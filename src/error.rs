@@ -11,7 +11,14 @@ pub enum Error {
     MissingValue,
     InvalidSectionType(u8),
     SectionOutOfOrder(SectionTy),
-    Unknown,
+    InvalidNumType,
+    InvalidVecType,
+    InvalidFuncType,
+    InvalidRefType,
+    InvalidValType,
+    InvalidExportDesc(u8),
+    ExprMissingEnd,
+    InvalidInstr,
 }
 
 pub type Result<T> = core::result::Result<T, Error>;

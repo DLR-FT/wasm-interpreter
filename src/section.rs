@@ -1,3 +1,9 @@
+pub mod code;
+pub mod custom;
+pub mod export;
+pub mod function;
+pub mod r#type;
+
 use crate::wasm::span::Span;
 use crate::wasm::Wasm;
 use crate::Error;
@@ -46,19 +52,19 @@ impl TryFrom<u8> for SectionTy {
     }
 }
 
-#[derive(Copy, Clone, Debug)]
-pub(crate) struct Section {
+#[derive(Debug)]
+pub(crate) struct SectionHeader {
     pub ty: SectionTy,
     pub contents: Span,
 }
 
 impl<'a> Wasm<'a> {
-    pub fn read_section(&mut self) -> Result<Section> {
-        let ty: SectionTy = self.strip_u8()?.try_into()?;
-        let size: u32 = self.strip_var_u32()?;
+    pub fn read_section_header(&mut self) -> Result<SectionHeader> {
+        let ty: SectionTy = self.read_u8()?.try_into()?;
+        let size: u32 = self.read_var_u32()?;
         let contents_span = self.make_span(size as usize);
 
-        Ok(Section {
+        Ok(SectionHeader {
             ty,
             contents: contents_span,
         })
