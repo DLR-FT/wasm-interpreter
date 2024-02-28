@@ -1,7 +1,8 @@
+use alloc::string::String;
+
 use crate::section::{SectionHeader, SectionTy};
 use crate::wasm::Wasm;
 use crate::Result;
-use alloc::string::String;
 
 impl<'a> Wasm<'a> {
     pub fn read_custom_section(&mut self, section_header: SectionHeader) -> Result<()> {

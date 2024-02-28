@@ -1,11 +1,11 @@
-pub(crate) mod indices;
-pub(crate) mod types;
-pub(crate) mod values;
-
 use core::ops::Index;
 
 use crate::wasm::span::Span;
 use crate::{Error, Result};
+
+pub(crate) mod indices;
+pub(crate) mod types;
+pub(crate) mod values;
 
 /// A struct for managing the WASM bytecode.
 /// Its purpose is mostly to abstract parsing basic WASM values from the bytecode.
@@ -56,6 +56,14 @@ impl<'a> Wasm<'a> {
         let num_read_bytes = self.current_idx() - before;
 
         Ok((ret, num_read_bytes))
+    }
+
+    pub fn skip(&mut self, num_bytes: usize) -> Result<()> {
+        if self.current.len() < num_bytes {
+            return Err(Error::MissingValue);
+        }
+        self.current = &self.current[num_bytes..];
+        Ok(())
     }
 }
 

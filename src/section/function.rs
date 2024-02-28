@@ -1,8 +1,9 @@
+use alloc::vec::Vec;
+
 use crate::section::{SectionHeader, SectionTy};
 use crate::wasm::indices::TypeIdx;
 use crate::wasm::Wasm;
 use crate::Result;
-use alloc::vec::Vec;
 
 impl<'a> Wasm<'a> {
     pub fn read_function_section(&mut self, section_header: SectionHeader) -> Result<Vec<TypeIdx>> {

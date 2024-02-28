@@ -1,13 +1,13 @@
+use crate::wasm::span::Span;
+use crate::wasm::Wasm;
+use crate::Error;
+use crate::Result;
+
 pub mod code;
 pub mod custom;
 pub mod export;
 pub mod function;
 pub mod r#type;
-
-use crate::wasm::span::Span;
-use crate::wasm::Wasm;
-use crate::Error;
-use crate::Result;
 
 #[derive(Copy, Clone, Debug, Hash, PartialEq, Eq)]
 pub enum SectionTy {
@@ -69,51 +69,4 @@ impl<'a> Wasm<'a> {
             contents: contents_span,
         })
     }
-}
-
-pub(crate) struct SectionTypeOrderValidator {
-    last: Option<SectionTy>,
-}
-
-impl SectionTypeOrderValidator {
-    pub fn new() -> Self {
-        Self { last: None }
-    }
-    pub fn validate(&mut self, ty: SectionTy) -> Result<()> {
-        if ty == SectionTy::Custom {
-            return Ok(());
-        }
-
-        let Some(last) = self.last else {
-            self.last = Some(ty);
-            return Ok(());
-        };
-
-        let order_is_valid = Self::SECTION_TYPE_ORDER
-            .iter()
-            .skip_while(|&&section_ty| section_ty != last)
-            .skip(1)
-            .any(|&section_ty| section_ty == ty);
-
-        if order_is_valid {
-            self.last = Some(ty);
-            Ok(())
-        } else {
-            Err(Error::SectionOutOfOrder(ty))
-        }
-    }
-    const SECTION_TYPE_ORDER: &'static [SectionTy] = &[
-        SectionTy::Type,
-        SectionTy::Import,
-        SectionTy::Function,
-        SectionTy::Table,
-        SectionTy::Memory,
-        SectionTy::Global,
-        SectionTy::Export,
-        SectionTy::Start,
-        SectionTy::Element,
-        SectionTy::DataCount,
-        SectionTy::Code,
-        SectionTy::Data,
-    ];
 }

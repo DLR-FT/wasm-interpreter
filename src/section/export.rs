@@ -1,10 +1,11 @@
+use alloc::borrow::ToOwned;
+use alloc::string::String;
+use alloc::vec::Vec;
+
 use crate::section::{SectionHeader, SectionTy};
 use crate::wasm::indices::{FuncIdx, GlobalIdx, MemIdx, TableIdx};
 use crate::wasm::Wasm;
 use crate::{Error, Result};
-use alloc::borrow::ToOwned;
-use alloc::string::String;
-use alloc::vec::Vec;
 
 #[derive(Debug)]
 pub struct Export {

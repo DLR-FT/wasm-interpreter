@@ -5,9 +5,10 @@
 //! Note: If any of these methods return `Err`, they may have consumed some bytes from the [Wasm] object and thus consequent calls may result in unexpected behaviour.
 //! This is due to the fact that these methods read elemental types which cannot be split.
 
+use alloc::vec::Vec;
+
 use crate::wasm::Wasm;
 use crate::{Error, Result};
-use alloc::vec::Vec;
 
 impl Wasm<'_> {
     /// Note: If `Err`, the [Wasm] object is no longer guaranteed to be in a valid state
