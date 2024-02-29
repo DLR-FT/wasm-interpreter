@@ -9,7 +9,7 @@ use crate::Error;
 use crate::Result;
 
 /// https://webassembly.github.io/spec/core/binary/types.html#number-types
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum NumType {
     I32,
     I64,
@@ -47,7 +47,7 @@ impl<'a> Wasm<'a> {
 }
 
 /// https://webassembly.github.io/spec/core/binary/types.html#reference-types
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RefType {
     FuncRef,
     ExternRef,
@@ -66,7 +66,7 @@ impl<'a> Wasm<'a> {
 }
 
 /// https://webassembly.github.io/spec/core/binary/types.html#reference-types
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ValType {
     NumType(NumType),
     VecType,
@@ -88,7 +88,7 @@ impl<'a> Wasm<'a> {
 /// https://webassembly.github.io/spec/core/binary/types.html#value-types
 #[derive(Debug, Clone)]
 pub struct ResultType {
-    valtypes: Vec<ValType>,
+    pub valtypes: Vec<ValType>,
 }
 
 impl<'a> Wasm<'a> {
@@ -102,8 +102,8 @@ impl<'a> Wasm<'a> {
 /// https://webassembly.github.io/spec/core/binary/types.html#function-types
 #[derive(Debug, Clone)]
 pub struct FuncType {
-    params: ResultType,
-    returns: ResultType,
+    pub params: ResultType,
+    pub returns: ResultType,
 }
 
 impl<'a> Wasm<'a> {

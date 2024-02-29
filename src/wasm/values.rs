@@ -6,6 +6,7 @@
 //! This is due to the fact that these methods read elemental types which cannot be split.
 
 use alloc::vec::Vec;
+use core::mem;
 
 use crate::wasm::Wasm;
 use crate::{Error, Result};
@@ -26,15 +27,36 @@ impl Wasm<'_> {
     /// Parses a variable-length `u32` as specified by [LEB128](https://en.wikipedia.org/wiki/LEB128#Unsigned_LEB128).
     /// Note: If `Err`, the [Wasm] object is no longer guaranteed to be in a valid state
     pub fn read_var_u32(&mut self) -> Result<u32> {
-        let mut result = 0_u32;
-        for byte_idx in 0..5_u32 {
-            // u32 max length is 5 bytes
-            let read_byte = self.read_u8()? as u32;
-            let (has_next_flag, byte_data) = (read_byte & 0b10000000, read_byte & 0b01111111);
-            result |= byte_data << (byte_idx * 7);
-            if has_next_flag >> 7 != 1 {
+        let mut result: u32 = 0;
+        let mut shift: u32 = 0;
+        loop {
+            let byte = self.read_u8()? as u32;
+            result |= (byte & 0b01111111) << shift;
+            if (byte & 0b10000000) == 0 {
                 break;
             }
+            shift += 7;
+        }
+
+        Ok(result)
+    }
+
+    pub fn read_var_i32(&mut self) -> Result<i32> {
+        let mut result: i32 = 0;
+        let mut shift: u32 = 0;
+
+        let mut byte: i32;
+        loop {
+            byte = self.read_u8()? as i32;
+            result |= (byte & 0b01111111) << shift;
+            shift += 7;
+            if (byte & 0b10000000) == 0 {
+                break;
+            }
+        }
+
+        if (shift < mem::size_of::<i32>() as u32 * 8) && (byte & 0x40 != 0) {
+            result |= !0 << shift;
         }
 
         Ok(result)
@@ -60,5 +82,18 @@ impl Wasm<'_> {
     {
         let len = self.read_var_u32()?;
         (0..len).map(|_| read_element(self)).collect()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::wasm::Wasm;
+
+    #[test]
+    fn test_var_i32() {
+        let bytes = [0xC0, 0xBB, 0x78];
+        let mut wasm = Wasm::new(&bytes);
+
+        assert_eq!(wasm.read_var_i32(), Ok(-123456));
     }
 }

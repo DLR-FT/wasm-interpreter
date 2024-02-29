@@ -1,5 +1,3 @@
-use core::ops::Index;
-
 use crate::wasm::span::Span;
 use crate::{Error, Result};
 

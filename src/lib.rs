@@ -4,6 +4,8 @@ extern crate alloc;
 #[macro_use]
 extern crate log;
 
+use alloc::borrow::ToOwned;
+
 pub use error::{Error, Result};
 
 use crate::section::{SectionHeader, SectionTy};
@@ -30,10 +32,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
     };
     debug!("Header ok");
 
-    let mut types = None;
-    let mut typeidxs = None;
-    let mut exports = None;
-    let mut codes = None;
+    // let mut codes = None;
 
     // returns true if end was reached
 
@@ -41,90 +40,94 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
     read_next_header(&mut wasm, &mut header)?;
 
     macro_rules! handle_section {
-        ($section_ty:expr, $section_header_ident:ident, $then:stmt) => {
-            match header.take() {
-                Some($section_header_ident @ SectionHeader {ty, ..},) if ty == $section_ty => {
-                    $then
+        ($section_ty:pat, $then:expr) => {
+            #[allow(unreachable_code)]
+            match &header {
+                Some(SectionHeader {
+                    ty: $section_ty, ..
+                }) => {
+                    let h = header.take().unwrap();
+                    trace!("Handling section {:?}", h.ty);
+                    let ret = $then(h);
                     read_next_header(&mut wasm, &mut header)?;
-                },
-                _ => {},
+                    Some(ret)
+                }
+                _ => None,
             }
         };
     }
+    macro_rules! skip_custom_sections {
+        () => {
+            let mut skip_section = || {
+                handle_section!(SectionTy::Custom, |h: SectionHeader| {
+                    wasm.skip(h.contents.len())
+                })
+                .transpose()
+            };
 
-    handle_custom_sections(&mut wasm, &mut header)?;
+            while let Some(_) = skip_section()? {}
+        };
+    }
 
-    handle_section!(SectionTy::Type, h, {
-        types = Some(wasm.read_type_section(h)?);
-    });
+    skip_custom_sections!();
 
-    handle_custom_sections(&mut wasm, &mut header)?;
+    let types = handle_section!(SectionTy::Type, |h| { wasm.read_type_section(h) })
+        .transpose()?
+        .unwrap_or_default();
 
-    handle_section!(SectionTy::Import, h, {
-        todo!("import");
-    });
+    skip_custom_sections!();
 
-    handle_custom_sections(&mut wasm, &mut header)?;
+    handle_section!(SectionTy::Import, |_| { todo!("import") });
 
-    handle_section!(SectionTy::Function, h, {
-        typeidxs = Some(wasm.read_function_section(h)?);
-    });
+    skip_custom_sections!();
 
-    handle_custom_sections(&mut wasm, &mut header)?;
+    let _typeidxs =
+        handle_section!(SectionTy::Function, |h| { wasm.read_function_section(h) }).transpose()?;
 
-    handle_section!(SectionTy::Table, h, {
-        todo!("table");
-    });
+    skip_custom_sections!();
 
-    handle_custom_sections(&mut wasm, &mut header)?;
+    handle_section!(SectionTy::Table, |_| { todo!("table") });
 
-    handle_section!(SectionTy::Memory, h, {
-        todo!("memory");
-    });
+    skip_custom_sections!();
 
-    handle_custom_sections(&mut wasm, &mut header)?;
+    handle_section!(SectionTy::Memory, |_| { todo!("memory") });
 
-    handle_section!(SectionTy::Global, h, {
-        todo!("global");
-    });
+    skip_custom_sections!();
 
-    handle_custom_sections(&mut wasm, &mut header)?;
+    handle_section!(SectionTy::Global, |_| { todo!("global") });
 
-    handle_section!(SectionTy::Export, h, {
-        exports = Some(wasm.read_export_section(h)?);
-    });
+    skip_custom_sections!();
 
-    handle_custom_sections(&mut wasm, &mut header)?;
+    let _exports = handle_section!(SectionTy::Export, |h| { wasm.read_export_section(h) })
+        .transpose()?
+        .unwrap_or_default();
 
-    handle_section!(SectionTy::Start, h, {
-        todo!("start");
-    });
+    skip_custom_sections!();
 
-    handle_custom_sections(&mut wasm, &mut header)?;
+    handle_section!(SectionTy::Start, |_| { todo!("start") });
 
-    handle_section!(SectionTy::Element, h, {
-        todo!("element");
-    });
+    skip_custom_sections!();
 
-    handle_custom_sections(&mut wasm, &mut header)?;
+    handle_section!(SectionTy::Element, |_| { todo!("element") });
 
-    handle_section!(SectionTy::DataCount, h, {
-        todo!("data count");
-    });
+    skip_custom_sections!();
 
-    handle_custom_sections(&mut wasm, &mut header)?;
+    handle_section!(SectionTy::DataCount, |_| { todo!("data count") });
 
-    handle_section!(SectionTy::Code, h, {
-        codes = Some(wasm.read_code_section(h)?);
-    });
+    skip_custom_sections!();
 
-    handle_custom_sections(&mut wasm, &mut header)?;
+    handle_section!(SectionTy::Code, |h| { wasm.read_code_section(&types) }).transpose()?;
 
-    handle_section!(SectionTy::Data, h, {
-        todo!("data");
-    });
+    skip_custom_sections!();
 
-    handle_custom_sections(&mut wasm, &mut header)?;
+    handle_section!(SectionTy::Data, |_| { todo!("data") });
+
+    skip_custom_sections!();
+
+    // All sections should have been handled
+    if let Some(header) = header {
+        return Err(Error::SectionOutOfOrder(header.ty));
+    }
 
     info!("Validation was successful");
     Ok(ValidationInfo {})

@@ -6,7 +6,7 @@ use crate::wasm::Wasm;
 use crate::Result;
 
 impl<'a> Wasm<'a> {
-    pub fn read_type_section(&mut self, section_header: SectionHeader) -> Result<Vec<FuncType>> {
+    pub fn read_type_section(&mut self, section_header: SectionHeader) -> Result<TypeStorage> {
         assert_eq!(section_header.ty, SectionTy::Type);
 
         let functypes = self.read_vec(|wasm| wasm.read_functype())?;
@@ -14,3 +14,5 @@ impl<'a> Wasm<'a> {
         Ok(functypes)
     }
 }
+
+pub type TypeStorage = Vec<FuncType>;

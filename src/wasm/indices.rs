@@ -2,8 +2,7 @@ macro_rules! def_idx_types {
     ($($name:ident),*) => {
         $(
             /// <https://webassembly.github.io/spec/core/binary/modules.html#indices>
-            #[derive(Copy, Clone, Debug)]
-            pub struct $name(pub u32);
+            pub type $name = usize;
         )*
     };
 }

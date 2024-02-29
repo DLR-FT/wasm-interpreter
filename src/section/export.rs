@@ -34,13 +34,13 @@ impl<'a> Wasm<'a> {
         let name = self.read_name()?.to_owned();
 
         let desc_id = self.read_u8()?;
-        let desc_content = self.read_var_u32()?;
+        let desc_idx = self.read_var_u32()? as usize;
 
         let desc = match desc_id {
-            0x00 => ExportDesc::FuncIdx(FuncIdx(desc_content)),
-            0x01 => ExportDesc::TableIdx(TableIdx(desc_content)),
-            0x02 => ExportDesc::MemIdx(MemIdx(desc_content)),
-            0x03 => ExportDesc::GlobalIdx(GlobalIdx(desc_content)),
+            0x00 => ExportDesc::FuncIdx(desc_idx),
+            0x01 => ExportDesc::TableIdx(desc_idx),
+            0x02 => ExportDesc::MemIdx(desc_idx),
+            0x03 => ExportDesc::GlobalIdx(desc_idx),
             other => return Err(Error::InvalidExportDesc(other)),
         };
 
