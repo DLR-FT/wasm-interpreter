@@ -50,40 +50,7 @@ impl<'a> Wasm<'a> {
             };
 
             validate_value_stack(func_ty, |value_stack| {
-                loop {
-                    let Ok(instr) = wasm.read_u8() else {
-                        return Err(Error::ExprMissingEnd);
-                    };
-                    trace!("Read instruction byte {instr:#x?} ({instr})");
-                    match instr {
-                        // end
-                        0x0B => {
-                            return Ok(());
-                        }
-                        // local.get: [] -> [t]
-                        0x20 => {
-                            let local_idx: LocalIdx = wasm.read_var_u32()? as usize;
-                            let local_ty = locals.get(local_idx).ok_or(Error::InvalidLocalIdx)?;
-                            value_stack.push_back(local_ty.clone());
-                        }
-                        // i32.add: [i32 i32] -> [i32]
-                        0x6A => {
-                            let ty1 = value_stack.pop_back().ok_or(Error::EmptyValueStack)?;
-                            let ty2 = value_stack.pop_back().ok_or(Error::EmptyValueStack)?;
-                            if !(ty1 == ty2 && ty2 == ValType::NumType(NumType::I32)) {
-                                return Err(Error::InvalidBinOpTypes(ty1, ty2));
-                            }
-                        }
-                        // i32.const: [] -> [i32]
-                        0x41 => {
-                            let n = wasm.read_var_i32()?;
-                            value_stack.push_back(ValType::NumType(NumType::I32));
-                        }
-                        other => {
-                            return Err(Error::InvalidInstr(other));
-                        }
-                    }
-                }
+                wasm.read_instructions(value_stack, &locals)
             })
         })
         .map(|_| ())
@@ -105,6 +72,65 @@ impl<'a> Wasm<'a> {
 
         Ok(locals)
     }
+
+    fn read_instructions(
+        &mut self,
+        value_stack: &mut VecDeque<ValType>,
+        locals: &[ValType],
+    ) -> Result<()> {
+        loop {
+            let Ok(instr) = self.read_u8() else {
+                return Err(Error::ExprMissingEnd);
+            };
+            trace!("Read instruction byte {instr:#x?} ({instr})");
+            match instr {
+                // nop
+                0x01 => {}
+                // end
+                0x0B => {
+                    return Ok(());
+                }
+                // local.get: [] -> [t]
+                0x20 => {
+                    let local_idx = self.read_var_u32()? as LocalIdx;
+                    let local_ty = locals.get(local_idx).ok_or(Error::InvalidLocalIdx)?;
+                    value_stack.push_back(local_ty.clone());
+                }
+                // local.set [t] -> [0]
+                0x21 => {
+                    let local_idx = self.read_var_u32()? as LocalIdx;
+                    let local_ty = locals.get(local_idx).ok_or(Error::InvalidLocalIdx)?;
+                    let popped = value_stack.pop_back();
+                    if popped.as_ref() != Some(local_ty) {
+                        return Err(Error::InvalidValueStackType(popped));
+                    }
+                }
+                // i32.add: [i32 i32] -> [i32]
+                0x6A => {
+                    let ty1 = value_stack
+                        .pop_back()
+                        .ok_or(Error::InvalidValueStackType(None))?;
+                    let ty2 = value_stack
+                        .pop_back()
+                        .ok_or(Error::InvalidValueStackType(None))?;
+                    let ValType::NumType(NumType::I32) = ty1 else {
+                        return Err(Error::InvalidValueStackType(Some(ty1)));
+                    };
+                    let ValType::NumType(NumType::I32) = ty2 else {
+                        return Err(Error::InvalidValueStackType(Some(ty2)));
+                    };
+                }
+                // i32.const: [] -> [i32]
+                0x41 => {
+                    let _num = self.read_var_i32()?;
+                    value_stack.push_back(ValType::NumType(NumType::I32));
+                }
+                other => {
+                    return Err(Error::InvalidInstr(other));
+                }
+            }
+        }
+    }
 }
 
 fn validate_value_stack<F>(func_ty: FuncType, mut f: F) -> Result<()>
@@ -119,7 +145,7 @@ where
 
     // TODO also check here for correct valtype order
     if value_stack != func_ty.returns.valtypes {
-        return Err(Error::InvalidValueStack);
+        return Err(Error::EndInvalidValueStack);
     }
     Ok(())
 }

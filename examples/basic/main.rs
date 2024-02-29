@@ -24,7 +24,7 @@ fn main() -> ExitCode {
     let _table = match validate(&wasm_bytes) {
         Ok(table) => table,
         Err(err) => {
-            error!("Validation failed: {err:?}");
+            error!("Validation failed: {err:?} [{err}]");
             return ExitCode::FAILURE;
         }
     };
