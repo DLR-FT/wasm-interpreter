@@ -2,13 +2,17 @@ use alloc::collections::VecDeque;
 use alloc::vec::Vec;
 use core::iter;
 
-use crate::{Error, Result};
 use crate::core::indices::LocalIdx;
-use crate::core::reader::{WasmReadable, WasmReader};
 use crate::core::reader::section_header::{SectionHeader, SectionTy};
 use crate::core::reader::types::{FuncType, NumType, ValType};
+use crate::core::reader::{WasmReadable, WasmReader};
+use crate::{Error, Result};
 
-pub fn validate_code_section(wasm: &mut WasmReader, section_header: SectionHeader, fn_types: &Vec<FuncType>) -> Result<()> {
+pub fn validate_code_section(
+    wasm: &mut WasmReader,
+    section_header: SectionHeader,
+    fn_types: &Vec<FuncType>,
+) -> Result<()> {
     assert_eq!(section_header.ty, SectionTy::Code);
     wasm.read_vec(|wasm| {
         // TODO hardcoded funcidx=0 for now, because only one function is supported
@@ -112,12 +116,12 @@ where
     F: FnOnce(&mut VecDeque<ValType>) -> Result<()>,
 {
     let mut value_stack: VecDeque<ValType> = VecDeque::new();
-    // TODO check for correct valtype order
+    // TODO is this the correct valtype order
     value_stack.extend(func_ty.params.valtypes);
 
     f(&mut value_stack)?;
 
-    // TODO also check here for correct valtype order
+    // TODO also check here if correct order
     if value_stack != func_ty.returns.valtypes {
         return Err(Error::EndInvalidValueStack);
     }
