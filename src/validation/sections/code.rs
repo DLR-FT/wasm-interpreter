@@ -3,9 +3,9 @@ use alloc::vec::Vec;
 use core::iter;
 
 use crate::core::indices::LocalIdx;
-use crate::core::reader::section_header::{SectionHeader, SectionTy};
 use crate::core::reader::types::{FuncType, NumType, ValType};
 use crate::core::reader::{WasmReadable, WasmReader};
+use crate::core::sections::{SectionHeader, SectionTy};
 use crate::{Error, Result};
 
 pub fn validate_code_section(

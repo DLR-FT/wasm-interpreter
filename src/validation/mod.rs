@@ -1,8 +1,9 @@
-use crate::{Error, Result};
 use crate::core::reader::{WasmReadable, WasmReader};
-use crate::core::reader::section_header::{SectionHeader, SectionTy};
-use crate::core::sections::{read_export_section, read_function_section, read_type_section};
+use crate::core::sections::{
+    read_export_section, read_function_section, read_type_section, SectionHeader, SectionTy,
+};
 use crate::validation::sections::validate_code_section;
+use crate::{Error, Result};
 
 pub mod sections;
 

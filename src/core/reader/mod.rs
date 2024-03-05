@@ -1,7 +1,6 @@
-use crate::{Error, Result};
 use crate::core::reader::span::Span;
+use crate::{Error, Result};
 
-pub(crate) mod section_header;
 pub mod types;
 pub mod values;
 

@@ -1,7 +1,7 @@
 use alloc::vec::Vec;
 
 use crate::core::indices::TypeIdx;
-use crate::core::reader::section_header::{SectionHeader, SectionTy};
+use crate::core::sections::{SectionHeader, SectionTy};
 use crate::core::reader::WasmReader;
 use crate::Result;
 

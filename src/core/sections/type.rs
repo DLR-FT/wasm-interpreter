@@ -1,7 +1,7 @@
 use alloc::vec::Vec;
 
 use crate::core::reader::{WasmReadable, WasmReader};
-use crate::core::reader::section_header::{SectionHeader, SectionTy};
+use crate::core::sections::{SectionHeader, SectionTy};
 use crate::core::reader::types::FuncType;
 use crate::Result;
 
