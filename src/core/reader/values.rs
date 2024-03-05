@@ -1,4 +1,4 @@
-//! Methods to read WASM Values from a [Wasm] object.
+//! Methods to read basic WASM Values from a [Wasm] object.
 //!
 //! See: <https://webassembly.github.io/spec/core/binary/values.html>
 //!
@@ -8,10 +8,10 @@
 use alloc::vec::Vec;
 use core::mem;
 
-use crate::wasm::Wasm;
 use crate::{Error, Result};
+use crate::core::reader::WasmReader;
 
-impl Wasm<'_> {
+impl WasmReader<'_> {
     /// Note: If `Err`, the [Wasm] object is no longer guaranteed to be in a valid state
     pub fn read_u8(&mut self) -> Result<u8> {
         let value = *self.current.get(0).ok_or(Error::MissingValue)?;
@@ -78,7 +78,7 @@ impl Wasm<'_> {
     /// Note: If `Err`, the [Wasm] object is no longer guaranteed to be in a valid state
     pub fn read_vec<T, F>(&mut self, mut read_element: F) -> Result<Vec<T>>
     where
-        F: FnMut(&mut Wasm) -> Result<T>,
+        F: FnMut(&mut WasmReader) -> Result<T>,
     {
         let len = self.read_var_u32()?;
         (0..len).map(|_| read_element(self)).collect()
@@ -87,12 +87,12 @@ impl Wasm<'_> {
 
 #[cfg(test)]
 mod tests {
-    use crate::wasm::Wasm;
+    use crate::core::reader::WasmReader;
 
     #[test]
     fn test_var_i32() {
         let bytes = [0xC0, 0xBB, 0x78];
-        let mut wasm = Wasm::new(&bytes);
+        let mut wasm = WasmReader::new(&bytes);
 
         assert_eq!(wasm.read_var_i32(), Ok(-123456));
     }

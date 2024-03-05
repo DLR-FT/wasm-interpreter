@@ -1,13 +1,6 @@
-use crate::wasm::span::Span;
-use crate::wasm::Wasm;
-use crate::Error;
-use crate::Result;
-
-pub mod code;
-pub mod custom;
-pub mod export;
-pub mod function;
-pub mod r#type;
+use crate::{Error, Result};
+use crate::core::reader::{WasmReadable, WasmReader};
+use crate::core::reader::span::Span;
 
 #[derive(Copy, Clone, Debug, Hash, PartialEq, Eq)]
 pub enum SectionTy {
@@ -26,12 +19,10 @@ pub enum SectionTy {
     DataCount = 12,
 }
 
-impl TryFrom<u8> for SectionTy {
-    type Error = Error;
-
-    fn try_from(ty: u8) -> core::result::Result<Self, Self::Error> {
+impl WasmReadable for SectionTy {
+    fn read(wasm: &mut WasmReader) -> Result<Self> {
         use SectionTy::*;
-        let ty = match ty {
+        let ty = match wasm.read_u8()? {
             0 => Custom,
             1 => Type,
             2 => Import,
@@ -58,11 +49,11 @@ pub(crate) struct SectionHeader {
     pub contents: Span,
 }
 
-impl<'a> Wasm<'a> {
-    pub fn read_section_header(&mut self) -> Result<SectionHeader> {
-        let ty: SectionTy = self.read_u8()?.try_into()?;
-        let size: u32 = self.read_var_u32()?;
-        let contents_span = self.make_span(size as usize);
+impl WasmReadable for SectionHeader {
+    fn read(wasm: &mut WasmReader) -> Result<Self> {
+        let ty = SectionTy::read(wasm)?;
+        let size: u32 = wasm.read_var_u32()?;
+        let contents_span = wasm.make_span(size as usize);
 
         Ok(SectionHeader {
             ty,

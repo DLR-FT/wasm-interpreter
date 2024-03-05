@@ -4,7 +4,7 @@
 
 use alloc::vec::Vec;
 
-use crate::wasm::Wasm;
+use crate::core::reader::{WasmReadable, WasmReader};
 use crate::Error;
 use crate::Result;
 
@@ -16,33 +16,34 @@ pub enum NumType {
     F32,
     F64,
 }
-impl<'a> Wasm<'a> {
-    pub fn read_numtype(&mut self) -> Result<NumType> {
+impl WasmReadable for NumType {
+    fn read(wasm: &mut WasmReader) -> Result<Self> {
         use NumType::*;
 
-        let ty = match self.peek_byte()? {
+        let ty = match wasm.peek_u8()? {
             0x7F => I32,
             0x7E => I64,
             0x7D => F32,
             0x7C => F64,
             _ => return Err(Error::InvalidNumType),
         };
-
-        let _ = self.read_u8();
+        let _ = wasm.read_u8();
 
         Ok(ty)
     }
 }
 
-// https://webassembly.github.io/spec/core/binary/types.html#vector-types
-impl<'a> Wasm<'a> {
-    pub fn read_vectype(&mut self) -> Result<()> {
-        let 0x7B = self.peek_byte()? else {
+/// https://webassembly.github.io/spec/core/binary/types.html#vector-types
+struct VecType;
+
+impl WasmReadable for VecType {
+    fn read(wasm: &mut WasmReader) -> Result<Self> {
+        let 0x7B = wasm.peek_u8()? else {
             return Err(Error::InvalidVecType);
         };
-        let _ = self.read_u8();
+        let _ = wasm.read_u8();
 
-        Ok(())
+        Ok(VecType)
     }
 }
 
@@ -53,30 +54,33 @@ pub enum RefType {
     ExternRef,
 }
 
-impl<'a> Wasm<'a> {
-    pub fn read_reftype(&mut self) -> Result<RefType> {
-        let ty = match self.peek_byte()? {
+impl WasmReadable for RefType {
+    fn read(wasm: &mut WasmReader) -> Result<RefType> {
+        let ty = match wasm.peek_u8()? {
             0x70 => RefType::FuncRef,
             0x6F => RefType::ExternRef,
             _ => return Err(Error::InvalidRefType),
         };
-        let _ = self.read_u8();
+        let _ = wasm.read_u8();
+
         Ok(ty)
     }
 }
 
 /// https://webassembly.github.io/spec/core/binary/types.html#reference-types
+/// TODO flatten [NumType] and [RefType] enums, as they are not used individually and `wasmparser` also does it.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ValType {
     NumType(NumType),
     VecType,
     RefType(RefType),
 }
-impl<'a> Wasm<'a> {
-    pub fn read_valtype(&mut self) -> Result<ValType> {
-        let numtype = self.read_numtype().map(|t| ValType::NumType(t));
-        let vectype = self.read_vectype().map(|_t| ValType::VecType);
-        let reftype = self.read_reftype().map(|t| ValType::RefType(t));
+
+impl WasmReadable for ValType {
+    fn read(wasm: &mut WasmReader) -> Result<Self> {
+        let numtype = NumType::read(wasm).map(|ty| ValType::NumType(ty));
+        let vectype = VecType::read(wasm).map(|_ty| ValType::VecType);
+        let reftype = RefType::read(wasm).map(|ty| ValType::RefType(ty));
 
         numtype
             .or(vectype)
@@ -91,9 +95,9 @@ pub struct ResultType {
     pub valtypes: Vec<ValType>,
 }
 
-impl<'a> Wasm<'a> {
-    pub fn read_resulttype(&mut self) -> Result<ResultType> {
-        let valtypes = self.read_vec(|wasm| wasm.read_valtype())?;
+impl WasmReadable for ResultType {
+    fn read(wasm: &mut WasmReader) -> Result<Self> {
+        let valtypes = wasm.read_vec(|wasm| ValType::read(wasm))?;
 
         Ok(ResultType { valtypes })
     }
@@ -106,14 +110,14 @@ pub struct FuncType {
     pub returns: ResultType,
 }
 
-impl<'a> Wasm<'a> {
-    pub fn read_functype(&mut self) -> Result<FuncType> {
-        let 0x60 = self.read_u8()? else {
+impl WasmReadable for FuncType {
+    fn read(wasm: &mut WasmReader) -> Result<FuncType> {
+        let 0x60 = wasm.read_u8()? else {
             return Err(Error::InvalidFuncType);
         };
 
-        let params = self.read_resulttype()?;
-        let returns = self.read_resulttype()?;
+        let params = ResultType::read(wasm)?;
+        let returns = ResultType::read(wasm)?;
 
         Ok(FuncType { params, returns })
     }
