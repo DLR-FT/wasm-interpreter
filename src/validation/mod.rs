@@ -1,8 +1,9 @@
+use crate::core::reader::section_header::{SectionHeader, SectionTy};
 use crate::core::reader::{WasmReadable, WasmReader};
-use crate::core::sections::{
-    read_export_section, read_function_section, read_type_section, SectionHeader, SectionTy,
-};
 use crate::validation::sections::validate_code_section;
+use crate::validation::sections::{
+    read_export_section, read_function_section, validate_type_section,
+};
 use crate::{Error, Result};
 
 pub mod sections;
@@ -63,7 +64,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
 
     skip_custom_sections!();
 
-    let fn_types = handle_section!(SectionTy::Type, |h| { read_type_section(&mut wasm, h) })
+    let fn_types = handle_section!(SectionTy::Type, |h| { validate_type_section(&mut wasm, h) })
         .transpose()?
         .unwrap_or_default();
 

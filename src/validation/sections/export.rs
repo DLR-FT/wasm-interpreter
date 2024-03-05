@@ -5,7 +5,7 @@ use alloc::vec::Vec;
 use crate::{Error, Result};
 use crate::core::indices::{FuncIdx, GlobalIdx, MemIdx, TableIdx};
 use crate::core::reader::{WasmReadable, WasmReader};
-use crate::core::sections::{SectionHeader, SectionTy};
+use crate::core::reader::section_header::{SectionHeader, SectionTy};
 
 #[derive(Debug)]
 pub struct Export {

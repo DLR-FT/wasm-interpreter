@@ -1,14 +1,7 @@
 use crate::{Error, Result};
-pub use export::*;
-pub use function::*;
-pub use r#type::*;
 
 use crate::core::reader::span::Span;
 use crate::core::reader::{WasmReadable, WasmReader};
-
-mod export;
-mod function;
-mod r#type;
 
 #[derive(Copy, Clone, Debug, Hash, PartialEq, Eq)]
 pub enum SectionTy {

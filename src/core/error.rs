@@ -1,8 +1,8 @@
 use core::fmt::{Display, Formatter, Write};
 use core::str::Utf8Error;
+use crate::core::reader::section_header::SectionTy;
 
 use crate::core::reader::types::ValType;
-use crate::core::sections::SectionTy;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Error {
