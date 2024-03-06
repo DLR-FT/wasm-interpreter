@@ -3,7 +3,6 @@ use crate::{Error, Result};
 
 pub mod section_header;
 pub mod types;
-pub mod values;
 
 /// A struct for managing and reading WASM bytecode.
 /// Its purpose is mostly to abstract parsing basic WASM values from the bytecode.

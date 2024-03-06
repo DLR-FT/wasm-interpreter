@@ -3,10 +3,10 @@ use alloc::vec::Vec;
 use core::iter;
 
 use crate::core::indices::LocalIdx;
-use crate::core::reader::types::{FuncType, NumType, ValType};
+use crate::core::reader::section_header::{SectionHeader, SectionTy};
+use crate::core::reader::types::{FuncType, NumType, ResultType, ValType};
 use crate::core::reader::{WasmReadable, WasmReader};
 use crate::{Error, Result};
-use crate::core::reader::section_header::{SectionHeader, SectionTy};
 
 pub fn validate_code_section(
     wasm: &mut WasmReader,
@@ -28,14 +28,14 @@ pub fn validate_code_section(
             params.chain(declared_locals).collect::<Vec<ValType>>()
         };
 
-        validate_value_stack(func_ty, |value_stack| {
+        validate_value_stack(func_ty.returns, |value_stack| {
             read_instructions(wasm, value_stack, &locals)
         })
     })
     .map(|_| ())
 }
 
-fn read_declared_locals(wasm: &mut WasmReader) -> Result<Vec<ValType>> {
+pub fn read_declared_locals(wasm: &mut WasmReader) -> Result<Vec<ValType>> {
     let locals = wasm.read_vec(|wasm| {
         let n = wasm.read_var_u32()? as usize;
         let valtype = ValType::read(wasm)?;
@@ -98,6 +98,8 @@ fn read_instructions(
                 let ValType::NumType(NumType::I32) = ty2 else {
                     return Err(Error::InvalidValueStackType(Some(ty2)));
                 };
+
+                value_stack.push_back(ValType::NumType(NumType::I32));
             }
             // i32.const: [] -> [i32]
             0x41 => {
@@ -111,18 +113,17 @@ fn read_instructions(
     }
 }
 
-fn validate_value_stack<F>(func_ty: FuncType, mut f: F) -> Result<()>
+fn validate_value_stack<F>(return_ty: ResultType, mut f: F) -> Result<()>
 where
     F: FnOnce(&mut VecDeque<ValType>) -> Result<()>,
 {
     let mut value_stack: VecDeque<ValType> = VecDeque::new();
-    // TODO is this the correct valtype order
-    value_stack.extend(func_ty.params.valtypes);
 
     f(&mut value_stack)?;
 
     // TODO also check here if correct order
-    if value_stack != func_ty.returns.valtypes {
+    if value_stack != return_ty.valtypes {
+        error!("Expected types {:?} on stack, got {:?}", return_ty.valtypes, value_stack);
         return Err(Error::EndInvalidValueStack);
     }
     Ok(())

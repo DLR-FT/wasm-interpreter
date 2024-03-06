@@ -1,11 +1,15 @@
-use crate::core::indices::{FuncIdx, TypeIdx};
+use alloc::vec;
+use alloc::vec::Vec;
+
+use crate::{Result, unreachable_validated, ValidationInfo};
+use crate::core::indices::{FuncIdx, LocalIdx, TypeIdx};
+use crate::core::reader::{WasmReadable, WasmReader};
 use crate::core::reader::section_header::SectionHeader;
 use crate::core::reader::section_header::SectionTy;
 use crate::core::reader::span::Span;
+use crate::core::reader::types::{FuncType, GlobalType, MemType, TableType};
 use crate::core::reader::types::export::Export;
 use crate::core::reader::types::import::{Import, ImportDesc};
-use crate::core::reader::types::{FuncType, GlobalType, MemType, TableType, ValType};
-use crate::core::reader::{WasmReadable, WasmReader};
 use crate::execution::sections::export::read_export_section;
 use crate::execution::sections::function::read_function_section;
 use crate::execution::sections::global::read_global_section;
@@ -14,14 +18,13 @@ use crate::execution::sections::memory::read_memory_section;
 use crate::execution::sections::r#type::read_type_section;
 use crate::execution::sections::table::read_table_section;
 use crate::execution::unwrap_validated::UnwrapValidatedExt;
-use crate::{Result, ValidationInfo};
-use alloc::collections::VecDeque;
-use alloc::vec::Vec;
-use core::iter;
+use crate::execution::value::Value;
+use crate::validation::sections::read_declared_locals;
 
 // TODO
 mod sections;
 pub(crate) mod unwrap_validated;
+pub mod value;
 
 pub struct InstantiatedInstance<'a> {
     wasm: &'a [u8],
@@ -194,26 +197,98 @@ pub fn instantiate(wasm: &[u8], _validation_info: ValidationInfo) -> Result<Inst
     })
 }
 
-/// Can only invocate functions with signature `[i32] -> [i32]` as of now.
+/// Can only invocate functions with signature `[t1] -> [t2]` as of now.
 /// Also this panics if a trap is received.
-pub fn invocate_fn(instantiation: &mut InstantiatedInstance, fn_idx: usize, param: i32) -> u32 {
+pub fn invocate_fn(
+    instantiation: &mut InstantiatedInstance,
+    fn_idx: usize,
+    mut param: Value,
+) -> Value {
     let fn_code_span = *instantiation.code_blocks.get(fn_idx).expect("valid fn_idx");
+
+    let func_ty = instantiation
+        .types
+        .get(*instantiation.functions.get(fn_idx).expect("valid fn_idx"))
+        .unwrap();
 
     let mut wasm = WasmReader::new(instantiation.wasm);
     wasm.move_to(fn_code_span);
 
-    let _locals: Vec<ValType> = wasm
-        .read_vec(|wasm| {
-            let n = wasm.read_var_u32().unwrap_validated();
-            let ty = ValType::read_unvalidated(wasm);
-            Ok((n, ty))
-        })
-        .unwrap_validated()
-        .into_iter()
-        .flat_map(|(n, ty)| iter::repeat(ty).take(n as usize))
-        .collect();
+    let params = &func_ty.params.valtypes;
+    assert_eq!(
+        params.len(),
+        1,
+        "just one parameter is allowed at this time"
+    );
+    let declared_locals = read_declared_locals(&mut wasm).unwrap_validated();
 
-    todo!("setup value stack, push params, interpret code, return result")
+    let mut locals: Vec<Value> = vec![Value::Uninitialized; declared_locals.len()];
+
+    fn get_local_mut<'a>(
+        param: &'a mut Value,
+        locals: &'a mut [Value],
+        idx: LocalIdx,
+    ) -> &'a mut Value {
+        if idx == 0 {
+            param
+        } else {
+            &mut locals[idx - 1]
+        }
+    }
+
+    let mut value_stack: Vec<Value> = Vec::new();
+
+    loop {
+        match wasm.read_u8().unwrap_validated() {
+            // end
+            0x0B => {
+                break;
+            }
+            // local.get: [] -> [t]
+            0x20 => {
+                let local_idx = wasm.read_var_u32().unwrap_validated() as LocalIdx;
+                let local_ty = *get_local_mut(&mut param, &mut locals, local_idx);
+                value_stack.push(local_ty);
+            }
+            // local.set [t] -> []
+            0x21 => {
+                let local_idx = wasm.read_var_u32().unwrap_validated() as LocalIdx;
+                let local_ty = get_local_mut(&mut param, &mut locals, local_idx);
+                *local_ty = value_stack.pop().unwrap_validated();
+            }
+            // i32.add: [i32 i32] -> [i32]
+            0x6A => {
+                let Some(Value::I32(v1)) = value_stack.pop() else {
+                    unreachable_validated!();
+                };
+                let Some(Value::I32(v2)) = value_stack.pop() else {
+                    unreachable_validated!();
+                };
+
+                let v1 = i32::from_le_bytes(v1.to_le_bytes());
+                let v2 = i32::from_le_bytes(v2.to_le_bytes());
+
+                let res = v1 + v2;
+                let res = u32::from_le_bytes(res.to_le_bytes());
+                value_stack.push(Value::I32(res));
+            }
+            // i32.const: [] -> [i32]
+            0x41 => {
+                let constant = wasm.read_var_i32().unwrap_validated();
+                let constant = u32::from_le_bytes(constant.to_le_bytes());
+
+                value_stack.push(Value::I32(constant));
+            }
+            _ => {}
+        }
+    }
+
+    assert_eq!(
+        value_stack.len(),
+        1,
+        "just one return value is allowed at this time"
+    );
+    value_stack.pop().unwrap_validated()
 }
 
 fn read_next_header(wasm: &mut WasmReader, header: &mut Option<SectionHeader>) -> Result<()> {

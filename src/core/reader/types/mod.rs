@@ -10,8 +10,9 @@ use crate::Result;
 use crate::{unreachable_validated, Error};
 
 pub mod export;
-pub mod import;
 pub mod function_code_header;
+pub mod import;
+pub mod values;
 
 /// https://webassembly.github.io/spec/core/binary/types.html#number-types
 #[derive(Debug, Clone, PartialEq, Eq)]

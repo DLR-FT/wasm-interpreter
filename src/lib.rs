@@ -6,7 +6,7 @@ extern crate log;
 pub use core::error::{Error, Result};
 pub use validation::{validate, ValidationInfo};
 
-pub use execution::{instantiate, invocate_fn, InstantiatedInstance};
+pub use execution::{instantiate, invocate_fn, InstantiatedInstance, value};
 
 pub(crate) mod core;
 pub(crate) mod execution;

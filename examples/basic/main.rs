@@ -4,6 +4,7 @@ use std::str::FromStr;
 
 use log::{error, LevelFilter};
 
+use wasm::value::Value;
 use wasm::{instantiate, invocate_fn, validate};
 
 fn main() -> ExitCode {
@@ -37,8 +38,9 @@ fn main() -> ExitCode {
         }
     };
 
-    let param = 5;
+    let param = Value::I32(u32::from_le_bytes(5_i32.to_le_bytes()));
     let ret = invocate_fn(&mut instance, 0, param);
+    dbg!(ret);
 
     ExitCode::SUCCESS
 }
