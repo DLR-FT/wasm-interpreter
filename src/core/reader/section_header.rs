@@ -1,7 +1,8 @@
-use crate::{Error, Result};
+use crate::{Error, Result, unreachable_validated};
 
 use crate::core::reader::span::Span;
 use crate::core::reader::{WasmReadable, WasmReader};
+use crate::execution::unwrap_validated::UnwrapValidatedExt;
 
 #[derive(Copy, Clone, Debug, Hash, PartialEq, Eq)]
 pub enum SectionTy {
@@ -42,6 +43,26 @@ impl WasmReadable for SectionTy {
 
         Ok(ty)
     }
+
+    fn read_unvalidated(wasm: &mut WasmReader) -> Self {
+        use SectionTy::*;
+        match wasm.read_u8().unwrap_validated() {
+            0 => Custom,
+            1 => Type,
+            2 => Import,
+            3 => Function,
+            4 => Table,
+            5 => Memory,
+            6 => Global,
+            7 => Export,
+            8 => Start,
+            9 => Element,
+            10 => Code,
+            11 => Data,
+            12 => DataCount,
+            _ => unreachable_validated!(),
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -60,5 +81,16 @@ impl WasmReadable for SectionHeader {
             ty,
             contents: contents_span,
         })
+    }
+
+    fn read_unvalidated(wasm: &mut WasmReader) -> Self {
+        let ty = SectionTy::read_unvalidated(wasm);
+        let size: u32 = wasm.read_var_u32().unwrap_validated();
+        let contents_span = wasm.make_span(size as usize);
+
+        SectionHeader {
+            ty,
+            contents: contents_span,
+        }
     }
 }

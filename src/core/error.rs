@@ -1,6 +1,6 @@
+use crate::core::reader::section_header::SectionTy;
 use core::fmt::{Display, Formatter, Write};
 use core::str::Utf8Error;
-use crate::core::reader::section_header::SectionTy;
 
 use crate::core::reader::types::ValType;
 
@@ -10,7 +10,7 @@ pub enum Error {
     InvalidMagic,
     InvalidVersion,
     MalformedUtf8String(Utf8Error),
-    MissingValue,
+    Eof,
     InvalidSectionType(u8),
     SectionOutOfOrder(SectionTy),
     InvalidNumType,
@@ -19,11 +19,14 @@ pub enum Error {
     InvalidRefType,
     InvalidValType,
     InvalidExportDesc(u8),
+    InvalidImportDesc(u8),
     ExprMissingEnd,
     InvalidInstr(u8),
     EndInvalidValueStack,
     InvalidLocalIdx,
     InvalidValueStackType(Option<ValType>),
+    InvalidLimitsType(u8),
+    InvalidMutType(u8),
 }
 
 impl Display for Error {
@@ -36,8 +39,8 @@ impl Display for Error {
             Error::MalformedUtf8String(err) => f.write_fmt(format_args!(
                 "A name could not be parsed as it was invalid UTF8: {err}"
             )),
-            Error::MissingValue => f.write_str(
-                "A value was expected in the WASM binary but it could not be found or read",
+            Error::Eof => f.write_str(
+                "A value was expected in the WASM binary but the end of file was reached instead",
             ),
             Error::InvalidSectionType(ty) => f.write_fmt(format_args!(
                 "An invalid section type id was found in a section header: {ty}"
@@ -63,6 +66,9 @@ impl Display for Error {
             Error::InvalidExportDesc(byte) => f.write_fmt(format_args!(
                 "An invalid byte `{byte:#x?}` was read where an exportdesc was expected"
             )),
+            Error::InvalidImportDesc(byte) => f.write_fmt(format_args!(
+                "An invalid byte `{byte:#x?}` was read where an importdesc was expected"
+            )),
             Error::ExprMissingEnd => f.write_str("An expr is missing an end byte"),
             Error::InvalidInstr(byte) => f.write_fmt(format_args!(
                 "An invalid instruction opcode was found: `{byte:#x?}`"
@@ -73,6 +79,12 @@ impl Display for Error {
             Error::InvalidLocalIdx => f.write_str("An invalid localidx was used"),
             Error::InvalidValueStackType(ty) => f.write_fmt(format_args!(
                 "An unexpected type was found on the stack when trying to pop another: `{ty:?}`"
+            )),
+            Error::InvalidLimitsType(ty) => {
+                f.write_fmt(format_args!("An invalid limits type was found: {ty:#x?}"))
+            }
+            Error::InvalidMutType(byte) => f.write_fmt(format_args!(
+                "An invalid mut/const byte was found: {byte:#x?}"
             )),
         }
     }

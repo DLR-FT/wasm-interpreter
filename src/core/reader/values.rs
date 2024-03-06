@@ -14,7 +14,7 @@ use crate::core::reader::WasmReader;
 impl WasmReader<'_> {
     /// Note: If `Err`, the [Wasm] object is no longer guaranteed to be in a valid state
     pub fn read_u8(&mut self) -> Result<u8> {
-        let value = *self.current.get(0).ok_or(Error::MissingValue)?;
+        let value = *self.current.get(0).ok_or(Error::Eof)?;
 
         self.current = &self
             .current
@@ -67,7 +67,7 @@ impl WasmReader<'_> {
         let len = self.read_var_u32()? as usize;
 
         if len > self.current.len() {
-            return Err(Error::MissingValue);
+            return Err(Error::Eof);
         }
         let (utf8_str, rest) = self.current.split_at(len); // Cannot panic because check is done above
         self.current = rest;

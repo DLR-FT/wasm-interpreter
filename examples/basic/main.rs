@@ -4,7 +4,7 @@ use std::str::FromStr;
 
 use log::{error, LevelFilter};
 
-use wasm::validate;
+use wasm::{instantiate, invocate_fn, validate};
 
 fn main() -> ExitCode {
     let level = LevelFilter::from_str(&env::var("RUST_LOG").unwrap_or("TRACE".to_owned())).unwrap();
@@ -21,13 +21,24 @@ fn main() -> ExitCode {
     "#;
     let wasm_bytes = wat::parse_str(&wat).unwrap();
 
-    let _table = match validate(&wasm_bytes) {
+    let validation_info = match validate(&wasm_bytes) {
         Ok(table) => table,
         Err(err) => {
             error!("Validation failed: {err:?} [{err}]");
             return ExitCode::FAILURE;
         }
     };
+
+    let mut instance = match instantiate(&wasm_bytes, validation_info) {
+        Ok(instance) => instance,
+        Err(err) => {
+            error!("Instantiation failed: {err:?} [{err}]");
+            return ExitCode::FAILURE;
+        }
+    };
+
+    let param = 5;
+    let ret = invocate_fn(&mut instance, 0, param);
 
     ExitCode::SUCCESS
 }

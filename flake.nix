@@ -37,6 +37,7 @@
             latest.rustfmt
             targets.${rust-target}.latest.rust-std
             targets.thumbv6m-none-eabi.latest.rust-std # for no_std test
+            targets.wasm32-unknown-unknown.latest.rust-std
           ];
 
         # overrides a naersk-lib which uses the stable toolchain expressed above

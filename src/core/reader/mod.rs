@@ -1,9 +1,9 @@
 use crate::core::reader::span::Span;
 use crate::{Error, Result};
 
+pub mod section_header;
 pub mod types;
 pub mod values;
-pub mod section_header;
 
 /// A struct for managing and reading WASM bytecode.
 /// Its purpose is mostly to abstract parsing basic WASM values from the bytecode.
@@ -19,6 +19,9 @@ impl<'a> WasmReader<'a> {
             current: wasm,
         }
     }
+    pub fn move_to(&mut self, span: Span) {
+        self.current = &self.full_contents[span.from..(span.from + span.len)];
+    }
 
     pub fn remaining_bytes(&self) -> &[u8] {
         &self.current
@@ -33,7 +36,7 @@ impl<'a> WasmReader<'a> {
 
     pub fn strip_bytes<const N: usize>(&mut self) -> Result<[u8; N]> {
         if N > self.current.len() {
-            return Err(Error::MissingValue);
+            return Err(Error::Eof);
         }
 
         let (bytes, rest) = self.current.split_at(N);
@@ -42,7 +45,7 @@ impl<'a> WasmReader<'a> {
         Ok(bytes.try_into().expect("the slice length to be exactly N"))
     }
     pub fn peek_u8(&self) -> Result<u8> {
-        self.current.get(0).copied().ok_or(Error::MissingValue)
+        self.current.get(0).copied().ok_or(Error::Eof)
     }
 
     pub fn measure_num_read_bytes<T>(
@@ -58,15 +61,19 @@ impl<'a> WasmReader<'a> {
 
     pub fn skip(&mut self, num_bytes: usize) -> Result<()> {
         if self.current.len() < num_bytes {
-            return Err(Error::MissingValue);
+            return Err(Error::Eof);
         }
         self.current = &self.current[num_bytes..];
         Ok(())
+    }
+    pub fn into_inner(self) -> &'a [u8] {
+        self.full_contents
     }
 }
 
 pub trait WasmReadable: Sized {
     fn read(wasm: &mut WasmReader) -> Result<Self>;
+    fn read_unvalidated(wasm: &mut WasmReader) -> Self;
 }
 
 pub mod span {
@@ -76,8 +83,8 @@ pub mod span {
 
     #[derive(Copy, Clone, Debug, Hash)]
     pub struct Span {
-        from: usize,
-        len: usize,
+        pub(super) from: usize,
+        pub(super) len: usize,
     }
 
     impl Span {
