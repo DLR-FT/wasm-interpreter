@@ -91,7 +91,7 @@ pub fn invoke_func<Param: WasmValueList, Returns: WasmValueList>(
             0x6A => {
                 let v1 = value_stack.pop::<i32>();
                 let v2 = value_stack.pop::<i32>();
-                value_stack.push(v1 + v2);
+                value_stack.push(v1.wrapping_add(v2));
             }
             // i32.const: [] -> [i32]
             0x41 => {
