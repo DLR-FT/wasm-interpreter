@@ -1,20 +1,15 @@
 use alloc::vec::Vec;
 
-use crate::core::indices::TypeIdx;
+use crate::core::indices::{FuncIdx, TypeIdx};
 use crate::core::reader::section_header::{SectionHeader, SectionTy};
 use crate::core::reader::span::Span;
 use crate::core::reader::types::export::Export;
 use crate::core::reader::types::import::Import;
 use crate::core::reader::types::{FuncType, GlobalType, MemType, TableType};
 use crate::core::reader::{WasmReadable, WasmReader};
-use crate::validation::sections::{
-    read_export_section, read_function_section, read_global_section, read_memory_section,
-    read_start_section, read_table_section, validate_type_section,
-};
-use crate::validation::sections::{validate_code_section, validate_import_section};
 use crate::{Error, Result};
 
-pub mod sections;
+pub(crate) mod code;
 
 pub struct ValidationInfo<'bytecode> {
     pub(crate) wasm: &'bytecode [u8],
@@ -26,6 +21,8 @@ pub struct ValidationInfo<'bytecode> {
     pub(crate) globals: Vec<GlobalType>,
     pub(crate) exports: Vec<Export>,
     pub(crate) code_blocks: Vec<Span>,
+    /// The start function which is automatically executed during instantiation
+    pub(crate) start: Option<FuncIdx>,
 }
 
 pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
@@ -78,14 +75,16 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
 
     skip_custom_sections!();
 
-    let types = handle_section!(SectionTy::Type, |h| { validate_type_section(&mut wasm, h) })
-        .transpose()?
-        .unwrap_or_default();
+    let types = handle_section!(SectionTy::Type, |h| {
+        wasm.read_vec(|wasm| FuncType::read(wasm))
+    })
+    .transpose()?
+    .unwrap_or_default();
 
     skip_custom_sections!();
 
     let imports = handle_section!(SectionTy::Import, |h| {
-        validate_import_section(&mut wasm, h)
+        wasm.read_vec(|wasm| Import::read(wasm))
     })
     .transpose()?
     .unwrap_or_default();
@@ -93,39 +92,49 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
     skip_custom_sections!();
 
     let functions = handle_section!(SectionTy::Function, |h| {
-        read_function_section(&mut wasm, h)
+        wasm.read_vec(|wasm| wasm.read_var_u32().map(|u| u as usize))
     })
     .transpose()?
     .unwrap_or_default();
 
     skip_custom_sections!();
 
-    let tables = handle_section!(SectionTy::Table, |h| { read_table_section(&mut wasm, h) })
-        .transpose()?
-        .unwrap_or_default();
+    let tables = handle_section!(SectionTy::Table, |h| {
+        wasm.read_vec(|wasm| TableType::read(wasm))
+    })
+    .transpose()?
+    .unwrap_or_default();
 
     skip_custom_sections!();
 
-    let memories = handle_section!(SectionTy::Memory, |h| { read_memory_section(&mut wasm, h) })
-        .transpose()?
-        .unwrap_or_default();
+    let memories = handle_section!(SectionTy::Memory, |h| {
+        wasm.read_vec(|wasm| MemType::read(wasm))
+    })
+    .transpose()?
+    .unwrap_or_default();
 
     skip_custom_sections!();
 
-    let globals = handle_section!(SectionTy::Global, |h| { read_global_section(&mut wasm, h) })
-        .transpose()?
-        .unwrap_or_default();
+    let globals = handle_section!(SectionTy::Global, |h| {
+        wasm.read_vec(|wasm| GlobalType::read(wasm))
+    })
+    .transpose()?
+    .unwrap_or_default();
 
     skip_custom_sections!();
 
-    let exports = handle_section!(SectionTy::Export, |h| { read_export_section(&mut wasm, h) })
-        .transpose()?
-        .unwrap_or_default();
+    let exports = handle_section!(SectionTy::Export, |h| {
+        wasm.read_vec(|wasm| Export::read(wasm))
+    })
+    .transpose()?
+    .unwrap_or_default();
 
     skip_custom_sections!();
 
-    let start =
-        handle_section!(SectionTy::Start, |h| { read_start_section(&mut wasm, h) }).transpose()?;
+    let start = handle_section!(SectionTy::Start, |h| {
+        wasm.read_var_u32().map(|idx| idx as FuncIdx)
+    })
+    .transpose()?;
 
     skip_custom_sections!();
 
@@ -142,7 +151,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
     skip_custom_sections!();
 
     let code_blocks = handle_section!(SectionTy::Code, |h| {
-        validate_code_section(&mut wasm, h, &types)
+        code::validate_code_section(&mut wasm, h, &types)
     })
     .transpose()?
     .unwrap_or_default();
@@ -173,6 +182,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
         globals,
         exports,
         code_blocks,
+        start,
     })
 }
 

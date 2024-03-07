@@ -1,12 +1,11 @@
+use crate::{Result, ValidationInfo};
 use crate::core::indices::LocalIdx;
-use crate::core::reader::section_header::SectionHeader;
 use crate::core::reader::{WasmReadable, WasmReader};
 use crate::execution::locals::Locals;
 use crate::execution::unwrap_validated::UnwrapValidatedExt;
-use crate::validation::sections::read_declared_locals;
-use crate::values::stack::ValueStack;
+use crate::validation::code::read_declared_locals;
 use crate::values::{WasmValue, WasmValueList};
-use crate::{Result, ValidationInfo};
+use crate::values::stack::ValueStack;
 
 // TODO
 pub(crate) mod locals;
