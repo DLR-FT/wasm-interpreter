@@ -32,7 +32,7 @@ fn main() -> ExitCode {
         }
     };
 
-    let mut instance = match instantiate(&wasm_bytes, validation_info) {
+    let mut instance = match instantiate(&validation_info) {
         Ok(instance) => instance,
         Err(err) => {
             error!("Instantiation failed: {err:?} [{err}]");

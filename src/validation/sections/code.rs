@@ -4,6 +4,7 @@ use core::iter;
 
 use crate::core::indices::LocalIdx;
 use crate::core::reader::section_header::{SectionHeader, SectionTy};
+use crate::core::reader::span::Span;
 use crate::core::reader::types::{FuncType, NumType, ResultType, ValType};
 use crate::core::reader::{WasmReadable, WasmReader};
 use crate::{Error, Result};
@@ -12,15 +13,17 @@ pub fn validate_code_section(
     wasm: &mut WasmReader,
     section_header: SectionHeader,
     fn_types: &Vec<FuncType>,
-) -> Result<()> {
+) -> Result<Vec<Span>> {
     assert_eq!(section_header.ty, SectionTy::Code);
-    wasm.read_vec(|wasm| {
+
+    let code_block_spans = wasm.read_vec(|wasm| {
         // TODO hardcoded funcidx=0 for now, because only one function is supported
         let func_idx = 0;
         let func_ty = fn_types[0].clone();
         trace!("Validating function with index {func_idx}");
 
-        let _func_size = wasm.read_var_u32()?;
+        let func_size = wasm.read_var_u32()?;
+        let code_block_span = wasm.make_span(func_size as usize);
 
         let locals = {
             let params = func_ty.params.valtypes.iter().cloned();
@@ -30,9 +33,17 @@ pub fn validate_code_section(
 
         validate_value_stack(func_ty.returns, |value_stack| {
             read_instructions(wasm, value_stack, &locals)
-        })
-    })
-    .map(|_| ())
+        })?;
+
+        Ok(code_block_span)
+    })?;
+
+    trace!(
+        "Read code section. Found {} code blocks",
+        code_block_spans.len()
+    );
+
+    Ok(code_block_spans)
 }
 
 pub fn read_declared_locals(wasm: &mut WasmReader) -> Result<Vec<ValType>> {

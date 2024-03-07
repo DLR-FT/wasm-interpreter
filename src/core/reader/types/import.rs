@@ -5,6 +5,7 @@ use crate::{unreachable_validated, Error, Result};
 use alloc::borrow::ToOwned;
 use alloc::string::String;
 
+#[derive(Debug)]
 pub struct Import {
     pub module_name: String,
     pub name: String,
@@ -37,6 +38,7 @@ impl WasmReadable for Import {
     }
 }
 
+#[derive(Debug)]
 pub enum ImportDesc {
     Func(TypeIdx),
     Table(()),  // TODO TableType

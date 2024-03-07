@@ -3,6 +3,7 @@
 //! See: <https://webassembly.github.io/spec/core/binary/types.html>
 
 use alloc::vec::Vec;
+use core::fmt::{Debug, Formatter, Write};
 
 use crate::core::reader::{WasmReadable, WasmReader};
 use crate::execution::unwrap_validated::UnwrapValidatedExt;
@@ -199,6 +200,15 @@ pub struct Limits {
     pub max: Option<u32>,
 }
 
+impl Debug for Limits {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        match self.max {
+            Some(max) => f.write_fmt(format_args!("{}..{}", self.min, max)),
+            None => f.write_fmt(format_args!("{}..", self.min)),
+        }
+    }
+}
+
 impl WasmReadable for Limits {
     fn read(wasm: &mut WasmReader) -> Result<Self> {
         let limits = match wasm.read_u8()? {
@@ -239,6 +249,7 @@ impl WasmReadable for Limits {
     }
 }
 
+#[derive(Debug)]
 pub struct TableType {
     pub et: RefType,
     pub lim: Limits,
@@ -259,6 +270,7 @@ impl WasmReadable for TableType {
     }
 }
 
+#[derive(Debug)]
 pub struct MemType {
     pub limits: Limits,
 }
@@ -276,6 +288,8 @@ impl WasmReadable for MemType {
         }
     }
 }
+
+#[derive(Debug)]
 pub struct GlobalType {
     pub ty: ValType,
     pub is_mut: bool,

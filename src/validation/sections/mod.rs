@@ -6,9 +6,19 @@
 pub use code::*;
 pub use export::*;
 pub use function::*;
+pub use import::*;
+pub use memory::*;
 pub use r#type::*;
+pub use table::*;
+pub use global::*;
+pub use start::*;
 
 mod code;
 mod export;
 mod function;
+mod import;
+mod memory;
+mod table;
 mod r#type;
+mod global;
+mod start;
