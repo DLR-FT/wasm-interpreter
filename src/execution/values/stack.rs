@@ -3,7 +3,7 @@ use alloc::boxed::Box;
 use alloc::vec::Vec;
 
 use crate::unreachable_validated;
-use crate::values::WasmValue;
+use crate::values::{WasmValue, WasmValueList};
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub(crate) struct ValueStack {
@@ -20,7 +20,7 @@ impl ValueStack {
     }
 
     pub fn push<T: WasmValue>(&mut self, t: T) {
-        self.push_bytes(&*t.to_bytes());
+        self.push_bytes(&*t.into_bytes());
     }
 
     pub fn pop_bytes(&mut self, n: usize) -> Box<[u8]> {
@@ -36,6 +36,11 @@ impl ValueStack {
 
     pub fn push_bytes(&mut self, bytes: &[u8]) {
         self.inner.extend(bytes.iter());
+    }
+
+    pub fn pop_all<T: WasmValueList>(&mut self) -> T {
+        let bytes = self.pop_bytes(T::SIZE);
+        T::from_bytes_list(&*bytes)
     }
 
     pub fn len(&self) -> usize {

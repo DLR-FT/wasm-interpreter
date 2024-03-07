@@ -1,6 +1,7 @@
 use alloc::boxed::Box;
 use alloc::vec;
 use alloc::vec::Vec;
+use core::iter;
 
 use crate::core::indices::{FuncIdx, LocalIdx, TypeIdx};
 use crate::core::reader::section_header::SectionHeader;
@@ -10,6 +11,7 @@ use crate::core::reader::types::export::Export;
 use crate::core::reader::types::import::{Import, ImportDesc};
 use crate::core::reader::types::{FuncType, GlobalType, MemType, NumType, TableType, ValType};
 use crate::core::reader::{WasmReadable, WasmReader};
+use crate::execution::locals::Locals;
 use crate::execution::sections::export::read_export_section;
 use crate::execution::sections::function::read_function_section;
 use crate::execution::sections::global::read_global_section;
@@ -20,11 +22,11 @@ use crate::execution::sections::table::read_table_section;
 use crate::execution::unwrap_validated::UnwrapValidatedExt;
 use crate::validation::sections::read_declared_locals;
 use crate::values::stack::ValueStack;
-use crate::values::value_vec::VarSizeVec;
-use crate::values::{WasmValue};
+use crate::values::{WasmValue, WasmValueList};
 use crate::{Result, ValidationInfo};
 
 // TODO
+pub(crate) mod locals;
 mod sections;
 pub(crate) mod unwrap_validated;
 pub mod values;
@@ -201,7 +203,7 @@ pub fn instantiate(wasm: &[u8], _validation_info: ValidationInfo) -> Result<Inst
 }
 
 /// Can only invoke functions with signature `[t1] -> [t2]` as of now.
-pub fn invoke_func<Param: WasmValue, Returns: WasmValue>(
+pub fn invoke_func<Param: WasmValueList, Returns: WasmValueList>(
     instantiation: &mut InstantiatedInstance,
     fn_idx: usize,
     mut param: Param,
@@ -213,41 +215,19 @@ pub fn invoke_func<Param: WasmValue, Returns: WasmValue>(
         .get(*instantiation.functions.get(fn_idx).expect("valid fn_idx"))
         .unwrap();
 
+    // TODO check if parameters and return types match the ones in `func_ty`
+
     let mut wasm = WasmReader::new(instantiation.wasm);
     wasm.move_to(fn_code_span);
 
-    let params = &func_ty.params.valtypes;
-    assert_eq!(
-        params.len(),
-        1,
-        "just one parameter is allowed at this time"
-    );
-    let declared_locals = read_declared_locals(&mut wasm).unwrap_validated();
+    // VALIDATION_ASSERT: All valtypes are correct, thus we only care about their sizes
+    let locals_sizes = read_declared_locals(&mut wasm)
+        .unwrap_validated()
+        .into_iter()
+        .map(|ty| ty.size());
 
-    let locals_sizes = declared_locals.iter().map(|ty| match ty {
-        ValType::NumType(NumType::I32) => 4,
-        ValType::NumType(NumType::I64) => 8,
-        ValType::NumType(NumType::F32) => 4,
-        ValType::NumType(NumType::F64) => 8,
-        ValType::VecType => 16,
-        ValType::RefType(_) => todo!("reftype not supported yet"),
-    });
-
-    let mut locals = VarSizeVec::new(locals_sizes);
-
-    let mut param = param.to_bytes();
-    fn get_local_mut<'a>(
-        param: &'a mut [u8],
-        locals: &'a mut VarSizeVec,
-        idx: LocalIdx,
-    ) -> &'a mut [u8] {
-        if idx == 0 {
-            param
-        } else {
-            &mut locals[idx - 1]
-        }
-    }
-
+    let param_bytes = param.into_bytes_list();
+    let mut locals = Locals::new(param_bytes.iter().map(|p| &**p), locals_sizes);
     let mut value_stack = ValueStack::new();
 
     loop {
@@ -259,13 +239,13 @@ pub fn invoke_func<Param: WasmValue, Returns: WasmValue>(
             // local.get: [] -> [t]
             0x20 => {
                 let local_idx = wasm.read_var_u32().unwrap_validated() as LocalIdx;
-                let local = get_local_mut(&mut param, &mut locals, local_idx);
+                let local = locals.get(local_idx);
                 value_stack.push_bytes(local);
             }
             // local.set [t] -> []
             0x21 => {
                 let local_idx = wasm.read_var_u32().unwrap_validated() as LocalIdx;
-                let local = get_local_mut(&mut param, &mut locals, local_idx);
+                let local = locals.get_mut(local_idx);
                 let stack_bytes = value_stack.pop_bytes(local.len());
                 local.copy_from_slice(&*stack_bytes);
             }
@@ -284,14 +264,9 @@ pub fn invoke_func<Param: WasmValue, Returns: WasmValue>(
         }
     }
 
-    assert_eq!(
-        value_stack.len(),
-        Returns::SIZE,
-        "just one return value is allowed at this time"
-    );
-
+    let ret = value_stack.pop_all::<Returns>();
     debug!("Successfully invoked function");
-    value_stack.pop::<Returns>()
+    ret
 }
 
 fn read_next_header(wasm: &mut WasmReader, header: &mut Option<SectionHeader>) -> Result<()> {

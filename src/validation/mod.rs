@@ -127,7 +127,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
         return Err(Error::SectionOutOfOrder(header.ty));
     }
 
-    info!("Validation was successful");
+    debug!("Validation was successful");
     Ok(ValidationInfo {})
 }
 

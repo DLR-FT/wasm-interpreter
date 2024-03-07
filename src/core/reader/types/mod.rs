@@ -109,6 +109,17 @@ pub enum ValType {
     RefType(RefType),
 }
 
+impl ValType {
+    pub fn size(&self) -> usize {
+        match self {
+            Self::NumType(NumType::I32 | NumType::F32) => 4,
+            Self::NumType(NumType::I64 | NumType::F64) => 8,
+            Self::VecType => 16,
+            Self::RefType(_) => todo!("reftypes not supported yet"),
+        }
+    }
+}
+
 impl WasmReadable for ValType {
     fn read(wasm: &mut WasmReader) -> Result<Self> {
         let numtype = NumType::read(wasm).map(|ty| ValType::NumType(ty));
