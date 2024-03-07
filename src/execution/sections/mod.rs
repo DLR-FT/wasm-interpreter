@@ -5,8 +5,8 @@
 //! They were not generalized on purpose for a simpler project structure.
 pub mod export;
 pub mod function;
+pub mod global;
 pub mod import;
 pub mod memory;
 pub mod table;
 pub mod r#type;
-pub mod global;

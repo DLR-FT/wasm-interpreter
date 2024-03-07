@@ -1,4 +1,4 @@
-use crate::{Error, Result, unreachable_validated};
+use crate::{unreachable_validated, Error, Result};
 
 use crate::core::reader::span::Span;
 use crate::core::reader::{WasmReadable, WasmReader};

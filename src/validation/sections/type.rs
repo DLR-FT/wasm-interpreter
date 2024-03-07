@@ -1,8 +1,8 @@
 use alloc::vec::Vec;
 
-use crate::core::reader::{WasmReadable, WasmReader};
 use crate::core::reader::section_header::{SectionHeader, SectionTy};
 use crate::core::reader::types::FuncType;
+use crate::core::reader::{WasmReadable, WasmReader};
 use crate::Result;
 
 pub fn validate_type_section(

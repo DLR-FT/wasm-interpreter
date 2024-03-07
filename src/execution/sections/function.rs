@@ -1,7 +1,7 @@
-use alloc::vec::Vec;
 use crate::core::indices::TypeIdx;
 use crate::core::reader::WasmReader;
 use crate::execution::unwrap_validated::UnwrapValidatedExt;
+use alloc::vec::Vec;
 
 pub fn read_function_section(wasm: &mut WasmReader) -> Vec<TypeIdx> {
     let typeidxs = wasm

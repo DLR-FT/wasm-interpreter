@@ -123,7 +123,10 @@ where
 
     // TODO also check here if correct order
     if value_stack != return_ty.valtypes {
-        error!("Expected types {:?} on stack, got {:?}", return_ty.valtypes, value_stack);
+        error!(
+            "Expected types {:?} on stack, got {:?}",
+            return_ty.valtypes, value_stack
+        );
         return Err(Error::EndInvalidValueStack);
     }
     Ok(())

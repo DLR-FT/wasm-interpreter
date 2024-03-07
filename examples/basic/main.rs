@@ -4,8 +4,7 @@ use std::str::FromStr;
 
 use log::{error, LevelFilter};
 
-use wasm::value::Value;
-use wasm::{instantiate, invocate_fn, validate};
+use wasm::{instantiate, invoke_func, validate};
 
 fn main() -> ExitCode {
     let level = LevelFilter::from_str(&env::var("RUST_LOG").unwrap_or("TRACE".to_owned())).unwrap();
@@ -38,8 +37,7 @@ fn main() -> ExitCode {
         }
     };
 
-    let param = Value::I32(u32::from_le_bytes(5_i32.to_le_bytes()));
-    let ret = invocate_fn(&mut instance, 0, param);
+    let ret = invoke_func::<i32, i32>(&mut instance, 0, 5);
     dbg!(ret);
 
     ExitCode::SUCCESS

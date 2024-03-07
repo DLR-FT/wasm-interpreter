@@ -1,7 +1,7 @@
 use alloc::vec::Vec;
 
-use crate::core::reader::{WasmReadable, WasmReader};
 use crate::core::reader::types::export::Export;
+use crate::core::reader::{WasmReadable, WasmReader};
 use crate::execution::unwrap_validated::UnwrapValidatedExt;
 
 pub fn read_export_section(wasm: &mut WasmReader) -> Vec<Export> {
