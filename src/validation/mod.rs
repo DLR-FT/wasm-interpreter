@@ -43,128 +43,95 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
     let mut header = None;
     read_next_header(&mut wasm, &mut header)?;
 
-    macro_rules! handle_section {
-        ($section_ty:pat, $then:expr) => {
-            #[allow(unreachable_code)]
-            match &header {
-                Some(SectionHeader {
-                    ty: $section_ty, ..
-                }) => {
-                    let h = header.take().unwrap();
-                    trace!("Handling section {:?}", h.ty);
-                    let ret = $then(h);
-                    read_next_header(&mut wasm, &mut header)?;
-                    Some(ret)
-                }
-                _ => None,
-            }
-        };
-    }
-    macro_rules! skip_custom_sections {
-        () => {
-            let mut skip_section = || {
-                handle_section!(SectionTy::Custom, |h: SectionHeader| {
-                    wasm.skip(h.contents.len())
-                })
-                .transpose()
-            };
+    let mut skip_section = |wasm: &mut WasmReader, section_header: &mut Option<SectionHeader>| {
+        handle_section(wasm, section_header, SectionTy::Custom, |wasm, h| {
+            wasm.skip(h.contents.len())
+        })
+    };
 
-            while let Some(_) = skip_section()? {}
-        };
-    }
+    while let Some(_) = skip_section(&mut wasm, &mut header)? {}
 
-    skip_custom_sections!();
-
-    let types = handle_section!(SectionTy::Type, |h| {
+    let types = handle_section(&mut wasm, &mut header, SectionTy::Type, |wasm, _| {
         wasm.read_vec(|wasm| FuncType::read(wasm))
-    })
-    .transpose()?
+    })?
     .unwrap_or_default();
 
-    skip_custom_sections!();
+    while let Some(_) = skip_section(&mut wasm, &mut header)? {}
 
-    let imports = handle_section!(SectionTy::Import, |h| {
+    let imports = handle_section(&mut wasm, &mut header, SectionTy::Import, |wasm, _| {
         wasm.read_vec(|wasm| Import::read(wasm))
-    })
-    .transpose()?
+    })?
     .unwrap_or_default();
 
-    skip_custom_sections!();
+    while let Some(_) = skip_section(&mut wasm, &mut header)? {}
 
-    let functions = handle_section!(SectionTy::Function, |h| {
+    let functions = handle_section(&mut wasm, &mut header, SectionTy::Function, |wasm, _| {
         wasm.read_vec(|wasm| wasm.read_var_u32().map(|u| u as usize))
-    })
-    .transpose()?
+    })?
     .unwrap_or_default();
 
-    skip_custom_sections!();
+    while let Some(_) = skip_section(&mut wasm, &mut header)? {}
 
-    let tables = handle_section!(SectionTy::Table, |h| {
+    let tables = handle_section(&mut wasm, &mut header, SectionTy::Table, |wasm, _| {
         wasm.read_vec(|wasm| TableType::read(wasm))
-    })
-    .transpose()?
+    })?
     .unwrap_or_default();
 
-    skip_custom_sections!();
+    while let Some(_) = skip_section(&mut wasm, &mut header)? {}
 
-    let memories = handle_section!(SectionTy::Memory, |h| {
+    let memories = handle_section(&mut wasm, &mut header, SectionTy::Memory, |wasm, _| {
         wasm.read_vec(|wasm| MemType::read(wasm))
-    })
-    .transpose()?
+    })?
     .unwrap_or_default();
 
-    skip_custom_sections!();
+    while let Some(_) = skip_section(&mut wasm, &mut header)? {}
 
-    let globals = handle_section!(SectionTy::Global, |h| {
+    let globals = handle_section(&mut wasm, &mut header, SectionTy::Global, |wasm, _| {
         wasm.read_vec(|wasm| GlobalType::read(wasm))
-    })
-    .transpose()?
+    })?
     .unwrap_or_default();
 
-    skip_custom_sections!();
+    while let Some(_) = skip_section(&mut wasm, &mut header)? {}
 
-    let exports = handle_section!(SectionTy::Export, |h| {
+    let exports = handle_section(&mut wasm, &mut header, SectionTy::Export, |wasm, _| {
         wasm.read_vec(|wasm| Export::read(wasm))
-    })
-    .transpose()?
+    })?
     .unwrap_or_default();
 
-    skip_custom_sections!();
+    while let Some(_) = skip_section(&mut wasm, &mut header)? {}
 
-    let start = handle_section!(SectionTy::Start, |h| {
+    let start = handle_section(&mut wasm, &mut header, SectionTy::Start, |wasm, _| {
         wasm.read_var_u32().map(|idx| idx as FuncIdx)
-    })
-    .transpose()?;
+    })?;
 
-    skip_custom_sections!();
+    while let Some(_) = skip_section(&mut wasm, &mut header)? {}
 
-    handle_section!(SectionTy::Element, |_| {
+    let _: Option<()> = handle_section(&mut wasm, &mut header, SectionTy::Element, |_, _| {
         todo!("element section not yet supported")
-    });
+    })?;
 
-    skip_custom_sections!();
+    while let Some(_) = skip_section(&mut wasm, &mut header)? {}
 
-    handle_section!(SectionTy::DataCount, |_| {
+    let _: Option<()> = handle_section(&mut wasm, &mut header, SectionTy::DataCount, |_, _| {
         todo!("data count section not yet supported")
-    });
+    })?;
 
-    skip_custom_sections!();
+    while let Some(_) = skip_section(&mut wasm, &mut header)? {}
 
-    let code_blocks = handle_section!(SectionTy::Code, |h| {
-        code::validate_code_section(&mut wasm, h, &types)
-    })
-    .transpose()?
+    let code_blocks = handle_section(&mut wasm, &mut header, SectionTy::Code, |wasm, h| {
+        code::validate_code_section(wasm, h, &types)
+    })?
     .unwrap_or_default();
 
     assert_eq!(code_blocks.len(), functions.len(), "these should be equal"); // TODO check if this is in the spec
 
-    skip_custom_sections!();
+    while let Some(_) = skip_section(&mut wasm, &mut header)? {}
 
-    handle_section!(SectionTy::Data, |_| {
+    let _: Option<()> = handle_section(&mut wasm, &mut header, SectionTy::Data, |_, _| {
         todo!("data section not yet supported")
-    });
+    })?;
 
-    skip_custom_sections!();
+    while let Some(_) = skip_section(&mut wasm, &mut header)? {}
 
     // All sections should have been handled
     if let Some(header) = header {
@@ -191,4 +158,23 @@ fn read_next_header(wasm: &mut WasmReader, header: &mut Option<SectionHeader>) -
         *header = Some(SectionHeader::read(wasm)?);
     }
     Ok(())
+}
+
+#[inline(always)]
+fn handle_section<T, F: FnOnce(&mut WasmReader, SectionHeader) -> Result<T>>(
+    wasm: &mut WasmReader,
+    header: &mut Option<SectionHeader>,
+    section_ty: SectionTy,
+    handler: F,
+) -> Result<Option<T>> {
+    match &header {
+        Some(SectionHeader { ty, .. }) if *ty == section_ty => {
+            let h = header.take().unwrap();
+            trace!("Handling section {:?}", h.ty);
+            let ret = handler(wasm, h)?;
+            read_next_header(wasm, header)?;
+            Ok(Some(ret))
+        }
+        _ => Ok(None),
+    }
 }
