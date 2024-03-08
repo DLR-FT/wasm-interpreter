@@ -4,9 +4,8 @@ extern crate alloc;
 extern crate log;
 
 pub use core::error::{Error, Result};
-pub use validation::{validate, ValidationInfo};
-
-pub use execution::{instantiate, invoke_func, values, InstantiatedInstance};
+pub use execution::*;
+pub use validation::*;
 
 pub(crate) mod core;
 pub(crate) mod execution;

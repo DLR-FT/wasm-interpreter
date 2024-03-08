@@ -4,7 +4,7 @@ use std::str::FromStr;
 
 use log::{error, LevelFilter};
 
-use wasm::{instantiate, invoke_func, validate};
+use wasm::{validate, RuntimeInstance};
 
 fn main() -> ExitCode {
     let level = LevelFilter::from_str(&env::var("RUST_LOG").unwrap_or("TRACE".to_owned())).unwrap();
@@ -32,7 +32,7 @@ fn main() -> ExitCode {
         }
     };
 
-    let mut instance = match instantiate(&validation_info) {
+    let mut instance = match RuntimeInstance::new(&validation_info) {
         Ok(instance) => instance,
         Err(err) => {
             error!("Instantiation failed: {err:?} [{err}]");
@@ -40,7 +40,7 @@ fn main() -> ExitCode {
         }
     };
 
-    let ret: (i32, i32) = invoke_func(&mut instance, 0, (5, 7));
+    let ret: (i32, i32) = instance.invoke_func(0, (5, 7));
     assert_eq!(ret, (8, 6));
 
     ExitCode::SUCCESS
