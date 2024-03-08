@@ -1,16 +1,21 @@
 use crate::core::indices::LocalIdx;
+use crate::core::reader::types::{NumType, ValType};
 use crate::core::reader::{WasmReadable, WasmReader};
 use crate::execution::locals::Locals;
 use crate::execution::unwrap_validated::UnwrapValidatedExt;
+use crate::execution::value::Value;
 use crate::validation::code::read_declared_locals;
-use crate::values::stack::ValueStack;
-use crate::values::{WasmValue, WasmValueList};
+use crate::value::{InteropValue, InteropValueList};
 use crate::{Result, ValidationInfo};
+use alloc::vec::Vec;
+use value_stack::Stack;
 
 // TODO
+pub(crate) mod label;
 pub(crate) mod locals;
 pub(crate) mod unwrap_validated;
-pub mod values;
+pub(crate) mod value;
+pub mod value_stack;
 
 pub struct RuntimeInstance<'bytecode, 'validation> {
     validated: &'validation ValidationInfo<'bytecode>,
@@ -30,7 +35,7 @@ impl<'b, 'v> RuntimeInstance<'b, 'v> {
         })
     }
     /// Can only invoke functions with signature `[t1] -> [t2]` as of now.
-    pub fn invoke_func<Param: WasmValueList, Returns: WasmValueList>(
+    pub fn invoke_func<Param: InteropValueList, Returns: InteropValueList>(
         &mut self,
         fn_idx: usize,
         mut param: Param,
@@ -52,15 +57,12 @@ impl<'b, 'v> RuntimeInstance<'b, 'v> {
         let mut wasm = WasmReader::new(self.validated.wasm);
         wasm.move_to(fn_code_span);
 
-        // VALIDATION_ASSERT: All valtypes are correct, thus we only care about their sizes
-        let locals_sizes = read_declared_locals(&mut wasm)
-            .unwrap_validated()
-            .into_iter()
-            .map(|ty| ty.size());
-
-        let param_bytes = param.into_bytes_list();
-        let mut locals = Locals::new(param_bytes.iter().map(|p| &**p), locals_sizes);
-        let mut value_stack = ValueStack::new();
+        let mut locals = {
+            let param_values = param.into_values();
+            let local_tys = read_declared_locals(&mut wasm).unwrap_validated();
+            Locals::new(param_values.into_iter(), local_tys.into_iter())
+        };
+        let mut stack = Stack::new();
 
         loop {
             match wasm.read_u8().unwrap_validated() {
@@ -72,31 +74,43 @@ impl<'b, 'v> RuntimeInstance<'b, 'v> {
                 0x20 => {
                     let local_idx = wasm.read_var_u32().unwrap_validated() as LocalIdx;
                     let local = locals.get(local_idx);
-                    value_stack.push_bytes(local);
+                    trace!("Instruction: local.get [] -> [{local:?}]");
+                    stack.push_value(local.clone());
                 }
                 // local.set [t] -> []
                 0x21 => {
                     let local_idx = wasm.read_var_u32().unwrap_validated() as LocalIdx;
                     let local = locals.get_mut(local_idx);
-                    let stack_bytes = value_stack.pop_bytes(local.len());
-                    local.copy_from_slice(&*stack_bytes);
+                    let value = stack.pop_value(local.to_ty());
+                    trace!("Instruction: local.set [{local:?}] -> []");
+                    *local = value;
                 }
                 // i32.add: [i32 i32] -> [i32]
                 0x6A => {
-                    let v1 = value_stack.pop::<i32>();
-                    let v2 = value_stack.pop::<i32>();
-                    value_stack.push(v1.wrapping_add(v2));
+                    let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                    let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                    let res = v1.wrapping_add(v2);
+
+                    trace!("Instruction: i32.add [{v1} {v2}] -> [{res}]");
+                    stack.push_value(res.into());
                 }
                 // i32.const: [] -> [i32]
                 0x41 => {
                     let constant = wasm.read_var_i32().unwrap_validated();
-                    value_stack.push(constant);
+                    trace!("Instruction: i32.const [] -> [{constant}]");
+                    stack.push_value(constant.into());
                 }
                 _ => {}
             }
         }
 
-        let ret = value_stack.pop_all::<Returns>();
+        let mut values = Returns::TYS
+            .iter()
+            .map(|ty| stack.pop_value(ty.clone()))
+            .collect::<Vec<Value>>();
+        // Values are reversed because they were popped from stack one-by-one. Now reverse them back
+        let reversed_values = values.into_iter().rev();
+        let ret = Returns::from_values(reversed_values);
         debug!("Successfully invoked function");
         ret
     }

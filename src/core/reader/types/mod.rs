@@ -16,7 +16,7 @@ pub mod import;
 pub mod values;
 
 /// https://webassembly.github.io/spec/core/binary/types.html#number-types
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum NumType {
     I32,
     I64,
@@ -74,7 +74,7 @@ impl WasmReadable for VecType {
 }
 
 /// https://webassembly.github.io/spec/core/binary/types.html#reference-types
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum RefType {
     FuncRef,
     ExternRef,
@@ -103,7 +103,7 @@ impl WasmReadable for RefType {
 
 /// https://webassembly.github.io/spec/core/binary/types.html#reference-types
 /// TODO flatten [NumType] and [RefType] enums, as they are not used individually and `wasmparser` also does it.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum ValType {
     NumType(NumType),
     VecType,
@@ -111,12 +111,12 @@ pub enum ValType {
 }
 
 impl ValType {
-    pub fn size(&self) -> usize {
+    pub const fn size(&self) -> usize {
         match self {
             Self::NumType(NumType::I32 | NumType::F32) => 4,
             Self::NumType(NumType::I64 | NumType::F64) => 8,
             Self::VecType => 16,
-            Self::RefType(_) => todo!("reftypes not supported yet"),
+            Self::RefType(_) => todo!(),
         }
     }
 }
@@ -143,7 +143,7 @@ impl WasmReadable for ValType {
 }
 
 /// https://webassembly.github.io/spec/core/binary/types.html#value-types
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ResultType {
     pub valtypes: Vec<ValType>,
 }
@@ -165,7 +165,7 @@ impl WasmReadable for ResultType {
 }
 
 /// https://webassembly.github.io/spec/core/binary/types.html#function-types
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FuncType {
     pub params: ResultType,
     pub returns: ResultType,
@@ -195,6 +195,7 @@ impl WasmReadable for FuncType {
     }
 }
 
+#[derive(Copy, Clone, PartialEq, Eq)]
 pub struct Limits {
     pub min: u32,
     pub max: Option<u32>,
@@ -249,7 +250,7 @@ impl WasmReadable for Limits {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct TableType {
     pub et: RefType,
     pub lim: Limits,
@@ -270,7 +271,7 @@ impl WasmReadable for TableType {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct MemType {
     pub limits: Limits,
 }
@@ -289,7 +290,7 @@ impl WasmReadable for MemType {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct GlobalType {
     pub ty: ValType,
     pub is_mut: bool,
