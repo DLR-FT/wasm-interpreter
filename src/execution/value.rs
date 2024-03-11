@@ -17,10 +17,15 @@ pub(crate) enum Value {
     // F32,
     // F64,
     // V128,
-    // RefNull,
-    // FuncRef,
-    // ExternRef,
 }
+
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) enum Ref {
+    Null,
+    // Func,
+    // Extern,
+}
+
 
 impl Value {
     pub fn default_from_ty(ty: ValType) -> Self {

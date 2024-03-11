@@ -1,5 +1,5 @@
-use crate::core::reader::span::Span;
 use crate::{Error, Result};
+use crate::core::reader::span::Span;
 
 pub mod section_header;
 pub mod types;
@@ -18,8 +18,11 @@ impl<'a> WasmReader<'a> {
             current: wasm,
         }
     }
-    pub fn move_to(&mut self, span: Span) {
-        self.current = &self.full_contents[span.from..(span.from + span.len)];
+    // TODO this is not very intuitive but we cannot shorten `self.current`'s end
+    //  because some methods rely on the property that `self.current`'s and
+    //  `self.full_contents`'s last element are equal.
+    pub fn move_start_to(&mut self, span: Span) {
+        self.current = &self.full_contents[span.from../* normally we would have the end of the span here*/];
     }
 
     pub fn remaining_bytes(&self) -> &[u8] {

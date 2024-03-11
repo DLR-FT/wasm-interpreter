@@ -11,6 +11,8 @@ use crate::{Error, Result};
 
 pub(crate) mod code;
 
+/// Information collected from validating a module.
+/// This can be used to create a [crate::RuntimeInstance].
 pub struct ValidationInfo<'bytecode> {
     pub(crate) wasm: &'bytecode [u8],
     pub(crate) types: Vec<FuncType>,
@@ -20,7 +22,7 @@ pub struct ValidationInfo<'bytecode> {
     pub(crate) memories: Vec<MemType>,
     pub(crate) globals: Vec<GlobalType>,
     pub(crate) exports: Vec<Export>,
-    pub(crate) code_blocks: Vec<Span>,
+    pub(crate) func_blocks: Vec<Span>,
     /// The start function which is automatically executed during instantiation
     pub(crate) start: Option<FuncIdx>,
 }
@@ -118,12 +120,12 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
 
     while let Some(_) = skip_section(&mut wasm, &mut header)? {}
 
-    let code_blocks = handle_section(&mut wasm, &mut header, SectionTy::Code, |wasm, h| {
+    let func_blocks = handle_section(&mut wasm, &mut header, SectionTy::Code, |wasm, h| {
         code::validate_code_section(wasm, h, &types)
     })?
     .unwrap_or_default();
 
-    assert_eq!(code_blocks.len(), functions.len(), "these should be equal"); // TODO check if this is in the spec
+    assert_eq!(func_blocks.len(), functions.len(), "these should be equal"); // TODO check if this is in the spec
 
     while let Some(_) = skip_section(&mut wasm, &mut header)? {}
 
@@ -148,7 +150,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
         memories,
         globals,
         exports,
-        code_blocks,
+        func_blocks,
         start,
     })
 }

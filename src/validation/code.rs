@@ -23,7 +23,7 @@ pub fn validate_code_section(
         trace!("Validating function with index {func_idx}");
 
         let func_size = wasm.read_var_u32()?;
-        let code_block_span = wasm.make_span(func_size as usize);
+        let func_block = wasm.make_span(func_size as usize);
 
         let locals = {
             let params = func_ty.params.valtypes.iter().cloned();
@@ -35,7 +35,7 @@ pub fn validate_code_section(
             read_instructions(wasm, value_stack, &locals)
         })?;
 
-        Ok(code_block_span)
+        Ok(func_block)
     })?;
 
     trace!(
