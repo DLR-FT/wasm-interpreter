@@ -1,9 +1,10 @@
-use crate::core::indices::TypeIdx;
-use crate::core::reader::{WasmReadable, WasmReader};
-use crate::execution::unwrap_validated::UnwrapValidatedExt;
-use crate::{unreachable_validated, Error, Result};
 use alloc::borrow::ToOwned;
 use alloc::string::String;
+
+use crate::core::indices::TypeIdx;
+use crate::core::reader::{WasmReadable, WasmReader};
+use crate::execution::assert_validated::UnwrapValidatedExt;
+use crate::{unreachable_validated, Error, Result};
 
 #[derive(Debug)]
 pub struct Import {
@@ -41,8 +42,10 @@ impl WasmReadable for Import {
 #[derive(Debug)]
 pub enum ImportDesc {
     Func(TypeIdx),
-    Table(()),  // TODO TableType
-    Mem(()),    // TODO MemType
+    Table(()),
+    // TODO TableType
+    Mem(()),
+    // TODO MemType
     Global(()), // TODO GlobalType
 }
 

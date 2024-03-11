@@ -1,8 +1,7 @@
-use crate::{unreachable_validated, Error, Result};
-
 use crate::core::reader::span::Span;
 use crate::core::reader::{WasmReadable, WasmReader};
-use crate::execution::unwrap_validated::UnwrapValidatedExt;
+use crate::execution::assert_validated::UnwrapValidatedExt;
+use crate::{unreachable_validated, Error, Result};
 
 #[derive(Copy, Clone, Debug, Hash, PartialEq, Eq)]
 pub enum SectionTy {

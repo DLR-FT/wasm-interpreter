@@ -1,8 +1,8 @@
-use crate::core::reader::types::ValType;
 use alloc::boxed::Box;
 use alloc::vec::Vec;
 
-use crate::execution::unwrap_validated::UnwrapValidatedExt;
+use crate::core::reader::types::ValType;
+use crate::execution::assert_validated::UnwrapValidatedExt;
 use crate::execution::value::Value;
 
 /// A helper for managing values of locals (and parameters) during function execution.

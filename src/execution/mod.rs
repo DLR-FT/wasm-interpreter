@@ -1,19 +1,21 @@
+use alloc::vec::Vec;
+
+use value_stack::Stack;
+
 use crate::core::indices::LocalIdx;
 use crate::core::reader::types::{NumType, ValType};
 use crate::core::reader::{WasmReadable, WasmReader};
+use crate::execution::assert_validated::UnwrapValidatedExt;
 use crate::execution::locals::Locals;
-use crate::execution::unwrap_validated::UnwrapValidatedExt;
 use crate::execution::value::Value;
 use crate::validation::code::read_declared_locals;
 use crate::value::{InteropValue, InteropValueList};
 use crate::{Result, ValidationInfo};
-use alloc::vec::Vec;
-use value_stack::Stack;
 
 // TODO
+pub(crate) mod assert_validated;
 pub(crate) mod label;
 pub(crate) mod locals;
-pub(crate) mod unwrap_validated;
 pub(crate) mod value;
 pub mod value_stack;
 

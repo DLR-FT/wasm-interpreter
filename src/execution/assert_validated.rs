@@ -1,7 +1,7 @@
-use core::fmt::{Debug, Display};
-use core::hint::unreachable_unchecked;
+//! Helpers for assertions due to prior validation of a WASM program.
 
-/// A helper trait to unwrap Options/Results that are expected to be Some/Ok due to prior validation.
+use core::fmt::{Debug, Display};
+
 pub(crate) trait UnwrapValidatedExt<T> {
     fn unwrap_validated(self) -> T;
 }

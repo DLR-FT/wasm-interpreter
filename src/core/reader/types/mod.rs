@@ -6,7 +6,7 @@ use alloc::vec::Vec;
 use core::fmt::{Debug, Formatter, Write};
 
 use crate::core::reader::{WasmReadable, WasmReader};
-use crate::execution::unwrap_validated::UnwrapValidatedExt;
+use crate::execution::assert_validated::UnwrapValidatedExt;
 use crate::Result;
 use crate::{unreachable_validated, Error};
 
@@ -23,6 +23,7 @@ pub enum NumType {
     F32,
     F64,
 }
+
 impl WasmReadable for NumType {
     fn read(wasm: &mut WasmReader) -> Result<Self> {
         use NumType::*;

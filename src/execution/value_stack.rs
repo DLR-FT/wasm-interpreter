@@ -1,11 +1,11 @@
-use crate::core::reader::types::ValType;
-use crate::execution::label::{ActivationFrame, Label};
-use crate::execution::unwrap_validated::UnwrapValidatedExt;
-use crate::execution::value::Value;
-use alloc::boxed::Box;
 use alloc::vec::Vec;
 
+use crate::core::reader::types::ValType;
+use crate::execution::assert_validated::UnwrapValidatedExt;
+use crate::execution::label::{ActivationFrame, Label};
+use crate::execution::value::Value;
 use crate::unreachable_validated;
+
 /// The stack at runtime containing
 /// 1. Values
 /// 2. Labels

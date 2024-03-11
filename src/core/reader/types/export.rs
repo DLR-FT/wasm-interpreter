@@ -1,9 +1,10 @@
-use crate::core::indices::{FuncIdx, GlobalIdx, MemIdx, TableIdx};
-use crate::core::reader::{WasmReadable, WasmReader};
-use crate::execution::unwrap_validated::UnwrapValidatedExt;
-use crate::{unreachable_validated, Error, Result};
 use alloc::borrow::ToOwned;
 use alloc::string::String;
+
+use crate::core::indices::{FuncIdx, GlobalIdx, MemIdx, TableIdx};
+use crate::core::reader::{WasmReadable, WasmReader};
+use crate::execution::assert_validated::UnwrapValidatedExt;
+use crate::{unreachable_validated, Error, Result};
 
 #[derive(Debug)]
 pub struct Export {
