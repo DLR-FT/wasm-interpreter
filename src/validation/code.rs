@@ -16,11 +16,9 @@ pub fn validate_code_section(
 ) -> Result<Vec<Span>> {
     assert_eq!(section_header.ty, SectionTy::Code);
 
-    let code_block_spans = wasm.read_vec(|wasm| {
-        // TODO hardcoded funcidx=0 for now, because only one function is supported
-        let func_idx = 0;
-        let func_ty = fn_types[0].clone();
-        trace!("Validating function with index {func_idx}");
+    let code_block_spans = wasm.read_vec_enumerated(|wasm, idx| {
+        // TODO maybe offset idx by number of imported functions?
+        let func_ty = fn_types[idx].clone();
 
         let func_size = wasm.read_var_u32()?;
         let func_block = wasm.make_span(func_size as usize);

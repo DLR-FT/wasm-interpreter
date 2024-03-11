@@ -8,8 +8,8 @@
 use alloc::vec::Vec;
 use core::mem;
 
-use crate::core::reader::WasmReader;
 use crate::{Error, Result};
+use crate::core::reader::WasmReader;
 
 impl WasmReader<'_> {
     /// Note: If `Err`, the [Wasm] object is no longer guaranteed to be in a valid state
@@ -73,6 +73,18 @@ impl WasmReader<'_> {
         self.current = rest;
 
         core::str::from_utf8(utf8_str).map_err(|err| Error::MalformedUtf8String(err))
+    }
+
+    pub fn read_vec_enumerated<T, F>(&mut self, mut read_element: F) -> Result<Vec<T>>
+    where
+        F: FnMut(&mut WasmReader, usize) -> Result<T>,
+    {
+        let mut idx = 0;
+        self.read_vec(|wasm| {
+            let ret = read_element(wasm, idx);
+            idx += 1;
+            ret
+        })
     }
 
     /// Note: If `Err`, the [Wasm] object is no longer guaranteed to be in a valid state

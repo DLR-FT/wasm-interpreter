@@ -26,7 +26,6 @@ pub(crate) enum Ref {
     // Extern,
 }
 
-
 impl Value {
     pub fn default_from_ty(ty: ValType) -> Self {
         match ty {

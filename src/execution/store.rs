@@ -1,5 +1,5 @@
-use alloc::vec::Vec;
 use crate::core::indices::TypeIdx;
+use alloc::vec::Vec;
 
 use crate::core::reader::span::Span;
 use crate::core::reader::types::{FuncType, MemType, TableType, ValType};
@@ -27,4 +27,3 @@ pub struct MemInst {
     pub ty: MemType,
     pub data: Vec<u8>,
 }
-
