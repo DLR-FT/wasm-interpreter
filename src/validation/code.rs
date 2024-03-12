@@ -2,13 +2,13 @@ use alloc::collections::VecDeque;
 use alloc::vec::Vec;
 use core::iter;
 
-use crate::{Error, Result};
 use crate::core::indices::LocalIdx;
-use crate::core::reader::{WasmReadable, WasmReader};
 use crate::core::reader::section_header::{SectionHeader, SectionTy};
 use crate::core::reader::span::Span;
-use crate::core::reader::types::{FuncType, NumType, ResultType, ValType};
 use crate::core::reader::types::memarg::MemArg;
+use crate::core::reader::types::{FuncType, NumType, ResultType, ValType};
+use crate::core::reader::{WasmReadable, WasmReader};
+use crate::{Error, Result};
 
 pub fn validate_code_section(
     wasm: &mut WasmReader,
@@ -101,7 +101,9 @@ fn read_instructions(
                 // TODO check correct `memarg.align`
                 // TODO check if memory[0] exists
 
-                value_stack.pop_back().ok_or(Error::InvalidValueStackType(None))
+                value_stack
+                    .pop_back()
+                    .ok_or(Error::InvalidValueStackType(None))
                     .and_then(|ty| match ty {
                         ValType::NumType(NumType::I32) => Ok(()),
                         invalid => Err(Error::InvalidValueStackType(Some(invalid))),
@@ -117,13 +119,17 @@ fn read_instructions(
                 // TODO check if memory[0] exists
 
                 // pop address
-                value_stack.pop_back().ok_or(Error::InvalidValueStackType(None))
+                value_stack
+                    .pop_back()
+                    .ok_or(Error::InvalidValueStackType(None))
                     .and_then(|ty| match ty {
                         ValType::NumType(NumType::I32) => Ok(()),
                         invalid => Err(Error::InvalidValueStackType(Some(invalid))),
                     })?;
                 // pop i32 value
-                value_stack.pop_back().ok_or(Error::InvalidValueStackType(None))
+                value_stack
+                    .pop_back()
+                    .ok_or(Error::InvalidValueStackType(None))
                     .and_then(|ty| match ty {
                         ValType::NumType(NumType::I32) => Ok(()),
                         invalid => Err(Error::InvalidValueStackType(Some(invalid))),
@@ -134,11 +140,9 @@ fn read_instructions(
                 value_stack
                     .pop_back()
                     .ok_or(Error::InvalidValueStackType(None))
-                    .and_then(|ty| {
-                        match ty {
-                            ValType::NumType(NumType::I32) => Ok(()),
-                            invalid => Err(Error::InvalidValueStackType(Some(invalid))),
-                        }
+                    .and_then(|ty| match ty {
+                        ValType::NumType(NumType::I32) => Ok(()),
+                        invalid => Err(Error::InvalidValueStackType(Some(invalid))),
                     })?;
 
                 let ty2 = value_stack

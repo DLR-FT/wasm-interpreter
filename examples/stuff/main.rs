@@ -4,7 +4,7 @@ use std::str::FromStr;
 
 use log::{error, LevelFilter};
 
-use wasm::{RuntimeInstance, validate};
+use wasm::{validate, RuntimeInstance};
 
 fn main() -> ExitCode {
     let level = LevelFilter::from_str(&env::var("RUST_LOG").unwrap_or("TRACE".to_owned())).unwrap();

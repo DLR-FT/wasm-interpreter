@@ -1,8 +1,11 @@
-use log::{LevelFilter};
-use wasm::{RuntimeInstance, validate};
+use log::LevelFilter;
+
+use wasm::{validate, RuntimeInstance};
 
 fn main() {
-    env_logger::builder().filter_level(LevelFilter::Trace).init();
+    env_logger::builder()
+        .filter_level(LevelFilter::Trace)
+        .init();
 
     let wat = r#"
     (module

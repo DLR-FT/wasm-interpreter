@@ -16,6 +16,6 @@ impl WasmReadable for MemArg {
     fn read_unvalidated(wasm: &mut WasmReader) -> Self {
         let offset = wasm.read_var_u32().unwrap_validated();
         let align = wasm.read_var_u32().unwrap_validated();
-        Self {offset, align}
+        Self { offset, align }
     }
 }

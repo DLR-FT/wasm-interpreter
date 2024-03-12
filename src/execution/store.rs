@@ -42,7 +42,8 @@ impl MemInst {
     }
 
     pub fn grow(&mut self, delta_pages: usize) {
-        self.data.extend(iter::repeat(0).take(delta_pages * Self::PAGE_SIZE))
+        self.data
+            .extend(iter::repeat(0).take(delta_pages * Self::PAGE_SIZE))
     }
 
     pub fn size(&self) -> usize {

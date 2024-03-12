@@ -130,7 +130,7 @@ impl InteropValueList for () {
         Vec::new()
     }
 
-    fn from_values(_values: impl Iterator<Item=Value>) -> Self {
+    fn from_values(_values: impl Iterator<Item = Value>) -> Self {
         ()
     }
 }

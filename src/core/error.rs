@@ -87,7 +87,9 @@ impl Display for Error {
             Error::InvalidMutType(byte) => f.write_fmt(format_args!(
                 "An invalid mut/const byte was found: {byte:#x?}"
             )),
-            Error::MoreThanOneMemory => f.write_str("As of not only one memory is allowed per module."),
+            Error::MoreThanOneMemory => {
+                f.write_str("As of not only one memory is allowed per module.")
+            }
         }
     }
 }

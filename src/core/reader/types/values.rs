@@ -8,8 +8,8 @@
 use alloc::vec::Vec;
 use core::mem;
 
-use crate::{Error, Result};
 use crate::core::reader::WasmReader;
+use crate::{Error, Result};
 
 impl WasmReader<'_> {
     /// Note: If `Err`, the [Wasm] object is no longer guaranteed to be in a valid state
