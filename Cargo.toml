@@ -13,6 +13,7 @@ path = "src/lib.rs"
 log = "0.4.20"
 
 [dev-dependencies]
+test-log = {version = "0.2.14", features = ["log"]}
 env_logger = "0.10.1"
 wasmparser = "0.119.0"
 itertools = "0.12.0"

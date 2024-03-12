@@ -34,13 +34,17 @@ impl<'b> RuntimeInstance<'b> {
 
         let store = Self::init_store(&validation_info);
 
-        // TODO execute start function
-
-        Ok(RuntimeInstance {
+        let mut instance = RuntimeInstance {
             wasm_bytecode: validation_info.wasm,
             types: validation_info.types.clone(),
             store,
-        })
+        };
+
+        if let Some(start) = validation_info.start {
+            instance.invoke_func::<(), ()>(start, ());
+        }
+
+        Ok(instance)
     }
     /// Can only invoke functions with signature `[t1] -> [t2]` as of now.
     pub fn invoke_func<Param: InteropValueList, Returns: InteropValueList>(

@@ -1,19 +1,14 @@
-use log::LevelFilter;
-
-use wasm::{validate, RuntimeInstance};
-
-fn main() {
-    env_logger::builder()
-        .filter_level(LevelFilter::Trace)
-        .init();
+/// A simple function to add 1 to an i32 and return the result
+#[test_log::test]
+fn add_one() {
+    use wasm::{validate, RuntimeInstance};
 
     let wat = r#"
     (module
-        (func $add_one (param $x i32) (result i32)
+        (func (export "add_one") (param $x i32) (result i32)
             local.get $x
             i32.const 1
             i32.add)
-        (export "add_one" (func $add_one))
     )
     "#;
     let wasm_bytes = wat::parse_str(&wat).unwrap();
