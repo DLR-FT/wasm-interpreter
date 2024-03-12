@@ -139,7 +139,7 @@ impl<'b> RuntimeInstance<'b> {
                             mem.data.get(address..(address+4))
                         }).expect("TODO trap here");
 
-                        let data: [u8; 4] = data.try_into().expect("this to be exactly 4 bytes");;
+                        let data: [u8; 4] = data.try_into().expect("this to be exactly 4 bytes");
                         u32::from_le_bytes(data)
                     };
 
