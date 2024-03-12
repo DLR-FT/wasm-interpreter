@@ -4,8 +4,9 @@ use crate::core::indices::{FuncIdx, TypeIdx};
 use crate::core::reader::section_header::{SectionHeader, SectionTy};
 use crate::core::reader::span::Span;
 use crate::core::reader::types::export::Export;
+use crate::core::reader::types::global::Global;
 use crate::core::reader::types::import::Import;
-use crate::core::reader::types::{FuncType, GlobalType, MemType, TableType};
+use crate::core::reader::types::{FuncType, MemType, TableType};
 use crate::core::reader::{WasmReadable, WasmReader};
 use crate::{Error, Result};
 
@@ -20,7 +21,7 @@ pub struct ValidationInfo<'bytecode> {
     pub(crate) functions: Vec<TypeIdx>,
     pub(crate) tables: Vec<TableType>,
     pub(crate) memories: Vec<MemType>,
-    pub(crate) globals: Vec<GlobalType>,
+    pub(crate) globals: Vec<Global>,
     pub(crate) exports: Vec<Export>,
     pub(crate) func_blocks: Vec<Span>,
     /// The start function which is automatically executed during instantiation
@@ -92,7 +93,13 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
     while let Some(_) = skip_section(&mut wasm, &mut header)? {}
 
     let globals = handle_section(&mut wasm, &mut header, SectionTy::Global, |wasm, _| {
-        wasm.read_vec(|wasm| GlobalType::read(wasm))
+        wasm.read_vec(|wasm| {
+            let global = Global::read(wasm);
+            // TODO validate instructions in `global.init_expr`. Furthermore all of these instructions need to be constant.
+            //  See https://webassembly.github.io/spec/core/valid/instructions.html#valid-constant
+            //  Maybe we can also execute constant expressions right here so they do not even exist in the runtime environment. <-- Needs further research to check if this is even possible
+            global
+        })
     })?
     .unwrap_or_default();
 
@@ -124,7 +131,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
     while let Some(_) = skip_section(&mut wasm, &mut header)? {}
 
     let func_blocks = handle_section(&mut wasm, &mut header, SectionTy::Code, |wasm, h| {
-        code::validate_code_section(wasm, h, &types)
+        code::validate_code_section(wasm, h, &types, &globals)
     })?
     .unwrap_or_default();
 

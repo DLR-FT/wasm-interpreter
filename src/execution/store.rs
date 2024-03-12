@@ -4,14 +4,16 @@ use core::iter;
 
 use crate::core::indices::TypeIdx;
 use crate::core::reader::span::Span;
+use crate::core::reader::types::global::Global;
 use crate::core::reader::types::{MemType, TableType, ValType};
-use crate::execution::value::Ref;
+use crate::execution::value::{Ref, Value};
 
 /// <https://webassembly.github.io/spec/core/exec/runtime.html#store>
 pub struct Store {
     pub funcs: Vec<FuncInst>,
     // tables: Vec<TableInst>,
     pub mems: Vec<MemInst>,
+    pub globals: Vec<GlobalInst>,
 }
 
 pub struct FuncInst {
@@ -49,4 +51,10 @@ impl MemInst {
     pub fn size(&self) -> usize {
         self.data.len() / Self::PAGE_SIZE
     }
+}
+
+pub struct GlobalInst {
+    pub global: Global,
+    /// Must be of the same type as specified in `ty`
+    pub value: Value,
 }

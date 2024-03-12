@@ -12,6 +12,7 @@ use crate::{unreachable_validated, Error};
 
 pub mod export;
 pub mod function_code_header;
+pub mod global;
 pub mod import;
 pub mod memarg;
 pub mod values;
@@ -289,34 +290,5 @@ impl WasmReadable for MemType {
         Self {
             limits: Limits::read_unvalidated(wasm),
         }
-    }
-}
-
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub struct GlobalType {
-    pub ty: ValType,
-    pub is_mut: bool,
-}
-
-impl WasmReadable for GlobalType {
-    fn read(wasm: &mut WasmReader) -> Result<Self> {
-        let ty = ValType::read(wasm)?;
-        let is_mut = match wasm.read_u8()? {
-            0x00 => false,
-            0x01 => true,
-            other => return Err(Error::InvalidMutType(other)),
-        };
-        Ok(Self { ty, is_mut })
-    }
-
-    fn read_unvalidated(wasm: &mut WasmReader) -> Self {
-        let ty = ValType::read_unvalidated(wasm);
-        let is_mut = match wasm.read_u8().unwrap_validated() {
-            0x00 => false,
-            0x01 => true,
-            _ => unreachable_validated!(),
-        };
-
-        Self { ty, is_mut }
     }
 }

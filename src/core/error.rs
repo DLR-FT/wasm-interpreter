@@ -1,8 +1,10 @@
+use crate::core::indices::GlobalIdx;
 use core::fmt::{Display, Formatter, Write};
 use core::str::Utf8Error;
 
 use crate::core::reader::section_header::SectionTy;
 use crate::core::reader::types::ValType;
+use crate::execution::store::GlobalInst;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Error {
@@ -28,6 +30,8 @@ pub enum Error {
     InvalidLimitsType(u8),
     InvalidMutType(u8),
     MoreThanOneMemory,
+    InvalidGlobalIdx(GlobalIdx),
+    GlobalIsConst,
 }
 
 impl Display for Error {
@@ -90,6 +94,10 @@ impl Display for Error {
             Error::MoreThanOneMemory => {
                 f.write_str("As of not only one memory is allowed per module.")
             }
+            Error::InvalidGlobalIdx(idx) => f.write_fmt(format_args!(
+                "An invalid global index `{idx}` was specified"
+            )),
+            Error::GlobalIsConst => f.write_str("A const global cannot be written to"),
         }
     }
 }

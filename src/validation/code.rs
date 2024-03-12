@@ -2,9 +2,10 @@ use alloc::collections::VecDeque;
 use alloc::vec::Vec;
 use core::iter;
 
-use crate::core::indices::LocalIdx;
+use crate::core::indices::{GlobalIdx, LocalIdx};
 use crate::core::reader::section_header::{SectionHeader, SectionTy};
 use crate::core::reader::span::Span;
+use crate::core::reader::types::global::Global;
 use crate::core::reader::types::memarg::MemArg;
 use crate::core::reader::types::{FuncType, NumType, ResultType, ValType};
 use crate::core::reader::{WasmReadable, WasmReader};
@@ -14,6 +15,7 @@ pub fn validate_code_section(
     wasm: &mut WasmReader,
     section_header: SectionHeader,
     fn_types: &Vec<FuncType>,
+    globals: &[Global],
 ) -> Result<Vec<Span>> {
     assert_eq!(section_header.ty, SectionTy::Code);
 
@@ -31,7 +33,7 @@ pub fn validate_code_section(
         };
 
         validate_value_stack(func_ty.returns, |value_stack| {
-            read_instructions(wasm, value_stack, &locals)
+            read_instructions(wasm, value_stack, &locals, globals)
         })?;
 
         Ok(func_block)
@@ -66,7 +68,19 @@ fn read_instructions(
     wasm: &mut WasmReader,
     value_stack: &mut VecDeque<ValType>,
     locals: &[ValType],
+    globals: &[Global],
 ) -> Result<()> {
+    let assert_pop_value_stack = |value_stack: &mut VecDeque<ValType>, expected_ty: ValType| {
+        value_stack
+            .pop_back()
+            .ok_or(Error::InvalidValueStackType(None))
+            .and_then(|ty| {
+                (ty == expected_ty)
+                    .then_some(())
+                    .ok_or(Error::InvalidValueStackType(Some(ty)))
+            })
+    };
+
     loop {
         let Ok(instr) = wasm.read_u8() else {
             return Err(Error::ExprMissingEnd);
@@ -94,6 +108,34 @@ fn read_instructions(
                     return Err(Error::InvalidValueStackType(popped));
                 }
             }
+            // global.get [] -> [t]
+            0x23 => {
+                let global_idx = wasm.read_var_u32()? as GlobalIdx;
+                let global = globals
+                    .get(global_idx)
+                    .ok_or(Error::InvalidGlobalIdx(global_idx))?;
+
+                value_stack.push_back(global.ty.ty);
+            }
+            // global.set [t] -> []
+            0x24 => {
+                let global_idx = wasm.read_var_u32()? as GlobalIdx;
+                let global = globals
+                    .get(global_idx)
+                    .ok_or(Error::InvalidGlobalIdx(global_idx))?;
+
+                if !global.ty.is_mut {
+                    return Err(Error::GlobalIsConst);
+                }
+
+                let ty_on_stack = value_stack
+                    .pop_back()
+                    .ok_or(Error::InvalidValueStackType(None))?;
+
+                if ty_on_stack != global.ty.ty {
+                    return Err(Error::InvalidValueStackType(Some(ty_on_stack)));
+                }
+            }
             // i32.load [i32] -> [i32]
             0x28 => {
                 let _memarg = MemArg::read_unvalidated(wasm);
@@ -101,13 +143,7 @@ fn read_instructions(
                 // TODO check correct `memarg.align`
                 // TODO check if memory[0] exists
 
-                value_stack
-                    .pop_back()
-                    .ok_or(Error::InvalidValueStackType(None))
-                    .and_then(|ty| match ty {
-                        ValType::NumType(NumType::I32) => Ok(()),
-                        invalid => Err(Error::InvalidValueStackType(Some(invalid))),
-                    })?;
+                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
 
                 value_stack.push_back(ValType::NumType(NumType::I32));
             }
@@ -118,39 +154,17 @@ fn read_instructions(
                 // TODO check correct `memarg.align`
                 // TODO check if memory[0] exists
 
-                // pop address
-                value_stack
-                    .pop_back()
-                    .ok_or(Error::InvalidValueStackType(None))
-                    .and_then(|ty| match ty {
-                        ValType::NumType(NumType::I32) => Ok(()),
-                        invalid => Err(Error::InvalidValueStackType(Some(invalid))),
-                    })?;
-                // pop i32 value
-                value_stack
-                    .pop_back()
-                    .ok_or(Error::InvalidValueStackType(None))
-                    .and_then(|ty| match ty {
-                        ValType::NumType(NumType::I32) => Ok(()),
-                        invalid => Err(Error::InvalidValueStackType(Some(invalid))),
-                    })?;
+                // Address
+                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
+                // Value to store
+                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
             }
             // i32.add: [i32 i32] -> [i32]
             0x6A => {
-                value_stack
-                    .pop_back()
-                    .ok_or(Error::InvalidValueStackType(None))
-                    .and_then(|ty| match ty {
-                        ValType::NumType(NumType::I32) => Ok(()),
-                        invalid => Err(Error::InvalidValueStackType(Some(invalid))),
-                    })?;
-
-                let ty2 = value_stack
-                    .pop_back()
-                    .ok_or(Error::InvalidValueStackType(None))?;
-                let ValType::NumType(NumType::I32) = ty2 else {
-                    return Err(Error::InvalidValueStackType(Some(ty2)));
-                };
+                // First value
+                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
+                // Second value
+                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
 
                 value_stack.push_back(ValType::NumType(NumType::I32));
             }

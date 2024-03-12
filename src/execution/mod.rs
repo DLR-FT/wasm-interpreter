@@ -2,13 +2,13 @@ use alloc::vec::Vec;
 
 use value_stack::Stack;
 
-use crate::core::indices::{FuncIdx, LocalIdx};
+use crate::core::indices::{FuncIdx, GlobalIdx, LocalIdx};
 use crate::core::reader::types::memarg::MemArg;
 use crate::core::reader::types::{FuncType, NumType, ValType};
 use crate::core::reader::{WasmReadable, WasmReader};
 use crate::execution::assert_validated::UnwrapValidatedExt;
 use crate::execution::locals::Locals;
-use crate::execution::store::{FuncInst, MemInst, Store};
+use crate::execution::store::{FuncInst, GlobalInst, MemInst, Store};
 use crate::execution::value::Value;
 use crate::validation::code::read_declared_locals;
 use crate::value::{InteropValue, InteropValueList};
@@ -127,6 +127,20 @@ impl<'b> RuntimeInstance<'b> {
                     trace!("Instruction: local.set [{local:?}] -> []");
                     *local = value;
                 }
+                // global.get [] -> [t]
+                0x23 => {
+                    let global_idx = wasm.read_var_u32().unwrap_validated() as GlobalIdx;
+                    let global = self.store.globals.get(global_idx).unwrap_validated();
+
+                    stack.push_value(global.value.clone());
+                }
+                // global.set [t] -> []
+                0x24 => {
+                    let global_idx = wasm.read_var_u32().unwrap_validated() as GlobalIdx;
+                    let global = self.store.globals.get_mut(global_idx).unwrap_validated();
+
+                    global.value = stack.pop_value(global.global.ty.ty)
+                }
                 // i32.load [i32] -> [i32]
                 0x28 => {
                     let memarg = MemArg::read_unvalidated(&mut wasm);
@@ -227,15 +241,30 @@ impl<'b> RuntimeInstance<'b> {
                 .collect()
         };
 
-        let mems: Vec<MemInst> = validation_info
+        let memory_instances: Vec<MemInst> = validation_info
             .memories
             .iter()
             .map(|ty| MemInst::new(ty.clone()))
             .collect();
 
+        let global_instances: Vec<GlobalInst> = validation_info
+            .globals
+            .iter()
+            .map(|global| {
+                // TODO execute `global.init_expr` to get initial value. For now just use a default value.
+                let value = Value::default_from_ty(global.ty.ty);
+
+                GlobalInst {
+                    global: *global,
+                    value,
+                }
+            })
+            .collect();
+
         Store {
             funcs: function_instances,
-            mems,
+            mems: memory_instances,
+            globals: global_instances,
         }
     }
 }
