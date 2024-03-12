@@ -12,6 +12,7 @@ fn main() -> ExitCode {
 
     let wat = r#"
     (module
+        (memory 1)
         (func $add_one (param $x i32) (result i32) (local $ununsed_local i32)
             local.get $x
             i32.const 1
@@ -21,6 +22,15 @@ fn main() -> ExitCode {
             local.get $y
             local.get $x
             i32.add)
+
+        (func (export "store_num") (param $x i32)
+            i32.const 0
+            local.get $x
+            i32.store)
+        (func (export "load_num") (result i32)
+            i32.const 0
+            i32.load)
+
         (export "add_one" (func $add_one))
         (export "add" (func $add))
     )
@@ -48,6 +58,10 @@ fn main() -> ExitCode {
 
     let twelve_plus_one: i32 = instance.invoke_func(0, twelve);
     assert_eq!(twelve_plus_one, 13);
+
+    instance.invoke_func::<_, ()>(2, 42_i32);
+
+    assert_eq!(instance.invoke_func::<(), i32>(3, ()), 42_i32);
 
     ExitCode::SUCCESS
 }

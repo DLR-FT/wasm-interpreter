@@ -123,6 +123,18 @@ impl InteropValue for i64 {
     }
 }
 
+impl InteropValueList for () {
+    const TYS: &'static [ValType] = &[];
+
+    fn into_values(self) -> Vec<Value> {
+        Vec::new()
+    }
+
+    fn from_values(_values: impl Iterator<Item=Value>) -> Self {
+        ()
+    }
+}
+
 impl<A: InteropValue> InteropValueList for A {
     const TYS: &'static [ValType] = &[A::TY];
 

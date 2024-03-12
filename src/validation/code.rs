@@ -2,12 +2,13 @@ use alloc::collections::VecDeque;
 use alloc::vec::Vec;
 use core::iter;
 
+use crate::{Error, Result};
 use crate::core::indices::LocalIdx;
+use crate::core::reader::{WasmReadable, WasmReader};
 use crate::core::reader::section_header::{SectionHeader, SectionTy};
 use crate::core::reader::span::Span;
 use crate::core::reader::types::{FuncType, NumType, ResultType, ValType};
-use crate::core::reader::{WasmReadable, WasmReader};
-use crate::{Error, Result};
+use crate::core::reader::types::memarg::MemArg;
 
 pub fn validate_code_section(
     wasm: &mut WasmReader,
@@ -93,17 +94,56 @@ fn read_instructions(
                     return Err(Error::InvalidValueStackType(popped));
                 }
             }
+            // i32.load [i32] -> [i32]
+            0x28 => {
+                let _memarg = MemArg::read_unvalidated(wasm);
+
+                // TODO check correct `memarg.align`
+                // TODO check if memory[0] exists
+
+                value_stack.pop_back().ok_or(Error::InvalidValueStackType(None))
+                    .and_then(|ty| match ty {
+                        ValType::NumType(NumType::I32) => Ok(()),
+                        invalid => Err(Error::InvalidValueStackType(Some(invalid))),
+                    })?;
+
+                value_stack.push_back(ValType::NumType(NumType::I32));
+            }
+            // i32.store [i32] -> [i32]
+            0x36 => {
+                let _memarg = MemArg::read_unvalidated(wasm);
+
+                // TODO check correct `memarg.align`
+                // TODO check if memory[0] exists
+
+                // pop address
+                value_stack.pop_back().ok_or(Error::InvalidValueStackType(None))
+                    .and_then(|ty| match ty {
+                        ValType::NumType(NumType::I32) => Ok(()),
+                        invalid => Err(Error::InvalidValueStackType(Some(invalid))),
+                    })?;
+                // pop i32 value
+                value_stack.pop_back().ok_or(Error::InvalidValueStackType(None))
+                    .and_then(|ty| match ty {
+                        ValType::NumType(NumType::I32) => Ok(()),
+                        invalid => Err(Error::InvalidValueStackType(Some(invalid))),
+                    })?;
+            }
             // i32.add: [i32 i32] -> [i32]
             0x6A => {
-                let ty1 = value_stack
+                value_stack
                     .pop_back()
-                    .ok_or(Error::InvalidValueStackType(None))?;
+                    .ok_or(Error::InvalidValueStackType(None))
+                    .and_then(|ty| {
+                        match ty {
+                            ValType::NumType(NumType::I32) => Ok(()),
+                            invalid => Err(Error::InvalidValueStackType(Some(invalid))),
+                        }
+                    })?;
+
                 let ty2 = value_stack
                     .pop_back()
                     .ok_or(Error::InvalidValueStackType(None))?;
-                let ValType::NumType(NumType::I32) = ty1 else {
-                    return Err(Error::InvalidValueStackType(Some(ty1)));
-                };
                 let ValType::NumType(NumType::I32) = ty2 else {
                     return Err(Error::InvalidValueStackType(Some(ty2)));
                 };

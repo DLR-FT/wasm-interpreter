@@ -27,6 +27,7 @@ pub enum Error {
     InvalidValueStackType(Option<ValType>),
     InvalidLimitsType(u8),
     InvalidMutType(u8),
+    MoreThanOneMemory,
 }
 
 impl Display for Error {
@@ -86,6 +87,7 @@ impl Display for Error {
             Error::InvalidMutType(byte) => f.write_fmt(format_args!(
                 "An invalid mut/const byte was found: {byte:#x?}"
             )),
+            Error::MoreThanOneMemory => f.write_str("As of not only one memory is allowed per module."),
         }
     }
 }

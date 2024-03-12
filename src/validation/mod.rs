@@ -1,13 +1,13 @@
 use alloc::vec::Vec;
 
+use crate::{Error, Result};
 use crate::core::indices::{FuncIdx, TypeIdx};
+use crate::core::reader::{WasmReadable, WasmReader};
 use crate::core::reader::section_header::{SectionHeader, SectionTy};
 use crate::core::reader::span::Span;
+use crate::core::reader::types::{FuncType, GlobalType, MemType, TableType};
 use crate::core::reader::types::export::Export;
 use crate::core::reader::types::import::Import;
-use crate::core::reader::types::{FuncType, GlobalType, MemType, TableType};
-use crate::core::reader::{WasmReadable, WasmReader};
-use crate::{Error, Result};
 
 pub(crate) mod code;
 
@@ -85,6 +85,9 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
         wasm.read_vec(|wasm| MemType::read(wasm))
     })?
     .unwrap_or_default();
+    if memories.len() > 1 {
+        return Err(Error::MoreThanOneMemory);
+    }
 
     while let Some(_) = skip_section(&mut wasm, &mut header)? {}
 

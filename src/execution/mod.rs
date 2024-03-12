@@ -2,16 +2,17 @@ use alloc::vec::Vec;
 
 use value_stack::Stack;
 
+use crate::{Result, ValidationInfo};
 use crate::core::indices::{FuncIdx, LocalIdx};
-use crate::core::reader::types::{FuncType, NumType, ValType};
 use crate::core::reader::{WasmReadable, WasmReader};
+use crate::core::reader::types::{FuncType, NumType, ValType};
+use crate::core::reader::types::memarg::MemArg;
 use crate::execution::assert_validated::UnwrapValidatedExt;
 use crate::execution::locals::Locals;
-use crate::execution::store::{FuncInst, Store};
+use crate::execution::store::{FuncInst, MemInst, Store};
 use crate::execution::value::Value;
 use crate::validation::code::read_declared_locals;
 use crate::value::{InteropValue, InteropValueList};
-use crate::{Result, ValidationInfo};
 
 // TODO
 pub(crate) mod assert_validated;
@@ -122,6 +123,55 @@ impl<'b> RuntimeInstance<'b> {
                     trace!("Instruction: local.set [{local:?}] -> []");
                     *local = value;
                 }
+                // i32.load [i32] -> [i32]
+                0x28 => {
+                    let memarg = MemArg::read_unvalidated(&mut wasm);
+                    let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                    let mem = self.store.mems.get(0).unwrap_validated(); // there is only one memory allowed as of now
+
+                    let data: u32 = {
+                        // The spec states that this should be a 33 bit integer
+                        // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
+                        let address = memarg.offset.checked_add(relative_address);
+                        let data = memarg.offset.checked_add(relative_address).and_then(|address| {
+                            let address = address as usize;
+                            mem.data.get(address..(address+4))
+                        }).expect("TODO trap here");
+
+                        let data: [u8; 4] = data.try_into().expect("this to be exactly 4 bytes");;
+                        u32::from_le_bytes(data)
+                    };
+
+                    stack.push_value(Value::I32(data));
+                    trace!("Instruction: i32.load [{relative_address}] -> [{data}]");
+                }
+                // i32.store [i32] -> [i32]
+                0x36 => {
+                    let memarg = MemArg::read_unvalidated(&mut wasm);
+
+                    let data_to_store: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                    let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                    let mem = self.store.mems.get_mut(0).unwrap_validated(); // there is only one memory allowed as of now
+
+                    // The spec states that this should be a 33 bit integer
+                    // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
+                    let address = memarg.offset.checked_add(relative_address);
+                    let memory_location = address.and_then(|address| {
+                        let address = address as usize;
+                        mem.data.get_mut(address..(address+4))
+                    }).expect("TODO trap here");
+
+                    memory_location.copy_from_slice(&data_to_store.to_le_bytes());
+                    trace!("Instruction: i32.store [{relative_address} {data_to_store}] -> []");
+                }
+                // i32.const: [] -> [i32]
+                0x41 => {
+                    let constant = wasm.read_var_i32().unwrap_validated();
+                    trace!("Instruction: i32.const [] -> [{constant}]");
+                    stack.push_value(constant.into());
+                }
                 // i32.add: [i32 i32] -> [i32]
                 0x6A => {
                     let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -130,12 +180,6 @@ impl<'b> RuntimeInstance<'b> {
 
                     trace!("Instruction: i32.add [{v1} {v2}] -> [{res}]");
                     stack.push_value(res.into());
-                }
-                // i32.const: [] -> [i32]
-                0x41 => {
-                    let constant = wasm.read_var_i32().unwrap_validated();
-                    trace!("Instruction: i32.const [] -> [{constant}]");
-                    stack.push_value(constant.into());
                 }
                 other => {
                     trace!("Unknown instruction {other:#x}, skipping..");
@@ -171,9 +215,11 @@ impl<'b> RuntimeInstance<'b> {
                 .collect()
         };
 
+        let mems: Vec<MemInst> = validation_info.memories.iter().map(|ty| MemInst::new(ty.clone())).collect();
+
         Store {
             funcs: function_instances,
-            mems: Vec::new(),
+            mems,
         }
     }
 }
