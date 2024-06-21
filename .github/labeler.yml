@@ -47,6 +47,3 @@ bugfix:
   - head-branch: ['^bugfix', 'bugfix']
 feature:
   - head-branch: ['^feature', 'feature']
-
-release:
-  - base-branch: 'main'
