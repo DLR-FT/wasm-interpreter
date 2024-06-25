@@ -44,6 +44,7 @@ impl WasmReadable for Import {
 
 #[derive(Debug)]
 pub enum ImportDesc {
+    #[allow(dead_code)]
     Func(TypeIdx),
     #[allow(dead_code)]
     Table(()),
