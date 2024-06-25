@@ -11,7 +11,7 @@ use crate::execution::locals::Locals;
 use crate::execution::store::{FuncInst, GlobalInst, MemInst, Store};
 use crate::execution::value::Value;
 use crate::validation::code::read_declared_locals;
-use crate::value::{InteropValue, InteropValueList};
+use crate::value::InteropValueList;
 use crate::{Result, ValidationInfo};
 
 // TODO
@@ -32,7 +32,7 @@ impl<'b> RuntimeInstance<'b> {
     pub fn new(validation_info: &'_ ValidationInfo<'b>) -> Result<Self> {
         trace!("Starting instantiation of bytecode");
 
-        let store = Self::init_store(&validation_info);
+        let store = Self::init_store(validation_info);
 
         let mut instance = RuntimeInstance {
             wasm_bytecode: validation_info.wasm,
@@ -50,7 +50,7 @@ impl<'b> RuntimeInstance<'b> {
     pub fn invoke_func<Param: InteropValueList, Returns: InteropValueList>(
         &mut self,
         func_idx: FuncIdx,
-        mut param: Param,
+        param: Param,
     ) -> Returns {
         let func_inst = self.store.funcs.get(func_idx).expect("valid FuncIdx");
         let func_ty = self.types.get(func_inst.ty).unwrap_validated();
@@ -73,9 +73,9 @@ impl<'b> RuntimeInstance<'b> {
         self.function(func_idx, &mut stack);
 
         // Pop return values from stack
-        let mut return_values = Returns::TYS
+        let return_values = Returns::TYS
             .iter()
-            .map(|ty| stack.pop_value(ty.clone()))
+            .map(|ty| stack.pop_value(*ty))
             .collect::<Vec<Value>>();
 
         // Values are reversed because they were popped from stack one-by-one. Now reverse them back
@@ -147,7 +147,7 @@ impl<'b> RuntimeInstance<'b> {
                     let relative_address: u32 =
                         stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                    let mem = self.store.mems.get(0).unwrap_validated(); // there is only one memory allowed as of now
+                    let mem = self.store.mems.first().unwrap_validated(); // there is only one memory allowed as of now
 
                     let data: u32 = {
                         // The spec states that this should be a 33 bit integer
@@ -227,7 +227,7 @@ impl<'b> RuntimeInstance<'b> {
                     wasm_reader.move_start_to(*func);
 
                     let (locals, bytes_read) = wasm_reader
-                        .measure_num_read_bytes(|wasm| read_declared_locals(wasm))
+                        .measure_num_read_bytes(read_declared_locals)
                         .unwrap_validated();
 
                     let code_expr = wasm_reader.make_span(func.len() - bytes_read);
@@ -244,7 +244,7 @@ impl<'b> RuntimeInstance<'b> {
         let memory_instances: Vec<MemInst> = validation_info
             .memories
             .iter()
-            .map(|ty| MemInst::new(ty.clone()))
+            .map(|ty| MemInst::new(*ty))
             .collect();
 
         let global_instances: Vec<GlobalInst> = validation_info

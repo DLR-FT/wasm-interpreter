@@ -97,7 +97,7 @@ fn read_instructions(
             0x20 => {
                 let local_idx = wasm.read_var_u32()? as LocalIdx;
                 let local_ty = locals.get(local_idx).ok_or(Error::InvalidLocalIdx)?;
-                value_stack.push_back(local_ty.clone());
+                value_stack.push_back(*local_ty);
             }
             // local.set [t] -> [0]
             0x21 => {
@@ -180,7 +180,7 @@ fn read_instructions(
     }
 }
 
-fn validate_value_stack<F>(return_ty: ResultType, mut f: F) -> Result<()>
+fn validate_value_stack<F>(return_ty: ResultType, f: F) -> Result<()>
 where
     F: FnOnce(&mut VecDeque<ValType>) -> Result<()>,
 {

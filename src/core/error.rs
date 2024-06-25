@@ -1,10 +1,9 @@
 use crate::core::indices::GlobalIdx;
-use core::fmt::{Display, Formatter, Write};
+use core::fmt::{Display, Formatter};
 use core::str::Utf8Error;
 
 use crate::core::reader::section_header::SectionTy;
 use crate::core::reader::types::ValType;
-use crate::execution::store::GlobalInst;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Error {

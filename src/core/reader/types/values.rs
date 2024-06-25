@@ -14,9 +14,9 @@ use crate::{Error, Result};
 impl WasmReader<'_> {
     /// Note: If `Err`, the [Wasm] object is no longer guaranteed to be in a valid state
     pub fn read_u8(&mut self) -> Result<u8> {
-        let value = *self.current.get(0).ok_or(Error::Eof)?;
+        let value = *self.current.first().ok_or(Error::Eof)?;
 
-        self.current = &self
+        self.current = self
             .current
             .get(1..)
             .expect("slice to contain at least 1 element");
@@ -72,7 +72,7 @@ impl WasmReader<'_> {
         let (utf8_str, rest) = self.current.split_at(len); // Cannot panic because check is done above
         self.current = rest;
 
-        core::str::from_utf8(utf8_str).map_err(|err| Error::MalformedUtf8String(err))
+        core::str::from_utf8(utf8_str).map_err(Error::MalformedUtf8String)
     }
 
     pub fn read_vec_enumerated<T, F>(&mut self, mut read_element: F) -> Result<Vec<T>>
