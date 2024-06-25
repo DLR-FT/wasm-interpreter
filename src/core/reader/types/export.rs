@@ -8,7 +8,9 @@ use crate::{unreachable_validated, Error, Result};
 
 #[derive(Debug)]
 pub struct Export {
+    #[allow(dead_code)]
     pub name: String,
+    #[allow(dead_code)]
     pub desc: ExportDesc,
 }
 
@@ -29,9 +31,13 @@ impl WasmReadable for Export {
 #[derive(Debug)]
 #[allow(clippy::all)]
 pub enum ExportDesc {
+    #[allow(warnings)]
     FuncIdx(FuncIdx),
+    #[allow(warnings)]
     TableIdx(TableIdx),
+    #[allow(warnings)]
     MemIdx(MemIdx),
+    #[allow(warnings)]
     GlobalIdx(GlobalIdx),
 }
 

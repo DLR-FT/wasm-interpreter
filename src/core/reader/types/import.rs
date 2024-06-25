@@ -8,8 +8,11 @@ use crate::{unreachable_validated, Error, Result};
 
 #[derive(Debug)]
 pub struct Import {
+    #[allow(warnings)]
     pub module_name: String,
+    #[allow(warnings)]
     pub name: String,
+    #[allow(warnings)]
     pub desc: ImportDesc,
 }
 
