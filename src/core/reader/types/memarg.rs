@@ -3,6 +3,7 @@ use crate::execution::assert_validated::UnwrapValidatedExt;
 
 pub struct MemArg {
     pub offset: u32,
+    #[allow(dead_code)]
     pub align: u32,
 }
 
