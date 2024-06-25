@@ -14,7 +14,7 @@ use crate::{Error, Result};
 pub fn validate_code_section(
     wasm: &mut WasmReader,
     section_header: SectionHeader,
-    fn_types: &Vec<FuncType>,
+    fn_types: &[FuncType],
     globals: &[Global],
 ) -> Result<Vec<Span>> {
     assert_eq!(section_header.ty, SectionTy::Code);

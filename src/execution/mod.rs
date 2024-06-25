@@ -56,10 +56,10 @@ impl<'b> RuntimeInstance<'b> {
         let func_ty = self.types.get(func_inst.ty).unwrap_validated();
 
         // Check correct function parameters and return types
-        if &func_ty.params.valtypes != Param::TYS {
+        if func_ty.params.valtypes != Param::TYS {
             panic!("Invalid `Param` generics");
         }
-        if &func_ty.returns.valtypes != Returns::TYS {
+        if func_ty.returns.valtypes != Returns::TYS {
             panic!("Invalid `Returns` generics");
         }
 

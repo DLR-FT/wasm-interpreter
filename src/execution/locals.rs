@@ -14,7 +14,7 @@ pub struct Locals {
 }
 
 impl Locals {
-    pub fn new<'a>(
+    pub fn new(
         parameters: impl Iterator<Item = Value>,
         locals: impl Iterator<Item = ValType>,
     ) -> Self {
