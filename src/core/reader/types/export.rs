@@ -58,7 +58,7 @@ impl WasmReadable for ExportDesc {
             0x01 => ExportDesc::TableIdx(desc_idx),
             0x02 => ExportDesc::MemIdx(desc_idx),
             0x03 => ExportDesc::GlobalIdx(desc_idx),
-            other => unreachable_validated!(),
+            _other => unreachable_validated!(),
         }
     }
 }

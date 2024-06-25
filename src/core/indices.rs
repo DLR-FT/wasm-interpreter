@@ -7,4 +7,5 @@ macro_rules! def_idx_types {
     };
 }
 
-def_idx_types!(TypeIdx, FuncIdx, TableIdx, MemIdx, GlobalIdx, ElemIdx, DataIdx, LocalIdx, LabelIdx);
+// #[allow(dead_code)]
+def_idx_types!(TypeIdx, FuncIdx, TableIdx, MemIdx, GlobalIdx, /* ElemIdx, DataIdx, */ LocalIdx/* , LabelIdx */);

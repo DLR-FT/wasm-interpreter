@@ -41,6 +41,7 @@ impl Stack {
         self.inner.push(StackEntry::Value(value));
     }
 
+    #[allow(dead_code)]
     pub fn len(&self) -> usize {
         self.inner.len()
     }
@@ -53,12 +54,16 @@ impl Stack {
 // TODO implement missing variants
 #[derive(Clone, Debug)]
 pub enum StackEntry {
+    #[allow(warnings)]
     Value(Value),
+    #[allow(warnings)]
     Label(Label),
+    #[allow(warnings)]
     Activation(ActivationFrame),
 }
 
 impl StackEntry {
+    #[allow(warnings)]
     /// Assumes this entry to be a [Value]
     pub fn into_value(self) -> Value {
         match self {
@@ -67,6 +72,7 @@ impl StackEntry {
         }
     }
 
+    #[allow(warnings)]
     /// Assumes this entry to be a [Label]
     pub fn into_label(self) -> Label {
         match self {
@@ -75,6 +81,7 @@ impl StackEntry {
         }
     }
 
+    #[allow(warnings)]
     /// Assumes this entry to be an [ActivationFrame]
     pub fn into_activation(self) -> ActivationFrame {
         match self {

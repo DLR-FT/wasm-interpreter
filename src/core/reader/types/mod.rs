@@ -3,7 +3,7 @@
 //! See: <https://webassembly.github.io/spec/core/binary/types.html>
 
 use alloc::vec::Vec;
-use core::fmt::{Debug, Formatter, Write};
+use core::fmt::{Debug, Formatter};
 
 use crate::core::reader::{WasmReadable, WasmReader};
 use crate::execution::assert_validated::UnwrapValidatedExt;

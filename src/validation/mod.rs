@@ -17,11 +17,14 @@ pub(crate) mod code;
 pub struct ValidationInfo<'bytecode> {
     pub(crate) wasm: &'bytecode [u8],
     pub(crate) types: Vec<FuncType>,
+    #[allow(dead_code)]
     pub(crate) imports: Vec<Import>,
     pub(crate) functions: Vec<TypeIdx>,
+    #[allow(dead_code)]
     pub(crate) tables: Vec<TableType>,
     pub(crate) memories: Vec<MemType>,
     pub(crate) globals: Vec<Global>,
+    #[allow(dead_code)]
     pub(crate) exports: Vec<Export>,
     pub(crate) func_blocks: Vec<Span>,
     /// The start function which is automatically executed during instantiation

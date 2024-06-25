@@ -152,7 +152,7 @@ impl<'b> RuntimeInstance<'b> {
                     let data: u32 = {
                         // The spec states that this should be a 33 bit integer
                         // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
-                        let address = memarg.offset.checked_add(relative_address);
+                        let _address = memarg.offset.checked_add(relative_address);
                         let data = memarg
                             .offset
                             .checked_add(relative_address)
