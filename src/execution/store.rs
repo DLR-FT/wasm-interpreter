@@ -22,6 +22,7 @@ pub struct FuncInst {
     pub code_expr: Span,
 }
 
+#[allow(dead_code)]
 pub struct TableInst {
     pub ty: TableType,
     pub elem: Vec<Ref>,
@@ -43,11 +44,13 @@ impl MemInst {
         }
     }
 
+    #[allow(dead_code)]
     pub fn grow(&mut self, delta_pages: usize) {
         self.data
             .extend(iter::repeat(0).take(delta_pages * Self::PAGE_SIZE))
     }
 
+    #[allow(dead_code)]
     pub fn size(&self) -> usize {
         self.data.len() / Self::PAGE_SIZE
     }

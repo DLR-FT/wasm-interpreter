@@ -14,14 +14,14 @@ impl WasmReadable for Global {
     fn read(wasm: &mut WasmReader) -> Result<Self> {
         Ok(Self {
             ty: GlobalType::read(wasm)?,
-            init_expr: todo!("read constant expression"),
+            init_expr: ()/* todo!("read constant expression") */,
         })
     }
 
     fn read_unvalidated(wasm: &mut WasmReader) -> Self {
         Self {
             ty: GlobalType::read_unvalidated(wasm),
-            init_expr: todo!("read constant expression"),
+            init_expr: ()/* todo!("read constant expression") */,
         }
     }
 }
