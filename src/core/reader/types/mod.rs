@@ -107,6 +107,7 @@ impl WasmReadable for RefType {
 /// https://webassembly.github.io/spec/core/binary/types.html#reference-types
 /// TODO flatten [NumType] and [RefType] enums, as they are not used individually and `wasmparser` also does it.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[allow(clippy::all)]
 pub enum ValType {
     NumType(NumType),
     VecType,
