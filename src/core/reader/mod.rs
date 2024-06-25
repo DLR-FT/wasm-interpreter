@@ -27,7 +27,7 @@ impl<'a> WasmReader<'a> {
     }
 
     pub fn remaining_bytes(&self) -> &[u8] {
-        &self.current
+        self.current
     }
 
     pub fn current_idx(&self) -> usize {
@@ -48,7 +48,7 @@ impl<'a> WasmReader<'a> {
         Ok(bytes.try_into().expect("the slice length to be exactly N"))
     }
     pub fn peek_u8(&self) -> Result<u8> {
-        self.current.get(0).copied().ok_or(Error::Eof)
+        self.current.first().copied().ok_or(Error::Eof)
     }
 
     pub fn measure_num_read_bytes<T>(

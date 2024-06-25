@@ -1,6 +1,6 @@
 //! Helpers for assertions due to prior validation of a WASM program.
 
-use core::fmt::{Debug, Display};
+use core::fmt::{Debug};
 
 pub(crate) trait UnwrapValidatedExt<T> {
     fn unwrap_validated(self) -> T;

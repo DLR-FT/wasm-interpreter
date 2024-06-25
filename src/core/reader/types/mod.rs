@@ -126,9 +126,9 @@ impl ValType {
 
 impl WasmReadable for ValType {
     fn read(wasm: &mut WasmReader) -> Result<Self> {
-        let numtype = NumType::read(wasm).map(|ty| ValType::NumType(ty));
+        let numtype = NumType::read(wasm).map(ValType::NumType);
         let vectype = VecType::read(wasm).map(|_ty| ValType::VecType);
-        let reftype = RefType::read(wasm).map(|ty| ValType::RefType(ty));
+        let reftype = RefType::read(wasm).map(ValType::RefType);
 
         numtype
             .or(vectype)
@@ -137,9 +137,9 @@ impl WasmReadable for ValType {
     }
 
     fn read_unvalidated(wasm: &mut WasmReader) -> Self {
-        let numtype = NumType::read(wasm).map(|ty| ValType::NumType(ty));
+        let numtype = NumType::read(wasm).map(ValType::NumType);
         let vectype = VecType::read(wasm).map(|_ty| ValType::VecType);
-        let reftype = RefType::read(wasm).map(|ty| ValType::RefType(ty));
+        let reftype = RefType::read(wasm).map(ValType::RefType);
 
         numtype.or(vectype).or(reftype).unwrap_validated()
     }
@@ -153,7 +153,7 @@ pub struct ResultType {
 
 impl WasmReadable for ResultType {
     fn read(wasm: &mut WasmReader) -> Result<Self> {
-        let valtypes = wasm.read_vec(|wasm| ValType::read(wasm))?;
+        let valtypes = wasm.read_vec(ValType::read)?;
 
         Ok(ResultType { valtypes })
     }
