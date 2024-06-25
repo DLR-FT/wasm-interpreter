@@ -1,3 +1,5 @@
+use core::ops::Mul;
+
 use alloc::vec::Vec;
 
 use value_stack::Stack;
@@ -205,6 +207,14 @@ impl<'b> RuntimeInstance<'b> {
                     let res = v1.wrapping_add(v2);
 
                     trace!("Instruction: i32.add [{v1} {v2}] -> [{res}]");
+                    stack.push_value(res.into());
+                }
+                0x6C => {
+                    let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                    let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                    let res = v1.mul(v2);
+
+                    trace!("Instruction: i32.mul [{v1} {v2}] -> [{res}]");
                     stack.push_value(res.into());
                 }
                 other => {
