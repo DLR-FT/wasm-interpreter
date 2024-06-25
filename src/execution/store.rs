@@ -29,6 +29,7 @@ pub struct TableInst {
 }
 
 pub struct MemInst {
+    #[allow(warnings)]
     pub ty: MemType,
     pub data: Vec<u8>,
 }

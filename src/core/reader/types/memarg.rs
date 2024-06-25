@@ -9,6 +9,7 @@ pub struct MemArg {
 impl WasmReadable for MemArg {
     fn read(wasm: &mut WasmReader) -> crate::Result<Self> {
         let offset = wasm.read_var_u32()?;
+        #[allow(warnings)]
         let align = wasm.read_var_u32()?;
         Ok(Self { offset, align })
     }
