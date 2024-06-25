@@ -27,6 +27,7 @@ impl WasmReadable for Export {
 }
 
 #[derive(Debug)]
+#[allow(clippy::all)]
 pub enum ExportDesc {
     FuncIdx(FuncIdx),
     TableIdx(TableIdx),
