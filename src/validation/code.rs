@@ -168,6 +168,14 @@ fn read_instructions(
 
                 value_stack.push_back(ValType::NumType(NumType::I32));
             }
+            0x6C => {
+                // First value
+                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
+                // Second value
+                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
+
+                value_stack.push_back(ValType::NumType(NumType::I32));
+            }
             // i32.const: [] -> [i32]
             0x41 => {
                 let _num = wasm.read_var_i32()?;
