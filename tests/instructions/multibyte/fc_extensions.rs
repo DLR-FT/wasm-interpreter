@@ -21,6 +21,7 @@ fn panic_on_not_implemented() {
 }
 
 #[test_log::test]
+#[should_panic(expected = "not implemented: Unimplemented instruction for bytes: 0xFC 0x1")]
 fn fc_extensions() {
     use wasm::validate;
 
