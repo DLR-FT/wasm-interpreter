@@ -1,33 +1,33 @@
 core:
   - changed-files:
-    - any-glob-to-any-file: 'src/core/**'
+      - any-glob-to-any-file: "src/core/**"
 execution:
   - changed-files:
-    - any-glob-to-any-file: 'src/execution/**'
+      - any-glob-to-any-file: "src/execution/**"
 validation:
   - changed-files:
-    - any-glob-to-any-file: 'src/validation/**'
+      - any-glob-to-any-file: "src/validation/**"
 
 tests:
   - changed-files:
-    - any-glob-to-any-file: 'tests/**'
+      - any-glob-to-any-file: "tests/**"
 
 examples:
   - changed-files:
-    - any-glob-to-any-file: 'examples/**'
+      - any-glob-to-any-file: "examples/**"
 
 priority-high:
   # Hotfixes are critical
-  - head-branch: ['^hotfix', 'hotfix']
+  - head-branch: ["^hotfix", "hotfix"]
   - changed-files:
-    - any-glob-to-any-file: [
-        'src/**',
-        # We treat configuration modification as high priority
-        #   as I reckon we'll have critical CI/CD workflow changes
-        #   and other changes that are highly needed for a
-        #   healthy functioning of the project
-        '.github/**'
-        ]
+      - any-glob-to-any-file: [
+            "src/**",
+            # We treat configuration modification as high priority
+            #   as I reckon we'll have critical CI/CD workflow changes
+            #   and other changes that are highly needed for a
+            #   healthy functioning of the project
+            ".github/**",
+          ]
 
 # We treat tests as medium priority (for now)
 #   as we get to have specialized tests
@@ -35,15 +35,15 @@ priority-high:
 #   we will then have different priorities for different tests
 priority-medium:
   - changed-files:
-    - any-glob-to-any-file: 'tests/**'
+      - any-glob-to-any-file: "tests/**"
 
 priority-low:
   - changed-files:
-    - any-glob-to-any-file: 'examples/**'
+      - any-glob-to-any-file: "examples/**"
 
 hotfix:
-  - head-branch: ['^hotfix', 'hotfix']
+  - head-branch: ["^hotfix", "hotfix"]
 bugfix:
-  - head-branch: ['^bugfix', 'bugfix']
+  - head-branch: ["^bugfix", "bugfix"]
 feature:
-  - head-branch: ['^feature', 'feature']
+  - head-branch: ["^feature", "feature"]

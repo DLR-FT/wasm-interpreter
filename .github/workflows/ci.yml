@@ -1,4 +1,3 @@
-
 name: wasm-interpreter-ci
 
 on:
