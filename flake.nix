@@ -58,7 +58,7 @@
         # a devshell with all the necessary bells and whistles
         devShells.default = (pkgs.devshell.mkShell {
           imports = [ "${devshell}/extra/git/hooks.nix" ];
-          name = "aa";
+          name = "wasm-interpreter";
           packages = with pkgs; [
             stdenv.cc
             coreutils
@@ -75,7 +75,7 @@
             # utilities
             nixpkgs-fmt
             nodePackages.prettier
-            treefmt
+            treefmtEval.config.build.wrapper
           ];
           git.hooks = {
             enable = true;
@@ -90,6 +90,11 @@
         # always check these
         checks = {
           formatting = treefmtEval.config.build.check self;
+          # TODO remove once https://github.com/numtide/treefmt/issues/153 is closed
+          format-bug-fix = pkgs.runCommand "yaml-fmt"
+              {
+                nativeBuildInputs = [ pkgs.nodePackages.prettier ];
+              } "cd ${./.} && prettier --check .github; touch $out";
         };
       });
 }

@@ -2,16 +2,13 @@
 
 This pull request adds/changes/fixes...
 
-
 ### Testing Strategy
 
 This pull request was tested by...
 
-
 ### TODO or Help Wanted
 
 This pull request still needs...
-
 
 ### Formatting
 
@@ -21,11 +18,9 @@ This pull request still needs...
 - [ ] Ran `nix fmt`
 - [ ] Ran `treefmt`
 
-
 ### Github Issue
 
 This pull request closes <GITHUB_ISSUE>
-
 
 ### Author
 
