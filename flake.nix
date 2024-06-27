@@ -13,8 +13,12 @@
       url = "git+https://github.com/nix-community/naersk.git";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    treefmt-nix = {
+      url = "github:numtide/treefmt-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
-  outputs = { self, nixpkgs, utils, naersk, devshell, ... }@inputs:
+  outputs = { self, nixpkgs, utils, naersk, devshell, treefmt-nix, ... }@inputs:
     utils.lib.eachSystem [ "x86_64-linux" "i686-linux" "aarch64-linux" ] (system:
       let
         lib = nixpkgs.lib;
@@ -22,6 +26,9 @@
           inherit system;
           overlays = [ devshell.overlays.default ];
         };
+
+        # universal formatter
+        treefmtEval = treefmt-nix.lib.evalModule pkgs ./treefmt.nix;
 
         # rust target name of the `system`
         rust-target = pkgs.rust.toRustTarget pkgs.pkgsStatic.targetPlatform;
@@ -62,9 +69,13 @@
             cargo-watch
             cargo-audit
             cargo-expand
-            nixpkgs-fmt
             nodePackages.prettier
             wabt
+
+            # utilities
+            nixpkgs-fmt
+            nodePackages.prettier
+            treefmt
           ];
           git.hooks = {
             enable = true;
@@ -72,16 +83,13 @@
           };
         });
 
+
+        # for `nix fmt`
+        formatter = treefmtEval.config.build.wrapper;
+
         # always check these
         checks = {
-          nixpkgs-fmt = pkgs.runCommand "nixpkgs-fmt"
-            {
-              nativeBuildInputs = [ pkgs.nixpkgs-fmt ];
-            } "nixpkgs-fmt --check ${./.}; touch $out";
-          cargo-fmt = pkgs.runCommand "cargo-fmt"
-            {
-              nativeBuildInputs = [ rust-toolchain ];
-            } "cd ${./.}; cargo fmt --check; touch $out";
+          formatting = treefmtEval.config.build.check self;
         };
       });
 }
