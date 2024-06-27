@@ -18,3 +18,8 @@ env_logger = "0.10.1"
 wasmparser = "0.119.0"
 itertools = "0.12.0"
 wat = "1.0.83"
+
+
+[features]
+default = ["hooks"]
+hooks = []
