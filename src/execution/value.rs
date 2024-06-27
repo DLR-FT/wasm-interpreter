@@ -145,9 +145,7 @@ impl InteropValueList for () {
     }
 
     #[allow(warnings)]
-    fn from_values(_values: impl Iterator<Item = Value>) -> Self {
-        
-    }
+    fn from_values(_values: impl Iterator<Item = Value>) -> Self {}
 }
 
 impl<A: InteropValue> InteropValueList for A {
