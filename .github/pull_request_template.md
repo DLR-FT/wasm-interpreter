@@ -18,6 +18,8 @@ This pull request still needs...
 - [ ] Ran `cargo fmt`
 - [ ] Ran `cargo check`
 - [ ] Ran `cargo build`
+- [ ] Ran `nix fmt`
+- [ ] Ran `treefmt`
 
 
 ### Github Issue
