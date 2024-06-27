@@ -129,47 +129,44 @@ where
         let mut wasm = WasmReader::new(self.wasm_bytecode);
         wasm.move_start_to(inst.code_expr);
 
+        use crate::core::reader::types::opcode::*;
         loop {
             // call the instruction hook
             #[cfg(feature = "hooks")]
             H::instruction_hook(self);
 
-            match wasm.read_u8().unwrap_validated() {
-                // end
-                0x0B => {
+            let first_instr_byte = wasm.read_u8().unwrap_validated();
+
+            match first_instr_byte {
+                END => {
                     break;
                 }
-                // local.get: [] -> [t]
-                0x20 => {
+                LOCAL_GET => {
                     let local_idx = wasm.read_var_u32().unwrap_validated() as LocalIdx;
                     let local = locals.get(local_idx);
                     trace!("Instruction: local.get [] -> [{local:?}]");
                     stack.push_value(local.clone());
                 }
-                // local.set [t] -> []
-                0x21 => {
+                LOCAL_SET => {
                     let local_idx = wasm.read_var_u32().unwrap_validated() as LocalIdx;
                     let local = locals.get_mut(local_idx);
                     let value = stack.pop_value(local.to_ty());
                     trace!("Instruction: local.set [{local:?}] -> []");
                     *local = value;
                 }
-                // global.get [] -> [t]
-                0x23 => {
+                GLOBAL_GET => {
                     let global_idx = wasm.read_var_u32().unwrap_validated() as GlobalIdx;
                     let global = self.store.globals.get(global_idx).unwrap_validated();
 
                     stack.push_value(global.value.clone());
                 }
-                // global.set [t] -> []
-                0x24 => {
+                GLOBAL_SET => {
                     let global_idx = wasm.read_var_u32().unwrap_validated() as GlobalIdx;
                     let global = self.store.globals.get_mut(global_idx).unwrap_validated();
 
                     global.value = stack.pop_value(global.global.ty.ty)
                 }
-                // i32.load [i32] -> [i32]
-                0x28 => {
+                I32_LOAD => {
                     let memarg = MemArg::read_unvalidated(&mut wasm);
                     let relative_address: u32 =
                         stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -196,8 +193,7 @@ where
                     stack.push_value(Value::I32(data));
                     trace!("Instruction: i32.load [{relative_address}] -> [{data}]");
                 }
-                // i32.store [i32] -> [i32]
-                0x36 => {
+                I32_STORE => {
                     let memarg = MemArg::read_unvalidated(&mut wasm);
 
                     let data_to_store: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -219,38 +215,33 @@ where
                     memory_location.copy_from_slice(&data_to_store.to_le_bytes());
                     trace!("Instruction: i32.store [{relative_address} {data_to_store}] -> []");
                 }
-                // i32.const: [] -> [i32]
-                0x41 => {
+                I32_CONST => {
                     let constant = wasm.read_var_i32().unwrap_validated();
                     trace!("Instruction: i32.const [] -> [{constant}]");
                     stack.push_value(constant.into());
                 }
-                // i32.clz: [i32] -> [i32]
-                0x67 => {
+                I32_CLZ => {
                     let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                     let res = v1.leading_zeros() as i32;
 
                     trace!("Instruction: i32.clz [{v1}] -> [{res}]");
                     stack.push_value(res.into());
                 }
-                // i32.ctz: [i32] -> [i32]
-                0x68 => {
+                I32_CTZ => {
                     let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                     let res = v1.trailing_zeros() as i32;
 
                     trace!("Instruction: i32.ctz [{v1}] -> [{res}]");
                     stack.push_value(res.into());
                 }
-                // i32.popcnt: [i32] -> [i32]
-                0x69 => {
+                I32_POPCNT => {
                     let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                     let res = v1.count_ones() as i32;
 
                     trace!("Instruction: i32.popcnt [{v1}] -> [{res}]");
                     stack.push_value(res.into());
                 }
-                // i32.add: [i32 i32] -> [i32]
-                0x6A => {
+                I32_ADD => {
                     let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                     let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                     let res = v1.wrapping_add(v2);
@@ -258,8 +249,7 @@ where
                     trace!("Instruction: i32.add [{v1} {v2}] -> [{res}]");
                     stack.push_value(res.into());
                 }
-                // i32.mul: [i32 i32] -> [i32]
-                0x6C => {
+                I32_MUL => {
                     let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                     let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                     let res = v1.wrapping_mul(v2);
@@ -267,8 +257,7 @@ where
                     trace!("Instruction: i32.mul [{v1} {v2}] -> [{res}]");
                     stack.push_value(res.into());
                 }
-                // i32.div_s: [i32 i32] -> [i32]
-                0x6D => {
+                I32_DIV_S => {
                     let dividend: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                     let divisor: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
@@ -284,8 +273,7 @@ where
                     trace!("Instruction: i32.div_s [{divisor} {dividend}] -> [{res}]");
                     stack.push_value(res.into());
                 }
-                // i32.div_u: [i32 i32] -> [i32]
-                0x6E => {
+                I32_DIV_U => {
                     let dividend: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                     let divisor: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
@@ -301,8 +289,7 @@ where
                     trace!("Instruction: i32.div_u [{divisor} {dividend}] -> [{res}]");
                     stack.push_value(res.into());
                 }
-                // i32.rem_s: [i32 i32] -> [i32]
-                0x6F => {
+                I32_REM_S => {
                     let dividend: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                     let divisor: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
@@ -316,8 +303,7 @@ where
                     trace!("Instruction: i32.rem_s [{divisor} {dividend}] -> [{res}]");
                     stack.push_value(res.into());
                 }
-                // i32.rem_u: [i32 i32] -> [i32]
-                0x70 => {
+                I32_REM_U => {
                     let dividend: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                     let divisor: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
@@ -334,8 +320,7 @@ where
                     trace!("Instruction: i32.rem_u [{divisor} {dividend}] -> [{res}]");
                     stack.push_value(res.into());
                 }
-                // i32.and: [i32 i32] -> [i32]
-                0x71 => {
+                I32_AND => {
                     let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                     let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                     let res = v1 & v2;
@@ -343,8 +328,7 @@ where
                     trace!("Instruction: i32.and [{v1} {v2}] -> [{res}]");
                     stack.push_value(res.into());
                 }
-                // i32.or: [i32 i32] -> [i32]
-                0x72 => {
+                I32_OR => {
                     let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                     let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                     let res = v1 | v2;
@@ -352,8 +336,7 @@ where
                     trace!("Instruction: i32.or [{v1} {v2}] -> [{res}]");
                     stack.push_value(res.into());
                 }
-                // i32.xor: [i32 i32] -> [i32]
-                0x73 => {
+                I32_XOR => {
                     let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                     let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                     let res = v1 ^ v2;
@@ -361,8 +344,7 @@ where
                     trace!("Instruction: i32.xor [{v1} {v2}] -> [{res}]");
                     stack.push_value(res.into());
                 }
-                // i32.shl: [i32 i32] -> [i32]
-                0x74 => {
+                I32_SHL => {
                     let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                     let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                     let res = v2.wrapping_shl(v1 as u32);
@@ -370,8 +352,7 @@ where
                     trace!("Instruction: i32.shl [{v2} {v1}] -> [{res}]");
                     stack.push_value(res.into());
                 }
-                // i32.shr_s: [i32 i32] -> [i32]
-                0x75 => {
+                I32_SHR_S => {
                     let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                     let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
@@ -380,8 +361,7 @@ where
                     trace!("Instruction: i32.shr_s [{v2} {v1}] -> [{res}]");
                     stack.push_value(res.into());
                 }
-                // i32.shr_u: [i32 i32] -> [i32]
-                0x76 => {
+                I32_SHR_U => {
                     let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                     let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
@@ -390,8 +370,7 @@ where
                     trace!("Instruction: i32.shr_u [{v2} {v1}] -> [{res}]");
                     stack.push_value(res.into());
                 }
-                // i32.rotl: [i32 i32] -> [i32]
-                0x77 => {
+                I32_ROTL => {
                     let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                     let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
@@ -400,8 +379,7 @@ where
                     trace!("Instruction: i32.rotl [{v2} {v1}] -> [{res}]");
                     stack.push_value(res.into());
                 }
-                // i32.rotr: [i32 i32] -> [i32]
-                0x78 => {
+                I32_ROTR => {
                     let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                     let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 

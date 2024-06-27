@@ -83,25 +83,27 @@ fn read_instructions(
     };
 
     loop {
-        let Ok(instr) = wasm.read_u8() else {
+        let Ok(first_instr_byte) = wasm.read_u8() else {
             return Err(Error::ExprMissingEnd);
         };
-        trace!("Read instruction byte {instr:#x?} ({instr})");
-        match instr {
+        trace!("Read instruction byte {first_instr_byte:#X?} ({first_instr_byte})");
+
+        use crate::core::reader::types::opcode::*;
+        match first_instr_byte {
             // nop
-            0x01 => {}
+            NOP => {}
             // end
-            0x0B => {
+            END => {
                 return Ok(());
             }
             // local.get: [] -> [t]
-            0x20 => {
+            LOCAL_GET => {
                 let local_idx = wasm.read_var_u32()? as LocalIdx;
                 let local_ty = locals.get(local_idx).ok_or(Error::InvalidLocalIdx)?;
                 value_stack.push_back(*local_ty);
             }
             // local.set [t] -> [0]
-            0x21 => {
+            LOCAL_SET => {
                 let local_idx = wasm.read_var_u32()? as LocalIdx;
                 let local_ty = locals.get(local_idx).ok_or(Error::InvalidLocalIdx)?;
                 let popped = value_stack.pop_back();
@@ -110,7 +112,7 @@ fn read_instructions(
                 }
             }
             // global.get [] -> [t]
-            0x23 => {
+            GLOBAL_GET => {
                 let global_idx = wasm.read_var_u32()? as GlobalIdx;
                 let global = globals
                     .get(global_idx)
@@ -119,7 +121,7 @@ fn read_instructions(
                 value_stack.push_back(global.ty.ty);
             }
             // global.set [t] -> []
-            0x24 => {
+            GLOBAL_SET => {
                 let global_idx = wasm.read_var_u32()? as GlobalIdx;
                 let global = globals
                     .get(global_idx)
@@ -138,7 +140,7 @@ fn read_instructions(
                 }
             }
             // i32.load [i32] -> [i32]
-            0x28 => {
+            I32_LOAD => {
                 let _memarg = MemArg::read_unvalidated(wasm);
 
                 // TODO check correct `memarg.align`
@@ -149,7 +151,7 @@ fn read_instructions(
                 value_stack.push_back(ValType::NumType(NumType::I32));
             }
             // i32.store [i32] -> [i32]
-            0x36 => {
+            I32_STORE => {
                 let _memarg = MemArg::read_unvalidated(wasm);
 
                 // TODO check correct `memarg.align`
@@ -160,133 +162,31 @@ fn read_instructions(
                 // Value to store
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
             }
-            // i32.add: [i32 i32] -> [i32]
-            0x6A => {
-                // First value
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
-                // Second value
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
-
-                value_stack.push_back(ValType::NumType(NumType::I32));
-            }
-            0x6C => {
-                // First value
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
-                // Second value
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
-
-                value_stack.push_back(ValType::NumType(NumType::I32));
-            }
-            // i32.div_s: [i32 i32] -> [i32]
-            0x6D => {
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
-
-                value_stack.push_back(ValType::NumType(NumType::I32));
-            }
-            // i32.div_u: [i32 i32] -> [i32]
-            0x6E => {
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
-
-                value_stack.push_back(ValType::NumType(NumType::I32));
-            }
-            // i32.rem_s: [i32 i32] -> [i32]
-            0x6F => {
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
-
-                value_stack.push_back(ValType::NumType(NumType::I32));
-            }
-            // i32.rem_u: [i32 i32] -> [i32]
-            0x70 => {
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
-
-                value_stack.push_back(ValType::NumType(NumType::I32));
-            }
             // i32.const: [] -> [i32]
-            0x41 => {
+            I32_CONST => {
                 let _num = wasm.read_var_i32()?;
                 value_stack.push_back(ValType::NumType(NumType::I32));
             }
+            I32_ADD | I32_MUL | I32_DIV_S | I32_DIV_U | I32_REM_S => {
+                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
+                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
+
+                value_stack.push_back(ValType::NumType(NumType::I32));
+            }
             // i32.clz: [i32] -> [i32]
-            0x67 => {
+            I32_CLZ | I32_CTZ | I32_POPCNT => {
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
 
                 value_stack.push_back(ValType::NumType(NumType::I32));
             }
-            // i32.ctz: [i32] -> [i32]
-            0x68 => {
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
-
-                value_stack.push_back(ValType::NumType(NumType::I32));
-            }
-            // i32.popcnt: [i32] -> [i32]
-            0x69 => {
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
-
-                value_stack.push_back(ValType::NumType(NumType::I32));
-            }
-            // i32.and: [i32 i32] -> [i32]
-            0x71 => {
+            I32_REM_U | I32_AND | I32_OR | I32_XOR | I32_SHL | I32_SHR_S | I32_SHR_U | I32_ROTL
+            | I32_ROTR => {
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
 
                 value_stack.push_back(ValType::NumType(NumType::I32));
             }
-            // i32.or: [i32 i32] -> [i32]
-            0x72 => {
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
-
-                value_stack.push_back(ValType::NumType(NumType::I32));
-            }
-            // i32.xor: [i32 i32] -> [i32]
-            0x73 => {
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
-
-                value_stack.push_back(ValType::NumType(NumType::I32));
-            }
-            // i32.shl: [i32 i32] -> [i32]
-            0x74 => {
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
-
-                value_stack.push_back(ValType::NumType(NumType::I32));
-            }
-            // i32.shr_s: [i32 i32] -> [i32]
-            0x75 => {
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
-
-                value_stack.push_back(ValType::NumType(NumType::I32));
-            }
-            // i32.shr_u: [i32 i32] -> [i32]
-            0x76 => {
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
-
-                value_stack.push_back(ValType::NumType(NumType::I32));
-            }
-            // i32.rotl: [i32 i32] -> [i32]
-            0x77 => {
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
-
-                value_stack.push_back(ValType::NumType(NumType::I32));
-            }
-            // i32.rotr: [i32 i32] -> [i32]
-            0x78 => {
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
-
-                value_stack.push_back(ValType::NumType(NumType::I32));
-            }
-            other => {
-                return Err(Error::InvalidInstr(other));
-            }
+            _ => return Err(Error::InvalidInstr(first_instr_byte)),
         }
     }
 }
