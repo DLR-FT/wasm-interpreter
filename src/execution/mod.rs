@@ -4,6 +4,7 @@ use value_stack::Stack;
 
 use crate::core::indices::{FuncIdx, GlobalIdx, LocalIdx};
 use crate::core::reader::types::memarg::MemArg;
+use crate::core::reader::types::opcode::{Op1Byte, Op2Byte};
 use crate::core::reader::types::{FuncType, NumType, ValType};
 use crate::core::reader::{WasmReadable, WasmReader};
 use crate::execution::assert_validated::UnwrapValidatedExt;
@@ -107,20 +108,22 @@ impl<'b> RuntimeInstance<'b> {
         wasm.move_start_to(inst.code_expr);
 
         loop {
-            match wasm.read_u8().unwrap_validated() {
+            let first_byte = wasm.read_u8().unwrap_validated();
+            let parsed_1byte_instr = Op1Byte::new(first_byte);
+            match parsed_1byte_instr {
                 // end
-                0x0B => {
+                Op1Byte::End => {
                     break;
                 }
                 // local.get: [] -> [t]
-                0x20 => {
+                Op1Byte::LocalGet => {
                     let local_idx = wasm.read_var_u32().unwrap_validated() as LocalIdx;
                     let local = locals.get(local_idx);
                     trace!("Instruction: local.get [] -> [{local:?}]");
                     stack.push_value(local.clone());
                 }
                 // local.set [t] -> []
-                0x21 => {
+                Op1Byte::LocalSet => {
                     let local_idx = wasm.read_var_u32().unwrap_validated() as LocalIdx;
                     let local = locals.get_mut(local_idx);
                     let value = stack.pop_value(local.to_ty());
@@ -128,21 +131,21 @@ impl<'b> RuntimeInstance<'b> {
                     *local = value;
                 }
                 // global.get [] -> [t]
-                0x23 => {
+                Op1Byte::GlobalGet => {
                     let global_idx = wasm.read_var_u32().unwrap_validated() as GlobalIdx;
                     let global = self.store.globals.get(global_idx).unwrap_validated();
 
                     stack.push_value(global.value.clone());
                 }
                 // global.set [t] -> []
-                0x24 => {
+                Op1Byte::GlobalSet => {
                     let global_idx = wasm.read_var_u32().unwrap_validated() as GlobalIdx;
                     let global = self.store.globals.get_mut(global_idx).unwrap_validated();
 
                     global.value = stack.pop_value(global.global.ty.ty)
                 }
                 // i32.load [i32] -> [i32]
-                0x28 => {
+                Op1Byte::I32Load => {
                     let memarg = MemArg::read_unvalidated(&mut wasm);
                     let relative_address: u32 =
                         stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -170,7 +173,7 @@ impl<'b> RuntimeInstance<'b> {
                     trace!("Instruction: i32.load [{relative_address}] -> [{data}]");
                 }
                 // i32.store [i32] -> [i32]
-                0x36 => {
+                Op1Byte::I32Store => {
                     let memarg = MemArg::read_unvalidated(&mut wasm);
 
                     let data_to_store: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -193,13 +196,13 @@ impl<'b> RuntimeInstance<'b> {
                     trace!("Instruction: i32.store [{relative_address} {data_to_store}] -> []");
                 }
                 // i32.const: [] -> [i32]
-                0x41 => {
+                Op1Byte::I32Const => {
                     let constant = wasm.read_var_i32().unwrap_validated();
                     trace!("Instruction: i32.const [] -> [{constant}]");
                     stack.push_value(constant.into());
                 }
                 // i32.add: [i32 i32] -> [i32]
-                0x6A => {
+                Op1Byte::I32Add => {
                     let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                     let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                     let res = v1.wrapping_add(v2);
@@ -208,17 +211,33 @@ impl<'b> RuntimeInstance<'b> {
                     stack.push_value(res.into());
                 }
                 // i32.mul: [i32 i32] -> [i32]
-                0x6C => {
-                  let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                  let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                  let res = v1.wrapping_mul(v2);
+                Op1Byte::I32Mul => {
+                    let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                    let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                    let res = v1.wrapping_mul(v2);
 
-                  trace!("Instruction: i32.mul [{v1} {v2}] -> [{res}]");
-                  stack.push_value(res.into());
+                    trace!("Instruction: i32.mul [{v1} {v2}] -> [{res}]");
+                    stack.push_value(res.into());
+                    let res = v1.wrapping_mul(v2);
+
+                    trace!("Instruction: i32.mul [{v1} {v2}] -> [{res}]");
+                    stack.push_value(res.into());
                 }
-                other => {
-                    trace!("Unknown instruction {other:#x}, skipping..");
+                Op1Byte::FCInstructions => {
+                    let second_byte = wasm.read_u8().unwrap_validated();
+                    let parsed_2byte_instr =
+                        Op2Byte::new(u16::from_be_bytes([first_byte, second_byte]));
+                    match parsed_2byte_instr {
+                        // i32.trunc_sat_f32_s: [f32] -> [i32]
+                        Op2Byte::I32TruncSatF32S => {
+                            trace!("Instruction: i32.trunc_sat_f32_s [?] -> [?]");
+                            unimplemented!("Not implemented yet")
+                        }
+                    }
                 }
+                // currently the only instruction we don't care about is NOP
+                //  since it was left out during validation
+                _ => {}
             }
         }
     }

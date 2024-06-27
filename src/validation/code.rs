@@ -7,6 +7,7 @@ use crate::core::reader::section_header::{SectionHeader, SectionTy};
 use crate::core::reader::span::Span;
 use crate::core::reader::types::global::Global;
 use crate::core::reader::types::memarg::MemArg;
+use crate::core::reader::types::opcode::{Op1Byte, Op2Byte};
 use crate::core::reader::types::{FuncType, NumType, ResultType, ValType};
 use crate::core::reader::{WasmReadable, WasmReader};
 use crate::{Error, Result};
@@ -82,25 +83,26 @@ fn read_instructions(
     };
 
     loop {
-        let Ok(instr) = wasm.read_u8() else {
+        let Ok(first_byte) = wasm.read_u8() else {
             return Err(Error::ExprMissingEnd);
         };
-        trace!("Read instruction byte {instr:#x?} ({instr})");
-        match instr {
+        trace!("Read instruction byte {first_byte:#x?} ({first_byte})");
+        let parsed_1byte_instr = Op1Byte::new(first_byte);
+        match parsed_1byte_instr {
             // nop
-            0x01 => {}
+            Op1Byte::Nop => {}
             // end
-            0x0B => {
+            Op1Byte::End => {
                 return Ok(());
             }
             // local.get: [] -> [t]
-            0x20 => {
+            Op1Byte::LocalGet => {
                 let local_idx = wasm.read_var_u32()? as LocalIdx;
                 let local_ty = locals.get(local_idx).ok_or(Error::InvalidLocalIdx)?;
                 value_stack.push_back(*local_ty);
             }
             // local.set [t] -> [0]
-            0x21 => {
+            Op1Byte::LocalSet => {
                 let local_idx = wasm.read_var_u32()? as LocalIdx;
                 let local_ty = locals.get(local_idx).ok_or(Error::InvalidLocalIdx)?;
                 let popped = value_stack.pop_back();
@@ -109,7 +111,7 @@ fn read_instructions(
                 }
             }
             // global.get [] -> [t]
-            0x23 => {
+            Op1Byte::GlobalGet => {
                 let global_idx = wasm.read_var_u32()? as GlobalIdx;
                 let global = globals
                     .get(global_idx)
@@ -118,7 +120,7 @@ fn read_instructions(
                 value_stack.push_back(global.ty.ty);
             }
             // global.set [t] -> []
-            0x24 => {
+            Op1Byte::GlobalSet => {
                 let global_idx = wasm.read_var_u32()? as GlobalIdx;
                 let global = globals
                     .get(global_idx)
@@ -137,7 +139,7 @@ fn read_instructions(
                 }
             }
             // i32.load [i32] -> [i32]
-            0x28 => {
+            Op1Byte::I32Load => {
                 let _memarg = MemArg::read_unvalidated(wasm);
 
                 // TODO check correct `memarg.align`
@@ -148,7 +150,7 @@ fn read_instructions(
                 value_stack.push_back(ValType::NumType(NumType::I32));
             }
             // i32.store [i32] -> [i32]
-            0x36 => {
+            Op1Byte::I32Store => {
                 let _memarg = MemArg::read_unvalidated(wasm);
 
                 // TODO check correct `memarg.align`
@@ -160,7 +162,7 @@ fn read_instructions(
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
             }
             // i32.add: [i32 i32] -> [i32]
-            0x6A => {
+            Op1Byte::I32Add => {
                 // First value
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
                 // Second value
@@ -168,7 +170,8 @@ fn read_instructions(
 
                 value_stack.push_back(ValType::NumType(NumType::I32));
             }
-            0x6C => {
+            // i32.mul: [i32 i32] -> [i32]
+            Op1Byte::I32Mul => {
                 // First value
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
                 // Second value
@@ -177,12 +180,23 @@ fn read_instructions(
                 value_stack.push_back(ValType::NumType(NumType::I32));
             }
             // i32.const: [] -> [i32]
-            0x41 => {
+            Op1Byte::I32Const => {
                 let _num = wasm.read_var_i32()?;
                 value_stack.push_back(ValType::NumType(NumType::I32));
             }
-            other => {
-                return Err(Error::InvalidInstr(other));
+
+            Op1Byte::FCInstructions => {
+                let Ok(second_byte) = wasm.read_u8() else {
+                    return Err(Error::ExprMissingEnd);
+                };
+                let parsed_2byte_instr =
+                    Op2Byte::new(u16::from_be_bytes([first_byte, second_byte]));
+                match parsed_2byte_instr {
+                  // i32.trunc_sat_f32_s: [f32] -> [i32]
+                    Op2Byte::I32TruncSatF32S => {
+                        panic!("i32.trunc_sat_f32_s NOT implemented");
+                    }
+                }
             }
         }
     }
