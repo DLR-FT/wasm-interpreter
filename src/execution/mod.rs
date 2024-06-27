@@ -30,7 +30,7 @@ pub struct RuntimeInstance<'b, H = EmptyHookSet>
 where
     H: HookSet,
 {
-    wasm_bytecode: &'b [u8],
+    pub wasm_bytecode: &'b [u8],
     types: Vec<FuncType>,
     store: Store,
     pub hook_set: H,
