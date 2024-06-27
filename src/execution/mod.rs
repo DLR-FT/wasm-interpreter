@@ -1,3 +1,5 @@
+use core::marker::PhantomData;
+
 use alloc::vec::Vec;
 
 use value_stack::Stack;
@@ -7,6 +9,7 @@ use crate::core::reader::types::memarg::MemArg;
 use crate::core::reader::types::{FuncType, NumType, ValType};
 use crate::core::reader::{WasmReadable, WasmReader};
 use crate::execution::assert_validated::UnwrapValidatedExt;
+use crate::execution::hooks::{EmptyHookSet, HookSet};
 use crate::execution::locals::Locals;
 use crate::execution::store::{FuncInst, GlobalInst, MemInst, Store};
 use crate::execution::value::Value;
@@ -16,19 +19,27 @@ use crate::{Result, ValidationInfo};
 
 // TODO
 pub(crate) mod assert_validated;
+pub mod hooks;
 pub(crate) mod label;
 pub(crate) mod locals;
 pub(crate) mod store;
 pub(crate) mod value;
 pub mod value_stack;
 
-pub struct RuntimeInstance<'b> {
-    wasm_bytecode: &'b [u8],
+pub struct RuntimeInstance<'b, H = EmptyHookSet>
+where
+    H: HookSet,
+{
+    pub wasm_bytecode: &'b [u8],
     types: Vec<FuncType>,
     store: Store,
+    hook_set: PhantomData<H>,
 }
 
-impl<'b> RuntimeInstance<'b> {
+impl<'b, H> RuntimeInstance<'b, H>
+where
+    H: HookSet,
+{
     pub fn new(validation_info: &'_ ValidationInfo<'b>) -> Result<Self> {
         trace!("Starting instantiation of bytecode");
 
@@ -38,6 +49,7 @@ impl<'b> RuntimeInstance<'b> {
             wasm_bytecode: validation_info.wasm,
             types: validation_info.types.clone(),
             store,
+            hook_set: PhantomData,
         };
 
         if let Some(start) = validation_info.start {
@@ -107,6 +119,10 @@ impl<'b> RuntimeInstance<'b> {
         wasm.move_start_to(inst.code_expr);
 
         loop {
+            // call the instruction hook
+            #[cfg(feature = "hooks")]
+            H::instruction_hook(self);
+
             match wasm.read_u8().unwrap_validated() {
                 // end
                 0x0B => {
