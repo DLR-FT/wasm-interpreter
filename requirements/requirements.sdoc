@@ -1,0 +1,187 @@
+[DOCUMENT]
+TITLE: Wasm Safety Interpreter requirements
+
+[SECTION]
+TITLE: Functional Requirements
+
+[REQUIREMENT]
+UID: REQ-1
+TITLE: Resumable
+STATEMENT: >>>
+The interpreter shall be resumable
+<<<
+RATIONALE: >>>
+Operation with fuel or other implementations of bounded run-time requires that the interpreter can be halted.
+Conversely, later on the interpreter may be resumed, as if it was not halted in the first place.
+<<<
+
+[REQUIREMENT]
+UID: REQ-3
+TITLE: Baremetal
+STATEMENT: >>>
+The interpreter shall be executable on bare-metal environments
+<<<
+RATIONALE: >>>
+No reliance on any specific functionality from the provided execution environment is acceptable, as the interpreter shall be ready for embedding to any environment that Rust can compile for.
+<<<
+
+[REQUIREMENT]
+UID: REQ-5
+TITLE: Bounded execution
+STATEMENT: >>>
+The interpreter shall yield back control flow eventually
+<<<
+RATIONALE: >>>
+A user shall be able to call the interpreter with a bound, expecting a result in a finite amount of time or bytecode operations. Even if the bytecode itself does never finish execution (i.e. due to a infinite loop), the interpreter shall yield eventually, by pausing the bytecode execution.
+<<<
+COMMENT: >>>
+It is not acceptable to constraint the interpreter to only those bytecode instances for which the halting-problem is solvable.
+<<<
+
+[REQUIREMENT]
+UID: REQ-12
+TITLE: Migrateable
+STATEMENT: >>>
+The interpreter state shall be able to halt on one computer and continue execution on another
+<<<
+RATIONALE: >>>
+This enables various workflows in deployments of multiple computers. For load-balancing or redundancy purposes, running applications can be migrated to other computers without disruption.
+<<<
+
+[SECTION]
+TITLE: Low-Level Functional Requirements
+
+[REQUIREMENT]
+UID: REQ-2
+TITLE: Stackless
+STATEMENT: >>>
+The interpreter shall be stackless
+<<<
+RATIONALE: >>>
+A stackless interpreter is one that does not use function calls in the host environment to implement function calls inside the interpreter. Instead, the stack of the interpreted bytecode is stored in a traditional data structure (such as a Vec<u8>). Interpretation can be interrupted between any two virtual instructions of the bytecode, and crucially so resumed from there.
+
+Further information: https://kyju.org/blog/piccolo-a-stackless-lua-interpreter/#a-stackless-interpreter-design
+<<<
+RELATIONS:
+- TYPE: Parent
+  VALUE: REQ-1
+
+[REQUIREMENT]
+UID: REQ-4
+TITLE: no_std
+STATEMENT: >>>
+The interpreter shall be implemented in no_std Rust
+<<<
+RATIONALE: >>>
+Only relying on the functionality that is provided by no_std enables execution on bare environments where operating system is available.
+<<<
+COMMENT: >>>
+Reliance on alloc is allowable, as an allocator can be implemented without further reliance on the execution environment.
+<<<
+RELATIONS:
+- TYPE: Parent
+  VALUE: REQ-3
+
+[REQUIREMENT]
+UID: REQ-6
+TITLE: Fuel
+STATEMENT: >>>
+The interpreter shall support fuel bounded execution
+<<<
+RATIONALE: >>>
+Fuel is a mechanism to limit the amount of bytecode operations conducted when calling the interpreter. Each bytecode instruction is associated with a specific amount of fuel consumed when executing it. The interpreter is provided a finite amount of fuel, that is deplete during execution, until the amount of fuel is insufficient to conduct further bytecode operations. At this point, the interpreter yields back the control flow. Later on, the execution may be resumed.
+
+Further information: https://docs.rs/wasmtime/latest/wasmtime/struct.Config.html#method.consume_fuel
+<<<
+RELATIONS:
+- TYPE: Parent
+  VALUE: REQ-5
+
+[REQUIREMENT]
+UID: REQ-13
+TITLE: De-/Serializable
+STATEMENT: >>>
+The interpreter state shall be de-/serializable
+<<<
+RATIONALE: >>>
+If the interpreter state can be serialized to and deserialized from a canonical representation, migration to other computers as well as check-point/lock-step like execution become simple to implement.
+<<<
+RELATIONS:
+- TYPE: Parent
+  VALUE: REQ-12
+
+[/SECTION]
+
+[/SECTION]
+
+[SECTION]
+TITLE: Observability Requirements
+
+[REQUIREMENT]
+UID: REQ-7
+TITLE: Instrumentation
+STATEMENT: >>>
+The interpreter shall implement means for instrumentation
+<<<
+RATIONALE: >>>
+Instrumentation is needed to generate evidence for certification. Instrumentation eases debugging. Instrumentation enables elaborate run-time monitoring.
+<<<
+
+[SECTION]
+TITLE: Low-Level Observability Requirements
+
+[REQUIREMENT]
+UID: REQ-8
+TITLE: Statement Coverage
+STATEMENT: >>>
+The instrumentation shall enable the measurement of statement coverage
+<<<
+RATIONALE: >>>
+Statement coverage is required by DO-178C starting at DAL-C (6.4.4.c)
+<<<
+RELATIONS:
+- TYPE: Parent
+  VALUE: REQ-7
+- TYPE: Parent
+  VALUE: REQ-11
+
+[REQUIREMENT]
+UID: REQ-9
+TITLE: Decision Coverage
+STATEMENT: >>>
+The instrumentation shall enable the measurement of decision coverage
+<<<
+RATIONALE: >>>
+Decision coverage is required by DO-178C starting at DAL-B (6.4.4.c)
+<<<
+RELATIONS:
+- TYPE: Parent
+  VALUE: REQ-7
+- TYPE: Parent
+  VALUE: REQ-11
+
+[REQUIREMENT]
+UID: REQ-10
+TITLE: Modified Condition/Decision Coverage
+STATEMENT: >>>
+The instrumentation shall enable the measurement of modified condition/decision coverage
+<<<
+RATIONALE: >>>
+Modified condition/decision coverage is required by DO-178C starting at DAL-A (6.4.4.c)
+<<<
+RELATIONS:
+- TYPE: Parent
+  VALUE: REQ-7
+- TYPE: Parent
+  VALUE: REQ-11
+
+[REQUIREMENT]
+UID: REQ-11
+TITLE: Certification Evidence
+STATEMENT: >>>
+The interpreter shall support the generation of certification evidence
+<<<
+
+[/SECTION]
+
+[/SECTION]
