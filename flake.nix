@@ -70,6 +70,7 @@
             cargo-audit
             cargo-expand
             nodePackages.prettier
+            strictdoc
             wabt
 
             # utilities
@@ -81,6 +82,33 @@
             enable = true;
             pre-commit.text = "nix flake check";
           };
+          commands = [
+            {
+              name = "requirements-export-excel";
+              command = ''
+                strictdoc export --output-dir "$PRJ_ROOT/requirements/export" \
+                  --formats=excel \
+                  "$PRJ_ROOT/requirements"
+              '';
+              help = "export the requirements to requirements/export";
+            }
+            {
+              name = "requirements-export-html";
+              command = ''
+                strictdoc export --output-dir "$PRJ_ROOT/requirements/export" \
+                  --formats=html \
+                  "$PRJ_ROOT/requirements"
+              '';
+              help = "export the requirements to requirements/export";
+            }
+            {
+              name = "requirements-web-server";
+              command = ''
+                strictdoc server "$PRJ_ROOT/requirements"
+              '';
+              help = "start the requirements editor web-ui";
+            }
+          ];
         });
 
 
@@ -92,9 +120,18 @@
           formatting = treefmtEval.config.build.check self;
           # TODO remove once https://github.com/numtide/treefmt/issues/153 is closed
           format-bug-fix = pkgs.runCommand "yaml-fmt"
-              {
-                nativeBuildInputs = [ pkgs.nodePackages.prettier ];
-              } "cd ${./.} && prettier --check .github; touch $out";
+            {
+              nativeBuildInputs = [ pkgs.nodePackages.prettier ];
+            } "cd ${./.} && prettier --check .github; touch $out";
+
+          requirements = pkgs.runCommand "check-requirement"
+            {
+              nativeBuildInputs = [ pkgs.strictdoc ];
+            } ''
+            shopt -s globstar
+            strictdoc passthrough ${./.}/requirements/**.sdoc
+            touch $out
+          '';
         };
       });
 }
