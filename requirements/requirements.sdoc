@@ -2,7 +2,7 @@
 TITLE: Wasm Safety Interpreter requirements
 
 [SECTION]
-TITLE: High-level requirements
+TITLE: Functional Requirements
 
 [REQUIREMENT]
 UID: REQ-1
@@ -14,6 +14,42 @@ RATIONALE: >>>
 Operation with fuel or other implementations of bounded run-time requires that the interpreter can be halted.
 Conversely, later on the interpreter may be resumed, as if it was not halted in the first place.
 <<<
+
+[REQUIREMENT]
+UID: REQ-3
+TITLE: Baremetal
+STATEMENT: >>>
+The interpreter shall be executable on bare-metal environments
+<<<
+RATIONALE: >>>
+No reliance on any specific functionality from the provided execution environment is acceptable, as the interpreter shall be ready for embedding to any environment that Rust can compile for.
+<<<
+
+[REQUIREMENT]
+UID: REQ-5
+TITLE: Bounded execution
+STATEMENT: >>>
+The interpreter shall yield back control flow eventually
+<<<
+RATIONALE: >>>
+A user shall be able to call the interpreter with a bound, expecting a result in a finite amount of time or bytecode operations. Even if the bytecode itself does never finish execution (i.e. due to a infinite loop), the interpreter shall yield eventually, by pausing the bytecode execution.
+<<<
+COMMENT: >>>
+It is not acceptable to constraint the interpreter to only those bytecode instances for which the halting-problem is solvable.
+<<<
+
+[REQUIREMENT]
+UID: REQ-12
+TITLE: Migrateable
+STATEMENT: >>>
+The interpreter state shall be able to halt on one computer and continue execution on another
+<<<
+RATIONALE: >>>
+This enables various workflows in deployments of multiple computers. For load-balancing or redundancy purposes, running applications can be migrated to other computers without disruption.
+<<<
+
+[SECTION]
+TITLE: Low-Level Functional Requirements
 
 [REQUIREMENT]
 UID: REQ-2
@@ -29,16 +65,6 @@ Further information: https://kyju.org/blog/piccolo-a-stackless-lua-interpreter/#
 RELATIONS:
 - TYPE: Parent
   VALUE: REQ-1
-
-[REQUIREMENT]
-UID: REQ-3
-TITLE: Baremetal
-STATEMENT: >>>
-The interpreter shall be executable on bare-metal environments
-<<<
-RATIONALE: >>>
-No reliance on any specific functionality from the provided execution environment is acceptable, as the interpreter shall be ready for embedding to any environment that Rust can compile for.
-<<<
 
 [REQUIREMENT]
 UID: REQ-4
@@ -57,19 +83,6 @@ RELATIONS:
   VALUE: REQ-3
 
 [REQUIREMENT]
-UID: REQ-5
-TITLE: Bounded execution
-STATEMENT: >>>
-The interpreter shall support to execute bytecode for a finite amount of time before yielding back control flow
-<<<
-RATIONALE: >>>
-A user shall be able to call the interpreter with a bound, expecting a result in a finite amount of time or bytecode operations. Even if the bytecode itself does never finish execution (i.e. due to a infinite loop), the interpreter shall yield eventually.
-<<<
-COMMENT: >>>
-It is not acceptable to constraint the interpreter to only those bytecode instances for which the halting-problem is solvable.
-<<<
-
-[REQUIREMENT]
 UID: REQ-6
 TITLE: Fuel
 STATEMENT: >>>
@@ -85,6 +98,26 @@ RELATIONS:
   VALUE: REQ-5
 
 [REQUIREMENT]
+UID: REQ-13
+TITLE: De-/Serializable
+STATEMENT: >>>
+The interpreter state shall be de-/serializable
+<<<
+RATIONALE: >>>
+If the interpreter state can be serialized to and deserialized from a canonical representation, migration to other computers as well as check-point/lock-step like execution become simple to implement.
+<<<
+RELATIONS:
+- TYPE: Parent
+  VALUE: REQ-12
+
+[/SECTION]
+
+[/SECTION]
+
+[SECTION]
+TITLE: Observability Requirements
+
+[REQUIREMENT]
 UID: REQ-7
 TITLE: Instrumentation
 STATEMENT: >>>
@@ -93,6 +126,9 @@ The interpreter shall implement means for instrumentation
 RATIONALE: >>>
 Instrumentation is needed to generate evidence for certification. Instrumentation eases debugging. Instrumentation enables elaborate run-time monitoring.
 <<<
+
+[SECTION]
+TITLE: Low-Level Observability Requirements
 
 [REQUIREMENT]
 UID: REQ-8
@@ -146,27 +182,6 @@ STATEMENT: >>>
 The interpreter shall support the generation of certification evidence
 <<<
 
-[REQUIREMENT]
-UID: REQ-12
-TITLE: Migrateable
-STATEMENT: >>>
-The interpreter state shall be able to halt on one computer and continue execution on another
-<<<
-RATIONALE: >>>
-This enables various workflows in deployments of multiple computers. For load-balancing or redundancy purposes, running applications can be migrated to other computers without disruption.
-<<<
-
-[REQUIREMENT]
-UID: REQ-13
-TITLE: De-/Serializable
-STATEMENT: >>>
-The interpreter state shall be de-/serializable
-<<<
-RATIONALE: >>>
-If the interpreter state can be serialized to and deserialized from a canonical representation, migration to other computers as well as check-point/lock-step like execution become simple to implement.
-<<<
-RELATIONS:
-- TYPE: Parent
-  VALUE: REQ-12
+[/SECTION]
 
 [/SECTION]
