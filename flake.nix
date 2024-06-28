@@ -64,12 +64,40 @@
             cargo-expand
             nixpkgs-fmt
             nodePackages.prettier
+            strictdoc
             wabt
           ];
           git.hooks = {
             enable = true;
             pre-commit.text = "nix flake check";
           };
+          commands = [
+            {
+              name = "requirements-export-excel";
+              command = ''
+                strictdoc export --output-dir "$PRJ_ROOT/requirements/export" \
+                  --formats=excel \
+                  "$PRJ_ROOT/requirements"
+              '';
+              help = "export the requirements to requirements/export";
+            }
+            {
+              name = "requirements-export-html";
+              command = ''
+                strictdoc export --output-dir "$PRJ_ROOT/requirements/export" \
+                  --formats=html \
+                  "$PRJ_ROOT/requirements"
+              '';
+              help = "export the requirements to requirements/export";
+            }
+            {
+              name = "requirements-web-server";
+              command = ''
+                strictdoc server "$PRJ_ROOT/requirements"
+              '';
+              help = "start the requirements editor web-ui";
+            }
+          ];
         });
 
         # always check these
@@ -82,6 +110,10 @@
             {
               nativeBuildInputs = [ rust-toolchain ];
             } "cd ${./.}; cargo fmt --check; touch $out";
+          requirements = pkgs.runCommand "check-requirement"
+            {
+              nativeBuildInputs = [ pkgs.strictdoc ];
+            } "cd ${./.}; strictdoc passthrough requirements/; touch $out";
         };
       });
 }
