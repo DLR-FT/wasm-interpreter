@@ -1,6 +1,6 @@
-mod common; 
-pub use common::*;
+mod common;
 pub use common::wasmtime_runner::WASMTimeRunner;
+pub use common::*;
 
 /// The WASM program has one mutable global initialized with a constant 3.
 /// It exports two methods:
@@ -29,13 +29,14 @@ fn globals() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
-    let wasmtime_instance = WASMTimeRunner::new(wat, ()).expect("wasmtime runner failed to instantiate");
+    let wasmtime_instance =
+        WASMTimeRunner::new(wat, ()).expect("wasmtime runner failed to instantiate");
 
     let mut runners = [instance.into(), wasmtime_instance.into()];
 
     // Set global to 17. 3 is returned as previous (default) value.
     poly_test_once(0, 17, 0, "set", &mut runners);
-    
+
     // Now 17 will be returned when getting the global
     poly_test_once((), 17, 1, "get", &mut runners);
 }

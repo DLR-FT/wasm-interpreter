@@ -13,7 +13,10 @@ pub enum Runner<'a, StoreType> {
 }
 
 impl<StoreType> Runner<'_, StoreType> {
-    pub fn execute<Params: InteropValueList + WasmParams, Output: InteropValueList + WasmResults>(
+    pub fn execute<
+        Params: InteropValueList + WasmParams,
+        Output: InteropValueList + WasmResults,
+    >(
         &mut self,
         func_id: usize,
         func_name: &str,
@@ -53,7 +56,10 @@ impl<'a, StoreType> FunctionRunner<'a, StoreType> {
         }
     }
 
-    pub fn execute<Params: InteropValueList + WasmParams, Output: InteropValueList + WasmResults>(
+    pub fn execute<
+        Params: InteropValueList + WasmParams,
+        Output: InteropValueList + WasmResults,
+    >(
         &mut self,
         params: Params,
     ) -> Result<Output, Box<dyn Error>> {

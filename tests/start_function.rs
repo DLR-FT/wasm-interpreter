@@ -1,6 +1,6 @@
-mod common; 
-pub use common::*;
+mod common;
 pub use common::wasmtime_runner::WASMTimeRunner;
+pub use common::*;
 
 /// The WASM program stores 42 into linear memory upon instantiation through a start function.
 /// Then it reads the same value and checks its value.
@@ -27,7 +27,8 @@ fn start_function() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
-    let wasmtime_instance = WASMTimeRunner::new(wat, ()).expect("wasmtime runner failed to instantiate");
+    let wasmtime_instance =
+        WASMTimeRunner::new(wat, ()).expect("wasmtime runner failed to instantiate");
 
     let mut runners = [instance.into(), wasmtime_instance.into()];
 

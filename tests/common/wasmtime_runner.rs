@@ -1,6 +1,6 @@
 pub struct WASMTimeRunner<T> {
     instance: wasmtime::Instance,
-    store: wasmtime::Store<T>
+    store: wasmtime::Store<T>,
 }
 
 impl<T> WASMTimeRunner<T> {
@@ -11,11 +11,8 @@ impl<T> WASMTimeRunner<T> {
 
         let mut store = wasmtime::Store::new(&engine, initial_store);
         let instance = linker.instantiate(&mut store, &module)?;
-        
-        Ok(WASMTimeRunner {
-            instance,
-            store
-        })
+
+        Ok(WASMTimeRunner { instance, store })
     }
 
     pub fn execute<WTParams, WTReturns>(
@@ -29,7 +26,9 @@ impl<T> WASMTimeRunner<T> {
     {
         // use wasmtime::*;
 
-        let function = self.instance.get_typed_func::<WTParams, WTReturns>(&mut self.store, func_name)?;
+        let function = self
+            .instance
+            .get_typed_func::<WTParams, WTReturns>(&mut self.store, func_name)?;
 
         function.call(&mut self.store, params)
     }

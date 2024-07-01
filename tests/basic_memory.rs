@@ -1,6 +1,6 @@
-mod common; 
-pub use common::*;
+mod common;
 pub use common::wasmtime_runner::WASMTimeRunner;
+pub use common::*;
 
 /// Two simple methods for storing and loading an i32 from the first slot in linear memory.
 #[test_log::test]
@@ -19,11 +19,12 @@ fn basic_memory() {
             i32.load)
     )
     "#;
-    
+
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
-    let wasmtime_instance = WASMTimeRunner::new(wat, ()).expect("wasmtime runner failed to instantiate");
+    let wasmtime_instance =
+        WASMTimeRunner::new(wat, ()).expect("wasmtime runner failed to instantiate");
 
     let mut runners = [instance.into(), wasmtime_instance.into()];
 
