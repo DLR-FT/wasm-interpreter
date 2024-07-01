@@ -216,6 +216,23 @@ impl<'b> RuntimeInstance<'b> {
                   trace!("Instruction: i32.mul [{v1} {v2}] -> [{res}]");
                   stack.push_value(res.into());
                 }
+                // i32.div_s: [i32 i32] -> [i32]
+                0x6D => {
+                    let dividend: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                    let divisor: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                    if dividend == 0 {
+                        panic!("RuntimeError: divide by zero");
+                    }
+                    if divisor == i32::MIN && dividend == -1 {
+                        panic!("RuntimeError: divide result unrepresentable");
+                    }
+
+                    let res = divisor / dividend;
+
+                    trace!("Instruction: i32.div_s [{divisor} {dividend}] -> [{res}]");
+                    stack.push_value(res.into());
+                }
                 other => {
                     trace!("Unknown instruction {other:#x}, skipping..");
                 }
