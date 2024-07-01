@@ -275,6 +275,26 @@ impl<'b> RuntimeInstance<'b> {
                     trace!("Instruction: i32.rem_s [{divisor} {dividend}] -> [{res}]");
                     stack.push_value(res.into());
                 }
+                // i32.rem_u: [i32 i32] -> [i32]
+                0x70 => {
+                    let dividend: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                    let divisor: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                    let dividend = dividend as u32;
+                    let divisor = divisor as u32;
+
+                    if dividend == 0 {
+                        return Err(crate::Error::RuntimeError(
+                            crate::core::error::RuntimeError::DivideBy0,
+                        ));
+                    }
+
+                    let res = divisor.checked_rem(dividend);
+                    let res = if res.is_none() { 0 } else { res.unwrap() } as i32;
+
+                    trace!("Instruction: i32.rem_u [{divisor} {dividend}] -> [{res}]");
+                    stack.push_value(res.into());
+                }
                 other => {
                     trace!("Unknown instruction {other:#x}, skipping..");
                 }
