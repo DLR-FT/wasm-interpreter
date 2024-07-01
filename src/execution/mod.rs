@@ -19,7 +19,7 @@ pub(crate) mod assert_validated;
 pub(crate) mod label;
 pub(crate) mod locals;
 pub(crate) mod store;
-pub(crate) mod value;
+pub mod value;
 pub mod value_stack;
 
 pub struct RuntimeInstance<'b> {

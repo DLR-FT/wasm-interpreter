@@ -1,3 +1,7 @@
+mod common; 
+pub use common::*;
+pub use common::wasmtime_runner::WASMTimeRunner;
+
 /// A simple function to add 1 to an i32 and return the result
 #[test_log::test]
 fn add_one() {
@@ -12,11 +16,16 @@ fn add_one() {
     )
     "#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
-
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
+    let instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
+    let wasmtime_instance = WASMTimeRunner::new(wat, ()).expect("wasmtime runner failed to instantiate");
 
-    assert_eq!(12, instance.invoke_func(0, 11));
-    assert_eq!(1, instance.invoke_func(0, 0));
-    assert_eq!(-5, instance.invoke_func(0, -6));
+    let mut runners = [
+        FunctionRunner::new(instance.into(), 0, "add_one"),
+        FunctionRunner::new(wasmtime_instance.into(), 0, "add_one")
+    ];
+
+    poly_test(11, 12, &mut runners);
+    poly_test(0, 1, &mut runners);
+    poly_test(-5, -4, &mut runners);
 }
