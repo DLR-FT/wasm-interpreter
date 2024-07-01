@@ -248,9 +248,9 @@ impl<'b> RuntimeInstance<'b> {
                     let divisor = divisor as u32;
 
                     if dividend == 0 {
-                      return Err(crate::Error::RuntimeError(
-                        crate::core::error::RuntimeError::DivideBy0,
-                    ));
+                        return Err(crate::Error::RuntimeError(
+                            crate::core::error::RuntimeError::DivideBy0,
+                        ));
                     }
 
                     let res = (divisor / dividend) as i32;
