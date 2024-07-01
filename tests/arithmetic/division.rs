@@ -81,7 +81,6 @@ pub fn division_signed_panic_result_unrepresentable() {
     );
 }
 
-
 /// A simple function to test unsigned division
 #[test_log::test]
 pub fn division_unsigned_simple() {
@@ -106,13 +105,11 @@ pub fn division_unsigned_simple() {
     assert_eq!(9_001, instance.invoke_func(0, (81_018_001, 9_001)).unwrap());
     assert_eq!(0, instance.invoke_func(0, (i32::MIN, -1)).unwrap());
 
-
     assert_eq!(0, instance.invoke_func(0, (i32::MIN, -1)).unwrap());
     assert_eq!(-20, instance.invoke_func(0, (-20, 1)).unwrap());
     assert_eq!(2147483638, instance.invoke_func(0, (-20, 2)).unwrap());
     assert_eq!(1431655758, instance.invoke_func(0, (-20, 3)).unwrap());
     assert_eq!(1073741819, instance.invoke_func(0, (-20, 4)).unwrap());
-
 }
 
 /// A simple function to test unsigned division's RuntimeError when dividing by 0
