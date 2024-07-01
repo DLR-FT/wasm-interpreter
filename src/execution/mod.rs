@@ -41,7 +41,8 @@ impl<'b> RuntimeInstance<'b> {
         };
 
         if let Some(start) = validation_info.start {
-            instance.invoke_func::<(), ()>(start, ());
+            let result = instance.invoke_func::<(), ()>(start, ());
+            result?;
         }
 
         Ok(instance)
@@ -51,7 +52,7 @@ impl<'b> RuntimeInstance<'b> {
         &mut self,
         func_idx: FuncIdx,
         param: Param,
-    ) -> Returns {
+    ) -> Result<Returns> {
         let func_inst = self.store.funcs.get(func_idx).expect("valid FuncIdx");
         let func_ty = self.types.get(func_inst.ty).unwrap_validated();
 
@@ -70,7 +71,8 @@ impl<'b> RuntimeInstance<'b> {
             stack.push_value(parameter);
         }
 
-        self.function(func_idx, &mut stack);
+        let error = self.function(func_idx, &mut stack);
+        error?;
 
         // Pop return values from stack
         let return_values = Returns::TYS
@@ -82,11 +84,11 @@ impl<'b> RuntimeInstance<'b> {
         let reversed_values = return_values.into_iter().rev();
         let ret = Returns::from_values(reversed_values);
         debug!("Successfully invoked function");
-        ret
+        Ok(ret)
     }
 
     /// Interprets a functions. Parameters and return values are passed on the stack.
-    fn function(&mut self, idx: FuncIdx, stack: &mut Stack) {
+    fn function(&mut self, idx: FuncIdx, stack: &mut Stack) -> Result<()> {
         let inst = self.store.funcs.get(idx).unwrap_validated();
 
         // Pop parameters from stack
@@ -209,12 +211,12 @@ impl<'b> RuntimeInstance<'b> {
                 }
                 // i32.mul: [i32 i32] -> [i32]
                 0x6C => {
-                  let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                  let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                  let res = v1.wrapping_mul(v2);
+                    let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                    let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                    let res = v1.wrapping_mul(v2);
 
-                  trace!("Instruction: i32.mul [{v1} {v2}] -> [{res}]");
-                  stack.push_value(res.into());
+                    trace!("Instruction: i32.mul [{v1} {v2}] -> [{res}]");
+                    stack.push_value(res.into());
                 }
                 // i32.div_s: [i32 i32] -> [i32]
                 0x6D => {
@@ -222,10 +224,14 @@ impl<'b> RuntimeInstance<'b> {
                     let divisor: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
                     if dividend == 0 {
-                        panic!("RuntimeError: divide by zero");
+                        return Err(crate::Error::RuntimeError(
+                            crate::core::error::RuntimeError::DivideBy0,
+                        ));
                     }
                     if divisor == i32::MIN && dividend == -1 {
-                        panic!("RuntimeError: divide result unrepresentable");
+                        return Err(crate::Error::RuntimeError(
+                            crate::core::error::RuntimeError::UnrepresentableResult,
+                        ));
                     }
 
                     let res = divisor / dividend;
@@ -238,6 +244,7 @@ impl<'b> RuntimeInstance<'b> {
                 }
             }
         }
+        Ok(())
     }
 
     fn init_store(validation_info: &ValidationInfo) -> Store {
