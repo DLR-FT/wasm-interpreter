@@ -18,13 +18,15 @@ pub fn division_signed_simple() {
 
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    assert_eq!(10, instance.invoke_func(0, (20, 2)));
-    assert_eq!(9_001, instance.invoke_func(0, (81_018_001, 9_001)));
+    assert_eq!(10, instance.invoke_func(0, (20, 2)).unwrap());
+    assert_eq!(9_001, instance.invoke_func(0, (81_018_001, 9_001)).unwrap());
+    assert_eq!(-10, instance.invoke_func(0, (20, -2)).unwrap());
+    assert_eq!(10, instance.invoke_func(0, (-20, -2)).unwrap());
+    assert_eq!(-10, instance.invoke_func(0, (-20, 2)).unwrap());
 }
 
 /// A simple function to test signed division's RuntimeError when dividing by 0
 #[test_log::test]
-#[should_panic(expected = "RuntimeError: divide by zero")]
 pub fn division_signed_panic_dividend_0() {
     use wasm::{validate, RuntimeInstance};
 
@@ -43,12 +45,16 @@ pub fn division_signed_panic_dividend_0() {
 
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    instance.invoke_func::<(i32, i32), i32>(0, (222, 0));
+    let result = instance.invoke_func::<(i32, i32), i32>(0, (222, 0));
+
+    assert_eq!(
+        result.unwrap_err(),
+        wasm::Error::RuntimeError(wasm::RuntimeError::DivideBy0)
+    );
 }
 
 /// A simple function to test signed division's RuntimeError when we are dividing the i32 minimum by -1 (which gives an unrepresentable result - overflow)
 #[test_log::test]
-#[should_panic(expected = "RuntimeError: divide result unrepresentable")]
 pub fn division_signed_panic_result_unrepresentable() {
     use wasm::{validate, RuntimeInstance};
 
@@ -67,5 +73,10 @@ pub fn division_signed_panic_result_unrepresentable() {
 
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    instance.invoke_func::<(i32, i32), i32>(0, (-(2_i32.pow(31)), -1));
+    let result = instance.invoke_func::<(i32, i32), i32>(0, (i32::MIN, -1));
+
+    assert_eq!(
+        result.unwrap_err(),
+        wasm::Error::RuntimeError(wasm::RuntimeError::UnrepresentableResult)
+    );
 }

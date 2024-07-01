@@ -25,5 +25,5 @@ fn start_function() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    assert_eq!(42, instance.invoke_func(1, ()));
+    assert_eq!(42, instance.invoke_func(1, ()).unwrap());
 }
