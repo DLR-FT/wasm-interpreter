@@ -45,6 +45,8 @@ impl<'b> RuntimeInstance<'b> {
         if let Some(start) = validation_info.start {
             let result = instance.invoke_func::<(), ()>(start, ());
             result?;
+            let result = instance.invoke_func::<(), ()>(start, ());
+            result?;
         }
 
         Ok(instance)
@@ -252,6 +254,39 @@ impl<'b> RuntimeInstance<'b> {
                     let res = (divisor / dividend) as i32;
 
                     trace!("Instruction: i32.div_u [{divisor} {dividend}] -> [{res}]");
+                    stack.push_value(res.into());
+                }
+                // i32.rem_s: [i32 i32] -> [i32]
+                0x6F => {
+                    let dividend: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                    let divisor: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                    if dividend == 0 {
+                        return Err(RuntimeError(DivideBy0));
+                    }
+
+                    let res = divisor.checked_rem(dividend);
+                    let res = res.unwrap_or_default();
+
+                    trace!("Instruction: i32.rem_s [{divisor} {dividend}] -> [{res}]");
+                    stack.push_value(res.into());
+                }
+                // i32.rem_u: [i32 i32] -> [i32]
+                0x70 => {
+                    let dividend: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                    let divisor: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                    let dividend = dividend as u32;
+                    let divisor = divisor as u32;
+
+                    if dividend == 0 {
+                        return Err(RuntimeError(DivideBy0));
+                    }
+
+                    let res = divisor.checked_rem(dividend);
+                    let res = res.unwrap_or_default() as i32;
+
+                    trace!("Instruction: i32.rem_u [{divisor} {dividend}] -> [{res}]");
                     stack.push_value(res.into());
                 }
                 other => {

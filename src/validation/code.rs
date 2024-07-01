@@ -190,6 +190,20 @@ fn read_instructions(
 
                 value_stack.push_back(ValType::NumType(NumType::I32));
             }
+            // i32.rem_s: [i32 i32] -> [i32]
+            0x6F => {
+                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
+                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
+
+                value_stack.push_back(ValType::NumType(NumType::I32));
+            }
+            // i32.rem_u: [i32 i32] -> [i32]
+            0x70 => {
+                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
+                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
+
+                value_stack.push_back(ValType::NumType(NumType::I32));
+            }
             // i32.const: [] -> [i32]
             0x41 => {
                 let _num = wasm.read_var_i32()?;
