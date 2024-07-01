@@ -26,6 +26,11 @@ pub fn division_signed_simple() {
     assert_eq!(-10, instance.invoke_func(0, (20, -2)).unwrap());
     assert_eq!(10, instance.invoke_func(0, (-20, -2)).unwrap());
     assert_eq!(-10, instance.invoke_func(0, (-20, 2)).unwrap());
+    assert_eq!(10, instance.invoke_func(0, (20, 2)).unwrap());
+    assert_eq!(9_001, instance.invoke_func(0, (81_018_001, 9_001)).unwrap());
+    assert_eq!(-10, instance.invoke_func(0, (20, -2)).unwrap());
+    assert_eq!(10, instance.invoke_func(0, (-20, -2)).unwrap());
+    assert_eq!(-10, instance.invoke_func(0, (-20, 2)).unwrap());
 }
 
 /// A simple function to test signed division's RuntimeError when dividing by 0
