@@ -16,7 +16,7 @@ fn add_one() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    assert_eq!(12, instance.invoke_func(0, 11));
-    assert_eq!(1, instance.invoke_func(0, 0));
-    assert_eq!(-5, instance.invoke_func(0, -6));
+    assert_eq!(12, instance.invoke_func(0, 11).unwrap());
+    assert_eq!(1, instance.invoke_func(0, 0).unwrap());
+    assert_eq!(-5, instance.invoke_func(0, -6).unwrap());
 }

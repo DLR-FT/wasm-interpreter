@@ -53,15 +53,15 @@ fn main() -> ExitCode {
         }
     };
 
-    let twelve: i32 = instance.invoke_func(1, (5, 7));
+    let twelve: i32 = instance.invoke_func(1, (5, 7)).unwrap();
     assert_eq!(twelve, 12);
 
-    let twelve_plus_one: i32 = instance.invoke_func(0, twelve);
+    let twelve_plus_one: i32 = instance.invoke_func(0, twelve).unwrap();
     assert_eq!(twelve_plus_one, 13);
 
-    instance.invoke_func::<_, ()>(2, 42_i32);
+    instance.invoke_func::<_, ()>(2, 42_i32).unwrap();
 
-    assert_eq!(instance.invoke_func::<(), i32>(3, ()), 42_i32);
+    assert_eq!(instance.invoke_func::<(), i32>(3, ()).unwrap(), 42_i32);
 
     ExitCode::SUCCESS
 }

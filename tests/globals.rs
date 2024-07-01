@@ -28,8 +28,8 @@ fn globals() {
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
     // Set global to 17. 3 is returned as previous (default) value.
-    assert_eq!(3, instance.invoke_func(0, 17));
+    assert_eq!(3, instance.invoke_func(0, 17).unwrap());
 
     // Now 17 will be returned when getting the global
-    assert_eq!(17, instance.invoke_func(1, ()));
+    assert_eq!(17, instance.invoke_func(1, ()).unwrap());
 }

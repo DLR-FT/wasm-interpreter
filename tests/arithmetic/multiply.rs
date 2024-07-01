@@ -18,10 +18,10 @@ pub fn multiply() {
 
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    assert_eq!(33, instance.invoke_func(0, 11));
-    assert_eq!(0, instance.invoke_func(0, 0));
-    assert_eq!(-30, instance.invoke_func(0, -10));
+    assert_eq!(33, instance.invoke_func(0, 11).unwrap());
+    assert_eq!(0, instance.invoke_func(0, 0).unwrap());
+    assert_eq!(-30, instance.invoke_func(0, -10).unwrap());
 
-    assert_eq!(i32::MAX - 5, instance.invoke_func(0, i32::MAX-1));
-    assert_eq!(i32::MIN + 3, instance.invoke_func(0, i32::MIN+1));
+    assert_eq!(i32::MAX - 5, instance.invoke_func(0, i32::MAX - 1).unwrap());
+    assert_eq!(i32::MIN + 3, instance.invoke_func(0, i32::MIN + 1).unwrap());
 }
