@@ -1,3 +1,4 @@
+/// A simple wrapper around the wasmtime library to make it easier to run Wasm functions.
 pub struct WASMTimeRunner<T> {
     instance: wasmtime::Instance,
     store: wasmtime::Store<T>,
@@ -24,8 +25,6 @@ impl<T> WASMTimeRunner<T> {
         WTParams: wasmtime::WasmParams,
         WTReturns: wasmtime::WasmResults,
     {
-        // use wasmtime::*;
-
         let function = self
             .instance
             .get_typed_func::<WTParams, WTReturns>(&mut self.store, func_name)?;

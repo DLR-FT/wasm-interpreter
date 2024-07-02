@@ -1,79 +1,25 @@
+pub(crate) mod runner;
 pub(crate) mod wasmtime_runner;
 
+pub use runner::*;
+
 extern crate wasm;
-use std::error::Error;
 use std::fmt::Debug;
 use wasm::value::InteropValueList;
-use wasmtime::{WasmParams, WasmResults, WasmTy};
+use wasmtime::{WasmParams, WasmResults};
 
-// TODO: also add wasmi?
-pub enum Runner<'a, StoreType> {
-    Interpreter(wasm::RuntimeInstance<'a>),
-    WASMTime(wasmtime_runner::WASMTimeRunner<StoreType>),
-}
-
-impl<StoreType> Runner<'_, StoreType> {
-    pub fn execute<
-        Params: InteropValueList + WasmParams,
-        Output: InteropValueList + WasmResults,
-    >(
-        &mut self,
-        func_id: usize,
-        func_name: &str,
-        params: Params,
-    ) -> Result<Output, Box<dyn Error>> {
-        match self {
-            Runner::Interpreter(runner) => Ok(runner.invoke_func(func_id, params)),
-            Runner::WASMTime(runner) => Ok(runner.execute(func_name, params)?),
-        }
-    }
-}
-
-impl<'a, StoreType> From<wasm::RuntimeInstance<'a>> for Runner<'a, StoreType> {
-    fn from(value: wasm::RuntimeInstance<'a>) -> Self {
-        Runner::Interpreter(value)
-    }
-}
-
-impl<'a, StoreType> From<wasmtime_runner::WASMTimeRunner<StoreType>> for Runner<'a, StoreType> {
-    fn from(value: wasmtime_runner::WASMTimeRunner<StoreType>) -> Self {
-        Runner::WASMTime(value)
-    }
-}
-
-pub struct FunctionRunner<'a, StoreType> {
-    inner: Runner<'a, StoreType>,
-    func_id: usize,
-    func_name: &'a str,
-}
-
-impl<'a, StoreType> FunctionRunner<'a, StoreType> {
-    pub fn new(inner: Runner<'a, StoreType>, func_id: usize, func_name: &'a str) -> Self {
-        FunctionRunner {
-            inner,
-            func_id,
-            func_name,
-        }
-    }
-
-    pub fn execute<
-        Params: InteropValueList + WasmParams,
-        Output: InteropValueList + WasmResults,
-    >(
-        &mut self,
-        params: Params,
-    ) -> Result<Output, Box<dyn Error>> {
-        self.inner.execute(self.func_id, self.func_name, params)
-    }
-}
-
+/// Test a function with all [FunctionRunner]s. `poly_test` assumes that all the runners share the same function.
+/// 
+/// # Panics
+/// 
+/// Panics if the output of any runner does not match the expected result or if any runner fails to execute.
 pub fn poly_test<Params, Output, StoreType>(
     params: Params,
     expected_result: Output,
     runners: &mut [FunctionRunner<StoreType>],
 ) where
-    Params: InteropValueList + WasmTy + Clone,
-    Output: InteropValueList + WasmTy + Debug + PartialEq,
+    Params: UniversalParams + Clone,
+    Output: UniversalResults + Debug + PartialEq,
 {
     for runner in runners {
         let output = runner
@@ -84,6 +30,11 @@ pub fn poly_test<Params, Output, StoreType>(
     }
 }
 
+/// Test any function with all [Runner]s.
+/// 
+/// # Panics
+/// 
+/// Panics if the output of any runner does not match the expected result or if any runner fails to execute.
 pub fn poly_test_once<Params, Output, StoreType>(
     params: Params,
     expected_result: Output,
