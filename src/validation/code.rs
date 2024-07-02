@@ -210,6 +210,80 @@ fn read_instructions(
                 let _num = wasm.read_var_i32()?;
                 value_stack.push_back(ValType::NumType(NumType::I32));
             }
+            // i32.clz: [i32] -> [i32]
+            0x67 => {
+                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
+
+                value_stack.push_back(ValType::NumType(NumType::I32));
+            }
+            // i32.ctz: [i32] -> [i32]
+            0x68 => {
+                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
+
+                value_stack.push_back(ValType::NumType(NumType::I32));
+            }
+            // i32.popcnt: [i32] -> [i32]
+            0x69 => {
+                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
+
+                value_stack.push_back(ValType::NumType(NumType::I32));
+            }
+            // i32.and: [i32 i32] -> [i32]
+            0x71 => {
+                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
+                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
+
+                value_stack.push_back(ValType::NumType(NumType::I32));
+            }
+            // i32.or: [i32 i32] -> [i32]
+            0x72 => {
+                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
+                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
+
+                value_stack.push_back(ValType::NumType(NumType::I32));
+            }
+            // i32.xor: [i32 i32] -> [i32]
+            0x73 => {
+                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
+                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
+
+                value_stack.push_back(ValType::NumType(NumType::I32));
+            }
+            // i32.shl: [i32 i32] -> [i32]
+            0x74 => {
+                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
+                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
+
+                value_stack.push_back(ValType::NumType(NumType::I32));
+            }
+            // i32.shr_s: [i32 i32] -> [i32]
+            0x75 => {
+                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
+                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
+
+                value_stack.push_back(ValType::NumType(NumType::I32));
+            }
+            // i32.shr_u: [i32 i32] -> [i32]
+            0x76 => {
+                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
+                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
+
+                value_stack.push_back(ValType::NumType(NumType::I32));
+            }
+            // i32.rotl: [i32 i32] -> [i32]
+            0x77 => {
+                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
+                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
+
+                value_stack.push_back(ValType::NumType(NumType::I32));
+            }
+            // i32.rotr: [i32 i32] -> [i32]
+            0x78 => {
+                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
+                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
+
+                value_stack.push_back(ValType::NumType(NumType::I32));
+            }
             other => {
                 return Err(Error::InvalidInstr(other));
             }

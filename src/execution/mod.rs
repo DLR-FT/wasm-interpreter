@@ -225,6 +225,30 @@ where
                     trace!("Instruction: i32.const [] -> [{constant}]");
                     stack.push_value(constant.into());
                 }
+                // i32.clz: [i32] -> [i32]
+                0x67 => {
+                    let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                    let res = v1.leading_zeros() as i32;
+
+                    trace!("Instruction: i32.clz [{v1}] -> [{res}]");
+                    stack.push_value(res.into());
+                }
+                // i32.ctz: [i32] -> [i32]
+                0x68 => {
+                    let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                    let res = v1.trailing_zeros() as i32;
+
+                    trace!("Instruction: i32.ctz [{v1}] -> [{res}]");
+                    stack.push_value(res.into());
+                }
+                // i32.popcnt: [i32] -> [i32]
+                0x69 => {
+                    let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                    let res = v1.count_ones() as i32;
+
+                    trace!("Instruction: i32.popcnt [{v1}] -> [{res}]");
+                    stack.push_value(res.into());
+                }
                 // i32.add: [i32 i32] -> [i32]
                 0x6A => {
                     let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -308,6 +332,82 @@ where
                     let res = res.unwrap_or_default() as i32;
 
                     trace!("Instruction: i32.rem_u [{divisor} {dividend}] -> [{res}]");
+                    stack.push_value(res.into());
+                }
+                // i32.and: [i32 i32] -> [i32]
+                0x71 => {
+                    let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                    let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                    let res = v1 & v2;
+
+                    trace!("Instruction: i32.and [{v1} {v2}] -> [{res}]");
+                    stack.push_value(res.into());
+                }
+                // i32.or: [i32 i32] -> [i32]
+                0x72 => {
+                    let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                    let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                    let res = v1 | v2;
+
+                    trace!("Instruction: i32.or [{v1} {v2}] -> [{res}]");
+                    stack.push_value(res.into());
+                }
+                // i32.xor: [i32 i32] -> [i32]
+                0x73 => {
+                    let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                    let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                    let res = v1 ^ v2;
+
+                    trace!("Instruction: i32.xor [{v1} {v2}] -> [{res}]");
+                    stack.push_value(res.into());
+                }
+                // i32.shl: [i32 i32] -> [i32]
+                0x74 => {
+                    let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                    let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                    let res = v2.wrapping_shl(v1 as u32);
+
+                    trace!("Instruction: i32.shl [{v2} {v1}] -> [{res}]");
+                    stack.push_value(res.into());
+                }
+                // i32.shr_s: [i32 i32] -> [i32]
+                0x75 => {
+                    let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                    let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                    let res = v2.wrapping_shr(v1 as u32);
+
+                    trace!("Instruction: i32.shr_s [{v2} {v1}] -> [{res}]");
+                    stack.push_value(res.into());
+                }
+                // i32.shr_u: [i32 i32] -> [i32]
+                0x76 => {
+                    let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                    let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                    let res = (v2 as u32).wrapping_shr(v1 as u32) as i32;
+
+                    trace!("Instruction: i32.shr_u [{v2} {v1}] -> [{res}]");
+                    stack.push_value(res.into());
+                }
+                // i32.rotl: [i32 i32] -> [i32]
+                0x77 => {
+                    let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                    let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                    let res = v2.rotate_left(v1 as u32);
+
+                    trace!("Instruction: i32.rotl [{v2} {v1}] -> [{res}]");
+                    stack.push_value(res.into());
+                }
+                // i32.rotr: [i32 i32] -> [i32]
+                0x78 => {
+                    let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                    let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                    let res = v2.rotate_right(v1 as u32);
+
+                    trace!("Instruction: i32.rotr [{v2} {v1}] -> [{res}]");
                     stack.push_value(res.into());
                 }
                 other => {
