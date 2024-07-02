@@ -8,10 +8,10 @@ pub fn multiply() {
 
     let wat = r#"
     (module
-    (func (export "multiply") (param $x i32) (result i32)
-    local.get $x
-    i32.const 3
-    i32.mul)
+        (func (export "multiply") (param $x i32) (result i32)
+            local.get $x
+            i32.const 3
+            i32.mul)
     )
     "#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
