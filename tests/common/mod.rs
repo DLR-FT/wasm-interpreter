@@ -9,9 +9,9 @@ use wasm::value::InteropValueList;
 use wasmtime::{WasmParams, WasmResults};
 
 /// Test a function with all [FunctionRunner]s. `poly_test` assumes that all the runners share the same function.
-/// 
+///
 /// # Panics
-/// 
+///
 /// Panics if the output of any runner does not match the expected result or if any runner fails to execute.
 pub fn poly_test<Params, Output, StoreType>(
     params: Params,
@@ -31,9 +31,9 @@ pub fn poly_test<Params, Output, StoreType>(
 }
 
 /// Test any function with all [Runner]s.
-/// 
+///
 /// # Panics
-/// 
+///
 /// Panics if the output of any runner does not match the expected result or if any runner fails to execute.
 pub fn poly_test_once<Params, Output, StoreType>(
     params: Params,
