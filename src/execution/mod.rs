@@ -12,6 +12,8 @@ use crate::execution::store::{FuncInst, GlobalInst, MemInst, Store};
 use crate::execution::value::Value;
 use crate::validation::code::read_declared_locals;
 use crate::value::InteropValueList;
+use crate::Error::RuntimeError;
+use crate::RuntimeError::{DivideBy0, UnrepresentableResult};
 use crate::{Result, ValidationInfo};
 
 // TODO
@@ -224,14 +226,10 @@ impl<'b> RuntimeInstance<'b> {
                     let divisor: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
                     if dividend == 0 {
-                        return Err(crate::Error::RuntimeError(
-                            crate::core::error::RuntimeError::DivideBy0,
-                        ));
+                        return Err(RuntimeError(DivideBy0));
                     }
                     if divisor == i32::MIN && dividend == -1 {
-                        return Err(crate::Error::RuntimeError(
-                            crate::core::error::RuntimeError::UnrepresentableResult,
-                        ));
+                        return Err(RuntimeError(UnrepresentableResult));
                     }
 
                     let res = divisor / dividend;
@@ -248,9 +246,7 @@ impl<'b> RuntimeInstance<'b> {
                     let divisor = divisor as u32;
 
                     if dividend == 0 {
-                        return Err(crate::Error::RuntimeError(
-                            crate::core::error::RuntimeError::DivideBy0,
-                        ));
+                        return Err(RuntimeError(DivideBy0));
                     }
 
                     let res = (divisor / dividend) as i32;
