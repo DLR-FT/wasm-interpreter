@@ -228,6 +228,15 @@ impl<'b> RuntimeInstance<'b> {
                     trace!("Instruction: i32.ne [{v1} {v2}] -> [{res}]");
                     stack.push_value(res.into());
                 }
+                // i32.lt_s: [i32 i32] -> [i32]
+                0x48 => {
+                    let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                    let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                    let res = if v2 < v1 { 1 } else { 0 };
+
+                    trace!("Instruction: i32.lt_s [{v1} {v2}] -> [{res}]");
+                    stack.push_value(res.into());
+                }
                 // i32.add: [i32 i32] -> [i32]
                 0x6A => {
                     let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
