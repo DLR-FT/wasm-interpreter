@@ -18,10 +18,9 @@ pub fn i32_eqz() {
 
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    assert_eq!(1, instance.invoke_func(0, 0));
-    assert_eq!(0, instance.invoke_func(0, 9001));
+    assert_eq!(1, instance.invoke_func(0, 0).unwrap());
+    assert_eq!(0, instance.invoke_func(0, 9001).unwrap());
 }
-
 
 const BASE_WAT_2_ARG: &'static str = r#"
     (module
@@ -43,8 +42,8 @@ pub fn i32_eq() {
 
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    assert_eq!(1, instance.invoke_func(0, (1, 1)));
-    assert_eq!(1, instance.invoke_func(0, (0, 0)));
-    assert_eq!(0, instance.invoke_func(0, (0, 1)));
-    assert_eq!(0, instance.invoke_func(0, (1, 0)));
+    assert_eq!(1, instance.invoke_func(0, (1, 1)).unwrap());
+    assert_eq!(1, instance.invoke_func(0, (0, 0)).unwrap());
+    assert_eq!(0, instance.invoke_func(0, (0, 1)).unwrap());
+    assert_eq!(0, instance.invoke_func(0, (1, 0)).unwrap());
 }
