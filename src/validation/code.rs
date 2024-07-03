@@ -165,6 +165,13 @@ fn read_instructions(
 
                 value_stack.push_back(ValType::NumType(NumType::I32));
             }
+            // i32.eq: [i32 i32] -> [i32]
+            0x46 => {
+                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
+                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
+
+                value_stack.push_back(ValType::NumType(NumType::I32));
+            }
             // i32.add: [i32 i32] -> [i32]
             0x6A => {
                 // First value
