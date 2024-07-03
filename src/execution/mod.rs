@@ -198,6 +198,13 @@ impl<'b> RuntimeInstance<'b> {
                     trace!("Instruction: i32.const [] -> [{constant}]");
                     stack.push_value(constant.into());
                 }
+                // i32.eqz: [i32 i32] -> [i32]
+                0x45 => {
+                    let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                    let res = if v1 == 0 { 1 } else { 0 };
+
+                    stack.push_value(res.into());
+                }
                 // i32.add: [i32 i32] -> [i32]
                 0x6A => {
                     let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -209,12 +216,12 @@ impl<'b> RuntimeInstance<'b> {
                 }
                 // i32.mul: [i32 i32] -> [i32]
                 0x6C => {
-                  let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                  let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                  let res = v1.wrapping_mul(v2);
+                    let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                    let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                    let res = v1.wrapping_mul(v2);
 
-                  trace!("Instruction: i32.mul [{v1} {v2}] -> [{res}]");
-                  stack.push_value(res.into());
+                    trace!("Instruction: i32.mul [{v1} {v2}] -> [{res}]");
+                    stack.push_value(res.into());
                 }
                 other => {
                     trace!("Unknown instruction {other:#x}, skipping..");
