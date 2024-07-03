@@ -1,3 +1,5 @@
+// /// This macro defines index types. Currently (2024-06-10) all indices are [`u32`].
+// /// See <https://webassembly.github.io/spec/core/binary/modules.html#indices> for more information.
 // macro_rules! def_idx_types {
 //     ($($name:ident),*) => {
 //         $(
@@ -10,6 +12,9 @@
 // // #[allow(dead_code)]
 // def_idx_types!(TypeIdx, FuncIdx, TableIdx, MemIdx, GlobalIdx, /* ElemIdx, DataIdx, */ LocalIdx/* , LabelIdx */);
 
+// TODO check whether is is clever to internally use usize instead of u32; potential problems are:
+// - unsound on architectures where `usize` < `u32`
+// - wasteful in memory on architectures where `usize` > `u32`
 pub type TypeIdx = usize;
 pub type FuncIdx = usize;
 pub type TableIdx = usize;

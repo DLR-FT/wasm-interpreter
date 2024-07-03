@@ -12,6 +12,8 @@ use crate::execution::store::{FuncInst, GlobalInst, MemInst, Store};
 use crate::execution::value::Value;
 use crate::validation::code::read_declared_locals;
 use crate::value::InteropValueList;
+use crate::Error::RuntimeError;
+use crate::RuntimeError::{DivideBy0, UnrepresentableResult};
 use crate::{Result, ValidationInfo};
 
 // TODO
@@ -41,7 +43,8 @@ impl<'b> RuntimeInstance<'b> {
         };
 
         if let Some(start) = validation_info.start {
-            instance.invoke_func::<(), ()>(start, ());
+            let result = instance.invoke_func::<(), ()>(start, ());
+            result?;
         }
 
         Ok(instance)
@@ -51,7 +54,7 @@ impl<'b> RuntimeInstance<'b> {
         &mut self,
         func_idx: FuncIdx,
         param: Param,
-    ) -> Returns {
+    ) -> Result<Returns> {
         let func_inst = self.store.funcs.get(func_idx).expect("valid FuncIdx");
         let func_ty = self.types.get(func_inst.ty).unwrap_validated();
 
@@ -70,7 +73,8 @@ impl<'b> RuntimeInstance<'b> {
             stack.push_value(parameter);
         }
 
-        self.function(func_idx, &mut stack);
+        let error = self.function(func_idx, &mut stack);
+        error?;
 
         // Pop return values from stack
         let return_values = Returns::TYS
@@ -82,11 +86,11 @@ impl<'b> RuntimeInstance<'b> {
         let reversed_values = return_values.into_iter().rev();
         let ret = Returns::from_values(reversed_values);
         debug!("Successfully invoked function");
-        ret
+        Ok(ret)
     }
 
     /// Interprets a functions. Parameters and return values are passed on the stack.
-    fn function(&mut self, idx: FuncIdx, stack: &mut Stack) {
+    fn function(&mut self, idx: FuncIdx, stack: &mut Stack) -> Result<()> {
         let inst = self.store.funcs.get(idx).unwrap_validated();
 
         // Pop parameters from stack
@@ -233,11 +237,46 @@ impl<'b> RuntimeInstance<'b> {
                     trace!("Instruction: i32.mul [{v1} {v2}] -> [{res}]");
                     stack.push_value(res.into());
                 }
+                // i32.div_s: [i32 i32] -> [i32]
+                0x6D => {
+                    let dividend: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                    let divisor: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                    if dividend == 0 {
+                        return Err(RuntimeError(DivideBy0));
+                    }
+                    if divisor == i32::MIN && dividend == -1 {
+                        return Err(RuntimeError(UnrepresentableResult));
+                    }
+
+                    let res = divisor / dividend;
+
+                    trace!("Instruction: i32.div_s [{divisor} {dividend}] -> [{res}]");
+                    stack.push_value(res.into());
+                }
+                // i32.div_u: [i32 i32] -> [i32]
+                0x6E => {
+                    let dividend: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                    let divisor: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                    let dividend = dividend as u32;
+                    let divisor = divisor as u32;
+
+                    if dividend == 0 {
+                        return Err(RuntimeError(DivideBy0));
+                    }
+
+                    let res = (divisor / dividend) as i32;
+
+                    trace!("Instruction: i32.div_u [{divisor} {dividend}] -> [{res}]");
+                    stack.push_value(res.into());
+                }
                 other => {
                     trace!("Unknown instruction {other:#x}, skipping..");
                 }
             }
         }
+        Ok(())
     }
 
     fn init_store(validation_info: &ValidationInfo) -> Store {

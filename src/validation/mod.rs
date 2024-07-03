@@ -97,7 +97,6 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
 
     let globals = handle_section(&mut wasm, &mut header, SectionTy::Global, |wasm, _| {
         wasm.read_vec(|wasm| {
-            
             // TODO validate instructions in `global.init_expr`. Furthermore all of these instructions need to be constant.
             //  See https://webassembly.github.io/spec/core/valid/instructions.html#valid-constant
             //  Maybe we can also execute constant expressions right here so they do not even exist in the runtime environment. <-- Needs further research to check if this is even possible

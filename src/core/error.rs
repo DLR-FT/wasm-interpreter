@@ -6,6 +6,12 @@ use crate::core::reader::section_header::SectionTy;
 use crate::core::reader::types::ValType;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
+pub enum RuntimeError {
+    DivideBy0,
+    UnrepresentableResult,
+}
+
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Error {
     /// The magic number at the very start of the given WASM file is invalid.
     InvalidMagic,
@@ -31,6 +37,7 @@ pub enum Error {
     MoreThanOneMemory,
     InvalidGlobalIdx(GlobalIdx),
     GlobalIsConst,
+    RuntimeError(RuntimeError),
 }
 
 impl Display for Error {
@@ -97,6 +104,10 @@ impl Display for Error {
                 "An invalid global index `{idx}` was specified"
             )),
             Error::GlobalIsConst => f.write_str("A const global cannot be written to"),
+            Error::RuntimeError(err) => match err {
+                RuntimeError::DivideBy0 => f.write_str("Divide by zero is not permitted"),
+                RuntimeError::UnrepresentableResult => f.write_str("Result is unrepresentable"),
+            },
         }
     }
 }
