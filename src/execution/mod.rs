@@ -1,5 +1,3 @@
-use core::marker::PhantomData;
-
 use alloc::vec::Vec;
 
 use value_stack::Stack;
@@ -35,12 +33,12 @@ where
     wasm_bytecode: &'b [u8],
     types: Vec<FuncType>,
     store: Store,
-    hook_set: PhantomData<H>,
+    pub hook_set: H,
 }
 
 impl<'b> RuntimeInstance<'b, EmptyHookSet> {
     pub fn new(validation_info: &'_ ValidationInfo<'b>) -> Result<Self> {
-        Self::new_with_hooks(validation_info)
+        Self::new_with_hooks(validation_info, EmptyHookSet)
     }
 }
 
@@ -48,7 +46,7 @@ impl<'b, H> RuntimeInstance<'b, H>
 where
     H: HookSet,
 {
-    pub fn new_with_hooks(validation_info: &'_ ValidationInfo<'b>) -> Result<Self> {
+    pub fn new_with_hooks(validation_info: &'_ ValidationInfo<'b>, hook_set: H) -> Result<Self> {
         trace!("Starting instantiation of bytecode");
 
         let store = Self::init_store(validation_info);
@@ -57,7 +55,7 @@ where
             wasm_bytecode: validation_info.wasm,
             types: validation_info.types.clone(),
             store,
-            hook_set: PhantomData,
+            hook_set,
         };
 
         if let Some(start) = validation_info.start {
