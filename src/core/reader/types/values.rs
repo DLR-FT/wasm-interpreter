@@ -24,6 +24,29 @@ impl WasmReader<'_> {
         Ok(value)
     }
 
+    pub fn read_instruction(&mut self) -> Result<&[u8]> {
+        if self.current.is_empty() {
+            return Err(Error::Eof);
+        }
+        match self.current {
+            // check if we are at a multibyte (2 byte) instruction
+            [0xFB, _, ..] | [0xFC, _, ..] | [0xFD, _, ..] | [0xFE, _, ..] => {
+                let bytes = &self.current[0..2];
+                self.strip_bytes::<2>()?;
+                Ok(bytes)
+            }
+            // if we aren't at a multibyte instruction, we are at a 1 byte instruction
+            [_, ..] => {
+                let bytes = &self.current[0..1];
+                self.strip_bytes::<1>()?;
+                Ok(bytes)
+            }
+            _ => {
+                unreachable!()
+            }
+        }
+    }
+
     /// Parses a variable-length `u32` as specified by [LEB128](https://en.wikipedia.org/wiki/LEB128#Unsigned_LEB128).
     /// Note: If `Err`, the [Wasm] object is no longer guaranteed to be in a valid state
     pub fn read_var_u32(&mut self) -> Result<u32> {

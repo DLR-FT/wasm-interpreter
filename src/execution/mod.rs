@@ -3,6 +3,7 @@ use alloc::vec::Vec;
 use value_stack::Stack;
 
 use crate::core::indices::{FuncIdx, GlobalIdx, LocalIdx};
+use crate::core::opcodes::*;
 use crate::core::reader::types::memarg::MemArg;
 use crate::core::reader::types::{FuncType, NumType, ValType};
 use crate::core::reader::{WasmReadable, WasmReader};
@@ -111,20 +112,20 @@ impl<'b> RuntimeInstance<'b> {
         wasm.move_start_to(inst.code_expr);
 
         loop {
-            match wasm.read_u8().unwrap_validated() {
+            match wasm.read_instruction().unwrap_validated() {
                 // end
-                0x0B => {
+                [NOP, ..] | [END, ..] => {
                     break;
                 }
                 // local.get: [] -> [t]
-                0x20 => {
+                [LOCAL_GET, ..] => {
                     let local_idx = wasm.read_var_u32().unwrap_validated() as LocalIdx;
                     let local = locals.get(local_idx);
                     trace!("Instruction: local.get [] -> [{local:?}]");
                     stack.push_value(local.clone());
                 }
                 // local.set [t] -> []
-                0x21 => {
+                [LOCAL_SET, ..] => {
                     let local_idx = wasm.read_var_u32().unwrap_validated() as LocalIdx;
                     let local = locals.get_mut(local_idx);
                     let value = stack.pop_value(local.to_ty());
@@ -132,21 +133,21 @@ impl<'b> RuntimeInstance<'b> {
                     *local = value;
                 }
                 // global.get [] -> [t]
-                0x23 => {
+                [GLOBAL_GET, ..] => {
                     let global_idx = wasm.read_var_u32().unwrap_validated() as GlobalIdx;
                     let global = self.store.globals.get(global_idx).unwrap_validated();
 
                     stack.push_value(global.value.clone());
                 }
                 // global.set [t] -> []
-                0x24 => {
+                [GLOBAL_SET, ..] => {
                     let global_idx = wasm.read_var_u32().unwrap_validated() as GlobalIdx;
                     let global = self.store.globals.get_mut(global_idx).unwrap_validated();
 
                     global.value = stack.pop_value(global.global.ty.ty)
                 }
                 // i32.load [i32] -> [i32]
-                0x28 => {
+                [I32_LOAD, ..] => {
                     let memarg = MemArg::read_unvalidated(&mut wasm);
                     let relative_address: u32 =
                         stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -174,7 +175,7 @@ impl<'b> RuntimeInstance<'b> {
                     trace!("Instruction: i32.load [{relative_address}] -> [{data}]");
                 }
                 // i32.store [i32] -> [i32]
-                0x36 => {
+                [I32_STORE, ..] => {
                     let memarg = MemArg::read_unvalidated(&mut wasm);
 
                     let data_to_store: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -197,13 +198,13 @@ impl<'b> RuntimeInstance<'b> {
                     trace!("Instruction: i32.store [{relative_address} {data_to_store}] -> []");
                 }
                 // i32.const: [] -> [i32]
-                0x41 => {
+                [I32_CONST, ..] => {
                     let constant = wasm.read_var_i32().unwrap_validated();
                     trace!("Instruction: i32.const [] -> [{constant}]");
                     stack.push_value(constant.into());
                 }
                 // i32.add: [i32 i32] -> [i32]
-                0x6A => {
+                [I32_ADD, ..] => {
                     let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                     let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                     let res = v1.wrapping_add(v2);
@@ -212,7 +213,7 @@ impl<'b> RuntimeInstance<'b> {
                     stack.push_value(res.into());
                 }
                 // i32.mul: [i32 i32] -> [i32]
-                0x6C => {
+                [I32_MUL, ..] => {
                     let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                     let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                     let res = v1.wrapping_mul(v2);
@@ -221,7 +222,7 @@ impl<'b> RuntimeInstance<'b> {
                     stack.push_value(res.into());
                 }
                 // i32.div_s: [i32 i32] -> [i32]
-                0x6D => {
+                [I32_DIV_S, ..] => {
                     let dividend: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                     let divisor: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
@@ -238,7 +239,7 @@ impl<'b> RuntimeInstance<'b> {
                     stack.push_value(res.into());
                 }
                 // i32.div_u: [i32 i32] -> [i32]
-                0x6E => {
+                [I32_DIV_U, ..] => {
                     let dividend: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                     let divisor: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
@@ -254,8 +255,14 @@ impl<'b> RuntimeInstance<'b> {
                     trace!("Instruction: i32.div_u [{divisor} {dividend}] -> [{res}]");
                     stack.push_value(res.into());
                 }
-                other => {
+                [FC_INSTRUCTIONS, fc_opcodes::I32_TRUNC_SAT_F32S, ..] => {
+                    unimplemented!()
+                }
+                [other, ..] => {
                     trace!("Unknown instruction {other:#x}, skipping..");
+                }
+                &[] => {
+                    unreachable!()
                 }
             }
         }
