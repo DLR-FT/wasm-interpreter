@@ -28,7 +28,7 @@ pub enum Error {
     InvalidExportDesc(u8),
     InvalidImportDesc(u8),
     ExprMissingEnd,
-    InvalidInstr(u8),
+    InvalidInstr(u16),
     EndInvalidValueStack,
     InvalidLocalIdx,
     InvalidValueStackType(Option<ValType>),

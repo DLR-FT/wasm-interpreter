@@ -8,47 +8,51 @@ pub mod types;
 /// Its purpose is mostly to abstract parsing basic WASM values from the bytecode.
 pub struct WasmReader<'a> {
     pub(crate) full_contents: &'a [u8],
-    pub(crate) current: &'a [u8],
+    pub(crate) pc: usize,
 }
 
 impl<'a> WasmReader<'a> {
     pub fn new(wasm: &'a [u8]) -> Self {
         Self {
             full_contents: wasm,
-            current: wasm,
+            pc: 0,
         }
     }
     // TODO this is not very intuitive but we cannot shorten `self.current`'s end
     //  because some methods rely on the property that `self.current`'s and
     //  `self.full_contents`'s last element are equal.
     pub fn move_start_to(&mut self, span: Span) {
-        self.current =
-            &self.full_contents[span.from../* normally we would have the end of the span here*/];
+        self.pc = span.from;
     }
 
     pub fn remaining_bytes(&self) -> &[u8] {
-        self.current
+        &self.full_contents[self.pc..]
     }
 
     pub fn current_idx(&self) -> usize {
-        self.full_contents.len() - self.current.len()
+        self.pc
     }
     pub fn make_span(&self, len: usize) -> Span {
         Span::new(self.current_idx(), len)
     }
 
     pub fn strip_bytes<const N: usize>(&mut self) -> Result<[u8; N]> {
-        if N > self.current.len() {
+        if N > (self.full_contents.len() - self.pc) {
             return Err(Error::Eof);
         }
 
-        let (bytes, rest) = self.current.split_at(N);
-        self.current = rest;
+        let (bytes, _) = self.full_contents[self.pc..].split_at(N);
+
+        self.pc += N;
 
         Ok(bytes.try_into().expect("the slice length to be exactly N"))
     }
     pub fn peek_u8(&self) -> Result<u8> {
-        self.current.first().copied().ok_or(Error::Eof)
+        if self.pc >= self.full_contents.len() {
+            Err(Error::Eof)
+        } else {
+            Ok(self.full_contents[self.pc])
+        }
     }
 
     pub fn measure_num_read_bytes<T>(
@@ -63,10 +67,12 @@ impl<'a> WasmReader<'a> {
     }
 
     pub fn skip(&mut self, num_bytes: usize) -> Result<()> {
-        if self.current.len() < num_bytes {
+        if self.full_contents.len() - self.pc < num_bytes {
             return Err(Error::Eof);
         }
-        self.current = &self.current[num_bytes..];
+
+        self.pc += num_bytes;
+
         Ok(())
     }
     pub fn into_inner(self) -> &'a [u8] {

@@ -1,8 +1,10 @@
 use alloc::collections::VecDeque;
 use alloc::vec::Vec;
 use core::iter;
+use fc_opcodes::I32_TRUNC_SAT_F32S;
 
 use crate::core::indices::{GlobalIdx, LocalIdx};
+use crate::core::opcodes::*;
 use crate::core::reader::section_header::{SectionHeader, SectionTy};
 use crate::core::reader::span::Span;
 use crate::core::reader::types::global::Global;
@@ -82,25 +84,27 @@ fn read_instructions(
     };
 
     loop {
-        let Ok(instr) = wasm.read_u8() else {
-            return Err(Error::ExprMissingEnd);
-        };
-        trace!("Read instruction byte {instr:#x?} ({instr})");
+        let instr = &wasm.full_contents[wasm.pc..];
+        if instr.is_empty() {
+            return Err(Error::Eof);
+        }
+        wasm.strip_bytes::<1>()?;
+        trace!("Read instruction byte {:#x?}", instr.first().unwrap());
         match instr {
             // nop
-            0x01 => {}
+            [NOP, ..] => {}
             // end
-            0x0B => {
+            [END, ..] => {
                 return Ok(());
             }
             // local.get: [] -> [t]
-            0x20 => {
+            [LOCAL_GET, ..] => {
                 let local_idx = wasm.read_var_u32()? as LocalIdx;
                 let local_ty = locals.get(local_idx).ok_or(Error::InvalidLocalIdx)?;
                 value_stack.push_back(*local_ty);
             }
             // local.set [t] -> [0]
-            0x21 => {
+            [LOCAL_SET, ..] => {
                 let local_idx = wasm.read_var_u32()? as LocalIdx;
                 let local_ty = locals.get(local_idx).ok_or(Error::InvalidLocalIdx)?;
                 let popped = value_stack.pop_back();
@@ -109,7 +113,7 @@ fn read_instructions(
                 }
             }
             // global.get [] -> [t]
-            0x23 => {
+            [GLOBAL_GET, ..] => {
                 let global_idx = wasm.read_var_u32()? as GlobalIdx;
                 let global = globals
                     .get(global_idx)
@@ -118,7 +122,7 @@ fn read_instructions(
                 value_stack.push_back(global.ty.ty);
             }
             // global.set [t] -> []
-            0x24 => {
+            [GLOBAL_SET, ..] => {
                 let global_idx = wasm.read_var_u32()? as GlobalIdx;
                 let global = globals
                     .get(global_idx)
@@ -137,7 +141,7 @@ fn read_instructions(
                 }
             }
             // i32.load [i32] -> [i32]
-            0x28 => {
+            [I32_LOAD, ..] => {
                 let _memarg = MemArg::read_unvalidated(wasm);
 
                 // TODO check correct `memarg.align`
@@ -148,7 +152,7 @@ fn read_instructions(
                 value_stack.push_back(ValType::NumType(NumType::I32));
             }
             // i32.store [i32] -> [i32]
-            0x36 => {
+            [I32_STORE, ..] => {
                 let _memarg = MemArg::read_unvalidated(wasm);
 
                 // TODO check correct `memarg.align`
@@ -159,45 +163,47 @@ fn read_instructions(
                 // Value to store
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
             }
-            // i32.add: [i32 i32] -> [i32]
-            0x6A => {
-                // First value
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
-                // Second value
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
-
-                value_stack.push_back(ValType::NumType(NumType::I32));
-            }
-            0x6C => {
-                // First value
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
-                // Second value
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
-
-                value_stack.push_back(ValType::NumType(NumType::I32));
-            }
-            // i32.div_s: [i32 i32] -> [i32]
-            0x6D => {
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
-
-                value_stack.push_back(ValType::NumType(NumType::I32));
-            }
-            // i32.div_u: [i32 i32] -> [i32]
-            0x6E => {
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
-
-                value_stack.push_back(ValType::NumType(NumType::I32));
-            }
-            // i32.const: [] -> [i32]
-            0x41 => {
+            [I32_CONST, ..] => {
                 let _num = wasm.read_var_i32()?;
                 value_stack.push_back(ValType::NumType(NumType::I32));
             }
-            other => {
-                return Err(Error::InvalidInstr(other));
+            [I32_ADD, ..] | [I32_MUL, ..] | [I32_DIV_S, ..] | [I32_DIV_U, ..] => {
+                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
+                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
+
+                value_stack.push_back(ValType::NumType(NumType::I32));
             }
+            [FB_INSTRUCTIONS, _, ..] => {
+                wasm.strip_bytes::<1>()?;
+                unimplemented!()
+            }
+            [FC_INSTRUCTIONS, I32_TRUNC_SAT_F32S, ..] => {
+                wasm.strip_bytes::<1>()?;
+                unimplemented!()
+            }
+            [FC_INSTRUCTIONS, _, ..] => {
+                wasm.strip_bytes::<1>()?;
+                unimplemented!()
+            }
+            [FD_INSTRUCTIONS, _, ..] => {
+                wasm.strip_bytes::<1>()?;
+                unimplemented!()
+            }
+            [FE_INSTRUCTIONS, _, ..] => {
+                wasm.strip_bytes::<1>()?;
+                unimplemented!()
+            }
+
+            other => match other[0] {
+                FB_INSTRUCTIONS | FC_INSTRUCTIONS | FD_INSTRUCTIONS | FE_INSTRUCTIONS => {
+                    return Err(Error::InvalidInstr(
+                        (other[0] as u16) << 8 | (other[1] as u16),
+                    ));
+                }
+                _ => {
+                    return Err(Error::InvalidInstr(other[0] as u16));
+                }
+            },
         }
     }
 }

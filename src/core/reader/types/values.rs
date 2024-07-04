@@ -14,14 +14,19 @@ use crate::{Error, Result};
 impl WasmReader<'_> {
     /// Note: If `Err`, the [Wasm] object is no longer guaranteed to be in a valid state
     pub fn read_u8(&mut self) -> Result<u8> {
-        let value = *self.current.first().ok_or(Error::Eof)?;
+        if self.full_contents.len() <= self.pc {
+            return Err(Error::Eof);
+        }
 
-        self.current = self
-            .current
-            .get(1..)
-            .expect("slice to contain at least 1 element");
+        let byte = self.full_contents[self.pc];
 
-        Ok(value)
+        self.pc += 1;
+
+        // if self.full_contents.len() - self.pc == 0 {
+        //     panic!("slice to contain at least 1 element")
+        // }
+
+        Ok(byte)
     }
 
     /// Parses a variable-length `u32` as specified by [LEB128](https://en.wikipedia.org/wiki/LEB128#Unsigned_LEB128).
@@ -66,11 +71,13 @@ impl WasmReader<'_> {
     pub fn read_name(&mut self) -> Result<&str> {
         let len = self.read_var_u32()? as usize;
 
-        if len > self.current.len() {
+        if len > (self.full_contents.len() - self.pc) {
             return Err(Error::Eof);
         }
-        let (utf8_str, rest) = self.current.split_at(len); // Cannot panic because check is done above
-        self.current = rest;
+
+        let (utf8_str, _) = self.full_contents[self.pc..].split_at(len);
+
+        self.pc += utf8_str.len();
 
         core::str::from_utf8(utf8_str).map_err(Error::MalformedUtf8String)
     }
