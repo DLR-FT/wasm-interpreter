@@ -1,0 +1,42 @@
+name: Requirement Preview Deploy
+
+on:
+  # When a PR is merged (or force push to main)
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - closed
+    paths:
+      - "requirements/**/"
+      - ".github/workflows/pages_requirement_preview.yaml"
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency: preview-${{ github.ref }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # -=-=-=-= Strictdoc =-=-=-=-
+      - name: Install python
+        uses: actions/setup-python@v5.1.0
+        with:
+          python-version: 3.12
+      - name: Install strictdoc & requirements
+        run: pip install strictdoc setuptools # Note: we need setuptools for strictdoc to work. Installing just strictdoc is not enough
+      - name: Export requirements
+        run: strictdoc export ./requirements/requirements.sdoc
+
+      # -=-=-=-= Deploy =-=-=-=-
+      - name: Deploy Preview
+        uses: rossjrw/pr-preview-action@v1.4.7
+        with:
+          source-dir: output/html/
+          umbrella-dir: requirements/pr-preview

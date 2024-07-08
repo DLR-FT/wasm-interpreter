@@ -1,0 +1,46 @@
+name: Coverage Preview Deploy
+
+on:
+  # When a PR is merged (or force push to main)
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - closed
+      - labeled
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency: preview-cov-${{ github.ref }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: contains(github.event.pull_request.labels.*.name, 'coverage')
+    steps:
+      - uses: actions/checkout@v4
+      # -=-=-=-= Coverage test =-=-=-=-
+      - name: Install coverage test tooling
+        run: |
+          rustup toolchain install nightly &&
+          rustup component add llvm-tools-preview &&
+          cargo install cargo-binutils
+      - name: Run & compile coverage test
+        run: |
+          cargo clean &&
+          RUSTFLAGS="-C instrument-coverage -Z coverage-options=branch,mcdc" cargo +nightly test --tests --no-run &&
+          OBJS=$(RUSTFLAGS="-C instrument-coverage -Z coverage-options=branch,mcdc" cargo +nightly test --tests --no-run -- --test-threads=1 2>&1 | grep -oP '(?<=\()[^ ]+[\\\/][^ \)]+' | sed 's/^/--object /' | sed 's/\r//' | tr '\n' ' ') &&
+          rm -rf *.profraw &&
+          RUSTFLAGS="-C instrument-coverage -Z coverage-options=branch,mcdc" cargo +nightly test --tests -- --test-threads=1 &&
+          cargo profdata -- merge -sparse *.profraw -o default.profdata &&
+          cargo cov -- show -show-line-counts-or-regions -output-dir=cov_out -format=html --ignore-filename-regex='.*cargo.*' --instr-profile=default.profdata $OBJS
+      # -=-=-=-= Deploy =-=-=-=-
+      - name: Deploy Preview
+        uses: rossjrw/pr-preview-action@v1.4.7
+        with:
+          source-dir: cov_out/
+          umbrella-dir: coverage/pr-preview
