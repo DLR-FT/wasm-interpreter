@@ -1,0 +1,57 @@
+name: Documentation Deploy
+
+on:
+  # When a PR is merged (or force push to main)
+  push:
+    branches: [ "main" ]
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# Enable cargo logs to be in colour
+env:
+  CARGO_TERM_COLOR: always
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: write
+
+# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
+# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # -=-=-=-= Rustdocs =-=-=-=-
+      - name: Build rustdocs
+        run: cargo doc
+
+      # -=-=-=-= Strictdoc =-=-=-=-
+      - name: Install python
+        uses: actions/setup-python@v5.1.0
+        with:
+          python-version: 3.12
+      - name: Install strictdoc & requirements
+        run: pip install strictdoc setuptools # Note: we need setuptools for strictdoc to work. Installing just strictdoc is not enough
+      - name: Export requirements
+        run: strictdoc export ./requirements/requirements.sdoc
+
+      # -=-=-=-= Preparation =-=-=-=-
+      - name: Prepare web files
+        run: mv ./target/doc/ ./web/rustdocs/ && mv ./output/html/ ./web/strictdoc/
+
+      # -=-=-=-= Deploy =-=-=-=-
+      - name: Deploy to Github Pages
+        uses: peaceiris/actions-gh-pages@v4.0.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          # Build output to publish to the `gh-pages` branch:
+          publish_dir: ./web
+          publish_branch: gh-pages
