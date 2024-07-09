@@ -266,6 +266,11 @@ where
                     trace!("Instruction: i32.popcnt [{v1}] -> [{res}]");
                     stack.push_value(res.into());
                 }
+                I64_CONST => {
+                    let constant = wasm.read_var_i64().unwrap_validated();
+                    trace!("Instruction: i64.const [] -> [{constant}]");
+                    stack.push_value(constant.into());
+                }
                 I32_ADD => {
                     let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                     let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -326,6 +331,189 @@ where
                     let res = res.unwrap_or_default();
 
                     trace!("Instruction: i32.rem_s [{divisor} {dividend}] -> [{res}]");
+                    stack.push_value(res.into());
+                }
+                I64_CLZ => {
+                    let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                    let res = v1.leading_zeros() as i64;
+
+                    trace!("Instruction: i64.clz [{v1}] -> [{res}]");
+                    stack.push_value(res.into());
+                }
+                I64_CTZ => {
+                    let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                    let res = v1.trailing_zeros() as i64;
+
+                    trace!("Instruction: i64.ctz [{v1}] -> [{res}]");
+                    stack.push_value(res.into());
+                }
+                I64_POPCNT => {
+                    let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                    let res = v1.count_ones() as i64;
+
+                    trace!("Instruction: i64.popcnt [{v1}] -> [{res}]");
+                    stack.push_value(res.into());
+                }
+                I64_ADD => {
+                    let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                    let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                    let res = v1.wrapping_add(v2);
+
+                    trace!("Instruction: i64.add [{v1} {v2}] -> [{res}]");
+                    stack.push_value(res.into());
+                }
+                I64_SUB => {
+                    let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                    let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                    let res = v1.wrapping_sub(v2);
+
+                    trace!("Instruction: i64.sub [{v1} {v2}] -> [{res}]");
+                    stack.push_value(res.into());
+                }
+                I64_MUL => {
+                    let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                    let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                    let res = v1.wrapping_mul(v2);
+
+                    trace!("Instruction: i64.mul [{v1} {v2}] -> [{res}]");
+                    stack.push_value(res.into());
+                }
+                I64_DIV_S => {
+                    let dividend: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                    let divisor: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+
+                    if dividend == 0 {
+                        return Err(RuntimeError(DivideBy0));
+                    }
+                    if divisor == i64::MIN && dividend == -1 {
+                        return Err(RuntimeError(UnrepresentableResult));
+                    }
+
+                    let res = divisor / dividend;
+
+                    trace!("Instruction: i64.div_s [{divisor} {dividend}] -> [{res}]");
+                    stack.push_value(res.into());
+                }
+                I64_DIV_U => {
+                    let dividend: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                    let divisor: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+
+                    let dividend = dividend as u64;
+                    let divisor = divisor as u64;
+
+                    if dividend == 0 {
+                        return Err(RuntimeError(DivideBy0));
+                    }
+
+                    let res = (divisor / dividend) as i64;
+
+                    trace!("Instruction: i64.div_u [{divisor} {dividend}] -> [{res}]");
+                    stack.push_value(res.into());
+                }
+                I64_REM_S => {
+                    let dividend: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                    let divisor: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+
+                    if dividend == 0 {
+                        return Err(crate::Error::RuntimeError(
+                            crate::core::error::RuntimeError::DivideBy0,
+                        ));
+                    }
+
+                    let res = divisor.checked_rem(dividend);
+                    let res = res.unwrap_or_default();
+
+                    trace!("Instruction: i64.rem_s [{divisor} {dividend}] -> [{res}]");
+                    stack.push_value(res.into());
+                }
+                I64_REM_U => {
+                    let dividend: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                    let divisor: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+
+                    let dividend = dividend as u64;
+                    let divisor = divisor as u64;
+
+                    if dividend == 0 {
+                        return Err(crate::Error::RuntimeError(
+                            crate::core::error::RuntimeError::DivideBy0,
+                        ));
+                    }
+
+                    let res = (divisor % dividend) as i64;
+
+                    trace!("Instruction: i64.rem_u [{divisor} {dividend}] -> [{res}]");
+                    stack.push_value(res.into());
+                }
+                I64_AND => {
+                    let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                    let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+
+                    let res = v1 & v2;
+
+                    trace!("Instruction: i64.and [{v1} {v2}] -> [{res}]");
+                    stack.push_value(res.into());
+                }
+                I64_OR => {
+                    let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                    let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+
+                    let res = v1 | v2;
+
+                    trace!("Instruction: i64.or [{v1} {v2}] -> [{res}]");
+                    stack.push_value(res.into());
+                }
+                I64_XOR => {
+                    let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                    let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+
+                    let res = v1 ^ v2;
+
+                    trace!("Instruction: i64.xor [{v1} {v2}] -> [{res}]");
+                    stack.push_value(res.into());
+                }
+                I64_SHL => {
+                    let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                    let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+
+                    let res = v1.wrapping_shl((v2 & 63) as u32);
+
+                    trace!("Instruction: i64.shl [{v1} {v2}] -> [{res}]");
+                    stack.push_value(res.into());
+                }
+                I64_SHR_S => {
+                    let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                    let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+
+                    let res = v1.wrapping_shr((v2 & 63) as u32);
+
+                    trace!("Instruction: i64.shr_s [{v1} {v2}] -> [{res}]");
+                    stack.push_value(res.into());
+                }
+                I64_SHR_U => {
+                    let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                    let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+
+                    let res = (v1 as u64).wrapping_shr((v2 & 63) as u32);
+
+                    trace!("Instruction: i64.shr_u [{v1} {v2}] -> [{res}]");
+                    stack.push_value(res.into());
+                }
+                I64_ROTL => {
+                    let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                    let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+
+                    let res = v1.rotate_left((v2 & 63) as u32);
+
+                    trace!("Instruction: i64.rotl [{v1} {v2}] -> [{res}]");
+                    stack.push_value(res.into());
+                }
+                I64_ROTR => {
+                    let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                    let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+
+                    let res = v1.rotate_right((v2 & 63) as u32);
+
+                    trace!("Instruction: i64.rotr [{v1} {v2}] -> [{res}]");
                     stack.push_value(res.into());
                 }
                 I32_REM_U => {

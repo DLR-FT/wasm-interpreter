@@ -14,10 +14,13 @@ use crate::{Error, Result};
 impl WasmReader<'_> {
     /// Note: If `Err`, the [WasmReader] object is no longer guaranteed to be in a valid state
     pub fn read_u8(&mut self) -> Result<u8> {
-        let value = self.full_wasm_binary.get(self.pc).ok_or(Error::Eof)?;
-        self.pc += core::mem::size_of::<u8>();
-
-        Ok(*value)
+        match self.peek_u8() {
+            Err(e) => Err(e),
+            Ok(byte) => {
+                self.pc += 1;
+                Ok(byte)
+            }
+        }
     }
 
     /// Parses a variable-length `u32` as specified by [LEB128](https://en.wikipedia.org/wiki/LEB128#Unsigned_LEB128).
@@ -52,6 +55,27 @@ impl WasmReader<'_> {
         }
 
         if (shift < mem::size_of::<i32>() as u32 * 8) && (byte & 0x40 != 0) {
+            result |= !0 << shift;
+        }
+
+        Ok(result)
+    }
+
+    pub fn read_var_i64(&mut self) -> Result<i64> {
+        let mut result: i64 = 0;
+        let mut shift: u64 = 0;
+
+        let mut byte: i64;
+        loop {
+            byte = self.read_u8()? as i64;
+            result |= (byte & 0b0111_1111) << shift;
+            shift += 7;
+            if (byte & 0b1000_0000) == 0 {
+                break;
+            }
+        }
+
+        if shift < 64 && (byte & 0x40 != 0) {
             result |= !0 << shift;
         }
 

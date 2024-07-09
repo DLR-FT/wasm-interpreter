@@ -167,6 +167,10 @@ fn read_instructions(
                 let _num = wasm.read_var_i32()?;
                 value_stack.push_back(ValType::NumType(NumType::I32));
             }
+            I64_CONST => {
+                let _num = wasm.read_var_i64()?;
+                value_stack.push_back(ValType::NumType(NumType::I64));
+            }
             I32_ADD | I32_MUL | I32_DIV_S | I32_DIV_U | I32_REM_S => {
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
@@ -186,7 +190,21 @@ fn read_instructions(
 
                 value_stack.push_back(ValType::NumType(NumType::I32));
             }
-            _ => return Err(Error::InvalidInstr(first_instr_byte)),
+            I64_CLZ | I64_CTZ | I64_POPCNT => {
+                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I64))?;
+
+                value_stack.push_back(ValType::NumType(NumType::I64));
+            }
+
+            I64_ADD | I64_SUB | I64_MUL | I64_DIV_S | I64_DIV_U | I64_REM_S | I64_REM_U
+            | I64_AND | I64_OR | I64_XOR | I64_SHL | I64_SHR_S | I64_SHR_U | I64_ROTL
+            | I64_ROTR => {
+                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I64))?;
+                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I64))?;
+
+                value_stack.push_back(ValType::NumType(NumType::I64));
+            }
+            _ => return Err(Error::InvalidInstr(first_instr_byte as u16)),
         }
     }
 }
