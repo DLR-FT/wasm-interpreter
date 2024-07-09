@@ -133,7 +133,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
     let func_blocks = handle_section(&mut wasm, &mut header, SectionTy::Code, |wasm, h| {
-        code::validate_code_section(wasm, h, &types, &globals)
+        code::validate_code_section(wasm, h, &types, &functions, &globals)
     })?
     .unwrap_or_default();
 
