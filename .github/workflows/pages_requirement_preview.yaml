@@ -9,8 +9,8 @@ on:
       - synchronize
       - closed
     paths:
-      - 'requirements/**/'
-      - '.github/workflows/pages_requirement_preview.yaml'
+      - "requirements/**/"
+      - ".github/workflows/pages_requirement_preview.yaml"
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
