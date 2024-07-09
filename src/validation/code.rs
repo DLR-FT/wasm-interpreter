@@ -15,13 +15,15 @@ pub fn validate_code_section(
     wasm: &mut WasmReader,
     section_header: SectionHeader,
     fn_types: &[FuncType],
+    type_of_fn: &[usize],
     globals: &[Global],
 ) -> Result<Vec<Span>> {
     assert_eq!(section_header.ty, SectionTy::Code);
 
     let code_block_spans = wasm.read_vec_enumerated(|wasm, idx| {
         // TODO maybe offset idx by number of imported functions?
-        let func_ty = fn_types[idx].clone();
+        let ty_idx = type_of_fn[idx];
+        let func_ty = fn_types[ty_idx].clone();
 
         let func_size = wasm.read_var_u32()?;
         let func_block = wasm.make_span(func_size as usize);
