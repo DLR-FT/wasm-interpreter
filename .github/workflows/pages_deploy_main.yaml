@@ -45,7 +45,7 @@ jobs:
 
       # -=-=-=-= Preparation =-=-=-=-
       - name: Prepare web files
-        run: mv ./target/doc/ ./web/rustdocs/ && mv ./output/html/ ./web/strictdoc/
+        run: mkdir -p web && mv ./target/doc/ ./web/rustdocs/ && mv ./output/html/ ./web/strictdoc/
 
       # -=-=-=-= Deploy =-=-=-=-
       - name: Deploy to Github Pages
@@ -55,3 +55,4 @@ jobs:
           # Build output to publish to the `gh-pages` branch:
           publish_dir: ./web
           publish_branch: gh-pages
+          destination_dir: ./main/
