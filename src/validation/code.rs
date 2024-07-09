@@ -21,7 +21,6 @@ pub fn validate_code_section(
     assert_eq!(section_header.ty, SectionTy::Code);
 
     let code_block_spans = wasm.read_vec_enumerated(|wasm, idx| {
-        // TODO maybe offset idx by number of imported functions?
         let ty_idx = type_of_fn[idx];
         let func_ty = fn_types[ty_idx].clone();
 
