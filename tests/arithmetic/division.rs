@@ -1,19 +1,29 @@
 use wasm::Error::RuntimeError;
 use wasm::RuntimeError::{DivideBy0, UnrepresentableResult};
+use wasm::{validate, RuntimeInstance};
 
-/// A simple function to test signed division
-#[test_log::test]
-pub fn division_signed_simple() {
-    use wasm::{validate, RuntimeInstance};
-
-    let wat = r#"
+const WAT_SIGNED_DIVISION_TEMPLATE: &'static str = r#"
     (module
-        (func (export "signed_division") (param $divisor i32) (param $dividend i32) (result i32)
+        (func (export "signed_division") (param $divisor {{TYPE}}) (param $dividend {{TYPE}}) (result {{TYPE}})
             local.get $divisor
             local.get $dividend
-            i32.div_s)
+            {{TYPE}}.div_s)
     )
-    "#;
+"#;
+
+const WAT_UNSIGNED_DIVISION_TEMPLATE: &'static str = r#"
+    (module
+        (func (export "unsigned_division") (param $divisor {{TYPE}}) (param $dividend {{TYPE}}) (result {{TYPE}})
+            local.get $divisor
+            local.get $dividend
+            {{TYPE}}.div_u)
+    )
+"#;
+
+/// A simple function to test signed i32 division
+#[test_log::test]
+pub fn i32_division_signed_simple() {
+    let wat = String::from(WAT_SIGNED_DIVISION_TEMPLATE).replace("{{TYPE}}", "i32");
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
@@ -67,19 +77,10 @@ pub fn division_signed_simple() {
     );
 }
 
-/// A simple function to test signed division's RuntimeError when dividing by 0
+/// A simple function to test i32 signed division's RuntimeError when dividing by 0
 #[test_log::test]
-pub fn division_signed_panic_dividend_0() {
-    use wasm::{validate, RuntimeInstance};
-
-    let wat = r#"
-  (module
-      (func (export "signed_division") (param $divisor i32) (param $dividend i32) (result i32)
-          local.get $divisor
-          local.get $dividend
-          i32.div_s)
-  )
-  "#;
+pub fn i32_division_signed_panic_dividend_0() {
+    let wat = String::from(WAT_SIGNED_DIVISION_TEMPLATE).replace("{{TYPE}}", "i32");
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
@@ -92,19 +93,10 @@ pub fn division_signed_panic_dividend_0() {
     assert_eq!(result.unwrap_err(), RuntimeError(DivideBy0));
 }
 
-/// A simple function to test signed division's RuntimeError when we are dividing the i32 minimum by -1 (which gives an unrepresentable result - overflow)
+/// A simple function to test i32 signed division's RuntimeError when we are dividing the i32 minimum by -1 (which gives an unrepresentable result - overflow)
 #[test_log::test]
-pub fn division_signed_panic_result_unrepresentable() {
-    use wasm::{validate, RuntimeInstance};
-
-    let wat = r#"
-  (module
-      (func (export "signed_division") (param $divisor i32) (param $dividend i32) (result i32)
-          local.get $divisor
-          local.get $dividend
-          i32.div_s)
-  )
-  "#;
+pub fn i32_division_signed_panic_result_unrepresentable() {
+    let wat = String::from(WAT_SIGNED_DIVISION_TEMPLATE).replace("{{TYPE}}", "i32");
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
@@ -117,19 +109,10 @@ pub fn division_signed_panic_result_unrepresentable() {
     assert_eq!(result.unwrap_err(), RuntimeError(UnrepresentableResult));
 }
 
-/// A simple function to test unsigned division
+/// A simple function to test i32 unsigned division
 #[test_log::test]
-pub fn division_unsigned_simple() {
-    use wasm::{validate, RuntimeInstance};
-
-    let wat = r#"
-    (module
-        (func (export "unsigned_division") (param $divisor i32) (param $dividend i32) (result i32)
-            local.get $divisor
-            local.get $dividend
-            i32.div_u)
-    )
-    "#;
+pub fn i32_division_unsigned_simple() {
+    let wat = String::from(WAT_UNSIGNED_DIVISION_TEMPLATE).replace("{{TYPE}}", "i32");
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
@@ -186,19 +169,10 @@ pub fn division_unsigned_simple() {
     );
 }
 
-/// A simple function to test unsigned division's RuntimeError when dividing by 0
+/// A simple function to test i32 unsigned division's RuntimeError when dividing by 0
 #[test_log::test]
-pub fn division_unsigned_panic_dividend_0() {
-    use wasm::{validate, RuntimeInstance};
-
-    let wat = r#"
-    (module
-        (func (export "unsigned_division") (param $divisor i32) (param $dividend i32) (result i32)
-            local.get $divisor
-            local.get $dividend
-            i32.div_u)
-    )
-    "#;
+pub fn i32_division_unsigned_panic_dividend_0() {
+    let wat = String::from(WAT_UNSIGNED_DIVISION_TEMPLATE).replace("{{TYPE}}", "i32");
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
@@ -209,4 +183,39 @@ pub fn division_unsigned_panic_dividend_0() {
     let result = instance.invoke_named::<(i32, i32), i32>("unsigned_division", (222, 0));
 
     assert_eq!(result.unwrap_err(), RuntimeError(DivideBy0));
+}
+
+/// A simple function to test signed i64 division
+#[test_log::test]
+pub fn i64_division_signed_simple() {
+    let wat = String::from(WAT_SIGNED_DIVISION_TEMPLATE).replace("{{TYPE}}", "i64");
+
+    let wasm_bytes = wat::parse_str(wat).unwrap();
+
+    let validation_info = validate(&wasm_bytes).expect("validation failed");
+
+    let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
+
+    assert_eq!(
+        10 as i64,
+        instance.invoke_func(0, (20 as i64, 2 as i64)).unwrap()
+    );
+    assert_eq!(
+        9_001 as i64,
+        instance
+            .invoke_func(0, (81_018_001 as i64, 9_001 as i64))
+            .unwrap()
+    );
+    assert_eq!(
+        -10 as i64,
+        instance.invoke_func(0, (20 as i64, -2 as i64)).unwrap()
+    );
+    assert_eq!(
+        10 as i64,
+        instance.invoke_func(0, (-20 as i64, -2 as i64)).unwrap()
+    );
+    assert_eq!(
+        -10 as i64,
+        instance.invoke_func(0, (-20 as i64, 2 as i64)).unwrap()
+    );
 }

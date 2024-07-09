@@ -230,3 +230,5 @@ macro_rules! impl_value_conversion {
 
 impl_value_conversion!(u32);
 impl_value_conversion!(i32);
+impl_value_conversion!(u64);
+impl_value_conversion!(i64);
