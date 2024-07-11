@@ -6,7 +6,7 @@ use crate::core::reader::{WasmReadable, WasmReader};
 use crate::execution::assert_validated::UnwrapValidatedExt;
 use crate::{unreachable_validated, Error, Result};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Export {
     #[allow(dead_code)]
     pub name: String,
@@ -28,7 +28,7 @@ impl WasmReadable for Export {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[allow(clippy::all)]
 pub enum ExportDesc {
     #[allow(warnings)]

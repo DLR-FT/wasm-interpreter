@@ -9,6 +9,7 @@ use crate::core::reader::types::ValType;
 pub enum RuntimeError {
     DivideBy0,
     UnrepresentableResult,
+    FunctionNotFound,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -107,6 +108,7 @@ impl Display for Error {
             Error::RuntimeError(err) => match err {
                 RuntimeError::DivideBy0 => f.write_str("Divide by zero is not permitted"),
                 RuntimeError::UnrepresentableResult => f.write_str("Result is unrepresentable"),
+                RuntimeError::FunctionNotFound => f.write_str("Function not found"),
             },
         }
     }
