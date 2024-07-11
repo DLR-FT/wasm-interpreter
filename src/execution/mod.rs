@@ -3,6 +3,7 @@ use alloc::vec::Vec;
 use value_stack::Stack;
 
 use crate::core::indices::{FuncIdx, GlobalIdx, LocalIdx};
+use crate::core::reader::types::export::{Export, ExportDesc};
 use crate::core::reader::types::memarg::MemArg;
 use crate::core::reader::types::{FuncType, NumType, ValType};
 use crate::core::reader::{WasmReadable, WasmReader};
@@ -14,7 +15,7 @@ use crate::execution::value::Value;
 use crate::validation::code::read_declared_locals;
 use crate::value::InteropValueList;
 use crate::Error::RuntimeError;
-use crate::RuntimeError::{DivideBy0, UnrepresentableResult};
+use crate::RuntimeError::{DivideBy0, FunctionNotFound, UnrepresentableResult};
 use crate::{Result, ValidationInfo};
 
 // TODO
@@ -32,6 +33,7 @@ where
 {
     pub wasm_bytecode: &'b [u8],
     types: Vec<FuncType>,
+    exports: Vec<Export>,
     store: Store,
     pub hook_set: H,
 }
@@ -54,6 +56,7 @@ where
         let mut instance = RuntimeInstance {
             wasm_bytecode: validation_info.wasm,
             types: validation_info.types.clone(),
+            exports: validation_info.exports.clone(),
             store,
             hook_set,
         };
@@ -64,6 +67,29 @@ where
         }
 
         Ok(instance)
+    }
+
+    pub fn invoke_named<Param: InteropValueList, Returns: InteropValueList>(
+        &mut self,
+        func_name: &str,
+        param: Param,
+    ) -> Result<Returns> {
+        let func_idx = self.exports.iter().find_map(|export| {
+            if export.name == func_name {
+                match export.desc {
+                    ExportDesc::FuncIdx(idx) => Some(idx),
+                    _ => None,
+                }
+            } else {
+                None
+            }
+        });
+
+        if let Some(func_idx) = func_idx {
+            self.invoke_func(func_idx, param)
+        } else {
+            Err(RuntimeError(FunctionNotFound))
+        }
     }
 
     /// Can only invoke functions with signature `[t1] -> [t2]` as of now.
