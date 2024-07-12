@@ -9,6 +9,9 @@ edition = "2021"
 name = "wasm"
 path = "src/lib.rs"
 
+[build]
+profiler = true
+
 [dependencies]
 log = "0.4.20"
 
