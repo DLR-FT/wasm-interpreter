@@ -21,6 +21,6 @@ fn same_type_fn() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    assert_eq!(-5, instance.invoke_func(0, -6).unwrap());
-    assert_eq!(-4, instance.invoke_func(1, -6).unwrap());
+    assert_eq!(-5, instance.invoke_named("add_one", -6).unwrap());
+    assert_eq!(-4, instance.invoke_named("add_two", -6).unwrap());
 }

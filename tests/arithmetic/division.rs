@@ -21,16 +21,50 @@ pub fn division_signed_simple() {
 
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    assert_eq!(10, instance.invoke_func(0, (20, 2)).unwrap());
-    assert_eq!(9_001, instance.invoke_func(0, (81_018_001, 9_001)).unwrap());
-    assert_eq!(-10, instance.invoke_func(0, (20, -2)).unwrap());
-    assert_eq!(10, instance.invoke_func(0, (-20, -2)).unwrap());
-    assert_eq!(-10, instance.invoke_func(0, (-20, 2)).unwrap());
-    assert_eq!(10, instance.invoke_func(0, (20, 2)).unwrap());
-    assert_eq!(9_001, instance.invoke_func(0, (81_018_001, 9_001)).unwrap());
-    assert_eq!(-10, instance.invoke_func(0, (20, -2)).unwrap());
-    assert_eq!(10, instance.invoke_func(0, (-20, -2)).unwrap());
-    assert_eq!(-10, instance.invoke_func(0, (-20, 2)).unwrap());
+    assert_eq!(
+        10,
+        instance.invoke_named("signed_division", (20, 2)).unwrap()
+    );
+    assert_eq!(
+        9_001,
+        instance
+            .invoke_named("signed_division", (81_018_001, 9_001))
+            .unwrap()
+    );
+    assert_eq!(
+        -10,
+        instance.invoke_named("signed_division", (20, -2)).unwrap()
+    );
+    assert_eq!(
+        10,
+        instance.invoke_named("signed_division", (-20, -2)).unwrap()
+    );
+    assert_eq!(
+        -10,
+        instance.invoke_named("signed_division", (-20, 2)).unwrap()
+    );
+    assert_eq!(
+        10,
+        instance.invoke_named("signed_division", (20, 2)).unwrap()
+    );
+    assert_eq!(
+        9_001,
+        instance
+            .invoke_named("signed_division", (81_018_001, 9_001))
+            .unwrap()
+    );
+    assert_eq!(
+        -10,
+        instance.invoke_named("signed_division", (20, -2)).unwrap()
+    );
+    assert_eq!(
+        10,
+        instance.invoke_named("signed_division", (-20, -2)).unwrap()
+    );
+    assert_eq!(
+        -10,
+        instance.invoke_named("signed_division", (-20, 2)).unwrap()
+    );
 }
 
 /// A simple function to test signed division's RuntimeError when dividing by 0
@@ -53,7 +87,7 @@ pub fn division_signed_panic_dividend_0() {
 
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    let result = instance.invoke_func::<(i32, i32), i32>(0, (222, 0));
+    let result = instance.invoke_named::<(i32, i32), i32>("signed_division", (222, 0));
 
     assert_eq!(result.unwrap_err(), RuntimeError(DivideBy0));
 }
@@ -78,7 +112,7 @@ pub fn division_signed_panic_result_unrepresentable() {
 
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    let result = instance.invoke_func::<(i32, i32), i32>(0, (i32::MIN, -1));
+    let result = instance.invoke_named::<(i32, i32), i32>("signed_division", (i32::MIN, -1));
 
     assert_eq!(result.unwrap_err(), RuntimeError(UnrepresentableResult));
 }
@@ -103,15 +137,53 @@ pub fn division_unsigned_simple() {
 
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    assert_eq!(10, instance.invoke_func(0, (20, 2)).unwrap());
-    assert_eq!(9_001, instance.invoke_func(0, (81_018_001, 9_001)).unwrap());
-    assert_eq!(0, instance.invoke_func(0, (i32::MIN, -1)).unwrap());
+    assert_eq!(
+        10,
+        instance.invoke_named("unsigned_division", (20, 2)).unwrap()
+    );
+    assert_eq!(
+        9_001,
+        instance
+            .invoke_named("unsigned_division", (81_018_001, 9_001))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke_named("unsigned_division", (i32::MIN, -1))
+            .unwrap()
+    );
 
-    assert_eq!(0, instance.invoke_func(0, (i32::MIN, -1)).unwrap());
-    assert_eq!(-20, instance.invoke_func(0, (-20, 1)).unwrap());
-    assert_eq!(2147483638, instance.invoke_func(0, (-20, 2)).unwrap());
-    assert_eq!(1431655758, instance.invoke_func(0, (-20, 3)).unwrap());
-    assert_eq!(1073741819, instance.invoke_func(0, (-20, 4)).unwrap());
+    assert_eq!(
+        0,
+        instance
+            .invoke_named("unsigned_division", (i32::MIN, -1))
+            .unwrap()
+    );
+    assert_eq!(
+        -20,
+        instance
+            .invoke_named("unsigned_division", (-20, 1))
+            .unwrap()
+    );
+    assert_eq!(
+        2147483638,
+        instance
+            .invoke_named("unsigned_division", (-20, 2))
+            .unwrap()
+    );
+    assert_eq!(
+        1431655758,
+        instance
+            .invoke_named("unsigned_division", (-20, 3))
+            .unwrap()
+    );
+    assert_eq!(
+        1073741819,
+        instance
+            .invoke_named("unsigned_division", (-20, 4))
+            .unwrap()
+    );
 }
 
 /// A simple function to test unsigned division's RuntimeError when dividing by 0
@@ -134,7 +206,7 @@ pub fn division_unsigned_panic_dividend_0() {
 
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    let result = instance.invoke_func::<(i32, i32), i32>(0, (222, 0));
+    let result = instance.invoke_named::<(i32, i32), i32>("unsigned_division", (222, 0));
 
     assert_eq!(result.unwrap_err(), RuntimeError(DivideBy0));
 }
