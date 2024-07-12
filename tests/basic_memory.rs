@@ -20,6 +20,6 @@ fn basic_memory() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    let _ = instance.invoke_func::<i32, ()>(0, 42);
-    assert_eq!(42, instance.invoke_func(1, ()).unwrap());
+    let _ = instance.invoke_named::<i32, ()>("store_num", 42);
+    assert_eq!(42, instance.invoke_named("load_num", ()).unwrap());
 }

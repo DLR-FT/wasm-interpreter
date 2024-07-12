@@ -74,6 +74,7 @@ where
         func_name: &str,
         param: Param,
     ) -> Result<Returns> {
+        // TODO: Optimize this search for better than linear-time. Pre-processing will likely be required
         let func_idx = self.exports.iter().find_map(|export| {
             if export.name == func_name {
                 match export.desc {
