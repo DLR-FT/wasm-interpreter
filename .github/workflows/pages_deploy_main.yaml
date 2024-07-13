@@ -42,7 +42,7 @@ jobs:
         run: pip install strictdoc setuptools # Note: we need setuptools for strictdoc to work. Installing just strictdoc is not enough
       - name: Export requirements
         run: strictdoc export ./requirements/requirements.sdoc
-      
+
       # -=-=-=-= Preparation (1/2) =-=-=-=-
       - name: Prepare web files (1/2)
         run: mkdir -p web && mv ./target/doc/ ./web/rustdocs/ && mv ./output/html/ ./web/strictdoc/
@@ -62,7 +62,7 @@ jobs:
           RUSTFLAGS="-C instrument-coverage -Z coverage-options=branch,mcdc" cargo +nightly test --tests -- --test-threads=1 &&
           cargo profdata -- merge -sparse *.profraw -o default.profdata &&
           cargo cov -- show -show-line-counts-or-regions -output-dir=cov_out -format=html --ignore-filename-regex='.*cargo.*' --instr-profile=default.profdata $OBJS
-      
+
       # -=-=-=-= Preparation (2/2) =-=-=-=-
       - name: Prepare web files (2/2)
         run: mv ./cov_out/ ./web/coverage
