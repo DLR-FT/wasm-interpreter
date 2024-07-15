@@ -61,8 +61,6 @@ where
         if let Some(start) = validation_info.start {
             let result = instance.invoke_func::<(), ()>(start, ());
             result?;
-            let result = instance.invoke_func::<(), ()>(start, ());
-            result?;
         }
 
         Ok(instance)
