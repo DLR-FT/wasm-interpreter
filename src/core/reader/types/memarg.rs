@@ -1,6 +1,9 @@
+use core::fmt::Debug;
+
 use crate::core::reader::{WasmReadable, WasmReader};
 use crate::execution::assert_validated::UnwrapValidatedExt;
 
+#[derive(Debug)]
 pub struct MemArg {
     pub offset: u32,
     #[allow(dead_code)]

@@ -61,6 +61,22 @@ impl WasmReader<'_> {
         Ok(result)
     }
 
+    pub fn read_var_f32(&mut self) -> Result<u32> {
+        if self.full_wasm_binary.len() - self.pc < 4 {
+            return Err(Error::Eof);
+        }
+
+        let word = u32::from_le_bytes(
+            self.full_wasm_binary[self.pc..self.pc + 4]
+                .try_into()
+                .unwrap(),
+        );
+
+        self.strip_bytes::<4>()?;
+
+        Ok(word)
+    }
+
     pub fn read_var_i64(&mut self) -> Result<i64> {
         let mut result: i64 = 0;
         let mut shift: u64 = 0;
