@@ -18,6 +18,7 @@ path = "src/lib.rs"
 profiler = true
 
 [dependencies]
+libm = "0.2.8"
 log = "=0.4.22"
 
 [dev-dependencies]
