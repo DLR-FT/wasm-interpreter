@@ -14,7 +14,7 @@ use crate::{Error, Result};
 impl WasmReader<'_> {
     /// Note: If `Err`, the [WasmReader] object is no longer guaranteed to be in a valid state
     pub fn read_u8(&mut self) -> Result<u8> {
-        let value = self.full_contents.get(self.pc).ok_or(Error::Eof)?;
+        let value = self.full_wasm_binary.get(self.pc).ok_or(Error::Eof)?;
         self.pc += core::mem::size_of::<u8>();
 
         Ok(*value)
@@ -62,11 +62,11 @@ impl WasmReader<'_> {
     pub fn read_name(&mut self) -> Result<&str> {
         let len = self.read_var_u32()? as usize;
 
-        if len > self.full_contents.len() - self.pc {
+        if len > self.full_wasm_binary.len() - self.pc {
             return Err(Error::Eof);
         }
 
-        let utf8_str = &self.full_contents[self.pc..(self.pc + len)]; // Cannot panic because check is done above
+        let utf8_str = &self.full_wasm_binary[self.pc..(self.pc + len)]; // Cannot panic because check is done above
         self.pc += len;
 
         core::str::from_utf8(utf8_str).map_err(Error::MalformedUtf8String)
