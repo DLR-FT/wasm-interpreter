@@ -9,7 +9,7 @@ pub mod types;
 /// Its purpose is to abstract parsing basic WASM values from the bytecode.
 pub struct WasmReader<'a> {
     /// Entire WASM binary as slice
-    pub full_contents: &'a [u8],
+    pub full_wasm_binary: &'a [u8],
 
     /// Current program counter, i. e. index of the next byte to be consumed from the WASM binary
     pub pc: usize,
@@ -19,7 +19,7 @@ impl<'a> WasmReader<'a> {
     /// Initialize a new [WasmReader] from a WASM byte slice
     pub const fn new(wasm: &'a [u8]) -> Self {
         Self {
-            full_contents: wasm,
+            full_wasm_binary: wasm,
             pc: 0,
         }
     }
@@ -31,7 +31,7 @@ impl<'a> WasmReader<'a> {
     /// This allows one to set the [pc](WasmReader::pc) to one byte *past* the end of
     /// [full_wasm_binary](WasmReader::full_wasm_binary), **if** the [Span]'s length is 0.
     pub fn move_start_to(&mut self, span: Span) -> Result<()> {
-        if span.from + span.len > self.full_contents.len() {
+        if span.from + span.len > self.full_wasm_binary.len() {
             return Err(Error::Eof);
         }
 
@@ -42,13 +42,14 @@ impl<'a> WasmReader<'a> {
 
     /// Byte slice to the remainder of the WASM binary, beginning from the current [pc](Self::pc)
     pub fn remaining_bytes(&self) -> &[u8] {
-        &self.full_contents[self.pc..]
+        &self.full_wasm_binary[self.pc..]
     }
 
     /// The current program counter
     #[allow(dead_code)]
     pub const fn current_pc(&self) -> usize {
         self.pc
+        &self.full_wasm_binary[self.pc..]
     }
 
     /// Create a [Span] starting from [pc](Self::pc) for the next `len` bytes
@@ -63,11 +64,11 @@ impl<'a> WasmReader<'a> {
     ///
     /// This yields back an array of the correct length
     pub fn strip_bytes<const N: usize>(&mut self) -> Result<[u8; N]> {
-        if N > self.full_contents.len() - self.pc {
+        if N > self.full_wasm_binary.len() - self.pc {
             return Err(Error::Eof);
         }
 
-        let bytes = &self.full_contents[self.pc..(self.pc + N)];
+        let bytes = &self.full_wasm_binary[self.pc..(self.pc + N)];
         self.pc += N;
 
         Ok(bytes.try_into().expect("the slice length to be exactly N"))
@@ -77,7 +78,10 @@ impl<'a> WasmReader<'a> {
     ///
     /// May yield an error if the [pc](Self::pc) advanced past the end of the WASM binary slice
     pub fn peek_u8(&self) -> Result<u8> {
-        self.full_contents.get(self.pc).copied().ok_or(Error::Eof)
+        self.full_wasm_binary
+            .get(self.pc)
+            .copied()
+            .ok_or(Error::Eof)
     }
 
     /// Call a closure that may mutate the [WasmReader]
@@ -112,7 +116,7 @@ impl<'a> WasmReader<'a> {
     /// more than 0 further bytes would panick. However, it can not move the [pc](Self::pc) any
     /// further, instead an error is returned.
     pub fn skip(&mut self, num_bytes: usize) -> Result<()> {
-        if num_bytes > self.full_contents.len() - self.pc {
+        if num_bytes > self.full_wasm_binary.len() - self.pc {
             return Err(Error::Eof);
         }
         self.pc += num_bytes;
@@ -123,7 +127,7 @@ impl<'a> WasmReader<'a> {
     ///
     /// This is foremost useful to remove any other reference WASM binary.
     pub fn into_inner(self) -> &'a [u8] {
-        self.full_contents
+        self.full_wasm_binary
     }
 }
 
@@ -164,7 +168,7 @@ pub mod span {
         type Output = [u8];
 
         fn index(&self, index: Span) -> &'a Self::Output {
-            &self.full_contents[index.from..(index.from + index.len)]
+            &self.full_wasm_binary[index.from..(index.from + index.len)]
         }
     }
 }
