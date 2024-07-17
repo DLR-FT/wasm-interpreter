@@ -107,3 +107,57 @@ pub mod span {
         }
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use alloc::vec;
+
+    #[test]
+    fn move_start_to() {
+        let my_bytes = vec![0x11, 0x12, 0x13, 0x14, 0x15];
+        let mut wasm_reader = WasmReader::new(&my_bytes);
+
+        let span = Span::new(0, 0);
+        wasm_reader.move_start_to(span);
+        // this actually dangerous, we did not validate there to be more than 0 bytes using the Span
+        wasm_reader.peek_u8().unwrap();
+
+        let span = Span::new(0, my_bytes.len());
+        wasm_reader.move_start_to(span);
+        wasm_reader.peek_u8().unwrap();
+        assert_eq!(wasm_reader[span], my_bytes);
+
+        let span = Span::new(my_bytes.len(), 0);
+        wasm_reader.move_start_to(span);
+        // span had zero lenght, hence wasm_reader.peek_u8() would be allowed to fail
+
+        let span = Span::new(my_bytes.len() - 1, 1);
+        wasm_reader.move_start_to(span);
+
+        assert_eq!(wasm_reader.peek_u8().unwrap(), *my_bytes.last().unwrap());
+    }
+
+    #[test]
+    fn remaining_bytes_1() {
+        let my_bytes = vec![0x11, 0x12, 0x13, 0x14, 0x15];
+        let mut wasm_reader = WasmReader::new(&my_bytes);
+
+        assert_eq!(wasm_reader.remaining_bytes(), my_bytes);
+        wasm_reader.skip(4).unwrap();
+        assert_eq!(wasm_reader.peek_u8().unwrap(), 0x15);
+
+        assert_eq!(wasm_reader.remaining_bytes(), &my_bytes[4..]);
+    }
+
+    #[test]
+    fn remaining_bytes_2() {
+        let my_bytes = vec![0x11, 0x12, 0x13, 0x14, 0x15];
+        let mut wasm_reader = WasmReader::new(&my_bytes);
+
+        assert_eq!(wasm_reader.remaining_bytes(), my_bytes);
+        wasm_reader.skip(5).unwrap();
+        assert_eq!(wasm_reader.remaining_bytes(), &my_bytes[5..]);
+        assert_eq!(wasm_reader.remaining_bytes(), &[]);
+    }
+}
