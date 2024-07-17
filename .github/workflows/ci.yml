@@ -15,6 +15,9 @@ jobs:
       matrix:
         os: [ubuntu-latest]
     runs-on: ${{ matrix.os }}
+    env:
+      RUSTFLAGS: "-D warnings"
+      RUSTDOCFLAGS: "-D warnings"
 
     steps:
       - uses: actions/checkout@v4
@@ -23,7 +26,9 @@ jobs:
       - name: Run clippy
         # for CI we can treat errors as warnings
         # for reference see: https://doc.rust-lang.org/clippy/usage.html
-        run: cargo clippy -- -Dwarnings
+        run: cargo clippy
+      - name: Build docs
+        run: cargo doc --document-private-items --verbose
       - name: Build
         run: cargo build --verbose
       - name: Run tests
