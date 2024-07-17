@@ -108,6 +108,13 @@
               '';
               help = "start the requirements editor web-ui";
             }
+            {
+              name = "cargo-watch-doc";
+              command = ''
+                cargo watch --shell 'cargo doc --document-private-items'
+              '';
+              help = "start cargo watch loop for documentation";
+            }
           ];
         });
 
