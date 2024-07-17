@@ -21,7 +21,3 @@ This pull request still needs...
 ### Github Issue
 
 This pull request closes <GITHUB_ISSUE>
-
-### Author
-
-Signed-off-by: <YOUR_NAME> <YOUR_EMAIL_HERE@EXAMPLE.COM>
