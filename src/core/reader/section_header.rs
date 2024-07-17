@@ -74,7 +74,7 @@ impl WasmReadable for SectionHeader {
     fn read(wasm: &mut WasmReader) -> Result<Self> {
         let ty = SectionTy::read(wasm)?;
         let size: u32 = wasm.read_var_u32()?;
-        let contents_span = wasm.make_span(size as usize);
+        let contents_span = wasm.make_span_unchecked(size as usize);
 
         Ok(SectionHeader {
             ty,
@@ -85,7 +85,7 @@ impl WasmReadable for SectionHeader {
     fn read_unvalidated(wasm: &mut WasmReader) -> Self {
         let ty = SectionTy::read_unvalidated(wasm);
         let size: u32 = wasm.read_var_u32().unwrap_validated();
-        let contents_span = wasm.make_span(size as usize);
+        let contents_span = wasm.make_span_unchecked(size as usize);
 
         SectionHeader {
             ty,

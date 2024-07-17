@@ -8,6 +8,10 @@ use crate::core::reader::types::global::Global;
 use crate::core::reader::types::{MemType, TableType, ValType};
 use crate::execution::value::{Ref, Value};
 
+/// The store represents all global state that can be manipulated by WebAssembly programs. It
+/// consists of the runtime representation of all instances of functions, tables, memories, and
+/// globals, element segments, and data segments that have been allocated during the life time of
+/// the abstract machine.
 /// <https://webassembly.github.io/spec/core/exec/runtime.html#store>
 pub struct Store {
     pub funcs: Vec<FuncInst>,

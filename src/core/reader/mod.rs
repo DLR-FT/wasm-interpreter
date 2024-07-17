@@ -4,71 +4,124 @@ use crate::{Error, Result};
 pub mod section_header;
 pub mod types;
 
-/// A struct for managing and reading WASM bytecode.
-/// Its purpose is mostly to abstract parsing basic WASM values from the bytecode.
+/// A struct for managing and reading WASM bytecode
+///
+/// Its purpose is to abstract parsing basic WASM values from the bytecode.
 pub struct WasmReader<'a> {
-    pub(crate) full_contents: &'a [u8],
-    pub(crate) current: &'a [u8],
+    /// Entire WASM binary as slice
+    pub full_contents: &'a [u8],
+
+    /// Current program counter, i. e. index of the next byte to be consumed from the WASM binary
+    pub pc: usize,
 }
 
 impl<'a> WasmReader<'a> {
-    pub fn new(wasm: &'a [u8]) -> Self {
+    /// Initialize a new [WasmReader] from a WASM byte slice
+    pub const fn new(wasm: &'a [u8]) -> Self {
         Self {
             full_contents: wasm,
-            current: wasm,
+            pc: 0,
         }
     }
-    // TODO this is not very intuitive but we cannot shorten `self.current`'s end
-    //  because some methods rely on the property that `self.current`'s and
-    //  `self.full_contents`'s last element are equal.
-    pub fn move_start_to(&mut self, span: Span) {
-        self.current =
-            &self.full_contents[span.from../* normally we would have the end of the span here*/];
-    }
 
-    pub fn remaining_bytes(&self) -> &[u8] {
-        self.current
-    }
-
-    pub fn current_idx(&self) -> usize {
-        self.full_contents.len() - self.current.len()
-    }
-    pub fn make_span(&self, len: usize) -> Span {
-        Span::new(self.current_idx(), len)
-    }
-
-    pub fn strip_bytes<const N: usize>(&mut self) -> Result<[u8; N]> {
-        if N > self.current.len() {
+    /// Advance the cursor to the first byte of the provided [Span] and validates that entire [Span] fits the WASM binary
+    ///
+    /// # Note
+    ///
+    /// This allows one to set the [pc](WasmReader::pc) to one byte *past* the end of
+    /// [full_wasm_binary](WasmReader::full_wasm_binary), **if** the [Span]'s length is 0.
+    pub fn move_start_to(&mut self, span: Span) -> Result<()> {
+        if span.from + span.len > self.full_contents.len() {
             return Err(Error::Eof);
         }
 
-        let (bytes, rest) = self.current.split_at(N);
-        self.current = rest;
+        self.pc = span.from;
+
+        Ok(())
+    }
+
+    /// Byte slice to the remainder of the WASM binary, beginning from the current [pc](Self::pc)
+    pub fn remaining_bytes(&self) -> &[u8] {
+        &self.full_contents[self.pc..]
+    }
+
+    /// The current program counter
+    #[allow(dead_code)]
+    pub const fn current_pc(&self) -> usize {
+        self.pc
+    }
+
+    /// Create a [Span] starting from [pc](Self::pc) for the next `len` bytes
+    ///
+    /// Does **not** verify the span to fit the WASM binary, i.e. the span could exceed the WASM
+    /// binarie's bounds.
+    pub fn make_span_unchecked(&self, len: usize) -> Span {
+        Span::new(self.pc, len)
+    }
+
+    /// Take `N` bytes starting from [pc](Self::pc), then advance the [pc](Self::pc) by `N`
+    ///
+    /// This yields back an array of the correct length
+    pub fn strip_bytes<const N: usize>(&mut self) -> Result<[u8; N]> {
+        if N > self.full_contents.len() - self.pc {
+            return Err(Error::Eof);
+        }
+
+        let bytes = &self.full_contents[self.pc..(self.pc + N)];
+        self.pc += N;
 
         Ok(bytes.try_into().expect("the slice length to be exactly N"))
     }
+
+    /// Read the current byte without advancing the [pc](Self::pc)
+    ///
+    /// May yield an error if the [pc](Self::pc) advanced past the end of the WASM binary slice
     pub fn peek_u8(&self) -> Result<u8> {
-        self.current.first().copied().ok_or(Error::Eof)
+        self.full_contents.get(self.pc).copied().ok_or(Error::Eof)
     }
 
+    /// Call a closure that may mutate the [WasmReader]
+    ///
+    /// Returns a tuple of the closure's return value and the number of bytes that the WasmReader
+    /// was advanced by.
+    ///
+    /// # Panics
+    ///
+    /// May panic if the closure moved the [pc](Self::pc) backwards, e.g. when
+    /// [move_start_to](Self::move_start_to) is called.
     pub fn measure_num_read_bytes<T>(
         &mut self,
         f: impl FnOnce(&mut WasmReader) -> Result<T>,
     ) -> Result<(T, usize)> {
-        let before = self.current_idx();
+        let before = self.pc;
         let ret = f(self)?;
-        let num_read_bytes = self.current_idx() - before;
 
+        // TODO maybe use checked sub, that is slower but guarantees no surprises
+        debug_assert!(
+            self.pc >= before,
+            "pc was advanced backwards towards the start"
+        );
+
+        let num_read_bytes = self.pc - before;
         Ok((ret, num_read_bytes))
     }
 
+    /// Skip `num_bytes`, advancing the [pc](Self::pc) accordingly
+    ///
+    /// This can move the [pc](Self::pc) past the last byte of the WASM binary, so that reading
+    /// more than 0 further bytes would panick. However, it can not move the [pc](Self::pc) any
+    /// further, instead an error is returned.
     pub fn skip(&mut self, num_bytes: usize) -> Result<()> {
-        if self.current.len() < num_bytes {
+        if num_bytes > self.full_contents.len() - self.pc {
             return Err(Error::Eof);
         }
-        self.current = &self.current[num_bytes..];
+        self.pc += num_bytes;
         Ok(())
     }
+
+    /// Consumes [Self], yielding back the internal reference to the WASM binary
+    ///
+    /// This is foremost useful to remove any other reference WASM binary.
     pub fn into_inner(self) -> &'a [u8] {
         self.full_contents
     }
@@ -84,6 +137,11 @@ pub mod span {
 
     use crate::core::reader::WasmReader;
 
+    /// A index and offset to describe a (sub-) slice into WASM bytecode
+    ///
+    /// Can be used to index into a [WasmReader], yielding a byte slice. As it does not
+    /// actually own the indexed data, this struct is free of lifetimes. Caution is advised when
+    /// indexing unknown slices, as a [Span] does not validate the length of the indexed slice.
     #[derive(Copy, Clone, Debug, Hash)]
     pub struct Span {
         pub(super) from: usize,
@@ -91,10 +149,13 @@ pub mod span {
     }
 
     impl Span {
-        pub fn new(from: usize, len: usize) -> Self {
+        /// Create a new [Span], starting from `from` and ranging `len` elements
+        pub const fn new(from: usize, len: usize) -> Self {
             Self { from, len }
         }
-        pub fn len(&self) -> usize {
+
+        /// Returnt the length of this [Span]
+        pub const fn len(&self) -> usize {
             self.len
         }
     }
@@ -119,23 +180,43 @@ mod test {
         let mut wasm_reader = WasmReader::new(&my_bytes);
 
         let span = Span::new(0, 0);
-        wasm_reader.move_start_to(span);
+        wasm_reader.move_start_to(span).unwrap();
         // this actually dangerous, we did not validate there to be more than 0 bytes using the Span
         wasm_reader.peek_u8().unwrap();
 
         let span = Span::new(0, my_bytes.len());
-        wasm_reader.move_start_to(span);
+        wasm_reader.move_start_to(span).unwrap();
         wasm_reader.peek_u8().unwrap();
         assert_eq!(wasm_reader[span], my_bytes);
 
         let span = Span::new(my_bytes.len(), 0);
-        wasm_reader.move_start_to(span);
-        // span had zero lenght, hence wasm_reader.peek_u8() would be allowed to fail
+        wasm_reader.move_start_to(span).unwrap();
+        // span had zero length, hence wasm_reader.peek_u8() would be allowed to fail
 
         let span = Span::new(my_bytes.len() - 1, 1);
-        wasm_reader.move_start_to(span);
+        wasm_reader.move_start_to(span).unwrap();
 
         assert_eq!(wasm_reader.peek_u8().unwrap(), *my_bytes.last().unwrap());
+    }
+
+    #[test]
+    #[should_panic]
+    fn move_start_to_out_of_bounds_1() {
+        let my_bytes = vec![0x11, 0x12, 0x13, 0x14, 0x15];
+        let mut wasm_reader = WasmReader::new(&my_bytes);
+
+        let span = Span::new(my_bytes.len(), 1);
+        wasm_reader.move_start_to(span).unwrap();
+    }
+
+    #[test]
+    #[should_panic]
+    fn move_start_to_out_of_bounds_2() {
+        let my_bytes = vec![0x11, 0x12, 0x13, 0x14, 0x15];
+        let mut wasm_reader = WasmReader::new(&my_bytes);
+
+        let span = Span::new(0, my_bytes.len() + 1);
+        wasm_reader.move_start_to(span).unwrap();
     }
 
     #[test]
