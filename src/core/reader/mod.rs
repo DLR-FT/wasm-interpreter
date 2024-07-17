@@ -45,13 +45,6 @@ impl<'a> WasmReader<'a> {
         &self.full_wasm_binary[self.pc..]
     }
 
-    /// The current program counter
-    #[allow(dead_code)]
-    pub const fn current_pc(&self) -> usize {
-        self.pc
-        &self.full_wasm_binary[self.pc..]
-    }
-
     /// Create a [Span] starting from [pc](Self::pc) for the next `len` bytes
     ///
     /// Does **not** verify the span to fit the WASM binary, i.e. the span could exceed the WASM
