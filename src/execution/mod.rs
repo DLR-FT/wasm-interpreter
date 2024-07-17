@@ -152,7 +152,7 @@ where
 
         // Start reading the function's instructions
         let mut wasm = WasmReader::new(self.wasm_bytecode);
-        wasm.move_start_to(inst.code_expr);
+        wasm.move_start_to(inst.code_expr)?;
 
         use crate::core::reader::types::opcode::*;
         loop {
@@ -431,13 +431,15 @@ where
             functions
                 .zip(func_blocks)
                 .map(|(ty, func)| {
-                    wasm_reader.move_start_to(*func);
+                    wasm_reader
+                        .move_start_to(*func)
+                        .expect("function index to be in the bounds of the WASM binary");
 
                     let (locals, bytes_read) = wasm_reader
                         .measure_num_read_bytes(read_declared_locals)
                         .unwrap_validated();
 
-                    let code_expr = wasm_reader.make_span(func.len() - bytes_read);
+                    let code_expr = wasm_reader.make_span_unchecked(func.len() - bytes_read);
 
                     FuncInst {
                         ty: *ty,
