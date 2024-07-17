@@ -15,6 +15,7 @@ This pull request still needs...
 - [ ] Ran `cargo fmt`
 - [ ] Ran `cargo check`
 - [ ] Ran `cargo build`
+- [ ] Ran `cargo doc`
 - [ ] Ran `nix fmt`
 - [ ] Ran `treefmt`
 
