@@ -1,8 +1,8 @@
-//! Methods to read basic WASM Values from a [Wasm] object.
+//! Methods to read basic WASM Values from a [WasmReader] object.
 //!
 //! See: <https://webassembly.github.io/spec/core/binary/values.html>
 //!
-//! Note: If any of these methods return `Err`, they may have consumed some bytes from the [Wasm] object and thus consequent calls may result in unexpected behaviour.
+//! Note: If any of these methods return `Err`, they may have consumed some bytes from the [WasmReader] object and thus consequent calls may result in unexpected behaviour.
 //! This is due to the fact that these methods read elemental types which cannot be split.
 
 use alloc::vec::Vec;
@@ -12,7 +12,7 @@ use crate::core::reader::WasmReader;
 use crate::{Error, Result};
 
 impl WasmReader<'_> {
-    /// Note: If `Err`, the [Wasm] object is no longer guaranteed to be in a valid state
+    /// Note: If `Err`, the [WasmReader] object is no longer guaranteed to be in a valid state
     pub fn read_u8(&mut self) -> Result<u8> {
         let value = *self.current.first().ok_or(Error::Eof)?;
 
@@ -25,7 +25,7 @@ impl WasmReader<'_> {
     }
 
     /// Parses a variable-length `u32` as specified by [LEB128](https://en.wikipedia.org/wiki/LEB128#Unsigned_LEB128).
-    /// Note: If `Err`, the [Wasm] object is no longer guaranteed to be in a valid state
+    /// Note: If `Err`, the [WasmReader] object is no longer guaranteed to be in a valid state
     pub fn read_var_u32(&mut self) -> Result<u32> {
         let mut result: u32 = 0;
         let mut shift: u32 = 0;
@@ -62,7 +62,7 @@ impl WasmReader<'_> {
         Ok(result)
     }
 
-    /// Note: If `Err`, the [Wasm] object is no longer guaranteed to be in a valid state
+    /// Note: If `Err`, the [WasmReader] object is no longer guaranteed to be in a valid state
     pub fn read_name(&mut self) -> Result<&str> {
         let len = self.read_var_u32()? as usize;
 
@@ -87,7 +87,7 @@ impl WasmReader<'_> {
         })
     }
 
-    /// Note: If `Err`, the [Wasm] object is no longer guaranteed to be in a valid state
+    /// Note: If `Err`, the [WasmReader] object is no longer guaranteed to be in a valid state
     pub fn read_vec<T, F>(&mut self, mut read_element: F) -> Result<Vec<T>>
     where
         F: FnMut(&mut WasmReader) -> Result<T>,

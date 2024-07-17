@@ -1,5 +1,5 @@
-/// The WASM program stores 42 into linear memory upon instantiation through a start function.
-/// Then it reads the same value and checks its value.
+//! The WASM program stores 42 into linear memory upon instantiation through a start function.
+//! Then it reads the same value and checks its value.
 #[test_log::test]
 fn start_function() {
     use wasm::{validate, RuntimeInstance};

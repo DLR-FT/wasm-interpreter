@@ -1,4 +1,4 @@
-//! Methods to read WASM Types from a [Wasm] object.
+//! Methods to read WASM Types from a [WasmReader] object.
 //!
 //! See: <https://webassembly.github.io/spec/core/binary/types.html>
 
@@ -18,7 +18,7 @@ pub mod memarg;
 pub mod opcode;
 pub mod values;
 
-/// https://webassembly.github.io/spec/core/binary/types.html#number-types
+/// <https://webassembly.github.io/spec/core/binary/types.html#number-types>
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum NumType {
     I32,
@@ -55,7 +55,7 @@ impl WasmReadable for NumType {
     }
 }
 
-/// https://webassembly.github.io/spec/core/binary/types.html#vector-types
+/// <https://webassembly.github.io/spec/core/binary/types.html#vector-types>
 struct VecType;
 
 impl WasmReadable for VecType {
@@ -77,7 +77,7 @@ impl WasmReadable for VecType {
     }
 }
 
-/// https://webassembly.github.io/spec/core/binary/types.html#reference-types
+/// <https://webassembly.github.io/spec/core/binary/types.html#reference-types>
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum RefType {
     FuncRef,
@@ -105,7 +105,7 @@ impl WasmReadable for RefType {
     }
 }
 
-/// https://webassembly.github.io/spec/core/binary/types.html#reference-types
+/// <https://webassembly.github.io/spec/core/binary/types.html#reference-types>
 /// TODO flatten [NumType] and [RefType] enums, as they are not used individually and `wasmparser` also does it.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[allow(clippy::all)]
@@ -147,7 +147,7 @@ impl WasmReadable for ValType {
     }
 }
 
-/// https://webassembly.github.io/spec/core/binary/types.html#value-types
+/// <https://webassembly.github.io/spec/core/binary/types.html#value-types>
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ResultType {
     pub valtypes: Vec<ValType>,
@@ -169,7 +169,7 @@ impl WasmReadable for ResultType {
     }
 }
 
-/// https://webassembly.github.io/spec/core/binary/types.html#function-types
+/// <https://webassembly.github.io/spec/core/binary/types.html#function-types>
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FuncType {
     pub params: ResultType,
