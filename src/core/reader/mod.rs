@@ -12,6 +12,20 @@ pub struct WasmReader<'a> {
     pub full_wasm_binary: &'a [u8],
 
     /// Current program counter, i. e. index of the next byte to be consumed from the WASM binary
+    ///
+    /// # Correctness Note
+    ///
+    /// The `pc` points to the next byte to be consumed from the WASM binary. Therefore, after
+    /// consuming last byte, this cursor will advance past the last byte; for a WASM binary that is
+    /// 100 bytes long (valid indexes start with 0 and end with 99), the `pc` therefore can become
+    /// 100. However, it can not advance further.
+    ///
+    /// The table below illustrates this with an example for a WASM binary that is 5 bytes long:
+    ///
+    /// |                     Index |   0  |   1  |   2  |   3  |   4  | 5 | 6 |
+    /// |--------------------------:|:----:|:----:|:----:|:----:|:----:|:-:|:-:|
+    /// | `full_wasm_binary[index]` | 0xaa | 0xbb | 0xcc | 0xee | 0xff | - | - |
+    /// |      Valid `pc` position? |   ✅  |   ✅  |   ✅  |   ✅  |   ✅  | ✅ | ❌ |
     pub pc: usize,
 }
 
@@ -28,8 +42,9 @@ impl<'a> WasmReader<'a> {
     ///
     /// # Note
     ///
-    /// This allows one to set the [pc](WasmReader::pc) to one byte *past* the end of
-    /// [full_wasm_binary](WasmReader::full_wasm_binary), **if** the [Span]'s length is 0.
+    /// This allows setting the [`pc`](WasmReader::pc) to one byte *past* the end of
+    /// [full_wasm_binary](WasmReader::full_wasm_binary), **if** the [Span]'s length is 0. For
+    /// further information, refer to the [field documentation of `pc`](WasmReader::pc).
     pub fn move_start_to(&mut self, span: Span) -> Result<()> {
         if span.from + span.len > self.full_wasm_binary.len() {
             return Err(Error::Eof);
@@ -40,22 +55,29 @@ impl<'a> WasmReader<'a> {
         Ok(())
     }
 
-    /// Byte slice to the remainder of the WASM binary, beginning from the current [pc](Self::pc)
+    /// Byte slice to the remainder of the WASM binary, beginning from the current [`pc`](Self::pc)
     pub fn remaining_bytes(&self) -> &[u8] {
         &self.full_wasm_binary[self.pc..]
     }
 
-    /// Create a [Span] starting from [pc](Self::pc) for the next `len` bytes
+    /// Create a [Span] starting from [`pc`](Self::pc) for the next `len` bytes
     ///
     /// Does **not** verify the span to fit the WASM binary, i.e. the span could exceed the WASM
-    /// binarie's bounds.
+    /// binary's bounds.
     pub fn make_span_unchecked(&self, len: usize) -> Span {
         Span::new(self.pc, len)
     }
 
-    /// Take `N` bytes starting from [pc](Self::pc), then advance the [pc](Self::pc) by `N`
+    /// Take `N` bytes starting from [`pc`](Self::pc), then advance the [`pc`](Self::pc) by `N`
     ///
     /// This yields back an array of the correct length
+    ///
+    /// # Note
+    ///
+    /// This allows setting the [`pc`](WasmReader::pc) to one byte *past* the end of
+    /// [full_wasm_binary](WasmReader::full_wasm_binary), **if** `N` equals the remaining bytes
+    /// slice's length. For further information, refer to the [field documentation of `pc`]
+    /// (WasmReader::pc).
     pub fn strip_bytes<const N: usize>(&mut self) -> Result<[u8; N]> {
         if N > self.full_wasm_binary.len() - self.pc {
             return Err(Error::Eof);
@@ -67,9 +89,9 @@ impl<'a> WasmReader<'a> {
         Ok(bytes.try_into().expect("the slice length to be exactly N"))
     }
 
-    /// Read the current byte without advancing the [pc](Self::pc)
+    /// Read the current byte without advancing the [`pc`](Self::pc)
     ///
-    /// May yield an error if the [pc](Self::pc) advanced past the end of the WASM binary slice
+    /// May yield an error if the [`pc`](Self::pc) advanced past the end of the WASM binary slice
     pub fn peek_u8(&self) -> Result<u8> {
         self.full_wasm_binary
             .get(self.pc)
@@ -79,12 +101,12 @@ impl<'a> WasmReader<'a> {
 
     /// Call a closure that may mutate the [WasmReader]
     ///
-    /// Returns a tuple of the closure's return value and the number of bytes that the WasmReader
+    /// Returns a tuple of the closure's return value and the number of bytes that the [`WasmReader`]
     /// was advanced by.
     ///
     /// # Panics
     ///
-    /// May panic if the closure moved the [pc](Self::pc) backwards, e.g. when
+    /// May panic if the closure moved the [`pc`](Self::pc) backwards, e.g. when
     /// [move_start_to](Self::move_start_to) is called.
     pub fn measure_num_read_bytes<T>(
         &mut self,
@@ -103,11 +125,14 @@ impl<'a> WasmReader<'a> {
         Ok((ret, num_read_bytes))
     }
 
-    /// Skip `num_bytes`, advancing the [pc](Self::pc) accordingly
+    /// Skip `num_bytes`, advancing the [`pc`](Self::pc) accordingly
     ///
-    /// This can move the [pc](Self::pc) past the last byte of the WASM binary, so that reading
-    /// more than 0 further bytes would panick. However, it can not move the [pc](Self::pc) any
-    /// further, instead an error is returned.
+    /// # Note
+    ///
+    /// This can move the [`pc`](Self::pc) past the last byte of the WASM binary, so that reading
+    /// more than 0 further bytes would panick. However, it can not move the [`pc`](Self::pc) any
+    /// further than that, instead an error is returned. For further information, refer to the
+    /// [field documentation of `pc`] (WasmReader::pc).
     pub fn skip(&mut self, num_bytes: usize) -> Result<()> {
         if num_bytes > self.full_wasm_binary.len() - self.pc {
             return Err(Error::Eof);
@@ -117,8 +142,6 @@ impl<'a> WasmReader<'a> {
     }
 
     /// Consumes [Self], yielding back the internal reference to the WASM binary
-    ///
-    /// This is foremost useful to remove any other reference WASM binary.
     pub fn into_inner(self) -> &'a [u8] {
         self.full_wasm_binary
     }
@@ -134,7 +157,7 @@ pub mod span {
 
     use crate::core::reader::WasmReader;
 
-    /// A index and offset to describe a (sub-) slice into WASM bytecode
+    /// An index and offset to describe a (sub-) slice into WASM bytecode
     ///
     /// Can be used to index into a [WasmReader], yielding a byte slice. As it does not
     /// actually own the indexed data, this struct is free of lifetimes. Caution is advised when
@@ -151,14 +174,14 @@ pub mod span {
             Self { from, len }
         }
 
-        /// Returnt the length of this [Span]
+        /// Returns the length of this [Span]
         pub const fn len(&self) -> usize {
             self.len
         }
     }
 
     impl<'a> Index<Span> for WasmReader<'a> {
-        type Output = [u8];
+        type Output = [u8]; // TODO make this Result
 
         fn index(&self, index: Span) -> &'a Self::Output {
             &self.full_wasm_binary[index.from..(index.from + index.len)]
@@ -197,23 +220,21 @@ mod test {
     }
 
     #[test]
-    #[should_panic]
     fn move_start_to_out_of_bounds_1() {
         let my_bytes = vec![0x11, 0x12, 0x13, 0x14, 0x15];
         let mut wasm_reader = WasmReader::new(&my_bytes);
 
         let span = Span::new(my_bytes.len(), 1);
-        wasm_reader.move_start_to(span).unwrap();
+        assert_eq!(wasm_reader.move_start_to(span), Err(Error::Eof));
     }
 
     #[test]
-    #[should_panic]
     fn move_start_to_out_of_bounds_2() {
         let my_bytes = vec![0x11, 0x12, 0x13, 0x14, 0x15];
         let mut wasm_reader = WasmReader::new(&my_bytes);
 
         let span = Span::new(0, my_bytes.len() + 1);
-        wasm_reader.move_start_to(span).unwrap();
+        assert_eq!(wasm_reader.move_start_to(span), Err(Error::Eof));
     }
 
     #[test]
@@ -237,5 +258,58 @@ mod test {
         wasm_reader.skip(5).unwrap();
         assert_eq!(wasm_reader.remaining_bytes(), &my_bytes[5..]);
         assert_eq!(wasm_reader.remaining_bytes(), &[]);
+    }
+
+    #[test]
+    fn strip_bytes_1() {
+        let my_bytes = vec![0x11, 0x12, 0x13, 0x14, 0x15];
+        let mut wasm_reader = WasmReader::new(&my_bytes);
+
+        assert_eq!(wasm_reader.remaining_bytes(), my_bytes);
+        let stripped_bytes = wasm_reader.strip_bytes::<4>().unwrap();
+        assert_eq!(&stripped_bytes, &my_bytes[..4]);
+        assert_eq!(wasm_reader.remaining_bytes(), &[0x15]);
+    }
+
+    #[test]
+    fn strip_bytes_2() {
+        let my_bytes = vec![0x11, 0x12, 0x13, 0x14, 0x15];
+        let mut wasm_reader = WasmReader::new(&my_bytes);
+
+        assert_eq!(wasm_reader.remaining_bytes(), my_bytes);
+        wasm_reader.skip(1).unwrap();
+        let stripped_bytes = wasm_reader.strip_bytes::<4>().unwrap();
+        assert_eq!(&stripped_bytes, &my_bytes[1..5]);
+        assert_eq!(wasm_reader.remaining_bytes(), &[]);
+    }
+
+    #[test]
+    fn strip_bytes_3() {
+        let my_bytes = vec![0x11, 0x12, 0x13, 0x14, 0x15];
+        let mut wasm_reader = WasmReader::new(&my_bytes);
+
+        assert_eq!(wasm_reader.remaining_bytes(), my_bytes);
+        wasm_reader.skip(2).unwrap();
+        let stripped_bytes = wasm_reader.strip_bytes::<4>();
+        assert_eq!(stripped_bytes, Err(Error::Eof));
+    }
+
+    #[test]
+    fn strip_bytes_4() {
+        let my_bytes = vec![0x11, 0x12, 0x13, 0x14, 0x15];
+        let mut wasm_reader = WasmReader::new(&my_bytes);
+
+        assert_eq!(wasm_reader.remaining_bytes(), my_bytes);
+        wasm_reader.skip(5).unwrap();
+        let stripped_bytes = wasm_reader.strip_bytes::<0>().unwrap();
+        assert_eq!(stripped_bytes, [0u8; 0]);
+    }
+
+    #[test]
+    fn skip_1() {
+        let my_bytes = vec![0x11, 0x12, 0x13, 0x14, 0x15];
+        let mut wasm_reader = WasmReader::new(&my_bytes);
+        assert_eq!(wasm_reader.remaining_bytes(), my_bytes);
+        assert_eq!(wasm_reader.skip(6), Err(Error::Eof));
     }
 }
