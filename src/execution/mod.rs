@@ -27,6 +27,18 @@ pub(crate) mod store;
 pub mod value;
 pub mod value_stack;
 
+struct CallFrame<'a> {
+    locals: Locals,
+    #[allow(dead_code)]
+    function_idx: FuncIdx,
+    reader: WasmReader<'a>,
+}
+
+enum CallStatus {
+    Finished,
+    Waiting,
+}
+
 pub struct RuntimeInstance<'b, H = EmptyHookSet>
 where
     H: HookSet,
@@ -35,6 +47,7 @@ where
     types: Vec<FuncType>,
     exports: Vec<Export>,
     store: Store,
+    call_stack: Vec<CallFrame<'b>>,
     pub hook_set: H,
 }
 
@@ -59,6 +72,7 @@ where
             exports: validation_info.exports.clone(),
             store,
             hook_set,
+            call_stack: Vec::new(),
         };
 
         if let Some(start) = validation_info.start {
@@ -187,8 +201,25 @@ where
         Ok(ret)
     }
 
-    /// Interprets a functions. Parameters and return values are passed on the stack.
     fn function(&mut self, idx: FuncIdx, stack: &mut Stack) -> Result<()> {
+        self.function_prepare(idx, stack)?;
+        loop {
+            let status = self.function_run(stack)?;
+            match status {
+                CallStatus::Finished => {
+                    self.call_stack.pop();
+                    if self.call_stack.is_empty() {
+                        break;
+                    }
+                }
+                CallStatus::Waiting => {}
+            };
+        }
+
+        Ok(())
+    }
+
+    fn function_prepare(&mut self, idx: FuncIdx, stack: &mut Stack) -> Result<()> {
         let inst = self.store.funcs.get(idx).unwrap_validated();
 
         // Pop parameters from stack
@@ -202,17 +233,37 @@ where
         params.reverse();
 
         // Create locals from parameters and declared locals
-        let mut locals = Locals::new(params.into_iter(), inst.locals.iter().cloned());
+        let locals = Locals::new(params.into_iter(), inst.locals.iter().cloned());
 
         // Start reading the function's instructions
         let mut wasm = WasmReader::new(self.wasm_bytecode);
         wasm.move_start_to(inst.code_expr)?;
 
+        let call_frame = CallFrame {
+            locals,
+            function_idx: idx,
+            reader: wasm,
+        };
+        self.call_stack.push(call_frame);
+
+        Ok(())
+    }
+
+    /// Interprets a functions. Parameters and return values are passed on the stack.
+    fn function_run(&mut self, stack: &mut Stack) -> Result<CallStatus> {
         use crate::core::reader::types::opcode::*;
         loop {
             // call the instruction hook
             #[cfg(feature = "hooks")]
             H::instruction_hook(self);
+
+            // I had to move these inside  the loop since the hook needs to borrow self as mutable, and these lines also borrow self as mutable
+            let call_frame_ref = self
+                .call_stack
+                .last_mut()
+                .expect("todo why we can expect this");
+            let locals = &mut call_frame_ref.locals;
+            let wasm = &mut call_frame_ref.reader;
 
             let first_instr_byte = wasm.read_u8().unwrap_validated();
 
@@ -222,7 +273,8 @@ where
                 }
                 CALL => {
                     let func_idx = wasm.read_var_u32().unwrap_validated() as FuncIdx;
-                    self.function(func_idx, stack)?;
+                    self.function_prepare(func_idx, stack)?;
+                    return Ok(CallStatus::Waiting);
                 }
                 LOCAL_GET => {
                     let local_idx = wasm.read_var_u32().unwrap_validated() as LocalIdx;
@@ -250,7 +302,7 @@ where
                     global.value = stack.pop_value(global.global.ty.ty)
                 }
                 I32_LOAD => {
-                    let memarg = MemArg::read_unvalidated(&mut wasm);
+                    let memarg = MemArg::read_unvalidated(wasm);
                     let relative_address: u32 =
                         stack.pop_value(ValType::NumType(NumType::I32)).into();
 
@@ -277,7 +329,7 @@ where
                     trace!("Instruction: i32.load [{relative_address}] -> [{data}]");
                 }
                 I32_STORE => {
-                    let memarg = MemArg::read_unvalidated(&mut wasm);
+                    let memarg = MemArg::read_unvalidated(wasm);
 
                     let data_to_store: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                     let relative_address: u32 =
@@ -664,7 +716,7 @@ where
                 }
             }
         }
-        Ok(())
+        Ok(CallStatus::Finished)
     }
 
     fn init_store(validation_info: &ValidationInfo) -> Store {
