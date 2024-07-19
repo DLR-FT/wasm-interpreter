@@ -34,7 +34,7 @@ pub fn validate_code_section(
         };
 
         validate_value_stack(func_ty.returns, |value_stack| {
-            read_instructions(wasm, value_stack, &locals, globals)
+            read_instructions(wasm, value_stack, &locals, globals, fn_types, type_of_fn)
         })?;
 
         Ok(func_block)
@@ -70,6 +70,8 @@ fn read_instructions(
     value_stack: &mut VecDeque<ValType>,
     locals: &[ValType],
     globals: &[Global],
+    fn_types: &[FuncType],
+    type_of_fn: &[usize],
 ) -> Result<()> {
     let assert_pop_value_stack = |value_stack: &mut VecDeque<ValType>, expected_ty: ValType| {
         value_stack
@@ -86,7 +88,10 @@ fn read_instructions(
         let Ok(first_instr_byte) = wasm.read_u8() else {
             return Err(Error::ExprMissingEnd);
         };
-        trace!("Read instruction byte {first_instr_byte:#X?} ({first_instr_byte})");
+        trace!(
+            "Read instruction byte {} ({first_instr_byte:#X?} / {first_instr_byte})",
+            opcode_name(first_instr_byte)
+        );
 
         use crate::core::reader::types::opcode::*;
         match first_instr_byte {
@@ -95,6 +100,19 @@ fn read_instructions(
             // end
             END => {
                 return Ok(());
+            }
+            // call [t*] -> [t*]
+            CALL => {
+                let func_idx = wasm.read_var_u32()? as usize;
+                let func_ty = fn_types[type_of_fn[func_idx]].clone();
+
+                for typ in func_ty.params.valtypes {
+                    assert_pop_value_stack(value_stack, typ)?;
+                }
+
+                for typ in func_ty.returns.valtypes {
+                    value_stack.push_back(typ);
+                }
             }
             // local.get: [] -> [t]
             LOCAL_GET => {

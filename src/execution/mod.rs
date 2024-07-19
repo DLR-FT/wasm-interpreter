@@ -27,6 +27,13 @@ pub(crate) mod store;
 pub mod value;
 pub mod value_stack;
 
+struct CallFrame<'a> {
+    locals: Locals,
+    #[allow(dead_code)]
+    function_idx: FuncIdx,
+    reader: WasmReader<'a>,
+}
+
 pub struct RuntimeInstance<'b, H = EmptyHookSet>
 where
     H: HookSet,
@@ -35,6 +42,7 @@ where
     types: Vec<FuncType>,
     exports: Vec<Export>,
     store: Store,
+    call_stack: Vec<CallFrame<'b>>,
     pub hook_set: H,
 }
 
@@ -59,6 +67,7 @@ where
             exports: validation_info.exports.clone(),
             store,
             hook_set,
+            call_stack: Vec::new(),
         };
 
         if let Some(start) = validation_info.start {
@@ -89,7 +98,7 @@ where
         if let Some(func_idx) = func_idx {
             self.invoke_func(func_idx, param)
         } else {
-            Err(RuntimeError(FunctionNotFound))
+            Err(FunctionNotFound.into())
         }
     }
 
@@ -100,7 +109,7 @@ where
         params: Param,
     ) -> Result<Returns> {
         // -=-= Verification =-=-
-        let func_inst = self.store.funcs.get(func_idx).expect("valid FuncIdx");
+        let func_inst = self.store.funcs.get(func_idx).ok_or(FunctionNotFound)?;
         let func_ty = self.types.get(func_inst.ty).unwrap_validated();
 
         // Check correct function parameters and return types
@@ -112,27 +121,9 @@ where
         }
 
         // -=-= Invoke the function =-=-
-        let mut stack = Stack::new();
-
-        // Push parameters on stack
-        for parameter in params.into_values() {
-            stack.push_value(parameter);
-        }
-
-        let error = self.function(func_idx, &mut stack);
-        error?;
-
-        // Pop return values from stack
-        let return_values = Returns::TYS
-            .iter()
-            .map(|ty| stack.pop_value(*ty))
-            .collect::<Vec<Value>>();
-
-        // Values are reversed because they were popped from stack one-by-one. Now reverse them back
-        let reversed_values = return_values.into_iter().rev();
-        let ret: Returns = Returns::from_values(reversed_values);
+        let return_values = self.function(func_idx, &params.into_values(), Returns::TYS)?;
         debug!("Successfully invoked function");
-        Ok(ret)
+        Ok(Returns::from_values(return_values.into_iter()))
     }
 
     /// Invokes a function with the given parameters, and return types which are not known at compile time.
@@ -158,37 +149,44 @@ where
             panic!("Invalid return types for function");
         }
 
-        // -=-= Invoke the function =-=-
+        let func_inst = self.store.funcs.get(func_idx).expect("valid FuncIdx");
+        let func_ty = self.types.get(func_inst.ty).unwrap_validated().clone();
+
+        let return_values = self.function(func_idx, &params, &func_ty.returns.valtypes)?;
+
+        debug!("Successfully invoked function");
+        Ok(return_values)
+    }
+
+    fn function(
+        &mut self,
+        idx: FuncIdx,
+        params: &[Value],
+        return_tys: &[ValType],
+    ) -> Result<Vec<Value>> {
         let mut stack = Stack::new();
 
         // Push parameters on stack
         for parameter in params {
-            stack.push_value(parameter);
+            stack.push_value(parameter.clone());
         }
 
-        let error = self.function(func_idx, &mut stack);
-        error?;
+        self.push_callframe(idx, &mut stack)?;
+        self.run(&mut stack)?;
 
-        let func_inst = self.store.funcs.get(func_idx).expect("valid FuncIdx");
-        let func_ty = self.types.get(func_inst.ty).unwrap_validated();
-
-        // Pop return values from stack
-        let return_values = func_ty
-            .returns
-            .valtypes
+        let mut return_values = return_tys
             .iter()
             .map(|ty| stack.pop_value(*ty))
             .collect::<Vec<Value>>();
 
-        // Values are reversed because they were popped from stack one-by-one. Now reverse them back
-        let reversed_values = return_values.into_iter().rev();
-        let ret = reversed_values.collect();
-        debug!("Successfully invoked function");
-        Ok(ret)
+        // These end up in wrong order (top element on the stack becomes idx 0)
+        return_values.reverse();
+        // Pop return values from stack
+        Ok(return_values)
     }
 
-    /// Interprets a functions. Parameters and return values are passed on the stack.
-    fn function(&mut self, idx: FuncIdx, stack: &mut Stack) -> Result<()> {
+    /// Push a new [CallFrame] to the call-frame stack
+    fn push_callframe(&mut self, idx: FuncIdx, stack: &mut Stack) -> Result<()> {
         let inst = self.store.funcs.get(idx).unwrap_validated();
 
         // Pop parameters from stack
@@ -202,23 +200,69 @@ where
         params.reverse();
 
         // Create locals from parameters and declared locals
-        let mut locals = Locals::new(params.into_iter(), inst.locals.iter().cloned());
+        let locals = Locals::new(params.into_iter(), inst.locals.iter().cloned());
 
         // Start reading the function's instructions
         let mut wasm = WasmReader::new(self.wasm_bytecode);
         wasm.move_start_to(inst.code_expr)?;
 
+        let call_frame = CallFrame {
+            locals,
+            function_idx: idx,
+            reader: wasm,
+        };
+        self.call_stack.push(call_frame);
+
+        Ok(())
+    }
+
+    /// Pop a call frame, e.g. when returning from a function
+    ///
+    /// Returns true if there is at least one remaining [CallFrame]
+    fn pop_callframe(&mut self) {
+        // TODO maybe when we return from inside nested control blocks there is more cleanup todo?
+        assert!(
+            self.call_stack.pop().is_some(),
+            "popping the CallStack when it was empty is a logic error"
+        );
+    }
+
+    /// Interprets a functions. Parameters and return values are passed on the stack.
+    fn run(&mut self, stack: &mut Stack) -> Result<()> {
         use crate::core::reader::types::opcode::*;
         loop {
             // call the instruction hook
             #[cfg(feature = "hooks")]
             H::instruction_hook(self);
 
+            // I had to move these inside  the loop since the hook needs to borrow self as mutable, and these lines also borrow self as mutable
+            let call_frame_ref = self
+                .call_stack
+                .last_mut()
+                .expect("todo why we can expect this");
+            let locals = &mut call_frame_ref.locals;
+            let wasm = &mut call_frame_ref.reader;
+
             let first_instr_byte = wasm.read_u8().unwrap_validated();
 
             match first_instr_byte {
                 END => {
-                    break;
+                    // TODO: check if this was the outermost block of the function, if so, pop its CallFrame and continue
+                    // TODO: otherwise, consult the sidetable
+                    self.pop_callframe();
+                    if self.call_stack.is_empty() {
+                        return Ok(());
+                    }
+                }
+                CALL => {
+                    let func_idx = wasm.read_var_u32().unwrap_validated() as FuncIdx;
+                    self.push_callframe(func_idx, stack)?;
+                }
+                RETURN => {
+                    self.pop_callframe();
+                    if self.call_stack.is_empty() {
+                        return Ok(());
+                    }
                 }
                 LOCAL_GET => {
                     let local_idx = wasm.read_var_u32().unwrap_validated() as LocalIdx;
@@ -246,7 +290,7 @@ where
                     global.value = stack.pop_value(global.global.ty.ty)
                 }
                 I32_LOAD => {
-                    let memarg = MemArg::read_unvalidated(&mut wasm);
+                    let memarg = MemArg::read_unvalidated(wasm);
                     let relative_address: u32 =
                         stack.pop_value(ValType::NumType(NumType::I32)).into();
 
@@ -273,7 +317,7 @@ where
                     trace!("Instruction: i32.load [{relative_address}] -> [{data}]");
                 }
                 I32_STORE => {
-                    let memarg = MemArg::read_unvalidated(&mut wasm);
+                    let memarg = MemArg::read_unvalidated(wasm);
 
                     let data_to_store: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                     let relative_address: u32 =
@@ -660,7 +704,6 @@ where
                 }
             }
         }
-        Ok(())
     }
 
     fn init_store(validation_info: &ValidationInfo) -> Store {

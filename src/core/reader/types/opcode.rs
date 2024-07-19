@@ -1,5 +1,7 @@
 pub const NOP: u8 = 0x01;
 pub const END: u8 = 0x0B;
+pub const RETURN: u8 = 0x0F;
+pub const CALL: u8 = 0x10;
 pub const LOCAL_GET: u8 = 0x20;
 pub const LOCAL_SET: u8 = 0x21;
 pub const GLOBAL_GET: u8 = 0x23;
@@ -43,3 +45,56 @@ pub const I64_SHR_S: u8 = 0x87;
 pub const I64_SHR_U: u8 = 0x88;
 pub const I64_ROTL: u8 = 0x89;
 pub const I64_ROTR: u8 = 0x8A;
+
+/// Returns the name of a single-byte opcode.
+pub fn opcode_name(opcode: u8) -> &'static str {
+    match opcode {
+        NOP => "nop",
+        END => "end",
+        CALL => "call",
+        LOCAL_GET => "local.get",
+        LOCAL_SET => "local.set",
+        GLOBAL_GET => "global.get",
+        GLOBAL_SET => "global.set",
+        I32_LOAD => "i32.load",
+        I32_STORE => "i32.store",
+        I32_CONST => "i32.const",
+        I64_CONST => "i64.const",
+        I32_ADD => "i32.add",
+        I32_MUL => "i32.mul",
+        I32_DIV_S => "i32.div_s",
+        I32_DIV_U => "i32.div_u",
+        I32_REM_S => "i32.rem_s",
+        I32_CLZ => "i32.clz",
+        I32_CTZ => "i32.ctz",
+        I32_POPCNT => "i32.popcnt",
+        I32_REM_U => "i32.rem_u",
+        I32_AND => "i32.and",
+        I32_OR => "i32.or",
+        I32_XOR => "i32.xor",
+        I32_SHL => "i32.shl",
+        I32_SHR_S => "i32.shr_s",
+        I32_SHR_U => "i32.shr_u",
+        I32_ROTL => "i32.rotl",
+        I32_ROTR => "i32.rotr",
+        I64_CLZ => "i64.clz",
+        I64_CTZ => "i64.ctz",
+        I64_POPCNT => "i64.popcnt",
+        I64_ADD => "i64.add",
+        I64_SUB => "i64.sub",
+        I64_MUL => "i64.mul",
+        I64_DIV_S => "i64.div_s",
+        I64_DIV_U => "i64.div_u",
+        I64_REM_S => "i64.rem_s",
+        I64_REM_U => "i64.rem_u",
+        I64_AND => "i64.and",
+        I64_OR => "i64.or",
+        I64_XOR => "i64.xor",
+        I64_SHL => "i64.shl",
+        I64_SHR_S => "i64.shr_s",
+        I64_SHR_U => "i64.shr_u",
+        I64_ROTL => "i64.rotl",
+        I64_ROTR => "i64.rotr",
+        _ => "<unknown>",
+    }
+}
