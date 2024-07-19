@@ -220,6 +220,10 @@ where
                 END => {
                     break;
                 }
+                CALL => {
+                    let func_idx = wasm.read_var_u32().unwrap_validated() as FuncIdx;
+                    self.function(func_idx, stack)?;
+                }
                 LOCAL_GET => {
                     let local_idx = wasm.read_var_u32().unwrap_validated() as LocalIdx;
                     let local = locals.get(local_idx);
