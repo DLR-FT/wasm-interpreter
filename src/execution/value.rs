@@ -11,7 +11,7 @@ use crate::unreachable_validated;
 /// See <https://webassembly.github.io/spec/core/exec/runtime.html#values>
 // TODO implement missing variants
 #[derive(Clone, Debug, PartialEq)]
-pub(crate) enum Value {
+pub enum Value {
     I32(u32),
     I64(u64),
     // F32,
@@ -21,7 +21,7 @@ pub(crate) enum Value {
 
 #[derive(Clone, Debug, PartialEq)]
 #[allow(dead_code)]
-pub(crate) enum Ref {
+pub enum Ref {
     Null,
     // Func,
     // Extern,
