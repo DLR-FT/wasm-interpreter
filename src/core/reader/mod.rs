@@ -62,10 +62,13 @@ impl<'a> WasmReader<'a> {
 
     /// Create a [Span] starting from [`pc`](Self::pc) for the next `len` bytes
     ///
-    /// Does **not** verify the span to fit the WASM binary, i.e. the span could exceed the WASM
-    /// binary's bounds.
-    pub fn make_span_unchecked(&self, len: usize) -> Span {
-        Span::new(self.pc, len)
+    /// Verifies the span to fit the WASM binary, i.e. using this span to index the WASM binary will
+    /// not yield an error.
+    pub fn make_span(&self, len: usize) -> Result<Span> {
+        if self.pc + len > self.full_wasm_binary.len() {
+            return Err(Error::Eof);
+        }
+        Ok(Span::new(self.pc, len))
     }
 
     /// Take `N` bytes starting from [`pc`](Self::pc), then advance the [`pc`](Self::pc) by `N`
@@ -181,7 +184,7 @@ pub mod span {
     }
 
     impl<'a> Index<Span> for WasmReader<'a> {
-        type Output = [u8]; // TODO make this Result
+        type Output = [u8];
 
         fn index(&self, index: Span) -> &'a Self::Output {
             &self.full_wasm_binary[index.from..(index.from + index.len)]

@@ -25,7 +25,7 @@ pub fn validate_code_section(
         let func_ty = fn_types[ty_idx].clone();
 
         let func_size = wasm.read_var_u32()?;
-        let func_block = wasm.make_span_unchecked(func_size as usize);
+        let func_block = wasm.make_span(func_size as usize)?;
 
         let locals = {
             let params = func_ty.params.valtypes.iter().cloned();
