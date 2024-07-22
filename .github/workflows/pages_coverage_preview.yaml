@@ -9,6 +9,7 @@ on:
       - synchronize
       - closed
       - labeled
+      - unlabeled
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
@@ -20,16 +21,17 @@ concurrency: preview-cov-${{ github.ref }}
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    if: contains(github.event.pull_request.labels.*.name, 'coverage')
     steps:
       - uses: actions/checkout@v4
-      # -=-=-=-= Coverage test =-=-=-=-
+      # -=-=-=-= Coverage test (if labeled) =-=-=-=-
       - name: Install coverage test tooling
+        if: contains(github.event.pull_request.labels.*.name, 'coverage')
         run: |
           rustup toolchain install nightly &&
           rustup component add llvm-tools-preview &&
           cargo install cargo-binutils
       - name: Run & compile coverage test
+        if: contains(github.event.pull_request.labels.*.name, 'coverage')
         run: |
           cargo clean &&
           RUSTFLAGS="-C instrument-coverage -Z coverage-options=branch,mcdc" cargo +nightly test --tests --no-run &&
@@ -38,8 +40,26 @@ jobs:
           RUSTFLAGS="-C instrument-coverage -Z coverage-options=branch,mcdc" cargo +nightly test --tests -- --test-threads=1 &&
           cargo profdata -- merge -sparse *.profraw -o default.profdata &&
           cargo cov -- show -show-line-counts-or-regions -output-dir=cov_out -format=html --ignore-filename-regex='.*cargo.*' --instr-profile=default.profdata $OBJS
-      # -=-=-=-= Deploy =-=-=-=-
+      
+      # -=-=-=-= Deploy (when labeled) =-=-=-=-
       - name: Deploy Preview
+        if: ${{ github.event.action == 'labeled' &&  github.event.label.name == 'coverage' }}
+        uses: rossjrw/pr-preview-action@v1.4.7
+        with:
+          source-dir: cov_out/
+          umbrella-dir: coverage/pr-preview
+          action: deploy # force deployment since, by default, this actions does nothing on the 'labeled' event
+      # -=-=-=-= Deploy (when unlabeled) =-=-=-=-
+      - name: Deploy Preview
+        if: ${{ github.event.action == 'unlabeled' &&  github.event.label.name == 'coverage' }}
+        uses: rossjrw/pr-preview-action@v1.4.7
+        with:
+          source-dir: cov_out/
+          umbrella-dir: coverage/pr-preview
+          action: remove # force removal since, by default, this actions does nothing on the 'labeled' event
+      # -=-=-=-= Deploy (defauly) =-=-=-=-
+      - name: Deploy Preview
+        if: ${{ github.event.action != 'labeled' && github.event.action != 'unlabeled' && contains(github.event.pull_request.labels.*.name, 'coverage') }}
         uses: rossjrw/pr-preview-action@v1.4.7
         with:
           source-dir: cov_out/
