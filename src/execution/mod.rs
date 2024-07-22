@@ -439,7 +439,9 @@ where
                         .measure_num_read_bytes(read_declared_locals)
                         .unwrap_validated();
 
-                    let code_expr = wasm_reader.make_span_unchecked(func.len() - bytes_read);
+                    let code_expr = wasm_reader
+                        .make_span(func.len() - bytes_read)
+                        .expect("TODO remove this expect");
 
                     FuncInst {
                         ty: *ty,
