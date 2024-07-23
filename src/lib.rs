@@ -4,6 +4,8 @@ extern crate alloc;
 extern crate log;
 
 pub use core::error::{Error, Result, RuntimeError};
+pub use core::reader::types::{NumType, RefType, ValType};
+pub use execution::value::Value;
 pub use execution::*;
 pub use validation::*;
 
