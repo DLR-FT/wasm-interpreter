@@ -24,7 +24,7 @@ pub mod hooks;
 pub(crate) mod label;
 pub(crate) mod locals;
 pub(crate) mod store;
-pub(crate) mod value;
+pub mod value;
 pub mod value_stack;
 
 pub struct RuntimeInstance<'b, H = EmptyHookSet>
@@ -97,8 +97,9 @@ where
     pub fn invoke_func<Param: InteropValueList, Returns: InteropValueList>(
         &mut self,
         func_idx: FuncIdx,
-        param: Param,
+        params: Param,
     ) -> Result<Returns> {
+        // -=-= Verification =-=-
         let func_inst = self.store.funcs.get(func_idx).expect("valid FuncIdx");
         let func_ty = self.types.get(func_inst.ty).unwrap_validated();
 
@@ -110,17 +111,38 @@ where
             panic!("Invalid `Returns` generics");
         }
 
-        let ret = unsafe { self.invoke_dynamic_unchecked(func_idx, param.into_values())? };
-        Ok(Returns::from_values(ret.into_iter()))
+        // -=-= Invoke the function =-=-
+        let mut stack = Stack::new();
+
+        // Push parameters on stack
+        for parameter in params.into_values() {
+            stack.push_value(parameter);
+        }
+
+        let error = self.function(func_idx, &mut stack);
+        error?;
+
+        // Pop return values from stack
+        let return_values = Returns::TYS
+            .iter()
+            .map(|ty| stack.pop_value(*ty))
+            .collect::<Vec<Value>>();
+
+        // Values are reversed because they were popped from stack one-by-one. Now reverse them back
+        let reversed_values = return_values.into_iter().rev();
+        let ret: Returns = Returns::from_values(reversed_values);
+        debug!("Successfully invoked function");
+        Ok(ret)
     }
 
-    /// Invokes a function with the given parameters and return types which are not known at compile time.
+    /// Invokes a function with the given parameters, and return types which are not known at compile time.
     pub fn invoke_dynamic(
         &mut self,
         func_idx: FuncIdx,
         params: Vec<Value>,
         ret_types: &[ValType],
     ) -> Result<Vec<Value>> {
+        // -=-= Verification =-=-
         let func_inst = self.store.funcs.get(func_idx).expect("valid FuncIdx");
         let func_ty = self.types.get(func_inst.ty).unwrap_validated();
 
@@ -136,20 +158,7 @@ where
             panic!("Invalid return types for function");
         }
 
-        unsafe { self.invoke_dynamic_unchecked(func_idx, params) }
-    }
-
-    /// Invokes a function with the given parameters whoses types are not known at compile time.
-    ///
-    /// # Safety
-    /// By using this function, the caller must ensure that the given parameters match the function's
-    /// parameters in both number and type. The return values' types are determined by the function's
-    /// signature and is on the caller to ensure that the return types are correct.
-    pub unsafe fn invoke_dynamic_unchecked(
-        &mut self,
-        func_idx: FuncIdx,
-        params: Vec<Value>,
-    ) -> Result<Vec<Value>> {
+        // -=-= Invoke the function =-=-
         let mut stack = Stack::new();
 
         // Push parameters on stack
