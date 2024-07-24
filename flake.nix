@@ -55,6 +55,9 @@
 
       in
       rec {
+        # packages
+        packages.wasm-interpreter = pkgs.callPackage pkgs/wasm-interpreter.nix { };
+
         # a devshell with all the necessary bells and whistles
         devShells.default = (pkgs.devshell.mkShell {
           imports = [ "${devshell}/extra/git/hooks.nix" ];
