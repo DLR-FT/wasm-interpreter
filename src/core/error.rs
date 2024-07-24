@@ -29,7 +29,8 @@ pub enum Error {
     InvalidExportDesc(u8),
     InvalidImportDesc(u8),
     ExprMissingEnd,
-    InvalidInstr(u16),
+    InvalidInstr(u8),
+    InvalidMultiByteInstr(u8, u8),
     EndInvalidValueStack,
     InvalidLocalIdx,
     InvalidValueStackType(Option<ValType>),
@@ -84,6 +85,9 @@ impl Display for Error {
             Error::ExprMissingEnd => f.write_str("An expr is missing an end byte"),
             Error::InvalidInstr(byte) => f.write_fmt(format_args!(
                 "An invalid instruction opcode was found: `{byte:#x?}`"
+            )),
+            Error::InvalidMultiByteInstr(byte1, byte2) => f.write_fmt(format_args!(
+                "An invalid multi-byte instruction opcode was found: `{byte1:#x?} {byte2:#x?}`"
             )),
             Error::EndInvalidValueStack => f.write_str(
                 "Different value stack types were expected at the end of a block/function.",
