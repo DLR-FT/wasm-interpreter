@@ -204,7 +204,7 @@ fn read_instructions(
 
                 value_stack.push_back(ValType::NumType(NumType::I64));
             }
-            _ => return Err(Error::InvalidInstr(first_instr_byte as u16)),
+            _ => return Err(Error::InvalidInstr(first_instr_byte)),
         }
     }
 }
