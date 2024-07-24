@@ -13,7 +13,7 @@ path = "src/lib.rs"
 profiler = true
 
 [dependencies]
-log = "0.4.20"
+log = "=0.4.22"
 
 [dev-dependencies]
 test-log = {version = "0.2.14", features = ["log"]}

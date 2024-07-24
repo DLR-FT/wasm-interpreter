@@ -1,5 +1,5 @@
 [DOCUMENT]
-TITLE: Wasm Safety Interpreter requirements
+TITLE: WASM Interpreter for Safety - Requirements
 
 [SECTION]
 TITLE: Functional Requirements
@@ -46,6 +46,28 @@ The interpreter state shall be able to halt on one computer and continue executi
 <<<
 RATIONALE: >>>
 This enables various workflows in deployments of multiple computers. For load-balancing or redundancy purposes, running applications can be migrated to other computers without disruption.
+<<<
+
+[REQUIREMENT]
+UID: REQ-14
+TITLE: No Dependencies
+STATEMENT: >>>
+No dependencies but those explicitly allowed by a requirement shall be used
+<<<
+RATIONALE: >>>
+Dependencies have to forego the full V&V process as well, which quickly adds enormous work.
+<<<
+COMMENT: >>>
+This requirement constraints the usage and introduction of normal dependencies, but not Dev Dependencies [#]_ and not Build Dependencies [#]_ .
+
+.. [#] https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#development-dependencies
+.. [#] https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#build-dependencies
+<<<
+COMMENT: >>>
+Exceptions to this, i.e. allowed dependencies, must refer to this requirement as their parent.
+<<<
+COMMENT: >>>
+All requirements that allow a dependency must specify the exact version of the dependency (at least major, minor and patch release)
 <<<
 
 [SECTION]
@@ -109,6 +131,40 @@ If the interpreter state can be serialized to and deserialized from a canonical 
 RELATIONS:
 - TYPE: Parent
   VALUE: REQ-12
+
+[REQUIREMENT]
+UID: REQ-15
+STATEMENT: >>>
+The interpreter shall have an optional dependency on the ``log`` crate version ``0.4.22``
+<<<
+RATIONALE: >>>
+Logging is an essential tool to make a system observable, and aid in debugging. Bespoke crate is widely used in the Rust ecosystem and can be attached to any (or no) logging backend. Using conditional compilation, all of the ``log`` crate's footprint in the WASM interpreter (foremost the ``debug``, ``error``, ``info``, ``trace`` and ``warn`` macro) can be expanded to empty statements to avoid **any** run-time impact when opting out of the dependency on ``log``.
+<<<
+RELATIONS:
+- TYPE: Parent
+  VALUE: REQ-14
+
+[REQUIREMENT]
+UID: REQ-16
+STATEMENT: >>>
+The interpreter may depend on the ``libm`` crate version ``0.2.8``
+<<<
+RATIONALE: >>>
+Rust does not expose all floating point operations in a bare-metal (as in ``no_std``) target, as to not introduce any dependency on the C standard library's ``libm`` (respective PR: https://github.com/rust-lang/rust/pull/27823). However, we identified at least the following operations to be required for WASM interpretation while unavailable in ``no_std``:
+
+- ``abs``
+- ``ceil``
+- ``floor``
+- ``trunc``
+- ``round``
+- ``sqrt``
+- ``copysign``
+
+In order use these operations, having the ``libm`` crate as dependencies of the WASM interpreter is an acceptable trade-off.
+<<<
+RELATIONS:
+- TYPE: Parent
+  VALUE: REQ-14
 
 [/SECTION]
 
