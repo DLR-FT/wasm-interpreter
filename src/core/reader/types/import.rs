@@ -60,9 +60,9 @@ impl WasmReadable for ImportDesc {
     fn read(wasm: &mut WasmReader) -> Result<Self> {
         let desc = match wasm.read_u8()? {
             0x00 => Self::Func(wasm.read_var_u32()? as TypeIdx),
-            0x01 => todo!("read TableType"),
-            0x02 => todo!("read MemType"),
-            0x03 => todo!("read GlobalType"),
+            0x01 => return Err(Error::NotYetImplemented("read TableType")),
+            0x02 => return Err(Error::NotYetImplemented("read MemType")),
+            0x03 => return Err(Error::NotYetImplemented("read GlobalType")),
             other => return Err(Error::InvalidImportDesc(other)),
         };
 

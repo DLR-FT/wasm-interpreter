@@ -121,13 +121,17 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
     let _: Option<()> = handle_section(&mut wasm, &mut header, SectionTy::Element, |_, _| {
-        todo!("element section not yet supported")
+        Err(Error::NotYetImplemented(
+            "element section not yet supported",
+        ))
     })?;
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
     let _: Option<()> = handle_section(&mut wasm, &mut header, SectionTy::DataCount, |_, _| {
-        todo!("data count section not yet supported")
+        Err(Error::NotYetImplemented(
+            "data count section not yet supported",
+        ))
     })?;
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
@@ -142,7 +146,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
     let _: Option<()> = handle_section(&mut wasm, &mut header, SectionTy::Data, |_, _| {
-        todo!("data section not yet supported")
+        Err(Error::NotYetImplemented("data section not yet supported"))
     })?;
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
@@ -183,6 +187,8 @@ fn handle_section<T, F: FnOnce(&mut WasmReader, SectionHeader) -> Result<T>>(
 ) -> Result<Option<T>> {
     match &header {
         Some(SectionHeader { ty, .. }) if *ty == section_ty => {
+            // We just checked that the header is of type "Some", so
+            // it is safe to unwrap here.
             let h = header.take().unwrap();
             trace!("Handling section {:?}", h.ty);
             let ret = handler(wasm, h)?;

@@ -89,7 +89,7 @@ impl<'a> WasmReader<'a> {
         let bytes = &self.full_wasm_binary[self.pc..(self.pc + N)];
         self.pc += N;
 
-        Ok(bytes.try_into().expect("the slice length to be exactly N"))
+        bytes.try_into().map_err(|_err| Error::Eof)
     }
 
     /// Read the current byte without advancing the [`pc`](Self::pc)

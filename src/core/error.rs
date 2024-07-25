@@ -1,4 +1,4 @@
-use crate::core::indices::GlobalIdx;
+use crate::core::indices::{FuncIdx, GlobalIdx};
 use core::fmt::{Display, Formatter};
 use core::str::Utf8Error;
 
@@ -38,8 +38,12 @@ pub enum Error {
     InvalidMutType(u8),
     MoreThanOneMemory,
     InvalidGlobalIdx(GlobalIdx),
+    InvalidFunctionIdx(FuncIdx),
     GlobalIsConst,
     RuntimeError(RuntimeError),
+    NotYetImplemented(&'static str),
+    InvalidParameterTypes,
+    InvalidResultTypes,
 }
 
 impl Display for Error {
@@ -108,12 +112,24 @@ impl Display for Error {
             Error::InvalidGlobalIdx(idx) => f.write_fmt(format_args!(
                 "An invalid global index `{idx}` was specified"
             )),
+            Error::InvalidFunctionIdx(idx) => f.write_fmt(format_args!(
+                "An invalid function index `{idx}` was specified"
+            )),
             Error::GlobalIsConst => f.write_str("A const global cannot be written to"),
             Error::RuntimeError(err) => match err {
                 RuntimeError::DivideBy0 => f.write_str("Divide by zero is not permitted"),
                 RuntimeError::UnrepresentableResult => f.write_str("Result is unrepresentable"),
                 RuntimeError::FunctionNotFound => f.write_str("Function not found"),
             },
+            Error::NotYetImplemented(msg) => {
+                f.write_fmt(format_args!("Not yet implemented: {msg}"))
+            }
+            Error::InvalidParameterTypes => {
+                f.write_str("The given parameter types do not match the function's signature")
+            }
+            Error::InvalidResultTypes => {
+                f.write_str("The given result types do not match the function's signature")
+            }
         }
     }
 }
