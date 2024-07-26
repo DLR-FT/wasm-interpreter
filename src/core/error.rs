@@ -119,3 +119,9 @@ impl Display for Error {
 }
 
 pub type Result<T> = core::result::Result<T, Error>;
+
+impl From<RuntimeError> for Error {
+    fn from(value: RuntimeError) -> Self {
+        Self::RuntimeError(value)
+    }
+}
