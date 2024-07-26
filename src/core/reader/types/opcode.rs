@@ -1,5 +1,11 @@
+//! All opcodes, in alphanumerical order by their numeric (hex-)value
+
 pub const NOP: u8 = 0x01;
+pub const ELSE: u8 = 0x05;
 pub const END: u8 = 0x0B;
+pub const BR: u8 = 0x0C;
+pub const BR_IF: u8 = 0x0D;
+pub const BR_TABLE: u8 = 0x0E;
 pub const LOCAL_GET: u8 = 0x20;
 pub const LOCAL_SET: u8 = 0x21;
 pub const GLOBAL_GET: u8 = 0x23;

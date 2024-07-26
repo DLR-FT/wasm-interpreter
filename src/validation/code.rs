@@ -9,6 +9,7 @@ use crate::core::reader::types::global::Global;
 use crate::core::reader::types::memarg::MemArg;
 use crate::core::reader::types::{FuncType, NumType, ResultType, ValType};
 use crate::core::reader::{WasmReadable, WasmReader};
+use crate::core::sidetable::Sidetable;
 use crate::{Error, Result};
 
 pub fn validate_code_section(
@@ -81,6 +82,7 @@ fn read_instructions(
                     .ok_or(Error::InvalidValueStackType(Some(ty)))
             })
     };
+    let mut sidetable: Sidetable = Sidetable::default();
 
     loop {
         let Ok(first_instr_byte) = wasm.read_u8() else {
