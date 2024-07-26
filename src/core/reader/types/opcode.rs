@@ -1,8 +1,13 @@
+//! All opcodes, in alphanumerical order by their numeric (hex-)value
 pub const UNREACHABLE: u8 = 0x00;
 pub const NOP: u8 = 0x01;
-pub const END: u8 = 0x0B;
-pub const RETURN: u8 = 0x0F;
+pub const ELSE: u8 = 0x05;
 pub const CALL: u8 = 0x10;
+pub const END: u8 = 0x0B;
+pub const BR: u8 = 0x0C;
+pub const BR_IF: u8 = 0x0D;
+pub const BR_TABLE: u8 = 0x0E;
+pub const RETURN: u8 = 0x0F;
 pub const LOCAL_GET: u8 = 0x20;
 pub const LOCAL_SET: u8 = 0x21;
 pub const LOCAL_TEE: u8 = 0x22;
