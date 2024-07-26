@@ -96,6 +96,31 @@ where
         }
     }
 
+    pub fn invoke_named_dynamic(
+        &mut self,
+        func_name: &str,
+        param: Vec<Value>,
+        ret_types: &[ValType],
+    ) -> Result<Vec<Value>, RuntimeError> {
+        // TODO: Optimize this search for better than linear-time. Pre-processing will likely be required
+        let func_idx = self.exports.iter().find_map(|export| {
+            if export.name == func_name {
+                match export.desc {
+                    ExportDesc::FuncIdx(idx) => Some(idx),
+                    _ => None,
+                }
+            } else {
+                None
+            }
+        });
+
+        if let Some(func_idx) = func_idx {
+            self.invoke_dynamic(func_idx, param, ret_types)
+        } else {
+            Err(RuntimeError::FunctionNotFound)
+        }
+    }
+
     /// Can only invoke functions with signature `[t1] -> [t2]` as of now.
     pub fn invoke_func<Param: InteropValueList, Returns: InteropValueList>(
         &mut self,
