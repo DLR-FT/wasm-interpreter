@@ -13,6 +13,7 @@ use crate::core::reader::types::global::Global;
 use crate::core::reader::types::memarg::MemArg;
 use crate::core::reader::types::{FuncType, MemType, NumType, TableType, ValType};
 use crate::core::reader::{WasmReadable, WasmReader};
+use crate::core::sidetable::Sidetable;
 use crate::validation_stack::ValidationStack;
 use crate::{Error, RefType, Result};
 
@@ -112,6 +113,18 @@ fn read_instructions(
     elements: &[ElemType],
     referenced_functions: &BTreeSet<u32>,
 ) -> Result<()> {
+    let assert_pop_value_stack = |value_stack: &mut VecDeque<ValType>, expected_ty: ValType| {
+        value_stack
+            .pop_back()
+            .ok_or(Error::InvalidValueStackType(None))
+            .and_then(|ty| {
+                (ty == expected_ty)
+                    .then_some(())
+                    .ok_or(Error::InvalidValueStackType(Some(ty)))
+            })
+    };
+    let mut sidetable: Sidetable = Sidetable::default();
+
     // TODO we must terminate only if both we saw the final `end` and when we consumed all of the code span
     loop {
         let Ok(first_instr_byte) = wasm.read_u8() else {
