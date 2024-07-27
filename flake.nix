@@ -64,11 +64,12 @@
             coreutils
             rust-toolchain
             rust-analyzer
+            cargo-audit
+            cargo-expand
+            cargo-llvm-cov
             cargo-outdated
             cargo-udeps
             cargo-watch
-            cargo-audit
-            cargo-expand
             nodePackages.prettier
             strictdoc
             wabt
@@ -77,6 +78,16 @@
             nixpkgs-fmt
             nodePackages.prettier
             treefmtEval.config.build.wrapper
+          ];
+          env = [
+            {
+              name = "LLVM_COV";
+              value = self.packages.${system}.wasm-interpreter.LLVM_COV;
+            }
+            {
+              name = "LLVM_PROFDATA";
+              value = self.packages.${system}.wasm-interpreter.LLVM_PROFDATA;
+            }
           ];
           git.hooks = {
             enable = true;
