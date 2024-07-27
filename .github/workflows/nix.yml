@@ -18,11 +18,11 @@ jobs:
         with:
           name: dlr-ft
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
-      - name: Run Checks
-        run: nix flake check
+      - run: nix flake check
 
   build-test-cover-document:
-    name: Nix build wasm-interpreter
+    name: Nix build wasm-interpreter and report
+    needs: checks
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -33,5 +33,10 @@ jobs:
         with:
           name: dlr-ft
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
-      - name: Run Checks
-        run: nix build .#wasm-interpreter --print-build-logs
+      - run: nix build .#wasm-interpreter --print-build-logs
+      - run: nix build .#report --print-build-logs
+      - name: Archive report
+        uses: actions/upload-artifact@v4
+        with:
+          name: report
+          path: result/
