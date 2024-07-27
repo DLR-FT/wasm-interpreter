@@ -54,9 +54,12 @@
         });
 
       in
-      rec {
+      {
         # packages
         packages.wasm-interpreter = pkgs.callPackage pkgs/wasm-interpreter.nix { };
+        packages.report = pkgs.callPackage pkgs/report.nix {
+          inherit (self.packages.${system}) wasm-interpreter;
+        };
 
         # a devshell with all the necessary bells and whistles
         devShells.default = (pkgs.devshell.mkShell {

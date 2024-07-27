@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      body {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-evenly;
+        align-items: baseline;
+        min-height: 100%;
+      }
+      a {
+        border: thin solid black;
+        border-radius: 0.5em;
+        margin: 0.25em;
+        padding: 0.5em;
+        text-align: center;
+        transition: background-color 0.25s ease;
+      }
+      a:hover {
+        background: rgba(0, 0, 0, 0.1);
+      }
+      @media (orientation: landscape) {
+        body {
+          flex-flow: row;
+          font-size: calc(min(12.5vw / 5, 25vh));
+        }
+        a {
+          flex-basis: 0;
+          flex-grow: 1;
+        }
+      }
+      @media (orientation: portrait) {
+        body {
+          flex-flow: column;
+          align-items: stretch;
+          font-size: calc(min(35vh / 5, 8vw));
+        }
+      }
+    </style>
+    <title>wasm-interpreter Report</title>
+  </head>
+  <body style="display: flex">
+    <a href="rustdoc/wasm/index.html">Documentation</a>
+    <a href="requirements/html/index.html">Requirements</a>
+    <a href="test/index.html">Tests</a>
+    <a href="coverage/html/index.html">Coverage</a>
+    <a href="bench/report/index.html">Benchmark</a>
+  </body>
+</html>
