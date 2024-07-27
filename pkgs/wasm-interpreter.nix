@@ -62,10 +62,19 @@ rustPlatform.buildRustPackage rec {
 
   # TODO `cargo llvm-cov report --doctest` is only available on nightly :(
   postCheck = ''
+    # bench
+    cargo bench
+    mv target/criterion "$out/bench-html"
+
+    # coverage stuff
     cargo llvm-cov --no-report nextest
-    # cargo llvm-cov --no-report --doc
     cargo llvm-cov report --lcov --output-path lcov.info
-    mv lcov.info target/nextest/ci/junit.xml "$out/"
+    cargo llvm-cov report --json --output-path lcov.json
+    cargo llvm-cov report --cobertura --output-path lcov-cobertura.xml
+    cargo llvm-cov report --codecov --output-path lcov-codecov.json
+    cargo llvm-cov report --text --output-path lcov.txt
+    cargo llvm-cov report --html --output-dir lcov-html
+    mv lcov* target/nextest/ci/junit.xml "$out/"
   '';
 
   meta = {
