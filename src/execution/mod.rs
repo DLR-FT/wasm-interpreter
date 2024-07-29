@@ -14,7 +14,7 @@ use crate::execution::store::{FuncInst, GlobalInst, MemInst, Store};
 use crate::execution::value::Value;
 use crate::validation::code::read_declared_locals;
 use crate::value::InteropValueList;
-use crate::Error::RuntimeError;
+use crate::Error::{self, RuntimeError};
 use crate::RuntimeError::{DivideBy0, FunctionNotFound, UnrepresentableResult};
 use crate::{Result, ValidationInfo};
 
@@ -51,7 +51,7 @@ where
     pub fn new_with_hooks(validation_info: &'_ ValidationInfo<'b>, hook_set: H) -> Result<Self> {
         trace!("Starting instantiation of bytecode");
 
-        let store = Self::init_store(validation_info);
+        let store = Self::init_store(validation_info)?;
 
         let mut instance = RuntimeInstance {
             wasm_bytecode: validation_info.wasm,
@@ -100,15 +100,20 @@ where
         params: Param,
     ) -> Result<Returns> {
         // -=-= Verification =-=-
-        let func_inst = self.store.funcs.get(func_idx).expect("valid FuncIdx");
+        // TODO(george-cosma): Do we want this to be a RuntimeError(FunctionNotFound)?
+        let func_inst = self
+            .store
+            .funcs
+            .get(func_idx)
+            .ok_or(Error::InvalidFunctionIdx(func_idx))?;
         let func_ty = self.types.get(func_inst.ty).unwrap_validated();
 
         // Check correct function parameters and return types
         if func_ty.params.valtypes != Param::TYS {
-            panic!("Invalid `Param` generics");
+            return Err(Error::InvalidParameterTypes);
         }
         if func_ty.returns.valtypes != Returns::TYS {
-            panic!("Invalid `Returns` generics");
+            return Err(Error::InvalidResultTypes);
         }
 
         // -=-= Invoke the function =-=-
@@ -143,19 +148,24 @@ where
         ret_types: &[ValType],
     ) -> Result<Vec<Value>> {
         // -=-= Verification =-=-
-        let func_inst = self.store.funcs.get(func_idx).expect("valid FuncIdx");
+        // TODO(george-cosma): Do we want this to be a RuntimeError(FunctionNotFound)?
+        let func_inst = self
+            .store
+            .funcs
+            .get(func_idx)
+            .ok_or(Error::InvalidFunctionIdx(func_idx))?;
         let func_ty = self.types.get(func_inst.ty).unwrap_validated();
 
         // Verify that the given parameters match the function parameters
         let param_types = params.iter().map(|v| v.to_ty()).collect::<Vec<_>>();
 
         if func_ty.params.valtypes != param_types {
-            panic!("Invalid parameters for function");
+            return Err(Error::InvalidParameterTypes);
         }
 
         // Verify that the given return types match the function return types
         if func_ty.returns.valtypes != ret_types {
-            panic!("Invalid return types for function");
+            return Err(Error::InvalidResultTypes);
         }
 
         // -=-= Invoke the function =-=-
@@ -169,7 +179,12 @@ where
         let error = self.function(func_idx, &mut stack);
         error?;
 
-        let func_inst = self.store.funcs.get(func_idx).expect("valid FuncIdx");
+        // TODO(george-cosma): Do we want this to be a RuntimeError(FunctionNotFound)?
+        let func_inst = self
+            .store
+            .funcs
+            .get(func_idx)
+            .ok_or(Error::InvalidFunctionIdx(func_idx))?;
         let func_ty = self.types.get(func_inst.ty).unwrap_validated();
 
         // Pop return values from stack
@@ -263,9 +278,9 @@ where
                                 let address = address as usize;
                                 mem.data.get(address..(address + 4))
                             })
-                            .expect("TODO trap here");
+                            .expect("TODO trap here"); // ???
 
-                        let data: [u8; 4] = data.try_into().expect("this to be exactly 4 bytes");
+                        let data: [u8; 4] = data.try_into().expect("this to be exactly 4 bytes"); // ???
                         u32::from_le_bytes(data)
                     };
 
@@ -289,7 +304,7 @@ where
                             let address = address as usize;
                             mem.data.get_mut(address..(address + 4))
                         })
-                        .expect("TODO trap here");
+                        .expect("TODO trap here"); // ???
 
                     memory_location.copy_from_slice(&data_to_store.to_le_bytes());
                     trace!("Instruction: i32.store [{relative_address} {data_to_store}] -> []");
@@ -663,7 +678,7 @@ where
         Ok(())
     }
 
-    fn init_store(validation_info: &ValidationInfo) -> Store {
+    fn init_store(validation_info: &ValidationInfo) -> Result<Store> {
         let function_instances: Vec<FuncInst> = {
             let mut wasm_reader = WasmReader::new(validation_info.wasm);
 
@@ -673,25 +688,21 @@ where
             functions
                 .zip(func_blocks)
                 .map(|(ty, func)| {
-                    wasm_reader
-                        .move_start_to(*func)
-                        .expect("function index to be in the bounds of the WASM binary");
+                    wasm_reader.move_start_to(*func)?;
 
                     let (locals, bytes_read) = wasm_reader
                         .measure_num_read_bytes(read_declared_locals)
                         .unwrap_validated();
 
-                    let code_expr = wasm_reader
-                        .make_span(func.len() - bytes_read)
-                        .expect("TODO remove this expect");
+                    let code_expr = wasm_reader.make_span(func.len() - bytes_read)?;
 
-                    FuncInst {
+                    Ok(FuncInst {
                         ty: *ty,
                         locals,
                         code_expr,
-                    }
+                    })
                 })
-                .collect()
+                .collect::<Result<Vec<FuncInst>>>()?
         };
 
         let memory_instances: Vec<MemInst> = validation_info
@@ -714,10 +725,10 @@ where
             })
             .collect();
 
-        Store {
+        Ok(Store {
             funcs: function_instances,
             mems: memory_instances,
             globals: global_instances,
-        }
+        })
     }
 }
