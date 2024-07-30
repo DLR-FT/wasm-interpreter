@@ -22,57 +22,29 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  deploy:
+  build-reports:
+    name: Build Reports using Nix
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      # -=-=-=-= Rustdocs =-=-=-=-
-      - name: Build rustdocs
-        run: cargo doc
-
-      # -=-=-=-= Strictdoc =-=-=-=-
-      - name: Install python
-        uses: actions/setup-python@v5.1.0
+      - uses: cachix/install-nix-action@v27
         with:
-          python-version: 3.12
-      - name: Install strictdoc & requirements
-        run: pip install strictdoc setuptools # Note: we need setuptools for strictdoc to work. Installing just strictdoc is not enough
-      - name: Export requirements
-        run: strictdoc export ./requirements/requirements.sdoc
-
-      # -=-=-=-= Preparation (1/2) =-=-=-=-
-      - name: Prepare web files (1/2)
-        run: mkdir -p web && mv ./target/doc/ ./web/rustdocs/ && mv ./output/html/ ./web/strictdoc/
-
-      # -=-=-=-= Coverage test =-=-=-=-
-      - name: Install coverage test tooling
-        run: |
-          rustup toolchain install nightly &&
-          rustup component add llvm-tools-preview &&
-          cargo install cargo-binutils
-      - name: Run & compile coverage test
-        run: |
-          cargo clean &&
-          RUSTFLAGS="-C instrument-coverage -Z coverage-options=branch,mcdc" cargo +nightly test --tests --no-run &&
-          OBJS=$(RUSTFLAGS="-C instrument-coverage -Z coverage-options=branch,mcdc" cargo +nightly test --tests --no-run -- --test-threads=1 2>&1 | grep -oP '(?<=\()[^ ]+[\\\/][^ \)]+' | sed 's/^/--object /' | sed 's/\r//' | tr '\n' ' ') &&
-          rm -rf *.profraw &&
-          RUSTFLAGS="-C instrument-coverage -Z coverage-options=branch,mcdc" cargo +nightly test --tests -- --test-threads=1 &&
-          cargo profdata -- merge -sparse *.profraw -o default.profdata &&
-          cargo cov -- show -show-line-counts-or-regions -output-dir=cov_out -format=html --ignore-filename-regex='.*cargo.*' --instr-profile=default.profdata $OBJS
-
-      # -=-=-=-= Preparation (2/2) =-=-=-=-
-      - name: Prepare web files (2/2)
-        run: mv ./cov_out/ ./web/coverage
-
-      # -=-=-=-= Deploy =-=-=-=-
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: cachix/cachix-action@v14
+        with:
+          name: dlr-ft
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+      - run: nix build .#wasm-interpreter --print-build-logs
+      - run: nix build .#report --print-build-logs
+      - run: rm -f ./result/index.html
       - name: Deploy to Github Pages
         uses: peaceiris/actions-gh-pages@v4.0.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           # Build output to publish to the `gh-pages` branch:
-          publish_dir: ./web
+          publish_dir: ./result
           publish_branch: gh-pages
           destination_dir: ./main/
