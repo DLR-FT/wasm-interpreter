@@ -87,7 +87,7 @@ impl WasmReadable for SectionHeader {
         let size: u32 = wasm.read_var_u32().unwrap_validated();
         let contents_span = wasm
             .make_span(size as usize)
-            .expect("TODO remove this expect");
+            .expect("Expected to be able to read section due to prior validation");
 
         SectionHeader {
             ty,
