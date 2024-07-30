@@ -23,34 +23,31 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      # -=-=-=-= Coverage test (if labeled) =-=-=-=-
-      - name: Install coverage test tooling
+      # -=-=-=-= Create report =-=-=-=-
+      - uses: cachix/install-nix-action@v27
         if: |
           (github.event.action == 'labeled' &&  github.event.label.name == 'coverage') ||
           (github.event.action != 'labeled' && github.event.action != 'unlabeled' && contains(github.event.pull_request.labels.*.name, 'coverage'))
-        run: |
-          rustup toolchain install nightly &&
-          rustup component add llvm-tools-preview &&
-          cargo install cargo-binutils
-      - name: Run & compile coverage test
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: cachix/cachix-action@v14
         if: |
           (github.event.action == 'labeled' &&  github.event.label.name == 'coverage') ||
           (github.event.action != 'labeled' && github.event.action != 'unlabeled' && contains(github.event.pull_request.labels.*.name, 'coverage'))
-        run: |
-          cargo clean &&
-          RUSTFLAGS="-C instrument-coverage -Z coverage-options=branch,mcdc" cargo +nightly test --tests --no-run &&
-          OBJS=$(RUSTFLAGS="-C instrument-coverage -Z coverage-options=branch,mcdc" cargo +nightly test --tests --no-run -- --test-threads=1 2>&1 | grep -oP '(?<=\()[^ ]+[\\\/][^ \)]+' | sed 's/^/--object /' | sed 's/\r//' | tr '\n' ' ') &&
-          rm -rf *.profraw &&
-          RUSTFLAGS="-C instrument-coverage -Z coverage-options=branch,mcdc" cargo +nightly test --tests -- --test-threads=1 &&
-          cargo profdata -- merge -sparse *.profraw -o default.profdata &&
-          cargo cov -- show -show-line-counts-or-regions -output-dir=cov_out -format=html --ignore-filename-regex='.*cargo.*' --instr-profile=default.profdata $OBJS
-
+        with:
+          name: dlr-ft
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+      - name: Generate report(s)
+        if: |
+          (github.event.action == 'labeled' &&  github.event.label.name == 'coverage') ||
+          (github.event.action != 'labeled' && github.event.action != 'unlabeled' && contains(github.event.pull_request.labels.*.name, 'coverage'))
+        run: nix build .#report --print-build-logs
       # -=-=-=-= Deploy (when labeled) =-=-=-=-
       - name: Deploy Preview (labeled)
         if: ${{ github.event.action == 'labeled' &&  github.event.label.name == 'coverage' }}
         uses: rossjrw/pr-preview-action@v1.4.7
         with:
-          source-dir: cov_out/
+          source-dir: result/coverage/html/
           umbrella-dir: coverage/pr-preview
           action: deploy # force deployment since, by default, this actions does nothing on the 'labeled' event
       # -=-=-=-= Deploy (when unlabeled) =-=-=-=-
@@ -58,7 +55,7 @@ jobs:
         if: ${{ github.event.action == 'unlabeled' &&  github.event.label.name == 'coverage' }}
         uses: rossjrw/pr-preview-action@v1.4.7
         with:
-          source-dir: cov_out/
+          source-dir: result/coverage/html/
           umbrella-dir: coverage/pr-preview
           action: remove # force removal since, by default, this actions does nothing on the 'labeled' event
       # -=-=-=-= Deploy (default) =-=-=-=-
@@ -66,5 +63,5 @@ jobs:
         if: ${{ github.event.action != 'labeled' && github.event.action != 'unlabeled' && contains(github.event.pull_request.labels.*.name, 'coverage') }}
         uses: rossjrw/pr-preview-action@v1.4.7
         with:
-          source-dir: cov_out/
+          source-dir: result/coverage/html/
           umbrella-dir: coverage/pr-preview
