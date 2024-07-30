@@ -1,29 +1,53 @@
 //! This module solely contains the actual interpretation loop that matches instructions, interpreting the WASM bytecode
 //!
-//! As such, there must be only imports, one `impl` with one function (`run`) in it.
+//!
+//! # Note to Developer:
+//!
+//! 1. There must be only imports and one `impl` with one function (`run`) in it.
+//! 2. This module must not use the [`Error`](crate::core::error::Error) enum.
+//! 3. Instead, only the [`RuntimeError`] enum shall be used
+//!    - **not** to be confused with the [`Error`](crate::core::error::Error) enum's
+//!      [`Error::RuntimeError`](crate::Error::RuntimeError) variant, which as per 2., we don not
+//!      want
+use alloc::vec::Vec;
 
-use crate::Error::*;
-use crate::RuntimeError::*;
 use crate::{
     assert_validated::UnwrapValidatedExt,
     core::{
         indices::{FuncIdx, GlobalIdx, LocalIdx},
-        reader::{types::memarg::MemArg, WasmReadable},
+        reader::{types::memarg::MemArg, WasmReadable, WasmReader},
     },
     hooks::HookSet,
     value_stack::Stack,
-    NumType, ValType, Value,
+    NumType, RuntimeError, ValType, Value,
 };
 
 use super::RuntimeInstance;
-use crate::Result;
 
 impl<'a, H> RuntimeInstance<'a, H>
 where
     H: HookSet,
 {
     /// Interprets a functions. Parameters and return values are passed on the stack.
-    pub(crate) fn run(&mut self, stack: &mut Stack) -> Result<()> {
+    pub(super) fn run(&mut self, idx: FuncIdx, stack: &mut Stack) -> Result<(), RuntimeError> {
+        let inst = self.store.funcs.get(idx).unwrap_validated();
+
+        // Pop parameters from stack
+        let func_type = self.types.get(inst.ty).unwrap_validated();
+        let mut params: Vec<Value> = func_type
+            .params
+            .valtypes
+            .iter()
+            .map(|ty| stack.pop_value(*ty))
+            .collect();
+        params.reverse();
+
+        // Start reading the function's instructions
+        let mut wasm = WasmReader::new(self.wasm_bytecode);
+
+        // unwrap is sound, because the validation assures that the function points to valid subslice of the WASM binary
+        wasm.move_start_to(inst.code_expr).unwrap();
+
         use crate::core::reader::types::opcode::*;
         loop {
             // call the instruction hook
@@ -185,10 +209,10 @@ where
                     let divisor: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
                     if dividend == 0 {
-                        return Err(RuntimeError(DivideBy0));
+                        return Err(RuntimeError::DivideBy0);
                     }
                     if divisor == i32::MIN && dividend == -1 {
-                        return Err(RuntimeError(UnrepresentableResult));
+                        return Err(RuntimeError::UnrepresentableResult);
                     }
 
                     let res = divisor / dividend;
@@ -204,7 +228,7 @@ where
                     let divisor = divisor as u32;
 
                     if dividend == 0 {
-                        return Err(RuntimeError(DivideBy0));
+                        return Err(RuntimeError::DivideBy0);
                     }
 
                     let res = (divisor / dividend) as i32;
@@ -217,7 +241,7 @@ where
                     let divisor: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
                     if dividend == 0 {
-                        return Err(RuntimeError(DivideBy0));
+                        return Err(RuntimeError::DivideBy0);
                     }
 
                     let res = divisor.checked_rem(dividend);
@@ -276,10 +300,10 @@ where
                     let divisor: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
 
                     if dividend == 0 {
-                        return Err(RuntimeError(DivideBy0));
+                        return Err(RuntimeError::DivideBy0);
                     }
                     if divisor == i64::MIN && dividend == -1 {
-                        return Err(RuntimeError(UnrepresentableResult));
+                        return Err(RuntimeError::UnrepresentableResult);
                     }
 
                     let res = divisor / dividend;
@@ -295,7 +319,7 @@ where
                     let divisor = divisor as u64;
 
                     if dividend == 0 {
-                        return Err(RuntimeError(DivideBy0));
+                        return Err(RuntimeError::DivideBy0);
                     }
 
                     let res = (divisor / dividend) as i64;
@@ -308,9 +332,7 @@ where
                     let divisor: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
 
                     if dividend == 0 {
-                        return Err(crate::Error::RuntimeError(
-                            crate::core::error::RuntimeError::DivideBy0,
-                        ));
+                        return Err(RuntimeError::DivideBy0);
                     }
 
                     let res = divisor.checked_rem(dividend);
@@ -327,9 +349,7 @@ where
                     let divisor = divisor as u64;
 
                     if dividend == 0 {
-                        return Err(crate::Error::RuntimeError(
-                            crate::core::error::RuntimeError::DivideBy0,
-                        ));
+                        return Err(RuntimeError::DivideBy0);
                     }
 
                     let res = (divisor % dividend) as i64;
@@ -417,7 +437,7 @@ where
                     let divisor = divisor as u32;
 
                     if dividend == 0 {
-                        return Err(RuntimeError(DivideBy0));
+                        return Err(RuntimeError::DivideBy0);
                     }
 
                     let res = divisor.checked_rem(dividend);

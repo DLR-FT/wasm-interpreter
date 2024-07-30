@@ -118,6 +118,18 @@ impl Display for Error {
     }
 }
 
+impl Display for RuntimeError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        match self {
+            RuntimeError::DivideBy0 => f.write_fmt(format_args!("A division by zero occured")),
+            RuntimeError::UnrepresentableResult => {
+                f.write_fmt(format_args!("The result can not be represented"))
+            }
+            RuntimeError::FunctionNotFound => f.write_fmt(format_args!("Function does not exist")),
+        }
+    }
+}
+
 pub type Result<T> = core::result::Result<T, Error>;
 
 impl From<RuntimeError> for Error {

@@ -13,8 +13,8 @@ use crate::execution::store::{FuncInst, GlobalInst, MemInst, Store};
 use crate::execution::value::Value;
 use crate::validation::code::read_declared_locals;
 use crate::value::InteropValueList;
-use crate::RuntimeError::FunctionNotFound;
-use crate::{Result, ValidationInfo};
+use crate::RuntimeError::{self, FunctionNotFound};
+use crate::ValidationInfo;
 
 // TODO
 pub(crate) mod assert_validated;
@@ -46,7 +46,7 @@ where
 }
 
 impl<'b> RuntimeInstance<'b, EmptyHookSet> {
-    pub fn new(validation_info: &'_ ValidationInfo<'b>) -> Result<Self> {
+    pub fn new(validation_info: &'_ ValidationInfo<'b>) -> Result<Self, RuntimeError> {
         Self::new_with_hooks(validation_info, EmptyHookSet)
     }
 }
@@ -55,7 +55,10 @@ impl<'b, H> RuntimeInstance<'b, H>
 where
     H: HookSet,
 {
-    pub fn new_with_hooks(validation_info: &'_ ValidationInfo<'b>, hook_set: H) -> Result<Self> {
+    pub fn new_with_hooks(
+        validation_info: &'_ ValidationInfo<'b>,
+        hook_set: H,
+    ) -> Result<Self, RuntimeError> {
         trace!("Starting instantiation of bytecode");
 
         let store = Self::init_store(validation_info);
@@ -81,7 +84,7 @@ where
         &mut self,
         func_name: &str,
         param: Param,
-    ) -> Result<Returns> {
+    ) -> Result<Returns, RuntimeError> {
         // TODO: Optimize this search for better than linear-time. Pre-processing will likely be required
         let func_idx = self.exports.iter().find_map(|export| {
             if export.name == func_name {
@@ -106,7 +109,7 @@ where
         &mut self,
         func_idx: FuncIdx,
         params: Param,
-    ) -> Result<Returns> {
+    ) -> Result<Returns, RuntimeError> {
         // -=-= Verification =-=-
         let func_inst = self.store.funcs.get(func_idx).ok_or(FunctionNotFound)?;
         let func_ty = self.types.get(func_inst.ty).unwrap_validated();
@@ -131,7 +134,7 @@ where
         func_idx: FuncIdx,
         params: Vec<Value>,
         ret_types: &[ValType],
-    ) -> Result<Vec<Value>> {
+    ) -> Result<Vec<Value>, RuntimeError> {
         // -=-= Verification =-=-
         let func_inst = self.store.funcs.get(func_idx).expect("valid FuncIdx");
         let func_ty = self.types.get(func_inst.ty).unwrap_validated();
@@ -162,7 +165,7 @@ where
         idx: FuncIdx,
         params: &[Value],
         return_tys: &[ValType],
-    ) -> Result<Vec<Value>> {
+    ) -> Result<Vec<Value>, RuntimeError> {
         let mut stack = Stack::new();
 
         // Push parameters on stack
@@ -171,7 +174,7 @@ where
         }
 
         self.push_callframe(idx, &mut stack)?;
-        self.run(&mut stack)?;
+        self.run(idx, &mut stack)?;
 
         let mut return_values = return_tys
             .iter()
@@ -185,7 +188,7 @@ where
     }
 
     /// Push a new [CallFrame] to the call-frame stack
-    fn push_callframe(&mut self, idx: FuncIdx, stack: &mut Stack) -> Result<()> {
+    fn push_callframe(&mut self, idx: FuncIdx, stack: &mut Stack) -> Result<(), RuntimeError> {
         let inst = self.store.funcs.get(idx).unwrap_validated();
 
         // Pop parameters from stack
@@ -203,7 +206,8 @@ where
 
         // Start reading the function's instructions
         let mut wasm = WasmReader::new(self.wasm_bytecode);
-        wasm.move_start_to(inst.code_expr)?;
+        wasm.move_start_to(inst.code_expr)
+            .expect("unable to move pc to function start, but validation guarantees this works");
 
         let call_frame = CallFrame {
             locals,
