@@ -13,9 +13,13 @@
 use crate::{
     assert_validated::UnwrapValidatedExt,
     core::{
-        indices::{GlobalIdx, LocalIdx},
-        reader::{types::memarg::MemArg, WasmReadable, WasmReader},
+        indices::{FuncIdx, GlobalIdx, LocalIdx},
+        reader::{
+            types::{memarg::MemArg, FuncType},
+            WasmReadable, WasmReader,
+        },
     },
+    locals::Locals,
     store::Store,
     value_stack::Stack,
     NumType, RuntimeError, ValType, Value,
@@ -27,6 +31,7 @@ use crate::execution::hooks::HookSet;
 /// Interprets a functions. Parameters and return values are passed on the stack.
 pub(super) fn run<H: HookSet>(
     wasm_bytecode: &[u8],
+    types: &[FuncType],
     store: &mut Store,
     stack: &mut Stack,
     mut hooks: H,
@@ -53,6 +58,26 @@ pub(super) fn run<H: HookSet>(
         match first_instr_byte {
             END => {
                 break;
+            }
+            RETURN => {
+                trace!("returning from function");
+                wasm.pc = stack.pop_stackframe();
+            }
+            CALL => {
+                let func_to_call_idx = wasm.read_var_u32().unwrap_validated() as FuncIdx;
+
+                let func_to_call_inst = store.funcs.get(func_to_call_idx).unwrap_validated();
+                let func_to_call_ty = types.get(func_to_call_inst.ty).unwrap_validated();
+
+                let params = stack.pop_tail_iter(func_to_call_ty.params.valtypes.len());
+                let remaining_locals = func_to_call_inst.locals.iter().cloned();
+
+                trace!("Instruction: call [{func_to_call_idx:?}]");
+                let locals = Locals::new(params, remaining_locals);
+                stack.push_stackframe(func_to_call_idx, locals, wasm.pc);
+
+                wasm.move_start_to(func_to_call_inst.code_expr)
+                    .unwrap_validated();
             }
             LOCAL_GET => {
                 stack.get_local(wasm.read_var_u32().unwrap_validated() as LocalIdx);

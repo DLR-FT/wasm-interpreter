@@ -122,6 +122,7 @@ where
         // Run the interpreter
         run(
             self.wasm_bytecode,
+            &self.types,
             &mut self.store,
             &mut stack,
             EmptyHookSet,
@@ -171,6 +172,7 @@ where
         // Run the interpreter
         run(
             self.wasm_bytecode,
+            &self.types,
             &mut self.store,
             &mut stack,
             EmptyHookSet,

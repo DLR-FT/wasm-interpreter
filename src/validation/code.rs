@@ -2,7 +2,7 @@ use alloc::collections::VecDeque;
 use alloc::vec::Vec;
 use core::iter;
 
-use crate::core::indices::{GlobalIdx, LocalIdx};
+use crate::core::indices::{FuncIdx, GlobalIdx, LocalIdx};
 use crate::core::reader::section_header::{SectionHeader, SectionTy};
 use crate::core::reader::span::Span;
 use crate::core::reader::types::global::Global;
@@ -95,6 +95,13 @@ fn read_instructions(
             // end
             END => {
                 return Ok(());
+            }
+            RETURN => {}
+            // TODO assert the top N values of the stack match the function return types, then return the top of the current stack frame as return value and remove all other values from the value stack that belong to the current function callframe
+            // call [t1*] -> [t2*]
+            CALL => {
+                let func_to_call_idx = wasm.read_var_u32()? as FuncIdx;
+                // TODO get function params, reverse iter over it, for each param pop that value from the value_stack and assert it has the right type, then push all types fromt he return value(s) of the called function to the value_stack
             }
             // local.get: [] -> [t]
             LOCAL_GET => {

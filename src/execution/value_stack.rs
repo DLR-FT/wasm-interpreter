@@ -1,4 +1,4 @@
-use alloc::vec::Vec;
+use alloc::vec::{Drain, Vec};
 
 use crate::core::indices::{FuncIdx, LocalIdx};
 use crate::core::reader::types::ValType;
@@ -65,6 +65,7 @@ impl Stack {
         let local_ty = self.current_stackframe().locals.get_ty(idx);
 
         let stack_value = self.pop_value(local_ty);
+        trace!("Instruction: local.set [{stack_value:?}] -> []");
         *self.current_stackframe_mut().locals.get_mut(idx) = stack_value;
     }
 
@@ -103,6 +104,14 @@ impl Stack {
             locals,
             return_addr,
         })
+    }
+
+    /// Pop `n` elements from the value stack's tail as an iterator, with the first element being
+    /// closest to the bottom of the value stack
+    pub fn pop_tail_iter(&mut self, n: usize) -> Drain<Value> {
+        let start = self.values.len() - n;
+
+        self.values.drain(start..)
     }
 }
 

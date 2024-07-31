@@ -1,5 +1,7 @@
 pub const NOP: u8 = 0x01;
 pub const END: u8 = 0x0B;
+pub const RETURN: u8 = 0x0F;
+pub const CALL: u8 = 0x10;
 pub const LOCAL_GET: u8 = 0x20;
 pub const LOCAL_SET: u8 = 0x21;
 pub const LOCAL_TEE: u8 = 0x22;
