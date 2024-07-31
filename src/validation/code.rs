@@ -1,7 +1,7 @@
 use alloc::vec::Vec;
 use core::iter;
 
-use crate::core::indices::{GlobalIdx, LocalIdx};
+use crate::core::indices::{FuncIdx, GlobalIdx, LocalIdx};
 use crate::core::reader::section_header::{SectionHeader, SectionTy};
 use crate::core::reader::span::Span;
 use crate::core::reader::types::global::Global;
@@ -14,13 +14,13 @@ pub fn validate_code_section(
     wasm: &mut WasmReader,
     section_header: SectionHeader,
     fn_types: &[FuncType],
-    type_of_fn: &[usize],
+    type_idx_of_fn: &[usize],
     globals: &[Global],
 ) -> Result<Vec<Span>> {
     assert_eq!(section_header.ty, SectionTy::Code);
 
     let code_block_spans = wasm.read_vec_enumerated(|wasm, idx| {
-        let ty_idx = type_of_fn[idx];
+        let ty_idx = type_idx_of_fn[idx];
         let func_ty = fn_types[ty_idx].clone();
 
         let func_size = wasm.read_var_u32()?;
@@ -33,7 +33,15 @@ pub fn validate_code_section(
         };
 
         validate_value_stack(func_ty.returns, |value_stack| {
-            read_instructions(wasm, value_stack, &locals, globals)
+            read_instructions(
+                idx,
+                wasm,
+                value_stack,
+                &locals,
+                globals,
+                fn_types,
+                type_idx_of_fn,
+            )
         })?;
 
         Ok(func_block)
@@ -65,10 +73,13 @@ pub fn read_declared_locals(wasm: &mut WasmReader) -> Result<Vec<ValType>> {
 }
 
 fn read_instructions(
+    this_function_idx: usize,
     wasm: &mut WasmReader,
     value_stack: &mut Vec<ValType>,
     locals: &[ValType],
     globals: &[Global],
+    fn_types: &[FuncType],
+    type_idx_of_fn: &[usize],
 ) -> Result<()> {
     let assert_pop_value_stack = |value_stack: &mut Vec<ValType>, expected_ty: ValType| {
         value_stack
@@ -94,6 +105,34 @@ fn read_instructions(
             // end
             END => {
                 return Ok(());
+            }
+            RETURN => {
+                let this_func_ty = &fn_types[type_idx_of_fn[this_function_idx]];
+
+                if value_stack.len() < this_func_ty.returns.valtypes.len() {
+                    return Err(Error::EndInvalidValueStack);
+                }
+
+                let ret_vals_start = value_stack.len() - this_func_ty.returns.valtypes.len();
+                let _remaining_locals = value_stack.drain(..ret_vals_start);
+
+                // TODO(george-cosma): a `return Ok(());` should probably be introduced here, but since we don't have
+                // controls flows implemented, the only way to test `return` is to place it at the end of function.
+                // However, an `end` is introduced after it, which is invalid. Compilation for this test case should
+                // probably fail.
+            }
+            // call [t1*] -> [t2*]
+            CALL => {
+                let func_to_call_idx = wasm.read_var_u32()? as FuncIdx;
+                let func_ty = &fn_types[type_idx_of_fn[func_to_call_idx]];
+
+                for typ in func_ty.params.valtypes.iter().rev() {
+                    assert_pop_value_stack(value_stack, *typ)?;
+                }
+
+                for typ in func_ty.returns.valtypes.iter() {
+                    value_stack.push(*typ);
+                }
             }
             // local.get: [] -> [t]
             LOCAL_GET => {

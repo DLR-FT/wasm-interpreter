@@ -10,12 +10,18 @@
 //!      [`Error::RuntimeError`](crate::Error::RuntimeError) variant, which as per 2., we don not
 //!      want
 
+use alloc::vec::Vec;
+
 use crate::{
     assert_validated::UnwrapValidatedExt,
     core::{
-        indices::{GlobalIdx, LocalIdx},
-        reader::{types::memarg::MemArg, WasmReadable, WasmReader},
+        indices::{FuncIdx, GlobalIdx, LocalIdx},
+        reader::{
+            types::{memarg::MemArg, FuncType},
+            WasmReadable, WasmReader,
+        },
     },
+    locals::Locals,
     store::Store,
     value,
     value_stack::Stack,
@@ -28,6 +34,7 @@ use crate::execution::hooks::HookSet;
 /// Interprets a functions. Parameters and return values are passed on the stack.
 pub(super) fn run<H: HookSet>(
     wasm_bytecode: &[u8],
+    types: &[FuncType],
     store: &mut Store,
     stack: &mut Stack,
     mut hooks: H,
@@ -53,7 +60,57 @@ pub(super) fn run<H: HookSet>(
 
         match first_instr_byte {
             END => {
-                break;
+                let maybe_return_address = stack.pop_stackframe();
+
+                // We finished this entire invocation if there is no stackframe left. If there are
+                // one or more stack frames, we need to continue from where the callee was called
+                // fromn.
+                if stack.callframe_count() == 0 {
+                    break;
+                }
+
+                trace!("end of function reached, returning to previous stack frame");
+                wasm.pc = maybe_return_address;
+            }
+            RETURN => {
+                trace!("returning from function");
+
+                let func_to_call_idx = stack.current_stackframe().func_idx;
+
+                let func_to_call_inst = store.funcs.get(func_to_call_idx).unwrap_validated();
+                let func_to_call_ty = types.get(func_to_call_inst.ty).unwrap_validated();
+
+                let ret_vals = stack
+                    .pop_tail_iter(func_to_call_ty.returns.valtypes.len())
+                    .collect::<Vec<_>>();
+                stack.clear_callframe_values();
+
+                for val in ret_vals {
+                    stack.push_value(val);
+                }
+
+                if stack.callframe_count() == 1 {
+                    break;
+                }
+
+                trace!("end of function reached, returning to previous stack frame");
+                wasm.pc = stack.pop_stackframe();
+            }
+            CALL => {
+                let func_to_call_idx = wasm.read_var_u32().unwrap_validated() as FuncIdx;
+
+                let func_to_call_inst = store.funcs.get(func_to_call_idx).unwrap_validated();
+                let func_to_call_ty = types.get(func_to_call_inst.ty).unwrap_validated();
+
+                let params = stack.pop_tail_iter(func_to_call_ty.params.valtypes.len());
+                let remaining_locals = func_to_call_inst.locals.iter().cloned();
+
+                trace!("Instruction: call [{func_to_call_idx:?}]");
+                let locals = Locals::new(params, remaining_locals);
+                stack.push_stackframe(func_to_call_idx, func_to_call_ty, locals, wasm.pc);
+
+                wasm.move_start_to(func_to_call_inst.code_expr)
+                    .unwrap_validated();
             }
             LOCAL_GET => {
                 stack.get_local(wasm.read_var_u32().unwrap_validated() as LocalIdx);
