@@ -12,9 +12,7 @@ use crate::execution::store::{FuncInst, GlobalInst, MemInst, Store};
 use crate::execution::value::Value;
 use crate::validation::code::read_declared_locals;
 use crate::value::InteropValueList;
-use crate::Error::RuntimeError;
-use crate::RuntimeError::FunctionNotFound;
-use crate::{Result, ValidationInfo};
+use crate::{RuntimeError, ValidationInfo};
 
 // TODO
 pub(crate) mod assert_validated;
@@ -38,7 +36,7 @@ where
 }
 
 impl<'b> RuntimeInstance<'b, EmptyHookSet> {
-    pub fn new(validation_info: &'_ ValidationInfo<'b>) -> Result<Self> {
+    pub fn new(validation_info: &'_ ValidationInfo<'b>) -> Result<Self, RuntimeError> {
         Self::new_with_hooks(validation_info, EmptyHookSet)
     }
 }
@@ -47,7 +45,10 @@ impl<'b, H> RuntimeInstance<'b, H>
 where
     H: HookSet,
 {
-    pub fn new_with_hooks(validation_info: &'_ ValidationInfo<'b>, hook_set: H) -> Result<Self> {
+    pub fn new_with_hooks(
+        validation_info: &'_ ValidationInfo<'b>,
+        hook_set: H,
+    ) -> Result<Self, RuntimeError> {
         trace!("Starting instantiation of bytecode");
 
         let store = Self::init_store(validation_info);
@@ -72,7 +73,7 @@ where
         &mut self,
         func_name: &str,
         param: Param,
-    ) -> Result<Returns> {
+    ) -> Result<Returns, RuntimeError> {
         // TODO: Optimize this search for better than linear-time. Pre-processing will likely be required
         let func_idx = self.exports.iter().find_map(|export| {
             if export.name == func_name {
@@ -88,7 +89,7 @@ where
         if let Some(func_idx) = func_idx {
             self.invoke_func(func_idx, param)
         } else {
-            Err(RuntimeError(FunctionNotFound))
+            Err(RuntimeError::FunctionNotFound)
         }
     }
 
@@ -97,7 +98,7 @@ where
         &mut self,
         func_idx: FuncIdx,
         params: Param,
-    ) -> Result<Returns> {
+    ) -> Result<Returns, RuntimeError> {
         // -=-= Verification =-=-
         let func_inst = self.store.funcs.get(func_idx).expect("valid FuncIdx");
         let func_ty = self.types.get(func_inst.ty).unwrap_validated();
@@ -140,7 +141,7 @@ where
         func_idx: FuncIdx,
         params: Vec<Value>,
         ret_types: &[ValType],
-    ) -> Result<Vec<Value>> {
+    ) -> Result<Vec<Value>, RuntimeError> {
         // -=-= Verification =-=-
         let func_inst = self.store.funcs.get(func_idx).expect("valid FuncIdx");
         let func_ty = self.types.get(func_inst.ty).unwrap_validated();
