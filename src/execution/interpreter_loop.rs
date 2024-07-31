@@ -9,54 +9,39 @@
 //!    - **not** to be confused with the [`Error`](crate::core::error::Error) enum's
 //!      [`Error::RuntimeError`](crate::Error::RuntimeError) variant, which as per 2., we don not
 //!      want
-use alloc::vec::Vec;
 
 use crate::{
     assert_validated::UnwrapValidatedExt,
     core::{
-        indices::{FuncIdx, GlobalIdx, LocalIdx},
-        reader::{
-            types::{memarg::MemArg, FuncType},
-            WasmReadable, WasmReader,
-        },
+        indices::{GlobalIdx, LocalIdx},
+        reader::{types::memarg::MemArg, WasmReadable, WasmReader},
     },
-    hooks::HookSet,
-    locals::Locals,
     store::Store,
     value,
     value_stack::Stack,
     NumType, RuntimeError, ValType, Value,
 };
 
+#[cfg(feature = "hooks")]
+use crate::execution::hooks::HookSet;
+
 /// Interprets a functions. Parameters and return values are passed on the stack.
 pub(super) fn run<H: HookSet>(
-    types: &[FuncType],
     wasm_bytecode: &[u8],
     store: &mut Store,
-    idx: FuncIdx,
     stack: &mut Stack,
     mut hooks: H,
 ) -> Result<(), RuntimeError> {
-    let inst = store.funcs.get(idx).unwrap_validated();
-
-    // Pop parameters from stack
-    let func_type = types.get(inst.ty).unwrap_validated();
-    let mut params: Vec<Value> = func_type
-        .params
-        .valtypes
-        .iter()
-        .map(|ty| stack.pop_value(*ty))
-        .collect();
-    params.reverse();
-
-    // Create locals from parameters and declared locals
-    let mut locals = Locals::new(params.into_iter(), inst.locals.iter().cloned());
+    let func_inst = store
+        .funcs
+        .get(stack.current_stackframe().func_idx)
+        .unwrap_validated();
 
     // Start reading the function's instructions
     let mut wasm = WasmReader::new(wasm_bytecode);
 
     // unwrap is sound, because the validation assures that the function points to valid subslice of the WASM binary
-    wasm.move_start_to(inst.code_expr).unwrap();
+    wasm.move_start_to(func_inst.code_expr).unwrap();
 
     use crate::core::reader::types::opcode::*;
     loop {
@@ -71,23 +56,14 @@ pub(super) fn run<H: HookSet>(
                 break;
             }
             LOCAL_GET => {
-                let local_idx = wasm.read_var_u32().unwrap_validated() as LocalIdx;
-                let local = locals.get(local_idx);
-                trace!("Instruction: local.get [] -> [{local:?}]");
-                stack.push_value(local.clone());
+                stack.get_local(wasm.read_var_u32().unwrap_validated() as LocalIdx);
             }
-            LOCAL_SET => {
-                let local_idx = wasm.read_var_u32().unwrap_validated() as LocalIdx;
-                let local = locals.get_mut(local_idx);
-                let value = stack.pop_value(local.to_ty());
-                trace!("Instruction: local.set [{local:?}] -> []");
-                *local = value;
-            }
+            LOCAL_SET => stack.set_local(wasm.read_var_u32().unwrap_validated() as LocalIdx),
             GLOBAL_GET => {
                 let global_idx = wasm.read_var_u32().unwrap_validated() as GlobalIdx;
                 let global = store.globals.get(global_idx).unwrap_validated();
 
-                stack.push_value(global.value.clone());
+                stack.push_value(global.value);
             }
             GLOBAL_SET => {
                 let global_idx = wasm.read_var_u32().unwrap_validated() as GlobalIdx;
