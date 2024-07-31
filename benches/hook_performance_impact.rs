@@ -44,8 +44,8 @@ fn criterion_benchmark(c: &mut Criterion) {
     #[derive(Default)]
     struct MyCustomHookSet;
     impl HookSet for MyCustomHookSet {
-        fn instruction_hook(interpreter_state: &mut RuntimeInstance<Self>) {
-            if black_box(interpreter_state.wasm_bytecode[0]) == 0x20 {
+        fn instruction_hook(&mut self, bytecode: &[u8], pc: usize) {
+            if black_box(bytecode[pc]) == 0x20 {
                 eprintln!("First instruction is a local.get");
             }
         }
