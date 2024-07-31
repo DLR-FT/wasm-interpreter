@@ -10,6 +10,9 @@ pub enum RuntimeError {
     DivideBy0,
     UnrepresentableResult,
     FunctionNotFound,
+    TypeNotFound,
+    TypeMismatch,
+    UnexpectedRunnerState,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -113,6 +116,11 @@ impl Display for Error {
                 RuntimeError::DivideBy0 => f.write_str("Divide by zero is not permitted"),
                 RuntimeError::UnrepresentableResult => f.write_str("Result is unrepresentable"),
                 RuntimeError::FunctionNotFound => f.write_str("Function not found"),
+                RuntimeError::TypeNotFound => f.write_str("Type not found"),
+                RuntimeError::TypeMismatch => f.write_str("Wrong type found"),
+                RuntimeError::UnexpectedRunnerState => f.write_str(
+                    "A function was called on the runner that is not available in its current state",
+                ),
             },
         }
     }
@@ -126,6 +134,11 @@ impl Display for RuntimeError {
                 f.write_fmt(format_args!("The result can not be represented"))
             }
             RuntimeError::FunctionNotFound => f.write_fmt(format_args!("Function does not exist")),
+            RuntimeError::TypeNotFound => f.write_fmt(format_args!("Type does not exist")),
+            RuntimeError::TypeMismatch => f.write_fmt(format_args!("Type-mismatch")),
+            RuntimeError::UnexpectedRunnerState => {
+                f.write_fmt(format_args!("Runner is in an unexpected state"))
+            }
         }
     }
 }

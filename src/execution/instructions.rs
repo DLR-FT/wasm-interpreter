@@ -17,48 +17,77 @@ use crate::{
         indices::{FuncIdx, GlobalIdx, LocalIdx},
         reader::{types::memarg::MemArg, WasmReadable, WasmReader},
     },
+    execution::{pop_callframe, push_callframe},
     hooks::HookSet,
-    value_stack::Stack,
-    NumType, RuntimeError, ValType, Value,
+    NumType, RunResult, Runner, RuntimeError, ValType, Value,
 };
 
 use super::RuntimeInstance;
 
-impl<'a, H> RuntimeInstance<'a, H>
+impl<'a, 'bytecode, H> Runner<'a, 'bytecode, H>
 where
     H: HookSet,
 {
     /// Interprets a functions. Parameters and return values are passed on the stack.
-    pub(super) fn run(&mut self, idx: FuncIdx, stack: &mut Stack) -> Result<(), RuntimeError> {
-        let inst = self.store.funcs.get(idx).unwrap_validated();
+    pub(super) fn run(&mut self) -> Result<RunResult, RuntimeError> {
+        let Self {
+            wasm_reader,
+            hook_set,
+            ref mut state,
+            fuel,
+            runtime_instance,
+            value_stack,
+            stack,
+            ..
+        } = self;
 
-        // Pop parameters from stack
-        let func_type = self.types.get(inst.ty).unwrap_validated();
-        let mut params: Vec<Value> = func_type
-            .params
-            .valtypes
-            .iter()
-            .map(|ty| stack.pop_value(*ty))
-            .collect();
-        params.reverse();
+        let call_stack = match state {
+            crate::RunnerState::Uninitialized => {
+                error!("Runner::run() was called on an uninitialized runner");
+                return Err(RuntimeError::UnexpectedRunnerState);
+            }
+            crate::RunnerState::ReadyToRun { func_idx } => {
+                // TODO run push_callstack here?
 
-        // Start reading the function's instructions
-        let mut wasm = WasmReader::new(self.wasm_bytecode);
+                let func = runtime_instance
+                    .store
+                    .funcs
+                    .get(*func_idx)
+                    .unwrap_validated();
 
-        // unwrap is sound, because the validation assures that the function points to valid subslice of the WASM binary
-        wasm.move_start_to(inst.code_expr).unwrap();
+                // Pop parameters from stack
+                let func_type = runtime_instance.types.get(func.ty).unwrap_validated();
+                let mut params: Vec<Value> = func_type
+                    .params
+                    .valtypes
+                    .iter()
+                    .map(|ty| stack.pop_value(*ty))
+                    .collect();
+                params.reverse();
+
+                // Start reading the function's instructions
+                let mut wasm = WasmReader::new(runtime_instance.wasm_bytecode);
+
+                // unwrap is sound, because the validation assures that the function points to valid subslice of the WASM binary
+                wasm.move_start_to(func.code_expr).unwrap();
+                todo!()
+            }
+            crate::RunnerState::InProgress {
+                call_stack,
+                func_idx,
+            } => call_stack, // TODO remove
+            crate::RunnerState::ReturnValueAvailable { func_idx } => return Ok(RunResult::Done),
+        };
 
         use crate::core::reader::types::opcode::*;
         loop {
+            // TODO
             // call the instruction hook
-            #[cfg(feature = "hooks")]
-            H::instruction_hook(self);
+            // #[cfg(feature = "hooks")]
+            // H::instruction_hook(self);
 
             // I had to move these inside  the loop since the hook needs to borrow self as mutable, and these lines also borrow self as mutable
-            let call_frame_ref = self
-                .call_stack
-                .last_mut()
-                .expect("todo why we can expect this");
+            let call_frame_ref = call_stack.last_mut().expect("todo why we can expect this");
             let locals = &mut call_frame_ref.locals;
             let wasm = &mut call_frame_ref.reader;
 
@@ -68,19 +97,19 @@ where
                 END => {
                     // TODO: check if this was the outermost block of the function, if so, pop its CallFrame and continue
                     // TODO: otherwise, consult the sidetable
-                    self.pop_callframe();
-                    if self.call_stack.is_empty() {
-                        return Ok(());
+                    pop_callframe(call_stack);
+                    if call_stack.is_empty() {
+                        return Ok(RunResult::Done);
                     }
                 }
                 CALL => {
                     let func_idx = wasm.read_var_u32().unwrap_validated() as FuncIdx;
-                    self.push_callframe(func_idx, stack)?;
+                    push_callframe(call_stack, runtime_instance, func_idx, stack)?;
                 }
                 RETURN => {
-                    self.pop_callframe();
-                    if self.call_stack.is_empty() {
-                        return Ok(());
+                    pop_callframe(call_stack);
+                    if call_stack.is_empty() {
+                        return Ok(RunResult::Done);
                     }
                 }
                 LOCAL_GET => {
@@ -98,13 +127,21 @@ where
                 }
                 GLOBAL_GET => {
                     let global_idx = wasm.read_var_u32().unwrap_validated() as GlobalIdx;
-                    let global = self.store.globals.get(global_idx).unwrap_validated();
+                    let global = runtime_instance
+                        .store
+                        .globals
+                        .get(global_idx)
+                        .unwrap_validated();
 
                     stack.push_value(global.value.clone());
                 }
                 GLOBAL_SET => {
                     let global_idx = wasm.read_var_u32().unwrap_validated() as GlobalIdx;
-                    let global = self.store.globals.get_mut(global_idx).unwrap_validated();
+                    let global = runtime_instance
+                        .store
+                        .globals
+                        .get_mut(global_idx)
+                        .unwrap_validated();
 
                     global.value = stack.pop_value(global.global.ty.ty)
                 }
@@ -113,7 +150,7 @@ where
                     let relative_address: u32 =
                         stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                    let mem = self.store.mems.first().unwrap_validated(); // there is only one memory allowed as of now
+                    let mem = runtime_instance.store.mems.first().unwrap_validated(); // there is only one memory allowed as of now
 
                     let data: u32 = {
                         // The spec states that this should be a 33 bit integer
@@ -142,7 +179,7 @@ where
                     let relative_address: u32 =
                         stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                    let mem = self.store.mems.get_mut(0).unwrap_validated(); // there is only one memory allowed as of now
+                    let mem = runtime_instance.store.mems.get_mut(0).unwrap_validated(); // there is only one memory allowed as of now
 
                     // The spec states that this should be a 33 bit integer
                     // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions

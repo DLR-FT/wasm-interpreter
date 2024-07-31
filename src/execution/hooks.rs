@@ -1,4 +1,4 @@
-use super::RuntimeInstance;
+use crate::Runner;
 
 /// Trait that allows user specified hooks for various events during interpretation
 ///
@@ -10,7 +10,7 @@ pub trait HookSet: Default {
     /// This allows the most intricate insight into the interpreters behavior, at the cost of a
     /// hefty performance penalty
     #[allow(unused_variables)]
-    fn instruction_hook(interpreter_state: &mut RuntimeInstance<Self>) {}
+    fn instruction_hook(interpreter_state: &mut Runner<Self>) {}
 }
 
 /// Default implementation of a hookset, with all hooks empty
