@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["NumType","RefType","ValType"],"mod":["export","function_code_header","global","import","memarg","opcode","values"],"struct":["FuncType","Limits","MemType","ResultType","TableType","VecType"]};

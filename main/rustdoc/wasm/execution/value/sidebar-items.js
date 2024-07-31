@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["Ref","Value"],"macro":["impl_value_conversion"],"trait":["InteropValue","InteropValueList"]};
