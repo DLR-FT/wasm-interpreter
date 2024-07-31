@@ -7,14 +7,18 @@ pub(crate) trait UnwrapValidatedExt<T> {
 }
 
 impl<T> UnwrapValidatedExt<T> for Option<T> {
+    /// Indicate that we can assume this Option to be Some(_) due to prior validation
     fn unwrap_validated(self) -> T {
-        self.expect("this to be `Some` because of prior validation")
+        self.expect("Validation guarantees this to be `Some(_)`, but it is `None`")
     }
 }
 
 impl<T, E: Debug> UnwrapValidatedExt<T> for Result<T, E> {
+    /// Indicate that we can assume this Result to be Ok(_) due to prior validation
     fn unwrap_validated(self) -> T {
-        self.expect("this to be `Ok` because of prior validation")
+        self.unwrap_or_else(|e| {
+            panic!("Validation guarantees this to be `Ok(_)`, but it is `Err({e:?})`");
+        })
     }
 }
 
