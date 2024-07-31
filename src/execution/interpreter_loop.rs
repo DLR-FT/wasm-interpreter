@@ -59,6 +59,7 @@ pub(super) fn run<H: HookSet>(
                 stack.get_local(wasm.read_var_u32().unwrap_validated() as LocalIdx);
             }
             LOCAL_SET => stack.set_local(wasm.read_var_u32().unwrap_validated() as LocalIdx),
+            LOCAL_TEE => stack.tee_local(wasm.read_var_u32().unwrap_validated() as LocalIdx),
             GLOBAL_GET => {
                 let global_idx = wasm.read_var_u32().unwrap_validated() as GlobalIdx;
                 let global = store.globals.get(global_idx).unwrap_validated();
