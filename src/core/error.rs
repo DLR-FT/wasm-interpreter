@@ -10,6 +10,7 @@ pub enum RuntimeError {
     DivideBy0,
     UnrepresentableResult,
     FunctionNotFound,
+    StackSmash,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -109,11 +110,18 @@ impl Display for Error {
                 "An invalid global index `{idx}` was specified"
             )),
             Error::GlobalIsConst => f.write_str("A const global cannot be written to"),
-            Error::RuntimeError(err) => match err {
-                RuntimeError::DivideBy0 => f.write_str("Divide by zero is not permitted"),
-                RuntimeError::UnrepresentableResult => f.write_str("Result is unrepresentable"),
-                RuntimeError::FunctionNotFound => f.write_str("Function not found"),
-            },
+            Error::RuntimeError(err) => err.fmt(f),
+        }
+    }
+}
+
+impl Display for RuntimeError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        match self {
+            RuntimeError::DivideBy0 => f.write_str("Divide by zero is not permitted"),
+            RuntimeError::UnrepresentableResult => f.write_str("Result is unrepresentable"),
+            RuntimeError::FunctionNotFound => f.write_str("Function not found"),
+            RuntimeError::StackSmash => f.write_str("Stack smashed"),
         }
     }
 }
