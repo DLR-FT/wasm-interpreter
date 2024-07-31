@@ -1,6 +1,7 @@
 use alloc::vec::Vec;
 
 use interpreter_loop::run;
+use locals::Locals;
 use value_stack::Stack;
 
 use crate::core::indices::FuncIdx;
@@ -19,7 +20,6 @@ use crate::{RuntimeError, ValidationInfo};
 pub(crate) mod assert_validated;
 pub mod hooks;
 mod interpreter_loop;
-pub(crate) mod label;
 pub(crate) mod locals;
 pub(crate) mod store;
 pub mod value;
@@ -112,19 +112,18 @@ where
             panic!("Invalid `Returns` generics");
         }
 
-        // -=-= Invoke the function =-=-
+        // Prepare a new stack with the locals for the entry function
         let mut stack = Stack::new();
+        let locals = Locals::new(
+            params.into_values().into_iter(),
+            func_inst.locals.iter().cloned(),
+        );
+        stack.push_stackframe(func_idx, locals, 0);
 
-        // Push parameters on stack
-        for parameter in params.into_values() {
-            stack.push_value(parameter);
-        }
-
+        // Run the interpreter
         run(
-            &self.types,
             self.wasm_bytecode,
             &mut self.store,
-            func_idx,
             &mut stack,
             EmptyHookSet,
         )?;
@@ -165,19 +164,15 @@ where
             panic!("Invalid return types for function");
         }
 
-        // -=-= Invoke the function =-=-
+        // Prepare a new stack with the locals for the entry function
         let mut stack = Stack::new();
+        let locals = Locals::new(params.into_iter(), func_inst.locals.iter().cloned());
+        stack.push_stackframe(func_idx, locals, 0);
 
-        // Push parameters on stack
-        for parameter in params {
-            stack.push_value(parameter);
-        }
-
+        // Run the interpreter
         run(
-            &self.types,
             self.wasm_bytecode,
             &mut self.store,
-            func_idx,
             &mut stack,
             EmptyHookSet,
         )?;
