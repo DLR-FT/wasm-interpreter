@@ -1,5 +1,3 @@
-use super::RuntimeInstance;
-
 /// Trait that allows user specified hooks for various events during interpretation
 ///
 /// The default implementation of all trait methods are empty, i. e. can be optimized out fully.
@@ -10,7 +8,7 @@ pub trait HookSet: Default {
     /// This allows the most intricate insight into the interpreters behavior, at the cost of a
     /// hefty performance penalty
     #[allow(unused_variables)]
-    fn instruction_hook(interpreter_state: &mut RuntimeInstance<Self>) {}
+    fn instruction_hook(&mut self, bytecode: &[u8], pc: usize) {}
 }
 
 /// Default implementation of a hookset, with all hooks empty
