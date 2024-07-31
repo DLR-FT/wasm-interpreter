@@ -19,3 +19,4 @@ fully `no_std`.
 - WebAssembly spec: https://webassembly.github.io/spec/core/index.html
 - WebAssembly Opcode Table: https://pengowray.github.io/wasm-ops/
 - Compiler/Interpreter Know-How Gist Compilation: https://gist.github.com/o11c/6b08643335388bbab0228db763f99219
+- Mozilla Developer Network WebAssembly Homepage: https://developer.mozilla.org/en-US/docs/WebAssembly
