@@ -19,7 +19,7 @@ use crate::{Result, ValidationInfo};
 // TODO
 pub(crate) mod assert_validated;
 pub mod hooks;
-mod instructions;
+mod interpreter_loop;
 pub(crate) mod label;
 pub(crate) mod locals;
 pub(crate) mod store;
