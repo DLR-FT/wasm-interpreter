@@ -2,6 +2,7 @@ pub const NOP: u8 = 0x01;
 pub const END: u8 = 0x0B;
 pub const LOCAL_GET: u8 = 0x20;
 pub const LOCAL_SET: u8 = 0x21;
+pub const LOCAL_TEE: u8 = 0x22;
 pub const GLOBAL_GET: u8 = 0x23;
 pub const GLOBAL_SET: u8 = 0x24;
 pub const I32_LOAD: u8 = 0x28;

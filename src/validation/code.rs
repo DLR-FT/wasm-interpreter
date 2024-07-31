@@ -110,6 +110,15 @@ fn read_instructions(
                     return Err(Error::InvalidValueStackType(popped));
                 }
             }
+            // local.set [t] -> [t]
+            LOCAL_TEE => {
+                let local_idx = wasm.read_var_u32()? as LocalIdx;
+                let local_ty = locals.get(local_idx).ok_or(Error::InvalidLocalIdx)?;
+                let back = value_stack.last();
+                if back != Some(local_ty) {
+                    return Err(Error::InvalidValueStackType(back.cloned()));
+                }
+            }
             // global.get [] -> [t]
             GLOBAL_GET => {
                 let global_idx = wasm.read_var_u32()? as GlobalIdx;
