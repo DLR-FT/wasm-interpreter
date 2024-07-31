@@ -1,5 +1,6 @@
 use alloc::vec::Vec;
 
+use interpreter_loop::run;
 use value_stack::Stack;
 
 use crate::core::indices::FuncIdx;
@@ -118,8 +119,14 @@ where
             stack.push_value(parameter);
         }
 
-        let error = self.run(func_idx, &mut stack);
-        error?;
+        run(
+            &self.types,
+            self.wasm_bytecode,
+            &mut self.store,
+            func_idx,
+            &mut stack,
+            EmptyHookSet,
+        )?;
 
         // Pop return values from stack
         let return_values = Returns::TYS
@@ -165,8 +172,14 @@ where
             stack.push_value(parameter);
         }
 
-        let error = self.run(func_idx, &mut stack);
-        error?;
+        run(
+            &self.types,
+            self.wasm_bytecode,
+            &mut self.store,
+            func_idx,
+            &mut stack,
+            EmptyHookSet,
+        )?;
 
         let func_inst = self.store.funcs.get(func_idx).expect("valid FuncIdx");
         let func_ty = self.types.get(func_inst.ty).unwrap_validated();
