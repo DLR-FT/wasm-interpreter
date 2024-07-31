@@ -30,6 +30,10 @@ impl Locals {
         self.data.get(idx).unwrap_validated()
     }
 
+    pub fn get_ty(&self, idx: usize) -> ValType {
+        self.data.get(idx).unwrap_validated().to_ty()
+    }
+
     pub fn get_mut(&mut self, idx: usize) -> &mut Value {
         self.data.get_mut(idx).unwrap_validated()
     }
