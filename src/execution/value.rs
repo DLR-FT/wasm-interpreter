@@ -10,7 +10,7 @@ use crate::unreachable_validated;
 ///
 /// See <https://webassembly.github.io/spec/core/exec/runtime.html#values>
 // TODO implement missing variants
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Value {
     I32(u32),
     I64(u64),
