@@ -1,3 +1,4 @@
+use wasm::RuntimeError;
 use wasm::{validate, RuntimeInstance};
 const REM_S_WAT: &'static str = r#"
     (module
@@ -75,10 +76,7 @@ pub fn i64_remainder_signed_panic_dividend_0() {
 
     let result = instance.invoke_func::<(i64, i64), i64>(0, (222 as i64, 0 as i64));
 
-    assert_eq!(
-        result.unwrap_err(),
-        wasm::Error::RuntimeError(wasm::RuntimeError::DivideBy0)
-    );
+    assert_eq!(result.unwrap_err(), RuntimeError::DivideBy0);
 }
 
 /// A simple function to test i64 unsigned remainder
@@ -152,10 +150,7 @@ pub fn i64_remainder_unsigned_panic_dividend_0() {
 
     let result = instance.invoke_func::<(i64, i64), i64>(0, (222, 0));
 
-    assert_eq!(
-        result.unwrap_err(),
-        wasm::Error::RuntimeError(wasm::RuntimeError::DivideBy0)
-    );
+    assert_eq!(result.unwrap_err(), RuntimeError::DivideBy0);
 }
 
 /// A simple function to test signed remainder
@@ -189,10 +184,7 @@ pub fn remainder_signed_panic_dividend_0() {
 
     let result = instance.invoke_named::<(i32, i32), i32>("rem_s", (222, 0));
 
-    assert_eq!(
-        result.unwrap_err(),
-        wasm::Error::RuntimeError(wasm::RuntimeError::DivideBy0)
-    );
+    assert_eq!(result.unwrap_err(), RuntimeError::DivideBy0);
 }
 
 /// A simple function to test unsigned remainder
@@ -248,8 +240,5 @@ pub fn i32_remainder_unsigned_panic_dividend_0() {
 
     let result = instance.invoke_named::<(i32, i32), i32>("rem_u", (222, 0));
 
-    assert_eq!(
-        result.unwrap_err(),
-        wasm::Error::RuntimeError(wasm::RuntimeError::DivideBy0)
-    );
+    assert_eq!(result.unwrap_err(), RuntimeError::DivideBy0);
 }
