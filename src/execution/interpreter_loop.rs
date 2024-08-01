@@ -57,9 +57,20 @@ pub(super) fn run<H: HookSet>(
 
         match first_instr_byte {
             END => {
-                break;
+                // We finish running the entire instruction if there is a single stackframe left.
+                // If there are 2 or more stack frames, we need to pop it and return to the calling
+                // function.
+                if stack.stackframe_count() == 1 {
+                    break;
+                }
+
+                trace!("end of function reached, returning to previous stack frame");
+                wasm.pc = stack.pop_stackframe();
             }
             RETURN => {
+                // TODO(george-cosma): Is this correct? I think return needs to pop all values from the stack, then pop
+                // other remaining values from the stack until it popped all values pushed by this function. This
+                // boundry would normally be determined when reaching a "call-frame".
                 trace!("returning from function");
                 wasm.pc = stack.pop_stackframe();
             }

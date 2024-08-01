@@ -15,13 +15,13 @@ pub fn validate_code_section(
     wasm: &mut WasmReader,
     section_header: SectionHeader,
     fn_types: &[FuncType],
-    type_of_fn: &[usize],
+    type_idx_of_fn: &[usize],
     globals: &[Global],
 ) -> Result<Vec<Span>> {
     assert_eq!(section_header.ty, SectionTy::Code);
 
     let code_block_spans = wasm.read_vec_enumerated(|wasm, idx| {
-        let ty_idx = type_of_fn[idx];
+        let ty_idx = type_idx_of_fn[idx];
         let func_ty = fn_types[ty_idx].clone();
 
         let func_size = wasm.read_var_u32()?;
@@ -34,7 +34,14 @@ pub fn validate_code_section(
         };
 
         validate_value_stack(func_ty.returns, |value_stack| {
-            read_instructions(wasm, value_stack, &locals, globals)
+            read_instructions(
+                wasm,
+                value_stack,
+                &locals,
+                globals,
+                fn_types,
+                type_idx_of_fn,
+            )
         })?;
 
         Ok(func_block)
@@ -70,6 +77,8 @@ fn read_instructions(
     value_stack: &mut VecDeque<ValType>,
     locals: &[ValType],
     globals: &[Global],
+    fn_types: &[FuncType],
+    type_idx_of_fn: &[usize],
 ) -> Result<()> {
     let assert_pop_value_stack = |value_stack: &mut VecDeque<ValType>, expected_ty: ValType| {
         value_stack
@@ -96,12 +105,26 @@ fn read_instructions(
             END => {
                 return Ok(());
             }
-            RETURN => {}
-            // TODO assert the top N values of the stack match the function return types, then return the top of the current stack frame as return value and remove all other values from the value stack that belong to the current function callframe
+            RETURN => {
+                // I don't think we need to do much more than return. If there are any residual elements on the stack,
+                // it doesn't matter since we are only validating a function at a time.
+                return Ok(());
+            }
             // call [t1*] -> [t2*]
             CALL => {
+                // TODO get function params, reverse iter over it, for each param pop that value from the value_stack
+                // and assert it has the right type, then push all types fromt he return value(s) of the called function
+                // to the value_stack.
                 let func_to_call_idx = wasm.read_var_u32()? as FuncIdx;
-                // TODO get function params, reverse iter over it, for each param pop that value from the value_stack and assert it has the right type, then push all types fromt he return value(s) of the called function to the value_stack
+                let func_ty = &fn_types[type_idx_of_fn[func_to_call_idx]];
+
+                for typ in func_ty.params.valtypes.iter().rev() {
+                    assert_pop_value_stack(value_stack, typ.clone())?;
+                }
+
+                for typ in func_ty.returns.valtypes.iter() {
+                    value_stack.push_back(typ.clone());
+                }
             }
             // local.get: [] -> [t]
             LOCAL_GET => {
