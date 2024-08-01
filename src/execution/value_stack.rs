@@ -106,6 +106,11 @@ impl Stack {
         })
     }
 
+    /// Returns how many stackframes are on the stack, in total.
+    pub fn stackframe_count(&self) -> usize {
+        self.frames.len()
+    }
+
     /// Pop `n` elements from the value stack's tail as an iterator, with the first element being
     /// closest to the bottom of the value stack
     pub fn pop_tail_iter(&mut self, n: usize) -> Drain<Value> {
@@ -121,6 +126,7 @@ pub(crate) struct CallFrame {
     pub func_idx: FuncIdx,
 
     /// Local varaiables such as parameters for this [CallFrame]'s function
+    /// TODO(george-cosma): Do we want "locals" to be a Box<\[Value\]>? Do we want two layers of indirection when getting locals?
     pub locals: Locals,
 
     /// Value that the PC has to be set to when this function returns
