@@ -10,6 +10,8 @@
 //!      [`Error::RuntimeError`](crate::Error::RuntimeError) variant, which as per 2., we don not
 //!      want
 
+use alloc::vec::Vec;
+
 use crate::{
     assert_validated::UnwrapValidatedExt,
     core::{
@@ -60,7 +62,7 @@ pub(super) fn run<H: HookSet>(
                 // We finish running the entire instruction if there is a single stackframe left.
                 // If there are 2 or more stack frames, we need to pop it and return to the calling
                 // function.
-                if stack.stackframe_count() == 1 {
+                if stack.callframe_count() == 1 {
                     break;
                 }
 
@@ -68,10 +70,27 @@ pub(super) fn run<H: HookSet>(
                 wasm.pc = stack.pop_stackframe();
             }
             RETURN => {
-                // TODO(george-cosma): Is this correct? I think return needs to pop all values from the stack, then pop
-                // other remaining values from the stack until it popped all values pushed by this function. This
-                // boundry would normally be determined when reaching a "call-frame".
                 trace!("returning from function");
+
+                let func_to_call_idx = stack.current_stackframe().func_idx;
+
+                let func_to_call_inst = store.funcs.get(func_to_call_idx).unwrap_validated();
+                let func_to_call_ty = types.get(func_to_call_inst.ty).unwrap_validated();
+
+                let ret_vals = stack
+                    .pop_tail_iter(func_to_call_ty.returns.valtypes.len())
+                    .collect::<Vec<_>>();
+                stack.clear_callframe_values();
+
+                for val in ret_vals {
+                    stack.push_value(val);
+                }
+
+                if stack.callframe_count() == 1 {
+                    break;
+                }
+
+                trace!("end of function reached, returning to previous stack frame");
                 wasm.pc = stack.pop_stackframe();
             }
             CALL => {

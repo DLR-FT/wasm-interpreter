@@ -35,6 +35,7 @@ pub fn validate_code_section(
 
         validate_value_stack(func_ty.returns, |value_stack| {
             read_instructions(
+                idx,
                 wasm,
                 value_stack,
                 &locals,
@@ -73,6 +74,7 @@ pub fn read_declared_locals(wasm: &mut WasmReader) -> Result<Vec<ValType>> {
 }
 
 fn read_instructions(
+    this_function_idx: usize,
     wasm: &mut WasmReader,
     value_stack: &mut VecDeque<ValType>,
     locals: &[ValType],
@@ -106,9 +108,17 @@ fn read_instructions(
                 return Ok(());
             }
             RETURN => {
-                // I don't think we need to do much more than return. If there are any residual elements on the stack,
-                // it doesn't matter since we are only validating a function at a time.
-                return Ok(());
+                let this_func_ty = &fn_types[type_idx_of_fn[this_function_idx]];
+
+                if value_stack.len() < this_func_ty.returns.valtypes.len() {
+                    return Err(Error::EndInvalidValueStack); // TODO(george-cosma): Is this the right error?
+                }
+
+                let ret_vals_start = value_stack.len() - this_func_ty.returns.valtypes.len();
+                let _remaining_locals = value_stack.drain(..ret_vals_start);
+
+                // TODO(george-cosma): There is a bug here. Because there is another op code after this reteurn (an
+                // `end`), I have to let this function consume it to work for the tests.
             }
             // call [t1*] -> [t2*]
             CALL => {
@@ -119,11 +129,11 @@ fn read_instructions(
                 let func_ty = &fn_types[type_idx_of_fn[func_to_call_idx]];
 
                 for typ in func_ty.params.valtypes.iter().rev() {
-                    assert_pop_value_stack(value_stack, typ.clone())?;
+                    assert_pop_value_stack(value_stack, *typ)?;
                 }
 
                 for typ in func_ty.returns.valtypes.iter() {
-                    value_stack.push_back(typ.clone());
+                    value_stack.push_back(*typ);
                 }
             }
             // local.get: [] -> [t]

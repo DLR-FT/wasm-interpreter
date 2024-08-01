@@ -33,6 +33,7 @@ impl Stack {
     pub fn pop_value(&mut self, ty: ValType) -> Value {
         let popped = self.values.pop().unwrap_validated();
         if popped.to_ty() == ty {
+            self.current_stackframe_mut().stack_values -= 1;
             popped
         } else {
             unreachable_validated!()
@@ -52,12 +53,14 @@ impl Stack {
     /// Push a value to the value stack
     pub fn push_value(&mut self, value: Value) {
         self.values.push(value);
+        self.current_stackframe_mut().stack_values += 1;
     }
 
     /// Copy a local variable to the top of the value stack
     pub fn get_local(&mut self, idx: LocalIdx) {
         let local_value = self.frames.last().unwrap_validated().locals.get(idx);
         self.values.push(*local_value);
+        self.current_stackframe_mut().stack_values += 1;
     }
 
     /// Pop value from the top of the value stack, writing it to the given local
@@ -65,6 +68,8 @@ impl Stack {
         let local_ty = self.current_stackframe().locals.get_ty(idx);
 
         let stack_value = self.pop_value(local_ty);
+        self.current_stackframe_mut().stack_values -= 1;
+
         trace!("Instruction: local.set [{stack_value:?}] -> []");
         *self.current_stackframe_mut().locals.get_mut(idx) = stack_value;
     }
@@ -92,7 +97,16 @@ impl Stack {
 
     pub fn pop_stackframe(&mut self) -> usize {
         // TODO maybe manipulate the value stack
-        self.frames.pop().unwrap_validated().return_addr
+        let stack_vals = self.frames.last().unwrap_validated().stack_values;
+        let return_addr = self.frames.pop().unwrap_validated().return_addr;
+
+        // Move ownership of previous stackframe's values to the previous stackframe
+        // In theroy, this should be only the return values of the previous stack frame.
+        if let Some(callframe) = self.frames.last_mut() {
+            callframe.stack_values += stack_vals;
+        }
+
+        return_addr
     }
 
     /// Pop a stackframe from the call stack
@@ -103,11 +117,12 @@ impl Stack {
             func_idx,
             locals,
             return_addr,
+            stack_values: 0,
         })
     }
 
     /// Returns how many stackframes are on the stack, in total.
-    pub fn stackframe_count(&self) -> usize {
+    pub fn callframe_count(&self) -> usize {
         self.frames.len()
     }
 
@@ -115,8 +130,15 @@ impl Stack {
     /// closest to the bottom of the value stack
     pub fn pop_tail_iter(&mut self, n: usize) -> Drain<Value> {
         let start = self.values.len() - n;
+        self.current_stackframe_mut().stack_values -= n;
 
         self.values.drain(start..)
+    }
+
+    /// Clear all of the values pushed to the value stack by the current stack frame
+    pub fn clear_callframe_values(&mut self) {
+        self.pop_tail_iter(self.current_stackframe().stack_values);
+        self.current_stackframe_mut().stack_values = 0;
     }
 }
 
@@ -131,4 +153,7 @@ pub(crate) struct CallFrame {
 
     /// Value that the PC has to be set to when this function returns
     pub return_addr: usize,
+
+    /// How many values are currently held by this frame on the stack
+    pub stack_values: usize,
 }
