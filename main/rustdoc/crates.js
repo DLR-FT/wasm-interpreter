@@ -1,1 +1,1 @@
-window.ALL_CRATES = ["log","wasm"];
+window.ALL_CRATES = ["libm","log","wasm"];
