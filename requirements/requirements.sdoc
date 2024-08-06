@@ -134,6 +134,7 @@ RELATIONS:
 
 [REQUIREMENT]
 UID: REQ-15
+TITLE: Allow log dependency
 STATEMENT: >>>
 The interpreter shall have an optional dependency on the ``log`` crate version ``0.4.22``
 <<<
@@ -146,6 +147,7 @@ RELATIONS:
 
 [REQUIREMENT]
 UID: REQ-16
+TITLE: Allow libm dependency
 STATEMENT: >>>
 The interpreter may depend on the ``libm`` crate version ``0.2.8``
 <<<
