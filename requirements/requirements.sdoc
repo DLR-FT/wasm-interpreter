@@ -168,6 +168,16 @@ RELATIONS:
 - TYPE: Parent
   VALUE: REQ-14
 
+[REQUIREMENT]
+UID: REQ-17
+TITLE: Minimum Supported Rust Version (MSRV)
+STATEMENT: >>>
+The interpreter shall compile on Rust ``1.74.1`` and later versions
+<<<
+RATIONALE: >>>
+An MSRV should be clearly stated to specify which toolchain is acceptable.
+<<<
+
 [/SECTION]
 
 [/SECTION]
