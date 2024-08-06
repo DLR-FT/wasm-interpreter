@@ -189,9 +189,10 @@
                                     ]
                                 },
                                 {
-                                    "_TOC": "",
+                                    "_TOC": "1.6.5",
                                     "TYPE": "REQUIREMENT",
                                     "UID": "REQ-15",
+                                    "TITLE": "Allow log dependency",
                                     "STATEMENT": "The interpreter shall have an optional dependency on the ``log`` crate version ``0.4.22``\n",
                                     "RATIONALE": "Logging is an essential tool to make a system observable, and aid in debugging. Bespoke crate is widely used in the Rust ecosystem and can be attached to any (or no) logging backend. Using conditional compilation, all of the ``log`` crate's footprint in the WASM interpreter (foremost the ``debug``, ``error``, ``info``, ``trace`` and ``warn`` macro) can be expanded to empty statements to avoid **any** run-time impact when opting out of the dependency on ``log``.\n",
                                     "RELATIONS": [
@@ -202,9 +203,10 @@
                                     ]
                                 },
                                 {
-                                    "_TOC": "",
+                                    "_TOC": "1.6.6",
                                     "TYPE": "REQUIREMENT",
                                     "UID": "REQ-16",
+                                    "TITLE": "Allow libm dependency",
                                     "STATEMENT": "The interpreter may depend on the ``libm`` crate version ``0.2.8``\n",
                                     "RATIONALE": "Rust does not expose all floating point operations in a bare-metal (as in ``no_std``) target, as to not introduce any dependency on the C standard library's ``libm`` (respective PR: https://github.com/rust-lang/rust/pull/27823). However, we identified at least the following operations to be required for WASM interpretation while unavailable in ``no_std``:\n\n- ``abs``\n- ``ceil``\n- ``floor``\n- ``trunc``\n- ``round``\n- ``sqrt``\n- ``copysign``\n\nIn order use these operations, having the ``libm`` crate as dependencies of the WASM interpreter is an acceptable trade-off.\n",
                                     "RELATIONS": [
@@ -213,6 +215,14 @@
                                             "VALUE": "REQ-14"
                                         }
                                     ]
+                                },
+                                {
+                                    "_TOC": "1.6.7",
+                                    "TYPE": "REQUIREMENT",
+                                    "UID": "REQ-17",
+                                    "TITLE": "Minimum Supported Rust Version (MSRV)",
+                                    "STATEMENT": "The interpreter shall compile on Rust ``1.74.1`` and later versions\n",
+                                    "RATIONALE": "An MSRV should be clearly stated to specify which toolchain is acceptable.\n"
                                 }
                             ]
                         }
