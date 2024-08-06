@@ -98,6 +98,105 @@ impl F32 {
     pub fn from_bits(other: u32) -> Self {
         Self(f32::from_bits(other))
     }
+    pub fn is_nan(&self) -> bool {
+        self.0.is_nan()
+    }
+}
+
+#[derive(Clone, Debug, Copy, PartialOrd)]
+pub struct F64(pub f64);
+
+impl Display for F64 {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl PartialEq for F64 {
+    fn eq(&self, other: &Self) -> bool {
+        self.0.eq(&other.0)
+    }
+}
+
+impl Add for F64 {
+    type Output = Self;
+    fn add(self, rhs: Self) -> Self::Output {
+        Self(self.0 + rhs.0)
+    }
+}
+
+impl Sub for F64 {
+    type Output = Self;
+    fn sub(self, rhs: Self) -> Self::Output {
+        Self(self.0 - rhs.0)
+    }
+}
+
+impl Mul for F64 {
+    type Output = Self;
+    fn mul(self, rhs: Self) -> Self::Output {
+        Self(self.0 * rhs.0)
+    }
+}
+
+impl Div for F64 {
+    type Output = Self;
+    fn div(self, rhs: Self) -> Self::Output {
+        Self(self.0 / rhs.0)
+    }
+}
+
+impl F64 {
+    pub fn abs(&self) -> Self {
+        Self(f64::from_bits(self.0.to_bits() & !(1 << 63)))
+    }
+    pub fn neg(&self) -> Self {
+        Self(f64::from_bits(self.0.to_bits() ^ (1 << 63)))
+    }
+    pub fn ceil(&self) -> Self {
+        Self(libm::ceil(self.0))
+    }
+    pub fn floor(&self) -> Self {
+        Self(libm::floor(self.0))
+    }
+    pub fn trunc(&self) -> Self {
+        Self(libm::trunc(self.0))
+    }
+    pub fn round(&self) -> Self {
+        Self(libm::round(self.0))
+    }
+    pub fn sqrt(&self) -> Self {
+        Self(libm::sqrt(self.0))
+    }
+
+    pub fn min(&self, rhs: Self) -> Self {
+        Self(if self.0.is_nan() {
+            self.0
+        } else if rhs.0.is_nan() {
+            rhs.0
+        } else {
+            self.0.min(rhs.0)
+        })
+    }
+    pub fn max(&self, rhs: Self) -> Self {
+        Self(if self.0.is_nan() {
+            self.0
+        } else if rhs.0.is_nan() {
+            rhs.0
+        } else {
+            self.0.max(rhs.0)
+        })
+    }
+    pub fn copysign(&self, rhs: Self) -> Self {
+        Self(libm::copysign(self.0, rhs.0))
+    }
+
+    pub fn from_bits(other: u64) -> Self {
+        Self(f64::from_bits(other))
+    }
+    pub fn is_nan(&self) -> bool {
+        self.0.is_nan()
+    }
 }
 
 /// A value at runtime. This is essentially a duplicate of [ValType] just with additional values.
@@ -109,6 +208,7 @@ pub enum Value {
     I32(u32),
     I64(u64),
     F32(F32),
+    F64(F64),
     // F64,
     // V128,
 }
@@ -127,6 +227,7 @@ impl Value {
             ValType::NumType(NumType::I32) => Self::I32(0),
             ValType::NumType(NumType::I64) => Self::I64(0),
             ValType::NumType(NumType::F32) => Self::F32(F32(0.0)),
+            ValType::NumType(NumType::F64) => Self::F64(F64(0.0_f64)),
             other => {
                 todo!("cannot determine type for {other:?} because this value is not supported yet")
             }
@@ -138,6 +239,7 @@ impl Value {
             Value::I32(_) => ValType::NumType(NumType::I32),
             Value::I64(_) => ValType::NumType(NumType::I64),
             Value::F32(_) => ValType::NumType(NumType::F32),
+            Value::F64(_) => ValType::NumType(NumType::F64),
         }
     }
 }
@@ -266,6 +368,40 @@ impl InteropValue for f32 {
     }
 }
 
+impl InteropValue for F64 {
+    const TY: ValType = ValType::NumType(NumType::F64);
+
+    #[allow(warnings)]
+    fn into_value(self) -> Value {
+        Value::F64(F64(f64::from_le_bytes(self.0.to_le_bytes())))
+    }
+
+    #[allow(warnings)]
+    fn from_value(value: Value) -> Self {
+        match value {
+            Value::F64(f) => F64(f64::from_le_bytes(f.0.to_le_bytes())),
+            _ => unreachable_validated!(),
+        }
+    }
+}
+
+impl InteropValue for f64 {
+    const TY: ValType = ValType::NumType(NumType::F64);
+
+    #[allow(warnings)]
+    fn into_value(self) -> Value {
+        Value::F64(F64(f64::from_le_bytes(self.to_le_bytes())))
+    }
+
+    #[allow(warnings)]
+    fn from_value(value: Value) -> Self {
+        match value {
+            Value::F64(f) => f64::from_le_bytes(f.0.to_le_bytes()),
+            _ => unreachable_validated!(),
+        }
+    }
+}
+
 impl InteropValueList for () {
     const TYS: &'static [ValType] = &[];
 
@@ -355,6 +491,19 @@ impl From<Value> for f32 {
     }
 }
 
+// TODO: don't let this like this, use a macro
+impl From<f64> for Value {
+    fn from(x: f64) -> Self {
+        F64(x).into_value()
+    }
+}
+
+impl From<Value> for f64 {
+    fn from(value: Value) -> Self {
+        F64::from(value).0
+    }
+}
+
 /// Stupid From and Into implementations, because Rust's orphan rules won't let me define a generic impl:
 macro_rules! impl_value_conversion {
     ($ty:ty) => {
@@ -376,3 +525,4 @@ impl_value_conversion!(i32);
 impl_value_conversion!(u64);
 impl_value_conversion!(i64);
 impl_value_conversion!(F32);
+impl_value_conversion!(F64);

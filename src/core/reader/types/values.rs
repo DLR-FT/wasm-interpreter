@@ -40,6 +40,12 @@ impl WasmReader<'_> {
         Ok(result)
     }
 
+    pub fn read_var_f64(&mut self) -> Result<u64> {
+        let bytes = self.strip_bytes::<8>().map_err(|_| Error::Eof)?;
+        let word = u64::from_le_bytes(bytes);
+        Ok(word)
+    }
+
     pub fn read_var_i32(&mut self) -> Result<i32> {
         let mut result: i32 = 0;
         let mut shift: u32 = 0;

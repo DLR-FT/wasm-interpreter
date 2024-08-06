@@ -189,6 +189,27 @@ pub(super) fn run<H: HookSet>(
                 memory_location.copy_from_slice(&data_to_store.to_le_bytes());
                 trace!("Instruction: f32.store [{relative_address} {data_to_store}] -> []");
             }
+            F64_STORE => {
+                let memarg = MemArg::read_unvalidated(&mut wasm);
+
+                let data_to_store: f64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                let mem = store.mems.get_mut(0).unwrap_validated(); // there is only one memory allowed as of now
+
+                // The spec states that this should be a 33 bit integer
+                // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
+                let address = memarg.offset.checked_add(relative_address);
+                let memory_location = address
+                    .and_then(|address| {
+                        let address = address as usize;
+                        mem.data.get_mut(address..(address + 4))
+                    })
+                    .expect("TODO trap here");
+
+                memory_location.copy_from_slice(&data_to_store.to_le_bytes());
+                trace!("Instruction: f64.store [{relative_address} {data_to_store}] -> []");
+            }
             I32_CONST => {
                 let constant = wasm.read_var_i32().unwrap_validated();
                 trace!("Instruction: i32.const [] -> [{constant}]");
@@ -253,6 +274,62 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: f32.ge [{v1} {v2}] -> [{res}]");
                 stack.push_value(res.into());
             }
+
+            F64_EQ => {
+                let v2: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+
+                let res = if v1 == v2 { 1 } else { 0 };
+
+                trace!("Instruction: f64.eq [{v1} {v2}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            F64_NE => {
+                let v2: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+
+                let res = if v1 != v2 { 1 } else { 0 };
+
+                trace!("Instruction: f64.ne [{v1} {v2}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            F64_LT => {
+                let v2: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+
+                let res = if v1 < v2 { 1 } else { 0 };
+
+                trace!("Instruction: f64.lt [{v1} {v2}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            F64_GT => {
+                let v2: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+
+                let res = if v1 > v2 { 1 } else { 0 };
+
+                trace!("Instruction: f64.gt [{v1} {v2}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            F64_LE => {
+                let v2: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+
+                let res = if v1 <= v2 { 1 } else { 0 };
+
+                trace!("Instruction: f64.le [{v1} {v2}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            F64_GE => {
+                let v2: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+
+                let res = if v1 >= v2 { 1 } else { 0 };
+
+                trace!("Instruction: f64.ge [{v1} {v2}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+
             I32_CLZ => {
                 let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                 let res = v1.leading_zeros() as i32;
@@ -277,6 +354,11 @@ pub(super) fn run<H: HookSet>(
             I64_CONST => {
                 let constant = wasm.read_var_i64().unwrap_validated();
                 trace!("Instruction: i64.const [] -> [{constant}]");
+                stack.push_value(constant.into());
+            }
+            F64_CONST => {
+                let constant = f64::from_bits(wasm.read_var_f64().unwrap_validated());
+                trace!("Instruction: f64.const [] -> [{constant}]");
                 stack.push_value(constant.into());
             }
             I32_ADD => {
@@ -746,6 +828,113 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: f32.reinterpret_i32 [{v1}] -> [{res}]");
                 stack.push_value(res.into());
             }
+
+            F64_ABS => {
+                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let res: value::F64 = v1.abs();
+
+                trace!("Instruction: f64.abs [{v1}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            F64_NEG => {
+                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let res: value::F64 = v1.neg();
+
+                trace!("Instruction: f64.neg [{v1}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            F64_CEIL => {
+                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let res: value::F64 = v1.ceil();
+
+                trace!("Instruction: f64.ceil [{v1}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            F64_FLOOR => {
+                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let res: value::F64 = v1.floor();
+
+                trace!("Instruction: f64.floor [{v1}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            F64_TRUNC => {
+                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let res: value::F64 = v1.trunc();
+
+                trace!("Instruction: f64.trunc [{v1}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            F64_NEAREST => {
+                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let res: value::F64 = v1.round();
+
+                trace!("Instruction: f64.nearest [{v1}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            F64_SQRT => {
+                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let res: value::F64 = v1.sqrt();
+
+                trace!("Instruction: f64.sqrt [{v1}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            F64_ADD => {
+                let v2: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let res: value::F64 = v1 + v2;
+
+                trace!("Instruction: f64.add [{v1} {v2}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            F64_SUB => {
+                let v2: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let res: value::F64 = v1 - v2;
+
+                trace!("Instruction: f64.sub [{v1} {v2}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            F64_MUL => {
+                let v2: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let res: value::F64 = v1 * v2;
+
+                trace!("Instruction: f64.mul [{v1} {v2}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            F64_DIV => {
+                let v2: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let res: value::F64 = v1 / v2;
+
+                trace!("Instruction: f64.div [{v1} {v2}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            F64_MIN => {
+                let v2: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let res: value::F64 = v1.min(v2);
+
+                trace!("Instruction: f64.min [{v1} {v2}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            F64_MAX => {
+                let v2: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let res: value::F64 = v1.max(v2);
+
+                trace!("Instruction: f64.max [{v1} {v2}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            F64_COPYSIGN => {
+                let v2: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let res: value::F64 = v1.copysign(v2);
+
+                trace!("Instruction: f64.copysign [{v1} {v2}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+
             other => {
                 trace!("Unknown instruction {other:#x}, skipping..");
             }
