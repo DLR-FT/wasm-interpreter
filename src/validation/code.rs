@@ -159,6 +159,15 @@ fn read_instructions(
 
                 value_stack.push_back(ValType::NumType(NumType::F32));
             }
+            // f32.load [f32] -> [f32]
+            F64_LOAD => {
+                let _memarg = MemArg::read_unvalidated(wasm);
+
+                // Check for I32 because that's the address where we find our value
+                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
+
+                value_stack.push_back(ValType::NumType(NumType::F64));
+            }
             // i32.store [i32] -> [i32]
             I32_STORE => {
                 let _memarg = MemArg::read_unvalidated(wasm);
@@ -180,6 +189,14 @@ fn read_instructions(
                 // Address
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
             }
+            F64_STORE => {
+                let _memarg = MemArg::read_unvalidated(wasm);
+
+                // Value to store
+                assert_pop_value_stack(value_stack, ValType::NumType(NumType::F64))?;
+                // Address
+                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
+            }
             // i32.const: [] -> [i32]
             I32_CONST => {
                 let _num = wasm.read_var_i32()?;
@@ -193,9 +210,19 @@ fn read_instructions(
                 let _num = wasm.read_var_f32()?;
                 value_stack.push_back(ValType::NumType(NumType::F32));
             }
+            F64_CONST => {
+                let _num = wasm.read_var_f64()?;
+                value_stack.push_back(ValType::NumType(NumType::F64));
+            }
             F32_EQ | F32_NE | F32_LT | F32_GT | F32_LE | F32_GE => {
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::F32))?;
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::F32))?;
+
+                value_stack.push_back(ValType::NumType(NumType::I32));
+            }
+            F64_EQ | F64_NE | F64_LT | F64_GT | F64_LE | F64_GE => {
+                assert_pop_value_stack(value_stack, ValType::NumType(NumType::F64))?;
+                assert_pop_value_stack(value_stack, ValType::NumType(NumType::F64))?;
 
                 value_stack.push_back(ValType::NumType(NumType::I32));
             }
@@ -209,6 +236,17 @@ fn read_instructions(
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::F32))?;
 
                 value_stack.push_back(ValType::NumType(NumType::F32));
+            }
+            F64_ABS | F64_NEG | F64_CEIL | F64_FLOOR | F64_TRUNC | F64_NEAREST | F64_SQRT => {
+                assert_pop_value_stack(value_stack, ValType::NumType(NumType::F64))?;
+
+                value_stack.push_back(ValType::NumType(NumType::F64));
+            }
+            F64_ADD | F64_SUB | F64_MUL | F64_DIV | F64_MIN | F64_MAX | F64_COPYSIGN => {
+                assert_pop_value_stack(value_stack, ValType::NumType(NumType::F64))?;
+                assert_pop_value_stack(value_stack, ValType::NumType(NumType::F64))?;
+
+                value_stack.push_back(ValType::NumType(NumType::F64));
             }
             I32_ADD | I32_MUL | I32_DIV_S | I32_DIV_U | I32_REM_S => {
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
