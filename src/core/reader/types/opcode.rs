@@ -1,6 +1,9 @@
 //! All opcodes, in alphanumerical order by their numeric (hex-)value
 pub const UNREACHABLE: u8 = 0x00;
 pub const NOP: u8 = 0x01;
+pub const BLOCK: u8 = 0x02;
+pub const LOOP: u8 = 0x03;
+pub const IF: u8 = 0x04;
 pub const ELSE: u8 = 0x05;
 pub const CALL: u8 = 0x10;
 pub const END: u8 = 0x0B;

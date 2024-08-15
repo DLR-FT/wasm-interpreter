@@ -28,6 +28,7 @@ pub enum Error {
     InvalidNumType,
     InvalidVecType,
     InvalidFuncType,
+    InvalidFuncTypeIdx,
     InvalidRefType,
     InvalidValType,
     InvalidExportDesc(u8),
@@ -74,6 +75,9 @@ impl Display for Error {
             }
             Error::InvalidFuncType => {
                 f.write_str("An invalid byte was read where a functype was expected")
+            }
+            Error::InvalidFuncTypeIdx => {
+                f.write_str("An invalid index to the fuctypes table was read")
             }
             Error::InvalidRefType => {
                 f.write_str("An invalid byte was read where a reftype was expected")
