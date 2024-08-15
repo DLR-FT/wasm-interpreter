@@ -135,8 +135,45 @@ fn read_instructions(
 
         use crate::core::reader::types::opcode::*;
         match first_instr_byte {
-            // nop
+            // unreachable: [t*1] -> [t*2]
+            UNREACHABLE => {}
+            // nop: [] -> []
             NOP => {}
+            // block: [] -> [t*2]
+            BLOCK | LOOP | IF => {
+                let block_ty = if wasm.peek_u8()? as i8 == 0x40 {
+                    let _ = wasm.read_u8();
+
+                    /* empty block type */
+                    FuncType {
+                        params: ResultType {
+                            valtypes: Vec::new(),
+                        },
+                        returns: ResultType {
+                            valtypes: Vec::new(),
+                        },
+                    }
+                } else if let Ok(val_ty) = ValType::read(wasm) {
+                    FuncType {
+                        params: ResultType {
+                            valtypes: Vec::new(),
+                        },
+                        returns: ResultType {
+                            valtypes: [val_ty].into(),
+                        },
+                    }
+                } else {
+                    let maybe_ty_idx: usize = wasm
+                        .read_var_i64()?
+                        .try_into()
+                        .map_err(|_| Error::InvalidFuncTypeIdx)?;
+
+                    fn_types
+                        .get(maybe_ty_idx)
+                        .ok_or_else(|| Error::InvalidFuncTypeIdx)?
+                        .clone()
+                };
+            }
             // end
             END => {
                 // TODO check if there are labels on the stack.
