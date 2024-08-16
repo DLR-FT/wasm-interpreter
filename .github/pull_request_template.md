@@ -17,7 +17,6 @@ This pull request still needs...
 - [ ] Ran `cargo build`
 - [ ] Ran `cargo doc`
 - [ ] Ran `nix fmt`
-- [ ] Ran `treefmt`
 
 ### Github Issue
 
