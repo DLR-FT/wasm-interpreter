@@ -220,6 +220,105 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: f32.const [] -> [{constant}]");
                 stack.push_value(constant.into());
             }
+            I32_EQZ => {
+                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                let res = if v1 == 0 { 1 } else { 0 };
+
+                trace!("Instruction: i32.eqz [{v1}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            I32_EQ => {
+                let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                let res = if v1 == v2 { 1 } else { 0 };
+
+                trace!("Instruction: i32.eq [{v1} {v2}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            I32_NE => {
+                let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                let res = if v1 != v2 { 1 } else { 0 };
+
+                trace!("Instruction: i32.ne [{v1} {v2}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            I32_LT_S => {
+                let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                let res = if v1 < v2 { 1 } else { 0 };
+
+                trace!("Instruction: i32.lt_s [{v1} {v2}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+
+            I32_LT_U => {
+                let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                let res = if (v1 as u32) < (v2 as u32) { 1 } else { 0 };
+
+                trace!("Instruction: i32.lt_u [{v1} {v2}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            I32_GT_S => {
+                let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                let res = if v1 > v2 { 1 } else { 0 };
+
+                trace!("Instruction: i32.gt_s [{v1} {v2}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            I32_GT_U => {
+                let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                let res = if (v1 as u32) > (v2 as u32) { 1 } else { 0 };
+
+                trace!("Instruction: i32.gt_u [{v1} {v2}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            I32_LE_S => {
+                let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                let res = if v1 <= v2 { 1 } else { 0 };
+
+                trace!("Instruction: i32.le_s [{v1} {v2}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            I32_LE_U => {
+                let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                let res = if (v1 as u32) <= (v2 as u32) { 1 } else { 0 };
+
+                trace!("Instruction: i32.le_u [{v1} {v2}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            I32_GE_S => {
+                let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                let res = if v1 >= v2 { 1 } else { 0 };
+
+                trace!("Instruction: i32.ge_s [{v1} {v2}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            I32_GE_U => {
+                let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                let res = if (v1 as u32) >= (v2 as u32) { 1 } else { 0 };
+
+                trace!("Instruction: i32.ge_u [{v1} {v2}] -> [{res}]");
+                stack.push_value(res.into());
+            }
             F32_EQ => {
                 let v2: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
                 let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
