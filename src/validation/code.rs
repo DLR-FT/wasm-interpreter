@@ -273,6 +273,18 @@ fn read_instructions(
 
                 value_stack.push(ValType::NumType(NumType::I32));
             }
+            I32_EQZ => {
+                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
+
+                value_stack.push_back(ValType::NumType(NumType::I32));
+            }
+            I32_EQ | I32_NE | I32_LT_S | I32_LT_U | I32_GT_S | I32_GT_U | I32_LE_S | I32_LE_U
+            | I32_GE_S | I32_GE_U => {
+                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
+                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
+
+                value_stack.push_back(ValType::NumType(NumType::I32));
+            }
             F32_EQ | F32_NE | F32_LT | F32_GT | F32_LE | F32_GE => {
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::F32))?;
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::F32))?;
