@@ -318,6 +318,72 @@
 <a href="#316" id="316">316</a>
 <a href="#317" id="317">317</a>
 <a href="#318" id="318">318</a>
+<a href="#319" id="319">319</a>
+<a href="#320" id="320">320</a>
+<a href="#321" id="321">321</a>
+<a href="#322" id="322">322</a>
+<a href="#323" id="323">323</a>
+<a href="#324" id="324">324</a>
+<a href="#325" id="325">325</a>
+<a href="#326" id="326">326</a>
+<a href="#327" id="327">327</a>
+<a href="#328" id="328">328</a>
+<a href="#329" id="329">329</a>
+<a href="#330" id="330">330</a>
+<a href="#331" id="331">331</a>
+<a href="#332" id="332">332</a>
+<a href="#333" id="333">333</a>
+<a href="#334" id="334">334</a>
+<a href="#335" id="335">335</a>
+<a href="#336" id="336">336</a>
+<a href="#337" id="337">337</a>
+<a href="#338" id="338">338</a>
+<a href="#339" id="339">339</a>
+<a href="#340" id="340">340</a>
+<a href="#341" id="341">341</a>
+<a href="#342" id="342">342</a>
+<a href="#343" id="343">343</a>
+<a href="#344" id="344">344</a>
+<a href="#345" id="345">345</a>
+<a href="#346" id="346">346</a>
+<a href="#347" id="347">347</a>
+<a href="#348" id="348">348</a>
+<a href="#349" id="349">349</a>
+<a href="#350" id="350">350</a>
+<a href="#351" id="351">351</a>
+<a href="#352" id="352">352</a>
+<a href="#353" id="353">353</a>
+<a href="#354" id="354">354</a>
+<a href="#355" id="355">355</a>
+<a href="#356" id="356">356</a>
+<a href="#357" id="357">357</a>
+<a href="#358" id="358">358</a>
+<a href="#359" id="359">359</a>
+<a href="#360" id="360">360</a>
+<a href="#361" id="361">361</a>
+<a href="#362" id="362">362</a>
+<a href="#363" id="363">363</a>
+<a href="#364" id="364">364</a>
+<a href="#365" id="365">365</a>
+<a href="#366" id="366">366</a>
+<a href="#367" id="367">367</a>
+<a href="#368" id="368">368</a>
+<a href="#369" id="369">369</a>
+<a href="#370" id="370">370</a>
+<a href="#371" id="371">371</a>
+<a href="#372" id="372">372</a>
+<a href="#373" id="373">373</a>
+<a href="#374" id="374">374</a>
+<a href="#375" id="375">375</a>
+<a href="#376" id="376">376</a>
+<a href="#377" id="377">377</a>
+<a href="#378" id="378">378</a>
+<a href="#379" id="379">379</a>
+<a href="#380" id="380">380</a>
+<a href="#381" id="381">381</a>
+<a href="#382" id="382">382</a>
+<a href="#383" id="383">383</a>
+<a href="#384" id="384">384</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::core::reader::span::Span;
 <span class="kw">use crate</span>::{Error, <span class="prelude-ty">Result</span>};
 
@@ -327,6 +393,7 @@
 <span class="doccomment">/// A struct for managing and reading WASM bytecode
 ///
 /// Its purpose is to abstract parsing basic WASM values from the bytecode.
+</span><span class="attr">#[derive(Clone)]
 </span><span class="kw">pub struct </span>WasmReader&lt;<span class="lifetime">'a</span>&gt; {
     <span class="doccomment">/// Entire WASM binary as slice
     </span><span class="kw">pub </span>full_wasm_binary: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[u8],
@@ -468,11 +535,40 @@
     </span><span class="kw">pub fn </span>into_inner(<span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[u8] {
         <span class="self">self</span>.full_wasm_binary
     }
+
+    <span class="doccomment">/// A wrapper function for reads with transaction-like behavior.
+    ///
+    /// The provided closure will be called with `&amp;mut self` and its result will be returned.
+    /// However if the closure returns `Err(_)`, `self` will be reset as if the closure was never called.
+    </span><span class="attr">#[allow(dead_code)]
+    </span><span class="kw">pub fn </span>handle_transaction&lt;T, E&gt;(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        f: <span class="kw">impl </span>FnOnce(<span class="kw-2">&amp;mut </span>WasmReader&lt;<span class="lifetime">'a</span>&gt;) -&gt; core::result::Result&lt;T, E&gt;,
+    ) -&gt; core::result::Result&lt;T, E&gt; {
+        <span class="kw">let </span>original = <span class="self">self</span>.clone();
+        f(<span class="self">self</span>).inspect_err(|<span class="kw">_</span>| {
+            <span class="kw-2">*</span><span class="self">self </span>= original;
+        })
+    }
 }
 
 <span class="kw">pub trait </span>WasmReadable: Sized {
-    <span class="kw">fn </span>read(wasm: <span class="kw-2">&amp;mut </span>WasmReader) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt;;
-    <span class="kw">fn </span>read_unvalidated(wasm: <span class="kw-2">&amp;mut </span>WasmReader) -&gt; <span class="self">Self</span>;
+    <span class="doccomment">/// Reads a new [`Self`] from given [`WasmReader`].
+    ///
+    /// Note that if this function returns `Err(_)`, the [`WasmReader`] may still have been advanced,
+    /// which may lead to unexpected behaviour.
+    /// To avoid this consider using the [`WasmReader::handle_transaction`] method to wrap this function call.
+    </span><span class="kw">fn </span>read(wasm: <span class="kw-2">&amp;mut </span>WasmReader) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt;;
+
+    <span class="doccomment">/// Like [`read`](WasmReadable::read), but may panic
+    ///
+    /// Allows to read a [`Self`], directly returning it, instead of a [`Result`].
+    /// Useful, when prior validation already assures that a [`Self`] can be read.
+    ///
+    /// # Panics
+    ///
+    /// Panics if reading a [`Self`] fails.
+    </span><span class="kw">fn </span>read_unvalidated(wasm: <span class="kw-2">&amp;mut </span>WasmReader) -&gt; <span class="self">Self</span>;
 }
 
 <span class="kw">pub mod </span>span {
@@ -514,6 +610,8 @@
 
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>test {
+    <span class="kw">use </span><span class="kw">crate</span>::ValType;
+
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
     <span class="kw">use </span>alloc::vec;
 
@@ -634,6 +732,40 @@
         <span class="kw">let </span><span class="kw-2">mut </span>wasm_reader = WasmReader::new(<span class="kw-2">&amp;</span>my_bytes);
         <span class="macro">assert_eq!</span>(wasm_reader.remaining_bytes(), my_bytes);
         <span class="macro">assert_eq!</span>(wasm_reader.skip(<span class="number">6</span>), <span class="prelude-val">Err</span>(Error::Eof));
+    }
+
+    <span class="attr">#[test]
+    </span><span class="kw">fn </span>reader_transaction() {
+        <span class="kw">let </span>bytes = [<span class="number">0x1</span>, <span class="number">0x2</span>, <span class="number">0x3</span>, <span class="number">0x4</span>, <span class="number">0x5</span>, <span class="number">0x6</span>];
+        <span class="kw">let </span><span class="kw-2">mut </span>reader = WasmReader::new(<span class="kw-2">&amp;</span>bytes);
+
+        <span class="macro">assert_eq!</span>(
+            reader.handle_transaction(|reader| { reader.strip_bytes::&lt;<span class="number">2</span>&gt;() }),
+            <span class="prelude-val">Ok</span>([<span class="number">0x1</span>, <span class="number">0x2</span>]),
+        );
+
+        <span class="kw">let </span>transaction_result: <span class="prelude-ty">Result</span>&lt;()&gt; = reader.handle_transaction(|reader| {
+            <span class="macro">assert_eq!</span>(reader.strip_bytes::&lt;<span class="number">2</span>&gt;(), <span class="prelude-val">Ok</span>([<span class="number">0x3</span>, <span class="number">0x4</span>]));
+
+            <span class="comment">// The exact error type does not matter
+            </span><span class="prelude-val">Err</span>(Error::InvalidMagic)
+        });
+        <span class="macro">assert_eq!</span>(transaction_result, <span class="prelude-val">Err</span>(Error::InvalidMagic));
+
+        <span class="macro">assert_eq!</span>(reader.strip_bytes::&lt;<span class="number">3</span>&gt;(), <span class="prelude-val">Ok</span>([<span class="number">0x3</span>, <span class="number">0x4</span>, <span class="number">0x5</span>]));
+    }
+
+    <span class="attr">#[test]
+    </span><span class="kw">fn </span>reader_transaction_ergonomics() {
+        <span class="kw">let </span>bytes = [<span class="number">0x1</span>, <span class="number">0x2</span>, <span class="number">0x3</span>, <span class="number">0x4</span>, <span class="number">0x5</span>, <span class="number">0x6</span>];
+        <span class="kw">let </span><span class="kw-2">mut </span>reader = WasmReader::new(<span class="kw-2">&amp;</span>bytes);
+
+        <span class="macro">assert_eq!</span>(reader.handle_transaction(WasmReader::read_u8), <span class="prelude-val">Ok</span>(<span class="number">0x1</span>));
+
+        <span class="macro">assert_eq!</span>(
+            reader.handle_transaction(ValType::read),
+            <span class="prelude-val">Err</span>(Error::InvalidValType)
+        );
     }
 }
 </code></pre></div></section></main></body></html>

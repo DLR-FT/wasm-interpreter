@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["Ref","Value"],"macro":["impl_value_conversion"],"struct":["F32"],"trait":["InteropValue","InteropValueList"]};
+window.SIDEBAR_ITEMS = {"enum":["Ref","Value"],"macro":["impl_value_conversion"],"struct":["F32","F64"],"trait":["InteropValue","InteropValueList"]};

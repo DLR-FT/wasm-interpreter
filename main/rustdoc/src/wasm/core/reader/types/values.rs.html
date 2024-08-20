@@ -148,6 +148,12 @@
 <a href="#146" id="146">146</a>
 <a href="#147" id="147">147</a>
 <a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
+<a href="#151" id="151">151</a>
+<a href="#152" id="152">152</a>
+<a href="#153" id="153">153</a>
+<a href="#154" id="154">154</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Methods to read basic WASM Values from a [WasmReader] object.
 //!
 //! See: &lt;https://webassembly.github.io/spec/core/binary/values.html&gt;
@@ -188,6 +194,12 @@
         }
 
         <span class="prelude-val">Ok</span>(result)
+    }
+
+    <span class="kw">pub fn </span>read_var_f64(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;u64&gt; {
+        <span class="kw">let </span>bytes = <span class="self">self</span>.strip_bytes::&lt;<span class="number">8</span>&gt;().map_err(|<span class="kw">_</span>| Error::Eof)<span class="question-mark">?</span>;
+        <span class="kw">let </span>word = u64::from_le_bytes(bytes);
+        <span class="prelude-val">Ok</span>(word)
     }
 
     <span class="kw">pub fn </span>read_var_i32(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;i32&gt; {

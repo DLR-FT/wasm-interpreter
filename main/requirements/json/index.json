@@ -221,7 +221,7 @@
                                     "TYPE": "REQUIREMENT",
                                     "UID": "REQ-17",
                                     "TITLE": "Minimum Supported Rust Version (MSRV)",
-                                    "STATEMENT": "The interpreter shall compile on Rust ``1.74.1`` and later versions\n",
+                                    "STATEMENT": "The interpreter shall compile on Rust ``1.76.0`` and later versions\n",
                                     "RATIONALE": "An MSRV should be clearly stated to specify which toolchain is acceptable.\n"
                                 }
                             ]
