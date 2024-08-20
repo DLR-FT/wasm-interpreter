@@ -1,4 +1,3 @@
-use alloc::collections::VecDeque;
 use alloc::vec::Vec;
 use core::iter;
 
@@ -67,13 +66,13 @@ pub fn read_declared_locals(wasm: &mut WasmReader) -> Result<Vec<ValType>> {
 
 fn read_instructions(
     wasm: &mut WasmReader,
-    value_stack: &mut VecDeque<ValType>,
+    value_stack: &mut Vec<ValType>,
     locals: &[ValType],
     globals: &[Global],
 ) -> Result<()> {
-    let assert_pop_value_stack = |value_stack: &mut VecDeque<ValType>, expected_ty: ValType| {
+    let assert_pop_value_stack = |value_stack: &mut Vec<ValType>, expected_ty: ValType| {
         value_stack
-            .pop_back()
+            .pop()
             .ok_or(Error::InvalidValueStackType(None))
             .and_then(|ty| {
                 (ty == expected_ty)
@@ -100,13 +99,13 @@ fn read_instructions(
             LOCAL_GET => {
                 let local_idx = wasm.read_var_u32()? as LocalIdx;
                 let local_ty = locals.get(local_idx).ok_or(Error::InvalidLocalIdx)?;
-                value_stack.push_back(*local_ty);
+                value_stack.push(*local_ty);
             }
             // local.set [t] -> [0]
             LOCAL_SET => {
                 let local_idx = wasm.read_var_u32()? as LocalIdx;
                 let local_ty = locals.get(local_idx).ok_or(Error::InvalidLocalIdx)?;
-                let popped = value_stack.pop_back();
+                let popped = value_stack.pop();
                 if popped.as_ref() != Some(local_ty) {
                     return Err(Error::InvalidValueStackType(popped));
                 }
@@ -118,7 +117,7 @@ fn read_instructions(
                     .get(global_idx)
                     .ok_or(Error::InvalidGlobalIdx(global_idx))?;
 
-                value_stack.push_back(global.ty.ty);
+                value_stack.push(global.ty.ty);
             }
             // global.set [t] -> []
             GLOBAL_SET => {
@@ -132,7 +131,7 @@ fn read_instructions(
                 }
 
                 let ty_on_stack = value_stack
-                    .pop_back()
+                    .pop()
                     .ok_or(Error::InvalidValueStackType(None))?;
 
                 if ty_on_stack != global.ty.ty {
@@ -148,7 +147,7 @@ fn read_instructions(
 
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
 
-                value_stack.push_back(ValType::NumType(NumType::I32));
+                value_stack.push(ValType::NumType(NumType::I32));
             }
             // f32.load [f32] -> [f32]
             F32_LOAD => {
@@ -157,7 +156,7 @@ fn read_instructions(
                 // Check for I32 because that's the address where we find our value
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
 
-                value_stack.push_back(ValType::NumType(NumType::F32));
+                value_stack.push(ValType::NumType(NumType::F32));
             }
             // f32.load [f32] -> [f32]
             F64_LOAD => {
@@ -166,7 +165,7 @@ fn read_instructions(
                 // Check for I32 because that's the address where we find our value
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
 
-                value_stack.push_back(ValType::NumType(NumType::F64));
+                value_stack.push(ValType::NumType(NumType::F64));
             }
             // i32.store [i32] -> [i32]
             I32_STORE => {
@@ -200,77 +199,77 @@ fn read_instructions(
             // i32.const: [] -> [i32]
             I32_CONST => {
                 let _num = wasm.read_var_i32()?;
-                value_stack.push_back(ValType::NumType(NumType::I32));
+                value_stack.push(ValType::NumType(NumType::I32));
             }
             I64_CONST => {
                 let _num = wasm.read_var_i64()?;
-                value_stack.push_back(ValType::NumType(NumType::I64));
+                value_stack.push(ValType::NumType(NumType::I64));
             }
             F32_CONST => {
                 let _num = wasm.read_var_f32()?;
-                value_stack.push_back(ValType::NumType(NumType::F32));
+                value_stack.push(ValType::NumType(NumType::F32));
             }
             F64_CONST => {
                 let _num = wasm.read_var_f64()?;
-                value_stack.push_back(ValType::NumType(NumType::F64));
+                value_stack.push(ValType::NumType(NumType::F64));
             }
             F32_EQ | F32_NE | F32_LT | F32_GT | F32_LE | F32_GE => {
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::F32))?;
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::F32))?;
 
-                value_stack.push_back(ValType::NumType(NumType::I32));
+                value_stack.push(ValType::NumType(NumType::I32));
             }
             F64_EQ | F64_NE | F64_LT | F64_GT | F64_LE | F64_GE => {
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::F64))?;
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::F64))?;
 
-                value_stack.push_back(ValType::NumType(NumType::I32));
+                value_stack.push(ValType::NumType(NumType::I32));
             }
             F32_ABS | F32_NEG | F32_CEIL | F32_FLOOR | F32_TRUNC | F32_NEAREST | F32_SQRT => {
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::F32))?;
 
-                value_stack.push_back(ValType::NumType(NumType::F32));
+                value_stack.push(ValType::NumType(NumType::F32));
             }
             F32_ADD | F32_SUB | F32_MUL | F32_DIV | F32_MIN | F32_MAX | F32_COPYSIGN => {
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::F32))?;
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::F32))?;
 
-                value_stack.push_back(ValType::NumType(NumType::F32));
+                value_stack.push(ValType::NumType(NumType::F32));
             }
             F64_ABS | F64_NEG | F64_CEIL | F64_FLOOR | F64_TRUNC | F64_NEAREST | F64_SQRT => {
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::F64))?;
 
-                value_stack.push_back(ValType::NumType(NumType::F64));
+                value_stack.push(ValType::NumType(NumType::F64));
             }
             F64_ADD | F64_SUB | F64_MUL | F64_DIV | F64_MIN | F64_MAX | F64_COPYSIGN => {
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::F64))?;
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::F64))?;
 
-                value_stack.push_back(ValType::NumType(NumType::F64));
+                value_stack.push(ValType::NumType(NumType::F64));
             }
             I32_ADD | I32_MUL | I32_DIV_S | I32_DIV_U | I32_REM_S => {
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
 
-                value_stack.push_back(ValType::NumType(NumType::I32));
+                value_stack.push(ValType::NumType(NumType::I32));
             }
             // i32.clz: [i32] -> [i32]
             I32_CLZ | I32_CTZ | I32_POPCNT => {
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
 
-                value_stack.push_back(ValType::NumType(NumType::I32));
+                value_stack.push(ValType::NumType(NumType::I32));
             }
             I32_REM_U | I32_AND | I32_OR | I32_XOR | I32_SHL | I32_SHR_S | I32_SHR_U | I32_ROTL
             | I32_ROTR => {
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
 
-                value_stack.push_back(ValType::NumType(NumType::I32));
+                value_stack.push(ValType::NumType(NumType::I32));
             }
             I64_CLZ | I64_CTZ | I64_POPCNT => {
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::I64))?;
 
-                value_stack.push_back(ValType::NumType(NumType::I64));
+                value_stack.push(ValType::NumType(NumType::I64));
             }
 
             I64_ADD | I64_SUB | I64_MUL | I64_DIV_S | I64_DIV_U | I64_REM_S | I64_REM_U
@@ -279,19 +278,19 @@ fn read_instructions(
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::I64))?;
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::I64))?;
 
-                value_stack.push_back(ValType::NumType(NumType::I64));
+                value_stack.push(ValType::NumType(NumType::I64));
             }
 
             F32_CONVERT_I32_S | F32_CONVERT_I32_U | F32_REINTERPRET_I32 => {
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
 
-                value_stack.push_back(ValType::NumType(NumType::F32));
+                value_stack.push(ValType::NumType(NumType::F32));
             }
 
             F32_CONVERT_I64_S | F32_CONVERT_I64_U => {
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::I64))?;
 
-                value_stack.push_back(ValType::NumType(NumType::F32));
+                value_stack.push(ValType::NumType(NumType::F32));
             }
             _ => return Err(Error::InvalidInstr(first_instr_byte)),
         }
@@ -300,9 +299,9 @@ fn read_instructions(
 
 fn validate_value_stack<F>(return_ty: ResultType, f: F) -> Result<()>
 where
-    F: FnOnce(&mut VecDeque<ValType>) -> Result<()>,
+    F: FnOnce(&mut Vec<ValType>) -> Result<()>,
 {
-    let mut value_stack: VecDeque<ValType> = VecDeque::new();
+    let mut value_stack: Vec<ValType> = Vec::new();
 
     f(&mut value_stack)?;
 
