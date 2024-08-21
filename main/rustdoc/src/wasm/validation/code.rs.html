@@ -317,9 +317,7 @@
 <a href="#315" id="315">315</a>
 <a href="#316" id="316">316</a>
 <a href="#317" id="317">317</a>
-<a href="#318" id="318">318</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>alloc::collections::VecDeque;
-<span class="kw">use </span>alloc::vec::Vec;
+</pre></div><pre class="rust"><code><span class="kw">use </span>alloc::vec::Vec;
 <span class="kw">use </span>core::iter;
 
 <span class="kw">use </span><span class="kw">crate</span>::core::indices::{GlobalIdx, LocalIdx};
@@ -387,13 +385,13 @@
 
 <span class="kw">fn </span>read_instructions(
     wasm: <span class="kw-2">&amp;mut </span>WasmReader,
-    value_stack: <span class="kw-2">&amp;mut </span>VecDeque&lt;ValType&gt;,
+    value_stack: <span class="kw-2">&amp;mut </span>Vec&lt;ValType&gt;,
     locals: <span class="kw-2">&amp;</span>[ValType],
     globals: <span class="kw-2">&amp;</span>[Global],
 ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-    <span class="kw">let </span>assert_pop_value_stack = |value_stack: <span class="kw-2">&amp;mut </span>VecDeque&lt;ValType&gt;, expected_ty: ValType| {
+    <span class="kw">let </span>assert_pop_value_stack = |value_stack: <span class="kw-2">&amp;mut </span>Vec&lt;ValType&gt;, expected_ty: ValType| {
         value_stack
-            .pop_back()
+            .pop()
             .ok_or(Error::InvalidValueStackType(<span class="prelude-val">None</span>))
             .and_then(|ty| {
                 (ty == expected_ty)
@@ -420,13 +418,13 @@
             </span>LOCAL_GET =&gt; {
                 <span class="kw">let </span>local_idx = wasm.read_var_u32()<span class="question-mark">? </span><span class="kw">as </span>LocalIdx;
                 <span class="kw">let </span>local_ty = locals.get(local_idx).ok_or(Error::InvalidLocalIdx)<span class="question-mark">?</span>;
-                value_stack.push_back(<span class="kw-2">*</span>local_ty);
+                value_stack.push(<span class="kw-2">*</span>local_ty);
             }
             <span class="comment">// local.set [t] -&gt; [0]
             </span>LOCAL_SET =&gt; {
                 <span class="kw">let </span>local_idx = wasm.read_var_u32()<span class="question-mark">? </span><span class="kw">as </span>LocalIdx;
                 <span class="kw">let </span>local_ty = locals.get(local_idx).ok_or(Error::InvalidLocalIdx)<span class="question-mark">?</span>;
-                <span class="kw">let </span>popped = value_stack.pop_back();
+                <span class="kw">let </span>popped = value_stack.pop();
                 <span class="kw">if </span>popped.as_ref() != <span class="prelude-val">Some</span>(local_ty) {
                     <span class="kw">return </span><span class="prelude-val">Err</span>(Error::InvalidValueStackType(popped));
                 }
@@ -438,7 +436,7 @@
                     .get(global_idx)
                     .ok_or(Error::InvalidGlobalIdx(global_idx))<span class="question-mark">?</span>;
 
-                value_stack.push_back(global.ty.ty);
+                value_stack.push(global.ty.ty);
             }
             <span class="comment">// global.set [t] -&gt; []
             </span>GLOBAL_SET =&gt; {
@@ -452,7 +450,7 @@
                 }
 
                 <span class="kw">let </span>ty_on_stack = value_stack
-                    .pop_back()
+                    .pop()
                     .ok_or(Error::InvalidValueStackType(<span class="prelude-val">None</span>))<span class="question-mark">?</span>;
 
                 <span class="kw">if </span>ty_on_stack != global.ty.ty {
@@ -468,7 +466,7 @@
 
                 </span>assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))<span class="question-mark">?</span>;
 
-                value_stack.push_back(ValType::NumType(NumType::I32));
+                value_stack.push(ValType::NumType(NumType::I32));
             }
             <span class="comment">// f32.load [f32] -&gt; [f32]
             </span>F32_LOAD =&gt; {
@@ -477,7 +475,7 @@
                 <span class="comment">// Check for I32 because that's the address where we find our value
                 </span>assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))<span class="question-mark">?</span>;
 
-                value_stack.push_back(ValType::NumType(NumType::F32));
+                value_stack.push(ValType::NumType(NumType::F32));
             }
             <span class="comment">// f32.load [f32] -&gt; [f32]
             </span>F64_LOAD =&gt; {
@@ -486,7 +484,7 @@
                 <span class="comment">// Check for I32 because that's the address where we find our value
                 </span>assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))<span class="question-mark">?</span>;
 
-                value_stack.push_back(ValType::NumType(NumType::F64));
+                value_stack.push(ValType::NumType(NumType::F64));
             }
             <span class="comment">// i32.store [i32] -&gt; [i32]
             </span>I32_STORE =&gt; {
@@ -520,77 +518,77 @@
             <span class="comment">// i32.const: [] -&gt; [i32]
             </span>I32_CONST =&gt; {
                 <span class="kw">let </span>_num = wasm.read_var_i32()<span class="question-mark">?</span>;
-                value_stack.push_back(ValType::NumType(NumType::I32));
+                value_stack.push(ValType::NumType(NumType::I32));
             }
             I64_CONST =&gt; {
                 <span class="kw">let </span>_num = wasm.read_var_i64()<span class="question-mark">?</span>;
-                value_stack.push_back(ValType::NumType(NumType::I64));
+                value_stack.push(ValType::NumType(NumType::I64));
             }
             F32_CONST =&gt; {
                 <span class="kw">let </span>_num = wasm.read_var_f32()<span class="question-mark">?</span>;
-                value_stack.push_back(ValType::NumType(NumType::F32));
+                value_stack.push(ValType::NumType(NumType::F32));
             }
             F64_CONST =&gt; {
                 <span class="kw">let </span>_num = wasm.read_var_f64()<span class="question-mark">?</span>;
-                value_stack.push_back(ValType::NumType(NumType::F64));
+                value_stack.push(ValType::NumType(NumType::F64));
             }
             F32_EQ | F32_NE | F32_LT | F32_GT | F32_LE | F32_GE =&gt; {
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::F32))<span class="question-mark">?</span>;
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::F32))<span class="question-mark">?</span>;
 
-                value_stack.push_back(ValType::NumType(NumType::I32));
+                value_stack.push(ValType::NumType(NumType::I32));
             }
             F64_EQ | F64_NE | F64_LT | F64_GT | F64_LE | F64_GE =&gt; {
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::F64))<span class="question-mark">?</span>;
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::F64))<span class="question-mark">?</span>;
 
-                value_stack.push_back(ValType::NumType(NumType::I32));
+                value_stack.push(ValType::NumType(NumType::I32));
             }
             F32_ABS | F32_NEG | F32_CEIL | F32_FLOOR | F32_TRUNC | F32_NEAREST | F32_SQRT =&gt; {
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::F32))<span class="question-mark">?</span>;
 
-                value_stack.push_back(ValType::NumType(NumType::F32));
+                value_stack.push(ValType::NumType(NumType::F32));
             }
             F32_ADD | F32_SUB | F32_MUL | F32_DIV | F32_MIN | F32_MAX | F32_COPYSIGN =&gt; {
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::F32))<span class="question-mark">?</span>;
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::F32))<span class="question-mark">?</span>;
 
-                value_stack.push_back(ValType::NumType(NumType::F32));
+                value_stack.push(ValType::NumType(NumType::F32));
             }
             F64_ABS | F64_NEG | F64_CEIL | F64_FLOOR | F64_TRUNC | F64_NEAREST | F64_SQRT =&gt; {
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::F64))<span class="question-mark">?</span>;
 
-                value_stack.push_back(ValType::NumType(NumType::F64));
+                value_stack.push(ValType::NumType(NumType::F64));
             }
             F64_ADD | F64_SUB | F64_MUL | F64_DIV | F64_MIN | F64_MAX | F64_COPYSIGN =&gt; {
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::F64))<span class="question-mark">?</span>;
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::F64))<span class="question-mark">?</span>;
 
-                value_stack.push_back(ValType::NumType(NumType::F64));
+                value_stack.push(ValType::NumType(NumType::F64));
             }
             I32_ADD | I32_MUL | I32_DIV_S | I32_DIV_U | I32_REM_S =&gt; {
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))<span class="question-mark">?</span>;
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))<span class="question-mark">?</span>;
 
-                value_stack.push_back(ValType::NumType(NumType::I32));
+                value_stack.push(ValType::NumType(NumType::I32));
             }
             <span class="comment">// i32.clz: [i32] -&gt; [i32]
             </span>I32_CLZ | I32_CTZ | I32_POPCNT =&gt; {
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))<span class="question-mark">?</span>;
 
-                value_stack.push_back(ValType::NumType(NumType::I32));
+                value_stack.push(ValType::NumType(NumType::I32));
             }
             I32_REM_U | I32_AND | I32_OR | I32_XOR | I32_SHL | I32_SHR_S | I32_SHR_U | I32_ROTL
             | I32_ROTR =&gt; {
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))<span class="question-mark">?</span>;
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))<span class="question-mark">?</span>;
 
-                value_stack.push_back(ValType::NumType(NumType::I32));
+                value_stack.push(ValType::NumType(NumType::I32));
             }
             I64_CLZ | I64_CTZ | I64_POPCNT =&gt; {
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::I64))<span class="question-mark">?</span>;
 
-                value_stack.push_back(ValType::NumType(NumType::I64));
+                value_stack.push(ValType::NumType(NumType::I64));
             }
 
             I64_ADD | I64_SUB | I64_MUL | I64_DIV_S | I64_DIV_U | I64_REM_S | I64_REM_U
@@ -599,19 +597,19 @@
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::I64))<span class="question-mark">?</span>;
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::I64))<span class="question-mark">?</span>;
 
-                value_stack.push_back(ValType::NumType(NumType::I64));
+                value_stack.push(ValType::NumType(NumType::I64));
             }
 
             F32_CONVERT_I32_S | F32_CONVERT_I32_U | F32_REINTERPRET_I32 =&gt; {
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))<span class="question-mark">?</span>;
 
-                value_stack.push_back(ValType::NumType(NumType::F32));
+                value_stack.push(ValType::NumType(NumType::F32));
             }
 
             F32_CONVERT_I64_S | F32_CONVERT_I64_U =&gt; {
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::I64))<span class="question-mark">?</span>;
 
-                value_stack.push_back(ValType::NumType(NumType::F32));
+                value_stack.push(ValType::NumType(NumType::F32));
             }
             <span class="kw">_ </span>=&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(Error::InvalidInstr(first_instr_byte)),
         }
@@ -620,9 +618,9 @@
 
 <span class="kw">fn </span>validate_value_stack&lt;F&gt;(return_ty: ResultType, f: F) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt;
 <span class="kw">where
-    </span>F: FnOnce(<span class="kw-2">&amp;mut </span>VecDeque&lt;ValType&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt;,
+    </span>F: FnOnce(<span class="kw-2">&amp;mut </span>Vec&lt;ValType&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt;,
 {
-    <span class="kw">let </span><span class="kw-2">mut </span>value_stack: VecDeque&lt;ValType&gt; = VecDeque::new();
+    <span class="kw">let </span><span class="kw-2">mut </span>value_stack: Vec&lt;ValType&gt; = Vec::new();
 
     f(<span class="kw-2">&amp;mut </span>value_stack)<span class="question-mark">?</span>;
 
