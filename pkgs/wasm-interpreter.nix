@@ -67,6 +67,7 @@ rustPlatform.buildRustPackage rec {
     mv target/criterion "$out/bench-html"
 
     # coverage stuff
+    export RUST_LOG=trace
     cargo llvm-cov --no-report nextest
     cargo llvm-cov report --lcov --output-path lcov.info
     cargo llvm-cov report --json --output-path lcov.json
