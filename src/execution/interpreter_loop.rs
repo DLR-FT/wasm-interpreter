@@ -353,6 +353,105 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: i32.ge_u [{v1} {v2}] -> [{res}]");
                 stack.push_value(res.into());
             }
+            I64_EQZ => {
+                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+
+                let res = if v1 == 0 { 1 } else { 0 };
+
+                trace!("Instruction: i64.eqz [{v1}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            I64_EQ => {
+                let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+
+                let res = if v1 == v2 { 1 } else { 0 };
+
+                trace!("Instruction: i64.eq [{v1} {v2}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            I64_NE => {
+                let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+
+                let res = if v1 != v2 { 1 } else { 0 };
+
+                trace!("Instruction: i64.ne [{v1} {v2}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            I64_LT_S => {
+                let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+
+                let res = if v1 < v2 { 1 } else { 0 };
+
+                trace!("Instruction: i64.lt_s [{v1} {v2}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+
+            I64_LT_U => {
+                let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+
+                let res = if (v1 as u64) < (v2 as u64) { 1 } else { 0 };
+
+                trace!("Instruction: i64.lt_u [{v1} {v2}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            I64_GT_S => {
+                let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+
+                let res = if v1 > v2 { 1 } else { 0 };
+
+                trace!("Instruction: i64.gt_s [{v1} {v2}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            I64_GT_U => {
+                let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+
+                let res = if (v1 as u64) > (v2 as u64) { 1 } else { 0 };
+
+                trace!("Instruction: i64.gt_u [{v1} {v2}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            I64_LE_S => {
+                let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+
+                let res = if v1 <= v2 { 1 } else { 0 };
+
+                trace!("Instruction: i64.le_s [{v1} {v2}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            I64_LE_U => {
+                let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+
+                let res = if (v1 as u64) <= (v2 as u64) { 1 } else { 0 };
+
+                trace!("Instruction: i64.le_u [{v1} {v2}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            I64_GE_S => {
+                let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+
+                let res = if v1 >= v2 { 1 } else { 0 };
+
+                trace!("Instruction: i64.ge_s [{v1} {v2}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            I64_GE_U => {
+                let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+
+                let res = if (v1 as u64) >= (v2 as u64) { 1 } else { 0 };
+
+                trace!("Instruction: i64.ge_u [{v1} {v2}] -> [{res}]");
+                stack.push_value(res.into());
+            }
             F32_EQ => {
                 let v2: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
                 let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
