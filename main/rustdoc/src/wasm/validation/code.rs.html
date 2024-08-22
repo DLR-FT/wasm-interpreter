@@ -317,6 +317,18 @@
 <a href="#315" id="315">315</a>
 <a href="#316" id="316">316</a>
 <a href="#317" id="317">317</a>
+<a href="#318" id="318">318</a>
+<a href="#319" id="319">319</a>
+<a href="#320" id="320">320</a>
+<a href="#321" id="321">321</a>
+<a href="#322" id="322">322</a>
+<a href="#323" id="323">323</a>
+<a href="#324" id="324">324</a>
+<a href="#325" id="325">325</a>
+<a href="#326" id="326">326</a>
+<a href="#327" id="327">327</a>
+<a href="#328" id="328">328</a>
+<a href="#329" id="329">329</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>alloc::vec::Vec;
 <span class="kw">use </span>core::iter;
 
@@ -531,6 +543,18 @@
             F64_CONST =&gt; {
                 <span class="kw">let </span>_num = wasm.read_var_f64()<span class="question-mark">?</span>;
                 value_stack.push(ValType::NumType(NumType::F64));
+            }
+            I32_EQZ =&gt; {
+                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))<span class="question-mark">?</span>;
+
+                value_stack.push(ValType::NumType(NumType::I32));
+            }
+            I32_EQ | I32_NE | I32_LT_S | I32_LT_U | I32_GT_S | I32_GT_U | I32_LE_S | I32_LE_U
+            | I32_GE_S | I32_GE_U =&gt; {
+                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))<span class="question-mark">?</span>;
+                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))<span class="question-mark">?</span>;
+
+                value_stack.push(ValType::NumType(NumType::I32));
             }
             F32_EQ | F32_NE | F32_LT | F32_GT | F32_LE | F32_GE =&gt; {
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::F32))<span class="question-mark">?</span>;
