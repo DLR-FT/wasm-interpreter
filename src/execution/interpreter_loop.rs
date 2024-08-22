@@ -502,6 +502,14 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: i32.add [{v1} {v2}] -> [{res}]");
                 stack.push_value(res.into());
             }
+            I32_SUB => {
+                let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let res = v1.wrapping_sub(v2);
+
+                trace!("Instruction: i32.sub [{v1} {v2}] -> [{res}]");
+                stack.push_value(res.into());
+            }
             I32_MUL => {
                 let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                 let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
