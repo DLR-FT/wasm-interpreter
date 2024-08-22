@@ -259,7 +259,7 @@ fn read_instructions(
 
                 value_stack.push(ValType::NumType(NumType::F64));
             }
-            I32_ADD | I32_MUL | I32_DIV_S | I32_DIV_U | I32_REM_S => {
+            I32_ADD | I32_SUB | I32_MUL | I32_DIV_S | I32_DIV_U | I32_REM_S => {
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
                 assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
 

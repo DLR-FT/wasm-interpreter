@@ -9,6 +9,55 @@ const WAT: &'static str = r#"
     )
 "#;
 
+/// A function to test the i32.add implementation using the [WASM TestSuite](https://github.com/WebAssembly/testsuite/blob/5741d6c5172866174fde27c6b5447af757528d1a/i32.wast#L37)
+#[test_log::test]
+pub fn i32_add() {
+    let wat = String::from(WAT).replace("{{0}}", "add");
+    let wasm_bytes = wat::parse_str(wat).unwrap();
+    let validation_info = validate(&wasm_bytes).expect("validation failed");
+    let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
+
+    assert_eq!(2, instance.invoke_func(0, (1, 1)).unwrap());
+    assert_eq!(1, instance.invoke_func(0, (1, 0)).unwrap());
+    assert_eq!(-2, instance.invoke_func(0, (-1, -1)).unwrap());
+    assert_eq!(0, instance.invoke_func(0, (-1, 1)).unwrap());
+    // Chaned the following value from the spec:
+    // - 0x80000000 to -2147483648 = (0x80000000 as u32) as i32
+    let i32_min = (0x80000000 as u32) as i32;
+
+    assert_eq!(i32_min, instance.invoke_func(0, (0x7fffffff, 1)).unwrap());
+    assert_eq!(0x7fffffff, instance.invoke_func(0, (i32_min, -1)).unwrap());
+    assert_eq!(0, instance.invoke_func(0, (i32_min, i32_min)).unwrap());
+    assert_eq!(
+        0x40000000,
+        instance.invoke_func(0, (0x3fffffff, 1)).unwrap()
+    );
+}
+
+/// A function to test the i32.sub implementation using the [WASM TestSuite](https://github.com/WebAssembly/testsuite/blob/5741d6c5172866174fde27c6b5447af757528d1a/i32.wast#L46)
+#[test_log::test]
+pub fn i32_sub() {
+    let wat = String::from(WAT).replace("{{0}}", "sub");
+    let wasm_bytes = wat::parse_str(wat).unwrap();
+    let validation_info = validate(&wasm_bytes).expect("validation failed");
+    let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
+
+    assert_eq!(0, instance.invoke_func(0, (1, 1)).unwrap());
+    assert_eq!(1, instance.invoke_func(0, (1, 0)).unwrap());
+    assert_eq!(0, instance.invoke_func(0, (-1, -1)).unwrap());
+    // Chaned the following value from the spec:
+    // - 0x80000000 to -2147483648 = (0x80000000 as u32) as i32
+    let i32_min = (0x80000000 as u32) as i32;
+
+    assert_eq!(i32_min, instance.invoke_func(0, (0x7fffffff, -1)).unwrap());
+    assert_eq!(0x7fffffff, instance.invoke_func(0, (i32_min, 1)).unwrap());
+    assert_eq!(0, instance.invoke_func(0, (i32_min, i32_min)).unwrap());
+    assert_eq!(
+        0x40000000,
+        instance.invoke_func(0, (0x3fffffff, -1)).unwrap()
+    );
+}
+
 #[should_panic]
 #[test_log::test]
 pub fn i32_eqz_panic() {
