@@ -1,6 +1,6 @@
 use alloc::vec::Vec;
 
-use interpreter_loop::run;
+use interpreter_loop::{run, run_const};
 use locals::Locals;
 use value_stack::Stack;
 
@@ -241,8 +241,13 @@ where
             .globals
             .iter()
             .map(|global| {
-                // TODO execute `global.init_expr` to get initial value. For now just use a default value.
-                let value = Value::default_from_ty(global.ty.ty);
+                let mut wasm = WasmReader::new(validation_info.wasm);
+                // The place we are moving the start to should, by all means, be inside the wasm bytecode.
+                wasm.move_start_to(global.init_expr).unwrap_validated();
+                let mut stack = Stack::new();
+
+                run_const(wasm, &mut stack, ());
+                let value = stack.pop_value(global.ty.ty);
 
                 GlobalInst {
                     global: *global,
