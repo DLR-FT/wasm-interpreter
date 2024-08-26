@@ -251,7 +251,7 @@ pub(super) fn run<H: HookSet>(
             }
             F32_CONST => {
                 let constant = f32::from_bits(wasm.read_var_f32().unwrap_validated());
-                trace!("Instruction: f32.const [] -> [{constant}]");
+                trace!("Instruction: f32.const [] -> [{constant:.7}]");
                 stack.push_value(constant.into());
             }
             I32_EQZ => {
@@ -1033,41 +1033,6 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: f32.copysign [{v1} {v2}] -> [{res}]");
                 stack.push_value(res.into());
             }
-            F32_CONVERT_I32_S => {
-                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                let res: value::F32 = value::F32(v1 as f32);
-
-                trace!("Instruction: f32.convert_i32_s [{v1}] -> [{res}]");
-                stack.push_value(res.into());
-            }
-            F32_CONVERT_I32_U => {
-                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                let res: value::F32 = value::F32(v1 as u32 as f32);
-
-                trace!("Instruction: f32.convert_i32_u [{v1}] -> [{res}]");
-                stack.push_value(res.into());
-            }
-            F32_CONVERT_I64_S => {
-                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-                let res: value::F32 = value::F32(v1 as f32);
-
-                trace!("Instruction: f32.convert_i64_s [{v1}] -> [{res}]");
-                stack.push_value(res.into());
-            }
-            F32_CONVERT_I64_U => {
-                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-                let res: value::F32 = value::F32(v1 as u64 as f32);
-
-                trace!("Instruction: f32.convert_i64_u [{v1}] -> [{res}]");
-                stack.push_value(res.into());
-            }
-            F32_REINTERPRET_I32 => {
-                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                let res: value::F32 = value::F32::from_bits(v1 as u32);
-
-                trace!("Instruction: f32.reinterpret_i32 [{v1}] -> [{res}]");
-                stack.push_value(res.into());
-            }
 
             F64_ABS => {
                 let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
@@ -1174,7 +1139,270 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: f64.copysign [{v1} {v2}] -> [{res}]");
                 stack.push_value(res.into());
             }
+            I32_WRAP_I64 => {
+                let v: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let res: i32 = v as i32;
 
+                trace!("Instruction: i32.wrap_i64 [{v}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            I32_TRUNC_F32_S => {
+                let v: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                if v.is_infinity() {
+                    return Err(RuntimeError::UnrepresentableResult);
+                }
+                if v.is_nan() {
+                    return Err(RuntimeError::BadConversionToInteger);
+                }
+                if v >= value::F32(2147483648.0) || v <= value::F32(-2147483904.0) {
+                    return Err(RuntimeError::UnrepresentableResult);
+                }
+
+                let res: i32 = v.as_i32();
+
+                trace!("Instruction: i32.trunc_f32_s [{v:.7}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            I32_TRUNC_F32_U => {
+                let v: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                if v.is_infinity() {
+                    return Err(RuntimeError::UnrepresentableResult);
+                }
+                if v.is_nan() {
+                    return Err(RuntimeError::BadConversionToInteger);
+                }
+                if v >= value::F32(4294967296.0) || v <= value::F32(-1.0) {
+                    return Err(RuntimeError::UnrepresentableResult);
+                }
+
+                let res: i32 = v.as_u32() as i32;
+
+                trace!("Instruction: i32.trunc_f32_u [{v:.7}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+
+            I32_TRUNC_F64_S => {
+                let v: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                if v.is_infinity() {
+                    return Err(RuntimeError::UnrepresentableResult);
+                }
+                if v.is_nan() {
+                    return Err(RuntimeError::BadConversionToInteger);
+                }
+                if v >= value::F64(2147483648.0) || v <= value::F64(-2147483649.0) {
+                    return Err(RuntimeError::UnrepresentableResult);
+                }
+
+                let res: i32 = v.as_i32();
+
+                trace!("Instruction: i32.trunc_f64_s [{v:.7}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            I32_TRUNC_F64_U => {
+                let v: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                if v.is_infinity() {
+                    return Err(RuntimeError::UnrepresentableResult);
+                }
+                if v.is_nan() {
+                    return Err(RuntimeError::BadConversionToInteger);
+                }
+                if v >= value::F64(4294967296.0) || v <= value::F64(-1.0) {
+                    return Err(RuntimeError::UnrepresentableResult);
+                }
+
+                let res: i32 = v.as_u32() as i32;
+
+                trace!("Instruction: i32.trunc_f32_u [{v:.7}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+
+            I64_EXTEND_I32_S => {
+                let v: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                let res: i64 = v as i64;
+
+                trace!("Instruction: i64.extend_i32_s [{v}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+
+            I64_EXTEND_I32_U => {
+                let v: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                let res: i64 = v as u32 as i64;
+
+                trace!("Instruction: i64.extend_i32_u [{v}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+
+            I64_TRUNC_F32_S => {
+                let v: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                if v.is_infinity() {
+                    return Err(RuntimeError::UnrepresentableResult);
+                }
+                if v.is_nan() {
+                    return Err(RuntimeError::BadConversionToInteger);
+                }
+                if v >= value::F32(9223372036854775808.0) || v <= value::F32(-9223373136366403584.0)
+                {
+                    return Err(RuntimeError::UnrepresentableResult);
+                }
+
+                let res: i64 = v.as_i64();
+
+                trace!("Instruction: i64.trunc_f32_s [{v:.7}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            I64_TRUNC_F32_U => {
+                let v: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                if v.is_infinity() {
+                    return Err(RuntimeError::UnrepresentableResult);
+                }
+                if v.is_nan() {
+                    return Err(RuntimeError::BadConversionToInteger);
+                }
+                if v >= value::F32(18446744073709551616.0) || v <= value::F32(-1.0) {
+                    return Err(RuntimeError::UnrepresentableResult);
+                }
+
+                let res: i64 = v.as_u64() as i64;
+
+                trace!("Instruction: i64.trunc_f32_u [{v:.7}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+
+            I64_TRUNC_F64_S => {
+                let v: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                if v.is_infinity() {
+                    return Err(RuntimeError::UnrepresentableResult);
+                }
+                if v.is_nan() {
+                    return Err(RuntimeError::BadConversionToInteger);
+                }
+                if v >= value::F64(9223372036854775808.0) || v <= value::F64(-9223372036854777856.0)
+                {
+                    return Err(RuntimeError::UnrepresentableResult);
+                }
+
+                let res: i64 = v.as_i64();
+
+                trace!("Instruction: i64.trunc_f64_s [{v:.17}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            I64_TRUNC_F64_U => {
+                let v: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                if v.is_infinity() {
+                    return Err(RuntimeError::UnrepresentableResult);
+                }
+                if v.is_nan() {
+                    return Err(RuntimeError::BadConversionToInteger);
+                }
+                if v >= value::F64(18446744073709551616.0) || v <= value::F64(-1.0) {
+                    return Err(RuntimeError::UnrepresentableResult);
+                }
+
+                let res: i64 = v.as_u64() as i64;
+
+                trace!("Instruction: i64.trunc_f64_u [{v:.17}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            F32_CONVERT_I32_S => {
+                let v: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let res: value::F32 = value::F32(v as f32);
+
+                trace!("Instruction: f32.convert_i32_s [{v}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            F32_CONVERT_I32_U => {
+                let v: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let res: value::F32 = value::F32(v as u32 as f32);
+
+                trace!("Instruction: f32.convert_i32_u [{v}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            F32_CONVERT_I64_S => {
+                let v: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let res: value::F32 = value::F32(v as f32);
+
+                trace!("Instruction: f32.convert_i64_s [{v}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            F32_CONVERT_I64_U => {
+                let v: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let res: value::F32 = value::F32(v as u64 as f32);
+
+                trace!("Instruction: f32.convert_i64_u [{v}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            F32_DEMOTE_F64 => {
+                let v: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let res: value::F32 = v.as_f32();
+
+                trace!("Instruction: f32.demote_f64 [{v:.17}] -> [{res:.7}]");
+                stack.push_value(res.into());
+            }
+            F64_CONVERT_I32_S => {
+                let v: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let res: value::F64 = value::F64(v as f64);
+
+                trace!("Instruction: f64.convert_i32_s [{v}] -> [{res:.17}]");
+                stack.push_value(res.into());
+            }
+            F64_CONVERT_I32_U => {
+                let v: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let res: value::F64 = value::F64(v as u32 as f64);
+
+                trace!("Instruction: f64.convert_i32_u [{v}] -> [{res:.17}]");
+                stack.push_value(res.into());
+            }
+            F64_CONVERT_I64_S => {
+                let v: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let res: value::F64 = value::F64(v as f64);
+
+                trace!("Instruction: f64.convert_i64_s [{v}] -> [{res:.17}]");
+                stack.push_value(res.into());
+            }
+            F64_CONVERT_I64_U => {
+                let v: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let res: value::F64 = value::F64(v as u64 as f64);
+
+                trace!("Instruction: f64.convert_i64_u [{v}] -> [{res:.17}]");
+                stack.push_value(res.into());
+            }
+            F64_PROMOTE_F32 => {
+                let v: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let res: value::F64 = v.as_f32();
+
+                trace!("Instruction: f64.promote_f32 [{v:.7}] -> [{res:.17}]");
+                stack.push_value(res.into());
+            }
+            I32_REINTERPRET_F32 => {
+                let v: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let res: i32 = v.reinterpret_as_i32();
+
+                trace!("Instruction: i32.reinterpret_f32 [{v:.7}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            I64_REINTERPRET_F64 => {
+                let v: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let res: i64 = v.reinterpret_as_i64();
+
+                trace!("Instruction: i64.reinterpret_f64 [{v:.17}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            F32_REINTERPRET_I32 => {
+                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let res: value::F32 = value::F32::from_bits(v1 as u32);
+
+                trace!("Instruction: f32.reinterpret_i32 [{v1}] -> [{res:.7}]");
+                stack.push_value(res.into());
+            }
+            F64_REINTERPRET_I64 => {
+                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let res: value::F64 = value::F64::from_bits(v1 as u64);
+
+                trace!("Instruction: f64.reinterpret_i64 [{v1}] -> [{res:.17}]");
+                stack.push_value(res.into());
+            }
             other => {
                 trace!("Unknown instruction {other:#x}, skipping..");
             }
