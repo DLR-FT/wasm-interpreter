@@ -1043,6 +1043,40 @@
 <a href="#1041" id="1041">1041</a>
 <a href="#1042" id="1042">1042</a>
 <a href="#1043" id="1043">1043</a>
+<a href="#1044" id="1044">1044</a>
+<a href="#1045" id="1045">1045</a>
+<a href="#1046" id="1046">1046</a>
+<a href="#1047" id="1047">1047</a>
+<a href="#1048" id="1048">1048</a>
+<a href="#1049" id="1049">1049</a>
+<a href="#1050" id="1050">1050</a>
+<a href="#1051" id="1051">1051</a>
+<a href="#1052" id="1052">1052</a>
+<a href="#1053" id="1053">1053</a>
+<a href="#1054" id="1054">1054</a>
+<a href="#1055" id="1055">1055</a>
+<a href="#1056" id="1056">1056</a>
+<a href="#1057" id="1057">1057</a>
+<a href="#1058" id="1058">1058</a>
+<a href="#1059" id="1059">1059</a>
+<a href="#1060" id="1060">1060</a>
+<a href="#1061" id="1061">1061</a>
+<a href="#1062" id="1062">1062</a>
+<a href="#1063" id="1063">1063</a>
+<a href="#1064" id="1064">1064</a>
+<a href="#1065" id="1065">1065</a>
+<a href="#1066" id="1066">1066</a>
+<a href="#1067" id="1067">1067</a>
+<a href="#1068" id="1068">1068</a>
+<a href="#1069" id="1069">1069</a>
+<a href="#1070" id="1070">1070</a>
+<a href="#1071" id="1071">1071</a>
+<a href="#1072" id="1072">1072</a>
+<a href="#1073" id="1073">1073</a>
+<a href="#1074" id="1074">1074</a>
+<a href="#1075" id="1075">1075</a>
+<a href="#1076" id="1076">1076</a>
+<a href="#1077" id="1077">1077</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! This module solely contains the actual interpretation loop that matches instructions, interpreting the WASM bytecode
 //!
 //!
@@ -1054,6 +1088,7 @@
 //!    - **not** to be confused with the [`Error`](crate::core::error::Error) enum's
 //!      [`Error::RuntimeError`](crate::Error::RuntimeError) variant, which as per 2., we don not
 //!      want
+
 </span><span class="kw">use </span>alloc::vec::Vec;
 
 <span class="kw">use crate</span>::{
@@ -1065,7 +1100,6 @@
             WasmReadable, WasmReader,
         },
     },
-    hooks::HookSet,
     locals::Locals,
     store::Store,
     value,
@@ -1073,35 +1107,27 @@
     NumType, RuntimeError, ValType, Value,
 };
 
+<span class="attr">#[cfg(feature = <span class="string">"hooks"</span>)]
+</span><span class="kw">use </span><span class="kw">crate</span>::execution::hooks::HookSet;
+
 <span class="doccomment">/// Interprets a functions. Parameters and return values are passed on the stack.
 </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>run&lt;H: HookSet&gt;(
-    types: <span class="kw-2">&amp;</span>[FuncType],
     wasm_bytecode: <span class="kw-2">&amp;</span>[u8],
+    types: <span class="kw-2">&amp;</span>[FuncType],
     store: <span class="kw-2">&amp;mut </span>Store,
-    idx: FuncIdx,
     stack: <span class="kw-2">&amp;mut </span>Stack,
     <span class="kw-2">mut </span>hooks: H,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;(), RuntimeError&gt; {
-    <span class="kw">let </span>inst = store.funcs.get(idx).unwrap_validated();
-
-    <span class="comment">// Pop parameters from stack
-    </span><span class="kw">let </span>func_type = types.get(inst.ty).unwrap_validated();
-    <span class="kw">let </span><span class="kw-2">mut </span>params: Vec&lt;Value&gt; = func_type
-        .params
-        .valtypes
-        .iter()
-        .map(|ty| stack.pop_value(<span class="kw-2">*</span>ty))
-        .collect();
-    params.reverse();
-
-    <span class="comment">// Create locals from parameters and declared locals
-    </span><span class="kw">let </span><span class="kw-2">mut </span>locals = Locals::new(params.into_iter(), inst.locals.iter().cloned());
+    <span class="kw">let </span>func_inst = store
+        .funcs
+        .get(stack.current_stackframe().func_idx)
+        .unwrap_validated();
 
     <span class="comment">// Start reading the function's instructions
     </span><span class="kw">let </span><span class="kw-2">mut </span>wasm = WasmReader::new(wasm_bytecode);
 
     <span class="comment">// unwrap is sound, because the validation assures that the function points to valid subslice of the WASM binary
-    </span>wasm.move_start_to(inst.code_expr).unwrap();
+    </span>wasm.move_start_to(func_inst.code_expr).unwrap();
 
     <span class="kw">use </span><span class="kw">crate</span>::core::reader::types::opcode::<span class="kw-2">*</span>;
     <span class="kw">loop </span>{
@@ -1113,26 +1139,68 @@
 
         <span class="kw">match </span>first_instr_byte {
             END =&gt; {
-                <span class="kw">break</span>;
+                <span class="kw">let </span>maybe_return_address = stack.pop_stackframe();
+
+                <span class="comment">// We finished this entire invocation if there is no stackframe left. If there are
+                // one or more stack frames, we need to continue from where the callee was called
+                // fromn.
+                </span><span class="kw">if </span>stack.callframe_count() == <span class="number">0 </span>{
+                    <span class="kw">break</span>;
+                }
+
+                <span class="macro">trace!</span>(<span class="string">"end of function reached, returning to previous stack frame"</span>);
+                wasm.pc = maybe_return_address;
+            }
+            RETURN =&gt; {
+                <span class="macro">trace!</span>(<span class="string">"returning from function"</span>);
+
+                <span class="kw">let </span>func_to_call_idx = stack.current_stackframe().func_idx;
+
+                <span class="kw">let </span>func_to_call_inst = store.funcs.get(func_to_call_idx).unwrap_validated();
+                <span class="kw">let </span>func_to_call_ty = types.get(func_to_call_inst.ty).unwrap_validated();
+
+                <span class="kw">let </span>ret_vals = stack
+                    .pop_tail_iter(func_to_call_ty.returns.valtypes.len())
+                    .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+                stack.clear_callframe_values();
+
+                <span class="kw">for </span>val <span class="kw">in </span>ret_vals {
+                    stack.push_value(val);
+                }
+
+                <span class="kw">if </span>stack.callframe_count() == <span class="number">1 </span>{
+                    <span class="kw">break</span>;
+                }
+
+                <span class="macro">trace!</span>(<span class="string">"end of function reached, returning to previous stack frame"</span>);
+                wasm.pc = stack.pop_stackframe();
+            }
+            CALL =&gt; {
+                <span class="kw">let </span>func_to_call_idx = wasm.read_var_u32().unwrap_validated() <span class="kw">as </span>FuncIdx;
+
+                <span class="kw">let </span>func_to_call_inst = store.funcs.get(func_to_call_idx).unwrap_validated();
+                <span class="kw">let </span>func_to_call_ty = types.get(func_to_call_inst.ty).unwrap_validated();
+
+                <span class="kw">let </span>params = stack.pop_tail_iter(func_to_call_ty.params.valtypes.len());
+                <span class="kw">let </span>remaining_locals = func_to_call_inst.locals.iter().cloned();
+
+                <span class="macro">trace!</span>(<span class="string">"Instruction: call [{func_to_call_idx:?}]"</span>);
+                <span class="kw">let </span>locals = Locals::new(params, remaining_locals);
+                stack.push_stackframe(func_to_call_idx, func_to_call_ty, locals, wasm.pc);
+
+                wasm.move_start_to(func_to_call_inst.code_expr)
+                    .unwrap_validated();
             }
             LOCAL_GET =&gt; {
-                <span class="kw">let </span>local_idx = wasm.read_var_u32().unwrap_validated() <span class="kw">as </span>LocalIdx;
-                <span class="kw">let </span>local = locals.get(local_idx);
-                <span class="macro">trace!</span>(<span class="string">"Instruction: local.get [] -&gt; [{local:?}]"</span>);
-                stack.push_value(local.clone());
+                stack.get_local(wasm.read_var_u32().unwrap_validated() <span class="kw">as </span>LocalIdx);
             }
-            LOCAL_SET =&gt; {
-                <span class="kw">let </span>local_idx = wasm.read_var_u32().unwrap_validated() <span class="kw">as </span>LocalIdx;
-                <span class="kw">let </span>local = locals.get_mut(local_idx);
-                <span class="kw">let </span>value = stack.pop_value(local.to_ty());
-                <span class="macro">trace!</span>(<span class="string">"Instruction: local.set [{local:?}] -&gt; []"</span>);
-                <span class="kw-2">*</span>local = value;
-            }
+            LOCAL_SET =&gt; stack.set_local(wasm.read_var_u32().unwrap_validated() <span class="kw">as </span>LocalIdx),
+            LOCAL_TEE =&gt; stack.tee_local(wasm.read_var_u32().unwrap_validated() <span class="kw">as </span>LocalIdx),
             GLOBAL_GET =&gt; {
                 <span class="kw">let </span>global_idx = wasm.read_var_u32().unwrap_validated() <span class="kw">as </span>GlobalIdx;
                 <span class="kw">let </span>global = store.globals.get(global_idx).unwrap_validated();
 
-                stack.push_value(global.value.clone());
+                stack.push_value(global.value);
             }
             GLOBAL_SET =&gt; {
                 <span class="kw">let </span>global_idx = wasm.read_var_u32().unwrap_validated() <span class="kw">as </span>GlobalIdx;

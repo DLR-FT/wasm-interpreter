@@ -92,12 +92,107 @@
 <a href="#90" id="90">90</a>
 <a href="#91" id="91">91</a>
 <a href="#92" id="92">92</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>alloc::vec::Vec;
+<a href="#93" id="93">93</a>
+<a href="#94" id="94">94</a>
+<a href="#95" id="95">95</a>
+<a href="#96" id="96">96</a>
+<a href="#97" id="97">97</a>
+<a href="#98" id="98">98</a>
+<a href="#99" id="99">99</a>
+<a href="#100" id="100">100</a>
+<a href="#101" id="101">101</a>
+<a href="#102" id="102">102</a>
+<a href="#103" id="103">103</a>
+<a href="#104" id="104">104</a>
+<a href="#105" id="105">105</a>
+<a href="#106" id="106">106</a>
+<a href="#107" id="107">107</a>
+<a href="#108" id="108">108</a>
+<a href="#109" id="109">109</a>
+<a href="#110" id="110">110</a>
+<a href="#111" id="111">111</a>
+<a href="#112" id="112">112</a>
+<a href="#113" id="113">113</a>
+<a href="#114" id="114">114</a>
+<a href="#115" id="115">115</a>
+<a href="#116" id="116">116</a>
+<a href="#117" id="117">117</a>
+<a href="#118" id="118">118</a>
+<a href="#119" id="119">119</a>
+<a href="#120" id="120">120</a>
+<a href="#121" id="121">121</a>
+<a href="#122" id="122">122</a>
+<a href="#123" id="123">123</a>
+<a href="#124" id="124">124</a>
+<a href="#125" id="125">125</a>
+<a href="#126" id="126">126</a>
+<a href="#127" id="127">127</a>
+<a href="#128" id="128">128</a>
+<a href="#129" id="129">129</a>
+<a href="#130" id="130">130</a>
+<a href="#131" id="131">131</a>
+<a href="#132" id="132">132</a>
+<a href="#133" id="133">133</a>
+<a href="#134" id="134">134</a>
+<a href="#135" id="135">135</a>
+<a href="#136" id="136">136</a>
+<a href="#137" id="137">137</a>
+<a href="#138" id="138">138</a>
+<a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
+<a href="#151" id="151">151</a>
+<a href="#152" id="152">152</a>
+<a href="#153" id="153">153</a>
+<a href="#154" id="154">154</a>
+<a href="#155" id="155">155</a>
+<a href="#156" id="156">156</a>
+<a href="#157" id="157">157</a>
+<a href="#158" id="158">158</a>
+<a href="#159" id="159">159</a>
+<a href="#160" id="160">160</a>
+<a href="#161" id="161">161</a>
+<a href="#162" id="162">162</a>
+<a href="#163" id="163">163</a>
+<a href="#164" id="164">164</a>
+<a href="#165" id="165">165</a>
+<a href="#166" id="166">166</a>
+<a href="#167" id="167">167</a>
+<a href="#168" id="168">168</a>
+<a href="#169" id="169">169</a>
+<a href="#170" id="170">170</a>
+<a href="#171" id="171">171</a>
+<a href="#172" id="172">172</a>
+<a href="#173" id="173">173</a>
+<a href="#174" id="174">174</a>
+<a href="#175" id="175">175</a>
+<a href="#176" id="176">176</a>
+<a href="#177" id="177">177</a>
+<a href="#178" id="178">178</a>
+<a href="#179" id="179">179</a>
+<a href="#180" id="180">180</a>
+<a href="#181" id="181">181</a>
+<a href="#182" id="182">182</a>
+<a href="#183" id="183">183</a>
+<a href="#184" id="184">184</a>
+<a href="#185" id="185">185</a>
+<a href="#186" id="186">186</a>
+</pre></div><pre class="rust"><code><span class="kw">use </span>alloc::vec::{Drain, Vec};
 
-<span class="kw">use </span><span class="kw">crate</span>::core::reader::types::ValType;
+<span class="kw">use </span><span class="kw">crate</span>::core::indices::{FuncIdx, LocalIdx};
+<span class="kw">use </span><span class="kw">crate</span>::core::reader::types::{FuncType, ValType};
 <span class="kw">use </span><span class="kw">crate</span>::execution::assert_validated::UnwrapValidatedExt;
-<span class="kw">use </span><span class="kw">crate</span>::execution::label::{ActivationFrame, Label};
 <span class="kw">use </span><span class="kw">crate</span>::execution::value::Value;
+<span class="kw">use </span><span class="kw">crate</span>::locals::Locals;
 <span class="kw">use </span><span class="kw">crate</span>::unreachable_validated;
 
 <span class="doccomment">/// The stack at runtime containing
@@ -106,9 +201,15 @@
 /// 3. Activations
 ///
 /// See &lt;https://webassembly.github.io/spec/core/exec/runtime.html#stack&gt;
-</span><span class="attr">#[derive(Clone, Debug, Default)]
+</span><span class="attr">#[derive(Default)]
 </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>Stack {
-    inner: Vec&lt;StackEntry&gt;,
+    <span class="doccomment">/// WASM values on the stack, i.e. the actual data that instructions operate on
+    </span>values: Vec&lt;Value&gt;,
+
+    <span class="doccomment">/// Stack frames
+    ///
+    /// Each time a function is called, a new frame is pushed, whenever a function returns, a frame is popped
+    </span>frames: Vec&lt;CallFrame&gt;,
 }
 
 <span class="kw">impl </span>Stack {
@@ -116,72 +217,159 @@
         <span class="self">Self</span>::default()
     }
 
-    <span class="kw">pub fn </span>pop_value(<span class="kw-2">&amp;mut </span><span class="self">self</span>, ty: ValType) -&gt; Value {
-        <span class="kw">let </span>popped = <span class="self">self</span>.inner.pop().unwrap_validated();
-        <span class="kw">match </span>popped {
-            StackEntry::Value(popped) =&gt; {
-                <span class="kw">if </span>popped.to_ty() == ty {
-                    popped
-                } <span class="kw">else </span>{
-                    <span class="macro">unreachable_validated!</span>()
-                }
-            }
-            StackEntry::Label(<span class="kw">_</span>) =&gt; <span class="macro">todo!</span>(<span class="string">"pop label from stack"</span>),
-            StackEntry::Activation(<span class="kw">_</span>) =&gt; <span class="macro">todo!</span>(<span class="string">"pop activation frame from stack"</span>),
+    <span class="doccomment">/// Pop a value of the given [ValType] from the value stack
+    </span><span class="kw">pub fn </span>pop_value(<span class="kw-2">&amp;mut </span><span class="self">self</span>, ty: ValType) -&gt; Value {
+        <span class="comment">// If there is at least one stack frame, we shall not pop values past the current
+        // stackframe. However, there is one legitimate reason to pop when there is **no** current
+        // stackframe: after the outermost function returns, to extract the final return values of
+        // this interpreter invocation.
+        </span><span class="macro">debug_assert!</span>(
+            <span class="kw">if </span>!<span class="self">self</span>.frames.is_empty() {
+                <span class="self">self</span>.values.len() &gt; <span class="self">self</span>.current_stackframe().value_stack_base_idx
+            } <span class="kw">else </span>{
+                <span class="bool-val">true
+            </span>},
+            <span class="string">"can not pop values past the current stackframe"
+        </span>);
+
+        <span class="kw">let </span>popped = <span class="self">self</span>.values.pop().unwrap_validated();
+        <span class="kw">if </span>popped.to_ty() == ty {
+            popped
+        } <span class="kw">else </span>{
+            <span class="macro">unreachable_validated!</span>()
         }
     }
 
-    <span class="kw">pub fn </span>push_value(<span class="kw-2">&amp;mut </span><span class="self">self</span>, value: Value) {
-        <span class="self">self</span>.inner.push(StackEntry::Value(value));
+    <span class="doccomment">/// Copy a value of the given [ValType] from the value stack without removing it
+    </span><span class="kw">pub fn </span>peek_value(<span class="kw-2">&amp;</span><span class="self">self</span>, ty: ValType) -&gt; Value {
+        <span class="kw">let </span>value = <span class="self">self</span>.values.last().unwrap_validated();
+        <span class="kw">if </span>value.to_ty() == ty {
+            <span class="kw-2">*</span>value
+        } <span class="kw">else </span>{
+            <span class="macro">unreachable_validated!</span>()
+        }
     }
 
-    <span class="attr">#[allow(dead_code)]
-    </span><span class="kw">pub fn </span>len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
-        <span class="self">self</span>.inner.len()
+    <span class="doccomment">/// Push a value to the value stack
+    </span><span class="kw">pub fn </span>push_value(<span class="kw-2">&amp;mut </span><span class="self">self</span>, value: Value) {
+        <span class="self">self</span>.values.push(value);
+    }
+
+    <span class="doccomment">/// Copy a local variable to the top of the value stack
+    </span><span class="kw">pub fn </span>get_local(<span class="kw-2">&amp;mut </span><span class="self">self</span>, idx: LocalIdx) {
+        <span class="kw">let </span>local_value = <span class="self">self</span>.frames.last().unwrap_validated().locals.get(idx);
+        <span class="self">self</span>.values.push(<span class="kw-2">*</span>local_value);
+    }
+
+    <span class="doccomment">/// Pop value from the top of the value stack, writing it to the given local
+    </span><span class="kw">pub fn </span>set_local(<span class="kw-2">&amp;mut </span><span class="self">self</span>, idx: LocalIdx) {
+        <span class="kw">let </span>local_ty = <span class="self">self</span>.current_stackframe().locals.get_ty(idx);
+
+        <span class="kw">let </span>stack_value = <span class="self">self</span>.pop_value(local_ty);
+        <span class="macro">debug_assert!</span>(
+            <span class="self">self</span>.values.len() &gt; <span class="self">self</span>.current_stackframe().value_stack_base_idx,
+            <span class="string">"can not pop values past the current stackframe"
+        </span>);
+
+        <span class="macro">trace!</span>(<span class="string">"Instruction: local.set [{stack_value:?}] -&gt; []"</span>);
+        <span class="kw-2">*</span><span class="self">self</span>.current_stackframe_mut().locals.get_mut(idx) = stack_value;
+    }
+
+    <span class="doccomment">/// Copy value from top of the value stack to the given local
+    </span><span class="kw">pub fn </span>tee_local(<span class="kw-2">&amp;mut </span><span class="self">self</span>, idx: LocalIdx) {
+        <span class="kw">let </span>local_ty = <span class="self">self</span>.current_stackframe().locals.get_ty(idx);
+
+        <span class="kw">let </span>stack_value = <span class="self">self</span>.peek_value(local_ty);
+        <span class="kw-2">*</span><span class="self">self</span>.current_stackframe_mut().locals.get_mut(idx) = stack_value;
+    }
+
+    <span class="doccomment">/// Get a shared reference to the current [`CallFrame`]
+    </span><span class="kw">pub fn </span>current_stackframe(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>CallFrame {
+        <span class="self">self</span>.frames.last().unwrap_validated()
+    }
+
+    <span class="doccomment">/// Get a mutable reference to the current [`CallFrame`]
+    </span><span class="kw">pub fn </span>current_stackframe_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>CallFrame {
+        <span class="self">self</span>.frames.last_mut().unwrap_validated()
+    }
+
+    <span class="doccomment">/// Pop a [`CallFrame`] from the call stack, returning the return address
+    </span><span class="kw">pub fn </span>pop_stackframe(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; usize {
+        <span class="kw">let </span>CallFrame {
+            return_addr,
+            value_stack_base_idx,
+            return_value_count,
+            ..
+        } = <span class="self">self</span>.frames.pop().unwrap_validated();
+
+        <span class="kw">let </span>truncation_top = <span class="self">self</span>.values.len() - return_value_count;
+        <span class="kw">let _ </span>= <span class="self">self</span>.values.drain(value_stack_base_idx..truncation_top);
+
+        <span class="macro">debug_assert_eq!</span>(
+            <span class="self">self</span>.values.len(),
+            value_stack_base_idx + return_value_count,
+            <span class="string">"after a function call finished, the stack must have exactly as many values as it had before calling the function plus the number of function return values"
+        </span>);
+
+        return_addr
+    }
+
+    <span class="doccomment">/// Push a stackframe to the call stack
+    ///
+    /// Takes the current [`Self::values`]'s length as [`CallFrame::value_stack_base_idx`].
+    </span><span class="kw">pub fn </span>push_stackframe(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        func_idx: FuncIdx,
+        func_ty: <span class="kw-2">&amp;</span>FuncType,
+        locals: Locals,
+        return_addr: usize,
+    ) {
+        <span class="self">self</span>.frames.push(CallFrame {
+            func_idx,
+            locals,
+            return_addr,
+            value_stack_base_idx: <span class="self">self</span>.values.len(),
+            return_value_count: func_ty.returns.valtypes.len(),
+        })
+    }
+
+    <span class="doccomment">/// Returns how many stackframes are on the stack, in total.
+    </span><span class="kw">pub fn </span>callframe_count(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+        <span class="self">self</span>.frames.len()
+    }
+
+    <span class="doccomment">/// Pop `n` elements from the value stack's tail as an iterator, with the first element being
+    /// closest to the **bottom** of the value stack
+    ///
+    /// Note that this is providing the values in reverse order compared to popping `n` values
+    /// (which would yield the element closest to the **top** of the value stack first).
+    </span><span class="kw">pub fn </span>pop_tail_iter(<span class="kw-2">&amp;mut </span><span class="self">self</span>, n: usize) -&gt; Drain&lt;Value&gt; {
+        <span class="kw">let </span>start = <span class="self">self</span>.values.len() - n;
+        <span class="self">self</span>.values.drain(start..)
+    }
+
+    <span class="doccomment">/// Clear all of the values pushed to the value stack by the current stack frame
+    </span><span class="kw">pub fn </span>clear_callframe_values(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="self">self</span>.values
+            .truncate(<span class="self">self</span>.current_stackframe().value_stack_base_idx);
     }
 }
 
-<span class="doccomment">/// This is a temporary solution for storing data on the stack.
-///
-/// In the future this will be replaced by storing raw bytes on the stack.
-/// Also the enum type tag will completely removed because the types popped are always correct due to prior validation.
-</span><span class="comment">// TODO implement missing variants
-</span><span class="attr">#[derive(Clone, Debug)]
-</span><span class="kw">pub enum </span>StackEntry {
-    <span class="attr">#[allow(warnings)]
-    </span>Value(Value),
-    <span class="attr">#[allow(warnings)]
-    </span>Label(Label),
-    <span class="attr">#[allow(warnings)]
-    </span>Activation(ActivationFrame),
-}
+<span class="doccomment">/// The [WASM spec](https://webassembly.github.io/spec/core/exec/runtime.html#stack) calls this `Activations`, however it refers to the call frames of functions.
+</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>CallFrame {
+    <span class="doccomment">/// Index to the function of this [`CallFrame`]
+    </span><span class="kw">pub </span>func_idx: FuncIdx,
 
-<span class="kw">impl </span>StackEntry {
-    <span class="attr">#[allow(warnings)]
-    </span><span class="doccomment">/// Assumes this entry to be a [Value]
-    </span><span class="kw">pub fn </span>into_value(<span class="self">self</span>) -&gt; Value {
-        <span class="kw">match </span><span class="self">self </span>{
-            StackEntry::Value(v) =&gt; v,
-            <span class="kw">_ </span>=&gt; <span class="macro">unreachable_validated!</span>(),
-        }
-    }
+    <span class="doccomment">/// Local variables such as parameters for this [`CallFrame`]'s function
+    </span><span class="kw">pub </span>locals: Locals,
 
-    <span class="attr">#[allow(warnings)]
-    </span><span class="doccomment">/// Assumes this entry to be a [Label]
-    </span><span class="kw">pub fn </span>into_label(<span class="self">self</span>) -&gt; Label {
-        <span class="kw">match </span><span class="self">self </span>{
-            StackEntry::Label(l) =&gt; l,
-            <span class="kw">_ </span>=&gt; <span class="macro">unreachable_validated!</span>(),
-        }
-    }
+    <span class="doccomment">/// Value that the PC has to be set to when this function returns
+    </span><span class="kw">pub </span>return_addr: usize,
 
-    <span class="attr">#[allow(warnings)]
-    </span><span class="doccomment">/// Assumes this entry to be an [ActivationFrame]
-    </span><span class="kw">pub fn </span>into_activation(<span class="self">self</span>) -&gt; ActivationFrame {
-        <span class="kw">match </span><span class="self">self </span>{
-            StackEntry::Activation(a) =&gt; a,
-            <span class="kw">_ </span>=&gt; <span class="macro">unreachable_validated!</span>(),
-        }
-    }
+    <span class="doccomment">/// The index to the first value on [`Stack::values`] that belongs to this [`CallFrame`]
+    </span><span class="kw">pub </span>value_stack_base_idx: usize,
+
+    <span class="doccomment">/// Number of return values to retain on [`Stack::values`] when unwinding/popping a [`CallFrame`]
+    </span><span class="kw">pub </span>return_value_count: usize,
 }
 </code></pre></div></section></main></body></html>

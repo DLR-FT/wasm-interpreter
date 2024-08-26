@@ -263,6 +263,7 @@
 </pre></div><pre class="rust"><code><span class="kw">use </span>alloc::vec::Vec;
 
 <span class="kw">use </span>interpreter_loop::run;
+<span class="kw">use </span>locals::Locals;
 <span class="kw">use </span>value_stack::Stack;
 
 <span class="kw">use </span><span class="kw">crate</span>::core::indices::FuncIdx;
@@ -281,7 +282,6 @@
 </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>assert_validated;
 <span class="kw">pub mod </span>hooks;
 <span class="kw">mod </span>interpreter_loop;
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>label;
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>locals;
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>store;
 <span class="kw">pub mod </span>value;
@@ -374,19 +374,22 @@
             <span class="macro">panic!</span>(<span class="string">"Invalid `Returns` generics"</span>);
         }
 
-        <span class="comment">// -=-= Invoke the function =-=-
+        <span class="comment">// Prepare a new stack with the locals for the entry function
         </span><span class="kw">let </span><span class="kw-2">mut </span>stack = Stack::new();
+        <span class="kw">let </span>locals = Locals::new(
+            params.into_values().into_iter(),
+            func_inst.locals.iter().cloned(),
+        );
 
-        <span class="comment">// Push parameters on stack
-        </span><span class="kw">for </span>parameter <span class="kw">in </span>params.into_values() {
-            stack.push_value(parameter);
-        }
+        <span class="comment">// setting `usize::MAX` as return address for the outermost function ensures that we
+        // observably fail upon errornoeusly continuing execution after that function returns.
+        </span>stack.push_stackframe(func_idx, func_ty, locals, usize::MAX);
 
-        run(
-            <span class="kw-2">&amp;</span><span class="self">self</span>.types,
+        <span class="comment">// Run the interpreter
+        </span>run(
             <span class="self">self</span>.wasm_bytecode,
+            <span class="kw-2">&amp;</span><span class="self">self</span>.types,
             <span class="kw-2">&amp;mut </span><span class="self">self</span>.store,
-            func_idx,
             <span class="kw-2">&amp;mut </span>stack,
             EmptyHookSet,
         )<span class="question-mark">?</span>;
@@ -427,19 +430,16 @@
             <span class="macro">panic!</span>(<span class="string">"Invalid return types for function"</span>);
         }
 
-        <span class="comment">// -=-= Invoke the function =-=-
+        <span class="comment">// Prepare a new stack with the locals for the entry function
         </span><span class="kw">let </span><span class="kw-2">mut </span>stack = Stack::new();
+        <span class="kw">let </span>locals = Locals::new(params.into_iter(), func_inst.locals.iter().cloned());
+        stack.push_stackframe(func_idx, func_ty, locals, <span class="number">0</span>);
 
-        <span class="comment">// Push parameters on stack
-        </span><span class="kw">for </span>parameter <span class="kw">in </span>params {
-            stack.push_value(parameter);
-        }
-
-        run(
-            <span class="kw-2">&amp;</span><span class="self">self</span>.types,
+        <span class="comment">// Run the interpreter
+        </span>run(
             <span class="self">self</span>.wasm_bytecode,
+            <span class="kw-2">&amp;</span><span class="self">self</span>.types,
             <span class="kw-2">&amp;mut </span><span class="self">self</span>.store,
-            func_idx,
             <span class="kw-2">&amp;mut </span>stack,
             EmptyHookSet,
         )<span class="question-mark">?</span>;

@@ -107,10 +107,16 @@
 <a href="#105" id="105">105</a>
 <a href="#106" id="106">106</a>
 <a href="#107" id="107">107</a>
+<a href="#108" id="108">108</a>
+<a href="#109" id="109">109</a>
+<a href="#110" id="110">110</a>
 </pre></div><pre class="rust"><code><span class="kw">pub const </span>NOP: u8 = <span class="number">0x01</span>;
 <span class="kw">pub const </span>END: u8 = <span class="number">0x0B</span>;
+<span class="kw">pub const </span>RETURN: u8 = <span class="number">0x0F</span>;
+<span class="kw">pub const </span>CALL: u8 = <span class="number">0x10</span>;
 <span class="kw">pub const </span>LOCAL_GET: u8 = <span class="number">0x20</span>;
 <span class="kw">pub const </span>LOCAL_SET: u8 = <span class="number">0x21</span>;
+<span class="kw">pub const </span>LOCAL_TEE: u8 = <span class="number">0x22</span>;
 <span class="kw">pub const </span>GLOBAL_GET: u8 = <span class="number">0x23</span>;
 <span class="kw">pub const </span>GLOBAL_SET: u8 = <span class="number">0x24</span>;
 <span class="kw">pub const </span>I32_LOAD: u8 = <span class="number">0x28</span>;

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["StackEntry"],"struct":["Stack"]};
+window.SIDEBAR_ITEMS = {"struct":["CallFrame","Stack"]};
