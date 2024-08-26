@@ -101,6 +101,28 @@ impl F32 {
     pub fn is_nan(&self) -> bool {
         self.0.is_nan()
     }
+    pub fn is_infinity(&self) -> bool {
+        self.0.is_infinite()
+    }
+
+    pub fn as_i32(&self) -> i32 {
+        self.0 as i32
+    }
+    pub fn as_u32(&self) -> u32 {
+        self.0 as u32
+    }
+    pub fn as_i64(&self) -> i64 {
+        self.0 as i64
+    }
+    pub fn as_u64(&self) -> u64 {
+        self.0 as u64
+    }
+    pub fn as_f32(&self) -> F64 {
+        F64(self.0 as f64)
+    }
+    pub fn reinterpret_as_i32(&self) -> i32 {
+        self.0.to_bits() as i32
+    }
 }
 
 #[derive(Clone, Debug, Copy, PartialOrd)]
@@ -196,6 +218,28 @@ impl F64 {
     }
     pub fn is_nan(&self) -> bool {
         self.0.is_nan()
+    }
+    pub fn is_infinity(&self) -> bool {
+        self.0.is_infinite()
+    }
+
+    pub fn as_i32(&self) -> i32 {
+        self.0 as i32
+    }
+    pub fn as_u32(&self) -> u32 {
+        self.0 as u32
+    }
+    pub fn as_i64(&self) -> i64 {
+        self.0 as i64
+    }
+    pub fn as_u64(&self) -> u64 {
+        self.0 as u64
+    }
+    pub fn as_f32(&self) -> F32 {
+        F32(self.0 as f32)
+    }
+    pub fn reinterpret_as_i64(&self) -> i64 {
+        self.0.to_bits() as i64
     }
 }
 

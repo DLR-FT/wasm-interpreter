@@ -387,6 +387,42 @@ fn read_instructions(
                 stack.push_valtype(ValType::NumType(NumType::I64));
             }
 
+            I32_WRAP_I64 => {
+                stack.assert_pop_val_type(ValType::NumType(NumType::I64))?;
+
+                stack.push_valtype(ValType::NumType(NumType::I32));
+            }
+
+            I32_TRUNC_F32_S | I32_TRUNC_F32_U | I32_REINTERPRET_F32 => {
+                stack.assert_pop_val_type(ValType::NumType(NumType::F32))?;
+
+                stack.push_valtype(ValType::NumType(NumType::I32));
+            }
+
+            I32_TRUNC_F64_S | I32_TRUNC_F64_U => {
+                stack.assert_pop_val_type(ValType::NumType(NumType::F64))?;
+
+                stack.push_valtype(ValType::NumType(NumType::I32));
+            }
+
+            I64_EXTEND_I32_S | I64_EXTEND_I32_U => {
+                stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+
+                stack.push_valtype(ValType::NumType(NumType::I64));
+            }
+
+            I64_TRUNC_F32_S | I64_TRUNC_F32_U => {
+                stack.assert_pop_val_type(ValType::NumType(NumType::F32))?;
+
+                stack.push_valtype(ValType::NumType(NumType::I64));
+            }
+
+            I64_TRUNC_F64_S | I64_TRUNC_F64_U | I64_REINTERPRET_F64 => {
+                stack.assert_pop_val_type(ValType::NumType(NumType::F64))?;
+
+                stack.push_valtype(ValType::NumType(NumType::I64));
+            }
+
             F32_CONVERT_I32_S | F32_CONVERT_I32_U | F32_REINTERPRET_I32 => {
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
 
@@ -397,6 +433,30 @@ fn read_instructions(
                 stack.assert_pop_val_type(ValType::NumType(NumType::I64))?;
 
                 stack.push_valtype(ValType::NumType(NumType::F32));
+            }
+
+            F32_DEMOTE_F64 => {
+                stack.assert_pop_val_type(ValType::NumType(NumType::F64))?;
+
+                stack.push_valtype(ValType::NumType(NumType::F32));
+            }
+
+            F64_CONVERT_I32_S | F64_CONVERT_I32_U => {
+                stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+
+                stack.push_valtype(ValType::NumType(NumType::F64));
+            }
+
+            F64_CONVERT_I64_S | F64_CONVERT_I64_U | F64_REINTERPRET_I64 => {
+                stack.assert_pop_val_type(ValType::NumType(NumType::I64))?;
+
+                stack.push_valtype(ValType::NumType(NumType::F64));
+            }
+
+            F64_PROMOTE_F32 => {
+                stack.assert_pop_val_type(ValType::NumType(NumType::F32))?;
+
+                stack.push_valtype(ValType::NumType(NumType::F64));
             }
             _ => return Err(Error::InvalidInstr(first_instr_byte)),
         }
