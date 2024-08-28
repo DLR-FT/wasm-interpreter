@@ -1077,6 +1077,14 @@
 <a href="#1075" id="1075">1075</a>
 <a href="#1076" id="1076">1076</a>
 <a href="#1077" id="1077">1077</a>
+<a href="#1078" id="1078">1078</a>
+<a href="#1079" id="1079">1079</a>
+<a href="#1080" id="1080">1080</a>
+<a href="#1081" id="1081">1081</a>
+<a href="#1082" id="1082">1082</a>
+<a href="#1083" id="1083">1083</a>
+<a href="#1084" id="1084">1084</a>
+<a href="#1085" id="1085">1085</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! This module solely contains the actual interpretation loop that matches instructions, interpreting the WASM bytecode
 //!
 //!
@@ -1579,6 +1587,14 @@
                 <span class="kw">let </span>res = v1.wrapping_add(v2);
 
                 <span class="macro">trace!</span>(<span class="string">"Instruction: i32.add [{v1} {v2}] -&gt; [{res}]"</span>);
+                stack.push_value(res.into());
+            }
+            I32_SUB =&gt; {
+                <span class="kw">let </span>v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                <span class="kw">let </span>v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                <span class="kw">let </span>res = v1.wrapping_sub(v2);
+
+                <span class="macro">trace!</span>(<span class="string">"Instruction: i32.sub [{v1} {v2}] -&gt; [{res}]"</span>);
                 stack.push_value(res.into());
             }
             I32_MUL =&gt; {
