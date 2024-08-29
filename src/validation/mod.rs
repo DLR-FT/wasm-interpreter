@@ -6,11 +6,12 @@ use crate::core::reader::span::Span;
 use crate::core::reader::types::export::Export;
 use crate::core::reader::types::global::Global;
 use crate::core::reader::types::import::Import;
-use crate::core::reader::types::{FuncType, MemType, TableType};
+use crate::core::reader::types::{FuncType, MemType, ResultType, TableType};
 use crate::core::reader::{WasmReadable, WasmReader};
-use crate::{Error, Result};
+use crate::{Error, Result, ValType};
 
 pub(crate) mod code;
+pub(crate) mod globals;
 pub(crate) mod validation_stack;
 
 /// Information collected from validating a module.
@@ -192,4 +193,23 @@ fn handle_section<T, F: FnOnce(&mut WasmReader, SectionHeader) -> Result<T>>(
         }
         _ => Ok(None),
     }
+}
+
+pub(crate) fn validate_value_stack<F>(return_ty: ResultType, f: F) -> Result<()>
+where
+    F: FnOnce(&mut Vec<ValType>) -> Result<()>,
+{
+    let mut value_stack: Vec<ValType> = Vec::new();
+
+    f(&mut value_stack)?;
+
+    // TODO also check here if correct order
+    if value_stack != return_ty.valtypes {
+        error!(
+            "Expected types {:?} on stack, got {:?}",
+            return_ty.valtypes, value_stack
+        );
+        return Err(Error::EndInvalidValueStack);
+    }
+    Ok(())
 }

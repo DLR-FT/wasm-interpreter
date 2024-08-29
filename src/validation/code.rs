@@ -4,12 +4,11 @@ use core::iter;
 use crate::core::indices::{FuncIdx, GlobalIdx, LocalIdx};
 use crate::core::reader::section_header::{SectionHeader, SectionTy};
 use crate::core::reader::span::Span;
-use crate::core::reader::types::global::{Global, GlobalType};
+use crate::core::reader::types::global::Global;
 use crate::core::reader::types::memarg::MemArg;
 use crate::core::reader::types::{FuncType, NumType, ValType};
 use crate::core::reader::{WasmReadable, WasmReader};
-use crate::validation_stack::ValidationStack;
-use crate::{Error, Result};
+use crate::{validate_value_stack, Error, Result};
 
 pub fn validate_code_section(
     wasm: &mut WasmReader,
@@ -461,136 +460,4 @@ fn read_instructions(
             _ => return Err(Error::InvalidInstr(first_instr_byte)),
         }
     }
-}
-
-pub fn read_constant_instructions(
-    wasm: &mut WasmReader,
-    value_stack: &mut Vec<ValType>,
-    _globals_ty: &[GlobalType],
-) -> Result<Span> {
-    let start_pc = wasm.pc;
-
-    let assert_pop_value_stack = |value_stack: &mut Vec<ValType>, expected_ty: ValType| {
-        value_stack
-            .pop()
-            .ok_or(Error::InvalidValueStackType(None))
-            .and_then(|ty| {
-                (ty == expected_ty)
-                    .then_some(())
-                    .ok_or(Error::InvalidValueStackType(Some(ty)))
-            })
-    };
-
-    loop {
-        let Ok(first_instr_byte) = wasm.read_u8() else {
-            return Err(Error::ExprMissingEnd);
-        };
-        trace!("Read cosntant instruction byte {first_instr_byte:#X?} ({first_instr_byte})");
-
-        // Valid constant instructions are:
-        // - Core: https://webassembly.github.io/spec/core/valid/instructions.html#valid-constant
-        // - Extended Proposal: https://webassembly.github.io/extended-const/core/valid/instructions.html#valid-constant
-        use crate::core::reader::types::opcode::*;
-        match first_instr_byte {
-            // Missing: ref.null, ref.func, global.get
-            // -------------
-            // Global.get only (seems) to work for imported globals
-            //
-            // Take the example code:
-            // ```wat
-            // (module
-            //     (global (export "g") (mut i32) (
-            //         i32.add (i32.const 1) (i32.const 2)
-            //     ))
-            //
-            //     (global (export "h1") i32 (
-            //         i32.const 1
-            //     ))
-            //
-            //     (global (export "h2") i32 (
-            //         global.get 1
-            //     ))
-            //
-            //     (func (export "f")
-            //         i32.const 100
-            //         global.set 0))
-            // ```
-            //
-            // When compiling with wat2wasm, the following error is thrown:
-            // ```
-            // Error: validate failed:
-            // test.wast:11:24: error: initializer expression can only reference an imported global
-            //             global.get 1
-            //                        ^
-            // ```
-            //
-            // When compiling the code with the latest dev build of wasmtime, the following error is thrown:
-            // ```
-            // failed to parse WebAssembly module
-            //
-            // Caused by:
-            //     constant expression required: global.get of locally defined global (at offset 0x24)
-            // ```
-            //
-            // Furthermore, the global must be immutable:
-            // ```wat
-            // (module
-            //     (import "env" "g" (global (mut i32)))
-            //     (global (export "h") (mut i32) (
-            //         i32.add (i32.const 1) (global.get 0)
-            //     ))
-            //   )
-            // ```
-            //
-            // When compiling with wat2wasm, the following error is thrown:
-            // ```
-            // Error: validate failed:
-            // test.wast:4:27: error: initializer expression cannot reference a mutable global
-            //     i32.add (i32.const 1) (global.get 0)
-            // ```
-            END => {
-                return Ok(Span::new(start_pc, wasm.pc - start_pc + 1));
-            }
-            I32_CONST => {
-                let _num = wasm.read_var_i32()?;
-                value_stack.push(ValType::NumType(NumType::I32));
-            }
-            I64_CONST => {
-                let _num = wasm.read_var_i64()?;
-                value_stack.push(ValType::NumType(NumType::I64));
-            }
-            I32_ADD | I32_SUB | I32_MUL => {
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
-
-                value_stack.push(ValType::NumType(NumType::I32));
-            }
-            I64_ADD | I64_SUB | I64_MUL => {
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I64))?;
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I64))?;
-
-                value_stack.push(ValType::NumType(NumType::I64));
-            }
-            _ => return Err(Error::InvalidInstr(first_instr_byte)),
-        }
-    }
-}
-
-pub fn validate_value_stack<F>(return_ty: ResultType, f: F) -> Result<()>
-where
-    F: FnOnce(&mut Vec<ValType>) -> Result<()>,
-{
-    let mut value_stack: Vec<ValType> = Vec::new();
-
-    f(&mut value_stack)?;
-
-    // TODO also check here if correct order
-    if value_stack != return_ty.valtypes {
-        error!(
-            "Expected types {:?} on stack, got {:?}",
-            return_ty.valtypes, value_stack
-        );
-        return Err(Error::EndInvalidValueStack);
-    }
-    Ok(())
 }

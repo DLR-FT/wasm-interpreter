@@ -3,7 +3,7 @@
 ///  - Setting the global's value and returning its previous value
 ///  - Getting the global's current value
 #[test_log::test]
-fn globals() {
+fn valid_global() {
     use wasm::{validate, RuntimeInstance};
 
     let wat = r#"
@@ -35,6 +35,31 @@ fn globals() {
 
     // Now 17 will be returned when getting the global
     assert_eq!(17, instance.invoke_named("get", ()).unwrap());
+}
+
+#[test_log::test]
+fn global_invalid_value_stack() {
+    use wasm::validate;
+
+    let wat = r#"
+    (module
+        (global $my_global (mut i32)
+            i32.const 2
+            i32.const 2
+            i32.const 2
+            i32.const 2
+            i32.const 2
+            i32.const 2
+            i32.const 3
+            i32.add
+        )
+    )
+    "#;
+    let wasm_bytes = wat::parse_str(wat).unwrap();
+
+    if validate(&wasm_bytes).is_ok() {
+        panic!("validation succeeded")
+    }
 }
 
 #[ignore = "not yet implemented"]

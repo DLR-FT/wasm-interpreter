@@ -1,6 +1,7 @@
 use alloc::vec::Vec;
 
-use interpreter_loop::{run, run_const};
+use const_interpreter_loop::run_const;
+use interpreter_loop::run;
 use locals::Locals;
 use value_stack::Stack;
 
@@ -18,6 +19,7 @@ use crate::{RuntimeError, ValidationInfo};
 
 // TODO
 pub(crate) mod assert_validated;
+mod const_interpreter_loop;
 pub mod hooks;
 mod interpreter_loop;
 pub(crate) mod locals;
@@ -240,18 +242,21 @@ where
         let global_instances: Vec<GlobalInst> = validation_info
             .globals
             .iter()
-            .map(|global| {
-                let mut wasm = WasmReader::new(validation_info.wasm);
-                // The place we are moving the start to should, by all means, be inside the wasm bytecode.
-                wasm.move_start_to(global.init_expr).unwrap_validated();
+            .map({
                 let mut stack = Stack::new();
+                move |global| {
+                    let mut wasm = WasmReader::new(validation_info.wasm);
+                    // The place we are moving the start to should, by all means, be inside the wasm bytecode.
+                    wasm.move_start_to(global.init_expr).unwrap_validated();
+                    // We shouldn't need to clear the stack. If validation is correct, it will remain empty after execution.
 
-                run_const(wasm, &mut stack, ());
-                let value = stack.pop_value(global.ty.ty);
+                    run_const(wasm, &mut stack, ());
+                    let value = stack.pop_value(global.ty.ty);
 
-                GlobalInst {
-                    global: *global,
-                    value,
+                    GlobalInst {
+                        global: *global,
+                        value,
+                    }
                 }
             })
             .collect();
