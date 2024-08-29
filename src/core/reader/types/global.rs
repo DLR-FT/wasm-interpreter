@@ -1,11 +1,11 @@
 use alloc::vec;
 
-use crate::code::{read_constant_instructions, validate_value_stack};
 use crate::core::reader::span::Span;
 use crate::core::reader::types::{ResultType, ValType};
 use crate::core::reader::{WasmReadable, WasmReader};
 use crate::execution::assert_validated::UnwrapValidatedExt;
-use crate::{unreachable_validated, Error, Result};
+use crate::globals::read_constant_instructions;
+use crate::{unreachable_validated, validate_value_stack, Error, Result};
 
 #[derive(Debug, Copy, Clone)]
 pub struct Global {
@@ -36,7 +36,7 @@ impl WasmReadable for Global {
         // Error. If an Error is returned it is pushed up the call stack.
         Ok(Self {
             ty,
-            init_expr: init_expr.unwrap_validated(),
+            init_expr: init_expr.expect("expected gobal init expression to be initialized on successful value stack validation"),
         })
     }
 
