@@ -35,8 +35,10 @@ pub struct PanicError {
 }
 
 impl PanicError {
-    pub fn new(message: String) -> Self {
-        PanicError { message }
+    pub fn new(message: &str) -> Self {
+        PanicError {
+            message: message.to_string(),
+        }
     }
 }
 
@@ -48,7 +50,7 @@ impl std::fmt::Display for PanicError {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub struct WasmInterpreterError(wasm::Error);
+pub struct WasmInterpreterError(pub wasm::Error);
 
 impl Error for WasmInterpreterError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
@@ -59,15 +61,9 @@ impl Error for WasmInterpreterError {
     }
 }
 
-impl From<wasm::Error> for WasmInterpreterError {
-    fn from(error: wasm::Error) -> Self {
-        WasmInterpreterError(error)
-    }
-}
-
 impl std::fmt::Display for WasmInterpreterError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "{}", self.0)
+        write!(f, "{}", self.0)
     }
 }
 

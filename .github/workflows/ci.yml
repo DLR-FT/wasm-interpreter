@@ -21,6 +21,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
       - name: Format
         run: cargo check
       - name: Run clippy
@@ -39,11 +41,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
       - uses: webiny/action-conventional-commits@v1.3.0
 
   msrv:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
       - uses: taiki-e/install-action@cargo-hack
       - run: cargo hack check --rust-version --workspace --all-targets --ignore-private
