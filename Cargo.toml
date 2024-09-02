@@ -35,7 +35,6 @@ hexf = "0.2.1"
 [features]
 default = ["hooks"]
 hooks = []
-spec-test = []
 
 [[bench]]
 name = "hook_performance_impact"

@@ -4,32 +4,60 @@ use std::panic::AssertUnwindSafe;
 
 use wasm::Value;
 use wasm::{validate, RuntimeInstance};
+use wast::core::WastArgCore;
+use wast::core::WastRetCore;
+use wast::WastArg;
 
 use crate::specification::reports::*;
 use crate::specification::test_errors::*;
 
+/// Attempt to unwrap the result of an expression. If the expression is an `Err`, then `return` the
+/// error.
+///
+/// # Motivation
+/// The `Try` trait is not yet stable, so we define our own macro to simulate the `Result` type.
 macro_rules! try_to {
     ($e:expr) => {
         match $e {
             Ok(val) => val,
-            Err(err) => return err.into(),
+            Err(err) => return err,
         }
     };
 }
 
 pub fn run_spec_test(filepath: &str) -> WastTestReport {
     // -=-= Initialization =-=-
-    let contents = try_to!(std::fs::read_to_string(filepath)
-        .map_err(|err| WastError::from_outside(Box::new(err), "failed to open wast file")));
+    let contents = try_to!(
+        std::fs::read_to_string(filepath).map_err(|err| CompilationError::new(
+            Box::new(err),
+            filepath,
+            "failed to open wast file"
+        )
+        .compile_report())
+    );
 
-    let buf = try_to!(wast::parser::ParseBuffer::new(&contents)
-        .map_err(|err| WastError::from_outside(Box::new(err), "failed to create wast buffer")));
+    let buf =
+        try_to!(
+            wast::parser::ParseBuffer::new(&contents).map_err(|err| CompilationError::new(
+                Box::new(err),
+                filepath,
+                "failed to create wast buffer"
+            )
+            .compile_report())
+        );
 
-    let wast = try_to!(wast::parser::parse::<wast::Wast>(&buf)
-        .map_err(|err| WastError::from_outside(Box::new(err), "failed to parse wast file")));
+    let wast =
+        try_to!(
+            wast::parser::parse::<wast::Wast>(&buf).map_err(|err| CompilationError::new(
+                Box::new(err),
+                filepath,
+                "failed to parse wast file"
+            )
+            .compile_report())
+        );
 
     // -=-= Testing & Compilation =-=-
-    let mut asserts = AssertReport::new();
+    let mut asserts = AssertReport::new(filepath);
 
     // We need to keep the wasm_bytes in-scope for the lifetime of the interpeter.
     // As such, we hoist the bytes into an Option, and assign it once a module directive is found.
@@ -40,47 +68,54 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
     for directive in wast.directives {
         match directive {
             wast::WastDirective::Wat(mut quoted) => {
-                let encoded = try_to!(quoted
-                    .encode()
-                    .map_err(|err| WastError::from_outside(Box::new(err), "failed to encode wat")));
+                // If we fail to compile or to validate the main module, then we should treat this
+                // as a fatal (compilation) error.
+                let encoded = try_to!(quoted.encode().map_err(|err| CompilationError::new(
+                    Box::new(err),
+                    filepath,
+                    "failed to encode main module's wat"
+                )
+                .compile_report()));
 
                 wasm_bytes = Some(encoded);
 
                 let validation_attempt = catch_unwind(|| {
                     validate(wasm_bytes.as_ref().unwrap()).map_err(|err| {
-                        WastError::new(
-                            Box::<WasmInterpreterError>::new(err.into()),
-                            filepath.to_string(),
-                            0,
-                            "Module validation failed",
+                        CompilationError::new(
+                            Box::new(WasmInterpreterError(err)),
+                            filepath,
+                            "main module validation failed",
                         )
+                        .compile_report()
                     })
                 });
 
                 let validation_info = match validation_attempt {
                     Ok(original_result) => try_to!(original_result),
-                    Err(inner) => {
+                    Err(panic) => {
                         // TODO: Do we want to exit on panic? State may be left in an inconsistent state, and cascading panics may occur.
-                        let err = if let Ok(msg) = inner.downcast::<&str>() {
-                            Box::new(PanicError::new(msg.to_string()))
+                        let err = if let Ok(msg) = panic.downcast::<&str>() {
+                            Box::new(PanicError::new(&msg))
                         } else {
-                            Box::new(PanicError::new("Unknown panic".into()))
+                            Box::new(PanicError::new("Unknown panic"))
                         };
 
-                        return WastError::new(
+                        return CompilationError::new(
                             err,
-                            filepath.to_string(),
-                            0,
-                            "Module validation panicked",
+                            filepath,
+                            "main module validation panicked",
                         )
-                        .into();
+                        .compile_report();
                     }
                 };
 
                 let instance = try_to!(RuntimeInstance::new(&validation_info).map_err(|err| {
-                    let err: wasm::Error = err.into();
-                    let err: WasmInterpreterError = err.into();
-                    WastError::from_outside(Box::new(err), "failed to create runtime instance")
+                    CompilationError::new(
+                        Box::new(WasmInterpreterError(wasm::Error::RuntimeError(err))),
+                        filepath,
+                        "failed to create runtime instance",
+                    )
+                    .compile_report()
                 }));
 
                 interpeter = Some(instance);
@@ -91,15 +126,14 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                 results,
             } => {
                 if interpeter.is_none() {
-                    asserts.push_error(
-                        filepath.to_string(),
-                        span.linecol_in(&contents).0 as u32 + 1,
-                        get_command(&contents, span),
+                    return CompilationError::new(
                         Box::new(GenericError::new(
-                            "Attempted to run assert_return before a module was compiled",
+                            "Attempted to assert before module directive",
                         )),
-                    );
-                    continue;
+                        filepath,
+                        "no module directive found",
+                    )
+                    .compile_report();
                 }
 
                 let interpeter = interpeter.as_mut().unwrap();
@@ -112,28 +146,26 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                         Err(inner) => {
                             // TODO: Do we want to exit on panic? State may be left in an inconsistent state, and cascading panics may occur.
                             if let Ok(msg) = inner.downcast::<&str>() {
-                                Err(Box::new(PanicError::new(msg.to_string())))
+                                Err(Box::new(PanicError::new(&msg)))
                             } else {
-                                Err(Box::new(PanicError::new("Unknown panic".into())))
+                                Err(Box::new(PanicError::new("Unknown panic")))
                             }
                         }
                     };
 
                 match err_or_panic {
                     Ok(_) => {
-                        asserts.push_success(
-                            filepath.to_string(),
+                        asserts.push_success(WastSuccess::new(
                             span.linecol_in(&contents).0 as u32 + 1,
                             get_command(&contents, span),
-                        );
+                        ));
                     }
                     Err(inner) => {
-                        asserts.push_error(
-                            filepath.to_string(),
+                        asserts.push_error(WastError::new(
+                            inner,
                             span.linecol_in(&contents).0 as u32 + 1,
                             get_command(&contents, span),
-                            inner,
-                        );
+                        ));
                     }
                 }
             }
@@ -168,20 +200,37 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                 message: _,
             }
             | wast::WastDirective::AssertException { span, exec: _ } => {
-                asserts.push_error(
-                    filepath.to_string(),
+                asserts.push_error(WastError::new(
+                    Box::new(GenericError::new("Assert directive not yet implemented")),
                     span.linecol_in(&contents).0 as u32 + 1,
                     get_command(&contents, span),
-                    Box::new(GenericError::new("Assert directive not yet implemented")),
-                );
+                ));
             }
-            wast::WastDirective::Wait { span: _, thread: _ } => todo!(),
-            wast::WastDirective::Invoke(_) => todo!(),
-            wast::WastDirective::Thread(_) => todo!(),
+            wast::WastDirective::Wait { span, thread: _ } => {
+                asserts.push_error(WastError::new(
+                    Box::new(GenericError::new("Wait directive not yet implemented")),
+                    span.linecol_in(&contents).0 as u32 + 1,
+                    get_command(&contents, span),
+                ));
+            }
+            wast::WastDirective::Invoke(invoke) => {
+                asserts.push_error(WastError::new(
+                    Box::new(GenericError::new("Invoke directive not yet implemented")),
+                    invoke.span.linecol_in(&contents).0 as u32 + 1,
+                    get_command(&contents, invoke.span),
+                ));
+            }
+            wast::WastDirective::Thread(thread) => {
+                asserts.push_error(WastError::new(
+                    Box::new(GenericError::new("Thread directive not yet implemented")),
+                    thread.span.linecol_in(&contents).0 as u32 + 1,
+                    get_command(&contents, thread.span),
+                ));
+            }
         }
     }
 
-    asserts.into()
+    asserts.compile_report()
 }
 
 fn execute_assert_return(
@@ -205,11 +254,7 @@ fn execute_assert_return(
 
             let actual = interpeter
                 .invoke_named_dynamic(invoke_info.name, args, &result_types)
-                .map_err(|err| {
-                    let err: wasm::Error = err.into();
-                    let err: WasmInterpreterError = err.into();
-                    Box::new(err)
-                })?;
+                .map_err(|err| Box::new(WasmInterpreterError(wasm::Error::RuntimeError(err))))?;
 
             AssertEqError::assert_eq(actual, result_vals)?;
         }
@@ -217,64 +262,81 @@ fn execute_assert_return(
             span: _,
             module: _,
             global: _,
-        } => todo!(),
-        wast::WastExecute::Wat(_) => todo!(),
+        } => todo!("`get` directive inside `assert_return` not yet implemented"),
+        wast::WastExecute::Wat(_) => {
+            todo!("`wat` directive inside `assert_return` not yet implemented")
+        }
     }
 
     Ok(())
 }
 
-pub fn arg_to_value(arg: wast::WastArg) -> Value {
+pub fn arg_to_value(arg: WastArg) -> Value {
     match arg {
-        wast::WastArg::Core(core_arg) => match core_arg {
-            wast::core::WastArgCore::I32(val) => Value::I32(val as u32),
-            wast::core::WastArgCore::I64(val) => Value::I64(val as u64),
-            wast::core::WastArgCore::F32(val) => Value::F32(wasm::value::F32(val.bits as f32)),
-            wast::core::WastArgCore::F64(val) => Value::F64(wasm::value::F64(val.bits as f64)),
-            wast::core::WastArgCore::V128(_) => todo!(),
-            wast::core::WastArgCore::RefNull(_) => todo!(),
-            wast::core::WastArgCore::RefExtern(_) => todo!(),
-            wast::core::WastArgCore::RefHost(_) => todo!(),
+        WastArg::Core(core_arg) => match core_arg {
+            WastArgCore::I32(val) => Value::I32(val as u32),
+            WastArgCore::I64(val) => Value::I64(val as u64),
+            WastArgCore::F32(val) => Value::F32(wasm::value::F32(val.bits as f32)),
+            WastArgCore::F64(val) => Value::F64(wasm::value::F64(val.bits as f64)),
+            WastArgCore::V128(_) => todo!("`V128` value arguments not yet implemented"),
+            WastArgCore::RefNull(_) => {
+                todo!("`RefNull` value arguments not yet implemented")
+            }
+            WastArgCore::RefExtern(_) => {
+                todo!("`RefExtern` value arguments not yet implemented")
+            }
+            WastArgCore::RefHost(_) => {
+                todo!("`RefHost` value arguments not yet implemented")
+            }
         },
-        wast::WastArg::Component(_) => todo!(),
+        WastArg::Component(_) => todo!("`Component` value arguments not yet implemented"),
     }
 }
 
 fn result_to_value(result: wast::WastRet) -> Value {
     match result {
         wast::WastRet::Core(core_arg) => match core_arg {
-            wast::core::WastRetCore::I32(val) => Value::I32(val as u32),
-            wast::core::WastRetCore::I64(val) => Value::I64(val as u64),
-            wast::core::WastRetCore::F32(val) => match val {
-                wast::core::NanPattern::CanonicalNan => todo!(),
-                wast::core::NanPattern::ArithmeticNan => todo!(),
+            WastRetCore::I32(val) => Value::I32(val as u32),
+            WastRetCore::I64(val) => Value::I64(val as u64),
+            WastRetCore::F32(val) => match val {
+                wast::core::NanPattern::CanonicalNan => {
+                    todo!("`F32::CanonicalNan` result not yet implemented")
+                }
+                wast::core::NanPattern::ArithmeticNan => {
+                    todo!("`F32::ArithmeticNan` result not yet implemented")
+                }
                 wast::core::NanPattern::Value(val) => Value::F32(wasm::value::F32(val.bits as f32)),
             },
-            wast::core::WastRetCore::F64(val) => match val {
-                wast::core::NanPattern::CanonicalNan => todo!(),
-                wast::core::NanPattern::ArithmeticNan => todo!(),
+            WastRetCore::F64(val) => match val {
+                wast::core::NanPattern::CanonicalNan => {
+                    todo!("`F64::CanonicalNan` result not yet implemented")
+                }
+                wast::core::NanPattern::ArithmeticNan => {
+                    todo!("`F64::ArithmeticNan` result not yet implemented")
+                }
                 wast::core::NanPattern::Value(val) => Value::F64(wasm::value::F64(val.bits as f64)),
             },
-            wast::core::WastRetCore::V128(_) => todo!(),
-            wast::core::WastRetCore::RefNull(_) => todo!(),
-            wast::core::WastRetCore::RefExtern(_) => todo!(),
-            wast::core::WastRetCore::RefHost(_) => todo!(),
-            wast::core::WastRetCore::RefFunc(_) => todo!(),
-            wast::core::WastRetCore::RefAny => todo!(),
-            wast::core::WastRetCore::RefEq => todo!(),
-            wast::core::WastRetCore::RefArray => todo!(),
-            wast::core::WastRetCore::RefStruct => todo!(),
-            wast::core::WastRetCore::RefI31 => todo!(),
-            wast::core::WastRetCore::Either(_) => todo!(),
+            WastRetCore::V128(_) => todo!("`V128` result not yet implemented"),
+            WastRetCore::RefNull(_) => todo!("`RefNull` result not yet implemented"),
+            WastRetCore::RefExtern(_) => {
+                todo!("`RefExtern` result not yet implemented")
+            }
+            WastRetCore::RefHost(_) => todo!("`RefHost` result not yet implemented"),
+            WastRetCore::RefFunc(_) => todo!("`RefFunc` result not yet implemented"),
+            WastRetCore::RefAny => todo!("`RefAny` result not yet implemented"),
+            WastRetCore::RefEq => todo!("`RefEq` result not yet implemented"),
+            WastRetCore::RefArray => todo!("`RefArray` result not yet implemented"),
+            WastRetCore::RefStruct => todo!("`RefStruct` result not yet implemented"),
+            WastRetCore::RefI31 => todo!("`RefI31` result not yet implemented"),
+            WastRetCore::Either(_) => todo!("`Either` result not yet implemented"),
         },
-        wast::WastRet::Component(_) => todo!(),
+        wast::WastRet::Component(_) => todo!("`Component` result not yet implemented"),
     }
 }
 
-pub fn get_command(contents: &str, span: wast::token::Span) -> String {
+pub fn get_command(contents: &str, span: wast::token::Span) -> &str {
     contents[span.offset() as usize..]
         .lines()
         .next()
         .unwrap_or("<unknown>")
-        .to_string()
 }

@@ -11,6 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
       - uses: cachix/install-nix-action@v27
         with:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
@@ -26,6 +28,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
       - uses: cachix/install-nix-action@v27
         with:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
@@ -33,7 +37,7 @@ jobs:
         with:
           name: dlr-ft
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
-      - run: nix build .#wasm-interpreter --print-build-logs
+      - run: nix build .?submodules=1#wasm-interpreter --print-build-logs
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
@@ -41,7 +45,7 @@ jobs:
           file: result/lcov-codecov.json
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-      - run: nix build .#report --print-build-logs
+      - run: nix build .?submodules=1#report --print-build-logs
       - name: Archive report
         uses: actions/upload-artifact@v4
         with:

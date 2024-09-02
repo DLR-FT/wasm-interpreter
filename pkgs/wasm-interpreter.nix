@@ -13,7 +13,7 @@ rustPlatform.buildRustPackage rec {
       src = ./..;
 
       # File suffices to include
-      extensions = [ "lock" "rs" "toml" ];
+      extensions = [ "lock" "rs" "toml" "wast" ];
       # Files to explicitly include
       include = [ ];
       # Files to explicitly exclude
