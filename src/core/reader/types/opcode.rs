@@ -1,3 +1,4 @@
+pub const UNREACHABLE: u8 = 0x00;
 pub const NOP: u8 = 0x01;
 pub const END: u8 = 0x0B;
 pub const RETURN: u8 = 0x0F;

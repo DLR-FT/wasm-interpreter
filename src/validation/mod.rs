@@ -11,6 +11,7 @@ use crate::core::reader::{WasmReadable, WasmReader};
 use crate::{Error, Result};
 
 pub(crate) mod code;
+pub(crate) mod validation_stack;
 
 /// Information collected from validating a module.
 /// This can be used to create a [crate::RuntimeInstance].
