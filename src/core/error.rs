@@ -1,4 +1,5 @@
 use crate::core::indices::GlobalIdx;
+use crate::validation_stack::LabelKind;
 use core::fmt::{Display, Formatter};
 use core::str::Utf8Error;
 
@@ -34,13 +35,14 @@ pub enum Error {
     InvalidMultiByteInstr(u8, u8),
     EndInvalidValueStack,
     InvalidLocalIdx,
-    InvalidValueStackType(Option<ValType>),
+    InvalidValidationStackValType(Option<ValType>),
     InvalidLimitsType(u8),
     InvalidMutType(u8),
     MoreThanOneMemory,
     InvalidGlobalIdx(GlobalIdx),
     GlobalIsConst,
     RuntimeError(RuntimeError),
+    FoundLabel(LabelKind),
 }
 
 impl Display for Error {
@@ -94,7 +96,7 @@ impl Display for Error {
                 "Different value stack types were expected at the end of a block/function.",
             ),
             Error::InvalidLocalIdx => f.write_str("An invalid localidx was used"),
-            Error::InvalidValueStackType(ty) => f.write_fmt(format_args!(
+            Error::InvalidValidationStackValType(ty) => f.write_fmt(format_args!(
                 "An unexpected type was found on the stack when trying to pop another: `{ty:?}`"
             )),
             Error::InvalidLimitsType(ty) => {
@@ -111,6 +113,9 @@ impl Display for Error {
             )),
             Error::GlobalIsConst => f.write_str("A const global cannot be written to"),
             Error::RuntimeError(err) => err.fmt(f),
+            Error::FoundLabel(lk) => f.write_fmt(format_args!(
+                "Expecting a ValType, a Label was found: {lk:?}"
+            )),
         }
     }
 }
