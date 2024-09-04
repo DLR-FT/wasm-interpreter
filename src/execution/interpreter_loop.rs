@@ -40,8 +40,8 @@ pub(super) fn run<H: HookSet>(
     mut hooks: H,
 ) -> Result<(), RuntimeError> {
     let func_inst = store
-        .funcs
-        .get(stack.current_stackframe().func_idx)
+        .local_funcs
+        .get(stack.current_stackframe().func_idx - store.imports.len())
         .unwrap_validated();
 
     // Start reading the function's instructions
@@ -75,9 +75,9 @@ pub(super) fn run<H: HookSet>(
             RETURN => {
                 trace!("returning from function");
 
-                let func_to_call_idx = stack.current_stackframe().func_idx;
+                let func_to_call_idx = stack.current_stackframe().func_idx - store.imports.len();
 
-                let func_to_call_inst = store.funcs.get(func_to_call_idx).unwrap_validated();
+                let func_to_call_inst = store.local_funcs.get(func_to_call_idx).unwrap_validated();
                 let func_to_call_ty = types.get(func_to_call_inst.ty).unwrap_validated();
 
                 let ret_vals = stack
@@ -99,7 +99,7 @@ pub(super) fn run<H: HookSet>(
             CALL => {
                 let func_to_call_idx = wasm.read_var_u32().unwrap_validated() as FuncIdx;
 
-                let func_to_call_inst = store.funcs.get(func_to_call_idx).unwrap_validated();
+                let func_to_call_inst = store.local_funcs.get(func_to_call_idx).unwrap_validated();
                 let func_to_call_ty = types.get(func_to_call_inst.ty).unwrap_validated();
 
                 let params = stack.pop_tail_iter(func_to_call_ty.params.valtypes.len());

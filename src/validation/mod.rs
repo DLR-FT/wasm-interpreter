@@ -5,7 +5,7 @@ use crate::core::reader::section_header::{SectionHeader, SectionTy};
 use crate::core::reader::span::Span;
 use crate::core::reader::types::export::Export;
 use crate::core::reader::types::global::Global;
-use crate::core::reader::types::import::Import;
+use crate::core::reader::types::import::{Import, ImportDesc};
 use crate::core::reader::types::{FuncType, MemType, TableType};
 use crate::core::reader::{WasmReadable, WasmReader};
 use crate::{Error, Result};
@@ -71,10 +71,19 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
-    let functions = handle_section(&mut wasm, &mut header, SectionTy::Function, |wasm, _| {
-        wasm.read_vec(|wasm| wasm.read_var_u32().map(|u| u as usize))
-    })?
-    .unwrap_or_default();
+    let local_functions =
+        handle_section(&mut wasm, &mut header, SectionTy::Function, |wasm, _| {
+            wasm.read_vec(|wasm| wasm.read_var_u32().map(|u| u as usize))
+        })?
+        .unwrap_or_default();
+
+    let imported_functions = imports
+        .iter()
+        .filter_map(|import| match &import.desc {
+            ImportDesc::Func(type_idx) => Some(*type_idx),
+            _ => None,
+        })
+        .collect::<Vec<TypeIdx>>();
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
@@ -132,12 +141,24 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
+    // WARN: Make sure the linker will validate imported functions.
     let func_blocks = handle_section(&mut wasm, &mut header, SectionTy::Code, |wasm, h| {
-        code::validate_code_section(wasm, h, &types, &functions, &globals)
+        code::validate_code_section(wasm, h, &types, &local_functions, &globals)
     })?
     .unwrap_or_default();
 
-    assert_eq!(func_blocks.len(), functions.len(), "these should be equal"); // TODO check if this is in the spec
+    // This is NOT EXPLICITLY stated in the spec, but it is implicitly required for a valid WASM Module
+    assert_eq!(
+        func_blocks.len(),
+        local_functions.len(),
+        "these should be equal"
+    );
+
+    let functions = imported_functions
+        .iter()
+        .chain(local_functions.iter())
+        .cloned()
+        .collect::<Vec<TypeIdx>>();
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 

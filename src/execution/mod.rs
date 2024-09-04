@@ -2,10 +2,12 @@ use alloc::vec::Vec;
 
 use interpreter_loop::run;
 use locals::Locals;
+use store::ImportInst;
 use value_stack::Stack;
 
 use crate::core::indices::FuncIdx;
 use crate::core::reader::types::export::{Export, ExportDesc};
+use crate::core::reader::types::import::ImportDesc;
 use crate::core::reader::types::{FuncType, ValType};
 use crate::core::reader::WasmReader;
 use crate::execution::assert_validated::UnwrapValidatedExt;
@@ -79,6 +81,7 @@ where
         let func_idx = self.exports.iter().find_map(|export| {
             if export.name == func_name {
                 match export.desc {
+                    // the first ones are the imported functions
                     ExportDesc::FuncIdx(idx) => Some(idx),
                     _ => None,
                 }
@@ -100,49 +103,62 @@ where
         func_idx: FuncIdx,
         params: Param,
     ) -> Result<Returns, RuntimeError> {
-        // -=-= Verification =-=-
-        let func_inst = self.store.funcs.get(func_idx).expect("valid FuncIdx");
-        let func_ty = self.types.get(func_inst.ty).unwrap_validated();
+        if func_idx >= self.store.imports.len() {
+            // -=-= Verification =-=-
+            let func_inst = self
+                .store
+                .local_funcs
+                .get(func_idx - self.store.imports.len())
+                .expect("valid FuncIdx");
+            let func_ty = self
+                .types
+                .get(func_inst.ty + self.store.imports.len())
+                .unwrap_validated();
 
-        // Check correct function parameters and return types
-        if func_ty.params.valtypes != Param::TYS {
-            panic!("Invalid `Param` generics");
+            // Check correct function parameters and return types
+            if func_ty.params.valtypes != Param::TYS {
+                panic!("Invalid `Param` generics");
+            }
+            if func_ty.returns.valtypes != Returns::TYS {
+                panic!("Invalid `Returns` generics");
+            }
+
+            // Prepare a new stack with the locals for the entry function
+            let mut stack = Stack::new();
+            let locals = Locals::new(
+                params.into_values().into_iter(),
+                func_inst.locals.iter().cloned(),
+            );
+
+            // setting `usize::MAX` as return address for the outermost function ensures that we
+            // observably fail upon errornoeusly continuing execution after that function returns.
+
+            // WARN: here, func_idx is not the index of the function in the wasm binary, but in the `local_funcs` vector
+            stack.push_stackframe(func_idx, func_ty, locals, usize::MAX);
+
+            // Run the interpreter
+            run(
+                self.wasm_bytecode,
+                &self.types,
+                &mut self.store,
+                &mut stack,
+                EmptyHookSet,
+            )?;
+
+            // Pop return values from stack
+            let return_values = Returns::TYS
+                .iter()
+                .map(|ty| stack.pop_value(*ty))
+                .collect::<Vec<Value>>();
+
+            // Values are reversed because they were popped from stack one-by-one. Now reverse them back
+            let reversed_values = return_values.into_iter().rev();
+            let ret: Returns = Returns::from_values(reversed_values);
+            debug!("Successfully invoked function");
+            Ok(ret)
+        } else {
+            panic!("Calling imported function is not implemented yet");
         }
-        if func_ty.returns.valtypes != Returns::TYS {
-            panic!("Invalid `Returns` generics");
-        }
-
-        // Prepare a new stack with the locals for the entry function
-        let mut stack = Stack::new();
-        let locals = Locals::new(
-            params.into_values().into_iter(),
-            func_inst.locals.iter().cloned(),
-        );
-
-        // setting `usize::MAX` as return address for the outermost function ensures that we
-        // observably fail upon errornoeusly continuing execution after that function returns.
-        stack.push_stackframe(func_idx, func_ty, locals, usize::MAX);
-
-        // Run the interpreter
-        run(
-            self.wasm_bytecode,
-            &self.types,
-            &mut self.store,
-            &mut stack,
-            EmptyHookSet,
-        )?;
-
-        // Pop return values from stack
-        let return_values = Returns::TYS
-            .iter()
-            .map(|ty| stack.pop_value(*ty))
-            .collect::<Vec<Value>>();
-
-        // Values are reversed because they were popped from stack one-by-one. Now reverse them back
-        let reversed_values = return_values.into_iter().rev();
-        let ret: Returns = Returns::from_values(reversed_values);
-        debug!("Successfully invoked function");
-        Ok(ret)
     }
 
     /// Invokes a function with the given parameters, and return types which are not known at compile time.
@@ -152,62 +168,83 @@ where
         params: Vec<Value>,
         ret_types: &[ValType],
     ) -> Result<Vec<Value>, RuntimeError> {
-        // -=-= Verification =-=-
-        let func_inst = self.store.funcs.get(func_idx).expect("valid FuncIdx");
-        let func_ty = self.types.get(func_inst.ty).unwrap_validated();
+        if func_idx >= self.store.imports.len() {
+            // -=-= Verification =-=-
+            let func_inst = self
+                .store
+                .local_funcs
+                .get(func_idx - self.store.imports.len())
+                .expect("valid FuncIdx");
+            let func_ty = self
+                .types
+                .get(func_inst.ty + self.store.imports.len())
+                .unwrap_validated();
 
-        // Verify that the given parameters match the function parameters
-        let param_types = params.iter().map(|v| v.to_ty()).collect::<Vec<_>>();
+            // Verify that the given parameters match the function parameters
+            let param_types = params.iter().map(|v| v.to_ty()).collect::<Vec<_>>();
 
-        if func_ty.params.valtypes != param_types {
-            panic!("Invalid parameters for function");
+            if func_ty.params.valtypes != param_types {
+                panic!("Invalid parameters for function");
+            }
+
+            // Verify that the given return types match the function return types
+            if func_ty.returns.valtypes != ret_types {
+                panic!("Invalid return types for function");
+            }
+
+            // Prepare a new stack with the locals for the entry function
+            let mut stack = Stack::new();
+            let locals = Locals::new(params.into_iter(), func_inst.locals.iter().cloned());
+            stack.push_stackframe(func_idx, func_ty, locals, 0);
+
+            // Run the interpreter
+            run(
+                self.wasm_bytecode,
+                &self.types,
+                &mut self.store,
+                &mut stack,
+                EmptyHookSet,
+            )?;
+
+            let func_inst = self
+                .store
+                .local_funcs
+                .get(func_idx - self.store.imports.len())
+                .expect("valid FuncIdx");
+            let func_ty = self
+                .types
+                .get(func_inst.ty + self.store.imports.len())
+                .unwrap_validated();
+
+            // Pop return values from stack
+            let return_values = func_ty
+                .returns
+                .valtypes
+                .iter()
+                .map(|ty| stack.pop_value(*ty))
+                .collect::<Vec<Value>>();
+
+            // Values are reversed because they were popped from stack one-by-one. Now reverse them back
+            let reversed_values = return_values.into_iter().rev();
+            let ret = reversed_values.collect();
+            debug!("Successfully invoked function");
+            Ok(ret)
+        } else {
+            // we have to call an imported function
+            // make the call to the linker haha
+            panic!("Calling imported function is not implemented yet");
         }
-
-        // Verify that the given return types match the function return types
-        if func_ty.returns.valtypes != ret_types {
-            panic!("Invalid return types for function");
-        }
-
-        // Prepare a new stack with the locals for the entry function
-        let mut stack = Stack::new();
-        let locals = Locals::new(params.into_iter(), func_inst.locals.iter().cloned());
-        stack.push_stackframe(func_idx, func_ty, locals, 0);
-
-        // Run the interpreter
-        run(
-            self.wasm_bytecode,
-            &self.types,
-            &mut self.store,
-            &mut stack,
-            EmptyHookSet,
-        )?;
-
-        let func_inst = self.store.funcs.get(func_idx).expect("valid FuncIdx");
-        let func_ty = self.types.get(func_inst.ty).unwrap_validated();
-
-        // Pop return values from stack
-        let return_values = func_ty
-            .returns
-            .valtypes
-            .iter()
-            .map(|ty| stack.pop_value(*ty))
-            .collect::<Vec<Value>>();
-
-        // Values are reversed because they were popped from stack one-by-one. Now reverse them back
-        let reversed_values = return_values.into_iter().rev();
-        let ret = reversed_values.collect();
-        debug!("Successfully invoked function");
-        Ok(ret)
     }
 
     fn init_store(validation_info: &ValidationInfo) -> Store {
-        let function_instances: Vec<FuncInst> = {
+        let local_function_instances: Vec<FuncInst> = {
             let mut wasm_reader = WasmReader::new(validation_info.wasm);
 
-            let functions = validation_info.functions.iter();
+            let local_funcs = validation_info.functions.iter();
+            // let functions = validation_info.functions.iter();
             let func_blocks = validation_info.func_blocks.iter();
 
-            functions
+            local_funcs
                 .zip(func_blocks)
                 .map(|(ty, func)| {
                     wasm_reader
@@ -231,6 +268,15 @@ where
                 .collect()
         };
 
+        let import_instances: Vec<ImportInst> = validation_info
+            .imports
+            .iter()
+            .filter_map(|import| match import.desc {
+                ImportDesc::Func(func) => Some(func),
+                _ => None,
+            })
+            .map(ImportInst::Func)
+            .collect();
         let memory_instances: Vec<MemInst> = validation_info
             .memories
             .iter()
@@ -252,7 +298,8 @@ where
             .collect();
 
         Store {
-            funcs: function_instances,
+            imports: import_instances,
+            local_funcs: local_function_instances,
             mems: memory_instances,
             globals: global_instances,
         }
