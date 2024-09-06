@@ -116,7 +116,12 @@ fn read_instructions(
 
                     // We check the valtypes on top of the stack
 
-                    let _block_return_ty: &[ValType] = todo!("get return types for current block");
+                    // TODO remove the ugly hack for the todo!(..)!
+                    #[allow(clippy::diverging_sub_expression)]
+                    {
+                        let _block_return_ty: &[ValType] =
+                            todo!("get return types for current block");
+                    }
                     // stack.assert_val_types_on_top(block_return_ty)?;
 
                     // Clear the stack until the next label
