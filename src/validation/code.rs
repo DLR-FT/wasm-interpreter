@@ -95,9 +95,10 @@ fn read_instructions(
     // TODO we must terminate only if both we saw the final `end` and when we consumed all of the code span
     loop {
         let Ok(first_instr_byte) = wasm.read_u8() else {
+            // TODO only do this if EOF
             return Err(Error::ExprMissingEnd);
         };
-        trace!("Read instruction byte {first_instr_byte:#X?} ({first_instr_byte})");
+        trace!("Read instruction byte {first_instr_byte:#04X?} ({first_instr_byte}) at wasm_binary[{}]", wasm.pc);
 
         use crate::core::reader::types::opcode::*;
         match first_instr_byte {
@@ -180,7 +181,7 @@ fn read_instructions(
                 let local_ty = locals.get(local_idx).ok_or(Error::InvalidLocalIdx)?;
                 stack.push_valtype(*local_ty);
             }
-            // local.set [t] -> [0]
+            // local.set [t] -> []
             LOCAL_SET => {
                 let local_idx = wasm.read_var_u32()? as LocalIdx;
                 let local_ty = locals.get(local_idx).ok_or(Error::InvalidLocalIdx)?;
