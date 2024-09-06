@@ -225,3 +225,172 @@ pub enum LabelKind {
     Loop,
     If,
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{NumType, RefType, ValType};
+
+    use super::{LabelInfo, LabelKind, ValidationStack};
+
+    #[test]
+    fn push_then_pop() {
+        let mut stack = ValidationStack::new();
+
+        stack.push_valtype(ValType::NumType(NumType::F64));
+        stack.push_valtype(ValType::NumType(NumType::I32));
+        stack.push_valtype(ValType::VecType);
+        stack.push_valtype(ValType::RefType(RefType::ExternRef));
+
+        stack
+            .assert_pop_val_type(ValType::RefType(RefType::ExternRef))
+            .unwrap();
+        stack.assert_pop_val_type(ValType::VecType).unwrap();
+        stack
+            .assert_pop_val_type(ValType::NumType(NumType::I32))
+            .unwrap();
+        stack
+            .assert_pop_val_type(ValType::NumType(NumType::F64))
+            .unwrap();
+    }
+
+    #[test]
+    fn labels() {
+        let mut stack = ValidationStack::new();
+
+        stack.push_valtype(ValType::NumType(NumType::I64));
+        stack.push_label(LabelInfo {
+            kind: LabelKind::Block,
+        });
+
+        stack.push_label(LabelInfo {
+            kind: LabelKind::Loop,
+        });
+
+        stack.push_valtype(ValType::VecType);
+
+        // This removes the `ValType::VecType` and the `LabelKind::Loop` label
+        let popped_label = stack.pop_label_and_above().unwrap();
+        assert_eq!(
+            popped_label,
+            LabelInfo {
+                kind: LabelKind::Loop,
+            }
+        );
+
+        let popped_label = stack.pop_label_and_above().unwrap();
+        assert_eq!(
+            popped_label,
+            LabelInfo {
+                kind: LabelKind::Block,
+            }
+        );
+
+        // The first valtype should still be there
+        stack.assert_pop_val_type(ValType::NumType(NumType::I64));
+    }
+
+    #[test]
+    fn assert_valtypes() {
+        let mut stack = ValidationStack::new();
+
+        stack.push_valtype(ValType::NumType(NumType::F64));
+        stack.push_valtype(ValType::NumType(NumType::I32));
+        stack.push_valtype(ValType::NumType(NumType::F32));
+
+        stack
+            .assert_val_types(&[
+                ValType::NumType(NumType::F64),
+                ValType::NumType(NumType::I32),
+                ValType::NumType(NumType::F32),
+            ])
+            .unwrap();
+
+        stack.push_label(LabelInfo {
+            kind: LabelKind::Block,
+        });
+        stack.push_valtype(ValType::NumType(NumType::I32));
+
+        stack
+            .assert_val_types(&[ValType::NumType(NumType::I32)])
+            .unwrap();
+    }
+
+    #[test]
+    fn assert_emtpy_valtypes() {
+        let mut stack = ValidationStack::new();
+
+        stack.assert_val_types(&[]).unwrap();
+
+        stack.push_valtype(ValType::NumType(NumType::I32));
+        stack.push_label(LabelInfo {
+            kind: LabelKind::Block,
+        });
+
+        // Valtypes separated by a label should also not be detected
+        stack.assert_val_types(&[]).unwrap();
+    }
+
+    #[test]
+    fn assert_valtypes_on_top() {
+        let mut stack = ValidationStack::new();
+
+        stack.assert_val_types_on_top(&[]).unwrap();
+
+        stack.push_valtype(ValType::NumType(NumType::I32));
+        stack.push_valtype(ValType::NumType(NumType::F32));
+        stack.push_valtype(ValType::NumType(NumType::I64));
+
+        // There are always zero valtypes on top of the stack
+        stack.assert_val_types_on_top(&[]).unwrap();
+
+        stack
+            .assert_val_types_on_top(&[ValType::NumType(NumType::I64)])
+            .unwrap();
+
+        stack
+            .assert_val_types_on_top(&[
+                ValType::NumType(NumType::F32),
+                ValType::NumType(NumType::I64),
+            ])
+            .unwrap();
+
+        stack
+            .assert_val_types_on_top(&[
+                ValType::NumType(NumType::I32),
+                ValType::NumType(NumType::F32),
+                ValType::NumType(NumType::I64),
+            ])
+            .unwrap();
+    }
+
+    #[test]
+    fn unspecified() {
+        let mut stack = ValidationStack::new();
+        stack.push_label(LabelInfo {
+            kind: LabelKind::Block,
+        });
+
+        stack.make_unspecified();
+
+        // Now we can pop as many valtypes from the stack as we want
+        stack
+            .assert_pop_val_type(ValType::NumType(NumType::I32))
+            .unwrap();
+
+        stack
+            .assert_pop_val_type(ValType::RefType(RefType::ExternRef))
+            .unwrap();
+
+        // Let's remove the unspecified entry and the first label
+        let popped_label = stack.pop_label_and_above().unwrap();
+        assert_eq!(
+            popped_label,
+            LabelInfo {
+                kind: LabelKind::Block,
+            }
+        );
+
+        // Now there are no values left on the stack
+        assert_eq!(stack.assert_val_types(&[]), Ok(()));
+    }
+}
