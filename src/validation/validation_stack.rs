@@ -34,7 +34,9 @@ impl ValidationStack {
 
     /// This puts an unspecified element on top of the stack.
     /// While the top of the stack is unspecified, arbitrary value types can be popped.
-    /// To remove this, a new label has to be pushed or an existing one has to be popped.
+    /// To undo this, a new label has to be pushed or an existing one has to be popped.
+    ///
+    /// See the documentation for [`ValidationStackEntry::UnspecifiedValTypes`] for more info.
     pub(super) fn make_unspecified(&mut self) {
         // Pop everything until next label or until the stack is empty.
         // This is okay, because these values cannot be accessed during execution ever again.
@@ -89,8 +91,8 @@ impl ValidationStack {
 
     /// Asserts that the values on top of the stack match those of a value iterator
     ///
-    /// The last element of the `val_types` [`Iterator`] is compared to the top-most
-    /// [`ValidationStackEntry`], the second last `val_types` element to the second top-most
+    /// The last element of `expected_val_types` is compared to the top-most
+    /// [`ValidationStackEntry`], the second last `expected_val_types` element to the second top-most
     /// [`ValidationStackEntry`] etc.
     ///
     /// Any occurence of the [`ValidationStackEntry::Label`] variant in the stack tail will cause an
@@ -119,6 +121,8 @@ impl ValidationStack {
                     }
                 }
                 ValidationStackEntry::UnspecifiedValTypes => {
+                    // In case we find an `UnspecifiedValTypes`, we pretend that all expected valtypes are found.
+                    // That's because this entry can expand to every possible combination of valtypes.
                     return Ok(());
                 }
             }
@@ -127,6 +131,15 @@ impl ValidationStack {
         Ok(())
     }
 
+    /// Asserts that the valtypes on the stack match the expected valtypes.
+    ///
+    /// This starts by comparing the top-most valtype with the last element from `expected_val_types` and then continues downwards on the stack.
+    /// If a label is reached and not all `expected_val_types` have been checked, the assertion fails.
+    ///
+    /// # Returns
+    ///
+    /// - `Ok(())` if all expected valtypes were found
+    /// - `Err(_)` otherwise
     pub(super) fn assert_val_types(&self, expected_val_types: &[ValType]) -> Result<()> {
         let topmost_label_index = self.find_topmost_label_idx();
 
@@ -155,7 +168,7 @@ impl ValidationStack {
         Ok(())
     }
 
-    /// Finds the index of the topmost label that is currently on the stack.
+    /// A helper to find the index of the top-most label in [`ValidationStack::stack`]
     fn find_topmost_label_idx(&self) -> Option<usize> {
         self.stack
             .iter()
@@ -165,8 +178,13 @@ impl ValidationStack {
             .map(|(idx, _entry)| idx)
     }
 
-    /// Removes all valtypes until the next lower label.
-    /// If a label is found and popped, its info is returned.
+    /// Searches for the top-most label, then pops the label and all entry on top of that label.
+    /// Only the label's [`LabelInfo`] is returned.
+    ///
+    /// # Returns
+    ///
+    /// - `Ok(LabelInfo)` if a label has been found and popped
+    /// - `None` if no label was found on the stack
     fn pop_label_and_above(&mut self) -> Option<LabelInfo> {
         /// Delete all the values until the topmost label or until the stack is empty
         match self.find_topmost_label_idx() {
@@ -204,12 +222,11 @@ enum ValidationStackEntry {
     /// A label
     Label(LabelInfo),
 
-    /// Special variant to encode that any possible number of ValTypes could be here
+    /// Special variant to encode that any possible number of [`ValType`]s could be here
     ///
-    /// Caused by `return` and `unreachable, as both can push an arbitrary number of values
-    /// from/to the stack.
+    /// Caused by `return` and `unreachable`, as both can push an arbitrary number of values to the stack.
     ///
-    /// When this variant is popped onto the stack, all valtypes until the next lower label are deleted.
+    /// When this variant is pushed onto the stack, all valtypes until the next lower label are deleted.
     /// They are not needed anymore because this variant can expand to all of them.
     UnspecifiedValTypes,
 }
