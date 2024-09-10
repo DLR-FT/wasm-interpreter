@@ -1,15 +1,38 @@
 use alloc::vec::Vec;
 
-use crate::{
-    core::reader::{span::Span, types::global::GlobalType, WasmReader},
-    Error, NumType, Result, ValType,
-};
+use crate::core::reader::section_header::{SectionHeader, SectionTy};
+use crate::core::reader::span::Span;
+use crate::core::reader::types::global::{Global, GlobalType};
+use crate::core::reader::{WasmReadable, WasmReader};
+use crate::{Error, NumType, Result, ValType};
+
+use super::validation_stack::ValidationStack;
+
+/// Validate the global section.
+///
+/// The global section is a vector of global variables. Each [Global] variable is composed of a [GlobalType] and an
+/// initialization expression represented by a constant expression.
+///
+/// See [read_constant_instructions] for more information.
+pub(super) fn validate_global_section(
+    wasm: &mut WasmReader,
+    section_header: SectionHeader,
+) -> Result<Vec<Global>> {
+    assert_eq!(section_header.ty, SectionTy::Global);
+
+    wasm.read_vec(|wasm| {
+        let ty = GlobalType::read(wasm)?;
+        let init_expr =
+            read_constant_instructions(wasm, ty.ty, &[/* todo!(imported globals tpyes) */])?;
+
+        Ok(Global { ty, init_expr })
+    })
+}
 
 /// Read and validate constant expressions.
 ///
-/// This function, alongside [`validate_value_stack()`](crate::validation::validate_value_stack) can be used to validate
-/// that a constant expression produces the expected result. The main use case for this is to validate that an
-/// initialization expression for a global returns the correct value.
+/// This function is used to validate that a constant expression produces the expected result. The main use case for
+/// this is to validate that an initialization expression for a global returns the correct value.
 ///
 /// Note: to be valid, constant expressions may not leave garbage data on the stack. It may leave only what is expected
 /// and nothing more.
@@ -82,23 +105,15 @@ use crate::{
 /// - `ref.null`
 /// - `ref.func`
 /// - `global.get`
-pub(crate) fn read_constant_instructions(
+pub(super) fn read_constant_instructions(
     wasm: &mut WasmReader,
-    value_stack: &mut Vec<ValType>,
+    this_global_valtype: ValType,
     _globals_ty: &[GlobalType],
 ) -> Result<Span> {
     let start_pc = wasm.pc;
 
-    let assert_pop_value_stack = |value_stack: &mut Vec<ValType>, expected_ty: ValType| {
-        value_stack
-            .pop()
-            .ok_or(Error::InvalidValueStackType(None))
-            .and_then(|ty| {
-                (ty == expected_ty)
-                    .then_some(())
-                    .ok_or(Error::InvalidValueStackType(Some(ty)))
-            })
-    };
+    // Compared to the code validation, we create the validation stack here as opposed to taking it as an argument.
+    let mut stack = ValidationStack::new();
 
     loop {
         let Ok(first_instr_byte) = wasm.read_u8() else {
@@ -110,27 +125,29 @@ pub(crate) fn read_constant_instructions(
         match first_instr_byte {
             // Missing: ref.null, ref.func, global.get
             END => {
+                // The stack must only contain the global's valtype
+                stack.assert_val_types(&[this_global_valtype])?;
                 return Ok(Span::new(start_pc, wasm.pc - start_pc + 1));
             }
             I32_CONST => {
                 let _num = wasm.read_var_i32()?;
-                value_stack.push(ValType::NumType(NumType::I32));
+                stack.push_valtype(ValType::NumType(NumType::I32));
             }
             I64_CONST => {
                 let _num = wasm.read_var_i64()?;
-                value_stack.push(ValType::NumType(NumType::I64));
+                stack.push_valtype(ValType::NumType(NumType::I64));
             }
             I32_ADD | I32_SUB | I32_MUL => {
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))?;
+                stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
 
-                value_stack.push(ValType::NumType(NumType::I32));
+                stack.push_valtype(ValType::NumType(NumType::I32));
             }
             I64_ADD | I64_SUB | I64_MUL => {
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I64))?;
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I64))?;
+                stack.assert_pop_val_type(ValType::NumType(NumType::I64))?;
+                stack.assert_pop_val_type(ValType::NumType(NumType::I64))?;
 
-                value_stack.push(ValType::NumType(NumType::I64));
+                stack.push_valtype(ValType::NumType(NumType::I64));
             }
             _ => return Err(Error::InvalidInstr(first_instr_byte)),
         }

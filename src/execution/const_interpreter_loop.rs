@@ -95,7 +95,9 @@ pub(crate) fn run_const(
                 trace!("Constant instruction: i64.mul [{v1} {v2}] -> [{res}]");
                 stack.push_value(res.into());
             }
-            _ => panic!("¯\\_(ツ)_/¯"),
+            other => {
+                panic!("Unknown constant instruction {other:#x}, validation allowed an unimplemented instruction.");
+            }
         }
     }
 }
