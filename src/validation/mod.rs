@@ -6,9 +6,9 @@ use crate::core::reader::span::Span;
 use crate::core::reader::types::export::Export;
 use crate::core::reader::types::global::Global;
 use crate::core::reader::types::import::Import;
-use crate::core::reader::types::{FuncType, MemType, ResultType, TableType};
+use crate::core::reader::types::{FuncType, MemType, TableType};
 use crate::core::reader::{WasmReadable, WasmReader};
-use crate::{Error, Result, ValType};
+use crate::{Error, Result};
 
 pub(crate) mod code;
 pub(crate) mod globals;
@@ -97,13 +97,8 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
-    let globals = handle_section(&mut wasm, &mut header, SectionTy::Global, |wasm, _| {
-        wasm.read_vec(|wasm| {
-            // TODO validate instructions in `global.init_expr`. Furthermore all of these instructions need to be constant.
-            //  See https://webassembly.github.io/spec/core/valid/instructions.html#valid-constant
-            //  Maybe we can also execute constant expressions right here so they do not even exist in the runtime environment. <-- Needs further research to check if this is even possible
-            Global::read(wasm)
-        })
+    let globals = handle_section(&mut wasm, &mut header, SectionTy::Global, |wasm, h| {
+        globals::validate_global_section(wasm, h)
     })?
     .unwrap_or_default();
 
@@ -193,23 +188,4 @@ fn handle_section<T, F: FnOnce(&mut WasmReader, SectionHeader) -> Result<T>>(
         }
         _ => Ok(None),
     }
-}
-
-pub(crate) fn validate_value_stack<F>(return_ty: ResultType, f: F) -> Result<()>
-where
-    F: FnOnce(&mut Vec<ValType>) -> Result<()>,
-{
-    let mut value_stack: Vec<ValType> = Vec::new();
-
-    f(&mut value_stack)?;
-
-    // TODO also check here if correct order
-    if value_stack != return_ty.valtypes {
-        error!(
-            "Expected types {:?} on stack, got {:?}",
-            return_ty.valtypes, value_stack
-        );
-        return Err(Error::EndInvalidValueStack);
-    }
-    Ok(())
 }

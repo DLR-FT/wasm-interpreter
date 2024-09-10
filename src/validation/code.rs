@@ -8,7 +8,8 @@ use crate::core::reader::types::global::Global;
 use crate::core::reader::types::memarg::MemArg;
 use crate::core::reader::types::{FuncType, NumType, ValType};
 use crate::core::reader::{WasmReadable, WasmReader};
-use crate::{validate_value_stack, Error, Result};
+use crate::validation_stack::ValidationStack;
+use crate::{Error, Result};
 
 pub fn validate_code_section(
     wasm: &mut WasmReader,
@@ -133,7 +134,7 @@ fn read_instructions(
                 } else {
                     // This is the last end of a function
 
-                    // The stack must only contain the functions return valtypes
+                    // The stack must only contain the function's return valtypes
                     let this_func_ty = &fn_types[type_idx_of_fn[this_function_idx]];
                     stack.assert_val_types(&this_func_ty.returns.valtypes)?;
                     return Ok(());
