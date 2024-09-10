@@ -140,6 +140,9 @@
 <a href="#138" id="138">138</a>
 <a href="#139" id="139">139</a>
 <a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::core::indices::GlobalIdx;
 <span class="kw">use </span><span class="kw">crate</span>::validation_stack::LabelKind;
 <span class="kw">use </span>core::fmt::{Display, Formatter};
@@ -154,6 +157,8 @@
     UnrepresentableResult,
     FunctionNotFound,
     StackSmash,
+    <span class="comment">// https://github.com/wasmi-labs/wasmi/blob/37d1449524a322817c55026eb21eb97dd693b9ce/crates/core/src/trap.rs#L265C5-L265C27
+    </span>BadConversionToInteger,
 }
 
 <span class="attr">#[derive(Debug, PartialEq, Eq, Clone)]
@@ -269,6 +274,7 @@
             RuntimeError::UnrepresentableResult =&gt; f.write_str(<span class="string">"Result is unrepresentable"</span>),
             RuntimeError::FunctionNotFound =&gt; f.write_str(<span class="string">"Function not found"</span>),
             RuntimeError::StackSmash =&gt; f.write_str(<span class="string">"Stack smashed"</span>),
+            RuntimeError::BadConversionToInteger =&gt; f.write_str(<span class="string">"Bad conversion to integer"</span>),
         }
     }
 }
