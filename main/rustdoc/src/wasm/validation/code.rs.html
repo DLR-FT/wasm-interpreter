@@ -389,6 +389,21 @@
 <a href="#387" id="387">387</a>
 <a href="#388" id="388">388</a>
 <a href="#389" id="389">389</a>
+<a href="#390" id="390">390</a>
+<a href="#391" id="391">391</a>
+<a href="#392" id="392">392</a>
+<a href="#393" id="393">393</a>
+<a href="#394" id="394">394</a>
+<a href="#395" id="395">395</a>
+<a href="#396" id="396">396</a>
+<a href="#397" id="397">397</a>
+<a href="#398" id="398">398</a>
+<a href="#399" id="399">399</a>
+<a href="#400" id="400">400</a>
+<a href="#401" id="401">401</a>
+<a href="#402" id="402">402</a>
+<a href="#403" id="403">403</a>
+<a href="#404" id="404">404</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>alloc::vec::Vec;
 <span class="kw">use </span>core::iter;
 
@@ -397,8 +412,9 @@
 <span class="kw">use </span><span class="kw">crate</span>::core::reader::span::Span;
 <span class="kw">use </span><span class="kw">crate</span>::core::reader::types::global::Global;
 <span class="kw">use </span><span class="kw">crate</span>::core::reader::types::memarg::MemArg;
-<span class="kw">use </span><span class="kw">crate</span>::core::reader::types::{FuncType, NumType, ResultType, ValType};
+<span class="kw">use </span><span class="kw">crate</span>::core::reader::types::{FuncType, NumType, ValType};
 <span class="kw">use </span><span class="kw">crate</span>::core::reader::{WasmReadable, WasmReader};
+<span class="kw">use </span><span class="kw">crate</span>::validation_stack::ValidationStack;
 <span class="kw">use crate</span>::{Error, <span class="prelude-ty">Result</span>};
 
 <span class="kw">pub fn </span>validate_code_section(
@@ -414,8 +430,11 @@
         <span class="kw">let </span>ty_idx = type_idx_of_fn[idx];
         <span class="kw">let </span>func_ty = fn_types[ty_idx].clone();
 
+        <span class="macro">debug!</span>(<span class="string">"{:x?}"</span>, wasm.full_wasm_binary);
+
         <span class="kw">let </span>func_size = wasm.read_var_u32()<span class="question-mark">?</span>;
         <span class="kw">let </span>func_block = wasm.make_span(func_size <span class="kw">as </span>usize)<span class="question-mark">?</span>;
+        <span class="kw">let </span>previous_pc = wasm.pc;
 
         <span class="kw">let </span>locals = {
             <span class="kw">let </span>params = func_ty.params.valtypes.iter().cloned();
@@ -423,17 +442,24 @@
             params.chain(declared_locals).collect::&lt;Vec&lt;ValType&gt;&gt;()
         };
 
-        validate_value_stack(func_ty.returns, |value_stack| {
-            read_instructions(
-                idx,
-                wasm,
-                value_stack,
-                <span class="kw-2">&amp;</span>locals,
-                globals,
-                fn_types,
-                type_idx_of_fn,
-            )
-        })<span class="question-mark">?</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>stack = ValidationStack::new();
+
+        read_instructions(
+            idx,
+            wasm,
+            <span class="kw-2">&amp;mut </span>stack,
+            <span class="kw-2">&amp;</span>locals,
+            globals,
+            fn_types,
+            type_idx_of_fn,
+        )<span class="question-mark">?</span>;
+
+        <span class="comment">// Check if there were unread trailing instructions after the last END
+        </span><span class="kw">if </span>previous_pc + func_size <span class="kw">as </span>usize != wasm.pc {
+            <span class="macro">todo!</span>(
+                <span class="string">"throw error because there are trailing unreachable instructions in the code block"
+            </span>)
+        }
 
         <span class="prelude-val">Ok</span>(func_block)
     })<span class="question-mark">?</span>;
@@ -466,28 +492,19 @@
 <span class="kw">fn </span>read_instructions(
     this_function_idx: usize,
     wasm: <span class="kw-2">&amp;mut </span>WasmReader,
-    value_stack: <span class="kw-2">&amp;mut </span>Vec&lt;ValType&gt;,
+    stack: <span class="kw-2">&amp;mut </span>ValidationStack,
     locals: <span class="kw-2">&amp;</span>[ValType],
     globals: <span class="kw-2">&amp;</span>[Global],
     fn_types: <span class="kw-2">&amp;</span>[FuncType],
     type_idx_of_fn: <span class="kw-2">&amp;</span>[usize],
 ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-    <span class="kw">let </span>assert_pop_value_stack = |value_stack: <span class="kw-2">&amp;mut </span>Vec&lt;ValType&gt;, expected_ty: ValType| {
-        value_stack
-            .pop()
-            .ok_or(Error::InvalidValueStackType(<span class="prelude-val">None</span>))
-            .and_then(|ty| {
-                (ty == expected_ty)
-                    .then_some(())
-                    .ok_or(Error::InvalidValueStackType(<span class="prelude-val">Some</span>(ty)))
-            })
-    };
-
-    <span class="kw">loop </span>{
+    <span class="comment">// TODO we must terminate only if both we saw the final `end` and when we consumed all of the code span
+    </span><span class="kw">loop </span>{
         <span class="kw">let </span><span class="prelude-val">Ok</span>(first_instr_byte) = wasm.read_u8() <span class="kw">else </span>{
-            <span class="kw">return </span><span class="prelude-val">Err</span>(Error::ExprMissingEnd);
+            <span class="comment">// TODO only do this if EOF
+            </span><span class="kw">return </span><span class="prelude-val">Err</span>(Error::ExprMissingEnd);
         };
-        <span class="macro">trace!</span>(<span class="string">"Read instruction byte {first_instr_byte:#X?} ({first_instr_byte})"</span>);
+        <span class="macro">trace!</span>(<span class="string">"Read instruction byte {first_instr_byte:#04X?} ({first_instr_byte}) at wasm_binary[{}]"</span>, wasm.pc);
 
         <span class="kw">use </span><span class="kw">crate</span>::core::reader::types::opcode::<span class="kw-2">*</span>;
         <span class="kw">match </span>first_instr_byte {
@@ -495,22 +512,62 @@
             </span>NOP =&gt; {}
             <span class="comment">// end
             </span>END =&gt; {
-                <span class="kw">return </span><span class="prelude-val">Ok</span>(());
+                <span class="comment">// TODO check if there are labels on the stack.
+                // If there are none (i.e. this is the implicit end of the function and not a jump to the end of a function), the stack must only contain the valid return values, no other junk.
+                //
+                // Else, anything may remain on the stack, as long as the top of the stack matche the current blocks return value.
+
+                </span><span class="kw">if </span>stack.has_remaining_label() {
+                    <span class="comment">// This is the END of a block.
+
+                    // We check the valtypes on top of the stack
+
+                    // TODO remove the ugly hack for the todo!(..)!
+                    </span><span class="attr">#[allow(clippy::diverging_sub_expression)]
+                    </span>{
+                        <span class="kw">let </span>_block_return_ty: <span class="kw-2">&amp;</span>[ValType] =
+                            <span class="macro">todo!</span>(<span class="string">"get return types for current block"</span>);
+                    }
+                    <span class="comment">// stack.assert_val_types_on_top(block_return_ty)?;
+
+                    // Clear the stack until the next label
+                    // stack.clear_until_next_label();
+
+                    // And push the blocks return types onto the stack again
+                    // for valtype in block_return_ty {
+                    // stack.push_valtype(*valtype);
+                    // }
+                </span>} <span class="kw">else </span>{
+                    <span class="comment">// This is the last end of a function
+
+                    // The stack must only contain the functions return valtypes
+                    </span><span class="kw">let </span>this_func_ty = <span class="kw-2">&amp;</span>fn_types[type_idx_of_fn[this_function_idx]];
+                    stack.assert_val_types(<span class="kw-2">&amp;</span>this_func_ty.returns.valtypes)<span class="question-mark">?</span>;
+                    <span class="kw">return </span><span class="prelude-val">Ok</span>(());
+                }
             }
             RETURN =&gt; {
                 <span class="kw">let </span>this_func_ty = <span class="kw-2">&amp;</span>fn_types[type_idx_of_fn[this_function_idx]];
 
-                <span class="kw">if </span>value_stack.len() &lt; this_func_ty.returns.valtypes.len() {
-                    <span class="kw">return </span><span class="prelude-val">Err</span>(Error::EndInvalidValueStack);
-                }
+                stack
+                    .assert_val_types_on_top(<span class="kw-2">&amp;</span>this_func_ty.returns.valtypes)
+                    .map_err(|<span class="kw">_</span>| Error::EndInvalidValueStack)<span class="question-mark">?</span>;
 
-                <span class="kw">let </span>ret_vals_start = value_stack.len() - this_func_ty.returns.valtypes.len();
-                <span class="kw">let </span>_remaining_locals = value_stack.drain(..ret_vals_start);
+                stack.make_unspecified();
 
                 <span class="comment">// TODO(george-cosma): a `return Ok(());` should probably be introduced here, but since we don't have
                 // controls flows implemented, the only way to test `return` is to place it at the end of function.
                 // However, an `end` is introduced after it, which is invalid. Compilation for this test case should
                 // probably fail.
+
+                // TODO(wucke13) I believe we must not drain the validation stack here; only if we
+                // know this return is actually taken during execution we may drain the stack. This
+                // could however be a conditional return (return in an `if`), and the other side
+                // past the `else` might need the values on the `ValidationStack` that do belong
+                // to the current function (but not the current block), so draining would make
+                // continued validation of the current function impossible. We should most
+                // definitely not `return Ok(())` here, because there might be still more of the
+                // current function to validate.
             </span>}
             <span class="comment">// call [t1*] -&gt; [t2*]
             </span>CALL =&gt; {
@@ -518,36 +575,34 @@
                 <span class="kw">let </span>func_ty = <span class="kw-2">&amp;</span>fn_types[type_idx_of_fn[func_to_call_idx]];
 
                 <span class="kw">for </span>typ <span class="kw">in </span>func_ty.params.valtypes.iter().rev() {
-                    assert_pop_value_stack(value_stack, <span class="kw-2">*</span>typ)<span class="question-mark">?</span>;
+                    stack.assert_pop_val_type(<span class="kw-2">*</span>typ)<span class="question-mark">?</span>;
                 }
 
                 <span class="kw">for </span>typ <span class="kw">in </span>func_ty.returns.valtypes.iter() {
-                    value_stack.push(<span class="kw-2">*</span>typ);
+                    stack.push_valtype(<span class="kw-2">*</span>typ);
                 }
+            }
+            <span class="comment">// unreachable: [t1*] -&gt; [t2*]
+            </span>UNREACHABLE =&gt; {
+                stack.make_unspecified();
             }
             <span class="comment">// local.get: [] -&gt; [t]
             </span>LOCAL_GET =&gt; {
                 <span class="kw">let </span>local_idx = wasm.read_var_u32()<span class="question-mark">? </span><span class="kw">as </span>LocalIdx;
                 <span class="kw">let </span>local_ty = locals.get(local_idx).ok_or(Error::InvalidLocalIdx)<span class="question-mark">?</span>;
-                value_stack.push(<span class="kw-2">*</span>local_ty);
+                stack.push_valtype(<span class="kw-2">*</span>local_ty);
             }
-            <span class="comment">// local.set [t] -&gt; [0]
+            <span class="comment">// local.set [t] -&gt; []
             </span>LOCAL_SET =&gt; {
                 <span class="kw">let </span>local_idx = wasm.read_var_u32()<span class="question-mark">? </span><span class="kw">as </span>LocalIdx;
                 <span class="kw">let </span>local_ty = locals.get(local_idx).ok_or(Error::InvalidLocalIdx)<span class="question-mark">?</span>;
-                <span class="kw">let </span>popped = value_stack.pop();
-                <span class="kw">if </span>popped.as_ref() != <span class="prelude-val">Some</span>(local_ty) {
-                    <span class="kw">return </span><span class="prelude-val">Err</span>(Error::InvalidValueStackType(popped));
-                }
+                stack.assert_pop_val_type(<span class="kw-2">*</span>local_ty)<span class="question-mark">?</span>;
             }
             <span class="comment">// local.set [t] -&gt; [t]
             </span>LOCAL_TEE =&gt; {
                 <span class="kw">let </span>local_idx = wasm.read_var_u32()<span class="question-mark">? </span><span class="kw">as </span>LocalIdx;
                 <span class="kw">let </span>local_ty = locals.get(local_idx).ok_or(Error::InvalidLocalIdx)<span class="question-mark">?</span>;
-                <span class="kw">let </span>back = value_stack.last();
-                <span class="kw">if </span>back != <span class="prelude-val">Some</span>(local_ty) {
-                    <span class="kw">return </span><span class="prelude-val">Err</span>(Error::InvalidValueStackType(back.cloned()));
-                }
+                stack.assert_pop_val_type(<span class="kw-2">*</span>local_ty)<span class="question-mark">?</span>;
             }
             <span class="comment">// global.get [] -&gt; [t]
             </span>GLOBAL_GET =&gt; {
@@ -556,7 +611,7 @@
                     .get(global_idx)
                     .ok_or(Error::InvalidGlobalIdx(global_idx))<span class="question-mark">?</span>;
 
-                value_stack.push(global.ty.ty);
+                stack.push_valtype(global.ty.ty);
             }
             <span class="comment">// global.set [t] -&gt; []
             </span>GLOBAL_SET =&gt; {
@@ -569,13 +624,7 @@
                     <span class="kw">return </span><span class="prelude-val">Err</span>(Error::GlobalIsConst);
                 }
 
-                <span class="kw">let </span>ty_on_stack = value_stack
-                    .pop()
-                    .ok_or(Error::InvalidValueStackType(<span class="prelude-val">None</span>))<span class="question-mark">?</span>;
-
-                <span class="kw">if </span>ty_on_stack != global.ty.ty {
-                    <span class="kw">return </span><span class="prelude-val">Err</span>(Error::InvalidValueStackType(<span class="prelude-val">Some</span>(ty_on_stack)));
-                }
+                stack.assert_pop_val_type(global.ty.ty)<span class="question-mark">?</span>;
             }
             <span class="comment">// i32.load [i32] -&gt; [i32]
             </span>I32_LOAD =&gt; {
@@ -584,27 +633,27 @@
                 <span class="comment">// TODO check correct `memarg.align`
                 // TODO check if memory[0] exists
 
-                </span>assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))<span class="question-mark">?</span>;
+                </span>stack.assert_pop_val_type(ValType::NumType(NumType::I32))<span class="question-mark">?</span>;
 
-                value_stack.push(ValType::NumType(NumType::I32));
+                stack.push_valtype(ValType::NumType(NumType::I32));
             }
             <span class="comment">// f32.load [f32] -&gt; [f32]
             </span>F32_LOAD =&gt; {
                 <span class="kw">let </span>_memarg = MemArg::read_unvalidated(wasm);
 
                 <span class="comment">// Check for I32 because that's the address where we find our value
-                </span>assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))<span class="question-mark">?</span>;
+                </span>stack.assert_pop_val_type(ValType::NumType(NumType::I32))<span class="question-mark">?</span>;
 
-                value_stack.push(ValType::NumType(NumType::F32));
+                stack.push_valtype(ValType::NumType(NumType::F32));
             }
             <span class="comment">// f32.load [f32] -&gt; [f32]
             </span>F64_LOAD =&gt; {
                 <span class="kw">let </span>_memarg = MemArg::read_unvalidated(wasm);
 
                 <span class="comment">// Check for I32 because that's the address where we find our value
-                </span>assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))<span class="question-mark">?</span>;
+                </span>stack.assert_pop_val_type(ValType::NumType(NumType::I32))<span class="question-mark">?</span>;
 
-                value_stack.push(ValType::NumType(NumType::F64));
+                stack.push_valtype(ValType::NumType(NumType::F64));
             }
             <span class="comment">// i32.store [i32] -&gt; [i32]
             </span>I32_STORE =&gt; {
@@ -614,168 +663,149 @@
                 // TODO check if memory[0] exists
 
                 // Value to store
-                </span>assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))<span class="question-mark">?</span>;
+                </span>stack.assert_pop_val_type(ValType::NumType(NumType::I32))<span class="question-mark">?</span>;
                 <span class="comment">// Address
-                </span>assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))<span class="question-mark">?</span>;
+                </span>stack.assert_pop_val_type(ValType::NumType(NumType::I32))<span class="question-mark">?</span>;
             }
             <span class="comment">// f32.store [f32] -&gt; [f32]
             </span>F32_STORE =&gt; {
                 <span class="kw">let </span>_memarg = MemArg::read_unvalidated(wasm);
 
                 <span class="comment">// Value to store
-                </span>assert_pop_value_stack(value_stack, ValType::NumType(NumType::F32))<span class="question-mark">?</span>;
+                </span>stack.assert_pop_val_type(ValType::NumType(NumType::F32))<span class="question-mark">?</span>;
                 <span class="comment">// Address
-                </span>assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))<span class="question-mark">?</span>;
+                </span>stack.assert_pop_val_type(ValType::NumType(NumType::I32))<span class="question-mark">?</span>;
             }
             F64_STORE =&gt; {
                 <span class="kw">let </span>_memarg = MemArg::read_unvalidated(wasm);
 
                 <span class="comment">// Value to store
-                </span>assert_pop_value_stack(value_stack, ValType::NumType(NumType::F64))<span class="question-mark">?</span>;
+                </span>stack.assert_pop_val_type(ValType::NumType(NumType::F64))<span class="question-mark">?</span>;
                 <span class="comment">// Address
-                </span>assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))<span class="question-mark">?</span>;
+                </span>stack.assert_pop_val_type(ValType::NumType(NumType::I32))<span class="question-mark">?</span>;
             }
             <span class="comment">// i32.const: [] -&gt; [i32]
             </span>I32_CONST =&gt; {
                 <span class="kw">let </span>_num = wasm.read_var_i32()<span class="question-mark">?</span>;
-                value_stack.push(ValType::NumType(NumType::I32));
+                stack.push_valtype(ValType::NumType(NumType::I32));
             }
             I64_CONST =&gt; {
                 <span class="kw">let </span>_num = wasm.read_var_i64()<span class="question-mark">?</span>;
-                value_stack.push(ValType::NumType(NumType::I64));
+                stack.push_valtype(ValType::NumType(NumType::I64));
             }
             F32_CONST =&gt; {
                 <span class="kw">let </span>_num = wasm.read_var_f32()<span class="question-mark">?</span>;
-                value_stack.push(ValType::NumType(NumType::F32));
+                stack.push_valtype(ValType::NumType(NumType::F32));
             }
             F64_CONST =&gt; {
                 <span class="kw">let </span>_num = wasm.read_var_f64()<span class="question-mark">?</span>;
-                value_stack.push(ValType::NumType(NumType::F64));
+                stack.push_valtype(ValType::NumType(NumType::F64));
             }
             I32_EQZ =&gt; {
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))<span class="question-mark">?</span>;
+                stack.assert_pop_val_type(ValType::NumType(NumType::I32))<span class="question-mark">?</span>;
 
-                value_stack.push(ValType::NumType(NumType::I32));
+                stack.push_valtype(ValType::NumType(NumType::I32));
             }
             I32_EQ | I32_NE | I32_LT_S | I32_LT_U | I32_GT_S | I32_GT_U | I32_LE_S | I32_LE_U
             | I32_GE_S | I32_GE_U =&gt; {
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))<span class="question-mark">?</span>;
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))<span class="question-mark">?</span>;
+                stack.assert_pop_val_type(ValType::NumType(NumType::I32))<span class="question-mark">?</span>;
+                stack.assert_pop_val_type(ValType::NumType(NumType::I32))<span class="question-mark">?</span>;
 
-                value_stack.push(ValType::NumType(NumType::I32));
+                stack.push_valtype(ValType::NumType(NumType::I32));
             }
             I64_EQZ =&gt; {
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I64))<span class="question-mark">?</span>;
+                stack.assert_pop_val_type(ValType::NumType(NumType::I64))<span class="question-mark">?</span>;
 
-                value_stack.push(ValType::NumType(NumType::I32));
+                stack.push_valtype(ValType::NumType(NumType::I32));
             }
             I64_EQ | I64_NE | I64_LT_S | I64_LT_U | I64_GT_S | I64_GT_U | I64_LE_S | I64_LE_U
             | I64_GE_S | I64_GE_U =&gt; {
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I64))<span class="question-mark">?</span>;
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I64))<span class="question-mark">?</span>;
+                stack.assert_pop_val_type(ValType::NumType(NumType::I64))<span class="question-mark">?</span>;
+                stack.assert_pop_val_type(ValType::NumType(NumType::I64))<span class="question-mark">?</span>;
 
-                value_stack.push(ValType::NumType(NumType::I32));
+                stack.push_valtype(ValType::NumType(NumType::I32));
             }
             F32_EQ | F32_NE | F32_LT | F32_GT | F32_LE | F32_GE =&gt; {
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::F32))<span class="question-mark">?</span>;
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::F32))<span class="question-mark">?</span>;
+                stack.assert_pop_val_type(ValType::NumType(NumType::F32))<span class="question-mark">?</span>;
+                stack.assert_pop_val_type(ValType::NumType(NumType::F32))<span class="question-mark">?</span>;
 
-                value_stack.push(ValType::NumType(NumType::I32));
+                stack.push_valtype(ValType::NumType(NumType::I32));
             }
             F64_EQ | F64_NE | F64_LT | F64_GT | F64_LE | F64_GE =&gt; {
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::F64))<span class="question-mark">?</span>;
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::F64))<span class="question-mark">?</span>;
+                stack.assert_pop_val_type(ValType::NumType(NumType::F64))<span class="question-mark">?</span>;
+                stack.assert_pop_val_type(ValType::NumType(NumType::F64))<span class="question-mark">?</span>;
 
-                value_stack.push(ValType::NumType(NumType::I32));
+                stack.push_valtype(ValType::NumType(NumType::I32));
             }
             F32_ABS | F32_NEG | F32_CEIL | F32_FLOOR | F32_TRUNC | F32_NEAREST | F32_SQRT =&gt; {
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::F32))<span class="question-mark">?</span>;
+                stack.assert_pop_val_type(ValType::NumType(NumType::F32))<span class="question-mark">?</span>;
 
-                value_stack.push(ValType::NumType(NumType::F32));
+                stack.push_valtype(ValType::NumType(NumType::F32));
             }
             F32_ADD | F32_SUB | F32_MUL | F32_DIV | F32_MIN | F32_MAX | F32_COPYSIGN =&gt; {
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::F32))<span class="question-mark">?</span>;
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::F32))<span class="question-mark">?</span>;
+                stack.assert_pop_val_type(ValType::NumType(NumType::F32))<span class="question-mark">?</span>;
+                stack.assert_pop_val_type(ValType::NumType(NumType::F32))<span class="question-mark">?</span>;
 
-                value_stack.push(ValType::NumType(NumType::F32));
+                stack.push_valtype(ValType::NumType(NumType::F32));
             }
             F64_ABS | F64_NEG | F64_CEIL | F64_FLOOR | F64_TRUNC | F64_NEAREST | F64_SQRT =&gt; {
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::F64))<span class="question-mark">?</span>;
+                stack.assert_pop_val_type(ValType::NumType(NumType::F64))<span class="question-mark">?</span>;
 
-                value_stack.push(ValType::NumType(NumType::F64));
+                stack.push_valtype(ValType::NumType(NumType::F64));
             }
             F64_ADD | F64_SUB | F64_MUL | F64_DIV | F64_MIN | F64_MAX | F64_COPYSIGN =&gt; {
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::F64))<span class="question-mark">?</span>;
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::F64))<span class="question-mark">?</span>;
+                stack.assert_pop_val_type(ValType::NumType(NumType::F64))<span class="question-mark">?</span>;
+                stack.assert_pop_val_type(ValType::NumType(NumType::F64))<span class="question-mark">?</span>;
 
-                value_stack.push(ValType::NumType(NumType::F64));
+                stack.push_valtype(ValType::NumType(NumType::F64));
             }
             I32_ADD | I32_SUB | I32_MUL | I32_DIV_S | I32_DIV_U | I32_REM_S =&gt; {
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))<span class="question-mark">?</span>;
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))<span class="question-mark">?</span>;
+                stack.assert_pop_val_type(ValType::NumType(NumType::I32))<span class="question-mark">?</span>;
+                stack.assert_pop_val_type(ValType::NumType(NumType::I32))<span class="question-mark">?</span>;
 
-                value_stack.push(ValType::NumType(NumType::I32));
+                stack.push_valtype(ValType::NumType(NumType::I32));
             }
             <span class="comment">// i32.clz: [i32] -&gt; [i32]
             </span>I32_CLZ | I32_CTZ | I32_POPCNT =&gt; {
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))<span class="question-mark">?</span>;
+                stack.assert_pop_val_type(ValType::NumType(NumType::I32))<span class="question-mark">?</span>;
 
-                value_stack.push(ValType::NumType(NumType::I32));
+                stack.push_valtype(ValType::NumType(NumType::I32));
             }
             I32_REM_U | I32_AND | I32_OR | I32_XOR | I32_SHL | I32_SHR_S | I32_SHR_U | I32_ROTL
             | I32_ROTR =&gt; {
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))<span class="question-mark">?</span>;
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))<span class="question-mark">?</span>;
+                stack.assert_pop_val_type(ValType::NumType(NumType::I32))<span class="question-mark">?</span>;
+                stack.assert_pop_val_type(ValType::NumType(NumType::I32))<span class="question-mark">?</span>;
 
-                value_stack.push(ValType::NumType(NumType::I32));
+                stack.push_valtype(ValType::NumType(NumType::I32));
             }
             I64_CLZ | I64_CTZ | I64_POPCNT =&gt; {
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I64))<span class="question-mark">?</span>;
+                stack.assert_pop_val_type(ValType::NumType(NumType::I64))<span class="question-mark">?</span>;
 
-                value_stack.push(ValType::NumType(NumType::I64));
+                stack.push_valtype(ValType::NumType(NumType::I64));
             }
 
             I64_ADD | I64_SUB | I64_MUL | I64_DIV_S | I64_DIV_U | I64_REM_S | I64_REM_U
             | I64_AND | I64_OR | I64_XOR | I64_SHL | I64_SHR_S | I64_SHR_U | I64_ROTL
             | I64_ROTR =&gt; {
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I64))<span class="question-mark">?</span>;
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I64))<span class="question-mark">?</span>;
+                stack.assert_pop_val_type(ValType::NumType(NumType::I64))<span class="question-mark">?</span>;
+                stack.assert_pop_val_type(ValType::NumType(NumType::I64))<span class="question-mark">?</span>;
 
-                value_stack.push(ValType::NumType(NumType::I64));
+                stack.push_valtype(ValType::NumType(NumType::I64));
             }
 
             F32_CONVERT_I32_S | F32_CONVERT_I32_U | F32_REINTERPRET_I32 =&gt; {
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I32))<span class="question-mark">?</span>;
+                stack.assert_pop_val_type(ValType::NumType(NumType::I32))<span class="question-mark">?</span>;
 
-                value_stack.push(ValType::NumType(NumType::F32));
+                stack.push_valtype(ValType::NumType(NumType::F32));
             }
 
             F32_CONVERT_I64_S | F32_CONVERT_I64_U =&gt; {
-                assert_pop_value_stack(value_stack, ValType::NumType(NumType::I64))<span class="question-mark">?</span>;
+                stack.assert_pop_val_type(ValType::NumType(NumType::I64))<span class="question-mark">?</span>;
 
-                value_stack.push(ValType::NumType(NumType::F32));
+                stack.push_valtype(ValType::NumType(NumType::F32));
             }
             <span class="kw">_ </span>=&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(Error::InvalidInstr(first_instr_byte)),
         }
     }
-}
-
-<span class="kw">fn </span>validate_value_stack&lt;F&gt;(return_ty: ResultType, f: F) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt;
-<span class="kw">where
-    </span>F: FnOnce(<span class="kw-2">&amp;mut </span>Vec&lt;ValType&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt;,
-{
-    <span class="kw">let </span><span class="kw-2">mut </span>value_stack: Vec&lt;ValType&gt; = Vec::new();
-
-    f(<span class="kw-2">&amp;mut </span>value_stack)<span class="question-mark">?</span>;
-
-    <span class="comment">// TODO also check here if correct order
-    </span><span class="kw">if </span>value_stack != return_ty.valtypes {
-        <span class="macro">error!</span>(
-            <span class="string">"Expected types {:?} on stack, got {:?}"</span>,
-            return_ty.valtypes, value_stack
-        );
-        <span class="kw">return </span><span class="prelude-val">Err</span>(Error::EndInvalidValueStack);
-    }
-    <span class="prelude-val">Ok</span>(())
 }
 </code></pre></div></section></main></body></html>

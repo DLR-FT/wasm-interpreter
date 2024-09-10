@@ -194,6 +194,7 @@
 <a href="#192" id="192">192</a>
 <a href="#193" id="193">193</a>
 <a href="#194" id="194">194</a>
+<a href="#195" id="195">195</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>alloc::vec::Vec;
 
 <span class="kw">use </span><span class="kw">crate</span>::core::indices::{FuncIdx, TypeIdx};
@@ -207,6 +208,7 @@
 <span class="kw">use crate</span>::{Error, <span class="prelude-ty">Result</span>};
 
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>code;
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>validation_stack;
 
 <span class="doccomment">/// Information collected from validating a module.
 /// This can be used to create a [crate::RuntimeInstance].

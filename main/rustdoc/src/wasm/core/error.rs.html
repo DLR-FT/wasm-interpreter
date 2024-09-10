@@ -135,7 +135,13 @@
 <a href="#133" id="133">133</a>
 <a href="#134" id="134">134</a>
 <a href="#135" id="135">135</a>
+<a href="#136" id="136">136</a>
+<a href="#137" id="137">137</a>
+<a href="#138" id="138">138</a>
+<a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::core::indices::GlobalIdx;
+<span class="kw">use </span><span class="kw">crate</span>::validation_stack::LabelKind;
 <span class="kw">use </span>core::fmt::{Display, Formatter};
 <span class="kw">use </span>core::str::Utf8Error;
 
@@ -171,13 +177,14 @@
     InvalidMultiByteInstr(u8, u8),
     EndInvalidValueStack,
     InvalidLocalIdx,
-    InvalidValueStackType(<span class="prelude-ty">Option</span>&lt;ValType&gt;),
+    InvalidValidationStackValType(<span class="prelude-ty">Option</span>&lt;ValType&gt;),
     InvalidLimitsType(u8),
     InvalidMutType(u8),
     MoreThanOneMemory,
     InvalidGlobalIdx(GlobalIdx),
     GlobalIsConst,
     RuntimeError(RuntimeError),
+    FoundLabel(LabelKind),
 }
 
 <span class="kw">impl </span>Display <span class="kw">for </span>Error {
@@ -231,7 +238,7 @@
                 <span class="string">"Different value stack types were expected at the end of a block/function."</span>,
             ),
             Error::InvalidLocalIdx =&gt; f.write_str(<span class="string">"An invalid localidx was used"</span>),
-            Error::InvalidValueStackType(ty) =&gt; f.write_fmt(<span class="macro">format_args!</span>(
+            Error::InvalidValidationStackValType(ty) =&gt; f.write_fmt(<span class="macro">format_args!</span>(
                 <span class="string">"An unexpected type was found on the stack when trying to pop another: `{ty:?}`"
             </span>)),
             Error::InvalidLimitsType(ty) =&gt; {
@@ -248,6 +255,9 @@
             </span>)),
             Error::GlobalIsConst =&gt; f.write_str(<span class="string">"A const global cannot be written to"</span>),
             Error::RuntimeError(err) =&gt; err.fmt(f),
+            Error::FoundLabel(lk) =&gt; f.write_fmt(<span class="macro">format_args!</span>(
+                <span class="string">"Expecting a ValType, a Label was found: {lk:?}"
+            </span>)),
         }
     }
 }
