@@ -396,6 +396,23 @@
 <a href="#394" id="394">394</a>
 <a href="#395" id="395">395</a>
 <a href="#396" id="396">396</a>
+<a href="#397" id="397">397</a>
+<a href="#398" id="398">398</a>
+<a href="#399" id="399">399</a>
+<a href="#400" id="400">400</a>
+<a href="#401" id="401">401</a>
+<a href="#402" id="402">402</a>
+<a href="#403" id="403">403</a>
+<a href="#404" id="404">404</a>
+<a href="#405" id="405">405</a>
+<a href="#406" id="406">406</a>
+<a href="#407" id="407">407</a>
+<a href="#408" id="408">408</a>
+<a href="#409" id="409">409</a>
+<a href="#410" id="410">410</a>
+<a href="#411" id="411">411</a>
+<a href="#412" id="412">412</a>
+<a href="#413" id="413">413</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! This module contains the [`ValidationStack`] data structure
 //!
 //! The [`ValidationStack`] is a unified stack, in the sense that it unifies both
@@ -432,7 +449,9 @@
 
     <span class="doccomment">/// This puts an unspecified element on top of the stack.
     /// While the top of the stack is unspecified, arbitrary value types can be popped.
-    /// To remove this, a new label has to be pushed or an existing one has to be popped.
+    /// To undo this, a new label has to be pushed or an existing one has to be popped.
+    ///
+    /// See the documentation for [`ValidationStackEntry::UnspecifiedValTypes`] for more info.
     </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>make_unspecified(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
         <span class="comment">// Pop everything until next label or until the stack is empty.
         // This is okay, because these values cannot be accessed during execution ever again.
@@ -487,8 +506,8 @@
 
     <span class="doccomment">/// Asserts that the values on top of the stack match those of a value iterator
     ///
-    /// The last element of the `val_types` [`Iterator`] is compared to the top-most
-    /// [`ValidationStackEntry`], the second last `val_types` element to the second top-most
+    /// The last element of `expected_val_types` is compared to the top-most
+    /// [`ValidationStackEntry`], the second last `expected_val_types` element to the second top-most
     /// [`ValidationStackEntry`] etc.
     ///
     /// Any occurence of the [`ValidationStackEntry::Label`] variant in the stack tail will cause an
@@ -517,7 +536,9 @@
                     }
                 }
                 ValidationStackEntry::UnspecifiedValTypes =&gt; {
-                    <span class="kw">return </span><span class="prelude-val">Ok</span>(());
+                    <span class="comment">// In case we find an `UnspecifiedValTypes`, we pretend that all expected valtypes are found.
+                    // That's because this entry can expand to every possible combination of valtypes.
+                    </span><span class="kw">return </span><span class="prelude-val">Ok</span>(());
                 }
             }
         }
@@ -525,7 +546,16 @@
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>assert_val_types(<span class="kw-2">&amp;</span><span class="self">self</span>, expected_val_types: <span class="kw-2">&amp;</span>[ValType]) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    <span class="doccomment">/// Asserts that the valtypes on the stack match the expected valtypes.
+    ///
+    /// This starts by comparing the top-most valtype with the last element from `expected_val_types` and then continues downwards on the stack.
+    /// If a label is reached and not all `expected_val_types` have been checked, the assertion fails.
+    ///
+    /// # Returns
+    ///
+    /// - `Ok(())` if all expected valtypes were found
+    /// - `Err(_)` otherwise
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>assert_val_types(<span class="kw-2">&amp;</span><span class="self">self</span>, expected_val_types: <span class="kw-2">&amp;</span>[ValType]) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">let </span>topmost_label_index = <span class="self">self</span>.find_topmost_label_idx();
 
         <span class="kw">let </span>first_valtype = topmost_label_index.map(|idx| idx + <span class="number">1</span>).unwrap_or(<span class="number">0</span>);
@@ -553,7 +583,7 @@
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="doccomment">/// Finds the index of the topmost label that is currently on the stack.
+    <span class="doccomment">/// A helper to find the index of the top-most label in [`ValidationStack::stack`]
     </span><span class="kw">fn </span>find_topmost_label_idx(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;usize&gt; {
         <span class="self">self</span>.stack
             .iter()
@@ -563,8 +593,13 @@
             .map(|(idx, _entry)| idx)
     }
 
-    <span class="doccomment">/// Removes all valtypes until the next lower label.
-    /// If a label is found and popped, its info is returned.
+    <span class="doccomment">/// Searches for the top-most label, then pops the label and all entry on top of that label.
+    /// Only the label's [`LabelInfo`] is returned.
+    ///
+    /// # Returns
+    ///
+    /// - `Ok(LabelInfo)` if a label has been found and popped
+    /// - `None` if no label was found on the stack
     </span><span class="kw">fn </span>pop_label_and_above(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;LabelInfo&gt; {
         <span class="doccomment">/// Delete all the values until the topmost label or until the stack is empty
         </span><span class="kw">match </span><span class="self">self</span>.find_topmost_label_idx() {
@@ -602,12 +637,11 @@
     <span class="doccomment">/// A label
     </span>Label(LabelInfo),
 
-    <span class="doccomment">/// Special variant to encode that any possible number of ValTypes could be here
+    <span class="doccomment">/// Special variant to encode that any possible number of [`ValType`]s could be here
     ///
-    /// Caused by `return` and `unreachable, as both can push an arbitrary number of values
-    /// from/to the stack.
+    /// Caused by `return` and `unreachable`, as both can push an arbitrary number of values to the stack.
     ///
-    /// When this variant is popped onto the stack, all valtypes until the next lower label are deleted.
+    /// When this variant is pushed onto the stack, all valtypes until the next lower label are deleted.
     /// They are not needed anymore because this variant can expand to all of them.
     </span>UnspecifiedValTypes,
 }
