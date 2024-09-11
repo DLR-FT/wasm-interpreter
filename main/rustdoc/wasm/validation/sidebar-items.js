@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["handle_section","read_next_header","validate"],"mod":["code","validation_stack"],"struct":["ValidationInfo"]};
+window.SIDEBAR_ITEMS = {"fn":["handle_section","read_next_header","validate"],"mod":["code","globals","validation_stack"],"struct":["ValidationInfo"]};

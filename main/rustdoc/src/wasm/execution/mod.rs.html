@@ -260,8 +260,19 @@
 <a href="#258" id="258">258</a>
 <a href="#259" id="259">259</a>
 <a href="#260" id="260">260</a>
+<a href="#261" id="261">261</a>
+<a href="#262" id="262">262</a>
+<a href="#263" id="263">263</a>
+<a href="#264" id="264">264</a>
+<a href="#265" id="265">265</a>
+<a href="#266" id="266">266</a>
+<a href="#267" id="267">267</a>
+<a href="#268" id="268">268</a>
+<a href="#269" id="269">269</a>
+<a href="#270" id="270">270</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>alloc::vec::Vec;
 
+<span class="kw">use </span>const_interpreter_loop::run_const;
 <span class="kw">use </span>interpreter_loop::run;
 <span class="kw">use </span>locals::Locals;
 <span class="kw">use </span>value_stack::Stack;
@@ -280,6 +291,7 @@
 
 <span class="comment">// TODO
 </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>assert_validated;
+<span class="kw">mod </span>const_interpreter_loop;
 <span class="kw">pub mod </span>hooks;
 <span class="kw">mod </span>interpreter_loop;
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>locals;
@@ -502,13 +514,21 @@
         <span class="kw">let </span>global_instances: Vec&lt;GlobalInst&gt; = validation_info
             .globals
             .iter()
-            .map(|global| {
-                <span class="comment">// TODO execute `global.init_expr` to get initial value. For now just use a default value.
-                </span><span class="kw">let </span>value = Value::default_from_ty(global.ty.ty);
+            .map({
+                <span class="kw">let </span><span class="kw-2">mut </span>stack = Stack::new();
+                <span class="kw">move </span>|global| {
+                    <span class="kw">let </span><span class="kw-2">mut </span>wasm = WasmReader::new(validation_info.wasm);
+                    <span class="comment">// The place we are moving the start to should, by all means, be inside the wasm bytecode.
+                    </span>wasm.move_start_to(global.init_expr).unwrap_validated();
+                    <span class="comment">// We shouldn't need to clear the stack. If validation is correct, it will remain empty after execution.
 
-                GlobalInst {
-                    global: <span class="kw-2">*</span>global,
-                    value,
+                    </span>run_const(wasm, <span class="kw-2">&amp;mut </span>stack, ());
+                    <span class="kw">let </span>value = stack.pop_value(global.ty.ty);
+
+                    GlobalInst {
+                        global: <span class="kw-2">*</span>global,
+                        value,
+                    }
                 }
             })
             .collect();

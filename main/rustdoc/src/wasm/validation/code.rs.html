@@ -600,7 +600,7 @@
                 </span>} <span class="kw">else </span>{
                     <span class="comment">// This is the last end of a function
 
-                    // The stack must only contain the functions return valtypes
+                    // The stack must only contain the function's return valtypes
                     </span><span class="kw">let </span>this_func_ty = <span class="kw-2">&amp;</span>fn_types[type_idx_of_fn[this_function_idx]];
                     stack.assert_val_types(<span class="kw-2">&amp;</span>this_func_ty.returns.valtypes)<span class="question-mark">?</span>;
                     <span class="kw">return </span><span class="prelude-val">Ok</span>(());

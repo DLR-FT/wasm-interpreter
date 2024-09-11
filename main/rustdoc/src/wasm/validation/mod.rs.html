@@ -191,10 +191,6 @@
 <a href="#189" id="189">189</a>
 <a href="#190" id="190">190</a>
 <a href="#191" id="191">191</a>
-<a href="#192" id="192">192</a>
-<a href="#193" id="193">193</a>
-<a href="#194" id="194">194</a>
-<a href="#195" id="195">195</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>alloc::vec::Vec;
 
 <span class="kw">use </span><span class="kw">crate</span>::core::indices::{FuncIdx, TypeIdx};
@@ -208,6 +204,7 @@
 <span class="kw">use crate</span>::{Error, <span class="prelude-ty">Result</span>};
 
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>code;
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>globals;
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>validation_stack;
 
 <span class="doccomment">/// Information collected from validating a module.
@@ -293,13 +290,8 @@
 
     <span class="kw">while </span>(skip_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header)<span class="question-mark">?</span>).is_some() {}
 
-    <span class="kw">let </span>globals = handle_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header, SectionTy::Global, |wasm, <span class="kw">_</span>| {
-        wasm.read_vec(|wasm| {
-            <span class="comment">// TODO validate instructions in `global.init_expr`. Furthermore all of these instructions need to be constant.
-            //  See https://webassembly.github.io/spec/core/valid/instructions.html#valid-constant
-            //  Maybe we can also execute constant expressions right here so they do not even exist in the runtime environment. &lt;-- Needs further research to check if this is even possible
-            </span>Global::read(wasm)
-        })
+    <span class="kw">let </span>globals = handle_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header, SectionTy::Global, |wasm, h| {
+        globals::validate_global_section(wasm, h)
     })<span class="question-mark">?
     </span>.unwrap_or_default();
 
