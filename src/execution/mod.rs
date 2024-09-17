@@ -5,10 +5,13 @@ use const_interpreter_loop::run_const;
 use function_ref::FunctionRef;
 use interpreter_loop::run;
 use locals::Locals;
+use store::{ImportedFuncInst, LocalFuncInst};
 use value_stack::Stack;
 
 use crate::core::reader::types::export::{Export, ExportDesc};
+use crate::core::reader::types::import::ImportDesc;
 use crate::core::reader::types::FuncType;
+use crate::core::reader::types::{FuncType, ValType};
 use crate::core::reader::WasmReader;
 use crate::execution::assert_validated::UnwrapValidatedExt;
 use crate::execution::hooks::{EmptyHookSet, HookSet};
@@ -154,15 +157,30 @@ where
         let (_module_idx, func_idx) = self.verify_function_ref(function_ref)?;
 
         // -=-= Verification =-=-
-        let func_inst = self.store.funcs.get(func_idx).expect("valid FuncIdx");
+        trace!("{:?}", self.store.funcs);
+        let func_inst = self
+            .store
+            .funcs
+            .get(func_idx)
+            .ok_or(RuntimeError::FunctionNotFound)?
+            .try_into_local()
+            .ok_or(RuntimeError::FunctionNotFound)?;
         let func_ty = self.types.get(func_inst.ty).unwrap_validated();
 
         // Check correct function parameters and return types
         if func_ty.params.valtypes != Param::TYS {
-            panic!("Invalid `Param` generics");
+            panic!(
+                "Invalid `Param` generics. Expected: {:?}, Found: {:?}",
+                func_ty.params.valtypes,
+                Param::TYS
+            );
         }
         if func_ty.returns.valtypes != Returns::TYS {
-            panic!("Invalid `Returns` generics");
+            panic!(
+                "Invalid `Returns` generics. Expected: {:?}, Found: {:?}",
+                func_ty.returns.valtypes,
+                Returns::TYS
+            );
         }
 
         // Prepare a new stack with the locals for the entry function
@@ -209,7 +227,13 @@ where
         let (_module_idx, func_idx) = self.verify_function_ref(function_ref)?;
 
         // -=-= Verification =-=-
-        let func_inst = self.store.funcs.get(func_idx).expect("valid FuncIdx");
+        let func_inst = self
+            .store
+            .funcs
+            .get(func_idx)
+            .ok_or(RuntimeError::FunctionNotFound)?
+            .try_into_local()
+            .ok_or(RuntimeError::FunctionNotFound)?;
         let func_ty = self.types.get(func_inst.ty).unwrap_validated();
 
         // Verify that the given parameters match the function parameters
@@ -237,9 +261,6 @@ where
             &mut stack,
             EmptyHookSet,
         )?;
-
-        let func_inst = self.store.funcs.get(func_idx).expect("valid FuncIdx");
-        let func_ty = self.types.get(func_inst.ty).unwrap_validated();
 
         // Pop return values from stack
         let return_values = func_ty
@@ -317,28 +338,40 @@ where
             let functions = validation_info.functions.iter();
             let func_blocks = validation_info.func_blocks.iter();
 
-            functions
-                .zip(func_blocks)
-                .map(|(ty, func)| {
-                    wasm_reader
-                        .move_start_to(*func)
-                        .expect("function index to be in the bounds of the WASM binary");
+            let local_function_inst = functions.zip(func_blocks).map(|(ty, func)| {
+                wasm_reader
+                    .move_start_to(*func)
+                    .expect("function index to be in the bounds of the WASM binary");
 
-                    let (locals, bytes_read) = wasm_reader
-                        .measure_num_read_bytes(read_declared_locals)
-                        .unwrap_validated();
+                let (locals, bytes_read) = wasm_reader
+                    .measure_num_read_bytes(read_declared_locals)
+                    .unwrap_validated();
 
-                    let code_expr = wasm_reader
-                        .make_span(func.len() - bytes_read)
-                        .expect("TODO remove this expect");
+                let code_expr = wasm_reader
+                    .make_span(func.len() - bytes_read)
+                    .expect("TODO remove this expect");
 
-                    FuncInst {
-                        ty: *ty,
-                        locals,
-                        code_expr,
-                    }
+                FuncInst::Local(LocalFuncInst {
+                    ty: *ty,
+                    locals,
+                    code_expr,
                 })
-                .collect()
+            });
+
+            let imported_function_inst =
+                validation_info
+                    .imports
+                    .iter()
+                    .filter_map(|import| match &import.desc {
+                        ImportDesc::Func(type_idx) => Some(FuncInst::Imported(ImportedFuncInst {
+                            ty: *type_idx,
+                            module_name: import.module_name.clone(),
+                            function_name: import.name.clone(),
+                        })),
+                        _ => None,
+                    });
+
+            imported_function_inst.chain(local_function_inst).collect()
         };
 
         let memory_instances: Vec<MemInst> = validation_info

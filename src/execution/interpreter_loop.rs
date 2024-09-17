@@ -42,6 +42,8 @@ pub(super) fn run<H: HookSet>(
     let func_inst = store
         .funcs
         .get(stack.current_stackframe().func_idx)
+        .unwrap_validated()
+        .try_into_local()
         .unwrap_validated();
 
     // Start reading the function's instructions
@@ -78,7 +80,7 @@ pub(super) fn run<H: HookSet>(
                 let func_to_call_idx = stack.current_stackframe().func_idx;
 
                 let func_to_call_inst = store.funcs.get(func_to_call_idx).unwrap_validated();
-                let func_to_call_ty = types.get(func_to_call_inst.ty).unwrap_validated();
+                let func_to_call_ty = types.get(func_to_call_inst.ty()).unwrap_validated();
 
                 let ret_vals = stack
                     .pop_tail_iter(func_to_call_ty.returns.valtypes.len())
@@ -99,7 +101,13 @@ pub(super) fn run<H: HookSet>(
             CALL => {
                 let func_to_call_idx = wasm.read_var_u32().unwrap_validated() as FuncIdx;
 
-                let func_to_call_inst = store.funcs.get(func_to_call_idx).unwrap_validated();
+                // TODO: if it is imported, defer to linking
+                let func_to_call_inst = store
+                    .funcs
+                    .get(func_to_call_idx)
+                    .unwrap_validated()
+                    .try_into_local()
+                    .expect("TODO: call imported functions");
                 let func_to_call_ty = types.get(func_to_call_inst.ty).unwrap_validated();
 
                 let params = stack.pop_tail_iter(func_to_call_ty.params.valtypes.len());
