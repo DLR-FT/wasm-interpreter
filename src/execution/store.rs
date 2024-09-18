@@ -5,6 +5,7 @@ use core::iter;
 
 use crate::core::indices::TypeIdx;
 use crate::core::reader::span::Span;
+use crate::core::reader::types::export::Export;
 use crate::core::reader::types::global::Global;
 use crate::core::reader::types::{MemType, TableType, ValType};
 use crate::execution::value::{Ref, Value};
@@ -20,6 +21,7 @@ pub struct Store {
     // tables: Vec<TableInst>,
     pub mems: Vec<MemInst>,
     pub globals: Vec<GlobalInst>,
+    pub exports: Vec<Export>,
 }
 
 #[derive(Debug)]
@@ -40,6 +42,13 @@ impl FuncInst {
         match self {
             FuncInst::Local(f) => Some(f),
             FuncInst::Imported(_) => None,
+        }
+    }
+
+    pub fn try_into_imported(&self) -> Option<&ImportedFuncInst> {
+        match self {
+            FuncInst::Local(_) => None,
+            FuncInst::Imported(f) => Some(f),
         }
     }
 }

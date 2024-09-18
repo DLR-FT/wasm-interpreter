@@ -11,9 +11,11 @@ pub enum RuntimeError {
     DivideBy0,
     UnrepresentableResult,
     FunctionNotFound,
+    ModuleNotFound,
     StackSmash,
     // https://github.com/wasmi-labs/wasmi/blob/37d1449524a322817c55026eb21eb97dd693b9ce/crates/core/src/trap.rs#L265C5-L265C27
     BadConversionToInteger,
+    UnmetImport,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -127,9 +129,13 @@ impl Display for RuntimeError {
         match self {
             RuntimeError::DivideBy0 => f.write_str("Divide by zero is not permitted"),
             RuntimeError::UnrepresentableResult => f.write_str("Result is unrepresentable"),
+            RuntimeError::ModuleNotFound => f.write_str("Module not found"),
             RuntimeError::FunctionNotFound => f.write_str("Function not found"),
             RuntimeError::StackSmash => f.write_str("Stack smashed"),
             RuntimeError::BadConversionToInteger => f.write_str("Bad conversion to integer"),
+            RuntimeError::UnmetImport => {
+                f.write_str("There is at least one import which has no corresponding export")
+            }
         }
     }
 }
