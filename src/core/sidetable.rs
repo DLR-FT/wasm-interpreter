@@ -19,6 +19,19 @@
 //!   back on the operand stack after unwinding. This behavior can be emulated by copying the
 //!   uppermost [`SidetableEntry::valcnt`] operands on the operand stack before taking a branch
 //!   into a structured control instruction.
+//!   
+//! # Relevant instructions
+//! **Sidetable jump origins (and how many ST entries they require)**
+//! - br (1)
+//! - br_if (1)
+//! - br_table (num_labels + 1 for default label)
+//! - if (2, maybe 1??)
+
+//! **Sidetable jump targets**
+//! - end of block
+//! - loop
+//! - else
+//! - end of else block
 //!
 //! # Reference
 //!
@@ -61,7 +74,6 @@ pub struct SidetableEntry {
     pub pop_count: usize,
 }
 
-/// A helper used during validation to build the sidetable
 pub struct SidetableBuilder {}
 
 impl SidetableBuilder {

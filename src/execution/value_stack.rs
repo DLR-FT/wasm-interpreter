@@ -7,10 +7,7 @@ use crate::execution::value::Value;
 use crate::locals::Locals;
 use crate::unreachable_validated;
 
-/// The stack at runtime containing
-/// 1. Values
-/// 2. Labels
-/// 3. Activations
+/// The stack at runtime containing values
 ///
 /// See <https://webassembly.github.io/spec/core/exec/runtime.html#stack>
 #[derive(Default)]
@@ -49,6 +46,54 @@ impl Stack {
             popped
         } else {
             unreachable_validated!()
+        }
+    }
+
+    /// This unwinds the stack by popping the topmost `num_values_to_keep` values and storing them temporarily.
+    /// Then the next topmost `num_values_to_remove` values are discarded before the previously popped values are pushed back to the stack.
+    ///
+    /// Example:
+    /// ```
+    /// BOTTOM                                                  TOP
+    /// -----------------------------------------------------------
+    /// | ... | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 1 | 2 | 3 | 4 |
+    /// ---------------------------------------------------------
+    ///           | num_values_to_remove  |   num_values_to_keep  |
+    /// ```
+    /// becomes
+    ///
+    /// ```
+    /// BOTTOM                          TOP
+    /// |----------------------------------
+    /// | ... | 1 | 8 | 9 | 1 | 2 | 3 | 4 |
+    /// |----------------------------------
+    ///           |   num_values_to_keep  |
+    /// ```
+    ///
+    // TODO Eventually this value stack should store raw bytes instead of enums on the stack. Then both `num_values` parameters should instead work with bytes.
+    pub fn unwind(&mut self, num_values_to_keep: usize, num_values_to_remove: usize) {
+        // FIXME: This is inefficient
+        let mut temporary_values = Vec::new();
+
+        for _ in 0..num_values_to_keep {
+            temporary_values.push(self.values.pop().unwrap_validated());
+        }
+
+        for _ in 0..num_values_to_remove {
+            self.values.pop().unwrap_validated();
+        }
+
+        // We should not have crossed a callframe boundary
+        debug_assert!(
+            self.frames
+                .last()
+                .map_or(true, |last_frame| self.values.len()
+                    > last_frame.value_stack_base_idx),
+            "can not pop values past the current stackframe"
+        );
+
+        for value in temporary_values.into_iter().rev() {
+            self.values.push(value);
         }
     }
 
@@ -183,4 +228,32 @@ pub(crate) struct CallFrame {
 
     /// Number of return values to retain on [`Stack::values`] when unwinding/popping a [`CallFrame`]
     pub return_value_count: usize,
+}
+
+#[test]
+fn test_stack_unwind() {
+    fn test_with_ten_example_numbers(num_keep: usize, num_pop: usize, expected: &[u32]) {
+        let mut stack = Stack::new();
+        for i in 0..10 {
+            stack.push_value(Value::I32(i));
+        }
+
+        stack.unwind(num_keep, num_pop);
+
+        let expected_values: Vec<Value> = expected.into_iter().copied().map(Value::I32).collect();
+
+        assert_eq!(&stack.values, &expected_values);
+    }
+
+    test_with_ten_example_numbers(2, 3, &[0, 1, 2, 3, 4, 8, 9]);
+
+    test_with_ten_example_numbers(0, 2, &[0, 1, 2, 3, 4, 5, 6, 7]);
+
+    test_with_ten_example_numbers(0, 0, &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+
+    test_with_ten_example_numbers(4, 0, &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+
+    test_with_ten_example_numbers(10, 0, &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+
+    test_with_ten_example_numbers(1, 9, &[9]);
 }

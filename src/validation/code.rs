@@ -1,12 +1,12 @@
 use alloc::vec::Vec;
 use core::iter;
 
-use crate::core::indices::{FuncIdx, GlobalIdx, LocalIdx};
+use crate::core::indices::{FuncIdx, GlobalIdx, LabelIdx, LocalIdx};
 use crate::core::reader::section_header::{SectionHeader, SectionTy};
 use crate::core::reader::span::Span;
 use crate::core::reader::types::global::Global;
 use crate::core::reader::types::memarg::MemArg;
-use crate::core::reader::types::{FuncType, NumType, ResultType, ValType};
+use crate::core::reader::types::{BlockType, FuncType, NumType, ResultType, ValType};
 use crate::core::reader::{WasmReadable, WasmReader};
 use crate::core::sidetable::Sidetable;
 use crate::validation_stack::ValidationStack;
@@ -97,6 +97,16 @@ fn read_instructions(
 ) -> Result<()> {
     let mut sidetable: Sidetable = Sidetable::default();
 
+    struct SidetableEntryBuilder {}
+
+    let mut sidetable_builder = Vec::<SidetableEntryBuilder>::new();
+
+    enum ControlStackEntry {
+        Block,
+    }
+
+    let mut control_stack = Vec::<ControlStackEntry>::new();
+
     // TODO we must terminate only if both we saw the final `end` and when we consumed all of the code span
     loop {
         let Ok(first_instr_byte) = wasm.read_u8() else {
@@ -114,55 +124,26 @@ fn read_instructions(
             // nop: [] -> []
             NOP => {}
             // block: [] -> [t*2]
-            BLOCK | LOOP | IF => {
-                let block_ty = if wasm.peek_u8()? as i8 == 0x40 {
-                    // Empty block type
-                    let _ = wasm.read_u8();
+            BLOCK => {
+                let _block_type: FuncType = BlockType::read(wasm)?.as_func_type(&fn_types)?;
 
-                    FuncType {
-                        params: ResultType {
-                            valtypes: Vec::new(),
-                        },
-                        returns: ResultType {
-                            valtypes: Vec::new(),
-                        },
-                    }
-                } else if let Ok(val_ty) = ValType::read(wasm) {
-                    // No parameters and given valtype as the result
-                    FuncType {
-                        params: ResultType {
-                            valtypes: Vec::new(),
-                        },
-                        returns: ResultType {
-                            valtypes: [val_ty].into(),
-                        },
-                    }
-                } else {
-                    // An index to a function type
-                    let maybe_ty_idx: usize = wasm
-                        .read_var_i33()?
-                        .try_into()
-                        .map_err(|_| Error::InvalidFuncTypeIdx)?;
+                control_stack.push(ControlStackEntry::Block);
+            }
+            BR => {
+                let label_idx = wasm.read_var_u32()? as LabelIdx;
+            }
+            LOOP | IF => {
+                let _block_type: FuncType = BlockType::read(wasm)?.as_func_type(&fn_types)?;
 
-                    fn_types
-                        .get(maybe_ty_idx)
-                        .ok_or_else(|| Error::InvalidFuncTypeIdx)?
-                        .clone()
-                };
-
-                todo!(
-                    "{}, {}",
-                    "add incomplete entry to sidetable",
-                    "verify from now on that only the top-most block_ty.params are accessed"
-                );
+                todo!("execute loop / if")
+                // todo!(
+                // "{}, {}",
+                // "add incomplete entry to sidetable",
+                // "verify from now on that only the top-most block_ty.params are accessed"
+                // );
             }
             // end
             END => {
-                // TODO check if there are labels on the stack.
-                // If there are none (i.e. this is the implicit end of the function and not a jump to the end of a function), the stack must only contain the valid return values, no other junk.
-                //
-                // Else, anything may remain on the stack, as long as the top of the stack matche the current blocks return value.
-
                 if stack.has_remaining_label() {
                     // This is the END of a block.
 
@@ -227,6 +208,12 @@ fn read_instructions(
                 for typ in func_ty.returns.valtypes.iter() {
                     stack.push_valtype(*typ);
                 }
+                // if let Some(popped_control_entry) = control_stack.pop() {
+                //     todo!("Complete sidetable entries that jumped to this entry's label");
+                // } else {
+                //     return Ok(());
+                // }
+                // todo!("check if there is a pending sidetable entry to be completed")
             }
             // local.get: [] -> [t]
             LOCAL_GET => {

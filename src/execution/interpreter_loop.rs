@@ -17,14 +17,14 @@ use crate::{
     core::{
         indices::{FuncIdx, GlobalIdx, LocalIdx},
         reader::{
-            types::{memarg::MemArg, FuncType},
+            types::{memarg::MemArg, BlockType, FuncType},
             WasmReadable, WasmReader,
         },
         sidetable::{self, Sidetable, SidetableEntry},
     },
     locals::Locals,
     store::Store,
-    value,
+    unreachable_validated, value,
     value_stack::Stack,
     NumType, RuntimeError, ValType, Value,
 };
@@ -116,7 +116,40 @@ pub(super) fn run<H: HookSet>(
                 wasm.move_start_to(func_to_call_inst.code_expr)
                     .unwrap_validated();
             }
-            BR => {}
+            BLOCK => {
+                let _block_type = BlockType::read_unvalidated(&mut wasm);
+
+                // Nothing else to do. The sidetable is responsible for control flow.
+            }
+            IF => {
+                todo!("execute if instruction, low priority as if can be simulated with br_if and blocks")
+            }
+            ELSE => {
+                do_sidetable_control_transfer(&sidetable, &mut sidetable_pointer, &mut wasm, stack);
+            }
+            BR => {
+                let _target_label = wasm.read_var_u32().unwrap_validated();
+                do_sidetable_control_transfer(&sidetable, &mut sidetable_pointer, &mut wasm, stack);
+            }
+            BR_IF => {
+                let _target_label = wasm.read_var_u32().unwrap_validated();
+
+                let condition: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                if condition != 0 {
+                    do_sidetable_control_transfer(
+                        &sidetable,
+                        &mut sidetable_pointer,
+                        &mut wasm,
+                        stack,
+                    );
+                } else {
+                    sidetable_pointer += 1;
+                }
+            }
+            BR_TABLE => {
+                todo!("execute BR_TABLE, Titzer stores multiple entries in the sidetable here, one for each label. See https://arxiv.org/pdf/2205.01183#lstlisting.1");
+            }
             LOCAL_GET => {
                 stack.get_local(wasm.read_var_u32().unwrap_validated() as LocalIdx);
             }
@@ -1420,6 +1453,7 @@ fn do_sidetable_control_transfer(
     sidetable: &Sidetable,
     sidetable_pointer: &mut usize,
     wasm: &mut WasmReader,
+    stack: &mut Stack,
 ) {
     let entry = *sidetable
         .get(*sidetable_pointer)
@@ -1435,4 +1469,7 @@ fn do_sidetable_control_transfer(
 
     *sidetable_pointer +=
         usize::try_from(entry.delta_stp).expect("delta_stp to be negative for branches");
+    usize::try_from(entry.delta_stp).expect("delta_stp to be negative for branches");
+
+    stack.unwind(entry.val_count, entry.pop_count);
 }
