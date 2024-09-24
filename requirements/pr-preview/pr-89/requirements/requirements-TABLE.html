@@ -1,0 +1,1139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  
+  <meta charset="UTF-8"/>
+  <meta name="keywords" content="strictdoc, documentation, documentation-tool, requirements-management, requirements, documentation-generator, requirement-specifications, requirements-engineering, technical-documentation, requirements-specification"/>
+  <meta name="description" content="strictdoc. Software for technical documentation and requirements management."/>
+
+  <link rel="shortcut icon" href="../_static/favicon.ico" type="image/x-icon"/>
+
+  
+  
+  <link rel="stylesheet" href="../_static/base.css"/>
+  <link rel="stylesheet" href="../_static/layout.css"/>
+  <link rel="stylesheet" href="../_static/content.css"/>
+  <link rel="stylesheet" href="../_static/node.css"/>
+  <link rel="stylesheet" href="../_static/requirement.css"/>
+  <link rel="stylesheet" href="../_static/element.css"/>
+  <link rel="stylesheet" href="../_static/form.css"/>
+  <link rel="stylesheet" href="../_static/requirement__temporary.css"/>
+  <link rel="stylesheet" href="../_static/autogen.css"/>
+  
+  <link rel="stylesheet" href="../_static/table_vew.css"/>
+
+
+  
+  <script type="text/javascript" src="../_static/viewtype_menu.js"></script>
+  <script type="text/javascript" src="../_static/resizable_bar.js"></script>
+  <script type="text/javascript" src="../_static/collapsible_toc.js"></script>
+  <script type="text/javascript" src="../_static/toc_highlighting.js"></script>
+  
+  
+
+
+  <title>WASM Interpreter for Safety - Requirements - Table</title>
+
+  
+</head>
+
+<body data-viewtype="table" data-turbo="false">
+
+<div class="mars">
+  
+</div>
+
+  <div class="layout" id="layout">
+
+    <nav class="layout_nav">
+      <div class="nav">
+
+
+
+  <a
+    data-link="index"
+    class="nav_button"
+    href="../index.html"
+    title="Project index">
+    <svg class="svg_icon" width="16" height="16" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <line x1="9" y1="4" x2="7" y2="4"></line>
+  <line x1="12" y1="9" x2="12" y2="7"></line>
+  <line x1="6" y1="10" x2="10" y2="6"></line>
+  <circle cx="4" cy="12" r="2.25"></circle>
+  <circle cx="12" cy="4" r="2.25"></circle>
+  <circle cx="4" cy="4" r="2.25"></circle>
+  <circle cx="12" cy="12" r="2.25"></circle>
+</svg>
+  </a></div>
+    </nav><aside class="layout_tree">
+      
+  
+
+
+
+<div
+  js-resizable_bar="tree"
+  data-state="open"
+  data-position="left"
+>
+<div class="tree">
+        
+        <a
+          href="../requirements/requirements.html"
+          class="tree_item"
+          
+          active="true"
+          
+          data-folder="requirements"
+          data-testid="tree-document-link"
+        >
+          <svg class="svg_icon" width="16" height="16" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <path d=" M13,13 L13,8 C13,7.5 12.6,7 12,7 L9,7 C8.5,7 8,6.5 8,6 L8,3 C8,2.5 7.5,2 7,2 L4,2 C3.5,2 3,2.5 3,3 L3,13 C3,13.5 3.5,14 4,14 L12,14 C12.6,14 13,13.5 13,13 Z M13,9 L13,8 C13,7.5 13,7 12.5,6.5 L8.5,2.5 C8,2 7.5,2 7,2 L6,2"></path>
+</svg>
+          <div
+            class="document_title"
+            title="WASM Interpreter for Safety - Requirements"
+            data-file_name="requirements.sdoc"
+          >WASM Interpreter for Safety - Requirements</div>
+        </a>
+        
+        
+        
+        
+      </div>
+</div>
+
+    </aside><aside
+        data-position="right"
+        class="layout_toc"
+      >
+        
+  
+
+
+
+<div
+  js-resizable_bar="toc"
+  data-state="open"
+  data-position="right"
+>
+<turbo-frame
+  id="frame-toc"
+  style="display: contents"
+>
+      <ul
+      data-testid="toc-list"
+      js-collapsible_list="list"
+      class="toc"
+      id="toc"
+      data-controller="draggable_list"><li data-nodeid="b0225ea02a8847e89458e5888e58f355"><a
+              href="#1-Functional-Requirements"
+              anchor="1-Functional-Requirements"
+              data-turbo="false"
+            >
+              <span class="section-number">
+                1
+              </span>Functional Requirements
+              
+            </a><ul><li data-nodeid="006648b0d18848fdb26bee03f8d49114">
+        <a
+          href="#1.1-REQ-1"
+          anchor="1.1-REQ-1"
+          data-turbo="false"
+        >
+          <span class="section-number">
+            1.1
+          </span>Resumable
+            </a></li><li data-nodeid="376a3c2d331343318d24b5abfc1faa96">
+        <a
+          href="#1.2-REQ-3"
+          anchor="1.2-REQ-3"
+          data-turbo="false"
+        >
+          <span class="section-number">
+            1.2
+          </span>Baremetal
+            </a></li><li data-nodeid="a73316aee893454abf213ae1a50ddae8">
+        <a
+          href="#1.3-REQ-5"
+          anchor="1.3-REQ-5"
+          data-turbo="false"
+        >
+          <span class="section-number">
+            1.3
+          </span>Bounded execution
+            </a></li><li data-nodeid="c7b57332374945c2854a6f7ce63050e4">
+        <a
+          href="#1.4-REQ-12"
+          anchor="1.4-REQ-12"
+          data-turbo="false"
+        >
+          <span class="section-number">
+            1.4
+          </span>Migrateable
+            </a></li><li data-nodeid="5dfad96c723243948c101e76fcaf4bd8">
+        <a
+          href="#1.5-REQ-14"
+          anchor="1.5-REQ-14"
+          data-turbo="false"
+        >
+          <span class="section-number">
+            1.5
+          </span>No Dependencies
+            </a></li><li data-nodeid="6c4f4a0251ad42a0b247dffe4e95e8d3"><a
+              href="#1.6-Low-Level-Functional-Requirements"
+              anchor="1.6-Low-Level-Functional-Requirements"
+              data-turbo="false"
+            >
+              <span class="section-number">
+                1.6
+              </span>Low-Level Functional Requirements
+              
+            </a><ul><li data-nodeid="32760306ebc14af8aaf955d34cfecab6">
+        <a
+          href="#1.6.1-REQ-2"
+          anchor="1.6.1-REQ-2"
+          data-turbo="false"
+        >
+          <span class="section-number">
+            1.6.1
+          </span>Stackless
+            </a></li><li data-nodeid="0efe653736f24bf585d84ff25ed33d80">
+        <a
+          href="#1.6.2-REQ-4"
+          anchor="1.6.2-REQ-4"
+          data-turbo="false"
+        >
+          <span class="section-number">
+            1.6.2
+          </span>no_std
+            </a></li><li data-nodeid="ba292c164fc241cc8ede783c2a92857d">
+        <a
+          href="#1.6.3-REQ-6"
+          anchor="1.6.3-REQ-6"
+          data-turbo="false"
+        >
+          <span class="section-number">
+            1.6.3
+          </span>Fuel
+            </a></li><li data-nodeid="fca60bd47f1a490b924153d1e78703c4">
+        <a
+          href="#1.6.4-REQ-13"
+          anchor="1.6.4-REQ-13"
+          data-turbo="false"
+        >
+          <span class="section-number">
+            1.6.4
+          </span>De-/Serializable
+            </a></li><li data-nodeid="92f3a833565548dc84d4f06039ef0fde">
+        <a
+          href="#1.6.5-REQ-15"
+          anchor="1.6.5-REQ-15"
+          data-turbo="false"
+        >
+          <span class="section-number">
+            1.6.5
+          </span>Allow log dependency
+            </a></li><li data-nodeid="cc348e7a58e44faab7e7d51ef6d8650d">
+        <a
+          href="#1.6.6-REQ-16"
+          anchor="1.6.6-REQ-16"
+          data-turbo="false"
+        >
+          <span class="section-number">
+            1.6.6
+          </span>Allow libm dependency
+            </a></li><li data-nodeid="28deb80bcf5c4c11b8f260e28f26b7ec">
+        <a
+          href="#1.6.7-REQ-17"
+          anchor="1.6.7-REQ-17"
+          data-turbo="false"
+        >
+          <span class="section-number">
+            1.6.7
+          </span>Minimum Supported Rust Version (MSRV)
+            </a></li></ul>
+            </li></ul>
+            </li><li data-nodeid="1e003a83b48b4103b824c6e1cb79626a"><a
+              href="#2-Observability-Requirements"
+              anchor="2-Observability-Requirements"
+              data-turbo="false"
+            >
+              <span class="section-number">
+                2
+              </span>Observability Requirements
+              
+            </a><ul><li data-nodeid="c1a946cf2d1049e596614aa1515b3a47">
+        <a
+          href="#2.1-REQ-7"
+          anchor="2.1-REQ-7"
+          data-turbo="false"
+        >
+          <span class="section-number">
+            2.1
+          </span>Instrumentation
+            </a></li><li data-nodeid="3caca080a9e746758110dda46493a8cc"><a
+              href="#2.2-Low-Level-Observability-Requirements"
+              anchor="2.2-Low-Level-Observability-Requirements"
+              data-turbo="false"
+            >
+              <span class="section-number">
+                2.2
+              </span>Low-Level Observability Requirements
+              
+            </a><ul><li data-nodeid="abb750197f734be4a53bbfb5eb8a9440">
+        <a
+          href="#2.2.1-REQ-8"
+          anchor="2.2.1-REQ-8"
+          data-turbo="false"
+        >
+          <span class="section-number">
+            2.2.1
+          </span>Statement Coverage
+            </a></li><li data-nodeid="4c78f749844d4eea89d83346df308028">
+        <a
+          href="#2.2.2-REQ-9"
+          anchor="2.2.2-REQ-9"
+          data-turbo="false"
+        >
+          <span class="section-number">
+            2.2.2
+          </span>Decision Coverage
+            </a></li><li data-nodeid="7b8323e6abf24379b26481bca816ba49">
+        <a
+          href="#2.2.3-REQ-10"
+          anchor="2.2.3-REQ-10"
+          data-turbo="false"
+        >
+          <span class="section-number">
+            2.2.3
+          </span>Modified Condition/Decision Coverage
+            </a></li><li data-nodeid="49edcf618c1e4ea5aae26298e7de660e">
+        <a
+          href="#2.2.4-REQ-11"
+          anchor="2.2.4-REQ-11"
+          data-turbo="false"
+        >
+          <span class="section-number">
+            2.2.4
+          </span>Certification Evidence
+            </a></li></ul>
+            </li></ul>
+            </li></ul>
+</turbo-frame>
+</div>
+
+      </aside><header class="layout_header">
+      <div class="header">
+
+  
+  <svg class="svg_icon" width="16px" height="16px" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <polyline points="14 5 14 10.5 8 15 2 10.5 2 5 8 1 14 5 8 9.5"></polyline>
+  <polyline points="2.5 5.5 8 9.5 8 15"></polyline>
+</svg>
+  <div
+    class="header__project_name"
+    title="Untitled Project"
+  >Untitled Project
+  </div>
+
+  
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 20 20" class="sc-gLvsXj bpkaBy"><path stroke="currentColor" d="M12.5 4.5l-5 11" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+      <turbo-frame id="header_document_title">
+  <svg class="svg_icon" width="16" height="16" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <path d=" M13,13 L13,8 C13,7.5 12.6,7 12,7 L9,7 C8.5,7 8,6.5 8,6 L8,3 C8,2.5 7.5,2 7,2 L4,2 C3.5,2 3,2.5 3,3 L3,13 C3,13.5 3.5,14 4,14 L12,14 C12.6,14 13,13.5 13,13 Z M13,9 L13,8 C13,7.5 13,7 12.5,6.5 L8.5,2.5 C8,2 7.5,2 7,2 L6,2"></path>
+</svg>
+  <div
+    class="header__document_title"
+    title="WASM Interpreter for Safety - Requirements"
+  >
+    WASM Interpreter for Safety - Requirements
+  </div>
+</turbo-frame>
+    
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 20 20" class="sc-gLvsXj bpkaBy"><path stroke="currentColor" d="M12.5 4.5l-5 11" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+      <div class="viewtype">
+  <div
+    id="viewtype_handler"
+    class="viewtype__handler"
+    aria-expanded="false"
+    aria-controls="viewtype_menu"
+  >
+    <span>Table</span>
+    <svg class="svg_icon" width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" >
+  <path d="M5 10l3 3 3-3M5 6l3-3 3 3"></path>
+</svg>
+  </div>
+  <menu
+    id="viewtype_menu"
+    class="viewtype__menu"
+    aria-hidden="true"
+    aria-labelledby="viewtype_handler"
+  >
+    <li class="viewtype__menu_header">VIEWS</li>
+    <li>
+      <a
+        data-viewtype_link="document"
+        class="viewtype__menu_item"
+        title="Go to Document view"
+        href="../requirements/requirements.html">
+      Document</a>
+    </li><li>
+      <a
+        data-viewtype_link="table"
+        class="viewtype__menu_item"
+        title="Go to Table view"
+        href="../requirements/requirements-TABLE.html">
+      Table</a>
+    </li><li>
+      <a
+        data-viewtype_link="traceability"
+        class="viewtype__menu_item"
+        title="Go to Traceability view"
+        href="../requirements/requirements-TRACE.html">
+      Traceability</a>
+    </li><li>
+      <a
+        data-viewtype_link="deep_traceability"
+        class="viewtype__menu_item"
+        title="Go to Deep Traceability view"
+        href="../requirements/requirements-DEEP-TRACE.html">
+      Deep Traceability</a>
+    </li></menu>
+</div>
+    </div>
+    </header>
+
+    <main class="layout_main">
+      
+  <div class="main">
+    
+<div class="tags">
+</div>
+      <div class="content">
+        <sdoc-node>
+        <h1 data-testid="document-title">WASM Interpreter for Safety - Requirements</h1>
+        
+
+        </sdoc-node>
+        <table class="content-view-table">
+          <thead>
+            <tr>
+              <th class="content-view-th">Type</th>
+              <th class="content-view-th">Level</th><th class="content-view-th">UID</th><th class="content-view-th">REFS</th>
+              <th class="content-view-th">Title</th>
+              <th class="content-view-th">Statement</th>
+              <th class="content-view-th">Rationale</th>
+              <th class="content-view-th">Comment</th></tr>
+          </thead>
+              <tr>
+                <td class="content-view-td content-view-td-type">Section</td>
+                <td class="content-view-td content-view-td-meta">1</td><td class="content-view-td content-view-td-meta"></td><td class="content-view-td content-view-td-meta"></td>
+                <td class="content-view-td content-view-td-title" colspan="4"><sdoc-anchor
+  id="1-Functional-Requirements"
+  node-role="section"
+  ></sdoc-anchor>
+                    <div class="requirement__title">
+                      Functional Requirements
+                    </div></td>
+              </tr>
+              <tr>
+                <td class="content-view-td content-view-td-type">
+                    Requirement</td>
+                <td class="content-view-td content-view-td-meta">
+                  1.1
+                </td>
+                  <td class="content-view-td content-view-td-meta">REQ-1</td><td class="content-view-td content-view-td-meta content-view-td-related">
+                    Children:
+                    <ul class="requirement__link">
+                        <li>
+                          <a class="requirement__link-child"
+                            href="#1.6.1-REQ-2">
+                              <span class="requirement__child-uid">REQ-2</span>
+                            Stackless
+                          </a>
+                        </li>
+                    </ul>
+                </td>
+                <td class="content-view-td content-view-td-title"><sdoc-anchor
+  id="1.1-REQ-1"
+  node-role="requirement"
+  data-uid="REQ-1"></sdoc-anchor>
+                    <div class="requirement__title">Resumable</div></td>
+                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+<p>The interpreter shall be resumable</p>
+</div>
+</sdoc-autogen></td>
+                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+<p>Operation with fuel or other implementations of bounded run-time requires that the interpreter can be halted.
+Conversely, later on the interpreter may be resumed, as if it was not halted in the first place.</p>
+</div>
+</sdoc-autogen></td>
+                <td class="content-view-td content-view-td-content"></td></tr>
+              <tr>
+                <td class="content-view-td content-view-td-type">
+                    Requirement</td>
+                <td class="content-view-td content-view-td-meta">
+                  1.2
+                </td>
+                  <td class="content-view-td content-view-td-meta">REQ-3</td><td class="content-view-td content-view-td-meta content-view-td-related">
+                    Children:
+                    <ul class="requirement__link">
+                        <li>
+                          <a class="requirement__link-child"
+                            href="#1.6.2-REQ-4">
+                              <span class="requirement__child-uid">REQ-4</span>
+                            no_std
+                          </a>
+                        </li>
+                    </ul>
+                </td>
+                <td class="content-view-td content-view-td-title"><sdoc-anchor
+  id="1.2-REQ-3"
+  node-role="requirement"
+  data-uid="REQ-3"></sdoc-anchor>
+                    <div class="requirement__title">Baremetal</div></td>
+                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+<p>The interpreter shall be executable on bare-metal environments</p>
+</div>
+</sdoc-autogen></td>
+                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+<p>No reliance on any specific functionality from the provided execution environment is acceptable, as the interpreter shall be ready for embedding to any environment that Rust can compile for.</p>
+</div>
+</sdoc-autogen></td>
+                <td class="content-view-td content-view-td-content"></td></tr>
+              <tr>
+                <td class="content-view-td content-view-td-type">
+                    Requirement</td>
+                <td class="content-view-td content-view-td-meta">
+                  1.3
+                </td>
+                  <td class="content-view-td content-view-td-meta">REQ-5</td><td class="content-view-td content-view-td-meta content-view-td-related">
+                    Children:
+                    <ul class="requirement__link">
+                        <li>
+                          <a class="requirement__link-child"
+                            href="#1.6.3-REQ-6">
+                              <span class="requirement__child-uid">REQ-6</span>
+                            Fuel
+                          </a>
+                        </li>
+                    </ul>
+                </td>
+                <td class="content-view-td content-view-td-title"><sdoc-anchor
+  id="1.3-REQ-5"
+  node-role="requirement"
+  data-uid="REQ-5"></sdoc-anchor>
+                    <div class="requirement__title">Bounded execution</div></td>
+                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+<p>The interpreter shall yield back control flow eventually</p>
+</div>
+</sdoc-autogen></td>
+                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+<p>A user shall be able to call the interpreter with a bound, expecting a result in a finite amount of time or bytecode operations. Even if the bytecode itself does never finish execution (i.e. due to a infinite loop), the interpreter shall yield eventually, by pausing the bytecode execution.</p>
+</div>
+</sdoc-autogen></td>
+                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+<p>It is not acceptable to constraint the interpreter to only those bytecode instances for which the halting-problem is solvable.</p>
+</div>
+</sdoc-autogen></td></tr>
+              <tr>
+                <td class="content-view-td content-view-td-type">
+                    Requirement</td>
+                <td class="content-view-td content-view-td-meta">
+                  1.4
+                </td>
+                  <td class="content-view-td content-view-td-meta">REQ-12</td><td class="content-view-td content-view-td-meta content-view-td-related">
+                    Children:
+                    <ul class="requirement__link">
+                        <li>
+                          <a class="requirement__link-child"
+                            href="#1.6.4-REQ-13">
+                              <span class="requirement__child-uid">REQ-13</span>
+                            De-/Serializable
+                          </a>
+                        </li>
+                    </ul>
+                </td>
+                <td class="content-view-td content-view-td-title"><sdoc-anchor
+  id="1.4-REQ-12"
+  node-role="requirement"
+  data-uid="REQ-12"></sdoc-anchor>
+                    <div class="requirement__title">Migrateable</div></td>
+                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+<p>The interpreter state shall be able to halt on one computer and continue execution on another</p>
+</div>
+</sdoc-autogen></td>
+                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+<p>This enables various workflows in deployments of multiple computers. For load-balancing or redundancy purposes, running applications can be migrated to other computers without disruption.</p>
+</div>
+</sdoc-autogen></td>
+                <td class="content-view-td content-view-td-content"></td></tr>
+              <tr>
+                <td class="content-view-td content-view-td-type">
+                    Requirement</td>
+                <td class="content-view-td content-view-td-meta">
+                  1.5
+                </td>
+                  <td class="content-view-td content-view-td-meta">REQ-14</td><td class="content-view-td content-view-td-meta content-view-td-related">
+                    Children:
+                    <ul class="requirement__link">
+                        <li>
+                          <a class="requirement__link-child"
+                            href="#1.6.5-REQ-15">
+                              <span class="requirement__child-uid">REQ-15</span>
+                            Allow log dependency
+                          </a>
+                        </li>
+                        <li>
+                          <a class="requirement__link-child"
+                            href="#1.6.6-REQ-16">
+                              <span class="requirement__child-uid">REQ-16</span>
+                            Allow libm dependency
+                          </a>
+                        </li>
+                    </ul>
+                </td>
+                <td class="content-view-td content-view-td-title"><sdoc-anchor
+  id="1.5-REQ-14"
+  node-role="requirement"
+  data-uid="REQ-14"></sdoc-anchor>
+                    <div class="requirement__title">No Dependencies</div></td>
+                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+<p>No dependencies but those explicitly allowed by a requirement shall be used</p>
+</div>
+</sdoc-autogen></td>
+                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+<p>Dependencies have to forego the full V&amp;V process as well, which quickly adds enormous work.</p>
+</div>
+</sdoc-autogen></td>
+                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+<p>This requirement constraints the usage and introduction of normal dependencies, but not Dev Dependencies <a class="footnote-reference" href="#footnote-1" id="footnote-reference-1">[1]</a> and not Build Dependencies <a class="footnote-reference" href="#footnote-2" id="footnote-reference-2">[2]</a> .</p>
+<table class="docutils footnote" frame="void" id="footnote-1" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#footnote-reference-1">[1]</a></td><td><a class="reference external" href="https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#development-dependencies">https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#development-dependencies</a></td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="footnote-2" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#footnote-reference-2">[2]</a></td><td><a class="reference external" href="https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#build-dependencies">https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#build-dependencies</a></td></tr>
+</tbody>
+</table>
+</div>
+</sdoc-autogen><sdoc-autogen><div class="document">
+<p>Exceptions to this, i.e. allowed dependencies, must refer to this requirement as their parent.</p>
+</div>
+</sdoc-autogen><sdoc-autogen><div class="document">
+<p>All requirements that allow a dependency must specify the exact version of the dependency (at least major, minor and patch release)</p>
+</div>
+</sdoc-autogen></td></tr>
+              <tr>
+                <td class="content-view-td content-view-td-type">Section</td>
+                <td class="content-view-td content-view-td-meta">1.6</td><td class="content-view-td content-view-td-meta"></td><td class="content-view-td content-view-td-meta"></td>
+                <td class="content-view-td content-view-td-title" colspan="4"><sdoc-anchor
+  id="1.6-Low-Level-Functional-Requirements"
+  node-role="section"
+  ></sdoc-anchor>
+                    <div class="requirement__title">
+                      Low-Level Functional Requirements
+                    </div></td>
+              </tr>
+              <tr>
+                <td class="content-view-td content-view-td-type">
+                    Requirement</td>
+                <td class="content-view-td content-view-td-meta">
+                  1.6.1
+                </td>
+                  <td class="content-view-td content-view-td-meta">REQ-2</td><td class="content-view-td content-view-td-meta content-view-td-related">
+                    Parents:
+                    <ul class="requirement__link">
+                        <li>
+                          <a class="requirement__link-parent"
+                            href="#1.1-REQ-1">
+                              <span class="requirement__parent-uid">REQ-1</span>
+                            Resumable
+                          </a>
+                        </li>
+                    </ul>
+                </td>
+                <td class="content-view-td content-view-td-title"><sdoc-anchor
+  id="1.6.1-REQ-2"
+  node-role="requirement"
+  data-uid="REQ-2"></sdoc-anchor>
+                    <div class="requirement__title">Stackless</div></td>
+                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+<p>The interpreter shall be stackless</p>
+</div>
+</sdoc-autogen></td>
+                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+<p>A stackless interpreter is one that does not use function calls in the host environment to implement function calls inside the interpreter. Instead, the stack of the interpreted bytecode is stored in a traditional data structure (such as a Vec&lt;u8&gt;). Interpretation can be interrupted between any two virtual instructions of the bytecode, and crucially so resumed from there.</p>
+<p>Further information: <a class="reference external" href="https://kyju.org/blog/piccolo-a-stackless-lua-interpreter/#a-stackless-interpreter-design">https://kyju.org/blog/piccolo-a-stackless-lua-interpreter/#a-stackless-interpreter-design</a></p>
+</div>
+</sdoc-autogen></td>
+                <td class="content-view-td content-view-td-content"></td></tr>
+              <tr>
+                <td class="content-view-td content-view-td-type">
+                    Requirement</td>
+                <td class="content-view-td content-view-td-meta">
+                  1.6.2
+                </td>
+                  <td class="content-view-td content-view-td-meta">REQ-4</td><td class="content-view-td content-view-td-meta content-view-td-related">
+                    Parents:
+                    <ul class="requirement__link">
+                        <li>
+                          <a class="requirement__link-parent"
+                            href="#1.2-REQ-3">
+                              <span class="requirement__parent-uid">REQ-3</span>
+                            Baremetal
+                          </a>
+                        </li>
+                    </ul>
+                </td>
+                <td class="content-view-td content-view-td-title"><sdoc-anchor
+  id="1.6.2-REQ-4"
+  node-role="requirement"
+  data-uid="REQ-4"></sdoc-anchor>
+                    <div class="requirement__title">no_std</div></td>
+                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+<p>The interpreter shall be implemented in no_std Rust</p>
+</div>
+</sdoc-autogen></td>
+                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+<p>Only relying on the functionality that is provided by no_std enables execution on bare environments where operating system is available.</p>
+</div>
+</sdoc-autogen></td>
+                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+<p>Reliance on alloc is allowable, as an allocator can be implemented without further reliance on the execution environment.</p>
+</div>
+</sdoc-autogen></td></tr>
+              <tr>
+                <td class="content-view-td content-view-td-type">
+                    Requirement</td>
+                <td class="content-view-td content-view-td-meta">
+                  1.6.3
+                </td>
+                  <td class="content-view-td content-view-td-meta">REQ-6</td><td class="content-view-td content-view-td-meta content-view-td-related">
+                    Parents:
+                    <ul class="requirement__link">
+                        <li>
+                          <a class="requirement__link-parent"
+                            href="#1.3-REQ-5">
+                              <span class="requirement__parent-uid">REQ-5</span>
+                            Bounded execution
+                          </a>
+                        </li>
+                    </ul>
+                </td>
+                <td class="content-view-td content-view-td-title"><sdoc-anchor
+  id="1.6.3-REQ-6"
+  node-role="requirement"
+  data-uid="REQ-6"></sdoc-anchor>
+                    <div class="requirement__title">Fuel</div></td>
+                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+<p>The interpreter shall support fuel bounded execution</p>
+</div>
+</sdoc-autogen></td>
+                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+<p>Fuel is a mechanism to limit the amount of bytecode operations conducted when calling the interpreter. Each bytecode instruction is associated with a specific amount of fuel consumed when executing it. The interpreter is provided a finite amount of fuel, that is deplete during execution, until the amount of fuel is insufficient to conduct further bytecode operations. At this point, the interpreter yields back the control flow. Later on, the execution may be resumed.</p>
+<p>Further information: <a class="reference external" href="https://docs.rs/wasmtime/latest/wasmtime/struct.Config.html#method.consume_fuel">https://docs.rs/wasmtime/latest/wasmtime/struct.Config.html#method.consume_fuel</a></p>
+</div>
+</sdoc-autogen></td>
+                <td class="content-view-td content-view-td-content"></td></tr>
+              <tr>
+                <td class="content-view-td content-view-td-type">
+                    Requirement</td>
+                <td class="content-view-td content-view-td-meta">
+                  1.6.4
+                </td>
+                  <td class="content-view-td content-view-td-meta">REQ-13</td><td class="content-view-td content-view-td-meta content-view-td-related">
+                    Parents:
+                    <ul class="requirement__link">
+                        <li>
+                          <a class="requirement__link-parent"
+                            href="#1.4-REQ-12">
+                              <span class="requirement__parent-uid">REQ-12</span>
+                            Migrateable
+                          </a>
+                        </li>
+                    </ul>
+                </td>
+                <td class="content-view-td content-view-td-title"><sdoc-anchor
+  id="1.6.4-REQ-13"
+  node-role="requirement"
+  data-uid="REQ-13"></sdoc-anchor>
+                    <div class="requirement__title">De-/Serializable</div></td>
+                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+<p>The interpreter state shall be de-/serializable</p>
+</div>
+</sdoc-autogen></td>
+                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+<p>If the interpreter state can be serialized to and deserialized from a canonical representation, migration to other computers as well as check-point/lock-step like execution become simple to implement.</p>
+</div>
+</sdoc-autogen></td>
+                <td class="content-view-td content-view-td-content"></td></tr>
+              <tr>
+                <td class="content-view-td content-view-td-type">
+                    Requirement</td>
+                <td class="content-view-td content-view-td-meta">
+                  1.6.5
+                </td>
+                  <td class="content-view-td content-view-td-meta">REQ-15</td><td class="content-view-td content-view-td-meta content-view-td-related">
+                    Parents:
+                    <ul class="requirement__link">
+                        <li>
+                          <a class="requirement__link-parent"
+                            href="#1.5-REQ-14">
+                              <span class="requirement__parent-uid">REQ-14</span>
+                            No Dependencies
+                          </a>
+                        </li>
+                    </ul>
+                </td>
+                <td class="content-view-td content-view-td-title"><sdoc-anchor
+  id="1.6.5-REQ-15"
+  node-role="requirement"
+  data-uid="REQ-15"></sdoc-anchor>
+                    <div class="requirement__title">Allow log dependency</div></td>
+                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+<p>The interpreter shall have an optional dependency on the <tt class="docutils literal">log</tt> crate version <tt class="docutils literal">0.4.22</tt></p>
+</div>
+</sdoc-autogen></td>
+                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+<p>Logging is an essential tool to make a system observable, and aid in debugging. Bespoke crate is widely used in the Rust ecosystem and can be attached to any (or no) logging backend. Using conditional compilation, all of the <tt class="docutils literal">log</tt> crate's footprint in the WASM interpreter (foremost the <tt class="docutils literal">debug</tt>, <tt class="docutils literal">error</tt>, <tt class="docutils literal">info</tt>, <tt class="docutils literal">trace</tt> and <tt class="docutils literal">warn</tt> macro) can be expanded to empty statements to avoid <strong>any</strong> run-time impact when opting out of the dependency on <tt class="docutils literal">log</tt>.</p>
+</div>
+</sdoc-autogen></td>
+                <td class="content-view-td content-view-td-content"></td></tr>
+              <tr>
+                <td class="content-view-td content-view-td-type">
+                    Requirement</td>
+                <td class="content-view-td content-view-td-meta">
+                  1.6.6
+                </td>
+                  <td class="content-view-td content-view-td-meta">REQ-16</td><td class="content-view-td content-view-td-meta content-view-td-related">
+                    Parents:
+                    <ul class="requirement__link">
+                        <li>
+                          <a class="requirement__link-parent"
+                            href="#1.5-REQ-14">
+                              <span class="requirement__parent-uid">REQ-14</span>
+                            No Dependencies
+                          </a>
+                        </li>
+                    </ul>
+                </td>
+                <td class="content-view-td content-view-td-title"><sdoc-anchor
+  id="1.6.6-REQ-16"
+  node-role="requirement"
+  data-uid="REQ-16"></sdoc-anchor>
+                    <div class="requirement__title">Allow libm dependency</div></td>
+                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+<p>The interpreter may depend on the <tt class="docutils literal">libm</tt> crate version <tt class="docutils literal">0.2.8</tt></p>
+</div>
+</sdoc-autogen></td>
+                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+<p>Rust does not expose all floating point operations in a bare-metal (as in <tt class="docutils literal">no_std</tt>) target, as to not introduce any dependency on the C standard library's <tt class="docutils literal">libm</tt> (respective PR: <a class="reference external" href="https://github.com/rust-lang/rust/pull/27823">https://github.com/rust-lang/rust/pull/27823</a>). However, we identified at least the following operations to be required for WASM interpretation while unavailable in <tt class="docutils literal">no_std</tt>:</p>
+<ul class="simple">
+<li><tt class="docutils literal">abs</tt></li>
+<li><tt class="docutils literal">ceil</tt></li>
+<li><tt class="docutils literal">floor</tt></li>
+<li><tt class="docutils literal">trunc</tt></li>
+<li><tt class="docutils literal">round</tt></li>
+<li><tt class="docutils literal">sqrt</tt></li>
+<li><tt class="docutils literal">copysign</tt></li>
+</ul>
+<p>In order use these operations, having the <tt class="docutils literal">libm</tt> crate as dependencies of the WASM interpreter is an acceptable trade-off.</p>
+</div>
+</sdoc-autogen></td>
+                <td class="content-view-td content-view-td-content"></td></tr>
+              <tr>
+                <td class="content-view-td content-view-td-type">
+                    Requirement</td>
+                <td class="content-view-td content-view-td-meta">
+                  1.6.7
+                </td>
+                  <td class="content-view-td content-view-td-meta">REQ-17</td><td class="content-view-td content-view-td-meta content-view-td-related">
+                </td>
+                <td class="content-view-td content-view-td-title"><sdoc-anchor
+  id="1.6.7-REQ-17"
+  node-role="requirement"
+  data-uid="REQ-17"></sdoc-anchor>
+                    <div class="requirement__title">Minimum Supported Rust Version (MSRV)</div></td>
+                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+<p>The interpreter shall compile on Rust <tt class="docutils literal">1.76.0</tt> and later versions</p>
+</div>
+</sdoc-autogen></td>
+                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+<p>An MSRV should be clearly stated to specify which toolchain is acceptable.</p>
+</div>
+</sdoc-autogen></td>
+                <td class="content-view-td content-view-td-content"></td></tr>
+              <tr>
+                <td class="content-view-td content-view-td-type">Section</td>
+                <td class="content-view-td content-view-td-meta">2</td><td class="content-view-td content-view-td-meta"></td><td class="content-view-td content-view-td-meta"></td>
+                <td class="content-view-td content-view-td-title" colspan="4"><sdoc-anchor
+  id="2-Observability-Requirements"
+  node-role="section"
+  ></sdoc-anchor>
+                    <div class="requirement__title">
+                      Observability Requirements
+                    </div></td>
+              </tr>
+              <tr>
+                <td class="content-view-td content-view-td-type">
+                    Requirement</td>
+                <td class="content-view-td content-view-td-meta">
+                  2.1
+                </td>
+                  <td class="content-view-td content-view-td-meta">REQ-7</td><td class="content-view-td content-view-td-meta content-view-td-related">
+                    Children:
+                    <ul class="requirement__link">
+                        <li>
+                          <a class="requirement__link-child"
+                            href="#2.2.1-REQ-8">
+                              <span class="requirement__child-uid">REQ-8</span>
+                            Statement Coverage
+                          </a>
+                        </li>
+                        <li>
+                          <a class="requirement__link-child"
+                            href="#2.2.2-REQ-9">
+                              <span class="requirement__child-uid">REQ-9</span>
+                            Decision Coverage
+                          </a>
+                        </li>
+                        <li>
+                          <a class="requirement__link-child"
+                            href="#2.2.3-REQ-10">
+                              <span class="requirement__child-uid">REQ-10</span>
+                            Modified Condition/Decision Coverage
+                          </a>
+                        </li>
+                    </ul>
+                </td>
+                <td class="content-view-td content-view-td-title"><sdoc-anchor
+  id="2.1-REQ-7"
+  node-role="requirement"
+  data-uid="REQ-7"></sdoc-anchor>
+                    <div class="requirement__title">Instrumentation</div></td>
+                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+<p>The interpreter shall implement means for instrumentation</p>
+</div>
+</sdoc-autogen></td>
+                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+<p>Instrumentation is needed to generate evidence for certification. Instrumentation eases debugging. Instrumentation enables elaborate run-time monitoring.</p>
+</div>
+</sdoc-autogen></td>
+                <td class="content-view-td content-view-td-content"></td></tr>
+              <tr>
+                <td class="content-view-td content-view-td-type">Section</td>
+                <td class="content-view-td content-view-td-meta">2.2</td><td class="content-view-td content-view-td-meta"></td><td class="content-view-td content-view-td-meta"></td>
+                <td class="content-view-td content-view-td-title" colspan="4"><sdoc-anchor
+  id="2.2-Low-Level-Observability-Requirements"
+  node-role="section"
+  ></sdoc-anchor>
+                    <div class="requirement__title">
+                      Low-Level Observability Requirements
+                    </div></td>
+              </tr>
+              <tr>
+                <td class="content-view-td content-view-td-type">
+                    Requirement</td>
+                <td class="content-view-td content-view-td-meta">
+                  2.2.1
+                </td>
+                  <td class="content-view-td content-view-td-meta">REQ-8</td><td class="content-view-td content-view-td-meta content-view-td-related">
+                    Parents:
+                    <ul class="requirement__link">
+                        <li>
+                          <a class="requirement__link-parent"
+                            href="#2.1-REQ-7">
+                              <span class="requirement__parent-uid">REQ-7</span>
+                            Instrumentation
+                          </a>
+                        </li>
+                        <li>
+                          <a class="requirement__link-parent"
+                            href="#2.2.4-REQ-11">
+                              <span class="requirement__parent-uid">REQ-11</span>
+                            Certification Evidence
+                          </a>
+                        </li>
+                    </ul>
+                </td>
+                <td class="content-view-td content-view-td-title"><sdoc-anchor
+  id="2.2.1-REQ-8"
+  node-role="requirement"
+  data-uid="REQ-8"></sdoc-anchor>
+                    <div class="requirement__title">Statement Coverage</div></td>
+                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+<p>The instrumentation shall enable the measurement of statement coverage</p>
+</div>
+</sdoc-autogen></td>
+                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+<p>Statement coverage is required by DO-178C starting at DAL-C (6.4.4.c)</p>
+</div>
+</sdoc-autogen></td>
+                <td class="content-view-td content-view-td-content"></td></tr>
+              <tr>
+                <td class="content-view-td content-view-td-type">
+                    Requirement</td>
+                <td class="content-view-td content-view-td-meta">
+                  2.2.2
+                </td>
+                  <td class="content-view-td content-view-td-meta">REQ-9</td><td class="content-view-td content-view-td-meta content-view-td-related">
+                    Parents:
+                    <ul class="requirement__link">
+                        <li>
+                          <a class="requirement__link-parent"
+                            href="#2.1-REQ-7">
+                              <span class="requirement__parent-uid">REQ-7</span>
+                            Instrumentation
+                          </a>
+                        </li>
+                        <li>
+                          <a class="requirement__link-parent"
+                            href="#2.2.4-REQ-11">
+                              <span class="requirement__parent-uid">REQ-11</span>
+                            Certification Evidence
+                          </a>
+                        </li>
+                    </ul>
+                </td>
+                <td class="content-view-td content-view-td-title"><sdoc-anchor
+  id="2.2.2-REQ-9"
+  node-role="requirement"
+  data-uid="REQ-9"></sdoc-anchor>
+                    <div class="requirement__title">Decision Coverage</div></td>
+                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+<p>The instrumentation shall enable the measurement of decision coverage</p>
+</div>
+</sdoc-autogen></td>
+                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+<p>Decision coverage is required by DO-178C starting at DAL-B (6.4.4.c)</p>
+</div>
+</sdoc-autogen></td>
+                <td class="content-view-td content-view-td-content"></td></tr>
+              <tr>
+                <td class="content-view-td content-view-td-type">
+                    Requirement</td>
+                <td class="content-view-td content-view-td-meta">
+                  2.2.3
+                </td>
+                  <td class="content-view-td content-view-td-meta">REQ-10</td><td class="content-view-td content-view-td-meta content-view-td-related">
+                    Parents:
+                    <ul class="requirement__link">
+                        <li>
+                          <a class="requirement__link-parent"
+                            href="#2.1-REQ-7">
+                              <span class="requirement__parent-uid">REQ-7</span>
+                            Instrumentation
+                          </a>
+                        </li>
+                        <li>
+                          <a class="requirement__link-parent"
+                            href="#2.2.4-REQ-11">
+                              <span class="requirement__parent-uid">REQ-11</span>
+                            Certification Evidence
+                          </a>
+                        </li>
+                    </ul>
+                </td>
+                <td class="content-view-td content-view-td-title"><sdoc-anchor
+  id="2.2.3-REQ-10"
+  node-role="requirement"
+  data-uid="REQ-10"></sdoc-anchor>
+                    <div class="requirement__title">Modified Condition/Decision Coverage</div></td>
+                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+<p>The instrumentation shall enable the measurement of modified condition/decision coverage</p>
+</div>
+</sdoc-autogen></td>
+                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+<p>Modified condition/decision coverage is required by DO-178C starting at DAL-A (6.4.4.c)</p>
+</div>
+</sdoc-autogen></td>
+                <td class="content-view-td content-view-td-content"></td></tr>
+              <tr>
+                <td class="content-view-td content-view-td-type">
+                    Requirement</td>
+                <td class="content-view-td content-view-td-meta">
+                  2.2.4
+                </td>
+                  <td class="content-view-td content-view-td-meta">REQ-11</td><td class="content-view-td content-view-td-meta content-view-td-related">
+                    Children:
+                    <ul class="requirement__link">
+                        <li>
+                          <a class="requirement__link-child"
+                            href="#2.2.1-REQ-8">
+                              <span class="requirement__child-uid">REQ-8</span>
+                            Statement Coverage
+                          </a>
+                        </li>
+                        <li>
+                          <a class="requirement__link-child"
+                            href="#2.2.2-REQ-9">
+                              <span class="requirement__child-uid">REQ-9</span>
+                            Decision Coverage
+                          </a>
+                        </li>
+                        <li>
+                          <a class="requirement__link-child"
+                            href="#2.2.3-REQ-10">
+                              <span class="requirement__child-uid">REQ-10</span>
+                            Modified Condition/Decision Coverage
+                          </a>
+                        </li>
+                    </ul>
+                </td>
+                <td class="content-view-td content-view-td-title"><sdoc-anchor
+  id="2.2.4-REQ-11"
+  node-role="requirement"
+  data-uid="REQ-11"></sdoc-anchor>
+                    <div class="requirement__title">Certification Evidence</div></td>
+                <td class="content-view-td content-view-td-content"><sdoc-autogen><div class="document">
+<p>The interpreter shall support the generation of certification evidence</p>
+</div>
+</sdoc-autogen></td>
+                <td class="content-view-td content-view-td-content"></td>
+                <td class="content-view-td content-view-td-content"></td></tr>
+        </table>
+      </div>
+      
+  </div>
+  
+
+    </main>
+
+    <footer class="layout_footer">
+      <div class="footer">
+        Built with
+        <a
+          class="strictdoc__link"
+          href="https://github.com/strictdoc-project/strictdoc"
+          target="_blank"
+        >StrictDoc</a>
+        <a
+          class="strictdoc__version"
+          href="https://github.com/strictdoc-project/strictdoc/releases/tag/0.0.58"
+          target="_blank"
+        >
+          <svg height="16" viewBox="0 0 16 16" version="1.1" width="16" >
+            <path fill-rule="evenodd" d="M2.5 7.775V2.75a.25.25 0 01.25-.25h5.025a.25.25 0 01.177.073l6.25 6.25a.25.25 0 010 .354l-5.025 5.025a.25.25 0 01-.354 0l-6.25-6.25a.25.25 0 01-.073-.177zm-1.5 0V2.75C1 1.784 1.784 1 2.75 1h5.025c.464 0 .91.184 1.238.513l6.25 6.25a1.75 1.75 0 010 2.474l-5.026 5.026a1.75 1.75 0 01-2.474 0l-6.25-6.25A1.75 1.75 0 011 7.775zM6 5a1 1 0 100 2 1 1 0 000-2z"/>
+          </svg>
+          0.0.58
+        </a>
+      </div>
+    </footer>
+
+    <aside class="layout_aside">
+      
+    </aside>
+
+  </div>
+  
+  <div id="modal"></div>
+  <div id="confirm"></div>
+  
+</body>
+</html>
