@@ -20,6 +20,7 @@ use crate::{
             types::{memarg::MemArg, FuncType},
             WasmReadable, WasmReader,
         },
+        sidetable::{self, Sidetable, SidetableEntry},
     },
     locals::Locals,
     store::Store,
@@ -43,6 +44,9 @@ pub(super) fn run<H: HookSet>(
         .funcs
         .get(stack.current_stackframe().func_idx)
         .unwrap_validated();
+
+    let sidetable: &Sidetable = &func_inst.sidetable;
+    let mut sidetable_pointer: usize = 0;
 
     // Start reading the function's instructions
     let mut wasm = WasmReader::new(wasm_bytecode);
@@ -112,6 +116,7 @@ pub(super) fn run<H: HookSet>(
                 wasm.move_start_to(func_to_call_inst.code_expr)
                     .unwrap_validated();
             }
+            BR => {}
             LOCAL_GET => {
                 stack.get_local(wasm.read_var_u32().unwrap_validated() as LocalIdx);
             }
@@ -1409,4 +1414,25 @@ pub(super) fn run<H: HookSet>(
         }
     }
     Ok(())
+}
+
+fn do_sidetable_control_transfer(
+    sidetable: &Sidetable,
+    sidetable_pointer: &mut usize,
+    wasm: &mut WasmReader,
+) {
+    let entry = *sidetable
+        .get(*sidetable_pointer)
+        .expect("sidetable entry to exist");
+
+    wasm.skip(
+        entry
+            .delta_pc
+            .try_into()
+            .expect("delta_pc to not be negative for branches"),
+    )
+    .unwrap_validated();
+
+    *sidetable_pointer +=
+        usize::try_from(entry.delta_stp).expect("delta_stp to be negative for branches");
 }

@@ -1,4 +1,4 @@
-use wasm::{validate, RuntimeInstance};
+use wasm::{validate, RuntimeInstance, DEFAULT_MODULE};
 
 /// Runs a function that does nothing and contains only a single empty block
 #[test_log::test]
@@ -16,7 +16,12 @@ fn empty() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    assert_eq!((), instance.invoke_named("do_nothing", ()).unwrap());
+    assert_eq!(
+        (),
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), ())
+            .unwrap()
+    );
 }
 
 #[test_log::test]
@@ -37,7 +42,12 @@ fn branch() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    assert_eq!((), instance.invoke_named("with_branch", ()).unwrap());
+    assert_eq!(
+        (),
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), ())
+            .unwrap()
+    );
 }
 
 #[test_log::test]
@@ -61,7 +71,12 @@ fn param_and_result() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    assert_eq!(7, instance.invoke_named("add_one", 6).unwrap());
+    assert_eq!(
+        7,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), 6)
+            .unwrap()
+    );
 }
 
 #[test_log::test]
@@ -85,7 +100,12 @@ fn return_out_of_block() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    assert_eq!(3, instance.invoke_named("get_three", ()).unwrap());
+    assert_eq!(
+        3,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), ())
+            .unwrap()
+    );
 }
 
 #[test_log::test]
@@ -114,7 +134,9 @@ fn branch_if() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    assert_eq!(6, instance.invoke_named("abs", 6).unwrap());
-    assert_eq!(123, instance.invoke_named("abs", -123).unwrap());
-    assert_eq!(0, instance.invoke_named("abs", 0).unwrap());
+    let abs_fn = instance.get_function_by_index(0, 0).unwrap();
+
+    assert_eq!(6, instance.invoke(&abs_fn, 6).unwrap());
+    assert_eq!(123, instance.invoke(&abs_fn, -123).unwrap());
+    assert_eq!(0, instance.invoke(&abs_fn, 0).unwrap());
 }

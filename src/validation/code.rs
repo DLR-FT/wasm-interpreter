@@ -6,7 +6,7 @@ use crate::core::reader::section_header::{SectionHeader, SectionTy};
 use crate::core::reader::span::Span;
 use crate::core::reader::types::global::Global;
 use crate::core::reader::types::memarg::MemArg;
-use crate::core::reader::types::{FuncType, NumType, ValType};
+use crate::core::reader::types::{FuncType, NumType, ResultType, ValType};
 use crate::core::reader::{WasmReadable, WasmReader};
 use crate::core::sidetable::Sidetable;
 use crate::validation_stack::ValidationStack;
@@ -18,7 +18,7 @@ pub fn validate_code_section(
     fn_types: &[FuncType],
     type_idx_of_fn: &[usize],
     globals: &[Global],
-) -> Result<Vec<Span>> {
+) -> Result<Vec<(Span, Sidetable)>> {
     assert_eq!(section_header.ty, SectionTy::Code);
 
     let code_block_spans = wasm.read_vec_enumerated(|wasm, idx| {
@@ -56,7 +56,9 @@ pub fn validate_code_section(
             )
         }
 
-        Ok(func_block)
+        let sidetable: Sidetable = todo!("make sidetable");
+
+        Ok((func_block, sidetable))
     })?;
 
     trace!(
@@ -93,16 +95,6 @@ fn read_instructions(
     fn_types: &[FuncType],
     type_idx_of_fn: &[usize],
 ) -> Result<()> {
-    let assert_pop_value_stack = |value_stack: &mut VecDeque<ValType>, expected_ty: ValType| {
-        value_stack
-            .pop_back()
-            .ok_or(Error::InvalidValueStackType(None))
-            .and_then(|ty| {
-                (ty == expected_ty)
-                    .then_some(())
-                    .ok_or(Error::InvalidValueStackType(Some(ty)))
-            })
-    };
     let mut sidetable: Sidetable = Sidetable::default();
 
     // TODO we must terminate only if both we saw the final `end` and when we consumed all of the code span
@@ -115,16 +107,18 @@ fn read_instructions(
 
         use crate::core::reader::types::opcode::*;
         match first_instr_byte {
-            // unreachable: [t*1] -> [t*2]
-            UNREACHABLE => {}
+            // unreachable: [t1*] -> [t2*]
+            UNREACHABLE => {
+                stack.make_unspecified();
+            }
             // nop: [] -> []
             NOP => {}
             // block: [] -> [t*2]
             BLOCK | LOOP | IF => {
                 let block_ty = if wasm.peek_u8()? as i8 == 0x40 {
+                    // Empty block type
                     let _ = wasm.read_u8();
 
-                    /* empty block type */
                     FuncType {
                         params: ResultType {
                             valtypes: Vec::new(),
@@ -134,6 +128,7 @@ fn read_instructions(
                         },
                     }
                 } else if let Ok(val_ty) = ValType::read(wasm) {
+                    // No parameters and given valtype as the result
                     FuncType {
                         params: ResultType {
                             valtypes: Vec::new(),
@@ -143,8 +138,9 @@ fn read_instructions(
                         },
                     }
                 } else {
+                    // An index to a function type
                     let maybe_ty_idx: usize = wasm
-                        .read_var_i64()?
+                        .read_var_i33()?
                         .try_into()
                         .map_err(|_| Error::InvalidFuncTypeIdx)?;
 
@@ -153,6 +149,12 @@ fn read_instructions(
                         .ok_or_else(|| Error::InvalidFuncTypeIdx)?
                         .clone()
                 };
+
+                todo!(
+                    "{}, {}",
+                    "add incomplete entry to sidetable",
+                    "verify from now on that only the top-most block_ty.params are accessed"
+                );
             }
             // end
             END => {
@@ -225,10 +227,6 @@ fn read_instructions(
                 for typ in func_ty.returns.valtypes.iter() {
                     stack.push_valtype(*typ);
                 }
-            }
-            // unreachable: [t1*] -> [t2*]
-            UNREACHABLE => {
-                stack.make_unspecified();
             }
             // local.get: [] -> [t]
             LOCAL_GET => {

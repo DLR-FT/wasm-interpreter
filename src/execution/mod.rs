@@ -319,7 +319,7 @@ where
 
             functions
                 .zip(func_blocks)
-                .map(|(ty, func)| {
+                .map(|(ty, (func, sidetable))| {
                     wasm_reader
                         .move_start_to(*func)
                         .expect("function index to be in the bounds of the WASM binary");
@@ -336,6 +336,7 @@ where
                         ty: *ty,
                         locals,
                         code_expr,
+                        sidetable: sidetable.clone(),
                     }
                 })
                 .collect()
