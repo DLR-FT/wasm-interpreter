@@ -2,7 +2,7 @@ use alloc::vec;
 use alloc::vec::Vec;
 use core::iter;
 
-use crate::core::indices::TypeIdx;
+use crate::core::indices::{FuncIdx, TypeIdx};
 use crate::core::reader::span::Span;
 use crate::core::reader::types::global::Global;
 use crate::core::reader::types::{MemType, TableType, ValType};
@@ -14,10 +14,16 @@ use crate::execution::value::{Ref, Value};
 /// the abstract machine.
 /// <https://webassembly.github.io/spec/core/exec/runtime.html#store>
 pub struct Store {
-    pub funcs: Vec<FuncInst>,
+    pub local_funcs: Vec<FuncInst>,
     // tables: Vec<TableInst>,
     pub mems: Vec<MemInst>,
     pub globals: Vec<GlobalInst>,
+    pub imports: Vec<ImportInst>,
+}
+
+pub enum ImportInst {
+    #[allow(dead_code)]
+    Func(FuncIdx),
 }
 
 pub struct FuncInst {
