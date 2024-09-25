@@ -1,13 +1,14 @@
+use alloc::string::ToString;
 use alloc::vec::Vec;
 
 use const_interpreter_loop::run_const;
+use function_ref::FunctionRef;
 use interpreter_loop::run;
 use locals::Locals;
 use value_stack::Stack;
 
-use crate::core::indices::FuncIdx;
 use crate::core::reader::types::export::{Export, ExportDesc};
-use crate::core::reader::types::{FuncType, ValType};
+use crate::core::reader::types::FuncType;
 use crate::core::reader::WasmReader;
 use crate::execution::assert_validated::UnwrapValidatedExt;
 use crate::execution::hooks::{EmptyHookSet, HookSet};
@@ -15,17 +16,21 @@ use crate::execution::store::{FuncInst, GlobalInst, MemInst, Store};
 use crate::execution::value::Value;
 use crate::validation::code::read_declared_locals;
 use crate::value::InteropValueList;
-use crate::{RuntimeError, ValidationInfo};
+use crate::{RuntimeError, ValType, ValidationInfo};
 
 // TODO
 pub(crate) mod assert_validated;
 mod const_interpreter_loop;
+pub mod function_ref;
 pub mod hooks;
 mod interpreter_loop;
 pub(crate) mod locals;
 pub(crate) mod store;
 pub mod value;
 pub mod value_stack;
+
+/// The default module name if a [RuntimeInstance] was created using [RuntimeInstance::new].
+pub const DEFAULT_MODULE: &str = "__interpreter_default__";
 
 pub struct RuntimeInstance<'b, H = EmptyHookSet>
 where
@@ -40,7 +45,14 @@ where
 
 impl<'b> RuntimeInstance<'b, EmptyHookSet> {
     pub fn new(validation_info: &'_ ValidationInfo<'b>) -> Result<Self, RuntimeError> {
-        Self::new_with_hooks(validation_info, EmptyHookSet)
+        Self::new_with_hooks(DEFAULT_MODULE, validation_info, EmptyHookSet)
+    }
+
+    pub fn new_named(
+        module_name: &str,
+        validation_info: &'_ ValidationInfo<'b>,
+    ) -> Result<Self, RuntimeError> {
+        Self::new_with_hooks(module_name, validation_info, EmptyHookSet)
     }
 }
 
@@ -49,6 +61,7 @@ where
     H: HookSet,
 {
     pub fn new_with_hooks(
+        module_name: &str,
         validation_info: &'_ ValidationInfo<'b>,
         hook_set: H,
     ) -> Result<Self, RuntimeError> {
@@ -65,68 +78,81 @@ where
         };
 
         if let Some(start) = validation_info.start {
-            let result = instance.invoke_func::<(), ()>(start, ());
-            result?;
+            // "start" is not always exported, so we need create a non-API exposed function reference.
+            // Note: function name is not important here, as it is not used in the verification process.
+            let start_fn = FunctionRef {
+                module_name: module_name.to_string(),
+                function_name: "start".to_string(),
+                module_index: 0,
+                function_index: start,
+                exported: false,
+            };
+            instance.invoke::<(), ()>(&start_fn, ())?;
         }
 
         Ok(instance)
     }
 
-    pub fn invoke_named<Param: InteropValueList, Returns: InteropValueList>(
-        &mut self,
-        func_name: &str,
-        param: Param,
-    ) -> Result<Returns, RuntimeError> {
-        // TODO: Optimize this search for better than linear-time. Pre-processing will likely be required
-        let func_idx = self.exports.iter().find_map(|export| {
-            if export.name == func_name {
-                match export.desc {
-                    ExportDesc::FuncIdx(idx) => Some(idx),
-                    _ => None,
-                }
-            } else {
-                None
-            }
-        });
+    pub fn get_function_by_name(
+        &self,
+        module_name: &str,
+        function_name: &str,
+    ) -> Result<FunctionRef, RuntimeError> {
+        let (module_idx, func_idx) = self.get_indicies(module_name, function_name)?;
 
-        if let Some(func_idx) = func_idx {
-            self.invoke_func(func_idx, param)
-        } else {
-            Err(RuntimeError::FunctionNotFound)
-        }
+        Ok(FunctionRef {
+            module_name: module_name.to_string(),
+            function_name: function_name.to_string(),
+            module_index: module_idx,
+            function_index: func_idx,
+            exported: true,
+        })
     }
 
-    pub fn invoke_named_dynamic(
-        &mut self,
-        func_name: &str,
-        param: Vec<Value>,
-        ret_types: &[ValType],
-    ) -> Result<Vec<Value>, RuntimeError> {
-        // TODO: Optimize this search for better than linear-time. Pre-processing will likely be required
-        let func_idx = self.exports.iter().find_map(|export| {
-            if export.name == func_name {
-                match export.desc {
-                    ExportDesc::FuncIdx(idx) => Some(idx),
-                    _ => None,
-                }
-            } else {
-                None
-            }
-        });
+    pub fn get_function_by_index(
+        &self,
+        module_idx: usize,
+        function_idx: usize,
+    ) -> Result<FunctionRef, RuntimeError> {
+        // TODO: Module resolution
+        let function_name = self
+            .exports
+            .iter()
+            .find(|export| match &export.desc {
+                ExportDesc::FuncIdx(idx) => *idx == function_idx,
+                _ => false,
+            })
+            .map(|export| export.name.clone())
+            .ok_or(RuntimeError::FunctionNotFound)?;
 
-        if let Some(func_idx) = func_idx {
-            self.invoke_dynamic(func_idx, param, ret_types)
-        } else {
-            Err(RuntimeError::FunctionNotFound)
-        }
+        Ok(FunctionRef {
+            // TODO: get the module name from the module index
+            module_name: DEFAULT_MODULE.to_string(),
+            function_name,
+            module_index: module_idx,
+            function_index: function_idx,
+            exported: true,
+        })
     }
 
-    /// Can only invoke functions with signature `[t1] -> [t2]` as of now.
-    pub fn invoke_func<Param: InteropValueList, Returns: InteropValueList>(
+    // TODO: remove this annotation when implementing the function
+    #[allow(clippy::result_unit_err)]
+    pub fn add_module(
         &mut self,
-        func_idx: FuncIdx,
+        _module_name: &str,
+        _validation_info: &'_ ValidationInfo<'b>,
+    ) -> Result<(), ()> {
+        todo!("Implement module linking");
+    }
+
+    pub fn invoke<Param: InteropValueList, Returns: InteropValueList>(
+        &mut self,
+        function_ref: &FunctionRef,
         params: Param,
     ) -> Result<Returns, RuntimeError> {
+        // First, verify that the function reference is valid
+        let (_module_idx, func_idx) = self.verify_function_ref(function_ref)?;
+
         // -=-= Verification =-=-
         let func_inst = self.store.funcs.get(func_idx).expect("valid FuncIdx");
         let func_ty = self.types.get(func_inst.ty).unwrap_validated();
@@ -175,10 +201,13 @@ where
     /// Invokes a function with the given parameters, and return types which are not known at compile time.
     pub fn invoke_dynamic(
         &mut self,
-        func_idx: FuncIdx,
+        function_ref: &FunctionRef,
         params: Vec<Value>,
         ret_types: &[ValType],
     ) -> Result<Vec<Value>, RuntimeError> {
+        // First, verify that the function reference is valid
+        let (_module_idx, func_idx) = self.verify_function_ref(function_ref)?;
+
         // -=-= Verification =-=-
         let func_inst = self.store.funcs.get(func_idx).expect("valid FuncIdx");
         let func_ty = self.types.get(func_inst.ty).unwrap_validated();
@@ -225,6 +254,60 @@ where
         let ret = reversed_values.collect();
         debug!("Successfully invoked function");
         Ok(ret)
+    }
+
+    // TODO: replace this with the lookup table when implmenting the linker
+    fn get_indicies(
+        &self,
+        _module_name: &str,
+        function_name: &str,
+    ) -> Result<(usize, usize), RuntimeError> {
+        let func_idx = self
+            .exports
+            .iter()
+            .find_map(|export| {
+                if export.name == function_name {
+                    match export.desc {
+                        ExportDesc::FuncIdx(func_idx) => Some(func_idx),
+                        _ => None,
+                    }
+                } else {
+                    None
+                }
+            })
+            .ok_or(RuntimeError::FunctionNotFound)?;
+
+        Ok((0, func_idx))
+    }
+
+    fn verify_function_ref(
+        &self,
+        function_ref: &FunctionRef,
+    ) -> Result<(usize, usize), RuntimeError> {
+        if function_ref.exported {
+            let (module_idx, func_idx) =
+                self.get_indicies(&function_ref.module_name, &function_ref.function_name)?;
+
+            if module_idx != function_ref.module_index || func_idx != function_ref.function_index {
+                // TODO: should we return a different error here?
+                return Err(RuntimeError::FunctionNotFound);
+            }
+
+            Ok((module_idx, func_idx))
+        } else {
+            let (module_idx, func_idx) = (function_ref.module_index, function_ref.function_index);
+
+            // TODO: verify module named - index mapping.
+
+            // Sanity check that the function index is at least in the bounds of the store, though this doesn't mean
+            // that it's a valid function.
+            self.store
+                .funcs
+                .get(func_idx)
+                .ok_or(RuntimeError::FunctionNotFound)?;
+
+            Ok((module_idx, func_idx))
+        }
     }
 
     fn init_store(validation_info: &ValidationInfo) -> Store {
