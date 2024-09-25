@@ -1,4 +1,4 @@
-use wasm::{validate, RuntimeInstance};
+use wasm::{validate, RuntimeInstance, DEFAULT_MODULE};
 
 const FUNCTION_CALL: &'static str = r#"
     (module
@@ -23,7 +23,14 @@ fn simple_function_call() {
 
     assert_eq!(
         3 * 7 + 13,
-        instance.invoke_named("simple_caller", (3, 7)).unwrap()
+        instance
+            .invoke(
+                &instance
+                    .get_function_by_name(DEFAULT_MODULE, "simple_caller")
+                    .unwrap(),
+                (3, 7)
+            )
+            .unwrap()
     );
 }
 
@@ -51,9 +58,39 @@ fn recursion_valid() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    assert_eq!(12, instance.invoke_named("add_two", 10).unwrap());
-    assert_eq!(2, instance.invoke_named("add_two", 0).unwrap());
-    assert_eq!(-4, instance.invoke_named("add_two", -6).unwrap());
+    assert_eq!(
+        12,
+        instance
+            .invoke(
+                &instance
+                    .get_function_by_name(DEFAULT_MODULE, "add_two")
+                    .unwrap(),
+                10
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        2,
+        instance
+            .invoke(
+                &instance
+                    .get_function_by_name(DEFAULT_MODULE, "add_two")
+                    .unwrap(),
+                0
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        -4,
+        instance
+            .invoke(
+                &instance
+                    .get_function_by_name(DEFAULT_MODULE, "add_two")
+                    .unwrap(),
+                -6
+            )
+            .unwrap()
+    );
 }
 
 #[test_log::test]

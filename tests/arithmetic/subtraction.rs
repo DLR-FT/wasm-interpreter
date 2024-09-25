@@ -23,23 +23,48 @@ pub fn i64_subtract() {
 
     assert_eq!(
         -10 as i64,
-        instance.invoke_func(0, (1 as i64, 11 as i64)).unwrap()
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (1 as i64, 11 as i64)
+            )
+            .unwrap()
     );
     assert_eq!(
         0 as i64,
-        instance.invoke_func(0, (0 as i64, 0 as i64)).unwrap()
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0 as i64, 0 as i64)
+            )
+            .unwrap()
     );
     assert_eq!(
         10 as i64,
-        instance.invoke_func(0, (-10 as i64, -20 as i64)).unwrap()
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (-10 as i64, -20 as i64)
+            )
+            .unwrap()
     );
 
     assert_eq!(
         i64::MAX - 1,
-        instance.invoke_func(0, (i64::MAX - 1, 0 as i64)).unwrap()
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (i64::MAX - 1, 0 as i64)
+            )
+            .unwrap()
     );
     assert_eq!(
         i64::MIN + 3,
-        instance.invoke_func(0, (i64::MIN + 3, 0 as i64)).unwrap()
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (i64::MIN + 3, 0 as i64)
+            )
+            .unwrap()
     );
 }

@@ -20,18 +20,20 @@ fn dynamic_add() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
+    let func = instance.get_function_by_index(0, 0).unwrap();
+
     let res = instance
         .invoke_dynamic(
-            0,
+            &func,
             vec![Value::I32(11), Value::I32(1)],
             &[ValType::NumType(NumType::I32)],
         )
         .expect("invocation failed");
     assert_eq!(vec![Value::I32(12)], res);
 
-    let res = instance
+    let res = func
         .invoke_dynamic(
-            0,
+            &mut instance,
             vec![Value::I32(-6i32 as u32), Value::I32(1)],
             &[ValType::NumType(NumType::I32)],
         )

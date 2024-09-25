@@ -1,4 +1,4 @@
-use wasm::{validate, RuntimeInstance};
+use wasm::{validate, RuntimeInstance, DEFAULT_MODULE};
 const BASE_WAT: &'static str = r#"
     (module
         (memory 1)
@@ -19,8 +19,23 @@ fn basic_memory() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    let _ = instance.invoke_named::<i32, ()>("store_num", 42);
-    assert_eq!(42, instance.invoke_named("load_num", ()).unwrap());
+    let _ = instance.invoke::<i32, ()>(
+        &instance
+            .get_function_by_name(DEFAULT_MODULE, "store_num")
+            .unwrap(),
+        42,
+    );
+    assert_eq!(
+        42,
+        instance
+            .invoke(
+                &instance
+                    .get_function_by_name(DEFAULT_MODULE, "load_num")
+                    .unwrap(),
+                ()
+            )
+            .unwrap()
+    );
 }
 
 /// Two simple methods for storing and loading an f32 from the first slot in linear memory.
@@ -32,6 +47,13 @@ fn f32_basic_memory() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    instance.invoke_func::<f32, ()>(0, 133.7_f32).unwrap();
-    assert_eq!(133.7_f32, instance.invoke_func(1, ()).unwrap());
+    instance
+        .invoke::<f32, ()>(&instance.get_function_by_index(0, 0).unwrap(), 133.7_f32)
+        .unwrap();
+    assert_eq!(
+        133.7_f32,
+        instance
+            .invoke(&instance.get_function_by_index(0, 1).unwrap(), ())
+            .unwrap()
+    );
 }

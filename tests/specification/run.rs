@@ -3,6 +3,7 @@ use std::panic::catch_unwind;
 use std::panic::AssertUnwindSafe;
 
 use wasm::Value;
+use wasm::DEFAULT_MODULE;
 use wasm::{validate, RuntimeInstance};
 use wast::core::WastArgCore;
 use wast::core::WastRetCore;
@@ -252,8 +253,13 @@ fn execute_assert_return(
                 .map(|val| val.to_ty())
                 .collect::<Vec<_>>();
 
+            // TODO: more modules ¯\_(ツ)_/¯
+            let func = interpeter
+                .get_function_by_name(DEFAULT_MODULE, invoke_info.name)
+                .map_err(|err| Box::new(WasmInterpreterError(wasm::Error::RuntimeError(err))))?;
+
             let actual = interpeter
-                .invoke_named_dynamic(invoke_info.name, args, &result_types)
+                .invoke_dynamic(&func, args, &result_types)
                 .map_err(|err| Box::new(WasmInterpreterError(wasm::Error::RuntimeError(err))))?;
 
             AssertEqError::assert_eq(actual, result_vals)?;

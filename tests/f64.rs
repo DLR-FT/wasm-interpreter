@@ -19,7 +19,12 @@ pub fn f64_const() {
 
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    assert_eq!(3.14159265359_f64, instance.invoke_func(0, ()).unwrap());
+    assert_eq!(
+        3.14159265359_f64,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), ())
+            .unwrap()
+    );
 }
 
 /// A simple function to test the f64.eq implementation
@@ -41,8 +46,24 @@ pub fn f64_eq() {
 
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    assert_eq!(1, instance.invoke_func(0, (1.1_f64, 1.1_f64)).unwrap());
-    assert_eq!(0, instance.invoke_func(0, (1.1_f64, 1.2_f64)).unwrap());
+    assert_eq!(
+        1,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (1.1_f64, 1.1_f64)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (1.1_f64, 1.2_f64)
+            )
+            .unwrap()
+    );
 }
 
 /// A simple function to test the f64.ne implementation
@@ -62,9 +83,33 @@ pub fn f64_ne() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    assert_eq!(0, instance.invoke_func(0, (1.1_f64, 1.1_f64)).unwrap());
-    assert_eq!(1, instance.invoke_func(0, (1.1_f64, 1.2_f64)).unwrap());
-    assert_eq!(0, instance.invoke_func(0, (0.0_f64, -0.0_f64)).unwrap());
+    assert_eq!(
+        0,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (1.1_f64, 1.1_f64)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (1.1_f64, 1.2_f64)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0.0_f64, -0.0_f64)
+            )
+            .unwrap()
+    );
 }
 
 /// A simple function to test the f64.lt implementation
@@ -84,9 +129,33 @@ pub fn f64_lt() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    assert_eq!(1, instance.invoke_func(0, (1.0_f64, 2.0_f64)).unwrap());
-    assert_eq!(0, instance.invoke_func(0, (2.0_f64, 1.0_f64)).unwrap());
-    assert_eq!(0, instance.invoke_func(0, (1.0_f64, 1.0_f64)).unwrap());
+    assert_eq!(
+        1,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (1.0_f64, 2.0_f64)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (2.0_f64, 1.0_f64)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (1.0_f64, 1.0_f64)
+            )
+            .unwrap()
+    );
 }
 
 /// A simple function to test the f64.gt implementation
@@ -106,9 +175,33 @@ pub fn f64_gt() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    assert_eq!(0, instance.invoke_func(0, (1.0_f64, 2.0_f64)).unwrap());
-    assert_eq!(1, instance.invoke_func(0, (2.0_f64, 1.0_f64)).unwrap());
-    assert_eq!(0, instance.invoke_func(0, (1.0_f64, 1.0_f64)).unwrap());
+    assert_eq!(
+        0,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (1.0_f64, 2.0_f64)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (2.0_f64, 1.0_f64)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (1.0_f64, 1.0_f64)
+            )
+            .unwrap()
+    );
 }
 
 /// A simple function to test the f64.le implementation
@@ -128,9 +221,33 @@ pub fn f64_le() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    assert_eq!(1, instance.invoke_func(0, (1.0_f64, 2.0_f64)).unwrap());
-    assert_eq!(0, instance.invoke_func(0, (2.0_f64, 1.0_f64)).unwrap());
-    assert_eq!(1, instance.invoke_func(0, (1.0_f64, 1.0_f64)).unwrap());
+    assert_eq!(
+        1,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (1.0_f64, 2.0_f64)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (2.0_f64, 1.0_f64)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (1.0_f64, 1.0_f64)
+            )
+            .unwrap()
+    );
 }
 
 /// A simple function to test the f64.ge implementation
@@ -150,9 +267,33 @@ pub fn f64_ge() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    assert_eq!(0, instance.invoke_func(0, (1.0_f64, 2.0_f64)).unwrap());
-    assert_eq!(1, instance.invoke_func(0, (2.0_f64, 1.0_f64)).unwrap());
-    assert_eq!(1, instance.invoke_func(0, (1.0_f64, 1.0_f64)).unwrap());
+    assert_eq!(
+        0,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (1.0_f64, 2.0_f64)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (2.0_f64, 1.0_f64)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (1.0_f64, 1.0_f64)
+            )
+            .unwrap()
+    );
 }
 
 /// A simple function to test the f64.abs implementation
@@ -172,31 +313,63 @@ pub fn f64_abs() {
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
     {
-        let result = instance.invoke_func::<f64, f64>(0, -f64::NAN).unwrap();
-        assert!(result.is_nan());
-        assert!(result.is_sign_positive());
-    }
-    {
-        let result = instance.invoke_func::<f64, f64>(0, f64::NAN).unwrap();
+        let result = instance
+            .invoke::<f64, f64>(&instance.get_function_by_index(0, 0).unwrap(), -f64::NAN)
+            .unwrap();
         assert!(result.is_nan());
         assert!(result.is_sign_positive());
     }
     {
         let result = instance
-            .invoke_func::<f64, f64>(0, f64::NEG_INFINITY)
+            .invoke::<f64, f64>(&instance.get_function_by_index(0, 0).unwrap(), f64::NAN)
+            .unwrap();
+        assert!(result.is_nan());
+        assert!(result.is_sign_positive());
+    }
+    {
+        let result = instance
+            .invoke::<f64, f64>(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                f64::NEG_INFINITY,
+            )
             .unwrap();
         assert!(result.is_infinite());
         assert!(result.is_sign_positive());
     }
     {
-        let result = instance.invoke_func::<f64, f64>(0, f64::INFINITY).unwrap();
+        let result = instance
+            .invoke::<f64, f64>(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                f64::INFINITY,
+            )
+            .unwrap();
         assert!(result.is_infinite());
         assert!(result.is_sign_positive());
     }
-    assert_eq!(1.5_f64, instance.invoke_func(0, 1.5_f64).unwrap());
-    assert_eq!(1.5_f64, instance.invoke_func(0, -1.5_f64).unwrap());
-    assert_eq!(0.0_f64, instance.invoke_func(0, 0.0_f64).unwrap());
-    assert_eq!(0.0_f64, instance.invoke_func(0, -0.0_f64).unwrap());
+    assert_eq!(
+        1.5_f64,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), 1.5_f64)
+            .unwrap()
+    );
+    assert_eq!(
+        1.5_f64,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), -1.5_f64)
+            .unwrap()
+    );
+    assert_eq!(
+        0.0_f64,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), 0.0_f64)
+            .unwrap()
+    );
+    assert_eq!(
+        0.0_f64,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), -0.0_f64)
+            .unwrap()
+    );
 }
 
 /// A simple function to test the f64.neg implementation
@@ -216,31 +389,63 @@ pub fn f64_neg() {
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
     {
-        let result = instance.invoke_func::<f64, f64>(0, -f64::NAN).unwrap();
+        let result = instance
+            .invoke::<f64, f64>(&instance.get_function_by_index(0, 0).unwrap(), -f64::NAN)
+            .unwrap();
         assert!(result.is_nan());
         assert!(result.is_sign_positive());
     }
     {
-        let result = instance.invoke_func::<f64, f64>(0, f64::NAN).unwrap();
+        let result = instance
+            .invoke::<f64, f64>(&instance.get_function_by_index(0, 0).unwrap(), f64::NAN)
+            .unwrap();
         assert!(result.is_nan());
         assert!(result.is_sign_negative());
     }
     {
         let result = instance
-            .invoke_func::<f64, f64>(0, f64::NEG_INFINITY)
+            .invoke::<f64, f64>(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                f64::NEG_INFINITY,
+            )
             .unwrap();
         assert!(result.is_infinite());
         assert!(result.is_sign_positive());
     }
     {
-        let result = instance.invoke_func::<f64, f64>(0, f64::INFINITY).unwrap();
+        let result = instance
+            .invoke::<f64, f64>(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                f64::INFINITY,
+            )
+            .unwrap();
         assert!(result.is_infinite());
         assert!(result.is_sign_negative());
     }
-    assert_eq!(-1.5_f64, instance.invoke_func(0, 1.5_f64).unwrap());
-    assert_eq!(1.5_f64, instance.invoke_func(0, -1.5_f64).unwrap());
-    assert_eq!(-0.0_f64, instance.invoke_func(0, 0.0_f64).unwrap());
-    assert_eq!(0.0_f64, instance.invoke_func(0, -0.0_f64).unwrap());
+    assert_eq!(
+        -1.5_f64,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), 1.5_f64)
+            .unwrap()
+    );
+    assert_eq!(
+        1.5_f64,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), -1.5_f64)
+            .unwrap()
+    );
+    assert_eq!(
+        -0.0_f64,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), 0.0_f64)
+            .unwrap()
+    );
+    assert_eq!(
+        0.0_f64,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), -0.0_f64)
+            .unwrap()
+    );
 }
 
 /// A simple function to test the f64.ceil implementation
@@ -259,9 +464,24 @@ pub fn f64_ceil() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    assert_eq!(2.0_f64, instance.invoke_func(0, 1.5_f64).unwrap());
-    assert_eq!(-1.0_f64, instance.invoke_func(0, -1.5_f64).unwrap());
-    assert_eq!(0.0_f64, instance.invoke_func(0, -0.1_f64).unwrap());
+    assert_eq!(
+        2.0_f64,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), 1.5_f64)
+            .unwrap()
+    );
+    assert_eq!(
+        -1.0_f64,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), -1.5_f64)
+            .unwrap()
+    );
+    assert_eq!(
+        0.0_f64,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), -0.1_f64)
+            .unwrap()
+    );
 }
 
 /// A simple function to test the f64.floor implementation
@@ -280,9 +500,24 @@ pub fn f64_floor() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    assert_eq!(1.0_f64, instance.invoke_func(0, 1.5_f64).unwrap());
-    assert_eq!(-2.0_f64, instance.invoke_func(0, -1.5_f64).unwrap());
-    assert_eq!(-1.0_f64, instance.invoke_func(0, -0.1_f64).unwrap());
+    assert_eq!(
+        1.0_f64,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), 1.5_f64)
+            .unwrap()
+    );
+    assert_eq!(
+        -2.0_f64,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), -1.5_f64)
+            .unwrap()
+    );
+    assert_eq!(
+        -1.0_f64,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), -0.1_f64)
+            .unwrap()
+    );
 }
 
 /// A simple function to test the f64.trunc implementation
@@ -301,9 +536,24 @@ pub fn f64_trunc() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    assert_eq!(1.0_f64, instance.invoke_func(0, 1.5_f64).unwrap());
-    assert_eq!(-1.0_f64, instance.invoke_func(0, -1.5_f64).unwrap());
-    assert_eq!(0.0_f64, instance.invoke_func(0, 0.9_f64).unwrap());
+    assert_eq!(
+        1.0_f64,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), 1.5_f64)
+            .unwrap()
+    );
+    assert_eq!(
+        -1.0_f64,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), -1.5_f64)
+            .unwrap()
+    );
+    assert_eq!(
+        0.0_f64,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), 0.9_f64)
+            .unwrap()
+    );
 }
 
 /// A simple function to test the f64.nearest implementation
@@ -322,10 +572,30 @@ pub fn f64_nearest() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    assert_eq!(2.0_f64, instance.invoke_func(0, 1.5_f64).unwrap());
-    assert_eq!(-2.0_f64, instance.invoke_func(0, -1.5_f64).unwrap());
-    assert_eq!(1.0_f64, instance.invoke_func(0, 0.6_f64).unwrap());
-    assert_eq!(0.0_f64, instance.invoke_func(0, 0.4_f64).unwrap());
+    assert_eq!(
+        2.0_f64,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), 1.5_f64)
+            .unwrap()
+    );
+    assert_eq!(
+        -2.0_f64,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), -1.5_f64)
+            .unwrap()
+    );
+    assert_eq!(
+        1.0_f64,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), 0.6_f64)
+            .unwrap()
+    );
+    assert_eq!(
+        0.0_f64,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), 0.4_f64)
+            .unwrap()
+    );
 }
 
 /// A simple function to test the f64.sqrt implementation
@@ -344,13 +614,20 @@ pub fn f64_sqrt() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    assert_eq!(2.0_f64, instance.invoke_func(0, 4.0_f64).unwrap());
+    assert_eq!(
+        2.0_f64,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), 4.0_f64)
+            .unwrap()
+    );
     assert_eq!(
         1.4142135623730951_f64,
-        instance.invoke_func(0, 2.0_f64).unwrap()
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), 2.0_f64)
+            .unwrap()
     );
     assert!(instance
-        .invoke_func::<f64, f64>(0, -f64::NAN)
+        .invoke::<f64, f64>(&instance.get_function_by_index(0, 0).unwrap(), -f64::NAN)
         .unwrap()
         .is_nan());
 }
@@ -374,15 +651,30 @@ pub fn f64_add() {
 
     assert_eq!(
         3.0_f64,
-        instance.invoke_func(0, (1.5_f64, 1.5_f64)).unwrap()
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (1.5_f64, 1.5_f64)
+            )
+            .unwrap()
     );
     assert_eq!(
         -1.0_f64,
-        instance.invoke_func(0, (1.0_f64, -2.0_f64)).unwrap()
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (1.0_f64, -2.0_f64)
+            )
+            .unwrap()
     );
     assert_eq!(
         0.0_f64,
-        instance.invoke_func(0, (0.1_f64, -0.1_f64)).unwrap()
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0.1_f64, -0.1_f64)
+            )
+            .unwrap()
     );
 }
 
@@ -405,15 +697,30 @@ pub fn f64_sub() {
 
     assert_eq!(
         0.0_f64,
-        instance.invoke_func(0, (1.5_f64, 1.5_f64)).unwrap()
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (1.5_f64, 1.5_f64)
+            )
+            .unwrap()
     );
     assert_eq!(
         3.0_f64,
-        instance.invoke_func(0, (1.0_f64, -2.0_f64)).unwrap()
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (1.0_f64, -2.0_f64)
+            )
+            .unwrap()
     );
     assert_eq!(
         0.2_f64,
-        instance.invoke_func(0, (0.1_f64, -0.1_f64)).unwrap()
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0.1_f64, -0.1_f64)
+            )
+            .unwrap()
     );
 }
 
@@ -436,15 +743,30 @@ pub fn f64_mul() {
 
     assert_eq!(
         6.0_f64,
-        instance.invoke_func(0, (2.0_f64, 3.0_f64)).unwrap()
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (2.0_f64, 3.0_f64)
+            )
+            .unwrap()
     );
     assert_eq!(
         -4.0_f64,
-        instance.invoke_func(0, (2.0_f64, -2.0_f64)).unwrap()
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (2.0_f64, -2.0_f64)
+            )
+            .unwrap()
     );
     assert_eq!(
         0.0_f64,
-        instance.invoke_func(0, (0.0_f64, 5.0_f64)).unwrap()
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0.0_f64, 5.0_f64)
+            )
+            .unwrap()
     );
 }
 
@@ -467,18 +789,34 @@ pub fn f64_div() {
 
     assert_eq!(
         2.0_f64,
-        instance.invoke_func(0, (6.0_f64, 3.0_f64)).unwrap()
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (6.0_f64, 3.0_f64)
+            )
+            .unwrap()
     );
     assert_eq!(
         -1.0_f64,
-        instance.invoke_func(0, (2.0_f64, -2.0_f64)).unwrap()
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (2.0_f64, -2.0_f64)
+            )
+            .unwrap()
     );
     assert!(instance
-        .invoke_func::<(f64, f64), f64>(0, (1.0_f64, 0.0_f64))
+        .invoke::<(f64, f64), f64>(
+            &instance.get_function_by_index(0, 0).unwrap(),
+            (1.0_f64, 0.0_f64)
+        )
         .unwrap()
         .is_infinite());
     assert!(instance
-        .invoke_func::<(f64, f64), f64>(0, (0.0_f64, 0.0_f64))
+        .invoke::<(f64, f64), f64>(
+            &instance.get_function_by_index(0, 0).unwrap(),
+            (0.0_f64, 0.0_f64)
+        )
         .unwrap()
         .is_nan());
 }
@@ -502,50 +840,93 @@ pub fn f64_min() {
 
     {
         let result = instance
-            .invoke_func::<(f64, f64), f64>(0, (f64::NAN, -f64::NAN))
+            .invoke::<(f64, f64), f64>(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (f64::NAN, -f64::NAN),
+            )
             .unwrap();
         assert!(result.is_nan());
     }
     {
         let result = instance
-            .invoke_func::<(f64, f64), f64>(0, (f64::NAN, f64::NAN))
+            .invoke::<(f64, f64), f64>(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (f64::NAN, f64::NAN),
+            )
             .unwrap();
         assert!(result.is_nan());
         assert!(result.is_sign_positive());
     }
     {
         let result = instance
-            .invoke_func::<(f64, f64), f64>(0, (-f64::NAN, -f64::NAN))
+            .invoke::<(f64, f64), f64>(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (-f64::NAN, -f64::NAN),
+            )
             .unwrap();
         assert!(result.is_nan());
         assert!(result.is_sign_negative());
     }
     {
         let result = instance
-            .invoke_func::<(f64, f64), f64>(0, (f64::INFINITY, f64::NEG_INFINITY))
+            .invoke::<(f64, f64), f64>(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (f64::INFINITY, f64::NEG_INFINITY),
+            )
             .unwrap();
         assert!(result.is_infinite());
         assert!(result.is_sign_negative());
     }
     assert_eq!(
         42_f64,
-        instance.invoke_func(0, (f64::INFINITY, 42_f64)).unwrap()
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (f64::INFINITY, 42_f64)
+            )
+            .unwrap()
     );
-    assert_eq!(-0_f64, instance.invoke_func(0, (-0_f64, 0_f64)).unwrap());
+    assert_eq!(
+        -0_f64,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (-0_f64, 0_f64)
+            )
+            .unwrap()
+    );
     assert_eq!(
         1.0_f64,
-        instance.invoke_func(0, (1.0_f64, 2.0_f64)).unwrap()
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (1.0_f64, 2.0_f64)
+            )
+            .unwrap()
     );
     assert_eq!(
         -2.0_f64,
-        instance.invoke_func(0, (-1.0_f64, -2.0_f64)).unwrap()
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (-1.0_f64, -2.0_f64)
+            )
+            .unwrap()
     );
     assert_eq!(
         -0.0_f64,
-        instance.invoke_func(0, (0.0_f64, -0.0_f64)).unwrap()
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0.0_f64, -0.0_f64)
+            )
+            .unwrap()
     );
     assert!(instance
-        .invoke_func::<(f64, f64), f64>(0, (f64::NAN, 1.0_f64))
+        .invoke::<(f64, f64), f64>(
+            &instance.get_function_by_index(0, 0).unwrap(),
+            (f64::NAN, 1.0_f64)
+        )
         .unwrap()
         .is_nan());
 }
@@ -569,27 +950,39 @@ pub fn f64_max() {
 
     {
         let result = instance
-            .invoke_func::<(f64, f64), f64>(0, (f64::NAN, -f64::NAN))
+            .invoke::<(f64, f64), f64>(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (f64::NAN, -f64::NAN),
+            )
             .unwrap();
         assert!(result.is_nan());
     }
     {
         let result = instance
-            .invoke_func::<(f64, f64), f64>(0, (f64::NAN, f64::NAN))
+            .invoke::<(f64, f64), f64>(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (f64::NAN, f64::NAN),
+            )
             .unwrap();
         assert!(result.is_nan());
         assert!(result.is_sign_positive());
     }
     {
         let result = instance
-            .invoke_func::<(f64, f64), f64>(0, (-f64::NAN, -f64::NAN))
+            .invoke::<(f64, f64), f64>(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (-f64::NAN, -f64::NAN),
+            )
             .unwrap();
         assert!(result.is_nan());
         assert!(result.is_sign_negative());
     }
     {
         let result = instance
-            .invoke_func::<(f64, f64), f64>(0, (f64::INFINITY, f64::NEG_INFINITY))
+            .invoke::<(f64, f64), f64>(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (f64::INFINITY, f64::NEG_INFINITY),
+            )
             .unwrap();
         assert!(result.is_infinite());
         assert!(result.is_sign_positive());
@@ -597,25 +990,54 @@ pub fn f64_max() {
     assert_eq!(
         42_f64,
         instance
-            .invoke_func(0, (f64::NEG_INFINITY, 42_f64))
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (f64::NEG_INFINITY, 42_f64)
+            )
             .unwrap()
     );
-    assert_eq!(0_f64, instance.invoke_func(0, (-0_f64, 0_f64)).unwrap());
+    assert_eq!(
+        0_f64,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (-0_f64, 0_f64)
+            )
+            .unwrap()
+    );
 
     assert_eq!(
         2.0_f64,
-        instance.invoke_func(0, (1.0_f64, 2.0_f64)).unwrap()
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (1.0_f64, 2.0_f64)
+            )
+            .unwrap()
     );
     assert_eq!(
         -1.0_f64,
-        instance.invoke_func(0, (-1.0_f64, -2.0_f64)).unwrap()
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (-1.0_f64, -2.0_f64)
+            )
+            .unwrap()
     );
     assert_eq!(
         0.0_f64,
-        instance.invoke_func(0, (0.0_f64, -0.0_f64)).unwrap()
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0.0_f64, -0.0_f64)
+            )
+            .unwrap()
     );
     assert!(instance
-        .invoke_func::<(f64, f64), f64>(0, (f64::NAN, 1.0_f64))
+        .invoke::<(f64, f64), f64>(
+            &instance.get_function_by_index(0, 0).unwrap(),
+            (f64::NAN, 1.0_f64)
+        )
         .unwrap()
         .is_nan());
 }
@@ -639,18 +1061,38 @@ pub fn f64_copysign() {
 
     assert_eq!(
         1.5_f64,
-        instance.invoke_func(0, (1.5_f64, 2.0_f64)).unwrap()
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (1.5_f64, 2.0_f64)
+            )
+            .unwrap()
     );
     assert_eq!(
         -1.5_f64,
-        instance.invoke_func(0, (1.5_f64, -2.0_f64)).unwrap()
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (1.5_f64, -2.0_f64)
+            )
+            .unwrap()
     );
     assert_eq!(
         -1.5_f64,
-        instance.invoke_func(0, (-1.5_f64, -0.0_f64)).unwrap()
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (-1.5_f64, -0.0_f64)
+            )
+            .unwrap()
     );
     assert_eq!(
         1.5_f64,
-        instance.invoke_func(0, (-1.5_f64, 0.0_f64)).unwrap()
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (-1.5_f64, 0.0_f64)
+            )
+            .unwrap()
     );
 }
