@@ -1,5 +1,5 @@
-use wasm::RuntimeError;
 use wasm::{validate, RuntimeInstance};
+use wasm::{RuntimeError, DEFAULT_MODULE};
 
 const WAT_SIGNED_DIVISION_TEMPLATE: &'static str = r#"
     (module
@@ -32,47 +32,113 @@ pub fn i32_division_signed_simple() {
 
     assert_eq!(
         10,
-        instance.invoke_named("signed_division", (20, 2)).unwrap()
+        instance
+            .invoke(
+                &instance
+                    .get_function_by_name(DEFAULT_MODULE, "signed_division")
+                    .unwrap(),
+                (20, 2)
+            )
+            .unwrap()
     );
     assert_eq!(
         9_001,
         instance
-            .invoke_named("signed_division", (81_018_001, 9_001))
+            .invoke(
+                &instance
+                    .get_function_by_name(DEFAULT_MODULE, "signed_division")
+                    .unwrap(),
+                (81_018_001, 9_001)
+            )
             .unwrap()
     );
     assert_eq!(
         -10,
-        instance.invoke_named("signed_division", (20, -2)).unwrap()
+        instance
+            .invoke(
+                &instance
+                    .get_function_by_name(DEFAULT_MODULE, "signed_division")
+                    .unwrap(),
+                (20, -2)
+            )
+            .unwrap()
     );
     assert_eq!(
         10,
-        instance.invoke_named("signed_division", (-20, -2)).unwrap()
+        instance
+            .invoke(
+                &instance
+                    .get_function_by_name(DEFAULT_MODULE, "signed_division")
+                    .unwrap(),
+                (-20, -2)
+            )
+            .unwrap()
     );
     assert_eq!(
         -10,
-        instance.invoke_named("signed_division", (-20, 2)).unwrap()
+        instance
+            .invoke(
+                &instance
+                    .get_function_by_name(DEFAULT_MODULE, "signed_division")
+                    .unwrap(),
+                (-20, 2)
+            )
+            .unwrap()
     );
     assert_eq!(
         10,
-        instance.invoke_named("signed_division", (20, 2)).unwrap()
+        instance
+            .invoke(
+                &instance
+                    .get_function_by_name(DEFAULT_MODULE, "signed_division")
+                    .unwrap(),
+                (20, 2)
+            )
+            .unwrap()
     );
     assert_eq!(
         9_001,
         instance
-            .invoke_named("signed_division", (81_018_001, 9_001))
+            .invoke(
+                &instance
+                    .get_function_by_name(DEFAULT_MODULE, "signed_division")
+                    .unwrap(),
+                (81_018_001, 9_001)
+            )
             .unwrap()
     );
     assert_eq!(
         -10,
-        instance.invoke_named("signed_division", (20, -2)).unwrap()
+        instance
+            .invoke(
+                &instance
+                    .get_function_by_name(DEFAULT_MODULE, "signed_division")
+                    .unwrap(),
+                (20, -2)
+            )
+            .unwrap()
     );
     assert_eq!(
         10,
-        instance.invoke_named("signed_division", (-20, -2)).unwrap()
+        instance
+            .invoke(
+                &instance
+                    .get_function_by_name(DEFAULT_MODULE, "signed_division")
+                    .unwrap(),
+                (-20, -2)
+            )
+            .unwrap()
     );
     assert_eq!(
         -10,
-        instance.invoke_named("signed_division", (-20, 2)).unwrap()
+        instance
+            .invoke(
+                &instance
+                    .get_function_by_name(DEFAULT_MODULE, "signed_division")
+                    .unwrap(),
+                (-20, 2)
+            )
+            .unwrap()
     );
 }
 
@@ -87,7 +153,12 @@ pub fn i32_division_signed_panic_dividend_0() {
 
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    let result = instance.invoke_named::<(i32, i32), i32>("signed_division", (222, 0));
+    let result = instance.invoke::<(i32, i32), i32>(
+        &instance
+            .get_function_by_name(DEFAULT_MODULE, "signed_division")
+            .unwrap(),
+        (222, 0),
+    );
 
     assert_eq!(result.unwrap_err(), RuntimeError::DivideBy0);
 }
@@ -103,7 +174,12 @@ pub fn i32_division_signed_panic_result_unrepresentable() {
 
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    let result = instance.invoke_named::<(i32, i32), i32>("signed_division", (i32::MIN, -1));
+    let result = instance.invoke::<(i32, i32), i32>(
+        &instance
+            .get_function_by_name(DEFAULT_MODULE, "signed_division")
+            .unwrap(),
+        (i32::MIN, -1),
+    );
 
     assert_eq!(result.unwrap_err(), RuntimeError::UnrepresentableResult);
 }
@@ -121,49 +197,91 @@ pub fn i32_division_unsigned_simple() {
 
     assert_eq!(
         10,
-        instance.invoke_named("unsigned_division", (20, 2)).unwrap()
+        instance
+            .invoke(
+                &instance
+                    .get_function_by_name(DEFAULT_MODULE, "unsigned_division")
+                    .unwrap(),
+                (20, 2)
+            )
+            .unwrap()
     );
     assert_eq!(
         9_001,
         instance
-            .invoke_named("unsigned_division", (81_018_001, 9_001))
+            .invoke(
+                &instance
+                    .get_function_by_name(DEFAULT_MODULE, "unsigned_division")
+                    .unwrap(),
+                (81_018_001, 9_001)
+            )
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke_named("unsigned_division", (i32::MIN, -1))
+            .invoke(
+                &instance
+                    .get_function_by_name(DEFAULT_MODULE, "unsigned_division")
+                    .unwrap(),
+                (i32::MIN, -1)
+            )
             .unwrap()
     );
 
     assert_eq!(
         0,
         instance
-            .invoke_named("unsigned_division", (i32::MIN, -1))
+            .invoke(
+                &instance
+                    .get_function_by_name(DEFAULT_MODULE, "unsigned_division")
+                    .unwrap(),
+                (i32::MIN, -1)
+            )
             .unwrap()
     );
     assert_eq!(
         -20,
         instance
-            .invoke_named("unsigned_division", (-20, 1))
+            .invoke(
+                &instance
+                    .get_function_by_name(DEFAULT_MODULE, "unsigned_division")
+                    .unwrap(),
+                (-20, 1)
+            )
             .unwrap()
     );
     assert_eq!(
         2147483638,
         instance
-            .invoke_named("unsigned_division", (-20, 2))
+            .invoke(
+                &instance
+                    .get_function_by_name(DEFAULT_MODULE, "unsigned_division")
+                    .unwrap(),
+                (-20, 2)
+            )
             .unwrap()
     );
     assert_eq!(
         1431655758,
         instance
-            .invoke_named("unsigned_division", (-20, 3))
+            .invoke(
+                &instance
+                    .get_function_by_name(DEFAULT_MODULE, "unsigned_division")
+                    .unwrap(),
+                (-20, 3)
+            )
             .unwrap()
     );
     assert_eq!(
         1073741819,
         instance
-            .invoke_named("unsigned_division", (-20, 4))
+            .invoke(
+                &instance
+                    .get_function_by_name(DEFAULT_MODULE, "unsigned_division")
+                    .unwrap(),
+                (-20, 4)
+            )
             .unwrap()
     );
 }
@@ -179,7 +297,12 @@ pub fn i32_division_unsigned_panic_dividend_0() {
 
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    let result = instance.invoke_named::<(i32, i32), i32>("unsigned_division", (222, 0));
+    let result = instance.invoke::<(i32, i32), i32>(
+        &instance
+            .get_function_by_name(DEFAULT_MODULE, "unsigned_division")
+            .unwrap(),
+        (222, 0),
+    );
 
     assert_eq!(result.unwrap_err(), RuntimeError::DivideBy0);
 }
@@ -197,24 +320,47 @@ pub fn i64_division_signed_simple() {
 
     assert_eq!(
         10 as i64,
-        instance.invoke_func(0, (20 as i64, 2 as i64)).unwrap()
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (20 as i64, 2 as i64)
+            )
+            .unwrap()
     );
     assert_eq!(
         9_001 as i64,
         instance
-            .invoke_func(0, (81_018_001 as i64, 9_001 as i64))
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (81_018_001 as i64, 9_001 as i64)
+            )
             .unwrap()
     );
     assert_eq!(
         -10 as i64,
-        instance.invoke_func(0, (20 as i64, -2 as i64)).unwrap()
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (20 as i64, -2 as i64)
+            )
+            .unwrap()
     );
     assert_eq!(
         10 as i64,
-        instance.invoke_func(0, (-20 as i64, -2 as i64)).unwrap()
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (-20 as i64, -2 as i64)
+            )
+            .unwrap()
     );
     assert_eq!(
         -10 as i64,
-        instance.invoke_func(0, (-20 as i64, 2 as i64)).unwrap()
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (-20 as i64, 2 as i64)
+            )
+            .unwrap()
     );
 }

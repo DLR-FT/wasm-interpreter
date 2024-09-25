@@ -1,3 +1,5 @@
+use wasm::DEFAULT_MODULE;
+
 /// This test checks if we can validate and executa a module which has two functions with the same signature.
 #[test_log::test]
 fn same_type_fn() {
@@ -21,6 +23,26 @@ fn same_type_fn() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    assert_eq!(-5, instance.invoke_named("add_one", -6).unwrap());
-    assert_eq!(-4, instance.invoke_named("add_two", -6).unwrap());
+    assert_eq!(
+        -5,
+        instance
+            .invoke(
+                &instance
+                    .get_function_by_name(DEFAULT_MODULE, "add_one")
+                    .unwrap(),
+                -6
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        -4,
+        instance
+            .invoke(
+                &instance
+                    .get_function_by_name(DEFAULT_MODULE, "add_two")
+                    .unwrap(),
+                -6
+            )
+            .unwrap()
+    );
 }

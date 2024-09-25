@@ -33,20 +33,69 @@ pub fn i32_add() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    assert_eq!(2, instance.invoke_func(0, (1, 1)).unwrap());
-    assert_eq!(1, instance.invoke_func(0, (1, 0)).unwrap());
-    assert_eq!(-2, instance.invoke_func(0, (-1, -1)).unwrap());
-    assert_eq!(0, instance.invoke_func(0, (-1, 1)).unwrap());
+    assert_eq!(
+        2,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (1, 1))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (1, 0))
+            .unwrap()
+    );
+    assert_eq!(
+        -2,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (-1, -1))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (-1, 1))
+            .unwrap()
+    );
     // Chaned the following value from the spec:
     // - 0x80000000 to -2147483648 = (0x80000000 as u32) as i32
     let i32_min = (0x80000000 as u32) as i32;
 
-    assert_eq!(i32_min, instance.invoke_func(0, (0x7fffffff, 1)).unwrap());
-    assert_eq!(0x7fffffff, instance.invoke_func(0, (i32_min, -1)).unwrap());
-    assert_eq!(0, instance.invoke_func(0, (i32_min, i32_min)).unwrap());
+    assert_eq!(
+        i32_min,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x7fffffff, 1)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        0x7fffffff,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (i32_min, -1)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (i32_min, i32_min)
+            )
+            .unwrap()
+    );
     assert_eq!(
         0x40000000,
-        instance.invoke_func(0, (0x3fffffff, 1)).unwrap()
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x3fffffff, 1)
+            )
+            .unwrap()
     );
 }
 
@@ -58,19 +107,60 @@ pub fn i32_sub() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    assert_eq!(0, instance.invoke_func(0, (1, 1)).unwrap());
-    assert_eq!(1, instance.invoke_func(0, (1, 0)).unwrap());
-    assert_eq!(0, instance.invoke_func(0, (-1, -1)).unwrap());
+    assert_eq!(
+        0,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (1, 1))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (1, 0))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (-1, -1))
+            .unwrap()
+    );
     // Chaned the following value from the spec:
     // - 0x80000000 to -2147483648 = (0x80000000 as u32) as i32
     let i32_min = (0x80000000 as u32) as i32;
 
-    assert_eq!(i32_min, instance.invoke_func(0, (0x7fffffff, -1)).unwrap());
-    assert_eq!(0x7fffffff, instance.invoke_func(0, (i32_min, 1)).unwrap());
-    assert_eq!(0, instance.invoke_func(0, (i32_min, i32_min)).unwrap());
+    assert_eq!(
+        i32_min,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x7fffffff, -1)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        0x7fffffff,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (i32_min, 1))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (i32_min, i32_min)
+            )
+            .unwrap()
+    );
     assert_eq!(
         0x40000000,
-        instance.invoke_func(0, (0x3fffffff, -1)).unwrap()
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x3fffffff, -1)
+            )
+            .unwrap()
     );
 }
 
@@ -92,7 +182,12 @@ pub fn i32_eqz_panic() {
 
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    assert_eq!(1, instance.invoke_func(0, ()).unwrap());
+    assert_eq!(
+        1,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), ())
+            .unwrap()
+    );
 }
 
 /// A function to test the i32.eqz implementation using the [WASM TestSuite](https://github.com/WebAssembly/testsuite/blob/5741d6c5172866174fde27c6b5447af757528d1a/i32.wast#L286)
@@ -113,11 +208,42 @@ pub fn i32_eqz() {
 
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    assert_eq!(1, instance.invoke_func(0, 0).unwrap());
-    assert_eq!(0, instance.invoke_func(0, 1).unwrap());
-    assert_eq!(0, instance.invoke_func(0, 0x80000000u32 as i32).unwrap());
-    assert_eq!(0, instance.invoke_func(0, 0x7fffffff).unwrap());
-    assert_eq!(0, instance.invoke_func(0, 0xffffffffu32 as i32).unwrap());
+    assert_eq!(
+        1,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), 0)
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), 1)
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                0x80000000u32 as i32
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), 0x7fffffff)
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                0xffffffffu32 as i32
+            )
+            .unwrap()
+    );
 }
 
 #[should_panic]
@@ -139,7 +265,12 @@ pub fn i32_eq_panic_first_arg() {
 
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    assert_eq!(1, instance.invoke_func(0, ()).unwrap());
+    assert_eq!(
+        1,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), ())
+            .unwrap()
+    );
 }
 
 #[should_panic]
@@ -161,7 +292,12 @@ pub fn i32_eq_panic_second_arg() {
 
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    assert_eq!(1, instance.invoke_func(0, ()).unwrap());
+    assert_eq!(
+        1,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), ())
+            .unwrap()
+    );
 }
 
 /// A function to test the i32.eq implementation using the [WASM TestSuite](https://github.com/WebAssembly/testsuite/blob/5741d6c5172866174fde27c6b5447af757528d1a/i32.wast#L292)
@@ -172,48 +308,112 @@ pub fn i32_eq() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    assert_eq!(1, instance.invoke_func(0, (0, 0)).unwrap());
-    assert_eq!(1, instance.invoke_func(0, (1, 1)).unwrap());
-    assert_eq!(0, instance.invoke_func(0, (-1, 1)).unwrap());
     assert_eq!(
         1,
         instance
-            .invoke_func(0, (0x80000000u32 as i32, 0x80000000u32 as i32))
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (0, 0))
             .unwrap()
     );
     assert_eq!(
         1,
-        instance.invoke_func(0, (0x7fffffff, 0x7fffffff)).unwrap()
-    );
-    assert_eq!(1, instance.invoke_func(0, (-1, -1)).unwrap());
-    assert_eq!(0, instance.invoke_func(0, (1, 0)).unwrap());
-    assert_eq!(0, instance.invoke_func(0, (0, 1)).unwrap());
-    assert_eq!(
-        0,
-        instance.invoke_func(0, (0x80000000u32 as i32, 0)).unwrap()
-    );
-    assert_eq!(
-        0,
-        instance.invoke_func(0, (0, 0x80000000u32 as i32)).unwrap()
-    );
-    assert_eq!(
-        0,
-        instance.invoke_func(0, (0x80000000u32 as i32, -1)).unwrap()
-    );
-    assert_eq!(
-        0,
-        instance.invoke_func(0, (-1, 0x80000000u32 as i32)).unwrap()
-    );
-    assert_eq!(
-        0,
         instance
-            .invoke_func(0, (0x80000000u32 as i32, 0x7fffffff))
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (1, 1))
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke_func(0, (0x7fffffff, 0x80000000u32 as i32))
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (-1, 1))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x80000000u32 as i32, 0x80000000u32 as i32)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x7fffffff, 0x7fffffff)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (-1, -1))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (1, 0))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (0, 1))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x80000000u32 as i32, 0)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0, 0x80000000u32 as i32)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x80000000u32 as i32, -1)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (-1, 0x80000000u32 as i32)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x80000000u32 as i32, 0x7fffffff)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x7fffffff, 0x80000000u32 as i32)
+            )
             .unwrap()
     );
 }
@@ -226,48 +426,112 @@ pub fn i32_ne() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    assert_eq!(0, instance.invoke_func(0, (0, 0)).unwrap());
-    assert_eq!(0, instance.invoke_func(0, (1, 1)).unwrap());
-    assert_eq!(1, instance.invoke_func(0, (-1, 1)).unwrap());
     assert_eq!(
         0,
         instance
-            .invoke_func(0, (0x80000000u32 as i32, 0x80000000u32 as i32))
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (0, 0))
             .unwrap()
     );
     assert_eq!(
         0,
-        instance.invoke_func(0, (0x7fffffff, 0x7fffffff)).unwrap()
-    );
-    assert_eq!(0, instance.invoke_func(0, (-1, -1)).unwrap());
-    assert_eq!(1, instance.invoke_func(0, (1, 0)).unwrap());
-    assert_eq!(1, instance.invoke_func(0, (0, 1)).unwrap());
-    assert_eq!(
-        1,
-        instance.invoke_func(0, (0x80000000u32 as i32, 0)).unwrap()
-    );
-    assert_eq!(
-        1,
-        instance.invoke_func(0, (0, 0x80000000u32 as i32)).unwrap()
-    );
-    assert_eq!(
-        1,
-        instance.invoke_func(0, (0x80000000u32 as i32, -1)).unwrap()
-    );
-    assert_eq!(
-        1,
-        instance.invoke_func(0, (-1, 0x80000000u32 as i32)).unwrap()
-    );
-    assert_eq!(
-        1,
         instance
-            .invoke_func(0, (0x80000000u32 as i32, 0x7fffffff))
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (1, 1))
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke_func(0, (0x7fffffff, 0x80000000u32 as i32))
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (-1, 1))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x80000000u32 as i32, 0x80000000u32 as i32)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x7fffffff, 0x7fffffff)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (-1, -1))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (1, 0))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (0, 1))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x80000000u32 as i32, 0)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0, 0x80000000u32 as i32)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x80000000u32 as i32, -1)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (-1, 0x80000000u32 as i32)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x80000000u32 as i32, 0x7fffffff)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x7fffffff, 0x80000000u32 as i32)
+            )
             .unwrap()
     );
 }
@@ -280,48 +544,112 @@ pub fn i32_lt_s() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    assert_eq!(0, instance.invoke_func(0, (0, 0)).unwrap());
-    assert_eq!(0, instance.invoke_func(0, (1, 1)).unwrap());
-    assert_eq!(1, instance.invoke_func(0, (-1, 1)).unwrap());
     assert_eq!(
         0,
         instance
-            .invoke_func(0, (0x80000000u32 as i32, 0x80000000u32 as i32))
-            .unwrap()
-    );
-    assert_eq!(
-        0,
-        instance.invoke_func(0, (0x7fffffff, 0x7fffffff)).unwrap()
-    );
-    assert_eq!(0, instance.invoke_func(0, (-1, -1)).unwrap());
-    assert_eq!(0, instance.invoke_func(0, (1, 0)).unwrap());
-    assert_eq!(1, instance.invoke_func(0, (0, 1)).unwrap());
-    assert_eq!(
-        1,
-        instance.invoke_func(0, (0x80000000u32 as i32, 0)).unwrap()
-    );
-    assert_eq!(
-        0,
-        instance.invoke_func(0, (0, 0x80000000u32 as i32)).unwrap()
-    );
-    assert_eq!(
-        1,
-        instance.invoke_func(0, (0x80000000u32 as i32, -1)).unwrap()
-    );
-    assert_eq!(
-        0,
-        instance.invoke_func(0, (-1, 0x80000000u32 as i32)).unwrap()
-    );
-    assert_eq!(
-        1,
-        instance
-            .invoke_func(0, (0x80000000u32 as i32, 0x7fffffff))
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (0, 0))
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke_func(0, (0x7fffffff, 0x80000000u32 as i32))
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (1, 1))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (-1, 1))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x80000000u32 as i32, 0x80000000u32 as i32)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x7fffffff, 0x7fffffff)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (-1, -1))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (1, 0))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (0, 1))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x80000000u32 as i32, 0)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0, 0x80000000u32 as i32)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x80000000u32 as i32, -1)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (-1, 0x80000000u32 as i32)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x80000000u32 as i32, 0x7fffffff)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x7fffffff, 0x80000000u32 as i32)
+            )
             .unwrap()
     );
 }
@@ -334,48 +662,112 @@ pub fn i32_lt_u() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    assert_eq!(0, instance.invoke_func(0, (0, 0)).unwrap());
-    assert_eq!(0, instance.invoke_func(0, (1, 1)).unwrap());
-    assert_eq!(0, instance.invoke_func(0, (-1, 1)).unwrap());
     assert_eq!(
         0,
         instance
-            .invoke_func(0, (0x80000000u32 as i32, 0x80000000u32 as i32))
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (0, 0))
             .unwrap()
     );
     assert_eq!(
         0,
-        instance.invoke_func(0, (0x7fffffff, 0x7fffffff)).unwrap()
-    );
-    assert_eq!(0, instance.invoke_func(0, (-1, -1)).unwrap());
-    assert_eq!(0, instance.invoke_func(0, (1, 0)).unwrap());
-    assert_eq!(1, instance.invoke_func(0, (0, 1)).unwrap());
-    assert_eq!(
-        0,
-        instance.invoke_func(0, (0x80000000u32 as i32, 0)).unwrap()
-    );
-    assert_eq!(
-        1,
-        instance.invoke_func(0, (0, 0x80000000u32 as i32)).unwrap()
-    );
-    assert_eq!(
-        1,
-        instance.invoke_func(0, (0x80000000u32 as i32, -1)).unwrap()
-    );
-    assert_eq!(
-        0,
-        instance.invoke_func(0, (-1, 0x80000000u32 as i32)).unwrap()
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (1, 1))
+            .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke_func(0, (0x80000000u32 as i32, 0x7fffffff))
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (-1, 1))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x80000000u32 as i32, 0x80000000u32 as i32)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x7fffffff, 0x7fffffff)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (-1, -1))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (1, 0))
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke_func(0, (0x7fffffff, 0x80000000u32 as i32))
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (0, 1))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x80000000u32 as i32, 0)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0, 0x80000000u32 as i32)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x80000000u32 as i32, -1)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (-1, 0x80000000u32 as i32)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x80000000u32 as i32, 0x7fffffff)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x7fffffff, 0x80000000u32 as i32)
+            )
             .unwrap()
     );
 }
@@ -388,48 +780,112 @@ pub fn i32_gt_s() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    assert_eq!(0, instance.invoke_func(0, (0, 0)).unwrap());
-    assert_eq!(0, instance.invoke_func(0, (1, 1)).unwrap());
-    assert_eq!(0, instance.invoke_func(0, (-1, 1)).unwrap());
     assert_eq!(
         0,
         instance
-            .invoke_func(0, (0x80000000u32 as i32, 0x80000000u32 as i32))
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (0, 0))
             .unwrap()
     );
     assert_eq!(
         0,
-        instance.invoke_func(0, (0x7fffffff, 0x7fffffff)).unwrap()
-    );
-    assert_eq!(0, instance.invoke_func(0, (-1, -1)).unwrap());
-    assert_eq!(1, instance.invoke_func(0, (1, 0)).unwrap());
-    assert_eq!(0, instance.invoke_func(0, (0, 1)).unwrap());
-    assert_eq!(
-        0,
-        instance.invoke_func(0, (0x80000000u32 as i32, 0)).unwrap()
-    );
-    assert_eq!(
-        1,
-        instance.invoke_func(0, (0, 0x80000000u32 as i32)).unwrap()
-    );
-    assert_eq!(
-        0,
-        instance.invoke_func(0, (0x80000000u32 as i32, -1)).unwrap()
-    );
-    assert_eq!(
-        1,
-        instance.invoke_func(0, (-1, 0x80000000u32 as i32)).unwrap()
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (1, 1))
+            .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke_func(0, (0x80000000u32 as i32, 0x7fffffff))
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (-1, 1))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x80000000u32 as i32, 0x80000000u32 as i32)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x7fffffff, 0x7fffffff)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (-1, -1))
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke_func(0, (0x7fffffff, 0x80000000u32 as i32))
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (1, 0))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (0, 1))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x80000000u32 as i32, 0)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0, 0x80000000u32 as i32)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x80000000u32 as i32, -1)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (-1, 0x80000000u32 as i32)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x80000000u32 as i32, 0x7fffffff)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x7fffffff, 0x80000000u32 as i32)
+            )
             .unwrap()
     );
 }
@@ -442,48 +898,112 @@ pub fn i32_gt_u() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    assert_eq!(0, instance.invoke_func(0, (0, 0)).unwrap());
-    assert_eq!(0, instance.invoke_func(0, (1, 1)).unwrap());
-    assert_eq!(1, instance.invoke_func(0, (-1, 1)).unwrap());
     assert_eq!(
         0,
         instance
-            .invoke_func(0, (0x80000000u32 as i32, 0x80000000u32 as i32))
-            .unwrap()
-    );
-    assert_eq!(
-        0,
-        instance.invoke_func(0, (0x7fffffff, 0x7fffffff)).unwrap()
-    );
-    assert_eq!(0, instance.invoke_func(0, (-1, -1)).unwrap());
-    assert_eq!(1, instance.invoke_func(0, (1, 0)).unwrap());
-    assert_eq!(0, instance.invoke_func(0, (0, 1)).unwrap());
-    assert_eq!(
-        1,
-        instance.invoke_func(0, (0x80000000u32 as i32, 0)).unwrap()
-    );
-    assert_eq!(
-        0,
-        instance.invoke_func(0, (0, 0x80000000u32 as i32)).unwrap()
-    );
-    assert_eq!(
-        0,
-        instance.invoke_func(0, (0x80000000u32 as i32, -1)).unwrap()
-    );
-    assert_eq!(
-        1,
-        instance.invoke_func(0, (-1, 0x80000000u32 as i32)).unwrap()
-    );
-    assert_eq!(
-        1,
-        instance
-            .invoke_func(0, (0x80000000u32 as i32, 0x7fffffff))
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (0, 0))
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke_func(0, (0x7fffffff, 0x80000000u32 as i32))
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (1, 1))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (-1, 1))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x80000000u32 as i32, 0x80000000u32 as i32)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x7fffffff, 0x7fffffff)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (-1, -1))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (1, 0))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (0, 1))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x80000000u32 as i32, 0)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0, 0x80000000u32 as i32)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x80000000u32 as i32, -1)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (-1, 0x80000000u32 as i32)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x80000000u32 as i32, 0x7fffffff)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x7fffffff, 0x80000000u32 as i32)
+            )
             .unwrap()
     );
 }
@@ -496,48 +1016,112 @@ pub fn i32_le_s() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    assert_eq!(1, instance.invoke_func(0, (0, 0)).unwrap());
-    assert_eq!(1, instance.invoke_func(0, (1, 1)).unwrap());
-    assert_eq!(1, instance.invoke_func(0, (-1, 1)).unwrap());
     assert_eq!(
         1,
         instance
-            .invoke_func(0, (0x80000000u32 as i32, 0x80000000u32 as i32))
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (0, 0))
             .unwrap()
     );
     assert_eq!(
         1,
-        instance.invoke_func(0, (0x7fffffff, 0x7fffffff)).unwrap()
-    );
-    assert_eq!(1, instance.invoke_func(0, (-1, -1)).unwrap());
-    assert_eq!(0, instance.invoke_func(0, (1, 0)).unwrap());
-    assert_eq!(1, instance.invoke_func(0, (0, 1)).unwrap());
-    assert_eq!(
-        1,
-        instance.invoke_func(0, (0x80000000u32 as i32, 0)).unwrap()
-    );
-    assert_eq!(
-        0,
-        instance.invoke_func(0, (0, 0x80000000u32 as i32)).unwrap()
-    );
-    assert_eq!(
-        1,
-        instance.invoke_func(0, (0x80000000u32 as i32, -1)).unwrap()
-    );
-    assert_eq!(
-        0,
-        instance.invoke_func(0, (-1, 0x80000000u32 as i32)).unwrap()
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (1, 1))
+            .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke_func(0, (0x80000000u32 as i32, 0x7fffffff))
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (-1, 1))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x80000000u32 as i32, 0x80000000u32 as i32)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x7fffffff, 0x7fffffff)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (-1, -1))
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke_func(0, (0x7fffffff, 0x80000000u32 as i32))
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (1, 0))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (0, 1))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x80000000u32 as i32, 0)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0, 0x80000000u32 as i32)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x80000000u32 as i32, -1)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (-1, 0x80000000u32 as i32)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x80000000u32 as i32, 0x7fffffff)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x7fffffff, 0x80000000u32 as i32)
+            )
             .unwrap()
     );
 }
@@ -551,48 +1135,112 @@ pub fn i32_le_u() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    assert_eq!(1, instance.invoke_func(0, (0, 0)).unwrap());
-    assert_eq!(1, instance.invoke_func(0, (1, 1)).unwrap());
-    assert_eq!(0, instance.invoke_func(0, (-1, 1)).unwrap());
     assert_eq!(
         1,
         instance
-            .invoke_func(0, (0x80000000u32 as i32, 0x80000000u32 as i32))
-            .unwrap()
-    );
-    assert_eq!(
-        1,
-        instance.invoke_func(0, (0x7fffffff, 0x7fffffff)).unwrap()
-    );
-    assert_eq!(1, instance.invoke_func(0, (-1, -1)).unwrap());
-    assert_eq!(0, instance.invoke_func(0, (1, 0)).unwrap());
-    assert_eq!(1, instance.invoke_func(0, (0, 1)).unwrap());
-    assert_eq!(
-        0,
-        instance.invoke_func(0, (0x80000000u32 as i32, 0)).unwrap()
-    );
-    assert_eq!(
-        1,
-        instance.invoke_func(0, (0, 0x80000000u32 as i32)).unwrap()
-    );
-    assert_eq!(
-        1,
-        instance.invoke_func(0, (0x80000000u32 as i32, -1)).unwrap()
-    );
-    assert_eq!(
-        0,
-        instance.invoke_func(0, (-1, 0x80000000u32 as i32)).unwrap()
-    );
-    assert_eq!(
-        0,
-        instance
-            .invoke_func(0, (0x80000000u32 as i32, 0x7fffffff))
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (0, 0))
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke_func(0, (0x7fffffff, 0x80000000u32 as i32))
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (1, 1))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (-1, 1))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x80000000u32 as i32, 0x80000000u32 as i32)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x7fffffff, 0x7fffffff)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (-1, -1))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (1, 0))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (0, 1))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x80000000u32 as i32, 0)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0, 0x80000000u32 as i32)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x80000000u32 as i32, -1)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (-1, 0x80000000u32 as i32)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x80000000u32 as i32, 0x7fffffff)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x7fffffff, 0x80000000u32 as i32)
+            )
             .unwrap()
     );
 }
@@ -605,48 +1253,112 @@ pub fn i32_ge_s() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    assert_eq!(1, instance.invoke_func(0, (0, 0)).unwrap());
-    assert_eq!(1, instance.invoke_func(0, (1, 1)).unwrap());
-    assert_eq!(0, instance.invoke_func(0, (-1, 1)).unwrap());
     assert_eq!(
         1,
         instance
-            .invoke_func(0, (0x80000000u32 as i32, 0x80000000u32 as i32))
-            .unwrap()
-    );
-    assert_eq!(
-        1,
-        instance.invoke_func(0, (0x7fffffff, 0x7fffffff)).unwrap()
-    );
-    assert_eq!(1, instance.invoke_func(0, (-1, -1)).unwrap());
-    assert_eq!(1, instance.invoke_func(0, (1, 0)).unwrap());
-    assert_eq!(0, instance.invoke_func(0, (0, 1)).unwrap());
-    assert_eq!(
-        0,
-        instance.invoke_func(0, (0x80000000u32 as i32, 0)).unwrap()
-    );
-    assert_eq!(
-        1,
-        instance.invoke_func(0, (0, 0x80000000u32 as i32)).unwrap()
-    );
-    assert_eq!(
-        0,
-        instance.invoke_func(0, (0x80000000u32 as i32, -1)).unwrap()
-    );
-    assert_eq!(
-        1,
-        instance.invoke_func(0, (-1, 0x80000000u32 as i32)).unwrap()
-    );
-    assert_eq!(
-        0,
-        instance
-            .invoke_func(0, (0x80000000u32 as i32, 0x7fffffff))
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (0, 0))
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke_func(0, (0x7fffffff, 0x80000000u32 as i32))
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (1, 1))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (-1, 1))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x80000000u32 as i32, 0x80000000u32 as i32)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x7fffffff, 0x7fffffff)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (-1, -1))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (1, 0))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (0, 1))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x80000000u32 as i32, 0)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0, 0x80000000u32 as i32)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x80000000u32 as i32, -1)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (-1, 0x80000000u32 as i32)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x80000000u32 as i32, 0x7fffffff)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x7fffffff, 0x80000000u32 as i32)
+            )
             .unwrap()
     );
 }
@@ -659,48 +1371,112 @@ pub fn i32_ge_u() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    assert_eq!(1, instance.invoke_func(0, (0, 0)).unwrap());
-    assert_eq!(1, instance.invoke_func(0, (1, 1)).unwrap());
-    assert_eq!(1, instance.invoke_func(0, (-1, 1)).unwrap());
     assert_eq!(
         1,
         instance
-            .invoke_func(0, (0x80000000u32 as i32, 0x80000000u32 as i32))
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (0, 0))
             .unwrap()
     );
     assert_eq!(
         1,
-        instance.invoke_func(0, (0x7fffffff, 0x7fffffff)).unwrap()
-    );
-    assert_eq!(1, instance.invoke_func(0, (-1, -1)).unwrap());
-    assert_eq!(1, instance.invoke_func(0, (1, 0)).unwrap());
-    assert_eq!(0, instance.invoke_func(0, (0, 1)).unwrap());
-    assert_eq!(
-        1,
-        instance.invoke_func(0, (0x80000000u32 as i32, 0)).unwrap()
-    );
-    assert_eq!(
-        0,
-        instance.invoke_func(0, (0, 0x80000000u32 as i32)).unwrap()
-    );
-    assert_eq!(
-        0,
-        instance.invoke_func(0, (0x80000000u32 as i32, -1)).unwrap()
-    );
-    assert_eq!(
-        1,
-        instance.invoke_func(0, (-1, 0x80000000u32 as i32)).unwrap()
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (1, 1))
+            .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke_func(0, (0x80000000u32 as i32, 0x7fffffff))
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (-1, 1))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x80000000u32 as i32, 0x80000000u32 as i32)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x7fffffff, 0x7fffffff)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (-1, -1))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (1, 0))
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke_func(0, (0x7fffffff, 0x80000000u32 as i32))
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (0, 1))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x80000000u32 as i32, 0)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0, 0x80000000u32 as i32)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x80000000u32 as i32, -1)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (-1, 0x80000000u32 as i32)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x80000000u32 as i32, 0x7fffffff)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (0x7fffffff, 0x80000000u32 as i32)
+            )
             .unwrap()
     );
 }

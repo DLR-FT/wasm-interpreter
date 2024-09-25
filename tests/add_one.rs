@@ -1,4 +1,4 @@
-use wasm::{validate, RuntimeInstance};
+use wasm::{validate, RuntimeInstance, DEFAULT_MODULE};
 
 const MULTIPLY_WAT_TEMPLATE: &'static str = r#"
     (module
@@ -18,9 +18,39 @@ fn i32_add_one() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    assert_eq!(12, instance.invoke_named("add_one", 11).unwrap());
-    assert_eq!(1, instance.invoke_named("add_one", 0).unwrap());
-    assert_eq!(-5, instance.invoke_named("add_one", -6).unwrap());
+    assert_eq!(
+        12,
+        instance
+            .invoke(
+                &instance
+                    .get_function_by_name(DEFAULT_MODULE, "add_one")
+                    .unwrap(),
+                11
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .invoke(
+                &instance
+                    .get_function_by_name(DEFAULT_MODULE, "add_one")
+                    .unwrap(),
+                0
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        -5,
+        instance
+            .invoke(
+                &instance
+                    .get_function_by_name(DEFAULT_MODULE, "add_one")
+                    .unwrap(),
+                -6
+            )
+            .unwrap()
+    );
 }
 
 /// A simple function to add 1 to an i64 and return the result
@@ -32,7 +62,22 @@ fn i64_add_one() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    assert_eq!(12 as i64, instance.invoke_func(0, 11 as i64).unwrap());
-    assert_eq!(1 as i64, instance.invoke_func(0, 0 as i64).unwrap());
-    assert_eq!(-5 as i64, instance.invoke_func(0, -6 as i64).unwrap());
+    assert_eq!(
+        12 as i64,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), 11 as i64)
+            .unwrap()
+    );
+    assert_eq!(
+        1 as i64,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), 0 as i64)
+            .unwrap()
+    );
+    assert_eq!(
+        -5 as i64,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), -6 as i64)
+            .unwrap()
+    );
 }

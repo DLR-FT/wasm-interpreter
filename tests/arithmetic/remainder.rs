@@ -1,5 +1,5 @@
-use wasm::RuntimeError;
 use wasm::{validate, RuntimeInstance};
+use wasm::{RuntimeError, DEFAULT_MODULE};
 const REM_S_WAT: &'static str = r#"
     (module
         (func (export "rem_s") (param $divisor {{TYPE}}) (param $dividend {{TYPE}}) (result {{TYPE}})
@@ -28,40 +28,74 @@ pub fn i64_remainder_signed_simple() {
 
     assert_eq!(
         0 as i64,
-        instance.invoke_func(0, (20 as i64, 2 as i64)).unwrap()
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (20 as i64, 2 as i64)
+            )
+            .unwrap()
     );
     assert_eq!(
         999 as i64,
         instance
-            .invoke_func(0, (10_000 as i64, 9_001 as i64))
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (10_000 as i64, 9_001 as i64)
+            )
             .unwrap()
     );
     assert_eq!(
         -2 as i64,
-        instance.invoke_func(0, (-20 as i64, 3 as i64)).unwrap()
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (-20 as i64, 3 as i64)
+            )
+            .unwrap()
     );
     assert_eq!(
         -2 as i64,
-        instance.invoke_func(0, (-20 as i64, -3 as i64)).unwrap()
-    );
-    assert_eq!(
-        2 as i64,
-        instance.invoke_func(0, (20 as i64, -3 as i64)).unwrap()
-    );
-    assert_eq!(
-        2 as i64,
-        instance.invoke_func(0, (20 as i64, 3 as i64)).unwrap()
-    );
-    assert_eq!(
-        0 as i64,
         instance
-            .invoke_func(0, (i64::MIN as i64, -1 as i64))
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (-20 as i64, -3 as i64)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        2 as i64,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (20 as i64, -3 as i64)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        2 as i64,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (20 as i64, 3 as i64)
+            )
             .unwrap()
     );
     assert_eq!(
         0 as i64,
         instance
-            .invoke_func(0, (i64::MIN as i64, 2 as i64))
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (i64::MIN as i64, -1 as i64)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        0 as i64,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (i64::MIN as i64, 2 as i64)
+            )
             .unwrap()
     );
 }
@@ -74,7 +108,10 @@ pub fn i64_remainder_signed_panic_dividend_0() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    let result = instance.invoke_func::<(i64, i64), i64>(0, (222 as i64, 0 as i64));
+    let result = instance.invoke::<(i64, i64), i64>(
+        &instance.get_function_by_index(0, 0).unwrap(),
+        (222 as i64, 0 as i64),
+    );
 
     assert_eq!(result.unwrap_err(), RuntimeError::DivideBy0);
 }
@@ -89,54 +126,112 @@ pub fn i64_remainder_unsigned_simple() {
 
     assert_eq!(
         0 as i64,
-        instance.invoke_func(0, (i64::MIN, 2 as i64)).unwrap()
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (i64::MIN, 2 as i64)
+            )
+            .unwrap()
     );
     assert_eq!(
         i64::MIN,
-        instance.invoke_func(0, (i64::MIN, -2 as i64)).unwrap()
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (i64::MIN, -2 as i64)
+            )
+            .unwrap()
     );
     assert_eq!(
         (i64::MAX - 1),
-        instance.invoke_func(0, (-2 as i64, i64::MIN)).unwrap()
-    );
-    assert_eq!(
-        2 as i64,
-        instance.invoke_func(0, (2 as i64, i64::MIN)).unwrap()
-    );
-
-    assert_eq!(
-        0 as i64,
-        instance.invoke_func(0, (20 as i64, 2 as i64)).unwrap()
-    );
-    assert_eq!(
-        999 as i64,
         instance
-            .invoke_func(0, (10_000 as i64, 9_001 as i64))
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (-2 as i64, i64::MIN)
+            )
             .unwrap()
     );
     assert_eq!(
         2 as i64,
-        instance.invoke_func(0, (-20 as i64, 3 as i64)).unwrap()
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (2 as i64, i64::MIN)
+            )
+            .unwrap()
+    );
+
+    assert_eq!(
+        0 as i64,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (20 as i64, 2 as i64)
+            )
+            .unwrap()
     );
     assert_eq!(
-        -20 as i64,
-        instance.invoke_func(0, (-20 as i64, -3 as i64)).unwrap()
-    );
-    assert_eq!(
-        20 as i64,
-        instance.invoke_func(0, (20 as i64, -3 as i64)).unwrap()
+        999 as i64,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (10_000 as i64, 9_001 as i64)
+            )
+            .unwrap()
     );
     assert_eq!(
         2 as i64,
-        instance.invoke_func(0, (20 as i64, 3 as i64)).unwrap()
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (-20 as i64, 3 as i64)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        -20 as i64,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (-20 as i64, -3 as i64)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        20 as i64,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (20 as i64, -3 as i64)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        2 as i64,
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (20 as i64, 3 as i64)
+            )
+            .unwrap()
     );
     assert_eq!(
         i64::MIN,
-        instance.invoke_func(0, (i64::MIN, -1 as i64)).unwrap()
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (i64::MIN, -1 as i64)
+            )
+            .unwrap()
     );
     assert_eq!(
         0 as i64,
-        instance.invoke_func(0, (i64::MIN, 2 as i64)).unwrap()
+        instance
+            .invoke(
+                &instance.get_function_by_index(0, 0).unwrap(),
+                (i64::MIN, 2 as i64)
+            )
+            .unwrap()
     );
 }
 
@@ -148,7 +243,8 @@ pub fn i64_remainder_unsigned_panic_dividend_0() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    let result = instance.invoke_func::<(i64, i64), i64>(0, (222, 0));
+    let result = instance
+        .invoke::<(i64, i64), i64>(&instance.get_function_by_index(0, 0).unwrap(), (222, 0));
 
     assert_eq!(result.unwrap_err(), RuntimeError::DivideBy0);
 }
@@ -161,17 +257,94 @@ pub fn i32_remainder_signed_simple() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    assert_eq!(0, instance.invoke_named("rem_s", (20, 2)).unwrap());
+    assert_eq!(
+        0,
+        instance
+            .invoke(
+                &instance
+                    .get_function_by_name(DEFAULT_MODULE, "rem_s")
+                    .unwrap(),
+                (20, 2)
+            )
+            .unwrap()
+    );
     assert_eq!(
         999,
-        instance.invoke_named("rem_s", (10_000, 9_001)).unwrap()
+        instance
+            .invoke(
+                &instance
+                    .get_function_by_name(DEFAULT_MODULE, "rem_s")
+                    .unwrap(),
+                (10_000, 9_001)
+            )
+            .unwrap()
     );
-    assert_eq!(-2, instance.invoke_named("rem_s", (-20, 3)).unwrap());
-    assert_eq!(-2, instance.invoke_named("rem_s", (-20, -3)).unwrap());
-    assert_eq!(2, instance.invoke_named("rem_s", (20, -3)).unwrap());
-    assert_eq!(2, instance.invoke_named("rem_s", (20, 3)).unwrap());
-    assert_eq!(0, instance.invoke_named("rem_s", (i32::MIN, -1)).unwrap());
-    assert_eq!(0, instance.invoke_named("rem_s", (i32::MIN, 2)).unwrap());
+    assert_eq!(
+        -2,
+        instance
+            .invoke(
+                &instance
+                    .get_function_by_name(DEFAULT_MODULE, "rem_s")
+                    .unwrap(),
+                (-20, 3)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        -2,
+        instance
+            .invoke(
+                &instance
+                    .get_function_by_name(DEFAULT_MODULE, "rem_s")
+                    .unwrap(),
+                (-20, -3)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        2,
+        instance
+            .invoke(
+                &instance
+                    .get_function_by_name(DEFAULT_MODULE, "rem_s")
+                    .unwrap(),
+                (20, -3)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        2,
+        instance
+            .invoke(
+                &instance
+                    .get_function_by_name(DEFAULT_MODULE, "rem_s")
+                    .unwrap(),
+                (20, 3)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(
+                &instance
+                    .get_function_by_name(DEFAULT_MODULE, "rem_s")
+                    .unwrap(),
+                (i32::MIN, -1)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke(
+                &instance
+                    .get_function_by_name(DEFAULT_MODULE, "rem_s")
+                    .unwrap(),
+                (i32::MIN, 2)
+            )
+            .unwrap()
+    );
 }
 
 /// A simple function to test signed remainder's RuntimeError when dividing by 0
@@ -182,7 +355,12 @@ pub fn remainder_signed_panic_dividend_0() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    let result = instance.invoke_named::<(i32, i32), i32>("rem_s", (222, 0));
+    let result = instance.invoke::<(i32, i32), i32>(
+        &instance
+            .get_function_by_name(DEFAULT_MODULE, "rem_s")
+            .unwrap(),
+        (222, 0),
+    );
 
     assert_eq!(result.unwrap_err(), RuntimeError::DivideBy0);
 }
@@ -196,37 +374,150 @@ pub fn i32_remainder_unsigned_simple() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    assert_eq!(0, instance.invoke_named("rem_u", (i32::MIN, 2)).unwrap());
+    assert_eq!(
+        0,
+        instance
+            .invoke(
+                &instance
+                    .get_function_by_name(DEFAULT_MODULE, "rem_u")
+                    .unwrap(),
+                (i32::MIN, 2)
+            )
+            .unwrap()
+    );
     assert_eq!(
         i32::MIN,
-        instance.invoke_named("rem_u", (i32::MIN, -2)).unwrap()
+        instance
+            .invoke(
+                &instance
+                    .get_function_by_name(DEFAULT_MODULE, "rem_u")
+                    .unwrap(),
+                (i32::MIN, -2)
+            )
+            .unwrap()
     );
     assert_eq!(
         (i32::MIN + 2) * (-1),
-        instance.invoke_named("rem_u", (-2, i32::MIN)).unwrap()
+        instance
+            .invoke(
+                &instance
+                    .get_function_by_name(DEFAULT_MODULE, "rem_u")
+                    .unwrap(),
+                (-2, i32::MIN)
+            )
+            .unwrap()
     );
-    assert_eq!(2, instance.invoke_named("rem_u", (2, i32::MIN)).unwrap());
+    assert_eq!(
+        2,
+        instance
+            .invoke(
+                &instance
+                    .get_function_by_name(DEFAULT_MODULE, "rem_u")
+                    .unwrap(),
+                (2, i32::MIN)
+            )
+            .unwrap()
+    );
     assert_eq!(
         i32::MAX,
         instance
-            .invoke_named("rem_u", (i32::MAX, i32::MIN))
+            .invoke(
+                &instance
+                    .get_function_by_name(DEFAULT_MODULE, "rem_u")
+                    .unwrap(),
+                (i32::MAX, i32::MIN)
+            )
             .unwrap()
     );
 
-    assert_eq!(0, instance.invoke_named("rem_u", (20, 2)).unwrap());
+    assert_eq!(
+        0,
+        instance
+            .invoke(
+                &instance
+                    .get_function_by_name(DEFAULT_MODULE, "rem_u")
+                    .unwrap(),
+                (20, 2)
+            )
+            .unwrap()
+    );
     assert_eq!(
         999,
-        instance.invoke_named("rem_u", (10_000, 9_001)).unwrap()
+        instance
+            .invoke(
+                &instance
+                    .get_function_by_name(DEFAULT_MODULE, "rem_u")
+                    .unwrap(),
+                (10_000, 9_001)
+            )
+            .unwrap()
     );
-    assert_eq!(2, instance.invoke_named("rem_u", (-20, 3)).unwrap());
-    assert_eq!(-20, instance.invoke_named("rem_u", (-20, -3)).unwrap());
-    assert_eq!(20, instance.invoke_named("rem_u", (20, -3)).unwrap());
-    assert_eq!(2, instance.invoke_named("rem_u", (20, 3)).unwrap());
+    assert_eq!(
+        2,
+        instance
+            .invoke(
+                &instance
+                    .get_function_by_name(DEFAULT_MODULE, "rem_u")
+                    .unwrap(),
+                (-20, 3)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        -20,
+        instance
+            .invoke(
+                &instance
+                    .get_function_by_name(DEFAULT_MODULE, "rem_u")
+                    .unwrap(),
+                (-20, -3)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        20,
+        instance
+            .invoke(
+                &instance
+                    .get_function_by_name(DEFAULT_MODULE, "rem_u")
+                    .unwrap(),
+                (20, -3)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        2,
+        instance
+            .invoke(
+                &instance
+                    .get_function_by_name(DEFAULT_MODULE, "rem_u")
+                    .unwrap(),
+                (20, 3)
+            )
+            .unwrap()
+    );
     assert_eq!(
         i32::MIN,
-        instance.invoke_named("rem_u", (i32::MIN, -1)).unwrap()
+        instance
+            .invoke(
+                &instance
+                    .get_function_by_name(DEFAULT_MODULE, "rem_u")
+                    .unwrap(),
+                (i32::MIN, -1)
+            )
+            .unwrap()
     );
-    assert_eq!(0, instance.invoke_named("rem_u", (i32::MIN, 2)).unwrap());
+    assert_eq!(
+        0,
+        instance
+            .invoke(
+                &instance
+                    .get_function_by_name(DEFAULT_MODULE, "rem_u")
+                    .unwrap(),
+                (i32::MIN, 2)
+            )
+            .unwrap()
+    );
 }
 
 /// A simple function to test signed remainder's RuntimeError when dividing by 0
@@ -238,7 +529,12 @@ pub fn i32_remainder_unsigned_panic_dividend_0() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    let result = instance.invoke_named::<(i32, i32), i32>("rem_u", (222, 0));
+    let result = instance.invoke::<(i32, i32), i32>(
+        &instance
+            .get_function_by_name(DEFAULT_MODULE, "rem_u")
+            .unwrap(),
+        (222, 0),
+    );
 
     assert_eq!(result.unwrap_err(), RuntimeError::DivideBy0);
 }

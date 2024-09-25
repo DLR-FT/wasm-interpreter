@@ -1,3 +1,5 @@
+use wasm::DEFAULT_MODULE;
+
 /// The WASM program has one mutable global initialized with a constant 3.
 /// It exports two methods:
 ///  - Setting the global's value and returning its previous value
@@ -31,10 +33,30 @@ fn valid_global() {
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
     // Set global to 17. 5 is returned as previous (default) value.
-    assert_eq!(5, instance.invoke_named("set", 17).unwrap());
+    assert_eq!(
+        5,
+        instance
+            .invoke(
+                &instance
+                    .get_function_by_name(DEFAULT_MODULE, "set")
+                    .unwrap(),
+                17
+            )
+            .unwrap()
+    );
 
     // Now 17 will be returned when getting the global
-    assert_eq!(17, instance.invoke_named("get", ()).unwrap());
+    assert_eq!(
+        17,
+        instance
+            .invoke(
+                &instance
+                    .get_function_by_name(DEFAULT_MODULE, "get")
+                    .unwrap(),
+                ()
+            )
+            .unwrap()
+    );
 }
 
 #[test_log::test]
@@ -88,8 +110,28 @@ fn imported_globals() {
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
     // Set global to 17. 3 is returned as previous (default) value.
-    assert_eq!(3, instance.invoke_named("set", 17).unwrap());
+    assert_eq!(
+        3,
+        instance
+            .invoke(
+                &instance
+                    .get_function_by_name(DEFAULT_MODULE, "set")
+                    .unwrap(),
+                17
+            )
+            .unwrap()
+    );
 
     // Now 17 will be returned when getting the global
-    assert_eq!(17, instance.invoke_named("get", ()).unwrap());
+    assert_eq!(
+        17,
+        instance
+            .invoke(
+                &instance
+                    .get_function_by_name(DEFAULT_MODULE, "get")
+                    .unwrap(),
+                ()
+            )
+            .unwrap()
+    );
 }
