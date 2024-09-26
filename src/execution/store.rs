@@ -1,9 +1,11 @@
+use alloc::string::String;
 use alloc::vec;
 use alloc::vec::Vec;
 use core::iter;
 
 use crate::core::indices::TypeIdx;
 use crate::core::reader::span::Span;
+use crate::core::reader::types::export::Export;
 use crate::core::reader::types::global::Global;
 use crate::core::reader::types::{MemType, TableType, ValType};
 use crate::execution::value::{Ref, Value};
@@ -13,25 +15,68 @@ use crate::execution::value::{Ref, Value};
 /// globals, element segments, and data segments that have been allocated during the life time of
 /// the abstract machine.
 /// <https://webassembly.github.io/spec/core/exec/runtime.html#store>
+#[derive(Debug)]
 pub struct Store {
     pub funcs: Vec<FuncInst>,
     // tables: Vec<TableInst>,
     pub mems: Vec<MemInst>,
     pub globals: Vec<GlobalInst>,
+    pub exports: Vec<Export>,
 }
 
-pub struct FuncInst {
+#[derive(Debug)]
+pub enum FuncInst {
+    Local(LocalFuncInst),
+    Imported(ImportedFuncInst),
+}
+
+impl FuncInst {
+    pub fn ty(&self) -> TypeIdx {
+        match self {
+            FuncInst::Local(f) => f.ty,
+            FuncInst::Imported(f) => f.ty,
+        }
+    }
+
+    pub fn try_into_local(&self) -> Option<&LocalFuncInst> {
+        match self {
+            FuncInst::Local(f) => Some(f),
+            FuncInst::Imported(_) => None,
+        }
+    }
+
+    pub fn try_into_imported(&self) -> Option<&ImportedFuncInst> {
+        match self {
+            FuncInst::Local(_) => None,
+            FuncInst::Imported(f) => Some(f),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct LocalFuncInst {
     pub ty: TypeIdx,
     pub locals: Vec<ValType>,
     pub code_expr: Span,
 }
 
+#[derive(Debug)]
+pub struct ImportedFuncInst {
+    pub ty: TypeIdx,
+    #[allow(dead_code)]
+    pub module_name: String,
+    #[allow(dead_code)]
+    pub function_name: String,
+}
+
 #[allow(dead_code)]
+#[derive(Debug)]
 pub struct TableInst {
     pub ty: TableType,
     pub elem: Vec<Ref>,
 }
 
+#[derive(Debug)]
 pub struct MemInst {
     #[allow(warnings)]
     pub ty: MemType,
@@ -61,6 +106,7 @@ impl MemInst {
     }
 }
 
+#[derive(Debug)]
 pub struct GlobalInst {
     pub global: Global,
     /// Must be of the same type as specified in `ty`

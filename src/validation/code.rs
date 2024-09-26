@@ -1,7 +1,7 @@
 use alloc::vec::Vec;
 use core::iter;
 
-use crate::core::indices::{FuncIdx, GlobalIdx, LocalIdx};
+use crate::core::indices::{FuncIdx, GlobalIdx, LocalIdx, TypeIdx};
 use crate::core::reader::section_header::{SectionHeader, SectionTy};
 use crate::core::reader::span::Span;
 use crate::core::reader::types::global::Global;
@@ -11,17 +11,34 @@ use crate::core::reader::{WasmReadable, WasmReader};
 use crate::validation_stack::ValidationStack;
 use crate::{Error, Result};
 
+/// <todo! summary>
+///
+/// # Arguments
+/// - `wasm`: The reader over the whole wasm binary. It is expected to be at the beginning of the code section, and
+///   after execution it will be at the beginning of the next section if the result is `Ok(...)`.
+/// - `section_header`: The header of the code section.
+/// - `fn_types`: The types of all functions in the module, including imported functions.
+/// - `type_idx_of_fn`: The index of the type of each function in `fn_types`, including imported functions. As per the
+///   specification, the indicies of the type of imported functions come first.
+/// - `num_imported_funcs`: The number of imported functions. This is used as an offset, to determine the first index of
+///   a local function in `type_idx_of_fn`.
+/// - `globals`: The global variables of the module.
+///
+/// # Returns
+/// <todo! returns>
 pub fn validate_code_section(
     wasm: &mut WasmReader,
     section_header: SectionHeader,
     fn_types: &[FuncType],
-    type_idx_of_fn: &[usize],
+    type_idx_of_fn: &[TypeIdx],
+    num_imported_funcs: usize,
     globals: &[Global],
 ) -> Result<Vec<Span>> {
     assert_eq!(section_header.ty, SectionTy::Code);
 
     let code_block_spans = wasm.read_vec_enumerated(|wasm, idx| {
-        let ty_idx = type_idx_of_fn[idx];
+        // We need to offset the index by the number of functions that were imported
+        let ty_idx = type_idx_of_fn[idx + num_imported_funcs];
         let func_ty = fn_types[ty_idx].clone();
 
         debug!("{:x?}", wasm.full_wasm_binary);
@@ -39,7 +56,7 @@ pub fn validate_code_section(
         let mut stack = ValidationStack::new();
 
         read_instructions(
-            idx,
+            idx + num_imported_funcs,
             wasm,
             &mut stack,
             &locals,

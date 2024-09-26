@@ -16,13 +16,12 @@ use crate::{
     assert_validated::UnwrapValidatedExt,
     core::{
         indices::{FuncIdx, GlobalIdx, LocalIdx},
-        reader::{
-            types::{memarg::MemArg, FuncType},
-            WasmReadable, WasmReader,
-        },
+        reader::{types::memarg::MemArg, WasmReadable},
     },
+    execution::execution_info::ExecutionInfo,
+    execution::Lut,
     locals::Locals,
-    store::Store,
+    store::FuncInst,
     value,
     value_stack::Stack,
     NumType, RuntimeError, ValType, Value,
@@ -33,19 +32,22 @@ use crate::execution::hooks::HookSet;
 
 /// Interprets a functions. Parameters and return values are passed on the stack.
 pub(super) fn run<H: HookSet>(
-    wasm_bytecode: &[u8],
-    types: &[FuncType],
-    store: &mut Store,
+    modules: &mut [ExecutionInfo],
+    current_module_idx: &mut usize,
+    lut: &Lut,
     stack: &mut Stack,
     mut hooks: H,
 ) -> Result<(), RuntimeError> {
-    let func_inst = store
+    let func_inst = modules[*current_module_idx]
+        .store
         .funcs
         .get(stack.current_stackframe().func_idx)
+        .unwrap_validated()
+        .try_into_local()
         .unwrap_validated();
 
     // Start reading the function's instructions
-    let mut wasm = WasmReader::new(wasm_bytecode);
+    let mut wasm = &mut modules[*current_module_idx].wasm_reader;
 
     // unwrap is sound, because the validation assures that the function points to valid subslice of the WASM binary
     wasm.move_start_to(func_inst.code_expr).unwrap();
@@ -54,13 +56,14 @@ pub(super) fn run<H: HookSet>(
     loop {
         // call the instruction hook
         #[cfg(feature = "hooks")]
-        hooks.instruction_hook(wasm_bytecode, wasm.pc);
+        hooks.instruction_hook(modules[*current_module_idx].wasm_bytecode, wasm.pc);
 
         let first_instr_byte = wasm.read_u8().unwrap_validated();
 
         match first_instr_byte {
             END => {
-                let maybe_return_address = stack.pop_stackframe();
+                let (return_module, maybe_return_address) = stack.pop_stackframe();
+                *current_module_idx = return_module;
 
                 // We finished this entire invocation if there is no stackframe left. If there are
                 // one or more stack frames, we need to continue from where the callee was called
@@ -70,6 +73,7 @@ pub(super) fn run<H: HookSet>(
                 }
 
                 trace!("end of function reached, returning to previous stack frame");
+                wasm = &mut modules[return_module].wasm_reader;
                 wasm.pc = maybe_return_address;
             }
             RETURN => {
@@ -77,8 +81,15 @@ pub(super) fn run<H: HookSet>(
 
                 let func_to_call_idx = stack.current_stackframe().func_idx;
 
-                let func_to_call_inst = store.funcs.get(func_to_call_idx).unwrap_validated();
-                let func_to_call_ty = types.get(func_to_call_inst.ty).unwrap_validated();
+                let func_to_call_inst = modules[*current_module_idx]
+                    .store
+                    .funcs
+                    .get(func_to_call_idx)
+                    .unwrap_validated();
+                let func_to_call_ty = modules[*current_module_idx]
+                    .fn_types
+                    .get(func_to_call_inst.ty())
+                    .unwrap_validated();
 
                 let ret_vals = stack
                     .pop_tail_iter(func_to_call_ty.returns.valtypes.len())
@@ -94,23 +105,71 @@ pub(super) fn run<H: HookSet>(
                 }
 
                 trace!("end of function reached, returning to previous stack frame");
-                wasm.pc = stack.pop_stackframe();
+                let (return_module, return_pc) = stack.pop_stackframe();
+                *current_module_idx = return_module;
+                wasm = &mut modules[return_module].wasm_reader;
+                wasm.pc = return_pc;
             }
             CALL => {
                 let func_to_call_idx = wasm.read_var_u32().unwrap_validated() as FuncIdx;
 
-                let func_to_call_inst = store.funcs.get(func_to_call_idx).unwrap_validated();
-                let func_to_call_ty = types.get(func_to_call_inst.ty).unwrap_validated();
+                let func_to_call_inst = modules[*current_module_idx]
+                    .store
+                    .funcs
+                    .get(func_to_call_idx)
+                    .unwrap_validated();
 
+                let func_to_call_ty = modules[*current_module_idx]
+                    .fn_types
+                    .get(func_to_call_inst.ty())
+                    .unwrap_validated();
                 let params = stack.pop_tail_iter(func_to_call_ty.params.valtypes.len());
-                let remaining_locals = func_to_call_inst.locals.iter().cloned();
 
                 trace!("Instruction: call [{func_to_call_idx:?}]");
-                let locals = Locals::new(params, remaining_locals);
-                stack.push_stackframe(func_to_call_idx, func_to_call_ty, locals, wasm.pc);
 
-                wasm.move_start_to(func_to_call_inst.code_expr)
-                    .unwrap_validated();
+                match func_to_call_inst {
+                    FuncInst::Local(local_func_inst) => {
+                        let remaining_locals = local_func_inst.locals.iter().cloned();
+                        let locals = Locals::new(params, remaining_locals);
+
+                        stack.push_stackframe(
+                            *current_module_idx,
+                            func_to_call_idx,
+                            func_to_call_ty,
+                            locals,
+                            wasm.pc,
+                        );
+
+                        wasm.move_start_to(local_func_inst.code_expr)
+                            .unwrap_validated();
+                    }
+                    FuncInst::Imported(_imported_func_inst) => {
+                        let (next_module, next_func_idx) = lut
+                            .lookup(*current_module_idx, func_to_call_idx)
+                            .expect("invalid state for lookup");
+
+                        let local_func_inst = modules[next_module].store.funcs[next_func_idx]
+                            .try_into_local()
+                            .unwrap();
+
+                        let remaining_locals = local_func_inst.locals.iter().cloned();
+                        let locals = Locals::new(params, remaining_locals);
+
+                        stack.push_stackframe(
+                            *current_module_idx,
+                            func_to_call_idx,
+                            func_to_call_ty,
+                            locals,
+                            wasm.pc,
+                        );
+
+                        wasm = &mut modules[next_module].wasm_reader;
+                        *current_module_idx = next_module;
+
+                        wasm.move_start_to(local_func_inst.code_expr)
+                            .unwrap_validated();
+                    }
+                }
             }
             LOCAL_GET => {
                 stack.get_local(wasm.read_var_u32().unwrap_validated() as LocalIdx);
@@ -119,21 +178,38 @@ pub(super) fn run<H: HookSet>(
             LOCAL_TEE => stack.tee_local(wasm.read_var_u32().unwrap_validated() as LocalIdx),
             GLOBAL_GET => {
                 let global_idx = wasm.read_var_u32().unwrap_validated() as GlobalIdx;
-                let global = store.globals.get(global_idx).unwrap_validated();
+                let global = modules[*current_module_idx]
+                    .store
+                    .globals
+                    .get(global_idx)
+                    .unwrap_validated();
+
+                // TODO: imported global
 
                 stack.push_value(global.value);
             }
             GLOBAL_SET => {
                 let global_idx = wasm.read_var_u32().unwrap_validated() as GlobalIdx;
-                let global = store.globals.get_mut(global_idx).unwrap_validated();
+                let global = modules[*current_module_idx]
+                    .store
+                    .globals
+                    .get_mut(global_idx)
+                    .unwrap_validated();
+
+                // TODO: imported global (?) ... can imported globals be set as mutable?
 
                 global.value = stack.pop_value(global.global.ty.ty)
             }
             I32_LOAD => {
-                let memarg = MemArg::read_unvalidated(&mut wasm);
+                let memarg = MemArg::read_unvalidated(wasm);
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                let mem = store.mems.first().unwrap_validated(); // there is only one memory allowed as of now
+                // TODO: how does this interact with imports?
+                let mem = modules[*current_module_idx]
+                    .store
+                    .mems
+                    .first()
+                    .unwrap_validated(); // there is only one memory allowed as of now
 
                 let data: u32 = {
                     // The spec states that this should be a 33 bit integer
@@ -156,10 +232,15 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: i32.load [{relative_address}] -> [{data}]");
             }
             F32_LOAD => {
-                let memarg = MemArg::read_unvalidated(&mut wasm);
+                let memarg = MemArg::read_unvalidated(wasm);
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                let mem = store.mems.first().unwrap_validated(); // there is only one memory allowed as of now
+                // TODO: how does this interact with imports?
+                let mem = modules[*current_module_idx]
+                    .store
+                    .mems
+                    .first()
+                    .unwrap_validated(); // there is only one memory allowed as of now
 
                 let data: f32 = {
                     // The spec states that this should be a 33 bit integer
@@ -182,12 +263,17 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: f32.load [{relative_address}] -> [{data}]");
             }
             I32_STORE => {
-                let memarg = MemArg::read_unvalidated(&mut wasm);
+                let memarg = MemArg::read_unvalidated(wasm);
 
                 let data_to_store: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                let mem = store.mems.get_mut(0).unwrap_validated(); // there is only one memory allowed as of now
+                // TODO: How does this interact with imports?
+                let mem = modules[*current_module_idx]
+                    .store
+                    .mems
+                    .get_mut(0)
+                    .unwrap_validated(); // there is only one memory allowed as of now
 
                 // The spec states that this should be a 33 bit integer
                 // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
@@ -203,12 +289,17 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: i32.store [{relative_address} {data_to_store}] -> []");
             }
             F32_STORE => {
-                let memarg = MemArg::read_unvalidated(&mut wasm);
+                let memarg = MemArg::read_unvalidated(wasm);
 
                 let data_to_store: f32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                let mem = store.mems.get_mut(0).unwrap_validated(); // there is only one memory allowed as of now
+                // TODO: how does this interact with imports?
+                let mem = modules[*current_module_idx]
+                    .store
+                    .mems
+                    .get_mut(0)
+                    .unwrap_validated(); // there is only one memory allowed as of now
 
                 // The spec states that this should be a 33 bit integer
                 // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
@@ -224,12 +315,17 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: f32.store [{relative_address} {data_to_store}] -> []");
             }
             F64_STORE => {
-                let memarg = MemArg::read_unvalidated(&mut wasm);
+                let memarg = MemArg::read_unvalidated(wasm);
 
                 let data_to_store: f64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                let mem = store.mems.get_mut(0).unwrap_validated(); // there is only one memory allowed as of now
+                // TODO: how does this interact with imports?
+                let mem = modules[*current_module_idx]
+                    .store
+                    .mems
+                    .get_mut(0)
+                    .unwrap_validated(); // there is only one memory allowed as of now
 
                 // The spec states that this should be a 33 bit integer
                 // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
