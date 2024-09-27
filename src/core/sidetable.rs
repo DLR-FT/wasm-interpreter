@@ -42,6 +42,8 @@
 
 use alloc::vec::Vec;
 
+use crate::{Error, Result};
+
 /// A sidetable
 pub type Sidetable = Vec<SidetableEntry>;
 
@@ -53,7 +55,7 @@ pub type Sidetable = Vec<SidetableEntry>;
 /// - br_if
 /// - br_table
 /// - else
-#[derive(Debug, Copy, Clone)]
+#[derive(Copy, Clone)]
 pub struct SidetableEntry {
     /// Δpc: the amount to adjust the instruction pointer by if the branch is taken
     pub delta_pc: isize,
@@ -74,12 +76,42 @@ pub struct SidetableEntry {
     pub pop_count: usize,
 }
 
-pub struct SidetableBuilder {}
+impl core::fmt::Debug for SidetableEntry {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("SidetableEntry")
+            .field("Δpc", &self.delta_pc)
+            .field("Δstp", &self.delta_stp)
+            .field("valcnt", &self.val_count)
+            .field("popcnt", &self.pop_count)
+            .finish()
+    }
+}
+
+pub struct IncompleteSidetableEntry {
+    pub ip: usize,
+    pub delta_ip: Option<isize>,
+    pub delta_stp: Option<isize>,
+    pub val_count: usize,
+    pub pop_count: usize,
+}
+
+pub struct SidetableBuilder(pub Vec<IncompleteSidetableEntry>);
 
 impl SidetableBuilder {
     pub fn new() -> Self {
-        Self {}
+        Self(Vec::new())
     }
 
-    pub fn add_entry(&mut self) {}
+    // This panics if some sidetable entries still contain any None fields.
+    pub fn into_sidetable(self) -> Sidetable {
+        self.0
+            .into_iter()
+            .map(|entry| SidetableEntry {
+                delta_pc: entry.delta_ip.expect("Failed to generate sidetable"),
+                delta_stp: entry.delta_stp.expect("Failed to generate sidetable"),
+                val_count: entry.val_count,
+                pop_count: entry.pop_count,
+            })
+            .collect()
+    }
 }

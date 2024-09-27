@@ -7,7 +7,7 @@
 use super::Result;
 use alloc::vec::Vec;
 
-use crate::{Error, ValType};
+use crate::{core::reader::types::FuncType, Error, ValType};
 
 #[derive(Debug, PartialEq, Eq)]
 pub(super) struct ValidationStack {
@@ -82,7 +82,7 @@ impl ValidationStack {
             ValidationStackEntry::Val(ty) => (ty == expected_ty)
                 .then_some(())
                 .ok_or(Error::InvalidValidationStackValType(Some(ty))),
-            ValidationStackEntry::Label(li) => Err(Error::FoundLabel(li.kind)),
+            ValidationStackEntry::Label(li) => Err(Error::FoundLabel(li)),
             ValidationStackEntry::UnspecifiedValTypes => {
                 unreachable!("we just checked if the topmost entry is of this type")
             }
@@ -185,7 +185,7 @@ impl ValidationStack {
     ///
     /// - `Ok(LabelInfo)` if a label has been found and popped
     /// - `None` if no label was found on the stack
-    fn pop_label_and_above(&mut self) -> Option<LabelInfo> {
+    pub fn pop_label_and_above(&mut self) -> Option<LabelInfo> {
         /// Delete all the values until the topmost label or until the stack is empty
         match self.find_topmost_label_idx() {
             Some(idx) => {
@@ -212,6 +212,28 @@ impl ValidationStack {
             .iter()
             .any(|e| matches!(e, ValidationStackEntry::Label(_)))
     }
+
+    pub fn find_nth_label_from_top(&self, n: usize) -> Option<&LabelInfo> {
+        self.stack
+            .iter()
+            .rev()
+            .filter_map(|entry| match entry {
+                ValidationStackEntry::Label(label_info) => Some(label_info),
+                _ => None,
+            })
+            .nth(n)
+    }
+
+    pub fn find_nth_label_from_top_mut(&mut self, n: usize) -> Option<&mut LabelInfo> {
+        self.stack
+            .iter_mut()
+            .rev()
+            .filter_map(|entry| match entry {
+                ValidationStackEntry::Label(label_info) => Some(label_info),
+                _ => None,
+            })
+            .nth(n)
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -232,22 +254,43 @@ enum ValidationStackEntry {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub(crate) struct LabelInfo {
-    pub(crate) kind: LabelKind,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum LabelKind {
-    Block,
-    Loop,
-    If,
+pub(crate) enum LabelInfo {
+    Block {
+        func_type: FuncType,
+        sidetable_branch_indices: Vec<usize>,
+        num_values_on_stack_before: usize,
+    },
+    Loop {
+        func_type: FuncType,
+        num_values_on_stack_before: usize,
+        first_sidetable_entry_index: usize,
+    },
+    If, // TODO
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{NumType, RefType, ValType};
+    use super::{LabelInfo, ValidationStack};
+    use crate::{
+        core::reader::types::{FuncType, ResultType},
+        NumType, RefType, ValType,
+    };
+    use alloc::vec::Vec;
 
-    use super::{LabelInfo, LabelKind, ValidationStack};
+    fn make_dummy_block_label() -> LabelInfo {
+        LabelInfo::Block {
+            func_type: FuncType {
+                params: ResultType {
+                    valtypes: Vec::new(),
+                },
+                returns: ResultType {
+                    valtypes: Vec::new(),
+                },
+            },
+            sidetable_branch_indices: Vec::new(),
+            num_values_on_stack_before: 0,
+        }
+    }
 
     #[test]
     fn push_then_pop() {
@@ -275,32 +318,13 @@ mod tests {
         let mut stack = ValidationStack::new();
 
         stack.push_valtype(ValType::NumType(NumType::I64));
-        stack.push_label(LabelInfo {
-            kind: LabelKind::Block,
-        });
-
-        stack.push_label(LabelInfo {
-            kind: LabelKind::Loop,
-        });
-
+        stack.push_label(make_dummy_block_label());
+        stack.push_label(make_dummy_block_label());
         stack.push_valtype(ValType::VecType);
 
-        // This removes the `ValType::VecType` and the `LabelKind::Loop` label
-        let popped_label = stack.pop_label_and_above().unwrap();
-        assert_eq!(
-            popped_label,
-            LabelInfo {
-                kind: LabelKind::Loop,
-            }
-        );
-
-        let popped_label = stack.pop_label_and_above().unwrap();
-        assert_eq!(
-            popped_label,
-            LabelInfo {
-                kind: LabelKind::Block,
-            }
-        );
+        // This removes the `ValType::VecType` and the `LabelInfo::Block` label
+        let _popped_label = stack.pop_label_and_above().unwrap();
+        let _popped_label = stack.pop_label_and_above().unwrap();
 
         // The first valtype should still be there
         stack.assert_pop_val_type(ValType::NumType(NumType::I64));
@@ -322,9 +346,7 @@ mod tests {
             ])
             .unwrap();
 
-        stack.push_label(LabelInfo {
-            kind: LabelKind::Block,
-        });
+        stack.push_label(make_dummy_block_label());
         stack.push_valtype(ValType::NumType(NumType::I32));
 
         stack
@@ -339,9 +361,7 @@ mod tests {
         stack.assert_val_types(&[]).unwrap();
 
         stack.push_valtype(ValType::NumType(NumType::I32));
-        stack.push_label(LabelInfo {
-            kind: LabelKind::Block,
-        });
+        stack.push_label(make_dummy_block_label());
 
         // Valtypes separated by a label should also not be detected
         stack.assert_val_types(&[]).unwrap();
@@ -383,9 +403,7 @@ mod tests {
     #[test]
     fn unspecified() {
         let mut stack = ValidationStack::new();
-        stack.push_label(LabelInfo {
-            kind: LabelKind::Block,
-        });
+        stack.push_label(make_dummy_block_label());
 
         stack.make_unspecified();
 
@@ -399,13 +417,7 @@ mod tests {
             .unwrap();
 
         // Let's remove the unspecified entry and the first label
-        let popped_label = stack.pop_label_and_above().unwrap();
-        assert_eq!(
-            popped_label,
-            LabelInfo {
-                kind: LabelKind::Block,
-            }
-        );
+        let _popped_label = stack.pop_label_and_above().unwrap();
 
         // Now there are no values left on the stack
         assert_eq!(stack.assert_val_types(&[]), Ok(()));

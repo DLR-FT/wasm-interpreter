@@ -1,5 +1,5 @@
 use crate::core::indices::GlobalIdx;
-use crate::validation_stack::LabelKind;
+use crate::validation_stack::LabelInfo;
 use core::fmt::{Display, Formatter};
 use core::str::Utf8Error;
 
@@ -45,7 +45,8 @@ pub enum Error {
     InvalidGlobalIdx(GlobalIdx),
     GlobalIsConst,
     RuntimeError(RuntimeError),
-    FoundLabel(LabelKind),
+    FoundLabel(LabelInfo),
+    InvalidLabelIdx,
 }
 
 impl Display for Error {
@@ -112,16 +113,17 @@ impl Display for Error {
                 "An invalid mut/const byte was found: {byte:#x?}"
             )),
             Error::MoreThanOneMemory => {
-                f.write_str("As of not only one memory is allowed per module.")
+                f.write_str("As of now only one memory is allowed per module.")
             }
             Error::InvalidGlobalIdx(idx) => f.write_fmt(format_args!(
                 "An invalid global index `{idx}` was specified"
             )),
             Error::GlobalIsConst => f.write_str("A const global cannot be written to"),
             Error::RuntimeError(err) => err.fmt(f),
-            Error::FoundLabel(lk) => f.write_fmt(format_args!(
-                "Expecting a ValType, a Label was found: {lk:?}"
+            Error::FoundLabel(label_info) => f.write_fmt(format_args!(
+                "Expecting a ValType, a Label was found: {label_info:?}"
             )),
+            Error::InvalidLabelIdx => f.write_str("An invalid index to a label was read"),
         }
     }
 }
