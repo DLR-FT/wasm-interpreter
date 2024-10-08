@@ -24,6 +24,20 @@ impl ValidationStack {
         self.stack.len()
     }
 
+    /// Returns None if there is atleast one Unspecified entry.
+    /// This function is only used during sidetable generation and there those instructions, where atleast one unspecified is present, are unreachable during execution.
+    pub(super) fn len_without_labels(&self) -> Option<usize> {
+        let mut num_values = 0;
+        for entry in &self.stack {
+            match entry {
+                ValidationStackEntry::UnspecifiedValTypes => return None,
+                ValidationStackEntry::Label(_) => {}
+                ValidationStackEntry::Val(_) => num_values += 1,
+            }
+        }
+        Some(num_values)
+    }
+
     pub(super) fn push_valtype(&mut self, valtype: ValType) {
         self.stack.push(ValidationStackEntry::Val(valtype));
     }
@@ -63,6 +77,19 @@ impl ValidationStack {
         self.stack
             .pop()
             .ok_or(Error::InvalidValidationStackValType(None))
+    }
+
+    pub fn pop_valtype(&mut self) -> Result<()> {
+        match self.stack.last() {
+            Some(ValidationStackEntry::Val(_)) => {
+                self.stack.pop();
+            }
+            Some(ValidationStackEntry::UnspecifiedValTypes) => {}
+            Some(ValidationStackEntry::Label(li)) => return Err(Error::FoundLabel(li.clone())),
+            None => return Err(Error::InvalidValType),
+        };
+
+        Ok(())
     }
 
     /// Assert the top-most [`ValidationStackEntry`] is a specific [`ValType`], after popping it from the [`ValidationStack`]
@@ -258,11 +285,11 @@ pub(crate) enum LabelInfo {
     Block {
         func_type: FuncType,
         sidetable_branch_indices: Vec<usize>,
-        num_values_on_stack_before: usize,
+        num_values_on_stack_before: Option<usize>, // Is None if the block is pracically unreachable. We still have to validate everything, so this LabelInfo is still necessary.
     },
     Loop {
         func_type: FuncType,
-        num_values_on_stack_before: usize,
+        num_values_on_stack_before: Option<usize>, // Is None if the block is pracically unreachable. We still have to validate everything, so this LabelInfo is still necessary.
         first_sidetable_entry_index: usize,
     },
     If, // TODO
@@ -288,7 +315,7 @@ mod tests {
                 },
             },
             sidetable_branch_indices: Vec::new(),
-            num_values_on_stack_before: 0,
+            num_values_on_stack_before: Some(0),
         }
     }
 

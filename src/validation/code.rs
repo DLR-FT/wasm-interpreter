@@ -124,7 +124,7 @@ fn read_instructions(
                 stack.push_label(LabelInfo::Block {
                     func_type,
                     sidetable_branch_indices: Vec::new(),
-                    num_values_on_stack_before: stack.len(),
+                    num_values_on_stack_before: stack.len_without_labels(),
                 });
             }
             BR => {
@@ -135,26 +135,97 @@ fn read_instructions(
                     .ok_or(Error::InvalidLabelIdx)?;
 
                 match label_info {
-                    LabelInfo::Block { func_type, .. } => {
+                    LabelInfo::Block {
+                        func_type,
+                        num_values_on_stack_before,
+                        ..
+                    } => {
+                        let block_return_types = &func_type.returns.valtypes;
                         // todo!("do branches require the top of the stack or the entire stack to be correct?");
-                        stack.assert_val_types_on_top(&func_type.returns.valtypes)?;
+                        stack.assert_val_types_on_top(block_return_types)?;
 
-                        let stack_len = stack.len();
+                        let Some(stack_len) = stack.len_without_labels() else {
+                            // The stack contains an `Unspecified` element, so this instruction is practically unreachable.
+                            // It does not matter if the Unspecified was before this Block/If/Loop started or after.
+                            //
+                            // We don't need to generate a sidetable entry and the validation of the top-most stack values has already be done, so we can just continue with the next instruction.
+                            continue;
+                        };
+
+                        let num_values_on_stack_before = num_values_on_stack_before.expect("this to always be Some. We already checked through `stack.len_without_label` whether the stack contains Unspecified. If so, we ignored this instruction. Because we are in a block right now, the stack values below the block label cannot have changed, so any Unspecified entries below the block label are impossible.");
+
+                        let val_count = block_return_types.len();
+                        let pop_count = stack_len - num_values_on_stack_before - val_count;
+
+                        error!("val: {}, pop: {}", val_count, pop_count);
 
                         // FIXME Now we actually need to modifiy the label info, so we have to borrow it again
                         let Some(LabelInfo::Block {
-                            func_type,
                             sidetable_branch_indices,
-                            num_values_on_stack_before,
+                            ..
                         }) = stack.find_nth_label_from_top_mut(label_idx)
                         else {
                             unreachable!("We just found this block")
                         };
 
-                        let val_count = func_type.returns.valtypes.len();
+                        sidetable_builder.0.push(IncompleteSidetableEntry {
+                            ip: wasm.pc, // TODO maybe - 1?
+                            delta_ip: None,
+                            delta_stp: None,
+                            val_count,
+                            pop_count,
+                        });
 
-                        todo!("pop_count has to ignore labels on the stack, which it currently doesn't");
-                        let pop_count = stack_len - *num_values_on_stack_before - val_count;
+                        // Store index of new sidetable entry so it can be completed, when the end of this block is reached.
+                        sidetable_branch_indices.push(sidetable_builder.0.len() - 1);
+                    }
+                    _ => todo!("handle branches for loops and ifs/elses"),
+                }
+            }
+            BR_IF => {
+                let label_idx = wasm.read_var_u32()? as LabelIdx;
+
+                // condition for if
+                stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                trace!("read br_if condition");
+
+                let label_info: &LabelInfo = stack
+                    .find_nth_label_from_top(label_idx)
+                    .ok_or(Error::InvalidLabelIdx)?;
+
+                match label_info {
+                    LabelInfo::Block {
+                        func_type,
+                        num_values_on_stack_before,
+                        ..
+                    } => {
+                        let block_return_types = &func_type.returns.valtypes;
+                        // todo!("do branches require the top of the stack or the entire stack to be correct?");
+                        stack.assert_val_types_on_top(block_return_types)?;
+
+                        let Some(stack_len) = stack.len_without_labels() else {
+                            // The stack contains an `Unspecified` element, so this instruction is practically unreachable.
+                            // It does not matter if the Unspecified was before this Block/If/Loop started or after.
+                            //
+                            // We don't need to generate a sidetable entry and the validation of the top-most stack values has already be done, so we can just continue with the next instruction.
+                            continue;
+                        };
+
+                        let num_values_on_stack_before = num_values_on_stack_before.expect("this to always be Some. We already checked through `stack.len_without_label` whether the stack contains Unspecified. If so, we ignored this instruction. Because we are in a block right now, the stack values below the block label cannot have changed, so any Unspecified entries below the block label are impossible.");
+
+                        let val_count = block_return_types.len();
+                        let pop_count = stack_len - num_values_on_stack_before - val_count;
+
+                        error!("val: {}, pop: {}", val_count, pop_count);
+
+                        // FIXME Now we actually need to modifiy the label info, so we have to borrow it again
+                        let Some(LabelInfo::Block {
+                            sidetable_branch_indices,
+                            ..
+                        }) = stack.find_nth_label_from_top_mut(label_idx)
+                        else {
+                            unreachable!("We just found this block")
+                        };
 
                         sidetable_builder.0.push(IncompleteSidetableEntry {
                             ip: wasm.pc, // TODO maybe - 1?
@@ -287,11 +358,12 @@ fn read_instructions(
                 let local_ty = locals.get(local_idx).ok_or(Error::InvalidLocalIdx)?;
                 stack.assert_pop_val_type(*local_ty)?;
             }
-            // local.set [t] -> [t]
+            // local.tee [t] -> [t]
             LOCAL_TEE => {
                 let local_idx = wasm.read_var_u32()? as LocalIdx;
                 let local_ty = locals.get(local_idx).ok_or(Error::InvalidLocalIdx)?;
                 stack.assert_pop_val_type(*local_ty)?;
+                stack.push_valtype(*local_ty);
             }
             // global.get [] -> [t]
             GLOBAL_GET => {
@@ -314,6 +386,9 @@ fn read_instructions(
                 }
 
                 stack.assert_pop_val_type(global.ty.ty)?;
+            }
+            DROP => {
+                stack.pop_valtype()?;
             }
             // i32.load [i32] -> [i32]
             I32_LOAD => {

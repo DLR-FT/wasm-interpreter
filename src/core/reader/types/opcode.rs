@@ -11,6 +11,7 @@ pub const BR: u8 = 0x0C;
 pub const BR_IF: u8 = 0x0D;
 pub const BR_TABLE: u8 = 0x0E;
 pub const RETURN: u8 = 0x0F;
+pub const DROP: u8 = 0x1A;
 pub const LOCAL_GET: u8 = 0x20;
 pub const LOCAL_SET: u8 = 0x21;
 pub const LOCAL_TEE: u8 = 0x22;
