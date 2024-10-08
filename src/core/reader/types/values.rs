@@ -67,6 +67,10 @@ impl WasmReader<'_> {
         Ok(result)
     }
 
+    pub fn read_var_i33(&mut self) -> Result<i64> {
+        todo!("read 33-bit signed integer D:")
+    }
+
     pub fn read_var_f32(&mut self) -> Result<u32> {
         if self.full_wasm_binary.len() - self.pc < 4 {
             return Err(Error::Eof);

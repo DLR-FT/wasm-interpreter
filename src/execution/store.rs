@@ -6,6 +6,7 @@ use crate::core::indices::TypeIdx;
 use crate::core::reader::span::Span;
 use crate::core::reader::types::global::Global;
 use crate::core::reader::types::{MemType, TableType, ValType};
+use crate::core::sidetable::Sidetable;
 use crate::execution::value::{Ref, Value};
 
 /// The store represents all global state that can be manipulated by WebAssembly programs. It
@@ -24,6 +25,7 @@ pub struct FuncInst {
     pub ty: TypeIdx,
     pub locals: Vec<ValType>,
     pub code_expr: Span,
+    pub sidetable: Sidetable,
 }
 
 #[allow(dead_code)]

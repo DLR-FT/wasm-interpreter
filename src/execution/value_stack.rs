@@ -2,15 +2,13 @@ use alloc::vec::{Drain, Vec};
 
 use crate::core::indices::{FuncIdx, LocalIdx};
 use crate::core::reader::types::{FuncType, ValType};
+use crate::core::sidetable::Sidetable;
 use crate::execution::assert_validated::UnwrapValidatedExt;
 use crate::execution::value::Value;
 use crate::locals::Locals;
 use crate::unreachable_validated;
 
-/// The stack at runtime containing
-/// 1. Values
-/// 2. Labels
-/// 3. Activations
+/// The stack at runtime containing values
 ///
 /// See <https://webassembly.github.io/spec/core/exec/runtime.html#stack>
 #[derive(Default)]
@@ -52,6 +50,54 @@ impl Stack {
         }
     }
 
+    /// This unwinds the stack by popping the topmost `num_values_to_keep` values and storing them temporarily.
+    /// Then the next topmost `num_values_to_remove` values are discarded before the previously popped values are pushed back to the stack.
+    ///
+    /// Example:
+    /// ```
+    /// BOTTOM                                                  TOP
+    /// -----------------------------------------------------------
+    /// | ... | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 1 | 2 | 3 | 4 |
+    /// ---------------------------------------------------------
+    ///           | num_values_to_remove  |   num_values_to_keep  |
+    /// ```
+    /// becomes
+    ///
+    /// ```
+    /// BOTTOM                          TOP
+    /// |----------------------------------
+    /// | ... | 1 | 8 | 9 | 1 | 2 | 3 | 4 |
+    /// |----------------------------------
+    ///           |   num_values_to_keep  |
+    /// ```
+    ///
+    // TODO Eventually this value stack should store raw bytes instead of enums on the stack. Then both `num_values` parameters should instead work with bytes.
+    pub fn unwind(&mut self, num_values_to_keep: usize, num_values_to_remove: usize) {
+        // FIXME: This is inefficient
+        let mut temporary_values = Vec::new();
+
+        for _ in 0..num_values_to_keep {
+            temporary_values.push(self.values.pop().unwrap_validated());
+        }
+
+        for _ in 0..num_values_to_remove {
+            self.values.pop().unwrap_validated();
+        }
+
+        // We should not have crossed a callframe boundary
+        debug_assert!(
+            self.frames
+                .last()
+                .map_or(true, |last_frame| self.values.len()
+                    >= last_frame.value_stack_base_idx),
+            "can not pop values past the current stackframe"
+        );
+
+        for value in temporary_values.into_iter().rev() {
+            self.values.push(value);
+        }
+    }
+
     /// Copy a value of the given [ValType] from the value stack without removing it
     pub fn peek_value(&self, ty: ValType) -> Value {
         let value = self.values.last().unwrap_validated();
@@ -79,7 +125,7 @@ impl Stack {
 
         let stack_value = self.pop_value(local_ty);
         debug_assert!(
-            self.values.len() > self.current_stackframe().value_stack_base_idx,
+            self.values.len() >= self.current_stackframe().value_stack_base_idx,
             "can not pop values past the current stackframe"
         );
 
@@ -135,6 +181,8 @@ impl Stack {
         func_ty: &FuncType,
         locals: Locals,
         return_addr: usize,
+        sidetable: Sidetable,
+        sidetable_pointer: usize,
     ) {
         self.frames.push(CallFrame {
             func_idx,
@@ -142,6 +190,8 @@ impl Stack {
             return_addr,
             value_stack_base_idx: self.values.len(),
             return_value_count: func_ty.returns.valtypes.len(),
+            sidetable,
+            sidetable_pointer,
         })
     }
 
@@ -183,4 +233,39 @@ pub(crate) struct CallFrame {
 
     /// Number of return values to retain on [`Stack::values`] when unwinding/popping a [`CallFrame`]
     pub return_value_count: usize,
+
+    /// The sidetable used for control flow in the current [`CallFrame`]
+    /// FIXME: This is currently cloned for every callframe, which is pretty inefficient.
+    pub sidetable: Sidetable,
+
+    /// An index that points to the current sidetable entry
+    pub sidetable_pointer: usize,
+}
+
+#[test]
+fn test_stack_unwind() {
+    fn test_with_ten_example_numbers(num_keep: usize, num_pop: usize, expected: &[u32]) {
+        let mut stack = Stack::new();
+        for i in 0..10 {
+            stack.push_value(Value::I32(i));
+        }
+
+        stack.unwind(num_keep, num_pop);
+
+        let expected_values: Vec<Value> = expected.into_iter().copied().map(Value::I32).collect();
+
+        assert_eq!(&stack.values, &expected_values);
+    }
+
+    test_with_ten_example_numbers(2, 3, &[0, 1, 2, 3, 4, 8, 9]);
+
+    test_with_ten_example_numbers(0, 2, &[0, 1, 2, 3, 4, 5, 6, 7]);
+
+    test_with_ten_example_numbers(0, 0, &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+
+    test_with_ten_example_numbers(4, 0, &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+
+    test_with_ten_example_numbers(10, 0, &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+
+    test_with_ten_example_numbers(1, 9, &[9]);
 }

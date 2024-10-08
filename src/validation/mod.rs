@@ -8,6 +8,7 @@ use crate::core::reader::types::global::Global;
 use crate::core::reader::types::import::Import;
 use crate::core::reader::types::{FuncType, MemType, TableType};
 use crate::core::reader::{WasmReadable, WasmReader};
+use crate::core::sidetable::Sidetable;
 use crate::{Error, Result};
 
 pub(crate) mod code;
@@ -28,7 +29,7 @@ pub struct ValidationInfo<'bytecode> {
     pub(crate) globals: Vec<Global>,
     #[allow(dead_code)]
     pub(crate) exports: Vec<Export>,
-    pub(crate) func_blocks: Vec<Span>,
+    pub(crate) func_blocks: Vec<(Span, Sidetable)>,
     /// The start function which is automatically executed during instantiation
     pub(crate) start: Option<FuncIdx>,
 }
