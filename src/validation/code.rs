@@ -186,7 +186,6 @@ fn read_instructions(
             }
             // unreachable: [t1*] -> [t2*]
             UNREACHABLE => {
-                // trap
                 stack.make_unspecified();
             }
             DROP => {

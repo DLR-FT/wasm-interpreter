@@ -1,5 +1,5 @@
 use alloc::vec::Vec;
-use read_constant_expression::read_constant_expression;
+use read_constant_expression::read_constant_instructions;
 
 use crate::const_interpreter_loop::run_const;
 use crate::core::indices::{FuncIdx, TypeIdx};
@@ -293,7 +293,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
                 0 => {
                     // active { memory 0, offset e }
                     trace!("Data section: active");
-                    let offset = { read_constant_expression(wasm).unwrap() };
+                    let offset = { read_constant_instructions(wasm, None, None).unwrap() };
                     trace!("{:?}", offset);
 
                     let value = {
