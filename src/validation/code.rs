@@ -237,7 +237,7 @@ fn read_instructions(
                     !memories.is_empty(),
                     "C.mems[0] is NOT defined when it should be"
                 );
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg = MemArg::read(wasm)?;
 
                 assert!(
                     memarg.align <= 4,
@@ -253,7 +253,7 @@ fn read_instructions(
                     !memories.is_empty(),
                     "C.mems[0] is NOT defined when it should be"
                 );
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg = MemArg::read(wasm)?;
 
                 assert!(
                     memarg.align <= 8,
@@ -270,7 +270,7 @@ fn read_instructions(
                     !memories.is_empty(),
                     "C.mems[0] is NOT defined when it should be"
                 );
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg = MemArg::read(wasm)?;
 
                 assert!(
                     memarg.align <= 4,
@@ -287,7 +287,7 @@ fn read_instructions(
                     !memories.is_empty(),
                     "C.mems[0] is NOT defined when it should be"
                 );
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg = MemArg::read(wasm)?;
 
                 assert!(
                     memarg.align <= 8,
@@ -305,7 +305,7 @@ fn read_instructions(
                     "C.mems[0] is NOT defined when it should be"
                 );
 
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg = MemArg::read(wasm)?;
                 assert!(
                     memarg.align <= 1,
                     "i32.load8_s: alignment is not less or equal to 1"
@@ -320,7 +320,7 @@ fn read_instructions(
                     "C.mems[0] is NOT defined when it should be"
                 );
 
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg = MemArg::read(wasm)?;
                 assert!(
                     memarg.align <= 1,
                     "i32.load8_u: alignment is not less or equal to 1"
@@ -335,7 +335,7 @@ fn read_instructions(
                     "C.mems[0] is NOT defined when it should be"
                 );
 
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg = MemArg::read(wasm)?;
                 assert!(
                     memarg.align <= 2,
                     "i32.load16_s: alignment is not less or equal to 2"
@@ -350,7 +350,7 @@ fn read_instructions(
                     "C.mems[0] is NOT defined when it should be"
                 );
 
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg = MemArg::read(wasm)?;
                 assert!(
                     memarg.align <= 2,
                     "i32.load16_u: alignment is not less or equal to 2"
@@ -365,7 +365,7 @@ fn read_instructions(
                     "C.mems[0] is NOT defined when it should be"
                 );
 
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg = MemArg::read(wasm)?;
                 assert!(
                     memarg.align <= 1,
                     "i64.load8_s: alignment is not less or equal to 1"
@@ -380,7 +380,7 @@ fn read_instructions(
                     "C.mems[0] is NOT defined when it should be"
                 );
 
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg = MemArg::read(wasm)?;
                 assert!(
                     memarg.align <= 1,
                     "i64.load8_u: alignment is not less or equal to 1"
@@ -395,7 +395,7 @@ fn read_instructions(
                     "C.mems[0] is NOT defined when it should be"
                 );
 
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg = MemArg::read(wasm)?;
                 assert!(
                     memarg.align <= 2,
                     "i64.load16_s: alignment is not less or equal to 2"
@@ -410,7 +410,7 @@ fn read_instructions(
                     "C.mems[0] is NOT defined when it should be"
                 );
 
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg = MemArg::read(wasm)?;
                 assert!(
                     memarg.align <= 2,
                     "i64.load16_u: alignment is not less or equal to 2"
@@ -425,7 +425,7 @@ fn read_instructions(
                     "C.mems[0] is NOT defined when it should be"
                 );
 
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg = MemArg::read(wasm)?;
                 assert!(
                     memarg.align <= 4,
                     "i64.load32_s: alignment is not less or equal to 4"
@@ -440,7 +440,7 @@ fn read_instructions(
                     "C.mems[0] is NOT defined when it should be"
                 );
 
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg = MemArg::read(wasm)?;
                 assert!(
                     memarg.align <= 4,
                     "i64.load32_u: alignment is not less or equal to 4"
@@ -455,7 +455,7 @@ fn read_instructions(
                     !memories.is_empty(),
                     "C.mems[0] is NOT defined when it should be"
                 );
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg = MemArg::read(wasm)?;
 
                 assert!(
                     memarg.align < 4,
@@ -473,7 +473,7 @@ fn read_instructions(
                     "C.mems[0] is NOT defined when it should be"
                 );
 
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg = MemArg::read(wasm)?;
                 assert!(
                     memarg.align <= 8,
                     "i64.store: alignment is not less or equal to 8"
@@ -491,7 +491,7 @@ fn read_instructions(
                     "C.mems[0] is NOT defined when it should be"
                 );
 
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg = MemArg::read(wasm)?;
                 assert!(
                     memarg.align < 4,
                     "f32.store: alignment is not less or equal to 4"
@@ -508,7 +508,7 @@ fn read_instructions(
                     "C.mems[0] is NOT defined when it should be"
                 );
 
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg = MemArg::read(wasm)?;
                 assert!(
                     memarg.align <= 8,
                     "f64.store: alignment is not less or equal to 8"
@@ -525,7 +525,7 @@ fn read_instructions(
                     "C.mems[0] is NOT defined when it should be"
                 );
 
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg = MemArg::read(wasm)?;
                 assert!(
                     memarg.align <= 1,
                     "i32.store8: alignment is not less or equal to 1"
@@ -540,7 +540,7 @@ fn read_instructions(
                     "C.mems[0] is NOT defined when it should be"
                 );
 
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg = MemArg::read(wasm)?;
                 assert!(
                     memarg.align <= 2,
                     "i32.store16: alignment is not less or equal to 2"
@@ -555,7 +555,7 @@ fn read_instructions(
                     "C.mems[0] is NOT defined when it should be"
                 );
 
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg = MemArg::read(wasm)?;
                 assert!(
                     memarg.align <= 1,
                     "i64.store8: alignment is not less or equal to 1"
@@ -570,7 +570,7 @@ fn read_instructions(
                     "C.mems[0] is NOT defined when it should be"
                 );
 
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg = MemArg::read(wasm)?;
                 assert!(
                     memarg.align <= 2,
                     "i64.store16: alignment is not less or equal to 2"
@@ -585,7 +585,7 @@ fn read_instructions(
                     "C.mems[0] is NOT defined when it should be"
                 );
 
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg = MemArg::read(wasm)?;
                 assert!(
                     memarg.align <= 4,
                     "i64.store16: alignment is not less or equal to 4"
@@ -595,13 +595,7 @@ fn read_instructions(
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
             }
             MEMORY_SIZE => {
-                let mem_idx = 
-                    // if multi_memory_is_enabled {
-                    //     wasm.read_var_u32()? as MemIdx
-                    // } else {
-                        wasm.read_u8()? as MemIdx
-                    // }
-                    ;
+                let mem_idx = wasm.read_u8()? as MemIdx;
                 assert!(
                     memories.len() > mem_idx,
                     "C.mems[{}] is NOT defined when it should be",
@@ -610,13 +604,7 @@ fn read_instructions(
                 stack.push_valtype(ValType::NumType(NumType::I32));
             }
             MEMORY_GROW => {
-                let mem_idx = 
-                // if multi_memory_is_enabled {
-                //     wasm.read_var_u32()? as MemIdx
-                // } else {
-                    wasm.read_u8()? as MemIdx
-                // }
-                ;
+                let mem_idx = wasm.read_u8()? as MemIdx;
                 assert!(
                     memories.len() > mem_idx,
                     "C.mems[{}] is NOT defined when it should be",
@@ -849,13 +837,7 @@ fn read_instructions(
                     }
                     MEMORY_INIT => {
                         let data_idx = wasm.read_var_u32()? as DataIdx;
-                        let mem_idx = 
-                        // if multi_memory_is_enabled {
-                        //     wasm.read_var_u32()? as MemIdx
-                        // } else {
-                        wasm.read_u8()? as MemIdx
-                        // }
-                        ;
+                        let mem_idx = wasm.read_u8()? as MemIdx;
                         assert!(
                             memories.len() > mem_idx,
                             "C.mems[{}] is NOT defined when it should be",
@@ -897,13 +879,7 @@ fn read_instructions(
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                     }
                     MEMORY_FILL => {
-                        let mem_idx = 
-                        // if multi_memory_is_enabled {
-                        //     wasm.read_var_u32()? as MemIdx
-                        // } else {
-                            wasm.read_u8()? as MemIdx
-                        // }
-                        ;
+                        let mem_idx = wasm.read_u8()? as MemIdx;
                         assert!(
                             memories.len() > mem_idx,
                             "C.mems[{}] is NOT defined when it should be",

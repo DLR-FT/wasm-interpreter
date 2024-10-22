@@ -16,7 +16,6 @@ use crate::execution::value::{Ref, Value};
 /// <https://webassembly.github.io/spec/core/exec/runtime.html#store>
 pub struct Store {
     pub funcs: Vec<FuncInst>,
-    pub tables: Vec<TableInst>,
     pub mems: Vec<MemInst>,
     pub globals: Vec<GlobalInst>,
     pub data: Vec<DataSegment>,

@@ -129,7 +129,7 @@ pub(super) fn run<H: HookSet>(
                 global.value = stack.pop_value(global.global.ty.ty)
             }
             I32_LOAD => {
-                let memarg = MemArg::read_unvalidated(&mut wasm);
+                let memarg = MemArg::read(&mut wasm).unwrap();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
                 let mem = store.mems.first().unwrap_validated(); // there is only one memory allowed as of now
@@ -155,7 +155,7 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: i32.load [{relative_address}] -> [{data}]");
             }
             I64_LOAD => {
-                let memarg = MemArg::read_unvalidated(&mut wasm);
+                let memarg = MemArg::read(&mut wasm).unwrap();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
                 let mem = store.mems.first().unwrap_validated();
@@ -182,7 +182,7 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: i64.load [{relative_address}] -> [{data}]");
             }
             F32_LOAD => {
-                let memarg = MemArg::read_unvalidated(&mut wasm);
+                let memarg = MemArg::read(&mut wasm).unwrap();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
                 let mem = store.mems.first().unwrap_validated(); // there is only one memory allowed as of now
@@ -208,7 +208,7 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: f32.load [{relative_address}] -> [{data}]");
             }
             F64_LOAD => {
-                let memarg = MemArg::read_unvalidated(&mut wasm);
+                let memarg = MemArg::read(&mut wasm).unwrap();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
                 let mem = store.mems.first().unwrap_validated();
@@ -235,7 +235,7 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: f64.load [{relative_address}] -> [{data}]");
             }
             I32_LOAD8_S => {
-                let memarg = MemArg::read_unvalidated(&mut wasm);
+                let memarg = MemArg::read(&mut wasm).unwrap();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
                 let mem = store.mems.first().unwrap_validated(); // there is only one memory allowed as of now
@@ -263,7 +263,7 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: i32.load8_s [{relative_address}] -> [{data}]");
             }
             I32_LOAD8_U => {
-                let memarg = MemArg::read_unvalidated(&mut wasm);
+                let memarg = MemArg::read(&mut wasm).unwrap();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
                 let mem = store.mems.first().unwrap_validated(); // there is only one memory allowed as of now
@@ -291,7 +291,7 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: i32.load8_u [{relative_address}] -> [{data}]");
             }
             I32_LOAD16_S => {
-                let memarg = MemArg::read_unvalidated(&mut wasm);
+                let memarg = MemArg::read(&mut wasm).unwrap();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
                 let mem = store.mems.first().unwrap_validated(); // there is only one memory allowed as of now
@@ -318,7 +318,7 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: i32.load16_s [{relative_address}] -> [{data}]");
             }
             I32_LOAD16_U => {
-                let memarg = MemArg::read_unvalidated(&mut wasm);
+                let memarg = MemArg::read(&mut wasm).unwrap();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
                 let mem = store.mems.first().unwrap_validated(); // there is only one memory allowed as of now
@@ -345,7 +345,7 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: i32.load16_u [{relative_address}] -> [{data}]");
             }
             I64_LOAD8_S => {
-                let memarg = MemArg::read_unvalidated(&mut wasm);
+                let memarg = MemArg::read(&mut wasm).unwrap();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
                 let mem = store.mems.first().unwrap_validated(); // there is only one memory allowed as of now
@@ -373,7 +373,7 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: i64.load8_s [{relative_address}] -> [{data}]");
             }
             I64_LOAD8_U => {
-                let memarg = MemArg::read_unvalidated(&mut wasm);
+                let memarg = MemArg::read(&mut wasm).unwrap();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
                 let mem = store.mems.first().unwrap_validated(); // there is only one memory allowed as of now
@@ -401,7 +401,7 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: i64.load8_u [{relative_address}] -> [{data}]");
             }
             I64_LOAD16_S => {
-                let memarg = MemArg::read_unvalidated(&mut wasm);
+                let memarg = MemArg::read(&mut wasm).unwrap();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
                 let mem = store.mems.first().unwrap_validated(); // there is only one memory allowed as of now
@@ -428,7 +428,7 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: i64.load16_s [{relative_address}] -> [{data}]");
             }
             I64_LOAD16_U => {
-                let memarg = MemArg::read_unvalidated(&mut wasm);
+                let memarg = MemArg::read(&mut wasm).unwrap();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
                 let mem = store.mems.first().unwrap_validated(); // there is only one memory allowed as of now
@@ -455,7 +455,7 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: i64.load16_u [{relative_address}] -> [{data}]");
             }
             I64_LOAD32_S => {
-                let memarg = MemArg::read_unvalidated(&mut wasm);
+                let memarg = MemArg::read(&mut wasm).unwrap();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
                 let mem = store.mems.first().unwrap_validated(); // there is only one memory allowed as of now
@@ -482,7 +482,7 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: i64.load32_s [{relative_address}] -> [{data}]");
             }
             I64_LOAD32_U => {
-                let memarg = MemArg::read_unvalidated(&mut wasm);
+                let memarg = MemArg::read(&mut wasm).unwrap();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
                 let mem = store.mems.first().unwrap_validated(); // there is only one memory allowed as of now
@@ -509,7 +509,7 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: i64.load32_u [{relative_address}] -> [{data}]");
             }
             I32_STORE => {
-                let memarg = MemArg::read_unvalidated(&mut wasm);
+                let memarg = MemArg::read(&mut wasm).unwrap();
 
                 let data_to_store: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -530,7 +530,7 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: i32.store [{relative_address} {data_to_store}] -> []");
             }
             I64_STORE => {
-                let memarg = MemArg::read_unvalidated(&mut wasm);
+                let memarg = MemArg::read(&mut wasm).unwrap();
 
                 let data_to_store: u32 = stack.pop_value(ValType::NumType(NumType::I64)).into();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -551,7 +551,7 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: i64.store [{relative_address} {data_to_store}] -> []");
             }
             F32_STORE => {
-                let memarg = MemArg::read_unvalidated(&mut wasm);
+                let memarg = MemArg::read(&mut wasm).unwrap();
 
                 let data_to_store: f32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -572,7 +572,7 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: f32.store [{relative_address} {data_to_store}] -> []");
             }
             F64_STORE => {
-                let memarg = MemArg::read_unvalidated(&mut wasm);
+                let memarg = MemArg::read(&mut wasm).unwrap();
 
                 let data_to_store: f64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -593,7 +593,7 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: f64.store [{relative_address} {data_to_store}] -> []");
             }
             I32_STORE8 => {
-                let memarg = MemArg::read_unvalidated(&mut wasm);
+                let memarg = MemArg::read(&mut wasm).unwrap();
 
                 let data_to_store: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -615,7 +615,7 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: i32.store8 [{relative_address} {data_to_store}] -> []");
             }
             I32_STORE16 => {
-                let memarg = MemArg::read_unvalidated(&mut wasm);
+                let memarg = MemArg::read(&mut wasm).unwrap();
 
                 let data_to_store: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -637,7 +637,7 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: i32.store16 [{relative_address} {data_to_store}] -> []");
             }
             I64_STORE8 => {
-                let memarg = MemArg::read_unvalidated(&mut wasm);
+                let memarg = MemArg::read(&mut wasm).unwrap();
 
                 let data_to_store: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -659,7 +659,7 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: i64.store8 [{relative_address} {data_to_store}] -> []");
             }
             I64_STORE16 => {
-                let memarg = MemArg::read_unvalidated(&mut wasm);
+                let memarg = MemArg::read(&mut wasm).unwrap();
 
                 let data_to_store: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -681,7 +681,7 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: i64.store16 [{relative_address} {data_to_store}] -> []");
             }
             I64_STORE32 => {
-                let memarg = MemArg::read_unvalidated(&mut wasm);
+                let memarg = MemArg::read(&mut wasm).unwrap();
 
                 let data_to_store: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -703,26 +703,14 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: i64.store32 [{relative_address} {data_to_store}] -> []");
             }
             MEMORY_SIZE => {
-                let mem_idx = 
-                // if multi_memory_is_enabled {
-                //     wasm.read_var_u32().unwrap_validated() as usize
-                // } else {
-                    wasm.read_u8().unwrap_validated() as usize
-                // }
-                ;
+                let mem_idx = wasm.read_u8().unwrap_validated() as usize;
                 let mem = store.mems.get(mem_idx).unwrap_validated();
                 let size = mem.size() as u32;
                 stack.push_value(Value::I32(size));
                 trace!("Instruction: memory.size [] -> [{}]", size);
             }
             MEMORY_GROW => {
-                let mem_idx = 
-                // if multi_memory_is_enabled {
-                //     wasm.read_var_u32().unwrap_validated() as usize
-                // } else {
-                    wasm.read_u8().unwrap_validated() as usize
-                // }
-                ;
+                let mem_idx = wasm.read_u8().unwrap_validated() as usize;
                 let mem = store.mems.get_mut(mem_idx).unwrap_validated();
                 let delta: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
@@ -2038,13 +2026,7 @@ pub(super) fn run<H: HookSet>(
                     MEMORY_INIT => {
                         let data_idx = wasm.read_var_u32().unwrap_validated() as DataIdx;
                         let data = unsafe { store.data.get_unchecked_mut(data_idx) };
-                        let mem_idx = 
-                        // if multi_memory_is_enabled {
-                        //     wasm.read_var_u32().unwrap_validated() as usize
-                        // } else {
-                            wasm.read_u8().unwrap_validated() as usize
-                        // }
-                        ;
+                        let mem_idx = wasm.read_u8().unwrap_validated() as usize;
                         let mem = store.mems.get(mem_idx).unwrap_validated();
                         let mut n: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                         let mut s: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -2205,13 +2187,7 @@ pub(super) fn run<H: HookSet>(
                         trace!("Instruction: memory.copy");
                     }
                     MEMORY_FILL => {
-                        let mem_idx = 
-                        // if multi_memory_is_enabled {
-                        //     wasm.read_var_u32().unwrap_validated() as usize
-                        // } else {
-                            wasm.read_u8().unwrap_validated() as usize
-                        // }
-                        ;
+                        let mem_idx = wasm.read_u8().unwrap_validated() as usize;
                         let mem = store.mems.get(mem_idx).unwrap_validated();
                         let mut n: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                         let val: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();

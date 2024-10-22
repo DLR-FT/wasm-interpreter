@@ -47,7 +47,7 @@ impl Debug for DataSegment {
 /// ```wasm
 /// (module
 ///  (memory 1) ;; memory starting with 1 page
-///  (data (i32.const 0) "wtf")  ;; writing the array of byte "wtf" in the first memory (0) at offset 0
+///  (data (i32.const 0) "abc")  ;; writing the array of byte "abc" in the first memory (0) at offset 0
 ///                             ;; for hardcoded offsets, we'll usually use i32.const because of wasm being x86 arch
 /// )
 /// ```

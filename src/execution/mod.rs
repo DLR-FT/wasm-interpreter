@@ -5,7 +5,6 @@ use const_interpreter_loop::run_const;
 use function_ref::FunctionRef;
 use interpreter_loop::run;
 use locals::Locals;
-use store::TableInst;
 use value_stack::Stack;
 
 use crate::core::reader::types::data::DataSegment;
@@ -343,15 +342,6 @@ where
                 .collect()
         };
 
-        let table_instances = validation_info
-            .tables
-            .iter()
-            .map(|ty| TableInst {
-                ty: *ty,
-                elem: Vec::new(),
-            })
-            .collect();
-
         let mut memory_instances: Vec<MemInst> = validation_info
             .memories
             .iter()
@@ -425,7 +415,6 @@ where
 
         Store {
             funcs: function_instances,
-            tables: table_instances,
             mems: memory_instances,
             globals: global_instances,
             data: data_sections,
