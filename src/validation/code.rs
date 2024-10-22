@@ -189,10 +189,7 @@ fn read_instructions(
                 stack.make_unspecified();
             }
             DROP => {
-                let el = stack.drop_val();
-                if el.is_err() {
-                    return Err(el.err().unwrap());
-                }
+                stack.drop_val()?;
             }
             // local.get: [] -> [t]
             LOCAL_GET => {
