@@ -73,6 +73,21 @@ impl ValidationStack {
             .ok_or(Error::InvalidValidationStackValType(None))
     }
 
+
+    pub(super) fn assert_pop_ref_type(&mut self) -> Result<()> {
+        let val = self.pop()?;
+        match val {
+            ValidationStackEntry::Val(v) => {
+                match v {
+                    ValType::RefType(_) => Ok(()),
+                    _ => panic!("Not a RefType")
+                }
+            },
+            ValidationStackEntry::UnspecifiedValTypes => panic!("Found UnspecifiedValTypes"),
+            ValidationStackEntry::Label(li) => Err(Error::FoundLabel(li.kind))
+        }
+    }
+
     /// Assert the top-most [`ValidationStackEntry`] is a specific [`ValType`], after popping it from the [`ValidationStack`]
     ///
     /// # Returns

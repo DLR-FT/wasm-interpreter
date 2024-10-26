@@ -15,6 +15,7 @@
 # limitations under the License.
 */
 use wasm::{validate, RuntimeError, RuntimeInstance};
+use wasm::Error as GeneralError;
 
 macro_rules! get_func {
     ($instance:ident, $func_name:expr) => {
@@ -182,7 +183,6 @@ fn memory_init_test_4() {
 }
 
 #[test_log::test]
-#[should_panic(expected = "data_idx is out of bounds")]
 fn memory_init_test_5() {
     let w = r#"
    (module
@@ -190,11 +190,11 @@ fn memory_init_test_5() {
        (data.drop 0)))
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
-    validate(&wasm_bytes).unwrap();
+    let res = validate(&wasm_bytes);
+    assert!(res.err().unwrap() == GeneralError::DataSegmentNotFound(0));
 }
 
 #[test_log::test]
-#[should_panic(expected = "data_idx is out of bounds")]
 fn memory_init_test_6() {
     let w = r#"
   (module
@@ -204,7 +204,9 @@ fn memory_init_test_6() {
       (data.drop 4)))
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
-    validate(&wasm_bytes).unwrap();
+    
+    let res = validate(&wasm_bytes);
+    assert!(res.err().unwrap() == GeneralError::DataSegmentNotFound(4));
 }
 
 #[test_log::test]
@@ -256,7 +258,6 @@ fn memory_init_test_9() {
 }
 
 #[test_log::test]
-#[should_panic(expected = "C.mems[0] is NOT defined when it should be")]
 fn memory_init_test_10() {
     let w = r#"
   (module
@@ -264,11 +265,12 @@ fn memory_init_test_10() {
       (memory.init 1 (i32.const 1234) (i32.const 1) (i32.const 1))))
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
-    validate(&wasm_bytes).unwrap();
+
+    let res = validate(&wasm_bytes);
+    assert!(res.err().unwrap() == GeneralError::MemoryIsNotDefined(0));
 }
 
 #[test_log::test]
-#[should_panic(expected = "data_idx 1 is out of bounds")]
 fn memory_init_test_11() {
     let w = r#"
   (module
@@ -278,7 +280,9 @@ fn memory_init_test_11() {
       (memory.init 1 (i32.const 1234) (i32.const 1) (i32.const 1))))
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
-    validate(&wasm_bytes).unwrap();
+
+    let res = validate(&wasm_bytes);
+    assert!(res.err().unwrap() == GeneralError::DataSegmentNotFound(1));
 }
 
 #[test_log::test]

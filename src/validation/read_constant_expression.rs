@@ -127,14 +127,15 @@ pub fn read_constant_instructions(
 
                 stack.push_valtype(ValType::NumType(NumType::I64));
             }
-            // REF_NULL => {
-            //     RefType::read(wasm).unwrap();
+            REF_NULL => {
+                todo!();
+                // RefType::read(wasm).unwrap();
                 
-            //     stack.push_valtype(ValType::RefType(RefType::));
-            // }
-            // REF_FUNC => {
-            //     wasm.read_var_u32().unwrap();
-            // }
+                // stack.push_valtype(ValType::RefType(RefType::));
+            }
+            REF_FUNC => {
+                wasm.read_var_u32().unwrap();
+            }
             _ => return Err(Error::InvalidInstr(first_instr_byte)),
         }
     }

@@ -247,7 +247,7 @@ impl WasmReadable for Limits {
         };
 
         if limits.max.is_some() && limits.min > limits.max.unwrap() {
-            return Err(Error::SizeMinIsGreaterThanMax);
+            return Err(Error::InvalidLimit);
         }
 
         Ok(limits)

@@ -53,7 +53,7 @@ fn memory_min_greater_than_max() {
         let validation_info = validate(&wasm_bytes);
         assert_eq!(
             validation_info.err().unwrap(),
-            Error::SizeMinIsGreaterThanMax
+            Error::InvalidLimit
         );
     });
 }

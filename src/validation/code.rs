@@ -231,385 +231,271 @@ fn read_instructions(
 
                 stack.assert_pop_val_type(global.ty.ty)?;
             }
-            // i32.load [i32] -> [i32]
             I32_LOAD => {
-                assert!(
-                    !memories.is_empty(),
-                    "C.mems[0] is NOT defined when it should be"
-                );
+                if memories.is_empty() {
+                    return Err(Error::MemoryIsNotDefined(0));
+                }
                 let memarg = MemArg::read(wasm)?;
-
-                assert!(
-                    memarg.align <= 4,
-                    "i32.load: alignment is not less or equal to 4"
-                );
-
+                if memarg.align > 4 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 4));
+                }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
-
                 stack.push_valtype(ValType::NumType(NumType::I32));
             }
             I64_LOAD => {
-                assert!(
-                    !memories.is_empty(),
-                    "C.mems[0] is NOT defined when it should be"
-                );
+                if memories.is_empty() {
+                    return Err(Error::MemoryIsNotDefined(0));
+                }
                 let memarg = MemArg::read(wasm)?;
-
-                assert!(
-                    memarg.align <= 8,
-                    "i64.load: alignment is not less or equal to 8"
-                );
-
+                if memarg.align > 8 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 8));
+                }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
-
                 stack.push_valtype(ValType::NumType(NumType::I64));
             }
-            // f32.load [f32] -> [f32]
             F32_LOAD => {
-                assert!(
-                    !memories.is_empty(),
-                    "C.mems[0] is NOT defined when it should be"
-                );
+                if memories.is_empty() {
+                    return Err(Error::MemoryIsNotDefined(0));
+                }
                 let memarg = MemArg::read(wasm)?;
-
-                assert!(
-                    memarg.align <= 4,
-                    "f32.load: alignment is not less or equal to 4"
-                );
-
+                if memarg.align > 4 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 4));
+                }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
-
                 stack.push_valtype(ValType::NumType(NumType::F32));
             }
-            // f32.load [f32] -> [f32]
             F64_LOAD => {
-                assert!(
-                    !memories.is_empty(),
-                    "C.mems[0] is NOT defined when it should be"
-                );
+                if memories.is_empty() {
+                    return Err(Error::MemoryIsNotDefined(0));
+                }
                 let memarg = MemArg::read(wasm)?;
-
-                assert!(
-                    memarg.align <= 8,
-                    "f64.load: alignment is not less or equal to 8"
-                );
-
+                if memarg.align > 8 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 8));
+                }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
-
                 stack.push_valtype(ValType::NumType(NumType::F64));
             }
-
             I32_LOAD8_S => {
-                assert!(
-                    !memories.is_empty(),
-                    "C.mems[0] is NOT defined when it should be"
-                );
-
+                if memories.is_empty() {
+                    return Err(Error::MemoryIsNotDefined(0));
+                }
                 let memarg = MemArg::read(wasm)?;
-                assert!(
-                    memarg.align <= 1,
-                    "i32.load8_s: alignment is not less or equal to 1"
-                );
-
+                if memarg.align > 1 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 1));
+                }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.push_valtype(ValType::NumType(NumType::I32));
             }
             I32_LOAD8_U => {
-                assert!(
-                    !memories.is_empty(),
-                    "C.mems[0] is NOT defined when it should be"
-                );
-
+                if memories.is_empty() {
+                    return Err(Error::MemoryIsNotDefined(0));
+                }
                 let memarg = MemArg::read(wasm)?;
-                assert!(
-                    memarg.align <= 1,
-                    "i32.load8_u: alignment is not less or equal to 1"
-                );
-
+                if memarg.align > 1 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 1));
+                }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.push_valtype(ValType::NumType(NumType::I32));
             }
             I32_LOAD16_S => {
-                assert!(
-                    !memories.is_empty(),
-                    "C.mems[0] is NOT defined when it should be"
-                );
-
+                if memories.is_empty() {
+                    return Err(Error::MemoryIsNotDefined(0));
+                }
                 let memarg = MemArg::read(wasm)?;
-                assert!(
-                    memarg.align <= 2,
-                    "i32.load16_s: alignment is not less or equal to 2"
-                );
-
+                if memarg.align > 2 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 2));
+                }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.push_valtype(ValType::NumType(NumType::I32));
             }
             I32_LOAD16_U => {
-                assert!(
-                    !memories.is_empty(),
-                    "C.mems[0] is NOT defined when it should be"
-                );
-
+                if memories.is_empty() {
+                    return Err(Error::MemoryIsNotDefined(0));
+                }
                 let memarg = MemArg::read(wasm)?;
-                assert!(
-                    memarg.align <= 2,
-                    "i32.load16_u: alignment is not less or equal to 2"
-                );
-
+                if memarg.align > 2 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 2));
+                }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.push_valtype(ValType::NumType(NumType::I32));
             }
             I64_LOAD8_S => {
-                assert!(
-                    !memories.is_empty(),
-                    "C.mems[0] is NOT defined when it should be"
-                );
-
+                if memories.is_empty() {
+                    return Err(Error::MemoryIsNotDefined(0));
+                }
                 let memarg = MemArg::read(wasm)?;
-                assert!(
-                    memarg.align <= 1,
-                    "i64.load8_s: alignment is not less or equal to 1"
-                );
-
+                if memarg.align > 1 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 1));
+                }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.push_valtype(ValType::NumType(NumType::I64));
             }
             I64_LOAD8_U => {
-                assert!(
-                    !memories.is_empty(),
-                    "C.mems[0] is NOT defined when it should be"
-                );
-
+                if memories.is_empty() {
+                    return Err(Error::MemoryIsNotDefined(0));
+                }
                 let memarg = MemArg::read(wasm)?;
-                assert!(
-                    memarg.align <= 1,
-                    "i64.load8_u: alignment is not less or equal to 1"
-                );
-
+                if memarg.align > 1 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 1));
+                }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.push_valtype(ValType::NumType(NumType::I64));
             }
             I64_LOAD16_S => {
-                assert!(
-                    !memories.is_empty(),
-                    "C.mems[0] is NOT defined when it should be"
-                );
-
+                if memories.is_empty() {
+                    return Err(Error::MemoryIsNotDefined(0));
+                }
                 let memarg = MemArg::read(wasm)?;
-                assert!(
-                    memarg.align <= 2,
-                    "i64.load16_s: alignment is not less or equal to 2"
-                );
-
+                if memarg.align > 2 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 2));
+                }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.push_valtype(ValType::NumType(NumType::I64));
             }
             I64_LOAD16_U => {
-                assert!(
-                    !memories.is_empty(),
-                    "C.mems[0] is NOT defined when it should be"
-                );
-
+                if memories.is_empty() {
+                    return Err(Error::MemoryIsNotDefined(0));
+                }
                 let memarg = MemArg::read(wasm)?;
-                assert!(
-                    memarg.align <= 2,
-                    "i64.load16_u: alignment is not less or equal to 2"
-                );
-
+                if memarg.align > 2 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 2));
+                }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.push_valtype(ValType::NumType(NumType::I64));
             }
             I64_LOAD32_S => {
-                assert!(
-                    !memories.is_empty(),
-                    "C.mems[0] is NOT defined when it should be"
-                );
-
+                if memories.is_empty() {
+                    return Err(Error::MemoryIsNotDefined(0));
+                }
                 let memarg = MemArg::read(wasm)?;
-                assert!(
-                    memarg.align <= 4,
-                    "i64.load32_s: alignment is not less or equal to 4"
-                );
-
+                if memarg.align > 4 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 4));
+                }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.push_valtype(ValType::NumType(NumType::I64));
             }
             I64_LOAD32_U => {
-                assert!(
-                    !memories.is_empty(),
-                    "C.mems[0] is NOT defined when it should be"
-                );
-
+                if memories.is_empty() {
+                    return Err(Error::MemoryIsNotDefined(0));
+                }
                 let memarg = MemArg::read(wasm)?;
-                assert!(
-                    memarg.align <= 4,
-                    "i64.load32_u: alignment is not less or equal to 4"
-                );
-
+                if memarg.align > 4 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 4));
+                }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.push_valtype(ValType::NumType(NumType::I64));
             }
-            // i32.store [i32] -> [i32]
             I32_STORE => {
-                assert!(
-                    !memories.is_empty(),
-                    "C.mems[0] is NOT defined when it should be"
-                );
+                if memories.is_empty() {
+                    return Err(Error::MemoryIsNotDefined(0));
+                }
                 let memarg = MemArg::read(wasm)?;
-
-                assert!(
-                    memarg.align < 4,
-                    "i32.store: alignment is not less or equal to 4"
-                );
-
-                // Value to store
+                if memarg.align >= 4 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 4));
+                }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
-                // Address
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
             }
             I64_STORE => {
-                assert!(
-                    !memories.is_empty(),
-                    "C.mems[0] is NOT defined when it should be"
-                );
-
+                if memories.is_empty() {
+                    return Err(Error::MemoryIsNotDefined(0));
+                }
                 let memarg = MemArg::read(wasm)?;
-                assert!(
-                    memarg.align <= 8,
-                    "i64.store: alignment is not less or equal to 8"
-                );
-
-                // Value to store
+                if memarg.align > 8 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 8));
+                }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I64))?;
-                // Address
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
             }
-            // f32.store [f32] -> [f32]
             F32_STORE => {
-                assert!(
-                    !memories.is_empty(),
-                    "C.mems[0] is NOT defined when it should be"
-                );
-
+                if memories.is_empty() {
+                    return Err(Error::MemoryIsNotDefined(0));
+                }
                 let memarg = MemArg::read(wasm)?;
-                assert!(
-                    memarg.align < 4,
-                    "f32.store: alignment is not less or equal to 4"
-                );
-
-                // Value to store
+                if memarg.align >= 4 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 4));
+                }
                 stack.assert_pop_val_type(ValType::NumType(NumType::F32))?;
-                // Address
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
             }
             F64_STORE => {
-                assert!(
-                    !memories.is_empty(),
-                    "C.mems[0] is NOT defined when it should be"
-                );
-
+                if memories.is_empty() {
+                    return Err(Error::MemoryIsNotDefined(0));
+                }
                 let memarg = MemArg::read(wasm)?;
-                assert!(
-                    memarg.align <= 8,
-                    "f64.store: alignment is not less or equal to 8"
-                );
-
-                // Value to store
+                if memarg.align > 8 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 8));
+                }
                 stack.assert_pop_val_type(ValType::NumType(NumType::F64))?;
-                // Address
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
             }
             I32_STORE8 => {
-                assert!(
-                    !memories.is_empty(),
-                    "C.mems[0] is NOT defined when it should be"
-                );
-
+                if memories.is_empty() {
+                    return Err(Error::MemoryIsNotDefined(0));
+                }
                 let memarg = MemArg::read(wasm)?;
-                assert!(
-                    memarg.align <= 1,
-                    "i32.store8: alignment is not less or equal to 1"
-                );
-
+                if memarg.align > 1 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 1));
+                }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
             }
             I32_STORE16 => {
-                assert!(
-                    !memories.is_empty(),
-                    "C.mems[0] is NOT defined when it should be"
-                );
-
+                if memories.is_empty() {
+                    return Err(Error::MemoryIsNotDefined(0));
+                }
                 let memarg = MemArg::read(wasm)?;
-                assert!(
-                    memarg.align <= 2,
-                    "i32.store16: alignment is not less or equal to 2"
-                );
-
+                if memarg.align > 2 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 2));
+                }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
             }
             I64_STORE8 => {
-                assert!(
-                    !memories.is_empty(),
-                    "C.mems[0] is NOT defined when it should be"
-                );
-
+                if memories.is_empty() {
+                    return Err(Error::MemoryIsNotDefined(0));
+                }
                 let memarg = MemArg::read(wasm)?;
-                assert!(
-                    memarg.align <= 1,
-                    "i64.store8: alignment is not less or equal to 1"
-                );
-
+                if memarg.align > 1 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 1));
+                }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I64))?;
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
             }
             I64_STORE16 => {
-                assert!(
-                    !memories.is_empty(),
-                    "C.mems[0] is NOT defined when it should be"
-                );
-
+                if memories.is_empty() {
+                    return Err(Error::MemoryIsNotDefined(0));
+                }
                 let memarg = MemArg::read(wasm)?;
-                assert!(
-                    memarg.align <= 2,
-                    "i64.store16: alignment is not less or equal to 2"
-                );
-
+                if memarg.align > 2 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 2));
+                }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I64))?;
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
             }
             I64_STORE32 => {
-                assert!(
-                    !memories.is_empty(),
-                    "C.mems[0] is NOT defined when it should be"
-                );
-
+                if memories.is_empty() {
+                    return Err(Error::MemoryIsNotDefined(0));
+                }
                 let memarg = MemArg::read(wasm)?;
-                assert!(
-                    memarg.align <= 4,
-                    "i64.store16: alignment is not less or equal to 4"
-                );
-
+                if memarg.align > 4 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 4));
+                }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I64))?;
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
             }
             MEMORY_SIZE => {
                 let mem_idx = wasm.read_u8()? as MemIdx;
-                assert!(
-                    memories.len() > mem_idx,
-                    "C.mems[{}] is NOT defined when it should be",
-                    mem_idx
-                );
+                if memories.len() <= mem_idx {
+                    return Err(Error::MemoryIsNotDefined(mem_idx));
+                }
                 stack.push_valtype(ValType::NumType(NumType::I32));
             }
             MEMORY_GROW => {
                 let mem_idx = wasm.read_u8()? as MemIdx;
-                assert!(
-                    memories.len() > mem_idx,
-                    "C.mems[{}] is NOT defined when it should be",
-                    mem_idx
-                );
+                if memories.len() <= mem_idx {
+                    return Err(Error::MemoryIsNotDefined(mem_idx));
+                }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.push_valtype(ValType::NumType(NumType::I32));
             }
@@ -794,6 +680,12 @@ fn read_instructions(
                 stack.push_valtype(ValType::NumType(NumType::F64));
             }
 
+            REF_IS_NULL => {
+                stack.assert_pop_ref_type()?;
+
+                stack.push_valtype(ValType::NumType(NumType::I32));
+            }
+
             FC_EXTENSIONS => {
                 let Ok(second_instr_byte) = wasm.read_u8() else {
                     // TODO only do this if EOF
@@ -838,53 +730,43 @@ fn read_instructions(
                     MEMORY_INIT => {
                         let data_idx = wasm.read_var_u32()? as DataIdx;
                         let mem_idx = wasm.read_u8()? as MemIdx;
-                        assert!(
-                            memories.len() > mem_idx,
-                            "C.mems[{}] is NOT defined when it should be",
-                            mem_idx
-                        );
-                        assert!(data_count.is_some(), "data count is none");
-                        assert!(
-                            data_count.unwrap() as usize > data_idx,
-                            "data_idx {} is out of bounds",
-                            data_idx
-                        );
+                        if memories.len() <= mem_idx {
+                            return Err(Error::MemoryIsNotDefined(mem_idx));
+                        }
+                        if data_count.is_none() {
+                            return Err(Error::NoDataSegments);
+                        }
+                        if data_count.unwrap() as usize <= data_idx {
+                            return Err(Error::DataSegmentNotFound(data_idx));
+                        }
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                     }
                     DATA_DROP => {
-                        assert!(data_count.is_some(), "data count is none");
+                        if data_count.is_none() {
+                            return Err(Error::NoDataSegments);
+                        }
                         let data_idx = wasm.read_var_u32()? as DataIdx;
-                        assert!(
-                            data_count.unwrap() as usize > data_idx,
-                            "data_idx is out of bounds"
-                        );
+                        if data_count.unwrap() as usize <= data_idx {
+                            return Err(Error::DataSegmentNotFound(data_idx));
+                        }
                     }
                     MEMORY_COPY => {
-                        let (dst, src) = 
-                        // if multi_memory_is_enabled {
-                            // (wasm.read_var_u32()? as usize, wasm.read_var_u32()? as usize)
-                        // } else {
-                            (wasm.read_u8()? as usize, wasm.read_u8()? as usize)
-                        // }
-                        ;
+                        let (dst, src) = (wasm.read_u8()? as usize, wasm.read_u8()? as usize);
                         assert!(dst == 0 && src == 0);
-                        assert!(
-                            !memories.is_empty(),
-                            "C.mems[0] is NOT defined when it should be"
-                        );
+                        if memories.is_empty() {
+                            return Err(Error::MemoryIsNotDefined(0));
+                        }
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                     }
                     MEMORY_FILL => {
                         let mem_idx = wasm.read_u8()? as MemIdx;
-                        assert!(
-                            memories.len() > mem_idx,
-                            "C.mems[{}] is NOT defined when it should be",
-                            mem_idx
-                        );
+                        if memories.len() <= mem_idx {
+                            return Err(Error::MemoryIsNotDefined(mem_idx));
+                        }
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
