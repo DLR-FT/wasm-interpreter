@@ -13,17 +13,86 @@
 use alloc::vec::Vec;
 
 use crate::{
-    assert_validated::UnwrapValidatedExt, core::{
+    assert_validated::UnwrapValidatedExt,
+    core::{
         indices::{DataIdx, FuncIdx, GlobalIdx, LocalIdx},
         reader::{
             types::{data::DataSegment, memarg::MemArg, FuncType},
             WasmReadable, WasmReader,
         },
-    }, locals::Locals, store::Store, value, value_stack::Stack, Limits, NumType, RuntimeError, ValType, Value
+    },
+    locals::Locals,
+    store::Store,
+    value,
+    value_stack::Stack,
+    Limits, NumType, RuntimeError, ValType, Value,
 };
 
 #[cfg(feature = "hooks")]
 use crate::execution::hooks::HookSet;
+
+/// Returns a tuple referring to -> (relative_address, data_to_store)
+fn i32_store8_fun(
+    // stack: &mut Stack,
+    store: &mut Store,
+    memarg: MemArg,
+    data_to_store: i32,
+    relative_address: u32,
+) -> Result<(), RuntimeError> {
+    // let data_to_store: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+    // let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+    let mem = store.mems.get_mut(0).unwrap_validated();
+
+    // The spec states that this should be a 33 bit integer
+    // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
+    // ea => effective address
+    let ea = memarg.offset.checked_add(relative_address);
+    let memory_location = ea
+        .and_then(|address| {
+            let address = address as usize;
+            mem.data.get_mut(address..(address + 1))
+        })
+        .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
+
+    memory_location.copy_from_slice(&data_to_store.to_le_bytes()[0..1]);
+    Ok((/* relative_address, data_to_store */))
+}
+
+/// Returns a tuple referring to -> (relative_address, data_read)
+fn i32_load8_u_fun(
+    // stack: &mut Stack,
+    store: &mut Store,
+    memarg: MemArg,
+    relative_address: u32,
+) -> Result<u32, RuntimeError> {
+    // let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+    let mem = store.mems.first().unwrap_validated(); // there is only one memory allowed as of now
+
+    let data: u8 = {
+        // The spec states that this should be a 33 bit integer
+        // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
+        let _address = memarg.offset.checked_add(relative_address);
+        let data = memarg
+            .offset
+            .checked_add(relative_address)
+            .and_then(|address| {
+                let address = address as usize;
+                mem.data
+                    .get(address..(address + 1))
+                    .map(|slice| slice.try_into().expect("this to be exactly 1 byte"))
+            })
+            .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
+
+        // let data: [u8; 1] = data.try_into().expect("this to be exactly 1 byte");
+        u8::from_le_bytes(data)
+    };
+
+    // stack.push_value(Value::I32(data as u32));
+    // Ok((relative_address, data))
+    Ok(data as u32)
+}
 
 /// Interprets a functions. Parameters and return values are passed on the stack.
 pub(super) fn run<H: HookSet>(
@@ -265,29 +334,8 @@ pub(super) fn run<H: HookSet>(
             I32_LOAD8_U => {
                 let memarg = MemArg::read(&mut wasm).unwrap();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-
-                let mem = store.mems.first().unwrap_validated(); // there is only one memory allowed as of now
-
-                let data: u8 = {
-                    // The spec states that this should be a 33 bit integer
-                    // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
-                    let _address = memarg.offset.checked_add(relative_address);
-                    let data = memarg
-                        .offset
-                        .checked_add(relative_address)
-                        .and_then(|address| {
-                            let address = address as usize;
-                            mem.data
-                                .get(address..(address + 1))
-                                .map(|slice| slice.try_into().expect("this to be exactly 1 byte"))
-                        })
-                        .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
-
-                    // let data: [u8; 1] = data.try_into().expect("this to be exactly 1 byte");
-                    u8::from_le_bytes(data)
-                };
-
-                stack.push_value(Value::I32(data as u32));
+                let data = i32_load8_u_fun(store, memarg, relative_address)?;
+                stack.push_value(Value::I32(data));
                 trace!("Instruction: i32.load8_u [{relative_address}] -> [{data}]");
             }
             I32_LOAD16_S => {
@@ -598,20 +646,24 @@ pub(super) fn run<H: HookSet>(
                 let data_to_store: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                let mem = store.mems.get_mut(0).unwrap_validated();
+                i32_store8_fun(store, memarg, data_to_store, relative_address)?;
+                // let data_to_store: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                // let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                // The spec states that this should be a 33 bit integer
-                // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
-                // ea => effective address
-                let ea = memarg.offset.checked_add(relative_address);
-                let memory_location = ea
-                    .and_then(|address| {
-                        let address = address as usize;
-                        mem.data.get_mut(address..(address + 1))
-                    })
-                    .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
+                // let mem = store.mems.get_mut(0).unwrap_validated();
 
-                memory_location.copy_from_slice(&data_to_store.to_le_bytes()[0..1]);
+                // // The spec states that this should be a 33 bit integer
+                // // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
+                // // ea => effective address
+                // let ea = memarg.offset.checked_add(relative_address);
+                // let memory_location = ea
+                //     .and_then(|address| {
+                //         let address = address as usize;
+                //         mem.data.get_mut(address..(address + 1))
+                //     })
+                //     .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
+
+                // memory_location.copy_from_slice(&data_to_store.to_le_bytes()[0..1]);
                 trace!("Instruction: i32.store8 [{relative_address} {data_to_store}] -> []");
             }
             I32_STORE16 => {
@@ -2023,9 +2075,15 @@ pub(super) fn run<H: HookSet>(
                         trace!("Instruction: i64.trunc_sat_f64_u [{v1}] -> [{res}]");
                         stack.push_value(res.into());
                     }
+                    // See https://webassembly.github.io/bulk-memory-operations/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-init-x
+                    // Copy a region from a data segment into memory
                     MEMORY_INIT => {
+                        //  mappings:
+                        //      n => number of bytes to copy
+                        //      s => starting pointer in the data segment
+                        //      d => destination address to copy to
                         let data_idx = wasm.read_var_u32().unwrap_validated() as DataIdx;
-                        let data = unsafe { store.data.get_unchecked_mut(data_idx) };
+                        let data_init_len = store.data.get(data_idx).unwrap().init.len();
                         let mem_idx = wasm.read_u8().unwrap_validated() as usize;
                         let mem = store.mems.get(mem_idx).unwrap_validated();
                         let mut n: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -2035,15 +2093,16 @@ pub(super) fn run<H: HookSet>(
                             return Err(RuntimeError::MemoryAccessOutOfBounds);
                         }
 
-                        if s as usize + n as usize > data.init.len()
+                        if s as usize + n as usize > data_init_len
                             || d as usize + n as usize > mem.data.len()
                         {
                             return Err(RuntimeError::MemoryAccessOutOfBounds);
                         }
 
                         while n != 0 {
-                            let b = data.init[s as usize];
-                            {
+                            let b = store.data.get(data_idx).unwrap().init[s as usize];
+                            #[allow(unused_labels)]
+                            'I32_STORE8: {
                                 let memarg = MemArg {
                                     align: 0,
                                     offset: 0,
@@ -2052,20 +2111,7 @@ pub(super) fn run<H: HookSet>(
                                 let data_to_store: i32 = b as i32;
                                 let relative_address: u32 = d as u32;
 
-                                let mem = store.mems.get_mut(0).unwrap_validated();
-
-                                // The spec states that this should be a 33 bit integer
-                                // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
-                                // ea => effective address
-                                let ea = memarg.offset.checked_add(relative_address);
-                                let memory_location = ea
-                                    .and_then(|address| {
-                                        let address = address as usize;
-                                        mem.data.get_mut(address..(address + 1))
-                                    })
-                                    .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
-
-                                memory_location.copy_from_slice(&data_to_store.to_le_bytes()[0..1]);
+                                i32_store8_fun(store, memarg, data_to_store, relative_address)?;
                             }
                             d += 1;
                             s += 1;
@@ -2089,14 +2135,16 @@ pub(super) fn run<H: HookSet>(
                             mode,
                         };
                     }
+                    // See https://webassembly.github.io/bulk-memory-operations/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-copy
                     MEMORY_COPY => {
-                        let (_dst, _src) = 
-                        // if multi_memory_is_enabled {
-                            // (wasm.read_var_u32().unwrap_validated() as usize, wasm.read_var_u32().unwrap_validated() as usize)
-                        // } else {
-                            (wasm.read_u8().unwrap_validated() as usize, wasm.read_u8().unwrap_validated())
-                        // }
-                        ;
+                        //  mappings:
+                        //      n => number of bytes to copy
+                        //      s => source address to copy from
+                        //      d => destination address to copy to
+                        let (_dst, _src) = (
+                            wasm.read_u8().unwrap_validated() as usize,
+                            wasm.read_u8().unwrap_validated(),
+                        );
                         let mem = unsafe { store.mems.get_unchecked_mut(0) };
                         let mut n: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                         let mut s: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -2119,38 +2167,20 @@ pub(super) fn run<H: HookSet>(
                                 (d + n - 1, s + n - 1)
                             };
 
-                            {
+                            #[allow(unused_labels)]
+                            'I32_LOAD8_U: {
                                 let memarg = MemArg {
                                     align: 0,
                                     offset: 0,
                                 };
-                                let relative_address: u32 = temp_s as u32;
 
-                                let mem = store.mems.first().unwrap_validated(); // there is only one memory allowed as of now
-
-                                let data: u8 = {
-                                    // The spec states that this should be a 33 bit integer
-                                    // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
-                                    let _address = memarg.offset.checked_add(relative_address);
-                                    let data = memarg
-                                        .offset
-                                        .checked_add(relative_address)
-                                        .and_then(|address| {
-                                            let address = address as usize;
-                                            mem.data.get(address..(address + 1)).map(|slice| {
-                                                slice.try_into().expect("this to be exactly 1 byte")
-                                            })
-                                        })
-                                        .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
-
-                                    u8::from_le_bytes(data)
-                                };
-
-                                stack.push_value(Value::I32(data as u32));
+                                let relative_address = temp_s as u32;
+                                let data = i32_load8_u_fun(store, memarg, relative_address)?;
+                                stack.push_value(Value::I32(data));
                             }
-                            // i32_load8_u {offset 0, align 0};
 
-                            {
+                            #[allow(unused_labels)]
+                            'I32_STORE8: {
                                 let memarg = MemArg {
                                     align: 0,
                                     offset: 0,
@@ -2158,24 +2188,10 @@ pub(super) fn run<H: HookSet>(
 
                                 let data_to_store: i32 =
                                     stack.pop_value(ValType::NumType(NumType::I32)).into();
-                                let relative_address: u32 = temp_d as u32;
+                                let relative_address = temp_d as u32;
 
-                                let mem = store.mems.get_mut(0).unwrap_validated();
-
-                                // The spec states that this should be a 33 bit integer
-                                // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
-                                // ea => effective address
-                                let ea = memarg.offset.checked_add(relative_address);
-                                let memory_location = ea
-                                    .and_then(|address| {
-                                        let address = address as usize;
-                                        mem.data.get_mut(address..(address + 1))
-                                    })
-                                    .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
-
-                                memory_location.copy_from_slice(&data_to_store.to_le_bytes()[0..1]);
+                                i32_store8_fun(store, memarg, data_to_store, relative_address)?;
                             }
-                            // i32_store8 {offset 0, align 0};
 
                             if is_d_less_or_equal_to_s {
                                 d += 1;
@@ -2186,11 +2202,17 @@ pub(super) fn run<H: HookSet>(
 
                         trace!("Instruction: memory.copy");
                     }
+                    // See https://webassembly.github.io/bulk-memory-operations/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-fill
                     MEMORY_FILL => {
+                        //  mappings:
+                        //      n => number of bytes to update
+                        //      val => the value to set each byte to (must be < 256)
+                        //      d => the pointer to the region to update
                         let mem_idx = wasm.read_u8().unwrap_validated() as usize;
                         let mem = store.mems.get(mem_idx).unwrap_validated();
                         let mut n: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                         let val: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                        assert!(val >= 0 && val <= 255);
                         let mut d: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
                         if n < 0 || d < 0 {
@@ -2202,31 +2224,18 @@ pub(super) fn run<H: HookSet>(
                         }
 
                         while n > 0 {
-                            {
+                            #[allow(unused_labels)]
+                            'I32_STORE8: {
                                 let memarg = MemArg {
                                     align: 0,
                                     offset: 0,
                                 };
 
-                                let data_to_store: i32 = val;
-                                let relative_address: u32 = d as u32;
+                                let data_to_store = val;
+                                let relative_address = d as u32;
 
-                                let mem = store.mems.get_mut(0).unwrap_validated();
-
-                                // The spec states that this should be a 33 bit integer
-                                // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
-                                // ea => effective address
-                                let ea = memarg.offset.checked_add(relative_address);
-                                let memory_location = ea
-                                    .and_then(|address| {
-                                        let address = address as usize;
-                                        mem.data.get_mut(address..(address + 1))
-                                    })
-                                    .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
-
-                                memory_location.copy_from_slice(&data_to_store.to_le_bytes()[0..1]);
+                                i32_store8_fun(store, memarg, data_to_store, relative_address)?;
                             }
-                            // i32_store8 {offset 0, align 0};
 
                             d += 1;
                             // val = val;
