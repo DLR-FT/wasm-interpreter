@@ -5,6 +5,7 @@ use const_interpreter_loop::run_const;
 use function_ref::FunctionRef;
 use interpreter_loop::run;
 use locals::Locals;
+use store::DataInst;
 use value_stack::Stack;
 
 use crate::core::reader::types::data::DataSegment;
@@ -348,7 +349,7 @@ where
             .map(|ty| MemInst::new(*ty))
             .collect();
 
-        let data_sections: Vec<DataSegment> = validation_info
+        let data_sections: Vec<DataInst> = validation_info
             .data
             .iter()
             .map(|d| {
@@ -401,9 +402,8 @@ where
                     }
                     _ => {}
                 }
-                DataSegment {
-                    mode: d.mode.clone(),
-                    init: d.init.clone(),
+                DataInst {
+                    data: d.init.clone(),
                 }
             })
             .collect();

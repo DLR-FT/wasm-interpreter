@@ -17,12 +17,12 @@ use crate::{
     core::{
         indices::{DataIdx, FuncIdx, GlobalIdx, LocalIdx},
         reader::{
-            types::{data::DataSegment, memarg::MemArg, FuncType},
+            types::{memarg::MemArg, FuncType},
             WasmReadable, WasmReader,
         },
     },
     locals::Locals,
-    store::Store,
+    store::{DataInst, Store},
     value,
     value_stack::Stack,
     Limits, NumType, RuntimeError, ValType, Value,
@@ -2083,7 +2083,7 @@ pub(super) fn run<H: HookSet>(
                         //      s => starting pointer in the data segment
                         //      d => destination address to copy to
                         let data_idx = wasm.read_var_u32().unwrap_validated() as DataIdx;
-                        let data_init_len = store.data.get(data_idx).unwrap().init.len();
+                        let data_init_len = store.data.get(data_idx).unwrap().data.len();
                         let mem_idx = wasm.read_u8().unwrap_validated() as usize;
                         let mem = store.mems.get(mem_idx).unwrap_validated();
                         let mut n: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -2100,7 +2100,7 @@ pub(super) fn run<H: HookSet>(
                         }
 
                         while n != 0 {
-                            let b = store.data.get(data_idx).unwrap().init[s as usize];
+                            let b = store.data.get(data_idx).unwrap().data[s as usize];
                             #[allow(unused_labels)]
                             'I32_STORE8: {
                                 let memarg = MemArg {
@@ -2129,11 +2129,7 @@ pub(super) fn run<H: HookSet>(
 
                         // Also, we should set data to null here (empty), which we do using an empty init vec
                         let data_idx = wasm.read_var_u32().unwrap_validated() as DataIdx;
-                        let mode = store.data[data_idx].mode.clone();
-                        store.data[data_idx] = DataSegment {
-                            init: Vec::new(),
-                            mode,
-                        };
+                        store.data[data_idx] = DataInst { data: Vec::new() };
                     }
                     // See https://webassembly.github.io/bulk-memory-operations/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-copy
                     MEMORY_COPY => {
