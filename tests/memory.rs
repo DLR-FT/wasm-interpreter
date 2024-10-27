@@ -51,10 +51,7 @@ fn memory_min_greater_than_max() {
     w.iter().for_each(|wat| {
         let wasm_bytes = wat::parse_str(wat).unwrap();
         let validation_info = validate(&wasm_bytes);
-        assert_eq!(
-            validation_info.err().unwrap(),
-            Error::InvalidLimit
-        );
+        assert_eq!(validation_info.err().unwrap(), Error::InvalidLimit);
     });
 }
 

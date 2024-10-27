@@ -14,8 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 */
-use wasm::{validate, RuntimeError, RuntimeInstance};
 use wasm::Error as GeneralError;
+use wasm::{validate, RuntimeError, RuntimeInstance};
 
 macro_rules! get_func {
     ($instance:ident, $func_name:expr) => {
@@ -204,7 +204,7 @@ fn memory_init_test_6() {
       (data.drop 4)))
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
-    
+
     let res = validate(&wasm_bytes);
     assert!(res.err().unwrap() == GeneralError::DataSegmentNotFound(4));
 }

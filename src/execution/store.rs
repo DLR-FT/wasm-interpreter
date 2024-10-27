@@ -4,7 +4,6 @@ use core::iter;
 
 use crate::core::indices::TypeIdx;
 use crate::core::reader::span::Span;
-use crate::core::reader::types::data::DataSegment;
 use crate::core::reader::types::global::Global;
 use crate::core::reader::types::{MemType, TableType, ValType};
 use crate::execution::value::{Ref, Value};
@@ -69,5 +68,5 @@ pub struct GlobalInst {
 }
 
 pub struct DataInst {
-    pub data: Vec<u8>
+    pub data: Vec<u8>,
 }

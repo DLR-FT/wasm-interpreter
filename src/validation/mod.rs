@@ -1,7 +1,6 @@
 use alloc::vec::Vec;
 use read_constant_expression::read_constant_instructions;
 
-use crate::const_interpreter_loop::run_const;
 use crate::core::indices::{FuncIdx, TypeIdx};
 use crate::core::reader::section_header::{SectionHeader, SectionTy};
 use crate::core::reader::span::Span;
@@ -11,8 +10,7 @@ use crate::core::reader::types::global::Global;
 use crate::core::reader::types::import::Import;
 use crate::core::reader::types::{FuncType, MemType, TableType};
 use crate::core::reader::{WasmReadable, WasmReader};
-use crate::value_stack::Stack;
-use crate::{Error, Limits, Result, Value};
+use crate::{Error, Result};
 
 pub(crate) mod code;
 pub(crate) mod globals;
@@ -255,7 +253,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
 
     // https://webassembly.github.io/spec/core/binary/modules.html#data-count-section
     // As per the official documentation:
-    // 
+    //
     // The data count section is used to simplify single-pass validation. Since the data section occurs after the code section, the `memory.init` and `data.drop` and instructions would not be able to check whether the data segment index is valid until the data section is read. The data count section occurs before the code section, so a single-pass validator can use this count instead of deferring validation.
     let data_count: Option<u32> =
         handle_section(&mut wasm, &mut header, SectionTy::DataCount, |wasm, _| {

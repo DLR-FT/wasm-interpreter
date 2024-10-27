@@ -141,7 +141,7 @@ fn read_instructions(
                     // }
                 } else {
                     // This is the last end of a function
-                    
+
                     // The stack must only contain the function's return valtypes
                     let this_func_ty = &fn_types[type_idx_of_fn[this_function_idx]];
                     stack.assert_val_types(&this_func_ty.returns.valtypes)?;

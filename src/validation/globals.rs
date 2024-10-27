@@ -20,8 +20,11 @@ pub(super) fn validate_global_section(
 
     wasm.read_vec(|wasm| {
         let ty = GlobalType::read(wasm)?;
-        let init_expr =
-            read_constant_instructions(wasm, Some(ty.ty), Some(&[/* todo!(imported globals tpyes) */]))?;
+        let init_expr = read_constant_instructions(
+            wasm,
+            Some(ty.ty),
+            Some(&[/* todo!(imported globals tpyes) */]),
+        )?;
 
         Ok(Global { ty, init_expr })
     })

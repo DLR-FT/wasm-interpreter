@@ -130,7 +130,7 @@ pub fn read_constant_instructions(
             REF_NULL => {
                 todo!();
                 // RefType::read(wasm).unwrap();
-                
+
                 // stack.push_valtype(ValType::RefType(RefType::));
             }
             REF_FUNC => {

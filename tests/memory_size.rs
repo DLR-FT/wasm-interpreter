@@ -80,65 +80,65 @@ fn memory_size_2() {
 
 #[test_log::test]
 fn memory_size_3() {
-  let w = r#"
+    let w = r#"
 (module
   (memory 0 2)
   (func (export "size") (result i32) (memory.size))
   (func (export "grow") (param $sz i32) (drop (memory.grow (local.get $sz))))
 )
 "#;
-  let wasm_bytes = wat::parse_str(w).unwrap();
-  let validation_info = validate(&wasm_bytes).unwrap();
-  let mut i = RuntimeInstance::new(&validation_info).expect("instantiation failed");
+    let wasm_bytes = wat::parse_str(w).unwrap();
+    let validation_info = validate(&wasm_bytes).unwrap();
+    let mut i = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-  let size = get_func!(i, "size");
-  let grow = get_func!(i, "grow");
+    let size = get_func!(i, "size");
+    let grow = get_func!(i, "grow");
 
-  assert_result!(i, size, (), 0);
-  assert_result!(i, grow, 3, ());
-  assert_result!(i, size, (), 0);
-  assert_result!(i, grow, 1, ());
-  assert_result!(i, size, (), 1);
-  assert_result!(i, grow, 0, ());
-  assert_result!(i, size, (), 1);
-  assert_result!(i, grow, 4, ());
-  assert_result!(i, size, (), 1);
-  assert_result!(i, grow, 1, ());
-  assert_result!(i, size, (), 2);
+    assert_result!(i, size, (), 0);
+    assert_result!(i, grow, 3, ());
+    assert_result!(i, size, (), 0);
+    assert_result!(i, grow, 1, ());
+    assert_result!(i, size, (), 1);
+    assert_result!(i, grow, 0, ());
+    assert_result!(i, size, (), 1);
+    assert_result!(i, grow, 4, ());
+    assert_result!(i, size, (), 1);
+    assert_result!(i, grow, 1, ());
+    assert_result!(i, size, (), 2);
 }
 
 #[test_log::test]
 fn memory_size_4() {
-  let w = r#"
+    let w = r#"
 (module
   (memory 3 8)
   (func (export "size") (result i32) (memory.size))
   (func (export "grow") (param $sz i32) (drop (memory.grow (local.get $sz))))
 )
 "#;
-  let wasm_bytes = wat::parse_str(w).unwrap();
-  let validation_info = validate(&wasm_bytes).unwrap();
-  let mut i = RuntimeInstance::new(&validation_info).expect("instantiation failed");
+    let wasm_bytes = wat::parse_str(w).unwrap();
+    let validation_info = validate(&wasm_bytes).unwrap();
+    let mut i = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-  let size = get_func!(i, "size");
-  let grow = get_func!(i, "grow");
+    let size = get_func!(i, "size");
+    let grow = get_func!(i, "grow");
 
-  assert_result!(i, size, (), 3);
-  assert_result!(i, grow, 1, ());
-  assert_result!(i, size, (), 4);
-  assert_result!(i, grow, 3, ());
-  assert_result!(i, size, (), 7);
-  assert_result!(i, grow, 0, ());
-  assert_result!(i, size, (), 7);
-  assert_result!(i, grow, 2, ());
-  assert_result!(i, size, (), 7);
-  assert_result!(i, grow, 1, ());
-  assert_result!(i, size, (), 8);
+    assert_result!(i, size, (), 3);
+    assert_result!(i, grow, 1, ());
+    assert_result!(i, size, (), 4);
+    assert_result!(i, grow, 3, ());
+    assert_result!(i, size, (), 7);
+    assert_result!(i, grow, 0, ());
+    assert_result!(i, size, (), 7);
+    assert_result!(i, grow, 2, ());
+    assert_result!(i, size, (), 7);
+    assert_result!(i, grow, 1, ());
+    assert_result!(i, size, (), 8);
 }
 
 #[test_log::test]
 fn memory_size_5() {
-  let w = r#"
+    let w = r#"
   (module
     (memory 1)
     (func $type-result-i32-vs-empty
@@ -149,13 +149,12 @@ fn memory_size_5() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     let mut i = 0;
     for byte in wasm_bytes.iter() {
-      print!("{:#04X} ", byte);
-      i += 1;
-      if i % 8 == 0 {
-        i = 0;
-        println!("");
-      }
-      
+        print!("{:#04X} ", byte);
+        i += 1;
+        if i % 8 == 0 {
+            i = 0;
+            println!("");
+        }
     }
     let validation_info = validate(&wasm_bytes);
     assert!(validation_info.is_err());
@@ -165,7 +164,7 @@ fn memory_size_5() {
 
 #[test_log::test]
 fn memory_size_6() {
-  let w = r#"
+    let w = r#"
   (module
     (memory 1)
     (func $type-result-i32-vs-f32 (result f32)
@@ -176,17 +175,15 @@ fn memory_size_6() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     let mut i = 0;
     for byte in wasm_bytes.iter() {
-      print!("{:#04X} ", byte);
-      i += 1;
-      if i % 8 == 0 {
-        i = 0;
-        println!("");
-      }
-      
+        print!("{:#04X} ", byte);
+        i += 1;
+        if i % 8 == 0 {
+            i = 0;
+            println!("");
+        }
     }
     let validation_info = validate(&wasm_bytes);
     assert!(validation_info.is_err());
     let validation_info_err = validation_info.err().unwrap();
     assert!(validation_info_err == wasm::Error::EndInvalidValueStack);
-  
 }

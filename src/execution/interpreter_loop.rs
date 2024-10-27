@@ -2208,7 +2208,7 @@ pub(super) fn run<H: HookSet>(
                         let mem = store.mems.get(mem_idx).unwrap_validated();
                         let mut n: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                         let val: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                        assert!(val >= 0 && val <= 255);
+                        assert!((0..=255).contains(&val));
                         let mut d: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
                         if n < 0 || d < 0 {
