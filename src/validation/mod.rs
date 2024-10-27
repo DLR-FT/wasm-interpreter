@@ -294,49 +294,10 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
                     // active { memory 0, offset e }
                     trace!("Data section: active");
                     let offset = { read_constant_instructions(wasm, None, None).unwrap() };
-                    trace!("{:?}", offset);
-
-                    let value = {
-                        let mut wasm = WasmReader::new(wasm.full_wasm_binary);
-                        // The place we are moving the start to should, by all means, be inside the wasm bytecode.
-                        wasm.move_start_to(offset)?;
-                        let mut stack = Stack::new();
-                        run_const(wasm, &mut stack, ());
-                        let value = stack.peek_unknown_value();
-                        if value.is_none() {
-                            panic!("No value on the stack for data segment offset");
-                        }
-                        value.unwrap()
-                    };
-
-                    let val: u32 = match value {
-                        Value::I32(val) => val,
-                        Value::I64(val) => {
-                            if val > u32::MAX as u64 {
-                                panic!("i64 value for data segment offset is out of reach")
-                            }
-                            val as u32
-                        }
-                        // TODO: implement all value types
-                        _ => unimplemented!(),
-                    };
 
                     let byte_vec = wasm.read_vec(|el| Ok(el.read_u8().unwrap())).unwrap();
 
-                    let memory = memories.first().unwrap();
-
-                    let max_bytes = if memory.limits.max.is_some()
-                        && memory.limits.max.unwrap() != Limits::MAX_MEM_PAGES
-                    {
-                        memory.limits.max.unwrap() * Limits::MEM_PAGE_SIZE
-                    } else {
-                        Limits::MAX_MEM_BYTES
-                    };
-
-                    if byte_vec.len() + val as usize > max_bytes as usize {
-                        panic!("Out of bounds");
-                    }
-
+                    // WARN: we currently don't take into consideration how we act when we are dealing with globals here
                     DataSegment {
                         mode: DataMode::Active(DataModeActive {
                             memory_idx: 0,

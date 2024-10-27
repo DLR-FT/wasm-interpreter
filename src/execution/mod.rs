@@ -352,37 +352,54 @@ where
             .data
             .iter()
             .map(|d| {
-                if let crate::core::reader::types::data::DataMode::Active(active_data) =
-                    d.mode.clone()
-                {
-                    let mem_idx = active_data.memory_idx as usize;
-                    if mem_idx != 0 {
-                        panic!("Active data has memory_idx different than 0");
-                    }
-                    assert!(memory_instances.len() > mem_idx);
-                    // let wasm_reader = WasmReader::new(validation_info.wasm);
+                use crate::core::reader::types::data::DataMode;
+                match d.mode.clone() {
+                    DataMode::Active(active_data) => {
+                        let mem_idx = active_data.memory_idx as usize;
+                        if mem_idx != 0 {
+                            panic!("Active data has memory_idx different than 0");
+                        }
+                        assert!(memory_instances.len() > mem_idx);
 
-                    let mut wasm_reader = WasmReader::new(validation_info.wasm);
-                    wasm_reader.skip(active_data.offset.from).unwrap();
-                    let mut stack = Stack::new();
-                    run_const(wasm_reader, &mut stack, ());
-                    // TODO: this shouldn't be a simple value, should it? I mean it can't be, but it can also be any type of ValType
-                    // TODO: also, do we need to forcefully make it i32?
-                    let offset: i32 = stack
-                        .pop_value(ValType::NumType(crate::NumType::I32))
-                        .into();
-                    let offset = offset as usize;
+                        let value = {
+                            let mut wasm = WasmReader::new(validation_info.wasm);
+                            wasm.move_start_to(active_data.offset).unwrap_validated();
+                            let mut stack = Stack::new();
+                            run_const(wasm, &mut stack, ());
+                            let value = stack.peek_unknown_value();
+                            if value.is_none() {
+                                panic!("No value on the stack for data segment offset");
+                            }
+                            value.unwrap()
+                        };
 
-                    let mem_inst = memory_instances.get_mut(mem_idx).unwrap();
-                    let len = mem_inst.data.len();
-                    if offset + d.init.len() > len {
-                        panic!("Active data writing in memory, out of bounds");
+                        // TODO: this shouldn't be a simple value, should it? I mean it can't be, but it can also be any type of ValType
+                        // TODO: also, do we need to forcefully make it i32?
+                        let offset: u32 = match value {
+                            Value::I32(val) => val,
+                            Value::I64(val) => {
+                                if val > u32::MAX as u64 {
+                                    panic!("i64 value for data segment offset is out of reach")
+                                }
+                                val as u32
+                            }
+                            // TODO: implement all value types
+                            _ => unimplemented!(),
+                        };
+
+                        let mem_inst = memory_instances.get_mut(mem_idx).unwrap();
+
+                        let len = mem_inst.data.len();
+                        if offset as usize + d.init.len() > len {
+                            panic!("Active data writing in memory, out of bounds");
+                        }
+                        let data = mem_inst
+                            .data
+                            .get_mut(offset as usize..offset as usize + d.init.len())
+                            .unwrap();
+                        data.copy_from_slice(&d.init);
                     }
-                    let data = mem_inst
-                        .data
-                        .get_mut(offset..offset + d.init.len())
-                        .unwrap();
-                    data.copy_from_slice(&d.init);
+                    _ => {}
                 }
                 DataSegment {
                     mode: d.mode.clone(),
