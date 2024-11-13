@@ -24,4 +24,5 @@
     };
   };
   programs.rustfmt.enable = true;
+  programs.typstfmt.enable = true;
 }
