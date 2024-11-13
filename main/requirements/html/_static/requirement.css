@@ -244,21 +244,18 @@ sdoc-requirement-field-label {
 /* section */
 
 sdoc-section,
+sdoc-section-text,
 sdoc-section-title {
   display: block;
   margin: 0;
 }
 
+sdoc-section-text {
+  margin-top: var(--base-padding);
+}
+
 sdoc-section-title {
   font-weight: 700;
-}
-
-sdoc-section-title {
-  margin-bottom: var(--base-padding);
-}
-
-sdoc-section-title:last-child {
-  margin-bottom: 0;
 }
 
 sdoc-section-title * {
@@ -270,22 +267,6 @@ sdoc-section-title * {
      and generates blank pages:
   */
   /* display: inline; */
-}
-
-/* TEXT node */
-
-sdoc-text,
-sdoc-section-text {
-  display: block;
-  margin: 0;
-}
-
-sdoc-section-text {
-  margin-top: var(--base-padding);
-}
-
-sdoc-section-text:first-child {
-  margin-top: 0;
 }
 
 /* meta */
@@ -304,8 +285,7 @@ sdoc-meta {
 
   font-size: var(--font-size-sm);
   line-height: 24px; /* to keep the copy button from expanding out of the content line */
-  /* margin: var(--base-padding) 0; */
-  margin: 0;
+  margin: var(--base-padding) 0;
   padding: calc(var(--requirement-base-rhythm)*0.5);
   row-gap: 2px;
 
@@ -342,19 +322,13 @@ sdoc-meta-section {
 
 /* PDF */
 /* There is no sdoc-node wrapper, so such neighbours and nesting is possible. */
-sdoc-text + sdoc-text,
-sdoc-text + sdoc-section,
-sdoc-text + sdoc-requirement,
-sdoc-text + sdoc-section-title,
-sdoc-section + sdoc-text,
 sdoc-section + sdoc-section,
 sdoc-section + sdoc-requirement,
 sdoc-section + sdoc-section sdoc-section-title,
-sdoc-requirement + sdoc-text,
 sdoc-requirement + sdoc-requirement,
 sdoc-requirement + sdoc-section,
 sdoc-requirement + sdoc-section sdoc-section-title {
-  margin-top: calc(var(--base-rhythm)*4);
+  margin-top: calc(var(--base-rhythm)*3);
 }
 
 /* requirement type tag */
