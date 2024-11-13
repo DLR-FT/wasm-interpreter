@@ -1,4 +1,4 @@
-{ lib, stdenvNoCC, python3Packages, strictdoc, wasm-interpreter }:
+{ lib, stdenvNoCC, python3Packages, strictdoc, wasm-interpreter, whitepaper }:
 
 let
   evidenceRoot = lib.strings.escapeShellArg wasm-interpreter;
@@ -22,6 +22,7 @@ stdenvNoCC.mkDerivation {
     cp --recursive -- ${evidenceRoot}/bench-html bench
     cp --recursive -- ${evidenceRoot}/lcov-html coverage
     cp --recursive -- ${evidenceRoot}/share/doc/ rustdoc
+    cp --dereference -- ${whitepaper} whitepaper.pdf
 
     mkdir test
     junit2html ${evidenceRoot}/junit.xml test/index.html

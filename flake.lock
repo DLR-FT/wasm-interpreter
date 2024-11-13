@@ -76,6 +76,22 @@
         "type": "github"
       }
     },
+    "nixpkgs-unstable": {
+      "locked": {
+        "lastModified": 1731139594,
+        "narHash": "sha256-IigrKK3vYRpUu+HEjPL/phrfh7Ox881er1UEsZvw9Q4=",
+        "owner": "nixos",
+        "repo": "nixpkgs",
+        "rev": "76612b17c0ce71689921ca12d9ffdc9c23ce40b2",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nixos",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
     "nixpkgs_2": {
       "locked": {
         "lastModified": 1731239293,
@@ -98,7 +114,10 @@
         "fenix": "fenix",
         "naersk": "naersk",
         "nixpkgs": "nixpkgs_2",
+        "nixpkgs-unstable": "nixpkgs-unstable",
         "treefmt-nix": "treefmt-nix",
+        "typix": "typix",
+        "typst-packages": "typst-packages",
         "utils": "utils"
       }
     },
@@ -151,6 +170,42 @@
       "original": {
         "owner": "numtide",
         "repo": "treefmt-nix",
+        "type": "github"
+      }
+    },
+    "typix": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs-unstable"
+        ]
+      },
+      "locked": {
+        "lastModified": 1731352170,
+        "narHash": "sha256-2JOC9lrFa0NfP9kfaT3dnm8WG5yAeDPONHJeMYl+O60=",
+        "owner": "loqusion",
+        "repo": "typix",
+        "rev": "7365cb7e6665350cb7b013abba1cbb70fcf07c53",
+        "type": "github"
+      },
+      "original": {
+        "owner": "loqusion",
+        "repo": "typix",
+        "type": "github"
+      }
+    },
+    "typst-packages": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1731485222,
+        "narHash": "sha256-uhXDznbGLS4s6d2S8OHUCzpgmJQ1H2HCJug7kRIY0Jw=",
+        "owner": "typst",
+        "repo": "packages",
+        "rev": "4979ee3923fb0143e5d076854cb0d94bbf367a2c",
+        "type": "github"
+      },
+      "original": {
+        "owner": "typst",
+        "repo": "packages",
         "type": "github"
       }
     },
