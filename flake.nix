@@ -2,7 +2,7 @@
   description = "a minimal WASM interpreter";
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-24.05";
     utils.url = "git+https://github.com/numtide/flake-utils.git";
     devshell.url = "github:numtide/devshell";
     fenix = {
@@ -31,7 +31,7 @@
         treefmtEval = treefmt-nix.lib.evalModule pkgs ./treefmt.nix;
 
         # rust target name of the `system`
-        rust-target = pkgs.rust.toRustTarget pkgs.pkgsStatic.targetPlatform;
+        rust-target = pkgs.pkgsStatic.targetPlatform.rust.rustcTarget;
 
         # Rust distribution for our hostSystem
         fenix = inputs.fenix.packages.${system};
