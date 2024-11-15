@@ -17,13 +17,14 @@ use crate::{
     core::{
         indices::{FuncIdx, GlobalIdx, LocalIdx},
         reader::{
-            types::{memarg::MemArg, FuncType},
+            types::{memarg::MemArg, BlockType, FuncType},
             WasmReadable, WasmReader,
         },
+        sidetable::{self, Sidetable, SidetableEntry},
     },
     locals::Locals,
     store::Store,
-    value,
+    unreachable_validated, value,
     value_stack::Stack,
     NumType, RuntimeError, ValType, Value,
 };
@@ -105,18 +106,70 @@ pub(super) fn run<H: HookSet>(
                 let params = stack.pop_tail_iter(func_to_call_ty.params.valtypes.len());
                 let remaining_locals = func_to_call_inst.locals.iter().cloned();
 
+                let sidetable = func_to_call_inst.sidetable.clone();
+
                 trace!("Instruction: call [{func_to_call_idx:?}]");
                 let locals = Locals::new(params, remaining_locals);
-                stack.push_stackframe(func_to_call_idx, func_to_call_ty, locals, wasm.pc);
 
+                stack.push_stackframe(func_to_call_idx, func_to_call_ty, locals, wasm.pc, sidetable, 0);
+                
                 wasm.move_start_to(func_to_call_inst.code_expr)
                     .unwrap_validated();
             }
+            BLOCK => {
+                let _block_type = BlockType::read_unvalidated(&mut wasm);
+                trace!("reached block, ignoring because of sidetable");
+
+                // Nothing else to do. The sidetable is responsible for control flow.
+            }
+            IF => {
+                todo!("execute if instruction, low priority as if can be simulated with br_if and blocks")
+            }
+            ELSE => {
+                let sidetable = stack.current_stackframe().sidetable.clone();
+                let mut sidetable_pointer = stack.current_stackframe().sidetable_pointer;
+                do_sidetable_control_transfer(&sidetable, &mut sidetable_pointer, &mut wasm, stack);
+                stack.current_stackframe_mut().sidetable_pointer = sidetable_pointer;
+            }
+            BR => {
+                let _target_label = wasm.read_var_u32().unwrap_validated();
+
+                let sidetable = stack.current_stackframe().sidetable.clone();
+                let mut sidetable_pointer = stack.current_stackframe().sidetable_pointer;
+                do_sidetable_control_transfer(&sidetable, &mut sidetable_pointer, &mut wasm, stack);
+                stack.current_stackframe_mut().sidetable_pointer = sidetable_pointer;
+            }
+            BR_IF => {
+                let _target_label = wasm.read_var_u32().unwrap_validated();
+
+                trace!("Reached br_if");
+                let condition: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                trace!("br_if condition is {condition}");
+
+                if condition != 0 {
+                    let sidetable = stack.current_stackframe().sidetable.clone();
+                    let mut sidetable_pointer = stack.current_stackframe().sidetable_pointer;
+                    do_sidetable_control_transfer(&sidetable, &mut sidetable_pointer, &mut wasm, stack);
+                    stack.current_stackframe_mut().sidetable_pointer = sidetable_pointer;
+                } else {
+                    stack.current_stackframe_mut().sidetable_pointer += 1;
+                }
+            }
+            BR_TABLE => {
+                todo!("execute BR_TABLE, Titzer stores multiple entries in the sidetable here, one for each label. See https://arxiv.org/pdf/2205.01183#lstlisting.1");
+            }
             LOCAL_GET => {
+                trace!("executing local.get");
                 stack.get_local(wasm.read_var_u32().unwrap_validated() as LocalIdx);
             }
-            LOCAL_SET => stack.set_local(wasm.read_var_u32().unwrap_validated() as LocalIdx),
-            LOCAL_TEE => stack.tee_local(wasm.read_var_u32().unwrap_validated() as LocalIdx),
+            LOCAL_SET => {
+                trace!("executing local.set");
+                stack.set_local(wasm.read_var_u32().unwrap_validated() as LocalIdx);
+            }
+            LOCAL_TEE => {
+                trace!("executing local.tee");
+                stack.tee_local(wasm.read_var_u32().unwrap_validated() as LocalIdx);
+            }
             GLOBAL_GET => {
                 let global_idx = wasm.read_var_u32().unwrap_validated() as GlobalIdx;
                 let global = store.globals.get(global_idx).unwrap_validated();
@@ -128,6 +181,9 @@ pub(super) fn run<H: HookSet>(
                 let global = store.globals.get_mut(global_idx).unwrap_validated();
 
                 global.value = stack.pop_value(global.global.ty.ty)
+            }
+            DROP => {
+                stack.pop_tail_iter(1); // pop_value takes a type. this works for now
             }
             I32_LOAD => {
                 let memarg = MemArg::read_unvalidated(&mut wasm);
@@ -1409,4 +1465,30 @@ pub(super) fn run<H: HookSet>(
         }
     }
     Ok(())
+}
+
+fn do_sidetable_control_transfer(
+    sidetable: &Sidetable,
+    sidetable_pointer: &mut usize,
+    wasm: &mut WasmReader,
+    stack: &mut Stack,
+) {
+    trace!("Fetching sidetable entry at {}", sidetable_pointer);
+    let entry = *sidetable
+        .get(*sidetable_pointer)
+        .expect("sidetable entry to exist");
+
+    wasm.skip(
+        entry
+            .delta_pc
+            .try_into()
+            .expect("delta_pc to not be negative for branches"),
+    )
+    .unwrap_validated();
+
+    *sidetable_pointer +=
+        usize::try_from(entry.delta_stp).expect("delta_stp to be negative for branches");
+    usize::try_from(entry.delta_stp).expect("delta_stp to be negative for branches");
+
+    stack.unwind(entry.val_count, entry.pop_count);
 }

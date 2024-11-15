@@ -200,6 +200,86 @@ impl WasmReadable for FuncType {
     }
 }
 
+/// <https://webassembly.github.io/spec/core/binary/instructions.html#binary-blocktype>
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum BlockType {
+    Empty,
+    Returns(ValType),
+    Type(u32),
+}
+
+impl WasmReadable for BlockType {
+    fn read(wasm: &mut WasmReader) -> Result<Self> {
+        // FIXME: Use transactions for ValType::read
+        if wasm.peek_u8()? as i8 == 0x40 {
+            // Empty block type
+            let _ = wasm.read_u8().expect("read to succeed, as we just peeked");
+            Ok(BlockType::Empty)
+        } else if let Ok(val_ty) = ValType::read(wasm) {
+            // No parameters and given valtype as the result
+            Ok(BlockType::Returns(val_ty))
+        } else {
+            // An index to a function type
+            wasm.read_var_i33()
+                .and_then(|idx| idx.try_into().map_err(|_| Error::InvalidFuncTypeIdx))
+                .map(BlockType::Type)
+        }
+    }
+
+    fn read_unvalidated(wasm: &mut WasmReader) -> Self {
+        if wasm.peek_u8().unwrap_validated() as i8 == 0x40 {
+            // Empty block type
+            let _ = wasm.read_u8();
+
+            BlockType::Empty
+        } else if let Ok(val_ty) = ValType::read(wasm) {
+            // No parameters and given valtype as the result
+            BlockType::Returns(val_ty)
+        } else {
+            // An index to a function type
+            BlockType::Type(
+                wasm.read_var_i33()
+                    .unwrap_validated()
+                    .try_into()
+                    .unwrap_validated(),
+            )
+        }
+    }
+}
+
+impl BlockType {
+    pub fn as_func_type(&self, func_types: &[FuncType]) -> Result<FuncType> {
+        match self {
+            BlockType::Empty => Ok(FuncType {
+                params: ResultType {
+                    valtypes: Vec::new(),
+                },
+                returns: ResultType {
+                    valtypes: Vec::new(),
+                },
+            }),
+            BlockType::Returns(val_type) => Ok(FuncType {
+                params: ResultType {
+                    valtypes: Vec::new(),
+                },
+                returns: ResultType {
+                    valtypes: [val_type.clone()].into(),
+                },
+            }),
+            BlockType::Type(type_idx) => {
+                let type_idx: usize = (*type_idx)
+                    .try_into()
+                    .map_err(|_| Error::InvalidFuncTypeIdx)?;
+
+                func_types
+                    .get(type_idx)
+                    .cloned()
+                    .ok_or_else(|| Error::InvalidFuncTypeIdx)
+            }
+        }
+    }
+}
+
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub struct Limits {
     pub min: u32,

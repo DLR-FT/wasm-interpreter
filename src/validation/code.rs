@@ -1,14 +1,15 @@
 use alloc::vec::Vec;
 use core::iter;
 
-use crate::core::indices::{FuncIdx, GlobalIdx, LocalIdx};
+use crate::core::indices::{FuncIdx, GlobalIdx, LabelIdx, LocalIdx};
 use crate::core::reader::section_header::{SectionHeader, SectionTy};
 use crate::core::reader::span::Span;
 use crate::core::reader::types::global::Global;
 use crate::core::reader::types::memarg::MemArg;
-use crate::core::reader::types::{FuncType, NumType, ValType};
+use crate::core::reader::types::{BlockType, FuncType, NumType, ResultType, ValType};
 use crate::core::reader::{WasmReadable, WasmReader};
-use crate::validation_stack::ValidationStack;
+use crate::core::sidetable::{self, IncompleteSidetableEntry, Sidetable, SidetableBuilder};
+use crate::validation_stack::{LabelInfo, ValidationStack};
 use crate::{Error, Result};
 
 pub fn validate_code_section(
@@ -17,7 +18,7 @@ pub fn validate_code_section(
     fn_types: &[FuncType],
     type_idx_of_fn: &[usize],
     globals: &[Global],
-) -> Result<Vec<Span>> {
+) -> Result<Vec<(Span, Sidetable)>> {
     assert_eq!(section_header.ty, SectionTy::Code);
 
     let code_block_spans = wasm.read_vec_enumerated(|wasm, idx| {
@@ -38,6 +39,8 @@ pub fn validate_code_section(
 
         let mut stack = ValidationStack::new();
 
+        let mut sidetable_builder = SidetableBuilder::new();
+
         read_instructions(
             idx,
             wasm,
@@ -46,7 +49,12 @@ pub fn validate_code_section(
             globals,
             fn_types,
             type_idx_of_fn,
+            &mut sidetable_builder,
         )?;
+
+        let sidetable = sidetable_builder.into_sidetable();
+
+        debug!("{:?}", &sidetable);
 
         // Check if there were unread trailing instructions after the last END
         if previous_pc + func_size as usize != wasm.pc {
@@ -55,7 +63,7 @@ pub fn validate_code_section(
             )
         }
 
-        Ok(func_block)
+        Ok((func_block, sidetable))
     })?;
 
     trace!(
@@ -91,6 +99,7 @@ fn read_instructions(
     globals: &[Global],
     fn_types: &[FuncType],
     type_idx_of_fn: &[usize],
+    sidetable_builder: &mut SidetableBuilder,
 ) -> Result<()> {
     // TODO we must terminate only if both we saw the final `end` and when we consumed all of the code span
     loop {
@@ -102,42 +111,197 @@ fn read_instructions(
 
         use crate::core::reader::types::opcode::*;
         match first_instr_byte {
-            // nop
+            // unreachable: [t1*] -> [t2*]
+            UNREACHABLE => {
+                stack.make_unspecified();
+            }
+            // nop: [] -> []
             NOP => {}
+            // block: [] -> [t*2]
+            BLOCK => {
+                let func_type: FuncType = BlockType::read(wasm)?.as_func_type(&fn_types)?;
+
+                stack.push_label(LabelInfo::Block {
+                    func_type,
+                    sidetable_branch_indices: Vec::new(),
+                    num_values_on_stack_before: stack.len_without_labels(),
+                });
+            }
+            BR => {
+                let label_idx = wasm.read_var_u32()? as LabelIdx;
+
+                let label_info: &LabelInfo = stack
+                    .find_nth_label_from_top(label_idx)
+                    .ok_or(Error::InvalidLabelIdx)?;
+
+                match label_info {
+                    LabelInfo::Block {
+                        func_type,
+                        num_values_on_stack_before,
+                        ..
+                    } => {
+                        let block_return_types = &func_type.returns.valtypes;
+                        // todo!("do branches require the top of the stack or the entire stack to be correct?");
+                        stack.assert_val_types_on_top(block_return_types)?;
+
+                        let Some(stack_len) = stack.len_without_labels() else {
+                            // The stack contains an `Unspecified` element, so this instruction is practically unreachable.
+                            // It does not matter if the Unspecified was before this Block/If/Loop started or after.
+                            //
+                            // We don't need to generate a sidetable entry and the validation of the top-most stack values has already be done, so we can just continue with the next instruction.
+                            continue;
+                        };
+
+                        let num_values_on_stack_before = num_values_on_stack_before.expect("this to always be Some. We already checked through `stack.len_without_label` whether the stack contains Unspecified. If so, we ignored this instruction. Because we are in a block right now, the stack values below the block label cannot have changed, so any Unspecified entries below the block label are impossible.");
+
+                        let val_count = block_return_types.len();
+                        let pop_count = stack_len - num_values_on_stack_before - val_count;
+
+                        error!("val: {}, pop: {}", val_count, pop_count);
+
+                        // FIXME Now we actually need to modifiy the label info, so we have to borrow it again
+                        let Some(LabelInfo::Block {
+                            sidetable_branch_indices,
+                            ..
+                        }) = stack.find_nth_label_from_top_mut(label_idx)
+                        else {
+                            unreachable!("We just found this block")
+                        };
+
+                        sidetable_builder.0.push(IncompleteSidetableEntry {
+                            ip: wasm.pc, // TODO maybe - 1?
+                            delta_ip: None,
+                            delta_stp: None,
+                            val_count,
+                            pop_count,
+                        });
+
+                        // Store index of new sidetable entry so it can be completed, when the end of this block is reached.
+                        sidetable_branch_indices.push(sidetable_builder.0.len() - 1);
+                    }
+                    _ => todo!("handle branches for loops and ifs/elses"),
+                }
+            }
+            BR_IF => {
+                let label_idx = wasm.read_var_u32()? as LabelIdx;
+
+                // condition for if
+                stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                trace!("read br_if condition");
+
+                let label_info: &LabelInfo = stack
+                    .find_nth_label_from_top(label_idx)
+                    .ok_or(Error::InvalidLabelIdx)?;
+
+                match label_info {
+                    LabelInfo::Block {
+                        func_type,
+                        num_values_on_stack_before,
+                        ..
+                    } => {
+                        let block_return_types = &func_type.returns.valtypes;
+                        // todo!("do branches require the top of the stack or the entire stack to be correct?");
+                        stack.assert_val_types_on_top(block_return_types)?;
+
+                        let Some(stack_len) = stack.len_without_labels() else {
+                            // The stack contains an `Unspecified` element, so this instruction is practically unreachable.
+                            // It does not matter if the Unspecified was before this Block/If/Loop started or after.
+                            //
+                            // We don't need to generate a sidetable entry and the validation of the top-most stack values has already be done, so we can just continue with the next instruction.
+                            continue;
+                        };
+
+                        let num_values_on_stack_before = num_values_on_stack_before.expect("this to always be Some. We already checked through `stack.len_without_label` whether the stack contains Unspecified. If so, we ignored this instruction. Because we are in a block right now, the stack values below the block label cannot have changed, so any Unspecified entries below the block label are impossible.");
+
+                        let val_count = block_return_types.len();
+                        let pop_count = stack_len - num_values_on_stack_before - val_count;
+
+                        error!("val: {}, pop: {}", val_count, pop_count);
+
+                        // FIXME Now we actually need to modifiy the label info, so we have to borrow it again
+                        let Some(LabelInfo::Block {
+                            sidetable_branch_indices,
+                            ..
+                        }) = stack.find_nth_label_from_top_mut(label_idx)
+                        else {
+                            unreachable!("We just found this block")
+                        };
+
+                        sidetable_builder.0.push(IncompleteSidetableEntry {
+                            ip: wasm.pc, // TODO maybe - 1?
+                            delta_ip: None,
+                            delta_stp: None,
+                            val_count,
+                            pop_count,
+                        });
+
+                        // Store index of new sidetable entry so it can be completed, when the end of this block is reached.
+                        sidetable_branch_indices.push(sidetable_builder.0.len() - 1);
+                    }
+                    _ => todo!("handle branches for loops and ifs/elses"),
+                }
+            }
+            LOOP | IF => {
+                let _block_type: FuncType = BlockType::read(wasm)?.as_func_type(&fn_types)?;
+
+                todo!("handle loop and if instructions")
+                // todo!(
+                // "{}, {}",
+                // "add incomplete entry to sidetable",
+                // "verify from now on that only the top-most block_ty.params are accessed"
+                // );
+            }
             // end
             END => {
-                // TODO check if there are labels on the stack.
-                // If there are none (i.e. this is the implicit end of the function and not a jump to the end of a function), the stack must only contain the valid return values, no other junk.
-                //
-                // Else, anything may remain on the stack, as long as the top of the stack matche the current blocks return value.
+                // This is the END of a block, loop or if
+                match stack.find_nth_label_from_top(0) {
+                    Some(LabelInfo::Block { func_type, .. }) => {
+                        // Before we can actually pop the label and valtypes from the stack, we need to validate the valtypes on top of the stack
+                        stack.assert_val_types_on_top(&func_type.returns.valtypes)?;
 
-                if stack.has_remaining_label() {
-                    // This is the END of a block.
+                        // FIXME It's not very pretty to shadow `func_type` with a newer variable that should be exactly the same
+                        // Clear the stack until the next label
+                        let LabelInfo::Block {
+                            func_type,
+                            sidetable_branch_indices,
+                            num_values_on_stack_before,
+                        } = stack
+                            .pop_label_and_above()
+                            .expect("this to find find the topmost label, which we just found")
+                        else {
+                            unreachable!(
+                                "We just checked that the topmost label has to be a Block"
+                            );
+                        };
 
-                    // We check the valtypes on top of the stack
+                        // And push the blocks return types onto the stack again
+                        for valtype in &func_type.returns.valtypes {
+                            stack.push_valtype(valtype.clone());
+                        }
 
-                    // TODO remove the ugly hack for the todo!(..)!
-                    #[allow(clippy::diverging_sub_expression)]
-                    {
-                        let _block_return_ty: &[ValType] =
-                            todo!("get return types for current block");
+                        let sidetable_len = sidetable_builder.0.len();
+
+                        for idx in sidetable_branch_indices {
+                            let incomplete_entry = sidetable_builder
+                                .0
+                                .get_mut(idx)
+                                .expect("index into sidetable to always be valid");
+
+                            incomplete_entry.delta_ip =
+                                Some(wasm.pc as isize - incomplete_entry.ip as isize);
+                            incomplete_entry.delta_stp =
+                                Some(sidetable_len as isize - idx as isize);
+                        }
                     }
-                    // stack.assert_val_types_on_top(block_return_ty)?;
+                    Some(_) => todo!("handle end for loops and ifs/elses"),
+                    None => {
+                        // This is the last end of a function
 
-                    // Clear the stack until the next label
-                    // stack.clear_until_next_label();
-
-                    // And push the blocks return types onto the stack again
-                    // for valtype in block_return_ty {
-                    // stack.push_valtype(*valtype);
-                    // }
-                } else {
-                    // This is the last end of a function
-
-                    // The stack must only contain the function's return valtypes
-                    let this_func_ty = &fn_types[type_idx_of_fn[this_function_idx]];
-                    stack.assert_val_types(&this_func_ty.returns.valtypes)?;
-                    return Ok(());
+                        // The stack must only contain the function's return valtypes
+                        let this_func_ty = &fn_types[type_idx_of_fn[this_function_idx]];
+                        stack.assert_val_types(&this_func_ty.returns.valtypes)?;
+                        return Ok(());
+                    }
                 }
             }
             RETURN => {
@@ -175,10 +339,12 @@ fn read_instructions(
                 for typ in func_ty.returns.valtypes.iter() {
                     stack.push_valtype(*typ);
                 }
-            }
-            // unreachable: [t1*] -> [t2*]
-            UNREACHABLE => {
-                stack.make_unspecified();
+                // if let Some(popped_control_entry) = control_stack.pop() {
+                //     todo!("Complete sidetable entries that jumped to this entry's label");
+                // } else {
+                //     return Ok(());
+                // }
+                // todo!("check if there is a pending sidetable entry to be completed")
             }
             // local.get: [] -> [t]
             LOCAL_GET => {
@@ -192,11 +358,12 @@ fn read_instructions(
                 let local_ty = locals.get(local_idx).ok_or(Error::InvalidLocalIdx)?;
                 stack.assert_pop_val_type(*local_ty)?;
             }
-            // local.set [t] -> [t]
+            // local.tee [t] -> [t]
             LOCAL_TEE => {
                 let local_idx = wasm.read_var_u32()? as LocalIdx;
                 let local_ty = locals.get(local_idx).ok_or(Error::InvalidLocalIdx)?;
                 stack.assert_pop_val_type(*local_ty)?;
+                stack.push_valtype(*local_ty);
             }
             // global.get [] -> [t]
             GLOBAL_GET => {
@@ -219,6 +386,9 @@ fn read_instructions(
                 }
 
                 stack.assert_pop_val_type(global.ty.ty)?;
+            }
+            DROP => {
+                stack.pop_valtype()?;
             }
             // i32.load [i32] -> [i32]
             I32_LOAD => {
