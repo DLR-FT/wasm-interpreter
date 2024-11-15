@@ -104,6 +104,9 @@ impl F32 {
     pub fn is_infinity(&self) -> bool {
         self.0.is_infinite()
     }
+    pub fn is_negative_infinity(&self) -> bool {
+        self.0.is_infinite() && self.0 < 0.0
+    }
 
     pub fn as_i32(&self) -> i32 {
         self.0 as i32
@@ -221,6 +224,9 @@ impl F64 {
     }
     pub fn is_infinity(&self) -> bool {
         self.0.is_infinite()
+    }
+    pub fn is_negative_infinity(&self) -> bool {
+        self.0.is_infinite() && self.0 < 0.0
     }
 
     pub fn as_i32(&self) -> i32 {

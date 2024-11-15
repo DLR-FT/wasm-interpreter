@@ -29,6 +29,23 @@ impl Stack {
         Self::default()
     }
 
+    pub fn drop_value(&mut self) {
+        // If there is at least one stack frame, we shall not pop values past the current
+        // stackframe. However, there is one legitimate reason to pop when there is **no** current
+        // stackframe: after the outermost function returns, to extract the final return values of
+        // this interpreter invocation.
+        debug_assert!(
+            if !self.frames.is_empty() {
+                self.values.len() > self.current_stackframe().value_stack_base_idx
+            } else {
+                true
+            },
+            "can not pop values past the current stackframe"
+        );
+
+        self.values.pop().unwrap_validated();
+    }
+
     /// Pop a value of the given [ValType] from the value stack
     pub fn pop_value(&mut self, ty: ValType) -> Value {
         // If there is at least one stack frame, we shall not pop values past the current
@@ -62,6 +79,11 @@ impl Stack {
         }
     }
 
+    /// Returns a cloned copy of the top value on the stack, or `None` if the stack is empty
+    pub fn peek_unknown_value(&self) -> Option<Value> {
+        self.values.last().copied()
+    }
+
     /// Push a value to the value stack
     pub fn push_value(&mut self, value: Value) {
         self.values.push(value);
@@ -77,11 +99,11 @@ impl Stack {
     pub fn set_local(&mut self, idx: LocalIdx) {
         let local_ty = self.current_stackframe().locals.get_ty(idx);
 
-        let stack_value = self.pop_value(local_ty);
         debug_assert!(
             self.values.len() > self.current_stackframe().value_stack_base_idx,
             "can not pop values past the current stackframe"
         );
+        let stack_value = self.pop_value(local_ty);
 
         trace!("Instruction: local.set [{stack_value:?}] -> []");
         *self.current_stackframe_mut().locals.get_mut(idx) = stack_value;

@@ -52,7 +52,7 @@ impl AssertReport {
     }
 
     pub fn compile_report(self) -> WastTestReport {
-        return WastTestReport::Asserts(self);
+        WastTestReport::Asserts(self)
     }
 
     pub fn has_errors(&self) -> bool {
@@ -76,7 +76,7 @@ impl CompilationError {
     }
 
     pub fn compile_report(self) -> WastTestReport {
-        return WastTestReport::CompilationError(self);
+        WastTestReport::CompilationError(self)
     }
 }
 
@@ -98,7 +98,7 @@ impl std::fmt::Display for WastTestReport {
                 writeln!(f, "Context: {}", error.context)?;
                 writeln!(f, "Error: {}", error.inner)?;
                 writeln!(f, "~~~~~~~~~~~~~~~~")?;
-                writeln!(f, "")?;
+                writeln!(f)?;
             }
             WastTestReport::Asserts(assert_report) => {
                 writeln!(f, "------ {} ------", assert_report.filename)?;
@@ -127,14 +127,14 @@ impl std::fmt::Display for WastTestReport {
                 let failed_asserts = assert_report.results.iter().filter(|r| r.is_err()).count();
                 let total_asserts = assert_report.results.len();
 
-                writeln!(f, "")?;
+                writeln!(f)?;
                 writeln!(
                     f,
                     "Execution finished. Passed: {}, Failed: {}, Total: {}",
                     passed_asserts, failed_asserts, total_asserts
                 )?;
                 writeln!(f, "~~~~~~~~~~~~~~~~")?;
-                writeln!(f, "")?;
+                writeln!(f)?;
             }
         }
 

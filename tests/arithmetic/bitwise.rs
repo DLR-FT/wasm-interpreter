@@ -1,6 +1,6 @@
 use wasm::{validate, RuntimeInstance};
 
-const BASE_WAT: &'static str = r#"
+const BASE_WAT: &str = r#"
     (module
       (func (export "template") (param $x i32) (param $y i32) (result i32)
           local.get $x
@@ -9,7 +9,7 @@ const BASE_WAT: &'static str = r#"
     )
 "#;
 
-const BASE_COUNT_WAT: &'static str = r#"
+const BASE_COUNT_WAT: &str = r#"
     (module
       (func (export "template") (param $x i32) (result i32)
           local.get $x
@@ -509,7 +509,7 @@ pub fn i32_bitwise_shr_u() {
 
     // Minimum and maximum 32-bit integers
     assert_eq!(
-        (i32::MIN / 2) * (-1),
+        -(i32::MIN / 2),
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -1055,7 +1055,7 @@ pub fn i32_bitwise_popcnt() {
     );
 }
 
-const I64_BASE_WAT: &'static str = r#"
+const I64_BASE_WAT: &str = r#"
     (module
       (func (export "template") (param $x i64) (param $y i64) (result i64)
           local.get $x
@@ -1064,7 +1064,7 @@ const I64_BASE_WAT: &'static str = r#"
     )
 "#;
 
-const I64_BASE_COUNT_WAT: &'static str = r#"
+const I64_BASE_COUNT_WAT: &str = r#"
     (module
       (func (export "template") (param $x i64) (result i64)
           local.get $x
@@ -1084,34 +1084,34 @@ pub fn i64_bitwise_and() {
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
     assert_eq!(
-        1 as i64,
+        1_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (33 as i64, 11 as i64)
+                (33_i64, 11_i64)
             )
             .unwrap()
     );
     assert_eq!(
-        5 as i64,
+        5_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (77 as i64, 23 as i64)
+                (77_i64, 23_i64)
             )
             .unwrap()
     );
     assert_eq!(
-        180244 as i64,
+        180244_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (192534 as i64, 1231412 as i64)
+                (192534_i64, 1231412_i64)
             )
             .unwrap()
     );
     assert_eq!(
-        0 as i64,
+        0_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -1133,34 +1133,34 @@ pub fn i64_bitwise_or() {
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
     assert_eq!(
-        43 as i64,
+        43_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (33 as i64, 11 as i64)
+                (33_i64, 11_i64)
             )
             .unwrap()
     );
     assert_eq!(
-        95 as i64,
+        95_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (77 as i64, 23 as i64)
+                (77_i64, 23_i64)
             )
             .unwrap()
     );
     assert_eq!(
-        1243702 as i64,
+        1243702_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (192534 as i64, 1231412 as i64)
+                (192534_i64, 1231412_i64)
             )
             .unwrap()
     );
     assert_eq!(
-        -1 as i64,
+        -1_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -1182,34 +1182,34 @@ pub fn i64_bitwise_xor() {
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
     assert_eq!(
-        42 as i64,
+        42_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (33 as i64, 11 as i64)
+                (33_i64, 11_i64)
             )
             .unwrap()
     );
     assert_eq!(
-        90 as i64,
+        90_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (77 as i64, 23 as i64)
+                (77_i64, 23_i64)
             )
             .unwrap()
     );
     assert_eq!(
-        1063458 as i64,
+        1063458_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (192534 as i64, 1231412 as i64)
+                (192534_i64, 1231412_i64)
             )
             .unwrap()
     );
     assert_eq!(
-        -1 as i64,
+        -1_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -1231,34 +1231,34 @@ pub fn i64_bitwise_shl() {
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
     assert_eq!(
-        67584 as i64,
+        67584_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (33 as i64, 11 as i64)
+                (33_i64, 11_i64)
             )
             .unwrap()
     );
     assert_eq!(
-        645922816 as i64,
+        645922816_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (77 as i64, 23 as i64)
+                (77_i64, 23_i64)
             )
             .unwrap()
     );
     assert_eq!(
-        99079191802150912 as i64,
+        99079191802150912_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (192534 as i64, 1231412 as i64)
+                (192534_i64, 1231412_i64)
             )
             .unwrap()
     );
     assert_eq!(
-        0 as i64,
+        0_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -1280,43 +1280,43 @@ pub fn i64_bitwise_shr_s() {
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
     assert_eq!(
-        8881445 as i64,
+        8881445_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (142_103_123 as i64, 4 as i64)
+                (142_103_123_i64, 4_i64)
             )
             .unwrap()
     );
     assert_eq!(
-        23879 as i64,
+        23879_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (391_248_921 as i64, 14 as i64)
+                (391_248_921_i64, 14_i64)
             )
             .unwrap()
     );
     assert_eq!(
-        0 as i64,
+        0_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (1_203_910_012 as i64, 33 as i64)
+                (1_203_910_012_i64, 33_i64)
             )
             .unwrap()
     );
     assert_eq!(
-        0 as i64,
+        0_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (2_113_189_231 as i64, 33 as i64)
+                (2_113_189_231_i64, 33_i64)
             )
             .unwrap()
     );
     assert_eq!(
-        -1 as i64,
+        -1_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -1327,109 +1327,109 @@ pub fn i64_bitwise_shr_s() {
 
     // Basic positive number
     assert_eq!(
-        4 as i64,
+        4_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (8 as i64, 1 as i64)
+                (8_i64, 1_i64)
             )
             .unwrap()
     );
 
     // Shifting by 0 (no shift)
     assert_eq!(
-        -1 as i64,
+        -1_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (-1 as i64, 0 as i64)
+                (-1_i64, 0_i64)
             )
             .unwrap()
     );
     assert_eq!(
-        1 as i64,
+        1_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (1 as i64, 0 as i64)
+                (1_i64, 0_i64)
             )
             .unwrap()
     );
 
     // Shifting negative numbers
     assert_eq!(
-        -4 as i64,
+        -4_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (-8 as i64, 1 as i64)
+                (-8_i64, 1_i64)
             )
             .unwrap()
     );
     assert_eq!(
-        -1 as i64,
+        -1_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (-1 as i64, 1 as i64)
+                (-1_i64, 1_i64)
             )
             .unwrap()
     );
 
     // Shifting by 31 (maximum shift for 32-bit int)
     assert_eq!(
-        -1 as i64,
+        -1_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (-1 as i64, 31 as i64)
+                (-1_i64, 31_i64)
             )
             .unwrap()
     );
     assert_eq!(
-        -4294967296 as i64,
+        -4294967296_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (i64::MIN, 31 as i64)
+                (i64::MIN, 31_i64)
             )
             .unwrap()
     );
     assert_eq!(
-        4294967295 as i64,
+        4294967295_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (i64::MAX, 31 as i64)
+                (i64::MAX, 31_i64)
             )
             .unwrap()
     );
 
     // Shifting by more than 31
     assert_eq!(
-        -1 as i64,
+        -1_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (-1 as i64, 32 as i64)
+                (-1_i64, 32_i64)
             )
             .unwrap()
     );
     assert_eq!(
-        0 as i64,
+        0_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (1 as i64, 32 as i64)
+                (1_i64, 32_i64)
             )
             .unwrap()
     );
     assert_eq!(
-        -1 as i64,
+        -1_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (-1 as i64, 100 as i64)
+                (-1_i64, 100_i64)
             )
             .unwrap()
     );
@@ -1440,7 +1440,7 @@ pub fn i64_bitwise_shr_s() {
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (i64::MIN, 1 as i64)
+                (i64::MIN, 1_i64)
             )
             .unwrap()
     );
@@ -1449,27 +1449,27 @@ pub fn i64_bitwise_shr_s() {
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (i64::MAX, 1 as i64)
+                (i64::MAX, 1_i64)
             )
             .unwrap()
     );
 
     // Shifting out all bits except sign
     assert_eq!(
-        -8589934592 as i64,
+        -8589934592_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (i64::MIN, 30 as i64)
+                (i64::MIN, 30_i64)
             )
             .unwrap()
     );
     assert_eq!(
-        8589934591 as i64,
+        8589934591_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (i64::MAX, 30 as i64)
+                (i64::MAX, 30_i64)
             )
             .unwrap()
     );
@@ -1487,43 +1487,43 @@ pub fn i64_bitwise_shr_u() {
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
     assert_eq!(
-        8881445 as i64,
+        8881445_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (142_103_123 as i64, 4 as i64)
+                (142_103_123_i64, 4_i64)
             )
             .unwrap()
     );
     assert_eq!(
-        23879 as i64,
+        23879_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (391_248_921 as i64, 14 as i64)
+                (391_248_921_i64, 14_i64)
             )
             .unwrap()
     );
     assert_eq!(
-        0 as i64,
+        0_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (1_203_910_012 as i64, 33 as i64)
+                (1_203_910_012_i64, 33_i64)
             )
             .unwrap()
     );
     assert_eq!(
-        0 as i64,
+        0_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (2_113_189_231 as i64, 33 as i64)
+                (2_113_189_231_i64, 33_i64)
             )
             .unwrap()
     );
     assert_eq!(
-        1 as i64,
+        1_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -1534,31 +1534,31 @@ pub fn i64_bitwise_shr_u() {
 
     // Basic positive number
     assert_eq!(
-        4 as i64,
+        4_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (8 as i64, 1 as i64)
+                (8_i64, 1_i64)
             )
             .unwrap()
     );
 
     // Shifting by 0 (no shift)
     assert_eq!(
-        -1 as i64,
+        -1_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (-1 as i64, 0 as i64)
+                (-1_i64, 0_i64)
             )
             .unwrap()
     );
     assert_eq!(
-        1 as i64,
+        1_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (1 as i64, 0 as i64)
+                (1_i64, 0_i64)
             )
             .unwrap()
     );
@@ -1569,7 +1569,7 @@ pub fn i64_bitwise_shr_u() {
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (-8 as i64, 1 as i64)
+                (-8_i64, 1_i64)
             )
             .unwrap()
     );
@@ -1578,76 +1578,76 @@ pub fn i64_bitwise_shr_u() {
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (-1 as i64, 1 as i64)
+                (-1_i64, 1_i64)
             )
             .unwrap()
     );
 
     // Shifting by 31 (maximum shift for 32-bit int)
     assert_eq!(
-        8589934591 as i64,
+        8589934591_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (-1 as i64, 31 as i64)
+                (-1_i64, 31_i64)
             )
             .unwrap()
     );
     assert_eq!(
-        4294967296 as i64,
+        4294967296_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (i64::MIN, 31 as i64)
+                (i64::MIN, 31_i64)
             )
             .unwrap()
     );
     assert_eq!(
-        4294967295 as i64,
+        4294967295_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (i64::MAX, 31 as i64)
+                (i64::MAX, 31_i64)
             )
             .unwrap()
     );
 
     // Shifting by more than 31
     assert_eq!(
-        4294967295 as i64,
+        4294967295_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (-1 as i64, 32 as i64)
+                (-1_i64, 32_i64)
             )
             .unwrap()
     );
     assert_eq!(
-        0 as i64,
+        0_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (1 as i64, 32 as i64)
+                (1_i64, 32_i64)
             )
             .unwrap()
     );
     assert_eq!(
-        268435455 as i64,
+        268435455_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (-1 as i64, 100 as i64)
+                (-1_i64, 100_i64)
             )
             .unwrap()
     );
 
     // Minimum and maximum 32-bit integers
     assert_eq!(
-        (i64::MIN / 2) * (-1),
+        -(i64::MIN / 2),
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (i64::MIN, 1 as i64)
+                (i64::MIN, 1_i64)
             )
             .unwrap()
     );
@@ -1656,27 +1656,27 @@ pub fn i64_bitwise_shr_u() {
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (i64::MAX, 1 as i64)
+                (i64::MAX, 1_i64)
             )
             .unwrap()
     );
 
     // Shifting out all bits except sign
     assert_eq!(
-        8589934592 as i64,
+        8589934592_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (i64::MIN, 30 as i64)
+                (i64::MIN, 30_i64)
             )
             .unwrap()
     );
     assert_eq!(
-        8589934591 as i64,
+        8589934591_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (i64::MAX, 30 as i64)
+                (i64::MAX, 30_i64)
             )
             .unwrap()
     );
@@ -1694,43 +1694,43 @@ pub fn i64_bitwise_rotl() {
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
     assert_eq!(
-        2273649968 as i64,
+        2273649968_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (142_103_123 as i64, 4 as i64)
+                (142_103_123_i64, 4_i64)
             )
             .unwrap()
     );
     assert_eq!(
-        6410222321664 as i64,
+        6410222321664_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (391_248_921 as i64, 14 as i64)
+                (391_248_921_i64, 14_i64)
             )
             .unwrap()
     );
     assert_eq!(
-        -8105235815975616512 as i64,
+        -8105235815975616512_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (1_203_910_012 as i64, 33 as i64)
+                (1_203_910_012_i64, 33_i64)
             )
             .unwrap()
     );
     assert_eq!(
-        -294586798900772864 as i64,
+        -294586798900772864_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (2_113_189_231 as i64, 33 as i64)
+                (2_113_189_231_i64, 33_i64)
             )
             .unwrap()
     );
     assert_eq!(
-        4611686018427387904 as i64,
+        4611686018427387904_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -1741,149 +1741,149 @@ pub fn i64_bitwise_rotl() {
 
     // Basic positive number
     assert_eq!(
-        16 as i64,
+        16_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (8 as i64, 1 as i64)
+                (8_i64, 1_i64)
             )
             .unwrap()
     );
 
     // Rotating by 0 (no shift)
     assert_eq!(
-        -1 as i64,
+        -1_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (-1 as i64, 0 as i64)
+                (-1_i64, 0_i64)
             )
             .unwrap()
     );
     assert_eq!(
-        1 as i64,
+        1_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (1 as i64, 0 as i64)
+                (1_i64, 0_i64)
             )
             .unwrap()
     );
 
     // Shifting negative numbers
     assert_eq!(
-        -15 as i64,
+        -15_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (-8 as i64, 1 as i64)
+                (-8_i64, 1_i64)
             )
             .unwrap()
     );
     assert_eq!(
-        -1 as i64,
+        -1_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (-1 as i64, 1 as i64)
+                (-1_i64, 1_i64)
             )
             .unwrap()
     );
 
     // Rotating by 31
     assert_eq!(
-        -1 as i64,
+        -1_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (-1 as i64, 31 as i64)
+                (-1_i64, 31_i64)
             )
             .unwrap()
     );
     assert_eq!(
-        1073741824 as i64,
+        1073741824_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (i64::MIN, 31 as i64)
+                (i64::MIN, 31_i64)
             )
             .unwrap()
     );
     assert_eq!(
-        -1073741825 as i64,
+        -1073741825_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (i64::MAX, 31 as i64)
+                (i64::MAX, 31_i64)
             )
             .unwrap()
     );
 
     // Rotating by more than 31
     assert_eq!(
-        -1 as i64,
+        -1_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (-1 as i64, 32 as i64)
+                (-1_i64, 32_i64)
             )
             .unwrap()
     );
     assert_eq!(
-        4294967296 as i64,
+        4294967296_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (1 as i64, 32 as i64)
+                (1_i64, 32_i64)
             )
             .unwrap()
     );
     assert_eq!(
-        -1 as i64,
+        -1_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (-1 as i64, 100 as i64)
+                (-1_i64, 100_i64)
             )
             .unwrap()
     );
 
     // Minimum and maximum 32-bit integers
     assert_eq!(
-        1 as i64,
+        1_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (i64::MIN, 1 as i64)
+                (i64::MIN, 1_i64)
             )
             .unwrap()
     );
     assert_eq!(
-        -2 as i64,
+        -2_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (i64::MAX, 1 as i64)
+                (i64::MAX, 1_i64)
             )
             .unwrap()
     );
 
     // Shifting out all bits except sign
     assert_eq!(
-        536870912 as i64,
+        536870912_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (i64::MIN, 30 as i64)
+                (i64::MIN, 30_i64)
             )
             .unwrap()
     );
     assert_eq!(
-        -536870913 as i64,
+        -536870913_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (i64::MAX, 30 as i64)
+                (i64::MAX, 30_i64)
             )
             .unwrap()
     );
@@ -1901,43 +1901,43 @@ pub fn i64_bitwise_rotr() {
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
     assert_eq!(
-        3458764513829422373 as i64,
+        3458764513829422373_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (142_103_123 as i64, 4 as i64)
+                (142_103_123_i64, 4_i64)
             )
             .unwrap()
     );
     assert_eq!(
-        -1124774006935757497 as i64,
+        -1124774006935757497_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (391_248_921 as i64, 14 as i64)
+                (391_248_921_i64, 14_i64)
             )
             .unwrap()
     );
     assert_eq!(
-        2585377064433483776 as i64,
+        2585377064433483776_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (1_203_910_012 as i64, 33 as i64)
+                (1_203_910_012_i64, 33_i64)
             )
             .unwrap()
     );
     assert_eq!(
-        4538039318702194688 as i64,
+        4538039318702194688_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (2_113_189_231 as i64, 33 as i64)
+                (2_113_189_231_i64, 33_i64)
             )
             .unwrap()
     );
     assert_eq!(
-        1 as i64,
+        1_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -1948,31 +1948,31 @@ pub fn i64_bitwise_rotr() {
 
     // Basic positive number
     assert_eq!(
-        4 as i64,
+        4_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (8 as i64, 1 as i64)
+                (8_i64, 1_i64)
             )
             .unwrap()
     );
 
     // Rotating by 0 (no shift)
     assert_eq!(
-        -1 as i64,
+        -1_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (-1 as i64, 0 as i64)
+                (-1_i64, 0_i64)
             )
             .unwrap()
     );
     assert_eq!(
-        1 as i64,
+        1_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (1 as i64, 0 as i64)
+                (1_i64, 0_i64)
             )
             .unwrap()
     );
@@ -1983,74 +1983,74 @@ pub fn i64_bitwise_rotr() {
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (-8 as i64, 1 as i64)
+                (-8_i64, 1_i64)
             )
             .unwrap()
     );
     assert_eq!(
-        -1 as i64,
+        -1_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (-1 as i64, 1 as i64)
+                (-1_i64, 1_i64)
             )
             .unwrap()
     );
 
     // Rotating by 31
     assert_eq!(
-        -1 as i64,
+        -1_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (-1 as i64, 31 as i64)
+                (-1_i64, 31_i64)
             )
             .unwrap()
     );
     assert_eq!(
-        4294967296 as i64,
+        4294967296_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (i64::MIN, 31 as i64)
+                (i64::MIN, 31_i64)
             )
             .unwrap()
     );
     assert_eq!(
-        -4294967297 as i64,
+        -4294967297_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (i64::MAX, 31 as i64)
+                (i64::MAX, 31_i64)
             )
             .unwrap()
     );
 
     // Rotating by more than 31
     assert_eq!(
-        -1 as i64,
+        -1_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (-1 as i64, 32 as i64)
+                (-1_i64, 32_i64)
             )
             .unwrap()
     );
     assert_eq!(
-        4294967296 as i64,
+        4294967296_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (1 as i64, 32 as i64)
+                (1_i64, 32_i64)
             )
             .unwrap()
     );
     assert_eq!(
-        -1 as i64,
+        -1_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (-1 as i64, 100 as i64)
+                (-1_i64, 100_i64)
             )
             .unwrap()
     );
@@ -2061,7 +2061,7 @@ pub fn i64_bitwise_rotr() {
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (i64::MIN, 1 as i64)
+                (i64::MIN, 1_i64)
             )
             .unwrap()
     );
@@ -2070,27 +2070,27 @@ pub fn i64_bitwise_rotr() {
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (i64::MAX, 1 as i64)
+                (i64::MAX, 1_i64)
             )
             .unwrap()
     );
 
     // Shifting out all bits except sign
     assert_eq!(
-        8589934592 as i64,
+        8589934592_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (i64::MIN, 30 as i64)
+                (i64::MIN, 30_i64)
             )
             .unwrap()
     );
     assert_eq!(
-        -8589934593 as i64,
+        -8589934593_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (i64::MAX, 30 as i64)
+                (i64::MAX, 30_i64)
             )
             .unwrap()
     );
@@ -2108,42 +2108,39 @@ pub fn i64_bitwise_clz() {
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
     assert_eq!(
-        58 as i64,
+        58_i64,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), 33 as i64)
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), 33_i64)
             .unwrap()
     );
     assert_eq!(
-        57 as i64,
+        57_i64,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), 77 as i64)
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), 77_i64)
             .unwrap()
     );
     assert_eq!(
-        46 as i64,
+        46_i64,
         instance
-            .invoke(
-                &instance.get_function_by_index(0, 0).unwrap(),
-                192534 as i64
-            )
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), 192534_i64)
             .unwrap()
     );
     assert_eq!(
-        0 as i64,
+        0_i64,
         instance
             .invoke(&instance.get_function_by_index(0, 0).unwrap(), i64::MIN)
             .unwrap()
     );
     assert_eq!(
-        1 as i64,
+        1_i64,
         instance
             .invoke(&instance.get_function_by_index(0, 0).unwrap(), i64::MAX)
             .unwrap()
     );
     assert_eq!(
-        64 as i64,
+        64_i64,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), 0 as i64)
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), 0_i64)
             .unwrap()
     );
 }
@@ -2160,42 +2157,39 @@ pub fn i64_bitwise_ctz() {
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
     assert_eq!(
-        0 as i64,
+        0_i64,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), 33 as i64)
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), 33_i64)
             .unwrap()
     );
     assert_eq!(
-        0 as i64,
+        0_i64,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), 77 as i64)
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), 77_i64)
             .unwrap()
     );
     assert_eq!(
-        1 as i64,
+        1_i64,
         instance
-            .invoke(
-                &instance.get_function_by_index(0, 0).unwrap(),
-                192534 as i64
-            )
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), 192534_i64)
             .unwrap()
     );
     assert_eq!(
-        63 as i64,
+        63_i64,
         instance
             .invoke(&instance.get_function_by_index(0, 0).unwrap(), i64::MIN)
             .unwrap()
     );
     assert_eq!(
-        0 as i64,
+        0_i64,
         instance
             .invoke(&instance.get_function_by_index(0, 0).unwrap(), i64::MAX)
             .unwrap()
     );
     assert_eq!(
-        64 as i64,
+        64_i64,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), 0 as i64)
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), 0_i64)
             .unwrap()
     );
 }
@@ -2212,42 +2206,39 @@ pub fn i64_bitwise_popcnt() {
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
     assert_eq!(
-        2 as i64,
+        2_i64,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), 33 as i64)
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), 33_i64)
             .unwrap()
     );
     assert_eq!(
-        4 as i64,
+        4_i64,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), 77 as i64)
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), 77_i64)
             .unwrap()
     );
     assert_eq!(
-        8 as i64,
+        8_i64,
         instance
-            .invoke(
-                &instance.get_function_by_index(0, 0).unwrap(),
-                192534 as i64
-            )
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), 192534_i64)
             .unwrap()
     );
     assert_eq!(
-        1 as i64,
+        1_i64,
         instance
             .invoke(&instance.get_function_by_index(0, 0).unwrap(), i64::MIN)
             .unwrap()
     );
     assert_eq!(
-        63 as i64,
+        63_i64,
         instance
             .invoke(&instance.get_function_by_index(0, 0).unwrap(), i64::MAX)
             .unwrap()
     );
     assert_eq!(
-        0 as i64,
+        0_i64,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), 0 as i64)
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), 0_i64)
             .unwrap()
     );
 }

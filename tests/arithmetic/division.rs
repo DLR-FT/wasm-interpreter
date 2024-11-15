@@ -1,7 +1,7 @@
 use wasm::{validate, RuntimeInstance};
 use wasm::{RuntimeError, DEFAULT_MODULE};
 
-const WAT_SIGNED_DIVISION_TEMPLATE: &'static str = r#"
+const WAT_SIGNED_DIVISION_TEMPLATE: &str = r#"
     (module
         (func (export "signed_division") (param $divisor {{TYPE}}) (param $dividend {{TYPE}}) (result {{TYPE}})
             local.get $divisor
@@ -10,7 +10,7 @@ const WAT_SIGNED_DIVISION_TEMPLATE: &'static str = r#"
     )
 "#;
 
-const WAT_UNSIGNED_DIVISION_TEMPLATE: &'static str = r#"
+const WAT_UNSIGNED_DIVISION_TEMPLATE: &str = r#"
     (module
         (func (export "unsigned_division") (param $divisor {{TYPE}}) (param $dividend {{TYPE}}) (result {{TYPE}})
             local.get $divisor
@@ -319,47 +319,47 @@ pub fn i64_division_signed_simple() {
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
     assert_eq!(
-        10 as i64,
+        10_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (20 as i64, 2 as i64)
+                (20_i64, 2_i64)
             )
             .unwrap()
     );
     assert_eq!(
-        9_001 as i64,
+        9_001_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (81_018_001 as i64, 9_001 as i64)
+                (81_018_001_i64, 9_001_i64)
             )
             .unwrap()
     );
     assert_eq!(
-        -10 as i64,
+        -10_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (20 as i64, -2 as i64)
+                (20_i64, -2_i64)
             )
             .unwrap()
     );
     assert_eq!(
-        10 as i64,
+        10_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (-20 as i64, -2 as i64)
+                (-20_i64, -2_i64)
             )
             .unwrap()
     );
     assert_eq!(
-        -10 as i64,
+        -10_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (-20 as i64, 2 as i64)
+                (-20_i64, 2_i64)
             )
             .unwrap()
     );

@@ -6,6 +6,8 @@ use core::str::Utf8Error;
 use crate::core::reader::section_header::SectionTy;
 use crate::core::reader::types::ValType;
 
+use super::indices::{DataIdx, MemIdx};
+
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum RuntimeError {
     DivideBy0,
@@ -14,6 +16,7 @@ pub enum RuntimeError {
     StackSmash,
     // https://github.com/wasmi-labs/wasmi/blob/37d1449524a322817c55026eb21eb97dd693b9ce/crates/core/src/trap.rs#L265C5-L265C27
     BadConversionToInteger,
+    MemoryAccessOutOfBounds,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -38,13 +41,21 @@ pub enum Error {
     EndInvalidValueStack,
     InvalidLocalIdx,
     InvalidValidationStackValType(Option<ValType>),
+    ExpectedAnOperand,
     InvalidLimitsType(u8),
     InvalidMutType(u8),
     MoreThanOneMemory,
+    InvalidLimit,
+    MemSizeTooBig,
     InvalidGlobalIdx(GlobalIdx),
     GlobalIsConst,
     RuntimeError(RuntimeError),
     FoundLabel(LabelKind),
+    MemoryIsNotDefined(MemIdx),
+    //           mem.align, wanted alignment
+    ErroneousAlignment(u32, u32),
+    NoDataSegments,
+    DataSegmentNotFound(DataIdx),
 }
 
 impl Display for Error {
@@ -110,6 +121,8 @@ impl Display for Error {
             Error::MoreThanOneMemory => {
                 f.write_str("As of not only one memory is allowed per module.")
             }
+            Error::InvalidLimit => f.write_str("Size minimum must not be greater than maximum"),
+            Error::MemSizeTooBig => f.write_str("Memory size must be at most 65536 pages (4GiB)"),
             Error::InvalidGlobalIdx(idx) => f.write_fmt(format_args!(
                 "An invalid global index `{idx}` was specified"
             )),
@@ -118,6 +131,21 @@ impl Display for Error {
             Error::FoundLabel(lk) => f.write_fmt(format_args!(
                 "Expecting a ValType, a Label was found: {lk:?}"
             )),
+            Error::ExpectedAnOperand => f.write_str("Expected a ValType"), // Error => f.write_str("Expected an operand (ValType) on the stack")
+            Error::MemoryIsNotDefined(memidx) => f.write_fmt(format_args!(
+                "C.mems[{}] is NOT defined when it should be",
+                memidx
+            )),
+            Error::ErroneousAlignment(mem_align, minimum_wanted_alignment) => {
+                f.write_fmt(format_args!(
+                    "Alignment ({}) is not less or equal to {}",
+                    mem_align, minimum_wanted_alignment
+                ))
+            }
+            Error::NoDataSegments => f.write_str("Data Count is None"),
+            Error::DataSegmentNotFound(data_idx) => {
+                f.write_fmt(format_args!("Data Segment {} not found", data_idx))
+            }
         }
     }
 }
@@ -130,6 +158,7 @@ impl Display for RuntimeError {
             RuntimeError::FunctionNotFound => f.write_str("Function not found"),
             RuntimeError::StackSmash => f.write_str("Stack smashed"),
             RuntimeError::BadConversionToInteger => f.write_str("Bad conversion to integer"),
+            RuntimeError::MemoryAccessOutOfBounds => f.write_str("Memory access out of bounds"),
         }
     }
 }

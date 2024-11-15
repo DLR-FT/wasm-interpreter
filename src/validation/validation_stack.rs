@@ -32,6 +32,14 @@ impl ValidationStack {
         self.stack.push(ValidationStackEntry::Label(label_info));
     }
 
+    /// Similar to [`ValidationStack::pop`], but more public and returns a Result<()>
+    pub(super) fn drop_val(&mut self) -> Result<()> {
+        match self.stack.pop().ok_or(Error::EndInvalidValueStack)? {
+            ValidationStackEntry::Val(_) => Ok(()),
+            _ => Err(Error::ExpectedAnOperand),
+        }
+    }
+
     /// This puts an unspecified element on top of the stack.
     /// While the top of the stack is unspecified, arbitrary value types can be popped.
     /// To undo this, a new label has to be pushed or an existing one has to be popped.
@@ -63,6 +71,18 @@ impl ValidationStack {
         self.stack
             .pop()
             .ok_or(Error::InvalidValidationStackValType(None))
+    }
+
+    pub(super) fn assert_pop_ref_type(&mut self) -> Result<()> {
+        let val = self.pop()?;
+        match val {
+            ValidationStackEntry::Val(v) => match v {
+                ValType::RefType(_) => Ok(()),
+                _ => panic!("Not a RefType"),
+            },
+            ValidationStackEntry::UnspecifiedValTypes => panic!("Found UnspecifiedValTypes"),
+            ValidationStackEntry::Label(li) => Err(Error::FoundLabel(li.kind)),
+        }
     }
 
     /// Assert the top-most [`ValidationStackEntry`] is a specific [`ValType`], after popping it from the [`ValidationStack`]

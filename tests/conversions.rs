@@ -19,7 +19,7 @@ use core::{f32, f64};
 use hexf::{hexf32, hexf64};
 use wasm::{validate, RuntimeError, RuntimeInstance};
 
-const WAT: &'static str = r#"
+const WAT: &str = r#"
       (module
       (func (export "{{0}}") (param $x {{1}}) (result {{2}})
           local.get $x
@@ -3125,7 +3125,7 @@ pub fn f64_promote_f32() {
             .unwrap()
     );
     assert_eq!(
-        6.6382536710104395e+37_f64,
+        6.638_253_671_010_439_5e37_f64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),

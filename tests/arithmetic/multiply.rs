@@ -1,6 +1,6 @@
 use wasm::{validate, RuntimeInstance, DEFAULT_MODULE};
 
-const MULTIPLY_WAT_TEMPLATE: &'static str = r#"
+const MULTIPLY_WAT_TEMPLATE: &str = r#"
     (module
         (func (export "multiply") (param $x {{TYPE}}) (result {{TYPE}})
             local.get $x
@@ -90,21 +90,21 @@ pub fn i64_multiply() {
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
     assert_eq!(
-        33 as i64,
+        33_i64,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), 11 as i64)
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), 11_i64)
             .unwrap()
     );
     assert_eq!(
-        0 as i64,
+        0_i64,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), 0 as i64)
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), 0_i64)
             .unwrap()
     );
     assert_eq!(
-        -30 as i64,
+        -30_i64,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), -10 as i64)
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), -10_i64)
             .unwrap()
     );
 

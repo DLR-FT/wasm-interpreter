@@ -1,6 +1,6 @@
 use wasm::{validate, RuntimeInstance};
 
-const WAT_SUBTRACT_TEMPLATE: &'static str = r#"
+const WAT_SUBTRACT_TEMPLATE: &str = r#"
     (module
         (func (export "subtract") (param $x {{TYPE}}) (param $y {{TYPE}}) (result {{TYPE}})
             local.get $x
@@ -22,29 +22,29 @@ pub fn i64_subtract() {
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
     assert_eq!(
-        -10 as i64,
+        -10_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (1 as i64, 11 as i64)
+                (1_i64, 11_i64)
             )
             .unwrap()
     );
     assert_eq!(
-        0 as i64,
+        0_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (0 as i64, 0 as i64)
+                (0_i64, 0_i64)
             )
             .unwrap()
     );
     assert_eq!(
-        10 as i64,
+        10_i64,
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (-10 as i64, -20 as i64)
+                (-10_i64, -20_i64)
             )
             .unwrap()
     );
@@ -54,7 +54,7 @@ pub fn i64_subtract() {
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (i64::MAX - 1, 0 as i64)
+                (i64::MAX - 1, 0_i64)
             )
             .unwrap()
     );
@@ -63,7 +63,7 @@ pub fn i64_subtract() {
         instance
             .invoke(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (i64::MIN + 3, 0 as i64)
+                (i64::MIN + 3, 0_i64)
             )
             .unwrap()
     );

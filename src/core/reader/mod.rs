@@ -197,8 +197,8 @@ pub mod span {
     /// indexing unknown slices, as a [Span] does not validate the length of the indexed slice.
     #[derive(Copy, Clone, Debug, Hash)]
     pub struct Span {
-        pub(super) from: usize,
-        pub(super) len: usize,
+        pub from: usize,
+        pub len: usize,
     }
 
     impl Span {

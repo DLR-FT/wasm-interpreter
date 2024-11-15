@@ -1,12 +1,12 @@
 use alloc::vec::Vec;
 use core::iter;
 
-use crate::core::indices::{FuncIdx, GlobalIdx, LocalIdx};
+use crate::core::indices::{DataIdx, FuncIdx, GlobalIdx, LocalIdx, MemIdx};
 use crate::core::reader::section_header::{SectionHeader, SectionTy};
 use crate::core::reader::span::Span;
 use crate::core::reader::types::global::Global;
 use crate::core::reader::types::memarg::MemArg;
-use crate::core::reader::types::{FuncType, NumType, ValType};
+use crate::core::reader::types::{FuncType, MemType, NumType, ValType};
 use crate::core::reader::{WasmReadable, WasmReader};
 use crate::validation_stack::ValidationStack;
 use crate::{Error, Result};
@@ -17,6 +17,8 @@ pub fn validate_code_section(
     fn_types: &[FuncType],
     type_idx_of_fn: &[usize],
     globals: &[Global],
+    memories: &[MemType],
+    data_count: &Option<u32>,
 ) -> Result<Vec<Span>> {
     assert_eq!(section_header.ty, SectionTy::Code);
 
@@ -24,7 +26,7 @@ pub fn validate_code_section(
         let ty_idx = type_idx_of_fn[idx];
         let func_ty = fn_types[ty_idx].clone();
 
-        debug!("{:x?}", wasm.full_wasm_binary);
+        // debug!("{:x?}", wasm.full_wasm_binary);
 
         let func_size = wasm.read_var_u32()?;
         let func_block = wasm.make_span(func_size as usize)?;
@@ -46,6 +48,8 @@ pub fn validate_code_section(
             globals,
             fn_types,
             type_idx_of_fn,
+            memories,
+            data_count,
         )?;
 
         // Check if there were unread trailing instructions after the last END
@@ -83,6 +87,7 @@ pub fn read_declared_locals(wasm: &mut WasmReader) -> Result<Vec<ValType>> {
     Ok(locals)
 }
 
+#[allow(clippy::too_many_arguments)]
 fn read_instructions(
     this_function_idx: usize,
     wasm: &mut WasmReader,
@@ -91,6 +96,8 @@ fn read_instructions(
     globals: &[Global],
     fn_types: &[FuncType],
     type_idx_of_fn: &[usize],
+    memories: &[MemType],
+    data_count: &Option<u32>,
 ) -> Result<()> {
     // TODO we must terminate only if both we saw the final `end` and when we consumed all of the code span
     loop {
@@ -106,6 +113,7 @@ fn read_instructions(
             NOP => {}
             // end
             END => {
+                trace!("Validation: END");
                 // TODO check if there are labels on the stack.
                 // If there are none (i.e. this is the implicit end of the function and not a jump to the end of a function), the stack must only contain the valid return values, no other junk.
                 //
@@ -180,6 +188,9 @@ fn read_instructions(
             UNREACHABLE => {
                 stack.make_unspecified();
             }
+            DROP => {
+                stack.drop_val()?;
+            }
             // local.get: [] -> [t]
             LOCAL_GET => {
                 let local_idx = wasm.read_var_u32()? as LocalIdx;
@@ -220,63 +231,273 @@ fn read_instructions(
 
                 stack.assert_pop_val_type(global.ty.ty)?;
             }
-            // i32.load [i32] -> [i32]
             I32_LOAD => {
-                let _memarg = MemArg::read_unvalidated(wasm);
-
-                // TODO check correct `memarg.align`
-                // TODO check if memory[0] exists
-
+                if memories.is_empty() {
+                    return Err(Error::MemoryIsNotDefined(0));
+                }
+                let memarg = MemArg::read(wasm)?;
+                if memarg.align > 4 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 4));
+                }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
-
                 stack.push_valtype(ValType::NumType(NumType::I32));
             }
-            // f32.load [f32] -> [f32]
-            F32_LOAD => {
-                let _memarg = MemArg::read_unvalidated(wasm);
-
-                // Check for I32 because that's the address where we find our value
+            I64_LOAD => {
+                if memories.is_empty() {
+                    return Err(Error::MemoryIsNotDefined(0));
+                }
+                let memarg = MemArg::read(wasm)?;
+                if memarg.align > 8 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 8));
+                }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
-
+                stack.push_valtype(ValType::NumType(NumType::I64));
+            }
+            F32_LOAD => {
+                if memories.is_empty() {
+                    return Err(Error::MemoryIsNotDefined(0));
+                }
+                let memarg = MemArg::read(wasm)?;
+                if memarg.align > 4 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 4));
+                }
+                stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.push_valtype(ValType::NumType(NumType::F32));
             }
-            // f32.load [f32] -> [f32]
             F64_LOAD => {
-                let _memarg = MemArg::read_unvalidated(wasm);
-
-                // Check for I32 because that's the address where we find our value
+                if memories.is_empty() {
+                    return Err(Error::MemoryIsNotDefined(0));
+                }
+                let memarg = MemArg::read(wasm)?;
+                if memarg.align > 8 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 8));
+                }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
-
                 stack.push_valtype(ValType::NumType(NumType::F64));
             }
-            // i32.store [i32] -> [i32]
-            I32_STORE => {
-                let _memarg = MemArg::read_unvalidated(wasm);
-
-                // TODO check correct `memarg.align`
-                // TODO check if memory[0] exists
-
-                // Value to store
+            I32_LOAD8_S => {
+                if memories.is_empty() {
+                    return Err(Error::MemoryIsNotDefined(0));
+                }
+                let memarg = MemArg::read(wasm)?;
+                if memarg.align > 1 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 1));
+                }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
-                // Address
+                stack.push_valtype(ValType::NumType(NumType::I32));
+            }
+            I32_LOAD8_U => {
+                if memories.is_empty() {
+                    return Err(Error::MemoryIsNotDefined(0));
+                }
+                let memarg = MemArg::read(wasm)?;
+                if memarg.align > 1 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 1));
+                }
+                stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                stack.push_valtype(ValType::NumType(NumType::I32));
+            }
+            I32_LOAD16_S => {
+                if memories.is_empty() {
+                    return Err(Error::MemoryIsNotDefined(0));
+                }
+                let memarg = MemArg::read(wasm)?;
+                if memarg.align > 2 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 2));
+                }
+                stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                stack.push_valtype(ValType::NumType(NumType::I32));
+            }
+            I32_LOAD16_U => {
+                if memories.is_empty() {
+                    return Err(Error::MemoryIsNotDefined(0));
+                }
+                let memarg = MemArg::read(wasm)?;
+                if memarg.align > 2 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 2));
+                }
+                stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                stack.push_valtype(ValType::NumType(NumType::I32));
+            }
+            I64_LOAD8_S => {
+                if memories.is_empty() {
+                    return Err(Error::MemoryIsNotDefined(0));
+                }
+                let memarg = MemArg::read(wasm)?;
+                if memarg.align > 1 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 1));
+                }
+                stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                stack.push_valtype(ValType::NumType(NumType::I64));
+            }
+            I64_LOAD8_U => {
+                if memories.is_empty() {
+                    return Err(Error::MemoryIsNotDefined(0));
+                }
+                let memarg = MemArg::read(wasm)?;
+                if memarg.align > 1 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 1));
+                }
+                stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                stack.push_valtype(ValType::NumType(NumType::I64));
+            }
+            I64_LOAD16_S => {
+                if memories.is_empty() {
+                    return Err(Error::MemoryIsNotDefined(0));
+                }
+                let memarg = MemArg::read(wasm)?;
+                if memarg.align > 2 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 2));
+                }
+                stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                stack.push_valtype(ValType::NumType(NumType::I64));
+            }
+            I64_LOAD16_U => {
+                if memories.is_empty() {
+                    return Err(Error::MemoryIsNotDefined(0));
+                }
+                let memarg = MemArg::read(wasm)?;
+                if memarg.align > 2 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 2));
+                }
+                stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                stack.push_valtype(ValType::NumType(NumType::I64));
+            }
+            I64_LOAD32_S => {
+                if memories.is_empty() {
+                    return Err(Error::MemoryIsNotDefined(0));
+                }
+                let memarg = MemArg::read(wasm)?;
+                if memarg.align > 4 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 4));
+                }
+                stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                stack.push_valtype(ValType::NumType(NumType::I64));
+            }
+            I64_LOAD32_U => {
+                if memories.is_empty() {
+                    return Err(Error::MemoryIsNotDefined(0));
+                }
+                let memarg = MemArg::read(wasm)?;
+                if memarg.align > 4 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 4));
+                }
+                stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                stack.push_valtype(ValType::NumType(NumType::I64));
+            }
+            I32_STORE => {
+                if memories.is_empty() {
+                    return Err(Error::MemoryIsNotDefined(0));
+                }
+                let memarg = MemArg::read(wasm)?;
+                if memarg.align >= 4 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 4));
+                }
+                stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
             }
-            // f32.store [f32] -> [f32]
+            I64_STORE => {
+                if memories.is_empty() {
+                    return Err(Error::MemoryIsNotDefined(0));
+                }
+                let memarg = MemArg::read(wasm)?;
+                if memarg.align > 8 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 8));
+                }
+                stack.assert_pop_val_type(ValType::NumType(NumType::I64))?;
+                stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+            }
             F32_STORE => {
-                let _memarg = MemArg::read_unvalidated(wasm);
-
-                // Value to store
+                if memories.is_empty() {
+                    return Err(Error::MemoryIsNotDefined(0));
+                }
+                let memarg = MemArg::read(wasm)?;
+                if memarg.align >= 4 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 4));
+                }
                 stack.assert_pop_val_type(ValType::NumType(NumType::F32))?;
-                // Address
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
             }
             F64_STORE => {
-                let _memarg = MemArg::read_unvalidated(wasm);
-
-                // Value to store
+                if memories.is_empty() {
+                    return Err(Error::MemoryIsNotDefined(0));
+                }
+                let memarg = MemArg::read(wasm)?;
+                if memarg.align > 8 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 8));
+                }
                 stack.assert_pop_val_type(ValType::NumType(NumType::F64))?;
-                // Address
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+            }
+            I32_STORE8 => {
+                if memories.is_empty() {
+                    return Err(Error::MemoryIsNotDefined(0));
+                }
+                let memarg = MemArg::read(wasm)?;
+                if memarg.align > 1 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 1));
+                }
+                stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+            }
+            I32_STORE16 => {
+                if memories.is_empty() {
+                    return Err(Error::MemoryIsNotDefined(0));
+                }
+                let memarg = MemArg::read(wasm)?;
+                if memarg.align > 2 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 2));
+                }
+                stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+            }
+            I64_STORE8 => {
+                if memories.is_empty() {
+                    return Err(Error::MemoryIsNotDefined(0));
+                }
+                let memarg = MemArg::read(wasm)?;
+                if memarg.align > 1 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 1));
+                }
+                stack.assert_pop_val_type(ValType::NumType(NumType::I64))?;
+                stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+            }
+            I64_STORE16 => {
+                if memories.is_empty() {
+                    return Err(Error::MemoryIsNotDefined(0));
+                }
+                let memarg = MemArg::read(wasm)?;
+                if memarg.align > 2 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 2));
+                }
+                stack.assert_pop_val_type(ValType::NumType(NumType::I64))?;
+                stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+            }
+            I64_STORE32 => {
+                if memories.is_empty() {
+                    return Err(Error::MemoryIsNotDefined(0));
+                }
+                let memarg = MemArg::read(wasm)?;
+                if memarg.align > 4 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 4));
+                }
+                stack.assert_pop_val_type(ValType::NumType(NumType::I64))?;
+                stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+            }
+            MEMORY_SIZE => {
+                let mem_idx = wasm.read_u8()? as MemIdx;
+                if memories.len() <= mem_idx {
+                    return Err(Error::MemoryIsNotDefined(mem_idx));
+                }
+                stack.push_valtype(ValType::NumType(NumType::I32));
+            }
+            MEMORY_GROW => {
+                let mem_idx = wasm.read_u8()? as MemIdx;
+                if memories.len() <= mem_idx {
+                    return Err(Error::MemoryIsNotDefined(mem_idx));
+                }
+                stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                stack.push_valtype(ValType::NumType(NumType::I32));
             }
             // i32.const: [] -> [i32]
             I32_CONST => {
@@ -457,6 +678,106 @@ fn read_instructions(
                 stack.assert_pop_val_type(ValType::NumType(NumType::F32))?;
 
                 stack.push_valtype(ValType::NumType(NumType::F64));
+            }
+
+            REF_IS_NULL => {
+                stack.assert_pop_ref_type()?;
+
+                stack.push_valtype(ValType::NumType(NumType::I32));
+            }
+
+            FC_EXTENSIONS => {
+                let Ok(second_instr_byte) = wasm.read_u8() else {
+                    // TODO only do this if EOF
+                    return Err(Error::ExprMissingEnd);
+                };
+                trace!("Read instruction byte {second_instr_byte:#04X?} ({second_instr_byte}) at wasm_binary[{}]", wasm.pc);
+
+                use crate::core::reader::types::opcode::fc_extensions::*;
+                match second_instr_byte {
+                    I32_TRUNC_SAT_F32_S => {
+                        stack.assert_pop_val_type(ValType::NumType(NumType::F32))?;
+                        stack.push_valtype(ValType::NumType(NumType::I32));
+                    }
+                    I32_TRUNC_SAT_F32_U => {
+                        stack.assert_pop_val_type(ValType::NumType(NumType::F32))?;
+                        stack.push_valtype(ValType::NumType(NumType::I32));
+                    }
+                    I32_TRUNC_SAT_F64_S => {
+                        stack.assert_pop_val_type(ValType::NumType(NumType::F64))?;
+                        stack.push_valtype(ValType::NumType(NumType::I32));
+                    }
+                    I32_TRUNC_SAT_F64_U => {
+                        stack.assert_pop_val_type(ValType::NumType(NumType::F64))?;
+                        stack.push_valtype(ValType::NumType(NumType::I32));
+                    }
+                    I64_TRUNC_SAT_F32_S => {
+                        stack.assert_pop_val_type(ValType::NumType(NumType::F32))?;
+                        stack.push_valtype(ValType::NumType(NumType::I64));
+                    }
+                    I64_TRUNC_SAT_F32_U => {
+                        stack.assert_pop_val_type(ValType::NumType(NumType::F32))?;
+                        stack.push_valtype(ValType::NumType(NumType::I64));
+                    }
+                    I64_TRUNC_SAT_F64_S => {
+                        stack.assert_pop_val_type(ValType::NumType(NumType::F64))?;
+                        stack.push_valtype(ValType::NumType(NumType::I64));
+                    }
+                    I64_TRUNC_SAT_F64_U => {
+                        stack.assert_pop_val_type(ValType::NumType(NumType::F64))?;
+                        stack.push_valtype(ValType::NumType(NumType::I64));
+                    }
+                    MEMORY_INIT => {
+                        let data_idx = wasm.read_var_u32()? as DataIdx;
+                        let mem_idx = wasm.read_u8()? as MemIdx;
+                        if memories.len() <= mem_idx {
+                            return Err(Error::MemoryIsNotDefined(mem_idx));
+                        }
+                        if data_count.is_none() {
+                            return Err(Error::NoDataSegments);
+                        }
+                        if data_count.unwrap() as usize <= data_idx {
+                            return Err(Error::DataSegmentNotFound(data_idx));
+                        }
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                    }
+                    DATA_DROP => {
+                        if data_count.is_none() {
+                            return Err(Error::NoDataSegments);
+                        }
+                        let data_idx = wasm.read_var_u32()? as DataIdx;
+                        if data_count.unwrap() as usize <= data_idx {
+                            return Err(Error::DataSegmentNotFound(data_idx));
+                        }
+                    }
+                    MEMORY_COPY => {
+                        let (dst, src) = (wasm.read_u8()? as usize, wasm.read_u8()? as usize);
+                        assert!(dst == 0 && src == 0);
+                        if memories.is_empty() {
+                            return Err(Error::MemoryIsNotDefined(0));
+                        }
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                    }
+                    MEMORY_FILL => {
+                        let mem_idx = wasm.read_u8()? as MemIdx;
+                        if memories.len() <= mem_idx {
+                            return Err(Error::MemoryIsNotDefined(mem_idx));
+                        }
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                    }
+                    _ => {
+                        return Err(Error::InvalidMultiByteInstr(
+                            first_instr_byte,
+                            second_instr_byte,
+                        ))
+                    }
+                }
             }
             _ => return Err(Error::InvalidInstr(first_instr_byte)),
         }
