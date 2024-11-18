@@ -16,7 +16,7 @@
 */
 use wasm::{validate, RuntimeInstance};
 
-const WAT: &'static str = r#"
+const WAT: &str = r#"
       (module
       (func (export "i64_{{0}}") (param $x i64) (param $y i64) (result i32)
           local.get $x

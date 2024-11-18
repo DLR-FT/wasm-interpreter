@@ -20,14 +20,14 @@ pub fn f32_const() {
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
     assert_eq!(
-        3.14159274_f32,
+        3.141_592_7_f32,
         instance
             .invoke(&instance.get_function_by_index(0, 0).unwrap(), ())
             .unwrap()
     );
 }
 
-const WAT_2_ARGS_RETURN_I32: &'static str = r#"
+const WAT_2_ARGS_RETURN_I32: &str = r#"
     (module
         (func (export "f32_{{0}}") (param $x f32) (param $y f32) (result i32)
             local.get $x
@@ -258,7 +258,7 @@ pub fn f32_ge() {
     );
 }
 
-const WAT_1_ARG_RETURN_F32: &'static str = r#"
+const WAT_1_ARG_RETURN_F32: &str = r#"
     (module
       (func (export "f32_{{0}}") (param $x f32) (result f32)
           local.get $x
@@ -553,7 +553,7 @@ pub fn f32_sqrt() {
         .is_nan());
 }
 
-const WAT_2_ARGS_RETURN_F32: &'static str = r#"
+const WAT_2_ARGS_RETURN_F32: &str = r#"
     (module
       (func (export "f32_{{0}}") (param $x f32) (param $y f32) (result f32)
           local.get $x

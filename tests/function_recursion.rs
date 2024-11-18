@@ -1,6 +1,6 @@
 use wasm::{validate, RuntimeInstance, DEFAULT_MODULE};
 
-const FUNCTION_CALL: &'static str = r#"
+const FUNCTION_CALL: &str = r#"
     (module
         (func (export "simple_caller") (param $x i32) (param $y i32) (result i32)
             (call $callee (i32.mul (local.get $x) (local.get $y)))

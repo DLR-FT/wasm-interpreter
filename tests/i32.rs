@@ -16,7 +16,7 @@
 */
 use wasm::{validate, RuntimeInstance};
 
-const WAT: &'static str = r#"
+const WAT: &str = r#"
       (module
       (func (export "i32_{{0}}") (param $x i32) (param $y i32) (result i32)
           local.get $x
@@ -59,7 +59,7 @@ pub fn i32_add() {
     );
     // Chaned the following value from the spec:
     // - 0x80000000 to -2147483648 = (0x80000000 as u32) as i32
-    let i32_min = (0x80000000 as u32) as i32;
+    let i32_min = 0x80000000_u32 as i32;
 
     assert_eq!(
         i32_min,
@@ -127,7 +127,7 @@ pub fn i32_sub() {
     );
     // Chaned the following value from the spec:
     // - 0x80000000 to -2147483648 = (0x80000000 as u32) as i32
-    let i32_min = (0x80000000 as u32) as i32;
+    let i32_min = 0x80000000_u32 as i32;
 
     assert_eq!(
         i32_min,
