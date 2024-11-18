@@ -116,6 +116,9 @@ pub(super) fn run<H: HookSet>(
                 wasm.move_start_to(func_to_call_inst.code_expr)
                     .unwrap_validated();
             }
+            DROP => {
+                stack.drop_value();
+            }
             LOCAL_GET => {
                 let local_idx = wasm.read_var_u32().unwrap_validated() as LocalIdx;
                 stack.get_local(local_idx);

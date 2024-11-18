@@ -29,6 +29,23 @@ impl Stack {
         Self::default()
     }
 
+    pub fn drop_value(&mut self) {
+        // If there is at least one stack frame, we shall not pop values past the current
+        // stackframe. However, there is one legitimate reason to pop when there is **no** current
+        // stackframe: after the outermost function returns, to extract the final return values of
+        // this interpreter invocation.
+        debug_assert!(
+            if !self.frames.is_empty() {
+                self.values.len() > self.current_stackframe().value_stack_base_idx
+            } else {
+                true
+            },
+            "can not pop values past the current stackframe"
+        );
+
+        self.values.pop().unwrap_validated();
+    }
+
     /// Pop a value of the given [ValType] from the value stack
     pub fn pop_value(&mut self, ty: ValType) -> Value {
         // If there is at least one stack frame, we shall not pop values past the current

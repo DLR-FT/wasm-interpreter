@@ -182,6 +182,9 @@ fn read_instructions(
             UNREACHABLE => {
                 stack.make_unspecified();
             }
+            DROP => {
+                stack.drop_val()?;
+            }
             // local.get: [] -> [t]
             LOCAL_GET => {
                 let local_idx = wasm.read_var_u32()? as LocalIdx;
