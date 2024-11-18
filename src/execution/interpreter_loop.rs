@@ -1898,6 +1898,143 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: f64.reinterpret_i64 [{v1}] -> [{res:.17}]");
                 stack.push_value(res.into());
             }
+            FC_EXTENSIONS => {
+                // Should we call instruction hook here as well? Multibyte instruction
+                let second_instr_byte = wasm.read_u8().unwrap_validated();
+
+                use crate::core::reader::types::opcode::fc_extensions::*;
+                match second_instr_byte {
+                    I32_TRUNC_SAT_F32_S => {
+                        let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                        let res = {
+                            if v1.is_nan() {
+                                0
+                            } else if v1.is_negative_infinity() {
+                                i32::MIN
+                            } else if v1.is_infinity() {
+                                i32::MAX
+                            } else {
+                                v1.as_i32()
+                            }
+                        };
+
+                        trace!("Instruction: i32.trunc_sat_f32_s [{v1}] -> [{res}]");
+                        stack.push_value(res.into());
+                    }
+                    I32_TRUNC_SAT_F32_U => {
+                        let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                        let res = {
+                            if v1.is_nan() || v1.is_negative_infinity() {
+                                0
+                            } else if v1.is_infinity() {
+                                u32::MAX as i32
+                            } else {
+                                v1.as_u32() as i32
+                            }
+                        };
+
+                        trace!("Instruction: i32.trunc_sat_f32_u [{v1}] -> [{res}]");
+                        stack.push_value(res.into());
+                    }
+                    I32_TRUNC_SAT_F64_S => {
+                        let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                        let res = {
+                            if v1.is_nan() {
+                                0
+                            } else if v1.is_negative_infinity() {
+                                i32::MIN
+                            } else if v1.is_infinity() {
+                                i32::MAX
+                            } else {
+                                v1.as_i32()
+                            }
+                        };
+
+                        trace!("Instruction: i32.trunc_sat_f64_s [{v1}] -> [{res}]");
+                        stack.push_value(res.into());
+                    }
+                    I32_TRUNC_SAT_F64_U => {
+                        let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                        let res = {
+                            if v1.is_nan() || v1.is_negative_infinity() {
+                                0
+                            } else if v1.is_infinity() {
+                                u32::MAX as i32
+                            } else {
+                                v1.as_u32() as i32
+                            }
+                        };
+
+                        trace!("Instruction: i32.trunc_sat_f64_u [{v1}] -> [{res}]");
+                        stack.push_value(res.into());
+                    }
+                    I64_TRUNC_SAT_F32_S => {
+                        let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                        let res = {
+                            if v1.is_nan() {
+                                0
+                            } else if v1.is_negative_infinity() {
+                                i64::MIN
+                            } else if v1.is_infinity() {
+                                i64::MAX
+                            } else {
+                                v1.as_i64()
+                            }
+                        };
+
+                        trace!("Instruction: i64.trunc_sat_f32_s [{v1}] -> [{res}]");
+                        stack.push_value(res.into());
+                    }
+                    I64_TRUNC_SAT_F32_U => {
+                        let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                        let res = {
+                            if v1.is_nan() || v1.is_negative_infinity() {
+                                0
+                            } else if v1.is_infinity() {
+                                u64::MAX as i64
+                            } else {
+                                v1.as_u64() as i64
+                            }
+                        };
+
+                        trace!("Instruction: i64.trunc_sat_f32_u [{v1}] -> [{res}]");
+                        stack.push_value(res.into());
+                    }
+                    I64_TRUNC_SAT_F64_S => {
+                        let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                        let res = {
+                            if v1.is_nan() {
+                                0
+                            } else if v1.is_negative_infinity() {
+                                i64::MIN
+                            } else if v1.is_infinity() {
+                                i64::MAX
+                            } else {
+                                v1.as_i64()
+                            }
+                        };
+
+                        trace!("Instruction: i64.trunc_sat_f64_s [{v1}] -> [{res}]");
+                        stack.push_value(res.into());
+                    }
+                    I64_TRUNC_SAT_F64_U => {
+                        let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                        let res = {
+                            if v1.is_nan() || v1.is_negative_infinity() {
+                                0
+                            } else if v1.is_infinity() {
+                                u64::MAX as i64
+                            } else {
+                                v1.as_u64() as i64
+                            }
+                        };
+
+                        trace!("Instruction: i64.trunc_sat_f64_u [{v1}] -> [{res}]");
+                        stack.push_value(res.into());
+                    }
+                    _ => unreachable!(),
+                }
+            }
             other => {
                 trace!("Unknown instruction {other:#x}, skipping..");
             }
