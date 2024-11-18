@@ -3,7 +3,10 @@ use core::fmt::{Debug, Formatter};
 use alloc::{format, vec::Vec};
 
 use crate::{
-    core::{indices::MemIdx, reader::{span::Span, WasmReadable}},
+    core::{
+        indices::MemIdx,
+        reader::{span::Span, WasmReadable},
+    },
     read_constant_expression::read_constant_instructions,
 };
 

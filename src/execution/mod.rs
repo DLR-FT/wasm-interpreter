@@ -354,7 +354,7 @@ where
             .map(|d| {
                 use crate::core::reader::types::data::DataMode;
                 if let DataMode::Active(active_data) = d.mode.clone() {
-                    let mem_idx = active_data.memory_idx as usize;
+                    let mem_idx = active_data.memory_idx;
                     if mem_idx != 0 {
                         todo!("Active data has memory_idx different than 0");
                     }
