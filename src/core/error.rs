@@ -41,6 +41,7 @@ pub enum Error {
     EndInvalidValueStack,
     InvalidLocalIdx,
     InvalidValidationStackValType(Option<ValType>),
+    ExpectedAnOperand,
     InvalidLimitsType(u8),
     InvalidMutType(u8),
     MoreThanOneMemory,
@@ -128,6 +129,7 @@ impl Display for Error {
             Error::FoundLabel(lk) => f.write_fmt(format_args!(
                 "Expecting a ValType, a Label was found: {lk:?}"
             )),
+            Error::ExpectedAnOperand => f.write_str("Expected a ValType"), // Error => f.write_str("Expected an operand (ValType) on the stack")
             Error::MemoryIsNotDefined(memidx) => f.write_fmt(format_args!(
                 "C.mems[{}] is NOT defined when it should be",
                 memidx
