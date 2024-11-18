@@ -206,6 +206,18 @@ pub struct Limits {
     pub max: Option<u32>,
 }
 
+impl Limits {
+    // since the maximum amount of bytes is u32::MAX, the page size is 1 << 16
+    // the max no. of pages = max bytes / page size = u32::MAX / (1 << 16) = 1 << 16
+    pub const MAX_MEM_PAGES: u32 = 1 << 16;
+    // https://webassembly.github.io/reference-types/core/syntax/types.html#limits
+    // memtype is defined in terms of limits, which go from 0 to u32::MAX
+    pub const MAX_MEM_BYTES: u32 = u32::MAX;
+    // https://webassembly.github.io/reference-types/core/exec/runtime.html#memory-instances
+    // memory size is 65536 (1 << 16)
+    pub const MEM_PAGE_SIZE: u32 = 1 << 16;
+}
+
 impl Debug for Limits {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         match self.max {
@@ -232,6 +244,10 @@ impl WasmReadable for Limits {
             }
             other => return Err(Error::InvalidLimitsType(other)),
         };
+
+        if limits.max.is_some() && limits.min > limits.max.unwrap() {
+            return Err(Error::InvalidLimit);
+        }
 
         Ok(limits)
     }
@@ -283,9 +299,20 @@ pub struct MemType {
 
 impl WasmReadable for MemType {
     fn read(wasm: &mut WasmReader) -> Result<Self> {
-        Ok(Self {
-            limits: Limits::read(wasm)?,
-        })
+        let mut limit = Limits::read(wasm)?;
+        // Memory can only grow to 65536 pages of 64kb size (4GiB)
+        if limit.min > (1 << 16) {
+            return Err(Error::MemSizeTooBig);
+        }
+        if limit.max.is_none() {
+            limit.max = Some(1 << 16);
+        } else if limit.max.is_some() {
+            let max_limit = limit.max.unwrap();
+            if max_limit > (1 << 16) {
+                return Err(Error::MemSizeTooBig);
+            }
+        }
+        Ok(Self { limits: limit })
     }
 
     fn read_unvalidated(wasm: &mut WasmReader) -> Self {
