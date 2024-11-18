@@ -723,11 +723,7 @@ pub(super) fn run<H: HookSet>(
                 let mem = store.mems.get_mut(mem_idx).unwrap_validated();
                 let delta: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                let upper_limit = if mem.ty.limits.max.is_some() {
-                    mem.ty.limits.max.unwrap()
-                } else {
-                    Limits::MAX_MEM_PAGES
-                };
+                let upper_limit = mem.ty.limits.max.unwrap_or(Limits::MAX_MEM_BYTES);
                 let pushed_value = if delta < 0 || delta as u32 + mem.size() as u32 > upper_limit {
                     stack.push_value((-1).into());
                     -1
@@ -2046,24 +2042,25 @@ pub(super) fn run<H: HookSet>(
                         let n: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                         let s: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                         let d: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                        if n < 0 || s < 0 || d < 0 {
-                            return Err(RuntimeError::MemoryAccessOutOfBounds);
-                        }
 
-                        if s as usize + n as usize > data_init_len
-                            || d as usize + n as usize > mem.data.len()
-                        {
-                            return Err(RuntimeError::MemoryAccessOutOfBounds);
-                        }
+                        let final_src_offset = (n as usize)
+                            .checked_add(s as usize)
+                            .filter(|&res| res <= data_init_len)
+                            .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
+
+                        let final_dst_offset = (n as usize)
+                            .checked_add(d as usize)
+                            .filter(|&res| res <= mem.data.len())
+                            .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
 
                         let data =
-                            &store.data.get(data_idx).unwrap().data[(s as usize)..(s + n) as usize];
+                            &store.data.get(data_idx).unwrap().data[(s as usize)..final_src_offset];
                         store
                             .mems
                             .get_mut(mem_idx)
                             .unwrap_validated()
                             .data
-                            .get_mut(d as usize..(d + n) as usize)
+                            .get_mut(d as usize..final_dst_offset)
                             .unwrap_validated()
                             .copy_from_slice(data);
 
@@ -2090,25 +2087,26 @@ pub(super) fn run<H: HookSet>(
                             wasm.read_u8().unwrap_validated() as usize,
                             wasm.read_u8().unwrap_validated() as usize,
                         );
-                        let mem = unsafe { store.mems.get_unchecked_mut(0) };
                         let n: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                         let s: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                         let d: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                        if n < 0 || s < 0 || d < 0 {
-                            return Err(RuntimeError::MemoryAccessOutOfBounds);
-                        }
 
-                        if s as usize + n as usize > mem.data.len()
-                            || d as usize + n as usize > mem.data.len()
-                        {
-                            return Err(RuntimeError::MemoryAccessOutOfBounds);
-                        }
+                        let final_src_offset = (n as usize)
+                            .checked_add(s as usize)
+                            .filter(|&res| res <= store.mems.get(src).unwrap_validated().data.len())
+                            .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
+
+                        // let final_dst_offset =
+                        (n as usize)
+                            .checked_add(d as usize)
+                            .filter(|&res| res <= store.mems.get(dst).unwrap_validated().data.len())
+                            .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
 
                         if dst == src {
                             // we copy from memory X to memory X
                             let mem = store.mems.get_mut(src).unwrap_validated();
                             mem.data
-                                .copy_within(s as usize..(s + n) as usize, d as usize);
+                                .copy_within(s as usize..final_src_offset, d as usize);
                         } else {
                             // we copy from one memory to another
                             use core::cmp::Ordering::*;
@@ -2140,42 +2138,16 @@ pub(super) fn run<H: HookSet>(
                         let n: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                         let val: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                        // This works just fine in brave, no need to return an error, just cast to u8 (we lose the first 24 bits)
-                        /*
-                        ;; https://webassembly.github.io/wabt/demo/wat2wasm/
-                        (module
-                            (import "js" "mem" (memory 1))
-                            (func (export "fill")
-                                (memory.fill (i32.const 0) (i32.const 2777) (i32.const 100))
-                            )
-                        )
-
-                        ;; JS
-
-                        const memory = new WebAssembly.Memory({
-                            initial: 1,
-                            maximum: 1,
-                        });
-                        const wasmInstance =
-                            new WebAssembly.Instance(wasmModule, {js: {mem: memory}});
-                        const { fill } = wasmInstance.exports;
-                        fill();
-                        console.log(new Uint8Array(memory.buffer));
-                         */
-
-                        // if !(0..=255).contains(&val) {
-                        //     return Err(RuntimeError::MemoryAccessOutOfBounds);
-                        // }
+                        if !(0..=255).contains(&val) {
+                            warn!("Value for memory.fill does not fit in a byte ({val})");
+                        }
 
                         let d: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                        if n < 0 || d < 0 {
-                            return Err(RuntimeError::MemoryAccessOutOfBounds);
-                        }
-
-                        if n as usize + d as usize > mem.data.len() {
-                            return Err(RuntimeError::MemoryAccessOutOfBounds);
-                        }
+                        let final_dst_offset = (n as usize)
+                            .checked_add(d as usize)
+                            .filter(|&res| res <= mem.data.len())
+                            .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
 
                         let data: Vec<u8> = vec![val as u8; (n - d) as usize];
                         store
@@ -2183,7 +2155,7 @@ pub(super) fn run<H: HookSet>(
                             .get_mut(mem_idx)
                             .unwrap_validated()
                             .data
-                            .get_mut(d as usize..(d + n) as usize)
+                            .get_mut(d as usize..final_dst_offset)
                             .unwrap_validated()
                             .copy_from_slice(&data);
 

@@ -483,6 +483,7 @@ fn read_instructions(
             }
             MEMORY_SIZE => {
                 let mem_idx = wasm.read_u8()? as MemIdx;
+                assert!(mem_idx == 0, "Multiple memories are not supported");
                 if memories.len() <= mem_idx {
                     return Err(Error::MemoryIsNotDefined(mem_idx));
                 }
@@ -490,6 +491,7 @@ fn read_instructions(
             }
             MEMORY_GROW => {
                 let mem_idx = wasm.read_u8()? as MemIdx;
+                assert!(mem_idx == 0, "Multiple memories are not supported");
                 if memories.len() <= mem_idx {
                     return Err(Error::MemoryIsNotDefined(mem_idx));
                 }
@@ -676,7 +678,6 @@ fn read_instructions(
 
                 stack.push_valtype(ValType::NumType(NumType::F64));
             }
-            
 
             FC_EXTENSIONS => {
                 let Ok(second_instr_byte) = wasm.read_u8() else {
@@ -722,6 +723,7 @@ fn read_instructions(
                     MEMORY_INIT => {
                         let data_idx = wasm.read_var_u32()? as DataIdx;
                         let mem_idx = wasm.read_u8()? as MemIdx;
+                        assert!(mem_idx == 0, "Multiple memories are not supported");
                         if memories.len() <= mem_idx {
                             return Err(Error::MemoryIsNotDefined(mem_idx));
                         }
@@ -746,7 +748,7 @@ fn read_instructions(
                     }
                     MEMORY_COPY => {
                         let (dst, src) = (wasm.read_u8()? as usize, wasm.read_u8()? as usize);
-                        assert!(dst == 0 && src == 0);
+                        assert!(dst == 0 && src == 0, "Multiple memories are not supported");
                         if memories.is_empty() {
                             return Err(Error::MemoryIsNotDefined(0));
                         }
@@ -756,6 +758,7 @@ fn read_instructions(
                     }
                     MEMORY_FILL => {
                         let mem_idx = wasm.read_u8()? as MemIdx;
+                        assert!(mem_idx == 0, "Multiple memories are not supported");
                         if memories.len() <= mem_idx {
                             return Err(Error::MemoryIsNotDefined(mem_idx));
                         }
