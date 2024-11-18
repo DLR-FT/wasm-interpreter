@@ -163,3 +163,15 @@ pub const F32_REINTERPRET_I32: u8 = 0xBE;
 pub const F64_REINTERPRET_I64: u8 = 0xBF;
 pub const REF_NULL: u8 = 0xD0;
 pub const REF_FUNC: u8 = 0xD2;
+pub const FC_EXTENSIONS: u8 = 0xFC;
+
+pub mod fc_extensions {
+    pub const I32_TRUNC_SAT_F32_S: u8 = 0x00;
+    pub const I32_TRUNC_SAT_F32_U: u8 = 0x01;
+    pub const I32_TRUNC_SAT_F64_S: u8 = 0x02;
+    pub const I32_TRUNC_SAT_F64_U: u8 = 0x03;
+    pub const I64_TRUNC_SAT_F32_S: u8 = 0x04;
+    pub const I64_TRUNC_SAT_F32_U: u8 = 0x05;
+    pub const I64_TRUNC_SAT_F64_S: u8 = 0x06;
+    pub const I64_TRUNC_SAT_F64_U: u8 = 0x07;
+}
