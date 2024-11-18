@@ -160,3 +160,5 @@ pub const I32_REINTERPRET_F32: u8 = 0xBC;
 pub const I64_REINTERPRET_F64: u8 = 0xBD;
 pub const F32_REINTERPRET_I32: u8 = 0xBE;
 pub const F64_REINTERPRET_I64: u8 = 0xBF;
+pub const REF_NULL: u8 = 0xD0;
+pub const REF_FUNC: u8 = 0xD2;
