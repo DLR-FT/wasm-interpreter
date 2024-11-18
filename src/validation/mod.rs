@@ -12,6 +12,7 @@ use crate::{Error, Result};
 
 pub(crate) mod code;
 pub(crate) mod globals;
+pub(crate) mod read_constant_expression;
 pub(crate) mod validation_stack;
 
 /// Information collected from validating a module.
