@@ -32,6 +32,15 @@ impl ValidationStack {
         self.stack.push(ValidationStackEntry::Label(label_info));
     }
 
+    /// Similar to [`ValidationStack::pop`], because it pops a value from the stack,
+    /// but more public and doesn't actually return the popped value.
+    pub(super) fn drop_val(&mut self) -> Result<()> {
+        match self.stack.pop().ok_or(Error::EndInvalidValueStack)? {
+            ValidationStackEntry::Val(_) => Ok(()),
+            _ => Err(Error::ExpectedAnOperand),
+        }
+    }
+
     /// This puts an unspecified element on top of the stack.
     /// While the top of the stack is unspecified, arbitrary value types can be popped.
     /// To undo this, a new label has to be pushed or an existing one has to be popped.
