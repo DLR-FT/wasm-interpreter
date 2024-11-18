@@ -15,7 +15,6 @@ use crate::execution::value::{Ref, Value};
 /// <https://webassembly.github.io/spec/core/exec/runtime.html#store>
 pub struct Store {
     pub funcs: Vec<FuncInst>,
-    // tables: Vec<TableInst>,
     pub mems: Vec<MemInst>,
     pub globals: Vec<GlobalInst>,
 }
@@ -39,9 +38,8 @@ pub struct MemInst {
 }
 
 impl MemInst {
-    const PAGE_SIZE: usize = 1 << 16;
     pub fn new(ty: MemType) -> Self {
-        let initial_size = Self::PAGE_SIZE * ty.limits.min as usize;
+        let initial_size = (crate::Limits::MEM_PAGE_SIZE as usize) * ty.limits.min as usize;
 
         Self {
             ty,
@@ -49,15 +47,14 @@ impl MemInst {
         }
     }
 
-    #[allow(dead_code)]
     pub fn grow(&mut self, delta_pages: usize) {
         self.data
-            .extend(iter::repeat(0).take(delta_pages * Self::PAGE_SIZE))
+            .extend(iter::repeat(0).take(delta_pages * (crate::Limits::MEM_PAGE_SIZE as usize)))
     }
 
-    #[allow(dead_code)]
+    /// Can never be bigger than 65,356 pages
     pub fn size(&self) -> usize {
-        self.data.len() / Self::PAGE_SIZE
+        self.data.len() / (crate::Limits::MEM_PAGE_SIZE as usize)
     }
 }
 
