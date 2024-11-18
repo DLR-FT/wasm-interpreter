@@ -10,6 +10,7 @@ use crate::execution::assert_validated::UnwrapValidatedExt;
 use crate::Result;
 use crate::{unreachable_validated, Error};
 
+pub mod data;
 pub mod export;
 pub mod function_code_header;
 pub mod global;
