@@ -59,6 +59,9 @@ pub(super) fn run<H: HookSet>(
         let first_instr_byte = wasm.read_u8().unwrap_validated();
 
         match first_instr_byte {
+            NOP => {
+                trace!("Instruction: NOP");
+            }
             END => {
                 let maybe_return_address = stack.pop_stackframe();
 
