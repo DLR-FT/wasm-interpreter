@@ -5,6 +5,7 @@ use const_interpreter_loop::run_const;
 use function_ref::FunctionRef;
 use interpreter_loop::run;
 use locals::Locals;
+use store::DataInst;
 use value_stack::Stack;
 
 use crate::core::reader::types::export::{Export, ExportDesc};
@@ -20,7 +21,7 @@ use crate::{RuntimeError, ValType, ValidationInfo};
 
 // TODO
 pub(crate) mod assert_validated;
-mod const_interpreter_loop;
+pub mod const_interpreter_loop;
 pub mod function_ref;
 pub mod hooks;
 mod interpreter_loop;
@@ -39,7 +40,7 @@ where
     pub wasm_bytecode: &'b [u8],
     types: Vec<FuncType>,
     exports: Vec<Export>,
-    store: Store,
+    pub store: Store,
     pub hook_set: H,
 }
 
@@ -341,10 +342,66 @@ where
                 .collect()
         };
 
-        let memory_instances: Vec<MemInst> = validation_info
+        let mut memory_instances: Vec<MemInst> = validation_info
             .memories
             .iter()
             .map(|ty| MemInst::new(*ty))
+            .collect();
+
+        let data_sections: Vec<DataInst> = validation_info
+            .data
+            .iter()
+            .map(|d| {
+                use crate::core::reader::types::data::DataMode;
+                if let DataMode::Active(active_data) = d.mode.clone() {
+                    let mem_idx = active_data.memory_idx as usize;
+                    if mem_idx != 0 {
+                        todo!("Active data has memory_idx different than 0");
+                    }
+                    assert!(memory_instances.len() > mem_idx);
+
+                    let value = {
+                        let mut wasm = WasmReader::new(validation_info.wasm);
+                        wasm.move_start_to(active_data.offset).unwrap_validated();
+                        let mut stack = Stack::new();
+                        run_const(wasm, &mut stack, ());
+                        let value = stack.peek_unknown_value();
+                        if value.is_none() {
+                            panic!("No value on the stack for data segment offset");
+                        }
+                        value.unwrap()
+                    };
+
+                    // TODO: this shouldn't be a simple value, should it? I mean it can't be, but it can also be any type of ValType
+                    // TODO: also, do we need to forcefully make it i32?
+                    let offset: u32 = match value {
+                        Value::I32(val) => val,
+                        Value::I64(val) => {
+                            if val > u32::MAX as u64 {
+                                panic!("i64 value for data segment offset is out of reach")
+                            }
+                            val as u32
+                        }
+                        // TODO: implement all value types
+                        _ => unimplemented!(),
+                    };
+
+                    let mem_inst = memory_instances.get_mut(mem_idx).unwrap();
+
+                    let len = mem_inst.data.len();
+                    if offset as usize + d.init.len() > len {
+                        panic!("Active data writing in memory, out of bounds");
+                    }
+                    let data = mem_inst
+                        .data
+                        .get_mut(offset as usize..offset as usize + d.init.len())
+                        .unwrap();
+                    data.copy_from_slice(&d.init);
+                }
+                DataInst {
+                    data: d.init.clone(),
+                }
+            })
             .collect();
 
         let global_instances: Vec<GlobalInst> = validation_info
@@ -373,6 +430,7 @@ where
             funcs: function_instances,
             mems: memory_instances,
             globals: global_instances,
+            data: data_sections,
         }
     }
 }

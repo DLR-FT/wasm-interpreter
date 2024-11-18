@@ -16,14 +16,14 @@ use alloc::vec::Vec;
 use crate::{
     assert_validated::UnwrapValidatedExt,
     core::{
-        indices::{FuncIdx, GlobalIdx, LocalIdx},
+        indices::{DataIdx, FuncIdx, GlobalIdx, LocalIdx},
         reader::{
             types::{memarg::MemArg, FuncType},
             WasmReadable, WasmReader,
         },
     },
     locals::Locals,
-    store::Store,
+    store::{DataInst, Store},
     value,
     value_stack::Stack,
     Limits, NumType, RuntimeError, ValType, Value,
@@ -2031,6 +2031,163 @@ pub(super) fn run<H: HookSet>(
 
                         trace!("Instruction: i64.trunc_sat_f64_u [{v1}] -> [{res}]");
                         stack.push_value(res.into());
+                    }
+                    // See https://webassembly.github.io/bulk-memory-operations/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-init-x
+                    // Copy a region from a data segment into memory
+                    MEMORY_INIT => {
+                        //  mappings:
+                        //      n => number of bytes to copy
+                        //      s => starting pointer in the data segment
+                        //      d => destination address to copy to
+                        let data_idx = wasm.read_var_u32().unwrap_validated() as DataIdx;
+                        let data_init_len = store.data.get(data_idx).unwrap().data.len();
+                        let mem_idx = wasm.read_u8().unwrap_validated() as usize;
+                        let mem = store.mems.get(mem_idx).unwrap_validated();
+                        let n: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                        let s: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                        let d: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                        if n < 0 || s < 0 || d < 0 {
+                            return Err(RuntimeError::MemoryAccessOutOfBounds);
+                        }
+
+                        if s as usize + n as usize > data_init_len
+                            || d as usize + n as usize > mem.data.len()
+                        {
+                            return Err(RuntimeError::MemoryAccessOutOfBounds);
+                        }
+
+                        let data =
+                            &store.data.get(data_idx).unwrap().data[(s as usize)..(s + n) as usize];
+                        store
+                            .mems
+                            .get_mut(mem_idx)
+                            .unwrap_validated()
+                            .data
+                            .get_mut(d as usize..(d + n) as usize)
+                            .unwrap_validated()
+                            .copy_from_slice(data);
+
+                        trace!("Instruction: memory.init");
+                    }
+                    DATA_DROP => {
+                        // Here is debatable
+                        // If we were to be on par with the spec we'd have to use a DataInst struct
+                        // But since memory.init is specifically made for Passive data segments
+                        // I thought that using DataMode would be better because we can see if the
+                        // data segment is passive or active
+
+                        // Also, we should set data to null here (empty), which we do using an empty init vec
+                        let data_idx = wasm.read_var_u32().unwrap_validated() as DataIdx;
+                        store.data[data_idx] = DataInst { data: Vec::new() };
+                    }
+                    // See https://webassembly.github.io/bulk-memory-operations/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-copy
+                    MEMORY_COPY => {
+                        //  mappings:
+                        //      n => number of bytes to copy
+                        //      s => source address to copy from
+                        //      d => destination address to copy to
+                        let (dst, src) = (
+                            wasm.read_u8().unwrap_validated() as usize,
+                            wasm.read_u8().unwrap_validated() as usize,
+                        );
+                        let mem = unsafe { store.mems.get_unchecked_mut(0) };
+                        let n: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                        let s: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                        let d: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                        if n < 0 || s < 0 || d < 0 {
+                            return Err(RuntimeError::MemoryAccessOutOfBounds);
+                        }
+
+                        if s as usize + n as usize > mem.data.len()
+                            || d as usize + n as usize > mem.data.len()
+                        {
+                            return Err(RuntimeError::MemoryAccessOutOfBounds);
+                        }
+
+                        if dst == src {
+                            // we copy from memory X to memory X
+                            let mem = store.mems.get_mut(src).unwrap_validated();
+                            mem.data
+                                .copy_within(s as usize..(s + n) as usize, d as usize);
+                        } else {
+                            // we copy from one memory to another
+                            use core::cmp::Ordering::*;
+                            let (src_mem, dst_mem) = match dst.cmp(&src) {
+                                Greater => {
+                                    let (left, right) = store.mems.split_at_mut(dst);
+                                    (&left[src], &mut right[0])
+                                }
+                                Less => {
+                                    let (left, right) = store.mems.split_at_mut(src);
+                                    (&right[0], &mut left[dst])
+                                }
+                                Equal => unreachable!(),
+                            };
+                            dst_mem.data[d as usize..(d + n) as usize]
+                                .copy_from_slice(&src_mem.data[s as usize..(s + n) as usize]);
+                        }
+
+                        trace!("Instruction: memory.copy");
+                    }
+                    // See https://webassembly.github.io/bulk-memory-operations/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-fill
+                    MEMORY_FILL => {
+                        //  mappings:
+                        //      n => number of bytes to update
+                        //      val => the value to set each byte to (must be < 256)
+                        //      d => the pointer to the region to update
+                        let mem_idx = wasm.read_u8().unwrap_validated() as usize;
+                        let mem = store.mems.get(mem_idx).unwrap_validated();
+                        let n: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                        let val: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                        // This works just fine in brave, no need to return an error, just cast to u8 (we lose the first 24 bits)
+                        /*
+                        ;; https://webassembly.github.io/wabt/demo/wat2wasm/
+                        (module
+                            (import "js" "mem" (memory 1))
+                            (func (export "fill")
+                                (memory.fill (i32.const 0) (i32.const 2777) (i32.const 100))
+                            )
+                        )
+
+                        ;; JS
+
+                        const memory = new WebAssembly.Memory({
+                            initial: 1,
+                            maximum: 1,
+                        });
+                        const wasmInstance =
+                            new WebAssembly.Instance(wasmModule, {js: {mem: memory}});
+                        const { fill } = wasmInstance.exports;
+                        fill();
+                        console.log(new Uint8Array(memory.buffer));
+                         */
+
+                        // if !(0..=255).contains(&val) {
+                        //     return Err(RuntimeError::MemoryAccessOutOfBounds);
+                        // }
+
+                        let d: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                        if n < 0 || d < 0 {
+                            return Err(RuntimeError::MemoryAccessOutOfBounds);
+                        }
+
+                        if n as usize + d as usize > mem.data.len() {
+                            return Err(RuntimeError::MemoryAccessOutOfBounds);
+                        }
+
+                        let data: Vec<u8> = vec![val as u8; (n - d) as usize];
+                        store
+                            .mems
+                            .get_mut(mem_idx)
+                            .unwrap_validated()
+                            .data
+                            .get_mut(d as usize..(d + n) as usize)
+                            .unwrap_validated()
+                            .copy_from_slice(&data);
+
+                        trace!("Instruction: memory.fill");
                     }
                     _ => unreachable!(),
                 }

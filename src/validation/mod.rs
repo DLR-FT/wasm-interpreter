@@ -3,6 +3,7 @@ use alloc::vec::Vec;
 use crate::core::indices::{FuncIdx, TypeIdx};
 use crate::core::reader::section_header::{SectionHeader, SectionTy};
 use crate::core::reader::span::Span;
+use crate::core::reader::types::data::DataSegment;
 use crate::core::reader::types::export::Export;
 use crate::core::reader::types::global::Global;
 use crate::core::reader::types::import::Import;
@@ -30,6 +31,7 @@ pub struct ValidationInfo<'bytecode> {
     #[allow(dead_code)]
     pub(crate) exports: Vec<Export>,
     pub(crate) func_blocks: Vec<Span>,
+    pub(crate) data: Vec<DataSegment>,
     /// The start function which is automatically executed during instantiation
     pub(crate) start: Option<FuncIdx>,
 }
@@ -124,14 +126,30 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
-    let _: Option<()> = handle_section(&mut wasm, &mut header, SectionTy::DataCount, |_, _| {
-        todo!("data count section not yet supported")
-    })?;
+    // https://webassembly.github.io/spec/core/binary/modules.html#data-count-section
+    // As per the official documentation:
+    //
+    // The data count section is used to simplify single-pass validation. Since the data section occurs after the code section, the `memory.init` and `data.drop` and instructions would not be able to check whether the data segment index is valid until the data section is read. The data count section occurs before the code section, so a single-pass validator can use this count instead of deferring validation.
+    let data_count: Option<u32> =
+        handle_section(&mut wasm, &mut header, SectionTy::DataCount, |wasm, _| {
+            wasm.read_var_u32()
+        })?;
+    if data_count.is_some() {
+        trace!("data count: {}", data_count.unwrap());
+    }
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
     let func_blocks = handle_section(&mut wasm, &mut header, SectionTy::Code, |wasm, h| {
-        code::validate_code_section(wasm, h, &types, &functions, &globals)
+        code::validate_code_section(
+            wasm,
+            h,
+            &types,
+            &functions,
+            &globals,
+            &memories,
+            &data_count,
+        )
     })?
     .unwrap_or_default();
 
@@ -139,9 +157,15 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
-    let _: Option<()> = handle_section(&mut wasm, &mut header, SectionTy::Data, |_, _| {
-        todo!("data section not yet supported")
-    })?;
+    let data_section = handle_section(&mut wasm, &mut header, SectionTy::Data, |wasm, _| {
+        wasm.read_vec(DataSegment::read)
+    })?
+    .unwrap_or_default();
+
+    // https://webassembly.github.io/spec/core/binary/modules.html#data-count-section
+    if data_count.is_some() {
+        assert_eq!(data_count.unwrap() as usize, data_section.len());
+    }
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
@@ -161,6 +185,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
         globals,
         exports,
         func_blocks,
+        data: data_section,
         start,
     })
 }

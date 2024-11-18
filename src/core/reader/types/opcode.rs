@@ -174,4 +174,8 @@ pub mod fc_extensions {
     pub const I64_TRUNC_SAT_F32_U: u8 = 0x05;
     pub const I64_TRUNC_SAT_F64_S: u8 = 0x06;
     pub const I64_TRUNC_SAT_F64_U: u8 = 0x07;
+    pub const MEMORY_INIT: u8 = 0x08;
+    pub const DATA_DROP: u8 = 0x09;
+    pub const MEMORY_COPY: u8 = 0x0A;
+    pub const MEMORY_FILL: u8 = 0x0B;
 }

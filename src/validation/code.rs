@@ -1,7 +1,7 @@
 use alloc::vec::Vec;
 use core::iter;
 
-use crate::core::indices::{FuncIdx, GlobalIdx, LocalIdx, MemIdx};
+use crate::core::indices::{DataIdx, FuncIdx, GlobalIdx, LocalIdx, MemIdx};
 use crate::core::reader::section_header::{SectionHeader, SectionTy};
 use crate::core::reader::span::Span;
 use crate::core::reader::types::global::Global;
@@ -18,6 +18,7 @@ pub fn validate_code_section(
     type_idx_of_fn: &[usize],
     globals: &[Global],
     memories: &[MemType],
+    data_count: &Option<u32>,
 ) -> Result<Vec<Span>> {
     assert_eq!(section_header.ty, SectionTy::Code);
 
@@ -46,6 +47,7 @@ pub fn validate_code_section(
             fn_types,
             type_idx_of_fn,
             memories,
+            data_count,
         )?;
 
         // Check if there were unread trailing instructions after the last END
@@ -93,6 +95,7 @@ fn read_instructions(
     fn_types: &[FuncType],
     type_idx_of_fn: &[usize],
     memories: &[MemType],
+    data_count: &Option<u32>,
 ) -> Result<()> {
     // TODO we must terminate only if both we saw the final `end` and when we consumed all of the code span
     loop {
@@ -715,6 +718,50 @@ fn read_instructions(
                     I64_TRUNC_SAT_F64_U => {
                         stack.assert_pop_val_type(ValType::NumType(NumType::F64))?;
                         stack.push_valtype(ValType::NumType(NumType::I64));
+                    }
+                    MEMORY_INIT => {
+                        let data_idx = wasm.read_var_u32()? as DataIdx;
+                        let mem_idx = wasm.read_u8()? as MemIdx;
+                        if memories.len() <= mem_idx {
+                            return Err(Error::MemoryIsNotDefined(mem_idx));
+                        }
+                        if data_count.is_none() {
+                            return Err(Error::NoDataSegments);
+                        }
+                        if data_count.unwrap() as usize <= data_idx {
+                            return Err(Error::DataSegmentNotFound(data_idx));
+                        }
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                    }
+                    DATA_DROP => {
+                        if data_count.is_none() {
+                            return Err(Error::NoDataSegments);
+                        }
+                        let data_idx = wasm.read_var_u32()? as DataIdx;
+                        if data_count.unwrap() as usize <= data_idx {
+                            return Err(Error::DataSegmentNotFound(data_idx));
+                        }
+                    }
+                    MEMORY_COPY => {
+                        let (dst, src) = (wasm.read_u8()? as usize, wasm.read_u8()? as usize);
+                        assert!(dst == 0 && src == 0);
+                        if memories.is_empty() {
+                            return Err(Error::MemoryIsNotDefined(0));
+                        }
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                    }
+                    MEMORY_FILL => {
+                        let mem_idx = wasm.read_u8()? as MemIdx;
+                        if memories.len() <= mem_idx {
+                            return Err(Error::MemoryIsNotDefined(mem_idx));
+                        }
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                     }
                     _ => {
                         return Err(Error::InvalidMultiByteInstr(

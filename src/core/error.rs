@@ -6,7 +6,7 @@ use core::str::Utf8Error;
 use crate::core::reader::section_header::SectionTy;
 use crate::core::reader::types::ValType;
 
-use super::indices::MemIdx;
+use super::indices::{DataIdx, MemIdx};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum RuntimeError {
@@ -54,6 +54,8 @@ pub enum Error {
     MemoryIsNotDefined(MemIdx),
     //           mem.align, wanted alignment
     ErroneousAlignment(u32, u32),
+    NoDataSegments,
+    DataSegmentNotFound(DataIdx),
 }
 
 impl Display for Error {
@@ -139,6 +141,10 @@ impl Display for Error {
                     "Alignment ({}) is not less or equal to {}",
                     mem_align, minimum_wanted_alignment
                 ))
+            }
+            Error::NoDataSegments => f.write_str("Data Count is None"),
+            Error::DataSegmentNotFound(data_idx) => {
+                f.write_fmt(format_args!("Data Segment {} not found", data_idx))
             }
         }
     }

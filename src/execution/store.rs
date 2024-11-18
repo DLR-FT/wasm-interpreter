@@ -17,6 +17,7 @@ pub struct Store {
     pub funcs: Vec<FuncInst>,
     pub mems: Vec<MemInst>,
     pub globals: Vec<GlobalInst>,
+    pub data: Vec<DataInst>,
 }
 
 pub struct FuncInst {
@@ -62,4 +63,8 @@ pub struct GlobalInst {
     pub global: Global,
     /// Must be of the same type as specified in `ty`
     pub value: Value,
+}
+
+pub struct DataInst {
+    pub data: Vec<u8>,
 }
