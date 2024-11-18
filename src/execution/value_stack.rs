@@ -92,13 +92,13 @@ impl Stack {
 
     /// Pop value from the top of the value stack, writing it to the given local
     pub fn set_local(&mut self, idx: LocalIdx) {
-        let local_ty = self.current_stackframe().locals.get_ty(idx);
-
-        let stack_value = self.pop_value(local_ty);
         debug_assert!(
             self.values.len() > self.current_stackframe().value_stack_base_idx,
             "can not pop values past the current stackframe"
         );
+
+        let local_ty = self.current_stackframe().locals.get_ty(idx);
+        let stack_value = self.pop_value(local_ty);
 
         trace!("Instruction: local.set [{stack_value:?}] -> []");
         *self.current_stackframe_mut().locals.get_mut(idx) = stack_value;
