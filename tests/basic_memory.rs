@@ -1,5 +1,5 @@
 use wasm::{validate, RuntimeInstance, DEFAULT_MODULE};
-const BASE_WAT: &'static str = r#"
+const BASE_WAT: &str = r#"
     (module
         (memory 1)
         (func (export "store_num") (param $x {{TYPE}})

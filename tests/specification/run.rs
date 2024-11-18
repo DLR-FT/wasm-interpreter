@@ -341,7 +341,7 @@ fn result_to_value(result: wast::WastRet) -> Value {
 }
 
 pub fn get_command(contents: &str, span: wast::token::Span) -> &str {
-    contents[span.offset() as usize..]
+    contents[span.offset()..]
         .lines()
         .next()
         .unwrap_or("<unknown>")
