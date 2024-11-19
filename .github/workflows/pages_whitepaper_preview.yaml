@@ -1,0 +1,46 @@
+name: Whitepaper Preview Deploy
+
+on:
+  # When a PR is merged (or force push to main)
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - closed
+    paths:
+      - "whitepaper/**/"
+      - ".github/workflows/pages_whitepaper_preview.yaml"
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency: preview-${{ github.ref }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      # -=-=-=-= Strictdoc =-=-=-=-
+      - uses: cachix/install-nix-action@v27
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: cachix/cachix-action@v14
+        with:
+          name: dlr-ft
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+      - run: nix build .?submodules=1#whitepaper --print-build-logs
+
+      - run: mkdir output && cp ./result ./output/whitepaper.pdf && cp ./whitepaper/index.html ./output/index.html
+
+      # -=-=-=-= Deploy =-=-=-=-
+      - name: Deploy Preview
+        uses: rossjrw/pr-preview-action@v1.4.7
+        with:
+          source-dir: output/
+          umbrella-dir: whitepaper/pr-preview
