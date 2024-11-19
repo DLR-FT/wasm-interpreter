@@ -1,0 +1,148 @@
+# Heper to convert from BibTeX:
+# https://jonasloos.github.io/bibtex-to-hayagriva-webapp/
+
+# papers
+
+webassembly-in-avionics-paper:
+  type: article
+  title: "WebAssembly in Avionics : Decoupling Software from Hardware"
+  author:
+    - Zaeske, Wanja
+    - Friedrich, Sven
+    - Schubert, Tim
+    - Durak, Umut
+  date: 2023
+  page-range: 1–10
+  serial-number:
+    doi: 10.1109/DASC58513.2023.10311207
+  parent:
+    type: proceedings
+    title: 2023 IEEE/AIAA 42nd Digital Avionics Systems Conference (DASC)
+    issue: ""
+    volume: 0
+
+fast-in-place-interpreter-for-webassembly:
+  type: article
+  title: A fast in-place interpreter for WebAssembly
+  author: Titzer, Ben L.
+  date: 2022-10
+  url: https://doi.org/10.1145/3563311
+  serial-number:
+    doi: 10.1145/3563311
+  parent:
+    type: periodical
+    title: Proc. ACM Program. Lang.
+    publisher: Association for Computing Machinery
+    location: New York, NY, USA
+    issue: OOPSLA2
+    volume: 6
+
+# standards etc.
+
+do178c:
+  type: report
+  title: "{DO-178C} Software Considerations in Airborne Systems and Equipment Certification"
+  author: RTCA
+  date: 2011
+  organization: RTCA
+do330:
+  type: report
+  title: "{DO-330} Software Tool Qualification Considerations"
+  author: RTCA
+  date: 2011
+  organization: RTCA
+
+do331:
+  type: report
+  title: "{DO-331} Model-Based Development and Verification Supplement to {DO-178C} and {DO-278A}"
+  author: RTCA
+  date: 2011
+  organization: RTCA
+
+do332:
+  type: report
+  title: "{DO-332} Object-Oriented Technology and Related Techniques Supplement to {DO-178C} and {DO-278A}"
+  author: RTCA
+  date: 2011
+  organization: RTCA
+
+do333:
+  type: report
+  title: "{DO-333} Formal Methods Supplement to {DO-178C} and {DO-278A}"
+  author: RTCA
+  date: 2011
+  organization: RTCA
+
+# websites
+
+our-repo:
+  type: Web
+  title: wasm-interpreter
+  author:
+    - DLR e. V.
+    - OxidOS
+  url: https://github.com/DLR-FT/wasm-interpreter
+
+dlr-ft-website:
+  type: Web
+  title: DLR | Institute of Flight Systems
+  author: DLR e. V.
+  url: https://www.dlr.de/en/ft
+
+oxidos-website:
+  type: Web
+  title: Welcome to OxidOS Automotive
+  author: OxidOS
+  url: https://oxidos.io/
+
+wasmtime-website:
+  type: Web
+  title: A fast and secuire runtime for Webassembly
+  author: Bytecode Alliance
+  url: https://wasmtime.dev/
+
+mozilla-baseline-compiler:
+  type: Web
+  title: "Making WebAssembly even faster: Firefox’s new streaming and tiering compiler"
+  author: Lin Clark
+  url: https://hacks.mozilla.org/2018/01/making-webassembly-even-faster-firefoxs-new-streaming-and-tiering-compiler/
+
+wasmi-instruction-enum:
+  type: Web
+  title: "Making WebAssembly even faster: Firefox’s new streaming and tiering compiler"
+  author: Robin Freyler et al.
+  url: https://docs.rs/wasmi_ir/latest/wasmi_ir/enum.Instruction.html
+
+wizard-engine:
+  type: Web
+  title: The Wizard Research Engine
+  author: Ben L. Titzer et al.
+  url: https://github.com/titzer/wizard-engine
+
+volvo-rust-assembly-line:
+  type: Web
+  title: Rust is rolling off the Volvo assembly line
+  author:
+    - Dion Dokte
+    - Julius Gustavsson
+  url: https://tweedegolf.nl/en/blog/137/rust-is-rolling-off-the-volvo-assembly-line
+
+ferrous-systems-website:
+  type: Web
+  title: Ferrous Systems
+  url: https://ferrous-systems.com/
+
+ferrocene-website:
+  type: Web
+  title: This is Rust for critical systems.
+  url: https://ferrocene.dev/
+
+adacore-website:
+  type: Web
+  title: AdaCore
+  url: https://www.adacore.com/
+
+adacore-rust-website:
+  type: Web
+  title: GNAT Pro for Rust
+  url: https://www.adacore.com/gnatpro-rust

@@ -2,7 +2,16 @@
   description = "a minimal WASM interpreter";
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-24.05";
+    nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
+    typst-packages = {
+      url = "github:typst/packages";
+      flake = false;
+    };
+    typix = {
+      url = "github:loqusion/typix";
+      inputs.nixpkgs.follows = "nixpkgs-unstable";
+    };
     utils.url = "git+https://github.com/numtide/flake-utils.git";
     devshell.url = "github:numtide/devshell";
     fenix = {
@@ -24,28 +33,34 @@
         lib = nixpkgs.lib;
         pkgs = import nixpkgs {
           inherit system;
-          overlays = [ devshell.overlays.default ];
+          overlays = [
+            devshell.overlays.default
+
+            # We unfortunately need the most up-to-date typst
+            (final: prev: {
+              typst = inputs.nixpkgs-unstable.legacyPackages.${pkgs.hostPlatform.system}.typst;
+            })
+          ];
         };
 
         # universal formatter
         treefmtEval = treefmt-nix.lib.evalModule pkgs ./treefmt.nix;
 
         # rust target name of the `system`
-        rust-target = pkgs.rust.toRustTarget pkgs.pkgsStatic.targetPlatform;
+        rust-target = pkgs.pkgsStatic.targetPlatform.rust.rustcTarget;
 
         # Rust distribution for our hostSystem
         fenix = inputs.fenix.packages.${system};
 
-        rust-toolchain = with fenix;
-          combine [
-            latest.rustc
-            latest.cargo
-            latest.clippy
-            latest.rustfmt
-            targets.${rust-target}.latest.rust-std
-            targets.thumbv6m-none-eabi.latest.rust-std # for no_std test
-            targets.wasm32-unknown-unknown.latest.rust-std
-          ];
+        rust-toolchain = with fenix; combine [
+          latest.rustc
+          latest.cargo
+          latest.clippy
+          latest.rustfmt
+          targets.${rust-target}.latest.rust-std
+          targets.thumbv6m-none-eabi.latest.rust-std # for no_std test
+          targets.wasm32-unknown-unknown.latest.rust-std
+        ];
 
         # overrides a naersk-lib which uses the stable toolchain expressed above
         naersk-lib = (naersk.lib.${system}.override {
@@ -53,13 +68,30 @@
           rustc = rust-toolchain;
         });
 
+        typstPackagesCache = pkgs.stdenv.mkDerivation {
+          name = "typst-packages-cache";
+          src = inputs.typst-packages;
+          dontBuild = true;
+          installPhase = ''
+            mkdir -p "$out/typst/packages"
+            cp --dereference --no-preserve=mode --recursive --reflink=auto \
+              --target-directory="$out/typst/packages" -- "$src"/packages/*
+          '';
+        };
       in
       {
         # packages
         packages.wasm-interpreter = pkgs.callPackage pkgs/wasm-interpreter.nix { };
-        packages.report = pkgs.callPackage pkgs/report.nix {
-          inherit (self.packages.${system}) wasm-interpreter;
+        packages.whitepaper = inputs.typix.lib.${system}.buildTypstProject {
+          name = "whitepaper.pdf";
+          src = ./whitepaper;
+          XDG_CACHE_HOME = typstPackagesCache;
         };
+
+        packages.report = pkgs.callPackage pkgs/report.nix {
+          inherit (self.packages.${system}) wasm-interpreter whitepaper;
+        };
+
 
         # a devshell with all the necessary bells and whistles
         devShells.default = (pkgs.devshell.mkShell {
@@ -84,6 +116,7 @@
             nixpkgs-fmt
             nodePackages.prettier
             treefmtEval.config.build.wrapper
+            typst # for the whitepaper
           ];
           env = [
             {
@@ -131,6 +164,13 @@
                 cargo watch --shell 'cargo doc --document-private-items'
               '';
               help = "start cargo watch loop for documentation";
+            }
+            {
+              name = "whitepaper-watch";
+              command = ''
+                typst watch --root "$PRJ_ROOT/whitepaper" "$PRJ_ROOT/whitepaper/main.typ"
+              '';
+              help = "start typst watch loop for the whitepaper";
             }
           ];
         });
