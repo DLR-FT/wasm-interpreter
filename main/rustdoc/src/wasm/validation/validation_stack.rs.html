@@ -413,6 +413,15 @@
 <a href="#411" id="411">411</a>
 <a href="#412" id="412">412</a>
 <a href="#413" id="413">413</a>
+<a href="#414" id="414">414</a>
+<a href="#415" id="415">415</a>
+<a href="#416" id="416">416</a>
+<a href="#417" id="417">417</a>
+<a href="#418" id="418">418</a>
+<a href="#419" id="419">419</a>
+<a href="#420" id="420">420</a>
+<a href="#421" id="421">421</a>
+<a href="#422" id="422">422</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! This module contains the [`ValidationStack`] data structure
 //!
 //! The [`ValidationStack`] is a unified stack, in the sense that it unifies both
@@ -445,6 +454,15 @@
 
     <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>push_label(<span class="kw-2">&amp;mut </span><span class="self">self</span>, label_info: LabelInfo) {
         <span class="self">self</span>.stack.push(ValidationStackEntry::Label(label_info));
+    }
+
+    <span class="doccomment">/// Similar to [`ValidationStack::pop`], because it pops a value from the stack,
+    /// but more public and doesn't actually return the popped value.
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>drop_val(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="kw">match </span><span class="self">self</span>.stack.pop().ok_or(Error::EndInvalidValueStack)<span class="question-mark">? </span>{
+            ValidationStackEntry::Val(<span class="kw">_</span>) =&gt; <span class="prelude-val">Ok</span>(()),
+            <span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(Error::ExpectedAnOperand),
+        }
     }
 
     <span class="doccomment">/// This puts an unspecified element on top of the stack.

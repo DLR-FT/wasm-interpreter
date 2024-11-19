@@ -68,6 +68,8 @@
 <a href="#66" id="66">66</a>
 <a href="#67" id="67">67</a>
 <a href="#68" id="68">68</a>
+<a href="#69" id="69">69</a>
+<a href="#70" id="70">70</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>alloc::vec;
 <span class="kw">use </span>alloc::vec::Vec;
 <span class="kw">use </span>core::iter;
@@ -85,9 +87,9 @@
 /// &lt;https://webassembly.github.io/spec/core/exec/runtime.html#store&gt;
 </span><span class="kw">pub struct </span>Store {
     <span class="kw">pub </span>funcs: Vec&lt;FuncInst&gt;,
-    <span class="comment">// tables: Vec&lt;TableInst&gt;,
-    </span><span class="kw">pub </span>mems: Vec&lt;MemInst&gt;,
+    <span class="kw">pub </span>mems: Vec&lt;MemInst&gt;,
     <span class="kw">pub </span>globals: Vec&lt;GlobalInst&gt;,
+    <span class="kw">pub </span>data: Vec&lt;DataInst&gt;,
 }
 
 <span class="kw">pub struct </span>FuncInst {
@@ -109,9 +111,8 @@
 }
 
 <span class="kw">impl </span>MemInst {
-    <span class="kw">const </span>PAGE_SIZE: usize = <span class="number">1 </span>&lt;&lt; <span class="number">16</span>;
     <span class="kw">pub fn </span>new(ty: MemType) -&gt; <span class="self">Self </span>{
-        <span class="kw">let </span>initial_size = <span class="self">Self</span>::PAGE_SIZE * ty.limits.min <span class="kw">as </span>usize;
+        <span class="kw">let </span>initial_size = (<span class="kw">crate</span>::Limits::MEM_PAGE_SIZE <span class="kw">as </span>usize) * ty.limits.min <span class="kw">as </span>usize;
 
         <span class="self">Self </span>{
             ty,
@@ -119,15 +120,14 @@
         }
     }
 
-    <span class="attr">#[allow(dead_code)]
-    </span><span class="kw">pub fn </span>grow(<span class="kw-2">&amp;mut </span><span class="self">self</span>, delta_pages: usize) {
+    <span class="kw">pub fn </span>grow(<span class="kw-2">&amp;mut </span><span class="self">self</span>, delta_pages: usize) {
         <span class="self">self</span>.data
-            .extend(iter::repeat(<span class="number">0</span>).take(delta_pages * <span class="self">Self</span>::PAGE_SIZE))
+            .extend(iter::repeat(<span class="number">0</span>).take(delta_pages * (<span class="kw">crate</span>::Limits::MEM_PAGE_SIZE <span class="kw">as </span>usize)))
     }
 
-    <span class="attr">#[allow(dead_code)]
+    <span class="doccomment">/// Can never be bigger than 65,356 pages
     </span><span class="kw">pub fn </span>size(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
-        <span class="self">self</span>.data.len() / <span class="self">Self</span>::PAGE_SIZE
+        <span class="self">self</span>.data.len() / (<span class="kw">crate</span>::Limits::MEM_PAGE_SIZE <span class="kw">as </span>usize)
     }
 }
 
@@ -135,5 +135,9 @@
     <span class="kw">pub </span>global: Global,
     <span class="doccomment">/// Must be of the same type as specified in `ty`
     </span><span class="kw">pub </span>value: Value,
+}
+
+<span class="kw">pub struct </span>DataInst {
+    <span class="kw">pub </span>data: Vec&lt;u8&gt;,
 }
 </code></pre></div></section></main></body></html>

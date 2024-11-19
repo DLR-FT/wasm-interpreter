@@ -296,6 +296,34 @@
 <a href="#294" id="294">294</a>
 <a href="#295" id="295">295</a>
 <a href="#296" id="296">296</a>
+<a href="#297" id="297">297</a>
+<a href="#298" id="298">298</a>
+<a href="#299" id="299">299</a>
+<a href="#300" id="300">300</a>
+<a href="#301" id="301">301</a>
+<a href="#302" id="302">302</a>
+<a href="#303" id="303">303</a>
+<a href="#304" id="304">304</a>
+<a href="#305" id="305">305</a>
+<a href="#306" id="306">306</a>
+<a href="#307" id="307">307</a>
+<a href="#308" id="308">308</a>
+<a href="#309" id="309">309</a>
+<a href="#310" id="310">310</a>
+<a href="#311" id="311">311</a>
+<a href="#312" id="312">312</a>
+<a href="#313" id="313">313</a>
+<a href="#314" id="314">314</a>
+<a href="#315" id="315">315</a>
+<a href="#316" id="316">316</a>
+<a href="#317" id="317">317</a>
+<a href="#318" id="318">318</a>
+<a href="#319" id="319">319</a>
+<a href="#320" id="320">320</a>
+<a href="#321" id="321">321</a>
+<a href="#322" id="322">322</a>
+<a href="#323" id="323">323</a>
+<a href="#324" id="324">324</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Methods to read WASM Types from a [WasmReader] object.
 //!
 //! See: &lt;https://webassembly.github.io/spec/core/binary/types.html&gt;
@@ -308,6 +336,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::Result;
 <span class="kw">use crate</span>::{unreachable_validated, Error};
 
+<span class="kw">pub mod </span>data;
 <span class="kw">pub mod </span>export;
 <span class="kw">pub mod </span>function_code_header;
 <span class="kw">pub mod </span>global;
@@ -504,6 +533,18 @@
     <span class="kw">pub </span>max: <span class="prelude-ty">Option</span>&lt;u32&gt;,
 }
 
+<span class="kw">impl </span>Limits {
+    <span class="comment">// since the maximum amount of bytes is u32::MAX, the page size is 1 &lt;&lt; 16
+    // the max no. of pages = max bytes / page size = u32::MAX / (1 &lt;&lt; 16) = 1 &lt;&lt; 16
+    </span><span class="kw">pub const </span>MAX_MEM_PAGES: u32 = <span class="number">1 </span>&lt;&lt; <span class="number">16</span>;
+    <span class="comment">// https://webassembly.github.io/reference-types/core/syntax/types.html#limits
+    // memtype is defined in terms of limits, which go from 0 to u32::MAX
+    </span><span class="kw">pub const </span>MAX_MEM_BYTES: u32 = u32::MAX;
+    <span class="comment">// https://webassembly.github.io/reference-types/core/exec/runtime.html#memory-instances
+    // memory size is 65536 (1 &lt;&lt; 16)
+    </span><span class="kw">pub const </span>MEM_PAGE_SIZE: u32 = <span class="number">1 </span>&lt;&lt; <span class="number">16</span>;
+}
+
 <span class="kw">impl </span>Debug <span class="kw">for </span>Limits {
     <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; core::fmt::Result {
         <span class="kw">match </span><span class="self">self</span>.max {
@@ -530,6 +571,10 @@
             }
             other =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(Error::InvalidLimitsType(other)),
         };
+
+        <span class="kw">if </span>limits.max.is_some() &amp;&amp; limits.min &gt; limits.max.unwrap() {
+            <span class="kw">return </span><span class="prelude-val">Err</span>(Error::InvalidLimit);
+        }
 
         <span class="prelude-val">Ok</span>(limits)
     }
@@ -581,9 +626,20 @@
 
 <span class="kw">impl </span>WasmReadable <span class="kw">for </span>MemType {
     <span class="kw">fn </span>read(wasm: <span class="kw-2">&amp;mut </span>WasmReader) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
-        <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
-            limits: Limits::read(wasm)<span class="question-mark">?</span>,
-        })
+        <span class="kw">let </span><span class="kw-2">mut </span>limit = Limits::read(wasm)<span class="question-mark">?</span>;
+        <span class="comment">// Memory can only grow to 65536 pages of 64kb size (4GiB)
+        </span><span class="kw">if </span>limit.min &gt; (<span class="number">1 </span>&lt;&lt; <span class="number">16</span>) {
+            <span class="kw">return </span><span class="prelude-val">Err</span>(Error::MemSizeTooBig);
+        }
+        <span class="kw">if </span>limit.max.is_none() {
+            limit.max = <span class="prelude-val">Some</span>(<span class="number">1 </span>&lt;&lt; <span class="number">16</span>);
+        } <span class="kw">else if </span>limit.max.is_some() {
+            <span class="kw">let </span>max_limit = limit.max.unwrap();
+            <span class="kw">if </span>max_limit &gt; (<span class="number">1 </span>&lt;&lt; <span class="number">16</span>) {
+                <span class="kw">return </span><span class="prelude-val">Err</span>(Error::MemSizeTooBig);
+            }
+        }
+        <span class="prelude-val">Ok</span>(<span class="self">Self </span>{ limits: limit })
     }
 
     <span class="kw">fn </span>read_unvalidated(wasm: <span class="kw-2">&amp;mut </span>WasmReader) -&gt; <span class="self">Self </span>{

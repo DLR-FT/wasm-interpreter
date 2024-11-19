@@ -1,0 +1,67 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Read and validate constant expressions."><title>read_constant_instructions in wasm::validation::read_constant_expression - Rust</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-5bc39a1768837dd0.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="wasm" data-themes="" data-resource-suffix="" data-rustdoc-version="1.77.2 (25ef9e3d8 2024-04-09) (built from a source tarball)" data-channel="1.77.2" data-search-js="search-dd67cee4cfa65049.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-4c98445ec4002617.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../../static.files/main-48f368f3872407c8.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc fn"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../../wasm/index.html">wasm</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><h2><a href="index.html">In wasm::validation::read_constant_expression</a></h2></div></nav><div class="sidebar-resizer"></div>
+    <main><div class="width-limiter"><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../wasm/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="main-heading"><h1>Function <a href="../../index.html">wasm</a>::<wbr><a href="../index.html">validation</a>::<wbr><a href="index.html">read_constant_expression</a>::<wbr><a class="fn" href="#">read_constant_instructions</a><button id="copy-path" title="Copy item path to clipboard"><img src="../../../static.files/clipboard-7571035ce49a181d.svg" width="19" height="18" alt="Copy item path"></button></h1><span class="out-of-band"><a class="src" href="../../../src/wasm/validation/read_constant_expression.rs.html#84-139">source</a> · <button id="toggle-all-docs" title="collapse all docs">[<span>&#x2212;</span>]</button></span></div><pre class="rust item-decl"><code>pub fn read_constant_instructions(
+    wasm: &amp;mut <a class="struct" href="../../core/reader/struct.WasmReader.html" title="struct wasm::core::reader::WasmReader">WasmReader</a>&lt;'_&gt;,
+    this_global_valtype: <a class="enum" href="https://doc.rust-lang.org/1.77.2/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="enum" href="../../core/reader/types/enum.ValType.html" title="enum wasm::core::reader::types::ValType">ValType</a>&gt;,
+    _globals_ty: <a class="enum" href="https://doc.rust-lang.org/1.77.2/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;&amp;[<a class="struct" href="../../core/reader/types/global/struct.GlobalType.html" title="struct wasm::core::reader::types::global::GlobalType">GlobalType</a>]&gt;
+) -&gt; <a class="type" href="../../core/error/type.Result.html" title="type wasm::core::error::Result">Result</a>&lt;<a class="struct" href="../../core/reader/span/struct.Span.html" title="struct wasm::core::reader::span::Span">Span</a>&gt;</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Read and validate constant expressions.</p>
+<p>This function is used to validate that a constant expression produces the expected result. The main use case for
+this is to validate that an initialization expression for a global returns the correct value.</p>
+<p>Note: to be valid, constant expressions may not leave garbage data on the stack. It may leave only what is expected
+and nothing more.</p>
+<p>Valid constant instructions are:</p>
+<ul>
+<li>Core: <a href="https://webassembly.github.io/spec/core/valid/instructions.html#valid-constant">https://webassembly.github.io/spec/core/valid/instructions.html#valid-constant</a></li>
+<li>Extended Proposal: <a href="https://webassembly.github.io/extended-const/core/valid/instructions.html#valid-constant">https://webassembly.github.io/extended-const/core/valid/instructions.html#valid-constant</a></li>
+</ul>
+<h2 id="the-wonders-of-globalget"><a class="doc-anchor" href="#the-wonders-of-globalget">§</a>The Wonders of <code>global.get</code></h2>
+<p>The <code>global.get</code> instruction is quite picky by nature. To make a long story short, there are two rules to follow to
+be able to use this expression.</p>
+<h3 id="1-the-referenced-global-must-be-imported"><a class="doc-anchor" href="#1-the-referenced-global-must-be-imported">§</a>1. The referenced global must be imported</h3>
+<p>Take the example code:</p>
+<div class="example-wrap"><pre class="language-wat"><code>(module
+    (global (export &quot;g&quot;) (mut i32) (
+        i32.add (i32.const 1) (i32.const 2)
+    ))
+
+    (global (export &quot;h1&quot;) i32 (
+        i32.const 1
+    ))
+
+    (global (export &quot;h2&quot;) i32 (
+        global.get 1
+    ))
+
+    (func (export &quot;f&quot;)
+        i32.const 100
+        global.set 0))
+</code></pre></div>
+<p>When compiling with wat2wasm, the following error is thrown:</p>
+<div class="example-wrap"><pre class="language-wat"><code>Error: validate failed:
+test.wast:11:24: error: initializer expression can only reference an imported global
+            global.get 1
+                       ^
+</code></pre></div>
+<p>When compiling the code with the latest dev build of wasmtime, the following error is thrown:</p>
+<div class="example-wrap"><pre class="language-wat"><code>failed to parse WebAssembly module
+
+Caused by:
+    constant expression required: global.get of locally defined global (at offset 0x24)
+</code></pre></div><h3 id="2-the-referenced-global-must-be-immutable"><a class="doc-anchor" href="#2-the-referenced-global-must-be-immutable">§</a>2. The referenced global must be immutable</h3><div class="example-wrap"><pre class="language-wat"><code> (module
+     (import &quot;env&quot; &quot;g&quot; (global (mut i32)))
+     (global (export &quot;h&quot;) (mut i32) (
+         i32.add (i32.const 1) (global.get 0)
+     ))
+   )
+</code></pre></div>
+<p>When compiling with wat2wasm, the following error is thrown:</p>
+<div class="example-wrap"><pre class="language-wat"><code>Error: validate failed:
+test.wast:4:27: error: initializer expression cannot reference a mutable global
+    i32.add (i32.const 1) (global.get 0)
+</code></pre></div><h2 id="note"><a class="doc-anchor" href="#note">§</a>Note</h2>
+<p>The following instructions are not yet supported:</p>
+<ul>
+<li><code>ref.null</code></li>
+<li><code>ref.func</code></li>
+<li><code>global.get</code></li>
+</ul>
+</div></details></section></div></main></body></html>

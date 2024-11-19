@@ -143,6 +143,35 @@
 <a href="#141" id="141">141</a>
 <a href="#142" id="142">142</a>
 <a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
+<a href="#151" id="151">151</a>
+<a href="#152" id="152">152</a>
+<a href="#153" id="153">153</a>
+<a href="#154" id="154">154</a>
+<a href="#155" id="155">155</a>
+<a href="#156" id="156">156</a>
+<a href="#157" id="157">157</a>
+<a href="#158" id="158">158</a>
+<a href="#159" id="159">159</a>
+<a href="#160" id="160">160</a>
+<a href="#161" id="161">161</a>
+<a href="#162" id="162">162</a>
+<a href="#163" id="163">163</a>
+<a href="#164" id="164">164</a>
+<a href="#165" id="165">165</a>
+<a href="#166" id="166">166</a>
+<a href="#167" id="167">167</a>
+<a href="#168" id="168">168</a>
+<a href="#169" id="169">169</a>
+<a href="#170" id="170">170</a>
+<a href="#171" id="171">171</a>
+<a href="#172" id="172">172</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::core::indices::GlobalIdx;
 <span class="kw">use </span><span class="kw">crate</span>::validation_stack::LabelKind;
 <span class="kw">use </span>core::fmt::{Display, Formatter};
@@ -150,6 +179,8 @@
 
 <span class="kw">use </span><span class="kw">crate</span>::core::reader::section_header::SectionTy;
 <span class="kw">use </span><span class="kw">crate</span>::core::reader::types::ValType;
+
+<span class="kw">use </span><span class="kw">super</span>::indices::{DataIdx, MemIdx};
 
 <span class="attr">#[derive(Debug, PartialEq, Eq, Clone)]
 </span><span class="kw">pub enum </span>RuntimeError {
@@ -159,6 +190,7 @@
     StackSmash,
     <span class="comment">// https://github.com/wasmi-labs/wasmi/blob/37d1449524a322817c55026eb21eb97dd693b9ce/crates/core/src/trap.rs#L265C5-L265C27
     </span>BadConversionToInteger,
+    MemoryAccessOutOfBounds,
 }
 
 <span class="attr">#[derive(Debug, PartialEq, Eq, Clone)]
@@ -183,13 +215,21 @@
     EndInvalidValueStack,
     InvalidLocalIdx,
     InvalidValidationStackValType(<span class="prelude-ty">Option</span>&lt;ValType&gt;),
+    ExpectedAnOperand,
     InvalidLimitsType(u8),
     InvalidMutType(u8),
     MoreThanOneMemory,
+    InvalidLimit,
+    MemSizeTooBig,
     InvalidGlobalIdx(GlobalIdx),
     GlobalIsConst,
     RuntimeError(RuntimeError),
     FoundLabel(LabelKind),
+    MemoryIsNotDefined(MemIdx),
+    <span class="comment">//           mem.align, wanted alignment
+    </span>ErroneousAlignment(u32, u32),
+    NoDataSegments,
+    DataSegmentNotFound(DataIdx),
 }
 
 <span class="kw">impl </span>Display <span class="kw">for </span>Error {
@@ -255,6 +295,8 @@
             Error::MoreThanOneMemory =&gt; {
                 f.write_str(<span class="string">"As of not only one memory is allowed per module."</span>)
             }
+            Error::InvalidLimit =&gt; f.write_str(<span class="string">"Size minimum must not be greater than maximum"</span>),
+            Error::MemSizeTooBig =&gt; f.write_str(<span class="string">"Memory size must be at most 65536 pages (4GiB)"</span>),
             Error::InvalidGlobalIdx(idx) =&gt; f.write_fmt(<span class="macro">format_args!</span>(
                 <span class="string">"An invalid global index `{idx}` was specified"
             </span>)),
@@ -263,6 +305,21 @@
             Error::FoundLabel(lk) =&gt; f.write_fmt(<span class="macro">format_args!</span>(
                 <span class="string">"Expecting a ValType, a Label was found: {lk:?}"
             </span>)),
+            Error::ExpectedAnOperand =&gt; f.write_str(<span class="string">"Expected a ValType"</span>), <span class="comment">// Error =&gt; f.write_str("Expected an operand (ValType) on the stack")
+            </span>Error::MemoryIsNotDefined(memidx) =&gt; f.write_fmt(<span class="macro">format_args!</span>(
+                <span class="string">"C.mems[{}] is NOT defined when it should be"</span>,
+                memidx
+            )),
+            Error::ErroneousAlignment(mem_align, minimum_wanted_alignment) =&gt; {
+                f.write_fmt(<span class="macro">format_args!</span>(
+                    <span class="string">"Alignment ({}) is not less or equal to {}"</span>,
+                    mem_align, minimum_wanted_alignment
+                ))
+            }
+            Error::NoDataSegments =&gt; f.write_str(<span class="string">"Data Count is None"</span>),
+            Error::DataSegmentNotFound(data_idx) =&gt; {
+                f.write_fmt(<span class="macro">format_args!</span>(<span class="string">"Data Segment {} not found"</span>, data_idx))
+            }
         }
     }
 }
@@ -275,6 +332,7 @@
             RuntimeError::FunctionNotFound =&gt; f.write_str(<span class="string">"Function not found"</span>),
             RuntimeError::StackSmash =&gt; f.write_str(<span class="string">"Stack smashed"</span>),
             RuntimeError::BadConversionToInteger =&gt; f.write_str(<span class="string">"Bad conversion to integer"</span>),
+            RuntimeError::MemoryAccessOutOfBounds =&gt; f.write_str(<span class="string">"Memory access out of bounds"</span>),
         }
     }
 }

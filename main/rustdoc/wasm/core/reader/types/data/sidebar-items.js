@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["DataMode"],"struct":["DataModeActive","DataSegment","PassiveData"]};
