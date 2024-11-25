@@ -36,7 +36,7 @@ impl WasmReadable for DataSegment {
             0 => {
                 // active { memory 0, offset e }
                 trace!("Data section: active");
-                let offset = { read_constant_instructions(wasm, None, None)? };
+                let offset = { read_constant_instructions(wasm, None, None, None)? };
 
                 let byte_vec = wasm.read_vec(|el| el.read_u8())?;
 
@@ -81,7 +81,8 @@ impl WasmReadable for DataSegment {
             0 => {
                 // active { memory 0, offset e }
                 trace!("Data section: active");
-                let offset = { read_constant_instructions(wasm, None, None).unwrap_validated() };
+                let offset =
+                    { read_constant_instructions(wasm, None, None, None).unwrap_validated() };
 
                 let byte_vec = wasm
                     .read_vec(|el| Ok(el.read_u8().unwrap_validated()))
@@ -154,7 +155,6 @@ impl Debug for DataSegment {
 ///                             ;; for hardcoded offsets, we'll usually use i32.const because of wasm being x86 arch
 /// )
 /// ```
-
 ///
 /// Since the span has only the start and length and acts a reference, we print the start and end (both inclusive, notice the '..=')
 /// We print it in both decimal and hexadecimal so it's easy to trace in something like <https://webassembly.github.io/wabt/demo/wat2wasm/>

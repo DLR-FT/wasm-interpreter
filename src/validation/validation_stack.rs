@@ -7,7 +7,7 @@
 use super::Result;
 use alloc::vec::Vec;
 
-use crate::{Error, ValType};
+use crate::{Error, RefType, ValType};
 
 #[derive(Debug, PartialEq, Eq)]
 pub(super) struct ValidationStack {
@@ -72,6 +72,27 @@ impl ValidationStack {
         self.stack
             .pop()
             .ok_or(Error::InvalidValidationStackValType(None))
+    }
+
+    pub(super) fn assert_pop_ref_type(&mut self, expected_ty: Option<RefType>) -> Result<()> {
+        let val = self.pop()?;
+        match val {
+            ValidationStackEntry::Val(v) => match v {
+                ValType::RefType(ref_type) => match expected_ty {
+                    None => Ok(()),
+                    Some(expected_ty) => {
+                        if expected_ty == ref_type {
+                            Ok(())
+                        } else {
+                            Err(Error::DifferentRefTypes(ref_type, expected_ty))
+                        }
+                    }
+                },
+                _ => Err(Error::ExpectedARefType(v)),
+            },
+            ValidationStackEntry::UnspecifiedValTypes => Err(Error::FoundUnspecifiedValTypes),
+            ValidationStackEntry::Label(li) => Err(Error::FoundLabel(li.kind)),
+        }
     }
 
     /// Assert the top-most [`ValidationStackEntry`] is a specific [`ValType`], after popping it from the [`ValidationStack`]

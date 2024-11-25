@@ -112,7 +112,11 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
 
                 let instance = try_to!(RuntimeInstance::new(&validation_info).map_err(|err| {
                     CompilationError::new(
-                        Box::new(WasmInterpreterError(wasm::Error::RuntimeError(err))),
+                        Box::new(WasmInterpreterError(wasm::Error::RuntimeError(match err {
+                            wasm::Error::RuntimeError(runtime_error) => runtime_error,
+                            // is it unreachable?
+                            _ => unreachable!(""),
+                        }))),
                         filepath,
                         "failed to create runtime instance",
                     )

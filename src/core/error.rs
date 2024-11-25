@@ -1,12 +1,16 @@
+use alloc::format;
+use alloc::string::{String, ToString};
+
 use crate::core::indices::GlobalIdx;
 use crate::validation_stack::LabelKind;
+use crate::RefType;
 use core::fmt::{Display, Formatter};
 use core::str::Utf8Error;
 
 use crate::core::reader::section_header::SectionTy;
 use crate::core::reader::types::ValType;
 
-use super::indices::{DataIdx, MemIdx};
+use super::indices::{DataIdx, ElemIdx, FuncIdx, MemIdx, TableIdx, TypeIdx};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum RuntimeError {
@@ -17,6 +21,18 @@ pub enum RuntimeError {
     // https://github.com/wasmi-labs/wasmi/blob/37d1449524a322817c55026eb21eb97dd693b9ce/crates/core/src/trap.rs#L265C5-L265C27
     BadConversionToInteger,
     MemoryAccessOutOfBounds,
+    TableAccessOutOfBounds,
+    ElementAccessOutOfBounds,
+    UninitializedElement,
+    SignatureMismatch,
+    ExpectedAValueOnTheStack,
+}
+
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub enum StoreInstantiationError {
+    ActiveDataWriteOutOfBounds,
+    I64ValueOutOfReach(String),
+    MissingValueOnTheStack,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -51,11 +67,23 @@ pub enum Error {
     GlobalIsConst,
     RuntimeError(RuntimeError),
     FoundLabel(LabelKind),
+    FoundUnspecifiedValTypes,
     MemoryIsNotDefined(MemIdx),
     //           mem.align, wanted alignment
     ErroneousAlignment(u32, u32),
     NoDataSegments,
     DataSegmentNotFound(DataIdx),
+    UnknownTable,
+    TableIsNotDefined(TableIdx),
+    ElementIsNotDefined(ElemIdx),
+    DifferentRefTypes(RefType, RefType),
+    ExpectedARefType(ValType),
+    WrongRefTypeForInteropValue(RefType, RefType),
+    FunctionIsNotDefined(FuncIdx),
+    ReferencingAnUnreferencedFunction(FuncIdx),
+    FunctionTypeIsNotDefined(TypeIdx),
+    StoreInstantiationError(StoreInstantiationError),
+    OnlyFuncRefIsAllowed,
 }
 
 impl Display for Error {
@@ -131,6 +159,7 @@ impl Display for Error {
             Error::FoundLabel(lk) => f.write_fmt(format_args!(
                 "Expecting a ValType, a Label was found: {lk:?}"
             )),
+            Error::FoundUnspecifiedValTypes => f.write_str("Found UnspecifiedValTypes"),
             Error::ExpectedAnOperand => f.write_str("Expected a ValType"), // Error => f.write_str("Expected an operand (ValType) on the stack")
             Error::MemoryIsNotDefined(memidx) => f.write_fmt(format_args!(
                 "C.mems[{}] is NOT defined when it should be",
@@ -146,6 +175,41 @@ impl Display for Error {
             Error::DataSegmentNotFound(data_idx) => {
                 f.write_fmt(format_args!("Data Segment {} not found", data_idx))
             }
+            Error::UnknownTable => f.write_str("Unknown Table"),
+            Error::TableIsNotDefined(table_idx) => f.write_fmt(format_args!(
+                "C.tables[{}] is NOT defined when it should be",
+                table_idx
+            )),
+            Error::ElementIsNotDefined(elem_idx) => f.write_fmt(format_args!(
+                "C.elems[{}] is NOT defined when it should be",
+                elem_idx
+            )),
+            Error::DifferentRefTypes(rref1, rref2) => f.write_fmt(format_args!(
+                "RefType {:?} is NOT equal to RefType {:?}",
+                rref1, rref2
+            )),
+            Error::ExpectedARefType(found_valtype) => f.write_fmt(format_args!(
+                "Expected a RefType, found a {:?} instead",
+                found_valtype
+            )),
+            Error::WrongRefTypeForInteropValue(ref_given, ref_wanted) => f.write_fmt(format_args!(
+                "Wrong RefType for InteropValue: Given {:?} - Needed {:?}",
+                ref_given, ref_wanted
+            )),
+            Error::FunctionIsNotDefined(func_idx) => f.write_fmt(format_args!(
+                "C.functions[{}] is NOT defined when it should be",
+                func_idx
+            )),
+            Error::ReferencingAnUnreferencedFunction(func_idx) => f.write_fmt(format_args!(
+                "Referenced a function ({}) that was not referenced in validation",
+                func_idx
+            )),
+            Error::FunctionTypeIsNotDefined(func_ty_idx) => f.write_fmt(format_args!(
+                "C.fn_types[{}] is NOT defined when it should be",
+                func_ty_idx
+            )),
+            Error::StoreInstantiationError(err) => err.fmt(f),
+            Error::OnlyFuncRefIsAllowed => f.write_str("Only FuncRef is allowed"),
         }
     }
 }
@@ -159,6 +223,33 @@ impl Display for RuntimeError {
             RuntimeError::StackSmash => f.write_str("Stack smashed"),
             RuntimeError::BadConversionToInteger => f.write_str("Bad conversion to integer"),
             RuntimeError::MemoryAccessOutOfBounds => f.write_str("Memory access out of bounds"),
+            RuntimeError::TableAccessOutOfBounds => f.write_str("Table access out of bounds"),
+            RuntimeError::ElementAccessOutOfBounds => f.write_str("Element access out of bounds"),
+            RuntimeError::UninitializedElement => f.write_str("Uninitialized element"),
+            RuntimeError::SignatureMismatch => f.write_str("Indirect call signature mismatch"),
+            RuntimeError::ExpectedAValueOnTheStack => {
+                f.write_str("Expected a value on the stack, but None was found")
+            }
+        }
+    }
+}
+
+impl Display for StoreInstantiationError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        use StoreInstantiationError::*;
+        match self {
+            ActiveDataWriteOutOfBounds => {
+                f.write_str("Active data writing in memory is out of bounds")
+            }
+            I64ValueOutOfReach(s) => f.write_fmt(format_args!(
+                "I64 value {}is out of reach",
+                if !s.is_empty() {
+                    format!("for {s} ")
+                } else {
+                    "".to_string()
+                }
+            )),
+            MissingValueOnTheStack => f.write_str(""),
         }
     }
 }
@@ -168,5 +259,11 @@ pub type Result<T> = core::result::Result<T, Error>;
 impl From<RuntimeError> for Error {
     fn from(value: RuntimeError) -> Self {
         Self::RuntimeError(value)
+    }
+}
+
+impl From<StoreInstantiationError> for Error {
+    fn from(value: StoreInstantiationError) -> Self {
+        Self::StoreInstantiationError(value)
     }
 }
