@@ -204,6 +204,8 @@ fn recursive_fibonacci() {
 
     let fib_fn = instance.get_function_by_index(0, 0).unwrap();
 
-    let first_ten = (0..10).map(|n| instance.invoke(&fib_fn, n).unwrap()).collect::<Vec<i32>>();
+    let first_ten = (0..10)
+        .map(|n| instance.invoke(&fib_fn, n).unwrap())
+        .collect::<Vec<i32>>();
     assert_eq!(&first_ten, &[0, 1, 1, 2, 3, 5, 8, 13, 21, 34]);
 }

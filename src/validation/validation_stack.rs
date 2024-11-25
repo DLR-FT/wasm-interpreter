@@ -7,17 +7,22 @@
 use super::Result;
 use alloc::vec::Vec;
 
-use crate::{Error, ValType};
+use crate::{core::reader::types::FuncType, Error, ValType};
 
 #[derive(Debug, PartialEq, Eq)]
 pub(super) struct ValidationStack {
     stack: Vec<ValidationStackEntry>,
+    // TODO hide implementation
+    pub ctrl_stack: Vec<CtrlStackEntry>,
 }
 
 impl ValidationStack {
     /// Initialize a new ValidationStack
     pub(super) fn new() -> Self {
-        Self { stack: Vec::new() }
+        Self {
+            stack: Vec::new(),
+            ctrl_stack: Vec::new(),
+        }
     }
 
     pub(super) fn len(&self) -> usize {
@@ -245,11 +250,51 @@ pub(crate) struct LabelInfo {
     pub(crate) kind: LabelKind,
 }
 
+// TODO hide implementation
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct CtrlStackEntry {
+    pub label_info: CtrlLabelInfo,
+    pub block_ty: FuncType,
+    pub height: usize,
+    pub unreachable: bool,
+}
+
+// TODO replace LabelInfo with this
+// TODO hide implementation
+// TODO implementation coupled to Sidetable
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum CtrlLabelInfo {
+    Block {
+        stps_to_backpatch: Vec<usize>,
+    },
+    Loop {
+        ip: usize,
+        stp: usize,
+    },
+    If {
+        stps_to_backpatch: Vec<usize>,
+        stp: usize,
+    },
+    Func,
+}
+
+impl CtrlLabelInfo {
+    fn label_kind(&self) -> LabelKind {
+        match self {
+            CtrlLabelInfo::Block { .. } => LabelKind::Block,
+            CtrlLabelInfo::Loop { .. } => LabelKind::Loop,
+            CtrlLabelInfo::If { .. } => LabelKind::If,
+            CtrlLabelInfo::Func => LabelKind::Func,
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum LabelKind {
     Block,
     Loop,
     If,
+    Func,
 }
 
 #[cfg(test)]
