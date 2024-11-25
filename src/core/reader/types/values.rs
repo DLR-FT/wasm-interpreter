@@ -67,6 +67,27 @@ impl WasmReader<'_> {
         Ok(result)
     }
 
+    pub fn read_var_i33(&mut self) -> Result<i64> {
+        let mut result: i64 = 0;
+        let mut shift: u64 = 0;
+
+        let mut byte: i64;
+        loop {
+            byte = self.read_u8()? as i64;
+            result |= (byte & 0b0111_1111) << shift;
+            shift += 7;
+            if (byte & 0b1000_0000) == 0 {
+                break;
+            }
+        }
+
+        if shift < 33 && (byte & 0x40 != 0) {
+            result |= !0 << shift;
+        }
+
+        Ok(result)
+    }
+
     pub fn read_var_f32(&mut self) -> Result<u32> {
         if self.full_wasm_binary.len() - self.pc < 4 {
             return Err(Error::Eof);
