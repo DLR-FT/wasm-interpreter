@@ -85,6 +85,7 @@ pub fn read_constant_instructions(
     wasm: &mut WasmReader,
     this_global_valtype: Option<ValType>,
     _globals_ty: Option<&[GlobalType]>,
+    funcs: Option<&[usize]>,
 ) -> Result<Span> {
     let start_pc = wasm.pc;
 
@@ -131,7 +132,22 @@ pub fn read_constant_instructions(
                 todo!();
             }
             REF_FUNC => {
-                wasm.read_var_u32().unwrap();
+                let func_idx = wasm.read_var_u32().unwrap() as usize;
+                match funcs {
+                    Some(funcs) => {
+                        if func_idx >= funcs.len() {
+                            panic!(
+                                "Out of bounds ref.func ({func_idx}) access (max: {})",
+                                funcs.len()
+                            );
+                        }
+                    }
+                    None => {
+                        panic!("Out of bounds ref.func ({func_idx}) access (max: 0)");
+                    }
+                }
+
+                stack.push_valtype(ValType::RefType(crate::RefType::FuncRef));
             }
             _ => return Err(Error::InvalidInstr(first_instr_byte)),
         }

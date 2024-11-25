@@ -36,7 +36,7 @@ impl WasmReadable for DataSegment {
             0 => {
                 // active { memory 0, offset e }
                 trace!("Data section: active");
-                let offset = { read_constant_instructions(wasm, None, None)? };
+                let offset = { read_constant_instructions(wasm, None, None, None)? };
 
                 let byte_vec = wasm.read_vec(|el| el.read_u8())?;
 
@@ -81,7 +81,8 @@ impl WasmReadable for DataSegment {
             0 => {
                 // active { memory 0, offset e }
                 trace!("Data section: active");
-                let offset = { read_constant_instructions(wasm, None, None).unwrap_validated() };
+                let offset =
+                    { read_constant_instructions(wasm, None, None, None).unwrap_validated() };
 
                 let byte_vec = wasm
                     .read_vec(|el| Ok(el.read_u8().unwrap_validated()))

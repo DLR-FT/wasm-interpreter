@@ -1,7 +1,12 @@
 use crate::{
-    assert_validated::UnwrapValidatedExt, core::reader::WasmReader, value_stack::Stack, NumType,
-    ValType,
+    assert_validated::UnwrapValidatedExt,
+    core::reader::WasmReader,
+    value::{FuncAddr, Ref},
+    value_stack::Stack,
+    NumType, ValType, Value,
 };
+
+use super::store::FuncInst;
 
 /// Execute a previosly-validated constant expression. These type of expressions are used for initializing global
 /// variables.
@@ -28,6 +33,7 @@ pub(crate) fn run_const(
     mut wasm: WasmReader,
     stack: &mut Stack,
     _imported_globals: (), /*todo!*/
+    funcs: &[FuncInst],
 ) {
     use crate::core::reader::types::opcode::*;
     loop {
@@ -94,6 +100,17 @@ pub(crate) fn run_const(
 
                 trace!("Constant instruction: i64.mul [{v1} {v2}] -> [{res}]");
                 stack.push_value(res.into());
+            }
+            REF_FUNC => {
+                // not unwrap validated because, guess what? not validated
+                let func_idx = wasm.read_var_u32().unwrap() as usize;
+                if func_idx >= funcs.len() {
+                    panic!(
+                        "Out of bounds ref.func ({func_idx}) access (max: {})",
+                        funcs.len()
+                    );
+                }
+                stack.push_value(Value::Ref(Ref::Func(FuncAddr::new(Some(func_idx)))));
             }
             other => {
                 panic!("Unknown constant instruction {other:#x}, validation allowed an unimplemented instruction.");
