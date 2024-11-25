@@ -7,10 +7,12 @@ use core::fmt::{Debug, Formatter};
 
 use crate::core::reader::{WasmReadable, WasmReader};
 use crate::execution::assert_validated::UnwrapValidatedExt;
+use crate::value::{ExternAddr, FuncAddr, Ref};
 use crate::Result;
 use crate::{unreachable_validated, Error};
 
 pub mod data;
+pub mod element;
 pub mod export;
 pub mod function_code_header;
 pub mod global;
@@ -85,6 +87,28 @@ pub enum RefType {
     ExternRef,
 }
 
+impl RefType {
+    /// TODO: we have to make sure they are NOT null Refs, but still, they are
+    /// not valid ones as we cast them from RefTypes which don't hold addresses
+    /// per-se
+    pub fn to_null_ref(&self) -> Ref {
+        match self {
+            RefType::ExternRef => Ref::Extern(ExternAddr::null()),
+            RefType::FuncRef => Ref::Func(FuncAddr::null()),
+        }
+    }
+}
+
+impl RefType {
+    pub fn from_byte(byte: u8) -> Result<RefType> {
+        match byte {
+            0x70 => Ok(RefType::FuncRef),
+            0x6F => Ok(RefType::ExternRef),
+            _ => Err(Error::InvalidRefType),
+        }
+    }
+}
+
 impl WasmReadable for RefType {
     fn read(wasm: &mut WasmReader) -> Result<RefType> {
         let ty = match wasm.peek_u8()? {
@@ -129,22 +153,31 @@ impl ValType {
 
 impl WasmReadable for ValType {
     fn read(wasm: &mut WasmReader) -> Result<Self> {
-        let numtype = NumType::read(wasm).map(ValType::NumType);
-        let vectype = VecType::read(wasm).map(|_ty| ValType::VecType);
-        let reftype = RefType::read(wasm).map(ValType::RefType);
+        if let Ok(numtype) = NumType::read(wasm).map(ValType::NumType) {
+            return Ok(numtype);
+        };
+        if let Ok(vectype) = VecType::read(wasm).map(|_ty| ValType::VecType) {
+            return Ok(vectype);
+        };
+        if let Ok(reftype) = RefType::read(wasm).map(ValType::RefType) {
+            return Ok(reftype);
+        }
 
-        numtype
-            .or(vectype)
-            .or(reftype)
-            .map_err(|_| Error::InvalidValType)
+        Err(Error::InvalidValType)
     }
 
     fn read_unvalidated(wasm: &mut WasmReader) -> Self {
-        let numtype = NumType::read(wasm).map(ValType::NumType);
-        let vectype = VecType::read(wasm).map(|_ty| ValType::VecType);
-        let reftype = RefType::read(wasm).map(ValType::RefType);
+        if let Ok(numtype) = NumType::read(wasm).map(ValType::NumType) {
+            return numtype;
+        };
+        if let Ok(vectype) = VecType::read(wasm).map(|_ty| ValType::VecType) {
+            return vectype;
+        };
+        if let Ok(reftype) = RefType::read(wasm).map(ValType::RefType) {
+            return reftype;
+        }
 
-        numtype.or(vectype).or(reftype).unwrap_validated()
+        unreachable!()
     }
 }
 
@@ -278,17 +311,25 @@ pub struct TableType {
     pub lim: Limits,
 }
 
+// https://webassembly.github.io/spec/core/syntax/types.html#limits
 impl WasmReadable for TableType {
     fn read(wasm: &mut WasmReader) -> Result<Self> {
         let et = RefType::read(wasm)?;
-        let lim = Limits::read(wasm)?;
+        let mut lim = Limits::read(wasm)?;
+        if lim.max.is_none() {
+            lim.max = Some(u32::MAX)
+        };
+        let table_type = Self { et, lim };
+        trace!("Table: {:?}", table_type);
         Ok(Self { et, lim })
     }
 
     fn read_unvalidated(wasm: &mut WasmReader) -> Self {
         let et = RefType::read_unvalidated(wasm);
-        let lim = Limits::read_unvalidated(wasm);
-
+        let mut lim = Limits::read_unvalidated(wasm);
+        if lim.max.is_none() {
+            lim.max = Some(u32::MAX)
+        };
         Self { et, lim }
     }
 }

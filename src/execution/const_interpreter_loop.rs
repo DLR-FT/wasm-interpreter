@@ -1,6 +1,9 @@
 use crate::{
-    assert_validated::UnwrapValidatedExt, core::reader::WasmReader, value_stack::Stack, NumType,
-    ValType,
+    assert_validated::UnwrapValidatedExt,
+    core::reader::{span::Span, WasmReadable, WasmReader},
+    value::{FuncAddr, Ref},
+    value_stack::Stack,
+    NumType, RefType, ValType, Value,
 };
 
 /// Execute a previosly-validated constant expression. These type of expressions are used for initializing global
@@ -95,9 +98,36 @@ pub(crate) fn run_const(
                 trace!("Constant instruction: i64.mul [{v1} {v2}] -> [{res}]");
                 stack.push_value(res.into());
             }
+            REF_NULL => {
+                let reftype = RefType::read_unvalidated(&mut wasm);
+
+                stack.push_value(Value::Ref(reftype.to_null_ref()));
+                trace!("Instruction: ref.null '{:?}' -> [{:?}]", reftype, reftype);
+            }
+            REF_FUNC => {
+                // we already checked for the func_idx to be in bounds during validation
+                let func_idx = wasm.read_var_u32().unwrap_validated() as usize;
+                stack.push_value(Value::Ref(Ref::Func(FuncAddr::new(Some(func_idx)))));
+            }
             other => {
                 panic!("Unknown constant instruction {other:#x}, validation allowed an unimplemented instruction.");
             }
         }
     }
+}
+
+pub(crate) fn run_const_span(
+    wasm: &[u8],
+    span: &Span,
+    imported_globals: (),
+    // funcs: &[FuncInst],
+) -> Option<Value> {
+    let mut wasm = WasmReader::new(wasm);
+
+    wasm.move_start_to(*span).unwrap_validated();
+
+    let mut stack = Stack::new();
+    run_const(wasm, &mut stack, imported_globals);
+
+    stack.peek_unknown_value()
 }

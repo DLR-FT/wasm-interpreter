@@ -24,6 +24,8 @@ pub(super) fn validate_global_section(
             wasm,
             Some(ty.ty),
             Some(&[/* todo!(imported globals tpyes) */]),
+            // we can't refer to any functions
+            None,
         )?;
 
         Ok(Global { ty, init_expr })
