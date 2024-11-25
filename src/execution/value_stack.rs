@@ -154,12 +154,13 @@ impl Stack {
         self.frames.last_mut().unwrap_validated()
     }
 
-    /// Pop a [`CallFrame`] from the call stack, returning the return address
-    pub fn pop_stackframe(&mut self) -> usize {
+    /// Pop a [`CallFrame`] from the call stack, returning the return address and the return stp
+    pub fn pop_stackframe(&mut self) -> (usize, usize) {
         let CallFrame {
             return_addr,
             value_stack_base_idx,
             return_value_count,
+            return_stp,
             ..
         } = self.frames.pop().unwrap_validated();
 
@@ -172,7 +173,7 @@ impl Stack {
             "after a function call finished, the stack must have exactly as many values as it had before calling the function plus the number of function return values"
         );
 
-        return_addr
+        (return_addr, return_stp)
     }
 
     /// Push a stackframe to the call stack
@@ -184,6 +185,7 @@ impl Stack {
         func_ty: &FuncType,
         locals: Locals,
         return_addr: usize,
+        return_stp: usize,
     ) {
         self.frames.push(CallFrame {
             func_idx,
@@ -191,6 +193,7 @@ impl Stack {
             return_addr,
             value_stack_base_idx: self.values.len(),
             return_value_count: func_ty.returns.valtypes.len(),
+            return_stp,
         })
     }
 
@@ -210,9 +213,15 @@ impl Stack {
     }
 
     /// Clear all of the values pushed to the value stack by the current stack frame
+    #[allow(unused)] // TODO remove this once sidetable implementation lands
     pub fn clear_callframe_values(&mut self) {
         self.values
             .truncate(self.current_stackframe().value_stack_base_idx);
+    }
+
+    // TODO change this interface
+    pub fn pop_n_values(&mut self, n: usize) {
+        self.values.truncate(self.values.len() - n);
     }
 }
 
@@ -232,4 +241,7 @@ pub(crate) struct CallFrame {
 
     /// Number of return values to retain on [`Stack::values`] when unwinding/popping a [`CallFrame`]
     pub return_value_count: usize,
+
+    // Value that the stp has to be set to when this function returns
+    pub return_stp: usize,
 }

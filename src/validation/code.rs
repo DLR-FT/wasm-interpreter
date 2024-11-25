@@ -4,17 +4,17 @@ use alloc::vec::Vec;
 use core::iter;
 
 use crate::core::indices::{
-    DataIdx, ElemIdx, FuncIdx, GlobalIdx, LocalIdx, MemIdx, TableIdx, TypeIdx,
+    DataIdx, ElemIdx, FuncIdx, GlobalIdx, LabelIdx, LocalIdx, MemIdx, TableIdx, TypeIdx,
 };
 use crate::core::reader::section_header::{SectionHeader, SectionTy};
 use crate::core::reader::span::Span;
 use crate::core::reader::types::element::ElemType;
 use crate::core::reader::types::global::Global;
 use crate::core::reader::types::memarg::MemArg;
-use crate::core::reader::types::{FuncType, MemType, NumType, TableType, ValType};
+use crate::core::reader::types::{BlockType, FuncType, MemType, NumType, TableType, ValType};
 use crate::core::reader::{WasmReadable, WasmReader};
-use crate::core::sidetable::Sidetable;
-use crate::validation_stack::ValidationStack;
+use crate::core::sidetable::{Sidetable, SidetableEntry};
+use crate::validation_stack::{LabelInfo, ValidationStack};
 use crate::{Error, RefType, Result};
 
 #[allow(clippy::too_many_arguments)]
@@ -29,10 +29,11 @@ pub fn validate_code_section(
     tables: &[TableType],
     elements: &[ElemType],
     referenced_functions: &BTreeSet<u32>,
-) -> Result<Vec<Span>> {
+) -> Result<Vec<(Span, Sidetable)>> {
     assert_eq!(section_header.ty, SectionTy::Code);
 
-    let code_block_spans = wasm.read_vec_enumerated(|wasm, idx| {
+    // TODO replace with single sidetable per module
+    let code_block_spans_sidetables = wasm.read_vec_enumerated(|wasm, idx| {
         let ty_idx = type_idx_of_fn[idx];
         let func_ty = fn_types[ty_idx].clone();
 
@@ -46,12 +47,13 @@ pub fn validate_code_section(
             params.chain(declared_locals).collect::<Vec<ValType>>()
         };
 
-        let mut stack = ValidationStack::new();
+        let mut stack = ValidationStack::new_for_func(func_ty);
+        let mut sidetable: Sidetable = Sidetable::default();
 
         read_instructions(
-            idx,
             wasm,
             &mut stack,
+            &mut sidetable,
             &locals,
             globals,
             fn_types,
@@ -70,15 +72,15 @@ pub fn validate_code_section(
             )
         }
 
-        Ok(func_block)
+        Ok((func_block, sidetable))
     })?;
 
     trace!(
         "Read code section. Found {} code blocks",
-        code_block_spans.len()
+        code_block_spans_sidetables.len()
     );
 
-    Ok(code_block_spans)
+    Ok(code_block_spans_sidetables)
 }
 
 pub fn read_declared_locals(wasm: &mut WasmReader) -> Result<Vec<ValType>> {
@@ -98,11 +100,79 @@ pub fn read_declared_locals(wasm: &mut WasmReader) -> Result<Vec<ValType>> {
     Ok(locals)
 }
 
+//helper function to avoid code duplication in jump validations
+//the entries, except for the loop label, need to be correctly backpatched later
+//the temporary values of fields (delta_pc, delta_stp) of the entries are the (ip, stp) of the relevant label
+//the label is also updated with the additional information of the index of this sidetable
+//entry itself so that the entry can be backpatched when the end instruction of the label
+//is hit.
+fn generate_unbackpatched_sidetable_entry(
+    wasm: &WasmReader,
+    sidetable: &mut Sidetable,
+    valcnt: usize,
+    popcnt: usize,
+    label_info: &mut LabelInfo,
+) {
+    let stp_here = sidetable.len();
+
+    sidetable.push(SidetableEntry {
+        delta_pc: wasm.pc as isize,
+        delta_stp: stp_here as isize,
+        popcnt,
+        valcnt,
+    });
+
+    match label_info {
+        LabelInfo::Block { stps_to_backpatch } => stps_to_backpatch.push(stp_here),
+        LabelInfo::Loop { ip, stp } => {
+            //we already know where to jump to for loops
+            sidetable[stp_here].delta_pc = *ip as isize - wasm.pc as isize;
+            sidetable[stp_here].delta_stp = *stp as isize - stp_here as isize;
+        }
+        LabelInfo::If {
+            stps_to_backpatch, ..
+        } => stps_to_backpatch.push(stp_here),
+        LabelInfo::Func { stps_to_backpatch } => stps_to_backpatch.push(stp_here),
+        LabelInfo::Untyped => {
+            unreachable!("this label is for untyped wasm sequences")
+        }
+    }
+}
+
+//helper function to avoid code duplication for common stuff in br, br_if, return
+fn validate_intrablock_jump_and_generate_sidetable_entry(
+    wasm: &WasmReader,
+    label_idx: usize,
+    stack: &mut ValidationStack,
+    sidetable: &mut Sidetable,
+) -> Result<()> {
+    let ctrl_stack_len = stack.ctrl_stack.len();
+
+    stack.assert_val_types_of_label_jump_types_on_top(label_idx)?;
+
+    let targeted_ctrl_block_entry = stack
+        .ctrl_stack
+        .get(ctrl_stack_len - label_idx - 1)
+        .ok_or(Error::InvalidLabelIdx(label_idx))?;
+
+    let valcnt = targeted_ctrl_block_entry.label_types().len();
+    let popcnt = stack.len() - targeted_ctrl_block_entry.height - valcnt;
+
+    let label_info = &mut stack
+        .ctrl_stack
+        .get_mut(ctrl_stack_len - label_idx - 1)
+        .unwrap()
+        .label_info;
+
+    generate_unbackpatched_sidetable_entry(wasm, sidetable, valcnt, popcnt, label_info);
+    Ok(())
+}
+
 #[allow(clippy::too_many_arguments)]
 fn read_instructions(
-    this_function_idx: usize,
     wasm: &mut WasmReader,
     stack: &mut ValidationStack,
+    sidetable: &mut Sidetable,
     locals: &[ValType],
     globals: &[Global],
     fn_types: &[FuncType],
@@ -113,19 +183,6 @@ fn read_instructions(
     elements: &[ElemType],
     referenced_functions: &BTreeSet<u32>,
 ) -> Result<()> {
-    let assert_pop_value_stack = |value_stack: &mut VecDeque<ValType>, expected_ty: ValType| {
-        value_stack
-            .pop_back()
-            .ok_or(Error::InvalidValueStackType(None))
-            .and_then(|ty| {
-                (ty == expected_ty)
-                    .then_some(())
-                    .ok_or(Error::InvalidValueStackType(Some(ty)))
-            })
-    };
-    let mut sidetable: Sidetable = Sidetable::default();
-
-    // TODO we must terminate only if both we saw the final `end` and when we consumed all of the code span
     loop {
         let Ok(first_instr_byte) = wasm.read_u8() else {
             // TODO only do this if EOF
@@ -135,103 +192,162 @@ fn read_instructions(
 
         use crate::core::reader::types::opcode::*;
         match first_instr_byte {
-            // unreachable: [t*1] -> [t*2]
-            UNREACHABLE => {}
             // nop: [] -> []
             NOP => {}
             // block: [] -> [t*2]
-            BLOCK | LOOP | IF => {
-                let block_ty = if wasm.peek_u8()? as i8 == 0x40 {
-                    let _ = wasm.read_u8();
-
-                    /* empty block type */
-                    FuncType {
-                        params: ResultType {
-                            valtypes: Vec::new(),
-                        },
-                        returns: ResultType {
-                            valtypes: Vec::new(),
-                        },
-                    }
-                } else if let Ok(val_ty) = ValType::read(wasm) {
-                    FuncType {
-                        params: ResultType {
-                            valtypes: Vec::new(),
-                        },
-                        returns: ResultType {
-                            valtypes: [val_ty].into(),
-                        },
-                    }
-                } else {
-                    let maybe_ty_idx: usize = wasm
-                        .read_var_i64()?
-                        .try_into()
-                        .map_err(|_| Error::InvalidFuncTypeIdx)?;
-
-                    fn_types
-                        .get(maybe_ty_idx)
-                        .ok_or_else(|| Error::InvalidFuncTypeIdx)?
-                        .clone()
+            BLOCK => {
+                let block_ty = BlockType::read(wasm)?.as_func_type(fn_types)?;
+                let label_info = LabelInfo::Block {
+                    stps_to_backpatch: Vec::new(),
                 };
+                stack.assert_push_ctrl(label_info, block_ty)?;
             }
-            // end
-            END => {
-                // TODO check if there are labels on the stack.
-                // If there are none (i.e. this is the implicit end of the function and not a jump to the end of a function), the stack must only contain the valid return values, no other junk.
-                //
-                // Else, anything may remain on the stack, as long as the top of the stack matche the current blocks return value.
+            LOOP => {
+                let block_ty = BlockType::read(wasm)?.as_func_type(fn_types)?;
+                let label_info = LabelInfo::Loop {
+                    ip: wasm.pc,
+                    stp: sidetable.len(),
+                };
+                stack.assert_push_ctrl(label_info, block_ty)?;
+            }
+            IF => {
+                let block_ty = BlockType::read(wasm)?.as_func_type(fn_types)?;
 
-                if stack.has_remaining_label() {
-                    // This is the END of a block.
+                stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
 
-                    // We check the valtypes on top of the stack
+                let stp_here = sidetable.len();
+                sidetable.push(SidetableEntry {
+                    delta_pc: wasm.pc as isize,
+                    delta_stp: stp_here as isize,
+                    popcnt: 0,
+                    valcnt: block_ty.params.valtypes.len(),
+                });
 
-                    // TODO remove the ugly hack for the todo!(..)!
-                    #[allow(clippy::diverging_sub_expression)]
-                    {
-                        let _block_return_ty: &[ValType] =
-                            todo!("get return types for current block");
+                let label_info = LabelInfo::If {
+                    stp: stp_here,
+                    stps_to_backpatch: Vec::new(),
+                };
+                stack.assert_push_ctrl(label_info, block_ty)?;
+            }
+            ELSE => {
+                let (mut label_info, block_ty) = stack.assert_pop_ctrl()?;
+                if let LabelInfo::If {
+                    stp,
+                    stps_to_backpatch,
+                } = &mut label_info
+                {
+                    if *stp == usize::MAX {
+                        //this If was previously matched with an else already, it is already backpatched!
+                        return Err(Error::IfWithoutMatchingElse);
                     }
-                    // stack.assert_val_types_on_top(block_return_ty)?;
+                    let stp_here = sidetable.len();
+                    sidetable.push(SidetableEntry {
+                        delta_pc: wasm.pc as isize,
+                        delta_stp: stp_here as isize,
+                        popcnt: 0,
+                        valcnt: block_ty.returns.valtypes.len(),
+                    });
+                    stps_to_backpatch.push(stp_here);
 
-                    // Clear the stack until the next label
-                    // stack.clear_until_next_label();
+                    sidetable[*stp].delta_pc = wasm.pc as isize - sidetable[*stp].delta_pc;
+                    sidetable[*stp].delta_stp =
+                        sidetable.len() as isize - sidetable[*stp].delta_stp;
 
-                    // And push the blocks return types onto the stack again
-                    // for valtype in block_return_ty {
-                    // stack.push_valtype(*valtype);
-                    // }
+                    *stp = usize::MAX; // mark this If as backpatched
+
+                    for valtype in block_ty.returns.valtypes.iter().rev() {
+                        stack.assert_pop_val_type(*valtype)?;
+                    }
+
+                    for valtype in block_ty.params.valtypes.iter() {
+                        stack.push_valtype(*valtype);
+                    }
+
+                    stack.assert_push_ctrl(label_info, block_ty)?;
                 } else {
-                    // This is the last end of a function
+                    return Err(Error::ElseWithoutMatchingIf);
+                }
+            }
+            BR => {
+                let label_idx = wasm.read_var_u32()? as LabelIdx;
+                validate_intrablock_jump_and_generate_sidetable_entry(
+                    wasm, label_idx, stack, sidetable,
+                )?;
+                stack.make_unspecified()?;
+            }
+            BR_IF => {
+                let label_idx = wasm.read_var_u32()? as LabelIdx;
+                stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                validate_intrablock_jump_and_generate_sidetable_entry(
+                    wasm, label_idx, stack, sidetable,
+                )?;
+            }
+            BR_TABLE => {
+                let label_vec = wasm.read_vec(|wasm| wasm.read_var_u32().map(|v| v as LabelIdx))?;
+                let max_label_idx = wasm.read_var_u32()? as LabelIdx;
+                stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
 
-                    // The stack must only contain the function's return valtypes
-                    let this_func_ty = &fn_types[type_idx_of_fn[this_function_idx]];
-                    stack.assert_val_types(&this_func_ty.returns.valtypes)?;
+                for label_idx in label_vec {
+                    validate_intrablock_jump_and_generate_sidetable_entry(
+                        wasm, label_idx, stack, sidetable,
+                    )?;
+                }
+
+                validate_intrablock_jump_and_generate_sidetable_entry(
+                    wasm,
+                    max_label_idx,
+                    stack,
+                    sidetable,
+                )?;
+
+                stack.make_unspecified()?;
+            }
+            END => {
+                let (label_info, _) = stack.assert_pop_ctrl()?;
+                let stp_here = sidetable.len();
+
+                match label_info {
+                    LabelInfo::Block { stps_to_backpatch } => {
+                        stps_to_backpatch.iter().for_each(|i| {
+                            sidetable[*i].delta_pc = (wasm.pc as isize) - sidetable[*i].delta_pc;
+                            sidetable[*i].delta_stp = (stp_here as isize) - sidetable[*i].delta_stp;
+                        });
+                    }
+                    LabelInfo::If {
+                        stp,
+                        stps_to_backpatch,
+                    } => {
+                        if stp != usize::MAX {
+                            // this If did not have a matching else statement. if...end is not allowed in the spec
+                        }
+                        stps_to_backpatch.iter().for_each(|i| {
+                            sidetable[*i].delta_pc = (wasm.pc as isize) - sidetable[*i].delta_pc;
+                            sidetable[*i].delta_stp = (stp_here as isize) - sidetable[*i].delta_stp;
+                        });
+                    }
+                    LabelInfo::Loop { .. } => (),
+                    LabelInfo::Func { stps_to_backpatch } => {
+                        // same as blocks, except jump just before the end instr, not after it
+                        // the last end instruction will handle the return to callee during execution
+                        stps_to_backpatch.iter().for_each(|i| {
+                            sidetable[*i].delta_pc =
+                                (wasm.pc as isize) - sidetable[*i].delta_pc - 1; // minus 1 is important!
+                            sidetable[*i].delta_stp = (stp_here as isize) - sidetable[*i].delta_stp;
+                        });
+                    }
+                    LabelInfo::Untyped => unreachable!("this label is for untyped wasm sequences"),
+                }
+
+                if stack.ctrl_stack.is_empty() {
                     return Ok(());
                 }
             }
             RETURN => {
-                let this_func_ty = &fn_types[type_idx_of_fn[this_function_idx]];
-
-                stack
-                    .assert_val_types_on_top(&this_func_ty.returns.valtypes)
-                    .map_err(|_| Error::EndInvalidValueStack)?;
-
-                stack.make_unspecified();
-
-                // TODO(george-cosma): a `return Ok(());` should probably be introduced here, but since we don't have
-                // controls flows implemented, the only way to test `return` is to place it at the end of function.
-                // However, an `end` is introduced after it, which is invalid. Compilation for this test case should
-                // probably fail.
-
-                // TODO(wucke13) I believe we must not drain the validation stack here; only if we
-                // know this return is actually taken during execution we may drain the stack. This
-                // could however be a conditional return (return in an `if`), and the other side
-                // past the `else` might need the values on the `ValidationStack` that do belong
-                // to the current function (but not the current block), so draining would make
-                // continued validation of the current function impossible. We should most
-                // definitely not `return Ok(())` here, because there might be still more of the
-                // current function to validate.
+                let label_idx = stack.ctrl_stack.len() - 1; // return behaves the same as br <most_outer>
+                validate_intrablock_jump_and_generate_sidetable_entry(
+                    wasm, label_idx, stack, sidetable,
+                )?;
+                stack.make_unspecified()?;
             }
             // call [t1*] -> [t2*]
             CALL => {
@@ -279,7 +395,7 @@ fn read_instructions(
             }
             // unreachable: [t1*] -> [t2*]
             UNREACHABLE => {
-                stack.make_unspecified();
+                stack.make_unspecified()?;
             }
             DROP => {
                 stack.drop_val()?;

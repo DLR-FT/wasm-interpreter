@@ -11,6 +11,7 @@ use crate::core::reader::types::global::Global;
 use crate::core::reader::types::import::Import;
 use crate::core::reader::types::{FuncType, MemType, TableType};
 use crate::core::reader::{WasmReadable, WasmReader};
+use crate::core::sidetable::Sidetable;
 use crate::{Error, Result};
 
 pub(crate) mod code;
@@ -31,7 +32,8 @@ pub struct ValidationInfo<'bytecode> {
     pub(crate) globals: Vec<Global>,
     #[allow(dead_code)]
     pub(crate) exports: Vec<Export>,
-    pub(crate) func_blocks: Vec<Span>,
+    /// Each block contains the validated code section and the generated sidetable
+    pub(crate) func_blocks: Vec<(Span, Sidetable)>,
     pub(crate) data: Vec<DataSegment>,
     /// The start function which is automatically executed during instantiation
     pub(crate) start: Option<FuncIdx>,
@@ -145,23 +147,28 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
-    let func_blocks = handle_section(&mut wasm, &mut header, SectionTy::Code, |wasm, h| {
-        code::validate_code_section(
-            wasm,
-            h,
-            &types,
-            &functions,
-            &globals,
-            &memories,
-            &data_count,
-            &tables,
-            &elements,
-            &referenced_functions,
-        )
-    })?
-    .unwrap_or_default();
+    let func_blocks_sidetables =
+        handle_section(&mut wasm, &mut header, SectionTy::Code, |wasm, h| {
+            code::validate_code_section(
+                wasm,
+                h,
+                &types,
+                &functions,
+                &globals,
+                &memories,
+                &data_count,
+                &tables,
+                &elements,
+                &referenced_functions,
+            )
+        })?
+        .unwrap_or_default();
 
-    assert_eq!(func_blocks.len(), functions.len(), "these should be equal"); // TODO check if this is in the spec
+    assert_eq!(
+        func_blocks_sidetables.len(),
+        functions.len(),
+        "these should be equal"
+    ); // TODO check if this is in the spec
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
@@ -192,7 +199,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
         memories,
         globals,
         exports,
-        func_blocks,
+        func_blocks: func_blocks_sidetables,
         data: data_section,
         start,
         elements,

@@ -211,6 +211,10 @@ pub mod span {
         pub const fn len(&self) -> usize {
             self.len
         }
+
+        pub const fn from(&self) -> usize {
+            self.from
+        }
     }
 
     impl<'a> Index<Span> for WasmReader<'a> {
