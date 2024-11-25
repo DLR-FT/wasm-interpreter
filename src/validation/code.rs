@@ -166,7 +166,8 @@ fn read_instructions(
                 //
                 // Else, anything may remain on the stack, as long as the top of the stack matche the current blocks return value.
 
-                if stack.has_remaining_label() {
+                // TODO replace with if !ctrl_stack.empty()
+                if false {
                     // This is the END of a block.
 
                     // We check the valtypes on top of the stack
