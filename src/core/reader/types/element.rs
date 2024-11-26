@@ -37,6 +37,11 @@ impl ElemType {
         }
     }
 
+    /// Here we can't implement WasmReadable because we also want a mutable
+    /// reference to a BTreeSet<u32> (`referenced_functions`)
+    ///
+    /// This comes in handy later on when we are validating the actual code of
+    /// the functions so that we can make sure we are not referencing invalid functions
     pub fn read_from_wasm(
         wasm: &mut crate::core::reader::WasmReader,
         functions: &[usize],
@@ -129,12 +134,6 @@ impl ElemType {
         })
     }
 }
-
-/// Here we can't implement WasmReadable because we also want a mutable
-/// reference to a BTreeSet<u32> (`referenced_functions`)
-///
-/// This comes in handy later on when we are validating the actual code of
-/// the functions so that we can make sure we are not referencing invalid functions
 
 #[derive(Debug, Clone)]
 pub enum ElemItems {

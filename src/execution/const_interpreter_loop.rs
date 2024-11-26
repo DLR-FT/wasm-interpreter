@@ -1,9 +1,9 @@
 use crate::{
     assert_validated::UnwrapValidatedExt,
-    core::reader::WasmReader,
+    core::reader::{WasmReadable, WasmReader},
     value::{FuncAddr, Ref},
     value_stack::Stack,
-    NumType, ValType, Value,
+    NumType, RefType, ValType, Value,
 };
 
 use super::store::FuncInst;
@@ -100,6 +100,12 @@ pub(crate) fn run_const(
 
                 trace!("Constant instruction: i64.mul [{v1} {v2}] -> [{res}]");
                 stack.push_value(res.into());
+            }
+            REF_NULL => {
+                let reftype = RefType::read_unvalidated(&mut wasm);
+
+                stack.push_value(Value::Ref(reftype.to_null_ref()));
+                trace!("Instruction: ref.null '{}' -> [{}]", reftype, reftype);
             }
             REF_FUNC => {
                 // not unwrap validated because, guess what? not validated

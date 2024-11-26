@@ -288,7 +288,7 @@ impl Ref {
     pub fn is_specific_func(&self, func_id: u32) -> bool {
         match self {
             Self::Func(func_addr) => !func_addr.is_null && func_addr.addr == func_id as usize,
-            _ => unimplemented!(),
+            _ => unreachable!(),
         }
     }
 }
@@ -334,6 +334,16 @@ impl FuncAddr {
             is_null: true,
         }
     }
+    pub fn get_value(&self) -> usize {
+        if self.is_null {
+            Self::get_reserved_value() as usize
+        } else {
+            self.addr
+        }
+    }
+    pub fn get_reserved_value() -> u32 {
+        u32::MAX
+    }
 }
 
 impl Default for FuncAddr {
@@ -373,6 +383,16 @@ impl ExternAddr {
             addr: 0,
             is_null: true,
         }
+    }
+    pub fn get_value(&self) -> usize {
+        if self.is_null {
+            Self::get_reserved_value() as usize
+        } else {
+            self.addr
+        }
+    }
+    pub fn get_reserved_value() -> u32 {
+        u32::MAX
     }
 }
 

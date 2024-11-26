@@ -1,7 +1,7 @@
 use crate::core::reader::span::Span;
 use crate::core::reader::types::global::GlobalType;
-use crate::core::reader::WasmReader;
-use crate::{Error, NumType, Result, ValType};
+use crate::core::reader::{WasmReadable, WasmReader};
+use crate::{Error, NumType, RefType, Result, ValType};
 
 use super::validation_stack::ValidationStack;
 
@@ -129,7 +129,7 @@ pub fn read_constant_instructions(
                 stack.push_valtype(ValType::NumType(NumType::I64));
             }
             REF_NULL => {
-                todo!();
+                stack.push_valtype(ValType::RefType(RefType::read(wasm)?));
             }
             REF_FUNC => {
                 let func_idx = wasm.read_var_u32().unwrap() as usize;
