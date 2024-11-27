@@ -30,6 +30,7 @@
 use alloc::vec::Vec;
 
 /// A sidetable
+
 pub type Sidetable = Vec<SidetableEntry>;
 
 /// Entry to translate the current branches implicit target into an explicit offset to the instruction pointer, as well as the side table pointer
@@ -41,6 +42,8 @@ pub type Sidetable = Vec<SidetableEntry>;
 /// - br_table
 /// - else
 // TODO hide implementation
+// TODO Remove Clone trait from sidetables
+#[derive(Clone)]
 pub struct SidetableEntry {
     /// Δpc: the amount to adjust the instruction pointer by if the branch is taken
     pub delta_pc: isize,

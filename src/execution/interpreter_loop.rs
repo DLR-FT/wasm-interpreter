@@ -21,6 +21,7 @@ use crate::{
             types::{memarg::MemArg, FuncType},
             WasmReadable, WasmReader,
         },
+        sidetable::Sidetable,
     },
     locals::Locals,
     store::{DataInst, Store},
@@ -48,6 +49,11 @@ pub(super) fn run<H: HookSet>(
     // Start reading the function's instructions
     let mut wasm = WasmReader::new(wasm_bytecode);
 
+    // the sidetable and stp for this function, stp will reset to 0 every call
+    // since function instances have their own sidetable.
+    let mut current_sidetable: &Sidetable = &func_inst.sidetable;
+    let mut stp = 0;
+
     // unwrap is sound, because the validation assures that the function points to valid subslice of the WASM binary
     wasm.move_start_to(func_inst.code_expr).unwrap();
 
@@ -64,7 +70,7 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: NOP");
             }
             END => {
-                let maybe_return_address = stack.pop_stackframe();
+                let (maybe_return_address, maybe_return_stp) = stack.pop_stackframe();
 
                 // We finished this entire invocation if there is no stackframe left. If there are
                 // one or more stack frames, we need to continue from where the callee was called
@@ -75,6 +81,13 @@ pub(super) fn run<H: HookSet>(
 
                 trace!("end of function reached, returning to previous stack frame");
                 wasm.pc = maybe_return_address;
+                stp = maybe_return_stp;
+
+                current_sidetable = &store
+                    .funcs
+                    .get(stack.current_stackframe().func_idx)
+                    .unwrap_validated()
+                    .sidetable;
             }
             RETURN => {
                 trace!("returning from function");
@@ -98,7 +111,13 @@ pub(super) fn run<H: HookSet>(
                 }
 
                 trace!("end of function reached, returning to previous stack frame");
-                wasm.pc = stack.pop_stackframe();
+                (wasm.pc, stp) = stack.pop_stackframe();
+
+                current_sidetable = &store
+                    .funcs
+                    .get(stack.current_stackframe().func_idx)
+                    .unwrap_validated()
+                    .sidetable;
             }
             CALL => {
                 let func_to_call_idx = wasm.read_var_u32().unwrap_validated() as FuncIdx;
@@ -111,10 +130,12 @@ pub(super) fn run<H: HookSet>(
 
                 trace!("Instruction: call [{func_to_call_idx:?}]");
                 let locals = Locals::new(params, remaining_locals);
-                stack.push_stackframe(func_to_call_idx, func_to_call_ty, locals, wasm.pc);
+                stack.push_stackframe(func_to_call_idx, func_to_call_ty, locals, wasm.pc, stp);
 
                 wasm.move_start_to(func_to_call_inst.code_expr)
                     .unwrap_validated();
+                stp = 0;
+                current_sidetable = &func_to_call_inst.sidetable;
             }
             DROP => {
                 stack.drop_value();

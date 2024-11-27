@@ -20,10 +20,11 @@ pub fn validate_code_section(
     globals: &[Global],
     memories: &[MemType],
     data_count: &Option<u32>,
-) -> Result<Vec<Span>> {
+) -> Result<Vec<(Span, Sidetable)>> {
     assert_eq!(section_header.ty, SectionTy::Code);
 
-    let code_block_spans = wasm.read_vec_enumerated(|wasm, idx| {
+    // TODO replace with single sidetable per module
+    let code_block_spans_sidetables = wasm.read_vec_enumerated(|wasm, idx| {
         let ty_idx = type_idx_of_fn[idx];
         let func_ty = fn_types[ty_idx].clone();
 
@@ -60,15 +61,15 @@ pub fn validate_code_section(
             )
         }
 
-        Ok(func_block)
+        Ok((func_block, sidetable))
     })?;
 
     trace!(
         "Read code section. Found {} code blocks",
-        code_block_spans.len()
+        code_block_spans_sidetables.len()
     );
 
-    Ok(code_block_spans)
+    Ok(code_block_spans_sidetables)
 }
 
 pub fn read_declared_locals(wasm: &mut WasmReader) -> Result<Vec<ValType>> {
@@ -122,8 +123,6 @@ fn read_instructions(
 
         use crate::core::reader::types::opcode::*;
         match first_instr_byte {
-            // unreachable: [t*1] -> [t*2]
-            UNREACHABLE => {}
             // nop: [] -> []
             NOP => {}
             // block: [] -> [t*2]

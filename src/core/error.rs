@@ -1,5 +1,4 @@
 use crate::core::indices::GlobalIdx;
-use crate::validation_stack::LabelKind;
 use core::fmt::{Display, Formatter};
 use core::str::Utf8Error;
 
