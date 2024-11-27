@@ -187,6 +187,16 @@ pub struct CtrlStackEntry {
     pub unreachable: bool,
 }
 
+impl CtrlStackEntry {
+    pub fn label_types(&self) -> &[ValType] {
+        if matches!(self.label_info, LabelInfo::Loop { .. }) {
+            &self.block_ty.params.valtypes
+        } else {
+            &self.block_ty.returns.valtypes
+        }
+    }
+}
+
 // TODO replace LabelInfo with this
 // TODO hide implementation
 // TODO implementation coupled to Sidetable
