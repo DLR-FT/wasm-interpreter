@@ -1,15 +1,15 @@
 use alloc::vec::Vec;
 use core::iter;
 
-use crate::core::indices::{DataIdx, FuncIdx, GlobalIdx, LocalIdx, MemIdx};
+use crate::core::indices::{DataIdx, FuncIdx, GlobalIdx, LabelIdx, LocalIdx, MemIdx};
 use crate::core::reader::section_header::{SectionHeader, SectionTy};
 use crate::core::reader::span::Span;
 use crate::core::reader::types::global::Global;
 use crate::core::reader::types::memarg::MemArg;
 use crate::core::reader::types::{FuncType, MemType, NumType, ResultType, ValType};
 use crate::core::reader::{WasmReadable, WasmReader};
-use crate::core::sidetable::Sidetable;
-use crate::validation_stack::ValidationStack;
+use crate::core::sidetable::{Sidetable, SidetableEntry};
+use crate::validation_stack::{CtrlStackEntry, LabelInfo, ValidationStack};
 use crate::{Error, Result};
 
 pub fn validate_code_section(
@@ -38,11 +38,13 @@ pub fn validate_code_section(
         };
 
         let mut stack = ValidationStack::new();
+        let mut sidetable: Sidetable = Sidetable::default();
 
         read_instructions(
             idx,
             wasm,
             &mut stack,
+            &mut sidetable,
             &locals,
             globals,
             fn_types,
@@ -91,6 +93,7 @@ fn read_instructions(
     this_function_idx: usize,
     wasm: &mut WasmReader,
     stack: &mut ValidationStack,
+    sidetable: &mut Sidetable,
     locals: &[ValType],
     globals: &[Global],
     fn_types: &[FuncType],
@@ -108,7 +111,6 @@ fn read_instructions(
     //                 .ok_or(Error::InvalidValueStackType(Some(ty)))
     //         })
     // };
-    let mut sidetable: Sidetable = Sidetable::default();
 
     // TODO we must terminate only if both we saw the final `end` and when we consumed all of the code span
     loop {
@@ -125,7 +127,7 @@ fn read_instructions(
             // nop: [] -> []
             NOP => {}
             // block: [] -> [t*2]
-            BLOCK | LOOP | IF => {
+            BLOCK => {
                 let block_ty = if wasm.peek_u8()? as i8 == 0x40 {
                     let _ = wasm.read_u8();
 
@@ -158,6 +160,66 @@ fn read_instructions(
                         .ok_or_else(|| Error::InvalidFuncTypeIdx)?
                         .clone()
                 };
+
+                stack.assert_val_types_on_top(&block_ty.params.valtypes)?;
+                let height = stack.len() - block_ty.params.valtypes.len();
+                stack.ctrl_stack.push(CtrlStackEntry {
+                    label_info: LabelInfo::Block {
+                        stps_to_backpatch: Vec::new(),
+                    },
+                    block_ty,
+                    height,
+                    unreachable: false,
+                });
+            }
+            LOOP => {
+                todo!("implement loop");
+            }
+            IF => {
+                todo!("implement if");
+            }
+            BR => {
+                let label_idx = wasm.read_var_u32()? as LabelIdx;
+                let ctrl_stack_len = stack.ctrl_stack.len();
+
+                let targeted_ctrl_block_entry = stack
+                    .ctrl_stack
+                    .get(ctrl_stack_len - label_idx)
+                    .ok_or(Error::InvalidLabelIdx(label_idx))?;
+
+                stack.assert_val_types_on_top(targeted_ctrl_block_entry.label_types())?;
+
+                let valcnt = targeted_ctrl_block_entry.label_types().len();
+                let popcnt = stack.len() - targeted_ctrl_block_entry.height - valcnt;
+
+                let targeted_ctrl_block_entry = stack
+                    .ctrl_stack
+                    .get_mut(ctrl_stack_len - label_idx)
+                    .unwrap();
+
+                let stp_here = sidetable.len();
+
+                sidetable.push(SidetableEntry {
+                    delta_pc: wasm.pc as isize,
+                    delta_stp: stp_here as isize,
+                    popcnt,
+                    valcnt,
+                });
+
+                match &mut targeted_ctrl_block_entry.label_info {
+                    LabelInfo::Block { stps_to_backpatch } => stps_to_backpatch.push(stp_here),
+                    LabelInfo::Loop { .. } => {
+                        todo!("implement loop")
+                    }
+                    LabelInfo::If { .. } => {
+                        todo!("implement if")
+                    }
+                    LabelInfo::Func { .. } => {
+                        todo!("implement func")
+                    }
+                }
+
+                stack.make_unspecified();
             }
             // end
             END => {
@@ -167,18 +229,36 @@ fn read_instructions(
                 // Else, anything may remain on the stack, as long as the top of the stack matche the current blocks return value.
 
                 // TODO replace with if !ctrl_stack.empty()
-                if false {
+                if stack.ctrl_stack.len() > 1 {
                     // This is the END of a block.
 
                     // We check the valtypes on top of the stack
+                    let last_ctrl_stack_entry = stack.ctrl_stack.pop().unwrap();
+                    let stp_here = sidetable.len();
 
-                    // TODO remove the ugly hack for the todo!(..)!
-                    #[allow(clippy::diverging_sub_expression)]
-                    {
-                        let _block_return_ty: &[ValType] =
-                            todo!("get return types for current block");
+                    match last_ctrl_stack_entry.label_info {
+                        LabelInfo::Block { stps_to_backpatch } => {
+                            stps_to_backpatch.iter().for_each(|i| {
+                                sidetable[*i].delta_pc =
+                                    (wasm.pc as isize) - sidetable[*i].delta_pc;
+                                sidetable[*i].delta_stp =
+                                    (stp_here as isize) - sidetable[*i].delta_stp;
+                            });
+                        }
+                        LabelInfo::If { .. } => {
+                            todo!("implement if");
+                        }
+                        LabelInfo::Loop { .. } => {
+                            todo!("implement loop");
+                        }
+                        LabelInfo::Func => {
+                            unreachable!("this label should only be in the bottom entry");
+                        }
                     }
-                    // stack.assert_val_types_on_top(block_return_ty)?;
+
+                    stack.assert_val_types(&last_ctrl_stack_entry.block_ty.returns.valtypes)?;
+
+                    // TODO is this required?
 
                     // Clear the stack until the next label
                     // stack.clear_until_next_label();

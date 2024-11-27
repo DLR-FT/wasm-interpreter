@@ -40,22 +40,23 @@ pub type Sidetable = Vec<SidetableEntry>;
 /// - br_if
 /// - br_table
 /// - else
+// TODO hide implementation
 pub struct SidetableEntry {
     /// Δpc: the amount to adjust the instruction pointer by if the branch is taken
-    delta_pc: isize,
+    pub delta_pc: isize,
 
     /// Δstp: the amount to adjust the side-table index by if the branch is taken
-    delta_stp: isize,
+    pub delta_stp: isize,
 
     /// valcnt: the number of values that will be copied if the branch is taken
     ///
     /// Branches may additionally consume operands themselves, which they push back on the operand
     /// stack after unwinding.
-    valcnt: usize,
+    pub valcnt: usize,
 
     /// popcnt: the number of values that will be popped if the branch is taken
     ///
     /// Taking a branch unwinds the operand stack down to the height where the targeted structured
     /// control instruction was entered.
-    popcnt: usize,
+    pub popcnt: usize,
 }
