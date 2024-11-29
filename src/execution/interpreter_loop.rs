@@ -18,7 +18,7 @@ use crate::{
     core::{
         indices::{DataIdx, FuncIdx, GlobalIdx, LocalIdx},
         reader::{
-            types::{memarg::MemArg, FuncType},
+            types::{memarg::MemArg, BlockType, FuncType},
             WasmReadable, WasmReader,
         },
         sidetable::Sidetable,
@@ -70,6 +70,19 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: NOP");
             }
             END => {
+                // if this is not the very last instruction in the function
+                // just skip because it is a delimiter of a ctrl block
+
+                // TODO there is definitely a better to write this
+                let current_func_span = store
+                    .funcs
+                    .get(stack.current_stackframe().func_idx)
+                    .unwrap_validated()
+                    .code_expr;
+                if wasm.pc != current_func_span.from() + current_func_span.len() {
+                    continue;
+                }
+
                 let (maybe_return_address, maybe_return_stp) = stack.pop_stackframe();
 
                 // We finished this entire invocation if there is no stackframe left. If there are
@@ -88,6 +101,33 @@ pub(super) fn run<H: HookSet>(
                     .get(stack.current_stackframe().func_idx)
                     .unwrap_validated()
                     .sidetable;
+            }
+            BR => {
+                //skip n of BR n
+                wasm.read_var_u32().unwrap_validated();
+
+                let sidetable_entry = &current_sidetable[stp];
+
+                // TODO fix this corner cutting implementation
+                let jump_vals = stack
+                    .pop_tail_iter(sidetable_entry.valcnt)
+                    .collect::<Vec<_>>();
+                stack.pop_n_values(sidetable_entry.popcnt);
+
+                for val in jump_vals {
+                    stack.push_value(val);
+                }
+
+                // TODO ugly
+                stp = (stp as isize + sidetable_entry.delta_stp)
+                    .try_into()
+                    .unwrap_validated();
+                wasm.pc = (wasm.pc as isize + sidetable_entry.delta_pc)
+                    .try_into()
+                    .unwrap_validated();
+            }
+            BLOCK => {
+                BlockType::read_unvalidated(&mut wasm);
             }
             RETURN => {
                 trace!("returning from function");
