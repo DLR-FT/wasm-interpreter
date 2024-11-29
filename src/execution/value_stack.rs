@@ -190,6 +190,11 @@ impl Stack {
         self.values
             .truncate(self.current_stackframe().value_stack_base_idx);
     }
+
+    // TODO change this interface
+    pub fn pop_n_values(&mut self, n: usize) {
+        self.values.truncate(self.values.len() - n);
+    }
 }
 
 /// The [WASM spec](https://webassembly.github.io/spec/core/exec/runtime.html#stack) calls this `Activations`, however it refers to the call frames of functions.

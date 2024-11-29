@@ -57,6 +57,48 @@ fn branch() {
 }
 
 #[test_log::test]
+fn branch2() {
+    let wasm_bytes = wat::parse_str(
+        r#"
+        (module
+            (func (export "with_branch") (result i32)
+                (block $outer_outer_block (result i32)
+                    i64.const 3
+                    (block $outer_block (param i64) (result i32) (result i32)
+                        drop
+                        i32.const 14
+                        (block $my_block (result i32)
+                            i32.const 11
+                            i32.const 8
+                            i32.const 5
+                            br $outer_block
+                            i32.const 3
+                        )
+                        i32.const 3
+                        i32.add
+                    )
+                    drop
+                    i32.const 5
+                    i32.add
+                )
+            )
+        )
+        "#,
+    )
+    .unwrap();
+
+    let validation_info = validate(&wasm_bytes).expect("validation failed");
+    let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
+
+    assert_eq!(
+        13,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), ())
+            .unwrap()
+    );
+}
+
+#[test_log::test]
 fn param_and_result() {
     let wasm_bytes = wat::parse_str(
         r#"

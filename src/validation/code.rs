@@ -6,7 +6,7 @@ use crate::core::reader::section_header::{SectionHeader, SectionTy};
 use crate::core::reader::span::Span;
 use crate::core::reader::types::global::Global;
 use crate::core::reader::types::memarg::MemArg;
-use crate::core::reader::types::{FuncType, MemType, NumType, ResultType, ValType};
+use crate::core::reader::types::{BlockType, FuncType, MemType, NumType, ResultType, ValType};
 use crate::core::reader::{WasmReadable, WasmReader};
 use crate::core::sidetable::{Sidetable, SidetableEntry};
 use crate::validation_stack::{CtrlStackEntry, LabelInfo, ValidationStack};
@@ -127,38 +127,7 @@ fn read_instructions(
             NOP => {}
             // block: [] -> [t*2]
             BLOCK => {
-                let block_ty = if wasm.peek_u8()? as i8 == 0x40 {
-                    let _ = wasm.read_u8();
-
-                    /* empty block type */
-                    FuncType {
-                        params: ResultType {
-                            valtypes: Vec::new(),
-                        },
-                        returns: ResultType {
-                            valtypes: Vec::new(),
-                        },
-                    }
-                } else if let Ok(val_ty) = ValType::read(wasm) {
-                    FuncType {
-                        params: ResultType {
-                            valtypes: Vec::new(),
-                        },
-                        returns: ResultType {
-                            valtypes: [val_ty].into(),
-                        },
-                    }
-                } else {
-                    let maybe_ty_idx: usize = wasm
-                        .read_var_i64()?
-                        .try_into()
-                        .map_err(|_| Error::InvalidFuncTypeIdx)?;
-
-                    fn_types
-                        .get(maybe_ty_idx)
-                        .ok_or_else(|| Error::InvalidFuncTypeIdx)?
-                        .clone()
-                };
+                let block_ty = BlockType::read(wasm)?.as_func_type(fn_types)?;
 
                 stack.assert_val_types_on_top(&block_ty.params.valtypes)?;
                 let height = stack.len() - block_ty.params.valtypes.len();
@@ -183,7 +152,7 @@ fn read_instructions(
 
                 let targeted_ctrl_block_entry = stack
                     .ctrl_stack
-                    .get(ctrl_stack_len - label_idx)
+                    .get(ctrl_stack_len - label_idx - 1)
                     .ok_or(Error::InvalidLabelIdx(label_idx))?;
 
                 stack.assert_val_types_on_top(targeted_ctrl_block_entry.label_types())?;
@@ -193,7 +162,7 @@ fn read_instructions(
 
                 let targeted_ctrl_block_entry = stack
                     .ctrl_stack
-                    .get_mut(ctrl_stack_len - label_idx)
+                    .get_mut(ctrl_stack_len - label_idx - 1)
                     .unwrap();
 
                 let stp_here = sidetable.len();
