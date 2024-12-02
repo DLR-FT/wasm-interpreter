@@ -173,7 +173,7 @@ impl Display for Error {
                 elem_idx
             )),
             Error::DifferentRefTypes(rref1, rref2) => f.write_fmt(format_args!(
-                "RefType {} is NOT equal to RefType {}",
+                "RefType {:?} is NOT equal to RefType {:?}",
                 rref1, rref2
             )),
             Error::ExpectedARefType(found_valtype) => f.write_fmt(format_args!(
@@ -181,7 +181,7 @@ impl Display for Error {
                 found_valtype
             )),
             Error::WrongRefTypeForInteropValue(ref_given, ref_wanted) => f.write_fmt(format_args!(
-                "Wrong RefType for InteropValue: Given {} - Needed {}",
+                "Wrong RefType for InteropValue: Given {:?} - Needed {:?}",
                 ref_given, ref_wanted
             )),
             Error::FunctionIsNotDefined(func_idx) => f.write_fmt(format_args!(

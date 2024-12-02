@@ -143,7 +143,10 @@ pub(super) fn run<H: HookSet>(
                     Ref::Extern(_) => unreachable!(),
                 };
 
-                let func_to_call_inst = store.funcs.get(func_addr).unwrap_validated();
+                let func_to_call_inst = store
+                    .funcs
+                    .get(func_addr.unwrap_validated())
+                    .unwrap_validated();
 
                 let func_ty_actual_index = func_to_call_inst.ty;
 
@@ -156,7 +159,7 @@ pub(super) fn run<H: HookSet>(
 
                 trace!("Instruction: call_indirect [{func_addr:?}]");
                 let locals = Locals::new(params, remaining_locals);
-                stack.push_stackframe(func_addr, func_ty, locals, wasm.pc);
+                stack.push_stackframe(func_addr.unwrap_validated(), func_ty, locals, wasm.pc);
 
                 wasm.move_start_to(func_to_call_inst.code_expr)
                     .unwrap_validated();
@@ -1982,13 +1985,13 @@ pub(super) fn run<H: HookSet>(
                 let reftype = RefType::read_unvalidated(&mut wasm);
 
                 stack.push_value(Value::Ref(reftype.to_null_ref()));
-                trace!("Instruction: ref.null '{}' -> [{}]", reftype, reftype);
+                trace!("Instruction: ref.null '{:?}' -> [{:?}]", reftype, reftype);
             }
             REF_IS_NULL => {
                 let rref = stack.pop_unknown_ref();
                 let is_null = match rref {
-                    Ref::Extern(rref) => rref.is_null,
-                    Ref::Func(rref) => rref.is_null,
+                    Ref::Extern(rref) => rref.addr.is_none(),
+                    Ref::Func(rref) => rref.addr.is_none(),
                 };
 
                 let res = if is_null { 1 } else { 0 };

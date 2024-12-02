@@ -366,8 +366,7 @@ where
                         .iter()
                         .map(|expr| {
                             get_address_offset(
-                                run_const_span(validation_info.wasm, expr, (), &function_instances)
-                                    .unwrap_validated(),
+                                run_const_span(validation_info.wasm, expr, ()).unwrap_validated(),
                             )
                         })
                         .collect(),
@@ -410,13 +409,8 @@ where
                         assert!(tables.len() > table_idx);
 
                         let offset = get_address_offset(
-                            run_const_span(
-                                validation_info.wasm,
-                                &active_elem.offset,
-                                (),
-                                &function_instances,
-                            )
-                            .unwrap_validated(),
+                            run_const_span(validation_info.wasm, &active_elem.offset, ())
+                                .unwrap_validated(),
                         ) as usize;
 
                         let table = &mut tables[table_idx];
@@ -457,7 +451,7 @@ where
                         let mut wasm = WasmReader::new(validation_info.wasm);
                         wasm.move_start_to(active_data.offset).unwrap_validated();
                         let mut stack = Stack::new();
-                        run_const(wasm, &mut stack, (), &[]);
+                        run_const(wasm, &mut stack, ());
                         let value = stack.peek_unknown_value();
                         if value.is_none() {
                             panic!("No value on the stack for data segment offset");
@@ -508,7 +502,7 @@ where
                     wasm.move_start_to(global.init_expr).unwrap_validated();
                     // We shouldn't need to clear the stack. If validation is correct, it will remain empty after execution.
 
-                    run_const(wasm, &mut stack, (), &[]);
+                    run_const(wasm, &mut stack, ());
                     let value = stack.pop_value(global.ty.ty);
 
                     GlobalInst {

@@ -3,7 +3,7 @@
 //! See: <https://webassembly.github.io/spec/core/binary/types.html>
 
 use alloc::vec::Vec;
-use core::fmt::{Debug, Display, Formatter};
+use core::fmt::{Debug, Formatter};
 
 use crate::core::reader::{WasmReadable, WasmReader};
 use crate::execution::assert_validated::UnwrapValidatedExt;
@@ -85,19 +85,6 @@ impl WasmReadable for VecType {
 pub enum RefType {
     FuncRef,
     ExternRef,
-}
-
-impl Display for RefType {
-    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                Self::ExternRef => "ExternRef",
-                Self::FuncRef => "FuncRef",
-            }
-        )
-    }
 }
 
 impl RefType {

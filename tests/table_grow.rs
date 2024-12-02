@@ -373,6 +373,7 @@ fn table_grow_with_exported_table_test() {
 //     assert_result!(import2_instance, size, (), 3);
 // }
 
+// TODO: we can NOT run this test yet because ???
 #[ignore = "table grow type errors"]
 #[test_log::test]
 fn table_grow_type_errors() {

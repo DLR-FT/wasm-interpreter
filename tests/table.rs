@@ -129,8 +129,8 @@ fn table_elem_test() {
         .for_each(|(i, rref)| match *rref {
             wasm::value::Ref::Extern(_) => panic!(),
             wasm::value::Ref::Func(func_addr) => {
-                assert!(!func_addr.is_null);
-                assert!(wanted[i] == func_addr.addr)
+                assert!(func_addr.addr.is_some());
+                assert!(wanted[i] == func_addr.addr.unwrap())
             }
         });
     // assert!(instance.store.tables)
@@ -170,7 +170,7 @@ fn table_get_set_test() {
 
         match rref {
             Ref::Func(funcaddr) => {
-                assert!(!funcaddr.is_null)
+                assert!(!funcaddr.is_null())
             }
             _ => panic!("Expected a FuncRef"),
         }
@@ -186,7 +186,7 @@ fn table_get_set_test() {
 
         match rref {
             Ref::Func(funcaddr) => {
-                assert!(funcaddr.is_null)
+                assert!(funcaddr.is_null())
             }
             _ => panic!("Expected a FuncRef"),
         }
@@ -204,7 +204,7 @@ fn table_get_set_test() {
 
         match rref {
             Ref::Func(funcaddr) => {
-                assert!(!funcaddr.is_null)
+                assert!(!funcaddr.is_null())
             }
             _ => panic!("Expected a FuncRef"),
         }

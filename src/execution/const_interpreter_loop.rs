@@ -6,8 +6,6 @@ use crate::{
     NumType, RefType, ValType, Value,
 };
 
-use super::store::FuncInst;
-
 /// Execute a previosly-validated constant expression. These type of expressions are used for initializing global
 /// variables.
 ///
@@ -33,7 +31,6 @@ pub(crate) fn run_const(
     mut wasm: WasmReader,
     stack: &mut Stack,
     _imported_globals: (), /*todo!*/
-    funcs: &[FuncInst],
 ) {
     use crate::core::reader::types::opcode::*;
     loop {
@@ -105,17 +102,11 @@ pub(crate) fn run_const(
                 let reftype = RefType::read_unvalidated(&mut wasm);
 
                 stack.push_value(Value::Ref(reftype.to_null_ref()));
-                trace!("Instruction: ref.null '{}' -> [{}]", reftype, reftype);
+                trace!("Instruction: ref.null '{:?}' -> [{:?}]", reftype, reftype);
             }
             REF_FUNC => {
-                // not unwrap validated because, guess what? not validated
-                let func_idx = wasm.read_var_u32().unwrap() as usize;
-                if func_idx >= funcs.len() {
-                    panic!(
-                        "Out of bounds ref.func ({func_idx}) access (max: {})",
-                        funcs.len()
-                    );
-                }
+                // we already checked for the func_idx to be in bounds during validation
+                let func_idx = wasm.read_var_u32().unwrap_validated() as usize;
                 stack.push_value(Value::Ref(Ref::Func(FuncAddr::new(Some(func_idx)))));
             }
             other => {
@@ -129,14 +120,14 @@ pub(crate) fn run_const_span(
     wasm: &[u8],
     span: &Span,
     imported_globals: (),
-    funcs: &[FuncInst],
+    // funcs: &[FuncInst],
 ) -> Option<Value> {
     let mut wasm = WasmReader::new(wasm);
 
     wasm.move_start_to(*span).unwrap_validated();
 
     let mut stack = Stack::new();
-    run_const(wasm, &mut stack, imported_globals, funcs);
+    run_const(wasm, &mut stack, imported_globals);
 
     stack.peek_unknown_value()
 }

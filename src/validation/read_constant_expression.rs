@@ -132,7 +132,7 @@ pub fn read_constant_instructions(
                 stack.push_valtype(ValType::RefType(RefType::read(wasm)?));
             }
             REF_FUNC => {
-                let func_idx = wasm.read_var_u32().unwrap() as usize;
+                let func_idx = wasm.read_var_u32()? as usize;
                 match funcs {
                     Some(funcs) => {
                         if func_idx >= funcs.len() {

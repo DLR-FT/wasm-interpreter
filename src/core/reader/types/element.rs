@@ -18,7 +18,7 @@ impl Debug for ElemType {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
-            "ElemType {{\n\tinit: {:?},\n\tmode: {:?},\n\t#ty: {}\n}}",
+            "ElemType {{\n\tinit: {:?},\n\tmode: {:?},\n\t#ty: {:?}\n}}",
             self.init,
             self.mode,
             self.init.ty()
@@ -105,7 +105,7 @@ impl ElemType {
             };
 
             match reftype_or_elemkind {
-                Some(rty) => trace!("REFTYPE: {}", rty),
+                Some(rty) => trace!("REFTYPE: {:?}", rty),
                 None => {
                     trace!("REFTYPE NONE!")
                 }

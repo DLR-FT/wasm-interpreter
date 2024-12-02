@@ -280,14 +280,14 @@ impl Ref {
 
     pub fn is_null(&self) -> bool {
         match self {
-            Self::Extern(extern_addr) => extern_addr.is_null,
-            Self::Func(func_addr) => func_addr.is_null,
+            Self::Extern(extern_addr) => extern_addr.addr.is_none(),
+            Self::Func(func_addr) => func_addr.addr.is_none(),
         }
     }
 
     pub fn is_specific_func(&self, func_id: u32) -> bool {
         match self {
-            Self::Func(func_addr) => !func_addr.is_null && func_addr.addr == func_id as usize,
+            Self::Func(func_addr) => func_addr.addr == Some(func_id as usize),
             _ => unreachable!(),
         }
     }
@@ -296,23 +296,21 @@ impl Ref {
 impl Display for Ref {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
-            Ref::Func(func_addr) => write!(f, "FuncRef({})", func_addr),
-            Ref::Extern(extern_addr) => write!(f, "ExternRef({})", extern_addr),
+            Ref::Func(func_addr) => write!(f, "FuncRef({:?})", func_addr),
+            Ref::Extern(extern_addr) => write!(f, "ExternRef({:?})", extern_addr),
         }
     }
 }
 
 #[derive(Clone, Copy, PartialEq)]
 pub struct FuncAddr {
-    pub is_null: bool,
-    // it is the idx of the function in the current module
-    pub addr: usize,
+    pub addr: Option<usize>,
 }
 
 impl Debug for FuncAddr {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        match self.is_null {
-            false => write!(f, "FuncAddr {{\n\taddr: {}\n}}", self.addr),
+        match self.addr.is_none() {
+            false => write!(f, "FuncAddr {{\n\taddr: {}\n}}", self.addr.unwrap()),
             true => write!(f, "FuncAddr {{ NULL }}"),
         }
     }
@@ -322,27 +320,23 @@ impl FuncAddr {
     pub fn new(addr: Option<usize>) -> Self {
         match addr {
             None => Self::null(),
-            Some(u) => Self {
-                addr: u,
-                is_null: false,
-            },
+            Some(u) => Self { addr: Some(u) },
         }
     }
     pub fn null() -> Self {
-        Self {
-            addr: 0,
-            is_null: true,
-        }
+        Self { addr: None }
     }
     pub fn get_value(&self) -> usize {
-        if self.is_null {
-            Self::get_reserved_value() as usize
-        } else {
-            self.addr
+        match self.addr {
+            None => Self::get_reserved_value() as usize,
+            Some(val) => val,
         }
     }
     pub fn get_reserved_value() -> u32 {
         u32::MAX
+    }
+    pub fn is_null(&self) -> bool {
+        self.addr.is_none()
     }
 }
 
@@ -352,43 +346,25 @@ impl Default for FuncAddr {
     }
 }
 
-impl Display for FuncAddr {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        if self.is_null {
-            write!(f, "FuncAddr {{ NULL }}")
-        } else {
-            write!(f, "FuncAddr {{ addr: {} }}", self.addr)
-        }
-    }
-}
-
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct ExternAddr {
-    pub is_null: bool,
-    pub addr: usize,
+    pub addr: Option<usize>,
 }
 
 impl ExternAddr {
     pub fn new(addr: Option<usize>) -> Self {
         match addr {
             None => Self::null(),
-            Some(u) => Self {
-                addr: u,
-                is_null: false,
-            },
+            Some(u) => Self { addr: Some(u) },
         }
     }
     pub fn null() -> Self {
-        Self {
-            addr: 0,
-            is_null: true,
-        }
+        Self { addr: None }
     }
     pub fn get_value(&self) -> usize {
-        if self.is_null {
-            Self::get_reserved_value() as usize
-        } else {
-            self.addr
+        match self.addr {
+            None => Self::get_reserved_value() as usize,
+            Some(val) => val,
         }
     }
     pub fn get_reserved_value() -> u32 {
@@ -399,16 +375,6 @@ impl ExternAddr {
 impl Default for ExternAddr {
     fn default() -> Self {
         Self::null()
-    }
-}
-
-impl Display for ExternAddr {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        if self.is_null {
-            write!(f, "ExternAddr {{ NULL }}")
-        } else {
-            write!(f, "ExternAddr {{ addr: () }}") // No actual addr, so printing ()
-        }
     }
 }
 

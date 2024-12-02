@@ -26,7 +26,7 @@ macro_rules! get_func {
 macro_rules! is_specific_func {
     ($self:expr, $func_id:expr) => {
         match $self {
-            Ref::Func(func_addr) => !func_addr.is_null && func_addr.addr == $func_id as usize,
+            Ref::Func(func_addr) => func_addr.addr == Some($func_id as usize),
             _ => unimplemented!(),
         }
     };
