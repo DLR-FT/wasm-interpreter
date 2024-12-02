@@ -56,7 +56,7 @@ impl ElemType {
             let ty = wasm.read_var_u32().unwrap();
             // https://webassembly.github.io/spec/core/syntax/modules.html#element-segments
             // https://webassembly.github.io/spec/core/binary/modules.html#element-section
-            // We can treat the ttype as a 3bit integer
+            // We can treat the ty as a 3bit integer
             // If it's not 3 bits I am not sure what to do
             // bit 0 => diff between passive|declartive and active segment
             // bit 1 => presence of an explicit table index for an active segment

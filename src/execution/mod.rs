@@ -371,8 +371,7 @@ where
                         })
                         .collect(),
                     ElemItems::RefFuncs(indicies) => {
-                        // For external references, this branch will never be taken
-                        // TODO: REASON @nerodesu017
+                        // This branch gets taken when the elements are direct function references (i32 values), so we just return the indices
                         indicies
                     }
                 };
@@ -391,13 +390,13 @@ where
                 };
 
                 match &elem.mode {
-                    // Declarative elements are used for streaming-compilers,
-                    // and do not offer any additional data to interpreters such
-                    // as ours.
+                    // As per https://webassembly.github.io/spec/core/syntax/modules.html#element-segments
+                    // A declarative element segment is not available at runtime but merely serves to forward-declare
+                    //  references that are formed in code with instructions like `ref.func`
 
-                    // TODO: link to more explanations, if available,
-                    // otherwise link and document ElemMode::Declarative
-                    // @nerodesu017
+                    // Also, the answer given by Andreas Rossberg (the editor of the WASM Spec - Release 2.0)
+                    // Per https://stackoverflow.com/questions/78672934/what-is-the-purpose-of-a-wasm-declarative-element-segment
+                    // "[...] The reason Wasm requires this (admittedly ugly) forward declaration is to support streaming compilation [...]"
                     ElemMode::Declarative => None,
                     ElemMode::Passive => {
                         passive_elem_indexes.push(i);
@@ -405,8 +404,6 @@ where
                     }
                     ElemMode::Active(active_elem) => {
                         let table_idx = active_elem.table as usize;
-                        // TODO: @nerodesu017 can this be verified at validation-time?
-                        assert!(tables.len() > table_idx);
 
                         let offset = get_address_offset(
                             run_const_span(validation_info.wasm, &active_elem.offset, ())
@@ -414,14 +411,12 @@ where
                         ) as usize;
 
                         let table = &mut tables[table_idx];
-                        // TODO: @nerodesu017 can this be verified at validation-time?
+                        // This can't be verified at validation-time because we don't keep track of actual values when validating expressions
+                        //  we only keep track of the type of the values. As such we can't pop the exact value of an i32 from the validation stack
                         assert!(table.len() >= (offset + instance.len()));
 
-                        // TODO: @nerodesu017 what is happening here?
-                        // https://youtu.be/Es2GIhjcSLQ?t=33
-                        for (i, reference) in instance.references.iter().enumerate() {
-                            table.elem[i + offset] = *reference;
-                        }
+                        table.elem[offset..offset + instance.references.len()]
+                            .copy_from_slice(&instance.references);
 
                         Some(instance)
                     }
@@ -525,16 +520,23 @@ where
     }
 }
 
+/// Used for getting the offset of an address.
+///
+/// Related to the Active Elements
+///
+/// https://webassembly.github.io/spec/core/syntax/modules.html#element-segments
+///
+/// Since active elements need an offset given by a constant expression, in this case
+/// they can only be an i32 (which can be understood from either a [`Value::I32`] - but
+/// since we don't unbox the address of the reference, for us also a [`Value::Ref`] -
+/// or from a Global)
 fn get_address_offset(value: Value) -> u32 {
     match value {
         Value::I32(val) => val,
-        Value::I64(val) => {
-            if val > u32::MAX as u64 {
-                panic!("i64 value for data segment offset is out of reach")
-            }
-            val as u32
-        }
-        Value::Ref(Ref::Func(addr)) => addr.get_value() as u32,
+        Value::Ref(rref) => match rref {
+            Ref::Extern(_) => panic!("Not yet implemented"),
+            Ref::Func(func_addr) => func_addr.addr.unwrap() as u32,
+        },
         // INFO: from wasmtime - implement only global
         _ => unreachable!(),
     }
