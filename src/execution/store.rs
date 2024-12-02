@@ -2,13 +2,12 @@ use alloc::vec;
 use alloc::vec::Vec;
 use core::iter;
 
-use crate::RefType;
-
 use crate::core::indices::TypeIdx;
 use crate::core::reader::span::Span;
 use crate::core::reader::types::global::Global;
 use crate::core::reader::types::{MemType, TableType, ValType};
 use crate::execution::value::{Ref, Value};
+use crate::RefType;
 
 /// The store represents all global state that can be manipulated by WebAssembly programs. It
 /// consists of the runtime representation of all instances of functions, tables, memories, and
@@ -29,15 +28,15 @@ pub struct Store {
 /// https://webassembly.github.io/spec/core/exec/runtime.html#element-instances
 pub struct ElemInst {
     pub ty: RefType,
-    pub elem: Vec<Ref>,
+    pub references: Vec<Ref>,
 }
 
 impl ElemInst {
     pub fn len(&self) -> usize {
-        self.elem.len()
+        self.references.len()
     }
     pub fn is_empty(&self) -> bool {
-        self.elem.is_empty()
+        self.references.is_empty()
     }
 }
 

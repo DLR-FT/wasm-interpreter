@@ -2,7 +2,7 @@ use alloc::string::ToString;
 use alloc::vec;
 use alloc::vec::Vec;
 
-use const_interpreter_loop::run_const;
+use const_interpreter_loop::{run_const, run_const_span};
 use function_ref::FunctionRef;
 use interpreter_loop::run;
 use locals::Locals;
@@ -10,7 +10,7 @@ use store::{DataInst, ElemInst, TableInst};
 use value::{ExternAddr, FuncAddr, Ref};
 use value_stack::Stack;
 
-use crate::core::reader::span::Span;
+use crate::core::reader::types::element::{ElemItems, ElemMode};
 use crate::core::reader::types::export::{Export, ExportDesc};
 use crate::core::reader::types::FuncType;
 use crate::core::reader::WasmReader;
@@ -20,7 +20,7 @@ use crate::execution::store::{FuncInst, GlobalInst, MemInst, Store};
 use crate::execution::value::Value;
 use crate::validation::code::read_declared_locals;
 use crate::value::InteropValueList;
-use crate::{RuntimeError, ValType, ValidationInfo};
+use crate::{RefType, RuntimeError, ValType, ValidationInfo};
 
 // TODO
 pub(crate) mod assert_validated;
@@ -358,146 +358,79 @@ where
             .elements
             .iter()
             .enumerate()
-            .filter_map(|(i, el)| {
-                use crate::core::reader::types::element::*;
-                trace!("Instantiating element {:#?}", el);
-                match &el.mode {
+            .filter_map(|(i, elem)| {
+                trace!("Instantiating element {:#?}", elem);
+
+                let offsets = match &elem.init {
+                    ElemItems::Exprs(_ref_type, init_exprs) => &init_exprs
+                        .iter()
+                        .map(|expr| {
+                            get_address_offset(
+                                run_const_span(validation_info.wasm, expr, (), &function_instances)
+                                    .unwrap_validated(),
+                            )
+                        })
+                        .collect(),
+                    ElemItems::RefFuncs(indicies) => {
+                        // For external references, this branch will never be taken
+                        // TODO: REASON @nerodesu017
+                        indicies
+                    }
+                };
+
+                let references: Vec<Ref> = offsets
+                    .iter()
+                    .map(|offset| match elem.ty() {
+                        RefType::FuncRef => Ref::Func(FuncAddr::new(Some(*offset as usize))),
+                        RefType::ExternRef => Ref::Extern(ExternAddr::new(Some(*offset as usize))),
+                    })
+                    .collect();
+
+                let instance = ElemInst {
+                    ty: elem.ty(),
+                    references,
+                };
+
+                match &elem.mode {
+                    // Declarative elements are used for streaming-compilers,
+                    // and do not offer any additional data to interpreters such
+                    // as ours.
+
+                    // TODO: link to more explanations, if available,
+                    // otherwise link and document ElemMode::Declarative
+                    // @nerodesu017
+                    ElemMode::Declarative => None,
                     ElemMode::Passive => {
                         passive_elem_indexes.push(i);
-                        // can be copied at runtime
-                        let rref = match el.ty() {
-                            crate::RefType::FuncRef => ElemInst {
-                                ty: el.ty(),
-                                elem: match &el.init {
-                                    ElemItems::Exprs(_, sub_programs) => sub_programs
-                                        .iter()
-                                        .map(|sub_program| {
-                                            let value = read_value_from_wasm(
-                                                validation_info.wasm,
-                                                sub_program,
-                                                (),
-                                                &function_instances,
-                                            );
-                                            let offset: u32 =
-                                                if let Value::Ref(Ref::Func(addr)) = value {
-                                                    addr.get_value() as u32
-                                                } else {
-                                                    unreachable!()
-                                                };
-
-                                            Ref::Func(FuncAddr::new(Some(offset as usize)))
-                                        })
-                                        .collect::<Vec<Ref>>(),
-                                    ElemItems::RefFuncs(func_idxs) => func_idxs
-                                        .iter()
-                                        .map(|func_idx| {
-                                            Ref::Func(FuncAddr::new(Some(*func_idx as usize)))
-                                        })
-                                        .collect::<Vec<Ref>>(),
-                                },
-                            },
-                            crate::RefType::ExternRef => ElemInst {
-                                ty: el.ty(),
-                                elem: match &el.init {
-                                    ElemItems::Exprs(_, sub_programs) => sub_programs
-                                        .iter()
-                                        .map(|sub_program| {
-                                            let value = read_value_from_wasm(
-                                                validation_info.wasm,
-                                                sub_program,
-                                                (),
-                                                &function_instances,
-                                            );
-                                            let offset: u32 =
-                                                if let Value::Ref(Ref::Extern(addr)) = value {
-                                                    addr.get_value() as u32
-                                                } else {
-                                                    unreachable!()
-                                                };
-
-                                            Ref::Extern(ExternAddr::new(Some(offset as usize)))
-                                        })
-                                        .collect::<Vec<Ref>>(),
-                                    ElemItems::RefFuncs(_) => {
-                                        unreachable!("RefFuncs allowed only for Functions!")
-                                    }
-                                },
-                            },
-                        };
-                        Some(rref)
+                        Some(instance)
                     }
                     ElemMode::Active(active_elem) => {
-                        // copies itself right now, when instantiating
                         let table_idx = active_elem.table as usize;
+                        // TODO: @nerodesu017 can this be verified at validation-time?
                         assert!(tables.len() > table_idx);
-                        // if tables.len() <= table_idx {
-                        //     return Err(StoreInstantiationError::TableIsNotDefined(table_idx));
-                        // }
 
-                        let value = read_value_from_wasm(
-                            validation_info.wasm,
-                            &active_elem.offset,
-                            (),
-                            &function_instances,
-                        );
-                        let offset = get_address_offset(value) as usize;
+                        let offset = get_address_offset(
+                            run_const_span(
+                                validation_info.wasm,
+                                &active_elem.offset,
+                                (),
+                                &function_instances,
+                            )
+                            .unwrap_validated(),
+                        ) as usize;
 
-                        let el = match el.ty() {
-                            crate::RefType::FuncRef => ElemInst {
-                                ty: el.ty(),
-                                elem: match &el.init {
-                                    ElemItems::Exprs(_, exprs) => (*exprs)
-                                        .iter()
-                                        .map(|expr| {
-                                            let value = read_value_from_wasm(
-                                                validation_info.wasm,
-                                                expr,
-                                                (),
-                                                &function_instances,
-                                            );
-                                            let offset = get_address_offset(value) as usize;
-                                            Ref::Func(FuncAddr::new(Some(offset)))
-                                        })
-                                        .collect::<Vec<Ref>>(),
-                                    ElemItems::RefFuncs(func_idxs) => func_idxs
-                                        .iter()
-                                        .map(|func_idx| {
-                                            Ref::Func(FuncAddr::new(Some(*func_idx as usize)))
-                                        })
-                                        .collect::<Vec<Ref>>(),
-                                },
-                            },
-                            crate::RefType::ExternRef => ElemInst {
-                                ty: el.ty(),
-                                elem: match &el.init {
-                                    ElemItems::Exprs(_, exprs) => (*exprs)
-                                        .iter()
-                                        .map(|expr| {
-                                            let value = read_value_from_wasm(
-                                                validation_info.wasm,
-                                                expr,
-                                                (),
-                                                &function_instances,
-                                            );
-                                            let offset = get_address_offset(value) as usize;
-                                            Ref::Extern(ExternAddr::new(Some(offset)))
-                                        })
-                                        .collect::<Vec<Ref>>(),
-                                    ElemItems::RefFuncs(_) => unreachable!(),
-                                },
-                            },
-                        };
                         let table = &mut tables[table_idx];
+                        // TODO: @nerodesu017 can this be verified at validation-time?
+                        assert!(table.len() >= (offset + instance.len()));
 
-                        assert!(table.len() >= (offset + el.len()));
+                        // TODO: @nerodesu017 what is happening here?
+                        // https://youtu.be/Es2GIhjcSLQ?t=33
+                        for (i, reference) in instance.references.iter().enumerate() {
+                            table.elem[i + offset] = *reference;
+                        }
 
-                        el.elem.iter().enumerate().for_each(|(i, rref)| {
-                            table.elem[i + offset] = *rref;
-                        });
-
-                        Some(el)
+                        Some(instance)
                     }
-                    ElemMode::Declarative => None,
                 }
             })
             .collect();
@@ -607,24 +540,8 @@ fn get_address_offset(value: Value) -> u32 {
             }
             val as u32
         }
+        Value::Ref(Ref::Func(addr)) => addr.get_value() as u32,
         // INFO: from wasmtime - implement only global
         _ => unreachable!(),
     }
-}
-
-fn read_value_from_wasm(
-    wasm: &[u8],
-    span: &Span,
-    imported_globals: (),
-    imported_funcs: &[FuncInst],
-) -> Value {
-    let mut wasm = WasmReader::new(wasm);
-    wasm.move_start_to(*span).unwrap_validated();
-    let mut stack = Stack::new();
-    run_const(wasm, &mut stack, imported_globals, imported_funcs);
-    let value = stack.peek_unknown_value();
-    if value.is_none() {
-        panic!("No value on the stack for data segment offset");
-    }
-    value.unwrap()
 }

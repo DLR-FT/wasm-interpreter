@@ -2310,14 +2310,18 @@ pub(super) fn run<H: HookSet>(
                         let elem = store.elements.get(elem_idx).unwrap_validated();
 
                         let dest = &mut tab.elem[d as usize..];
-                        let src = &elem.elem[s as usize..final_src_offset];
+                        let src = &elem.references[s as usize..final_src_offset];
                         dest[..src.len()].copy_from_slice(src);
                     }
                     ELEM_DROP => {
                         let elem_idx = wasm.read_var_u32().unwrap_validated() as usize;
 
                         // WARN: i'm not sure if this is okay or not
-                        store.elements.get_mut(elem_idx).unwrap_validated().elem = vec![];
+                        store
+                            .elements
+                            .get_mut(elem_idx)
+                            .unwrap_validated()
+                            .references = vec![];
                     }
                     // https://webassembly.github.io/spec/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-table-mathsf-table-copy-x-y
                     TABLE_COPY => {

@@ -78,7 +78,7 @@ impl ElemType {
                 if tables_length <= table_idx as usize {
                     return Err(Error::UnknownTable);
                 }
-                let expr = read_constant_instructions(wasm, None, None, Some(&functions))?;
+                let expr = read_constant_instructions(wasm, None, None, Some(functions))?;
 
                 ElemMode::Active(ActiveElem {
                     table: table_idx,
@@ -114,7 +114,7 @@ impl ElemType {
             let items: ElemItems = if use_of_el_ty_and_el_exprs {
                 ElemItems::Exprs(
                     reftype_or_elemkind.unwrap_or(RefType::FuncRef),
-                    wasm.read_vec(|w| read_constant_instructions(w, None, None, Some(&functions)))?,
+                    wasm.read_vec(|w| read_constant_instructions(w, None, None, Some(functions)))?,
                 )
             } else {
                 assert!(reftype_or_elemkind.is_none());

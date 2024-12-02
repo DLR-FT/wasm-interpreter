@@ -1,6 +1,6 @@
 use crate::{
     assert_validated::UnwrapValidatedExt,
-    core::reader::{WasmReadable, WasmReader},
+    core::reader::{span::Span, WasmReadable, WasmReader},
     value::{FuncAddr, Ref},
     value_stack::Stack,
     NumType, RefType, ValType, Value,
@@ -123,4 +123,20 @@ pub(crate) fn run_const(
             }
         }
     }
+}
+
+pub(crate) fn run_const_span(
+    wasm: &[u8],
+    span: &Span,
+    imported_globals: (),
+    funcs: &[FuncInst],
+) -> Option<Value> {
+    let mut wasm = WasmReader::new(wasm);
+
+    wasm.move_start_to(*span).unwrap_validated();
+
+    let mut stack = Stack::new();
+    run_const(wasm, &mut stack, imported_globals, funcs);
+
+    stack.peek_unknown_value()
 }
