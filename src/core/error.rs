@@ -1,3 +1,6 @@
+use alloc::format;
+use alloc::string::{String, ToString};
+
 use crate::core::indices::GlobalIdx;
 use crate::validation_stack::LabelKind;
 use crate::RefType;
@@ -23,6 +26,13 @@ pub enum RuntimeError {
     UninitializedElement,
     SignatureMismatch,
     ExpectedAValueOnTheStack,
+}
+
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub enum StoreInstantiationError {
+    ActiveDataWriteOutOfBounds,
+    I64ValueOutOfReach(String),
+    MissingValueOnTheStack,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -72,6 +82,7 @@ pub enum Error {
     FunctionIsNotDefined(FuncIdx),
     ReferencingAnUnreferencedFunction(FuncIdx),
     FunctionTypeIsNotDefined(TypeIdx),
+    StoreInstantiationError(StoreInstantiationError),
 }
 
 impl Display for Error {
@@ -196,6 +207,7 @@ impl Display for Error {
                 "C.fn_types[{}] is NOT defined when it should be",
                 func_ty_idx
             )),
+            Error::StoreInstantiationError(err) => err.fmt(f),
         }
     }
 }
@@ -220,10 +232,36 @@ impl Display for RuntimeError {
     }
 }
 
+impl Display for StoreInstantiationError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        use StoreInstantiationError::*;
+        match self {
+            ActiveDataWriteOutOfBounds => {
+                f.write_str("Active data writing in memory is out of bounds")
+            }
+            I64ValueOutOfReach(s) => f.write_fmt(format_args!(
+                "I64 value {}is out of reach",
+                if !s.is_empty() {
+                    format!("for {s} ")
+                } else {
+                    "".to_string()
+                }
+            )),
+            MissingValueOnTheStack => f.write_str(""),
+        }
+    }
+}
+
 pub type Result<T> = core::result::Result<T, Error>;
 
 impl From<RuntimeError> for Error {
     fn from(value: RuntimeError) -> Self {
         Self::RuntimeError(value)
+    }
+}
+
+impl From<StoreInstantiationError> for Error {
+    fn from(value: StoreInstantiationError) -> Self {
+        Self::StoreInstantiationError(value)
     }
 }

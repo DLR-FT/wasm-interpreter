@@ -1,3 +1,4 @@
+use alloc::borrow::ToOwned;
 use alloc::string::ToString;
 use alloc::vec;
 use alloc::vec::Vec;
@@ -10,6 +11,7 @@ use store::{DataInst, ElemInst, TableInst};
 use value::{ExternAddr, FuncAddr, Ref};
 use value_stack::Stack;
 
+use crate::core::error::StoreInstantiationError;
 use crate::core::reader::types::element::{ElemItems, ElemMode};
 use crate::core::reader::types::export::{Export, ExportDesc};
 use crate::core::reader::types::FuncType;
@@ -20,7 +22,7 @@ use crate::execution::store::{FuncInst, GlobalInst, MemInst, Store};
 use crate::execution::value::Value;
 use crate::validation::code::read_declared_locals;
 use crate::value::InteropValueList;
-use crate::{RefType, RuntimeError, ValType, ValidationInfo};
+use crate::{RefType, Result as CustomResult, RuntimeError, ValType, ValidationInfo};
 
 // TODO
 pub(crate) mod assert_validated;
@@ -48,14 +50,14 @@ where
 }
 
 impl<'b> RuntimeInstance<'b, EmptyHookSet> {
-    pub fn new(validation_info: &'_ ValidationInfo<'b>) -> Result<Self, RuntimeError> {
+    pub fn new(validation_info: &'_ ValidationInfo<'b>) -> CustomResult<Self> {
         Self::new_with_hooks(DEFAULT_MODULE, validation_info, EmptyHookSet)
     }
 
     pub fn new_named(
         module_name: &str,
         validation_info: &'_ ValidationInfo<'b>,
-    ) -> Result<Self, RuntimeError> {
+    ) -> CustomResult<Self> {
         Self::new_with_hooks(module_name, validation_info, EmptyHookSet)
     }
 }
@@ -68,10 +70,10 @@ where
         module_name: &str,
         validation_info: &'_ ValidationInfo<'b>,
         hook_set: H,
-    ) -> Result<Self, RuntimeError> {
+    ) -> CustomResult<Self> {
         trace!("Starting instantiation of bytecode");
 
-        let store = Self::init_store(validation_info);
+        let store = Self::init_store(validation_info)?;
 
         let mut instance = RuntimeInstance {
             wasm_bytecode: validation_info.wasm,
@@ -314,7 +316,8 @@ where
         }
     }
 
-    fn init_store(validation_info: &ValidationInfo) -> Store {
+    fn init_store(validation_info: &ValidationInfo) -> CustomResult<Store> {
+        use StoreInstantiationError::*;
         let function_instances: Vec<FuncInst> = {
             let mut wasm_reader = WasmReader::new(validation_info.wasm);
 
@@ -447,11 +450,7 @@ where
                         wasm.move_start_to(active_data.offset).unwrap_validated();
                         let mut stack = Stack::new();
                         run_const(wasm, &mut stack, ());
-                        let value = stack.peek_unknown_value();
-                        if value.is_none() {
-                            panic!("No value on the stack for data segment offset");
-                        }
-                        value.unwrap()
+                        stack.peek_unknown_value().ok_or(MissingValueOnTheStack)?
                     };
 
                     // TODO: this shouldn't be a simple value, should it? I mean it can't be, but it can also be any type of ValType
@@ -460,7 +459,7 @@ where
                         Value::I32(val) => val,
                         Value::I64(val) => {
                             if val > u32::MAX as u64 {
-                                panic!("i64 value for data segment offset is out of reach")
+                                return Err(I64ValueOutOfReach("data segment".to_owned()));
                             }
                             val as u32
                         }
@@ -472,7 +471,7 @@ where
 
                     let len = mem_inst.data.len();
                     if offset as usize + d.init.len() > len {
-                        panic!("Active data writing in memory, out of bounds");
+                        return Err(ActiveDataWriteOutOfBounds);
                     }
                     let data = mem_inst
                         .data
@@ -480,11 +479,11 @@ where
                         .unwrap();
                     data.copy_from_slice(&d.init);
                 }
-                DataInst {
+                Ok(DataInst {
                     data: d.init.clone(),
-                }
+                })
             })
-            .collect();
+            .collect::<Result<Vec<DataInst>, StoreInstantiationError>>()?;
 
         let global_instances: Vec<GlobalInst> = validation_info
             .globals
@@ -508,7 +507,7 @@ where
             })
             .collect();
 
-        Store {
+        Ok(Store {
             funcs: function_instances,
             mems: memory_instances,
             globals: global_instances,
@@ -516,7 +515,7 @@ where
             tables,
             elements,
             passive_elem_indexes,
-        }
+        })
     }
 }
 
@@ -534,7 +533,7 @@ fn get_address_offset(value: Value) -> u32 {
     match value {
         Value::I32(val) => val,
         Value::Ref(rref) => match rref {
-            Ref::Extern(_) => panic!("Not yet implemented"),
+            Ref::Extern(_) => todo!("Not yet implemented"),
             Ref::Func(func_addr) => func_addr.addr.unwrap() as u32,
         },
         // INFO: from wasmtime - implement only global
