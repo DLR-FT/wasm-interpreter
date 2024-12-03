@@ -326,15 +326,6 @@ impl FuncAddr {
     pub fn null() -> Self {
         Self { addr: None }
     }
-    pub fn get_value(&self) -> usize {
-        match self.addr {
-            None => Self::get_reserved_value() as usize,
-            Some(val) => val,
-        }
-    }
-    pub fn get_reserved_value() -> u32 {
-        u32::MAX
-    }
     pub fn is_null(&self) -> bool {
         self.addr.is_none()
     }
@@ -360,15 +351,6 @@ impl ExternAddr {
     }
     pub fn null() -> Self {
         Self { addr: None }
-    }
-    pub fn get_value(&self) -> usize {
-        match self.addr {
-            None => Self::get_reserved_value() as usize,
-            Some(val) => val,
-        }
-    }
-    pub fn get_reserved_value() -> u32 {
-        u32::MAX
     }
 }
 
