@@ -150,12 +150,12 @@ fn read_instructions(
                 let label_idx = wasm.read_var_u32()? as LabelIdx;
                 let ctrl_stack_len = stack.ctrl_stack.len();
 
+                stack.assert_val_types_of_label_jump_types_on_top(label_idx);
+
                 let targeted_ctrl_block_entry = stack
                     .ctrl_stack
                     .get(ctrl_stack_len - label_idx - 1)
                     .ok_or(Error::InvalidLabelIdx(label_idx))?;
-
-                stack.assert_val_types_on_top(targeted_ctrl_block_entry.label_types())?;
 
                 let valcnt = targeted_ctrl_block_entry.label_types().len();
                 let popcnt = stack.len() - targeted_ctrl_block_entry.height - valcnt;

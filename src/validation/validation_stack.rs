@@ -15,7 +15,7 @@ use crate::{
 
 #[derive(Debug, PartialEq, Eq)]
 pub(super) struct ValidationStack {
-    stack: Vec<ValType>,
+    stack: Vec<ValidationStackEntry>,
     // TODO hide implementation
     pub ctrl_stack: Vec<CtrlStackEntry>,
 }
@@ -49,7 +49,7 @@ impl ValidationStack {
     }
 
     pub(super) fn push_valtype(&mut self, valtype: ValType) {
-        self.stack.push(valtype);
+        self.stack.push(ValidationStackEntry::Val(valtype));
     }
 
     /// Similar to [`ValidationStack::pop`], because it pops a value from the stack,
@@ -88,11 +88,12 @@ impl ValidationStack {
             }
         } else {
             //empty stack is covered with above check
-            Ok(ValidationStackEntry::Val(self.stack.pop().unwrap()))
+            self.stack.pop().ok_or(Error::EndInvalidValueStack)
         }
     }
 
     /// Assert the top-most [`ValidationStackEntry`] is a specific [`ValType`], after popping it from the [`ValidationStack`]
+    //  This assertion will unify the the top-most entry with `expected_ty`.
     ///
     /// # Returns
     ///
@@ -105,48 +106,92 @@ impl ValidationStack {
             ValidationStackEntry::Val(ty) => (ty == expected_ty)
                 .then_some(())
                 .ok_or(Error::InvalidValidationStackValType(Some(ty))),
+            ValidationStackEntry::NumOrVecType => match expected_ty {
+                ValType::NumType(_) => Ok(()),
+                ValType::VecType => Ok(()),
+                // TODO change this error
+                _ => Err(Error::InvalidValidationStackValType(None)),
+            },
             ValidationStackEntry::UnspecifiedValTypes => Ok(()),
         }
     }
 
-    /// Asserts that the values on top of the stack match those of a value iterator
-    ///
-    /// The last element of `expected_val_types` is compared to the top-most
-    /// [`ValidationStackEntry`], the second last `expected_val_types` element to the second top-most
-    /// [`ValidationStackEntry`] etc.
-    ///
-    /// Any occurence of the [`ValidationStackEntry::Label`] variant in the stack tail will cause an
-    /// error. This method does not mutate the [`ValidationStack::stack`] in any way.
-    ///
-    /// # Returns
-    ///
-    /// - `Ok(_)`, the tail of the stack matches the `expected_val_types`
-    /// - `Err(_)` otherwise
-    pub(super) fn assert_val_types_on_top(&self, expected_val_types: &[ValType]) -> Result<()> {
-        // TODO unwrapping might not be the best option
-        let last_ctrl_stack_entry = self.ctrl_stack.last().unwrap();
+    // private fn to shut the borrow checker up when calling methods with mutable ref to self with immutable ref to self arguments
+    // TODO ugly but I can't come up with anything else better
+    fn assert_val_types_on_top_with_custom_stacks(
+        stack: &mut Vec<ValidationStackEntry>,
+        ctrl_stack: &Vec<CtrlStackEntry>,
+        expected_val_types: &[ValType],
+    ) -> Result<()> {
+        let last_ctrl_stack_entry = ctrl_stack.last().unwrap();
+        let stack_len = stack.len();
 
-        for (i, expected_ty) in expected_val_types.iter().rev().enumerate() {
-            if self.stack.len() - last_ctrl_stack_entry.height <= i {
+        let rev_iterator = expected_val_types.iter().rev().enumerate();
+        for (i, expected_ty) in rev_iterator {
+            if stack_len - last_ctrl_stack_entry.height <= i {
                 if last_ctrl_stack_entry.unreachable {
+                    // Unify(t2*,expected_val_types) := [t2* expected_val_types]
+                    stack.splice(
+                        stack_len - i..stack_len - i,
+                        expected_val_types[..expected_val_types.len() - i]
+                            .iter()
+                            .map(|ty| ValidationStackEntry::Val(*ty)),
+                    );
                     return Ok(());
                 } else {
                     return Err(Error::EndInvalidValueStack);
                 }
             }
 
-            // this access won't blow up because of the above check
-            if self.stack[self.stack.len() - i - 1] != *expected_ty {
-                return Err(Error::InvalidValidationStackValType(Some(
-                    self.stack[self.stack.len() - i - 1],
-                )));
+            let actual_ty = &mut stack[stack_len - i - 1];
+
+            match actual_ty {
+                ValidationStackEntry::Val(actual_val_ty) => {
+                    if *actual_val_ty == *expected_ty {
+                        continue;
+                    }
+                }
+                ValidationStackEntry::NumOrVecType => match expected_ty {
+                    // unify the NumOrVecType to expected_ty
+                    ValType::NumType(_) => *actual_ty = ValidationStackEntry::Val(*expected_ty),
+                    ValType::VecType => *actual_ty = ValidationStackEntry::Val(*expected_ty),
+                    _ => return Err(Error::InvalidValidationStackValType(None)),
+                },
+                ValidationStackEntry::UnspecifiedValTypes => {
+                    unreachable!("bottom type should not exist in the stack")
+                }
             }
         }
+
         Ok(())
     }
 
-    /// Asserts that the valtypes on the stack match the expected valtypes.
+    /// Asserts that the values on top of the stack match those of a value iterator
+    /// This method will unify the types on the stack to the expected valtypes.
+    /// The last element of `expected_val_types` is unified to the top-most
+    /// [`ValidationStackEntry`], the second last `expected_val_types` element to the second top-most
+    /// [`ValidationStackEntry`] etc.
     ///
+    /// Any occurence of the [`ValidationStackEntry::Label`] variant in the stack tail will cause an
+    /// error.
+    ///
+    /// Any occurence of an error may leave the stack in an invalid state.
+    ///
+    /// # Returns
+    ///
+    /// - `Ok(_)`, the tail of the stack matches the `expected_val_types`
+    /// - `Err(_)` otherwise
+    ///
+    pub(super) fn assert_val_types_on_top(&mut self, expected_val_types: &[ValType]) -> Result<()> {
+        ValidationStack::assert_val_types_on_top_with_custom_stacks(
+            &mut self.stack,
+            &self.ctrl_stack,
+            expected_val_types,
+        )
+    }
+
+    /// Asserts that the valtypes on the stack match the expected valtypes.
+    /// This method will unify the types on the stack to the expected valtypes.
     /// This starts by comparing the top-most valtype with the last element from `expected_val_types` and then continues downwards on the stack.
     /// If a label is reached and not all `expected_val_types` have been checked, the assertion fails.
     ///
@@ -154,15 +199,29 @@ impl ValidationStack {
     ///
     /// - `Ok(())` if all expected valtypes were found
     /// - `Err(_)` otherwise
-    pub(super) fn assert_val_types(&self, expected_val_types: &[ValType]) -> Result<()> {
+    pub(super) fn assert_val_types(&mut self, expected_val_types: &[ValType]) -> Result<()> {
         // TODO unwrapping might not be the best option
+        self.assert_val_types_on_top(expected_val_types)?;
+
         let last_ctrl_stack_entry = self.ctrl_stack.last().unwrap();
-
-        if self.stack.len() - last_ctrl_stack_entry.height != expected_val_types.len() {
-            return Err(Error::EndInvalidValueStack);
+        if self.stack.len() == last_ctrl_stack_entry.height + expected_val_types.len() {
+            Ok(())
+        } else {
+            Err(Error::EndInvalidValueStack)
         }
+    }
 
-        self.assert_val_types_on_top(expected_val_types)
+    pub fn assert_val_types_of_label_jump_types_on_top(&mut self, label_idx: usize) -> Result<()> {
+        let label_types = self
+            .ctrl_stack
+            .get(self.ctrl_stack.len() - label_idx)
+            .ok_or(Error::InvalidLabelIdx(label_idx))?
+            .label_types();
+        ValidationStack::assert_val_types_on_top_with_custom_stacks(
+            &mut self.stack,
+            &self.ctrl_stack,
+            label_types,
+        )
     }
 }
 
@@ -170,12 +229,15 @@ impl ValidationStack {
 enum ValidationStackEntry {
     /// A value
     Val(ValType),
+    /// Special variant to encode an uninstantiated type for `select` instruction
+    NumOrVecType,
     /// Special variant to encode that any possible number of [`ValType`]s could be here
     ///
     /// Caused by `return` and `unreachable`, as both can push an arbitrary number of values to the stack.
     ///
     /// When this variant is pushed onto the stack, all valtypes until the next lower label are deleted.
     /// They are not needed anymore because this variant can expand to all of them.
+    // TODO change this name to BottomType
     UnspecifiedValTypes,
 }
 // TODO hide implementation
