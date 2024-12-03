@@ -1,7 +1,7 @@
 use crate::core::reader::span::Span;
 use crate::core::reader::types::global::GlobalType;
-use crate::core::reader::WasmReader;
-use crate::{Error, NumType, Result, ValType};
+use crate::core::reader::{WasmReadable, WasmReader};
+use crate::{Error, NumType, RefType, Result, ValType};
 
 use super::validation_stack::ValidationStack;
 
@@ -85,6 +85,7 @@ pub fn read_constant_instructions(
     wasm: &mut WasmReader,
     this_global_valtype: Option<ValType>,
     _globals_ty: Option<&[GlobalType]>,
+    funcs: Option<&[usize]>,
 ) -> Result<Span> {
     let start_pc = wasm.pc;
 
@@ -128,10 +129,22 @@ pub fn read_constant_instructions(
                 stack.push_valtype(ValType::NumType(NumType::I64));
             }
             REF_NULL => {
-                todo!();
+                stack.push_valtype(ValType::RefType(RefType::read(wasm)?));
             }
             REF_FUNC => {
-                wasm.read_var_u32().unwrap();
+                let func_idx = wasm.read_var_u32()? as usize;
+                match funcs {
+                    Some(funcs) => {
+                        if func_idx >= funcs.len() {
+                            return Err(Error::FunctionIsNotDefined(func_idx));
+                        }
+                    }
+                    None => {
+                        return Err(Error::FunctionIsNotDefined(u32::MAX as usize));
+                    }
+                }
+
+                stack.push_valtype(ValType::RefType(crate::RefType::FuncRef));
             }
             _ => return Err(Error::InvalidInstr(first_instr_byte)),
         }

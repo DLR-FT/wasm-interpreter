@@ -4,11 +4,14 @@ pub const END: u8 = 0x0B;
 pub const RETURN: u8 = 0x0F;
 pub const CALL: u8 = 0x10;
 pub const DROP: u8 = 0x1A;
+pub const CALL_INDIRECT: u8 = 0x11;
 pub const LOCAL_GET: u8 = 0x20;
 pub const LOCAL_SET: u8 = 0x21;
 pub const LOCAL_TEE: u8 = 0x22;
 pub const GLOBAL_GET: u8 = 0x23;
 pub const GLOBAL_SET: u8 = 0x24;
+pub const TABLE_GET: u8 = 0x25;
+pub const TABLE_SET: u8 = 0x26;
 pub const I32_LOAD: u8 = 0x28;
 pub const I64_LOAD: u8 = 0x29;
 pub const F32_LOAD: u8 = 0x2A;
@@ -162,6 +165,7 @@ pub const I64_REINTERPRET_F64: u8 = 0xBD;
 pub const F32_REINTERPRET_I32: u8 = 0xBE;
 pub const F64_REINTERPRET_I64: u8 = 0xBF;
 pub const REF_NULL: u8 = 0xD0;
+pub const REF_IS_NULL: u8 = 0xD1;
 pub const REF_FUNC: u8 = 0xD2;
 pub const FC_EXTENSIONS: u8 = 0xFC;
 
@@ -178,4 +182,10 @@ pub mod fc_extensions {
     pub const DATA_DROP: u8 = 0x09;
     pub const MEMORY_COPY: u8 = 0x0A;
     pub const MEMORY_FILL: u8 = 0x0B;
+    pub const TABLE_INIT: u8 = 0x0C;
+    pub const ELEM_DROP: u8 = 0x0D;
+    pub const TABLE_COPY: u8 = 0x0E;
+    pub const TABLE_GROW: u8 = 0x0F;
+    pub const TABLE_SIZE: u8 = 0x10;
+    pub const TABLE_FILL: u8 = 0x11;
 }
