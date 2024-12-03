@@ -136,14 +136,11 @@ pub fn read_constant_instructions(
                 match funcs {
                     Some(funcs) => {
                         if func_idx >= funcs.len() {
-                            panic!(
-                                "Out of bounds ref.func ({func_idx}) access (max: {})",
-                                funcs.len()
-                            );
+                            return Err(Error::FunctionIsNotDefined(func_idx));
                         }
                     }
                     None => {
-                        panic!("Out of bounds ref.func ({func_idx}) access (max: 0)");
+                        return Err(Error::FunctionIsNotDefined(u32::MAX as usize));
                     }
                 }
 
