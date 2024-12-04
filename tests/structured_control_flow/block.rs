@@ -56,42 +56,58 @@ fn branch() {
     );
 }
 
+const BRANCH23_WAT: &str = r#"
+(module
+    (func (export "with_branch") (result i32)
+        (block $outer_outer_block (result i32)
+            i64.const 3
+            (block $outer_block (param i64) (result i32) (result i32)
+                drop
+                i32.const 14
+                (block $my_block (result i32)
+                    i32.const 11
+                    i32.const 8
+                    i32.const 5
+                    br {{LABEL}}
+                    i32.const 3
+                )
+                i32.const 3
+                i32.add
+            )
+            drop
+            i32.const 5
+            i32.add
+        )
+    )
+)
+"#;
+
 #[test_log::test]
 fn branch2() {
-    let wasm_bytes = wat::parse_str(
-        r#"
-        (module
-            (func (export "with_branch") (result i32)
-                (block $outer_outer_block (result i32)
-                    i64.const 3
-                    (block $outer_block (param i64) (result i32) (result i32)
-                        drop
-                        i32.const 14
-                        (block $my_block (result i32)
-                            i32.const 11
-                            i32.const 8
-                            i32.const 5
-                            br $outer_block
-                            i32.const 3
-                        )
-                        i32.const 3
-                        i32.add
-                    )
-                    drop
-                    i32.const 5
-                    i32.add
-                )
-            )
-        )
-        "#,
-    )
-    .unwrap();
+    let wat = String::from(BRANCH23_WAT).replace("{{LABEL}}", "$outer_block");
+    let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
     assert_eq!(
         13,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), ())
+            .unwrap()
+    );
+}
+
+#[test_log::test]
+fn branch3() {
+    let wat = String::from(BRANCH23_WAT).replace("{{LABEL}}", "$outer_outer_block");
+    let wasm_bytes = wat::parse_str(wat).unwrap();
+
+    let validation_info = validate(&wasm_bytes).expect("validation failed");
+    let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
+
+    assert_eq!(
+        5,
         instance
             .invoke(&instance.get_function_by_index(0, 0).unwrap(), ())
             .unwrap()
@@ -127,29 +143,92 @@ fn param_and_result() {
     );
 }
 
+const RETURN_OUT_OF_BLOCK: &str = r#"
+(module
+    (func (export "get_three") (result i32)
+        (block
+            i32.const 5
+            i32.const 3
+            {{RETURN}}
+        )
+        unreachable
+    )
+)
+"#;
+
+const RETURN_OUT_OF_BLOCK2: &str = r#"
+(module
+    (func (export "get_three") (result i32)
+        (block
+            i32.const 5
+            {{RETURN}}
+            drop
+            drop
+            drop
+        )
+        unreachable
+    )
+)
+"#;
+
 #[test_log::test]
 fn return_out_of_block() {
-    let wasm_bytes = wat::parse_str(
-        r#"
-        (module
-            (func (export "get_three") (result i32)
-                (block
-                    i32.const 5
-                    i32.const 3
-                    return
-                )
-                unreachable
-            )
-        )
-        "#,
-    )
-    .unwrap();
+    let wat = String::from(RETURN_OUT_OF_BLOCK).replace("{{RETURN}}", "return");
+    let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
     assert_eq!(
         3,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), ())
+            .unwrap()
+    );
+}
+
+#[test_log::test]
+fn br_return_out_of_block() {
+    let wat = String::from(RETURN_OUT_OF_BLOCK).replace("{{RETURN}}", "br 1");
+    let wasm_bytes = wat::parse_str(wat).unwrap();
+
+    let validation_info = validate(&wasm_bytes).expect("validation failed");
+    let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
+
+    assert_eq!(
+        3,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), ())
+            .unwrap()
+    );
+}
+
+#[test_log::test]
+fn return_out_of_block2() {
+    let wat = String::from(RETURN_OUT_OF_BLOCK2).replace("{{RETURN}}", "return");
+    let wasm_bytes = wat::parse_str(wat).unwrap();
+
+    let validation_info = validate(&wasm_bytes).expect("validation failed");
+    let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
+
+    assert_eq!(
+        5,
+        instance
+            .invoke(&instance.get_function_by_index(0, 0).unwrap(), ())
+            .unwrap()
+    );
+}
+
+#[test_log::test]
+fn br_return_out_of_block2() {
+    let wat = String::from(RETURN_OUT_OF_BLOCK2).replace("{{RETURN}}", "br 1");
+    let wasm_bytes = wat::parse_str(wat).unwrap();
+
+    let validation_info = validate(&wasm_bytes).expect("validation failed");
+    let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
+
+    assert_eq!(
+        5,
         instance
             .invoke(&instance.get_function_by_index(0, 0).unwrap(), ())
             .unwrap()

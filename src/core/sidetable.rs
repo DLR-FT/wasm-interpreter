@@ -29,7 +29,7 @@
 
 use alloc::vec::Vec;
 
-/// A sidetable
+// A sidetable
 
 pub type Sidetable = Vec<SidetableEntry>;
 
