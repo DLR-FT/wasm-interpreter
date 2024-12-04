@@ -1,8 +1,3 @@
-//! This module contains the [`ValidationStack`] data structure
-//!
-//! The [`ValidationStack`] is a unified stack, in the sense that it unifies both
-//! [`ValidationStackEntry::Val`] and [`ValidationStackEntry::Label`]. It therefore mixes type
-//! information with structured control flow information.
 #![allow(unused)] // TODO remove this once sidetable implementation lands
 use super::Result;
 use alloc::vec;
@@ -63,7 +58,7 @@ impl ValidationStack {
         self.stack.push(ValidationStackEntry::Val(valtype));
     }
 
-    /// Similar to [`ValidationStack::pop`], because it pops a value from the stack,
+    /// Similar to [`ValidationStack::pop_valtype`], because it pops a value from the stack,
     /// but more public and doesn't actually return the popped value.
     pub(super) fn drop_val(&mut self) -> Result<()> {
         self.pop_valtype().map_err(|e| Error::ExpectedAnOperand)?;
@@ -205,8 +200,7 @@ impl ValidationStack {
     /// [`ValidationStackEntry`], the second last `expected_val_types` element to the second top-most
     /// [`ValidationStackEntry`] etc.
     ///
-    /// Any occurence of the [`ValidationStackEntry::Label`] variant in the stack tail will cause an
-    /// error.
+    /// Any unification failure or arity mismatch will cause an error.
     ///
     /// Any occurence of an error may leave the stack in an invalid state.
     ///
