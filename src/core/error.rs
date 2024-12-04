@@ -56,6 +56,7 @@ pub enum Error {
     NoDataSegments,
     DataSegmentNotFound(DataIdx),
     InvalidLabelIdx(usize),
+    ValidationCtrlStackEmpty,
 }
 
 impl Display for Error {
@@ -148,6 +149,9 @@ impl Display for Error {
             }
             Error::InvalidLabelIdx(label_idx) => {
                 f.write_fmt(format_args!("invalid label index {}", label_idx))
+            }
+            Error::ValidationCtrlStackEmpty => {
+                f.write_str("cannot retrieve last ctrl block, validation ctrl stack is empty")
             }
         }
     }

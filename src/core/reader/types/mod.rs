@@ -264,7 +264,7 @@ impl BlockType {
                     valtypes: Vec::new(),
                 },
                 returns: ResultType {
-                    valtypes: [val_type.clone()].into(),
+                    valtypes: [*val_type].into(),
                 },
             }),
             BlockType::Type(type_idx) => {
@@ -275,7 +275,7 @@ impl BlockType {
                 func_types
                     .get(type_idx)
                     .cloned()
-                    .ok_or_else(|| Error::InvalidFuncTypeIdx)
+                    .ok_or(Error::InvalidFuncTypeIdx)
             }
         }
     }

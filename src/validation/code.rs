@@ -6,10 +6,10 @@ use crate::core::reader::section_header::{SectionHeader, SectionTy};
 use crate::core::reader::span::Span;
 use crate::core::reader::types::global::Global;
 use crate::core::reader::types::memarg::MemArg;
-use crate::core::reader::types::{BlockType, FuncType, MemType, NumType, ResultType, ValType};
+use crate::core::reader::types::{BlockType, FuncType, MemType, NumType, ValType};
 use crate::core::reader::{WasmReadable, WasmReader};
 use crate::core::sidetable::{Sidetable, SidetableEntry};
-use crate::validation_stack::{CtrlStackEntry, LabelInfo, ValidationStack};
+use crate::validation_stack::{LabelInfo, ValidationStack};
 use crate::{Error, Result};
 
 pub fn validate_code_section(
@@ -38,7 +38,7 @@ pub fn validate_code_section(
             params.chain(declared_locals).collect::<Vec<ValType>>()
         };
 
-        let mut stack = ValidationStack::new();
+        let mut stack = ValidationStack::new_for_func(func_ty);
         let mut sidetable: Sidetable = Sidetable::default();
 
         read_instructions(
@@ -102,18 +102,6 @@ fn read_instructions(
     memories: &[MemType],
     data_count: &Option<u32>,
 ) -> Result<()> {
-    // let assert_pop_value_stack = |value_stack: &mut VecDeque<ValType>, expected_ty: ValType| {
-    //     value_stack
-    //         .pop_back()
-    //         .ok_or(Error::InvalidValueStackType(None))
-    //         .and_then(|ty| {
-    //             (ty == expected_ty)
-    //                 .then_some(())
-    //                 .ok_or(Error::InvalidValueStackType(Some(ty)))
-    //         })
-    // };
-
-    // TODO we must terminate only if both we saw the final `end` and when we consumed all of the code span
     loop {
         let Ok(first_instr_byte) = wasm.read_u8() else {
             // TODO only do this if EOF
@@ -128,17 +116,10 @@ fn read_instructions(
             // block: [] -> [t*2]
             BLOCK => {
                 let block_ty = BlockType::read(wasm)?.as_func_type(fn_types)?;
-
-                stack.assert_val_types_on_top(&block_ty.params.valtypes)?;
-                let height = stack.len() - block_ty.params.valtypes.len();
-                stack.ctrl_stack.push(CtrlStackEntry {
-                    label_info: LabelInfo::Block {
-                        stps_to_backpatch: Vec::new(),
-                    },
-                    block_ty,
-                    height,
-                    unreachable: false,
-                });
+                let label_info = LabelInfo::Block {
+                    stps_to_backpatch: Vec::new(),
+                };
+                stack.assert_push_ctrl(label_info, block_ty)?;
             }
             LOOP => {
                 todo!("implement loop");
@@ -150,7 +131,7 @@ fn read_instructions(
                 let label_idx = wasm.read_var_u32()? as LabelIdx;
                 let ctrl_stack_len = stack.ctrl_stack.len();
 
-                stack.assert_val_types_of_label_jump_types_on_top(label_idx);
+                stack.assert_val_types_of_label_jump_types_on_top(label_idx)?;
 
                 let targeted_ctrl_block_entry = stack
                     .ctrl_stack
@@ -182,12 +163,13 @@ fn read_instructions(
                     LabelInfo::If { .. } => {
                         todo!("implement if")
                     }
-                    LabelInfo::Func { .. } => {
-                        todo!("implement func")
+                    LabelInfo::Func { stps_to_backpatch } => stps_to_backpatch.push(stp_here),
+                    LabelInfo::Untyped => {
+                        unreachable!("this label is for untyped wasm sequences")
                     }
                 }
 
-                stack.make_unspecified();
+                stack.make_unspecified()?;
             }
             // end
             END => {
@@ -197,50 +179,36 @@ fn read_instructions(
                 // Else, anything may remain on the stack, as long as the top of the stack matche the current blocks return value.
 
                 // TODO replace with if !ctrl_stack.empty()
-                if stack.ctrl_stack.len() > 1 {
-                    // This is the END of a block.
 
-                    // We check the valtypes on top of the stack
-                    let last_ctrl_stack_entry = stack.ctrl_stack.pop().unwrap();
-                    let stp_here = sidetable.len();
+                let label_info = stack.assert_pop_ctrl()?;
+                let stp_here = sidetable.len();
 
-                    match last_ctrl_stack_entry.label_info {
-                        LabelInfo::Block { stps_to_backpatch } => {
-                            stps_to_backpatch.iter().for_each(|i| {
-                                sidetable[*i].delta_pc =
-                                    (wasm.pc as isize) - sidetable[*i].delta_pc;
-                                sidetable[*i].delta_stp =
-                                    (stp_here as isize) - sidetable[*i].delta_stp;
-                            });
-                        }
-                        LabelInfo::If { .. } => {
-                            todo!("implement if");
-                        }
-                        LabelInfo::Loop { .. } => {
-                            todo!("implement loop");
-                        }
-                        LabelInfo::Func => {
-                            unreachable!("this label should only be in the bottom entry");
-                        }
+                match label_info {
+                    LabelInfo::Block { stps_to_backpatch } => {
+                        stps_to_backpatch.iter().for_each(|i| {
+                            sidetable[*i].delta_pc = (wasm.pc as isize) - sidetable[*i].delta_pc;
+                            sidetable[*i].delta_stp = (stp_here as isize) - sidetable[*i].delta_stp;
+                        });
                     }
+                    LabelInfo::If { .. } => {
+                        todo!("implement if");
+                    }
+                    LabelInfo::Loop { .. } => {
+                        todo!("implement loop");
+                    }
+                    LabelInfo::Func { stps_to_backpatch } => {
+                        // same as blocks, except jump just before the end instr, not after it
+                        // the last end instruction will handle the return to callee during execution
+                        stps_to_backpatch.iter().for_each(|i| {
+                            sidetable[*i].delta_pc =
+                                (wasm.pc as isize) - sidetable[*i].delta_pc - 1; // minus 1 is important!
+                            sidetable[*i].delta_stp = (stp_here as isize) - sidetable[*i].delta_stp;
+                        });
+                    }
+                    LabelInfo::Untyped => unreachable!("this label is for untyped wasm sequences"),
+                }
 
-                    stack.assert_val_types(&last_ctrl_stack_entry.block_ty.returns.valtypes)?;
-
-                    // TODO is this required?
-
-                    // Clear the stack until the next label
-                    // stack.clear_until_next_label();
-
-                    // And push the blocks return types onto the stack again
-                    // for valtype in block_return_ty {
-                    // stack.push_valtype(*valtype);
-                    // }
-                } else {
-                    // This is the last end of a function
-
-                    // The stack must only contain the function's return valtypes
-                    let this_func_ty = &fn_types[type_idx_of_fn[this_function_idx]];
-                    stack.assert_val_types(&this_func_ty.returns.valtypes)?;
+                if stack.ctrl_stack.is_empty() {
                     return Ok(());
                 }
             }
@@ -251,7 +219,7 @@ fn read_instructions(
                     .assert_val_types_on_top(&this_func_ty.returns.valtypes)
                     .map_err(|_| Error::EndInvalidValueStack)?;
 
-                stack.make_unspecified();
+                stack.make_unspecified()?;
 
                 // TODO(george-cosma): a `return Ok(());` should probably be introduced here, but since we don't have
                 // controls flows implemented, the only way to test `return` is to place it at the end of function.
@@ -282,7 +250,7 @@ fn read_instructions(
             }
             // unreachable: [t1*] -> [t2*]
             UNREACHABLE => {
-                stack.make_unspecified();
+                stack.make_unspecified()?;
             }
             DROP => {
                 stack.drop_val()?;
