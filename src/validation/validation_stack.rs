@@ -158,14 +158,14 @@ impl ValidationStack {
             match actual_ty {
                 ValidationStackEntry::Val(actual_val_ty) => {
                     if *actual_val_ty != *expected_ty {
-                        return Err(Error::InvalidValidationStackValType(Some(*actual_val_ty)));
+                        return Err(Error::EndInvalidValueStack);
                     }
                 }
                 ValidationStackEntry::NumOrVecType => match expected_ty {
                     // unify the NumOrVecType to expected_ty
                     ValType::NumType(_) => *actual_ty = ValidationStackEntry::Val(*expected_ty),
                     ValType::VecType => *actual_ty = ValidationStackEntry::Val(*expected_ty),
-                    _ => return Err(Error::InvalidValidationStackValType(None)),
+                    _ => return Err(Error::EndInvalidValueStack),
                 },
                 ValidationStackEntry::UnspecifiedValTypes => {
                     unreachable!("bottom type should not exist in the stack")
