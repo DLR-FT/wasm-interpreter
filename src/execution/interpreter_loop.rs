@@ -102,6 +102,21 @@ pub(super) fn run<H: HookSet>(
                     .unwrap_validated()
                     .sidetable;
             }
+            BR_IF => {
+                wasm.read_var_u32().unwrap_validated();
+
+                let c: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                //nothing with valcnt, popcnt, since popcnt = 0
+
+                if c != 0 {
+                    let sidetable_entry = &current_sidetable[stp];
+                    stp = (stp as isize + sidetable_entry.delta_stp) as usize;
+                    wasm.pc = (wasm.pc as isize + sidetable_entry.delta_pc) as usize;
+                } else {
+                    stp += 1;
+                }
+            }
             BR => {
                 //skip n of BR n
                 wasm.read_var_u32().unwrap_validated();
@@ -118,13 +133,8 @@ pub(super) fn run<H: HookSet>(
                     stack.push_value(val);
                 }
 
-                // TODO ugly
-                stp = (stp as isize + sidetable_entry.delta_stp)
-                    .try_into()
-                    .unwrap_validated();
-                wasm.pc = (wasm.pc as isize + sidetable_entry.delta_pc)
-                    .try_into()
-                    .unwrap_validated();
+                stp = (stp as isize + sidetable_entry.delta_stp) as usize;
+                wasm.pc = (wasm.pc as isize + sidetable_entry.delta_pc) as usize;
             }
             BLOCK => {
                 BlockType::read_unvalidated(&mut wasm);

@@ -248,6 +248,19 @@ impl ValidationStack {
         )
     }
 
+    pub fn assert_val_types_of_label_jump_types(&mut self, label_idx: usize) -> Result<()> {
+        let label_types = self
+            .ctrl_stack
+            .get(self.ctrl_stack.len() - label_idx - 1)
+            .ok_or(Error::InvalidLabelIdx(label_idx))?
+            .label_types();
+        ValidationStack::assert_val_types_with_custom_stacks(
+            &mut self.stack,
+            &self.ctrl_stack,
+            label_types,
+        )
+    }
+
     // TODO is moving block_ty ok?
     pub fn assert_push_ctrl(&mut self, label_info: LabelInfo, block_ty: FuncType) -> Result<()> {
         self.assert_val_types_on_top(&block_ty.params.valtypes)?;

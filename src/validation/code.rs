@@ -42,7 +42,6 @@ pub fn validate_code_section(
         let mut sidetable: Sidetable = Sidetable::default();
 
         read_instructions(
-            idx,
             wasm,
             &mut stack,
             &mut sidetable,
@@ -89,9 +88,107 @@ pub fn read_declared_locals(wasm: &mut WasmReader) -> Result<Vec<ValType>> {
     Ok(locals)
 }
 
+//helper function to avoid code duplication in jump validations
+//the entries, except for the loop label, need to be correctly backpatched later
+//the temporary values of fields (delta_pc, delta_stp) of the entries are the (ip, stp) of the relevant label
+//the label is also updated with the additional information of the index of this sidetable
+//entry itself so that the entry can be backpatched when the end instruction of the label
+//is hit.
+fn generate_unbackpatched_sidetable_entry(
+    wasm: &WasmReader,
+    sidetable: &mut Sidetable,
+    valcnt: usize,
+    popcnt: usize,
+    label_info: &mut LabelInfo,
+) {
+    let stp_here = sidetable.len();
+
+    sidetable.push(SidetableEntry {
+        delta_pc: wasm.pc as isize,
+        delta_stp: stp_here as isize,
+        popcnt,
+        valcnt,
+    });
+
+    match label_info {
+        LabelInfo::Block { stps_to_backpatch } => stps_to_backpatch.push(stp_here),
+        LabelInfo::Loop { ip, stp } => {
+            //we already know where to jump to for loops
+            sidetable[stp_here].delta_pc = *ip as isize - wasm.pc as isize;
+            sidetable[stp_here].delta_stp = *stp as isize - stp_here as isize;
+        }
+        LabelInfo::If {
+            stps_to_backpatch, ..
+        } => stps_to_backpatch.push(stp_here),
+        LabelInfo::Func { stps_to_backpatch } => stps_to_backpatch.push(stp_here),
+        LabelInfo::Untyped => {
+            unreachable!("this label is for untyped wasm sequences")
+        }
+    }
+}
+
+//helper function to avoid code duplication for common stuff in br, return
+fn validate_unconditional_jump_and_generate_sidetable_entry(
+    wasm: &WasmReader,
+    label_idx: usize,
+    stack: &mut ValidationStack,
+    sidetable: &mut Sidetable,
+) -> Result<()> {
+    let ctrl_stack_len = stack.ctrl_stack.len();
+
+    stack.assert_val_types_of_label_jump_types_on_top(label_idx)?;
+
+    let targeted_ctrl_block_entry = stack
+        .ctrl_stack
+        .get(ctrl_stack_len - label_idx - 1)
+        .ok_or(Error::InvalidLabelIdx(label_idx))?;
+
+    let valcnt = targeted_ctrl_block_entry.label_types().len();
+    let popcnt = stack.len() - targeted_ctrl_block_entry.height - valcnt;
+
+    let label_info = &mut stack
+        .ctrl_stack
+        .get_mut(ctrl_stack_len - label_idx - 1)
+        .unwrap()
+        .label_info;
+
+    generate_unbackpatched_sidetable_entry(wasm, sidetable, valcnt, popcnt, label_info);
+
+    stack.make_unspecified()
+}
+
+//helper function to avoid code duplication for common stuff in if, else, br_if
+fn validate_conditional_jump_and_generate_sidetable_entry(
+    wasm: &WasmReader,
+    label_idx: usize,
+    stack: &mut ValidationStack,
+    sidetable: &mut Sidetable,
+) -> Result<()> {
+    let ctrl_stack_len = stack.ctrl_stack.len();
+
+    stack.assert_val_types_of_label_jump_types(label_idx)?;
+
+    let targeted_ctrl_block_entry = stack
+        .ctrl_stack
+        .get(ctrl_stack_len - label_idx - 1)
+        .ok_or(Error::InvalidLabelIdx(label_idx))?;
+
+    let valcnt = targeted_ctrl_block_entry.label_types().len();
+    let popcnt = 0; //otherwise the above assert would fail.
+
+    let label_info = &mut stack
+        .ctrl_stack
+        .get_mut(ctrl_stack_len - label_idx - 1)
+        .unwrap()
+        .label_info;
+
+    generate_unbackpatched_sidetable_entry(wasm, sidetable, valcnt, popcnt, label_info);
+
+    Ok(())
+}
+
 #[allow(clippy::too_many_arguments)]
 fn read_instructions(
-    this_function_idx: usize,
     wasm: &mut WasmReader,
     stack: &mut ValidationStack,
     sidetable: &mut Sidetable,
@@ -129,47 +226,16 @@ fn read_instructions(
             }
             BR => {
                 let label_idx = wasm.read_var_u32()? as LabelIdx;
-                let ctrl_stack_len = stack.ctrl_stack.len();
-
-                stack.assert_val_types_of_label_jump_types_on_top(label_idx)?;
-
-                let targeted_ctrl_block_entry = stack
-                    .ctrl_stack
-                    .get(ctrl_stack_len - label_idx - 1)
-                    .ok_or(Error::InvalidLabelIdx(label_idx))?;
-
-                let valcnt = targeted_ctrl_block_entry.label_types().len();
-                let popcnt = stack.len() - targeted_ctrl_block_entry.height - valcnt;
-
-                let targeted_ctrl_block_entry = stack
-                    .ctrl_stack
-                    .get_mut(ctrl_stack_len - label_idx - 1)
-                    .unwrap();
-
-                let stp_here = sidetable.len();
-
-                sidetable.push(SidetableEntry {
-                    delta_pc: wasm.pc as isize,
-                    delta_stp: stp_here as isize,
-                    popcnt,
-                    valcnt,
-                });
-
-                match &mut targeted_ctrl_block_entry.label_info {
-                    LabelInfo::Block { stps_to_backpatch } => stps_to_backpatch.push(stp_here),
-                    LabelInfo::Loop { .. } => {
-                        todo!("implement loop")
-                    }
-                    LabelInfo::If { .. } => {
-                        todo!("implement if")
-                    }
-                    LabelInfo::Func { stps_to_backpatch } => stps_to_backpatch.push(stp_here),
-                    LabelInfo::Untyped => {
-                        unreachable!("this label is for untyped wasm sequences")
-                    }
-                }
-
-                stack.make_unspecified()?;
+                validate_unconditional_jump_and_generate_sidetable_entry(
+                    wasm, label_idx, stack, sidetable,
+                )?;
+            }
+            BR_IF => {
+                let label_idx = wasm.read_var_u32()? as LabelIdx;
+                stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                validate_conditional_jump_and_generate_sidetable_entry(
+                    wasm, label_idx, stack, sidetable,
+                )?;
             }
             // end
             END => {
@@ -213,27 +279,10 @@ fn read_instructions(
                 }
             }
             RETURN => {
-                let this_func_ty = &fn_types[type_idx_of_fn[this_function_idx]];
-
-                stack
-                    .assert_val_types_on_top(&this_func_ty.returns.valtypes)
-                    .map_err(|_| Error::EndInvalidValueStack)?;
-
-                stack.make_unspecified()?;
-
-                // TODO(george-cosma): a `return Ok(());` should probably be introduced here, but since we don't have
-                // controls flows implemented, the only way to test `return` is to place it at the end of function.
-                // However, an `end` is introduced after it, which is invalid. Compilation for this test case should
-                // probably fail.
-
-                // TODO(wucke13) I believe we must not drain the validation stack here; only if we
-                // know this return is actually taken during execution we may drain the stack. This
-                // could however be a conditional return (return in an `if`), and the other side
-                // past the `else` might need the values on the `ValidationStack` that do belong
-                // to the current function (but not the current block), so draining would make
-                // continued validation of the current function impossible. We should most
-                // definitely not `return Ok(())` here, because there might be still more of the
-                // current function to validate.
+                let label_idx = stack.ctrl_stack.len() - 1; // return behaves the same as br <most_outer>
+                validate_unconditional_jump_and_generate_sidetable_entry(
+                    wasm, label_idx, stack, sidetable,
+                )?;
             }
             // call [t1*] -> [t2*]
             CALL => {
