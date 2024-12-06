@@ -219,7 +219,12 @@ fn read_instructions(
                 stack.assert_push_ctrl(label_info, block_ty)?;
             }
             LOOP => {
-                todo!("implement loop");
+                let block_ty = BlockType::read(wasm)?.as_func_type(fn_types)?;
+                let label_info = LabelInfo::Loop {
+                    ip: wasm.pc,
+                    stp: sidetable.len(),
+                };
+                stack.assert_push_ctrl(label_info, block_ty)?;
             }
             IF => {
                 todo!("implement if");
@@ -259,9 +264,7 @@ fn read_instructions(
                     LabelInfo::If { .. } => {
                         todo!("implement if");
                     }
-                    LabelInfo::Loop { .. } => {
-                        todo!("implement loop");
-                    }
+                    LabelInfo::Loop { .. } => (),
                     LabelInfo::Func { stps_to_backpatch } => {
                         // same as blocks, except jump just before the end instr, not after it
                         // the last end instruction will handle the return to callee during execution

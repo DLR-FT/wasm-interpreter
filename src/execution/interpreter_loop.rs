@@ -118,7 +118,7 @@ pub(super) fn run<H: HookSet>(
                 wasm.read_var_u32().unwrap_validated();
                 do_sidetable_control_transfer(&mut wasm, stack, &mut stp, current_sidetable);
             }
-            BLOCK => {
+            BLOCK | LOOP => {
                 BlockType::read_unvalidated(&mut wasm);
             }
             RETURN => {
