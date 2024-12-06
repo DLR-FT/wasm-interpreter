@@ -154,7 +154,6 @@ impl Debug for DataSegment {
 ///                             ;; for hardcoded offsets, we'll usually use i32.const because of wasm being x86 arch
 /// )
 /// ```
-
 ///
 /// Since the span has only the start and length and acts a reference, we print the start and end (both inclusive, notice the '..=')
 /// We print it in both decimal and hexadecimal so it's easy to trace in something like <https://webassembly.github.io/wabt/demo/wat2wasm/>

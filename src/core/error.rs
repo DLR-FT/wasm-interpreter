@@ -1,5 +1,4 @@
 use crate::core::indices::GlobalIdx;
-use crate::validation_stack::LabelKind;
 use core::fmt::{Display, Formatter};
 use core::str::Utf8Error;
 
@@ -31,6 +30,7 @@ pub enum Error {
     InvalidNumType,
     InvalidVecType,
     InvalidFuncType,
+    InvalidFuncTypeIdx,
     InvalidRefType,
     InvalidValType,
     InvalidExportDesc(u8),
@@ -50,12 +50,13 @@ pub enum Error {
     InvalidGlobalIdx(GlobalIdx),
     GlobalIsConst,
     RuntimeError(RuntimeError),
-    FoundLabel(LabelKind),
     MemoryIsNotDefined(MemIdx),
     //           mem.align, wanted alignment
     ErroneousAlignment(u32, u32),
     NoDataSegments,
     DataSegmentNotFound(DataIdx),
+    InvalidLabelIdx(usize),
+    ValidationCtrlStackEmpty,
 }
 
 impl Display for Error {
@@ -85,6 +86,9 @@ impl Display for Error {
             }
             Error::InvalidFuncType => {
                 f.write_str("An invalid byte was read where a functype was expected")
+            }
+            Error::InvalidFuncTypeIdx => {
+                f.write_str("An invalid index to the fuctypes table was read")
             }
             Error::InvalidRefType => {
                 f.write_str("An invalid byte was read where a reftype was expected")
@@ -128,9 +132,6 @@ impl Display for Error {
             )),
             Error::GlobalIsConst => f.write_str("A const global cannot be written to"),
             Error::RuntimeError(err) => err.fmt(f),
-            Error::FoundLabel(lk) => f.write_fmt(format_args!(
-                "Expecting a ValType, a Label was found: {lk:?}"
-            )),
             Error::ExpectedAnOperand => f.write_str("Expected a ValType"), // Error => f.write_str("Expected an operand (ValType) on the stack")
             Error::MemoryIsNotDefined(memidx) => f.write_fmt(format_args!(
                 "C.mems[{}] is NOT defined when it should be",
@@ -145,6 +146,12 @@ impl Display for Error {
             Error::NoDataSegments => f.write_str("Data Count is None"),
             Error::DataSegmentNotFound(data_idx) => {
                 f.write_fmt(format_args!("Data Segment {} not found", data_idx))
+            }
+            Error::InvalidLabelIdx(label_idx) => {
+                f.write_fmt(format_args!("invalid label index {}", label_idx))
+            }
+            Error::ValidationCtrlStackEmpty => {
+                f.write_str("cannot retrieve last ctrl block, validation ctrl stack is empty")
             }
         }
     }
