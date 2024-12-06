@@ -186,6 +186,7 @@ impl Stack {
     }
 
     /// Clear all of the values pushed to the value stack by the current stack frame
+    #[allow(unused)] // TODO remove this once sidetable implementation lands
     pub fn clear_callframe_values(&mut self) {
         self.values
             .truncate(self.current_stackframe().value_stack_base_idx);

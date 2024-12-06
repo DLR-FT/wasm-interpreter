@@ -102,62 +102,28 @@ pub(super) fn run<H: HookSet>(
                     .unwrap_validated()
                     .sidetable;
             }
+            BR_IF => {
+                wasm.read_var_u32().unwrap_validated();
+
+                let c: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                if c != 0 {
+                    do_sidetable_control_transfer(&mut wasm, stack, &mut stp, current_sidetable);
+                } else {
+                    stp += 1;
+                }
+            }
             BR => {
                 //skip n of BR n
                 wasm.read_var_u32().unwrap_validated();
-
-                let sidetable_entry = &current_sidetable[stp];
-
-                // TODO fix this corner cutting implementation
-                let jump_vals = stack
-                    .pop_tail_iter(sidetable_entry.valcnt)
-                    .collect::<Vec<_>>();
-                stack.pop_n_values(sidetable_entry.popcnt);
-
-                for val in jump_vals {
-                    stack.push_value(val);
-                }
-
-                // TODO ugly
-                stp = (stp as isize + sidetable_entry.delta_stp)
-                    .try_into()
-                    .unwrap_validated();
-                wasm.pc = (wasm.pc as isize + sidetable_entry.delta_pc)
-                    .try_into()
-                    .unwrap_validated();
+                do_sidetable_control_transfer(&mut wasm, stack, &mut stp, current_sidetable);
             }
             BLOCK => {
                 BlockType::read_unvalidated(&mut wasm);
             }
             RETURN => {
-                trace!("returning from function");
-
-                let func_to_call_idx = stack.current_stackframe().func_idx;
-
-                let func_to_call_inst = store.funcs.get(func_to_call_idx).unwrap_validated();
-                let func_to_call_ty = types.get(func_to_call_inst.ty).unwrap_validated();
-
-                let ret_vals = stack
-                    .pop_tail_iter(func_to_call_ty.returns.valtypes.len())
-                    .collect::<Vec<_>>();
-                stack.clear_callframe_values();
-
-                for val in ret_vals {
-                    stack.push_value(val);
-                }
-
-                if stack.callframe_count() == 1 {
-                    break;
-                }
-
-                trace!("end of function reached, returning to previous stack frame");
-                (wasm.pc, stp) = stack.pop_stackframe();
-
-                current_sidetable = &store
-                    .funcs
-                    .get(stack.current_stackframe().func_idx)
-                    .unwrap_validated()
-                    .sidetable;
+                //same as BR, except no need to skip n of BR n
+                do_sidetable_control_transfer(&mut wasm, stack, &mut stp, current_sidetable);
             }
             CALL => {
                 let func_to_call_idx = wasm.read_var_u32().unwrap_validated() as FuncIdx;
@@ -2231,4 +2197,27 @@ pub(super) fn run<H: HookSet>(
         }
     }
     Ok(())
+}
+
+//helper function for avoiding code duplication at intraprocedural jumps
+fn do_sidetable_control_transfer(
+    wasm: &mut WasmReader,
+    stack: &mut Stack,
+    current_stp: &mut usize,
+    current_sidetable: &Sidetable,
+) {
+    let sidetable_entry = &current_sidetable[*current_stp];
+
+    // TODO fix this corner cutting implementation
+    let jump_vals = stack
+        .pop_tail_iter(sidetable_entry.valcnt)
+        .collect::<Vec<_>>();
+    stack.pop_n_values(sidetable_entry.popcnt);
+
+    for val in jump_vals {
+        stack.push_value(val);
+    }
+
+    *current_stp = (*current_stp as isize + sidetable_entry.delta_stp) as usize;
+    wasm.pc = (wasm.pc as isize + sidetable_entry.delta_pc) as usize;
 }

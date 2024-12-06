@@ -158,14 +158,14 @@ impl ValidationStack {
             match actual_ty {
                 ValidationStackEntry::Val(actual_val_ty) => {
                     if *actual_val_ty != *expected_ty {
-                        return Err(Error::InvalidValidationStackValType(Some(*actual_val_ty)));
+                        return Err(Error::EndInvalidValueStack);
                     }
                 }
                 ValidationStackEntry::NumOrVecType => match expected_ty {
                     // unify the NumOrVecType to expected_ty
                     ValType::NumType(_) => *actual_ty = ValidationStackEntry::Val(*expected_ty),
                     ValType::VecType => *actual_ty = ValidationStackEntry::Val(*expected_ty),
-                    _ => return Err(Error::InvalidValidationStackValType(None)),
+                    _ => return Err(Error::EndInvalidValueStack),
                 },
                 ValidationStackEntry::UnspecifiedValTypes => {
                     unreachable!("bottom type should not exist in the stack")
@@ -242,6 +242,19 @@ impl ValidationStack {
             .ok_or(Error::InvalidLabelIdx(label_idx))?
             .label_types();
         ValidationStack::assert_val_types_on_top_with_custom_stacks(
+            &mut self.stack,
+            &self.ctrl_stack,
+            label_types,
+        )
+    }
+
+    pub fn assert_val_types_of_label_jump_types(&mut self, label_idx: usize) -> Result<()> {
+        let label_types = self
+            .ctrl_stack
+            .get(self.ctrl_stack.len() - label_idx - 1)
+            .ok_or(Error::InvalidLabelIdx(label_idx))?
+            .label_types();
+        ValidationStack::assert_val_types_with_custom_stacks(
             &mut self.stack,
             &self.ctrl_stack,
             label_types,

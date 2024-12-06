@@ -119,7 +119,7 @@ fn param_and_result() {
     let wasm_bytes = wat::parse_str(
         r#"
         (module
-            (func (export "add_one") (param $x i32) (result)
+            (func (export "add_one") (param $x i32) (result i32)
                 local.get $x
                 (block $my_block (param i32) (result i32)
                     i32.const 1
