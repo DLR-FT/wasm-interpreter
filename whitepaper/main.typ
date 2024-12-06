@@ -1,20 +1,17 @@
 /* imports */
 #import "@preview/acrostiche:0.4.0": *
-#import "@preview/ccicons:1.0.0": *
+#import "template.typ": setup_template
 
-/* variables and setup */
-#let title = [WASM Interpreter for Safety -- White Paper]
-
-/* TODO make this multi-author capable */
-#let author = "Wanja Zaeske"
-#let affiliation = [
-  Department Safety Critical Systems & Systems Engineering \
-  German Aerospace Center (DLR) \
-  #link("mailto:wanja.zaeske@dlr.de")
-]
-
-#set document(
-  title: title, author: author, keywords: ("WebAssembly", "Safety-Critical"),
+#show: setup_template.with(
+  title: [WASM Interpreter for Safety -- White Paper],
+  /* TODO make this multi-author capable */
+  author: "Wanja Zaeske", keywords: ("WebAssembly", "Safety-Critical"),
+  /* TODO set affiliation per author (or for multiple authors at once) */
+  affiliation: [
+    Department Safety Critical Systems & Systems Engineering \
+    German Aerospace Center (DLR) \
+    #link("mailto:wanja.zaeske@dlr.de")
+  ],
 )
 
 #init-acronyms(
@@ -22,31 +19,6 @@
     "AOT": ("Ahead-of-time"), "DAL": ("Design Assurance Level"), "DARPA": ("Defense Advanced Research Projects Agency"), "IR": ("Intermediate Representation"), "JIT": ("Just-in-time"), "SBOM": ("Software Bill of Materials"), "TQL": ("Tool Qualification Level"), "TRACTOR": ("Translating All C to Rust"), "WASM": ("WebAssembly"),
   ),
 )
-
-/* style */
-#set page(
-  paper: "a4", header: context{
-    if counter(page).get().first() > 1 [
-      #align(right, title),
-    ]
-  }, footer: context[
-    #set text(8pt)
-    License: #link("https://creativecommons.org/licenses/by-sa/4.0/")[CC-BY-SA #cc-by-sa]
-    #h(1fr) #counter(page).display("1 of 1", both: true) \
-
-    Copyright © 2024-#datetime.today().year() German Aerospace Center (DLR). All
-    rights reserved.
-  ], columns: 1,
-)
-
-#set heading(numbering: "1.")
-
-#align(center, text(17pt)[*#title*])
-
-#grid(columns: (1fr), align(center)[
-  #author \
-  #affiliation
-])
 
 = Introduction
 This white paper provides an overview over our WebAssembly interpreter
