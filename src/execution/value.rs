@@ -6,7 +6,7 @@ use core::ops::{Add, Div, Mul, Sub};
 
 use crate::core::reader::types::{NumType, ValType};
 use crate::execution::assert_validated::UnwrapValidatedExt;
-use crate::unreachable_validated;
+use crate::{unreachable_validated, Error, RefType, Result};
 
 #[derive(Clone, Debug, Copy, PartialOrd)]
 pub struct F32(pub f32);
@@ -261,14 +261,126 @@ pub enum Value {
     F64(F64),
     // F64,
     // V128,
+    Ref(Ref),
 }
 
-#[derive(Clone, Debug, PartialEq)]
-#[allow(dead_code)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Ref {
-    Null,
-    // Func,
-    // Extern,
+    Func(FuncAddr),
+    Extern(ExternAddr),
+}
+
+impl Ref {
+    pub fn default_from_ref_type(rref: RefType) -> Self {
+        match rref {
+            RefType::ExternRef => Self::Extern(ExternAddr::default()),
+            RefType::FuncRef => Self::Func(FuncAddr::default()),
+        }
+    }
+
+    pub fn is_null(&self) -> bool {
+        match self {
+            Self::Extern(extern_addr) => extern_addr.addr.is_none(),
+            Self::Func(func_addr) => func_addr.addr.is_none(),
+        }
+    }
+
+    pub fn is_specific_func(&self, func_id: u32) -> bool {
+        match self {
+            Self::Func(func_addr) => func_addr.addr == Some(func_id as usize),
+            _ => unreachable!(),
+        }
+    }
+}
+
+impl Display for Ref {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Ref::Func(func_addr) => write!(f, "FuncRef({:?})", func_addr),
+            Ref::Extern(extern_addr) => write!(f, "ExternRef({:?})", extern_addr),
+        }
+    }
+}
+
+/// Represents the address of a function within a WebAssembly module.
+///
+/// Functions in WebAssembly modules can be either:
+/// - **Defined**: Declared and implemented within the module.
+/// - **Imported**: Declared in the module but implemented externally.
+///
+/// [`FuncAddr`] provides a unified representation for both types. Internally,
+/// the address corresponds to an index in a combined function namespace,
+/// typically represented as a vector.
+#[derive(Clone, Copy, PartialEq)]
+pub struct FuncAddr {
+    pub addr: Option<usize>,
+}
+
+impl Debug for FuncAddr {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self.addr.is_none() {
+            false => write!(f, "FuncAddr {{\n\taddr: {}\n}}", self.addr.unwrap()),
+            true => write!(f, "FuncAddr {{ NULL }}"),
+        }
+    }
+}
+
+impl FuncAddr {
+    pub fn new(addr: Option<usize>) -> Self {
+        match addr {
+            None => Self::null(),
+            Some(u) => Self { addr: Some(u) },
+        }
+    }
+    pub fn null() -> Self {
+        Self { addr: None }
+    }
+    pub fn is_null(&self) -> bool {
+        self.addr.is_none()
+    }
+}
+
+impl Default for FuncAddr {
+    fn default() -> Self {
+        Self::null()
+    }
+}
+
+/// Represents the address of an external reference in the interpreter.
+///
+/// External references are managed at the interpreter level and are not part of
+/// the WebAssembly module itself. They are typically used to refer to host
+/// functions or objects that interact with the module.
+///
+/// Internally, [`ExternAddr`] corresponds to an index in a linear vector,
+/// enabling dynamic storage and retrieval of external values.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct ExternAddr {
+    pub addr: Option<usize>,
+}
+
+impl ExternAddr {
+    pub fn new(addr: Option<usize>) -> Self {
+        match addr {
+            None => Self::null(),
+            Some(u) => Self { addr: Some(u) },
+        }
+    }
+    pub fn null() -> Self {
+        Self { addr: None }
+    }
+}
+
+impl Default for ExternAddr {
+    fn default() -> Self {
+        Self::null()
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum RefValueTy {
+    Func,
+    Extern,
 }
 
 impl Value {
@@ -278,6 +390,8 @@ impl Value {
             ValType::NumType(NumType::I64) => Self::I64(0),
             ValType::NumType(NumType::F32) => Self::F32(F32(0.0)),
             ValType::NumType(NumType::F64) => Self::F64(F64(0.0_f64)),
+            ValType::RefType(RefType::ExternRef) => Self::Ref(Ref::Extern(ExternAddr::null())),
+            ValType::RefType(RefType::FuncRef) => Self::Ref(Ref::Func(FuncAddr::null())),
             other => {
                 todo!("cannot determine type for {other:?} because this value is not supported yet")
             }
@@ -290,6 +404,10 @@ impl Value {
             Value::I64(_) => ValType::NumType(NumType::I64),
             Value::F32(_) => ValType::NumType(NumType::F32),
             Value::F64(_) => ValType::NumType(NumType::F64),
+            Value::Ref(rref) => match rref {
+                Ref::Extern(_) => ValType::RefType(RefType::ExternRef),
+                Ref::Func(_) => ValType::RefType(RefType::FuncRef),
+            },
         }
     }
 }
@@ -452,6 +570,44 @@ impl InteropValue for f64 {
     }
 }
 
+#[derive(PartialEq, Debug, Copy, Clone)]
+pub struct FuncRefForInteropValue {
+    rref: Ref,
+}
+
+impl FuncRefForInteropValue {
+    pub fn new(rref: Ref) -> Result<Self> {
+        match rref {
+            Ref::Extern(_) => Err(Error::WrongRefTypeForInteropValue(
+                RefType::ExternRef,
+                RefType::FuncRef,
+            )),
+            Ref::Func(_) => Ok(Self { rref }),
+        }
+    }
+
+    pub fn get_ref(&self) -> Ref {
+        self.rref
+    }
+}
+
+impl InteropValue for FuncRefForInteropValue {
+    const TY: ValType = ValType::RefType(RefType::FuncRef);
+
+    #[allow(warnings)]
+    fn into_value(self) -> Value {
+        Value::Ref(self.rref)
+    }
+
+    #[allow(warnings)]
+    fn from_value(value: Value) -> Self {
+        match value {
+            Value::Ref(rref) => unsafe { FuncRefForInteropValue::new(rref).unwrap_unchecked() },
+            _ => unreachable_validated!(),
+        }
+    }
+}
+
 impl InteropValueList for () {
     const TYS: &'static [ValType] = &[];
 
@@ -576,3 +732,18 @@ impl_value_conversion!(u64);
 impl_value_conversion!(i64);
 impl_value_conversion!(F32);
 impl_value_conversion!(F64);
+
+impl From<Ref> for Value {
+    fn from(value: Ref) -> Self {
+        Self::Ref(value)
+    }
+}
+
+impl From<Value> for Ref {
+    fn from(value: Value) -> Self {
+        match value {
+            Value::Ref(rref) => rref,
+            _ => unreachable!(),
+        }
+    }
+}
