@@ -57,6 +57,8 @@ pub enum Error {
     DataSegmentNotFound(DataIdx),
     InvalidLabelIdx(usize),
     ValidationCtrlStackEmpty,
+    ElseWithoutMatchingIf,
+    IfWithoutMatchingElse,
 }
 
 impl Display for Error {
@@ -152,6 +154,12 @@ impl Display for Error {
             }
             Error::ValidationCtrlStackEmpty => {
                 f.write_str("cannot retrieve last ctrl block, validation ctrl stack is empty")
+            }
+            Error::ElseWithoutMatchingIf => {
+                f.write_str("read 'else' without a previous matching 'if' instruction")
+            }
+            Error::IfWithoutMatchingElse => {
+                f.write_str("read 'end' without matching 'else' instruction to 'if' instruction")
             }
         }
     }

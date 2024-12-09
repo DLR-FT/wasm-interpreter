@@ -127,8 +127,8 @@ fn generate_unbackpatched_sidetable_entry(
     }
 }
 
-//helper function to avoid code duplication for common stuff in br, return
-fn validate_unconditional_jump_and_generate_sidetable_entry(
+//helper function to avoid code duplication for common stuff in br, br_if, return
+fn validate_intrablock_jump_and_generate_sidetable_entry(
     wasm: &WasmReader,
     label_idx: usize,
     stack: &mut ValidationStack,
@@ -153,37 +153,6 @@ fn validate_unconditional_jump_and_generate_sidetable_entry(
         .label_info;
 
     generate_unbackpatched_sidetable_entry(wasm, sidetable, valcnt, popcnt, label_info);
-
-    stack.make_unspecified()
-}
-
-//helper function to avoid code duplication for common stuff in if, else, br_if
-fn validate_conditional_jump_and_generate_sidetable_entry(
-    wasm: &WasmReader,
-    label_idx: usize,
-    stack: &mut ValidationStack,
-    sidetable: &mut Sidetable,
-) -> Result<()> {
-    let ctrl_stack_len = stack.ctrl_stack.len();
-
-    stack.assert_val_types_of_label_jump_types(label_idx)?;
-
-    let targeted_ctrl_block_entry = stack
-        .ctrl_stack
-        .get(ctrl_stack_len - label_idx - 1)
-        .ok_or(Error::InvalidLabelIdx(label_idx))?;
-
-    let valcnt = targeted_ctrl_block_entry.label_types().len();
-    let popcnt = 0; //otherwise the above assert would fail.
-
-    let label_info = &mut stack
-        .ctrl_stack
-        .get_mut(ctrl_stack_len - label_idx - 1)
-        .unwrap()
-        .label_info;
-
-    generate_unbackpatched_sidetable_entry(wasm, sidetable, valcnt, popcnt, label_info);
-
     Ok(())
 }
 
@@ -227,31 +196,79 @@ fn read_instructions(
                 stack.assert_push_ctrl(label_info, block_ty)?;
             }
             IF => {
-                todo!("implement if");
+                let block_ty = BlockType::read(wasm)?.as_func_type(fn_types)?;
+
+                stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+
+                let stp_here = sidetable.len();
+                sidetable.push(SidetableEntry {
+                    delta_pc: wasm.pc as isize,
+                    delta_stp: stp_here as isize,
+                    popcnt: 0,
+                    valcnt: block_ty.params.valtypes.len(),
+                });
+
+                let label_info = LabelInfo::If {
+                    stp: stp_here,
+                    stps_to_backpatch: Vec::new(),
+                };
+                stack.assert_push_ctrl(label_info, block_ty)?;
+            }
+            ELSE => {
+                let (mut label_info, block_ty) = stack.assert_pop_ctrl()?;
+                if let LabelInfo::If {
+                    stp,
+                    stps_to_backpatch,
+                } = &mut label_info
+                {
+                    if *stp == usize::MAX {
+                        //this If was previously matched with an else already, it is already backpatched!
+                        return Err(Error::IfWithoutMatchingElse);
+                    }
+                    let stp_here = sidetable.len();
+                    sidetable.push(SidetableEntry {
+                        delta_pc: wasm.pc as isize,
+                        delta_stp: stp_here as isize,
+                        popcnt: 0,
+                        valcnt: block_ty.returns.valtypes.len(),
+                    });
+                    stps_to_backpatch.push(stp_here);
+
+                    sidetable[*stp].delta_pc = wasm.pc as isize - sidetable[*stp].delta_pc;
+                    sidetable[*stp].delta_stp =
+                        sidetable.len() as isize - sidetable[*stp].delta_stp;
+
+                    *stp = usize::MAX; // mark this If as backpatched
+
+                    for valtype in block_ty.returns.valtypes.iter().rev() {
+                        stack.assert_pop_val_type(*valtype)?;
+                    }
+
+                    for valtype in block_ty.params.valtypes.iter() {
+                        stack.push_valtype(*valtype);
+                    }
+
+                    stack.assert_push_ctrl(label_info, block_ty)?;
+                } else {
+                    return Err(Error::ElseWithoutMatchingIf);
+                }
             }
             BR => {
                 let label_idx = wasm.read_var_u32()? as LabelIdx;
-                validate_unconditional_jump_and_generate_sidetable_entry(
+                validate_intrablock_jump_and_generate_sidetable_entry(
                     wasm, label_idx, stack, sidetable,
                 )?;
+                stack.make_unspecified()?;
             }
             BR_IF => {
                 let label_idx = wasm.read_var_u32()? as LabelIdx;
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
-                validate_conditional_jump_and_generate_sidetable_entry(
+                validate_intrablock_jump_and_generate_sidetable_entry(
                     wasm, label_idx, stack, sidetable,
                 )?;
             }
-            // end
             END => {
-                // TODO check if there are labels on the stack.
-                // If there are none (i.e. this is the implicit end of the function and not a jump to the end of a function), the stack must only contain the valid return values, no other junk.
-                //
-                // Else, anything may remain on the stack, as long as the top of the stack matche the current blocks return value.
-
-                // TODO replace with if !ctrl_stack.empty()
-
-                let label_info = stack.assert_pop_ctrl()?;
+                let (label_info, _) = stack.assert_pop_ctrl()?;
                 let stp_here = sidetable.len();
 
                 match label_info {
@@ -261,8 +278,17 @@ fn read_instructions(
                             sidetable[*i].delta_stp = (stp_here as isize) - sidetable[*i].delta_stp;
                         });
                     }
-                    LabelInfo::If { .. } => {
-                        todo!("implement if");
+                    LabelInfo::If {
+                        stp,
+                        stps_to_backpatch,
+                    } => {
+                        if stp != usize::MAX {
+                            // this If did not have a matching else statement. if...end is not allowed in the spec
+                        }
+                        stps_to_backpatch.iter().for_each(|i| {
+                            sidetable[*i].delta_pc = (wasm.pc as isize) - sidetable[*i].delta_pc;
+                            sidetable[*i].delta_stp = (stp_here as isize) - sidetable[*i].delta_stp;
+                        });
                     }
                     LabelInfo::Loop { .. } => (),
                     LabelInfo::Func { stps_to_backpatch } => {
@@ -283,9 +309,10 @@ fn read_instructions(
             }
             RETURN => {
                 let label_idx = stack.ctrl_stack.len() - 1; // return behaves the same as br <most_outer>
-                validate_unconditional_jump_and_generate_sidetable_entry(
+                validate_intrablock_jump_and_generate_sidetable_entry(
                     wasm, label_idx, stack, sidetable,
                 )?;
+                stack.make_unspecified()?;
             }
             // call [t1*] -> [t2*]
             CALL => {

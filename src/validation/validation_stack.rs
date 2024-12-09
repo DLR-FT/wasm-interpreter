@@ -1,4 +1,3 @@
-#![allow(unused)] // TODO remove this once sidetable implementation lands
 use super::Result;
 use alloc::vec;
 use alloc::vec::Vec;
@@ -61,7 +60,7 @@ impl ValidationStack {
     /// Similar to [`ValidationStack::pop_valtype`], because it pops a value from the stack,
     /// but more public and doesn't actually return the popped value.
     pub(super) fn drop_val(&mut self) -> Result<()> {
-        self.pop_valtype().map_err(|e| Error::ExpectedAnOperand)?;
+        self.pop_valtype().map_err(|_| Error::ExpectedAnOperand)?;
         Ok(())
     }
 
@@ -248,19 +247,6 @@ impl ValidationStack {
         )
     }
 
-    pub fn assert_val_types_of_label_jump_types(&mut self, label_idx: usize) -> Result<()> {
-        let label_types = self
-            .ctrl_stack
-            .get(self.ctrl_stack.len() - label_idx - 1)
-            .ok_or(Error::InvalidLabelIdx(label_idx))?
-            .label_types();
-        ValidationStack::assert_val_types_with_custom_stacks(
-            &mut self.stack,
-            &self.ctrl_stack,
-            label_types,
-        )
-    }
-
     // TODO is moving block_ty ok?
     pub fn assert_push_ctrl(&mut self, label_info: LabelInfo, block_ty: FuncType) -> Result<()> {
         self.assert_val_types_on_top(&block_ty.params.valtypes)?;
@@ -274,7 +260,7 @@ impl ValidationStack {
         Ok(())
     }
 
-    pub fn assert_pop_ctrl(&mut self) -> Result<LabelInfo> {
+    pub fn assert_pop_ctrl(&mut self) -> Result<(LabelInfo, FuncType)> {
         let return_types = &self
             .ctrl_stack
             .last()
@@ -290,7 +276,10 @@ impl ValidationStack {
 
         //if we can assert types in the above there is a last ctrl stack entry, this access is valid.
         let last_ctrl_stack_entry = self.ctrl_stack.pop().unwrap();
-        Ok(last_ctrl_stack_entry.label_info)
+        Ok((
+            last_ctrl_stack_entry.label_info,
+            last_ctrl_stack_entry.block_ty,
+        ))
     }
 }
 
@@ -299,6 +288,7 @@ enum ValidationStackEntry {
     /// A value
     Val(ValType),
     /// Special variant to encode an uninstantiated type for `select` instruction
+    #[allow(unused)]
     NumOrVecType,
     /// Special variant to encode that any possible number of [`ValType`]s could be here
     ///
@@ -356,28 +346,9 @@ mod tests {
 
     use super::{CtrlStackEntry, FuncType, LabelInfo, ResultType, ValidationStack, Vec};
 
-    // TODO remove this later
     fn push_dummy_untyped_label(validation_stack: &mut ValidationStack) {
         validation_stack.ctrl_stack.push(CtrlStackEntry {
             label_info: LabelInfo::Untyped,
-            block_ty: FuncType {
-                params: ResultType {
-                    valtypes: Vec::new(),
-                },
-                returns: ResultType {
-                    valtypes: Vec::new(),
-                },
-            },
-            height: validation_stack.len(),
-            unreachable: false,
-        })
-    }
-
-    fn push_dummy_block_label(validation_stack: &mut ValidationStack) {
-        validation_stack.ctrl_stack.push(CtrlStackEntry {
-            label_info: LabelInfo::Block {
-                stps_to_backpatch: Vec::new(),
-            },
             block_ty: FuncType {
                 params: ResultType {
                     valtypes: Vec::new(),
@@ -521,7 +492,7 @@ mod tests {
         let mut stack = ValidationStack::new();
         push_dummy_untyped_label(&mut stack);
 
-        stack.make_unspecified();
+        stack.make_unspecified().unwrap();
 
         // Now we can pop as many valtypes from the stack as we want
         stack
@@ -546,14 +517,16 @@ mod tests {
         let mut stack = ValidationStack::new();
         push_dummy_untyped_label(&mut stack);
 
-        stack.make_unspecified();
+        stack.make_unspecified().unwrap();
 
         // Stack needs to keep track of unified types, I64 and F32 and I32 will appear.
-        stack.assert_val_types(&[
-            ValType::NumType(NumType::I64),
-            ValType::NumType(NumType::F32),
-            ValType::NumType(NumType::I32),
-        ]);
+        stack
+            .assert_val_types(&[
+                ValType::NumType(NumType::I64),
+                ValType::NumType(NumType::F32),
+                ValType::NumType(NumType::I32),
+            ])
+            .unwrap();
 
         stack.ctrl_stack.pop();
 
@@ -576,17 +549,19 @@ mod tests {
         let mut stack = ValidationStack::new();
         push_dummy_untyped_label(&mut stack);
 
-        stack.make_unspecified();
+        stack.make_unspecified().unwrap();
 
         stack.push_valtype(ValType::NumType(NumType::I32));
 
         // Stack needs to keep track of unified types, I64 and F32 will appear under I32.
         // Stack needs to keep track of unified types, I64 and F32 and I32 will appear.
-        stack.assert_val_types(&[
-            ValType::NumType(NumType::I64),
-            ValType::NumType(NumType::F32),
-            ValType::NumType(NumType::I32),
-        ]);
+        stack
+            .assert_val_types(&[
+                ValType::NumType(NumType::I64),
+                ValType::NumType(NumType::F32),
+                ValType::NumType(NumType::I32),
+            ])
+            .unwrap();
 
         stack.ctrl_stack.pop();
 
@@ -613,19 +588,21 @@ mod tests {
 
         push_dummy_untyped_label(&mut stack);
 
-        stack.make_unspecified();
+        stack.make_unspecified().unwrap();
 
         stack.push_valtype(ValType::VecType);
         stack.push_valtype(ValType::RefType(RefType::FuncRef));
 
         // Stack needs to keep track of unified types, I64 and F32 will appear below VecType and RefType
         // and above I32 and VecType
-        stack.assert_val_types(&[
-            ValType::NumType(NumType::I64),
-            ValType::NumType(NumType::F32),
-            ValType::VecType,
-            ValType::RefType(RefType::FuncRef),
-        ]);
+        stack
+            .assert_val_types(&[
+                ValType::NumType(NumType::I64),
+                ValType::NumType(NumType::F32),
+                ValType::VecType,
+                ValType::RefType(RefType::FuncRef),
+            ])
+            .unwrap();
 
         stack.ctrl_stack.pop();
 
