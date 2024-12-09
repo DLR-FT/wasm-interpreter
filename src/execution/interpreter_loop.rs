@@ -105,9 +105,9 @@ pub(super) fn run<H: HookSet>(
             IF => {
                 wasm.read_var_u32().unwrap_validated();
 
-                let c: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let test_val: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                if c != 0 {
+                if test_val != 0 {
                     stp += 1;
                 } else {
                     do_sidetable_control_transfer(&mut wasm, stack, &mut stp, current_sidetable);
@@ -119,9 +119,9 @@ pub(super) fn run<H: HookSet>(
             BR_IF => {
                 wasm.read_var_u32().unwrap_validated();
 
-                let c: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let test_val: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                if c != 0 {
+                if test_val != 0 {
                     do_sidetable_control_transfer(&mut wasm, stack, &mut stp, current_sidetable);
                 } else {
                     stp += 1;

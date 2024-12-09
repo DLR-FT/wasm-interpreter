@@ -31,7 +31,8 @@ pub struct ValidationInfo<'bytecode> {
     pub(crate) globals: Vec<Global>,
     #[allow(dead_code)]
     pub(crate) exports: Vec<Export>,
-    pub(crate) func_blocks_sidetables: Vec<(Span, Sidetable)>,
+    /// Each block contains the validated code section and the generated sidetable
+    pub(crate) func_blocks: Vec<(Span, Sidetable)>,
     pub(crate) data: Vec<DataSegment>,
     /// The start function which is automatically executed during instantiation
     pub(crate) start: Option<FuncIdx>,
@@ -190,7 +191,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
         memories,
         globals,
         exports,
-        func_blocks_sidetables,
+        func_blocks: func_blocks_sidetables,
         data: data_section,
         start,
     })

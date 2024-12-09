@@ -211,10 +211,9 @@ pub enum BlockType {
 
 impl WasmReadable for BlockType {
     fn read(wasm: &mut WasmReader) -> Result<Self> {
-        // FIXME: Use transactions for ValType::read
         if wasm.peek_u8()? as i8 == 0x40 {
             // Empty block type
-            let _ = wasm.read_u8().expect("read to succeed, as we just peeked");
+            let _ = wasm.read_u8().unwrap_validated();
             Ok(BlockType::Empty)
         } else if let Ok(val_ty) = ValType::read(wasm) {
             // No parameters and given valtype as the result

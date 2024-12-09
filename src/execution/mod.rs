@@ -316,10 +316,10 @@ where
             let mut wasm_reader = WasmReader::new(validation_info.wasm);
 
             let functions = validation_info.functions.iter();
-            let func_blocks_sidetables = validation_info.func_blocks_sidetables.iter();
+            let func_blocks = validation_info.func_blocks.iter();
 
             functions
-                .zip(func_blocks_sidetables)
+                .zip(func_blocks)
                 .map(|(ty, (func, sidetable))| {
                     wasm_reader
                         .move_start_to(*func)
