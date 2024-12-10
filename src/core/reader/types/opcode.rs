@@ -1,6 +1,17 @@
+//! All opcodes, in alphanumerical order by their numeric (hex-)value
 pub const UNREACHABLE: u8 = 0x00;
 pub const NOP: u8 = 0x01;
+pub const BLOCK: u8 = 0x02;
+pub const LOOP: u8 = 0x03;
+pub const IF: u8 = 0x04;
+#[allow(unused)] // TODO remove this once sidetable implementation lands
+pub const ELSE: u8 = 0x05;
 pub const END: u8 = 0x0B;
+pub const BR: u8 = 0x0C;
+#[allow(unused)] // TODO remove this once sidetable implementation lands
+pub const BR_IF: u8 = 0x0D;
+#[allow(unused)] // TODO remove this once sidetable implementation lands
+pub const BR_TABLE: u8 = 0x0E;
 pub const RETURN: u8 = 0x0F;
 pub const CALL: u8 = 0x10;
 pub const DROP: u8 = 0x1A;
