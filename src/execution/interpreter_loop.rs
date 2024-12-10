@@ -16,7 +16,7 @@ use alloc::vec::Vec;
 use crate::{
     assert_validated::UnwrapValidatedExt,
     core::{
-        indices::{DataIdx, FuncIdx, GlobalIdx, LocalIdx},
+        indices::{DataIdx, FuncIdx, GlobalIdx, LabelIdx, LocalIdx},
         reader::{
             types::{memarg::MemArg, BlockType, FuncType},
             WasmReadable, WasmReader,
@@ -126,6 +126,24 @@ pub(super) fn run<H: HookSet>(
                 } else {
                     stp += 1;
                 }
+            }
+            BR_TABLE => {
+                let label_vec = wasm
+                    .read_vec(|wasm| wasm.read_var_u32().map(|v| v as LabelIdx))
+                    .unwrap_validated();
+                wasm.read_var_u32().unwrap_validated();
+
+                // TODO is this correct?
+                let case_val_i32: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let case_val = case_val_i32 as usize;
+
+                if case_val >= label_vec.len() {
+                    stp += label_vec.len();
+                } else {
+                    stp += case_val;
+                }
+
+                do_sidetable_control_transfer(&mut wasm, stack, &mut stp, current_sidetable);
             }
             BR => {
                 //skip n of BR n

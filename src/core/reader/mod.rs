@@ -212,7 +212,6 @@ pub mod span {
             self.len
         }
 
-        // TODO is this ok?
         pub const fn from(&self) -> usize {
             self.from
         }

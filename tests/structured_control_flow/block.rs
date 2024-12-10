@@ -261,11 +261,11 @@ fn branch_if() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    let abs_fn = instance.get_function_by_index(0, 0).unwrap();
+    let switch_case_fn = instance.get_function_by_index(0, 0).unwrap();
 
-    assert_eq!(6, instance.invoke(&abs_fn, 6).unwrap());
-    assert_eq!(123, instance.invoke(&abs_fn, -123).unwrap());
-    assert_eq!(0, instance.invoke(&abs_fn, 0).unwrap());
+    assert_eq!(6, instance.invoke(&switch_case_fn, 6).unwrap());
+    assert_eq!(123, instance.invoke(&switch_case_fn, -123).unwrap());
+    assert_eq!(0, instance.invoke(&switch_case_fn, 0).unwrap());
 }
 
 #[test_log::test]
@@ -329,4 +329,53 @@ fn recursive_fibonacci() {
         .map(|n| instance.invoke(&fib_fn, n).unwrap())
         .collect::<Vec<i32>>();
     assert_eq!(&first_ten, &[0, 1, 1, 2, 3, 5, 8, 13, 21, 34]);
+}
+
+#[test_log::test]
+fn switch_case() {
+    let wasm_bytes = wat::parse_str(
+        r#"
+    (module
+        (func $switch_case (param $value i32) (result i32)
+        (block $default
+            (block $case4
+                (block $case3
+                    (block $case2
+                        (block $case1
+                            local.get $value
+                            (br_table $case1 $case2 $case3 $case4 $default)
+                        )
+                        i32.const 1
+                        return
+                    )
+                    i32.const 3
+                    return
+                )
+                i32.const 5
+                return
+            )
+            i32.const 7
+            return
+        )
+        i32.const 9
+        return
+    )
+    (export "switch_case" (func $switch_case))
+    )"#,
+    )
+    .unwrap();
+
+    let validation_info = validate(&wasm_bytes).expect("validation failed");
+    let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
+
+    let switch_case_fn = instance.get_function_by_index(0, 0).unwrap();
+
+    assert_eq!(9, instance.invoke(&switch_case_fn, -5).unwrap());
+    assert_eq!(9, instance.invoke(&switch_case_fn, -1).unwrap());
+    assert_eq!(1, instance.invoke(&switch_case_fn, 0).unwrap());
+    assert_eq!(3, instance.invoke(&switch_case_fn, 1).unwrap());
+    assert_eq!(5, instance.invoke(&switch_case_fn, 2).unwrap());
+    assert_eq!(7, instance.invoke(&switch_case_fn, 3).unwrap());
+    assert_eq!(9, instance.invoke(&switch_case_fn, 4).unwrap());
+    assert_eq!(9, instance.invoke(&switch_case_fn, 7).unwrap());
 }

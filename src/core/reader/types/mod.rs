@@ -215,7 +215,7 @@ impl WasmReadable for BlockType {
             // Empty block type
             let _ = wasm.read_u8().unwrap_validated();
             Ok(BlockType::Empty)
-        } else if let Ok(val_ty) = ValType::read(wasm) {
+        } else if let Ok(val_ty) = wasm.handle_transaction(|wasm| ValType::read(wasm)) {
             // No parameters and given valtype as the result
             Ok(BlockType::Returns(val_ty))
         } else {
@@ -232,7 +232,7 @@ impl WasmReadable for BlockType {
             let _ = wasm.read_u8();
 
             BlockType::Empty
-        } else if let Ok(val_ty) = ValType::read(wasm) {
+        } else if let Ok(val_ty) = wasm.handle_transaction(|wasm| ValType::read(wasm)) {
             // No parameters and given valtype as the result
             BlockType::Returns(val_ty)
         } else {

@@ -267,6 +267,26 @@ fn read_instructions(
                     wasm, label_idx, stack, sidetable,
                 )?;
             }
+            BR_TABLE => {
+                let label_vec = wasm.read_vec(|wasm| wasm.read_var_u32().map(|v| v as LabelIdx))?;
+                let max_label_idx = wasm.read_var_u32()? as LabelIdx;
+                stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+
+                for label_idx in label_vec {
+                    validate_intrablock_jump_and_generate_sidetable_entry(
+                        wasm, label_idx, stack, sidetable,
+                    )?;
+                }
+
+                validate_intrablock_jump_and_generate_sidetable_entry(
+                    wasm,
+                    max_label_idx,
+                    stack,
+                    sidetable,
+                )?;
+
+                stack.make_unspecified()?;
+            }
             END => {
                 let (label_info, _) = stack.assert_pop_ctrl()?;
                 let stp_here = sidetable.len();
