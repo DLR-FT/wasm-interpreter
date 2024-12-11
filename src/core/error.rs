@@ -2,7 +2,7 @@ use alloc::format;
 use alloc::string::{String, ToString};
 
 use crate::core::indices::GlobalIdx;
-use crate::validation_stack::LabelKind;
+use crate::validation_stack::{LabelKind, ValidationStackEntry};
 use crate::RefType;
 use core::fmt::{Display, Formatter};
 use core::str::Utf8Error;
@@ -57,6 +57,7 @@ pub enum Error {
     EndInvalidValueStack,
     InvalidLocalIdx,
     InvalidValidationStackValType(Option<ValType>),
+    InvalidValidationStackType(ValidationStackEntry),
     ExpectedAnOperand,
     InvalidLimitsType(u8),
     InvalidMutType(u8),
@@ -139,6 +140,9 @@ impl Display for Error {
             Error::InvalidLocalIdx => f.write_str("An invalid localidx was used"),
             Error::InvalidValidationStackValType(ty) => f.write_fmt(format_args!(
                 "An unexpected type was found on the stack when trying to pop another: `{ty:?}`"
+            )),
+            Error::InvalidValidationStackType(ty) => f.write_fmt(format_args!(
+                "An unexpected type was found on the stack: `{ty:?}`"
             )),
             Error::InvalidLimitsType(ty) => {
                 f.write_fmt(format_args!("An invalid limits type was found: {ty:#x?}"))

@@ -81,16 +81,14 @@ use super::validation_stack::ValidationStack;
 /// - `ref.null`
 /// - `ref.func`
 /// - `global.get`
-pub fn read_constant_instructions(
+pub fn read_constant_expression(
     wasm: &mut WasmReader,
+    stack: &mut ValidationStack,
     this_global_valtype: Option<ValType>,
     _globals_ty: Option<&[GlobalType]>,
     funcs: Option<&[usize]>,
 ) -> Result<Span> {
     let start_pc = wasm.pc;
-
-    // Compared to the code validation, we create the validation stack here as opposed to taking it as an argument.
-    let mut stack = ValidationStack::new();
 
     loop {
         let Ok(first_instr_byte) = wasm.read_u8() else {

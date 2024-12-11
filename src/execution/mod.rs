@@ -1,4 +1,3 @@
-use alloc::borrow::ToOwned;
 use alloc::string::ToString;
 use alloc::vec;
 use alloc::vec::Vec;
@@ -414,12 +413,14 @@ where
                     ElemMode::Active(active_elem) => {
                         let table_idx = active_elem.table_idx as usize;
 
-                        // TODO
-                        let offset = get_address_offset(
-                            run_const_span(validation_info.wasm, &active_elem.init_expr, ())
-                                .unwrap_validated(),
-                        )
-                        .unwrap_validated() as usize;
+                        let offset =
+                            match run_const_span(validation_info.wasm, &active_elem.init_expr, ())
+                                .unwrap_validated()
+                            {
+                                Value::I32(offset) => offset as usize,
+                                // We are already asserting that on top of the stack there is an I32 at validation time
+                                _ => unreachable!(),
+                            };
 
                         let table = &mut tables[table_idx];
                         // This can't be verified at validation-time because we don't keep track of actual values when validating expressions
@@ -446,6 +447,7 @@ where
             .iter()
             .map(|d| {
                 use crate::core::reader::types::data::DataMode;
+                use crate::NumType;
                 if let DataMode::Active(active_data) = d.mode.clone() {
                     let mem_idx = active_data.memory_idx;
                     if mem_idx != 0 {
@@ -453,26 +455,27 @@ where
                     }
                     assert!(memory_instances.len() > mem_idx);
 
-                    let value = {
+                    let boxed_value = {
                         let mut wasm = WasmReader::new(validation_info.wasm);
                         wasm.move_start_to(active_data.offset).unwrap_validated();
                         let mut stack = Stack::new();
                         run_const(wasm, &mut stack, ());
-                        stack.peek_unknown_value().ok_or(MissingValueOnTheStack)?
+                        stack.pop_value(ValType::NumType(NumType::I32))
+                        // stack.peek_unknown_value().ok_or(MissingValueOnTheStack)?
                     };
 
                     // TODO: this shouldn't be a simple value, should it? I mean it can't be, but it can also be any type of ValType
                     // TODO: also, do we need to forcefully make it i32?
-                    let offset: u32 = match value {
+                    let offset: u32 = match boxed_value {
                         Value::I32(val) => val,
-                        Value::I64(val) => {
-                            if val > u32::MAX as u64 {
-                                return Err(I64ValueOutOfReach("data segment".to_owned()));
-                            }
-                            val as u32
-                        }
+                        // Value::I64(val) => {
+                        //     if val > u32::MAX as u64 {
+                        //         return Err(I64ValueOutOfReach("data segment".to_owned()));
+                        //     }
+                        //     val as u32
+                        // }
                         // TODO: implement all value types
-                        _ => unimplemented!(),
+                        _ => todo!(),
                     };
 
                     let mem_inst = memory_instances.get_mut(mem_idx).unwrap();
@@ -543,10 +546,7 @@ fn get_address_offset(value: Value) -> Option<u32> {
         Value::Ref(rref) => match rref {
             Ref::Extern(_) => todo!("Not yet implemented"),
             // TODO: fix
-            Ref::Func(func_addr) => match func_addr.addr {
-                Some(addr) => Some(addr as u32),
-                None => None,
-            },
+            Ref::Func(func_addr) => func_addr.addr.map(|addr| addr as u32),
         },
         // INFO: from wasmtime - implement only global
         _ => unreachable!(),
