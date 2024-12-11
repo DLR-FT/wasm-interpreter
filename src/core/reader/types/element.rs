@@ -1,7 +1,8 @@
 use super::RefType;
 use crate::core::reader::span::Span;
 use crate::core::reader::WasmReader;
-use crate::read_constant_expression::read_constant_instructions;
+use crate::read_constant_expression::read_constant_expression;
+use crate::validation_stack::ValidationStack;
 use crate::{Error, Result};
 
 use alloc::collections::btree_set::BTreeSet;
@@ -83,7 +84,12 @@ impl ElemType {
                     return Err(Error::UnknownTable);
                 }
 
-                let init_expr = read_constant_instructions(wasm, None, None, Some(functions))?;
+                let mut valid_stack = ValidationStack::new();
+                let init_expr =
+                    read_constant_expression(wasm, &mut valid_stack, None, None, Some(functions))?;
+
+                // on top of the stack it's supposed to be the
+                valid_stack.assert_pop_val_type(super::ValType::NumType(super::NumType::I32))?;
 
                 ElemMode::Active(ActiveElem {
                     table_idx,
@@ -114,7 +120,39 @@ impl ElemType {
             let items: ElemItems = if third_bit_set {
                 ElemItems::Exprs(
                     reftype_or_elemkind.unwrap_or(RefType::FuncRef),
-                    wasm.read_vec(|w| read_constant_instructions(w, None, None, Some(functions)))?,
+                    wasm.read_vec(|w| {
+                        let mut valid_stack = ValidationStack::new();
+                        let span = read_constant_expression(
+                            w,
+                            &mut valid_stack,
+                            None,
+                            None,
+                            Some(functions),
+                        );
+
+                        use crate::validation_stack::ValidationStackEntry::*;
+
+                        if let Some(val) = valid_stack.peek_stack() {
+                            if let Val(val) = val {
+                                match val {
+                                    crate::ValType::RefType(_) => {}
+                                    crate::ValType::NumType(crate::NumType::I32) => {}
+                                    crate::ValType::NumType(_) => {
+                                        return Err(Error::InvalidValidationStackValType(Some(val)))
+                                    }
+                                    _ => {
+                                        return Err(Error::InvalidValidationStackValType(Some(val)))
+                                    }
+                                }
+                            } else {
+                                return Err(Error::InvalidValidationStackType(val));
+                            }
+                        } else {
+                            return Err(Error::InvalidValidationStackValType(None));
+                        }
+
+                        span
+                    })?,
                 )
             } else {
                 assert!(reftype_or_elemkind.is_none());

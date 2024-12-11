@@ -279,8 +279,10 @@ impl WasmReadable for Limits {
             other => return Err(Error::InvalidLimitsType(other)),
         };
 
-        if limits.max.is_some() && limits.min > limits.max.unwrap() {
-            return Err(Error::InvalidLimit);
+        if let Some(max) = limits.max {
+            if limits.min > max {
+                return Err(Error::InvalidLimit);
+            }
         }
 
         Ok(limits)

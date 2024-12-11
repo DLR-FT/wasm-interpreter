@@ -7,7 +7,8 @@ use crate::{
         indices::MemIdx,
         reader::{span::Span, WasmReadable},
     },
-    read_constant_expression::read_constant_instructions,
+    read_constant_expression::read_constant_expression,
+    validation_stack::ValidationStack,
 };
 
 use super::UnwrapValidatedExt;
@@ -31,12 +32,17 @@ pub struct DataModeActive {
 
 impl WasmReadable for DataSegment {
     fn read(wasm: &mut crate::core::reader::WasmReader) -> crate::Result<Self> {
+        use crate::{NumType, ValType};
         let mode = wasm.read_var_u32()?;
         let data_sec: DataSegment = match mode {
             0 => {
                 // active { memory 0, offset e }
                 trace!("Data section: active");
-                let offset = { read_constant_instructions(wasm, None, None, None)? };
+                let mut valid_stack = ValidationStack::new();
+                let offset =
+                    { read_constant_expression(wasm, &mut valid_stack, None, None, None)? };
+
+                valid_stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
 
                 let byte_vec = wasm.read_vec(|el| el.read_u8())?;
 
@@ -81,8 +87,10 @@ impl WasmReadable for DataSegment {
             0 => {
                 // active { memory 0, offset e }
                 trace!("Data section: active");
-                let offset =
-                    { read_constant_instructions(wasm, None, None, None).unwrap_validated() };
+                let offset = {
+                    read_constant_expression(wasm, &mut ValidationStack::new(), None, None, None)
+                        .unwrap_validated()
+                };
 
                 let byte_vec = wasm
                     .read_vec(|el| Ok(el.read_u8().unwrap_validated()))
