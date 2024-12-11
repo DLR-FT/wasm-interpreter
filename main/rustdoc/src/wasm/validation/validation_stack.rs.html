@@ -422,6 +422,31 @@
 <a href="#420" id="420">420</a>
 <a href="#421" id="421">421</a>
 <a href="#422" id="422">422</a>
+<a href="#423" id="423">423</a>
+<a href="#424" id="424">424</a>
+<a href="#425" id="425">425</a>
+<a href="#426" id="426">426</a>
+<a href="#427" id="427">427</a>
+<a href="#428" id="428">428</a>
+<a href="#429" id="429">429</a>
+<a href="#430" id="430">430</a>
+<a href="#431" id="431">431</a>
+<a href="#432" id="432">432</a>
+<a href="#433" id="433">433</a>
+<a href="#434" id="434">434</a>
+<a href="#435" id="435">435</a>
+<a href="#436" id="436">436</a>
+<a href="#437" id="437">437</a>
+<a href="#438" id="438">438</a>
+<a href="#439" id="439">439</a>
+<a href="#440" id="440">440</a>
+<a href="#441" id="441">441</a>
+<a href="#442" id="442">442</a>
+<a href="#443" id="443">443</a>
+<a href="#444" id="444">444</a>
+<a href="#445" id="445">445</a>
+<a href="#446" id="446">446</a>
+<a href="#447" id="447">447</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! This module contains the [`ValidationStack`] data structure
 //!
 //! The [`ValidationStack`] is a unified stack, in the sense that it unifies both
@@ -431,34 +456,38 @@
 </span><span class="kw">use </span><span class="kw">super</span>::Result;
 <span class="kw">use </span>alloc::vec::Vec;
 
-<span class="kw">use crate</span>::{Error, ValType};
+<span class="kw">use crate</span>::{Error, RefType, ValType};
 
 <span class="attr">#[derive(Debug, PartialEq, Eq)]
-</span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">struct </span>ValidationStack {
+</span><span class="kw">pub struct </span>ValidationStack {
     stack: Vec&lt;ValidationStackEntry&gt;,
 }
 
 <span class="kw">impl </span>ValidationStack {
     <span class="doccomment">/// Initialize a new ValidationStack
-    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>new() -&gt; <span class="self">Self </span>{
+    </span><span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{ stack: Vec::new() }
     }
 
-    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+    <span class="kw">pub fn </span>len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
         <span class="self">self</span>.stack.len()
     }
 
-    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>push_valtype(<span class="kw-2">&amp;mut </span><span class="self">self</span>, valtype: ValType) {
+    <span class="kw">pub fn </span>push_valtype(<span class="kw-2">&amp;mut </span><span class="self">self</span>, valtype: ValType) {
         <span class="self">self</span>.stack.push(ValidationStackEntry::Val(valtype));
     }
 
-    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>push_label(<span class="kw-2">&amp;mut </span><span class="self">self</span>, label_info: LabelInfo) {
+    <span class="kw">pub fn </span>push_label(<span class="kw-2">&amp;mut </span><span class="self">self</span>, label_info: LabelInfo) {
         <span class="self">self</span>.stack.push(ValidationStackEntry::Label(label_info));
+    }
+
+    <span class="kw">pub fn </span>peek_stack(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;ValidationStackEntry&gt; {
+        <span class="self">self</span>.stack.last().cloned()
     }
 
     <span class="doccomment">/// Similar to [`ValidationStack::pop`], because it pops a value from the stack,
     /// but more public and doesn't actually return the popped value.
-    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>drop_val(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    </span><span class="kw">pub fn </span>drop_val(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">match </span><span class="self">self</span>.stack.pop().ok_or(Error::EndInvalidValueStack)<span class="question-mark">? </span>{
             ValidationStackEntry::Val(<span class="kw">_</span>) =&gt; <span class="prelude-val">Ok</span>(()),
             <span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(Error::ExpectedAnOperand),
@@ -470,7 +499,7 @@
     /// To undo this, a new label has to be pushed or an existing one has to be popped.
     ///
     /// See the documentation for [`ValidationStackEntry::UnspecifiedValTypes`] for more info.
-    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>make_unspecified(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+    </span><span class="kw">pub fn </span>make_unspecified(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
         <span class="comment">// Pop everything until next label or until the stack is empty.
         // This is okay, because these values cannot be accessed during execution ever again.
         </span><span class="kw">while let </span><span class="prelude-val">Some</span>(entry) = <span class="self">self</span>.stack.last() {
@@ -498,6 +527,27 @@
             .ok_or(Error::InvalidValidationStackValType(<span class="prelude-val">None</span>))
     }
 
+    <span class="kw">pub fn </span>assert_pop_ref_type(<span class="kw-2">&amp;mut </span><span class="self">self</span>, expected_ty: <span class="prelude-ty">Option</span>&lt;RefType&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="kw">let </span>val = <span class="self">self</span>.pop()<span class="question-mark">?</span>;
+        <span class="kw">match </span>val {
+            ValidationStackEntry::Val(v) =&gt; <span class="kw">match </span>v {
+                ValType::RefType(ref_type) =&gt; <span class="kw">match </span>expected_ty {
+                    <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Ok</span>(()),
+                    <span class="prelude-val">Some</span>(expected_ty) =&gt; {
+                        <span class="kw">if </span>expected_ty == ref_type {
+                            <span class="prelude-val">Ok</span>(())
+                        } <span class="kw">else </span>{
+                            <span class="prelude-val">Err</span>(Error::DifferentRefTypes(ref_type, expected_ty))
+                        }
+                    }
+                },
+                <span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(Error::ExpectedARefType(v)),
+            },
+            ValidationStackEntry::UnspecifiedValTypes =&gt; <span class="prelude-val">Err</span>(Error::FoundUnspecifiedValTypes),
+            ValidationStackEntry::Label(li) =&gt; <span class="prelude-val">Err</span>(Error::FoundLabel(li.kind)),
+        }
+    }
+
     <span class="doccomment">/// Assert the top-most [`ValidationStackEntry`] is a specific [`ValType`], after popping it from the [`ValidationStack`]
     ///
     /// # Returns
@@ -505,7 +555,7 @@
     /// - Returns `Ok(())` if the top-most [`ValidationStackEntry`] is a [`ValType`] identical to
     ///   `expected_ty`.
     /// - Returns `Err(_)` otherwise.
-    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>assert_pop_val_type(<span class="kw-2">&amp;mut </span><span class="self">self</span>, expected_ty: ValType) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    </span><span class="kw">pub fn </span>assert_pop_val_type(<span class="kw-2">&amp;mut </span><span class="self">self</span>, expected_ty: ValType) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">if let </span><span class="prelude-val">Some</span>(ValidationStackEntry::UnspecifiedValTypes) = <span class="self">self</span>.stack.last() {
             <span class="comment">// An unspecified value is always correct, and will never disappear by popping.
             </span><span class="kw">return </span><span class="prelude-val">Ok</span>(());
@@ -535,7 +585,7 @@
     ///
     /// - `Ok(_)`, the tail of the stack matches the `expected_val_types`
     /// - `Err(_)` otherwise
-    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>assert_val_types_on_top(<span class="kw-2">&amp;</span><span class="self">self</span>, expected_val_types: <span class="kw-2">&amp;</span>[ValType]) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    </span><span class="kw">pub fn </span>assert_val_types_on_top(<span class="kw-2">&amp;</span><span class="self">self</span>, expected_val_types: <span class="kw-2">&amp;</span>[ValType]) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">let </span>stack_tail = <span class="self">self
             </span>.stack
             .get(<span class="self">self</span>.stack.len() - expected_val_types.len()..)
@@ -573,7 +623,7 @@
     ///
     /// - `Ok(())` if all expected valtypes were found
     /// - `Err(_)` otherwise
-    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>assert_val_types(<span class="kw-2">&amp;</span><span class="self">self</span>, expected_val_types: <span class="kw-2">&amp;</span>[ValType]) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    </span><span class="kw">pub fn </span>assert_val_types(<span class="kw-2">&amp;</span><span class="self">self</span>, expected_val_types: <span class="kw-2">&amp;</span>[ValType]) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">let </span>topmost_label_index = <span class="self">self</span>.find_topmost_label_idx();
 
         <span class="kw">let </span>first_valtype = topmost_label_index.map(|idx| idx + <span class="number">1</span>).unwrap_or(<span class="number">0</span>);
@@ -640,7 +690,7 @@
     }
 
     <span class="doccomment">/// Return true if the stack has at least one remaining label
-    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>has_remaining_label(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+    </span><span class="kw">pub fn </span>has_remaining_label(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
         <span class="self">self</span>.stack
             .iter()
             .any(|e| <span class="macro">matches!</span>(e, ValidationStackEntry::Label(<span class="kw">_</span>)))
@@ -648,7 +698,7 @@
 }
 
 <span class="attr">#[derive(Clone, Debug, PartialEq, Eq)]
-</span><span class="kw">enum </span>ValidationStackEntry {
+</span><span class="kw">pub enum </span>ValidationStackEntry {
     <span class="doccomment">/// A value
     </span>Val(ValType),
 
@@ -665,8 +715,8 @@
 }
 
 <span class="attr">#[derive(Clone, Debug, PartialEq, Eq)]
-</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>LabelInfo {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) kind: LabelKind,
+</span><span class="kw">pub struct </span>LabelInfo {
+    <span class="kw">pub </span>kind: LabelKind,
 }
 
 <span class="attr">#[derive(Clone, Debug, PartialEq, Eq)]

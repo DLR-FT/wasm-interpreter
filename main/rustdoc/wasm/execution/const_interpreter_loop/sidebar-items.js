@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["run_const"]};
+window.SIDEBAR_ITEMS = {"fn":["run_const","run_const_span"]};

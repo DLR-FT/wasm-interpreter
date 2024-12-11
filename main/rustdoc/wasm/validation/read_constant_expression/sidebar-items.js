@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["read_constant_instructions"]};
+window.SIDEBAR_ITEMS = {"fn":["read_constant_expression"]};

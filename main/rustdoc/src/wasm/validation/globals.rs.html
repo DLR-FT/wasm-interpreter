@@ -31,12 +31,17 @@
 <a href="#29" id="29">29</a>
 <a href="#30" id="30">30</a>
 <a href="#31" id="31">31</a>
+<a href="#32" id="32">32</a>
+<a href="#33" id="33">33</a>
+<a href="#34" id="34">34</a>
+<a href="#35" id="35">35</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>alloc::vec::Vec;
 
 <span class="kw">use </span><span class="kw">crate</span>::core::reader::section_header::{SectionHeader, SectionTy};
 <span class="kw">use </span><span class="kw">crate</span>::core::reader::types::global::{Global, GlobalType};
 <span class="kw">use </span><span class="kw">crate</span>::core::reader::{WasmReadable, WasmReader};
-<span class="kw">use </span><span class="kw">crate</span>::read_constant_expression::read_constant_instructions;
+<span class="kw">use </span><span class="kw">crate</span>::read_constant_expression::read_constant_expression;
+<span class="kw">use </span><span class="kw">crate</span>::validation_stack::ValidationStack;
 <span class="kw">use </span><span class="kw">crate</span>::Result;
 
 <span class="doccomment">/// Validate the global section.
@@ -44,7 +49,7 @@
 /// The global section is a vector of global variables. Each [Global] variable is composed of a [GlobalType] and an
 /// initialization expression represented by a constant expression.
 ///
-/// See [read_constant_instructions] for more information.
+/// See [`read_constant_expression`] for more information.
 </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>validate_global_section(
     wasm: <span class="kw-2">&amp;mut </span>WasmReader,
     section_header: SectionHeader,
@@ -53,10 +58,13 @@
 
     wasm.read_vec(|wasm| {
         <span class="kw">let </span>ty = GlobalType::read(wasm)<span class="question-mark">?</span>;
-        <span class="kw">let </span>init_expr = read_constant_instructions(
+        <span class="kw">let </span>init_expr = read_constant_expression(
             wasm,
+            <span class="kw-2">&amp;mut </span>ValidationStack::new(),
             <span class="prelude-val">Some</span>(ty.ty),
             <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>[<span class="comment">/* todo!(imported globals tpyes) */</span>]),
+            <span class="comment">// we can't refer to any functions
+            </span><span class="prelude-val">None</span>,
         )<span class="question-mark">?</span>;
 
         <span class="prelude-val">Ok</span>(Global { ty, init_expr })

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["Error","RuntimeError"],"type":["Result"]};
+window.SIDEBAR_ITEMS = {"enum":["Error","RuntimeError","StoreInstantiationError"],"type":["Result"]};

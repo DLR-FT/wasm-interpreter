@@ -202,6 +202,14 @@
 <a href="#200" id="200">200</a>
 <a href="#201" id="201">201</a>
 <a href="#202" id="202">202</a>
+<a href="#203" id="203">203</a>
+<a href="#204" id="204">204</a>
+<a href="#205" id="205">205</a>
+<a href="#206" id="206">206</a>
+<a href="#207" id="207">207</a>
+<a href="#208" id="208">208</a>
+<a href="#209" id="209">209</a>
+<a href="#210" id="210">210</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>core::fmt::{Debug, Formatter};
 
 <span class="kw">use </span>alloc::{format, vec::Vec};
@@ -211,7 +219,8 @@
         indices::MemIdx,
         reader::{span::Span, WasmReadable},
     },
-    read_constant_expression::read_constant_instructions,
+    read_constant_expression::read_constant_expression,
+    validation_stack::ValidationStack,
 };
 
 <span class="kw">use </span><span class="kw">super</span>::UnwrapValidatedExt;
@@ -235,12 +244,17 @@
 
 <span class="kw">impl </span>WasmReadable <span class="kw">for </span>DataSegment {
     <span class="kw">fn </span>read(wasm: <span class="kw-2">&amp;mut </span><span class="kw">crate</span>::core::reader::WasmReader) -&gt; <span class="kw">crate</span>::Result&lt;<span class="self">Self</span>&gt; {
+        <span class="kw">use crate</span>::{NumType, ValType};
         <span class="kw">let </span>mode = wasm.read_var_u32()<span class="question-mark">?</span>;
         <span class="kw">let </span>data_sec: DataSegment = <span class="kw">match </span>mode {
             <span class="number">0 </span>=&gt; {
                 <span class="comment">// active { memory 0, offset e }
                 </span><span class="macro">trace!</span>(<span class="string">"Data section: active"</span>);
-                <span class="kw">let </span>offset = { read_constant_instructions(wasm, <span class="prelude-val">None</span>, <span class="prelude-val">None</span>)<span class="question-mark">? </span>};
+                <span class="kw">let </span><span class="kw-2">mut </span>valid_stack = ValidationStack::new();
+                <span class="kw">let </span>offset =
+                    { read_constant_expression(wasm, <span class="kw-2">&amp;mut </span>valid_stack, <span class="prelude-val">None</span>, <span class="prelude-val">None</span>, <span class="prelude-val">None</span>)<span class="question-mark">? </span>};
+
+                valid_stack.assert_pop_val_type(ValType::NumType(NumType::I32))<span class="question-mark">?</span>;
 
                 <span class="kw">let </span>byte_vec = wasm.read_vec(|el| el.read_u8())<span class="question-mark">?</span>;
 
@@ -285,7 +299,10 @@
             <span class="number">0 </span>=&gt; {
                 <span class="comment">// active { memory 0, offset e }
                 </span><span class="macro">trace!</span>(<span class="string">"Data section: active"</span>);
-                <span class="kw">let </span>offset = { read_constant_instructions(wasm, <span class="prelude-val">None</span>, <span class="prelude-val">None</span>).unwrap_validated() };
+                <span class="kw">let </span>offset = {
+                    read_constant_expression(wasm, <span class="kw-2">&amp;mut </span>ValidationStack::new(), <span class="prelude-val">None</span>, <span class="prelude-val">None</span>, <span class="prelude-val">None</span>)
+                        .unwrap_validated()
+                };
 
                 <span class="kw">let </span>byte_vec = wasm
                     .read_vec(|el| <span class="prelude-val">Ok</span>(el.read_u8().unwrap_validated()))
@@ -358,7 +375,6 @@
 ///                             ;; for hardcoded offsets, we'll usually use i32.const because of wasm being x86 arch
 /// )
 /// ```
-
 ///
 /// Since the span has only the start and length and acts a reference, we print the start and end (both inclusive, notice the '..=')
 /// We print it in both decimal and hexadecimal so it's easy to trace in something like &lt;https://webassembly.github.io/wabt/demo/wat2wasm/&gt;

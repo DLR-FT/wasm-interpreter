@@ -217,12 +217,23 @@
 <a href="#215" id="215">215</a>
 <a href="#216" id="216">216</a>
 <a href="#217" id="217">217</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>alloc::vec::Vec;
+<a href="#218" id="218">218</a>
+<a href="#219" id="219">219</a>
+<a href="#220" id="220">220</a>
+<a href="#221" id="221">221</a>
+<a href="#222" id="222">222</a>
+<a href="#223" id="223">223</a>
+<a href="#224" id="224">224</a>
+<a href="#225" id="225">225</a>
+<a href="#226" id="226">226</a>
+</pre></div><pre class="rust"><code><span class="kw">use </span>alloc::collections::btree_set;
+<span class="kw">use </span>alloc::vec::Vec;
 
 <span class="kw">use </span><span class="kw">crate</span>::core::indices::{FuncIdx, TypeIdx};
 <span class="kw">use </span><span class="kw">crate</span>::core::reader::section_header::{SectionHeader, SectionTy};
 <span class="kw">use </span><span class="kw">crate</span>::core::reader::span::Span;
 <span class="kw">use </span><span class="kw">crate</span>::core::reader::types::data::DataSegment;
+<span class="kw">use </span><span class="kw">crate</span>::core::reader::types::element::ElemType;
 <span class="kw">use </span><span class="kw">crate</span>::core::reader::types::export::Export;
 <span class="kw">use </span><span class="kw">crate</span>::core::reader::types::global::Global;
 <span class="kw">use </span><span class="kw">crate</span>::core::reader::types::import::Import;
@@ -243,8 +254,7 @@
     <span class="attr">#[allow(dead_code)]
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) imports: Vec&lt;Import&gt;,
     <span class="kw">pub</span>(<span class="kw">crate</span>) functions: Vec&lt;TypeIdx&gt;,
-    <span class="attr">#[allow(dead_code)]
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) tables: Vec&lt;TableType&gt;,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) tables: Vec&lt;TableType&gt;,
     <span class="kw">pub</span>(<span class="kw">crate</span>) memories: Vec&lt;MemType&gt;,
     <span class="kw">pub</span>(<span class="kw">crate</span>) globals: Vec&lt;Global&gt;,
     <span class="attr">#[allow(dead_code)]
@@ -253,6 +263,7 @@
     <span class="kw">pub</span>(<span class="kw">crate</span>) data: Vec&lt;DataSegment&gt;,
     <span class="doccomment">/// The start function which is automatically executed during instantiation
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) start: <span class="prelude-ty">Option</span>&lt;FuncIdx&gt;,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) elements: Vec&lt;ElemType&gt;,
 }
 
 <span class="kw">pub fn </span>validate(wasm: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;ValidationInfo&gt; {
@@ -339,9 +350,12 @@
 
     <span class="kw">while </span>(skip_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header)<span class="question-mark">?</span>).is_some() {}
 
-    <span class="kw">let _</span>: <span class="prelude-ty">Option</span>&lt;()&gt; = handle_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header, SectionTy::Element, |<span class="kw">_</span>, <span class="kw">_</span>| {
-        <span class="macro">todo!</span>(<span class="string">"element section not yet supported"</span>)
-    })<span class="question-mark">?</span>;
+    <span class="kw">let </span><span class="kw-2">mut </span>referenced_functions = btree_set::BTreeSet::new();
+    <span class="kw">let </span>elements: Vec&lt;ElemType&gt; =
+        handle_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header, SectionTy::Element, |wasm, <span class="kw">_</span>| {
+            ElemType::read_from_wasm(wasm, <span class="kw-2">&amp;</span>functions, <span class="kw-2">&amp;mut </span>referenced_functions, tables.len())
+        })<span class="question-mark">?
+        </span>.unwrap_or_default();
 
     <span class="kw">while </span>(skip_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header)<span class="question-mark">?</span>).is_some() {}
 
@@ -368,6 +382,9 @@
             <span class="kw-2">&amp;</span>globals,
             <span class="kw-2">&amp;</span>memories,
             <span class="kw-2">&amp;</span>data_count,
+            <span class="kw-2">&amp;</span>tables,
+            <span class="kw-2">&amp;</span>elements,
+            <span class="kw-2">&amp;</span>referenced_functions,
         )
     })<span class="question-mark">?
     </span>.unwrap_or_default();
@@ -406,6 +423,7 @@
         func_blocks,
         data: data_section,
         start,
+        elements,
     })
 }
 

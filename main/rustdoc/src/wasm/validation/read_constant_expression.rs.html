@@ -139,10 +139,21 @@
 <a href="#137" id="137">137</a>
 <a href="#138" id="138">138</a>
 <a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::core::reader::span::Span;
 <span class="kw">use </span><span class="kw">crate</span>::core::reader::types::global::GlobalType;
-<span class="kw">use </span><span class="kw">crate</span>::core::reader::WasmReader;
-<span class="kw">use crate</span>::{Error, NumType, <span class="prelude-ty">Result</span>, ValType};
+<span class="kw">use </span><span class="kw">crate</span>::core::reader::{WasmReadable, WasmReader};
+<span class="kw">use crate</span>::{Error, NumType, RefType, <span class="prelude-ty">Result</span>, ValType};
 
 <span class="kw">use </span><span class="kw">super</span>::validation_stack::ValidationStack;
 
@@ -222,15 +233,14 @@
 /// - `ref.null`
 /// - `ref.func`
 /// - `global.get`
-</span><span class="kw">pub fn </span>read_constant_instructions(
+</span><span class="kw">pub fn </span>read_constant_expression(
     wasm: <span class="kw-2">&amp;mut </span>WasmReader,
+    stack: <span class="kw-2">&amp;mut </span>ValidationStack,
     this_global_valtype: <span class="prelude-ty">Option</span>&lt;ValType&gt;,
     _globals_ty: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>[GlobalType]&gt;,
+    funcs: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>[usize]&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;Span&gt; {
     <span class="kw">let </span>start_pc = wasm.pc;
-
-    <span class="comment">// Compared to the code validation, we create the validation stack here as opposed to taking it as an argument.
-    </span><span class="kw">let </span><span class="kw-2">mut </span>stack = ValidationStack::new();
 
     <span class="kw">loop </span>{
         <span class="kw">let </span><span class="prelude-val">Ok</span>(first_instr_byte) = wasm.read_u8() <span class="kw">else </span>{
@@ -269,10 +279,22 @@
                 stack.push_valtype(ValType::NumType(NumType::I64));
             }
             REF_NULL =&gt; {
-                <span class="macro">todo!</span>();
+                stack.push_valtype(ValType::RefType(RefType::read(wasm)<span class="question-mark">?</span>));
             }
             REF_FUNC =&gt; {
-                wasm.read_var_u32().unwrap();
+                <span class="kw">let </span>func_idx = wasm.read_var_u32()<span class="question-mark">? </span><span class="kw">as </span>usize;
+                <span class="kw">match </span>funcs {
+                    <span class="prelude-val">Some</span>(funcs) =&gt; {
+                        <span class="kw">if </span>func_idx &gt;= funcs.len() {
+                            <span class="kw">return </span><span class="prelude-val">Err</span>(Error::FunctionIsNotDefined(func_idx));
+                        }
+                    }
+                    <span class="prelude-val">None </span>=&gt; {
+                        <span class="kw">return </span><span class="prelude-val">Err</span>(Error::FunctionIsNotDefined(u32::MAX <span class="kw">as </span>usize));
+                    }
+                }
+
+                stack.push_valtype(ValType::RefType(<span class="kw">crate</span>::RefType::FuncRef));
             }
             <span class="kw">_ </span>=&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(Error::InvalidInstr(first_instr_byte)),
         }

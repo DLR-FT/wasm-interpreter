@@ -172,15 +172,120 @@
 <a href="#170" id="170">170</a>
 <a href="#171" id="171">171</a>
 <a href="#172" id="172">172</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::core::indices::GlobalIdx;
-<span class="kw">use </span><span class="kw">crate</span>::validation_stack::LabelKind;
+<a href="#173" id="173">173</a>
+<a href="#174" id="174">174</a>
+<a href="#175" id="175">175</a>
+<a href="#176" id="176">176</a>
+<a href="#177" id="177">177</a>
+<a href="#178" id="178">178</a>
+<a href="#179" id="179">179</a>
+<a href="#180" id="180">180</a>
+<a href="#181" id="181">181</a>
+<a href="#182" id="182">182</a>
+<a href="#183" id="183">183</a>
+<a href="#184" id="184">184</a>
+<a href="#185" id="185">185</a>
+<a href="#186" id="186">186</a>
+<a href="#187" id="187">187</a>
+<a href="#188" id="188">188</a>
+<a href="#189" id="189">189</a>
+<a href="#190" id="190">190</a>
+<a href="#191" id="191">191</a>
+<a href="#192" id="192">192</a>
+<a href="#193" id="193">193</a>
+<a href="#194" id="194">194</a>
+<a href="#195" id="195">195</a>
+<a href="#196" id="196">196</a>
+<a href="#197" id="197">197</a>
+<a href="#198" id="198">198</a>
+<a href="#199" id="199">199</a>
+<a href="#200" id="200">200</a>
+<a href="#201" id="201">201</a>
+<a href="#202" id="202">202</a>
+<a href="#203" id="203">203</a>
+<a href="#204" id="204">204</a>
+<a href="#205" id="205">205</a>
+<a href="#206" id="206">206</a>
+<a href="#207" id="207">207</a>
+<a href="#208" id="208">208</a>
+<a href="#209" id="209">209</a>
+<a href="#210" id="210">210</a>
+<a href="#211" id="211">211</a>
+<a href="#212" id="212">212</a>
+<a href="#213" id="213">213</a>
+<a href="#214" id="214">214</a>
+<a href="#215" id="215">215</a>
+<a href="#216" id="216">216</a>
+<a href="#217" id="217">217</a>
+<a href="#218" id="218">218</a>
+<a href="#219" id="219">219</a>
+<a href="#220" id="220">220</a>
+<a href="#221" id="221">221</a>
+<a href="#222" id="222">222</a>
+<a href="#223" id="223">223</a>
+<a href="#224" id="224">224</a>
+<a href="#225" id="225">225</a>
+<a href="#226" id="226">226</a>
+<a href="#227" id="227">227</a>
+<a href="#228" id="228">228</a>
+<a href="#229" id="229">229</a>
+<a href="#230" id="230">230</a>
+<a href="#231" id="231">231</a>
+<a href="#232" id="232">232</a>
+<a href="#233" id="233">233</a>
+<a href="#234" id="234">234</a>
+<a href="#235" id="235">235</a>
+<a href="#236" id="236">236</a>
+<a href="#237" id="237">237</a>
+<a href="#238" id="238">238</a>
+<a href="#239" id="239">239</a>
+<a href="#240" id="240">240</a>
+<a href="#241" id="241">241</a>
+<a href="#242" id="242">242</a>
+<a href="#243" id="243">243</a>
+<a href="#244" id="244">244</a>
+<a href="#245" id="245">245</a>
+<a href="#246" id="246">246</a>
+<a href="#247" id="247">247</a>
+<a href="#248" id="248">248</a>
+<a href="#249" id="249">249</a>
+<a href="#250" id="250">250</a>
+<a href="#251" id="251">251</a>
+<a href="#252" id="252">252</a>
+<a href="#253" id="253">253</a>
+<a href="#254" id="254">254</a>
+<a href="#255" id="255">255</a>
+<a href="#256" id="256">256</a>
+<a href="#257" id="257">257</a>
+<a href="#258" id="258">258</a>
+<a href="#259" id="259">259</a>
+<a href="#260" id="260">260</a>
+<a href="#261" id="261">261</a>
+<a href="#262" id="262">262</a>
+<a href="#263" id="263">263</a>
+<a href="#264" id="264">264</a>
+<a href="#265" id="265">265</a>
+<a href="#266" id="266">266</a>
+<a href="#267" id="267">267</a>
+<a href="#268" id="268">268</a>
+<a href="#269" id="269">269</a>
+<a href="#270" id="270">270</a>
+<a href="#271" id="271">271</a>
+<a href="#272" id="272">272</a>
+<a href="#273" id="273">273</a>
+</pre></div><pre class="rust"><code><span class="kw">use </span>alloc::format;
+<span class="kw">use </span>alloc::string::{String, ToString};
+
+<span class="kw">use </span><span class="kw">crate</span>::core::indices::GlobalIdx;
+<span class="kw">use </span><span class="kw">crate</span>::validation_stack::{LabelKind, ValidationStackEntry};
+<span class="kw">use </span><span class="kw">crate</span>::RefType;
 <span class="kw">use </span>core::fmt::{Display, Formatter};
 <span class="kw">use </span>core::str::Utf8Error;
 
 <span class="kw">use </span><span class="kw">crate</span>::core::reader::section_header::SectionTy;
 <span class="kw">use </span><span class="kw">crate</span>::core::reader::types::ValType;
 
-<span class="kw">use </span><span class="kw">super</span>::indices::{DataIdx, MemIdx};
+<span class="kw">use </span><span class="kw">super</span>::indices::{DataIdx, ElemIdx, FuncIdx, MemIdx, TableIdx, TypeIdx};
 
 <span class="attr">#[derive(Debug, PartialEq, Eq, Clone)]
 </span><span class="kw">pub enum </span>RuntimeError {
@@ -191,6 +296,18 @@
     <span class="comment">// https://github.com/wasmi-labs/wasmi/blob/37d1449524a322817c55026eb21eb97dd693b9ce/crates/core/src/trap.rs#L265C5-L265C27
     </span>BadConversionToInteger,
     MemoryAccessOutOfBounds,
+    TableAccessOutOfBounds,
+    ElementAccessOutOfBounds,
+    UninitializedElement,
+    SignatureMismatch,
+    ExpectedAValueOnTheStack,
+}
+
+<span class="attr">#[derive(Debug, PartialEq, Eq, Clone)]
+</span><span class="kw">pub enum </span>StoreInstantiationError {
+    ActiveDataWriteOutOfBounds,
+    I64ValueOutOfReach(String),
+    MissingValueOnTheStack,
 }
 
 <span class="attr">#[derive(Debug, PartialEq, Eq, Clone)]
@@ -215,6 +332,7 @@
     EndInvalidValueStack,
     InvalidLocalIdx,
     InvalidValidationStackValType(<span class="prelude-ty">Option</span>&lt;ValType&gt;),
+    InvalidValidationStackType(ValidationStackEntry),
     ExpectedAnOperand,
     InvalidLimitsType(u8),
     InvalidMutType(u8),
@@ -225,11 +343,23 @@
     GlobalIsConst,
     RuntimeError(RuntimeError),
     FoundLabel(LabelKind),
+    FoundUnspecifiedValTypes,
     MemoryIsNotDefined(MemIdx),
     <span class="comment">//           mem.align, wanted alignment
     </span>ErroneousAlignment(u32, u32),
     NoDataSegments,
     DataSegmentNotFound(DataIdx),
+    UnknownTable,
+    TableIsNotDefined(TableIdx),
+    ElementIsNotDefined(ElemIdx),
+    DifferentRefTypes(RefType, RefType),
+    ExpectedARefType(ValType),
+    WrongRefTypeForInteropValue(RefType, RefType),
+    FunctionIsNotDefined(FuncIdx),
+    ReferencingAnUnreferencedFunction(FuncIdx),
+    FunctionTypeIsNotDefined(TypeIdx),
+    StoreInstantiationError(StoreInstantiationError),
+    OnlyFuncRefIsAllowed,
 }
 
 <span class="kw">impl </span>Display <span class="kw">for </span>Error {
@@ -286,6 +416,9 @@
             Error::InvalidValidationStackValType(ty) =&gt; f.write_fmt(<span class="macro">format_args!</span>(
                 <span class="string">"An unexpected type was found on the stack when trying to pop another: `{ty:?}`"
             </span>)),
+            Error::InvalidValidationStackType(ty) =&gt; f.write_fmt(<span class="macro">format_args!</span>(
+                <span class="string">"An unexpected type was found on the stack: `{ty:?}`"
+            </span>)),
             Error::InvalidLimitsType(ty) =&gt; {
                 f.write_fmt(<span class="macro">format_args!</span>(<span class="string">"An invalid limits type was found: {ty:#x?}"</span>))
             }
@@ -305,6 +438,7 @@
             Error::FoundLabel(lk) =&gt; f.write_fmt(<span class="macro">format_args!</span>(
                 <span class="string">"Expecting a ValType, a Label was found: {lk:?}"
             </span>)),
+            Error::FoundUnspecifiedValTypes =&gt; f.write_str(<span class="string">"Found UnspecifiedValTypes"</span>),
             Error::ExpectedAnOperand =&gt; f.write_str(<span class="string">"Expected a ValType"</span>), <span class="comment">// Error =&gt; f.write_str("Expected an operand (ValType) on the stack")
             </span>Error::MemoryIsNotDefined(memidx) =&gt; f.write_fmt(<span class="macro">format_args!</span>(
                 <span class="string">"C.mems[{}] is NOT defined when it should be"</span>,
@@ -320,6 +454,41 @@
             Error::DataSegmentNotFound(data_idx) =&gt; {
                 f.write_fmt(<span class="macro">format_args!</span>(<span class="string">"Data Segment {} not found"</span>, data_idx))
             }
+            Error::UnknownTable =&gt; f.write_str(<span class="string">"Unknown Table"</span>),
+            Error::TableIsNotDefined(table_idx) =&gt; f.write_fmt(<span class="macro">format_args!</span>(
+                <span class="string">"C.tables[{}] is NOT defined when it should be"</span>,
+                table_idx
+            )),
+            Error::ElementIsNotDefined(elem_idx) =&gt; f.write_fmt(<span class="macro">format_args!</span>(
+                <span class="string">"C.elems[{}] is NOT defined when it should be"</span>,
+                elem_idx
+            )),
+            Error::DifferentRefTypes(rref1, rref2) =&gt; f.write_fmt(<span class="macro">format_args!</span>(
+                <span class="string">"RefType {:?} is NOT equal to RefType {:?}"</span>,
+                rref1, rref2
+            )),
+            Error::ExpectedARefType(found_valtype) =&gt; f.write_fmt(<span class="macro">format_args!</span>(
+                <span class="string">"Expected a RefType, found a {:?} instead"</span>,
+                found_valtype
+            )),
+            Error::WrongRefTypeForInteropValue(ref_given, ref_wanted) =&gt; f.write_fmt(<span class="macro">format_args!</span>(
+                <span class="string">"Wrong RefType for InteropValue: Given {:?} - Needed {:?}"</span>,
+                ref_given, ref_wanted
+            )),
+            Error::FunctionIsNotDefined(func_idx) =&gt; f.write_fmt(<span class="macro">format_args!</span>(
+                <span class="string">"C.functions[{}] is NOT defined when it should be"</span>,
+                func_idx
+            )),
+            Error::ReferencingAnUnreferencedFunction(func_idx) =&gt; f.write_fmt(<span class="macro">format_args!</span>(
+                <span class="string">"Referenced a function ({}) that was not referenced in validation"</span>,
+                func_idx
+            )),
+            Error::FunctionTypeIsNotDefined(func_ty_idx) =&gt; f.write_fmt(<span class="macro">format_args!</span>(
+                <span class="string">"C.fn_types[{}] is NOT defined when it should be"</span>,
+                func_ty_idx
+            )),
+            Error::StoreInstantiationError(err) =&gt; err.fmt(f),
+            Error::OnlyFuncRefIsAllowed =&gt; f.write_str(<span class="string">"Only FuncRef is allowed"</span>),
         }
     }
 }
@@ -333,6 +502,33 @@
             RuntimeError::StackSmash =&gt; f.write_str(<span class="string">"Stack smashed"</span>),
             RuntimeError::BadConversionToInteger =&gt; f.write_str(<span class="string">"Bad conversion to integer"</span>),
             RuntimeError::MemoryAccessOutOfBounds =&gt; f.write_str(<span class="string">"Memory access out of bounds"</span>),
+            RuntimeError::TableAccessOutOfBounds =&gt; f.write_str(<span class="string">"Table access out of bounds"</span>),
+            RuntimeError::ElementAccessOutOfBounds =&gt; f.write_str(<span class="string">"Element access out of bounds"</span>),
+            RuntimeError::UninitializedElement =&gt; f.write_str(<span class="string">"Uninitialized element"</span>),
+            RuntimeError::SignatureMismatch =&gt; f.write_str(<span class="string">"Indirect call signature mismatch"</span>),
+            RuntimeError::ExpectedAValueOnTheStack =&gt; {
+                f.write_str(<span class="string">"Expected a value on the stack, but None was found"</span>)
+            }
+        }
+    }
+}
+
+<span class="kw">impl </span>Display <span class="kw">for </span>StoreInstantiationError {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; core::fmt::Result {
+        <span class="kw">use </span>StoreInstantiationError::<span class="kw-2">*</span>;
+        <span class="kw">match </span><span class="self">self </span>{
+            ActiveDataWriteOutOfBounds =&gt; {
+                f.write_str(<span class="string">"Active data writing in memory is out of bounds"</span>)
+            }
+            I64ValueOutOfReach(s) =&gt; f.write_fmt(<span class="macro">format_args!</span>(
+                <span class="string">"I64 value {}is out of reach"</span>,
+                <span class="kw">if </span>!s.is_empty() {
+                    <span class="macro">format!</span>(<span class="string">"for {s} "</span>)
+                } <span class="kw">else </span>{
+                    <span class="string">""</span>.to_string()
+                }
+            )),
+            MissingValueOnTheStack =&gt; f.write_str(<span class="string">""</span>),
         }
     }
 }
@@ -342,6 +538,12 @@
 <span class="kw">impl </span>From&lt;RuntimeError&gt; <span class="kw">for </span>Error {
     <span class="kw">fn </span>from(value: RuntimeError) -&gt; <span class="self">Self </span>{
         <span class="self">Self</span>::RuntimeError(value)
+    }
+}
+
+<span class="kw">impl </span>From&lt;StoreInstantiationError&gt; <span class="kw">for </span>Error {
+    <span class="kw">fn </span>from(value: StoreInstantiationError) -&gt; <span class="self">Self </span>{
+        <span class="self">Self</span>::StoreInstantiationError(value)
     }
 }
 </code></pre></div></section></main></body></html>

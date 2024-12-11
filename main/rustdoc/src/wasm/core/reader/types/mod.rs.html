@@ -324,6 +324,49 @@
 <a href="#322" id="322">322</a>
 <a href="#323" id="323">323</a>
 <a href="#324" id="324">324</a>
+<a href="#325" id="325">325</a>
+<a href="#326" id="326">326</a>
+<a href="#327" id="327">327</a>
+<a href="#328" id="328">328</a>
+<a href="#329" id="329">329</a>
+<a href="#330" id="330">330</a>
+<a href="#331" id="331">331</a>
+<a href="#332" id="332">332</a>
+<a href="#333" id="333">333</a>
+<a href="#334" id="334">334</a>
+<a href="#335" id="335">335</a>
+<a href="#336" id="336">336</a>
+<a href="#337" id="337">337</a>
+<a href="#338" id="338">338</a>
+<a href="#339" id="339">339</a>
+<a href="#340" id="340">340</a>
+<a href="#341" id="341">341</a>
+<a href="#342" id="342">342</a>
+<a href="#343" id="343">343</a>
+<a href="#344" id="344">344</a>
+<a href="#345" id="345">345</a>
+<a href="#346" id="346">346</a>
+<a href="#347" id="347">347</a>
+<a href="#348" id="348">348</a>
+<a href="#349" id="349">349</a>
+<a href="#350" id="350">350</a>
+<a href="#351" id="351">351</a>
+<a href="#352" id="352">352</a>
+<a href="#353" id="353">353</a>
+<a href="#354" id="354">354</a>
+<a href="#355" id="355">355</a>
+<a href="#356" id="356">356</a>
+<a href="#357" id="357">357</a>
+<a href="#358" id="358">358</a>
+<a href="#359" id="359">359</a>
+<a href="#360" id="360">360</a>
+<a href="#361" id="361">361</a>
+<a href="#362" id="362">362</a>
+<a href="#363" id="363">363</a>
+<a href="#364" id="364">364</a>
+<a href="#365" id="365">365</a>
+<a href="#366" id="366">366</a>
+<a href="#367" id="367">367</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Methods to read WASM Types from a [WasmReader] object.
 //!
 //! See: &lt;https://webassembly.github.io/spec/core/binary/types.html&gt;
@@ -333,10 +376,12 @@
 
 <span class="kw">use </span><span class="kw">crate</span>::core::reader::{WasmReadable, WasmReader};
 <span class="kw">use </span><span class="kw">crate</span>::execution::assert_validated::UnwrapValidatedExt;
+<span class="kw">use </span><span class="kw">crate</span>::value::{ExternAddr, FuncAddr, Ref};
 <span class="kw">use </span><span class="kw">crate</span>::Result;
 <span class="kw">use crate</span>::{unreachable_validated, Error};
 
 <span class="kw">pub mod </span>data;
+<span class="kw">pub mod </span>element;
 <span class="kw">pub mod </span>export;
 <span class="kw">pub mod </span>function_code_header;
 <span class="kw">pub mod </span>global;
@@ -411,6 +456,28 @@
     ExternRef,
 }
 
+<span class="kw">impl </span>RefType {
+    <span class="doccomment">/// TODO: we have to make sure they are NOT null Refs, but still, they are
+    /// not valid ones as we cast them from RefTypes which don't hold addresses
+    /// per-se
+    </span><span class="kw">pub fn </span>to_null_ref(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Ref {
+        <span class="kw">match </span><span class="self">self </span>{
+            RefType::ExternRef =&gt; Ref::Extern(ExternAddr::null()),
+            RefType::FuncRef =&gt; Ref::Func(FuncAddr::null()),
+        }
+    }
+}
+
+<span class="kw">impl </span>RefType {
+    <span class="kw">pub fn </span>from_byte(byte: u8) -&gt; <span class="prelude-ty">Result</span>&lt;RefType&gt; {
+        <span class="kw">match </span>byte {
+            <span class="number">0x70 </span>=&gt; <span class="prelude-val">Ok</span>(RefType::FuncRef),
+            <span class="number">0x6F </span>=&gt; <span class="prelude-val">Ok</span>(RefType::ExternRef),
+            <span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(Error::InvalidRefType),
+        }
+    }
+}
+
 <span class="kw">impl </span>WasmReadable <span class="kw">for </span>RefType {
     <span class="kw">fn </span>read(wasm: <span class="kw-2">&amp;mut </span>WasmReader) -&gt; <span class="prelude-ty">Result</span>&lt;RefType&gt; {
         <span class="kw">let </span>ty = <span class="kw">match </span>wasm.peek_u8()<span class="question-mark">? </span>{
@@ -455,22 +522,31 @@
 
 <span class="kw">impl </span>WasmReadable <span class="kw">for </span>ValType {
     <span class="kw">fn </span>read(wasm: <span class="kw-2">&amp;mut </span>WasmReader) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
-        <span class="kw">let </span>numtype = NumType::read(wasm).map(ValType::NumType);
-        <span class="kw">let </span>vectype = VecType::read(wasm).map(|_ty| ValType::VecType);
-        <span class="kw">let </span>reftype = RefType::read(wasm).map(ValType::RefType);
+        <span class="kw">if let </span><span class="prelude-val">Ok</span>(numtype) = NumType::read(wasm).map(ValType::NumType) {
+            <span class="kw">return </span><span class="prelude-val">Ok</span>(numtype);
+        };
+        <span class="kw">if let </span><span class="prelude-val">Ok</span>(vectype) = VecType::read(wasm).map(|_ty| ValType::VecType) {
+            <span class="kw">return </span><span class="prelude-val">Ok</span>(vectype);
+        };
+        <span class="kw">if let </span><span class="prelude-val">Ok</span>(reftype) = RefType::read(wasm).map(ValType::RefType) {
+            <span class="kw">return </span><span class="prelude-val">Ok</span>(reftype);
+        }
 
-        numtype
-            .or(vectype)
-            .or(reftype)
-            .map_err(|<span class="kw">_</span>| Error::InvalidValType)
+        <span class="prelude-val">Err</span>(Error::InvalidValType)
     }
 
     <span class="kw">fn </span>read_unvalidated(wasm: <span class="kw-2">&amp;mut </span>WasmReader) -&gt; <span class="self">Self </span>{
-        <span class="kw">let </span>numtype = NumType::read(wasm).map(ValType::NumType);
-        <span class="kw">let </span>vectype = VecType::read(wasm).map(|_ty| ValType::VecType);
-        <span class="kw">let </span>reftype = RefType::read(wasm).map(ValType::RefType);
+        <span class="kw">if let </span><span class="prelude-val">Ok</span>(numtype) = NumType::read(wasm).map(ValType::NumType) {
+            <span class="kw">return </span>numtype;
+        };
+        <span class="kw">if let </span><span class="prelude-val">Ok</span>(vectype) = VecType::read(wasm).map(|_ty| ValType::VecType) {
+            <span class="kw">return </span>vectype;
+        };
+        <span class="kw">if let </span><span class="prelude-val">Ok</span>(reftype) = RefType::read(wasm).map(ValType::RefType) {
+            <span class="kw">return </span>reftype;
+        }
 
-        numtype.or(vectype).or(reftype).unwrap_validated()
+        <span class="macro">unreachable!</span>()
     }
 }
 
@@ -572,8 +648,10 @@
             other =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(Error::InvalidLimitsType(other)),
         };
 
-        <span class="kw">if </span>limits.max.is_some() &amp;&amp; limits.min &gt; limits.max.unwrap() {
-            <span class="kw">return </span><span class="prelude-val">Err</span>(Error::InvalidLimit);
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(max) = limits.max {
+            <span class="kw">if </span>limits.min &gt; max {
+                <span class="kw">return </span><span class="prelude-val">Err</span>(Error::InvalidLimit);
+            }
         }
 
         <span class="prelude-val">Ok</span>(limits)
@@ -604,17 +682,25 @@
     <span class="kw">pub </span>lim: Limits,
 }
 
-<span class="kw">impl </span>WasmReadable <span class="kw">for </span>TableType {
+<span class="comment">// https://webassembly.github.io/spec/core/syntax/types.html#limits
+</span><span class="kw">impl </span>WasmReadable <span class="kw">for </span>TableType {
     <span class="kw">fn </span>read(wasm: <span class="kw-2">&amp;mut </span>WasmReader) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
         <span class="kw">let </span>et = RefType::read(wasm)<span class="question-mark">?</span>;
-        <span class="kw">let </span>lim = Limits::read(wasm)<span class="question-mark">?</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>lim = Limits::read(wasm)<span class="question-mark">?</span>;
+        <span class="kw">if </span>lim.max.is_none() {
+            lim.max = <span class="prelude-val">Some</span>(u32::MAX)
+        };
+        <span class="kw">let </span>table_type = <span class="self">Self </span>{ et, lim };
+        <span class="macro">trace!</span>(<span class="string">"Table: {:?}"</span>, table_type);
         <span class="prelude-val">Ok</span>(<span class="self">Self </span>{ et, lim })
     }
 
     <span class="kw">fn </span>read_unvalidated(wasm: <span class="kw-2">&amp;mut </span>WasmReader) -&gt; <span class="self">Self </span>{
         <span class="kw">let </span>et = RefType::read_unvalidated(wasm);
-        <span class="kw">let </span>lim = Limits::read_unvalidated(wasm);
-
+        <span class="kw">let </span><span class="kw-2">mut </span>lim = Limits::read_unvalidated(wasm);
+        <span class="kw">if </span>lim.max.is_none() {
+            lim.max = <span class="prelude-val">Some</span>(u32::MAX)
+        };
         <span class="self">Self </span>{ et, lim }
     }
 }
