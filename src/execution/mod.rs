@@ -261,6 +261,58 @@ where
         Ok(ret)
     }
 
+    #[cfg(debug_assertions)]
+    pub fn invoke_dynamic_unchecked_return_ty(
+        &mut self,
+        function_ref: &FunctionRef,
+        params: Vec<Value>,
+    ) -> Result<Vec<Value>, RuntimeError> {
+        // First, verify that the function reference is valid
+        let (_module_idx, func_idx) = self.verify_function_ref(function_ref)?;
+
+        // -=-= Verification =-=-
+        let func_inst = self.store.funcs.get(func_idx).expect("valid FuncIdx");
+        let func_ty = self.types.get(func_inst.ty).unwrap_validated();
+
+        // Verify that the given parameters match the function parameters
+        let param_types = params.iter().map(|v| v.to_ty()).collect::<Vec<_>>();
+
+        if func_ty.params.valtypes != param_types {
+            panic!("Invalid parameters for function");
+        }
+
+        // Prepare a new stack with the locals for the entry function
+        let mut stack = Stack::new();
+        let locals = Locals::new(params.into_iter(), func_inst.locals.iter().cloned());
+        stack.push_stackframe(func_idx, func_ty, locals, 0);
+
+        // Run the interpreter
+        run(
+            self.wasm_bytecode,
+            &self.types,
+            &mut self.store,
+            &mut stack,
+            EmptyHookSet,
+        )?;
+
+        let func_inst = self.store.funcs.get(func_idx).expect("valid FuncIdx");
+        let func_ty = self.types.get(func_inst.ty).unwrap_validated();
+
+        // Pop return values from stack
+        let return_values = func_ty
+            .returns
+            .valtypes
+            .iter()
+            .map(|ty| stack.pop_value(*ty))
+            .collect::<Vec<Value>>();
+
+        // Values are reversed because they were popped from stack one-by-one. Now reverse them back
+        let reversed_values = return_values.into_iter().rev();
+        let ret = reversed_values.collect();
+        debug!("Successfully invoked function");
+        Ok(ret)
+    }
+
     // TODO: replace this with the lookup table when implmenting the linker
     fn get_indicies(
         &self,

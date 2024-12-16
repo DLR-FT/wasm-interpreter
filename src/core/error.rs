@@ -26,6 +26,34 @@ pub enum RuntimeError {
     UninitializedElement,
     SignatureMismatch,
     ExpectedAValueOnTheStack,
+    UndefinedTableIndex,
+    // "undefined element" <- as-call_indirect-last
+    // "unreachable"
+}
+
+impl RuntimeError {
+    #[cfg(debug_assertions)]
+    pub fn to_wasm_testsuite_string(&self) -> alloc::string::String {
+        match self {
+            Self::DivideBy0 => "integer divide by zero",
+            Self::UnrepresentableResult => "integer overflow",
+            Self::FunctionNotFound => todo!(),
+            Self::StackSmash => todo!(),
+            Self::BadConversionToInteger => "invalid conversion to integer",
+
+            Self::MemoryAccessOutOfBounds => "out of bounds memory access",
+            Self::TableAccessOutOfBounds => "out of bounds table access",
+            Self::ElementAccessOutOfBounds => todo!(),
+
+            Self::UninitializedElement => "uninitialized element",
+            Self::SignatureMismatch => "indirect call type mismatch",
+            Self::ExpectedAValueOnTheStack => todo!(),
+
+            Self::UndefinedTableIndex => "undefined element",
+            // _ => "",
+        }
+        .to_string()
+    }
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -233,6 +261,9 @@ impl Display for RuntimeError {
             RuntimeError::SignatureMismatch => f.write_str("Indirect call signature mismatch"),
             RuntimeError::ExpectedAValueOnTheStack => {
                 f.write_str("Expected a value on the stack, but None was found")
+            }
+            RuntimeError::UndefinedTableIndex => {
+                f.write_str("Indirect call: table index out of bounds")
             }
         }
     }

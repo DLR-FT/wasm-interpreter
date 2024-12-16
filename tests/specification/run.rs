@@ -2,6 +2,7 @@ use std::error::Error;
 use std::panic::catch_unwind;
 use std::panic::AssertUnwindSafe;
 
+use wasm::function_ref::FunctionRef;
 use wasm::Value;
 use wasm::DEFAULT_MODULE;
 use wasm::{validate, RuntimeInstance};
@@ -174,6 +175,124 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                     }
                 }
             }
+            wast::WastDirective::AssertTrap {
+                span,
+                exec,
+                message,
+            } => {
+                if interpeter.is_none() {
+                    return CompilationError::new(
+                        Box::new(GenericError::new(
+                            "Attempted to assert before module directive",
+                        )),
+                        filepath,
+                        "no module directive found",
+                    )
+                    .compile_report();
+                }
+
+                let interpeter = interpeter.as_mut().unwrap();
+
+                let err_or_panic: Result<(), Box<dyn Error>> = 
+                    match catch_unwind(AssertUnwindSafe(|| {
+                        execute_assert_trap(interpeter, exec, message)
+                    })) {
+                        Err(inner) => {
+                            // TODO: Do we want to exit on panic? State may be left in an inconsistent state, and cascading panics may occur.
+                            if let Ok(msg) = inner.downcast::<&str>() {
+                                Err(Box::new(PanicError::new(&msg)))
+                            } else {
+                                Err(Box::new(PanicError::new("Unknown panic")))
+                            }
+                        }
+                        Ok(original_result) => original_result
+                    };
+
+                    match err_or_panic {
+                        Ok(_) => {
+                            asserts.push_success(WastSuccess::new(
+                                span.linecol_in(&contents).0 as u32 + 1,
+                                get_command(&contents, span),
+                            ));
+                        }
+                        Err(inner) => {
+                            asserts.push_error(WastError::new(
+                                inner,
+                                span.linecol_in(&contents).0 as u32 + 1,
+                                get_command(&contents, span),
+                            ));
+                        }
+                    }
+
+                // match exec {
+                //     wast::WastExecute::Invoke(invoke_info) => {
+                //         let args = invoke_info
+                //             .args
+                //             .into_iter()
+                //             .map(arg_to_value)
+                //             .collect::<Vec<_>>();
+
+                //         // TODO: more modules ¯\_(ツ)_/¯
+                //         let func_res = interpeter
+                //             .get_function_by_name(DEFAULT_MODULE, invoke_info.name)
+                //             .map_err(|err| {
+                //                 Box::new(WasmInterpreterError(wasm::Error::RuntimeError(err)))
+                //             });
+
+                //         let func: FunctionRef;
+                //         match func_res {
+                //             Err(e) => {
+                //                 asserts.push_error(WastError::new(
+                //                     e,
+                //                     span.linecol_in(&contents).0 as u32 + 1,
+                //                     get_command(&contents, span),
+                //                 ));
+                //                 continue;
+                //             }
+                //             Ok(func_ref) => func = func_ref,
+                //         };
+
+                //         let actual = interpeter.invoke_dynamic_unchecked_return_ty(&func, args);
+
+                //         match actual {
+                //             Ok(_) => asserts.push_error(WastError::new(
+                //                 Box::new(GenericError::new("assert_trap did NOT trap")),
+                //                 span.linecol_in(&contents).0 as u32 + 1,
+                //                 get_command(&contents, span),
+                //             )),
+                //             Err(e) => {
+                //                 let actual = e.to_wasm_testsuite_string();
+                //                 let expected = message;
+
+                //                 if actual.contains(expected)
+                //                     || (expected.contains("uninitialized element 2") && actual.contains("uninitialized element")) {
+                //                         // we passed
+                //                         asserts.push_success(WastSuccess::new(
+                //                             span.linecol_in(&contents).0 as u32 + 1,
+                //                             get_command(&contents, span),
+                //                         ));
+
+                //                     } else {
+                //                         // something went wrong
+                //                         asserts.push_error(WastError::new(
+                //                             Box::new(GenericError::new(format!("'assert_trap': Expected '{expected}' - Actual: '{actual}'").as_str())),
+                //                             span.linecol_in(&contents).0 as u32 + 1,
+                //                             get_command(&contents, span),
+                //                         ));
+                //                     }
+                //             }
+                //         };
+                //     }
+                //     wast::WastExecute::Get {
+                //         span: _,
+                //         module: _,
+                //         global: _,
+                //     } => todo!("`get` directive inside `assert_return` not yet implemented"),
+                //     wast::WastExecute::Wat(_) => {
+                //         todo!("`wat` directive inside `assert_return` not yet implemented")
+                //     }
+                // }
+            }
             wast::WastDirective::AssertMalformed {
                 span,
                 module: _,
@@ -189,11 +308,11 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                 name: _,
                 module: _,
             }
-            | wast::WastDirective::AssertTrap {
-                span,
-                exec: _,
-                message: _,
-            }
+            // | wast::WastDirective::AssertTrap {
+            //     span,
+            //     exec: _,
+            //     message: _,
+            // }
             | wast::WastDirective::AssertExhaustion {
                 span,
                 call: _,
@@ -281,17 +400,84 @@ fn execute_assert_return(
     Ok(())
 }
 
+fn execute_assert_trap(
+    interpeter: &mut RuntimeInstance,
+    exec: wast::WastExecute,
+    message: &str
+) -> Result<(), Box<dyn Error>> {
+    match exec {
+        wast::WastExecute::Invoke(invoke_info) => {
+            let args = invoke_info
+                .args
+                .into_iter()
+                .map(arg_to_value)
+                .collect::<Vec<_>>();
+
+            // TODO: more modules ¯\_(ツ)_/¯
+            let func_res = interpeter
+                .get_function_by_name(DEFAULT_MODULE, invoke_info.name)
+                .map_err(|err| {
+                    Box::new(WasmInterpreterError(wasm::Error::RuntimeError(err)))
+                });
+
+            let func: FunctionRef;
+            match func_res {
+                Err(e) => {
+                    return Err(e);
+                }
+                Ok(func_ref) => func = func_ref,
+            };
+
+            let actual = interpeter.invoke_dynamic_unchecked_return_ty(&func, args);
+
+            match actual {
+                Ok(_) => Err(Box::new(GenericError::new("assert_trap did NOT trap"))),
+                Err(e) => {
+                    let actual = e.to_wasm_testsuite_string();
+                    let expected = message;
+
+                    if actual.contains(expected)
+                        || (expected.contains("uninitialized element 2") && actual.contains("uninitialized element")) {
+                            Ok(())
+                        } else {
+                            Err(Box::new(GenericError::new(format!("'assert_trap': Expected '{expected}' - Actual: '{actual}'").as_str())))
+                        }
+                }
+            }
+        }
+        wast::WastExecute::Get {
+            span: _,
+            module: _,
+            global: _,
+        } => todo!("`get` directive inside `assert_return` not yet implemented"),
+        wast::WastExecute::Wat(_) => {
+            todo!("`wat` directive inside `assert_return` not yet implemented")
+        }
+    }
+}
+
 pub fn arg_to_value(arg: WastArg) -> Value {
     match arg {
         WastArg::Core(core_arg) => match core_arg {
             WastArgCore::I32(val) => Value::I32(val as u32),
             WastArgCore::I64(val) => Value::I64(val as u64),
-            WastArgCore::F32(val) => Value::F32(wasm::value::F32(val.bits as f32)),
-            WastArgCore::F64(val) => Value::F64(wasm::value::F64(val.bits as f64)),
+            WastArgCore::F32(val) => Value::F32(wasm::value::F32(f32::from_bits(val.bits))),
+            WastArgCore::F64(val) => Value::F64(wasm::value::F64(f64::from_bits(val.bits))),
             WastArgCore::V128(_) => todo!("`V128` value arguments not yet implemented"),
-            WastArgCore::RefNull(_) => {
-                todo!("`RefNull` value arguments not yet implemented")
-            }
+            WastArgCore::RefNull(rref) => match rref {
+                wast::core::HeapType::Concrete(_) => {
+                    unreachable!("Null refs don't point to any specific reference")
+                }
+                wast::core::HeapType::Abstract { shared: _, ty } => {
+                    use wasm::value::*;
+                    use wast::core::AbstractHeapType::*;
+                    match ty {
+                        Func => Value::Ref(Ref::Func(FuncAddr::null())),
+                        Extern => Value::Ref(Ref::Extern(ExternAddr::null())),
+                        _ => todo!("`GC` proposal not yet implemented"),
+                    }
+                }
+            },
             WastArgCore::RefExtern(_) => {
                 todo!("`RefExtern` value arguments not yet implemented")
             }
@@ -310,29 +496,57 @@ fn result_to_value(result: wast::WastRet) -> Value {
             WastRetCore::I64(val) => Value::I64(val as u64),
             WastRetCore::F32(val) => match val {
                 wast::core::NanPattern::CanonicalNan => {
-                    todo!("`F32::CanonicalNan` result not yet implemented")
+                    Value::F32(wasm::value::F32(f32::from_bits(0x7fc0_0000)))
                 }
                 wast::core::NanPattern::ArithmeticNan => {
-                    todo!("`F32::ArithmeticNan` result not yet implemented")
+                    Value::F32(wasm::value::F32(f32::from_bits(0x7f80_0000)))
                 }
-                wast::core::NanPattern::Value(val) => Value::F32(wasm::value::F32(val.bits as f32)),
+                wast::core::NanPattern::Value(val) => {
+                    Value::F32(wasm::value::F32(f32::from_bits(val.bits)))
+                }
             },
             WastRetCore::F64(val) => match val {
                 wast::core::NanPattern::CanonicalNan => {
-                    todo!("`F64::CanonicalNan` result not yet implemented")
+                    Value::F64(wasm::value::F64(f64::from_bits(0x7ff8_0000_0000_0000)))
                 }
                 wast::core::NanPattern::ArithmeticNan => {
-                    todo!("`F64::ArithmeticNan` result not yet implemented")
+                    Value::F64(wasm::value::F64(f64::from_bits(0x7ff0_0000_0000_0000)))
                 }
-                wast::core::NanPattern::Value(val) => Value::F64(wasm::value::F64(val.bits as f64)),
+                wast::core::NanPattern::Value(val) => {
+                    Value::F64(wasm::value::F64(f64::from_bits(val.bits)))
+                }
             },
             WastRetCore::V128(_) => todo!("`V128` result not yet implemented"),
-            WastRetCore::RefNull(_) => todo!("`RefNull` result not yet implemented"),
+            WastRetCore::RefNull(rref) => match rref {
+                None => todo!("RefNull with no type not yet implemented"),
+                Some(rref) => match rref {
+                    wast::core::HeapType::Concrete(_) => {
+                        unreachable!("Null refs don't point to any specific reference")
+                    }
+                    wast::core::HeapType::Abstract { shared: _, ty } => {
+                        use wasm::value::*;
+                        use wast::core::AbstractHeapType::*;
+                        match ty {
+                            Func => Value::Ref(Ref::Func(FuncAddr::null())),
+                            Extern => Value::Ref(Ref::Extern(ExternAddr::null())),
+                            _ => todo!("`GC` proposal not yet implemented"),
+                        }
+                    }
+                },
+            },
             WastRetCore::RefExtern(_) => {
                 todo!("`RefExtern` result not yet implemented")
             }
             WastRetCore::RefHost(_) => todo!("`RefHost` result not yet implemented"),
-            WastRetCore::RefFunc(_) => todo!("`RefFunc` result not yet implemented"),
+            WastRetCore::RefFunc(index) => match index {
+                None => unreachable!("Expected a non-null function reference"),
+                Some(_index) => {
+                    // use wasm::value::*;
+                    // Value::Ref(Ref::Func(FuncAddr::new(Some(index))))
+                    todo!("RefFuncs not yet implemented")
+                }
+            },
+            //todo!("`RefFunc` result not yet implemented"),
             WastRetCore::RefAny => todo!("`RefAny` result not yet implemented"),
             WastRetCore::RefEq => todo!("`RefEq` result not yet implemented"),
             WastRetCore::RefArray => todo!("`RefArray` result not yet implemented"),

@@ -13,6 +13,7 @@ use crate::core::reader::types::global::Global;
 use crate::core::reader::types::memarg::MemArg;
 use crate::core::reader::types::{FuncType, MemType, NumType, TableType, ValType};
 use crate::core::reader::{WasmReadable, WasmReader};
+use crate::core::utils::print_beautiful_instruction_name_1_byte;
 use crate::validation_stack::ValidationStack;
 use crate::{Error, RefType, Result};
 
@@ -118,6 +119,11 @@ fn read_instructions(
             // TODO only do this if EOF
             return Err(Error::ExprMissingEnd);
         };
+
+        #[cfg(debug_assertions)]
+        print_beautiful_instruction_name_1_byte(first_instr_byte, wasm.pc);
+
+        #[cfg(not(debug_assertions))]
         trace!("Read instruction byte {first_instr_byte:#04X?} ({first_instr_byte}) at wasm_binary[{}]", wasm.pc);
 
         use crate::core::reader::types::opcode::*;
