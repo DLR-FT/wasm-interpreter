@@ -24,7 +24,6 @@ pub(crate) mod validation_stack;
 pub struct ValidationInfo<'bytecode> {
     pub(crate) wasm: &'bytecode [u8],
     pub(crate) types: Vec<FuncType>,
-    #[allow(dead_code)]
     pub(crate) imports: Vec<Import>,
     pub(crate) functions: Vec<TypeIdx>,
     pub(crate) tables: Vec<TableType>,

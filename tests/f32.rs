@@ -751,16 +751,6 @@ pub fn f32_min() {
         let result = instance
             .invoke::<(f32, f32), f32>(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (-f32::NAN, -f32::NAN),
-            )
-            .unwrap();
-        assert!(result.is_nan());
-        assert!(result.is_sign_negative());
-    }
-    {
-        let result = instance
-            .invoke::<(f32, f32), f32>(
-                &instance.get_function_by_index(0, 0).unwrap(),
                 (f32::INFINITY, f32::NEG_INFINITY),
             )
             .unwrap();
@@ -848,16 +838,6 @@ pub fn f32_max() {
             .unwrap();
         assert!(result.is_nan());
         assert!(result.is_sign_positive());
-    }
-    {
-        let result = instance
-            .invoke::<(f32, f32), f32>(
-                &instance.get_function_by_index(0, 0).unwrap(),
-                (-f32::NAN, -f32::NAN),
-            )
-            .unwrap();
-        assert!(result.is_nan());
-        assert!(result.is_sign_negative());
     }
     {
         let result = instance

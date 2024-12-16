@@ -28,6 +28,16 @@ pub enum RuntimeError {
     ExpectedAValueOnTheStack,
     ModuleNotFound,
     UnmetImport,
+    UndefinedTableIndex,
+    // "undefined element" <- as-call_indirect-last
+    // "unreachable"
+}
+
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub enum Proposal {
+    Memory64,
+    MultipleMemories,
+    Threads,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -35,6 +45,7 @@ pub enum StoreInstantiationError {
     ActiveDataWriteOutOfBounds,
     I64ValueOutOfReach(String),
     MissingValueOnTheStack,
+    TooManyMemories(usize),
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -92,6 +103,9 @@ pub enum Error {
     OnlyFuncRefIsAllowed,
     TypeUnificationMismatch,
     InvalidSelectTypeVector,
+    TooManyLocals(usize),
+    UnsupportedProposal(Proposal),
+    Overflow,
 }
 
 impl Display for Error {
@@ -238,6 +252,13 @@ impl Display for Error {
             Error::InvalidSelectTypeVector => {
                 f.write_str("SELECT T* (0x1C) instruction must have exactly one type in the subsequent type vector")
             }
+            Error::TooManyLocals(x) => {
+                f.write_fmt(format_args!("Too many locals (more than 2^32-1): {}", x))
+            }
+            Error::UnsupportedProposal(proposal) => {
+                f.write_fmt(format_args!("Unsupported proposal: {:?}", proposal))
+            }
+            Error::Overflow => f.write_str("Overflow"),
         }
     }
 }
@@ -262,6 +283,9 @@ impl Display for RuntimeError {
             RuntimeError::UnmetImport => {
                 f.write_str("There is at least one import which has no corresponding export")
             }
+            RuntimeError::UndefinedTableIndex => {
+                f.write_str("Indirect call: table index out of bounds")
+            }
         }
     }
 }
@@ -282,6 +306,7 @@ impl Display for StoreInstantiationError {
                 }
             )),
             MissingValueOnTheStack => f.write_str(""),
+            TooManyMemories(x) => f.write_fmt(format_args!("Too many memories (overflow): {}", x)),
         }
     }
 }

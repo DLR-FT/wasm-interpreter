@@ -144,8 +144,9 @@ impl Stack {
     /// Copy value from top of the value stack to the given local
     pub fn tee_local(&mut self, idx: LocalIdx) {
         let local_ty = self.current_stackframe().locals.get_ty(idx);
-
         let stack_value = self.peek_value(local_ty);
+
+        trace!("Instruction: local.tee [{stack_value:?}] -> []");
         *self.current_stackframe_mut().locals.get_mut(idx) = stack_value;
     }
 

@@ -34,4 +34,6 @@ impl FunctionRef {
     ) -> Result<Vec<Value>, RuntimeError> {
         runtime.invoke_dynamic(self, params, ret_types)
     }
+
+    // pub fn get_return_types(&self) -> Vec<Value
 }

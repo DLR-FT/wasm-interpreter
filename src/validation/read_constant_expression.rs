@@ -104,7 +104,7 @@ pub fn read_constant_expression(
                 if this_global_valtype.is_some() {
                     stack.assert_val_types(&[this_global_valtype.unwrap()])?;
                 }
-                return Ok(Span::new(start_pc, wasm.pc - start_pc + 1));
+                return Ok(Span::new(start_pc, wasm.pc - start_pc));
             }
             I32_CONST => {
                 let _num = wasm.read_var_i32()?;

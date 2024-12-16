@@ -11,14 +11,16 @@ pub struct MemArg {
 
 impl WasmReadable for MemArg {
     fn read(wasm: &mut WasmReader) -> crate::Result<Self> {
-        let align = wasm.read_var_u32()?;
+        let align_log2 = wasm.read_var_u32()?;
         let offset = wasm.read_var_u32()?;
+        let align = u32::pow(2, align_log2);
         Ok(Self { offset, align })
     }
 
     fn read_unvalidated(wasm: &mut WasmReader) -> Self {
-        let align = wasm.read_var_u32().unwrap_validated();
+        let align_log2 = wasm.read_var_u32().unwrap_validated();
         let offset = wasm.read_var_u32().unwrap_validated();
+        let align = u32::pow(2, align_log2);
         Self { offset, align }
     }
 }
