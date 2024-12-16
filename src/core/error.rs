@@ -26,6 +26,16 @@ pub enum RuntimeError {
     UninitializedElement,
     SignatureMismatch,
     ExpectedAValueOnTheStack,
+    UndefinedTableIndex,
+    // "undefined element" <- as-call_indirect-last
+    // "unreachable"
+}
+
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub enum Proposal {
+    Memory64,
+    MultipleMemories,
+    Threads,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -33,6 +43,7 @@ pub enum StoreInstantiationError {
     ActiveDataWriteOutOfBounds,
     I64ValueOutOfReach(String),
     MissingValueOnTheStack,
+    TooManyMemories(usize),
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -88,6 +99,9 @@ pub enum Error {
     FunctionTypeIsNotDefined(TypeIdx),
     StoreInstantiationError(StoreInstantiationError),
     OnlyFuncRefIsAllowed,
+    TooManyLocals(usize),
+    UnsupportedProposal(Proposal),
+    Overflow,
 }
 
 impl Display for Error {
@@ -228,6 +242,13 @@ impl Display for Error {
             )),
             Error::StoreInstantiationError(err) => err.fmt(f),
             Error::OnlyFuncRefIsAllowed => f.write_str("Only FuncRef is allowed"),
+            Error::TooManyLocals(x) => {
+                f.write_fmt(format_args!("Too many locals (more than 2^32-1): {}", x))
+            }
+            Error::UnsupportedProposal(proposal) => {
+                f.write_fmt(format_args!("Unsupported proposal: {:?}", proposal))
+            }
+            Error::Overflow => f.write_str("Overflow"),
         }
     }
 }
@@ -247,6 +268,9 @@ impl Display for RuntimeError {
             RuntimeError::SignatureMismatch => f.write_str("Indirect call signature mismatch"),
             RuntimeError::ExpectedAValueOnTheStack => {
                 f.write_str("Expected a value on the stack, but None was found")
+            }
+            RuntimeError::UndefinedTableIndex => {
+                f.write_str("Indirect call: table index out of bounds")
             }
         }
     }
@@ -268,6 +292,7 @@ impl Display for StoreInstantiationError {
                 }
             )),
             MissingValueOnTheStack => f.write_str(""),
+            TooManyMemories(x) => f.write_fmt(format_args!("Too many memories (overflow): {}", x)),
         }
     }
 }

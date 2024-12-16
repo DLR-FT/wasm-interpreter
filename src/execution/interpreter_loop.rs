@@ -65,6 +65,12 @@ pub(super) fn run<H: HookSet>(
 
         let first_instr_byte = wasm.read_u8().unwrap_validated();
 
+        #[cfg(debug_assertions)]
+        trace!(
+            "Executing instruction {}",
+            opcode_byte_to_str(first_instr_byte)
+        );
+
         match first_instr_byte {
             NOP => {
                 trace!("Instruction: NOP");
@@ -187,7 +193,7 @@ pub(super) fn run<H: HookSet>(
                 let r = tab
                     .elem
                     .get(i as usize)
-                    .ok_or(RuntimeError::TableAccessOutOfBounds)
+                    .ok_or(RuntimeError::UndefinedTableIndex)
                     .and_then(|r| {
                         if r.is_null() {
                             trace!("table_idx ({table_idx}) --- element index in table ({i})");
@@ -200,12 +206,10 @@ pub(super) fn run<H: HookSet>(
                 let func_addr = match *r {
                     Ref::Func(func_addr) => func_addr.addr,
                     Ref::Extern(_) => unreachable!(),
-                };
+                }
+                .unwrap_validated();
 
-                let func_to_call_inst = store
-                    .funcs
-                    .get(func_addr.unwrap_validated())
-                    .unwrap_validated();
+                let func_to_call_inst = store.funcs.get(func_addr).unwrap_validated();
 
                 let func_ty_actual_index = func_to_call_inst.ty;
 
@@ -218,7 +222,7 @@ pub(super) fn run<H: HookSet>(
 
                 trace!("Instruction: call_indirect [{func_addr:?}]");
                 let locals = Locals::new(params, remaining_locals);
-                stack.push_stackframe(func_addr.unwrap_validated(), func_ty, locals, wasm.pc, stp);
+                stack.push_stackframe(func_addr, func_ty, locals, wasm.pc, stp);
 
                 wasm.move_start_to(func_to_call_inst.code_expr)
                     .unwrap_validated();
@@ -689,7 +693,7 @@ pub(super) fn run<H: HookSet>(
             I64_STORE => {
                 let memarg = MemArg::read_unvalidated(&mut wasm);
 
-                let data_to_store: u32 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let data_to_store: u64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
                 let mem = store.mems.get_mut(0).unwrap_validated(); // there is only one memory allowed as of now
@@ -742,7 +746,7 @@ pub(super) fn run<H: HookSet>(
                 let memory_location = address
                     .and_then(|address| {
                         let address = address as usize;
-                        mem.data.get_mut(address..(address + 4))
+                        mem.data.get_mut(address..(address + 8))
                     })
                     .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
 
@@ -1604,7 +1608,7 @@ pub(super) fn run<H: HookSet>(
             }
             F32_NEAREST => {
                 let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
-                let res: value::F32 = v1.round();
+                let res: value::F32 = v1.nearest();
 
                 trace!("Instruction: f32.nearest [{v1}] -> [{res}]");
                 stack.push_value(res.into());
@@ -1710,7 +1714,7 @@ pub(super) fn run<H: HookSet>(
             }
             F64_NEAREST => {
                 let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
-                let res: value::F64 = v1.round();
+                let res: value::F64 = v1.nearest();
 
                 trace!("Instruction: f64.nearest [{v1}] -> [{res}]");
                 stack.push_value(res.into());
@@ -2319,7 +2323,6 @@ pub(super) fn run<H: HookSet>(
                             .filter(|&res| res <= mem.data.len())
                             .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
 
-                        let data: Vec<u8> = vec![val as u8; (n - d) as usize];
                         store
                             .mems
                             .get_mut(mem_idx)
@@ -2327,7 +2330,7 @@ pub(super) fn run<H: HookSet>(
                             .data
                             .get_mut(d as usize..final_dst_offset)
                             .unwrap_validated()
-                            .copy_from_slice(&data);
+                            .fill(val as u8);
 
                         trace!("Instruction: memory.fill");
                     }

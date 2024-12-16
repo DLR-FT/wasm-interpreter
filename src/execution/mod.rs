@@ -261,6 +261,57 @@ where
         Ok(ret)
     }
 
+    pub fn invoke_dynamic_unchecked_return_ty(
+        &mut self,
+        function_ref: &FunctionRef,
+        params: Vec<Value>,
+    ) -> Result<Vec<Value>, RuntimeError> {
+        // First, verify that the function reference is valid
+        let (_module_idx, func_idx) = self.verify_function_ref(function_ref)?;
+
+        // -=-= Verification =-=-
+        let func_inst = self.store.funcs.get(func_idx).expect("valid FuncIdx");
+        let func_ty = self.types.get(func_inst.ty).unwrap_validated();
+
+        // Verify that the given parameters match the function parameters
+        let param_types = params.iter().map(|v| v.to_ty()).collect::<Vec<_>>();
+
+        if func_ty.params.valtypes != param_types {
+            panic!("Invalid parameters for function");
+        }
+
+        // Prepare a new stack with the locals for the entry function
+        let mut stack = Stack::new();
+        let locals = Locals::new(params.into_iter(), func_inst.locals.iter().cloned());
+        stack.push_stackframe(func_idx, func_ty, locals, 0, 0);
+
+        // Run the interpreter
+        run(
+            self.wasm_bytecode,
+            &self.types,
+            &mut self.store,
+            &mut stack,
+            EmptyHookSet,
+        )?;
+
+        let func_inst = self.store.funcs.get(func_idx).expect("valid FuncIdx");
+        let func_ty = self.types.get(func_inst.ty).unwrap_validated();
+
+        // Pop return values from stack
+        let return_values = func_ty
+            .returns
+            .valtypes
+            .iter()
+            .map(|ty| stack.pop_value(*ty))
+            .collect::<Vec<Value>>();
+
+        // Values are reversed because they were popped from stack one-by-one. Now reverse them back
+        let reversed_values = return_values.into_iter().rev();
+        let ret = reversed_values.collect();
+        debug!("Successfully invoked function");
+        Ok(ret)
+    }
+
     // TODO: replace this with the lookup table when implmenting the linker
     fn get_indicies(
         &self,
@@ -316,6 +367,7 @@ where
     }
 
     fn init_store(validation_info: &ValidationInfo) -> CustomResult<Store> {
+        use crate::core::error::*;
         use StoreInstantiationError::*;
         let function_instances: Vec<FuncInst> = {
             let mut wasm_reader = WasmReader::new(validation_info.wasm);
@@ -444,6 +496,31 @@ where
             .map(|ty| MemInst::new(*ty))
             .collect();
 
+        let import_memory_instances_len = {
+            let mut len: usize = 0;
+            for import in &validation_info.imports {
+                if let crate::core::reader::types::import::ImportDesc::Mem(_) = import.desc {
+                    len += 1;
+                }
+            }
+            len
+        };
+        match memory_instances
+            .len()
+            .checked_add(import_memory_instances_len)
+        {
+            None => {
+                return Err(Error::StoreInstantiationError(
+                    StoreInstantiationError::TooManyMemories(usize::MAX),
+                ))
+            }
+            Some(mem_instances) => {
+                if mem_instances > 1 {
+                    return Err(Error::UnsupportedProposal(Proposal::MultipleMemories));
+                }
+            }
+        };
+
         let data_sections: Vec<DataInst> = validation_info
             .data
             .iter()
@@ -455,7 +532,10 @@ where
                     if mem_idx != 0 {
                         todo!("Active data has memory_idx different than 0");
                     }
-                    assert!(memory_instances.len() > mem_idx);
+                    assert!(
+                        memory_instances.len() > mem_idx,
+                        "Multiple memories not yet supported"
+                    );
 
                     let boxed_value = {
                         let mut wasm = WasmReader::new(validation_info.wasm);
@@ -484,7 +564,7 @@ where
 
                     let len = mem_inst.data.len();
                     if offset as usize + d.init.len() > len {
-                        return Err(ActiveDataWriteOutOfBounds);
+                        return Err(Error::StoreInstantiationError(ActiveDataWriteOutOfBounds));
                     }
                     let data = mem_inst
                         .data
@@ -496,7 +576,7 @@ where
                     data: d.init.clone(),
                 })
             })
-            .collect::<Result<Vec<DataInst>, StoreInstantiationError>>()?;
+            .collect::<Result<Vec<DataInst>>>()?;
 
         let global_instances: Vec<GlobalInst> = validation_info
             .globals
