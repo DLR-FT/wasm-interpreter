@@ -35,6 +35,38 @@ fn odd_with_if_else() {
 }
 
 #[test_log::test]
+fn odd_with_if() {
+    let wasm_bytes = wat::parse_str(
+        r#"(module
+    (func $odd (param $n i32) (result i32)
+        local.get $n
+        i32.const 2
+        i32.rem_s
+        (if
+            (then 
+                i32.const 1
+                return
+            )
+        )
+        i32.const 0
+    )
+
+    (export "odd" (func $odd))
+)"#,
+    )
+    .unwrap();
+    let validation_info = validate(&wasm_bytes).expect("validation failed");
+    let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
+
+    let odd_fn = instance.get_function_by_index(0, 0).unwrap();
+
+    assert_eq!(1, instance.invoke(&odd_fn, -5).unwrap());
+    assert_eq!(0, instance.invoke(&odd_fn, 0).unwrap());
+    assert_eq!(1, instance.invoke(&odd_fn, 3).unwrap());
+    assert_eq!(0, instance.invoke(&odd_fn, 4).unwrap());
+}
+
+#[test_log::test]
 fn odd_with_if_else_recursive() {
     let wasm_bytes = wat::parse_str(
         r#"
