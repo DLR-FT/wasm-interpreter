@@ -8,6 +8,7 @@ mod run;
 mod test_errors;
 
 enum Filter {
+    #[allow(dead_code)]
     Include(FnF),
     Exclude(FnF),
 }
@@ -30,8 +31,8 @@ impl Default for FnF {
 #[test_log::test]
 pub fn spec_tests() {
     let filters = Filter::Exclude(FnF {
-        files: Some(vec!["binary-leb128.wast".to_string()]),
         folders: Some(vec!["proposals".to_string()]),
+        ..Default::default()
     });
 
     // let only_these_tests: Vec<String> = vec![];

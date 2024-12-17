@@ -193,7 +193,7 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
 
                 let interpeter = interpeter.as_mut().unwrap();
 
-                let err_or_panic: Result<(), Box<dyn Error>> = 
+                let err_or_panic: Result<(), Box<dyn Error>> =
                     match catch_unwind(AssertUnwindSafe(|| {
                         execute_assert_trap(interpeter, exec, message)
                     })) {
@@ -205,24 +205,24 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                                 Err(Box::new(PanicError::new("Unknown panic")))
                             }
                         }
-                        Ok(original_result) => original_result
+                        Ok(original_result) => original_result,
                     };
 
-                    match err_or_panic {
-                        Ok(_) => {
-                            asserts.push_success(WastSuccess::new(
-                                span.linecol_in(&contents).0 as u32 + 1,
-                                get_command(&contents, span),
-                            ));
-                        }
-                        Err(inner) => {
-                            asserts.push_error(WastError::new(
-                                inner,
-                                span.linecol_in(&contents).0 as u32 + 1,
-                                get_command(&contents, span),
-                            ));
-                        }
+                match err_or_panic {
+                    Ok(_) => {
+                        asserts.push_success(WastSuccess::new(
+                            span.linecol_in(&contents).0 as u32 + 1,
+                            get_command(&contents, span),
+                        ));
                     }
+                    Err(inner) => {
+                        asserts.push_error(WastError::new(
+                            inner,
+                            span.linecol_in(&contents).0 as u32 + 1,
+                            get_command(&contents, span),
+                        ));
+                    }
+                }
 
                 // match exec {
                 //     wast::WastExecute::Invoke(invoke_info) => {
@@ -308,11 +308,6 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                 name: _,
                 module: _,
             }
-            // | wast::WastDirective::AssertTrap {
-            //     span,
-            //     exec: _,
-            //     message: _,
-            // }
             | wast::WastDirective::AssertExhaustion {
                 span,
                 call: _,
@@ -403,7 +398,7 @@ fn execute_assert_return(
 fn execute_assert_trap(
     interpeter: &mut RuntimeInstance,
     exec: wast::WastExecute,
-    message: &str
+    message: &str,
 ) -> Result<(), Box<dyn Error>> {
     match exec {
         wast::WastExecute::Invoke(invoke_info) => {
@@ -416,9 +411,7 @@ fn execute_assert_trap(
             // TODO: more modules ¯\_(ツ)_/¯
             let func_res = interpeter
                 .get_function_by_name(DEFAULT_MODULE, invoke_info.name)
-                .map_err(|err| {
-                    Box::new(WasmInterpreterError(wasm::Error::RuntimeError(err)))
-                });
+                .map_err(|err| Box::new(WasmInterpreterError(wasm::Error::RuntimeError(err))));
 
             let func: FunctionRef;
             match func_res {
@@ -437,11 +430,16 @@ fn execute_assert_trap(
                     let expected = message;
 
                     if actual.contains(expected)
-                        || (expected.contains("uninitialized element 2") && actual.contains("uninitialized element")) {
-                            Ok(())
-                        } else {
-                            Err(Box::new(GenericError::new(format!("'assert_trap': Expected '{expected}' - Actual: '{actual}'").as_str())))
-                        }
+                        || (expected.contains("uninitialized element 2")
+                            && actual.contains("uninitialized element"))
+                    {
+                        Ok(())
+                    } else {
+                        Err(Box::new(GenericError::new(
+                            format!("'assert_trap': Expected '{expected}' - Actual: '{actual}'")
+                                .as_str(),
+                        )))
+                    }
                 }
             }
         }
