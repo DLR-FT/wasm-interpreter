@@ -302,6 +302,30 @@ impl ValidationStack {
             last_ctrl_stack_entry.block_ty,
         ))
     }
+
+    pub fn validate_polymorphic_select(&mut self) -> Result<()> {
+        //SELECT instruction has the type signature
+        //[t t i32] -> [t] where t is a Num or Vec Type
+
+        // TODO write this more efficiently
+        self.assert_pop_val_type(ValType::NumType(crate::NumType::I32))?;
+
+        let unified = self
+            .pop_valtype()?
+            .unify(&self.pop_valtype()?)
+            .map_err(|_| Error::InvalidValidationStackValType(None))?;
+
+        match unified {
+            ValidationStackEntry::UnspecifiedValTypes => {
+                //if unified is a bottom type only way to satisfy validation of SELECT is to unify it to NumOrVec
+                self.stack.push(ValidationStackEntry::NumOrVecType);
+            }
+            _ => {
+                self.stack.push(unified);
+            }
+        }
+        Ok(())
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -320,6 +344,34 @@ pub enum ValidationStackEntry {
     // TODO change this name to BottomType
     UnspecifiedValTypes,
 }
+
+impl ValidationStackEntry {
+    // TODO better way to write this?
+    fn unify(&self, other: &ValidationStackEntry) -> Result<Self> {
+        match self {
+            ValidationStackEntry::Val(s) => match other {
+                Self::Val(o) => (o == s)
+                    .then_some(self.clone())
+                    .ok_or(Error::TypeUnificationMismatch),
+                Self::NumOrVecType => self.unify_to_num_or_vec_type(),
+                Self::UnspecifiedValTypes => Ok(self.clone()),
+            },
+            ValidationStackEntry::NumOrVecType => other.unify_to_num_or_vec_type(),
+            ValidationStackEntry::UnspecifiedValTypes => Ok(other.clone()),
+        }
+    }
+
+    fn unify_to_num_or_vec_type(&self) -> Result<Self> {
+        match self {
+            ValidationStackEntry::Val(ValType::NumType(_)) => Ok(self.clone()),
+            ValidationStackEntry::Val(ValType::VecType) => Ok(self.clone()),
+            ValidationStackEntry::NumOrVecType => Ok(self.clone()),
+            ValidationStackEntry::UnspecifiedValTypes => Ok(ValidationStackEntry::NumOrVecType),
+            _ => Err(Error::TypeUnificationMismatch),
+        }
+    }
+}
+
 // TODO hide implementation
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CtrlStackEntry {

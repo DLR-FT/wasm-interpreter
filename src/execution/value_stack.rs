@@ -96,6 +96,11 @@ impl Stack {
         }
     }
 
+    //unfortunately required for polymorphic select
+    pub fn pop_value_with_unknown_type(&mut self) -> Value {
+        self.values.pop().unwrap_validated()
+    }
+
     /// Copy a value of the given [ValType] from the value stack without removing it
     pub fn peek_value(&self, ty: ValType) -> Value {
         let value = self.values.last().unwrap_validated();
