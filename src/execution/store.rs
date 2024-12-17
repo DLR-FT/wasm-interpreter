@@ -8,6 +8,7 @@ use crate::core::reader::types::global::Global;
 use crate::core::reader::types::{MemType, TableType, ValType};
 use crate::core::sidetable::Sidetable;
 use crate::execution::value::{Ref, Value};
+use crate::RefType;
 
 /// The store represents all global state that can be manipulated by WebAssembly programs. It
 /// consists of the runtime representation of all instances of functions, tables, memories, and
@@ -19,6 +20,25 @@ pub struct Store {
     pub mems: Vec<MemInst>,
     pub globals: Vec<GlobalInst>,
     pub data: Vec<DataInst>,
+    pub tables: Vec<TableInst>,
+    pub elements: Vec<ElemInst>,
+    pub passive_elem_indexes: Vec<usize>,
+}
+
+#[derive(Clone, Debug)]
+/// <https://webassembly.github.io/spec/core/exec/runtime.html#element-instances>
+pub struct ElemInst {
+    pub ty: RefType,
+    pub references: Vec<Ref>,
+}
+
+impl ElemInst {
+    pub fn len(&self) -> usize {
+        self.references.len()
+    }
+    pub fn is_empty(&self) -> bool {
+        self.references.is_empty()
+    }
 }
 
 pub struct FuncInst {
@@ -28,10 +48,27 @@ pub struct FuncInst {
     pub sidetable: Sidetable,
 }
 
-#[allow(dead_code)]
+#[derive(Debug)]
 pub struct TableInst {
     pub ty: TableType,
     pub elem: Vec<Ref>,
+}
+
+impl TableInst {
+    pub fn len(&self) -> usize {
+        self.elem.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.elem.is_empty()
+    }
+
+    pub fn new(ty: TableType) -> Self {
+        Self {
+            ty,
+            elem: vec![Ref::default_from_ref_type(ty.et); ty.lim.min as usize],
+        }
+    }
 }
 
 pub struct MemInst {
