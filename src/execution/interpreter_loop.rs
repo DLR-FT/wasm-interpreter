@@ -228,6 +228,27 @@ pub(super) fn run<H: HookSet>(
             DROP => {
                 stack.drop_value();
             }
+            SELECT => {
+                let test_val: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let val2 = stack.pop_value_with_unknown_type();
+                let val1 = stack.pop_value_with_unknown_type();
+                if test_val != 0 {
+                    stack.push_value(val1);
+                } else {
+                    stack.push_value(val2);
+                }
+            }
+            SELECT_T => {
+                let type_vec = wasm.read_vec(ValType::read).unwrap_validated();
+                let test_val: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let val2 = stack.pop_value(type_vec[0]);
+                let val1 = stack.pop_value(type_vec[0]);
+                if test_val != 0 {
+                    stack.push_value(val1);
+                } else {
+                    stack.push_value(val2);
+                }
+            }
             LOCAL_GET => {
                 let local_idx = wasm.read_var_u32().unwrap_validated() as LocalIdx;
                 stack.get_local(local_idx);

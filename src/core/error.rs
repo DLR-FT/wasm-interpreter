@@ -88,6 +88,8 @@ pub enum Error {
     FunctionTypeIsNotDefined(TypeIdx),
     StoreInstantiationError(StoreInstantiationError),
     OnlyFuncRefIsAllowed,
+    TypeUnificationMismatch,
+    InvalidSelectTypeVector,
 }
 
 impl Display for Error {
@@ -228,6 +230,12 @@ impl Display for Error {
             )),
             Error::StoreInstantiationError(err) => err.fmt(f),
             Error::OnlyFuncRefIsAllowed => f.write_str("Only FuncRef is allowed"),
+            Error::TypeUnificationMismatch => {
+                f.write_str("cannot unify types")
+            }
+            Error::InvalidSelectTypeVector => {
+                f.write_str("SELECT T* (0x1C) instruction must have exactly one type in the subsequent type vector")
+            }
         }
     }
 }
