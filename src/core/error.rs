@@ -89,6 +89,8 @@ pub enum Error {
     ValidationCtrlStackEmpty,
     ElseWithoutMatchingIf,
     IfWithoutMatchingElse,
+    TypeUnificationMismatch,
+    InvalidSelectTypeVector,
 }
 
 impl Display for Error {
@@ -229,6 +231,12 @@ impl Display for Error {
             }
             Error::IfWithoutMatchingElse => {
                 f.write_str("read 'end' without matching 'else' instruction to 'if' instruction")
+            }
+            Error::TypeUnificationMismatch => {
+                f.write_str("cannot unify types")
+            }
+            Error::InvalidSelectTypeVector => {
+                f.write_str("SELECT T* (0x1C) instruction must have exactly one type in the subsequent type vector")
             }
         }
     }

@@ -404,6 +404,19 @@ fn read_instructions(
             DROP => {
                 stack.drop_val()?;
             }
+            SELECT => {
+                stack.validate_polymorphic_select()?;
+            }
+            SELECT_T => {
+                let type_vec = wasm.read_vec(ValType::read)?;
+                if type_vec.len() != 1 {
+                    return Err(Error::InvalidSelectTypeVector);
+                }
+                stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                stack.assert_pop_val_type(type_vec[0])?;
+                stack.assert_pop_val_type(type_vec[0])?;
+                stack.push_valtype(type_vec[0]);
+            }
             // local.get: [] -> [t]
             LOCAL_GET => {
                 let local_idx = wasm.read_var_u32()? as LocalIdx;
