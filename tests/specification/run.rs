@@ -3,6 +3,7 @@ use std::panic::catch_unwind;
 use std::panic::AssertUnwindSafe;
 
 use wasm::function_ref::FunctionRef;
+use wasm::RuntimeError;
 use wasm::Value;
 use wasm::DEFAULT_MODULE;
 use wasm::{validate, RuntimeInstance};
@@ -12,6 +13,27 @@ use wast::WastArg;
 
 use crate::specification::reports::*;
 use crate::specification::test_errors::*;
+
+pub fn to_wasm_testsuite_string(runtime_error: RuntimeError) -> std::string::String {
+    match runtime_error {
+        RuntimeError::DivideBy0 => "integer divide by zero",
+        RuntimeError::UnrepresentableResult => "integer overflow",
+        RuntimeError::FunctionNotFound => todo!(),
+        RuntimeError::StackSmash => todo!(),
+        RuntimeError::BadConversionToInteger => "invalid conversion to integer",
+
+        RuntimeError::MemoryAccessOutOfBounds => "out of bounds memory access",
+        RuntimeError::TableAccessOutOfBounds => "out of bounds table access",
+        RuntimeError::ElementAccessOutOfBounds => todo!(),
+
+        RuntimeError::UninitializedElement => "uninitialized element",
+        RuntimeError::SignatureMismatch => "indirect call type mismatch",
+        RuntimeError::ExpectedAValueOnTheStack => todo!(),
+
+        RuntimeError::UndefinedTableIndex => "undefined element",
+    }
+    .to_string()
+}
 
 /// Attempt to unwrap the result of an expression. If the expression is an `Err`, then `return` the
 /// error.
@@ -426,7 +448,7 @@ fn execute_assert_trap(
             match actual {
                 Ok(_) => Err(Box::new(GenericError::new("assert_trap did NOT trap"))),
                 Err(e) => {
-                    let actual = e.to_wasm_testsuite_string();
+                    let actual = to_wasm_testsuite_string(e);
                     let expected = message;
 
                     if actual.contains(expected)

@@ -31,31 +31,6 @@ pub enum RuntimeError {
     // "unreachable"
 }
 
-impl RuntimeError {
-    #[cfg(debug_assertions)]
-    pub fn to_wasm_testsuite_string(&self) -> alloc::string::String {
-        match self {
-            Self::DivideBy0 => "integer divide by zero",
-            Self::UnrepresentableResult => "integer overflow",
-            Self::FunctionNotFound => todo!(),
-            Self::StackSmash => todo!(),
-            Self::BadConversionToInteger => "invalid conversion to integer",
-
-            Self::MemoryAccessOutOfBounds => "out of bounds memory access",
-            Self::TableAccessOutOfBounds => "out of bounds table access",
-            Self::ElementAccessOutOfBounds => todo!(),
-
-            Self::UninitializedElement => "uninitialized element",
-            Self::SignatureMismatch => "indirect call type mismatch",
-            Self::ExpectedAValueOnTheStack => todo!(),
-
-            Self::UndefinedTableIndex => "undefined element",
-            // _ => "",
-        }
-        .to_string()
-    }
-}
-
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum StoreInstantiationError {
     ActiveDataWriteOutOfBounds,
