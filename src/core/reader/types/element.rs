@@ -132,7 +132,7 @@ impl ElemType {
 
                         use crate::validation_stack::ValidationStackEntry::*;
 
-                        if let Some(val) = valid_stack.peek_stack() {
+                        if let Some(val) = valid_stack.peek_stack_within_const_validation() {
                             if let Val(val) = val {
                                 match val {
                                     crate::ValType::RefType(_) => {}

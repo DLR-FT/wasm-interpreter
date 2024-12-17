@@ -179,7 +179,7 @@ where
 
         // setting `usize::MAX` as return address for the outermost function ensures that we
         // observably fail upon errornoeusly continuing execution after that function returns.
-        stack.push_stackframe(func_idx, func_ty, locals, usize::MAX);
+        stack.push_stackframe(func_idx, func_ty, locals, usize::MAX, usize::MAX);
 
         // Run the interpreter
         run(
@@ -232,7 +232,7 @@ where
         // Prepare a new stack with the locals for the entry function
         let mut stack = Stack::new();
         let locals = Locals::new(params.into_iter(), func_inst.locals.iter().cloned());
-        stack.push_stackframe(func_idx, func_ty, locals, 0);
+        stack.push_stackframe(func_idx, func_ty, locals, 0, 0);
 
         // Run the interpreter
         run(
@@ -325,7 +325,7 @@ where
 
             functions
                 .zip(func_blocks)
-                .map(|(ty, func)| {
+                .map(|(ty, (func, sidetable))| {
                     wasm_reader
                         .move_start_to(*func)
                         .expect("function index to be in the bounds of the WASM binary");
@@ -342,6 +342,8 @@ where
                         ty: *ty,
                         locals,
                         code_expr,
+                        // TODO fix this ugly clone
+                        sidetable: sidetable.clone(),
                     }
                 })
                 .collect()

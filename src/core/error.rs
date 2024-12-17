@@ -2,7 +2,7 @@ use alloc::format;
 use alloc::string::{String, ToString};
 
 use crate::core::indices::GlobalIdx;
-use crate::validation_stack::{LabelKind, ValidationStackEntry};
+use crate::validation_stack::ValidationStackEntry;
 use crate::RefType;
 use core::fmt::{Display, Formatter};
 use core::str::Utf8Error;
@@ -47,6 +47,7 @@ pub enum Error {
     InvalidNumType,
     InvalidVecType,
     InvalidFuncType,
+    InvalidFuncTypeIdx,
     InvalidRefType,
     InvalidValType,
     InvalidExportDesc(u8),
@@ -67,7 +68,6 @@ pub enum Error {
     InvalidGlobalIdx(GlobalIdx),
     GlobalIsConst,
     RuntimeError(RuntimeError),
-    FoundLabel(LabelKind),
     FoundUnspecifiedValTypes,
     MemoryIsNotDefined(MemIdx),
     //           mem.align, wanted alignment
@@ -85,6 +85,10 @@ pub enum Error {
     FunctionTypeIsNotDefined(TypeIdx),
     StoreInstantiationError(StoreInstantiationError),
     OnlyFuncRefIsAllowed,
+    InvalidLabelIdx(usize),
+    ValidationCtrlStackEmpty,
+    ElseWithoutMatchingIf,
+    IfWithoutMatchingElse,
 }
 
 impl Display for Error {
@@ -114,6 +118,9 @@ impl Display for Error {
             }
             Error::InvalidFuncType => {
                 f.write_str("An invalid byte was read where a functype was expected")
+            }
+            Error::InvalidFuncTypeIdx => {
+                f.write_str("An invalid index to the fuctypes table was read")
             }
             Error::InvalidRefType => {
                 f.write_str("An invalid byte was read where a reftype was expected")
@@ -160,9 +167,6 @@ impl Display for Error {
             )),
             Error::GlobalIsConst => f.write_str("A const global cannot be written to"),
             Error::RuntimeError(err) => err.fmt(f),
-            Error::FoundLabel(lk) => f.write_fmt(format_args!(
-                "Expecting a ValType, a Label was found: {lk:?}"
-            )),
             Error::FoundUnspecifiedValTypes => f.write_str("Found UnspecifiedValTypes"),
             Error::ExpectedAnOperand => f.write_str("Expected a ValType"), // Error => f.write_str("Expected an operand (ValType) on the stack")
             Error::MemoryIsNotDefined(memidx) => f.write_fmt(format_args!(
@@ -214,6 +218,18 @@ impl Display for Error {
             )),
             Error::StoreInstantiationError(err) => err.fmt(f),
             Error::OnlyFuncRefIsAllowed => f.write_str("Only FuncRef is allowed"),
+            Error::InvalidLabelIdx(label_idx) => {
+                f.write_fmt(format_args!("invalid label index {}", label_idx))
+            }
+            Error::ValidationCtrlStackEmpty => {
+                f.write_str("cannot retrieve last ctrl block, validation ctrl stack is empty")
+            }
+            Error::ElseWithoutMatchingIf => {
+                f.write_str("read 'else' without a previous matching 'if' instruction")
+            }
+            Error::IfWithoutMatchingElse => {
+                f.write_str("read 'end' without matching 'else' instruction to 'if' instruction")
+            }
         }
     }
 }
