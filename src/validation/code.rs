@@ -420,7 +420,7 @@ fn read_instructions(
             LOCAL_TEE => {
                 let local_idx = wasm.read_var_u32()? as LocalIdx;
                 let local_ty = locals.get(local_idx).ok_or(Error::InvalidLocalIdx)?;
-                stack.assert_pop_val_type(*local_ty)?;
+                stack.assert_val_types_on_top(&[*local_ty])?;
             }
             // global.get [] -> [t]
             GLOBAL_GET => {
