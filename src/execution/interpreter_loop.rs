@@ -45,7 +45,6 @@ pub(super) fn run<H: HookSet>(
         .get(stack.current_stackframe().func_idx)
         .unwrap_validated();
 
-    #[cfg(debug_assertions)]
     // Start reading the function's instructions
     let mut wasm = WasmReader::new(wasm_bytecode);
 
