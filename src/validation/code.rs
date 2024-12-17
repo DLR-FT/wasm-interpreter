@@ -118,6 +118,11 @@ fn read_instructions(
             // TODO only do this if EOF
             return Err(Error::ExprMissingEnd);
         };
+
+        #[cfg(debug_assertions)]
+        crate::core::utils::print_beautiful_instruction_name_1_byte(first_instr_byte, wasm.pc);
+
+        #[cfg(not(debug_assertions))]
         trace!("Read instruction byte {first_instr_byte:#04X?} ({first_instr_byte}) at wasm_binary[{}]", wasm.pc);
 
         use crate::core::reader::types::opcode::*;
