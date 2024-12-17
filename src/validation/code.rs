@@ -318,7 +318,11 @@ fn read_instructions(
                         stps_to_backpatch,
                     } => {
                         if stp != usize::MAX {
-                            // this If did not have a matching else statement. if...end is not allowed in the spec
+                            //This If is still not backpatched, meaning it does not have a corresponding
+                            //ELSE. Therefore if its condition fails, it jumps after END.
+                            sidetable[stp].delta_pc = (wasm.pc as isize) - sidetable[stp].delta_pc;
+                            sidetable[stp].delta_stp =
+                                (stp_here as isize) - sidetable[stp].delta_stp;
                         }
                         stps_to_backpatch.iter().for_each(|i| {
                             sidetable[*i].delta_pc = (wasm.pc as isize) - sidetable[*i].delta_pc;
