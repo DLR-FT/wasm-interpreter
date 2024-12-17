@@ -261,7 +261,6 @@ where
         Ok(ret)
     }
 
-    #[cfg(debug_assertions)]
     pub fn invoke_dynamic_unchecked_return_ty(
         &mut self,
         function_ref: &FunctionRef,
