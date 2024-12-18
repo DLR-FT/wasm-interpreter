@@ -379,3 +379,39 @@ fn switch_case() {
     assert_eq!(9, instance.invoke(&switch_case_fn, 4).unwrap());
     assert_eq!(9, instance.invoke(&switch_case_fn, 7).unwrap());
 }
+
+const POLYMORPHIC_SELECT_VALIDATION: &str = r#"
+(module
+    (func $polymorphic_select_validation
+        return
+        select
+        select
+        {{NUM_OR_VEC_INSTR1}}
+        drop
+        {{NUM_OR_VEC_INSTR2}}
+        drop
+        drop
+        drop
+        drop
+        drop
+        drop
+    )
+)"#;
+
+#[test_log::test]
+fn polymorphic_select_validation1() {
+    let wat = String::from(POLYMORPHIC_SELECT_VALIDATION)
+        .replace("{{NUM_OR_VEC_INSTR1}}", "i32.eqz")
+        .replace("{{NUM_OR_VEC_INSTR2}}", "i64.eqz");
+    let wasm_bytes = wat::parse_str(wat).unwrap();
+    validate(&wasm_bytes).expect("validation failed");
+}
+
+#[test_log::test]
+fn polymorphic_select_validation2() {
+    let wat = String::from(POLYMORPHIC_SELECT_VALIDATION)
+        .replace("{{NUM_OR_VEC_INSTR1}}", "i64.eqz")
+        .replace("{{NUM_OR_VEC_INSTR2}}", "i32.eqz");
+    let wasm_bytes = wat::parse_str(wat).unwrap();
+    validate(&wasm_bytes).expect("validation failed");
+}
