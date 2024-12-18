@@ -268,7 +268,6 @@ impl ValidationStack {
         )
     }
 
-    // TODO is moving block_ty ok?
     pub fn assert_push_ctrl(&mut self, label_info: LabelInfo, block_ty: FuncType) -> Result<()> {
         self.assert_val_types_on_top(&block_ty.params.valtypes)?;
         let height = self.stack.len() - block_ty.params.valtypes.len();
@@ -341,18 +340,21 @@ pub enum ValidationStackEntry {
     ///
     /// When this variant is pushed onto the stack, all valtypes until the next lower label are deleted.
     /// They are not needed anymore because this variant can expand to all of them.
-    // TODO change this name to BottomType
+    // TODO change this name
     UnspecifiedValTypes,
 }
 
 impl ValidationStackEntry {
-    // TODO better way to write this?
     fn unify(&self, other: &ValidationStackEntry) -> Result<Self> {
         match self {
             ValidationStackEntry::Val(s) => match other {
-                Self::Val(o) => (o == s)
-                    .then_some(self.clone())
-                    .ok_or(Error::TypeUnificationMismatch),
+                Self::Val(o) => {
+                    if o == s {
+                        Ok(self.clone())
+                    } else {
+                        Err(Error::TypeUnificationMismatch)
+                    }
+                }
                 Self::NumOrVecType => self.unify_to_num_or_vec_type(),
                 Self::UnspecifiedValTypes => Ok(self.clone()),
             },
