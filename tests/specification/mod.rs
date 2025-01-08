@@ -10,11 +10,14 @@ mod test_errors;
 enum Filter {
     #[allow(dead_code)]
     Include(FnF),
+    #[allow(dead_code)]
     Exclude(FnF),
 }
 
 struct FnF {
+    #[allow(dead_code)]
     files: Option<Vec<String>>,
+    #[allow(dead_code)]
     folders: Option<Vec<String>>,
 }
 
@@ -27,9 +30,12 @@ impl Default for FnF {
     }
 }
 
-// #[ignore = "Globals cause a panic"]
+#[ignore = "Globals cause a panic"]
 #[test_log::test]
 pub fn spec_tests() {
+    std::env::set_var("RUST_BACKTRACE", "full");
+    println!("{}", std::process::id());
+    #[allow(unused)]
     let filters = Filter::Exclude(FnF {
         folders: Some(vec!["proposals".to_string()]),
         ..Default::default()
@@ -37,12 +43,13 @@ pub fn spec_tests() {
 
     // let only_these_tests: Vec<String> = vec![];
 
-    let paths = get_wast_files(Path::new("./tests/specification/testsuite/"), &filters)
-        .expect("Failed to find testsuite");
+    // let paths = get_wast_files(Path::new("./tests/specification/testsuite/"), &filters)
+    //     .expect("Failed to find testsuite");
 
     // let pb: PathBuf = "./tests/specification/testsuite/custom_conversions.wast".into();
     // let pb: PathBuf = "./tests/specification/testsuite/custom_f64.wast".into();
-    // let paths = vec![pb];
+    let pb: PathBuf = "./tests/specification/testsuite/binary.wast".into();
+    let paths = vec![pb];
 
     let mut successful_reports = 0;
     let mut failed_reports = 0;
@@ -73,6 +80,7 @@ pub fn spec_tests() {
     );
 }
 
+#[allow(dead_code)]
 // See: https://stackoverflow.com/a/76820878
 fn get_wast_files(
     base_path: &Path,

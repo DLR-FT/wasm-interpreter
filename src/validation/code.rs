@@ -89,23 +89,23 @@ pub fn read_declared_locals(wasm: &mut WasmReader) -> Result<Vec<ValType>> {
     })?;
 
     // these checks are related to the official test suite binary.wast file, the first 2 assert_malformed's starting at line 350
-    // we check to not have more than 2^31-1 locals, and if that number is okay, we then get to instantiate them all
+    // we check to not have more than 2^32-1 locals, and if that number is okay, we then get to instantiate them all
     // this is because the flat_map and collect take an insane amount of time
     // in total, these 2 tests take more than 240s
     let mut total_no_of_locals: usize = 0;
     for local in &locals {
         let temp = local.0;
         if temp > i32::MAX as usize {
-            panic!("can't have more than 2^31-1 locals")
+            panic!("can't have more than 2^32-1 locals")
         };
         total_no_of_locals = match total_no_of_locals.checked_add(temp) {
-            None => panic!("can't have more than 2^31-1 locals"),
+            None => panic!("can't have more than 2^32-1 locals"),
             Some(n) => n,
         }
     }
 
     if total_no_of_locals > i32::MAX as usize {
-        panic!("can't have more than 2^31-1 locals");
+        panic!("can't have more than 2^32-1 locals");
     }
 
     // Flatten local types for easier representation where n > 1
