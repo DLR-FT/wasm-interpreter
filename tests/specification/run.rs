@@ -315,12 +315,69 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                 //     }
                 // }
             }
+
             wast::WastDirective::AssertMalformed {
                 span,
-                module: _,
+                mut module,
                 message: _,
+            } => {
+                // use std::time;
+                use wast::*;
+                let line_number = span.linecol_in(&contents).0 as u32 + 1;
+                // println!("Module with line_number {line_number}");
+                // let start = time::SystemTime::now();
+                let cmd = get_command(&contents, span);
+                let is_module = match &module {
+                    QuoteWat::QuoteComponent(..) => false,
+                    QuoteWat::Wat(Wat::Component(..)) => false,
+                    QuoteWat::Wat(..) => true,
+                    QuoteWat::QuoteModule(..) => true,
+                };
+
+                if is_module {
+                    let bytes = module.encode();
+
+                    match bytes {
+                        Err(..) => asserts.push_success(WastSuccess::new(line_number, cmd)),
+                        Ok(bytes) => {
+                            println!("At line {}", line_number);
+                            let validation_info_attempt = catch_unwind(|| validate(&bytes));
+
+                            match validation_info_attempt {
+                                Err(..) => asserts.push_success(WastSuccess::new(line_number, cmd)),
+                                Ok(validation_info) => match validation_info {
+                                    Err(..) => {
+                                        asserts.push_success(WastSuccess::new(line_number, cmd))
+                                    }
+                                    Ok(validation_info) => {
+                                        match RuntimeInstance::new(&validation_info) {
+                                                Err(..) => {
+                                                    asserts.push_success(WastSuccess::new(line_number, cmd))
+                                                }
+                                                Ok(_) => asserts.push_error(WastError::new("Module validated and instantiated successfully, when it shouldn't have been".into(), line_number, cmd)),
+                                            };
+                                    }
+                                },
+                            }
+                        }
+                    }
+
+                    asserts.push_success(WastSuccess::new(line_number, cmd));
+                } else {
+                    asserts.push_error(WastError::new(
+                        Box::new(GenericError::new(
+                            "Assert malformed for components not yet implemented",
+                        )),
+                        line_number,
+                        cmd,
+                    ));
+                }
+
+                // println!("Time: {}", start.elapsed().unwrap().as_nanos());
+                // println!("Finished! Module with line_number {line_number}");
             }
-            | wast::WastDirective::AssertInvalid {
+
+            wast::WastDirective::AssertInvalid {
                 span,
                 module: _,
                 message: _,
