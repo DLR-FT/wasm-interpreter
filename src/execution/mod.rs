@@ -1,13 +1,17 @@
 use alloc::string::ToString;
+use alloc::vec;
 use alloc::vec::Vec;
 
-use const_interpreter_loop::run_const;
+use const_interpreter_loop::{run_const, run_const_span};
 use function_ref::FunctionRef;
 use interpreter_loop::run;
 use locals::Locals;
-use store::DataInst;
+use store::{DataInst, ElemInst, TableInst};
+use value::{ExternAddr, FuncAddr, Ref};
 use value_stack::Stack;
 
+use crate::core::error::StoreInstantiationError;
+use crate::core::reader::types::element::{ElemItems, ElemMode};
 use crate::core::reader::types::export::{Export, ExportDesc};
 use crate::core::reader::types::FuncType;
 use crate::core::reader::WasmReader;
@@ -17,7 +21,7 @@ use crate::execution::store::{FuncInst, GlobalInst, MemInst, Store};
 use crate::execution::value::Value;
 use crate::validation::code::read_declared_locals;
 use crate::value::InteropValueList;
-use crate::{RuntimeError, ValType, ValidationInfo};
+use crate::{RefType, Result as CustomResult, RuntimeError, ValType, ValidationInfo};
 
 // TODO
 pub(crate) mod assert_validated;
@@ -45,14 +49,14 @@ where
 }
 
 impl<'b> RuntimeInstance<'b, EmptyHookSet> {
-    pub fn new(validation_info: &'_ ValidationInfo<'b>) -> Result<Self, RuntimeError> {
+    pub fn new(validation_info: &'_ ValidationInfo<'b>) -> CustomResult<Self> {
         Self::new_with_hooks(DEFAULT_MODULE, validation_info, EmptyHookSet)
     }
 
     pub fn new_named(
         module_name: &str,
         validation_info: &'_ ValidationInfo<'b>,
-    ) -> Result<Self, RuntimeError> {
+    ) -> CustomResult<Self> {
         Self::new_with_hooks(module_name, validation_info, EmptyHookSet)
     }
 }
@@ -65,10 +69,10 @@ where
         module_name: &str,
         validation_info: &'_ ValidationInfo<'b>,
         hook_set: H,
-    ) -> Result<Self, RuntimeError> {
+    ) -> CustomResult<Self> {
         trace!("Starting instantiation of bytecode");
 
-        let store = Self::init_store(validation_info);
+        let store = Self::init_store(validation_info)?;
 
         let mut instance = RuntimeInstance {
             wasm_bytecode: validation_info.wasm,
@@ -311,7 +315,8 @@ where
         }
     }
 
-    fn init_store(validation_info: &ValidationInfo) -> Store {
+    fn init_store(validation_info: &ValidationInfo) -> CustomResult<Store> {
+        use StoreInstantiationError::*;
         let function_instances: Vec<FuncInst> = {
             let mut wasm_reader = WasmReader::new(validation_info.wasm);
 
@@ -342,6 +347,95 @@ where
                 .collect()
         };
 
+        // https://webassembly.github.io/spec/core/exec/modules.html#tables
+        let mut tables: Vec<TableInst> = validation_info
+            .tables
+            .iter()
+            .map(|ty| TableInst::new(*ty))
+            .collect();
+
+        let mut passive_elem_indexes: Vec<usize> = vec![];
+        // https://webassembly.github.io/spec/core/syntax/modules.html#element-segments
+        let elements: Vec<ElemInst> = validation_info
+            .elements
+            .iter()
+            .enumerate()
+            .filter_map(|(i, elem)| {
+                trace!("Instantiating element {:#?}", elem);
+
+                let offsets = match &elem.init {
+                    ElemItems::Exprs(_ref_type, init_exprs) => init_exprs
+                        .iter()
+                        .map(|expr| {
+                            get_address_offset(
+                                run_const_span(validation_info.wasm, expr, ()).unwrap_validated(),
+                            )
+                        })
+                        .collect::<Vec<Option<u32>>>(),
+                    ElemItems::RefFuncs(indicies) => {
+                        // This branch gets taken when the elements are direct function references (i32 values), so we just return the indices
+                        indicies
+                            .iter()
+                            .map(|el| Some(*el))
+                            .collect::<Vec<Option<u32>>>()
+                    }
+                };
+
+                let references: Vec<Ref> = offsets
+                    .iter()
+                    .map(|offset| {
+                        let offset = offset.as_ref().map(|offset| *offset as usize);
+                        match elem.ty() {
+                            RefType::FuncRef => Ref::Func(FuncAddr::new(offset)),
+                            RefType::ExternRef => Ref::Extern(ExternAddr::new(offset)),
+                        }
+                    })
+                    .collect();
+
+                let instance = ElemInst {
+                    ty: elem.ty(),
+                    references,
+                };
+
+                match &elem.mode {
+                    // As per https://webassembly.github.io/spec/core/syntax/modules.html#element-segments
+                    // A declarative element segment is not available at runtime but merely serves to forward-declare
+                    //  references that are formed in code with instructions like `ref.func`
+
+                    // Also, the answer given by Andreas Rossberg (the editor of the WASM Spec - Release 2.0)
+                    // Per https://stackoverflow.com/questions/78672934/what-is-the-purpose-of-a-wasm-declarative-element-segment
+                    // "[...] The reason Wasm requires this (admittedly ugly) forward declaration is to support streaming compilation [...]"
+                    ElemMode::Declarative => None,
+                    ElemMode::Passive => {
+                        passive_elem_indexes.push(i);
+                        Some(instance)
+                    }
+                    ElemMode::Active(active_elem) => {
+                        let table_idx = active_elem.table_idx as usize;
+
+                        let offset =
+                            match run_const_span(validation_info.wasm, &active_elem.init_expr, ())
+                                .unwrap_validated()
+                            {
+                                Value::I32(offset) => offset as usize,
+                                // We are already asserting that on top of the stack there is an I32 at validation time
+                                _ => unreachable!(),
+                            };
+
+                        let table = &mut tables[table_idx];
+                        // This can't be verified at validation-time because we don't keep track of actual values when validating expressions
+                        //  we only keep track of the type of the values. As such we can't pop the exact value of an i32 from the validation stack
+                        assert!(table.len() >= (offset + instance.len()));
+
+                        table.elem[offset..offset + instance.references.len()]
+                            .copy_from_slice(&instance.references);
+
+                        Some(instance)
+                    }
+                }
+            })
+            .collect();
+
         let mut memory_instances: Vec<MemInst> = validation_info
             .memories
             .iter()
@@ -353,6 +447,7 @@ where
             .iter()
             .map(|d| {
                 use crate::core::reader::types::data::DataMode;
+                use crate::NumType;
                 if let DataMode::Active(active_data) = d.mode.clone() {
                     let mem_idx = active_data.memory_idx;
                     if mem_idx != 0 {
@@ -360,37 +455,34 @@ where
                     }
                     assert!(memory_instances.len() > mem_idx);
 
-                    let value = {
+                    let boxed_value = {
                         let mut wasm = WasmReader::new(validation_info.wasm);
                         wasm.move_start_to(active_data.offset).unwrap_validated();
                         let mut stack = Stack::new();
                         run_const(wasm, &mut stack, ());
-                        let value = stack.peek_unknown_value();
-                        if value.is_none() {
-                            panic!("No value on the stack for data segment offset");
-                        }
-                        value.unwrap()
+                        stack.pop_value(ValType::NumType(NumType::I32))
+                        // stack.peek_unknown_value().ok_or(MissingValueOnTheStack)?
                     };
 
                     // TODO: this shouldn't be a simple value, should it? I mean it can't be, but it can also be any type of ValType
                     // TODO: also, do we need to forcefully make it i32?
-                    let offset: u32 = match value {
+                    let offset: u32 = match boxed_value {
                         Value::I32(val) => val,
-                        Value::I64(val) => {
-                            if val > u32::MAX as u64 {
-                                panic!("i64 value for data segment offset is out of reach")
-                            }
-                            val as u32
-                        }
+                        // Value::I64(val) => {
+                        //     if val > u32::MAX as u64 {
+                        //         return Err(I64ValueOutOfReach("data segment".to_owned()));
+                        //     }
+                        //     val as u32
+                        // }
                         // TODO: implement all value types
-                        _ => unimplemented!(),
+                        _ => todo!(),
                     };
 
                     let mem_inst = memory_instances.get_mut(mem_idx).unwrap();
 
                     let len = mem_inst.data.len();
                     if offset as usize + d.init.len() > len {
-                        panic!("Active data writing in memory, out of bounds");
+                        return Err(ActiveDataWriteOutOfBounds);
                     }
                     let data = mem_inst
                         .data
@@ -398,11 +490,11 @@ where
                         .unwrap();
                     data.copy_from_slice(&d.init);
                 }
-                DataInst {
+                Ok(DataInst {
                     data: d.init.clone(),
-                }
+                })
             })
-            .collect();
+            .collect::<Result<Vec<DataInst>, StoreInstantiationError>>()?;
 
         let global_instances: Vec<GlobalInst> = validation_info
             .globals
@@ -426,11 +518,37 @@ where
             })
             .collect();
 
-        Store {
+        Ok(Store {
             funcs: function_instances,
             mems: memory_instances,
             globals: global_instances,
             data: data_sections,
-        }
+            tables,
+            elements,
+            passive_elem_indexes,
+        })
+    }
+}
+
+/// Used for getting the offset of an address.
+///
+/// Related to the Active Elements
+///
+/// <https://webassembly.github.io/spec/core/syntax/modules.html#element-segments>
+///
+/// Since active elements need an offset given by a constant expression, in this case
+/// they can only be an i32 (which can be understood from either a [`Value::I32`] - but
+/// since we don't unbox the address of the reference, for us also a [`Value::Ref`] -
+/// or from a Global)
+fn get_address_offset(value: Value) -> Option<u32> {
+    match value {
+        Value::I32(val) => Some(val),
+        Value::Ref(rref) => match rref {
+            Ref::Extern(_) => todo!("Not yet implemented"),
+            // TODO: fix
+            Ref::Func(func_addr) => func_addr.addr.map(|addr| addr as u32),
+        },
+        // INFO: from wasmtime - implement only global
+        _ => unreachable!(),
     }
 }

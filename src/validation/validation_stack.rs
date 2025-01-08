@@ -7,34 +7,38 @@
 use super::Result;
 use alloc::vec::Vec;
 
-use crate::{Error, ValType};
+use crate::{Error, RefType, ValType};
 
 #[derive(Debug, PartialEq, Eq)]
-pub(super) struct ValidationStack {
+pub struct ValidationStack {
     stack: Vec<ValidationStackEntry>,
 }
 
 impl ValidationStack {
     /// Initialize a new ValidationStack
-    pub(super) fn new() -> Self {
+    pub fn new() -> Self {
         Self { stack: Vec::new() }
     }
 
-    pub(super) fn len(&self) -> usize {
+    pub fn len(&self) -> usize {
         self.stack.len()
     }
 
-    pub(super) fn push_valtype(&mut self, valtype: ValType) {
+    pub fn push_valtype(&mut self, valtype: ValType) {
         self.stack.push(ValidationStackEntry::Val(valtype));
     }
 
-    pub(super) fn push_label(&mut self, label_info: LabelInfo) {
+    pub fn push_label(&mut self, label_info: LabelInfo) {
         self.stack.push(ValidationStackEntry::Label(label_info));
+    }
+
+    pub fn peek_stack(&self) -> Option<ValidationStackEntry> {
+        self.stack.last().cloned()
     }
 
     /// Similar to [`ValidationStack::pop`], because it pops a value from the stack,
     /// but more public and doesn't actually return the popped value.
-    pub(super) fn drop_val(&mut self) -> Result<()> {
+    pub fn drop_val(&mut self) -> Result<()> {
         match self.stack.pop().ok_or(Error::EndInvalidValueStack)? {
             ValidationStackEntry::Val(_) => Ok(()),
             _ => Err(Error::ExpectedAnOperand),
@@ -46,7 +50,7 @@ impl ValidationStack {
     /// To undo this, a new label has to be pushed or an existing one has to be popped.
     ///
     /// See the documentation for [`ValidationStackEntry::UnspecifiedValTypes`] for more info.
-    pub(super) fn make_unspecified(&mut self) {
+    pub fn make_unspecified(&mut self) {
         // Pop everything until next label or until the stack is empty.
         // This is okay, because these values cannot be accessed during execution ever again.
         while let Some(entry) = self.stack.last() {
@@ -74,6 +78,27 @@ impl ValidationStack {
             .ok_or(Error::InvalidValidationStackValType(None))
     }
 
+    pub fn assert_pop_ref_type(&mut self, expected_ty: Option<RefType>) -> Result<()> {
+        let val = self.pop()?;
+        match val {
+            ValidationStackEntry::Val(v) => match v {
+                ValType::RefType(ref_type) => match expected_ty {
+                    None => Ok(()),
+                    Some(expected_ty) => {
+                        if expected_ty == ref_type {
+                            Ok(())
+                        } else {
+                            Err(Error::DifferentRefTypes(ref_type, expected_ty))
+                        }
+                    }
+                },
+                _ => Err(Error::ExpectedARefType(v)),
+            },
+            ValidationStackEntry::UnspecifiedValTypes => Err(Error::FoundUnspecifiedValTypes),
+            ValidationStackEntry::Label(li) => Err(Error::FoundLabel(li.kind)),
+        }
+    }
+
     /// Assert the top-most [`ValidationStackEntry`] is a specific [`ValType`], after popping it from the [`ValidationStack`]
     ///
     /// # Returns
@@ -81,7 +106,7 @@ impl ValidationStack {
     /// - Returns `Ok(())` if the top-most [`ValidationStackEntry`] is a [`ValType`] identical to
     ///   `expected_ty`.
     /// - Returns `Err(_)` otherwise.
-    pub(super) fn assert_pop_val_type(&mut self, expected_ty: ValType) -> Result<()> {
+    pub fn assert_pop_val_type(&mut self, expected_ty: ValType) -> Result<()> {
         if let Some(ValidationStackEntry::UnspecifiedValTypes) = self.stack.last() {
             // An unspecified value is always correct, and will never disappear by popping.
             return Ok(());
@@ -111,7 +136,7 @@ impl ValidationStack {
     ///
     /// - `Ok(_)`, the tail of the stack matches the `expected_val_types`
     /// - `Err(_)` otherwise
-    pub(super) fn assert_val_types_on_top(&self, expected_val_types: &[ValType]) -> Result<()> {
+    pub fn assert_val_types_on_top(&self, expected_val_types: &[ValType]) -> Result<()> {
         let stack_tail = self
             .stack
             .get(self.stack.len() - expected_val_types.len()..)
@@ -149,7 +174,7 @@ impl ValidationStack {
     ///
     /// - `Ok(())` if all expected valtypes were found
     /// - `Err(_)` otherwise
-    pub(super) fn assert_val_types(&self, expected_val_types: &[ValType]) -> Result<()> {
+    pub fn assert_val_types(&self, expected_val_types: &[ValType]) -> Result<()> {
         let topmost_label_index = self.find_topmost_label_idx();
 
         let first_valtype = topmost_label_index.map(|idx| idx + 1).unwrap_or(0);
@@ -216,7 +241,7 @@ impl ValidationStack {
     }
 
     /// Return true if the stack has at least one remaining label
-    pub(super) fn has_remaining_label(&self) -> bool {
+    pub fn has_remaining_label(&self) -> bool {
         self.stack
             .iter()
             .any(|e| matches!(e, ValidationStackEntry::Label(_)))
@@ -224,7 +249,7 @@ impl ValidationStack {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-enum ValidationStackEntry {
+pub enum ValidationStackEntry {
     /// A value
     Val(ValType),
 
@@ -241,8 +266,8 @@ enum ValidationStackEntry {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub(crate) struct LabelInfo {
-    pub(crate) kind: LabelKind,
+pub struct LabelInfo {
+    pub kind: LabelKind,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

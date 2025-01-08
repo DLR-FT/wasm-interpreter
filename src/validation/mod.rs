@@ -1,9 +1,11 @@
+use alloc::collections::btree_set;
 use alloc::vec::Vec;
 
 use crate::core::indices::{FuncIdx, TypeIdx};
 use crate::core::reader::section_header::{SectionHeader, SectionTy};
 use crate::core::reader::span::Span;
 use crate::core::reader::types::data::DataSegment;
+use crate::core::reader::types::element::ElemType;
 use crate::core::reader::types::export::Export;
 use crate::core::reader::types::global::Global;
 use crate::core::reader::types::import::Import;
@@ -24,7 +26,6 @@ pub struct ValidationInfo<'bytecode> {
     #[allow(dead_code)]
     pub(crate) imports: Vec<Import>,
     pub(crate) functions: Vec<TypeIdx>,
-    #[allow(dead_code)]
     pub(crate) tables: Vec<TableType>,
     pub(crate) memories: Vec<MemType>,
     pub(crate) globals: Vec<Global>,
@@ -34,6 +35,7 @@ pub struct ValidationInfo<'bytecode> {
     pub(crate) data: Vec<DataSegment>,
     /// The start function which is automatically executed during instantiation
     pub(crate) start: Option<FuncIdx>,
+    pub(crate) elements: Vec<ElemType>,
 }
 
 pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
@@ -120,9 +122,12 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
-    let _: Option<()> = handle_section(&mut wasm, &mut header, SectionTy::Element, |_, _| {
-        todo!("element section not yet supported")
-    })?;
+    let mut referenced_functions = btree_set::BTreeSet::new();
+    let elements: Vec<ElemType> =
+        handle_section(&mut wasm, &mut header, SectionTy::Element, |wasm, _| {
+            ElemType::read_from_wasm(wasm, &functions, &mut referenced_functions, tables.len())
+        })?
+        .unwrap_or_default();
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
@@ -149,6 +154,9 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
             &globals,
             &memories,
             &data_count,
+            &tables,
+            &elements,
+            &referenced_functions,
         )
     })?
     .unwrap_or_default();
@@ -187,6 +195,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
         func_blocks,
         data: data_section,
         start,
+        elements,
     })
 }
 

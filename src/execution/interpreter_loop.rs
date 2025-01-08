@@ -16,7 +16,7 @@ use alloc::vec::Vec;
 use crate::{
     assert_validated::UnwrapValidatedExt,
     core::{
-        indices::{DataIdx, FuncIdx, GlobalIdx, LocalIdx},
+        indices::{DataIdx, FuncIdx, GlobalIdx, LocalIdx, TableIdx, TypeIdx},
         reader::{
             types::{memarg::MemArg, FuncType},
             WasmReadable, WasmReader,
@@ -24,9 +24,9 @@ use crate::{
     },
     locals::Locals,
     store::{DataInst, Store},
-    value,
+    value::{self, FuncAddr, Ref},
     value_stack::Stack,
-    Limits, NumType, RuntimeError, ValType, Value,
+    Limits, NumType, RefType, RuntimeError, ValType, Value,
 };
 
 #[cfg(feature = "hooks")]
@@ -116,6 +116,54 @@ pub(super) fn run<H: HookSet>(
                 wasm.move_start_to(func_to_call_inst.code_expr)
                     .unwrap_validated();
             }
+            CALL_INDIRECT => {
+                let type_idx = wasm.read_var_u32().unwrap_validated() as TypeIdx;
+                let table_idx = wasm.read_var_u32().unwrap_validated() as TableIdx;
+
+                let tab = store.tables.get(table_idx).unwrap_validated();
+                let func_ty = types.get(type_idx).unwrap_validated();
+
+                let i: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                let r = tab
+                    .elem
+                    .get(i as usize)
+                    .ok_or(RuntimeError::TableAccessOutOfBounds)
+                    .and_then(|r| {
+                        if r.is_null() {
+                            trace!("table_idx ({table_idx}) --- element index in table ({i})");
+                            Err(RuntimeError::UninitializedElement)
+                        } else {
+                            Ok(r)
+                        }
+                    })?;
+
+                let func_addr = match *r {
+                    Ref::Func(func_addr) => func_addr.addr,
+                    Ref::Extern(_) => unreachable!(),
+                };
+
+                let func_to_call_inst = store
+                    .funcs
+                    .get(func_addr.unwrap_validated())
+                    .unwrap_validated();
+
+                let func_ty_actual_index = func_to_call_inst.ty;
+
+                if type_idx != func_ty_actual_index {
+                    return Err(RuntimeError::SignatureMismatch);
+                }
+
+                let params = stack.pop_tail_iter(func_ty.params.valtypes.len());
+                let remaining_locals = func_to_call_inst.locals.iter().cloned();
+
+                trace!("Instruction: call_indirect [{func_addr:?}]");
+                let locals = Locals::new(params, remaining_locals);
+                stack.push_stackframe(func_addr.unwrap_validated(), func_ty, locals, wasm.pc);
+
+                wasm.move_start_to(func_to_call_inst.code_expr)
+                    .unwrap_validated();
+            }
             DROP => {
                 stack.drop_value();
             }
@@ -137,6 +185,45 @@ pub(super) fn run<H: HookSet>(
                 let global = store.globals.get_mut(global_idx).unwrap_validated();
 
                 global.value = stack.pop_value(global.global.ty.ty)
+            }
+            TABLE_GET => {
+                let table_idx = wasm.read_var_u32().unwrap_validated() as TableIdx;
+
+                let tab = store.tables.get(table_idx).unwrap_validated();
+
+                let i: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                let val = tab
+                    .elem
+                    .get(i as usize)
+                    .ok_or(RuntimeError::TableAccessOutOfBounds)?;
+
+                stack.push_value((*val).into());
+                trace!(
+                    "Instruction: table.get '{}' [{}] -> [{}]",
+                    table_idx,
+                    i,
+                    val
+                );
+            }
+            TABLE_SET => {
+                let table_idx = wasm.read_var_u32().unwrap_validated() as TableIdx;
+
+                let tab = &mut store.tables[table_idx];
+
+                let val: Ref = stack.pop_value(ValType::RefType(tab.ty.et)).into();
+                let i: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                tab.elem
+                    .get_mut(i as usize)
+                    .ok_or(RuntimeError::TableAccessOutOfBounds)
+                    .map(|r| *r = val)?;
+                trace!(
+                    "Instruction: table.set '{}' [{} {}] -> []",
+                    table_idx,
+                    i,
+                    val
+                )
             }
             I32_LOAD => {
                 let memarg = MemArg::read_unvalidated(&mut wasm);
@@ -1894,6 +1981,28 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: f64.reinterpret_i64 [{v1}] -> [{res:.17}]");
                 stack.push_value(res.into());
             }
+            REF_NULL => {
+                let reftype = RefType::read_unvalidated(&mut wasm);
+
+                stack.push_value(Value::Ref(reftype.to_null_ref()));
+                trace!("Instruction: ref.null '{:?}' -> [{:?}]", reftype, reftype);
+            }
+            REF_IS_NULL => {
+                let rref = stack.pop_unknown_ref();
+                let is_null = match rref {
+                    Ref::Extern(rref) => rref.addr.is_none(),
+                    Ref::Func(rref) => rref.addr.is_none(),
+                };
+
+                let res = if is_null { 1 } else { 0 };
+                trace!("Instruction: ref.is_null [{}] -> [{}]", rref, res);
+                stack.push_value(Value::I32(res));
+            }
+            // https://webassembly.github.io/spec/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-ref-mathsf-ref-func-x
+            REF_FUNC => {
+                let func_idx = wasm.read_var_u32().unwrap_validated() as FuncIdx;
+                stack.push_value(Value::Ref(Ref::Func(FuncAddr::new(Some(func_idx)))));
+            }
             FC_EXTENSIONS => {
                 // Should we call instruction hook here as well? Multibyte instruction
                 let second_instr_byte = wasm.read_u8().unwrap_validated();
@@ -2160,6 +2269,194 @@ pub(super) fn run<H: HookSet>(
                             .copy_from_slice(&data);
 
                         trace!("Instruction: memory.fill");
+                    }
+                    // https://webassembly.github.io/spec/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-table-mathsf-table-init-x-y
+                    // https://webassembly.github.io/spec/core/binary/instructions.html#table-instructions
+                    // in binary format it seems that elemidx is first ???????
+                    // this is ONLY for passive elements
+                    TABLE_INIT => {
+                        let elem_idx = wasm.read_var_u32().unwrap_validated() as usize;
+                        let table_idx = wasm.read_var_u32().unwrap_validated() as usize;
+
+                        let n: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into(); // size
+                        let s: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into(); // offset
+                        let d: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into(); // dst
+
+                        let tab_len = store.tables.get(table_idx).unwrap_validated().len();
+                        let tab = store.tables.get_mut(table_idx).unwrap_validated();
+
+                        let elem_len = if store.passive_elem_indexes.contains(&elem_idx) {
+                            store.elements.get(elem_idx).unwrap_validated().len()
+                        } else {
+                            0
+                        };
+
+                        trace!(
+                            "Instruction: table.init '{}' '{}' [{} {} {}] -> []",
+                            elem_idx,
+                            table_idx,
+                            d,
+                            s,
+                            n
+                        );
+
+                        let final_src_offset = (s as usize)
+                            .checked_add(n as usize)
+                            .filter(|&res| res <= elem_len)
+                            .ok_or(RuntimeError::TableAccessOutOfBounds)?;
+
+                        (d as usize)
+                            .checked_add(n as usize)
+                            .filter(|&res| res <= tab_len)
+                            .ok_or(RuntimeError::TableAccessOutOfBounds)?;
+
+                        let elem = store.elements.get(elem_idx).unwrap_validated();
+
+                        let dest = &mut tab.elem[d as usize..];
+                        let src = &elem.references[s as usize..final_src_offset];
+                        dest[..src.len()].copy_from_slice(src);
+                    }
+                    ELEM_DROP => {
+                        let elem_idx = wasm.read_var_u32().unwrap_validated() as usize;
+
+                        // WARN: i'm not sure if this is okay or not
+                        store
+                            .elements
+                            .get_mut(elem_idx)
+                            .unwrap_validated()
+                            .references = vec![];
+                    }
+                    // https://webassembly.github.io/spec/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-table-mathsf-table-copy-x-y
+                    TABLE_COPY => {
+                        let table_x_idx = wasm.read_var_u32().unwrap_validated() as usize;
+                        let table_y_idx = wasm.read_var_u32().unwrap_validated() as usize;
+
+                        let tab_x_elem_len = store.tables[table_x_idx].elem.len();
+                        let tab_y_elem_len = store.tables[table_y_idx].elem.len();
+
+                        let n: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into(); // size
+                        let s: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into(); // source
+                        let d: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into(); // destination
+
+                        let src_res = match s.checked_add(n) {
+                            Some(res) => {
+                                if res > tab_y_elem_len as u32 {
+                                    return Err(RuntimeError::TableAccessOutOfBounds);
+                                } else {
+                                    res as usize
+                                }
+                            }
+                            _ => return Err(RuntimeError::TableAccessOutOfBounds),
+                        };
+
+                        let dst_res = match d.checked_add(n) {
+                            Some(res) => {
+                                if res > tab_x_elem_len as u32 {
+                                    return Err(RuntimeError::TableAccessOutOfBounds);
+                                } else {
+                                    res as usize
+                                }
+                            }
+                            _ => return Err(RuntimeError::TableAccessOutOfBounds),
+                        };
+
+                        let dst = table_x_idx;
+                        let src = table_y_idx;
+
+                        if table_x_idx == table_y_idx {
+                            store.tables[table_x_idx]
+                                .elem
+                                .copy_within(s as usize..src_res, d as usize); // }
+                        } else {
+                            use core::cmp::Ordering::*;
+                            let (src_table, dst_table) = match dst.cmp(&src) {
+                                Greater => {
+                                    let (left, right) = store.tables.split_at_mut(dst);
+                                    (&left[src], &mut right[0])
+                                }
+                                Less => {
+                                    let (left, right) = store.tables.split_at_mut(src);
+                                    (&right[0], &mut left[dst])
+                                }
+                                Equal => unreachable!(),
+                            };
+                            dst_table.elem[d as usize..dst_res]
+                                .copy_from_slice(&src_table.elem[s as usize..src_res]);
+                        }
+
+                        trace!(
+                            "Instruction: table.copy '{}' '{}' [{} {} {}] -> []",
+                            table_x_idx,
+                            table_y_idx,
+                            d,
+                            s,
+                            n
+                        );
+                    }
+                    TABLE_GROW => {
+                        let table_idx = wasm.read_var_u32().unwrap_validated() as usize;
+
+                        let tab = store.tables.get_mut(table_idx).unwrap_validated();
+
+                        let sz = tab.elem.len() as u32;
+
+                        let n: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                        let val = stack.pop_unknown_ref();
+
+                        let max = tab.ty.lim.max.unwrap();
+
+                        let final_size = sz.checked_add(n);
+
+                        match final_size {
+                            Some(final_size) => {
+                                if final_size > max {
+                                    stack.push_value(Value::I32(u32::MAX))
+                                } else {
+                                    tab.elem.extend(vec![val; n as usize]);
+
+                                    stack.push_value(Value::I32(sz));
+                                }
+                            }
+                            _ => stack.push_value(Value::I32(u32::MAX)),
+                        }
+                    }
+                    TABLE_SIZE => {
+                        let table_idx = wasm.read_var_u32().unwrap_validated() as usize;
+
+                        let tab = store.tables.get(table_idx).unwrap_validated();
+
+                        let sz = tab.elem.len() as u32;
+
+                        stack.push_value(Value::I32(sz));
+
+                        trace!("Instruction: table.size '{}' [] -> [{}]", table_idx, sz);
+                    }
+                    TABLE_FILL => {
+                        let table_idx = wasm.read_var_u32().unwrap_validated() as usize;
+
+                        let tab = store.tables.get_mut(table_idx).unwrap_validated();
+                        let ty = tab.ty.et;
+
+                        let n: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into(); // len
+                        let val: Ref = stack.pop_value(ValType::RefType(ty)).into();
+                        let i: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into(); // dst
+
+                        let end = (i as usize)
+                            .checked_add(n as usize)
+                            .ok_or(RuntimeError::TableAccessOutOfBounds)?;
+
+                        tab.elem
+                            .get_mut(i as usize..end)
+                            .ok_or(RuntimeError::TableAccessOutOfBounds)?
+                            .fill(val);
+
+                        trace!(
+                            "Instruction table.fill '{}' [{} {} {}] -> []",
+                            table_idx,
+                            i,
+                            val,
+                            n
+                        )
                     }
                     _ => unreachable!(),
                 }
