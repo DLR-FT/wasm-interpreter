@@ -16,11 +16,12 @@ use alloc::vec::Vec;
 use crate::{
     assert_validated::UnwrapValidatedExt,
     core::{
-        indices::{DataIdx, FuncIdx, GlobalIdx, LocalIdx, TableIdx, TypeIdx},
+        indices::{DataIdx, FuncIdx, GlobalIdx, LabelIdx, LocalIdx, TableIdx, TypeIdx},
         reader::{
-            types::{memarg::MemArg, FuncType},
+            types::{memarg::MemArg, BlockType, FuncType},
             WasmReadable, WasmReader,
         },
+        sidetable::Sidetable,
     },
     locals::Locals,
     store::{DataInst, Store},
@@ -48,6 +49,11 @@ pub(super) fn run<H: HookSet>(
     // Start reading the function's instructions
     let mut wasm = WasmReader::new(wasm_bytecode);
 
+    // the sidetable and stp for this function, stp will reset to 0 every call
+    // since function instances have their own sidetable.
+    let mut current_sidetable: &Sidetable = &func_inst.sidetable;
+    let mut stp = 0;
+
     // unwrap is sound, because the validation assures that the function points to valid subslice of the WASM binary
     wasm.move_start_to(func_inst.code_expr).unwrap();
 
@@ -64,7 +70,20 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: NOP");
             }
             END => {
-                let maybe_return_address = stack.pop_stackframe();
+                // if this is not the very last instruction in the function
+                // just skip because it is a delimiter of a ctrl block
+
+                // TODO there is definitely a better to write this
+                let current_func_span = store
+                    .funcs
+                    .get(stack.current_stackframe().func_idx)
+                    .unwrap_validated()
+                    .code_expr;
+                if wasm.pc != current_func_span.from() + current_func_span.len() {
+                    continue;
+                }
+
+                let (maybe_return_address, maybe_return_stp) = stack.pop_stackframe();
 
                 // We finished this entire invocation if there is no stackframe left. If there are
                 // one or more stack frames, we need to continue from where the callee was called
@@ -75,30 +94,68 @@ pub(super) fn run<H: HookSet>(
 
                 trace!("end of function reached, returning to previous stack frame");
                 wasm.pc = maybe_return_address;
+                stp = maybe_return_stp;
+
+                current_sidetable = &store
+                    .funcs
+                    .get(stack.current_stackframe().func_idx)
+                    .unwrap_validated()
+                    .sidetable;
+            }
+            IF => {
+                wasm.read_var_u32().unwrap_validated();
+
+                let test_val: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                if test_val != 0 {
+                    stp += 1;
+                } else {
+                    do_sidetable_control_transfer(&mut wasm, stack, &mut stp, current_sidetable);
+                }
+            }
+            ELSE => {
+                do_sidetable_control_transfer(&mut wasm, stack, &mut stp, current_sidetable);
+            }
+            BR_IF => {
+                wasm.read_var_u32().unwrap_validated();
+
+                let test_val: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                if test_val != 0 {
+                    do_sidetable_control_transfer(&mut wasm, stack, &mut stp, current_sidetable);
+                } else {
+                    stp += 1;
+                }
+            }
+            BR_TABLE => {
+                let label_vec = wasm
+                    .read_vec(|wasm| wasm.read_var_u32().map(|v| v as LabelIdx))
+                    .unwrap_validated();
+                wasm.read_var_u32().unwrap_validated();
+
+                // TODO is this correct?
+                let case_val_i32: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let case_val = case_val_i32 as usize;
+
+                if case_val >= label_vec.len() {
+                    stp += label_vec.len();
+                } else {
+                    stp += case_val;
+                }
+
+                do_sidetable_control_transfer(&mut wasm, stack, &mut stp, current_sidetable);
+            }
+            BR => {
+                //skip n of BR n
+                wasm.read_var_u32().unwrap_validated();
+                do_sidetable_control_transfer(&mut wasm, stack, &mut stp, current_sidetable);
+            }
+            BLOCK | LOOP => {
+                BlockType::read_unvalidated(&mut wasm);
             }
             RETURN => {
-                trace!("returning from function");
-
-                let func_to_call_idx = stack.current_stackframe().func_idx;
-
-                let func_to_call_inst = store.funcs.get(func_to_call_idx).unwrap_validated();
-                let func_to_call_ty = types.get(func_to_call_inst.ty).unwrap_validated();
-
-                let ret_vals = stack
-                    .pop_tail_iter(func_to_call_ty.returns.valtypes.len())
-                    .collect::<Vec<_>>();
-                stack.clear_callframe_values();
-
-                for val in ret_vals {
-                    stack.push_value(val);
-                }
-
-                if stack.callframe_count() == 1 {
-                    break;
-                }
-
-                trace!("end of function reached, returning to previous stack frame");
-                wasm.pc = stack.pop_stackframe();
+                //same as BR, except no need to skip n of BR n
+                do_sidetable_control_transfer(&mut wasm, stack, &mut stp, current_sidetable);
             }
             CALL => {
                 let func_to_call_idx = wasm.read_var_u32().unwrap_validated() as FuncIdx;
@@ -111,10 +168,12 @@ pub(super) fn run<H: HookSet>(
 
                 trace!("Instruction: call [{func_to_call_idx:?}]");
                 let locals = Locals::new(params, remaining_locals);
-                stack.push_stackframe(func_to_call_idx, func_to_call_ty, locals, wasm.pc);
+                stack.push_stackframe(func_to_call_idx, func_to_call_ty, locals, wasm.pc, stp);
 
                 wasm.move_start_to(func_to_call_inst.code_expr)
                     .unwrap_validated();
+                stp = 0;
+                current_sidetable = &func_to_call_inst.sidetable;
             }
             CALL_INDIRECT => {
                 let type_idx = wasm.read_var_u32().unwrap_validated() as TypeIdx;
@@ -159,10 +218,12 @@ pub(super) fn run<H: HookSet>(
 
                 trace!("Instruction: call_indirect [{func_addr:?}]");
                 let locals = Locals::new(params, remaining_locals);
-                stack.push_stackframe(func_addr.unwrap_validated(), func_ty, locals, wasm.pc);
+                stack.push_stackframe(func_addr.unwrap_validated(), func_ty, locals, wasm.pc, stp);
 
                 wasm.move_start_to(func_to_call_inst.code_expr)
                     .unwrap_validated();
+                stp = 0;
+                current_sidetable = &func_to_call_inst.sidetable;
             }
             DROP => {
                 stack.drop_value();
@@ -2467,4 +2528,27 @@ pub(super) fn run<H: HookSet>(
         }
     }
     Ok(())
+}
+
+//helper function for avoiding code duplication at intraprocedural jumps
+fn do_sidetable_control_transfer(
+    wasm: &mut WasmReader,
+    stack: &mut Stack,
+    current_stp: &mut usize,
+    current_sidetable: &Sidetable,
+) {
+    let sidetable_entry = &current_sidetable[*current_stp];
+
+    // TODO fix this corner cutting implementation
+    let jump_vals = stack
+        .pop_tail_iter(sidetable_entry.valcnt)
+        .collect::<Vec<_>>();
+    stack.pop_n_values(sidetable_entry.popcnt);
+
+    for val in jump_vals {
+        stack.push_value(val);
+    }
+
+    *current_stp = (*current_stp as isize + sidetable_entry.delta_stp) as usize;
+    wasm.pc = (wasm.pc as isize + sidetable_entry.delta_pc) as usize;
 }

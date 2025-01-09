@@ -1,23 +1,52 @@
-//! This module contains the [`ValidationStack`] data structure
-//!
-//! The [`ValidationStack`] is a unified stack, in the sense that it unifies both
-//! [`ValidationStackEntry::Val`] and [`ValidationStackEntry::Label`]. It therefore mixes type
-//! information with structured control flow information.
-#![allow(unused)] // TODO remove this once sidetable implementation lands
 use super::Result;
+use alloc::vec;
 use alloc::vec::Vec;
 
-use crate::{Error, RefType, ValType};
+use crate::{
+    core::reader::types::{FuncType, ResultType},
+    Error, RefType, ValType,
+};
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct ValidationStack {
     stack: Vec<ValidationStackEntry>,
+    // TODO hide implementation
+    pub ctrl_stack: Vec<CtrlStackEntry>,
 }
 
 impl ValidationStack {
     /// Initialize a new ValidationStack
     pub fn new() -> Self {
-        Self { stack: Vec::new() }
+        Self {
+            stack: Vec::new(),
+            ctrl_stack: vec![CtrlStackEntry {
+                label_info: LabelInfo::Untyped,
+                block_ty: FuncType {
+                    params: ResultType {
+                        valtypes: Vec::new(),
+                    },
+                    returns: ResultType {
+                        valtypes: Vec::new(),
+                    },
+                },
+                height: 0,
+                unreachable: false,
+            }],
+        }
+    }
+
+    pub(super) fn new_for_func(block_ty: FuncType) -> Self {
+        Self {
+            stack: Vec::new(),
+            ctrl_stack: vec![CtrlStackEntry {
+                label_info: LabelInfo::Func {
+                    stps_to_backpatch: Vec::new(),
+                },
+                block_ty,
+                height: 0,
+                unreachable: false,
+            }],
+        }
     }
 
     pub fn len(&self) -> usize {
@@ -28,41 +57,26 @@ impl ValidationStack {
         self.stack.push(ValidationStackEntry::Val(valtype));
     }
 
-    pub fn push_label(&mut self, label_info: LabelInfo) {
-        self.stack.push(ValidationStackEntry::Label(label_info));
-    }
-
-    pub fn peek_stack(&self) -> Option<ValidationStackEntry> {
+    /// DANGER! only to be used within const validation! use within non-const validation may result in algorithmically incorrect validation
+    pub fn peek_const_validation_stack(&self) -> Option<ValidationStackEntry> {
         self.stack.last().cloned()
     }
 
-    /// Similar to [`ValidationStack::pop`], because it pops a value from the stack,
+    /// Similar to [`ValidationStack::pop_valtype`], because it pops a value from the stack,
     /// but more public and doesn't actually return the popped value.
-    pub fn drop_val(&mut self) -> Result<()> {
-        match self.stack.pop().ok_or(Error::EndInvalidValueStack)? {
-            ValidationStackEntry::Val(_) => Ok(()),
-            _ => Err(Error::ExpectedAnOperand),
-        }
+    pub(super) fn drop_val(&mut self) -> Result<()> {
+        self.pop_valtype().map_err(|_| Error::ExpectedAnOperand)?;
+        Ok(())
     }
 
-    /// This puts an unspecified element on top of the stack.
-    /// While the top of the stack is unspecified, arbitrary value types can be popped.
-    /// To undo this, a new label has to be pushed or an existing one has to be popped.
-    ///
-    /// See the documentation for [`ValidationStackEntry::UnspecifiedValTypes`] for more info.
-    pub fn make_unspecified(&mut self) {
-        // Pop everything until next label or until the stack is empty.
-        // This is okay, because these values cannot be accessed during execution ever again.
-        while let Some(entry) = self.stack.last() {
-            match entry {
-                ValidationStackEntry::Val(_) | ValidationStackEntry::UnspecifiedValTypes => {
-                    self.stack.pop();
-                }
-                ValidationStackEntry::Label(_) => break,
-            }
-        }
-
-        self.stack.push(ValidationStackEntry::UnspecifiedValTypes)
+    pub(super) fn make_unspecified(&mut self) -> Result<()> {
+        let last_ctrl_stack_entry = self
+            .ctrl_stack
+            .last_mut()
+            .ok_or(Error::ValidationCtrlStackEmpty)?;
+        last_ctrl_stack_entry.unreachable = true;
+        self.stack.truncate(last_ctrl_stack_entry.height);
+        Ok(())
     }
 
     /// Pop a [`ValidationStackEntry`] from the [`ValidationStack`]
@@ -72,92 +86,109 @@ impl ValidationStack {
     /// - Returns `Ok(_)` with the former top-most [`ValidationStackEntry`] inside, if the stack had
     ///   at least one element.
     /// - Returns `Err(_)` if the stack was already empty.
-    fn pop(&mut self) -> Result<ValidationStackEntry> {
-        self.stack
-            .pop()
-            .ok_or(Error::InvalidValidationStackValType(None))
+    fn pop_valtype(&mut self) -> Result<ValidationStackEntry> {
+        // TODO unwrapping might not be the best option
+        // TODO ugly
+        // TODO return type should be Result<()> maybe?
+        let last_ctrl_stack_entry = self.ctrl_stack.last().unwrap();
+        assert!(self.stack.len() >= last_ctrl_stack_entry.height);
+        if last_ctrl_stack_entry.height == self.stack.len() {
+            if last_ctrl_stack_entry.unreachable {
+                Ok(ValidationStackEntry::UnspecifiedValTypes)
+            } else {
+                Err(Error::EndInvalidValueStack)
+            }
+        } else {
+            //empty stack is covered with above check
+            self.stack.pop().ok_or(Error::EndInvalidValueStack)
+        }
     }
 
     pub fn assert_pop_ref_type(&mut self, expected_ty: Option<RefType>) -> Result<()> {
-        let val = self.pop()?;
-        match val {
-            ValidationStackEntry::Val(v) => match v {
-                ValType::RefType(ref_type) => match expected_ty {
-                    None => Ok(()),
-                    Some(expected_ty) => {
-                        if expected_ty == ref_type {
-                            Ok(())
-                        } else {
-                            Err(Error::DifferentRefTypes(ref_type, expected_ty))
-                        }
-                    }
-                },
-                _ => Err(Error::ExpectedARefType(v)),
-            },
-            ValidationStackEntry::UnspecifiedValTypes => Err(Error::FoundUnspecifiedValTypes),
-            ValidationStackEntry::Label(li) => Err(Error::FoundLabel(li.kind)),
+        match self.pop_valtype()? {
+            ValidationStackEntry::Val(ValType::RefType(ref_type)) => {
+                expected_ty.map_or(Ok(()), |ty| {
+                    (ty == ref_type)
+                        .then_some(())
+                        .ok_or(Error::DifferentRefTypes(ref_type, ty))
+                })
+            }
+            ValidationStackEntry::Val(v) => Err(Error::ExpectedARefType(v)),
+            // TODO fix the thrown error type below
+            ValidationStackEntry::NumOrVecType => Err(Error::EndInvalidValueStack),
+            ValidationStackEntry::UnspecifiedValTypes => Ok(()),
         }
     }
 
     /// Assert the top-most [`ValidationStackEntry`] is a specific [`ValType`], after popping it from the [`ValidationStack`]
+    /// This assertion will unify the the top-most entry with `expected_ty`.
     ///
     /// # Returns
     ///
     /// - Returns `Ok(())` if the top-most [`ValidationStackEntry`] is a [`ValType`] identical to
     ///   `expected_ty`.
     /// - Returns `Err(_)` otherwise.
+    ///
     pub fn assert_pop_val_type(&mut self, expected_ty: ValType) -> Result<()> {
-        if let Some(ValidationStackEntry::UnspecifiedValTypes) = self.stack.last() {
-            // An unspecified value is always correct, and will never disappear by popping.
-            return Ok(());
-        }
-
-        match self.pop()? {
+        match self.pop_valtype()? {
             ValidationStackEntry::Val(ty) => (ty == expected_ty)
                 .then_some(())
                 .ok_or(Error::InvalidValidationStackValType(Some(ty))),
-            ValidationStackEntry::Label(li) => Err(Error::FoundLabel(li.kind)),
-            ValidationStackEntry::UnspecifiedValTypes => {
-                unreachable!("we just checked if the topmost entry is of this type")
-            }
+            ValidationStackEntry::NumOrVecType => match expected_ty {
+                ValType::NumType(_) => Ok(()),
+                ValType::VecType => Ok(()),
+                // TODO change this error
+                _ => Err(Error::InvalidValidationStackValType(None)),
+            },
+            ValidationStackEntry::UnspecifiedValTypes => Ok(()),
         }
     }
 
-    /// Asserts that the values on top of the stack match those of a value iterator
-    ///
-    /// The last element of `expected_val_types` is compared to the top-most
-    /// [`ValidationStackEntry`], the second last `expected_val_types` element to the second top-most
-    /// [`ValidationStackEntry`] etc.
-    ///
-    /// Any occurence of the [`ValidationStackEntry::Label`] variant in the stack tail will cause an
-    /// error. This method does not mutate the [`ValidationStack::stack`] in any way.
-    ///
-    /// # Returns
-    ///
-    /// - `Ok(_)`, the tail of the stack matches the `expected_val_types`
-    /// - `Err(_)` otherwise
-    pub fn assert_val_types_on_top(&self, expected_val_types: &[ValType]) -> Result<()> {
-        let stack_tail = self
-            .stack
-            .get(self.stack.len() - expected_val_types.len()..)
-            .ok_or(Error::InvalidValType)?;
+    // private fns to shut the borrow checker up when calling methods with mutable ref to self with immutable ref to self arguments
+    // TODO ugly but I can't come up with anything else better
 
-        // Now we check the valtypes in reverse.
-        // That way we can stop checking if we encounter an `UnspecifiedValTypes`.
+    fn assert_val_types_on_top_with_custom_stacks(
+        stack: &mut Vec<ValidationStackEntry>,
+        ctrl_stack: &[CtrlStackEntry],
+        expected_val_types: &[ValType],
+    ) -> Result<()> {
+        let last_ctrl_stack_entry = ctrl_stack.last().ok_or(Error::ValidationCtrlStackEmpty)?;
+        let stack_len = stack.len();
 
-        let mut current_expected_valtype = expected_val_types.iter().rev();
-        for entry in stack_tail.iter().rev() {
-            match entry {
-                ValidationStackEntry::Label(label) => return Err(Error::EndInvalidValueStack),
-                ValidationStackEntry::Val(valtype) => {
-                    if Some(valtype) != current_expected_valtype.next() {
+        let rev_iterator = expected_val_types.iter().rev().enumerate();
+        for (i, expected_ty) in rev_iterator {
+            if stack_len - last_ctrl_stack_entry.height <= i {
+                if last_ctrl_stack_entry.unreachable {
+                    // Unify(t2*,expected_val_types) := [t2* expected_val_types]
+                    stack.splice(
+                        stack_len - i..stack_len - i,
+                        expected_val_types[..expected_val_types.len() - i]
+                            .iter()
+                            .map(|ty| ValidationStackEntry::Val(*ty)),
+                    );
+                    return Ok(());
+                } else {
+                    return Err(Error::EndInvalidValueStack);
+                }
+            }
+
+            // the above height check ensures this access is valid
+            let actual_ty = &mut stack[stack_len - i - 1];
+
+            match actual_ty {
+                ValidationStackEntry::Val(actual_val_ty) => {
+                    if *actual_val_ty != *expected_ty {
                         return Err(Error::EndInvalidValueStack);
                     }
                 }
+                ValidationStackEntry::NumOrVecType => match expected_ty {
+                    // unify the NumOrVecType to expected_ty
+                    ValType::NumType(_) => *actual_ty = ValidationStackEntry::Val(*expected_ty),
+                    ValType::VecType => *actual_ty = ValidationStackEntry::Val(*expected_ty),
+                    _ => return Err(Error::EndInvalidValueStack),
+                },
                 ValidationStackEntry::UnspecifiedValTypes => {
-                    // In case we find an `UnspecifiedValTypes`, we pretend that all expected valtypes are found.
-                    // That's because this entry can expand to every possible combination of valtypes.
-                    return Ok(());
+                    unreachable!("bottom type should not exist in the stack")
                 }
             }
         }
@@ -165,8 +196,50 @@ impl ValidationStack {
         Ok(())
     }
 
-    /// Asserts that the valtypes on the stack match the expected valtypes.
+    fn assert_val_types_with_custom_stacks(
+        stack: &mut Vec<ValidationStackEntry>,
+        ctrl_stack: &[CtrlStackEntry],
+        expected_val_types: &[ValType],
+    ) -> Result<()> {
+        ValidationStack::assert_val_types_on_top_with_custom_stacks(
+            stack,
+            ctrl_stack,
+            expected_val_types,
+        )?;
+        //if we can assert types in the above there is a last ctrl stack entry, this access is valid.
+        let last_ctrl_stack_entry = &ctrl_stack[ctrl_stack.len() - 1];
+        if stack.len() == last_ctrl_stack_entry.height + expected_val_types.len() {
+            Ok(())
+        } else {
+            Err(Error::EndInvalidValueStack)
+        }
+    }
+    /// Asserts that the values on top of the stack match those of a value iterator
+    /// This method will unify the types on the stack to the expected valtypes.
+    /// The last element of `expected_val_types` is unified to the top-most
+    /// [`ValidationStackEntry`], the second last `expected_val_types` element to the second top-most
+    /// [`ValidationStackEntry`] etc.
     ///
+    /// Any unification failure or arity mismatch will cause an error.
+    ///
+    /// Any occurence of an error may leave the stack in an invalid state.
+    ///
+    /// # Returns
+    ///
+    /// - `Ok(_)`, the tail of the stack matches the `expected_val_types`
+    /// - `Err(_)` otherwise
+    ///
+    pub(super) fn assert_val_types_on_top(&mut self, expected_val_types: &[ValType]) -> Result<()> {
+        ValidationStack::assert_val_types_on_top_with_custom_stacks(
+            &mut self.stack,
+            &self.ctrl_stack,
+            expected_val_types,
+        )
+    }
+
+    // TODO better documentation
+    /// Asserts that the valtypes on the stack match the expected valtypes and no other type is on the stack.
+    /// This method will unify the types on the stack to the expected valtypes.
     /// This starts by comparing the top-most valtype with the last element from `expected_val_types` and then continues downwards on the stack.
     /// If a label is reached and not all `expected_val_types` have been checked, the assertion fails.
     ///
@@ -174,77 +247,60 @@ impl ValidationStack {
     ///
     /// - `Ok(())` if all expected valtypes were found
     /// - `Err(_)` otherwise
-    pub fn assert_val_types(&self, expected_val_types: &[ValType]) -> Result<()> {
-        let topmost_label_index = self.find_topmost_label_idx();
+    pub(super) fn assert_val_types(&mut self, expected_val_types: &[ValType]) -> Result<()> {
+        ValidationStack::assert_val_types_with_custom_stacks(
+            &mut self.stack,
+            &self.ctrl_stack,
+            expected_val_types,
+        )
+    }
 
-        let first_valtype = topmost_label_index.map(|idx| idx + 1).unwrap_or(0);
+    pub fn assert_val_types_of_label_jump_types_on_top(&mut self, label_idx: usize) -> Result<()> {
+        let label_types = self
+            .ctrl_stack
+            .get(self.ctrl_stack.len() - label_idx - 1)
+            .ok_or(Error::InvalidLabelIdx(label_idx))?
+            .label_types();
+        ValidationStack::assert_val_types_on_top_with_custom_stacks(
+            &mut self.stack,
+            &self.ctrl_stack,
+            label_types,
+        )
+    }
 
-        // Now we check the valtypes in reverse.
-        // That way we can stop checking if we encounter an `UnspecifiedValTypes`.
-
-        let mut current_expected_valtype = expected_val_types.iter().rev();
-        for entry in self.stack[first_valtype..].iter().rev() {
-            match entry {
-                ValidationStackEntry::Label(_) => unreachable!(
-                    "we started at the top-most label so we cannot find any more labels"
-                ),
-                ValidationStackEntry::Val(valtype) => {
-                    if Some(valtype) != current_expected_valtype.next() {
-                        return Err(Error::EndInvalidValueStack);
-                    }
-                }
-                ValidationStackEntry::UnspecifiedValTypes => {
-                    return Ok(());
-                }
-            }
-        }
-
+    // TODO is moving block_ty ok?
+    pub fn assert_push_ctrl(&mut self, label_info: LabelInfo, block_ty: FuncType) -> Result<()> {
+        self.assert_val_types_on_top(&block_ty.params.valtypes)?;
+        let height = self.stack.len() - block_ty.params.valtypes.len();
+        self.ctrl_stack.push(CtrlStackEntry {
+            label_info,
+            block_ty,
+            height,
+            unreachable: false,
+        });
         Ok(())
     }
 
-    /// A helper to find the index of the top-most label in [`ValidationStack::stack`]
-    fn find_topmost_label_idx(&self) -> Option<usize> {
-        self.stack
-            .iter()
-            .enumerate()
-            .rev()
-            .find(|(_idx, entry)| matches!(entry, ValidationStackEntry::Label(_)))
-            .map(|(idx, _entry)| idx)
-    }
+    pub fn assert_pop_ctrl(&mut self) -> Result<(LabelInfo, FuncType)> {
+        let return_types = &self
+            .ctrl_stack
+            .last()
+            .ok_or(Error::ValidationCtrlStackEmpty)?
+            .block_ty
+            .returns
+            .valtypes;
+        ValidationStack::assert_val_types_with_custom_stacks(
+            &mut self.stack,
+            &self.ctrl_stack,
+            return_types,
+        )?;
 
-    /// Searches for the top-most label, then pops the label and all entry on top of that label.
-    /// Only the label's [`LabelInfo`] is returned.
-    ///
-    /// # Returns
-    ///
-    /// - `Ok(LabelInfo)` if a label has been found and popped
-    /// - `None` if no label was found on the stack
-    fn pop_label_and_above(&mut self) -> Option<LabelInfo> {
-        /// Delete all the values until the topmost label or until the stack is empty
-        match self.find_topmost_label_idx() {
-            Some(idx) => {
-                if self.stack.len() > idx + 1 {
-                    self.stack.drain((idx + 1)..);
-                }
-            }
-            None => self.stack.clear(),
-        }
-
-        // Pop the label itself
-        match self.pop() {
-            Ok(ValidationStackEntry::Label(info)) => Some(info),
-            Ok(_) => unreachable!(
-                "we just removed everything until the next label, thus new topmost entry must be a label"
-            ),
-            Err(_) => None,
-        }
-    }
-
-    /// Return true if the stack has at least one remaining label
-    pub fn has_remaining_label(&self) -> bool {
-        self.stack
-            .iter()
-            .any(|e| matches!(e, ValidationStackEntry::Label(_)))
+        //if we can assert types in the above there is a last ctrl stack entry, this access is valid.
+        let last_ctrl_stack_entry = self.ctrl_stack.pop().unwrap();
+        Ok((
+            last_ctrl_stack_entry.label_info,
+            last_ctrl_stack_entry.block_ty,
+        ))
     }
 }
 
@@ -252,36 +308,80 @@ impl ValidationStack {
 pub enum ValidationStackEntry {
     /// A value
     Val(ValType),
-
-    /// A label
-    Label(LabelInfo),
-
+    /// Special variant to encode an uninstantiated type for `select` instruction
+    #[allow(unused)]
+    NumOrVecType,
     /// Special variant to encode that any possible number of [`ValType`]s could be here
     ///
     /// Caused by `return` and `unreachable`, as both can push an arbitrary number of values to the stack.
     ///
     /// When this variant is pushed onto the stack, all valtypes until the next lower label are deleted.
     /// They are not needed anymore because this variant can expand to all of them.
+    // TODO change this name to BottomType
     UnspecifiedValTypes,
 }
-
+// TODO hide implementation
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct LabelInfo {
-    pub kind: LabelKind,
+pub struct CtrlStackEntry {
+    pub label_info: LabelInfo,
+    pub block_ty: FuncType,
+    pub height: usize,
+    pub unreachable: bool,
 }
 
+impl CtrlStackEntry {
+    pub fn label_types(&self) -> &[ValType] {
+        if matches!(self.label_info, LabelInfo::Loop { .. }) {
+            &self.block_ty.params.valtypes
+        } else {
+            &self.block_ty.returns.valtypes
+        }
+    }
+}
+
+// TODO replace LabelInfo with this
+// TODO hide implementation
+// TODO implementation coupled to Sidetable
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum LabelKind {
-    Block,
-    Loop,
-    If,
+pub enum LabelInfo {
+    Block {
+        stps_to_backpatch: Vec<usize>,
+    },
+    Loop {
+        ip: usize,
+        stp: usize,
+    },
+    If {
+        stps_to_backpatch: Vec<usize>,
+        stp: usize,
+    },
+    Func {
+        stps_to_backpatch: Vec<usize>,
+    },
+    Untyped,
 }
 
 #[cfg(test)]
 mod tests {
     use crate::{NumType, RefType, ValType};
 
-    use super::{LabelInfo, LabelKind, ValidationStack};
+    use super::{CtrlStackEntry, FuncType, LabelInfo, ResultType, ValidationStack, Vec};
+
+    fn push_dummy_untyped_label(validation_stack: &mut ValidationStack) {
+        validation_stack.ctrl_stack.push(CtrlStackEntry {
+            label_info: LabelInfo::Untyped,
+            block_ty: FuncType {
+                params: ResultType {
+                    valtypes: Vec::new(),
+                },
+                returns: ResultType {
+                    valtypes: Vec::new(),
+                },
+            },
+            height: validation_stack.len(),
+            unreachable: false,
+        })
+    }
 
     #[test]
     fn push_then_pop() {
@@ -304,41 +404,38 @@ mod tests {
             .unwrap();
     }
 
-    #[test]
-    fn labels() {
-        let mut stack = ValidationStack::new();
+    // TODO rewrite these
+    // #[test]
+    // fn labels() {
+    //     let mut stack = ValidationStack::new();
 
-        stack.push_valtype(ValType::NumType(NumType::I64));
-        stack.push_label(LabelInfo {
-            kind: LabelKind::Block,
-        });
+    //     stack.push_valtype(ValType::NumType(NumType::I64));
+    //     push_dummy_func_label(&mut stack);
 
-        stack.push_label(LabelInfo {
-            kind: LabelKind::Loop,
-        });
+    //     push_dummy_block_label(&mut stack);
 
-        stack.push_valtype(ValType::VecType);
+    //     stack.push_valtype(ValType::VecType);
 
-        // This removes the `ValType::VecType` and the `LabelKind::Loop` label
-        let popped_label = stack.pop_label_and_above().unwrap();
-        assert_eq!(
-            popped_label,
-            LabelInfo {
-                kind: LabelKind::Loop,
-            }
-        );
+    //     // This removes the `ValType::VecType` and the `LabelKind::Loop` label
+    //     let popped_label = stack.pop_label_and_above().unwrap();
+    //     assert_eq!(
+    //         popped_label,
+    //         LabelInfo {
+    //             kind: LabelKind::Loop,
+    //         }
+    //     );
 
-        let popped_label = stack.pop_label_and_above().unwrap();
-        assert_eq!(
-            popped_label,
-            LabelInfo {
-                kind: LabelKind::Block,
-            }
-        );
+    //     let popped_label = stack.pop_label_and_above().unwrap();
+    //     assert_eq!(
+    //         popped_label,
+    //         LabelInfo {
+    //             kind: LabelKind::Block,
+    //         }
+    //     );
 
-        // The first valtype should still be there
-        stack.assert_pop_val_type(ValType::NumType(NumType::I64));
-    }
+    //     // The first valtype should still be there
+    //     stack.assert_pop_val_type(ValType::NumType(NumType::I64));
+    // }
 
     #[test]
     fn assert_valtypes() {
@@ -356,9 +453,8 @@ mod tests {
             ])
             .unwrap();
 
-        stack.push_label(LabelInfo {
-            kind: LabelKind::Block,
-        });
+        push_dummy_untyped_label(&mut stack);
+
         stack.push_valtype(ValType::NumType(NumType::I32));
 
         stack
@@ -373,9 +469,7 @@ mod tests {
         stack.assert_val_types(&[]).unwrap();
 
         stack.push_valtype(ValType::NumType(NumType::I32));
-        stack.push_label(LabelInfo {
-            kind: LabelKind::Block,
-        });
+        push_dummy_untyped_label(&mut stack);
 
         // Valtypes separated by a label should also not be detected
         stack.assert_val_types(&[]).unwrap();
@@ -417,11 +511,9 @@ mod tests {
     #[test]
     fn unspecified() {
         let mut stack = ValidationStack::new();
-        stack.push_label(LabelInfo {
-            kind: LabelKind::Block,
-        });
+        push_dummy_untyped_label(&mut stack);
 
-        stack.make_unspecified();
+        stack.make_unspecified().unwrap();
 
         // Now we can pop as many valtypes from the stack as we want
         stack
@@ -433,15 +525,125 @@ mod tests {
             .unwrap();
 
         // Let's remove the unspecified entry and the first label
-        let popped_label = stack.pop_label_and_above().unwrap();
-        assert_eq!(
-            popped_label,
-            LabelInfo {
-                kind: LabelKind::Block,
-            }
-        );
+
+        // TODO hide implementation
+        stack.ctrl_stack.pop();
 
         // Now there are no values left on the stack
         assert_eq!(stack.assert_val_types(&[]), Ok(()));
+    }
+
+    #[test]
+    fn unspecified2() {
+        let mut stack = ValidationStack::new();
+        push_dummy_untyped_label(&mut stack);
+
+        stack.make_unspecified().unwrap();
+
+        // Stack needs to keep track of unified types, I64 and F32 and I32 will appear.
+        stack
+            .assert_val_types(&[
+                ValType::NumType(NumType::I64),
+                ValType::NumType(NumType::F32),
+                ValType::NumType(NumType::I32),
+            ])
+            .unwrap();
+
+        stack.ctrl_stack.pop();
+
+        assert_eq!(
+            stack.assert_pop_val_type(ValType::NumType(NumType::I32)),
+            Ok(())
+        );
+        assert_eq!(
+            stack.assert_pop_val_type(ValType::NumType(NumType::F32)),
+            Ok(())
+        );
+        assert_eq!(
+            stack.assert_pop_val_type(ValType::NumType(NumType::I64)),
+            Ok(())
+        );
+    }
+
+    #[test]
+    fn unspecified3() {
+        let mut stack = ValidationStack::new();
+        push_dummy_untyped_label(&mut stack);
+
+        stack.make_unspecified().unwrap();
+
+        stack.push_valtype(ValType::NumType(NumType::I32));
+
+        // Stack needs to keep track of unified types, I64 and F32 will appear under I32.
+        // Stack needs to keep track of unified types, I64 and F32 and I32 will appear.
+        stack
+            .assert_val_types(&[
+                ValType::NumType(NumType::I64),
+                ValType::NumType(NumType::F32),
+                ValType::NumType(NumType::I32),
+            ])
+            .unwrap();
+
+        stack.ctrl_stack.pop();
+
+        assert_eq!(
+            stack.assert_pop_val_type(ValType::NumType(NumType::I32)),
+            Ok(())
+        );
+        assert_eq!(
+            stack.assert_pop_val_type(ValType::NumType(NumType::F32)),
+            Ok(())
+        );
+        assert_eq!(
+            stack.assert_pop_val_type(ValType::NumType(NumType::I64)),
+            Ok(())
+        );
+    }
+
+    #[test]
+    fn unspecified4() {
+        let mut stack = ValidationStack::new();
+
+        stack.push_valtype(ValType::VecType);
+        stack.push_valtype(ValType::NumType(NumType::I32));
+
+        push_dummy_untyped_label(&mut stack);
+
+        stack.make_unspecified().unwrap();
+
+        stack.push_valtype(ValType::VecType);
+        stack.push_valtype(ValType::RefType(RefType::FuncRef));
+
+        // Stack needs to keep track of unified types, I64 and F32 will appear below VecType and RefType
+        // and above I32 and VecType
+        stack
+            .assert_val_types(&[
+                ValType::NumType(NumType::I64),
+                ValType::NumType(NumType::F32),
+                ValType::VecType,
+                ValType::RefType(RefType::FuncRef),
+            ])
+            .unwrap();
+
+        stack.ctrl_stack.pop();
+
+        assert_eq!(
+            stack.assert_pop_val_type(ValType::RefType(RefType::FuncRef)),
+            Ok(())
+        );
+        assert_eq!(stack.assert_pop_val_type(ValType::VecType), Ok(()));
+        assert_eq!(
+            stack.assert_pop_val_type(ValType::NumType(NumType::F32)),
+            Ok(())
+        );
+        assert_eq!(
+            stack.assert_pop_val_type(ValType::NumType(NumType::I64)),
+            Ok(())
+        );
+        assert_eq!(
+            stack.assert_pop_val_type(ValType::NumType(NumType::I32)),
+            Ok(())
+        );
+        assert_eq!(stack.assert_pop_val_type(ValType::VecType), Ok(()));
     }
 }
