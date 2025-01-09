@@ -88,6 +88,26 @@ pub fn read_declared_locals(wasm: &mut WasmReader) -> Result<Vec<ValType>> {
         Ok((n, valtype))
     })?;
 
+    // these checks are related to the official test suite binary.wast file, the first 2 assert_malformed's starting at line 350
+    // we check to not have more than 2^32-1 locals, and if that number is okay, we then get to instantiate them all
+    // this is because the flat_map and collect take an insane amount of time
+    // in total, these 2 tests take more than 240s
+    let mut total_no_of_locals: usize = 0;
+    for local in &locals {
+        let temp = local.0;
+        if temp > i32::MAX as usize {
+            panic!("can't have more than 2^32-1 locals")
+        };
+        total_no_of_locals = match total_no_of_locals.checked_add(temp) {
+            None => panic!("can't have more than 2^32-1 locals"),
+            Some(n) => n,
+        }
+    }
+
+    if total_no_of_locals > i32::MAX as usize {
+        panic!("can't have more than 2^32-1 locals");
+    }
+
     // Flatten local types for easier representation where n > 1
     let locals = locals
         .into_iter()
@@ -118,6 +138,11 @@ fn read_instructions(
             // TODO only do this if EOF
             return Err(Error::ExprMissingEnd);
         };
+
+        #[cfg(debug_assertions)]
+        crate::core::utils::print_beautiful_instruction_name_1_byte(first_instr_byte, wasm.pc);
+
+        #[cfg(not(debug_assertions))]
         trace!("Read instruction byte {first_instr_byte:#04X?} ({first_instr_byte}) at wasm_binary[{}]", wasm.pc);
 
         use crate::core::reader::types::opcode::*;

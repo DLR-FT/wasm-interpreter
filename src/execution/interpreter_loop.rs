@@ -59,6 +59,12 @@ pub(super) fn run<H: HookSet>(
 
         let first_instr_byte = wasm.read_u8().unwrap_validated();
 
+        #[cfg(debug_assertions)]
+        trace!(
+            "Executing instruction {}",
+            opcode_byte_to_str(first_instr_byte)
+        );
+
         match first_instr_byte {
             NOP => {
                 trace!("Instruction: NOP");
@@ -128,7 +134,7 @@ pub(super) fn run<H: HookSet>(
                 let r = tab
                     .elem
                     .get(i as usize)
-                    .ok_or(RuntimeError::TableAccessOutOfBounds)
+                    .ok_or(RuntimeError::UndefinedTableIndex)
                     .and_then(|r| {
                         if r.is_null() {
                             trace!("table_idx ({table_idx}) --- element index in table ({i})");
@@ -141,12 +147,10 @@ pub(super) fn run<H: HookSet>(
                 let func_addr = match *r {
                     Ref::Func(func_addr) => func_addr.addr,
                     Ref::Extern(_) => unreachable!(),
-                };
+                }
+                .unwrap_validated();
 
-                let func_to_call_inst = store
-                    .funcs
-                    .get(func_addr.unwrap_validated())
-                    .unwrap_validated();
+                let func_to_call_inst = store.funcs.get(func_addr).unwrap_validated();
 
                 let func_ty_actual_index = func_to_call_inst.ty;
 
@@ -159,7 +163,7 @@ pub(super) fn run<H: HookSet>(
 
                 trace!("Instruction: call_indirect [{func_addr:?}]");
                 let locals = Locals::new(params, remaining_locals);
-                stack.push_stackframe(func_addr.unwrap_validated(), func_ty, locals, wasm.pc);
+                stack.push_stackframe(func_addr, func_ty, locals, wasm.pc);
 
                 wasm.move_start_to(func_to_call_inst.code_expr)
                     .unwrap_validated();
@@ -628,7 +632,7 @@ pub(super) fn run<H: HookSet>(
             I64_STORE => {
                 let memarg = MemArg::read_unvalidated(&mut wasm);
 
-                let data_to_store: u32 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let data_to_store: u64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
                 let mem = store.mems.get_mut(0).unwrap_validated(); // there is only one memory allowed as of now
@@ -681,7 +685,7 @@ pub(super) fn run<H: HookSet>(
                 let memory_location = address
                     .and_then(|address| {
                         let address = address as usize;
-                        mem.data.get_mut(address..(address + 4))
+                        mem.data.get_mut(address..(address + 8))
                     })
                     .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
 

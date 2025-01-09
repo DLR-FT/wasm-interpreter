@@ -26,6 +26,9 @@ pub enum RuntimeError {
     UninitializedElement,
     SignatureMismatch,
     ExpectedAValueOnTheStack,
+    UndefinedTableIndex,
+    // "undefined element" <- as-call_indirect-last
+    // "unreachable"
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -233,6 +236,9 @@ impl Display for RuntimeError {
             RuntimeError::SignatureMismatch => f.write_str("Indirect call signature mismatch"),
             RuntimeError::ExpectedAValueOnTheStack => {
                 f.write_str("Expected a value on the stack, but None was found")
+            }
+            RuntimeError::UndefinedTableIndex => {
+                f.write_str("Indirect call: table index out of bounds")
             }
         }
     }
