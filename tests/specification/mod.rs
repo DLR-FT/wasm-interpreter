@@ -43,13 +43,14 @@ pub fn spec_tests() {
 
     // let only_these_tests: Vec<String> = vec![];
 
-    // let paths = get_wast_files(Path::new("./tests/specification/testsuite/"), &filters)
-    //     .expect("Failed to find testsuite");
+    let paths = get_wast_files(Path::new("./tests/specification/testsuite/"), &filters)
+        .expect("Failed to find testsuite");
 
     // let pb: PathBuf = "./tests/specification/testsuite/custom_conversions.wast".into();
     // let pb: PathBuf = "./tests/specification/testsuite/custom_f64.wast".into();
-    let pb: PathBuf = "./tests/specification/testsuite/binary.wast".into();
-    let paths = vec![pb];
+    // let pb: PathBuf = "./tests/specification/testsuite/memory_manual.wast".into();
+    // let pb: PathBuf = "./tests/specification/testsuite/memory.wast".into();
+    // let paths = vec![pb];
 
     let mut successful_reports = 0;
     let mut failed_reports = 0;

@@ -49,6 +49,61 @@ macro_rules! try_to {
     };
 }
 
+enum ErrEVI {
+    Encode,
+    Validate,
+    Instantiate,
+}
+
+/// Clear the bytes and runtime instance before calling this function
+fn encode_validate_instantiate<'a>(
+    module: &mut wast::QuoteWat,
+    bytes: &'a mut Option<Vec<u8>>,
+    runtime_inst: &'a mut Option<RuntimeInstance<'a>>,
+) -> Result<(), ErrEVI> {
+    use wast::*;
+    let is_module = match &module {
+        QuoteWat::QuoteComponent(..) | QuoteWat::Wat(Wat::Component(..)) => false,
+        QuoteWat::Wat(..) | QuoteWat::QuoteModule(..) => true,
+    };
+
+    if is_module {
+        let inner_bytes = module.encode();
+
+        match inner_bytes {
+            Err(_) => Err(ErrEVI::Encode),
+            Ok(inner_bytes) => {
+                bytes.replace(inner_bytes);
+                let validation_info_attempt = catch_unwind(|| validate(bytes.as_ref().unwrap()));
+
+                match validation_info_attempt {
+                    Err(_) => Err(ErrEVI::Validate),
+                    Ok(validation_info) => match validation_info {
+                        Err(_) => Err(ErrEVI::Validate),
+                        Ok(validation_info) => {
+                            let runtime_instance_result =
+                                catch_unwind(|| RuntimeInstance::new(&validation_info));
+
+                            match runtime_instance_result {
+                                Err(_) => Err(ErrEVI::Instantiate),
+                                Ok(runtime_instance) => match runtime_instance {
+                                    Err(_) => Err(ErrEVI::Instantiate),
+                                    Ok(runtime_instance) => {
+                                        runtime_inst.replace(runtime_instance);
+                                        Ok(())
+                                    }
+                                },
+                            }
+                        }
+                    },
+                }
+            }
+        }
+    } else {
+        Err(ErrEVI::Encode)
+    }
+}
+
 pub fn run_spec_test(filepath: &str) -> WastTestReport {
     // -=-= Initialization =-=-
     let contents = try_to!(
@@ -321,68 +376,29 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                 mut module,
                 message: _,
             } => {
-                // use std::time;
-                use wast::*;
                 let line_number = span.linecol_in(&contents).0 as u32 + 1;
-                // println!("Module with line_number {line_number}");
-                // let start = time::SystemTime::now();
                 let cmd = get_command(&contents, span);
-                let is_module = match &module {
-                    QuoteWat::QuoteComponent(..) => false,
-                    QuoteWat::Wat(Wat::Component(..)) => false,
-                    QuoteWat::Wat(..) => true,
-                    QuoteWat::QuoteModule(..) => true,
+
+                match encode_validate_instantiate(&mut module, &mut None, &mut None) {
+                    Err(_) => asserts.push_success(WastSuccess::new(line_number, cmd)),
+                    Ok(_) => asserts.push_error(WastError::new("Module validated and instantiated successfully, when it shouldn't have been".into(), line_number, cmd))
                 };
-
-                if is_module {
-                    let bytes = module.encode();
-
-                    match bytes {
-                        Err(..) => asserts.push_success(WastSuccess::new(line_number, cmd)),
-                        Ok(bytes) => {
-                            println!("At line {}", line_number);
-                            let validation_info_attempt = catch_unwind(|| validate(&bytes));
-
-                            match validation_info_attempt {
-                                Err(..) => asserts.push_success(WastSuccess::new(line_number, cmd)),
-                                Ok(validation_info) => match validation_info {
-                                    Err(..) => {
-                                        asserts.push_success(WastSuccess::new(line_number, cmd))
-                                    }
-                                    Ok(validation_info) => {
-                                        match RuntimeInstance::new(&validation_info) {
-                                                Err(..) => {
-                                                    asserts.push_success(WastSuccess::new(line_number, cmd))
-                                                }
-                                                Ok(_) => asserts.push_error(WastError::new("Module validated and instantiated successfully, when it shouldn't have been".into(), line_number, cmd)),
-                                            };
-                                    }
-                                },
-                            }
-                        }
-                    }
-
-                    asserts.push_success(WastSuccess::new(line_number, cmd));
-                } else {
-                    asserts.push_error(WastError::new(
-                        Box::new(GenericError::new(
-                            "Assert malformed for components not yet implemented",
-                        )),
-                        line_number,
-                        cmd,
-                    ));
-                }
-
-                // println!("Time: {}", start.elapsed().unwrap().as_nanos());
-                // println!("Finished! Module with line_number {line_number}");
             }
 
             wast::WastDirective::AssertInvalid {
                 span,
-                module: _,
+                mut module,
                 message: _,
+            } => {
+                let line_number = span.linecol_in(&contents).0 as u32 + 1;
+                let cmd = get_command(&contents, span);
+
+                match encode_validate_instantiate(&mut module, &mut None, &mut None) {
+                    Err(_) => asserts.push_success(WastSuccess::new(line_number, cmd)),
+                    Ok(_) => asserts.push_error(WastError::new("Module validated and instantiated successfully, when it shouldn't have been".into(), line_number, cmd))
+                };
             }
-            | wast::WastDirective::Register {
+            wast::WastDirective::Register {
                 span,
                 name: _,
                 module: _,
@@ -412,11 +428,50 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                 ));
             }
             wast::WastDirective::Invoke(invoke) => {
-                asserts.push_error(WastError::new(
-                    Box::new(GenericError::new("Invoke directive not yet implemented")),
-                    invoke.span.linecol_in(&contents).0 as u32 + 1,
-                    get_command(&contents, invoke.span),
-                ));
+                match interpeter {
+                    None => asserts.push_error(WastError::new(
+                        Box::new(GenericError::new(
+                            "Couldn't invoke, interpreter not present",
+                        )),
+                        u32::MAX,
+                        "invoke",
+                    )),
+                    Some(ref mut interpeter) => {
+                        let args = invoke
+                            .args
+                            .into_iter()
+                            .map(arg_to_value)
+                            .collect::<Vec<_>>();
+
+                        // TODO: more modules ¯\_(ツ)_/¯
+                        match interpeter.get_function_by_name(DEFAULT_MODULE, invoke.name) {
+                            Err(_) => asserts.push_error(WastError::new(
+                                Box::new(GenericError::new(&format!(
+                                    "Couldn't get the function '{}' from module '{}'",
+                                    invoke.name, "DEFAULT_MODULE"
+                                ))),
+                                u32::MAX,
+                                "invoke",
+                            )),
+                            Ok(funcref) => {
+                                match interpeter.invoke_dynamic_unchecked_return_ty(&funcref, args)
+                                {
+                                    Err(e) => asserts.push_error(WastError::new(
+                                        Box::new(GenericError::new(&format!(
+                                            "failed to execute function '{}' from module '{}' - error: {:?}",
+                                            invoke.name, "DEFAULT_MODULE", e
+                                        ))),
+                                        u32::MAX,
+                                        "invoke",
+                                    )),
+                                    Ok(_) => {
+                                        asserts.push_success(WastSuccess::new(u32::MAX, "invoke"))
+                                    }
+                                }
+                            }
+                        };
+                    }
+                };
             }
             wast::WastDirective::Thread(thread) => {
                 asserts.push_error(WastError::new(

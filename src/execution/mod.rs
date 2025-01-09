@@ -493,6 +493,28 @@ where
             .map(|ty| MemInst::new(*ty))
             .collect();
 
+        let import_memory_instances_len = {
+            let mut len: usize = 0;
+            for import in &validation_info.imports {
+                if let crate::core::reader::types::import::ImportDesc::Mem(_) = import.desc {
+                    len += 1;
+                }
+            }
+            len
+        };
+        match memory_instances
+            .len()
+            .checked_add(import_memory_instances_len)
+        {
+            None => panic!("Unknown number of memory instances"),
+            Some(mem_instances) => {
+                if mem_instances != 1 {
+                    panic!("Multiple memories not yet supported");
+                } else {
+                }
+            }
+        };
+
         let data_sections: Vec<DataInst> = validation_info
             .data
             .iter()
@@ -504,7 +526,10 @@ where
                     if mem_idx != 0 {
                         todo!("Active data has memory_idx different than 0");
                     }
-                    assert!(memory_instances.len() > mem_idx);
+                    assert!(
+                        memory_instances.len() > mem_idx,
+                        "Multiple memories not yet supported"
+                    );
 
                     let boxed_value = {
                         let mut wasm = WasmReader::new(validation_info.wasm);

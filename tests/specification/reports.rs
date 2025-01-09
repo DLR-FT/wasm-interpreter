@@ -108,7 +108,13 @@ impl std::fmt::Display for WastTestReport {
                             writeln!(
                                 f,
                                 "✅ {}:{} -> {}",
-                                assert_report.filename, success.line_number, success.command
+                                assert_report.filename,
+                                if success.line_number == u32::MAX {
+                                    "?".to_string()
+                                } else {
+                                    success.line_number.to_string()
+                                },
+                                success.command
                             )?;
                         }
                         Err(error) => {
@@ -116,7 +122,15 @@ impl std::fmt::Display for WastTestReport {
                                 f,
                                 "❌ {}:{} -> {}",
                                 assert_report.filename,
-                                error.line_number.unwrap_or(0),
+                                match error.line_number {
+                                    None => u32::MAX.to_string(),
+                                    Some(line_number) =>
+                                        if line_number == u32::MAX {
+                                            "?".to_string()
+                                        } else {
+                                            line_number.to_string()
+                                        },
+                                },
                                 error.command
                             )?;
                             writeln!(f, "    Error: {}", error.inner)?;
