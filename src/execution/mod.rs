@@ -508,7 +508,7 @@ where
         {
             None => panic!("Unknown number of memory instances"),
             Some(mem_instances) => {
-                if mem_instances != 1 {
+                if mem_instances > 1 {
                     panic!("Multiple memories not yet supported");
                 } else {
                 }
