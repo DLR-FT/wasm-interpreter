@@ -2470,6 +2470,90 @@
 <a href="#2468" id="2468">2468</a>
 <a href="#2469" id="2469">2469</a>
 <a href="#2470" id="2470">2470</a>
+<a href="#2471" id="2471">2471</a>
+<a href="#2472" id="2472">2472</a>
+<a href="#2473" id="2473">2473</a>
+<a href="#2474" id="2474">2474</a>
+<a href="#2475" id="2475">2475</a>
+<a href="#2476" id="2476">2476</a>
+<a href="#2477" id="2477">2477</a>
+<a href="#2478" id="2478">2478</a>
+<a href="#2479" id="2479">2479</a>
+<a href="#2480" id="2480">2480</a>
+<a href="#2481" id="2481">2481</a>
+<a href="#2482" id="2482">2482</a>
+<a href="#2483" id="2483">2483</a>
+<a href="#2484" id="2484">2484</a>
+<a href="#2485" id="2485">2485</a>
+<a href="#2486" id="2486">2486</a>
+<a href="#2487" id="2487">2487</a>
+<a href="#2488" id="2488">2488</a>
+<a href="#2489" id="2489">2489</a>
+<a href="#2490" id="2490">2490</a>
+<a href="#2491" id="2491">2491</a>
+<a href="#2492" id="2492">2492</a>
+<a href="#2493" id="2493">2493</a>
+<a href="#2494" id="2494">2494</a>
+<a href="#2495" id="2495">2495</a>
+<a href="#2496" id="2496">2496</a>
+<a href="#2497" id="2497">2497</a>
+<a href="#2498" id="2498">2498</a>
+<a href="#2499" id="2499">2499</a>
+<a href="#2500" id="2500">2500</a>
+<a href="#2501" id="2501">2501</a>
+<a href="#2502" id="2502">2502</a>
+<a href="#2503" id="2503">2503</a>
+<a href="#2504" id="2504">2504</a>
+<a href="#2505" id="2505">2505</a>
+<a href="#2506" id="2506">2506</a>
+<a href="#2507" id="2507">2507</a>
+<a href="#2508" id="2508">2508</a>
+<a href="#2509" id="2509">2509</a>
+<a href="#2510" id="2510">2510</a>
+<a href="#2511" id="2511">2511</a>
+<a href="#2512" id="2512">2512</a>
+<a href="#2513" id="2513">2513</a>
+<a href="#2514" id="2514">2514</a>
+<a href="#2515" id="2515">2515</a>
+<a href="#2516" id="2516">2516</a>
+<a href="#2517" id="2517">2517</a>
+<a href="#2518" id="2518">2518</a>
+<a href="#2519" id="2519">2519</a>
+<a href="#2520" id="2520">2520</a>
+<a href="#2521" id="2521">2521</a>
+<a href="#2522" id="2522">2522</a>
+<a href="#2523" id="2523">2523</a>
+<a href="#2524" id="2524">2524</a>
+<a href="#2525" id="2525">2525</a>
+<a href="#2526" id="2526">2526</a>
+<a href="#2527" id="2527">2527</a>
+<a href="#2528" id="2528">2528</a>
+<a href="#2529" id="2529">2529</a>
+<a href="#2530" id="2530">2530</a>
+<a href="#2531" id="2531">2531</a>
+<a href="#2532" id="2532">2532</a>
+<a href="#2533" id="2533">2533</a>
+<a href="#2534" id="2534">2534</a>
+<a href="#2535" id="2535">2535</a>
+<a href="#2536" id="2536">2536</a>
+<a href="#2537" id="2537">2537</a>
+<a href="#2538" id="2538">2538</a>
+<a href="#2539" id="2539">2539</a>
+<a href="#2540" id="2540">2540</a>
+<a href="#2541" id="2541">2541</a>
+<a href="#2542" id="2542">2542</a>
+<a href="#2543" id="2543">2543</a>
+<a href="#2544" id="2544">2544</a>
+<a href="#2545" id="2545">2545</a>
+<a href="#2546" id="2546">2546</a>
+<a href="#2547" id="2547">2547</a>
+<a href="#2548" id="2548">2548</a>
+<a href="#2549" id="2549">2549</a>
+<a href="#2550" id="2550">2550</a>
+<a href="#2551" id="2551">2551</a>
+<a href="#2552" id="2552">2552</a>
+<a href="#2553" id="2553">2553</a>
+<a href="#2554" id="2554">2554</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! This module solely contains the actual interpretation loop that matches instructions, interpreting the WASM bytecode
 //!
 //!
@@ -2488,11 +2572,12 @@
 <span class="kw">use crate</span>::{
     assert_validated::UnwrapValidatedExt,
     core::{
-        indices::{DataIdx, FuncIdx, GlobalIdx, LocalIdx, TableIdx, TypeIdx},
+        indices::{DataIdx, FuncIdx, GlobalIdx, LabelIdx, LocalIdx, TableIdx, TypeIdx},
         reader::{
-            types::{memarg::MemArg, FuncType},
+            types::{memarg::MemArg, BlockType, FuncType},
             WasmReadable, WasmReader,
         },
+        sidetable::Sidetable,
     },
     locals::Locals,
     store::{DataInst, Store},
@@ -2520,6 +2605,11 @@
     <span class="comment">// Start reading the function's instructions
     </span><span class="kw">let </span><span class="kw-2">mut </span>wasm = WasmReader::new(wasm_bytecode);
 
+    <span class="comment">// the sidetable and stp for this function, stp will reset to 0 every call
+    // since function instances have their own sidetable.
+    </span><span class="kw">let </span><span class="kw-2">mut </span>current_sidetable: <span class="kw-2">&amp;</span>Sidetable = <span class="kw-2">&amp;</span>func_inst.sidetable;
+    <span class="kw">let </span><span class="kw-2">mut </span>stp = <span class="number">0</span>;
+
     <span class="comment">// unwrap is sound, because the validation assures that the function points to valid subslice of the WASM binary
     </span>wasm.move_start_to(func_inst.code_expr).unwrap();
 
@@ -2536,7 +2626,20 @@
                 <span class="macro">trace!</span>(<span class="string">"Instruction: NOP"</span>);
             }
             END =&gt; {
-                <span class="kw">let </span>maybe_return_address = stack.pop_stackframe();
+                <span class="comment">// if this is not the very last instruction in the function
+                // just skip because it is a delimiter of a ctrl block
+
+                // TODO there is definitely a better to write this
+                </span><span class="kw">let </span>current_func_span = store
+                    .funcs
+                    .get(stack.current_stackframe().func_idx)
+                    .unwrap_validated()
+                    .code_expr;
+                <span class="kw">if </span>wasm.pc != current_func_span.from() + current_func_span.len() {
+                    <span class="kw">continue</span>;
+                }
+
+                <span class="kw">let </span>(maybe_return_address, maybe_return_stp) = stack.pop_stackframe();
 
                 <span class="comment">// We finished this entire invocation if there is no stackframe left. If there are
                 // one or more stack frames, we need to continue from where the callee was called
@@ -2547,30 +2650,68 @@
 
                 <span class="macro">trace!</span>(<span class="string">"end of function reached, returning to previous stack frame"</span>);
                 wasm.pc = maybe_return_address;
+                stp = maybe_return_stp;
+
+                current_sidetable = <span class="kw-2">&amp;</span>store
+                    .funcs
+                    .get(stack.current_stackframe().func_idx)
+                    .unwrap_validated()
+                    .sidetable;
+            }
+            IF =&gt; {
+                wasm.read_var_u32().unwrap_validated();
+
+                <span class="kw">let </span>test_val: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                <span class="kw">if </span>test_val != <span class="number">0 </span>{
+                    stp += <span class="number">1</span>;
+                } <span class="kw">else </span>{
+                    do_sidetable_control_transfer(<span class="kw-2">&amp;mut </span>wasm, stack, <span class="kw-2">&amp;mut </span>stp, current_sidetable);
+                }
+            }
+            ELSE =&gt; {
+                do_sidetable_control_transfer(<span class="kw-2">&amp;mut </span>wasm, stack, <span class="kw-2">&amp;mut </span>stp, current_sidetable);
+            }
+            BR_IF =&gt; {
+                wasm.read_var_u32().unwrap_validated();
+
+                <span class="kw">let </span>test_val: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                <span class="kw">if </span>test_val != <span class="number">0 </span>{
+                    do_sidetable_control_transfer(<span class="kw-2">&amp;mut </span>wasm, stack, <span class="kw-2">&amp;mut </span>stp, current_sidetable);
+                } <span class="kw">else </span>{
+                    stp += <span class="number">1</span>;
+                }
+            }
+            BR_TABLE =&gt; {
+                <span class="kw">let </span>label_vec = wasm
+                    .read_vec(|wasm| wasm.read_var_u32().map(|v| v <span class="kw">as </span>LabelIdx))
+                    .unwrap_validated();
+                wasm.read_var_u32().unwrap_validated();
+
+                <span class="comment">// TODO is this correct?
+                </span><span class="kw">let </span>case_val_i32: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                <span class="kw">let </span>case_val = case_val_i32 <span class="kw">as </span>usize;
+
+                <span class="kw">if </span>case_val &gt;= label_vec.len() {
+                    stp += label_vec.len();
+                } <span class="kw">else </span>{
+                    stp += case_val;
+                }
+
+                do_sidetable_control_transfer(<span class="kw-2">&amp;mut </span>wasm, stack, <span class="kw-2">&amp;mut </span>stp, current_sidetable);
+            }
+            BR =&gt; {
+                <span class="comment">//skip n of BR n
+                </span>wasm.read_var_u32().unwrap_validated();
+                do_sidetable_control_transfer(<span class="kw-2">&amp;mut </span>wasm, stack, <span class="kw-2">&amp;mut </span>stp, current_sidetable);
+            }
+            BLOCK | LOOP =&gt; {
+                BlockType::read_unvalidated(<span class="kw-2">&amp;mut </span>wasm);
             }
             RETURN =&gt; {
-                <span class="macro">trace!</span>(<span class="string">"returning from function"</span>);
-
-                <span class="kw">let </span>func_to_call_idx = stack.current_stackframe().func_idx;
-
-                <span class="kw">let </span>func_to_call_inst = store.funcs.get(func_to_call_idx).unwrap_validated();
-                <span class="kw">let </span>func_to_call_ty = types.get(func_to_call_inst.ty).unwrap_validated();
-
-                <span class="kw">let </span>ret_vals = stack
-                    .pop_tail_iter(func_to_call_ty.returns.valtypes.len())
-                    .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
-                stack.clear_callframe_values();
-
-                <span class="kw">for </span>val <span class="kw">in </span>ret_vals {
-                    stack.push_value(val);
-                }
-
-                <span class="kw">if </span>stack.callframe_count() == <span class="number">1 </span>{
-                    <span class="kw">break</span>;
-                }
-
-                <span class="macro">trace!</span>(<span class="string">"end of function reached, returning to previous stack frame"</span>);
-                wasm.pc = stack.pop_stackframe();
+                <span class="comment">//same as BR, except no need to skip n of BR n
+                </span>do_sidetable_control_transfer(<span class="kw-2">&amp;mut </span>wasm, stack, <span class="kw-2">&amp;mut </span>stp, current_sidetable);
             }
             CALL =&gt; {
                 <span class="kw">let </span>func_to_call_idx = wasm.read_var_u32().unwrap_validated() <span class="kw">as </span>FuncIdx;
@@ -2583,10 +2724,12 @@
 
                 <span class="macro">trace!</span>(<span class="string">"Instruction: call [{func_to_call_idx:?}]"</span>);
                 <span class="kw">let </span>locals = Locals::new(params, remaining_locals);
-                stack.push_stackframe(func_to_call_idx, func_to_call_ty, locals, wasm.pc);
+                stack.push_stackframe(func_to_call_idx, func_to_call_ty, locals, wasm.pc, stp);
 
                 wasm.move_start_to(func_to_call_inst.code_expr)
                     .unwrap_validated();
+                stp = <span class="number">0</span>;
+                current_sidetable = <span class="kw-2">&amp;</span>func_to_call_inst.sidetable;
             }
             CALL_INDIRECT =&gt; {
                 <span class="kw">let </span>type_idx = wasm.read_var_u32().unwrap_validated() <span class="kw">as </span>TypeIdx;
@@ -2631,10 +2774,12 @@
 
                 <span class="macro">trace!</span>(<span class="string">"Instruction: call_indirect [{func_addr:?}]"</span>);
                 <span class="kw">let </span>locals = Locals::new(params, remaining_locals);
-                stack.push_stackframe(func_addr.unwrap_validated(), func_ty, locals, wasm.pc);
+                stack.push_stackframe(func_addr.unwrap_validated(), func_ty, locals, wasm.pc, stp);
 
                 wasm.move_start_to(func_to_call_inst.code_expr)
                     .unwrap_validated();
+                stp = <span class="number">0</span>;
+                current_sidetable = <span class="kw-2">&amp;</span>func_to_call_inst.sidetable;
             }
             DROP =&gt; {
                 stack.drop_value();
@@ -4939,5 +5084,28 @@
         }
     }
     <span class="prelude-val">Ok</span>(())
+}
+
+<span class="comment">//helper function for avoiding code duplication at intraprocedural jumps
+</span><span class="kw">fn </span>do_sidetable_control_transfer(
+    wasm: <span class="kw-2">&amp;mut </span>WasmReader,
+    stack: <span class="kw-2">&amp;mut </span>Stack,
+    current_stp: <span class="kw-2">&amp;mut </span>usize,
+    current_sidetable: <span class="kw-2">&amp;</span>Sidetable,
+) {
+    <span class="kw">let </span>sidetable_entry = <span class="kw-2">&amp;</span>current_sidetable[<span class="kw-2">*</span>current_stp];
+
+    <span class="comment">// TODO fix this corner cutting implementation
+    </span><span class="kw">let </span>jump_vals = stack
+        .pop_tail_iter(sidetable_entry.valcnt)
+        .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+    stack.pop_n_values(sidetable_entry.popcnt);
+
+    <span class="kw">for </span>val <span class="kw">in </span>jump_vals {
+        stack.push_value(val);
+    }
+
+    <span class="kw-2">*</span>current_stp = (<span class="kw-2">*</span>current_stp <span class="kw">as </span>isize + sidetable_entry.delta_stp) <span class="kw">as </span>usize;
+    wasm.pc = (wasm.pc <span class="kw">as </span>isize + sidetable_entry.delta_pc) <span class="kw">as </span>usize;
 }
 </code></pre></div></section></main></body></html>

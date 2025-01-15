@@ -235,6 +235,11 @@
 <a href="#233" id="233">233</a>
 <a href="#234" id="234">234</a>
 <a href="#235" id="235">235</a>
+<a href="#236" id="236">236</a>
+<a href="#237" id="237">237</a>
+<a href="#238" id="238">238</a>
+<a href="#239" id="239">239</a>
+<a href="#240" id="240">240</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>alloc::vec::{Drain, Vec};
 
 <span class="kw">use </span><span class="kw">crate</span>::core::indices::{FuncIdx, LocalIdx};
@@ -391,12 +396,13 @@
         <span class="self">self</span>.frames.last_mut().unwrap_validated()
     }
 
-    <span class="doccomment">/// Pop a [`CallFrame`] from the call stack, returning the return address
-    </span><span class="kw">pub fn </span>pop_stackframe(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; usize {
+    <span class="doccomment">/// Pop a [`CallFrame`] from the call stack, returning the return address and the return stp
+    </span><span class="kw">pub fn </span>pop_stackframe(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; (usize, usize) {
         <span class="kw">let </span>CallFrame {
             return_addr,
             value_stack_base_idx,
             return_value_count,
+            return_stp,
             ..
         } = <span class="self">self</span>.frames.pop().unwrap_validated();
 
@@ -409,7 +415,7 @@
             <span class="string">"after a function call finished, the stack must have exactly as many values as it had before calling the function plus the number of function return values"
         </span>);
 
-        return_addr
+        (return_addr, return_stp)
     }
 
     <span class="doccomment">/// Push a stackframe to the call stack
@@ -421,6 +427,7 @@
         func_ty: <span class="kw-2">&amp;</span>FuncType,
         locals: Locals,
         return_addr: usize,
+        return_stp: usize,
     ) {
         <span class="self">self</span>.frames.push(CallFrame {
             func_idx,
@@ -428,6 +435,7 @@
             return_addr,
             value_stack_base_idx: <span class="self">self</span>.values.len(),
             return_value_count: func_ty.returns.valtypes.len(),
+            return_stp,
         })
     }
 
@@ -446,10 +454,9 @@
         <span class="self">self</span>.values.drain(start..)
     }
 
-    <span class="doccomment">/// Clear all of the values pushed to the value stack by the current stack frame
-    </span><span class="kw">pub fn </span>clear_callframe_values(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-        <span class="self">self</span>.values
-            .truncate(<span class="self">self</span>.current_stackframe().value_stack_base_idx);
+    <span class="comment">// TODO change this interface
+    </span><span class="kw">pub fn </span>pop_n_values(<span class="kw-2">&amp;mut </span><span class="self">self</span>, n: usize) {
+        <span class="self">self</span>.values.truncate(<span class="self">self</span>.values.len() - n);
     }
 }
 
@@ -469,5 +476,8 @@
 
     <span class="doccomment">/// Number of return values to retain on [`Stack::values`] when unwinding/popping a [`CallFrame`]
     </span><span class="kw">pub </span>return_value_count: usize,
+
+    <span class="comment">// Value that the stp has to be set to when this function returns
+    </span><span class="kw">pub </span>return_stp: usize,
 }
 </code></pre></div></section></main></body></html>

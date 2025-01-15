@@ -191,9 +191,25 @@
 <a href="#189" id="189">189</a>
 <a href="#190" id="190">190</a>
 <a href="#191" id="191">191</a>
-</pre></div><pre class="rust"><code><span class="kw">pub const </span>UNREACHABLE: u8 = <span class="number">0x00</span>;
+<a href="#192" id="192">192</a>
+<a href="#193" id="193">193</a>
+<a href="#194" id="194">194</a>
+<a href="#195" id="195">195</a>
+<a href="#196" id="196">196</a>
+<a href="#197" id="197">197</a>
+<a href="#198" id="198">198</a>
+<a href="#199" id="199">199</a>
+</pre></div><pre class="rust"><code><span class="doccomment">//! All opcodes, in alphanumerical order by their numeric (hex-)value
+</span><span class="kw">pub const </span>UNREACHABLE: u8 = <span class="number">0x00</span>;
 <span class="kw">pub const </span>NOP: u8 = <span class="number">0x01</span>;
+<span class="kw">pub const </span>BLOCK: u8 = <span class="number">0x02</span>;
+<span class="kw">pub const </span>LOOP: u8 = <span class="number">0x03</span>;
+<span class="kw">pub const </span>IF: u8 = <span class="number">0x04</span>;
+<span class="kw">pub const </span>ELSE: u8 = <span class="number">0x05</span>;
 <span class="kw">pub const </span>END: u8 = <span class="number">0x0B</span>;
+<span class="kw">pub const </span>BR: u8 = <span class="number">0x0C</span>;
+<span class="kw">pub const </span>BR_IF: u8 = <span class="number">0x0D</span>;
+<span class="kw">pub const </span>BR_TABLE: u8 = <span class="number">0x0E</span>;
 <span class="kw">pub const </span>RETURN: u8 = <span class="number">0x0F</span>;
 <span class="kw">pub const </span>CALL: u8 = <span class="number">0x10</span>;
 <span class="kw">pub const </span>DROP: u8 = <span class="number">0x1A</span>;

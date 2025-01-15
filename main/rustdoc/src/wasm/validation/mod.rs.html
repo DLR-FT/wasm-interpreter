@@ -226,6 +226,13 @@
 <a href="#224" id="224">224</a>
 <a href="#225" id="225">225</a>
 <a href="#226" id="226">226</a>
+<a href="#227" id="227">227</a>
+<a href="#228" id="228">228</a>
+<a href="#229" id="229">229</a>
+<a href="#230" id="230">230</a>
+<a href="#231" id="231">231</a>
+<a href="#232" id="232">232</a>
+<a href="#233" id="233">233</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>alloc::collections::btree_set;
 <span class="kw">use </span>alloc::vec::Vec;
 
@@ -239,6 +246,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::core::reader::types::import::Import;
 <span class="kw">use </span><span class="kw">crate</span>::core::reader::types::{FuncType, MemType, TableType};
 <span class="kw">use </span><span class="kw">crate</span>::core::reader::{WasmReadable, WasmReader};
+<span class="kw">use </span><span class="kw">crate</span>::core::sidetable::Sidetable;
 <span class="kw">use crate</span>::{Error, <span class="prelude-ty">Result</span>};
 
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>code;
@@ -259,7 +267,8 @@
     <span class="kw">pub</span>(<span class="kw">crate</span>) globals: Vec&lt;Global&gt;,
     <span class="attr">#[allow(dead_code)]
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) exports: Vec&lt;Export&gt;,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) func_blocks: Vec&lt;Span&gt;,
+    <span class="doccomment">/// Each block contains the validated code section and the generated sidetable
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) func_blocks: Vec&lt;(Span, Sidetable)&gt;,
     <span class="kw">pub</span>(<span class="kw">crate</span>) data: Vec&lt;DataSegment&gt;,
     <span class="doccomment">/// The start function which is automatically executed during instantiation
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) start: <span class="prelude-ty">Option</span>&lt;FuncIdx&gt;,
@@ -373,23 +382,28 @@
 
     <span class="kw">while </span>(skip_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header)<span class="question-mark">?</span>).is_some() {}
 
-    <span class="kw">let </span>func_blocks = handle_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header, SectionTy::Code, |wasm, h| {
-        code::validate_code_section(
-            wasm,
-            h,
-            <span class="kw-2">&amp;</span>types,
-            <span class="kw-2">&amp;</span>functions,
-            <span class="kw-2">&amp;</span>globals,
-            <span class="kw-2">&amp;</span>memories,
-            <span class="kw-2">&amp;</span>data_count,
-            <span class="kw-2">&amp;</span>tables,
-            <span class="kw-2">&amp;</span>elements,
-            <span class="kw-2">&amp;</span>referenced_functions,
-        )
-    })<span class="question-mark">?
-    </span>.unwrap_or_default();
+    <span class="kw">let </span>func_blocks_sidetables =
+        handle_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header, SectionTy::Code, |wasm, h| {
+            code::validate_code_section(
+                wasm,
+                h,
+                <span class="kw-2">&amp;</span>types,
+                <span class="kw-2">&amp;</span>functions,
+                <span class="kw-2">&amp;</span>globals,
+                <span class="kw-2">&amp;</span>memories,
+                <span class="kw-2">&amp;</span>data_count,
+                <span class="kw-2">&amp;</span>tables,
+                <span class="kw-2">&amp;</span>elements,
+                <span class="kw-2">&amp;</span>referenced_functions,
+            )
+        })<span class="question-mark">?
+        </span>.unwrap_or_default();
 
-    <span class="macro">assert_eq!</span>(func_blocks.len(), functions.len(), <span class="string">"these should be equal"</span>); <span class="comment">// TODO check if this is in the spec
+    <span class="macro">assert_eq!</span>(
+        func_blocks_sidetables.len(),
+        functions.len(),
+        <span class="string">"these should be equal"
+    </span>); <span class="comment">// TODO check if this is in the spec
 
     </span><span class="kw">while </span>(skip_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header)<span class="question-mark">?</span>).is_some() {}
 
@@ -420,7 +434,7 @@
         memories,
         globals,
         exports,
-        func_blocks,
+        func_blocks: func_blocks_sidetables,
         data: data_section,
         start,
         elements,

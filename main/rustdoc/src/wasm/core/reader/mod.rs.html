@@ -384,6 +384,10 @@
 <a href="#382" id="382">382</a>
 <a href="#383" id="383">383</a>
 <a href="#384" id="384">384</a>
+<a href="#385" id="385">385</a>
+<a href="#386" id="386">386</a>
+<a href="#387" id="387">387</a>
+<a href="#388" id="388">388</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::core::reader::span::Span;
 <span class="kw">use crate</span>::{Error, <span class="prelude-ty">Result</span>};
 
@@ -596,6 +600,10 @@
         <span class="doccomment">/// Returns the length of this [Span]
         </span><span class="kw">pub const fn </span>len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
             <span class="self">self</span>.len
+        }
+
+        <span class="kw">pub const fn </span>from(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+            <span class="self">self</span>.from
         }
     }
 

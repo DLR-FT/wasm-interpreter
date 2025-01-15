@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["LabelKind","ValidationStackEntry"],"struct":["LabelInfo","ValidationStack"]};
+window.SIDEBAR_ITEMS = {"enum":["LabelInfo","ValidationStackEntry"],"struct":["CtrlStackEntry","ValidationStack"]};

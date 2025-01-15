@@ -273,11 +273,25 @@
 <a href="#271" id="271">271</a>
 <a href="#272" id="272">272</a>
 <a href="#273" id="273">273</a>
+<a href="#274" id="274">274</a>
+<a href="#275" id="275">275</a>
+<a href="#276" id="276">276</a>
+<a href="#277" id="277">277</a>
+<a href="#278" id="278">278</a>
+<a href="#279" id="279">279</a>
+<a href="#280" id="280">280</a>
+<a href="#281" id="281">281</a>
+<a href="#282" id="282">282</a>
+<a href="#283" id="283">283</a>
+<a href="#284" id="284">284</a>
+<a href="#285" id="285">285</a>
+<a href="#286" id="286">286</a>
+<a href="#287" id="287">287</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>alloc::format;
 <span class="kw">use </span>alloc::string::{String, ToString};
 
 <span class="kw">use </span><span class="kw">crate</span>::core::indices::GlobalIdx;
-<span class="kw">use </span><span class="kw">crate</span>::validation_stack::{LabelKind, ValidationStackEntry};
+<span class="kw">use </span><span class="kw">crate</span>::validation_stack::ValidationStackEntry;
 <span class="kw">use </span><span class="kw">crate</span>::RefType;
 <span class="kw">use </span>core::fmt::{Display, Formatter};
 <span class="kw">use </span>core::str::Utf8Error;
@@ -322,6 +336,7 @@
     InvalidNumType,
     InvalidVecType,
     InvalidFuncType,
+    InvalidFuncTypeIdx,
     InvalidRefType,
     InvalidValType,
     InvalidExportDesc(u8),
@@ -342,13 +357,15 @@
     InvalidGlobalIdx(GlobalIdx),
     GlobalIsConst,
     RuntimeError(RuntimeError),
-    FoundLabel(LabelKind),
-    FoundUnspecifiedValTypes,
     MemoryIsNotDefined(MemIdx),
     <span class="comment">//           mem.align, wanted alignment
     </span>ErroneousAlignment(u32, u32),
     NoDataSegments,
     DataSegmentNotFound(DataIdx),
+    InvalidLabelIdx(usize),
+    ValidationCtrlStackEmpty,
+    ElseWithoutMatchingIf,
+    IfWithoutMatchingElse,
     UnknownTable,
     TableIsNotDefined(TableIdx),
     ElementIsNotDefined(ElemIdx),
@@ -389,6 +406,9 @@
             }
             Error::InvalidFuncType =&gt; {
                 f.write_str(<span class="string">"An invalid byte was read where a functype was expected"</span>)
+            }
+            Error::InvalidFuncTypeIdx =&gt; {
+                f.write_str(<span class="string">"An invalid index to the fuctypes table was read"</span>)
             }
             Error::InvalidRefType =&gt; {
                 f.write_str(<span class="string">"An invalid byte was read where a reftype was expected"</span>)
@@ -435,10 +455,6 @@
             </span>)),
             Error::GlobalIsConst =&gt; f.write_str(<span class="string">"A const global cannot be written to"</span>),
             Error::RuntimeError(err) =&gt; err.fmt(f),
-            Error::FoundLabel(lk) =&gt; f.write_fmt(<span class="macro">format_args!</span>(
-                <span class="string">"Expecting a ValType, a Label was found: {lk:?}"
-            </span>)),
-            Error::FoundUnspecifiedValTypes =&gt; f.write_str(<span class="string">"Found UnspecifiedValTypes"</span>),
             Error::ExpectedAnOperand =&gt; f.write_str(<span class="string">"Expected a ValType"</span>), <span class="comment">// Error =&gt; f.write_str("Expected an operand (ValType) on the stack")
             </span>Error::MemoryIsNotDefined(memidx) =&gt; f.write_fmt(<span class="macro">format_args!</span>(
                 <span class="string">"C.mems[{}] is NOT defined when it should be"</span>,
@@ -453,6 +469,18 @@
             Error::NoDataSegments =&gt; f.write_str(<span class="string">"Data Count is None"</span>),
             Error::DataSegmentNotFound(data_idx) =&gt; {
                 f.write_fmt(<span class="macro">format_args!</span>(<span class="string">"Data Segment {} not found"</span>, data_idx))
+            }
+            Error::InvalidLabelIdx(label_idx) =&gt; {
+                f.write_fmt(<span class="macro">format_args!</span>(<span class="string">"invalid label index {}"</span>, label_idx))
+            }
+            Error::ValidationCtrlStackEmpty =&gt; {
+                f.write_str(<span class="string">"cannot retrieve last ctrl block, validation ctrl stack is empty"</span>)
+            }
+            Error::ElseWithoutMatchingIf =&gt; {
+                f.write_str(<span class="string">"read 'else' without a previous matching 'if' instruction"</span>)
+            }
+            Error::IfWithoutMatchingElse =&gt; {
+                f.write_str(<span class="string">"read 'end' without matching 'else' instruction to 'if' instruction"</span>)
             }
             Error::UnknownTable =&gt; f.write_str(<span class="string">"Unknown Table"</span>),
             Error::TableIsNotDefined(table_idx) =&gt; f.write_fmt(<span class="macro">format_args!</span>(

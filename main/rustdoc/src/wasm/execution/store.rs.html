@@ -107,6 +107,8 @@
 <a href="#105" id="105">105</a>
 <a href="#106" id="106">106</a>
 <a href="#107" id="107">107</a>
+<a href="#108" id="108">108</a>
+<a href="#109" id="109">109</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>alloc::vec;
 <span class="kw">use </span>alloc::vec::Vec;
 <span class="kw">use </span>core::iter;
@@ -115,6 +117,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::core::reader::span::Span;
 <span class="kw">use </span><span class="kw">crate</span>::core::reader::types::global::Global;
 <span class="kw">use </span><span class="kw">crate</span>::core::reader::types::{MemType, TableType, ValType};
+<span class="kw">use </span><span class="kw">crate</span>::core::sidetable::Sidetable;
 <span class="kw">use </span><span class="kw">crate</span>::execution::value::{Ref, Value};
 <span class="kw">use </span><span class="kw">crate</span>::RefType;
 
@@ -153,6 +156,7 @@
     <span class="kw">pub </span>ty: TypeIdx,
     <span class="kw">pub </span>locals: Vec&lt;ValType&gt;,
     <span class="kw">pub </span>code_expr: Span,
+    <span class="kw">pub </span>sidetable: Sidetable,
 }
 
 <span class="attr">#[derive(Debug)]

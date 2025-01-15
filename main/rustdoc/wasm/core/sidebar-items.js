@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["error","indices","reader"]};
+window.SIDEBAR_ITEMS = {"mod":["error","indices","reader","sidetable"]};
