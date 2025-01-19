@@ -154,9 +154,10 @@ impl Stack {
         self.frames.last_mut().unwrap_validated()
     }
 
-    /// Pop a [`CallFrame`] from the call stack, returning the return address and the return stp
-    pub fn pop_stackframe(&mut self) -> (usize, usize) {
+    /// Pop a [`CallFrame`] from the call stack, returning the module id, return address, and the return stp
+    pub fn pop_stackframe(&mut self) -> (usize, usize, usize) {
         let CallFrame {
+            module_idx,
             return_addr,
             value_stack_base_idx,
             return_value_count,
@@ -173,7 +174,7 @@ impl Stack {
             "after a function call finished, the stack must have exactly as many values as it had before calling the function plus the number of function return values"
         );
 
-        (return_addr, return_stp)
+        (module_idx, return_addr, return_stp)
     }
 
     /// Push a stackframe to the call stack
@@ -181,6 +182,7 @@ impl Stack {
     /// Takes the current [`Self::values`]'s length as [`CallFrame::value_stack_base_idx`].
     pub fn push_stackframe(
         &mut self,
+        module_idx: usize,
         func_idx: FuncIdx,
         func_ty: &FuncType,
         locals: Locals,
@@ -188,6 +190,7 @@ impl Stack {
         return_stp: usize,
     ) {
         self.frames.push(CallFrame {
+            module_idx,
             func_idx,
             locals,
             return_addr,
@@ -220,6 +223,9 @@ impl Stack {
 
 /// The [WASM spec](https://webassembly.github.io/spec/core/exec/runtime.html#stack) calls this `Activations`, however it refers to the call frames of functions.
 pub(crate) struct CallFrame {
+    /// Index to the module idx the function originates in.
+    pub module_idx: usize,
+
     /// Index to the function of this [`CallFrame`]
     pub func_idx: FuncIdx,
 
