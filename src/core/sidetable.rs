@@ -43,7 +43,7 @@ pub type Sidetable = Vec<SidetableEntry>;
 /// - else
 // TODO hide implementation
 // TODO Remove Clone trait from sidetables
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct SidetableEntry {
     /// Δpc: the amount to adjust the instruction pointer by if the branch is taken
     pub delta_pc: isize,

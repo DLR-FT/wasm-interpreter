@@ -280,6 +280,8 @@ impl ValidationStack {
         Ok(())
     }
 
+    // TODO: rename/refactor this function to make it more clear that it ALSO
+    // checks the stack for valid return types.
     pub fn assert_pop_ctrl(&mut self) -> Result<(LabelInfo, FuncType)> {
         let return_types = &self
             .ctrl_stack

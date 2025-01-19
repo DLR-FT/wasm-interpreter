@@ -8,7 +8,7 @@ use crate::core::reader::types::data::DataSegment;
 use crate::core::reader::types::element::ElemType;
 use crate::core::reader::types::export::Export;
 use crate::core::reader::types::global::Global;
-use crate::core::reader::types::import::Import;
+use crate::core::reader::types::import::{Import, ImportDesc};
 use crate::core::reader::types::{FuncType, MemType, TableType};
 use crate::core::reader::{WasmReadable, WasmReader};
 use crate::core::sidetable::Sidetable;
@@ -80,10 +80,31 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
-    let functions = handle_section(&mut wasm, &mut header, SectionTy::Function, |wasm, _| {
-        wasm.read_vec(|wasm| wasm.read_var_u32().map(|u| u as usize))
-    })?
-    .unwrap_or_default();
+    // The `Function` section only covers module-level (or "local") functions.
+    // Imported functions have their types known in the `import` section. Both
+    // local and imported functions share the same index space.
+    //
+    // Imported functions are given priority and have the first indicies, and
+    // only after that do the local functions get assigned their indices.
+    let local_functions =
+        handle_section(&mut wasm, &mut header, SectionTy::Function, |wasm, _| {
+            wasm.read_vec(|wasm| wasm.read_var_u32().map(|u| u as usize))
+        })?
+        .unwrap_or_default();
+
+    let imported_functions = imports
+        .iter()
+        .filter_map(|import| match &import.desc {
+            ImportDesc::Func(type_idx) => Some(*type_idx),
+            _ => None,
+        })
+        .collect::<Vec<_>>();
+
+    let all_functions = imported_functions
+        .iter()
+        .chain(local_functions.iter())
+        .cloned()
+        .collect::<Vec<TypeIdx>>();
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
@@ -127,7 +148,12 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
     let mut referenced_functions = btree_set::BTreeSet::new();
     let elements: Vec<ElemType> =
         handle_section(&mut wasm, &mut header, SectionTy::Element, |wasm, _| {
-            ElemType::read_from_wasm(wasm, &functions, &mut referenced_functions, tables.len())
+            ElemType::read_from_wasm(
+                wasm,
+                &all_functions,
+                &mut referenced_functions,
+                tables.len(),
+            )
         })?
         .unwrap_or_default();
 
@@ -153,7 +179,8 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
                 wasm,
                 h,
                 &types,
-                &functions,
+                &all_functions,
+                imported_functions.len(),
                 &globals,
                 &memories,
                 &data_count,
@@ -166,7 +193,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
 
     assert_eq!(
         func_blocks_sidetables.len(),
-        functions.len(),
+        local_functions.len(),
         "these should be equal"
     ); // TODO check if this is in the spec
 
@@ -194,7 +221,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
         wasm: wasm.into_inner(),
         types,
         imports,
-        functions,
+        functions: local_functions,
         tables,
         memories,
         globals,
