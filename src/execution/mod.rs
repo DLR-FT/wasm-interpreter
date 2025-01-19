@@ -6,13 +6,14 @@ use const_interpreter_loop::{run_const, run_const_span};
 use function_ref::FunctionRef;
 use interpreter_loop::run;
 use locals::Locals;
-use store::{DataInst, ElemInst, TableInst};
+use store::{DataInst, ElemInst, ImportedFuncInst, LocalFuncInst, TableInst};
 use value::{ExternAddr, FuncAddr, Ref};
 use value_stack::Stack;
 
 use crate::core::error::StoreInstantiationError;
 use crate::core::reader::types::element::{ElemItems, ElemMode};
 use crate::core::reader::types::export::{Export, ExportDesc};
+use crate::core::reader::types::import::ImportDesc;
 use crate::core::reader::types::FuncType;
 use crate::core::reader::WasmReader;
 use crate::execution::assert_validated::UnwrapValidatedExt;
@@ -30,6 +31,7 @@ pub mod function_ref;
 pub mod hooks;
 mod interpreter_loop;
 pub(crate) mod locals;
+pub(crate) mod lut;
 pub(crate) mod store;
 pub mod value;
 pub mod value_stack;
@@ -159,7 +161,13 @@ where
         let (_module_idx, func_idx) = self.verify_function_ref(function_ref)?;
 
         // -=-= Verification =-=-
-        let func_inst = self.store.funcs.get(func_idx).expect("valid FuncIdx");
+        let func_inst = self
+            .store
+            .funcs
+            .get(func_idx)
+            .expect("valid FuncIdx")
+            .try_into_local()
+            .expect("to invoke local function");
         let func_ty = self.types.get(func_inst.ty).unwrap_validated();
 
         // Check correct function parameters and return types
@@ -214,7 +222,13 @@ where
         let (_module_idx, func_idx) = self.verify_function_ref(function_ref)?;
 
         // -=-= Verification =-=-
-        let func_inst = self.store.funcs.get(func_idx).expect("valid FuncIdx");
+        let func_inst = self
+            .store
+            .funcs
+            .get(func_idx)
+            .expect("valid FuncIdx")
+            .try_into_local()
+            .expect("to invoke local function");
         let func_ty = self.types.get(func_inst.ty).unwrap_validated();
 
         // Verify that the given parameters match the function parameters
@@ -243,7 +257,13 @@ where
             EmptyHookSet,
         )?;
 
-        let func_inst = self.store.funcs.get(func_idx).expect("valid FuncIdx");
+        let func_inst = self
+            .store
+            .funcs
+            .get(func_idx)
+            .expect("valid FuncIdx")
+            .try_into_local()
+            .expect("to invoke local function");
         let func_ty = self.types.get(func_inst.ty).unwrap_validated();
 
         // Pop return values from stack
@@ -323,30 +343,42 @@ where
             let functions = validation_info.functions.iter();
             let func_blocks = validation_info.func_blocks.iter();
 
-            functions
-                .zip(func_blocks)
-                .map(|(ty, (func, sidetable))| {
-                    wasm_reader
-                        .move_start_to(*func)
-                        .expect("function index to be in the bounds of the WASM binary");
+            let local_function_inst = functions.zip(func_blocks).map(|(ty, (func, sidetable))| {
+                wasm_reader
+                    .move_start_to(*func)
+                    .expect("function index to be in the bounds of the WASM binary");
 
-                    let (locals, bytes_read) = wasm_reader
-                        .measure_num_read_bytes(read_declared_locals)
-                        .unwrap_validated();
+                let (locals, bytes_read) = wasm_reader
+                    .measure_num_read_bytes(read_declared_locals)
+                    .unwrap_validated();
 
-                    let code_expr = wasm_reader
-                        .make_span(func.len() - bytes_read)
-                        .expect("TODO remove this expect");
+                let code_expr = wasm_reader
+                    .make_span(func.len() - bytes_read)
+                    .expect("TODO remove this expect");
 
-                    FuncInst {
-                        ty: *ty,
-                        locals,
-                        code_expr,
-                        // TODO fix this ugly clone
-                        sidetable: sidetable.clone(),
-                    }
+                FuncInst::Local(LocalFuncInst {
+                    ty: *ty,
+                    locals,
+                    code_expr,
+                    // TODO fix this ugly clone
+                    sidetable: sidetable.clone(),
                 })
-                .collect()
+            });
+
+            let imported_function_inst =
+                validation_info
+                    .imports
+                    .iter()
+                    .filter_map(|import| match &import.desc {
+                        ImportDesc::Func(type_idx) => Some(FuncInst::Imported(ImportedFuncInst {
+                            ty: *type_idx,
+                            module_name: import.module_name.clone(),
+                            function_name: import.name.clone(),
+                        })),
+                        _ => None,
+                    });
+
+            imported_function_inst.chain(local_function_inst).collect()
         };
 
         // https://webassembly.github.io/spec/core/exec/modules.html#tables

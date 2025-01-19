@@ -26,6 +26,8 @@ pub enum RuntimeError {
     UninitializedElement,
     SignatureMismatch,
     ExpectedAValueOnTheStack,
+    ModuleNotFound,
+    UnmetImport,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -247,6 +249,10 @@ impl Display for RuntimeError {
             RuntimeError::SignatureMismatch => f.write_str("Indirect call signature mismatch"),
             RuntimeError::ExpectedAValueOnTheStack => {
                 f.write_str("Expected a value on the stack, but None was found")
+            }
+            RuntimeError::ModuleNotFound => f.write_str("No such module exists"),
+            RuntimeError::UnmetImport => {
+                f.write_str("There is at least one import which has no corresponding export")
             }
         }
     }
