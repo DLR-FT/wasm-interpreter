@@ -5,6 +5,7 @@ use core::iter;
 
 use crate::core::indices::TypeIdx;
 use crate::core::reader::span::Span;
+use crate::core::reader::types::export::Export;
 use crate::core::reader::types::global::Global;
 use crate::core::reader::types::{MemType, TableType, ValType};
 use crate::core::sidetable::Sidetable;
@@ -24,6 +25,7 @@ pub struct Store {
     pub tables: Vec<TableInst>,
     pub elements: Vec<ElemInst>,
     pub passive_elem_indexes: Vec<usize>,
+    pub exports: Vec<Export>,
 }
 
 #[derive(Debug)]
