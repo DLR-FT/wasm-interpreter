@@ -8,7 +8,6 @@ use crate::core::reader::span::Span;
 use crate::core::reader::types::export::Export;
 use crate::core::reader::types::global::Global;
 use crate::core::reader::types::{MemType, TableType, ValType};
-use crate::core::sidetable::Sidetable;
 use crate::execution::value::{Ref, Value};
 use crate::RefType;
 
@@ -39,7 +38,8 @@ pub struct LocalFuncInst {
     pub ty: TypeIdx,
     pub locals: Vec<ValType>,
     pub code_expr: Span,
-    pub sidetable: Sidetable,
+    /// where stp should point to when pc points to the beginning of the function
+    pub stp: usize,
 }
 
 #[derive(Debug)]

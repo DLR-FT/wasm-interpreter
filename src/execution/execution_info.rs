@@ -28,15 +28,16 @@ impl ExecutionInfo {
 pub struct StateData<'r> {
     pub wasm_bytecode: &'r [u8],
     pub wasm_reader: WasmReader<'r>,
-    pub sidetables: Vec<Sidetable>,
+    //TODO: figure out the lifetime of a sidetable ref, replace this with a ref
+    pub sidetable: Sidetable,
 }
 
 impl<'r> StateData<'r> {
-    pub fn new(wasm_bytecode: &'r [u8], sidetables: Vec<Sidetable>) -> Self {
+    pub fn new(wasm_bytecode: &'r [u8], sidetable: Sidetable) -> Self {
         StateData {
             wasm_bytecode,
             wasm_reader: WasmReader::new(wasm_bytecode),
-            sidetables,
+            sidetable,
         }
     }
 }

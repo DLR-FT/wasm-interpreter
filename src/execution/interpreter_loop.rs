@@ -61,11 +61,8 @@ pub(super) fn run<H: HookSet>(
     // Start reading the function's instructions
     let mut wasm = &mut state_data[*current_module_idx].wasm_reader;
 
-    // the sidetable and stp for this function, stp will reset to 0 every call
-    // since function instances have their own sidetable.
-    let mut current_sidetable: &Sidetable =
-        &state_data[*current_module_idx].sidetables[stack.current_stackframe().func_idx];
-    let mut stp = 0;
+    let mut current_sidetable = &state_data[*current_module_idx].sidetable;
+    let mut stp = func_inst.stp;
 
     // unwrap is sound, because the validation assures that the function points to valid subslice of the WASM binary
     wasm.move_start_to(func_inst.code_expr).unwrap();
@@ -117,8 +114,7 @@ pub(super) fn run<H: HookSet>(
                 wasm.pc = maybe_return_address;
                 stp = maybe_return_stp;
 
-                current_sidetable =
-                    &state_data[return_module].sidetables[stack.current_stackframe().func_idx];
+                current_sidetable = &state_data[return_module].sidetable;
 
                 *current_module_idx = return_module;
             }
@@ -211,9 +207,7 @@ pub(super) fn run<H: HookSet>(
                         wasm.move_start_to(local_func_inst.code_expr)
                             .unwrap_validated();
 
-                        stp = 0;
-                        current_sidetable =
-                            &state_data[*current_module_idx].sidetables[func_to_call_idx];
+                        stp = local_func_inst.stp;
                     }
                     FuncInst::Imported(_imported_func_inst) => {
                         let (next_module, next_func_idx) = lut
@@ -242,8 +236,8 @@ pub(super) fn run<H: HookSet>(
                         wasm.move_start_to(local_func_inst.code_expr)
                             .unwrap_validated();
 
-                        stp = 0;
-                        current_sidetable = &state_data[next_module].sidetables[next_func_idx];
+                        stp = local_func_inst.stp;
+                        current_sidetable = &state_data[next_module].sidetable;
                     }
                 }
             }
@@ -312,8 +306,7 @@ pub(super) fn run<H: HookSet>(
                         wasm.move_start_to(local_func_inst.code_expr)
                             .unwrap_validated();
 
-                        stp = 0;
-                        current_sidetable = &state_data[*current_module_idx].sidetables[func_addr];
+                        stp = local_func_inst.stp;
                     }
                     FuncInst::Imported(_imported_func_inst) => {
                         let (next_module, next_func_idx) = lut
@@ -344,8 +337,8 @@ pub(super) fn run<H: HookSet>(
                         wasm.move_start_to(local_func_inst.code_expr)
                             .unwrap_validated();
 
-                        stp = 0;
-                        current_sidetable = &state_data[next_module].sidetables[next_func_idx];
+                        stp = local_func_inst.stp;
+                        current_sidetable = &state_data[next_module].sidetable;
                     }
                 }
             }
