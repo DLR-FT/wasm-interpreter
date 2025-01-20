@@ -115,24 +115,32 @@ fn generate_unbackpatched_sidetable_entry(
 ) {
     let stp_here = sidetable.len();
 
-    sidetable.push(SidetableEntry {
-        delta_pc: wasm.pc as isize,
-        delta_stp: stp_here as isize,
-        popcnt,
-        valcnt,
-    });
-
     match label_info {
-        LabelInfo::Block { stps_to_backpatch } => stps_to_backpatch.push(stp_here),
         LabelInfo::Loop { ip, stp } => {
             //we already know where to jump to for loops
-            sidetable[stp_here].delta_pc = *ip as isize - wasm.pc as isize;
-            sidetable[stp_here].delta_stp = *stp as isize - stp_here as isize;
+            sidetable.push(SidetableEntry {
+                delta_pc: *ip as isize - wasm.pc as isize,
+                delta_stp: *stp as isize - stp_here as isize,
+                popcnt,
+                valcnt,
+            });
         }
-        LabelInfo::If {
+        //use the delta_stp field temporarily as the "next" pointer of the linked list of unbackpatched entries of a particular label
+        //stps_to_backpatch field is the "head" pointer of this linked list, and is stored in the label
+        //-1 indicates the end of the linked list for the label
+        LabelInfo::Block { stps_to_backpatch }
+        | LabelInfo::If {
             stps_to_backpatch, ..
-        } => stps_to_backpatch.push(stp_here),
-        LabelInfo::Func { stps_to_backpatch } => stps_to_backpatch.push(stp_here),
+        }
+        | LabelInfo::Func { stps_to_backpatch } => {
+            sidetable.push(SidetableEntry {
+                delta_pc: wasm.pc as isize,
+                delta_stp: *stps_to_backpatch,
+                popcnt,
+                valcnt,
+            });
+            *stps_to_backpatch = stp_here as isize;
+        }
         LabelInfo::Untyped => {
             unreachable!("this label is for untyped wasm sequences")
         }
@@ -198,7 +206,8 @@ fn read_instructions(
             BLOCK => {
                 let block_ty = BlockType::read(wasm)?.as_func_type(fn_types)?;
                 let label_info = LabelInfo::Block {
-                    stps_to_backpatch: Vec::new(),
+                    //the linked list of unbackpatched sidetable entries that correspond to this label is empty so we initialize it as -1, standing in for null.
+                    stps_to_backpatch: -1,
                 };
                 stack.assert_push_ctrl(label_info, block_ty)?;
             }
@@ -215,6 +224,7 @@ fn read_instructions(
 
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
 
+                //sidetable entry for the case the condition for If fails and we need to jump to the matching Else.
                 let stp_here = sidetable.len();
                 sidetable.push(SidetableEntry {
                     delta_pc: wasm.pc as isize,
@@ -224,8 +234,11 @@ fn read_instructions(
                 });
 
                 let label_info = LabelInfo::If {
+                    //stp field holds the index of the entry above
                     stp: stp_here,
-                    stps_to_backpatch: Vec::new(),
+                    //the linked list of unbackpatched sidetable entries that correspond to this label is empty so we initialize it as -1, standing in for null.
+                    //these sidetable entries correspond to jumps within the If and the corresponding Else blocks.
+                    stps_to_backpatch: -1,
                 };
                 stack.assert_push_ctrl(label_info, block_ty)?;
             }
@@ -237,24 +250,28 @@ fn read_instructions(
                 } = &mut label_info
                 {
                     if *stp == usize::MAX {
-                        //this If was previously matched with an else already, it is already backpatched!
+                        //this If was previously matched with an Else already, it is already backpatched!
                         return Err(Error::IfWithoutMatchingElse);
                     }
+
+                    //sidetable entry for the unconditional jump at the ELSE instruction, when its corresponding If block executes (we shouldn't execute the else block then)
+                    //similar to `generate_unbackpatched_sidetable_entry`, except the type validation is different
                     let stp_here = sidetable.len();
                     sidetable.push(SidetableEntry {
                         delta_pc: wasm.pc as isize,
-                        delta_stp: stp_here as isize,
+                        delta_stp: *stps_to_backpatch,
                         popcnt: 0,
                         valcnt: block_ty.returns.valtypes.len(),
                     });
-                    stps_to_backpatch.push(stp_here);
+                    *stps_to_backpatch = stp_here as isize;
 
+                    //backpatch sidetable entry corresponding to case where the condition of the If block fails and we need to jump over it to execute this else block
                     sidetable[*stp].delta_pc = wasm.pc as isize - sidetable[*stp].delta_pc;
                     sidetable[*stp].delta_stp =
                         sidetable.len() as isize - sidetable[*stp].delta_stp;
+                    *stp = usize::MAX; // mark the corresponding If as backpatched with usize::MAX
 
-                    *stp = usize::MAX; // mark this If as backpatched
-
+                    //type validation
                     for valtype in block_ty.returns.valtypes.iter().rev() {
                         stack.assert_pop_val_type(*valtype)?;
                     }
@@ -308,10 +325,17 @@ fn read_instructions(
 
                 match label_info {
                     LabelInfo::Block { stps_to_backpatch } => {
-                        stps_to_backpatch.iter().for_each(|i| {
-                            sidetable[*i].delta_pc = (wasm.pc as isize) - sidetable[*i].delta_pc;
-                            sidetable[*i].delta_stp = (stp_here as isize) - sidetable[*i].delta_stp;
-                        });
+                        //follow the linked list indicated within the temporary entries of delta_stp
+                        //and backpatch every entry.
+                        let mut current_i = stps_to_backpatch;
+                        while current_i != -1 {
+                            let current = current_i as usize;
+                            let next = sidetable[current].delta_stp;
+                            sidetable[current].delta_pc =
+                                (wasm.pc as isize) - sidetable[current].delta_pc;
+                            sidetable[current].delta_stp = (stp_here as isize) - current_i;
+                            current_i = next;
+                        }
                     }
                     LabelInfo::If {
                         stp,
@@ -324,20 +348,31 @@ fn read_instructions(
                             sidetable[stp].delta_stp =
                                 (stp_here as isize) - sidetable[stp].delta_stp;
                         }
-                        stps_to_backpatch.iter().for_each(|i| {
-                            sidetable[*i].delta_pc = (wasm.pc as isize) - sidetable[*i].delta_pc;
-                            sidetable[*i].delta_stp = (stp_here as isize) - sidetable[*i].delta_stp;
-                        });
+
+                        //the rest is same as blocks.
+                        let mut current_i = stps_to_backpatch;
+                        while current_i != -1 {
+                            let current = current_i as usize;
+                            let next = sidetable[current].delta_stp;
+                            sidetable[current].delta_pc =
+                                (wasm.pc as isize) - sidetable[current].delta_pc;
+                            sidetable[current].delta_stp = (stp_here as isize) - current_i;
+                            current_i = next;
+                        }
                     }
                     LabelInfo::Loop { .. } => (),
                     LabelInfo::Func { stps_to_backpatch } => {
                         // same as blocks, except jump just before the end instr, not after it
                         // the last end instruction will handle the return to callee during execution
-                        stps_to_backpatch.iter().for_each(|i| {
-                            sidetable[*i].delta_pc =
-                                (wasm.pc as isize) - sidetable[*i].delta_pc - 1; // minus 1 is important!
-                            sidetable[*i].delta_stp = (stp_here as isize) - sidetable[*i].delta_stp;
-                        });
+                        let mut current_i = stps_to_backpatch;
+                        while current_i != -1 {
+                            let current = current_i as usize;
+                            let next = sidetable[current].delta_stp;
+                            sidetable[current].delta_pc =
+                                (wasm.pc as isize) - sidetable[current].delta_pc - 1; //minus 1 is important!
+                            sidetable[current].delta_stp = (stp_here as isize) - current_i;
+                            current_i = next;
+                        }
                     }
                     LabelInfo::Untyped => unreachable!("this label is for untyped wasm sequences"),
                 }

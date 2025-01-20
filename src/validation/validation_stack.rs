@@ -40,7 +40,7 @@ impl ValidationStack {
             stack: Vec::new(),
             ctrl_stack: vec![CtrlStackEntry {
                 label_info: LabelInfo::Func {
-                    stps_to_backpatch: Vec::new(),
+                    stps_to_backpatch: -1,
                 },
                 block_ty,
                 height: 0,
@@ -345,18 +345,21 @@ impl CtrlStackEntry {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum LabelInfo {
     Block {
-        stps_to_backpatch: Vec<usize>,
+        // pointer to the temporary linked list of unbackpatched entries, embedded within the sidetable itself
+        stps_to_backpatch: isize,
     },
     Loop {
         ip: usize,
         stp: usize,
     },
     If {
-        stps_to_backpatch: Vec<usize>,
+        // pointer to the temporary linked list of unbackpatched entries, embedded within the sidetable itself
+        stps_to_backpatch: isize,
         stp: usize,
     },
     Func {
-        stps_to_backpatch: Vec<usize>,
+        // pointer to the temporary linked list of unbackpatched entries, embedded within the sidetable itself
+        stps_to_backpatch: isize,
     },
     Untyped,
 }
