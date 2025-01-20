@@ -422,9 +422,9 @@ where
             let mut wasm_reader = WasmReader::new(validation_info.wasm);
 
             let functions = validation_info.functions.iter();
-            let func_blocks = validation_info.func_blocks.iter();
+            let func_blocks_stps = validation_info.func_blocks_stps.iter();
 
-            let local_function_inst = functions.zip(func_blocks).map(|(ty, (func, sidetable))| {
+            let local_function_inst = functions.zip(func_blocks_stps).map(|(ty, (func, stp))| {
                 wasm_reader
                     .move_start_to(*func)
                     .expect("function index to be in the bounds of the WASM binary");
@@ -441,8 +441,7 @@ where
                     ty: *ty,
                     locals,
                     code_expr,
-                    // TODO fix this ugly clone
-                    sidetable: sidetable.clone(),
+                    stp: *stp,
                 })
             });
 
@@ -643,6 +642,8 @@ where
             elements,
             passive_elem_indexes,
             exports,
+            // TODO is this ok? possible multiple instantiations of the store from same code forces us a clone
+            sidetable: validation_info.sidetable.clone(),
         })
     }
 }

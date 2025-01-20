@@ -26,6 +26,7 @@ pub struct Store {
     pub elements: Vec<ElemInst>,
     pub passive_elem_indexes: Vec<usize>,
     pub exports: Vec<Export>,
+    pub sidetable: Sidetable,
 }
 
 #[derive(Debug)]
@@ -39,7 +40,8 @@ pub struct LocalFuncInst {
     pub ty: TypeIdx,
     pub locals: Vec<ValType>,
     pub code_expr: Span,
-    pub sidetable: Sidetable,
+    /// where stp should point to when pc points to the beginning of the function
+    pub stp: usize,
 }
 
 #[derive(Debug)]
