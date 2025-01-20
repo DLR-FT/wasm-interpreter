@@ -21,7 +21,6 @@ use crate::core::reader::types::element::{ElemItems, ElemMode};
 use crate::core::reader::types::export::ExportDesc;
 use crate::core::reader::types::import::ImportDesc;
 use crate::core::reader::WasmReader;
-use crate::core::sidetable::Sidetable;
 use crate::execution::assert_validated::UnwrapValidatedExt;
 use crate::execution::hooks::{EmptyHookSet, HookSet};
 use crate::execution::store::{FuncInst, GlobalInst, MemInst, Store};
@@ -166,31 +165,11 @@ where
             .insert(module_name.to_string(), self.modules.len());
         self.modules.push(exec_info);
 
-        let local_sidetables = validation_info
-            .func_blocks
-            .iter()
-            .map(|block| block.1.clone());
-
-        // In order to be able to index the `sidetables` vec from the
-        // `StateData` using the function index, we need to insert some blank
-        // sidetables for the imported functions. An alternative solution
-        // would've been to offset the indexing, this was just faster to
-        // implement.
-        let dummy_sidetables =
-            validation_info
-                .imports
-                .iter()
-                .filter_map(|import| match &import.desc {
-                    ImportDesc::Func(_type_idx) => Some(Sidetable::new()),
-                    _ => None,
-                });
-
-        let sidetables = dummy_sidetables
-            .chain(local_sidetables)
-            .collect::<Vec<Sidetable>>();
-
-        self.state_data
-            .push(StateData::new(validation_info.wasm, sidetables));
+        //TODO: fix the clone
+        self.state_data.push(StateData::new(
+            validation_info.wasm,
+            validation_info.sidetable.clone(),
+        ));
 
         self.lut = Lut::new(&self.modules, &self.module_map);
 
@@ -527,9 +506,9 @@ where
             let mut wasm_reader = WasmReader::new(validation_info.wasm);
 
             let functions = validation_info.functions.iter();
-            let func_blocks = validation_info.func_blocks.iter();
+            let func_blocks_stps = validation_info.func_blocks_stps.iter();
 
-            let local_function_inst = functions.zip(func_blocks).map(|(ty, (func, sidetable))| {
+            let local_function_inst = functions.zip(func_blocks_stps).map(|(ty, (func, stp))| {
                 wasm_reader
                     .move_start_to(*func)
                     .expect("function index to be in the bounds of the WASM binary");
@@ -546,8 +525,7 @@ where
                     ty: *ty,
                     locals,
                     code_expr,
-                    // TODO: Not used any more. Should we remove it?
-                    sidetable: sidetable.clone(),
+                    stp: *stp,
                 })
             });
 
