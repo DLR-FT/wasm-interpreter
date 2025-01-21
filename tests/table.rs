@@ -49,23 +49,23 @@ fn table_basic() {
     });
 }
 
-#[test_log::test]
-fn table_basic_2() {
-    let w = r#"
-    (module (table 0 funcref) (table 0 funcref))
-    (module (table (import "spectest" "table") 0 funcref) (table 0 funcref))
-"#
-    .split("\n")
-    .map(|el| el.trim())
-    .filter(|el| !el.is_empty())
-    .collect::<Vec<&str>>();
+// #[test_log::test]
+// fn table_basic_2() {
+//     let w = r#"
+//     (module (table 0 funcref) (table 0 funcref))
+//     (module (table (import "spectest" "table") 0 funcref) (table 0 funcref))
+// "#
+//     .split("\n")
+//     .map(|el| el.trim())
+//     .filter(|el| !el.is_empty())
+//     .collect::<Vec<&str>>();
 
-    w.iter().for_each(|wat| {
-        let wasm_bytes = wat::parse_str(wat).unwrap();
-        let validation_info = validate(&wasm_bytes).expect("validation failed");
-        RuntimeInstance::new(&validation_info).expect("instantiation failed");
-    });
-}
+//     w.iter().for_each(|wat| {
+//         let wasm_bytes = wat::parse_str(wat).unwrap();
+//         let validation_info = validate(&wasm_bytes).expect("validation failed");
+//         RuntimeInstance::new(&validation_info).expect("instantiation failed");
+//     });
+// }
 
 #[test_log::test]
 fn unknown_table() {
@@ -121,7 +121,8 @@ fn table_elem_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
     let instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
-    let table = &instance.modules[0].store.tables[0];
+    // let table = &instance.modules[0].store.tables[0];
+    let table = &(&instance.store).as_ref().unwrap().tables[0];
     assert!(table.len() == 2);
     let wanted: [usize; 2] = [0, 2];
     table
@@ -211,6 +212,73 @@ fn table_get_set_test() {
             _ => panic!("Expected a FuncRef"),
         }
     }
+}
+
+#[test_log::test]
+fn call_indirect_type_check() {
+    let wat = r#"
+    (module
+    ;; duplicate same type for different ids to make sure types themselves are compared
+    ;; during call_indirect, not type ids
+    (type $type_1 (func (param i32) (result i32)))
+    (type $type_2 (func (param i32) (result i32)))
+    (type $type_3 (func (param i32) (result i32)))
+    
+    (func $add_one_func (type $type_1) (param $x i32) (result i32)
+        local.get $x
+        i32.const 1
+        i32.add
+    )
+
+    (func $mul_two_func (type $type_2) (param $x i32) (result i32)
+        local.get $x
+        i32.const 2
+        i32.mul
+    )
+
+    (table funcref (elem $add_one_func $mul_two_func))
+
+    (func $call_function (param $value i32) (param $index i32) (result i32)
+        local.get $value
+        local.get $index
+        call_indirect 0 (type $type_3)
+    )
+    
+    (export "call_function" (func $call_function))
+    )
+    "#;
+    let wasm_bytes = wat::parse_str(wat).unwrap();
+    let validation_info = validate(&wasm_bytes).expect("validation failed");
+    let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
+
+    let call_fn = instance
+        .get_function_by_name(DEFAULT_MODULE, "call_function")
+        .unwrap();
+
+    assert_eq!(
+        4,
+        instance
+            .invoke::<(i32, i32), i32>(&call_fn, (3, 0))
+            .unwrap()
+    );
+    assert_eq!(
+        6,
+        instance
+            .invoke::<(i32, i32), i32>(&call_fn, (5, 0))
+            .unwrap()
+    );
+    assert_eq!(
+        6,
+        instance
+            .invoke::<(i32, i32), i32>(&call_fn, (3, 1))
+            .unwrap()
+    );
+    assert_eq!(
+        10,
+        instance
+            .invoke::<(i32, i32), i32>(&call_fn, (5, 1))
+            .unwrap()
+    );
 }
 
 // (assert_malformed

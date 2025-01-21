@@ -267,7 +267,7 @@ fn read_instructions(
                 {
                     if *stp == usize::MAX {
                         //this If was previously matched with an else already, it is already backpatched!
-                        return Err(Error::IfWithoutMatchingElse);
+                        return Err(Error::ElseWithoutMatchingIf);
                     }
                     let stp_here = sidetable.len();
                     sidetable.push(SidetableEntry {
@@ -315,10 +315,9 @@ fn read_instructions(
                 let label_vec = wasm.read_vec(|wasm| wasm.read_var_u32().map(|v| v as LabelIdx))?;
                 let max_label_idx = wasm.read_var_u32()? as LabelIdx;
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
-
-                for label_idx in label_vec {
+                for label_idx in &label_vec {
                     validate_intrablock_jump_and_generate_sidetable_entry(
-                        wasm, label_idx, stack, sidetable,
+                        wasm, *label_idx, stack, sidetable,
                     )?;
                 }
 
@@ -329,10 +328,34 @@ fn read_instructions(
                     sidetable,
                 )?;
 
+                // The label arity of the branches must be explicitly checked against each other further
+                // if their arities are the same, then they must unify, as they unify against the stack variables already
+                // If the following check is not made, the algorithm incorrectly unifies label types with different arities
+                // in which the smaller arity type is a suffix in the label type list of the larger arity function
+
+                // stack includes all labels, that check is made in the above fn already
+                let max_label_arity = stack
+                    .ctrl_stack
+                    .get(stack.ctrl_stack.len() - max_label_idx - 1)
+                    .unwrap()
+                    .label_types()
+                    .len();
+                for label_idx in &label_vec {
+                    let label_arity = stack
+                        .ctrl_stack
+                        .get(stack.ctrl_stack.len() - *label_idx - 1)
+                        .unwrap()
+                        .label_types()
+                        .len();
+                    if max_label_arity != label_arity {
+                        return Err(Error::InvalidLabelIdx(*label_idx));
+                    }
+                }
+
                 stack.make_unspecified()?;
             }
             END => {
-                let (label_info, _) = stack.assert_pop_ctrl()?;
+                let (label_info, block_ty) = stack.assert_pop_ctrl()?;
                 let stp_here = sidetable.len();
 
                 match label_info {
@@ -347,6 +370,14 @@ fn read_instructions(
                         stps_to_backpatch,
                     } => {
                         if stp != usize::MAX {
+                            //This If is still not backpatched, meaning it does not have a corresponding
+                            //ELSE. This is only allowed when the corresponding If block has the same input
+                            //types as its output types (an untyped ELSE block with no instruction is valid
+                            //if and only if it is of this type)
+                            if !(block_ty.params == block_ty.returns) {
+                                return Err(Error::IfWithoutMatchingElse);
+                            }
+
                             //This If is still not backpatched, meaning it does not have a corresponding
                             //ELSE. Therefore if its condition fails, it jumps after END.
                             sidetable[stp].delta_pc = (wasm.pc as isize) - sidetable[stp].delta_pc;
@@ -472,6 +503,12 @@ fn read_instructions(
                     .ok_or(Error::InvalidGlobalIdx(global_idx))?;
 
                 stack.push_valtype(global.ty.ty);
+                trace!(
+                    "Instruction: global.get '{}' [] -> [{:?}]",
+                    global_idx,
+                    // global,
+                    global.ty.ty
+                );
             }
             // global.set [t] -> []
             GLOBAL_SET => {
@@ -1004,6 +1041,11 @@ fn read_instructions(
                     // TODO only do this if EOF
                     return Err(Error::ExprMissingEnd);
                 };
+
+                #[cfg(debug_assertions)]
+                crate::core::utils::print_beautiful_fc_extension(second_instr_byte, wasm.pc);
+
+                #[cfg(not(debug_assertions))]
                 trace!("Read instruction byte {second_instr_byte:#04X?} ({second_instr_byte}) at wasm_binary[{}]", wasm.pc);
 
                 use crate::core::reader::types::opcode::fc_extensions::*;
@@ -1195,6 +1237,32 @@ fn read_instructions(
                         ))
                     }
                 }
+            }
+
+            I32_EXTEND8_S => {
+                stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+
+                stack.push_valtype(ValType::NumType(NumType::I32));
+            }
+            I32_EXTEND16_S => {
+                stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+
+                stack.push_valtype(ValType::NumType(NumType::I32));
+            }
+            I64_EXTEND8_S => {
+                stack.assert_pop_val_type(ValType::NumType(NumType::I64))?;
+
+                stack.push_valtype(ValType::NumType(NumType::I64));
+            }
+            I64_EXTEND16_S => {
+                stack.assert_pop_val_type(ValType::NumType(NumType::I64))?;
+
+                stack.push_valtype(ValType::NumType(NumType::I64));
+            }
+            I64_EXTEND32_S => {
+                stack.assert_pop_val_type(ValType::NumType(NumType::I64))?;
+
+                stack.push_valtype(ValType::NumType(NumType::I64));
             }
             _ => return Err(Error::InvalidInstr(first_instr_byte)),
         }

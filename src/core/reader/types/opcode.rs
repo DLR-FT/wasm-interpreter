@@ -178,6 +178,11 @@ pub const REF_NULL: u8 = 0xD0;
 pub const REF_IS_NULL: u8 = 0xD1;
 pub const REF_FUNC: u8 = 0xD2;
 pub const FC_EXTENSIONS: u8 = 0xFC;
+pub const I32_EXTEND8_S: u8 = 0xC0;
+pub const I32_EXTEND16_S: u8 = 0xC1;
+pub const I64_EXTEND8_S: u8 = 0xC2;
+pub const I64_EXTEND16_S: u8 = 0xC3;
+pub const I64_EXTEND32_S: u8 = 0xC4;
 
 pub mod fc_extensions {
     pub const I32_TRUNC_SAT_F32_S: u8 = 0x00;
@@ -201,24 +206,59 @@ pub mod fc_extensions {
 }
 
 #[cfg(debug_assertions)]
+pub fn fc_extension_opcode_second_byte_to_str(byte: u8) -> alloc::string::String {
+    use alloc::{borrow::ToOwned, format};
+
+    let opcode = match byte {
+        0x00 => "I32_TRUNC_SAT_F32_S",
+        0x01 => "I32_TRUNC_SAT_F32_U",
+        0x02 => "I32_TRUNC_SAT_F64_S",
+        0x03 => "I32_TRUNC_SAT_F64_U",
+        0x04 => "I64_TRUNC_SAT_F32_S",
+        0x05 => "I64_TRUNC_SAT_F32_U",
+        0x06 => "I64_TRUNC_SAT_F64_S",
+        0x07 => "I64_TRUNC_SAT_F64_U",
+        0x08 => "MEMORY_INIT",
+        0x09 => "DATA_DROP",
+        0x0A => "MEMORY_COPY",
+        0x0B => "MEMORY_FILL",
+        0x0C => "TABLE_INIT",
+        0x0D => "ELEM_DROP",
+        0x0E => "TABLE_COPY",
+        0x0F => "TABLE_GROW",
+        0x10 => "TABLE_SIZE",
+        0x11 => "TABLE_FILL",
+        _ => "UNKNOWN",
+    }
+    .to_owned();
+
+    if opcode == "UNKNOWN" {
+        format!("UNKNOWN({:x})", byte)
+    } else {
+        opcode
+    }
+}
+
+#[cfg(debug_assertions)]
 pub fn opcode_byte_to_str(byte: u8) -> alloc::string::String {
-    use alloc::borrow::ToOwned;
-    match byte {
+    use alloc::{borrow::ToOwned, format};
+    let opcode = match byte {
         UNREACHABLE => "UNREACHABLE",
         NOP => "NOP",
-        // BLOCK => "BLOCK",
-        // LOOP => "LOOP",
-        // IF => "IF",
-        // ELSE => "ELSE",
+        BLOCK => "BLOCK",
+        LOOP => "LOOP",
+        IF => "IF",
+        ELSE => "ELSE",
         END => "END",
-        // BR => "BR",
-        // BR_IF => "BR_IF",
-        // BR_TABLE => "BR_TABLE",
+        BR => "BR",
+        BR_IF => "BR_IF",
+        BR_TABLE => "BR_TABLE",
         RETURN => "RETURN",
         CALL => "CALL",
-        // CALL_INDIRECT => "CALL_INDIRECT",
+        CALL_INDIRECT => "CALL_INDIRECT",
         DROP => "DROP",
-        // SELECT => "SELECT",
+        SELECT => "SELECT",
+        SELECT_T => "SELECT_T",
         LOCAL_GET => "LOCAL_GET",
         LOCAL_SET => "LOCAL_SET",
         LOCAL_TEE => "LOCAL_TEE",
@@ -379,7 +419,18 @@ pub fn opcode_byte_to_str(byte: u8) -> alloc::string::String {
         REF_NULL => "REF_NULL",
         REF_FUNC => "REF_FUNC",
         FC_EXTENSIONS => "FC_EXTENSIONS",
+        I32_EXTEND8_S => "I32_EXTEND8_S",
+        I32_EXTEND16_S => "I32_EXTEND16_S",
+        I64_EXTEND8_S => "I64_EXTEND8_S",
+        I64_EXTEND16_S => "I64_EXTEND16_S",
+        I64_EXTEND32_S => "I64_EXTEND32_S",
         _ => "UNKNOWN",
     }
-    .to_owned()
+    .to_owned();
+
+    if opcode == "UNKNOWN" {
+        format!("UNKNOWN({:x})", byte)
+    } else {
+        opcode
+    }
 }
