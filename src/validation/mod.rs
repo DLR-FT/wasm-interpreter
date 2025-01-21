@@ -59,7 +59,36 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
 
     let skip_section = |wasm: &mut WasmReader, section_header: &mut Option<SectionHeader>| {
         handle_section(wasm, section_header, SectionTy::Custom, |wasm, h| {
-            wasm.skip(h.contents.len())
+            use alloc::string::*;
+            // customsec ::= section_0(custom)
+            // custom ::= name byte*
+            // name ::= b*:vec(byte) => name (if utf8(name) = b*)
+            // vec(B) ::= n:u32 (x:B)^n => x^n
+
+            if h.contents.len() == 0 {
+                return Ok(());
+            }
+            let _name = wasm.read_name()?;
+
+            let remaining_bytes = match h
+                .contents
+                .from()
+                .checked_add(h.contents.len())
+                .and_then(|res| res.checked_sub(wasm.pc))
+            {
+                None => Err(Error::InvalidSection(
+                    SectionTy::Custom,
+                    "Remaining bytes less than 0 after reading name!".to_string(),
+                )),
+                Some(remaining_bytes) => Ok(remaining_bytes),
+            }?;
+
+            // TODO: maybe do something with these remaining bytes?
+            let mut _bytes = Vec::new();
+            for _ in 0..remaining_bytes {
+                _bytes.push(wasm.read_u8()?)
+            }
+            Ok(())
         })
     };
 
