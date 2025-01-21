@@ -131,6 +131,7 @@ impl AssertReport {
     }
 }
 
+#[derive(Debug)]
 pub struct CompilationError {
     inner: Box<dyn Error>,
     filename: String,
