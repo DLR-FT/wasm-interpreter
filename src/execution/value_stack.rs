@@ -188,7 +188,7 @@ impl Stack {
     /// Takes the current [`Self::values`]'s length as [`CallFrame::value_stack_base_idx`].
     pub fn push_stackframe(
         &mut self,
-        module_idx: usize,
+        return_module_idx: usize,
         func_idx: FuncIdx,
         func_ty: &FuncType,
         locals: Locals,
@@ -196,7 +196,7 @@ impl Stack {
         return_stp: usize,
     ) {
         self.frames.push(CallFrame {
-            module_idx,
+            module_idx: return_module_idx,
             func_idx,
             locals,
             return_addr,
@@ -230,6 +230,7 @@ impl Stack {
 /// The [WASM spec](https://webassembly.github.io/spec/core/exec/runtime.html#stack) calls this `Activations`, however it refers to the call frames of functions.
 pub(crate) struct CallFrame {
     /// Index to the module idx the function originates in.
+    /// This seems to be used as a return module id LOL
     pub module_idx: usize,
 
     /// Index to the function of this [`CallFrame`]

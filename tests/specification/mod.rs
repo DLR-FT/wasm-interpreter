@@ -3,7 +3,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use reports::WastTestReport;
+use reports::{CompilationError, WastTestReport};
 
 mod reports;
 mod run;
@@ -41,17 +41,131 @@ impl Default for FnF {
 #[test_log::test]
 pub fn spec_tests() {
     // so we don't see unnecessary stacktraces of catch_unwind (sadly this also means we don't see panics from outside catch_unwind either)
-    std::panic::set_hook(Box::new(|_| {}));
+    // std::panic::set_hook(Box::new(|_| {}));
 
     let filters = Filter::Exclude(FnF {
         folders: Some(vec!["proposals".to_string()]),
         ..Default::default()
     });
 
+    // let filters = Filter::Include(FnF {
+    //     folders: None,
+    //     files: Some(
+    //         vec![
+    //             // "memory_copy.wast",
+    //             // "memory_fill.wast",
+    //             "memory_grow.wast",
+    //             // "memory_grow_manual.wast",
+    //             // "memory_init.wast",
+    //             // "memory_redundancy.wast",
+    //             // "memory_size.wast",
+    //             // "memory_trap.wast",
+    //             // "memory.wast",
+    //         ]
+    //         .iter()
+    //         .map(|el| (*el).to_owned())
+    //         .collect::<Vec<String>>(),
+    //     ),
+    // });
+
+    // let filters = Filter::Include(FnF {
+    //     folders: None,
+    //     files: Some(
+    //         vec![
+    //             "table_copy.wast",
+    //             "table_fill.wast",
+    //             "table_get.wast",
+    //             "table_grow.wast",
+    //             "table_init.wast",
+    //             "table_set.wast",
+    //             "table_size.wast",
+    //             "table-sub.wast",
+    //             "table.wast",
+    //         ]
+    //         .iter()
+    //         .map(|el| (*el).to_owned())
+    //         .collect::<Vec<String>>(),
+    //     ),
+    // });
+
+    let filters = Filter::Exclude(FnF {
+        folders: Some(vec!["proposals".to_string()]),
+        files: Some(vec![
+            "simd_address.wast".to_string(),
+            "simd_align.wast".to_string(),
+            "simd_bit_shift.wast".to_string(),
+            "simd_bitwise.wast".to_string(),
+            "simd_boolean.wast".to_string(),
+            "simd_const.wast".to_string(),
+            "simd_conversions.wast".to_string(),
+            "simd_f32x4.wast".to_string(),
+            "simd_f32x4_arith.wast".to_string(),
+            "simd_f32x4_cmp.wast".to_string(),
+            "simd_f32x4_pmin_pmax.wast".to_string(),
+            "simd_f32x4_rounding.wast".to_string(),
+            "simd_f64x2.wast".to_string(),
+            "simd_f64x2_arith.wast".to_string(),
+            "simd_f64x2_cmp.wast".to_string(),
+            "simd_f64x2_pmin_pmax.wast".to_string(),
+            "simd_f64x2_rounding.wast".to_string(),
+            "simd_i16x8_arith.wast".to_string(),
+            "simd_i16x8_arith2.wast".to_string(),
+            "simd_i16x8_cmp.wast".to_string(),
+            "simd_i16x8_extadd_pairwise_i8x16.wast".to_string(),
+            "simd_i16x8_extmul_i8x16.wast".to_string(),
+            "simd_i16x8_q15mulr_sat_s.wast".to_string(),
+            "simd_i16x8_sat_arith.wast".to_string(),
+            "simd_i32x4_arith.wast".to_string(),
+            "simd_i32x4_arith2.wast".to_string(),
+            "simd_i32x4_cmp.wast".to_string(),
+            "simd_i32x4_dot_i16x8.wast".to_string(),
+            "simd_i32x4_extadd_pairwise_i16x8.wast".to_string(),
+            "simd_i32x4_extmul_i16x8.wast".to_string(),
+            "simd_i32x4_trunc_sat_f32x4.wast".to_string(),
+            "simd_i32x4_trunc_sat_f64x2.wast".to_string(),
+            "simd_i64x2_arith.wast".to_string(),
+            "simd_i64x2_arith2.wast".to_string(),
+            "simd_i64x2_cmp.wast".to_string(),
+            "simd_i64x2_extmul_i32x4.wast".to_string(),
+            "simd_i8x16_arith.wast".to_string(),
+            "simd_i8x16_arith2.wast".to_string(),
+            "simd_i8x16_cmp.wast".to_string(),
+            "simd_i8x16_sat_arith.wast".to_string(),
+            "simd_int_to_int_extend.wast".to_string(),
+            "simd_lane.wast".to_string(),
+            "simd_linking.wast".to_string(),
+            "simd_load.wast".to_string(),
+            "simd_load16_lane.wast".to_string(),
+            "simd_load32_lane.wast".to_string(),
+            "simd_load64_lane.wast".to_string(),
+            "simd_load8_lane.wast".to_string(),
+            "simd_load_extend.wast".to_string(),
+            "simd_load_splat.wast".to_string(),
+            "simd_load_zero.wast".to_string(),
+            "simd_splat.wast".to_string(),
+            "simd_store.wast".to_string(),
+            "simd_store16_lane.wast".to_string(),
+            "simd_store32_lane.wast".to_string(),
+            "simd_store64_lane.wast".to_string(),
+            "simd_store8_lane.wast".to_string(),
+        ]),
+    });
+
+    // let filters = Filter::Include(FnF {
+    //     folders: None,
+    //     files: Some(
+    //         // vec!["linking.wast"]
+    //         vec!["linking.wast"]
+    //             .iter()
+    //             .map(|el| (*el).to_owned())
+    //             .collect::<Vec<String>>(),
+    //     ),
+    // });
+
     let paths = get_wast_files(Path::new("./tests/specification/testsuite/"), &filters)
         .expect("Failed to find testsuite");
 
-    // let pb: PathBuf = "./tests/specification/testsuite/table_get.wast".into();
+    // let pb: PathBuf = "./tests/specification/testsuite/memory_manual.wast".into();
     // let mut paths = Vec::new();
     // paths.push(pb);
 
@@ -61,6 +175,9 @@ pub fn spec_tests() {
     let mut failed_reports = 0;
     let mut compile_error_reports = 0;
     let mut reports: Vec<Report> = Vec::with_capacity(paths.len());
+
+    // let mut compile_errors: Vec<CompilationError> = Vec::new();
+    let mut compile_error_paths: Vec<String> = Vec::new();
 
     let mut longest_string_len: usize = 0;
 
@@ -80,7 +197,10 @@ pub fn spec_tests() {
                     successful_reports += 1;
                 }
             }
-            reports::WastTestReport::CompilationError(_) => {
+            reports::WastTestReport::CompilationError(_compilation_error) => {
+                println!("{:#?}", _compilation_error);
+                compile_error_paths.push(test_path.to_str().unwrap().to_string());
+                // compile_errors.push(_compilation_error);
                 compile_error_reports += 1;
             }
         };
@@ -146,6 +266,10 @@ pub fn spec_tests() {
         "Tests: {} Passed, {} Failed, {} Compilation Errors",
         successful_reports, failed_reports, compile_error_reports
     );
+
+    for compile_report_path in &compile_error_paths {
+        println!("Compile error: {compile_report_path}");
+    }
 }
 
 #[allow(dead_code)]

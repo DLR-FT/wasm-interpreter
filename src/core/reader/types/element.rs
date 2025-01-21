@@ -1,3 +1,4 @@
+use super::global::GlobalType;
 use super::RefType;
 use crate::core::reader::span::Span;
 use crate::core::reader::WasmReader;
@@ -51,6 +52,7 @@ impl ElemType {
         functions: &[usize],
         referenced_functions: &mut BTreeSet<u32>,
         tables_length: usize,
+        all_globals_types: &[GlobalType],
     ) -> Result<Vec<Self>> {
         wasm.read_vec(|wasm| {
             let prop = wasm.read_var_u32()?;
@@ -85,10 +87,51 @@ impl ElemType {
                 }
 
                 let mut valid_stack = ValidationStack::new();
-                let init_expr =
-                    read_constant_expression(wasm, &mut valid_stack, None, None, Some(functions))?;
+                // let wasm_pc = wasm.pc;
+                let init_expr = read_constant_expression(
+                    wasm,
+                    &mut valid_stack,
+                    all_globals_types,
+                    Some(functions),
+                )?;
+
+                // at validation time we actually have to check for the function to be known
+                //  that means a new stack
+                //  nvm we will do that directly at runtime
+                //  we could do a part now, for example, if we don't have imported globals to take care of, just so we are even more
+                //  reliable (more checks at validation/compile time)
+
+                // now, why do I mention this? most of the testing is done online on the https://webassembly.github.io/wabt/demo/wat2wasm/ website
+                //  chromium's wasm engine actually catches (as much as it can) errors at validation (tries to run the expressions)
 
                 // on top of the stack it's supposed to be the
+                // it might also be an extern ref w/e
+                // let function_idx = valid_stack.peek_const_validation_stack();
+
+                // match function_idx {
+                //     None => return Err(Error::UnknownFunction),
+                //     Some(stack_entry) => match stack_entry {
+                //         crate::validation_stack::ValidationStackEntry::Val(val) => match val {
+                //             super::ValType::NumType(num) => match num {
+                //                 super::NumType::I32 => {
+                //                     wasm.pc = wasm_pc;
+                //                     let stack = &mut Stack::new();
+                //                     run_const(wasm, stack, ());
+                //                     let popped_from_stack: u32 = stack
+                //                         .pop_value(super::ValType::NumType(super::NumType::I32))
+                //                         .into();
+                //                     if functions.len() >= popped_from_stack as usize {
+                //                         return Err(Error::UnknownFunction);
+                //                     }
+                //                 }
+                //                 _ => return Err(Error::UnknownFunction),
+                //             },
+                //             _ => return Err(Error::UnknownFunction),
+                //         },
+                //         _ => return Err(Error::UnknownFunction),
+                //     },
+                // };
+
                 valid_stack.assert_pop_val_type(super::ValType::NumType(super::NumType::I32))?;
 
                 ElemMode::Active(ActiveElem {
@@ -125,8 +168,7 @@ impl ElemType {
                         let span = read_constant_expression(
                             w,
                             &mut valid_stack,
-                            None,
-                            None,
+                            all_globals_types,
                             Some(functions),
                         );
 

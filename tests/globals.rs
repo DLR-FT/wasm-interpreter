@@ -135,3 +135,28 @@ fn imported_globals() {
             .unwrap()
     );
 }
+
+#[test_log::test]
+fn global_f32_and_f64() {
+    use wasm::validate;
+
+    let wat = r#"
+    (module
+        (global $my_global (mut i32)
+            i32.const 2
+            i32.const 2
+            i32.const 2
+            i32.const 2
+            i32.const 2
+            i32.const 2
+            i32.const 3
+            i32.add
+        )
+    )
+    "#;
+    let wasm_bytes = wat::parse_str(wat).unwrap();
+
+    if validate(&wasm_bytes).is_ok() {
+        panic!("validation succeeded")
+    }
+}

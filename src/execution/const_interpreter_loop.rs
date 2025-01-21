@@ -1,9 +1,12 @@
 use crate::{
     assert_validated::UnwrapValidatedExt,
-    core::reader::{span::Span, WasmReadable, WasmReader},
+    core::{
+        indices::GlobalIdx,
+        reader::{span::Span, WasmReadable, WasmReader},
+    },
     value::{self, FuncAddr, Ref},
     value_stack::Stack,
-    NumType, RefType, ValType, Value,
+    GlobalInst, NumType, RefType, ValType, Value,
 };
 
 /// Execute a previosly-validated constant expression. These type of expressions are used for initializing global
@@ -28,17 +31,40 @@ use crate::{
 /// - `ref.func`
 /// - `global.get`
 pub(crate) fn run_const(
-    mut wasm: WasmReader,
+    wasm: &mut WasmReader,
     stack: &mut Stack,
-    _imported_globals: (), /*todo!*/
+    // The globals slice should contain ONLY imported globals IF AND ONLY IF we are calling `run_const` for local globals instantiation
+    // As per https://webassembly.github.io/spec/core/valid/modules.html (bottom of the page):
+    //
+    //  Globals, however, are not recursive and not accessible within constant expressions when they are defined locally. The effect of defining the limited context C'
+    //   for validating certain definitions is that they can only access functions and imported globals and nothing else.
+    globals: &[GlobalInst],
 ) {
     use crate::core::reader::types::opcode::*;
     loop {
         let first_instr_byte = wasm.read_u8().unwrap_validated();
 
+        #[cfg(debug_assertions)]
+        crate::core::utils::print_beautiful_instruction_name_1_byte(first_instr_byte, wasm.pc);
+
+        #[cfg(not(debug_assertions))]
+        trace!("Read instruction byte {first_instr_byte:#04X?} ({first_instr_byte}) at wasm_binary[{}]", wasm.pc);
+
         match first_instr_byte {
             END => {
+                trace!("Constant instruction: END");
                 break;
+            }
+            GLOBAL_GET => {
+                let global_idx = wasm.read_var_u32().unwrap_validated() as GlobalIdx;
+
+                let global = &globals[global_idx];
+
+                trace!(
+                    "Constant instruction: global.get [{global_idx}] -> [{:?}]",
+                    global
+                );
+                stack.push_value(global.value);
             }
             I32_CONST => {
                 let constant = wasm.read_var_i32().unwrap_validated();
@@ -108,8 +134,72 @@ pub(crate) fn run_const(
                 trace!("Constant instruction: i64.mul [{v1} {v2}] -> [{res}]");
                 stack.push_value(res.into());
             }
+            F32_ADD => {
+                let v2: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let res: value::F32 = v1 + v2;
+
+                trace!("Instruction: f32.add [{v1} {v2}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            F32_SUB => {
+                let v2: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let res: value::F32 = v1 - v2;
+
+                trace!("Instruction: f32.sub [{v1} {v2}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            F32_MUL => {
+                let v2: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let res: value::F32 = v1 * v2;
+
+                trace!("Instruction: f32.mul [{v1} {v2}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            F32_DIV => {
+                let v2: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let res: value::F32 = v1 / v2;
+
+                trace!("Instruction: f32.div [{v1} {v2}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            F64_ADD => {
+                let v2: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let res: value::F64 = v1 + v2;
+
+                trace!("Instruction: f64.add [{v1} {v2}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            F64_SUB => {
+                let v2: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let res: value::F64 = v1 - v2;
+
+                trace!("Instruction: f64.sub [{v1} {v2}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            F64_MUL => {
+                let v2: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let res: value::F64 = v1 * v2;
+
+                trace!("Instruction: f64.mul [{v1} {v2}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            F64_DIV => {
+                let v2: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let res: value::F64 = v1 / v2;
+
+                trace!("Instruction: f64.div [{v1} {v2}] -> [{res}]");
+                stack.push_value(res.into());
+            }
             REF_NULL => {
-                let reftype = RefType::read_unvalidated(&mut wasm);
+                let reftype = RefType::read_unvalidated(wasm);
 
                 stack.push_value(Value::Ref(reftype.to_null_ref()));
                 trace!("Instruction: ref.null '{:?}' -> [{:?}]", reftype, reftype);
@@ -120,7 +210,7 @@ pub(crate) fn run_const(
                 stack.push_value(Value::Ref(Ref::Func(FuncAddr::new(Some(func_idx)))));
             }
             other => {
-                panic!("Unknown constant instruction {other:#x}, validation allowed an unimplemented instruction.");
+                unreachable!("Unknown constant instruction {other:#x}, validation allowed an unimplemented instruction.");
             }
         }
     }
@@ -129,7 +219,7 @@ pub(crate) fn run_const(
 pub(crate) fn run_const_span(
     wasm: &[u8],
     span: &Span,
-    imported_globals: (),
+    imported_globals: &[GlobalInst],
     // funcs: &[FuncInst],
 ) -> Option<Value> {
     let mut wasm = WasmReader::new(wasm);
@@ -137,7 +227,7 @@ pub(crate) fn run_const_span(
     wasm.move_start_to(*span).unwrap_validated();
 
     let mut stack = Stack::new();
-    run_const(wasm, &mut stack, imported_globals);
+    run_const(&mut wasm, &mut stack, imported_globals);
 
     stack.peek_unknown_value()
 }
