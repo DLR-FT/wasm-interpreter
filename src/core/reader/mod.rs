@@ -137,6 +137,7 @@ impl<'a> WasmReader<'a> {
     /// more than 0 further bytes would panick. However, it can not move the [`pc`](Self::pc) any
     /// further than that, instead an error is returned. For further information, refer to the
     /// [field documentation of `pc`] (WasmReader::pc).
+    #[allow(dead_code)]
     pub fn skip(&mut self, num_bytes: usize) -> Result<()> {
         if num_bytes > self.full_wasm_binary.len() - self.pc {
             return Err(Error::Eof);

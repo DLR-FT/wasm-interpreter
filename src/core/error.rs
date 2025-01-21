@@ -55,6 +55,7 @@ pub enum Error {
     InvalidVersion,
     MalformedUtf8String(Utf8Error),
     Eof,
+    InvalidSection(SectionTy, String),
     InvalidSectionType(u8),
     SectionOutOfOrder(SectionTy),
     InvalidNumType,
@@ -121,6 +122,10 @@ impl Display for Error {
             Error::Eof => f.write_str(
                 "A value was expected in the WASM binary but the end of file was reached instead",
             ),
+            Error::InvalidSection(section, reason) => f.write_fmt(format_args!(
+                "Section '{:?}' invalid! Reason: {}",
+                section, reason
+            )),
             Error::InvalidSectionType(ty) => f.write_fmt(format_args!(
                 "An invalid section type id was found in a section header: {ty}"
             )),
