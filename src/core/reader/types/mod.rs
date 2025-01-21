@@ -4,6 +4,7 @@
 
 use alloc::vec::Vec;
 use core::fmt::{Debug, Formatter};
+use global::GlobalType;
 
 use crate::core::reader::{WasmReadable, WasmReader};
 use crate::execution::assert_validated::UnwrapValidatedExt;
@@ -14,7 +15,6 @@ use crate::{unreachable_validated, Error};
 pub mod data;
 pub mod element;
 pub mod export;
-pub mod function_code_header;
 pub mod global;
 pub mod import;
 pub mod memarg;
@@ -331,6 +331,20 @@ impl Limits {
     pub const MEM_PAGE_SIZE: u32 = 1 << 16;
 }
 
+pub fn check_limits(fmin: u32, fmax: Option<u32>, tmin: u32, tmax: Option<u32>) -> bool {
+    if fmin < tmin {
+        return false;
+    }
+
+    match tmax {
+        None => true,
+        Some(tmax_val) => match fmax {
+            None => false,
+            Some(fmax_val) => fmax_val <= tmax_val,
+        },
+    }
+}
+
 impl Debug for Limits {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         match self.max {
@@ -443,4 +457,15 @@ impl WasmReadable for MemType {
             limits: Limits::read_unvalidated(wasm),
         }
     }
+}
+
+// TODO: PartialOrd needs to be implemented for subtyping relation
+// <https://webassembly.github.io/spec/core/valid/types.html#import-subtyping>
+///<https://webassembly.github.io/spec/core/valid/types.html#external-types>
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub enum ExternType {
+    Func(FuncType),
+    Table(TableType),
+    Mem(MemType),
+    Global(GlobalType),
 }

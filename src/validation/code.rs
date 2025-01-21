@@ -30,11 +30,10 @@ pub fn validate_code_section(
     tables: &[TableType],
     elements: &[ElemType],
     referenced_functions: &BTreeSet<u32>,
-) -> Result<Vec<(Span, Sidetable)>> {
+    sidetable: &mut Sidetable,
+) -> Result<Vec<(Span, usize)>> {
     assert_eq!(section_header.ty, SectionTy::Code);
-
-    // TODO replace with single sidetable per module
-    let code_block_spans_sidetables = wasm.read_vec_enumerated(|wasm, idx| {
+    let code_block_spans_stps = wasm.read_vec_enumerated(|wasm, idx| {
         // We need to offset the index by the number of functions that were
         // imported. Imported functions always live at the start of the index
         // space.
@@ -52,12 +51,12 @@ pub fn validate_code_section(
         };
 
         let mut stack = ValidationStack::new_for_func(func_ty);
-        let mut sidetable: Sidetable = Sidetable::default();
+        let stp = sidetable.len();
 
         read_instructions(
             wasm,
             &mut stack,
-            &mut sidetable,
+            sidetable,
             &locals,
             globals,
             fn_types,
@@ -76,15 +75,15 @@ pub fn validate_code_section(
             )
         }
 
-        Ok((func_block, sidetable))
+        Ok((func_block, stp))
     })?;
 
     trace!(
         "Read code section. Found {} code blocks",
-        code_block_spans_sidetables.len()
+        code_block_spans_stps.len()
     );
 
-    Ok(code_block_spans_sidetables)
+    Ok(code_block_spans_stps)
 }
 
 pub fn read_declared_locals(wasm: &mut WasmReader) -> Result<Vec<ValType>> {
@@ -503,6 +502,12 @@ fn read_instructions(
                     .ok_or(Error::InvalidGlobalIdx(global_idx))?;
 
                 stack.push_valtype(global.ty.ty);
+                trace!(
+                    "Instruction: global.get '{}' [] -> [{:?}]",
+                    global_idx,
+                    // global,
+                    global.ty.ty
+                );
             }
             // global.set [t] -> []
             GLOBAL_SET => {
@@ -1035,6 +1040,11 @@ fn read_instructions(
                     // TODO only do this if EOF
                     return Err(Error::ExprMissingEnd);
                 };
+
+                #[cfg(debug_assertions)]
+                crate::core::utils::print_beautiful_fc_extension(second_instr_byte, wasm.pc);
+
+                #[cfg(not(debug_assertions))]
                 trace!("Read instruction byte {second_instr_byte:#04X?} ({second_instr_byte}) at wasm_binary[{}]", wasm.pc);
 
                 use crate::core::reader::types::opcode::fc_extensions::*;
@@ -1253,7 +1263,6 @@ fn read_instructions(
 
                 stack.push_valtype(ValType::NumType(NumType::I64));
             }
-
             _ => return Err(Error::InvalidInstr(first_instr_byte)),
         }
     }

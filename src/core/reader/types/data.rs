@@ -2,17 +2,9 @@ use core::fmt::{Debug, Formatter};
 
 use alloc::{format, vec::Vec};
 
-use crate::{
-    core::{
-        indices::MemIdx,
-        reader::{span::Span, WasmReadable},
-    },
-    read_constant_expression::read_constant_expression,
-    validation_stack::ValidationStack,
-};
+use crate::core::{indices::MemIdx, reader::span::Span};
 
-use super::UnwrapValidatedExt;
-
+#[derive(Clone)]
 pub struct DataSegment {
     pub init: Vec<u8>,
     pub mode: DataMode,
@@ -28,109 +20,6 @@ pub enum DataMode {
 pub struct DataModeActive {
     pub memory_idx: MemIdx,
     pub offset: Span,
-}
-
-impl WasmReadable for DataSegment {
-    fn read(wasm: &mut crate::core::reader::WasmReader) -> crate::Result<Self> {
-        use crate::{NumType, ValType};
-        let mode = wasm.read_var_u32()?;
-        let data_sec: DataSegment = match mode {
-            0 => {
-                // active { memory 0, offset e }
-                trace!("Data section: active");
-                let mut valid_stack = ValidationStack::new();
-                let offset =
-                    { read_constant_expression(wasm, &mut valid_stack, None, None, None)? };
-
-                valid_stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
-
-                let byte_vec = wasm.read_vec(|el| el.read_u8())?;
-
-                // WARN: we currently don't take into consideration how we act when we are dealing with globals here
-                DataSegment {
-                    mode: DataMode::Active(DataModeActive {
-                        memory_idx: 0,
-                        offset,
-                    }),
-                    init: byte_vec,
-                }
-            }
-            1 => {
-                // passive
-                // A passive data segment's contents can be copied into a memory using the `memory.init` instruction
-                trace!("Data section: passive");
-                DataSegment {
-                    mode: DataMode::Passive,
-                    init: wasm.read_vec(|el| el.read_u8())?,
-                }
-            }
-            2 => {
-                // mode active { memory x, offset e }
-                // this hasn't been yet implemented in wasm
-                // as per docs:
-
-                // https://webassembly.github.io/spec/core/binary/modules.html#data-section
-                // The initial integer can be interpreted as a bitfield. Bit 0 indicates a passive segment, bit 1 indicates the presence of an explicit memory index for an active segment.
-                // In the current version of WebAssembly, at most one memory may be defined or imported in a single module, so all valid active data segments have a memory value of 0
-                todo!("Data section: active - with multiple memories - NOT YET IMPLEMENTED!");
-            }
-            _ => unreachable!(),
-        };
-
-        trace!("{:?}", data_sec.init);
-        Ok(data_sec)
-    }
-
-    fn read_unvalidated(wasm: &mut crate::core::reader::WasmReader) -> Self {
-        let mode = wasm.read_var_u32().unwrap_validated();
-        let data_sec: DataSegment = match mode {
-            0 => {
-                // active { memory 0, offset e }
-                trace!("Data section: active");
-                let offset = {
-                    read_constant_expression(wasm, &mut ValidationStack::new(), None, None, None)
-                        .unwrap_validated()
-                };
-
-                let byte_vec = wasm
-                    .read_vec(|el| Ok(el.read_u8().unwrap_validated()))
-                    .unwrap_validated();
-
-                // WARN: we currently don't take into consideration how we act when we are dealing with globals here
-                DataSegment {
-                    mode: DataMode::Active(DataModeActive {
-                        memory_idx: 0,
-                        offset,
-                    }),
-                    init: byte_vec,
-                }
-            }
-            1 => {
-                // passive
-                // A passive data segment's contents can be copied into a memory using the `memory.init` instruction
-                trace!("Data section: passive");
-                DataSegment {
-                    mode: DataMode::Passive,
-                    init: wasm
-                        .read_vec(|el| Ok(el.read_u8().unwrap_validated()))
-                        .unwrap_validated(),
-                }
-            }
-            2 => {
-                // mode active { memory x, offset e }
-                // this hasn't been yet implemented in wasm
-                // as per docs:
-
-                // https://webassembly.github.io/spec/core/binary/modules.html#data-section
-                // The initial integer can be interpreted as a bitfield. Bit 0 indicates a passive segment, bit 1 indicates the presence of an explicit memory index for an active segment.
-                // In the current version of WebAssembly, at most one memory may be defined or imported in a single module, so all valid active data segments have a memory value of 0
-                todo!("Data section: active - with multiple memories - NOT YET IMPLEMENTED!");
-            }
-            _ => unreachable!(),
-        };
-
-        data_sec
-    }
 }
 
 impl Debug for DataSegment {
