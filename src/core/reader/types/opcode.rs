@@ -206,24 +206,59 @@ pub mod fc_extensions {
 }
 
 #[cfg(debug_assertions)]
+pub fn fc_extension_opcode_second_byte_to_str(byte: u8) -> alloc::string::String {
+    use alloc::{borrow::ToOwned, format};
+
+    let opcode = match byte {
+        0x00 => "I32_TRUNC_SAT_F32_S",
+        0x01 => "I32_TRUNC_SAT_F32_U",
+        0x02 => "I32_TRUNC_SAT_F64_S",
+        0x03 => "I32_TRUNC_SAT_F64_U",
+        0x04 => "I64_TRUNC_SAT_F32_S",
+        0x05 => "I64_TRUNC_SAT_F32_U",
+        0x06 => "I64_TRUNC_SAT_F64_S",
+        0x07 => "I64_TRUNC_SAT_F64_U",
+        0x08 => "MEMORY_INIT",
+        0x09 => "DATA_DROP",
+        0x0A => "MEMORY_COPY",
+        0x0B => "MEMORY_FILL",
+        0x0C => "TABLE_INIT",
+        0x0D => "ELEM_DROP",
+        0x0E => "TABLE_COPY",
+        0x0F => "TABLE_GROW",
+        0x10 => "TABLE_SIZE",
+        0x11 => "TABLE_FILL",
+        _ => "UNKNOWN",
+    }
+    .to_owned();
+
+    if opcode == "UNKNOWN" {
+        format!("UNKNOWN({:x})", byte)
+    } else {
+        opcode
+    }
+}
+
+#[cfg(debug_assertions)]
 pub fn opcode_byte_to_str(byte: u8) -> alloc::string::String {
-    use alloc::borrow::ToOwned;
-    match byte {
+    use alloc::{borrow::ToOwned, format};
+    let opcode = match byte {
         UNREACHABLE => "UNREACHABLE",
         NOP => "NOP",
-        // BLOCK => "BLOCK",
-        // LOOP => "LOOP",
-        // IF => "IF",
-        // ELSE => "ELSE",
+        BLOCK => "BLOCK",
+        LOOP => "LOOP",
+        IF => "IF",
+        ELSE => "ELSE",
         END => "END",
-        // BR => "BR",
-        // BR_IF => "BR_IF",
-        // BR_TABLE => "BR_TABLE",
+        BR => "BR",
+        BR_IF => "BR_IF",
+        BR_TABLE => "BR_TABLE",
         RETURN => "RETURN",
         CALL => "CALL",
-        // CALL_INDIRECT => "CALL_INDIRECT",
+        CALL_INDIRECT => "CALL_INDIRECT",
         DROP => "DROP",
-        // SELECT => "SELECT",
+        SELECT => "SELECT",
+        SELECT_T => "SELECT_T",
         LOCAL_GET => "LOCAL_GET",
         LOCAL_SET => "LOCAL_SET",
         LOCAL_TEE => "LOCAL_TEE",
@@ -391,5 +426,11 @@ pub fn opcode_byte_to_str(byte: u8) -> alloc::string::String {
         I64_EXTEND32_S => "I64_EXTEND32_S",
         _ => "UNKNOWN",
     }
-    .to_owned()
+    .to_owned();
+
+    if opcode == "UNKNOWN" {
+        format!("UNKNOWN({:x})", byte)
+    } else {
+        opcode
+    }
 }

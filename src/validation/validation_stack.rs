@@ -321,6 +321,7 @@ impl ValidationStack {
                 //if unified is a bottom type only way to satisfy validation of SELECT is to unify it to NumOrVec
                 self.stack.push(ValidationStackEntry::NumOrVecType);
             }
+            ValidationStackEntry::Val(ValType::RefType(_)) => return Err(Error::InvalidValType),
             _ => {
                 self.stack.push(unified);
             }

@@ -289,7 +289,7 @@ fn table_init_4_test() {
 
     i.invoke::<(), ()>(test, ()).unwrap();
 
-    println!("{:#?}", i.modules[0].store.tables[1]);
+    // println!("{:#?}", i.modules[0].store.tables[1]);
 
     assert!(i.invoke::<i32, i32>(check, 0).err().unwrap() == RuntimeError::UninitializedElement);
     assert!(i.invoke::<i32, i32>(check, 1).err().unwrap() == RuntimeError::UninitializedElement);
