@@ -11,6 +11,7 @@ use crate::value::{ExternAddr, FuncAddr, Ref};
 use crate::Result;
 use crate::{unreachable_validated, Error};
 
+pub mod custom;
 pub mod data;
 pub mod element;
 pub mod export;
