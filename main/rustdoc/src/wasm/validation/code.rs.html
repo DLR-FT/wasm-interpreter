@@ -1140,6 +1140,19 @@
 <a href="#1138" id="1138">1138</a>
 <a href="#1139" id="1139">1139</a>
 <a href="#1140" id="1140">1140</a>
+<a href="#1141" id="1141">1141</a>
+<a href="#1142" id="1142">1142</a>
+<a href="#1143" id="1143">1143</a>
+<a href="#1144" id="1144">1144</a>
+<a href="#1145" id="1145">1145</a>
+<a href="#1146" id="1146">1146</a>
+<a href="#1147" id="1147">1147</a>
+<a href="#1148" id="1148">1148</a>
+<a href="#1149" id="1149">1149</a>
+<a href="#1150" id="1150">1150</a>
+<a href="#1151" id="1151">1151</a>
+<a href="#1152" id="1152">1152</a>
+<a href="#1153" id="1153">1153</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>alloc::collections::btree_set::BTreeSet;
 <span class="kw">use </span>alloc::vec;
 <span class="kw">use </span>alloc::vec::Vec;
@@ -1545,6 +1558,19 @@
             }
             DROP =&gt; {
                 stack.drop_val()<span class="question-mark">?</span>;
+            }
+            SELECT =&gt; {
+                stack.validate_polymorphic_select()<span class="question-mark">?</span>;
+            }
+            SELECT_T =&gt; {
+                <span class="kw">let </span>type_vec = wasm.read_vec(ValType::read)<span class="question-mark">?</span>;
+                <span class="kw">if </span>type_vec.len() != <span class="number">1 </span>{
+                    <span class="kw">return </span><span class="prelude-val">Err</span>(Error::InvalidSelectTypeVector);
+                }
+                stack.assert_pop_val_type(ValType::NumType(NumType::I32))<span class="question-mark">?</span>;
+                stack.assert_pop_val_type(type_vec[<span class="number">0</span>])<span class="question-mark">?</span>;
+                stack.assert_pop_val_type(type_vec[<span class="number">0</span>])<span class="question-mark">?</span>;
+                stack.push_valtype(type_vec[<span class="number">0</span>]);
             }
             <span class="comment">// local.get: [] -&gt; [t]
             </span>LOCAL_GET =&gt; {

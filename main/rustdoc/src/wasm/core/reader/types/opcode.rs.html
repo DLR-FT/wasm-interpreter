@@ -199,6 +199,8 @@
 <a href="#197" id="197">197</a>
 <a href="#198" id="198">198</a>
 <a href="#199" id="199">199</a>
+<a href="#200" id="200">200</a>
+<a href="#201" id="201">201</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! All opcodes, in alphanumerical order by their numeric (hex-)value
 </span><span class="kw">pub const </span>UNREACHABLE: u8 = <span class="number">0x00</span>;
 <span class="kw">pub const </span>NOP: u8 = <span class="number">0x01</span>;
@@ -213,6 +215,8 @@
 <span class="kw">pub const </span>RETURN: u8 = <span class="number">0x0F</span>;
 <span class="kw">pub const </span>CALL: u8 = <span class="number">0x10</span>;
 <span class="kw">pub const </span>DROP: u8 = <span class="number">0x1A</span>;
+<span class="kw">pub const </span>SELECT: u8 = <span class="number">0x1B</span>;
+<span class="kw">pub const </span>SELECT_T: u8 = <span class="number">0x1C</span>;
 <span class="kw">pub const </span>CALL_INDIRECT: u8 = <span class="number">0x11</span>;
 <span class="kw">pub const </span>LOCAL_GET: u8 = <span class="number">0x20</span>;
 <span class="kw">pub const </span>LOCAL_SET: u8 = <span class="number">0x21</span>;
