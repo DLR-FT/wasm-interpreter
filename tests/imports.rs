@@ -28,28 +28,6 @@ const SIMPLE_IMPORT_ADDON: &str = r#"
     )
 )"#;
 
-const CALL_INDIRECT_BASE: &str = r#"
-(module
-    (import "env" "get_one" (func $get_one (param) (result i32)))
-    (func $get_three (param) (result i32)
-        call $get_one
-        i32.const 2
-        i32.add
-    )
-
-    (table 2 funcref)
-    (elem (i32.const 0) $get_one $get_three)
-    (type $void_to_i32 (func (param) (result i32)))
-
-    (func (export "run") (result i32 i32)
-        i32.const 0
-        call_indirect (type $void_to_i32)
-        
-        i32.const 1
-        call_indirect (type $void_to_i32)
-    )
-)"#;
-
 #[test_log::test]
 pub fn unmet_imports() {
     let wasm_bytes = wat::parse_str(UNMET_IMPORTS).unwrap();
@@ -105,21 +83,4 @@ pub fn run_simple_import() {
     // Function 0 should be the imported function
     let get_three = instance.get_function_by_index(0, 1).unwrap();
     assert_eq!(3, instance.invoke(&get_three, ()).unwrap());
-}
-
-#[test_log::test]
-pub fn run_call_indirect() {
-    let wasm_bytes = wat::parse_str(CALL_INDIRECT_BASE).unwrap();
-    let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance =
-        RuntimeInstance::new_named("base", &validation_info).expect("instantiation failed");
-
-    let wasm_bytes = wat::parse_str(SIMPLE_IMPORT_ADDON).unwrap();
-    let validation_info = validate(&wasm_bytes).expect("validation failed");
-    instance
-        .add_module("env", &validation_info)
-        .expect("Successful instantiation");
-
-    let run = instance.get_function_by_name("base", "run").unwrap();
-    assert_eq!((1, 3), instance.invoke(&run, ()).unwrap());
 }

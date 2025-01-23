@@ -245,7 +245,7 @@ pub(super) fn run<H: HookSet>(
                 }
             }
             CALL_INDIRECT => {
-                let given_type_idx = wasm.read_var_u32().unwrap_validated() as TypeIdx;
+                let type_idx = wasm.read_var_u32().unwrap_validated() as TypeIdx;
                 let table_idx = wasm.read_var_u32().unwrap_validated() as TableIdx;
 
                 let tab = modules[*current_module_idx]
@@ -255,7 +255,7 @@ pub(super) fn run<H: HookSet>(
                     .unwrap_validated();
                 let func_ty = modules[*current_module_idx]
                     .fn_types
-                    .get(given_type_idx)
+                    .get(type_idx)
                     .unwrap_validated();
 
                 let i: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -274,77 +274,42 @@ pub(super) fn run<H: HookSet>(
                     })?;
 
                 let func_addr = match *r {
-                    Ref::Func(func_addr) => func_addr.addr.unwrap_validated(),
+                    Ref::Func(func_addr) => func_addr.addr,
                     Ref::Extern(_) => unreachable!(),
                 };
 
                 let func_to_call_inst = modules[*current_module_idx]
                     .store
                     .funcs
-                    .get(func_addr)
-                    .unwrap_validated();
+                    .get(func_addr.unwrap_validated())
+                    .unwrap_validated()
+                    .try_into_local()
+                    .expect("TODO: handle call_indirect into import");
 
-                let actual_type_idx = func_to_call_inst.ty();
+                let func_ty_actual_index = func_to_call_inst.ty;
 
-                if given_type_idx != actual_type_idx {
+                if type_idx != func_ty_actual_index {
                     return Err(RuntimeError::SignatureMismatch);
                 }
 
-                match func_to_call_inst {
-                    FuncInst::Local(local_func_inst) => {
-                        let params = stack.pop_tail_iter(func_ty.params.valtypes.len());
-                        let remaining_locals = local_func_inst.locals.iter().cloned();
+                let params = stack.pop_tail_iter(func_ty.params.valtypes.len());
+                let remaining_locals = func_to_call_inst.locals.iter().cloned();
 
-                        trace!("Instruction: call_indirect [{func_addr:?}]");
-                        let locals = Locals::new(params, remaining_locals);
-                        stack.push_stackframe(
-                            *current_module_idx,
-                            func_addr,
-                            func_ty,
-                            locals,
-                            wasm.pc,
-                            stp,
-                        );
+                trace!("Instruction: call_indirect [{func_addr:?}]");
+                let locals = Locals::new(params, remaining_locals);
+                stack.push_stackframe(
+                    *current_module_idx,
+                    func_addr.unwrap_validated(),
+                    func_ty,
+                    locals,
+                    wasm.pc,
+                    stp,
+                );
 
-                        wasm.move_start_to(local_func_inst.code_expr)
-                            .unwrap_validated();
-
-                        stp = 0;
-                        current_sidetable = &local_func_inst.sidetable;
-                    }
-                    FuncInst::Imported(_imported_func_inst) => {
-                        let (next_module, next_func_idx) = lut
-                            .lookup(*current_module_idx, func_addr)
-                            .expect("invalid state for lookup");
-
-                        let local_func_inst = modules[next_module].store.funcs[next_func_idx]
-                            .try_into_local()
-                            .unwrap();
-
-                        let params = stack.pop_tail_iter(func_ty.params.valtypes.len());
-                        let remaining_locals = local_func_inst.locals.iter().cloned();
-
-                        trace!("Instruction: call_indirect [{func_addr:?}]");
-                        let locals = Locals::new(params, remaining_locals);
-                        stack.push_stackframe(
-                            *current_module_idx,
-                            func_addr,
-                            func_ty,
-                            locals,
-                            wasm.pc,
-                            stp,
-                        );
-
-                        wasm = &mut modules[next_module].wasm_reader;
-                        *current_module_idx = next_module;
-
-                        wasm.move_start_to(local_func_inst.code_expr)
-                            .unwrap_validated();
-
-                        stp = 0;
-                        current_sidetable = &local_func_inst.sidetable;
-                    }
-                }
+                wasm.move_start_to(func_to_call_inst.code_expr)
+                    .unwrap_validated();
+                stp = 0;
+                current_sidetable = &func_to_call_inst.sidetable;
             }
             DROP => {
                 stack.drop_value();
