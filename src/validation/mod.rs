@@ -92,18 +92,14 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
         })?
         .unwrap_or_default();
 
-    let imported_functions = imports
-        .iter()
-        .filter_map(|import| match &import.desc {
-            ImportDesc::Func(type_idx) => Some(*type_idx),
-            _ => None,
-        })
-        .collect::<Vec<_>>();
+    let imported_functions = imports.iter().filter_map(|import| match &import.desc {
+        ImportDesc::Func(type_idx) => Some(*type_idx),
+        _ => None,
+    });
 
     let all_functions = imported_functions
-        .iter()
-        .chain(local_functions.iter())
-        .cloned()
+        .clone()
+        .chain(local_functions.iter().cloned())
         .collect::<Vec<TypeIdx>>();
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
@@ -180,7 +176,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
                 h,
                 &types,
                 &all_functions,
-                imported_functions.len(),
+                imported_functions.count(),
                 &globals,
                 &memories,
                 &data_count,
