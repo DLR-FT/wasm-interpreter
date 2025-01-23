@@ -703,6 +703,8 @@
 <a href="#701" id="701">701</a>
 <a href="#702" id="702">702</a>
 <a href="#703" id="703">703</a>
+<a href="#704" id="704">704</a>
+<a href="#705" id="705">705</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::Result;
 <span class="kw">use </span>alloc::vec;
 <span class="kw">use </span>alloc::vec::Vec;
@@ -985,7 +987,9 @@
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="kw">pub fn </span>assert_pop_ctrl(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(LabelInfo, FuncType)&gt; {
+    <span class="comment">// TODO: rename/refactor this function to make it more clear that it ALSO
+    // checks the stack for valid return types.
+    </span><span class="kw">pub fn </span>assert_pop_ctrl(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(LabelInfo, FuncType)&gt; {
         <span class="kw">let </span>return_types = <span class="kw-2">&amp;</span><span class="self">self
             </span>.ctrl_stack
             .last()

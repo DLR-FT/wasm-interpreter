@@ -295,6 +295,12 @@
 <a href="#293" id="293">293</a>
 <a href="#294" id="294">294</a>
 <a href="#295" id="295">295</a>
+<a href="#296" id="296">296</a>
+<a href="#297" id="297">297</a>
+<a href="#298" id="298">298</a>
+<a href="#299" id="299">299</a>
+<a href="#300" id="300">300</a>
+<a href="#301" id="301">301</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>alloc::format;
 <span class="kw">use </span>alloc::string::{String, ToString};
 
@@ -323,6 +329,8 @@
     UninitializedElement,
     SignatureMismatch,
     ExpectedAValueOnTheStack,
+    ModuleNotFound,
+    UnmetImport,
 }
 
 <span class="attr">#[derive(Debug, PartialEq, Eq, Clone)]
@@ -552,6 +560,10 @@
             RuntimeError::SignatureMismatch =&gt; f.write_str(<span class="string">"Indirect call signature mismatch"</span>),
             RuntimeError::ExpectedAValueOnTheStack =&gt; {
                 f.write_str(<span class="string">"Expected a value on the stack, but None was found"</span>)
+            }
+            RuntimeError::ModuleNotFound =&gt; f.write_str(<span class="string">"No such module exists"</span>),
+            RuntimeError::UnmetImport =&gt; {
+                f.write_str(<span class="string">"There is at least one import which has no corresponding export"</span>)
             }
         }
     }

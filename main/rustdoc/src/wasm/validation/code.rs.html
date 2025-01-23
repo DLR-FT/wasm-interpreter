@@ -1153,6 +1153,10 @@
 <a href="#1151" id="1151">1151</a>
 <a href="#1152" id="1152">1152</a>
 <a href="#1153" id="1153">1153</a>
+<a href="#1154" id="1154">1154</a>
+<a href="#1155" id="1155">1155</a>
+<a href="#1156" id="1156">1156</a>
+<a href="#1157" id="1157">1157</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>alloc::collections::btree_set::BTreeSet;
 <span class="kw">use </span>alloc::vec;
 <span class="kw">use </span>alloc::vec::Vec;
@@ -1178,6 +1182,7 @@
     section_header: SectionHeader,
     fn_types: <span class="kw-2">&amp;</span>[FuncType],
     type_idx_of_fn: <span class="kw-2">&amp;</span>[usize],
+    num_imported_funcs: usize,
     globals: <span class="kw-2">&amp;</span>[Global],
     memories: <span class="kw-2">&amp;</span>[MemType],
     data_count: <span class="kw-2">&amp;</span><span class="prelude-ty">Option</span>&lt;u32&gt;,
@@ -1189,7 +1194,10 @@
 
     <span class="comment">// TODO replace with single sidetable per module
     </span><span class="kw">let </span>code_block_spans_sidetables = wasm.read_vec_enumerated(|wasm, idx| {
-        <span class="kw">let </span>ty_idx = type_idx_of_fn[idx];
+        <span class="comment">// We need to offset the index by the number of functions that were
+        // imported. Imported functions always live at the start of the index
+        // space.
+        </span><span class="kw">let </span>ty_idx = type_idx_of_fn[idx + num_imported_funcs];
         <span class="kw">let </span>func_ty = fn_types[ty_idx].clone();
 
         <span class="kw">let </span>func_size = wasm.read_var_u32()<span class="question-mark">?</span>;
@@ -1490,7 +1498,7 @@
                         // the last end instruction will handle the return to callee during execution
                         </span>stps_to_backpatch.iter().for_each(|i| {
                             sidetable[<span class="kw-2">*</span>i].delta_pc =
-                                (wasm.pc <span class="kw">as </span>isize) - sidetable[<span class="kw-2">*</span>i].delta_pc - <span class="number">1</span>; <span class="comment">// minus 1 is important!
+                                (wasm.pc <span class="kw">as </span>isize) - sidetable[<span class="kw-2">*</span>i].delta_pc - <span class="number">1</span>; <span class="comment">// minus 1 is important! TODO: Why?
                             </span>sidetable[<span class="kw-2">*</span>i].delta_stp = (stp_here <span class="kw">as </span>isize) - sidetable[<span class="kw-2">*</span>i].delta_stp;
                         });
                     }

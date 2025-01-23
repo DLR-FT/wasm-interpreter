@@ -233,6 +233,33 @@
 <a href="#231" id="231">231</a>
 <a href="#232" id="232">232</a>
 <a href="#233" id="233">233</a>
+<a href="#234" id="234">234</a>
+<a href="#235" id="235">235</a>
+<a href="#236" id="236">236</a>
+<a href="#237" id="237">237</a>
+<a href="#238" id="238">238</a>
+<a href="#239" id="239">239</a>
+<a href="#240" id="240">240</a>
+<a href="#241" id="241">241</a>
+<a href="#242" id="242">242</a>
+<a href="#243" id="243">243</a>
+<a href="#244" id="244">244</a>
+<a href="#245" id="245">245</a>
+<a href="#246" id="246">246</a>
+<a href="#247" id="247">247</a>
+<a href="#248" id="248">248</a>
+<a href="#249" id="249">249</a>
+<a href="#250" id="250">250</a>
+<a href="#251" id="251">251</a>
+<a href="#252" id="252">252</a>
+<a href="#253" id="253">253</a>
+<a href="#254" id="254">254</a>
+<a href="#255" id="255">255</a>
+<a href="#256" id="256">256</a>
+<a href="#257" id="257">257</a>
+<a href="#258" id="258">258</a>
+<a href="#259" id="259">259</a>
+<a href="#260" id="260">260</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>alloc::collections::btree_set;
 <span class="kw">use </span>alloc::vec::Vec;
 
@@ -243,7 +270,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::core::reader::types::element::ElemType;
 <span class="kw">use </span><span class="kw">crate</span>::core::reader::types::export::Export;
 <span class="kw">use </span><span class="kw">crate</span>::core::reader::types::global::Global;
-<span class="kw">use </span><span class="kw">crate</span>::core::reader::types::import::Import;
+<span class="kw">use </span><span class="kw">crate</span>::core::reader::types::import::{Import, ImportDesc};
 <span class="kw">use </span><span class="kw">crate</span>::core::reader::types::{FuncType, MemType, TableType};
 <span class="kw">use </span><span class="kw">crate</span>::core::reader::{WasmReadable, WasmReader};
 <span class="kw">use </span><span class="kw">crate</span>::core::sidetable::Sidetable;
@@ -315,10 +342,31 @@
 
     <span class="kw">while </span>(skip_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header)<span class="question-mark">?</span>).is_some() {}
 
-    <span class="kw">let </span>functions = handle_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header, SectionTy::Function, |wasm, <span class="kw">_</span>| {
-        wasm.read_vec(|wasm| wasm.read_var_u32().map(|u| u <span class="kw">as </span>usize))
-    })<span class="question-mark">?
-    </span>.unwrap_or_default();
+    <span class="comment">// The `Function` section only covers module-level (or "local") functions.
+    // Imported functions have their types known in the `import` section. Both
+    // local and imported functions share the same index space.
+    //
+    // Imported functions are given priority and have the first indicies, and
+    // only after that do the local functions get assigned their indices.
+    </span><span class="kw">let </span>local_functions =
+        handle_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header, SectionTy::Function, |wasm, <span class="kw">_</span>| {
+            wasm.read_vec(|wasm| wasm.read_var_u32().map(|u| u <span class="kw">as </span>usize))
+        })<span class="question-mark">?
+        </span>.unwrap_or_default();
+
+    <span class="kw">let </span>imported_functions = imports
+        .iter()
+        .filter_map(|import| <span class="kw">match </span><span class="kw-2">&amp;</span>import.desc {
+            ImportDesc::Func(type_idx) =&gt; <span class="prelude-val">Some</span>(<span class="kw-2">*</span>type_idx),
+            <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
+        })
+        .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+
+    <span class="kw">let </span>all_functions = imported_functions
+        .iter()
+        .chain(local_functions.iter())
+        .cloned()
+        .collect::&lt;Vec&lt;TypeIdx&gt;&gt;();
 
     <span class="kw">while </span>(skip_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header)<span class="question-mark">?</span>).is_some() {}
 
@@ -362,7 +410,12 @@
     <span class="kw">let </span><span class="kw-2">mut </span>referenced_functions = btree_set::BTreeSet::new();
     <span class="kw">let </span>elements: Vec&lt;ElemType&gt; =
         handle_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header, SectionTy::Element, |wasm, <span class="kw">_</span>| {
-            ElemType::read_from_wasm(wasm, <span class="kw-2">&amp;</span>functions, <span class="kw-2">&amp;mut </span>referenced_functions, tables.len())
+            ElemType::read_from_wasm(
+                wasm,
+                <span class="kw-2">&amp;</span>all_functions,
+                <span class="kw-2">&amp;mut </span>referenced_functions,
+                tables.len(),
+            )
         })<span class="question-mark">?
         </span>.unwrap_or_default();
 
@@ -388,7 +441,8 @@
                 wasm,
                 h,
                 <span class="kw-2">&amp;</span>types,
-                <span class="kw-2">&amp;</span>functions,
+                <span class="kw-2">&amp;</span>all_functions,
+                imported_functions.len(),
                 <span class="kw-2">&amp;</span>globals,
                 <span class="kw-2">&amp;</span>memories,
                 <span class="kw-2">&amp;</span>data_count,
@@ -401,7 +455,7 @@
 
     <span class="macro">assert_eq!</span>(
         func_blocks_sidetables.len(),
-        functions.len(),
+        local_functions.len(),
         <span class="string">"these should be equal"
     </span>); <span class="comment">// TODO check if this is in the spec
 
@@ -429,7 +483,7 @@
         wasm: wasm.into_inner(),
         types,
         imports,
-        functions,
+        functions: local_functions,
         tables,
         memories,
         globals,

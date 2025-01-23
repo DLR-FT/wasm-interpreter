@@ -110,7 +110,7 @@
 /// - else
 </span><span class="comment">// TODO hide implementation
 // TODO Remove Clone trait from sidetables
-</span><span class="attr">#[derive(Clone)]
+</span><span class="attr">#[derive(Debug, Clone)]
 </span><span class="kw">pub struct </span>SidetableEntry {
     <span class="doccomment">/// Δpc: the amount to adjust the instruction pointer by if the branch is taken
     </span><span class="kw">pub </span>delta_pc: isize,

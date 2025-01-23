@@ -245,6 +245,12 @@
 <a href="#243" id="243">243</a>
 <a href="#244" id="244">244</a>
 <a href="#245" id="245">245</a>
+<a href="#246" id="246">246</a>
+<a href="#247" id="247">247</a>
+<a href="#248" id="248">248</a>
+<a href="#249" id="249">249</a>
+<a href="#250" id="250">250</a>
+<a href="#251" id="251">251</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>alloc::vec::{Drain, Vec};
 
 <span class="kw">use </span><span class="kw">crate</span>::core::indices::{FuncIdx, LocalIdx};
@@ -406,9 +412,10 @@
         <span class="self">self</span>.frames.last_mut().unwrap_validated()
     }
 
-    <span class="doccomment">/// Pop a [`CallFrame`] from the call stack, returning the return address and the return stp
-    </span><span class="kw">pub fn </span>pop_stackframe(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; (usize, usize) {
+    <span class="doccomment">/// Pop a [`CallFrame`] from the call stack, returning the module id, return address, and the return stp
+    </span><span class="kw">pub fn </span>pop_stackframe(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; (usize, usize, usize) {
         <span class="kw">let </span>CallFrame {
+            module_idx,
             return_addr,
             value_stack_base_idx,
             return_value_count,
@@ -425,7 +432,7 @@
             <span class="string">"after a function call finished, the stack must have exactly as many values as it had before calling the function plus the number of function return values"
         </span>);
 
-        (return_addr, return_stp)
+        (module_idx, return_addr, return_stp)
     }
 
     <span class="doccomment">/// Push a stackframe to the call stack
@@ -433,6 +440,7 @@
     /// Takes the current [`Self::values`]'s length as [`CallFrame::value_stack_base_idx`].
     </span><span class="kw">pub fn </span>push_stackframe(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        module_idx: usize,
         func_idx: FuncIdx,
         func_ty: <span class="kw-2">&amp;</span>FuncType,
         locals: Locals,
@@ -440,6 +448,7 @@
         return_stp: usize,
     ) {
         <span class="self">self</span>.frames.push(CallFrame {
+            module_idx,
             func_idx,
             locals,
             return_addr,
@@ -472,6 +481,9 @@
 
 <span class="doccomment">/// The [WASM spec](https://webassembly.github.io/spec/core/exec/runtime.html#stack) calls this `Activations`, however it refers to the call frames of functions.
 </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>CallFrame {
+    <span class="doccomment">/// Index to the module idx the function originates in.
+    </span><span class="kw">pub </span>module_idx: usize,
+
     <span class="doccomment">/// Index to the function of this [`CallFrame`]
     </span><span class="kw">pub </span>func_idx: FuncIdx,
 

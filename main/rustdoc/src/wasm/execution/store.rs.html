@@ -109,12 +109,54 @@
 <a href="#107" id="107">107</a>
 <a href="#108" id="108">108</a>
 <a href="#109" id="109">109</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>alloc::vec;
+<a href="#110" id="110">110</a>
+<a href="#111" id="111">111</a>
+<a href="#112" id="112">112</a>
+<a href="#113" id="113">113</a>
+<a href="#114" id="114">114</a>
+<a href="#115" id="115">115</a>
+<a href="#116" id="116">116</a>
+<a href="#117" id="117">117</a>
+<a href="#118" id="118">118</a>
+<a href="#119" id="119">119</a>
+<a href="#120" id="120">120</a>
+<a href="#121" id="121">121</a>
+<a href="#122" id="122">122</a>
+<a href="#123" id="123">123</a>
+<a href="#124" id="124">124</a>
+<a href="#125" id="125">125</a>
+<a href="#126" id="126">126</a>
+<a href="#127" id="127">127</a>
+<a href="#128" id="128">128</a>
+<a href="#129" id="129">129</a>
+<a href="#130" id="130">130</a>
+<a href="#131" id="131">131</a>
+<a href="#132" id="132">132</a>
+<a href="#133" id="133">133</a>
+<a href="#134" id="134">134</a>
+<a href="#135" id="135">135</a>
+<a href="#136" id="136">136</a>
+<a href="#137" id="137">137</a>
+<a href="#138" id="138">138</a>
+<a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
+</pre></div><pre class="rust"><code><span class="kw">use </span>alloc::string::String;
+<span class="kw">use </span>alloc::vec;
 <span class="kw">use </span>alloc::vec::Vec;
 <span class="kw">use </span>core::iter;
 
 <span class="kw">use </span><span class="kw">crate</span>::core::indices::TypeIdx;
 <span class="kw">use </span><span class="kw">crate</span>::core::reader::span::Span;
+<span class="kw">use </span><span class="kw">crate</span>::core::reader::types::export::Export;
 <span class="kw">use </span><span class="kw">crate</span>::core::reader::types::global::Global;
 <span class="kw">use </span><span class="kw">crate</span>::core::reader::types::{MemType, TableType, ValType};
 <span class="kw">use </span><span class="kw">crate</span>::core::sidetable::Sidetable;
@@ -134,6 +176,51 @@
     <span class="kw">pub </span>tables: Vec&lt;TableInst&gt;,
     <span class="kw">pub </span>elements: Vec&lt;ElemInst&gt;,
     <span class="kw">pub </span>passive_elem_indexes: Vec&lt;usize&gt;,
+    <span class="kw">pub </span>exports: Vec&lt;Export&gt;,
+}
+
+<span class="attr">#[derive(Debug)]
+</span><span class="kw">pub enum </span>FuncInst {
+    Local(LocalFuncInst),
+    Imported(ImportedFuncInst),
+}
+
+<span class="attr">#[derive(Debug)]
+</span><span class="kw">pub struct </span>LocalFuncInst {
+    <span class="kw">pub </span>ty: TypeIdx,
+    <span class="kw">pub </span>locals: Vec&lt;ValType&gt;,
+    <span class="kw">pub </span>code_expr: Span,
+    <span class="kw">pub </span>sidetable: Sidetable,
+}
+
+<span class="attr">#[derive(Debug)]
+</span><span class="kw">pub struct </span>ImportedFuncInst {
+    <span class="kw">pub </span>ty: TypeIdx,
+    <span class="kw">pub </span>module_name: String,
+    <span class="kw">pub </span>function_name: String,
+}
+
+<span class="kw">impl </span>FuncInst {
+    <span class="kw">pub fn </span>ty(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; TypeIdx {
+        <span class="kw">match </span><span class="self">self </span>{
+            FuncInst::Local(f) =&gt; f.ty,
+            FuncInst::Imported(f) =&gt; f.ty,
+        }
+    }
+
+    <span class="kw">pub fn </span>try_into_local(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>LocalFuncInst&gt; {
+        <span class="kw">match </span><span class="self">self </span>{
+            FuncInst::Local(f) =&gt; <span class="prelude-val">Some</span>(f),
+            FuncInst::Imported(<span class="kw">_</span>) =&gt; <span class="prelude-val">None</span>,
+        }
+    }
+
+    <span class="kw">pub fn </span>try_into_imported(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>ImportedFuncInst&gt; {
+        <span class="kw">match </span><span class="self">self </span>{
+            FuncInst::Local(<span class="kw">_</span>) =&gt; <span class="prelude-val">None</span>,
+            FuncInst::Imported(f) =&gt; <span class="prelude-val">Some</span>(f),
+        }
+    }
 }
 
 <span class="attr">#[derive(Clone, Debug)]
@@ -150,13 +237,6 @@
     <span class="kw">pub fn </span>is_empty(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
         <span class="self">self</span>.references.is_empty()
     }
-}
-
-<span class="kw">pub struct </span>FuncInst {
-    <span class="kw">pub </span>ty: TypeIdx,
-    <span class="kw">pub </span>locals: Vec&lt;ValType&gt;,
-    <span class="kw">pub </span>code_expr: Span,
-    <span class="kw">pub </span>sidetable: Sidetable,
 }
 
 <span class="attr">#[derive(Debug)]
