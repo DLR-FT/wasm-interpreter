@@ -28,6 +28,12 @@ const SIMPLE_IMPORT_ADDON: &str = r#"
     )
 )"#;
 
+const CYCLICAL_IMPORT: &str = r#"
+(module
+    (import "base" "get_three" (func $get_three (param) (result i32)))
+    (export "get_three" (func $get_three))
+)"#;
+
 const CALL_INDIRECT_BASE: &str = r#"
 (module
     (import "env" "get_one" (func $get_one (param) (result i32)))
@@ -122,4 +128,23 @@ pub fn run_call_indirect() {
 
     let run = instance.get_function_by_name("base", "run").unwrap();
     assert_eq!((1, 3), instance.invoke(&run, ()).unwrap());
+}
+
+#[test_log::test]
+pub fn run_cyclical() {
+    let wasm_bytes = wat::parse_str(SIMPLE_IMPORT_BASE).unwrap();
+    let validation_info = validate(&wasm_bytes).expect("validation failed");
+    let mut instance =
+        RuntimeInstance::new_named("base", &validation_info).expect("instantiation failed");
+
+    let wasm_bytes = wat::parse_str(CYCLICAL_IMPORT).unwrap();
+    let validation_info = validate(&wasm_bytes).expect("validation failed");
+    instance
+        .add_module("env", &validation_info)
+        .expect("Successful instantiation");
+
+    let run = instance.get_function_by_name("base", "get_three").unwrap();
+    // Unmet import since we can't have cyclical imports
+    // Currently, this passes since we don't allow chained imports.
+    assert!(instance.invoke::<(), i32>(&run, ()).unwrap_err() == wasm::RuntimeError::UnmetImport);
 }

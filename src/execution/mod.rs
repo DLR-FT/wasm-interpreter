@@ -383,8 +383,9 @@ where
             let (module_idx, func_idx) =
                 self.get_indicies(&function_ref.module_name, &function_ref.function_name)?;
 
+            // TODO: figure out errors :)
             if module_idx != function_ref.module_index {
-                return Err(RuntimeError::FunctionNotFound);
+                return Err(RuntimeError::ModuleNotFound);
             }
             if func_idx != function_ref.function_index {
                 return Err(RuntimeError::FunctionNotFound);
