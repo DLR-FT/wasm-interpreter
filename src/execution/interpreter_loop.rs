@@ -44,9 +44,7 @@ pub(super) fn run<H: HookSet>(
     let func_inst = store
         .funcs
         .get(stack.current_stackframe().func_idx)
-        .unwrap_validated()
-        .try_into_local()
-        .expect("to start execution with local function");
+        .unwrap_validated();
 
     // Start reading the function's instructions
     let mut wasm = WasmReader::new(wasm_bytecode);
@@ -80,8 +78,6 @@ pub(super) fn run<H: HookSet>(
                     .funcs
                     .get(stack.current_stackframe().func_idx)
                     .unwrap_validated()
-                    .try_into_local()
-                    .expect("TODO: interpreter_loop")
                     .code_expr;
                 if wasm.pc != current_func_span.from() + current_func_span.len() {
                     continue;
@@ -104,8 +100,6 @@ pub(super) fn run<H: HookSet>(
                     .funcs
                     .get(stack.current_stackframe().func_idx)
                     .unwrap_validated()
-                    .try_into_local()
-                    .expect("TODO: interpreter_loop")
                     .sidetable;
             }
             IF => {
@@ -166,12 +160,7 @@ pub(super) fn run<H: HookSet>(
             CALL => {
                 let func_to_call_idx = wasm.read_var_u32().unwrap_validated() as FuncIdx;
 
-                let func_to_call_inst = store
-                    .funcs
-                    .get(func_to_call_idx)
-                    .unwrap_validated()
-                    .try_into_local()
-                    .expect("TODO: interpreter_loop");
+                let func_to_call_inst = store.funcs.get(func_to_call_idx).unwrap_validated();
                 let func_to_call_ty = types.get(func_to_call_inst.ty).unwrap_validated();
 
                 let params = stack.pop_tail_iter(func_to_call_ty.params.valtypes.len());
@@ -216,9 +205,7 @@ pub(super) fn run<H: HookSet>(
                 let func_to_call_inst = store
                     .funcs
                     .get(func_addr.unwrap_validated())
-                    .unwrap_validated()
-                    .try_into_local()
-                    .expect("TODO: interpreter_loop");
+                    .unwrap_validated();
 
                 let func_ty_actual_index = func_to_call_inst.ty;
 

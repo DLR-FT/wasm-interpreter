@@ -1,4 +1,3 @@
-use alloc::string::String;
 use alloc::vec;
 use alloc::vec::Vec;
 use core::iter;
@@ -26,50 +25,6 @@ pub struct Store {
     pub passive_elem_indexes: Vec<usize>,
 }
 
-#[derive(Debug)]
-pub enum FuncInst {
-    Local(LocalFuncInst),
-    Imported(ImportedFuncInst),
-}
-
-#[derive(Debug)]
-pub struct LocalFuncInst {
-    pub ty: TypeIdx,
-    pub locals: Vec<ValType>,
-    pub code_expr: Span,
-    pub sidetable: Sidetable,
-}
-
-#[derive(Debug)]
-pub struct ImportedFuncInst {
-    pub ty: TypeIdx,
-    pub module_name: String,
-    pub function_name: String,
-}
-
-impl FuncInst {
-    pub fn ty(&self) -> TypeIdx {
-        match self {
-            FuncInst::Local(f) => f.ty,
-            FuncInst::Imported(f) => f.ty,
-        }
-    }
-
-    pub fn try_into_local(&self) -> Option<&LocalFuncInst> {
-        match self {
-            FuncInst::Local(f) => Some(f),
-            FuncInst::Imported(_) => None,
-        }
-    }
-
-    pub fn try_into_imported(&self) -> Option<&ImportedFuncInst> {
-        match self {
-            FuncInst::Local(_) => None,
-            FuncInst::Imported(f) => Some(f),
-        }
-    }
-}
-
 #[derive(Clone, Debug)]
 /// <https://webassembly.github.io/spec/core/exec/runtime.html#element-instances>
 pub struct ElemInst {
@@ -84,6 +39,13 @@ impl ElemInst {
     pub fn is_empty(&self) -> bool {
         self.references.is_empty()
     }
+}
+
+pub struct FuncInst {
+    pub ty: TypeIdx,
+    pub locals: Vec<ValType>,
+    pub code_expr: Span,
+    pub sidetable: Sidetable,
 }
 
 #[derive(Debug)]

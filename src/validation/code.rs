@@ -23,7 +23,6 @@ pub fn validate_code_section(
     section_header: SectionHeader,
     fn_types: &[FuncType],
     type_idx_of_fn: &[usize],
-    num_imported_funcs: usize,
     globals: &[Global],
     memories: &[MemType],
     data_count: &Option<u32>,
@@ -35,10 +34,7 @@ pub fn validate_code_section(
 
     // TODO replace with single sidetable per module
     let code_block_spans_sidetables = wasm.read_vec_enumerated(|wasm, idx| {
-        // We need to offset the index by the number of functions that were
-        // imported. Imported functions always live at the start of the index
-        // space.
-        let ty_idx = type_idx_of_fn[idx + num_imported_funcs];
+        let ty_idx = type_idx_of_fn[idx];
         let func_ty = fn_types[ty_idx].clone();
 
         let func_size = wasm.read_var_u32()?;
@@ -339,7 +335,7 @@ fn read_instructions(
                         // the last end instruction will handle the return to callee during execution
                         stps_to_backpatch.iter().for_each(|i| {
                             sidetable[*i].delta_pc =
-                                (wasm.pc as isize) - sidetable[*i].delta_pc - 1; // minus 1 is important! TODO: Why?
+                                (wasm.pc as isize) - sidetable[*i].delta_pc - 1; // minus 1 is important!
                             sidetable[*i].delta_stp = (stp_here as isize) - sidetable[*i].delta_stp;
                         });
                     }
