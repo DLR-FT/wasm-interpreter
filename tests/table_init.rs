@@ -15,13 +15,11 @@
 # limitations under the License.
 */
 
-use wasm::{validate, Error, RuntimeError, RuntimeInstance, DEFAULT_MODULE};
+use wasm::{validate, Error, RuntimeError, RuntimeInstance};
 
 macro_rules! get_func {
     ($instance:ident, $func_name:expr) => {
-        &$instance
-            .get_function_by_name(DEFAULT_MODULE, $func_name)
-            .unwrap()
+        &$instance.get_function_by_name("", $func_name).unwrap()
     };
 }
 
@@ -289,7 +287,7 @@ fn table_init_4_test() {
 
     i.invoke::<(), ()>(test, ()).unwrap();
 
-    println!("{:#?}", i.modules[0].store.tables[1]);
+    println!("{:#?}", i.store.tables[1]);
 
     assert!(i.invoke::<i32, i32>(check, 0).err().unwrap() == RuntimeError::UninitializedElement);
     assert!(i.invoke::<i32, i32>(check, 1).err().unwrap() == RuntimeError::UninitializedElement);

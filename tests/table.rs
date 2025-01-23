@@ -16,13 +16,11 @@
 */
 use wasm::value::{FuncRefForInteropValue, Ref};
 use wasm::Error as GeneralError;
-use wasm::{validate, RuntimeInstance, DEFAULT_MODULE};
+use wasm::{validate, RuntimeInstance};
 
 macro_rules! get_func {
     ($instance:ident, $func_name:expr) => {
-        &$instance
-            .get_function_by_name(DEFAULT_MODULE, $func_name)
-            .unwrap()
+        &$instance.get_function_by_name("", $func_name).unwrap()
     };
 }
 
@@ -121,7 +119,7 @@ fn table_elem_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
     let instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
-    let table = &instance.modules[0].store.tables[0];
+    let table = &instance.store.tables[0];
     assert!(table.len() == 2);
     let wanted: [usize; 2] = [0, 2];
     table

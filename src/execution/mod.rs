@@ -1,22 +1,20 @@
-use alloc::collections::btree_map::BTreeMap;
-use alloc::string::{String, ToString};
+use alloc::string::ToString;
 use alloc::vec;
 use alloc::vec::Vec;
 
 use const_interpreter_loop::{run_const, run_const_span};
-use execution_info::ExecutionInfo;
 use function_ref::FunctionRef;
 use interpreter_loop::run;
 use locals::Locals;
-use lut::Lut;
 use store::{DataInst, ElemInst, ImportedFuncInst, LocalFuncInst, TableInst};
 use value::{ExternAddr, FuncAddr, Ref};
 use value_stack::Stack;
 
 use crate::core::error::StoreInstantiationError;
 use crate::core::reader::types::element::{ElemItems, ElemMode};
-use crate::core::reader::types::export::ExportDesc;
+use crate::core::reader::types::export::{Export, ExportDesc};
 use crate::core::reader::types::import::ImportDesc;
+use crate::core::reader::types::FuncType;
 use crate::core::reader::WasmReader;
 use crate::execution::assert_validated::UnwrapValidatedExt;
 use crate::execution::hooks::{EmptyHookSet, HookSet};
@@ -29,7 +27,6 @@ use crate::{RefType, Result as CustomResult, RuntimeError, ValType, ValidationIn
 // TODO
 pub(crate) mod assert_validated;
 pub mod const_interpreter_loop;
-pub(crate) mod execution_info;
 pub mod function_ref;
 pub mod hooks;
 mod interpreter_loop;
@@ -46,9 +43,10 @@ pub struct RuntimeInstance<'b, H = EmptyHookSet>
 where
     H: HookSet,
 {
-    pub modules: Vec<ExecutionInfo<'b>>,
-    module_map: BTreeMap<String, usize>,
-    lut: Option<Lut>,
+    pub wasm_bytecode: &'b [u8],
+    types: Vec<FuncType>,
+    exports: Vec<Export>,
+    pub store: Store,
     pub hook_set: H,
 }
 
@@ -76,15 +74,16 @@ where
     ) -> CustomResult<Self> {
         trace!("Starting instantiation of bytecode");
 
+        let store = Self::init_store(validation_info)?;
+
         let mut instance = RuntimeInstance {
-            modules: Vec::new(),
-            module_map: BTreeMap::new(),
-            lut: None,
+            wasm_bytecode: validation_info.wasm,
+            types: validation_info.types.clone(),
+            exports: validation_info.exports.clone(),
+            store,
             hook_set,
         };
-        instance.add_module(module_name, validation_info)?;
 
-        // TODO: how do we handle the start function, if we don't have a LUT yet?
         if let Some(start) = validation_info.start {
             // "start" is not always exported, so we need create a non-API exposed function reference.
             // Note: function name is not important here, as it is not used in the verification process.
@@ -122,13 +121,8 @@ where
         module_idx: usize,
         function_idx: usize,
     ) -> Result<FunctionRef, RuntimeError> {
-        let module = self
-            .modules
-            .get(module_idx)
-            .ok_or(RuntimeError::ModuleNotFound)?;
-
-        let function_name = module
-            .store
+        // TODO: Module resolution
+        let function_name = self
             .exports
             .iter()
             .find(|export| match &export.desc {
@@ -139,7 +133,8 @@ where
             .ok_or(RuntimeError::FunctionNotFound)?;
 
         Ok(FunctionRef {
-            module_name: module.name.clone(),
+            // TODO: get the module name from the module index
+            module_name: DEFAULT_MODULE.to_string(),
             function_name,
             module_index: module_idx,
             function_index: function_idx,
@@ -147,26 +142,14 @@ where
         })
     }
 
+    // TODO: remove this annotation when implementing the function
+    #[allow(clippy::result_unit_err)]
     pub fn add_module(
         &mut self,
-        module_name: &str,
-        validation_info: &'_ ValidationInfo<'b>,
-    ) -> CustomResult<()> {
-        let store = Self::init_store(validation_info)?;
-        let exec_info = ExecutionInfo::new(
-            module_name,
-            validation_info.wasm,
-            validation_info.types.clone(),
-            store,
-        );
-
-        self.module_map
-            .insert(module_name.to_string(), self.modules.len());
-        self.modules.push(exec_info);
-
-        self.lut = Lut::new(&self.modules, &self.module_map);
-
-        Ok(())
+        _module_name: &str,
+        _validation_info: &'_ ValidationInfo<'b>,
+    ) -> Result<(), ()> {
+        todo!("Implement module linking");
     }
 
     pub fn invoke<Param: InteropValueList, Returns: InteropValueList>(
@@ -175,22 +158,17 @@ where
         params: Param,
     ) -> Result<Returns, RuntimeError> {
         // First, verify that the function reference is valid
-        let (module_idx, func_idx) = self.verify_function_ref(function_ref)?;
+        let (_module_idx, func_idx) = self.verify_function_ref(function_ref)?;
 
         // -=-= Verification =-=-
-        trace!("{:?}", self.modules[module_idx].store.funcs);
-
-        let func_inst = self.modules[module_idx]
+        let func_inst = self
             .store
             .funcs
             .get(func_idx)
-            .ok_or(RuntimeError::FunctionNotFound)?
+            .expect("valid FuncIdx")
             .try_into_local()
-            .ok_or(RuntimeError::FunctionNotFound)?;
-        let func_ty = self.modules[module_idx]
-            .fn_types
-            .get(func_inst.ty)
-            .unwrap_validated();
+            .expect("to invoke local function");
+        let func_ty = self.types.get(func_inst.ty).unwrap_validated();
 
         // Check correct function parameters and return types
         if func_ty.params.valtypes != Param::TYS {
@@ -209,21 +187,13 @@ where
 
         // setting `usize::MAX` as return address for the outermost function ensures that we
         // observably fail upon errornoeusly continuing execution after that function returns.
-        stack.push_stackframe(
-            module_idx,
-            func_idx,
-            func_ty,
-            locals,
-            usize::MAX,
-            usize::MAX,
-        );
+        stack.push_stackframe(func_idx, func_ty, locals, usize::MAX, usize::MAX);
 
-        let mut current_module_idx = module_idx;
         // Run the interpreter
         run(
-            &mut self.modules,
-            &mut current_module_idx,
-            self.lut.as_ref().ok_or(RuntimeError::UnmetImport)?,
+            self.wasm_bytecode,
+            &self.types,
+            &mut self.store,
             &mut stack,
             EmptyHookSet,
         )?;
@@ -249,20 +219,17 @@ where
         ret_types: &[ValType],
     ) -> Result<Vec<Value>, RuntimeError> {
         // First, verify that the function reference is valid
-        let (module_idx, func_idx) = self.verify_function_ref(function_ref)?;
+        let (_module_idx, func_idx) = self.verify_function_ref(function_ref)?;
 
         // -=-= Verification =-=-
-        let func_inst = self.modules[module_idx]
+        let func_inst = self
             .store
             .funcs
             .get(func_idx)
-            .ok_or(RuntimeError::FunctionNotFound)?
+            .expect("valid FuncIdx")
             .try_into_local()
-            .ok_or(RuntimeError::FunctionNotFound)?;
-        let func_ty = self.modules[module_idx]
-            .fn_types
-            .get(func_inst.ty)
-            .unwrap_validated();
+            .expect("to invoke local function");
+        let func_ty = self.types.get(func_inst.ty).unwrap_validated();
 
         // Verify that the given parameters match the function parameters
         let param_types = params.iter().map(|v| v.to_ty()).collect::<Vec<_>>();
@@ -279,29 +246,25 @@ where
         // Prepare a new stack with the locals for the entry function
         let mut stack = Stack::new();
         let locals = Locals::new(params.into_iter(), func_inst.locals.iter().cloned());
-        stack.push_stackframe(module_idx, func_idx, func_ty, locals, 0, 0);
+        stack.push_stackframe(func_idx, func_ty, locals, 0, 0);
 
-        let mut currrent_module_idx = module_idx;
         // Run the interpreter
         run(
-            &mut self.modules,
-            &mut currrent_module_idx,
-            self.lut.as_ref().ok_or(RuntimeError::UnmetImport)?,
+            self.wasm_bytecode,
+            &self.types,
+            &mut self.store,
             &mut stack,
             EmptyHookSet,
         )?;
 
-        let func_inst = self.modules[module_idx]
+        let func_inst = self
             .store
             .funcs
             .get(func_idx)
-            .ok_or(RuntimeError::FunctionNotFound)?
+            .expect("valid FuncIdx")
             .try_into_local()
-            .ok_or(RuntimeError::FunctionNotFound)?;
-        let func_ty = self.modules[module_idx]
-            .fn_types
-            .get(func_inst.ty)
-            .unwrap_validated();
+            .expect("to invoke local function");
+        let func_ty = self.types.get(func_inst.ty).unwrap_validated();
 
         // Pop return values from stack
         let return_values = func_ty
@@ -318,30 +281,13 @@ where
         Ok(ret)
     }
 
-    /// Get the indicies of a module and function by their names.
-    ///
-    /// # Arguments
-    /// - `module_name`: The module in which to find the function.
-    /// - `function_name`: The name of the function to find inside the module. The function must be a local function and
-    ///   not an import.
-    ///
-    /// # Returns
-    /// - `Ok((module_idx, func_idx))`, where `module_idx` is the internal index of the module inside the
-    ///   [RuntimeInstance], and `func_idx` is the internal index of the function inside the module.
-    /// - `Err(RuntimeError::ModuleNotFound)`, if the module is not found.
-    /// - `Err(RuntimeError::FunctionNotFound`, if the function is not found within the module.
+    // TODO: replace this with the lookup table when implmenting the linker
     fn get_indicies(
         &self,
-        module_name: &str,
+        _module_name: &str,
         function_name: &str,
     ) -> Result<(usize, usize), RuntimeError> {
-        let module_idx = *self
-            .module_map
-            .get(module_name)
-            .ok_or(RuntimeError::ModuleNotFound)?;
-
-        let func_idx = self.modules[module_idx]
-            .store
+        let func_idx = self
             .exports
             .iter()
             .find_map(|export| {
@@ -356,25 +302,9 @@ where
             })
             .ok_or(RuntimeError::FunctionNotFound)?;
 
-        Ok((module_idx, func_idx))
+        Ok((0, func_idx))
     }
 
-    /// Verify that the function reference is still valid. A function reference may be invalid if it created from
-    /// another [RuntimeInstance] or the modules inside the instance have been changed in a way that the indicies inside
-    /// the [FunctionRef] would be invalid.
-    ///
-    /// Note: this function ensures that making an unchecked indexation will not cause a panic.
-    ///
-    /// # Returns
-    /// - `Ok((function_ref.module_idx, function_ref.func_idx))`
-    /// - `Err(RuntimeError::FunctionNotFound)`, or `Err(RuntimeError::ModuleNotFound)` if the function is not valid.
-    ///
-    /// # Implementation details
-    /// For an exported function (i.e. created by the same [RuntimeInstance]), the names are re-resolved using
-    /// [RuntimeInstance::get_indicies], and the indicies are compared with the indicies in the [FunctionRef].
-    ///
-    /// For a [FunctionRef] with the [export](FunctionRef::exported) flag set to `false`, the indicies are checked to be
-    /// in-bounds, and that the module name matches the module name in the [FunctionRef]. The function name is ignored.
     fn verify_function_ref(
         &self,
         function_ref: &FunctionRef,
@@ -383,10 +313,8 @@ where
             let (module_idx, func_idx) =
                 self.get_indicies(&function_ref.module_name, &function_ref.function_name)?;
 
-            if module_idx != function_ref.module_index {
-                return Err(RuntimeError::FunctionNotFound);
-            }
-            if func_idx != function_ref.function_index {
+            if module_idx != function_ref.module_index || func_idx != function_ref.function_index {
+                // TODO: should we return a different error here?
                 return Err(RuntimeError::FunctionNotFound);
             }
 
@@ -394,19 +322,11 @@ where
         } else {
             let (module_idx, func_idx) = (function_ref.module_index, function_ref.function_index);
 
-            let module = self
-                .modules
-                .get(module_idx)
-                .ok_or(RuntimeError::ModuleNotFound)?;
-
-            if module.name != function_ref.module_name {
-                return Err(RuntimeError::ModuleNotFound);
-            }
+            // TODO: verify module named - index mapping.
 
             // Sanity check that the function index is at least in the bounds of the store, though this doesn't mean
             // that it's a valid function.
-            module
-                .store
+            self.store
                 .funcs
                 .get(func_idx)
                 .ok_or(RuntimeError::FunctionNotFound)?;
@@ -632,7 +552,6 @@ where
             })
             .collect();
 
-        let exports = validation_info.exports.clone();
         Ok(Store {
             funcs: function_instances,
             mems: memory_instances,
@@ -641,7 +560,6 @@ where
             tables,
             elements,
             passive_elem_indexes,
-            exports,
         })
     }
 }
