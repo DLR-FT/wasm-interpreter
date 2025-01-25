@@ -153,8 +153,8 @@
                 })
                 .collect::&lt;<span class="prelude-ty">Option</span>&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;&gt;()<span class="question-mark">?</span>;
 
-            <span class="comment">// TODO: what do we want to do if there is a missing import/export pair? Currently we fail the entire
-            // operation. Should it be a RuntimeError if said missing pair is called?
+            <span class="comment">// If there is a missing import/export pair,  we fail the entire
+            // operation. Better safe than sorry...
 
             </span>function_lut.push(module_lut);
         }
