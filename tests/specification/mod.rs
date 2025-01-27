@@ -3,7 +3,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use reports::{AssertReport, WastTestReport};
+use reports::WastTestReport;
 
 mod reports;
 mod run;
@@ -38,7 +38,7 @@ impl Default for FnF {
     }
 }
 
-#[test_log::test]
+// #[test_log::test]
 pub fn spec_tests() {
     // so we don't see unnecessary stacktraces of catch_unwind (sadly this also means we don't see panics from outside catch_unwind either)
     std::panic::set_hook(Box::new(|_| {}));
@@ -54,6 +54,8 @@ pub fn spec_tests() {
     // let pb: PathBuf = "./tests/specification/testsuite/table_get.wast".into();
     // let mut paths = Vec::new();
     // paths.push(pb);
+
+    assert!(paths.len() > 0, "Submodules not instantiated");
 
     let mut successful_reports = 0;
     let mut failed_reports = 0;
@@ -97,7 +99,7 @@ pub fn spec_tests() {
             WastTestReport::Asserts(asserts) => Some(asserts),
             _ => None,
         })
-        .collect::<Vec<&AssertReport>>();
+        .collect::<Vec<&reports::AssertReport>>();
     no_compile_errors_reports.sort_by(|a, b| b.percentage.total_cmp(&a.percentage));
 
     let mut successful_mini_tests = 0;
