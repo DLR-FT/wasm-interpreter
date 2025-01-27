@@ -2,3 +2,7 @@
 // More so, the reason it wasn't added to the `lib.rs` file is because we wanted to separate the
 // regular tests from the spec tests.
 mod specification;
+
+pub fn main() {
+    specification::spec_tests();
+}
