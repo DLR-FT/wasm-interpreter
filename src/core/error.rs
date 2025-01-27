@@ -26,9 +26,9 @@ pub enum RuntimeError {
     UninitializedElement,
     SignatureMismatch,
     ExpectedAValueOnTheStack,
+    ModuleNotFound,
+    UnmetImport,
     UndefinedTableIndex,
-    // "undefined element" <- as-call_indirect-last
-    // "unreachable"
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -100,6 +100,8 @@ pub enum Error {
     FunctionTypeIsNotDefined(TypeIdx),
     StoreInstantiationError(StoreInstantiationError),
     OnlyFuncRefIsAllowed,
+    TypeUnificationMismatch,
+    InvalidSelectTypeVector,
     TooManyLocals(usize),
     UnsupportedProposal(Proposal),
     Overflow,
@@ -247,6 +249,12 @@ impl Display for Error {
             )),
             Error::StoreInstantiationError(err) => err.fmt(f),
             Error::OnlyFuncRefIsAllowed => f.write_str("Only FuncRef is allowed"),
+            Error::TypeUnificationMismatch => {
+                f.write_str("cannot unify types")
+            }
+            Error::InvalidSelectTypeVector => {
+                f.write_str("SELECT T* (0x1C) instruction must have exactly one type in the subsequent type vector")
+            },
             Error::TooManyLocals(x) => {
                 f.write_fmt(format_args!("Too many locals (more than 2^32-1): {}", x))
             }
@@ -273,6 +281,10 @@ impl Display for RuntimeError {
             RuntimeError::SignatureMismatch => f.write_str("Indirect call signature mismatch"),
             RuntimeError::ExpectedAValueOnTheStack => {
                 f.write_str("Expected a value on the stack, but None was found")
+            }
+            RuntimeError::ModuleNotFound => f.write_str("No such module exists"),
+            RuntimeError::UnmetImport => {
+                f.write_str("There is at least one import which has no corresponding export")
             }
             RuntimeError::UndefinedTableIndex => {
                 f.write_str("Indirect call: table index out of bounds")

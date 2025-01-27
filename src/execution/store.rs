@@ -1,9 +1,11 @@
+use alloc::string::String;
 use alloc::vec;
 use alloc::vec::Vec;
 use core::iter;
 
 use crate::core::indices::TypeIdx;
 use crate::core::reader::span::Span;
+use crate::core::reader::types::export::Export;
 use crate::core::reader::types::global::Global;
 use crate::core::reader::types::{MemType, TableType, ValType};
 use crate::core::sidetable::Sidetable;
@@ -23,6 +25,51 @@ pub struct Store {
     pub tables: Vec<TableInst>,
     pub elements: Vec<ElemInst>,
     pub passive_elem_indexes: Vec<usize>,
+    pub exports: Vec<Export>,
+}
+
+#[derive(Debug)]
+pub enum FuncInst {
+    Local(LocalFuncInst),
+    Imported(ImportedFuncInst),
+}
+
+#[derive(Debug)]
+pub struct LocalFuncInst {
+    pub ty: TypeIdx,
+    pub locals: Vec<ValType>,
+    pub code_expr: Span,
+    pub sidetable: Sidetable,
+}
+
+#[derive(Debug)]
+pub struct ImportedFuncInst {
+    pub ty: TypeIdx,
+    pub module_name: String,
+    pub function_name: String,
+}
+
+impl FuncInst {
+    pub fn ty(&self) -> TypeIdx {
+        match self {
+            FuncInst::Local(f) => f.ty,
+            FuncInst::Imported(f) => f.ty,
+        }
+    }
+
+    pub fn try_into_local(&self) -> Option<&LocalFuncInst> {
+        match self {
+            FuncInst::Local(f) => Some(f),
+            FuncInst::Imported(_) => None,
+        }
+    }
+
+    pub fn try_into_imported(&self) -> Option<&ImportedFuncInst> {
+        match self {
+            FuncInst::Local(_) => None,
+            FuncInst::Imported(f) => Some(f),
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -39,13 +86,6 @@ impl ElemInst {
     pub fn is_empty(&self) -> bool {
         self.references.is_empty()
     }
-}
-
-pub struct FuncInst {
-    pub ty: TypeIdx,
-    pub locals: Vec<ValType>,
-    pub code_expr: Span,
-    pub sidetable: Sidetable,
 }
 
 #[derive(Debug)]

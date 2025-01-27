@@ -23,6 +23,7 @@ pub fn validate_code_section(
     section_header: SectionHeader,
     fn_types: &[FuncType],
     type_idx_of_fn: &[usize],
+    num_imported_funcs: usize,
     globals: &[Global],
     memories: &[MemType],
     data_count: &Option<u32>,
@@ -34,7 +35,10 @@ pub fn validate_code_section(
 
     // TODO replace with single sidetable per module
     let code_block_spans_sidetables = wasm.read_vec_enumerated(|wasm, idx| {
-        let ty_idx = type_idx_of_fn[idx];
+        // We need to offset the index by the number of functions that were
+        // imported. Imported functions always live at the start of the index
+        // space.
+        let ty_idx = type_idx_of_fn[idx + num_imported_funcs];
         let func_ty = fn_types[ty_idx].clone();
 
         let func_size = wasm.read_var_u32()?;
@@ -360,7 +364,7 @@ fn read_instructions(
                         // the last end instruction will handle the return to callee during execution
                         stps_to_backpatch.iter().for_each(|i| {
                             sidetable[*i].delta_pc =
-                                (wasm.pc as isize) - sidetable[*i].delta_pc - 1; // minus 1 is important!
+                                (wasm.pc as isize) - sidetable[*i].delta_pc - 1; // minus 1 is important! TODO: Why?
                             sidetable[*i].delta_stp = (stp_here as isize) - sidetable[*i].delta_stp;
                         });
                     }
@@ -428,6 +432,19 @@ fn read_instructions(
             }
             DROP => {
                 stack.drop_val()?;
+            }
+            SELECT => {
+                stack.validate_polymorphic_select()?;
+            }
+            SELECT_T => {
+                let type_vec = wasm.read_vec(ValType::read)?;
+                if type_vec.len() != 1 {
+                    return Err(Error::InvalidSelectTypeVector);
+                }
+                stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                stack.assert_pop_val_type(type_vec[0])?;
+                stack.assert_pop_val_type(type_vec[0])?;
+                stack.push_valtype(type_vec[0]);
             }
             // local.get: [] -> [t]
             LOCAL_GET => {

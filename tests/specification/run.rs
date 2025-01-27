@@ -46,6 +46,9 @@ pub fn to_wasm_testsuite_string(runtime_error: RuntimeError) -> std::string::Str
         RuntimeError::SignatureMismatch => "indirect call type mismatch",
         RuntimeError::ExpectedAValueOnTheStack => todo!(),
 
+        RuntimeError::ModuleNotFound => "module not found",
+        RuntimeError::UnmetImport => "unmet import",
+
         RuntimeError::UndefinedTableIndex => "undefined element",
     }
     .to_string()

@@ -14,11 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 */
-use wasm::{validate, RuntimeError, RuntimeInstance};
+use wasm::{validate, RuntimeError, RuntimeInstance, DEFAULT_MODULE};
 
 macro_rules! get_func {
     ($instance:ident, $func_name:expr) => {
-        &$instance.get_function_by_name("", $func_name).unwrap()
+        &$instance
+            .get_function_by_name(DEFAULT_MODULE, $func_name)
+            .unwrap()
     };
 }
 
