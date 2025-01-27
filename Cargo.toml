@@ -36,6 +36,6 @@ hexf = "0.2.1"
 default = ["hooks"]
 hooks = []
 
-[[test]]
-name = "wasm_spec_testsuite"
+[[bench]]
+name = "hook_performance_impact"
 harness = false
