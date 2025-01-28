@@ -392,6 +392,11 @@ pub(super) fn run<H: HookSet>(
                             stp,
                         );
 
+                        if index != *current_module_idx {
+                            wasm = &mut modules[index].wasm_reader;
+                            *current_module_idx = index;
+                        }
+
                         wasm.move_start_to(local_func_inst.code_expr)
                             .unwrap_validated();
 
