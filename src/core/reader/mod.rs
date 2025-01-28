@@ -196,7 +196,7 @@ pub mod span {
     /// Can be used to index into a [WasmReader], yielding a byte slice. As it does not
     /// actually own the indexed data, this struct is free of lifetimes. Caution is advised when
     /// indexing unknown slices, as a [Span] does not validate the length of the indexed slice.
-    #[derive(Copy, Clone, Debug, Hash)]
+    #[derive(Copy, Clone, Debug, Hash, Default)]
     pub struct Span {
         pub(super) from: usize,
         pub(super) len: usize,

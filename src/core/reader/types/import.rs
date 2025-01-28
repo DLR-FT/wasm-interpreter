@@ -10,11 +10,25 @@ use super::global::GlobalType;
 use super::{MemType, TableType};
 
 #[derive(Debug)]
-pub struct Import {
+pub struct ImportRefData {
     #[allow(warnings)]
     pub module_name: String,
     #[allow(warnings)]
     pub name: String,
+}
+
+impl PartialEq for ImportRefData {
+    fn eq(&self, other: &Self) -> bool {
+        self.module_name == other.module_name && self.name == other.name
+    }
+    fn ne(&self, other: &Self) -> bool {
+        !self.eq(other)
+    }
+}
+
+#[derive(Debug)]
+pub struct Import {
+    pub import_ref_data: ImportRefData,
     #[allow(warnings)]
     pub desc: ImportDesc,
 }
@@ -26,8 +40,7 @@ impl WasmReadable for Import {
         let desc = ImportDesc::read(wasm)?;
 
         Ok(Self {
-            module_name,
-            name,
+            import_ref_data: ImportRefData { module_name, name },
             desc,
         })
     }
@@ -38,8 +51,7 @@ impl WasmReadable for Import {
         let desc = ImportDesc::read_unvalidated(wasm);
 
         Self {
-            module_name,
-            name,
+            import_ref_data: ImportRefData { module_name, name },
             desc,
         }
     }
@@ -55,7 +67,6 @@ pub enum ImportDesc {
     #[allow(dead_code)]
     Mem(MemType),
     // TODO MemType
-    #[allow(dead_code)]
     Global(GlobalType), // TODO GlobalType
 }
 

@@ -1,6 +1,6 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
-use wasm::{hooks::HookSet, validate, RuntimeInstance, DEFAULT_MODULE};
+use wasm::{global_store::GlobalStore, hooks::HookSet, validate, RuntimeInstance, DEFAULT_MODULE};
 
 fn criterion_benchmark(c: &mut Criterion) {
     let wat = r#"
@@ -29,6 +29,8 @@ fn criterion_benchmark(c: &mut Criterion) {
     )
     "#;
 
+    let global_store = &mut GlobalStore::new();
+
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let validation_info = validate(&wasm_bytes).unwrap();
@@ -36,7 +38,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     //
     // Set up an interpreter with the empty hook-set
     //
-    let mut instance_empty_hookset = RuntimeInstance::new(&validation_info).unwrap();
+    let mut instance_empty_hookset = RuntimeInstance::new(&validation_info, global_store).unwrap();
 
     //
     // Set up an interpreter with an non-empty hook-set
@@ -51,19 +53,26 @@ fn criterion_benchmark(c: &mut Criterion) {
         }
     }
 
-    let mut instance_non_empty_hookset =
-        RuntimeInstance::new_with_hooks(DEFAULT_MODULE, &validation_info, MyCustomHookSet).unwrap();
+    let mut instance_non_empty_hookset = RuntimeInstance::new_with_hooks(
+        DEFAULT_MODULE,
+        &validation_info,
+        MyCustomHookSet,
+        global_store,
+    )
+    .unwrap();
 
     let test_fn = instance_empty_hookset.get_function_by_index(0, 2).unwrap();
     c.bench_function("invoke_func EmptyHookSet", |b| {
-        b.iter(|| instance_empty_hookset.invoke::<_, ()>(&test_fn, black_box(42_i32)))
+        b.iter(|| instance_empty_hookset.invoke::<_, ()>(&test_fn, black_box(42_i32), global_store))
     });
 
     let test_fn = instance_non_empty_hookset
         .get_function_by_index(0, 2)
         .unwrap();
     c.bench_function("invoke_func MyCustomHookSet", |b| {
-        b.iter(|| instance_non_empty_hookset.invoke::<_, ()>(&test_fn, black_box(42_i32)))
+        b.iter(|| {
+            instance_non_empty_hookset.invoke::<_, ()>(&test_fn, black_box(42_i32), global_store)
+        })
     });
 }
 

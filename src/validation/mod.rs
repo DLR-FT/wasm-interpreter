@@ -12,6 +12,7 @@ use crate::core::reader::types::import::{Import, ImportDesc};
 use crate::core::reader::types::{FuncType, MemType, TableType};
 use crate::core::reader::{WasmReadable, WasmReader};
 use crate::core::sidetable::Sidetable;
+use crate::global_store::GlobalStore;
 use crate::{Error, Result};
 
 pub(crate) mod code;
@@ -157,6 +158,14 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
         globals::validate_global_section(wasm, h)
     })?
     .unwrap_or_default();
+    let all_globals: Vec<Global> = imports
+        .iter()
+        .filter_map(|import| match &import.desc {
+            ImportDesc::Global(global) => Some(Global::from_global_type(global)),
+            _ => None,
+        })
+        .chain(globals.clone())
+        .collect::<Vec<Global>>();
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
@@ -209,7 +218,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
                 &types,
                 &all_functions,
                 imported_functions.len(),
-                &globals,
+                &all_globals,
                 &memories,
                 &data_count,
                 &tables,

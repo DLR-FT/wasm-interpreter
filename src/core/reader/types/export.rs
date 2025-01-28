@@ -8,7 +8,7 @@ use crate::{unreachable_validated, Error, Result};
 
 #[derive(Debug, Clone)]
 pub struct Export {
-    #[allow(dead_code)]
+    // #[allow(dead_code)]
     pub name: String,
     #[allow(dead_code)]
     pub desc: ExportDesc,

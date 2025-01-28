@@ -6,11 +6,14 @@ use core::iter;
 use crate::core::indices::TypeIdx;
 use crate::core::reader::span::Span;
 use crate::core::reader::types::export::Export;
-use crate::core::reader::types::global::Global;
+// use crate::core::reader::types::global::Global;
 use crate::core::reader::types::{MemType, TableType, ValType};
 use crate::core::sidetable::Sidetable;
-use crate::execution::value::{Ref, Value};
+// use crate::execution::value::{Ref, Value};
+use crate::execution::value::Ref;
 use crate::RefType;
+
+use super::global_store::GlobalInst;
 
 /// The store represents all global state that can be manipulated by WebAssembly programs. It
 /// consists of the runtime representation of all instances of functions, tables, memories, and
@@ -20,7 +23,7 @@ use crate::RefType;
 pub struct Store {
     pub funcs: Vec<FuncInst>,
     pub mems: Vec<MemInst>,
-    pub globals: Vec<GlobalInst>,
+    pub globals: Vec<usize>,
     pub data: Vec<DataInst>,
     pub tables: Vec<TableInst>,
     pub elements: Vec<ElemInst>,
@@ -138,11 +141,11 @@ impl MemInst {
     }
 }
 
-pub struct GlobalInst {
-    pub global: Global,
-    /// Must be of the same type as specified in `ty`
-    pub value: Value,
-}
+// pub struct GlobalInst {
+//     pub global: Global,
+//     /// Must be of the same type as specified in `ty`
+//     pub value: Value,
+// }
 
 pub struct DataInst {
     pub data: Vec<u8>,

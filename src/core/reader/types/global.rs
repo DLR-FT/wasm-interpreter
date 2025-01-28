@@ -11,6 +11,15 @@ pub struct Global {
     pub init_expr: Span,
 }
 
+impl Global {
+    pub fn from_global_type(global_type: &GlobalType) -> Self {
+        Self {
+            ty: global_type.clone(),
+            init_expr: Default::default(),
+        }
+    }
+}
+
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct GlobalType {
     pub ty: ValType,

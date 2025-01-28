@@ -6,6 +6,7 @@ use alloc::vec::Vec;
 use const_interpreter_loop::{run_const, run_const_span};
 use execution_info::ExecutionInfo;
 use function_ref::FunctionRef;
+use global_store::{GlobalInst, GlobalStore};
 use interpreter_loop::run;
 use locals::Locals;
 use lut::Lut;
@@ -16,11 +17,11 @@ use value_stack::Stack;
 use crate::core::error::StoreInstantiationError;
 use crate::core::reader::types::element::{ElemItems, ElemMode};
 use crate::core::reader::types::export::ExportDesc;
-use crate::core::reader::types::import::ImportDesc;
+use crate::core::reader::types::import::{ImportDesc, ImportRefData};
 use crate::core::reader::WasmReader;
 use crate::execution::assert_validated::UnwrapValidatedExt;
 use crate::execution::hooks::{EmptyHookSet, HookSet};
-use crate::execution::store::{FuncInst, GlobalInst, MemInst, Store};
+use crate::execution::store::{FuncInst, MemInst, Store};
 use crate::execution::value::Value;
 use crate::validation::code::read_declared_locals;
 use crate::value::InteropValueList;
@@ -31,6 +32,7 @@ pub(crate) mod assert_validated;
 pub mod const_interpreter_loop;
 pub(crate) mod execution_info;
 pub mod function_ref;
+pub mod global_store;
 pub mod hooks;
 mod interpreter_loop;
 pub(crate) mod locals;
@@ -53,15 +55,19 @@ where
 }
 
 impl<'b> RuntimeInstance<'b, EmptyHookSet> {
-    pub fn new(validation_info: &'_ ValidationInfo<'b>) -> CustomResult<Self> {
-        Self::new_with_hooks(DEFAULT_MODULE, validation_info, EmptyHookSet)
+    pub fn new(
+        validation_info: &'_ ValidationInfo<'b>,
+        global_store: &mut GlobalStore,
+    ) -> CustomResult<Self> {
+        Self::new_with_hooks(DEFAULT_MODULE, validation_info, EmptyHookSet, global_store)
     }
 
     pub fn new_named(
         module_name: &str,
         validation_info: &'_ ValidationInfo<'b>,
+        global_store: &mut GlobalStore,
     ) -> CustomResult<Self> {
-        Self::new_with_hooks(module_name, validation_info, EmptyHookSet)
+        Self::new_with_hooks(module_name, validation_info, EmptyHookSet, global_store)
     }
 }
 
@@ -73,6 +79,7 @@ where
         module_name: &str,
         validation_info: &'_ ValidationInfo<'b>,
         hook_set: H,
+        global_store: &mut GlobalStore,
     ) -> CustomResult<Self> {
         trace!("Starting instantiation of bytecode");
 
@@ -82,7 +89,7 @@ where
             lut: None,
             hook_set,
         };
-        instance.add_module(module_name, validation_info)?;
+        instance.add_module(module_name, validation_info, global_store)?;
 
         // TODO: how do we handle the start function, if we don't have a LUT yet?
         if let Some(start) = validation_info.start {
@@ -95,7 +102,7 @@ where
                 function_index: start,
                 exported: false,
             };
-            instance.invoke::<(), ()>(&start_fn, ())?;
+            instance.invoke::<(), ()>(&start_fn, (), global_store)?;
         }
 
         Ok(instance)
@@ -151,8 +158,9 @@ where
         &mut self,
         module_name: &str,
         validation_info: &'_ ValidationInfo<'b>,
+        global_store: &mut GlobalStore,
     ) -> CustomResult<()> {
-        let store = Self::init_store(validation_info)?;
+        let store = Self::init_store(validation_info, global_store, module_name)?;
         let exec_info = ExecutionInfo::new(
             module_name,
             validation_info.wasm,
@@ -173,6 +181,7 @@ where
         &mut self,
         function_ref: &FunctionRef,
         params: Param,
+        global_store: &mut GlobalStore,
     ) -> Result<Returns, RuntimeError> {
         // First, verify that the function reference is valid
         let (module_idx, func_idx) = self.verify_function_ref(function_ref)?;
@@ -226,6 +235,7 @@ where
             self.lut.as_ref().ok_or(RuntimeError::UnmetImport)?,
             &mut stack,
             EmptyHookSet,
+            global_store,
         )?;
 
         // Pop return values from stack
@@ -247,6 +257,7 @@ where
         function_ref: &FunctionRef,
         params: Vec<Value>,
         ret_types: &[ValType],
+        global_store: &mut GlobalStore,
     ) -> Result<Vec<Value>, RuntimeError> {
         // First, verify that the function reference is valid
         let (module_idx, func_idx) = self.verify_function_ref(function_ref)?;
@@ -289,6 +300,7 @@ where
             self.lut.as_ref().ok_or(RuntimeError::UnmetImport)?,
             &mut stack,
             EmptyHookSet,
+            global_store,
         )?;
 
         let func_inst = self.modules[module_idx]
@@ -322,6 +334,7 @@ where
         &mut self,
         function_ref: &FunctionRef,
         params: Vec<Value>,
+        global_store: &mut GlobalStore,
     ) -> Result<Vec<Value>, RuntimeError> {
         // First, verify that the function reference is valid
         let (_module_idx, func_idx) = self.verify_function_ref(function_ref)?;
@@ -360,6 +373,7 @@ where
             self.lut.as_ref().ok_or(RuntimeError::UnmetImport)?,
             &mut stack,
             EmptyHookSet,
+            global_store,
         )?;
 
         let func_inst = self.modules[_module_idx]
@@ -486,7 +500,11 @@ where
         }
     }
 
-    fn init_store(validation_info: &ValidationInfo) -> CustomResult<Store> {
+    fn init_store(
+        validation_info: &ValidationInfo,
+        global_store: &mut GlobalStore,
+        module_name: &str,
+    ) -> CustomResult<Store> {
         use crate::core::error::*;
         use StoreInstantiationError::*;
         let function_instances: Vec<FuncInst> = {
@@ -524,8 +542,8 @@ where
                     .filter_map(|import| match &import.desc {
                         ImportDesc::Func(type_idx) => Some(FuncInst::Imported(ImportedFuncInst {
                             ty: *type_idx,
-                            module_name: import.module_name.clone(),
-                            function_name: import.name.clone(),
+                            module_name: import.import_ref_data.module_name.clone(),
+                            function_name: import.import_ref_data.name.clone(),
                         })),
                         _ => None,
                     });
@@ -710,33 +728,80 @@ where
             })
             .collect::<Result<Vec<DataInst>>>()?;
 
-        let global_instances: Vec<GlobalInst> = validation_info
-            .globals
-            .iter()
-            .map({
-                let mut stack = Stack::new();
-                move |global| {
-                    let mut wasm = WasmReader::new(validation_info.wasm);
-                    // The place we are moving the start to should, by all means, be inside the wasm bytecode.
-                    wasm.move_start_to(global.init_expr).unwrap_validated();
-                    // We shouldn't need to clear the stack. If validation is correct, it will remain empty after execution.
+        // let global_instances: Vec<GlobalInst> = validation_info
+        //     .imports
+        //     .iter()
+        //     .filter_map(|import| {
 
-                    run_const(wasm, &mut stack, ());
+        //     })
+        //     .collect::<Vec<_>>();
+        let global_refs: Vec<usize> = {
+            let imported: Vec<usize> = validation_info
+                .imports
+                .iter()
+                .filter_map(|import| match &import.desc {
+                    ImportDesc::Global(_global) => {
+                        // here we have to resolve the reference to the global
+                        Some(global_store.find_global_idx(&import.import_ref_data))
+                    }
+                    _ => None,
+                })
+                .collect::<Vec<usize>>();
+            let mut local: Vec<usize> = validation_info
+                .globals
+                .iter()
+                .map(|global| {
+                    let mut stack = Stack::new();
+                    {
+                        let mut wasm = WasmReader::new(validation_info.wasm);
+                        // The place we are moving the start to should, by all means, be inside the wasm bytecode.
+                        wasm.move_start_to(global.init_expr).unwrap_validated();
+                        // We shouldn't need to clear the stack. If validation is correct, it will remain empty after execution.
+
+                        run_const(wasm, &mut stack, ());
+
+                        global
+                    };
+
                     let value = stack.pop_value(global.ty.ty);
 
-                    GlobalInst {
+                    global_store.add_global(GlobalInst {
                         global: *global,
                         value,
+                        owner_data: ImportRefData {
+                            module_name: module_name.into(),
+                            // maybe not exported
+                            name: "".into(),
+                        },
+                    })
+                })
+                .collect::<Vec<usize>>();
+
+            let mut all_globals: Vec<usize> = imported;
+            all_globals.append(&mut local);
+
+            validation_info
+                .exports
+                .iter()
+                .for_each(|export| match export.desc {
+                    ExportDesc::GlobalIdx(global_idx) => {
+                        let global_store_global_idx = all_globals[global_idx];
+                        global_store
+                            .get_mut_global(global_store_global_idx)
+                            .owner_data
+                            .name = export.name.clone();
                     }
-                }
-            })
-            .collect();
+                    _ => {}
+                });
+
+            all_globals
+        };
 
         let exports = validation_info.exports.clone();
         Ok(Store {
             funcs: function_instances,
             mems: memory_instances,
-            globals: global_instances,
+            globals: global_refs,
             data: data_sections,
             tables,
             elements,

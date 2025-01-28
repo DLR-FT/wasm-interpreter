@@ -14,6 +14,7 @@ use alloc::format;
 use alloc::vec;
 use alloc::vec::Vec;
 
+use crate::core::reader::types::import::ImportRefData;
 use crate::{
     assert_validated::UnwrapValidatedExt,
     core::{
@@ -99,6 +100,7 @@ macro_rules! store {
 #[cfg(feature = "hooks")]
 use crate::execution::hooks::HookSet;
 
+use super::global_store::GlobalStore;
 use super::{execution_info::ExecutionInfo, lut::Lut};
 
 /// Interprets a functions. Parameters and return values are passed on the stack.
@@ -108,6 +110,7 @@ pub(super) fn run<H: HookSet>(
     lut: &Lut,
     stack: &mut Stack,
     mut hooks: H,
+    global_store: &mut GlobalStore,
 ) -> Result<(), RuntimeError> {
     let func_inst = modules[*current_module_idx]
         .store
@@ -452,23 +455,18 @@ pub(super) fn run<H: HookSet>(
             LOCAL_TEE => stack.tee_local(wasm.read_var_u32().unwrap_validated() as LocalIdx),
             GLOBAL_GET => {
                 let global_idx = wasm.read_var_u32().unwrap_validated() as GlobalIdx;
-                let global = modules[*current_module_idx]
-                    .store
-                    .globals
-                    .get(global_idx)
-                    .unwrap_validated();
+                let global = modules[*current_module_idx].store.globals[global_idx];
 
-                stack.push_value(global.value);
+                stack.push_value(global_store.get_global(global).value);
             }
             GLOBAL_SET => {
                 let global_idx = wasm.read_var_u32().unwrap_validated() as GlobalIdx;
-                let global = modules[*current_module_idx]
-                    .store
-                    .globals
-                    .get_mut(global_idx)
-                    .unwrap_validated();
+                let global = modules[*current_module_idx].store.globals[global_idx];
 
-                global.value = stack.pop_value(global.global.ty.ty)
+                // global_store.get_global()
+                let global_valtype = global_store.get_global(global).global.ty.ty.clone();
+                let popped = stack.pop_value(global_valtype);
+                global_store.get_mut_global(global).value = popped;
             }
             TABLE_GET => {
                 let table_idx = wasm.read_var_u32().unwrap_validated() as TableIdx;
