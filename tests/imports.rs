@@ -190,3 +190,86 @@ pub fn import_global() {
     assert_eq!(result.len(), 1);
     assert!(i32::from(result[0]) == 42);
 }
+
+#[test]
+pub fn simple_table() {
+    let global_store = &mut GlobalStore::new();
+    let wasm_bytes = wat::parse_str(
+        r#"
+(module
+  (table $my_table (export "my_table") 1 10 funcref)
+  (elem (i32.const 0) $my_func)
+  
+  (func $my_func (result i32)
+    i32.const 42
+  )
+
+  (func $call_table_func (export "call_table_func") (result i32)
+    (call_indirect (result i32) (i32.const 0))
+  )
+)
+  "#,
+    )
+    .unwrap();
+    let validation_info = validate(&wasm_bytes).expect("validation failed");
+    let mut instance = RuntimeInstance::new_named("base", &validation_info, global_store)
+        .expect("instantiation failed");
+
+    let func = instance
+        .get_function_by_name("base", "call_table_func")
+        .unwrap();
+
+    let result = instance
+        .invoke_dynamic_unchecked_return_ty(&func, vec![], global_store)
+        .unwrap();
+
+    assert_eq!(result.len(), 1);
+    assert!(i32::from(result[0]) == 42);
+}
+
+const EXPORT_TABLE_MODULE: &'static str = r#"
+(module
+  (table $my_table (export "my_table") 1 10 funcref)
+  (elem (i32.const 0) $my_func)
+  
+  (func $my_func (result i32)
+    i32.const 42
+  )
+)
+"#;
+
+const IMPORT_TABLE_MODULE: &'static str = r#"
+(module
+  (table $imported_table (import "export" "my_table") 1 10 funcref)
+
+  (func $call_table_func (export "call_table_func") (result i32)
+    (call_indirect (result i32) (i32.const 0))
+  )
+)
+"#;
+
+#[test_log::test]
+pub fn import_table() {
+    let global_store = &mut GlobalStore::new();
+    let wasm_bytes = wat::parse_str(EXPORT_TABLE_MODULE).unwrap();
+    let validation_info = validate(&wasm_bytes).expect("validation failed");
+    let mut instance = RuntimeInstance::new_named("export", &validation_info, global_store)
+        .expect("instantiation failed");
+
+    let wasm_bytes = wat::parse_str(IMPORT_TABLE_MODULE).unwrap();
+    let validation_info = validate(&wasm_bytes).expect("validation failed");
+    instance
+        .add_module("import", &validation_info, global_store)
+        .expect("Successful instantiation");
+
+    let func = instance
+        .get_function_by_name("import", "call_table_func")
+        .unwrap();
+
+    let result = instance
+        .invoke_dynamic_unchecked_return_ty(&func, vec![], global_store)
+        .unwrap();
+
+    assert_eq!(result.len(), 1);
+    assert!(i32::from(result[0]) == 42);
+}

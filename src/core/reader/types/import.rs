@@ -9,7 +9,7 @@ use crate::{unreachable_validated, Error, Result};
 use super::global::GlobalType;
 use super::{MemType, TableType};
 
-#[derive(Debug)]
+#[derive(Debug, Default, Clone)]
 pub struct ImportRefData {
     #[allow(warnings)]
     pub module_name: String,

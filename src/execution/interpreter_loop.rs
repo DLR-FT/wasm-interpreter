@@ -112,6 +112,10 @@ pub(super) fn run<H: HookSet>(
     mut hooks: H,
     global_store: &mut GlobalStore,
 ) -> Result<(), RuntimeError> {
+    let names = modules
+        .iter()
+        .map(|module| module.name.clone())
+        .collect::<Vec<_>>();
     let func_inst = modules[*current_module_idx]
         .store
         .funcs
@@ -329,6 +333,15 @@ pub(super) fn run<H: HookSet>(
                     .tables
                     .get(table_idx)
                     .unwrap_validated();
+                let tab = global_store.get_table(*tab);
+
+                let owner_data = tab.owner_data.clone();
+
+                let index: usize = names
+                    .iter()
+                    .position(|name| name == &owner_data.module_name)
+                    .unwrap();
+
                 let func_ty = modules[*current_module_idx]
                     .fn_types
                     .get(given_type_idx)
@@ -354,11 +367,8 @@ pub(super) fn run<H: HookSet>(
                     Ref::Extern(_) => unreachable!(),
                 };
 
-                let func_to_call_inst = modules[*current_module_idx]
-                    .store
-                    .funcs
-                    .get(func_addr)
-                    .unwrap_validated();
+                let func_to_call_inst =
+                    modules[index].store.funcs.get(func_addr).unwrap_validated();
 
                 let actual_type_idx = func_to_call_inst.ty();
 
@@ -476,6 +486,7 @@ pub(super) fn run<H: HookSet>(
                     .tables
                     .get(table_idx)
                     .unwrap_validated();
+                let tab = global_store.get_table(*tab);
 
                 let i: i32 = stack.pop_value(ValType::NumType(I32)).into();
 
@@ -496,7 +507,7 @@ pub(super) fn run<H: HookSet>(
                 let table_idx = wasm.read_var_u32().unwrap_validated() as TableIdx;
 
                 let tab = &mut modules[*current_module_idx].store.tables[table_idx];
-
+                let tab = global_store.get_mut_table(*tab);
                 let val: Ref = stack.pop_value(ValType::RefType(tab.ty.et)).into();
                 let i: i32 = stack.pop_value(ValType::NumType(I32)).into();
 
@@ -2296,17 +2307,14 @@ pub(super) fn run<H: HookSet>(
                         let s: i32 = stack.pop_value(ValType::NumType(I32)).into(); // offset
                         let d: i32 = stack.pop_value(ValType::NumType(I32)).into(); // dst
 
-                        let tab_len = modules[*current_module_idx]
-                            .store
-                            .tables
-                            .get(table_idx)
-                            .unwrap_validated()
-                            .len();
                         let tab = modules[*current_module_idx]
                             .store
                             .tables
                             .get_mut(table_idx)
                             .unwrap_validated();
+                        let tab = global_store.get_mut_table(*tab);
+
+                        let tab_len = tab.len();
 
                         let elem_len = if modules[*current_module_idx]
                             .store
@@ -2368,10 +2376,12 @@ pub(super) fn run<H: HookSet>(
                         let table_x_idx = wasm.read_var_u32().unwrap_validated() as usize;
                         let table_y_idx = wasm.read_var_u32().unwrap_validated() as usize;
 
-                        let tab_x_elem_len = modules[*current_module_idx].store.tables[table_x_idx]
+                        let tab_x_elem_len = global_store
+                            .get_table(modules[*current_module_idx].store.tables[table_x_idx])
                             .elem
                             .len();
-                        let tab_y_elem_len = modules[*current_module_idx].store.tables[table_y_idx]
+                        let tab_y_elem_len = global_store
+                            .get_table(modules[*current_module_idx].store.tables[table_y_idx])
                             .elem
                             .len();
 
@@ -2405,24 +2415,15 @@ pub(super) fn run<H: HookSet>(
                         let src = table_y_idx;
 
                         if table_x_idx == table_y_idx {
-                            modules[*current_module_idx].store.tables[table_x_idx]
+                            global_store
+                                .get_mut_table(
+                                    modules[*current_module_idx].store.tables[table_x_idx],
+                                )
                                 .elem
                                 .copy_within(s as usize..src_res, d as usize); // }
                         } else {
-                            use core::cmp::Ordering::*;
-                            let (src_table, dst_table) = match dst.cmp(&src) {
-                                Greater => {
-                                    let (left, right) =
-                                        modules[*current_module_idx].store.tables.split_at_mut(dst);
-                                    (&left[src], &mut right[0])
-                                }
-                                Less => {
-                                    let (left, right) =
-                                        modules[*current_module_idx].store.tables.split_at_mut(src);
-                                    (&right[0], &mut left[dst])
-                                }
-                                Equal => unreachable!(),
-                            };
+                            let (src_table, dst_table) =
+                                global_store.get_immut_and_mut_table_pair(src, dst);
                             dst_table.elem[d as usize..dst_res]
                                 .copy_from_slice(&src_table.elem[s as usize..src_res]);
                         }
@@ -2444,7 +2445,7 @@ pub(super) fn run<H: HookSet>(
                             .tables
                             .get_mut(table_idx)
                             .unwrap_validated();
-
+                        let tab = global_store.get_mut_table(*tab);
                         let sz = tab.elem.len() as u32;
 
                         let n: u32 = stack.pop_value(ValType::NumType(I32)).into();
@@ -2475,7 +2476,7 @@ pub(super) fn run<H: HookSet>(
                             .tables
                             .get(table_idx)
                             .unwrap_validated();
-
+                        let tab = global_store.get_table(*tab);
                         let sz = tab.elem.len() as u32;
 
                         stack.push_value(Value::I32(sz));
@@ -2490,6 +2491,7 @@ pub(super) fn run<H: HookSet>(
                             .tables
                             .get_mut(table_idx)
                             .unwrap_validated();
+                        let tab = global_store.get_mut_table(*tab);
                         let ty = tab.ty.et;
 
                         let n: u32 = stack.pop_value(ValType::NumType(I32)).into(); // len

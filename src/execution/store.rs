@@ -13,7 +13,7 @@ use crate::core::sidetable::Sidetable;
 use crate::execution::value::Ref;
 use crate::RefType;
 
-use super::global_store::GlobalInst;
+use super::global_store::TableInst;
 
 /// The store represents all global state that can be manipulated by WebAssembly programs. It
 /// consists of the runtime representation of all instances of functions, tables, memories, and
@@ -25,7 +25,7 @@ pub struct Store {
     pub mems: Vec<MemInst>,
     pub globals: Vec<usize>,
     pub data: Vec<DataInst>,
-    pub tables: Vec<TableInst>,
+    pub tables: Vec<usize>,
     pub elements: Vec<ElemInst>,
     pub passive_elem_indexes: Vec<usize>,
     pub exports: Vec<Export>,
@@ -88,29 +88,6 @@ impl ElemInst {
     }
     pub fn is_empty(&self) -> bool {
         self.references.is_empty()
-    }
-}
-
-#[derive(Debug)]
-pub struct TableInst {
-    pub ty: TableType,
-    pub elem: Vec<Ref>,
-}
-
-impl TableInst {
-    pub fn len(&self) -> usize {
-        self.elem.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.elem.is_empty()
-    }
-
-    pub fn new(ty: TableType) -> Self {
-        Self {
-            ty,
-            elem: vec![Ref::default_from_ref_type(ty.et); ty.lim.min as usize],
-        }
     }
 }
 

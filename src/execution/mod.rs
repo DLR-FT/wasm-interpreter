@@ -6,11 +6,11 @@ use alloc::vec::Vec;
 use const_interpreter_loop::{run_const, run_const_span};
 use execution_info::ExecutionInfo;
 use function_ref::FunctionRef;
-use global_store::{GlobalInst, GlobalStore};
+use global_store::{GlobalInst, GlobalStore, TableInst};
 use interpreter_loop::run;
 use locals::Locals;
 use lut::Lut;
-use store::{DataInst, ElemInst, ImportedFuncInst, LocalFuncInst, TableInst};
+use store::{DataInst, ElemInst, ImportedFuncInst, LocalFuncInst};
 use value::{ExternAddr, FuncAddr, Ref};
 use value_stack::Stack;
 
@@ -552,11 +552,60 @@ where
         };
 
         // https://webassembly.github.io/spec/core/exec/modules.html#tables
-        let mut tables: Vec<TableInst> = validation_info
-            .tables
-            .iter()
-            .map(|ty| TableInst::new(*ty))
-            .collect();
+        let mut table_refs: Vec<usize> = {
+            // first are the imported tables
+            let imported: Vec<usize> = validation_info
+                .imports
+                .iter()
+                .filter_map(|import| match &import.desc {
+                    ImportDesc::Table(_table) => {
+                        Some(global_store.find_table_idx(&import.import_ref_data))
+                    }
+                    _ => None,
+                })
+                .collect::<Vec<usize>>();
+
+            // then we deal with all local ones
+            let mut local: Vec<usize> = validation_info
+                .tables
+                .iter()
+                .map(|table| {
+                    let mut owner_data = ImportRefData::default();
+                    owner_data.module_name = module_name.into();
+                    let mut table_inst = TableInst::new(*table);
+                    table_inst.set_owner_data(owner_data);
+                    global_store.add_table(table_inst)
+                })
+                .collect::<Vec<usize>>();
+
+            let mut all_tables: Vec<usize> = imported;
+            all_tables.append(&mut local);
+
+            // lastly, we have to tackle the exports
+            // since that we didn't know what locals were exported, their export names are set to an empty string,
+            // we have to edit it successfully, otherwise we won't be able to find them
+            validation_info
+                .exports
+                .iter()
+                .for_each(|export| match export.desc {
+                    ExportDesc::TableIdx(table_idx) => {
+                        let global_store_table_idx = all_tables[table_idx];
+                        global_store
+                            .get_mut_table(global_store_table_idx)
+                            .owner_data
+                            .name = export.name.clone();
+                    }
+                    _ => {}
+                });
+
+            all_tables
+        };
+
+        // let mut tables: Vec<TableInst> = validation_info
+        //     .tables
+        //     .iter()
+        //     .map(|ty| TableInst::new(*ty))
+        //     .collect();
 
         let mut passive_elem_indexes: Vec<usize> = vec![];
         // https://webassembly.github.io/spec/core/syntax/modules.html#element-segments
@@ -626,7 +675,7 @@ where
                                 _ => unreachable!(),
                             };
 
-                        let table = &mut tables[table_idx];
+                        let table = global_store.get_mut_table(table_refs[table_idx]);
                         // This can't be verified at validation-time because we don't keep track of actual values when validating expressions
                         //  we only keep track of the type of the values. As such we can't pop the exact value of an i32 from the validation stack
                         assert!(table.len() >= (offset + instance.len()));
@@ -803,7 +852,7 @@ where
             mems: memory_instances,
             globals: global_refs,
             data: data_sections,
-            tables,
+            tables: table_refs,
             elements,
             passive_elem_indexes,
             exports,

@@ -141,6 +141,14 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
         wasm.read_vec(TableType::read)
     })?
     .unwrap_or_default();
+    let all_tables: Vec<TableType> = imports
+        .iter()
+        .filter_map(|import| match &import.desc {
+            ImportDesc::Table(table) => Some(table.clone()),
+            _ => None,
+        })
+        .chain(tables.clone())
+        .collect::<Vec<_>>();
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
@@ -221,7 +229,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
                 &all_globals,
                 &memories,
                 &data_count,
-                &tables,
+                &all_tables,
                 &elements,
                 &referenced_functions,
             )
