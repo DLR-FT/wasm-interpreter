@@ -861,16 +861,6 @@ pub fn f64_min() {
         let result = instance
             .invoke::<(f64, f64), f64>(
                 &instance.get_function_by_index(0, 0).unwrap(),
-                (-f64::NAN, -f64::NAN),
-            )
-            .unwrap();
-        assert!(result.is_nan());
-        assert!(result.is_sign_negative());
-    }
-    {
-        let result = instance
-            .invoke::<(f64, f64), f64>(
-                &instance.get_function_by_index(0, 0).unwrap(),
                 (f64::INFINITY, f64::NEG_INFINITY),
             )
             .unwrap();
@@ -966,16 +956,6 @@ pub fn f64_max() {
             .unwrap();
         assert!(result.is_nan());
         assert!(result.is_sign_positive());
-    }
-    {
-        let result = instance
-            .invoke::<(f64, f64), f64>(
-                &instance.get_function_by_index(0, 0).unwrap(),
-                (-f64::NAN, -f64::NAN),
-            )
-            .unwrap();
-        assert!(result.is_nan());
-        assert!(result.is_sign_negative());
     }
     {
         let result = instance

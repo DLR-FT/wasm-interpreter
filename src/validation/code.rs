@@ -95,6 +95,26 @@ pub fn read_declared_locals(wasm: &mut WasmReader) -> Result<Vec<ValType>> {
         Ok((n, valtype))
     })?;
 
+    // these checks are related to the official test suite binary.wast file, the first 2 assert_malformed's starting at line 350
+    // we check to not have more than 2^32-1 locals, and if that number is okay, we then get to instantiate them all
+    // this is because the flat_map and collect take an insane amount of time
+    // in total, these 2 tests take more than 240s
+    let mut total_no_of_locals: usize = 0;
+    for local in &locals {
+        let temp = local.0;
+        if temp > i32::MAX as usize {
+            return Err(Error::TooManyLocals(total_no_of_locals));
+        };
+        total_no_of_locals = match total_no_of_locals.checked_add(temp) {
+            None => return Err(Error::TooManyLocals(total_no_of_locals)),
+            Some(n) => n,
+        }
+    }
+
+    if total_no_of_locals > i32::MAX as usize {
+        return Err(Error::TooManyLocals(total_no_of_locals));
+    }
+
     // Flatten local types for easier representation where n > 1
     let locals = locals
         .into_iter()
@@ -192,6 +212,11 @@ fn read_instructions(
             // TODO only do this if EOF
             return Err(Error::ExprMissingEnd);
         };
+
+        #[cfg(debug_assertions)]
+        crate::core::utils::print_beautiful_instruction_name_1_byte(first_instr_byte, wasm.pc);
+
+        #[cfg(not(debug_assertions))]
         trace!("Read instruction byte {first_instr_byte:#04X?} ({first_instr_byte}) at wasm_binary[{}]", wasm.pc);
 
         use crate::core::reader::types::opcode::*;
@@ -407,6 +432,19 @@ fn read_instructions(
             }
             DROP => {
                 stack.drop_val()?;
+            }
+            SELECT => {
+                stack.validate_polymorphic_select()?;
+            }
+            SELECT_T => {
+                let type_vec = wasm.read_vec(ValType::read)?;
+                if type_vec.len() != 1 {
+                    return Err(Error::InvalidSelectTypeVector);
+                }
+                stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                stack.assert_pop_val_type(type_vec[0])?;
+                stack.assert_pop_val_type(type_vec[0])?;
+                stack.push_valtype(type_vec[0]);
             }
             // local.get: [] -> [t]
             LOCAL_GET => {
@@ -631,7 +669,7 @@ fn read_instructions(
                     return Err(Error::MemoryIsNotDefined(0));
                 }
                 let memarg = MemArg::read(wasm)?;
-                if memarg.align >= 4 {
+                if memarg.align > 4 {
                     return Err(Error::ErroneousAlignment(memarg.align, 4));
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
@@ -653,7 +691,7 @@ fn read_instructions(
                     return Err(Error::MemoryIsNotDefined(0));
                 }
                 let memarg = MemArg::read(wasm)?;
-                if memarg.align >= 4 {
+                if memarg.align > 4 {
                     return Err(Error::ErroneousAlignment(memarg.align, 4));
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::F32))?;
@@ -727,7 +765,11 @@ fn read_instructions(
             }
             MEMORY_SIZE => {
                 let mem_idx = wasm.read_u8()? as MemIdx;
-                assert!(mem_idx == 0, "Multiple memories are not supported");
+                if mem_idx != 0 {
+                    return Err(Error::UnsupportedProposal(
+                        crate::core::error::Proposal::MultipleMemories,
+                    ));
+                }
                 if memories.len() <= mem_idx {
                     return Err(Error::MemoryIsNotDefined(mem_idx));
                 }
@@ -735,7 +777,11 @@ fn read_instructions(
             }
             MEMORY_GROW => {
                 let mem_idx = wasm.read_u8()? as MemIdx;
-                assert!(mem_idx == 0, "Multiple memories are not supported");
+                if mem_idx != 0 {
+                    return Err(Error::UnsupportedProposal(
+                        crate::core::error::Proposal::MultipleMemories,
+                    ));
+                }
                 if memories.len() <= mem_idx {
                     return Err(Error::MemoryIsNotDefined(mem_idx));
                 }
@@ -997,7 +1043,11 @@ fn read_instructions(
                     MEMORY_INIT => {
                         let data_idx = wasm.read_var_u32()? as DataIdx;
                         let mem_idx = wasm.read_u8()? as MemIdx;
-                        assert!(mem_idx == 0, "Multiple memories are not supported");
+                        if mem_idx != 0 {
+                            return Err(Error::UnsupportedProposal(
+                                crate::core::error::Proposal::MultipleMemories,
+                            ));
+                        }
                         if memories.len() <= mem_idx {
                             return Err(Error::MemoryIsNotDefined(mem_idx));
                         }
@@ -1022,7 +1072,11 @@ fn read_instructions(
                     }
                     MEMORY_COPY => {
                         let (dst, src) = (wasm.read_u8()? as usize, wasm.read_u8()? as usize);
-                        assert!(dst == 0 && src == 0, "Multiple memories are not supported");
+                        if dst != 0 || src != 0 {
+                            return Err(Error::UnsupportedProposal(
+                                crate::core::error::Proposal::MultipleMemories,
+                            ));
+                        }
                         if memories.is_empty() {
                             return Err(Error::MemoryIsNotDefined(0));
                         }
@@ -1032,7 +1086,11 @@ fn read_instructions(
                     }
                     MEMORY_FILL => {
                         let mem_idx = wasm.read_u8()? as MemIdx;
-                        assert!(mem_idx == 0, "Multiple memories are not supported");
+                        if mem_idx != 0 {
+                            return Err(Error::UnsupportedProposal(
+                                crate::core::error::Proposal::MultipleMemories,
+                            ));
+                        }
                         if memories.len() <= mem_idx {
                             return Err(Error::MemoryIsNotDefined(mem_idx));
                         }

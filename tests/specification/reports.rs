@@ -31,8 +31,67 @@ impl WastError {
 }
 
 pub struct AssertReport {
-    filename: String,
-    results: Vec<Result<WastSuccess, WastError>>,
+    pub filename: String,
+    pub results: Vec<Result<WastSuccess, WastError>>,
+    pub successful: usize,
+    pub failed: usize,
+    pub total: usize,
+    pub percentage: f64,
+}
+
+impl Default for AssertReport {
+    fn default() -> Self {
+        Self {
+            filename: String::from(""),
+            results: Vec::new(),
+            successful: 0,
+            failed: 0,
+            total: 0,
+            percentage: 0.0,
+        }
+    }
+}
+
+impl std::fmt::Display for AssertReport {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for elem in &self.results {
+            match elem {
+                Ok(success) => {
+                    writeln!(
+                        f,
+                        "✅ {}:{} -> {}",
+                        self.filename,
+                        if success.line_number == u32::MAX {
+                            "?".to_string()
+                        } else {
+                            success.line_number.to_string()
+                        },
+                        success.command
+                    )?;
+                }
+                Err(error) => {
+                    writeln!(
+                        f,
+                        "❌ {}:{} -> {}",
+                        self.filename,
+                        match error.line_number {
+                            None => u32::MAX.to_string(),
+                            Some(line_number) =>
+                                if line_number == u32::MAX {
+                                    "?".to_string()
+                                } else {
+                                    line_number.to_string()
+                                },
+                        },
+                        error.command
+                    )?;
+                    writeln!(f, "    Error: {}", error.inner)?;
+                }
+            }
+        }
+
+        Ok(())
+    }
 }
 
 impl AssertReport {
@@ -40,7 +99,19 @@ impl AssertReport {
         Self {
             filename: filename.to_string(),
             results: Vec::new(),
+            ..Default::default()
         }
+    }
+
+    pub fn compute_data(&mut self) {
+        self.total = self.results.len();
+        self.successful = self.results.iter().filter(|el| el.is_ok()).count();
+        self.failed = self.total - self.successful;
+        self.percentage = if self.total == 0 {
+            0.0
+        } else {
+            (self.successful as f64) * 100.0 / (self.total as f64)
+        };
     }
 
     pub fn push_success(&mut self, success: WastSuccess) {
@@ -102,27 +173,7 @@ impl std::fmt::Display for WastTestReport {
             }
             WastTestReport::Asserts(assert_report) => {
                 writeln!(f, "------ {} ------", assert_report.filename)?;
-                for result in &assert_report.results {
-                    match result {
-                        Ok(success) => {
-                            writeln!(
-                                f,
-                                "✅ {}:{} -> {}",
-                                assert_report.filename, success.line_number, success.command
-                            )?;
-                        }
-                        Err(error) => {
-                            writeln!(
-                                f,
-                                "❌ {}:{} -> {}",
-                                assert_report.filename,
-                                error.line_number.unwrap_or(0),
-                                error.command
-                            )?;
-                            writeln!(f, "    Error: {}", error.inner)?;
-                        }
-                    }
-                }
+                writeln!(f, "{}", assert_report)?;
                 let passed_asserts = assert_report.results.iter().filter(|r| r.is_ok()).count();
                 let failed_asserts = assert_report.results.iter().filter(|r| r.is_err()).count();
                 let total_asserts = assert_report.results.len();

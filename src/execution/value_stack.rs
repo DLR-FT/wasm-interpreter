@@ -96,6 +96,11 @@ impl Stack {
         }
     }
 
+    //unfortunately required for polymorphic select
+    pub fn pop_value_with_unknown_type(&mut self) -> Value {
+        self.values.pop().unwrap_validated()
+    }
+
     /// Copy a value of the given [ValType] from the value stack without removing it
     pub fn peek_value(&self, ty: ValType) -> Value {
         let value = self.values.last().unwrap_validated();
@@ -139,8 +144,9 @@ impl Stack {
     /// Copy value from top of the value stack to the given local
     pub fn tee_local(&mut self, idx: LocalIdx) {
         let local_ty = self.current_stackframe().locals.get_ty(idx);
-
         let stack_value = self.peek_value(local_ty);
+
+        trace!("Instruction: local.tee [{stack_value:?}] -> []");
         *self.current_stackframe_mut().locals.get_mut(idx) = stack_value;
     }
 

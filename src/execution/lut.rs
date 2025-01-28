@@ -40,6 +40,8 @@ impl Lut {
 
             // TODO: what do we want to do if there is a missing import/export pair? Currently we fail the entire
             // operation. Should it be a RuntimeError if said missing pair is called?
+            // If there is a missing import/export pair,  we fail the entire
+            // operation. Better safe than sorry...
 
             function_lut.push(module_lut);
         }

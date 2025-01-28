@@ -28,6 +28,14 @@ pub enum RuntimeError {
     ExpectedAValueOnTheStack,
     ModuleNotFound,
     UnmetImport,
+    UndefinedTableIndex,
+}
+
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub enum Proposal {
+    Memory64,
+    MultipleMemories,
+    Threads,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -35,6 +43,7 @@ pub enum StoreInstantiationError {
     ActiveDataWriteOutOfBounds,
     I64ValueOutOfReach(String),
     MissingValueOnTheStack,
+    TooManyMemories(usize),
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -44,6 +53,7 @@ pub enum Error {
     InvalidVersion,
     MalformedUtf8String(Utf8Error),
     Eof,
+    InvalidSection(SectionTy, String),
     InvalidSectionType(u8),
     SectionOutOfOrder(SectionTy),
     InvalidNumType,
@@ -90,6 +100,11 @@ pub enum Error {
     FunctionTypeIsNotDefined(TypeIdx),
     StoreInstantiationError(StoreInstantiationError),
     OnlyFuncRefIsAllowed,
+    TypeUnificationMismatch,
+    InvalidSelectTypeVector,
+    TooManyLocals(usize),
+    UnsupportedProposal(Proposal),
+    Overflow,
 }
 
 impl Display for Error {
@@ -105,6 +120,10 @@ impl Display for Error {
             Error::Eof => f.write_str(
                 "A value was expected in the WASM binary but the end of file was reached instead",
             ),
+            Error::InvalidSection(section, reason) => f.write_fmt(format_args!(
+                "Section '{:?}' invalid! Reason: {}",
+                section, reason
+            )),
             Error::InvalidSectionType(ty) => f.write_fmt(format_args!(
                 "An invalid section type id was found in a section header: {ty}"
             )),
@@ -230,6 +249,19 @@ impl Display for Error {
             )),
             Error::StoreInstantiationError(err) => err.fmt(f),
             Error::OnlyFuncRefIsAllowed => f.write_str("Only FuncRef is allowed"),
+            Error::TypeUnificationMismatch => {
+                f.write_str("cannot unify types")
+            }
+            Error::InvalidSelectTypeVector => {
+                f.write_str("SELECT T* (0x1C) instruction must have exactly one type in the subsequent type vector")
+            },
+            Error::TooManyLocals(x) => {
+                f.write_fmt(format_args!("Too many locals (more than 2^32-1): {}", x))
+            }
+            Error::UnsupportedProposal(proposal) => {
+                f.write_fmt(format_args!("Unsupported proposal: {:?}", proposal))
+            }
+            Error::Overflow => f.write_str("Overflow"),
         }
     }
 }
@@ -254,6 +286,9 @@ impl Display for RuntimeError {
             RuntimeError::UnmetImport => {
                 f.write_str("There is at least one import which has no corresponding export")
             }
+            RuntimeError::UndefinedTableIndex => {
+                f.write_str("Indirect call: table index out of bounds")
+            }
         }
     }
 }
@@ -274,6 +309,7 @@ impl Display for StoreInstantiationError {
                 }
             )),
             MissingValueOnTheStack => f.write_str(""),
+            TooManyMemories(x) => f.write_fmt(format_args!("Too many memories (overflow): {}", x)),
         }
     }
 }
