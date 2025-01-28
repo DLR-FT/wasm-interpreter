@@ -1,8 +1,8 @@
 use alloc::vec;
 use alloc::vec::Vec;
-use core::f32;
 use core::fmt::{Debug, Display};
 use core::ops::{Add, Div, Mul, Sub};
+use core::{f32, f64};
 
 use crate::core::reader::types::{NumType, ValType};
 use crate::execution::assert_validated::UnwrapValidatedExt;
@@ -53,19 +53,34 @@ impl Div for F32 {
 
 impl F32 {
     pub fn abs(&self) -> Self {
-        Self(f32::from_bits(self.0.to_bits() & !(1 << 31)))
+        Self(libm::fabsf(self.0))
     }
     pub fn neg(&self) -> Self {
-        Self(f32::from_bits(self.0.to_bits() ^ (1 << 31)))
+        Self(-self.0)
     }
     pub fn ceil(&self) -> Self {
+        if self.0.is_nan() {
+            return Self(f32::NAN);
+        }
         Self(libm::ceilf(self.0))
     }
     pub fn floor(&self) -> Self {
+        if self.0.is_nan() {
+            return Self(f32::NAN);
+        }
         Self(libm::floorf(self.0))
     }
     pub fn trunc(&self) -> Self {
+        if self.0.is_nan() {
+            return Self(f32::NAN);
+        }
         Self(libm::truncf(self.0))
+    }
+    pub fn nearest(&self) -> Self {
+        if self.0.is_nan() {
+            return Self(f32::NAN);
+        }
+        Self(libm::rintf(self.0))
     }
     pub fn round(&self) -> Self {
         Self(libm::roundf(self.0))
@@ -75,19 +90,27 @@ impl F32 {
     }
 
     pub fn min(&self, rhs: Self) -> Self {
-        Self(if self.0.is_nan() {
-            self.0
-        } else if rhs.0.is_nan() {
-            rhs.0
+        Self(if self.0.is_nan() || rhs.0.is_nan() {
+            f32::NAN
+        } else if self.0 == 0.0 && rhs.0 == 0.0 {
+            if self.to_bits() >> 31 == 1 {
+                self.0
+            } else {
+                rhs.0
+            }
         } else {
             self.0.min(rhs.0)
         })
     }
     pub fn max(&self, rhs: Self) -> Self {
-        Self(if self.0.is_nan() {
-            self.0
-        } else if rhs.0.is_nan() {
-            rhs.0
+        Self(if self.0.is_nan() || rhs.0.is_nan() {
+            f32::NAN
+        } else if self.0 == 0.0 && rhs.0 == 0.0 {
+            if self.to_bits() >> 31 == 1 {
+                rhs.0
+            } else {
+                self.0
+            }
         } else {
             self.0.max(rhs.0)
         })
@@ -125,6 +148,9 @@ impl F32 {
     }
     pub fn reinterpret_as_i32(&self) -> i32 {
         self.0.to_bits() as i32
+    }
+    pub fn to_bits(&self) -> u32 {
+        self.0.to_bits()
     }
 }
 
@@ -173,19 +199,34 @@ impl Div for F64 {
 
 impl F64 {
     pub fn abs(&self) -> Self {
-        Self(f64::from_bits(self.0.to_bits() & !(1 << 63)))
+        Self(libm::fabs(self.0))
     }
     pub fn neg(&self) -> Self {
-        Self(f64::from_bits(self.0.to_bits() ^ (1 << 63)))
+        Self(-self.0)
     }
     pub fn ceil(&self) -> Self {
+        if self.0.is_nan() {
+            return Self(f64::NAN);
+        }
         Self(libm::ceil(self.0))
     }
     pub fn floor(&self) -> Self {
+        if self.0.is_nan() {
+            return Self(f64::NAN);
+        }
         Self(libm::floor(self.0))
     }
     pub fn trunc(&self) -> Self {
+        if self.0.is_nan() {
+            return Self(f64::NAN);
+        }
         Self(libm::trunc(self.0))
+    }
+    pub fn nearest(&self) -> Self {
+        if self.0.is_nan() {
+            return Self(f64::NAN);
+        }
+        Self(libm::rint(self.0))
     }
     pub fn round(&self) -> Self {
         Self(libm::round(self.0))
@@ -195,19 +236,27 @@ impl F64 {
     }
 
     pub fn min(&self, rhs: Self) -> Self {
-        Self(if self.0.is_nan() {
-            self.0
-        } else if rhs.0.is_nan() {
-            rhs.0
+        Self(if self.0.is_nan() || rhs.0.is_nan() {
+            f64::NAN
+        } else if self.0 == 0.0 && rhs.0 == 0.0 {
+            if self.to_bits() >> 63 == 1 {
+                self.0
+            } else {
+                rhs.0
+            }
         } else {
             self.0.min(rhs.0)
         })
     }
     pub fn max(&self, rhs: Self) -> Self {
-        Self(if self.0.is_nan() {
-            self.0
-        } else if rhs.0.is_nan() {
-            rhs.0
+        Self(if self.0.is_nan() || rhs.0.is_nan() {
+            f64::NAN
+        } else if self.0 == 0.0 && rhs.0 == 0.0 {
+            if self.to_bits() >> 63 == 1 {
+                rhs.0
+            } else {
+                self.0
+            }
         } else {
             self.0.max(rhs.0)
         })
@@ -246,6 +295,9 @@ impl F64 {
     }
     pub fn reinterpret_as_i64(&self) -> i64 {
         self.0.to_bits() as i64
+    }
+    pub fn to_bits(&self) -> u64 {
+        self.0.to_bits()
     }
 }
 

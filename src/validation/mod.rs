@@ -12,6 +12,7 @@ use crate::core::reader::types::import::{Import, ImportDesc};
 use crate::core::reader::types::{FuncType, MemType, TableType};
 use crate::core::reader::{WasmReadable, WasmReader};
 use crate::core::sidetable::Sidetable;
+use crate::global_store::GlobalStore;
 use crate::{Error, Result};
 
 pub(crate) mod code;
@@ -24,7 +25,6 @@ pub(crate) mod validation_stack;
 pub struct ValidationInfo<'bytecode> {
     pub(crate) wasm: &'bytecode [u8],
     pub(crate) types: Vec<FuncType>,
-    #[allow(dead_code)]
     pub(crate) imports: Vec<Import>,
     pub(crate) functions: Vec<TypeIdx>,
     pub(crate) tables: Vec<TableType>,
@@ -60,7 +60,36 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
 
     let skip_section = |wasm: &mut WasmReader, section_header: &mut Option<SectionHeader>| {
         handle_section(wasm, section_header, SectionTy::Custom, |wasm, h| {
-            wasm.skip(h.contents.len())
+            use alloc::string::*;
+            // customsec ::= section_0(custom)
+            // custom ::= name byte*
+            // name ::= b*:vec(byte) => name (if utf8(name) = b*)
+            // vec(B) ::= n:u32 (x:B)^n => x^n
+
+            if h.contents.len() == 0 {
+                return Ok(());
+            }
+            let _name = wasm.read_name()?;
+
+            let remaining_bytes = match h
+                .contents
+                .from()
+                .checked_add(h.contents.len())
+                .and_then(|res| res.checked_sub(wasm.pc))
+            {
+                None => Err(Error::InvalidSection(
+                    SectionTy::Custom,
+                    "Remaining bytes less than 0 after reading name!".to_string(),
+                )),
+                Some(remaining_bytes) => Ok(remaining_bytes),
+            }?;
+
+            // TODO: maybe do something with these remaining bytes?
+            let mut _bytes = Vec::new();
+            for _ in 0..remaining_bytes {
+                _bytes.push(wasm.read_u8()?)
+            }
+            Ok(())
         })
     };
 
@@ -92,14 +121,18 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
         })?
         .unwrap_or_default();
 
-    let imported_functions = imports.iter().filter_map(|import| match &import.desc {
-        ImportDesc::Func(type_idx) => Some(*type_idx),
-        _ => None,
-    });
+    let imported_functions = imports
+        .iter()
+        .filter_map(|import| match &import.desc {
+            ImportDesc::Func(type_idx) => Some(*type_idx),
+            _ => None,
+        })
+        .collect::<Vec<_>>();
 
     let all_functions = imported_functions
-        .clone()
-        .chain(local_functions.iter().cloned())
+        .iter()
+        .chain(local_functions.iter())
+        .cloned()
         .collect::<Vec<TypeIdx>>();
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
@@ -108,6 +141,14 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
         wasm.read_vec(TableType::read)
     })?
     .unwrap_or_default();
+    let all_tables: Vec<TableType> = imports
+        .iter()
+        .filter_map(|import| match &import.desc {
+            ImportDesc::Table(table) => Some(table.clone()),
+            _ => None,
+        })
+        .chain(tables.clone())
+        .collect::<Vec<_>>();
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
@@ -125,6 +166,14 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
         globals::validate_global_section(wasm, h)
     })?
     .unwrap_or_default();
+    let all_globals: Vec<Global> = imports
+        .iter()
+        .filter_map(|import| match &import.desc {
+            ImportDesc::Global(global) => Some(Global::from_global_type(global)),
+            _ => None,
+        })
+        .chain(globals.clone())
+        .collect::<Vec<Global>>();
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
@@ -176,11 +225,11 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
                 h,
                 &types,
                 &all_functions,
-                imported_functions.count(),
-                &globals,
+                imported_functions.len(),
+                &all_globals,
                 &memories,
                 &data_count,
-                &tables,
+                &all_tables,
                 &elements,
                 &referenced_functions,
             )

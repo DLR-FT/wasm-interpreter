@@ -137,6 +137,7 @@ impl<'a> WasmReader<'a> {
     /// more than 0 further bytes would panick. However, it can not move the [`pc`](Self::pc) any
     /// further than that, instead an error is returned. For further information, refer to the
     /// [field documentation of `pc`] (WasmReader::pc).
+    #[allow(dead_code)]
     pub fn skip(&mut self, num_bytes: usize) -> Result<()> {
         if num_bytes > self.full_wasm_binary.len() - self.pc {
             return Err(Error::Eof);
@@ -195,7 +196,7 @@ pub mod span {
     /// Can be used to index into a [WasmReader], yielding a byte slice. As it does not
     /// actually own the indexed data, this struct is free of lifetimes. Caution is advised when
     /// indexing unknown slices, as a [Span] does not validate the length of the indexed slice.
-    #[derive(Copy, Clone, Debug, Hash)]
+    #[derive(Copy, Clone, Debug, Hash, Default)]
     pub struct Span {
         pub(super) from: usize,
         pub(super) len: usize,

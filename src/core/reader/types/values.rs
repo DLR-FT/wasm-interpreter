@@ -1,3 +1,19 @@
+/*
+# This file incorporates code from Wasmtime, originally
+# available at https://github.com/bytecodealliance/wasm-tools.
+#
+# The original code is licensed under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance
+# with the License. You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+*/
 //! Methods to read basic WASM Values from a [WasmReader] object.
 //!
 //! See: <https://webassembly.github.io/spec/core/binary/values.html>
@@ -23,21 +39,40 @@ impl WasmReader<'_> {
         }
     }
 
+    const CONTINUATION_BIT: u8 = 1 << 7;
+
+    /// Parses a variable-length `u64` (can be casted to a smaller uint if the result fits)
+    /// Taken from <https://github.com/bytecodealliance/wasm-tools>
+    pub fn read_var_u64(&mut self) -> Result<u64> {
+        let mut result = 0;
+        let mut shift = 0;
+
+        loop {
+            let mut byte = self.read_u8()?;
+            if shift == 63 && byte != 0 && byte != 1 {
+                while byte & Self::CONTINUATION_BIT != 0 {
+                    byte = self.read_u8()?;
+                }
+                return Err(Error::Overflow);
+            }
+
+            let low_bits = (byte & !Self::CONTINUATION_BIT) as u64;
+            result |= low_bits << shift;
+
+            if byte & Self::CONTINUATION_BIT == 0 {
+                return Ok(result);
+            }
+
+            shift += 7;
+        }
+    }
+
     /// Parses a variable-length `u32` as specified by [LEB128](https://en.wikipedia.org/wiki/LEB128#Unsigned_LEB128).
     /// Note: If `Err`, the [WasmReader] object is no longer guaranteed to be in a valid state
     pub fn read_var_u32(&mut self) -> Result<u32> {
-        let mut result: u32 = 0;
-        let mut shift: u32 = 0;
-        loop {
-            let byte = self.read_u8()? as u32;
-            result |= (byte & 0b01111111) << shift;
-            if (byte & 0b10000000) == 0 {
-                break;
-            }
-            shift += 7;
-        }
-
-        Ok(result)
+        Self::read_var_u64(self)?
+            .try_into()
+            .map_err(|_| Error::Overflow)
     }
 
     pub fn read_var_f64(&mut self) -> Result<u64> {

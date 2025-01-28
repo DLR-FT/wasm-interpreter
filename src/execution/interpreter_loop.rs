@@ -10,9 +10,11 @@
 //!      [`Error::RuntimeError`](crate::Error::RuntimeError) variant, which as per 2., we don not
 //!      want
 
+use alloc::format;
 use alloc::vec;
 use alloc::vec::Vec;
 
+use crate::core::reader::types::import::ImportRefData;
 use crate::{
     assert_validated::UnwrapValidatedExt,
     core::{
@@ -27,12 +29,78 @@ use crate::{
     store::{DataInst, FuncInst},
     value::{self, FuncAddr, Ref},
     value_stack::Stack,
-    Limits, NumType, RefType, RuntimeError, ValType, Value,
+    Limits, RefType, RuntimeError, ValType, Value,
 };
+
+macro_rules! load {
+    ($wasm:ident, $stack:ident, $store:expr, $to:ty, $from:ty, $how_many_bytes:literal, $instr:literal) => {
+        let memarg = MemArg::read_unvalidated($wasm);
+        let relative_address: u32 = $stack.pop_value(ValType::NumType(I32)).into();
+
+        let mem = $store
+            .mems
+            .first()
+            .unwrap_validated(); // there is only one memory allowed as of now
+
+        let data = {
+            // The spec states that this should be a 33 bit integer
+            // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
+            let _address = memarg.offset.checked_add(relative_address);
+            let data = memarg
+                .offset
+                .checked_add(relative_address)
+                .and_then(|address| {
+                    let address = address as usize;
+                    mem.data
+                        .get(address..(address + $how_many_bytes))
+                        .map(|slice| slice.try_into().expect(format!("this to be exactly {} byte(s)", stringify!($how_many_bytes)).as_str()))
+                })
+                .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
+
+            <$from>::from_le_bytes(data)
+        };
+
+        $stack.push_value((data as $to).into());
+        trace!("Instruction: {}? [{relative_address}] -> [{data}]", $instr);
+    };
+}
+
+macro_rules! store {
+    ($wasm:ident, $stack:ident, $store:expr, $to:ty, $from:expr, $how_many_bytes:literal,$instr:literal) => {
+        let memarg = MemArg::read_unvalidated($wasm);
+
+        let data_to_store: $to = $stack.pop_value(ValType::NumType($from)).into();
+        let relative_address: u32 = $stack.pop_value(ValType::NumType(I32)).into();
+
+        let mem = $store
+            .mems
+            .get_mut(0)
+            .unwrap_validated(); // there is only one memory allowed as of now
+
+        // The spec states that this should be a 33 bit integer
+        // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
+        let address = memarg.offset.checked_add(relative_address);
+        let memory_location = address
+            .and_then(|address| {
+                let address = address as usize;
+                mem.data.get_mut(address..(address + $how_many_bytes))
+            })
+            .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
+
+        let data_to_store = &data_to_store.to_le_bytes()[0..$how_many_bytes];
+        memory_location.copy_from_slice(data_to_store);
+        trace!(
+            "Instruction: {} [{relative_address} [{:?}]] -> []",
+            $instr,
+            data_to_store
+        );
+    };
+}
 
 #[cfg(feature = "hooks")]
 use crate::execution::hooks::HookSet;
 
+use super::global_store::GlobalStore;
 use super::{execution_info::ExecutionInfo, lut::Lut};
 
 /// Interprets a functions. Parameters and return values are passed on the stack.
@@ -42,7 +110,12 @@ pub(super) fn run<H: HookSet>(
     lut: &Lut,
     stack: &mut Stack,
     mut hooks: H,
+    global_store: &mut GlobalStore,
 ) -> Result<(), RuntimeError> {
+    let names = modules
+        .iter()
+        .map(|module| module.name.clone())
+        .collect::<Vec<_>>();
     let func_inst = modules[*current_module_idx]
         .store
         .funcs
@@ -63,12 +136,19 @@ pub(super) fn run<H: HookSet>(
     wasm.move_start_to(func_inst.code_expr).unwrap();
 
     use crate::core::reader::types::opcode::*;
+    use crate::NumType::*;
     loop {
         // call the instruction hook
         #[cfg(feature = "hooks")]
         hooks.instruction_hook(modules[*current_module_idx].wasm_bytecode, wasm.pc);
 
         let first_instr_byte = wasm.read_u8().unwrap_validated();
+
+        #[cfg(debug_assertions)]
+        trace!(
+            "Executing instruction {}",
+            opcode_byte_to_str(first_instr_byte)
+        );
 
         match first_instr_byte {
             NOP => {
@@ -123,7 +203,7 @@ pub(super) fn run<H: HookSet>(
             IF => {
                 wasm.read_var_u32().unwrap_validated();
 
-                let test_val: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let test_val: i32 = stack.pop_value(ValType::NumType(I32)).into();
 
                 if test_val != 0 {
                     stp += 1;
@@ -137,7 +217,7 @@ pub(super) fn run<H: HookSet>(
             BR_IF => {
                 wasm.read_var_u32().unwrap_validated();
 
-                let test_val: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let test_val: i32 = stack.pop_value(ValType::NumType(I32)).into();
 
                 if test_val != 0 {
                     do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable);
@@ -152,7 +232,7 @@ pub(super) fn run<H: HookSet>(
                 wasm.read_var_u32().unwrap_validated();
 
                 // TODO is this correct?
-                let case_val_i32: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let case_val_i32: i32 = stack.pop_value(ValType::NumType(I32)).into();
                 let case_val = case_val_i32 as usize;
 
                 if case_val >= label_vec.len() {
@@ -253,17 +333,26 @@ pub(super) fn run<H: HookSet>(
                     .tables
                     .get(table_idx)
                     .unwrap_validated();
+                let tab = global_store.get_table(*tab);
+
+                let owner_data = tab.owner_data.clone();
+
+                let index: usize = names
+                    .iter()
+                    .position(|name| name == &owner_data.module_name)
+                    .unwrap();
+
                 let func_ty = modules[*current_module_idx]
                     .fn_types
                     .get(given_type_idx)
                     .unwrap_validated();
 
-                let i: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let i: u32 = stack.pop_value(ValType::NumType(I32)).into();
 
                 let r = tab
                     .elem
                     .get(i as usize)
-                    .ok_or(RuntimeError::TableAccessOutOfBounds)
+                    .ok_or(RuntimeError::UndefinedTableIndex)
                     .and_then(|r| {
                         if r.is_null() {
                             trace!("table_idx ({table_idx}) --- element index in table ({i})");
@@ -278,11 +367,8 @@ pub(super) fn run<H: HookSet>(
                     Ref::Extern(_) => unreachable!(),
                 };
 
-                let func_to_call_inst = modules[*current_module_idx]
-                    .store
-                    .funcs
-                    .get(func_addr)
-                    .unwrap_validated();
+                let func_to_call_inst =
+                    modules[index].store.funcs.get(func_addr).unwrap_validated();
 
                 let actual_type_idx = func_to_call_inst.ty();
 
@@ -305,6 +391,11 @@ pub(super) fn run<H: HookSet>(
                             wasm.pc,
                             stp,
                         );
+
+                        if index != *current_module_idx {
+                            wasm = &mut modules[index].wasm_reader;
+                            *current_module_idx = index;
+                        }
 
                         wasm.move_start_to(local_func_inst.code_expr)
                             .unwrap_validated();
@@ -350,7 +441,7 @@ pub(super) fn run<H: HookSet>(
                 stack.drop_value();
             }
             SELECT => {
-                let test_val: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let test_val: i32 = stack.pop_value(ValType::NumType(I32)).into();
                 let val2 = stack.pop_value_with_unknown_type();
                 let val1 = stack.pop_value_with_unknown_type();
                 if test_val != 0 {
@@ -361,7 +452,7 @@ pub(super) fn run<H: HookSet>(
             }
             SELECT_T => {
                 let type_vec = wasm.read_vec(ValType::read).unwrap_validated();
-                let test_val: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let test_val: i32 = stack.pop_value(ValType::NumType(I32)).into();
                 let val2 = stack.pop_value(type_vec[0]);
                 let val1 = stack.pop_value(type_vec[0]);
                 if test_val != 0 {
@@ -379,23 +470,18 @@ pub(super) fn run<H: HookSet>(
             LOCAL_TEE => stack.tee_local(wasm.read_var_u32().unwrap_validated() as LocalIdx),
             GLOBAL_GET => {
                 let global_idx = wasm.read_var_u32().unwrap_validated() as GlobalIdx;
-                let global = modules[*current_module_idx]
-                    .store
-                    .globals
-                    .get(global_idx)
-                    .unwrap_validated();
+                let global = modules[*current_module_idx].store.globals[global_idx];
 
-                stack.push_value(global.value);
+                stack.push_value(global_store.get_global(global).value);
             }
             GLOBAL_SET => {
                 let global_idx = wasm.read_var_u32().unwrap_validated() as GlobalIdx;
-                let global = modules[*current_module_idx]
-                    .store
-                    .globals
-                    .get_mut(global_idx)
-                    .unwrap_validated();
+                let global = modules[*current_module_idx].store.globals[global_idx];
 
-                global.value = stack.pop_value(global.global.ty.ty)
+                // global_store.get_global()
+                let global_valtype = global_store.get_global(global).global.ty.ty.clone();
+                let popped = stack.pop_value(global_valtype);
+                global_store.get_mut_global(global).value = popped;
             }
             TABLE_GET => {
                 let table_idx = wasm.read_var_u32().unwrap_validated() as TableIdx;
@@ -405,8 +491,9 @@ pub(super) fn run<H: HookSet>(
                     .tables
                     .get(table_idx)
                     .unwrap_validated();
+                let tab = global_store.get_table(*tab);
 
-                let i: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let i: i32 = stack.pop_value(ValType::NumType(I32)).into();
 
                 let val = tab
                     .elem
@@ -425,9 +512,9 @@ pub(super) fn run<H: HookSet>(
                 let table_idx = wasm.read_var_u32().unwrap_validated() as TableIdx;
 
                 let tab = &mut modules[*current_module_idx].store.tables[table_idx];
-
+                let tab = global_store.get_mut_table(*tab);
                 let val: Ref = stack.pop_value(ValType::RefType(tab.ty.et)).into();
-                let i: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let i: i32 = stack.pop_value(ValType::NumType(I32)).into();
 
                 tab.elem
                     .get_mut(i as usize)
@@ -441,669 +528,257 @@ pub(super) fn run<H: HookSet>(
                 )
             }
             I32_LOAD => {
-                let memarg = MemArg::read_unvalidated(wasm);
-                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .first()
-                    .unwrap_validated(); // there is only one memory allowed as of now
-
-                let data: u32 = {
-                    // The spec states that this should be a 33 bit integer
-                    // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
-                    let _address = memarg.offset.checked_add(relative_address);
-                    let data = memarg
-                        .offset
-                        .checked_add(relative_address)
-                        .and_then(|address| {
-                            let address = address as usize;
-                            mem.data.get(address..(address + 4))
-                        })
-                        .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
-
-                    let data: [u8; 4] = data.try_into().expect("this to be exactly 4 bytes");
-                    u32::from_le_bytes(data)
-                };
-
-                stack.push_value(Value::I32(data));
-                trace!("Instruction: i32.load [{relative_address}] -> [{data}]");
+                load!(
+                    wasm,
+                    stack,
+                    modules[*current_module_idx].store,
+                    i32,
+                    i32,
+                    4,
+                    "i32.load"
+                );
             }
             I64_LOAD => {
-                let memarg = MemArg::read_unvalidated(wasm);
-                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .first()
-                    .unwrap_validated();
-
-                let data: u64 = {
-                    // The spec states that this should be a 33 bit integer
-                    // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
-                    let _address = memarg.offset.checked_add(relative_address);
-                    let data = memarg
-                        .offset
-                        .checked_add(relative_address)
-                        .and_then(|address| {
-                            let address = address as usize;
-                            mem.data
-                                .get(address..(address + 8))
-                                .map(|slice| slice.try_into().expect("this to be exactly 8 bytes"))
-                        })
-                        .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
-
-                    u64::from_le_bytes(data)
-                };
-
-                stack.push_value(Value::I64(data));
-                trace!("Instruction: i64.load [{relative_address}] -> [{data}]");
+                load!(
+                    wasm,
+                    stack,
+                    modules[*current_module_idx].store,
+                    i64,
+                    i64,
+                    8,
+                    "i64.load"
+                );
             }
             F32_LOAD => {
-                let memarg = MemArg::read_unvalidated(wasm);
-                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .first()
-                    .unwrap_validated(); // there is only one memory allowed as of now
-
-                let data: f32 = {
-                    // The spec states that this should be a 33 bit integer
-                    // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
-                    let _address = memarg.offset.checked_add(relative_address);
-                    let data = memarg
-                        .offset
-                        .checked_add(relative_address)
-                        .and_then(|address| {
-                            let address = address as usize;
-                            mem.data
-                                .get(address..(address + 4))
-                                .map(|slice| slice.try_into().expect("this to be exactly 4 bytes"))
-                        })
-                        .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
-                    f32::from_le_bytes(data)
-                };
-
-                stack.push_value(Value::F32(value::F32(data)));
-                trace!("Instruction: f32.load [{relative_address}] -> [{data}]");
+                load!(
+                    wasm,
+                    stack,
+                    modules[*current_module_idx].store,
+                    f32,
+                    f32,
+                    4,
+                    "f32.load"
+                );
             }
             F64_LOAD => {
-                let memarg = MemArg::read_unvalidated(wasm);
-                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .first()
-                    .unwrap_validated();
-
-                let data: f64 = {
-                    // The spec states that this should be a 33 bit integer
-                    // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
-                    let _address = memarg.offset.checked_add(relative_address);
-                    let data = memarg
-                        .offset
-                        .checked_add(relative_address)
-                        .and_then(|address| {
-                            let address = address as usize;
-                            mem.data
-                                .get(address..(address + 8))
-                                .map(|slice| slice.try_into().expect("this to be exactly 8 bytes"))
-                        })
-                        .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
-
-                    f64::from_le_bytes(data)
-                };
-
-                stack.push_value(Value::F64(value::F64(data)));
-                trace!("Instruction: f64.load [{relative_address}] -> [{data}]");
+                load!(
+                    wasm,
+                    stack,
+                    modules[*current_module_idx].store,
+                    f64,
+                    f64,
+                    8,
+                    "f64.load"
+                );
             }
             I32_LOAD8_S => {
-                let memarg = MemArg::read_unvalidated(wasm);
-                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .first()
-                    .unwrap_validated(); // there is only one memory allowed as of now
-
-                let data: i8 = {
-                    // The spec states that this should be a 33 bit integer
-                    // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
-                    let _address = memarg.offset.checked_add(relative_address);
-                    let data = memarg
-                        .offset
-                        .checked_add(relative_address)
-                        .and_then(|address| {
-                            let address = address as usize;
-                            mem.data
-                                .get(address..(address + 1))
-                                .map(|slice| slice.try_into().expect("this to be exactly 1 byte"))
-                        })
-                        .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
-
-                    // let data: [u8; 1] = data.try_into().expect("this to be exactly 1 byte");
-                    u8::from_le_bytes(data) as i8
-                };
-
-                stack.push_value(Value::I32(data as u32));
-                trace!("Instruction: i32.load8_s [{relative_address}] -> [{data}]");
+                load!(
+                    wasm,
+                    stack,
+                    modules[*current_module_idx].store,
+                    u32,
+                    i8,
+                    1,
+                    "i32.load8_s"
+                );
             }
             I32_LOAD8_U => {
-                let memarg = MemArg::read_unvalidated(wasm);
-                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .first()
-                    .unwrap_validated(); // there is only one memory allowed as of now
-
-                let data: u8 = {
-                    // The spec states that this should be a 33 bit integer
-                    // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
-                    let _address = memarg.offset.checked_add(relative_address);
-                    let data = memarg
-                        .offset
-                        .checked_add(relative_address)
-                        .and_then(|address| {
-                            let address = address as usize;
-                            mem.data
-                                .get(address..(address + 1))
-                                .map(|slice| slice.try_into().expect("this to be exactly 1 byte"))
-                        })
-                        .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
-
-                    u8::from_le_bytes(data)
-                };
-
-                stack.push_value(Value::I32(data as u32));
-                trace!("Instruction: i32.load8_u [{relative_address}] -> [{data}]");
+                load!(
+                    wasm,
+                    stack,
+                    modules[*current_module_idx].store,
+                    u32,
+                    u8,
+                    1,
+                    "i32.load8_u"
+                );
             }
             I32_LOAD16_S => {
-                let memarg = MemArg::read_unvalidated(wasm);
-                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .first()
-                    .unwrap_validated(); // there is only one memory allowed as of now
-
-                let data: i16 = {
-                    // The spec states that this should be a 33 bit integer
-                    // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
-                    let _address = memarg.offset.checked_add(relative_address);
-                    let data = memarg
-                        .offset
-                        .checked_add(relative_address)
-                        .and_then(|address| {
-                            let address = address as usize;
-                            mem.data
-                                .get(address..(address + 2))
-                                .map(|slice| slice.try_into().expect("this to be exactly 2 bytes"))
-                        })
-                        .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
-
-                    u16::from_le_bytes(data) as i16
-                };
-
-                stack.push_value(Value::I32(data as u32));
-                trace!("Instruction: i32.load16_s [{relative_address}] -> [{data}]");
+                load!(
+                    wasm,
+                    stack,
+                    modules[*current_module_idx].store,
+                    u32,
+                    i16,
+                    2,
+                    "i32.load16_s"
+                );
             }
             I32_LOAD16_U => {
-                let memarg = MemArg::read_unvalidated(wasm);
-                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .first()
-                    .unwrap_validated(); // there is only one memory allowed as of now
-
-                let data: u16 = {
-                    // The spec states that this should be a 33 bit integer
-                    // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
-                    let _address = memarg.offset.checked_add(relative_address);
-                    let data = memarg
-                        .offset
-                        .checked_add(relative_address)
-                        .and_then(|address| {
-                            let address = address as usize;
-                            mem.data
-                                .get(address..(address + 2))
-                                .map(|slice| slice.try_into().expect("this to be exactly 2 bytes"))
-                        })
-                        .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
-
-                    u16::from_le_bytes(data)
-                };
-
-                stack.push_value(Value::I32(data as u32));
-                trace!("Instruction: i32.load16_u [{relative_address}] -> [{data}]");
+                load!(
+                    wasm,
+                    stack,
+                    modules[*current_module_idx].store,
+                    u32,
+                    u16,
+                    2,
+                    "i32.load16_u"
+                );
             }
             I64_LOAD8_S => {
-                let memarg = MemArg::read_unvalidated(wasm);
-                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .first()
-                    .unwrap_validated(); // there is only one memory allowed as of now
-
-                let data: i8 = {
-                    // The spec states that this should be a 33 bit integer
-                    // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
-                    let _address = memarg.offset.checked_add(relative_address);
-                    let data = memarg
-                        .offset
-                        .checked_add(relative_address)
-                        .and_then(|address| {
-                            let address = address as usize;
-                            mem.data
-                                .get(address..(address + 1))
-                                .map(|slice| slice.try_into().expect("this to be exactly 1 byte"))
-                        })
-                        .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
-
-                    // let data: [u8; 1] = data.try_into().expect("this to be exactly 1 byte");
-                    u8::from_le_bytes(data) as i8
-                };
-
-                stack.push_value(Value::I64(data as u64));
-                trace!("Instruction: i64.load8_s [{relative_address}] -> [{data}]");
+                load!(
+                    wasm,
+                    stack,
+                    modules[*current_module_idx].store,
+                    u64,
+                    i8,
+                    1,
+                    "i64.load8_s"
+                );
             }
             I64_LOAD8_U => {
-                let memarg = MemArg::read_unvalidated(wasm);
-                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .first()
-                    .unwrap_validated(); // there is only one memory allowed as of now
-
-                let data: u8 = {
-                    // The spec states that this should be a 33 bit integer
-                    // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
-                    let _address = memarg.offset.checked_add(relative_address);
-                    let data = memarg
-                        .offset
-                        .checked_add(relative_address)
-                        .and_then(|address| {
-                            let address = address as usize;
-                            mem.data
-                                .get(address..(address + 1))
-                                .map(|slice| slice.try_into().expect("this to be exactly 1 byte"))
-                        })
-                        .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
-
-                    // let data: [u8; 1] = data.try_into().expect("this to be exactly 1 byte");
-                    u8::from_le_bytes(data)
-                };
-
-                stack.push_value(Value::I64(data as u64));
-                trace!("Instruction: i64.load8_u [{relative_address}] -> [{data}]");
+                load!(
+                    wasm,
+                    stack,
+                    modules[*current_module_idx].store,
+                    u64,
+                    u8,
+                    1,
+                    "i64.load8_u"
+                );
             }
             I64_LOAD16_S => {
-                let memarg = MemArg::read_unvalidated(wasm);
-                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .first()
-                    .unwrap_validated(); // there is only one memory allowed as of now
-
-                let data: i16 = {
-                    // The spec states that this should be a 33 bit integer
-                    // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
-                    let _address = memarg.offset.checked_add(relative_address);
-                    let data = memarg
-                        .offset
-                        .checked_add(relative_address)
-                        .and_then(|address| {
-                            let address = address as usize;
-                            mem.data
-                                .get(address..(address + 2))
-                                .map(|slice| slice.try_into().expect("this to be exactly 2 bytes"))
-                        })
-                        .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
-
-                    u16::from_le_bytes(data) as i16
-                };
-
-                stack.push_value(Value::I64(data as u64));
-                trace!("Instruction: i64.load16_s [{relative_address}] -> [{data}]");
+                load!(
+                    wasm,
+                    stack,
+                    modules[*current_module_idx].store,
+                    u64,
+                    i16,
+                    2,
+                    "i64.load16_s"
+                );
             }
             I64_LOAD16_U => {
-                let memarg = MemArg::read_unvalidated(wasm);
-                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .first()
-                    .unwrap_validated(); // there is only one memory allowed as of now
-
-                let data: u16 = {
-                    // The spec states that this should be a 33 bit integer
-                    // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
-                    let _address = memarg.offset.checked_add(relative_address);
-                    let data = memarg
-                        .offset
-                        .checked_add(relative_address)
-                        .and_then(|address| {
-                            let address = address as usize;
-                            mem.data
-                                .get(address..(address + 2))
-                                .map(|slice| slice.try_into().expect("this to be exactly 2 bytes"))
-                        })
-                        .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
-
-                    u16::from_le_bytes(data)
-                };
-
-                stack.push_value(Value::I64(data as u64));
-                trace!("Instruction: i64.load16_u [{relative_address}] -> [{data}]");
+                load!(
+                    wasm,
+                    stack,
+                    modules[*current_module_idx].store,
+                    u64,
+                    u16,
+                    2,
+                    "i64.load16_u"
+                );
             }
             I64_LOAD32_S => {
-                let memarg = MemArg::read_unvalidated(wasm);
-                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .first()
-                    .unwrap_validated(); // there is only one memory allowed as of now
-
-                let data: i32 = {
-                    // The spec states that this should be a 33 bit integer
-                    // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
-                    let _address = memarg.offset.checked_add(relative_address);
-                    let data = memarg
-                        .offset
-                        .checked_add(relative_address)
-                        .and_then(|address| {
-                            let address = address as usize;
-                            mem.data
-                                .get(address..(address + 4))
-                                .map(|slice| slice.try_into().expect("this to be exactly 4 bytes"))
-                        })
-                        .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
-
-                    u32::from_le_bytes(data) as i32
-                };
-
-                stack.push_value(Value::I64(data as u64));
-                trace!("Instruction: i64.load32_s [{relative_address}] -> [{data}]");
+                load!(
+                    wasm,
+                    stack,
+                    modules[*current_module_idx].store,
+                    u64,
+                    i32,
+                    4,
+                    "i64.load32_s"
+                );
             }
             I64_LOAD32_U => {
-                let memarg = MemArg::read_unvalidated(wasm);
-                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .first()
-                    .unwrap_validated(); // there is only one memory allowed as of now
-
-                let data: u32 = {
-                    // The spec states that this should be a 33 bit integer
-                    // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
-                    let _address = memarg.offset.checked_add(relative_address);
-                    let data = memarg
-                        .offset
-                        .checked_add(relative_address)
-                        .and_then(|address| {
-                            let address = address as usize;
-                            mem.data
-                                .get(address..(address + 4))
-                                .map(|slice| slice.try_into().expect("this to be exactly 4 bytes"))
-                        })
-                        .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
-
-                    u32::from_le_bytes(data)
-                };
-
-                stack.push_value(Value::I64(data as u64));
-                trace!("Instruction: i64.load32_u [{relative_address}] -> [{data}]");
+                load!(
+                    wasm,
+                    stack,
+                    modules[*current_module_idx].store,
+                    u64,
+                    u32,
+                    4,
+                    "i64.load32_u"
+                );
             }
             I32_STORE => {
-                let memarg = MemArg::read_unvalidated(wasm);
-
-                let data_to_store: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .get_mut(0)
-                    .unwrap_validated(); // there is only one memory allowed as of now
-
-                // The spec states that this should be a 33 bit integer
-                // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
-                let address = memarg.offset.checked_add(relative_address);
-                let memory_location = address
-                    .and_then(|address| {
-                        let address = address as usize;
-                        mem.data.get_mut(address..(address + 4))
-                    })
-                    .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
-
-                memory_location.copy_from_slice(&data_to_store.to_le_bytes());
-                trace!("Instruction: i32.store [{relative_address} {data_to_store}] -> []");
+                store!(
+                    wasm,
+                    stack,
+                    modules[*current_module_idx].store,
+                    u32,
+                    I32,
+                    4,
+                    "i32.store"
+                );
             }
             I64_STORE => {
-                let memarg = MemArg::read_unvalidated(wasm);
-
-                let data_to_store: u32 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .get_mut(0)
-                    .unwrap_validated(); // there is only one memory allowed as of now
-
-                // The spec states that this should be a 33 bit integer
-                // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
-                let address = memarg.offset.checked_add(relative_address);
-                let memory_location = address
-                    .and_then(|address| {
-                        let address = address as usize;
-                        mem.data.get_mut(address..(address + 8))
-                    })
-                    .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
-
-                memory_location.copy_from_slice(&data_to_store.to_le_bytes());
-                trace!("Instruction: i64.store [{relative_address} {data_to_store}] -> []");
+                store!(
+                    wasm,
+                    stack,
+                    modules[*current_module_idx].store,
+                    u64,
+                    I64,
+                    8,
+                    "i64.store"
+                );
             }
             F32_STORE => {
-                let memarg = MemArg::read_unvalidated(wasm);
-
-                let data_to_store: f32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
-                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .get_mut(0)
-                    .unwrap_validated(); // there is only one memory allowed as of now
-
-                // The spec states that this should be a 33 bit integer
-                // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
-                let address = memarg.offset.checked_add(relative_address);
-                let memory_location = address
-                    .and_then(|address| {
-                        let address = address as usize;
-                        mem.data.get_mut(address..(address + 4))
-                    })
-                    .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
-
-                memory_location.copy_from_slice(&data_to_store.to_le_bytes());
-                trace!("Instruction: f32.store [{relative_address} {data_to_store}] -> []");
+                store!(
+                    wasm,
+                    stack,
+                    modules[*current_module_idx].store,
+                    f32,
+                    F32,
+                    4,
+                    "f32.store"
+                );
             }
             F64_STORE => {
-                let memarg = MemArg::read_unvalidated(wasm);
-
-                let data_to_store: f64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
-                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .get_mut(0)
-                    .unwrap_validated(); // there is only one memory allowed as of now
-
-                // The spec states that this should be a 33 bit integer
-                // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
-                let address = memarg.offset.checked_add(relative_address);
-                let memory_location = address
-                    .and_then(|address| {
-                        let address = address as usize;
-                        mem.data.get_mut(address..(address + 4))
-                    })
-                    .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
-
-                memory_location.copy_from_slice(&data_to_store.to_le_bytes());
-                trace!("Instruction: f64.store [{relative_address} {data_to_store}] -> []");
+                store!(
+                    wasm,
+                    stack,
+                    modules[*current_module_idx].store,
+                    f64,
+                    F64,
+                    8,
+                    "f64.store"
+                );
             }
             I32_STORE8 => {
-                let memarg = MemArg::read_unvalidated(wasm);
-
-                let data_to_store: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .get_mut(0)
-                    .unwrap_validated();
-
-                // The spec states that this should be a 33 bit integer
-                // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
-                // ea => effective address
-                let ea = memarg.offset.checked_add(relative_address);
-                let memory_location = ea
-                    .and_then(|address| {
-                        let address = address as usize;
-                        mem.data.get_mut(address..(address + 1))
-                    })
-                    .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
-
-                memory_location.copy_from_slice(&data_to_store.to_le_bytes()[0..1]);
-                trace!("Instruction: i32.store8 [{relative_address} {data_to_store}] -> []");
+                store!(
+                    wasm,
+                    stack,
+                    modules[*current_module_idx].store,
+                    u32,
+                    I32,
+                    1,
+                    "i32.store8"
+                );
             }
             I32_STORE16 => {
-                let memarg = MemArg::read_unvalidated(wasm);
-
-                let data_to_store: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .get_mut(0)
-                    .unwrap_validated();
-
-                // The spec states that this should be a 33 bit integer
-                // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
-                // ea => effective address
-                let ea = memarg.offset.checked_add(relative_address);
-                let memory_location = ea
-                    .and_then(|address| {
-                        let address = address as usize;
-                        mem.data.get_mut(address..(address + 2))
-                    })
-                    .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
-
-                memory_location.copy_from_slice(&data_to_store.to_le_bytes()[0..2]);
-                trace!("Instruction: i32.store16 [{relative_address} {data_to_store}] -> []");
+                store!(
+                    wasm,
+                    stack,
+                    modules[*current_module_idx].store,
+                    u32,
+                    I32,
+                    2,
+                    "i32.store16"
+                );
             }
             I64_STORE8 => {
-                let memarg = MemArg::read_unvalidated(wasm);
-
-                let data_to_store: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .get_mut(0)
-                    .unwrap_validated();
-
-                // The spec states that this should be a 33 bit integer
-                // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
-                // ea => effective address
-                let ea = memarg.offset.checked_add(relative_address);
-                let memory_location = ea
-                    .and_then(|address| {
-                        let address = address as usize;
-                        mem.data.get_mut(address..(address + 1))
-                    })
-                    .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
-
-                memory_location.copy_from_slice(&data_to_store.to_le_bytes()[0..1]);
-                trace!("Instruction: i64.store8 [{relative_address} {data_to_store}] -> []");
+                store!(
+                    wasm,
+                    stack,
+                    modules[*current_module_idx].store,
+                    u64,
+                    I64,
+                    1,
+                    "i64.store8"
+                );
             }
             I64_STORE16 => {
-                let memarg = MemArg::read_unvalidated(wasm);
-
-                let data_to_store: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .get_mut(0)
-                    .unwrap_validated();
-
-                // The spec states that this should be a 33 bit integer
-                // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
-                // ea => effective address
-                let ea = memarg.offset.checked_add(relative_address);
-                let memory_location = ea
-                    .and_then(|address| {
-                        let address = address as usize;
-                        mem.data.get_mut(address..(address + 2))
-                    })
-                    .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
-
-                memory_location.copy_from_slice(&data_to_store.to_le_bytes()[0..2]);
-                trace!("Instruction: i64.store16 [{relative_address} {data_to_store}] -> []");
+                store!(
+                    wasm,
+                    stack,
+                    modules[*current_module_idx].store,
+                    u64,
+                    I64,
+                    2,
+                    "i64.store16"
+                );
             }
             I64_STORE32 => {
-                let memarg = MemArg::read_unvalidated(wasm);
-
-                let data_to_store: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .get_mut(0)
-                    .unwrap_validated();
-
-                // The spec states that this should be a 33 bit integer
-                // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
-                // ea => effective address
-                let ea = memarg.offset.checked_add(relative_address);
-                let memory_location = ea
-                    .and_then(|address| {
-                        let address = address as usize;
-                        mem.data.get_mut(address..(address + 4))
-                    })
-                    .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
-
-                memory_location.copy_from_slice(&data_to_store.to_le_bytes()[0..4]);
-                trace!("Instruction: i64.store32 [{relative_address} {data_to_store}] -> []");
+                store!(
+                    wasm,
+                    stack,
+                    modules[*current_module_idx].store,
+                    u64,
+                    I64,
+                    4,
+                    "i64.store32"
+                );
             }
             MEMORY_SIZE => {
                 let mem_idx = wasm.read_u8().unwrap_validated() as usize;
@@ -1123,7 +798,7 @@ pub(super) fn run<H: HookSet>(
                     .mems
                     .get_mut(mem_idx)
                     .unwrap_validated();
-                let delta: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let delta: i32 = stack.pop_value(ValType::NumType(I32)).into();
 
                 let upper_limit = mem.ty.limits.max.unwrap_or(Limits::MAX_MEM_BYTES);
                 let pushed_value = if delta < 0 || delta as u32 + mem.size() as u32 > upper_limit {
@@ -1148,7 +823,7 @@ pub(super) fn run<H: HookSet>(
                 stack.push_value(constant.into());
             }
             I32_EQZ => {
-                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v1: i32 = stack.pop_value(ValType::NumType(I32)).into();
 
                 let res = if v1 == 0 { 1 } else { 0 };
 
@@ -1156,8 +831,8 @@ pub(super) fn run<H: HookSet>(
                 stack.push_value(res.into());
             }
             I32_EQ => {
-                let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v2: i32 = stack.pop_value(ValType::NumType(I32)).into();
+                let v1: i32 = stack.pop_value(ValType::NumType(I32)).into();
 
                 let res = if v1 == v2 { 1 } else { 0 };
 
@@ -1165,8 +840,8 @@ pub(super) fn run<H: HookSet>(
                 stack.push_value(res.into());
             }
             I32_NE => {
-                let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v2: i32 = stack.pop_value(ValType::NumType(I32)).into();
+                let v1: i32 = stack.pop_value(ValType::NumType(I32)).into();
 
                 let res = if v1 != v2 { 1 } else { 0 };
 
@@ -1174,8 +849,8 @@ pub(super) fn run<H: HookSet>(
                 stack.push_value(res.into());
             }
             I32_LT_S => {
-                let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v2: i32 = stack.pop_value(ValType::NumType(I32)).into();
+                let v1: i32 = stack.pop_value(ValType::NumType(I32)).into();
 
                 let res = if v1 < v2 { 1 } else { 0 };
 
@@ -1184,8 +859,8 @@ pub(super) fn run<H: HookSet>(
             }
 
             I32_LT_U => {
-                let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v2: i32 = stack.pop_value(ValType::NumType(I32)).into();
+                let v1: i32 = stack.pop_value(ValType::NumType(I32)).into();
 
                 let res = if (v1 as u32) < (v2 as u32) { 1 } else { 0 };
 
@@ -1193,8 +868,8 @@ pub(super) fn run<H: HookSet>(
                 stack.push_value(res.into());
             }
             I32_GT_S => {
-                let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v2: i32 = stack.pop_value(ValType::NumType(I32)).into();
+                let v1: i32 = stack.pop_value(ValType::NumType(I32)).into();
 
                 let res = if v1 > v2 { 1 } else { 0 };
 
@@ -1202,8 +877,8 @@ pub(super) fn run<H: HookSet>(
                 stack.push_value(res.into());
             }
             I32_GT_U => {
-                let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v2: i32 = stack.pop_value(ValType::NumType(I32)).into();
+                let v1: i32 = stack.pop_value(ValType::NumType(I32)).into();
 
                 let res = if (v1 as u32) > (v2 as u32) { 1 } else { 0 };
 
@@ -1211,8 +886,8 @@ pub(super) fn run<H: HookSet>(
                 stack.push_value(res.into());
             }
             I32_LE_S => {
-                let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v2: i32 = stack.pop_value(ValType::NumType(I32)).into();
+                let v1: i32 = stack.pop_value(ValType::NumType(I32)).into();
 
                 let res = if v1 <= v2 { 1 } else { 0 };
 
@@ -1220,8 +895,8 @@ pub(super) fn run<H: HookSet>(
                 stack.push_value(res.into());
             }
             I32_LE_U => {
-                let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v2: i32 = stack.pop_value(ValType::NumType(I32)).into();
+                let v1: i32 = stack.pop_value(ValType::NumType(I32)).into();
 
                 let res = if (v1 as u32) <= (v2 as u32) { 1 } else { 0 };
 
@@ -1229,8 +904,8 @@ pub(super) fn run<H: HookSet>(
                 stack.push_value(res.into());
             }
             I32_GE_S => {
-                let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v2: i32 = stack.pop_value(ValType::NumType(I32)).into();
+                let v1: i32 = stack.pop_value(ValType::NumType(I32)).into();
 
                 let res = if v1 >= v2 { 1 } else { 0 };
 
@@ -1238,8 +913,8 @@ pub(super) fn run<H: HookSet>(
                 stack.push_value(res.into());
             }
             I32_GE_U => {
-                let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v2: i32 = stack.pop_value(ValType::NumType(I32)).into();
+                let v1: i32 = stack.pop_value(ValType::NumType(I32)).into();
 
                 let res = if (v1 as u32) >= (v2 as u32) { 1 } else { 0 };
 
@@ -1247,7 +922,7 @@ pub(super) fn run<H: HookSet>(
                 stack.push_value(res.into());
             }
             I64_EQZ => {
-                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v1: i64 = stack.pop_value(ValType::NumType(I64)).into();
 
                 let res = if v1 == 0 { 1 } else { 0 };
 
@@ -1255,8 +930,8 @@ pub(super) fn run<H: HookSet>(
                 stack.push_value(res.into());
             }
             I64_EQ => {
-                let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v2: i64 = stack.pop_value(ValType::NumType(I64)).into();
+                let v1: i64 = stack.pop_value(ValType::NumType(I64)).into();
 
                 let res = if v1 == v2 { 1 } else { 0 };
 
@@ -1264,8 +939,8 @@ pub(super) fn run<H: HookSet>(
                 stack.push_value(res.into());
             }
             I64_NE => {
-                let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v2: i64 = stack.pop_value(ValType::NumType(I64)).into();
+                let v1: i64 = stack.pop_value(ValType::NumType(I64)).into();
 
                 let res = if v1 != v2 { 1 } else { 0 };
 
@@ -1273,8 +948,8 @@ pub(super) fn run<H: HookSet>(
                 stack.push_value(res.into());
             }
             I64_LT_S => {
-                let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v2: i64 = stack.pop_value(ValType::NumType(I64)).into();
+                let v1: i64 = stack.pop_value(ValType::NumType(I64)).into();
 
                 let res = if v1 < v2 { 1 } else { 0 };
 
@@ -1283,8 +958,8 @@ pub(super) fn run<H: HookSet>(
             }
 
             I64_LT_U => {
-                let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v2: i64 = stack.pop_value(ValType::NumType(I64)).into();
+                let v1: i64 = stack.pop_value(ValType::NumType(I64)).into();
 
                 let res = if (v1 as u64) < (v2 as u64) { 1 } else { 0 };
 
@@ -1292,8 +967,8 @@ pub(super) fn run<H: HookSet>(
                 stack.push_value(res.into());
             }
             I64_GT_S => {
-                let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v2: i64 = stack.pop_value(ValType::NumType(I64)).into();
+                let v1: i64 = stack.pop_value(ValType::NumType(I64)).into();
 
                 let res = if v1 > v2 { 1 } else { 0 };
 
@@ -1301,8 +976,8 @@ pub(super) fn run<H: HookSet>(
                 stack.push_value(res.into());
             }
             I64_GT_U => {
-                let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v2: i64 = stack.pop_value(ValType::NumType(I64)).into();
+                let v1: i64 = stack.pop_value(ValType::NumType(I64)).into();
 
                 let res = if (v1 as u64) > (v2 as u64) { 1 } else { 0 };
 
@@ -1310,8 +985,8 @@ pub(super) fn run<H: HookSet>(
                 stack.push_value(res.into());
             }
             I64_LE_S => {
-                let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v2: i64 = stack.pop_value(ValType::NumType(I64)).into();
+                let v1: i64 = stack.pop_value(ValType::NumType(I64)).into();
 
                 let res = if v1 <= v2 { 1 } else { 0 };
 
@@ -1319,8 +994,8 @@ pub(super) fn run<H: HookSet>(
                 stack.push_value(res.into());
             }
             I64_LE_U => {
-                let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v2: i64 = stack.pop_value(ValType::NumType(I64)).into();
+                let v1: i64 = stack.pop_value(ValType::NumType(I64)).into();
 
                 let res = if (v1 as u64) <= (v2 as u64) { 1 } else { 0 };
 
@@ -1328,8 +1003,8 @@ pub(super) fn run<H: HookSet>(
                 stack.push_value(res.into());
             }
             I64_GE_S => {
-                let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v2: i64 = stack.pop_value(ValType::NumType(I64)).into();
+                let v1: i64 = stack.pop_value(ValType::NumType(I64)).into();
 
                 let res = if v1 >= v2 { 1 } else { 0 };
 
@@ -1337,8 +1012,8 @@ pub(super) fn run<H: HookSet>(
                 stack.push_value(res.into());
             }
             I64_GE_U => {
-                let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v2: i64 = stack.pop_value(ValType::NumType(I64)).into();
+                let v1: i64 = stack.pop_value(ValType::NumType(I64)).into();
 
                 let res = if (v1 as u64) >= (v2 as u64) { 1 } else { 0 };
 
@@ -1346,8 +1021,8 @@ pub(super) fn run<H: HookSet>(
                 stack.push_value(res.into());
             }
             F32_EQ => {
-                let v2: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
-                let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let v2: value::F32 = stack.pop_value(ValType::NumType(F32)).into();
+                let v1: value::F32 = stack.pop_value(ValType::NumType(F32)).into();
 
                 let res = if v1 == v2 { 1 } else { 0 };
 
@@ -1355,8 +1030,8 @@ pub(super) fn run<H: HookSet>(
                 stack.push_value(res.into());
             }
             F32_NE => {
-                let v2: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
-                let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let v2: value::F32 = stack.pop_value(ValType::NumType(F32)).into();
+                let v1: value::F32 = stack.pop_value(ValType::NumType(F32)).into();
 
                 let res = if v1 != v2 { 1 } else { 0 };
 
@@ -1364,8 +1039,8 @@ pub(super) fn run<H: HookSet>(
                 stack.push_value(res.into());
             }
             F32_LT => {
-                let v2: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
-                let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let v2: value::F32 = stack.pop_value(ValType::NumType(F32)).into();
+                let v1: value::F32 = stack.pop_value(ValType::NumType(F32)).into();
 
                 let res = if v1 < v2 { 1 } else { 0 };
 
@@ -1373,8 +1048,8 @@ pub(super) fn run<H: HookSet>(
                 stack.push_value(res.into());
             }
             F32_GT => {
-                let v2: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
-                let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let v2: value::F32 = stack.pop_value(ValType::NumType(F32)).into();
+                let v1: value::F32 = stack.pop_value(ValType::NumType(F32)).into();
 
                 let res = if v1 > v2 { 1 } else { 0 };
 
@@ -1382,8 +1057,8 @@ pub(super) fn run<H: HookSet>(
                 stack.push_value(res.into());
             }
             F32_LE => {
-                let v2: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
-                let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let v2: value::F32 = stack.pop_value(ValType::NumType(F32)).into();
+                let v1: value::F32 = stack.pop_value(ValType::NumType(F32)).into();
 
                 let res = if v1 <= v2 { 1 } else { 0 };
 
@@ -1391,8 +1066,8 @@ pub(super) fn run<H: HookSet>(
                 stack.push_value(res.into());
             }
             F32_GE => {
-                let v2: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
-                let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let v2: value::F32 = stack.pop_value(ValType::NumType(F32)).into();
+                let v1: value::F32 = stack.pop_value(ValType::NumType(F32)).into();
 
                 let res = if v1 >= v2 { 1 } else { 0 };
 
@@ -1401,8 +1076,8 @@ pub(super) fn run<H: HookSet>(
             }
 
             F64_EQ => {
-                let v2: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
-                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v2: value::F64 = stack.pop_value(ValType::NumType(F64)).into();
+                let v1: value::F64 = stack.pop_value(ValType::NumType(F64)).into();
 
                 let res = if v1 == v2 { 1 } else { 0 };
 
@@ -1410,8 +1085,8 @@ pub(super) fn run<H: HookSet>(
                 stack.push_value(res.into());
             }
             F64_NE => {
-                let v2: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
-                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v2: value::F64 = stack.pop_value(ValType::NumType(F64)).into();
+                let v1: value::F64 = stack.pop_value(ValType::NumType(F64)).into();
 
                 let res = if v1 != v2 { 1 } else { 0 };
 
@@ -1419,8 +1094,8 @@ pub(super) fn run<H: HookSet>(
                 stack.push_value(res.into());
             }
             F64_LT => {
-                let v2: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
-                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v2: value::F64 = stack.pop_value(ValType::NumType(F64)).into();
+                let v1: value::F64 = stack.pop_value(ValType::NumType(F64)).into();
 
                 let res = if v1 < v2 { 1 } else { 0 };
 
@@ -1428,8 +1103,8 @@ pub(super) fn run<H: HookSet>(
                 stack.push_value(res.into());
             }
             F64_GT => {
-                let v2: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
-                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v2: value::F64 = stack.pop_value(ValType::NumType(F64)).into();
+                let v1: value::F64 = stack.pop_value(ValType::NumType(F64)).into();
 
                 let res = if v1 > v2 { 1 } else { 0 };
 
@@ -1437,8 +1112,8 @@ pub(super) fn run<H: HookSet>(
                 stack.push_value(res.into());
             }
             F64_LE => {
-                let v2: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
-                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v2: value::F64 = stack.pop_value(ValType::NumType(F64)).into();
+                let v1: value::F64 = stack.pop_value(ValType::NumType(F64)).into();
 
                 let res = if v1 <= v2 { 1 } else { 0 };
 
@@ -1446,8 +1121,8 @@ pub(super) fn run<H: HookSet>(
                 stack.push_value(res.into());
             }
             F64_GE => {
-                let v2: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
-                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v2: value::F64 = stack.pop_value(ValType::NumType(F64)).into();
+                let v1: value::F64 = stack.pop_value(ValType::NumType(F64)).into();
 
                 let res = if v1 >= v2 { 1 } else { 0 };
 
@@ -1456,21 +1131,21 @@ pub(super) fn run<H: HookSet>(
             }
 
             I32_CLZ => {
-                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v1: i32 = stack.pop_value(ValType::NumType(I32)).into();
                 let res = v1.leading_zeros() as i32;
 
                 trace!("Instruction: i32.clz [{v1}] -> [{res}]");
                 stack.push_value(res.into());
             }
             I32_CTZ => {
-                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v1: i32 = stack.pop_value(ValType::NumType(I32)).into();
                 let res = v1.trailing_zeros() as i32;
 
                 trace!("Instruction: i32.ctz [{v1}] -> [{res}]");
                 stack.push_value(res.into());
             }
             I32_POPCNT => {
-                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v1: i32 = stack.pop_value(ValType::NumType(I32)).into();
                 let res = v1.count_ones() as i32;
 
                 trace!("Instruction: i32.popcnt [{v1}] -> [{res}]");
@@ -1487,32 +1162,32 @@ pub(super) fn run<H: HookSet>(
                 stack.push_value(constant.into());
             }
             I32_ADD => {
-                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v1: i32 = stack.pop_value(ValType::NumType(I32)).into();
+                let v2: i32 = stack.pop_value(ValType::NumType(I32)).into();
                 let res = v1.wrapping_add(v2);
 
                 trace!("Instruction: i32.add [{v1} {v2}] -> [{res}]");
                 stack.push_value(res.into());
             }
             I32_SUB => {
-                let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v2: i32 = stack.pop_value(ValType::NumType(I32)).into();
+                let v1: i32 = stack.pop_value(ValType::NumType(I32)).into();
                 let res = v1.wrapping_sub(v2);
 
                 trace!("Instruction: i32.sub [{v1} {v2}] -> [{res}]");
                 stack.push_value(res.into());
             }
             I32_MUL => {
-                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v1: i32 = stack.pop_value(ValType::NumType(I32)).into();
+                let v2: i32 = stack.pop_value(ValType::NumType(I32)).into();
                 let res = v1.wrapping_mul(v2);
 
                 trace!("Instruction: i32.mul [{v1} {v2}] -> [{res}]");
                 stack.push_value(res.into());
             }
             I32_DIV_S => {
-                let dividend: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                let divisor: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let dividend: i32 = stack.pop_value(ValType::NumType(I32)).into();
+                let divisor: i32 = stack.pop_value(ValType::NumType(I32)).into();
 
                 if dividend == 0 {
                     return Err(RuntimeError::DivideBy0);
@@ -1527,8 +1202,8 @@ pub(super) fn run<H: HookSet>(
                 stack.push_value(res.into());
             }
             I32_DIV_U => {
-                let dividend: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                let divisor: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let dividend: i32 = stack.pop_value(ValType::NumType(I32)).into();
+                let divisor: i32 = stack.pop_value(ValType::NumType(I32)).into();
 
                 let dividend = dividend as u32;
                 let divisor = divisor as u32;
@@ -1543,8 +1218,8 @@ pub(super) fn run<H: HookSet>(
                 stack.push_value(res.into());
             }
             I32_REM_S => {
-                let dividend: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                let divisor: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let dividend: i32 = stack.pop_value(ValType::NumType(I32)).into();
+                let divisor: i32 = stack.pop_value(ValType::NumType(I32)).into();
 
                 if dividend == 0 {
                     return Err(RuntimeError::DivideBy0);
@@ -1557,53 +1232,53 @@ pub(super) fn run<H: HookSet>(
                 stack.push_value(res.into());
             }
             I64_CLZ => {
-                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v1: i64 = stack.pop_value(ValType::NumType(I64)).into();
                 let res = v1.leading_zeros() as i64;
 
                 trace!("Instruction: i64.clz [{v1}] -> [{res}]");
                 stack.push_value(res.into());
             }
             I64_CTZ => {
-                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v1: i64 = stack.pop_value(ValType::NumType(I64)).into();
                 let res = v1.trailing_zeros() as i64;
 
                 trace!("Instruction: i64.ctz [{v1}] -> [{res}]");
                 stack.push_value(res.into());
             }
             I64_POPCNT => {
-                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v1: i64 = stack.pop_value(ValType::NumType(I64)).into();
                 let res = v1.count_ones() as i64;
 
                 trace!("Instruction: i64.popcnt [{v1}] -> [{res}]");
                 stack.push_value(res.into());
             }
             I64_ADD => {
-                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-                let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v1: i64 = stack.pop_value(ValType::NumType(I64)).into();
+                let v2: i64 = stack.pop_value(ValType::NumType(I64)).into();
                 let res = v1.wrapping_add(v2);
 
                 trace!("Instruction: i64.add [{v1} {v2}] -> [{res}]");
                 stack.push_value(res.into());
             }
             I64_SUB => {
-                let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v2: i64 = stack.pop_value(ValType::NumType(I64)).into();
+                let v1: i64 = stack.pop_value(ValType::NumType(I64)).into();
                 let res = v1.wrapping_sub(v2);
 
                 trace!("Instruction: i64.sub [{v1} {v2}] -> [{res}]");
                 stack.push_value(res.into());
             }
             I64_MUL => {
-                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-                let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v1: i64 = stack.pop_value(ValType::NumType(I64)).into();
+                let v2: i64 = stack.pop_value(ValType::NumType(I64)).into();
                 let res = v1.wrapping_mul(v2);
 
                 trace!("Instruction: i64.mul [{v1} {v2}] -> [{res}]");
                 stack.push_value(res.into());
             }
             I64_DIV_S => {
-                let dividend: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-                let divisor: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let dividend: i64 = stack.pop_value(ValType::NumType(I64)).into();
+                let divisor: i64 = stack.pop_value(ValType::NumType(I64)).into();
 
                 if dividend == 0 {
                     return Err(RuntimeError::DivideBy0);
@@ -1618,8 +1293,8 @@ pub(super) fn run<H: HookSet>(
                 stack.push_value(res.into());
             }
             I64_DIV_U => {
-                let dividend: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-                let divisor: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let dividend: i64 = stack.pop_value(ValType::NumType(I64)).into();
+                let divisor: i64 = stack.pop_value(ValType::NumType(I64)).into();
 
                 let dividend = dividend as u64;
                 let divisor = divisor as u64;
@@ -1634,8 +1309,8 @@ pub(super) fn run<H: HookSet>(
                 stack.push_value(res.into());
             }
             I64_REM_S => {
-                let dividend: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-                let divisor: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let dividend: i64 = stack.pop_value(ValType::NumType(I64)).into();
+                let divisor: i64 = stack.pop_value(ValType::NumType(I64)).into();
 
                 if dividend == 0 {
                     return Err(RuntimeError::DivideBy0);
@@ -1648,8 +1323,8 @@ pub(super) fn run<H: HookSet>(
                 stack.push_value(res.into());
             }
             I64_REM_U => {
-                let dividend: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-                let divisor: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let dividend: i64 = stack.pop_value(ValType::NumType(I64)).into();
+                let divisor: i64 = stack.pop_value(ValType::NumType(I64)).into();
 
                 let dividend = dividend as u64;
                 let divisor = divisor as u64;
@@ -1664,8 +1339,8 @@ pub(super) fn run<H: HookSet>(
                 stack.push_value(res.into());
             }
             I64_AND => {
-                let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v2: i64 = stack.pop_value(ValType::NumType(I64)).into();
+                let v1: i64 = stack.pop_value(ValType::NumType(I64)).into();
 
                 let res = v1 & v2;
 
@@ -1673,8 +1348,8 @@ pub(super) fn run<H: HookSet>(
                 stack.push_value(res.into());
             }
             I64_OR => {
-                let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v2: i64 = stack.pop_value(ValType::NumType(I64)).into();
+                let v1: i64 = stack.pop_value(ValType::NumType(I64)).into();
 
                 let res = v1 | v2;
 
@@ -1682,8 +1357,8 @@ pub(super) fn run<H: HookSet>(
                 stack.push_value(res.into());
             }
             I64_XOR => {
-                let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v2: i64 = stack.pop_value(ValType::NumType(I64)).into();
+                let v1: i64 = stack.pop_value(ValType::NumType(I64)).into();
 
                 let res = v1 ^ v2;
 
@@ -1691,8 +1366,8 @@ pub(super) fn run<H: HookSet>(
                 stack.push_value(res.into());
             }
             I64_SHL => {
-                let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v2: i64 = stack.pop_value(ValType::NumType(I64)).into();
+                let v1: i64 = stack.pop_value(ValType::NumType(I64)).into();
 
                 let res = v1.wrapping_shl((v2 & 63) as u32);
 
@@ -1700,8 +1375,8 @@ pub(super) fn run<H: HookSet>(
                 stack.push_value(res.into());
             }
             I64_SHR_S => {
-                let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v2: i64 = stack.pop_value(ValType::NumType(I64)).into();
+                let v1: i64 = stack.pop_value(ValType::NumType(I64)).into();
 
                 let res = v1.wrapping_shr((v2 & 63) as u32);
 
@@ -1709,8 +1384,8 @@ pub(super) fn run<H: HookSet>(
                 stack.push_value(res.into());
             }
             I64_SHR_U => {
-                let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v2: i64 = stack.pop_value(ValType::NumType(I64)).into();
+                let v1: i64 = stack.pop_value(ValType::NumType(I64)).into();
 
                 let res = (v1 as u64).wrapping_shr((v2 & 63) as u32);
 
@@ -1718,8 +1393,8 @@ pub(super) fn run<H: HookSet>(
                 stack.push_value(res.into());
             }
             I64_ROTL => {
-                let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v2: i64 = stack.pop_value(ValType::NumType(I64)).into();
+                let v1: i64 = stack.pop_value(ValType::NumType(I64)).into();
 
                 let res = v1.rotate_left((v2 & 63) as u32);
 
@@ -1727,8 +1402,8 @@ pub(super) fn run<H: HookSet>(
                 stack.push_value(res.into());
             }
             I64_ROTR => {
-                let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v2: i64 = stack.pop_value(ValType::NumType(I64)).into();
+                let v1: i64 = stack.pop_value(ValType::NumType(I64)).into();
 
                 let res = v1.rotate_right((v2 & 63) as u32);
 
@@ -1736,8 +1411,8 @@ pub(super) fn run<H: HookSet>(
                 stack.push_value(res.into());
             }
             I32_REM_U => {
-                let dividend: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                let divisor: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let dividend: i32 = stack.pop_value(ValType::NumType(I32)).into();
+                let divisor: i32 = stack.pop_value(ValType::NumType(I32)).into();
 
                 let dividend = dividend as u32;
                 let divisor = divisor as u32;
@@ -1753,40 +1428,40 @@ pub(super) fn run<H: HookSet>(
                 stack.push_value(res.into());
             }
             I32_AND => {
-                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v1: i32 = stack.pop_value(ValType::NumType(I32)).into();
+                let v2: i32 = stack.pop_value(ValType::NumType(I32)).into();
                 let res = v1 & v2;
 
                 trace!("Instruction: i32.and [{v1} {v2}] -> [{res}]");
                 stack.push_value(res.into());
             }
             I32_OR => {
-                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v1: i32 = stack.pop_value(ValType::NumType(I32)).into();
+                let v2: i32 = stack.pop_value(ValType::NumType(I32)).into();
                 let res = v1 | v2;
 
                 trace!("Instruction: i32.or [{v1} {v2}] -> [{res}]");
                 stack.push_value(res.into());
             }
             I32_XOR => {
-                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v1: i32 = stack.pop_value(ValType::NumType(I32)).into();
+                let v2: i32 = stack.pop_value(ValType::NumType(I32)).into();
                 let res = v1 ^ v2;
 
                 trace!("Instruction: i32.xor [{v1} {v2}] -> [{res}]");
                 stack.push_value(res.into());
             }
             I32_SHL => {
-                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v1: i32 = stack.pop_value(ValType::NumType(I32)).into();
+                let v2: i32 = stack.pop_value(ValType::NumType(I32)).into();
                 let res = v2.wrapping_shl(v1 as u32);
 
                 trace!("Instruction: i32.shl [{v2} {v1}] -> [{res}]");
                 stack.push_value(res.into());
             }
             I32_SHR_S => {
-                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v1: i32 = stack.pop_value(ValType::NumType(I32)).into();
+                let v2: i32 = stack.pop_value(ValType::NumType(I32)).into();
 
                 let res = v2.wrapping_shr(v1 as u32);
 
@@ -1794,8 +1469,8 @@ pub(super) fn run<H: HookSet>(
                 stack.push_value(res.into());
             }
             I32_SHR_U => {
-                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v1: i32 = stack.pop_value(ValType::NumType(I32)).into();
+                let v2: i32 = stack.pop_value(ValType::NumType(I32)).into();
 
                 let res = (v2 as u32).wrapping_shr(v1 as u32) as i32;
 
@@ -1803,8 +1478,8 @@ pub(super) fn run<H: HookSet>(
                 stack.push_value(res.into());
             }
             I32_ROTL => {
-                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v1: i32 = stack.pop_value(ValType::NumType(I32)).into();
+                let v2: i32 = stack.pop_value(ValType::NumType(I32)).into();
 
                 let res = v2.rotate_left(v1 as u32);
 
@@ -1812,8 +1487,8 @@ pub(super) fn run<H: HookSet>(
                 stack.push_value(res.into());
             }
             I32_ROTR => {
-                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v1: i32 = stack.pop_value(ValType::NumType(I32)).into();
+                let v2: i32 = stack.pop_value(ValType::NumType(I32)).into();
 
                 let res = v2.rotate_right(v1 as u32);
 
@@ -1822,105 +1497,105 @@ pub(super) fn run<H: HookSet>(
             }
 
             F32_ABS => {
-                let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let v1: value::F32 = stack.pop_value(ValType::NumType(F32)).into();
                 let res: value::F32 = v1.abs();
 
                 trace!("Instruction: f32.abs [{v1}] -> [{res}]");
                 stack.push_value(res.into());
             }
             F32_NEG => {
-                let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let v1: value::F32 = stack.pop_value(ValType::NumType(F32)).into();
                 let res: value::F32 = v1.neg();
 
                 trace!("Instruction: f32.neg [{v1}] -> [{res}]");
                 stack.push_value(res.into());
             }
             F32_CEIL => {
-                let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let v1: value::F32 = stack.pop_value(ValType::NumType(F32)).into();
                 let res: value::F32 = v1.ceil();
 
                 trace!("Instruction: f32.ceil [{v1}] -> [{res}]");
                 stack.push_value(res.into());
             }
             F32_FLOOR => {
-                let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let v1: value::F32 = stack.pop_value(ValType::NumType(F32)).into();
                 let res: value::F32 = v1.floor();
 
                 trace!("Instruction: f32.floor [{v1}] -> [{res}]");
                 stack.push_value(res.into());
             }
             F32_TRUNC => {
-                let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let v1: value::F32 = stack.pop_value(ValType::NumType(F32)).into();
                 let res: value::F32 = v1.trunc();
 
                 trace!("Instruction: f32.trunc [{v1}] -> [{res}]");
                 stack.push_value(res.into());
             }
             F32_NEAREST => {
-                let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
-                let res: value::F32 = v1.round();
+                let v1: value::F32 = stack.pop_value(ValType::NumType(F32)).into();
+                let res: value::F32 = v1.nearest();
 
                 trace!("Instruction: f32.nearest [{v1}] -> [{res}]");
                 stack.push_value(res.into());
             }
             F32_SQRT => {
-                let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let v1: value::F32 = stack.pop_value(ValType::NumType(F32)).into();
                 let res: value::F32 = v1.sqrt();
 
                 trace!("Instruction: f32.sqrt [{v1}] -> [{res}]");
                 stack.push_value(res.into());
             }
             F32_ADD => {
-                let v2: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
-                let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let v2: value::F32 = stack.pop_value(ValType::NumType(F32)).into();
+                let v1: value::F32 = stack.pop_value(ValType::NumType(F32)).into();
                 let res: value::F32 = v1 + v2;
 
                 trace!("Instruction: f32.add [{v1} {v2}] -> [{res}]");
                 stack.push_value(res.into());
             }
             F32_SUB => {
-                let v2: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
-                let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let v2: value::F32 = stack.pop_value(ValType::NumType(F32)).into();
+                let v1: value::F32 = stack.pop_value(ValType::NumType(F32)).into();
                 let res: value::F32 = v1 - v2;
 
                 trace!("Instruction: f32.sub [{v1} {v2}] -> [{res}]");
                 stack.push_value(res.into());
             }
             F32_MUL => {
-                let v2: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
-                let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let v2: value::F32 = stack.pop_value(ValType::NumType(F32)).into();
+                let v1: value::F32 = stack.pop_value(ValType::NumType(F32)).into();
                 let res: value::F32 = v1 * v2;
 
                 trace!("Instruction: f32.mul [{v1} {v2}] -> [{res}]");
                 stack.push_value(res.into());
             }
             F32_DIV => {
-                let v2: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
-                let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let v2: value::F32 = stack.pop_value(ValType::NumType(F32)).into();
+                let v1: value::F32 = stack.pop_value(ValType::NumType(F32)).into();
                 let res: value::F32 = v1 / v2;
 
                 trace!("Instruction: f32.div [{v1} {v2}] -> [{res}]");
                 stack.push_value(res.into());
             }
             F32_MIN => {
-                let v2: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
-                let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let v2: value::F32 = stack.pop_value(ValType::NumType(F32)).into();
+                let v1: value::F32 = stack.pop_value(ValType::NumType(F32)).into();
                 let res: value::F32 = v1.min(v2);
 
                 trace!("Instruction: f32.min [{v1} {v2}] -> [{res}]");
                 stack.push_value(res.into());
             }
             F32_MAX => {
-                let v2: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
-                let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let v2: value::F32 = stack.pop_value(ValType::NumType(F32)).into();
+                let v1: value::F32 = stack.pop_value(ValType::NumType(F32)).into();
                 let res: value::F32 = v1.max(v2);
 
                 trace!("Instruction: f32.max [{v1} {v2}] -> [{res}]");
                 stack.push_value(res.into());
             }
             F32_COPYSIGN => {
-                let v2: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
-                let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let v2: value::F32 = stack.pop_value(ValType::NumType(F32)).into();
+                let v1: value::F32 = stack.pop_value(ValType::NumType(F32)).into();
                 let res: value::F32 = v1.copysign(v2);
 
                 trace!("Instruction: f32.copysign [{v1} {v2}] -> [{res}]");
@@ -1928,119 +1603,119 @@ pub(super) fn run<H: HookSet>(
             }
 
             F64_ABS => {
-                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v1: value::F64 = stack.pop_value(ValType::NumType(F64)).into();
                 let res: value::F64 = v1.abs();
 
                 trace!("Instruction: f64.abs [{v1}] -> [{res}]");
                 stack.push_value(res.into());
             }
             F64_NEG => {
-                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v1: value::F64 = stack.pop_value(ValType::NumType(F64)).into();
                 let res: value::F64 = v1.neg();
 
                 trace!("Instruction: f64.neg [{v1}] -> [{res}]");
                 stack.push_value(res.into());
             }
             F64_CEIL => {
-                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v1: value::F64 = stack.pop_value(ValType::NumType(F64)).into();
                 let res: value::F64 = v1.ceil();
 
                 trace!("Instruction: f64.ceil [{v1}] -> [{res}]");
                 stack.push_value(res.into());
             }
             F64_FLOOR => {
-                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v1: value::F64 = stack.pop_value(ValType::NumType(F64)).into();
                 let res: value::F64 = v1.floor();
 
                 trace!("Instruction: f64.floor [{v1}] -> [{res}]");
                 stack.push_value(res.into());
             }
             F64_TRUNC => {
-                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v1: value::F64 = stack.pop_value(ValType::NumType(F64)).into();
                 let res: value::F64 = v1.trunc();
 
                 trace!("Instruction: f64.trunc [{v1}] -> [{res}]");
                 stack.push_value(res.into());
             }
             F64_NEAREST => {
-                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
-                let res: value::F64 = v1.round();
+                let v1: value::F64 = stack.pop_value(ValType::NumType(F64)).into();
+                let res: value::F64 = v1.nearest();
 
                 trace!("Instruction: f64.nearest [{v1}] -> [{res}]");
                 stack.push_value(res.into());
             }
             F64_SQRT => {
-                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v1: value::F64 = stack.pop_value(ValType::NumType(F64)).into();
                 let res: value::F64 = v1.sqrt();
 
                 trace!("Instruction: f64.sqrt [{v1}] -> [{res}]");
                 stack.push_value(res.into());
             }
             F64_ADD => {
-                let v2: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
-                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v2: value::F64 = stack.pop_value(ValType::NumType(F64)).into();
+                let v1: value::F64 = stack.pop_value(ValType::NumType(F64)).into();
                 let res: value::F64 = v1 + v2;
 
                 trace!("Instruction: f64.add [{v1} {v2}] -> [{res}]");
                 stack.push_value(res.into());
             }
             F64_SUB => {
-                let v2: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
-                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v2: value::F64 = stack.pop_value(ValType::NumType(F64)).into();
+                let v1: value::F64 = stack.pop_value(ValType::NumType(F64)).into();
                 let res: value::F64 = v1 - v2;
 
                 trace!("Instruction: f64.sub [{v1} {v2}] -> [{res}]");
                 stack.push_value(res.into());
             }
             F64_MUL => {
-                let v2: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
-                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v2: value::F64 = stack.pop_value(ValType::NumType(F64)).into();
+                let v1: value::F64 = stack.pop_value(ValType::NumType(F64)).into();
                 let res: value::F64 = v1 * v2;
 
                 trace!("Instruction: f64.mul [{v1} {v2}] -> [{res}]");
                 stack.push_value(res.into());
             }
             F64_DIV => {
-                let v2: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
-                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v2: value::F64 = stack.pop_value(ValType::NumType(F64)).into();
+                let v1: value::F64 = stack.pop_value(ValType::NumType(F64)).into();
                 let res: value::F64 = v1 / v2;
 
                 trace!("Instruction: f64.div [{v1} {v2}] -> [{res}]");
                 stack.push_value(res.into());
             }
             F64_MIN => {
-                let v2: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
-                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v2: value::F64 = stack.pop_value(ValType::NumType(F64)).into();
+                let v1: value::F64 = stack.pop_value(ValType::NumType(F64)).into();
                 let res: value::F64 = v1.min(v2);
 
                 trace!("Instruction: f64.min [{v1} {v2}] -> [{res}]");
                 stack.push_value(res.into());
             }
             F64_MAX => {
-                let v2: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
-                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v2: value::F64 = stack.pop_value(ValType::NumType(F64)).into();
+                let v1: value::F64 = stack.pop_value(ValType::NumType(F64)).into();
                 let res: value::F64 = v1.max(v2);
 
                 trace!("Instruction: f64.max [{v1} {v2}] -> [{res}]");
                 stack.push_value(res.into());
             }
             F64_COPYSIGN => {
-                let v2: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
-                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v2: value::F64 = stack.pop_value(ValType::NumType(F64)).into();
+                let v1: value::F64 = stack.pop_value(ValType::NumType(F64)).into();
                 let res: value::F64 = v1.copysign(v2);
 
                 trace!("Instruction: f64.copysign [{v1} {v2}] -> [{res}]");
                 stack.push_value(res.into());
             }
             I32_WRAP_I64 => {
-                let v: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v: i64 = stack.pop_value(ValType::NumType(I64)).into();
                 let res: i32 = v as i32;
 
                 trace!("Instruction: i32.wrap_i64 [{v}] -> [{res}]");
                 stack.push_value(res.into());
             }
             I32_TRUNC_F32_S => {
-                let v: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let v: value::F32 = stack.pop_value(ValType::NumType(F32)).into();
                 if v.is_infinity() {
                     return Err(RuntimeError::UnrepresentableResult);
                 }
@@ -2057,7 +1732,7 @@ pub(super) fn run<H: HookSet>(
                 stack.push_value(res.into());
             }
             I32_TRUNC_F32_U => {
-                let v: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let v: value::F32 = stack.pop_value(ValType::NumType(F32)).into();
                 if v.is_infinity() {
                     return Err(RuntimeError::UnrepresentableResult);
                 }
@@ -2075,7 +1750,7 @@ pub(super) fn run<H: HookSet>(
             }
 
             I32_TRUNC_F64_S => {
-                let v: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v: value::F64 = stack.pop_value(ValType::NumType(F64)).into();
                 if v.is_infinity() {
                     return Err(RuntimeError::UnrepresentableResult);
                 }
@@ -2092,7 +1767,7 @@ pub(super) fn run<H: HookSet>(
                 stack.push_value(res.into());
             }
             I32_TRUNC_F64_U => {
-                let v: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v: value::F64 = stack.pop_value(ValType::NumType(F64)).into();
                 if v.is_infinity() {
                     return Err(RuntimeError::UnrepresentableResult);
                 }
@@ -2110,7 +1785,7 @@ pub(super) fn run<H: HookSet>(
             }
 
             I64_EXTEND_I32_S => {
-                let v: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v: i32 = stack.pop_value(ValType::NumType(I32)).into();
 
                 let res: i64 = v as i64;
 
@@ -2119,7 +1794,7 @@ pub(super) fn run<H: HookSet>(
             }
 
             I64_EXTEND_I32_U => {
-                let v: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v: i32 = stack.pop_value(ValType::NumType(I32)).into();
 
                 let res: i64 = v as u32 as i64;
 
@@ -2128,7 +1803,7 @@ pub(super) fn run<H: HookSet>(
             }
 
             I64_TRUNC_F32_S => {
-                let v: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let v: value::F32 = stack.pop_value(ValType::NumType(F32)).into();
                 if v.is_infinity() {
                     return Err(RuntimeError::UnrepresentableResult);
                 }
@@ -2146,7 +1821,7 @@ pub(super) fn run<H: HookSet>(
                 stack.push_value(res.into());
             }
             I64_TRUNC_F32_U => {
-                let v: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let v: value::F32 = stack.pop_value(ValType::NumType(F32)).into();
                 if v.is_infinity() {
                     return Err(RuntimeError::UnrepresentableResult);
                 }
@@ -2164,7 +1839,7 @@ pub(super) fn run<H: HookSet>(
             }
 
             I64_TRUNC_F64_S => {
-                let v: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v: value::F64 = stack.pop_value(ValType::NumType(F64)).into();
                 if v.is_infinity() {
                     return Err(RuntimeError::UnrepresentableResult);
                 }
@@ -2182,7 +1857,7 @@ pub(super) fn run<H: HookSet>(
                 stack.push_value(res.into());
             }
             I64_TRUNC_F64_U => {
-                let v: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v: value::F64 = stack.pop_value(ValType::NumType(F64)).into();
                 if v.is_infinity() {
                     return Err(RuntimeError::UnrepresentableResult);
                 }
@@ -2199,98 +1874,98 @@ pub(super) fn run<H: HookSet>(
                 stack.push_value(res.into());
             }
             F32_CONVERT_I32_S => {
-                let v: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v: i32 = stack.pop_value(ValType::NumType(I32)).into();
                 let res: value::F32 = value::F32(v as f32);
 
                 trace!("Instruction: f32.convert_i32_s [{v}] -> [{res}]");
                 stack.push_value(res.into());
             }
             F32_CONVERT_I32_U => {
-                let v: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v: i32 = stack.pop_value(ValType::NumType(I32)).into();
                 let res: value::F32 = value::F32(v as u32 as f32);
 
                 trace!("Instruction: f32.convert_i32_u [{v}] -> [{res}]");
                 stack.push_value(res.into());
             }
             F32_CONVERT_I64_S => {
-                let v: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v: i64 = stack.pop_value(ValType::NumType(I64)).into();
                 let res: value::F32 = value::F32(v as f32);
 
                 trace!("Instruction: f32.convert_i64_s [{v}] -> [{res}]");
                 stack.push_value(res.into());
             }
             F32_CONVERT_I64_U => {
-                let v: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v: i64 = stack.pop_value(ValType::NumType(I64)).into();
                 let res: value::F32 = value::F32(v as u64 as f32);
 
                 trace!("Instruction: f32.convert_i64_u [{v}] -> [{res}]");
                 stack.push_value(res.into());
             }
             F32_DEMOTE_F64 => {
-                let v: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v: value::F64 = stack.pop_value(ValType::NumType(F64)).into();
                 let res: value::F32 = v.as_f32();
 
                 trace!("Instruction: f32.demote_f64 [{v:.17}] -> [{res:.7}]");
                 stack.push_value(res.into());
             }
             F64_CONVERT_I32_S => {
-                let v: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v: i32 = stack.pop_value(ValType::NumType(I32)).into();
                 let res: value::F64 = value::F64(v as f64);
 
                 trace!("Instruction: f64.convert_i32_s [{v}] -> [{res:.17}]");
                 stack.push_value(res.into());
             }
             F64_CONVERT_I32_U => {
-                let v: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v: i32 = stack.pop_value(ValType::NumType(I32)).into();
                 let res: value::F64 = value::F64(v as u32 as f64);
 
                 trace!("Instruction: f64.convert_i32_u [{v}] -> [{res:.17}]");
                 stack.push_value(res.into());
             }
             F64_CONVERT_I64_S => {
-                let v: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v: i64 = stack.pop_value(ValType::NumType(I64)).into();
                 let res: value::F64 = value::F64(v as f64);
 
                 trace!("Instruction: f64.convert_i64_s [{v}] -> [{res:.17}]");
                 stack.push_value(res.into());
             }
             F64_CONVERT_I64_U => {
-                let v: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v: i64 = stack.pop_value(ValType::NumType(I64)).into();
                 let res: value::F64 = value::F64(v as u64 as f64);
 
                 trace!("Instruction: f64.convert_i64_u [{v}] -> [{res:.17}]");
                 stack.push_value(res.into());
             }
             F64_PROMOTE_F32 => {
-                let v: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let v: value::F32 = stack.pop_value(ValType::NumType(F32)).into();
                 let res: value::F64 = v.as_f32();
 
                 trace!("Instruction: f64.promote_f32 [{v:.7}] -> [{res:.17}]");
                 stack.push_value(res.into());
             }
             I32_REINTERPRET_F32 => {
-                let v: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let v: value::F32 = stack.pop_value(ValType::NumType(F32)).into();
                 let res: i32 = v.reinterpret_as_i32();
 
                 trace!("Instruction: i32.reinterpret_f32 [{v:.7}] -> [{res}]");
                 stack.push_value(res.into());
             }
             I64_REINTERPRET_F64 => {
-                let v: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v: value::F64 = stack.pop_value(ValType::NumType(F64)).into();
                 let res: i64 = v.reinterpret_as_i64();
 
                 trace!("Instruction: i64.reinterpret_f64 [{v:.17}] -> [{res}]");
                 stack.push_value(res.into());
             }
             F32_REINTERPRET_I32 => {
-                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v1: i32 = stack.pop_value(ValType::NumType(I32)).into();
                 let res: value::F32 = value::F32::from_bits(v1 as u32);
 
                 trace!("Instruction: f32.reinterpret_i32 [{v1}] -> [{res:.7}]");
                 stack.push_value(res.into());
             }
             F64_REINTERPRET_I64 => {
-                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v1: i64 = stack.pop_value(ValType::NumType(I64)).into();
                 let res: value::F64 = value::F64::from_bits(v1 as u64);
 
                 trace!("Instruction: f64.reinterpret_i64 [{v1}] -> [{res:.17}]");
@@ -2325,7 +2000,7 @@ pub(super) fn run<H: HookSet>(
                 use crate::core::reader::types::opcode::fc_extensions::*;
                 match second_instr_byte {
                     I32_TRUNC_SAT_F32_S => {
-                        let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                        let v1: value::F32 = stack.pop_value(ValType::NumType(F32)).into();
                         let res = {
                             if v1.is_nan() {
                                 0
@@ -2342,7 +2017,7 @@ pub(super) fn run<H: HookSet>(
                         stack.push_value(res.into());
                     }
                     I32_TRUNC_SAT_F32_U => {
-                        let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                        let v1: value::F32 = stack.pop_value(ValType::NumType(F32)).into();
                         let res = {
                             if v1.is_nan() || v1.is_negative_infinity() {
                                 0
@@ -2357,7 +2032,7 @@ pub(super) fn run<H: HookSet>(
                         stack.push_value(res.into());
                     }
                     I32_TRUNC_SAT_F64_S => {
-                        let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                        let v1: value::F64 = stack.pop_value(ValType::NumType(F64)).into();
                         let res = {
                             if v1.is_nan() {
                                 0
@@ -2374,7 +2049,7 @@ pub(super) fn run<H: HookSet>(
                         stack.push_value(res.into());
                     }
                     I32_TRUNC_SAT_F64_U => {
-                        let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                        let v1: value::F64 = stack.pop_value(ValType::NumType(F64)).into();
                         let res = {
                             if v1.is_nan() || v1.is_negative_infinity() {
                                 0
@@ -2389,7 +2064,7 @@ pub(super) fn run<H: HookSet>(
                         stack.push_value(res.into());
                     }
                     I64_TRUNC_SAT_F32_S => {
-                        let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                        let v1: value::F32 = stack.pop_value(ValType::NumType(F32)).into();
                         let res = {
                             if v1.is_nan() {
                                 0
@@ -2406,7 +2081,7 @@ pub(super) fn run<H: HookSet>(
                         stack.push_value(res.into());
                     }
                     I64_TRUNC_SAT_F32_U => {
-                        let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                        let v1: value::F32 = stack.pop_value(ValType::NumType(F32)).into();
                         let res = {
                             if v1.is_nan() || v1.is_negative_infinity() {
                                 0
@@ -2421,7 +2096,7 @@ pub(super) fn run<H: HookSet>(
                         stack.push_value(res.into());
                     }
                     I64_TRUNC_SAT_F64_S => {
-                        let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                        let v1: value::F64 = stack.pop_value(ValType::NumType(F64)).into();
                         let res = {
                             if v1.is_nan() {
                                 0
@@ -2438,7 +2113,7 @@ pub(super) fn run<H: HookSet>(
                         stack.push_value(res.into());
                     }
                     I64_TRUNC_SAT_F64_U => {
-                        let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                        let v1: value::F64 = stack.pop_value(ValType::NumType(F64)).into();
                         let res = {
                             if v1.is_nan() || v1.is_negative_infinity() {
                                 0
@@ -2473,9 +2148,9 @@ pub(super) fn run<H: HookSet>(
                             .mems
                             .get(mem_idx)
                             .unwrap_validated();
-                        let n: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                        let s: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                        let d: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                        let n: i32 = stack.pop_value(ValType::NumType(I32)).into();
+                        let s: i32 = stack.pop_value(ValType::NumType(I32)).into();
+                        let d: i32 = stack.pop_value(ValType::NumType(I32)).into();
 
                         let final_src_offset = (n as usize)
                             .checked_add(s as usize)
@@ -2527,9 +2202,9 @@ pub(super) fn run<H: HookSet>(
                             wasm.read_u8().unwrap_validated() as usize,
                             wasm.read_u8().unwrap_validated() as usize,
                         );
-                        let n: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                        let s: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                        let d: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                        let n: i32 = stack.pop_value(ValType::NumType(I32)).into();
+                        let s: i32 = stack.pop_value(ValType::NumType(I32)).into();
+                        let d: i32 = stack.pop_value(ValType::NumType(I32)).into();
 
                         let len_src = modules[*current_module_idx]
                             .store
@@ -2599,21 +2274,20 @@ pub(super) fn run<H: HookSet>(
                             .mems
                             .get(mem_idx)
                             .unwrap_validated();
-                        let n: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                        let val: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                        let n: i32 = stack.pop_value(ValType::NumType(I32)).into();
+                        let val: i32 = stack.pop_value(ValType::NumType(I32)).into();
 
                         if !(0..=255).contains(&val) {
                             warn!("Value for memory.fill does not fit in a byte ({val})");
                         }
 
-                        let d: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                        let d: i32 = stack.pop_value(ValType::NumType(I32)).into();
 
                         let final_dst_offset = (n as usize)
                             .checked_add(d as usize)
                             .filter(|&res| res <= mem.data.len())
                             .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
 
-                        let data: Vec<u8> = vec![val as u8; (n - d) as usize];
                         modules[*current_module_idx]
                             .store
                             .mems
@@ -2622,7 +2296,7 @@ pub(super) fn run<H: HookSet>(
                             .data
                             .get_mut(d as usize..final_dst_offset)
                             .unwrap_validated()
-                            .copy_from_slice(&data);
+                            .fill(val as u8);
 
                         trace!("Instruction: memory.fill");
                     }
@@ -2634,21 +2308,18 @@ pub(super) fn run<H: HookSet>(
                         let elem_idx = wasm.read_var_u32().unwrap_validated() as usize;
                         let table_idx = wasm.read_var_u32().unwrap_validated() as usize;
 
-                        let n: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into(); // size
-                        let s: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into(); // offset
-                        let d: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into(); // dst
+                        let n: i32 = stack.pop_value(ValType::NumType(I32)).into(); // size
+                        let s: i32 = stack.pop_value(ValType::NumType(I32)).into(); // offset
+                        let d: i32 = stack.pop_value(ValType::NumType(I32)).into(); // dst
 
-                        let tab_len = modules[*current_module_idx]
-                            .store
-                            .tables
-                            .get(table_idx)
-                            .unwrap_validated()
-                            .len();
                         let tab = modules[*current_module_idx]
                             .store
                             .tables
                             .get_mut(table_idx)
                             .unwrap_validated();
+                        let tab = global_store.get_mut_table(*tab);
+
+                        let tab_len = tab.len();
 
                         let elem_len = if modules[*current_module_idx]
                             .store
@@ -2710,16 +2381,18 @@ pub(super) fn run<H: HookSet>(
                         let table_x_idx = wasm.read_var_u32().unwrap_validated() as usize;
                         let table_y_idx = wasm.read_var_u32().unwrap_validated() as usize;
 
-                        let tab_x_elem_len = modules[*current_module_idx].store.tables[table_x_idx]
+                        let tab_x_elem_len = global_store
+                            .get_table(modules[*current_module_idx].store.tables[table_x_idx])
                             .elem
                             .len();
-                        let tab_y_elem_len = modules[*current_module_idx].store.tables[table_y_idx]
+                        let tab_y_elem_len = global_store
+                            .get_table(modules[*current_module_idx].store.tables[table_y_idx])
                             .elem
                             .len();
 
-                        let n: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into(); // size
-                        let s: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into(); // source
-                        let d: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into(); // destination
+                        let n: u32 = stack.pop_value(ValType::NumType(I32)).into(); // size
+                        let s: u32 = stack.pop_value(ValType::NumType(I32)).into(); // source
+                        let d: u32 = stack.pop_value(ValType::NumType(I32)).into(); // destination
 
                         let src_res = match s.checked_add(n) {
                             Some(res) => {
@@ -2747,24 +2420,15 @@ pub(super) fn run<H: HookSet>(
                         let src = table_y_idx;
 
                         if table_x_idx == table_y_idx {
-                            modules[*current_module_idx].store.tables[table_x_idx]
+                            global_store
+                                .get_mut_table(
+                                    modules[*current_module_idx].store.tables[table_x_idx],
+                                )
                                 .elem
                                 .copy_within(s as usize..src_res, d as usize); // }
                         } else {
-                            use core::cmp::Ordering::*;
-                            let (src_table, dst_table) = match dst.cmp(&src) {
-                                Greater => {
-                                    let (left, right) =
-                                        modules[*current_module_idx].store.tables.split_at_mut(dst);
-                                    (&left[src], &mut right[0])
-                                }
-                                Less => {
-                                    let (left, right) =
-                                        modules[*current_module_idx].store.tables.split_at_mut(src);
-                                    (&right[0], &mut left[dst])
-                                }
-                                Equal => unreachable!(),
-                            };
+                            let (src_table, dst_table) =
+                                global_store.get_immut_and_mut_table_pair(src, dst);
                             dst_table.elem[d as usize..dst_res]
                                 .copy_from_slice(&src_table.elem[s as usize..src_res]);
                         }
@@ -2786,10 +2450,10 @@ pub(super) fn run<H: HookSet>(
                             .tables
                             .get_mut(table_idx)
                             .unwrap_validated();
-
+                        let tab = global_store.get_mut_table(*tab);
                         let sz = tab.elem.len() as u32;
 
-                        let n: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                        let n: u32 = stack.pop_value(ValType::NumType(I32)).into();
                         let val = stack.pop_unknown_ref();
 
                         let max = tab.ty.lim.max.unwrap();
@@ -2817,7 +2481,7 @@ pub(super) fn run<H: HookSet>(
                             .tables
                             .get(table_idx)
                             .unwrap_validated();
-
+                        let tab = global_store.get_table(*tab);
                         let sz = tab.elem.len() as u32;
 
                         stack.push_value(Value::I32(sz));
@@ -2832,11 +2496,12 @@ pub(super) fn run<H: HookSet>(
                             .tables
                             .get_mut(table_idx)
                             .unwrap_validated();
+                        let tab = global_store.get_mut_table(*tab);
                         let ty = tab.ty.et;
 
-                        let n: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into(); // len
+                        let n: u32 = stack.pop_value(ValType::NumType(I32)).into(); // len
                         let val: Ref = stack.pop_value(ValType::RefType(ty)).into();
-                        let i: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into(); // dst
+                        let i: u32 = stack.pop_value(ValType::NumType(I32)).into(); // dst
 
                         let end = (i as usize)
                             .checked_add(n as usize)

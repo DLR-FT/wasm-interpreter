@@ -1,4 +1,4 @@
-use wasm::{global_store::GlobalStore, DEFAULT_MODULE};
+use wasm::DEFAULT_MODULE;
 
 /// The WASM program has one mutable global initialized with a constant 3.
 /// It exports two methods:
@@ -7,8 +7,6 @@ use wasm::{global_store::GlobalStore, DEFAULT_MODULE};
 #[test_log::test]
 fn valid_global() {
     use wasm::{validate, RuntimeInstance};
-
-    let mut global_store = &mut GlobalStore::new();
 
     let wat = r#"
     (module
@@ -32,8 +30,7 @@ fn valid_global() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance =
-        RuntimeInstance::new(&validation_info, global_store).expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
     // Set global to 17. 5 is returned as previous (default) value.
     assert_eq!(
@@ -43,8 +40,7 @@ fn valid_global() {
                 &instance
                     .get_function_by_name(DEFAULT_MODULE, "set")
                     .unwrap(),
-                17,
-                global_store
+                17
             )
             .unwrap()
     );
@@ -57,8 +53,7 @@ fn valid_global() {
                 &instance
                     .get_function_by_name(DEFAULT_MODULE, "get")
                     .unwrap(),
-                (),
-                global_store
+                ()
             )
             .unwrap()
     );
@@ -94,8 +89,6 @@ fn global_invalid_value_stack() {
 fn imported_globals() {
     use wasm::{validate, RuntimeInstance};
 
-    let global_store = &mut GlobalStore::new();
-
     let wat = r#"
     (module
         (import "env" "global" (global $my_global (mut i32)))
@@ -114,8 +107,7 @@ fn imported_globals() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance =
-        RuntimeInstance::new(&validation_info, global_store).expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
     // Set global to 17. 3 is returned as previous (default) value.
     assert_eq!(
@@ -125,8 +117,7 @@ fn imported_globals() {
                 &instance
                     .get_function_by_name(DEFAULT_MODULE, "set")
                     .unwrap(),
-                17,
-                global_store
+                17
             )
             .unwrap()
     );
@@ -139,8 +130,7 @@ fn imported_globals() {
                 &instance
                     .get_function_by_name(DEFAULT_MODULE, "get")
                     .unwrap(),
-                (),
-                global_store
+                ()
             )
             .unwrap()
     );

@@ -6,14 +6,29 @@ use crate::core::reader::{WasmReadable, WasmReader};
 use crate::execution::assert_validated::UnwrapValidatedExt;
 use crate::{unreachable_validated, Error, Result};
 
-use super::TableType;
+use super::global::GlobalType;
+use super::{MemType, TableType};
 
-#[derive(Debug)]
-pub struct Import {
+#[derive(Debug, Default, Clone)]
+pub struct ImportRefData {
     #[allow(warnings)]
     pub module_name: String,
     #[allow(warnings)]
     pub name: String,
+}
+
+impl PartialEq for ImportRefData {
+    fn eq(&self, other: &Self) -> bool {
+        self.module_name == other.module_name && self.name == other.name
+    }
+    fn ne(&self, other: &Self) -> bool {
+        !self.eq(other)
+    }
+}
+
+#[derive(Debug)]
+pub struct Import {
+    pub import_ref_data: ImportRefData,
     #[allow(warnings)]
     pub desc: ImportDesc,
 }
@@ -25,8 +40,7 @@ impl WasmReadable for Import {
         let desc = ImportDesc::read(wasm)?;
 
         Ok(Self {
-            module_name,
-            name,
+            import_ref_data: ImportRefData { module_name, name },
             desc,
         })
     }
@@ -37,8 +51,7 @@ impl WasmReadable for Import {
         let desc = ImportDesc::read_unvalidated(wasm);
 
         Self {
-            module_name,
-            name,
+            import_ref_data: ImportRefData { module_name, name },
             desc,
         }
     }
@@ -52,10 +65,9 @@ pub enum ImportDesc {
     Table(TableType),
     // TODO TableType
     #[allow(dead_code)]
-    Mem(()),
+    Mem(MemType),
     // TODO MemType
-    #[allow(dead_code)]
-    Global(()), // TODO GlobalType
+    Global(GlobalType), // TODO GlobalType
 }
 
 impl WasmReadable for ImportDesc {
@@ -64,8 +76,8 @@ impl WasmReadable for ImportDesc {
             0x00 => Self::Func(wasm.read_var_u32()? as TypeIdx),
             // https://webassembly.github.io/spec/core/binary/types.html#table-types
             0x01 => Self::Table(TableType::read(wasm)?),
-            0x02 => todo!("read MemType"),
-            0x03 => todo!("read GlobalType"),
+            0x02 => Self::Mem(MemType::read(wasm)?),
+            0x03 => Self::Global(GlobalType::read(wasm)?),
             other => return Err(Error::InvalidImportDesc(other)),
         };
 

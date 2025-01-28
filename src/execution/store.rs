@@ -6,11 +6,14 @@ use core::iter;
 use crate::core::indices::TypeIdx;
 use crate::core::reader::span::Span;
 use crate::core::reader::types::export::Export;
-use crate::core::reader::types::global::Global;
+// use crate::core::reader::types::global::Global;
 use crate::core::reader::types::{MemType, TableType, ValType};
 use crate::core::sidetable::Sidetable;
-use crate::execution::value::{Ref, Value};
+// use crate::execution::value::{Ref, Value};
+use crate::execution::value::Ref;
 use crate::RefType;
+
+use super::global_store::TableInst;
 
 /// The store represents all global state that can be manipulated by WebAssembly programs. It
 /// consists of the runtime representation of all instances of functions, tables, memories, and
@@ -20,9 +23,9 @@ use crate::RefType;
 pub struct Store {
     pub funcs: Vec<FuncInst>,
     pub mems: Vec<MemInst>,
-    pub globals: Vec<GlobalInst>,
+    pub globals: Vec<usize>,
     pub data: Vec<DataInst>,
-    pub tables: Vec<TableInst>,
+    pub tables: Vec<usize>,
     pub elements: Vec<ElemInst>,
     pub passive_elem_indexes: Vec<usize>,
     pub exports: Vec<Export>,
@@ -88,29 +91,6 @@ impl ElemInst {
     }
 }
 
-#[derive(Debug)]
-pub struct TableInst {
-    pub ty: TableType,
-    pub elem: Vec<Ref>,
-}
-
-impl TableInst {
-    pub fn len(&self) -> usize {
-        self.elem.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.elem.is_empty()
-    }
-
-    pub fn new(ty: TableType) -> Self {
-        Self {
-            ty,
-            elem: vec![Ref::default_from_ref_type(ty.et); ty.lim.min as usize],
-        }
-    }
-}
-
 pub struct MemInst {
     #[allow(warnings)]
     pub ty: MemType,
@@ -138,11 +118,11 @@ impl MemInst {
     }
 }
 
-pub struct GlobalInst {
-    pub global: Global,
-    /// Must be of the same type as specified in `ty`
-    pub value: Value,
-}
+// pub struct GlobalInst {
+//     pub global: Global,
+//     /// Must be of the same type as specified in `ty`
+//     pub value: Value,
+// }
 
 pub struct DataInst {
     pub data: Vec<u8>,
