@@ -4,7 +4,7 @@ use alloc::vec;
 use alloc::vec::Vec;
 
 use const_interpreter_loop::{run_const, run_const_span};
-use execution_info::ExecutionInfo;
+use execution_info::{ExecutionInfo, StateData};
 use function_ref::FunctionRef;
 use interpreter_loop::run;
 use locals::Locals;
@@ -20,6 +20,7 @@ use crate::core::reader::types::element::{ElemItems, ElemMode};
 use crate::core::reader::types::export::ExportDesc;
 use crate::core::reader::types::import::ImportDesc;
 use crate::core::reader::WasmReader;
+use crate::core::sidetable::Sidetable;
 use crate::execution::assert_validated::UnwrapValidatedExt;
 use crate::execution::hooks::{EmptyHookSet, HookSet};
 use crate::execution::store::{FuncInst, GlobalInst, MemInst, Store};
@@ -48,7 +49,8 @@ pub struct RuntimeInstance<'b, H = EmptyHookSet>
 where
     H: HookSet,
 {
-    pub modules: Vec<ExecutionInfo<'b>>,
+    pub modules: Vec<ExecutionInfo>,
+    pub state_data: Vec<StateData<'b>>,
     module_map: BTreeMap<String, usize>,
     lut: Option<Lut>,
     pub hook_set: H,
@@ -80,6 +82,7 @@ where
 
         let mut instance = RuntimeInstance {
             modules: Vec::new(),
+            state_data: Vec::new(),
             module_map: BTreeMap::new(),
             lut: None,
             hook_set,
@@ -155,16 +158,37 @@ where
         validation_info: &'_ ValidationInfo<'b>,
     ) -> CustomResult<()> {
         let store = Self::init_store(validation_info)?;
-        let exec_info = ExecutionInfo::new(
-            module_name,
-            validation_info.wasm,
-            validation_info.types.clone(),
-            store,
-        );
+        let exec_info = ExecutionInfo::new(module_name, validation_info.types.clone(), store);
 
         self.module_map
             .insert(module_name.to_string(), self.modules.len());
         self.modules.push(exec_info);
+
+        let local_sidetables = validation_info
+            .func_blocks
+            .iter()
+            .map(|block| block.1.clone());
+
+        // In order to be able to index the `sidetables` vec from the
+        // `StateData` using the function index, we need to insert some blank
+        // sidetables for the imported functions. An alternative solution
+        // would've been to offset the indexing, this was just faster to
+        // implement.
+        let dummy_sidetables =
+            validation_info
+                .imports
+                .iter()
+                .filter_map(|import| match &import.desc {
+                    ImportDesc::Func(_type_idx) => Some(Sidetable::new()),
+                    _ => None,
+                });
+
+        let sidetables = dummy_sidetables
+            .chain(local_sidetables)
+            .collect::<Vec<Sidetable>>();
+
+        self.state_data
+            .push(StateData::new(validation_info.wasm, sidetables));
 
         self.lut = Lut::new(&self.modules, &self.module_map);
 
@@ -224,6 +248,7 @@ where
         // Run the interpreter
         run(
             &mut self.modules,
+            &mut self.state_data,
             &mut current_module_idx,
             self.lut.as_ref().ok_or(RuntimeError::UnmetImport)?,
             &mut stack,
@@ -287,6 +312,7 @@ where
         // Run the interpreter
         run(
             &mut self.modules,
+            &mut self.state_data,
             &mut currrent_module_idx,
             self.lut.as_ref().ok_or(RuntimeError::UnmetImport)?,
             &mut stack,
@@ -443,7 +469,7 @@ where
                     ty: *ty,
                     locals,
                     code_expr,
-                    // TODO fix this ugly clone
+                    // TODO: Not used any more. Should we remove it?
                     sidetable: sidetable.clone(),
                 })
             });

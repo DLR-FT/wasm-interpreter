@@ -1,3 +1,4 @@
+use log::trace;
 use wasm::{validate, RuntimeError, RuntimeInstance, DEFAULT_MODULE};
 
 const UNMET_IMPORTS: &str = r#"
@@ -170,6 +171,14 @@ const USE_MEMORY: &str = r#"
         local.get $offset
         i32.load
     )
+
+    (func (export "memory_copy") 
+        (param $source i32) (param $dest i32) (param $size i32)
+        local.get $dest    ;; destination offset
+        local.get $source  ;; source offset
+        local.get $size    ;; size in bytes
+        memory.copy
+    )
 )
 "#;
 
@@ -188,9 +197,41 @@ pub fn run_memory() {
 
     let store_i32 = instance.get_function_by_name("base", "store_i32").unwrap();
     let load_i32 = instance.get_function_by_name("base", "load_i32").unwrap();
+    let memory_copy = instance
+        .get_function_by_name("base", "memory_copy")
+        .unwrap();
+
+    trace!(
+        "{:?}",
+        &instance.modules[1].store.mems[0]
+            .try_into_local()
+            .unwrap()
+            .data[0..16]
+    );
 
     let _: () = instance.invoke(&store_i32, (0, 123)).unwrap();
     let res: i32 = instance.invoke(&load_i32, 0).unwrap();
 
+    trace!(
+        "{:?}",
+        &instance.modules[1].store.mems[0]
+            .try_into_local()
+            .unwrap()
+            .data[0..16]
+    );
     assert_eq!(res, 123);
+
+    let _: () = instance.invoke(&memory_copy, (0, 4, 4)).unwrap();
+    let res: i32 = instance.invoke(&load_i32, 0).unwrap();
+    let res2: i32 = instance.invoke(&load_i32, 4).unwrap();
+
+    trace!(
+        "{:?}",
+        &instance.modules[1].store.mems[0]
+            .try_into_local()
+            .unwrap()
+            .data[0..16]
+    );
+    assert_eq!(res, 123);
+    assert_eq!(res2, 123);
 }
