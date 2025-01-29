@@ -77,7 +77,7 @@ impl WasmReadable for ImportDesc {
         match wasm.read_u8().unwrap_validated() {
             0x00 => Self::Func(wasm.read_var_u32().unwrap_validated() as TypeIdx),
             0x01 => Self::Table(TableType::read_unvalidated(wasm)),
-            0x02 => todo!("read MemType"),
+            0x02 => Self::Mem(MemType::read_unvalidated(wasm)),
             0x03 => todo!("read GlobalType"),
             _ => unreachable_validated!(),
         }

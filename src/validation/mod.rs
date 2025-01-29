@@ -139,13 +139,31 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
-    let memories = handle_section(&mut wasm, &mut header, SectionTy::Memory, |wasm, _| {
+    let local_memories = handle_section(&mut wasm, &mut header, SectionTy::Memory, |wasm, _| {
         wasm.read_vec(MemType::read)
     })?
     .unwrap_or_default();
-    if memories.len() > 1 {
+    if local_memories.len() > 1 {
         return Err(Error::MoreThanOneMemory);
     }
+
+    let imported_memories = imports
+        .iter()
+        .filter_map(|import| match &import.desc {
+            ImportDesc::Mem(mem_type) => Some(*mem_type),
+            _ => None,
+        })
+        .collect::<Vec<MemType>>();
+
+    if imported_memories.len() > 1 {
+        return Err(Error::MoreThanOneMemory);
+    }
+
+    let all_memories = imported_memories
+        .iter()
+        .chain(local_memories.iter())
+        .cloned()
+        .collect::<Vec<MemType>>();
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
@@ -206,7 +224,8 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
                 &all_functions,
                 imported_functions.count(),
                 &globals,
-                &memories,
+                &all_memories,
+                imported_memories.len(),
                 &data_count,
                 &tables,
                 &elements,
@@ -247,7 +266,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
         imports,
         functions: local_functions,
         tables,
-        memories,
+        memories: local_memories,
         globals,
         exports,
         func_blocks: func_blocks_sidetables,
