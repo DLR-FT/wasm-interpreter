@@ -18,13 +18,13 @@ use crate::{
     core::{
         indices::{DataIdx, FuncIdx, GlobalIdx, LabelIdx, LocalIdx, TableIdx, TypeIdx},
         reader::{
-            types::{memarg::MemArg, BlockType},
+            types::{memarg::MemArg, BlockType, MemType},
             WasmReadable, WasmReader,
         },
         sidetable::Sidetable,
     },
     locals::Locals,
-    store::{DataInst, FuncInst},
+    store::{DataInst, FuncInst, MemInst},
     value::{self, FuncAddr, Ref},
     value_stack::Stack,
     Limits, NumType, RefType, RuntimeError, ValType, Value,
@@ -447,9 +447,23 @@ pub(super) fn run<H: HookSet>(
                 let mem = modules[*current_module_idx]
                     .store
                     .mems
-                    .first()
+                    .first_mut()
                     .unwrap_validated(); // there is only one memory allowed as of now
 
+                let mem = match mem {
+                    MemInst::Local(local_mem_inst) => local_mem_inst,
+                    MemInst::Imported(_imported_mem_inst) => {
+                        let (next_module, next_func_idx) = lut
+                            .lookup_mem(*current_module_idx, 0)
+                            .expect("invalid state for lookup");
+
+                        let local_func_inst = modules[next_module].store.mems[next_func_idx]
+                            .try_into_local()
+                            .unwrap();
+
+                        local_func_inst
+                    }
+                };
                 let data: u32 = {
                     // The spec states that this should be a 33 bit integer
                     // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
@@ -477,8 +491,11 @@ pub(super) fn run<H: HookSet>(
                 let mem = modules[*current_module_idx]
                     .store
                     .mems
-                    .first()
+                    .first_mut()
                     .unwrap_validated();
+
+                // TODO: replace with import lookup
+                let mem = mem.try_into_local().unwrap();
 
                 let data: u64 = {
                     // The spec states that this should be a 33 bit integer
@@ -508,8 +525,11 @@ pub(super) fn run<H: HookSet>(
                 let mem = modules[*current_module_idx]
                     .store
                     .mems
-                    .first()
+                    .first_mut()
                     .unwrap_validated(); // there is only one memory allowed as of now
+
+                // TODO: replace with import lookup
+                let mem = mem.try_into_local().unwrap();
 
                 let data: f32 = {
                     // The spec states that this should be a 33 bit integer
@@ -538,8 +558,11 @@ pub(super) fn run<H: HookSet>(
                 let mem = modules[*current_module_idx]
                     .store
                     .mems
-                    .first()
+                    .first_mut()
                     .unwrap_validated();
+
+                // TODO: replace with import lookup
+                let mem = mem.try_into_local().unwrap();
 
                 let data: f64 = {
                     // The spec states that this should be a 33 bit integer
@@ -569,8 +592,11 @@ pub(super) fn run<H: HookSet>(
                 let mem = modules[*current_module_idx]
                     .store
                     .mems
-                    .first()
+                    .first_mut()
                     .unwrap_validated(); // there is only one memory allowed as of now
+
+                // TODO: replace with import lookup
+                let mem = mem.try_into_local().unwrap();
 
                 let data: i8 = {
                     // The spec states that this should be a 33 bit integer
@@ -601,8 +627,11 @@ pub(super) fn run<H: HookSet>(
                 let mem = modules[*current_module_idx]
                     .store
                     .mems
-                    .first()
+                    .first_mut()
                     .unwrap_validated(); // there is only one memory allowed as of now
+
+                // TODO: replace with import lookup
+                let mem = mem.try_into_local().unwrap();
 
                 let data: u8 = {
                     // The spec states that this should be a 33 bit integer
@@ -632,8 +661,11 @@ pub(super) fn run<H: HookSet>(
                 let mem = modules[*current_module_idx]
                     .store
                     .mems
-                    .first()
+                    .first_mut()
                     .unwrap_validated(); // there is only one memory allowed as of now
+
+                // TODO: replace with import lookup
+                let mem = mem.try_into_local().unwrap();
 
                 let data: i16 = {
                     // The spec states that this should be a 33 bit integer
@@ -663,8 +695,11 @@ pub(super) fn run<H: HookSet>(
                 let mem = modules[*current_module_idx]
                     .store
                     .mems
-                    .first()
+                    .first_mut()
                     .unwrap_validated(); // there is only one memory allowed as of now
+
+                // TODO: replace with import lookup
+                let mem = mem.try_into_local().unwrap();
 
                 let data: u16 = {
                     // The spec states that this should be a 33 bit integer
@@ -694,8 +729,11 @@ pub(super) fn run<H: HookSet>(
                 let mem = modules[*current_module_idx]
                     .store
                     .mems
-                    .first()
+                    .first_mut()
                     .unwrap_validated(); // there is only one memory allowed as of now
+
+                // TODO: replace with import lookup
+                let mem = mem.try_into_local().unwrap();
 
                 let data: i8 = {
                     // The spec states that this should be a 33 bit integer
@@ -726,8 +764,11 @@ pub(super) fn run<H: HookSet>(
                 let mem = modules[*current_module_idx]
                     .store
                     .mems
-                    .first()
+                    .first_mut()
                     .unwrap_validated(); // there is only one memory allowed as of now
+
+                // TODO: replace with import lookup
+                let mem = mem.try_into_local().unwrap();
 
                 let data: u8 = {
                     // The spec states that this should be a 33 bit integer
@@ -758,8 +799,11 @@ pub(super) fn run<H: HookSet>(
                 let mem = modules[*current_module_idx]
                     .store
                     .mems
-                    .first()
+                    .first_mut()
                     .unwrap_validated(); // there is only one memory allowed as of now
+
+                // TODO: replace with import lookup
+                let mem = mem.try_into_local().unwrap();
 
                 let data: i16 = {
                     // The spec states that this should be a 33 bit integer
@@ -789,8 +833,11 @@ pub(super) fn run<H: HookSet>(
                 let mem = modules[*current_module_idx]
                     .store
                     .mems
-                    .first()
+                    .first_mut()
                     .unwrap_validated(); // there is only one memory allowed as of now
+
+                // TODO: replace with import lookup
+                let mem = mem.try_into_local().unwrap();
 
                 let data: u16 = {
                     // The spec states that this should be a 33 bit integer
@@ -820,8 +867,11 @@ pub(super) fn run<H: HookSet>(
                 let mem = modules[*current_module_idx]
                     .store
                     .mems
-                    .first()
+                    .first_mut()
                     .unwrap_validated(); // there is only one memory allowed as of now
+
+                // TODO: replace with import lookup
+                let mem = mem.try_into_local().unwrap();
 
                 let data: i32 = {
                     // The spec states that this should be a 33 bit integer
@@ -851,8 +901,11 @@ pub(super) fn run<H: HookSet>(
                 let mem = modules[*current_module_idx]
                     .store
                     .mems
-                    .first()
+                    .first_mut()
                     .unwrap_validated(); // there is only one memory allowed as of now
+
+                // TODO: replace with import lookup
+                let mem = mem.try_into_local().unwrap();
 
                 let data: u32 = {
                     // The spec states that this should be a 33 bit integer
@@ -887,6 +940,21 @@ pub(super) fn run<H: HookSet>(
                     .get_mut(0)
                     .unwrap_validated(); // there is only one memory allowed as of now
 
+                let mem = match mem {
+                    MemInst::Local(local_mem_inst) => local_mem_inst,
+                    MemInst::Imported(_imported_mem_inst) => {
+                        let (next_module, next_func_idx) = lut
+                            .lookup_mem(*current_module_idx, 0)
+                            .expect("invalid state for lookup");
+
+                        let local_func_inst = modules[next_module].store.mems[next_func_idx]
+                            .try_into_local()
+                            .unwrap();
+
+                        local_func_inst
+                    }
+                };
+
                 // The spec states that this should be a 33 bit integer
                 // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
                 let address = memarg.offset.checked_add(relative_address);
@@ -911,6 +979,9 @@ pub(super) fn run<H: HookSet>(
                     .mems
                     .get_mut(0)
                     .unwrap_validated(); // there is only one memory allowed as of now
+
+                // TODO: replace with import lookup
+                let mem = mem.try_into_local().unwrap();
 
                 // The spec states that this should be a 33 bit integer
                 // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
@@ -937,6 +1008,9 @@ pub(super) fn run<H: HookSet>(
                     .get_mut(0)
                     .unwrap_validated(); // there is only one memory allowed as of now
 
+                // TODO: replace with import lookup
+                let mem = mem.try_into_local().unwrap();
+
                 // The spec states that this should be a 33 bit integer
                 // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
                 let address = memarg.offset.checked_add(relative_address);
@@ -962,6 +1036,9 @@ pub(super) fn run<H: HookSet>(
                     .get_mut(0)
                     .unwrap_validated(); // there is only one memory allowed as of now
 
+                // TODO: replace with import lookup
+                let mem = mem.try_into_local().unwrap();
+
                 // The spec states that this should be a 33 bit integer
                 // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
                 let address = memarg.offset.checked_add(relative_address);
@@ -986,6 +1063,9 @@ pub(super) fn run<H: HookSet>(
                     .mems
                     .get_mut(0)
                     .unwrap_validated();
+
+                // TODO: replace with import lookup
+                let mem = mem.try_into_local().unwrap();
 
                 // The spec states that this should be a 33 bit integer
                 // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
@@ -1013,6 +1093,9 @@ pub(super) fn run<H: HookSet>(
                     .get_mut(0)
                     .unwrap_validated();
 
+                // TODO: replace with import lookup
+                let mem = mem.try_into_local().unwrap();
+
                 // The spec states that this should be a 33 bit integer
                 // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
                 // ea => effective address
@@ -1038,6 +1121,9 @@ pub(super) fn run<H: HookSet>(
                     .mems
                     .get_mut(0)
                     .unwrap_validated();
+
+                // TODO: replace with import lookup
+                let mem = mem.try_into_local().unwrap();
 
                 // The spec states that this should be a 33 bit integer
                 // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
@@ -1065,6 +1151,9 @@ pub(super) fn run<H: HookSet>(
                     .get_mut(0)
                     .unwrap_validated();
 
+                // TODO: replace with import lookup
+                let mem = mem.try_into_local().unwrap();
+
                 // The spec states that this should be a 33 bit integer
                 // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
                 // ea => effective address
@@ -1091,6 +1180,9 @@ pub(super) fn run<H: HookSet>(
                     .get_mut(0)
                     .unwrap_validated();
 
+                // TODO: replace with import lookup
+                let mem = mem.try_into_local().unwrap();
+
                 // The spec states that this should be a 33 bit integer
                 // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
                 // ea => effective address
@@ -1110,8 +1202,12 @@ pub(super) fn run<H: HookSet>(
                 let mem = modules[*current_module_idx]
                     .store
                     .mems
-                    .get(mem_idx)
+                    .get_mut(mem_idx)
                     .unwrap_validated();
+
+                // TODO: replace with import lookup
+                let mem = mem.try_into_local().unwrap();
+
                 let size = mem.size() as u32;
                 stack.push_value(Value::I32(size));
                 trace!("Instruction: memory.size [] -> [{}]", size);
@@ -1123,6 +1219,10 @@ pub(super) fn run<H: HookSet>(
                     .mems
                     .get_mut(mem_idx)
                     .unwrap_validated();
+
+                // TODO: replace with import lookup
+                let mem = mem.try_into_local().unwrap();
+
                 let delta: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
                 let upper_limit = mem.ty.limits.max.unwrap_or(Limits::MAX_MEM_BYTES);
@@ -2471,8 +2571,12 @@ pub(super) fn run<H: HookSet>(
                         let mem = modules[*current_module_idx]
                             .store
                             .mems
-                            .get(mem_idx)
+                            .get_mut(mem_idx)
                             .unwrap_validated();
+
+                        // TODO: replace with import lookup
+                        let mem = mem.try_into_local().unwrap();
+
                         let n: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                         let s: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                         let d: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -2498,6 +2602,8 @@ pub(super) fn run<H: HookSet>(
                             .mems
                             .get_mut(mem_idx)
                             .unwrap_validated()
+                            .try_into_local() // TODO: remove
+                            .unwrap()
                             .data
                             .get_mut(d as usize..final_dst_offset)
                             .unwrap_validated()
@@ -2534,8 +2640,10 @@ pub(super) fn run<H: HookSet>(
                         let len_src = modules[*current_module_idx]
                             .store
                             .mems
-                            .get(src)
+                            .get_mut(src)
                             .unwrap_validated()
+                            .try_into_local() // TODO: remove
+                            .unwrap()
                             .data
                             .len();
                         let final_src_offset = (n as usize)
@@ -2546,8 +2654,10 @@ pub(super) fn run<H: HookSet>(
                         let len_dest = modules[*current_module_idx]
                             .store
                             .mems
-                            .get(dst)
+                            .get_mut(dst)
                             .unwrap_validated()
+                            .try_into_local() // TODO: remove
+                            .unwrap()
                             .data
                             .len();
                         // let final_dst_offset =
@@ -2563,6 +2673,10 @@ pub(super) fn run<H: HookSet>(
                                 .mems
                                 .get_mut(src)
                                 .unwrap_validated();
+
+                            // TODO: remove
+                            let mem = mem.try_into_local().unwrap();
+
                             mem.data
                                 .copy_within(s as usize..final_src_offset, d as usize);
                         } else {
@@ -2572,17 +2686,26 @@ pub(super) fn run<H: HookSet>(
                                 Greater => {
                                     let (left, right) =
                                         modules[*current_module_idx].store.mems.split_at_mut(dst);
-                                    (&left[src], &mut right[0])
+                                    (&mut left[src], &mut right[0])
                                 }
                                 Less => {
                                     let (left, right) =
                                         modules[*current_module_idx].store.mems.split_at_mut(src);
-                                    (&right[0], &mut left[dst])
+                                    (&mut right[0], &mut left[dst])
                                 }
                                 Equal => unreachable!(),
                             };
-                            dst_mem.data[d as usize..(d + n) as usize]
-                                .copy_from_slice(&src_mem.data[s as usize..(s + n) as usize]);
+                            dst_mem
+                                .try_into_local() // TODO: remove
+                                .unwrap()
+                                .data[d as usize..(d + n) as usize]
+                                .copy_from_slice(
+                                    &src_mem
+                                        .try_into_local() // TODO: remove
+                                        .unwrap()
+                                        .data
+                                        [s as usize..(s + n) as usize],
+                                );
                         }
 
                         trace!("Instruction: memory.copy");
@@ -2597,8 +2720,12 @@ pub(super) fn run<H: HookSet>(
                         let mem = modules[*current_module_idx]
                             .store
                             .mems
-                            .get(mem_idx)
+                            .get_mut(mem_idx)
                             .unwrap_validated();
+
+                        // TODO: remove
+                        let mem = mem.try_into_local().unwrap();
+
                         let n: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                         let val: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
@@ -2619,6 +2746,8 @@ pub(super) fn run<H: HookSet>(
                             .mems
                             .get_mut(mem_idx)
                             .unwrap_validated()
+                            .try_into_local() // TODO: remove
+                            .unwrap()
                             .data
                             .get_mut(d as usize..final_dst_offset)
                             .unwrap_validated()

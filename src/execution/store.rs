@@ -111,13 +111,46 @@ impl TableInst {
     }
 }
 
-pub struct MemInst {
-    #[allow(warnings)]
+pub enum MemInst {
+    Local(LocalMemInst),
+    Imported(ImportedMemInst),
+}
+
+pub struct LocalMemInst {
     pub ty: MemType,
     pub data: Vec<u8>,
 }
 
+pub struct ImportedMemInst {
+    pub ty: MemType,
+    pub module_name: String,
+    pub function_name: String,
+}
+
 impl MemInst {
+    pub fn ty(&self) -> MemType {
+        match self {
+            MemInst::Local(f) => f.ty,
+            MemInst::Imported(f) => f.ty,
+        }
+    }
+
+    pub fn try_into_local(&mut self) -> Option<&mut LocalMemInst> {
+        match self {
+            MemInst::Local(f) => Some(f),
+            MemInst::Imported(_) => None,
+        }
+    }
+
+    pub fn try_into_imported(&mut self) -> Option<&mut ImportedMemInst> {
+        match self {
+            MemInst::Local(_) => None,
+            MemInst::Imported(f) => Some(f),
+        }
+    }
+}
+
+impl LocalMemInst {
     pub fn new(ty: MemType) -> Self {
         let initial_size = (crate::Limits::MEM_PAGE_SIZE as usize) * ty.limits.min as usize;
 

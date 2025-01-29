@@ -9,7 +9,9 @@ use function_ref::FunctionRef;
 use interpreter_loop::run;
 use locals::Locals;
 use lut::Lut;
-use store::{DataInst, ElemInst, ImportedFuncInst, LocalFuncInst, TableInst};
+use store::{
+    DataInst, ElemInst, ImportedFuncInst, ImportedMemInst, LocalFuncInst, LocalMemInst, TableInst,
+};
 use value::{ExternAddr, FuncAddr, Ref};
 use value_stack::Stack;
 
@@ -551,11 +553,29 @@ where
             })
             .collect();
 
-        let mut memory_instances: Vec<MemInst> = validation_info
-            .memories
-            .iter()
-            .map(|ty| MemInst::new(*ty))
-            .collect();
+        let mut memory_instances: Vec<MemInst> = {
+            let local_mems = validation_info
+                .memories
+                .iter()
+                .map(|ty| MemInst::Local(LocalMemInst::new(*ty)));
+
+            let imported_mems =
+                validation_info
+                    .imports
+                    .iter()
+                    .filter_map(|import| match &import.desc {
+                        ImportDesc::Mem(mem_type) => Some(MemInst::Imported(ImportedMemInst {
+                            ty: *mem_type,
+                            module_name: import.module_name.clone(),
+                            function_name: import.name.clone(),
+                        })),
+                        _ => None,
+                    });
+
+            imported_mems.chain(local_mems).collect()
+        };
+
+        // TODO: assert only at most 1 memory?
 
         let data_sections: Vec<DataInst> = validation_info
             .data
@@ -593,7 +613,11 @@ where
                         _ => todo!(),
                     };
 
-                    let mem_inst = memory_instances.get_mut(mem_idx).unwrap();
+                    let mem_inst = memory_instances
+                        .get_mut(mem_idx)
+                        .unwrap()
+                        .try_into_local() // TODO: remove
+                        .unwrap();
 
                     let len = mem_inst.data.len();
                     if offset as usize + d.init.len() > len {

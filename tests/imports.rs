@@ -148,3 +148,49 @@ pub fn run_cyclical() {
     // Currently, this passes since we don't allow chained imports.
     assert!(instance.invoke::<(), i32>(&run, ()).unwrap_err() == wasm::RuntimeError::UnmetImport);
 }
+
+const EXPORT_MEMORY: &str = r#"
+(module
+    ;; Initialize with 1 page, maximum of 2 pages.
+    (memory (export "shared_memory") 1 2)
+)
+"#;
+
+const USE_MEMORY: &str = r#"
+(module
+    (import "env" "shared_memory" (memory 1))
+    
+    (func (export "store_i32") (param $offset i32) (param $value i32)
+        local.get $offset
+        local.get $value
+        i32.store
+    )
+  
+    (func (export "load_i32") (param $offset i32) (result i32)
+        local.get $offset
+        i32.load
+    )
+)
+"#;
+
+#[test_log::test]
+pub fn run_memory() {
+    let wasm_bytes = wat::parse_str(USE_MEMORY).unwrap();
+    let validation_info = validate(&wasm_bytes).expect("validation failed");
+    let mut instance =
+        RuntimeInstance::new_named("base", &validation_info).expect("instantiation failed");
+
+    let wasm_bytes = wat::parse_str(EXPORT_MEMORY).unwrap();
+    let validation_info = validate(&wasm_bytes).expect("validation failed");
+    instance
+        .add_module("env", &validation_info)
+        .expect("Successful instantiation");
+
+    let store_i32 = instance.get_function_by_name("base", "store_i32").unwrap();
+    let load_i32 = instance.get_function_by_name("base", "load_i32").unwrap();
+
+    let _: () = instance.invoke(&store_i32, (0, 123)).unwrap();
+    let res: i32 = instance.invoke(&load_i32, 0).unwrap();
+
+    assert_eq!(res, 123);
+}
