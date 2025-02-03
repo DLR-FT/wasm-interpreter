@@ -1,9 +1,12 @@
 use std::{
+    collections::HashMap,
     fs,
+    io::Write,
     path::{Path, PathBuf},
 };
 
 use reports::WastTestReport;
+use serde::{Deserialize, Serialize};
 
 mod reports;
 mod run;
@@ -107,7 +110,7 @@ pub fn spec_tests() {
 
     let mut final_status: String = String::new();
     // Printing success rate per file for those that did NOT error out when compiling
-    for report in no_compile_errors_reports {
+    for report in &no_compile_errors_reports {
         final_status += format!(
             "Report for {:filename_width$}: Tests: {:passed_width$} Passed, {:failed_width$} Failed --- {:percentage_width$.2}%\n",
             report.filename,
@@ -146,6 +149,123 @@ pub fn spec_tests() {
         "Tests: {} Passed, {} Failed, {} Compilation Errors",
         successful_reports, failed_reports, compile_error_reports
     );
+
+    let result = execute_ci_instructions(
+        "testsuite_results",
+        TestResults {
+            total: total_mini_tests,
+            successful: successful_mini_tests,
+            failed: total_mini_tests - successful_mini_tests,
+            tests: no_compile_errors_reports
+                .iter()
+                .map(|el| {
+                    (
+                        el.filename.clone(),
+                        TestResult {
+                            failed: el.failed,
+                            successful: el.successful,
+                            total: el.total,
+                        },
+                    )
+                })
+                .collect::<HashMap<String, TestResult>>(),
+        },
+    );
+
+    match result {
+        Err(e) => {
+            println!("\n\n\n{}\n\n\n", e);
+            std::process::exit(-1);
+        }
+        Ok(..) => {}
+    };
+}
+
+#[derive(Deserialize, Serialize)]
+struct TestResult {
+    // name: String,
+    total: usize,
+    successful: usize,
+    failed: usize,
+}
+
+#[derive(Deserialize, Serialize)]
+struct TestResults {
+    total: usize,
+    successful: usize,
+    failed: usize,
+    tests: HashMap<String, TestResult>,
+    // tests: Vec<TestResult>,
+}
+
+fn execute_ci_instructions(file_name: &str, results: TestResults) -> Result<(), String> {
+    let original_file = std::fs::File::open(String::from(file_name) + "_original.json").ok();
+
+    let mut file = std::fs::OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(true) // This ensures the file is truncated if it exists
+        .open(String::from(file_name) + ".json")
+        .unwrap();
+
+    let stringified: String = serde_json::to_string(&results).unwrap();
+
+    file.write(stringified.as_bytes()).unwrap();
+
+    match original_file {
+        None => Ok(()),
+        Some(original_file) => {
+            let parsed_original_file: TestResults =
+                serde_json::from_reader(original_file).map_err(|e| e.to_string())?;
+
+            diff(parsed_original_file, results)
+        }
+    }
+}
+
+fn diff(original: TestResults, current: TestResults) -> Result<(), String> {
+    if original.total > current.total {
+        return Err(format!(
+            "Fewer total tests in the current run ({}) than in the original ({})",
+            current.total, original.total
+        ));
+    }
+    if original.successful > current.successful {
+        return Err(format!(
+            "Fewer successful tests in the current run ({}) than in the original ({})",
+            current.successful, original.successful
+        ));
+    }
+
+    for (original_test_name, original_test) in original.tests {
+        let current_test = current
+            .tests
+            .iter()
+            .find(|test| *test.0 == original_test_name);
+
+        match current_test {
+            None => return Err(format!("Test with name '{}' not found", original_test_name)),
+            Some(current_test) => {
+                let current_test = current_test.1;
+
+                if original_test.total > current_test.total {
+                    return Err(format!(
+                        "TEST '{}': Fewer total tests ({}) than in the original ({})",
+                        original_test_name, current_test.total, original_test.total
+                    ));
+                }
+
+                if original_test.successful > current_test.successful {
+                    return Err(format!(
+                        "TEST '{}': Fewer successful tests ({}) than in the original ({})",
+                        original_test_name, current_test.successful, original_test.successful
+                    ));
+                }
+            }
+        }
+    }
+
+    Ok(())
 }
 
 #[allow(dead_code)]
