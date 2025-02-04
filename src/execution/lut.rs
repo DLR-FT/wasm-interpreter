@@ -1,6 +1,8 @@
 use crate::{core::reader::types::export::ExportDesc, execution::execution_info::ExecutionInfo};
 use alloc::{collections::btree_map::BTreeMap, string::String, vec::Vec};
 
+use super::store::MemInst;
+
 pub struct Lut {
     /// function_lut\[local_module_idx\]\[function_local_idx\] = (foreign_module_idx, function_foreign_idx)
     ///
@@ -9,6 +11,8 @@ pub struct Lut {
     /// - Module B exports a function "foo". Inside module B, the function has the index "function_foreign_idx". Module
     ///   B is assigned the index "foreign_module_idx".
     function_lut: Vec<Vec<(usize, usize)>>,
+
+    memory_lut: Vec<Vec<(usize, usize)>>,
 }
 
 impl Lut {
@@ -44,7 +48,36 @@ impl Lut {
             function_lut.push(module_lut);
         }
 
-        Some(Self { function_lut })
+        let mut memory_lut = Vec::new();
+        for module in modules {
+            let module_lut = module
+                .store
+                .mems
+                .iter()
+                .filter_map(|f| match &f {
+                    MemInst::Local(_local_mem_inst) => None,
+                    MemInst::Imported(imported_mem_inst) => Some(imported_mem_inst),
+                })
+                .map(|import| {
+                    Self::manual_lookup(
+                        modules,
+                        module_map,
+                        &import.module_name,
+                        &import.function_name,
+                    )
+                })
+                .collect::<Option<Vec<_>>>()?;
+
+            // If there is a missing import/export pair,  we fail the entire
+            // operation. Better safe than sorry...
+
+            memory_lut.push(module_lut);
+        }
+
+        Some(Self {
+            function_lut,
+            memory_lut,
+        })
     }
 
     /// Lookup a function by its module and function index.
@@ -63,6 +96,10 @@ impl Lut {
             .get(module_idx)?
             .get(function_idx)
             .copied()
+    }
+
+    pub fn lookup_mem(&self, module_idx: usize, function_idx: usize) -> Option<(usize, usize)> {
+        self.memory_lut.get(module_idx)?.get(function_idx).copied()
     }
 
     /// Manually lookup a function by its module and function name.
@@ -103,10 +140,11 @@ impl Lut {
                 }
             })
             .find_map(|desc| {
-                if let ExportDesc::FuncIdx(func_idx) = desc {
-                    Some((*module_idx, *func_idx))
-                } else {
-                    None
+                match desc {
+                    ExportDesc::FuncIdx(func_idx) => Some((*module_idx, *func_idx)),
+                    // TODO: this will break if a function and memory share a name. Need to modify function to be told what to look for
+                    ExportDesc::MemIdx(mem_idx) => Some((*module_idx, *mem_idx)),
+                    _ => None,
                 }
             })
     }

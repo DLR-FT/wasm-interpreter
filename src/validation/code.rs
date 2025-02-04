@@ -26,6 +26,7 @@ pub fn validate_code_section(
     num_imported_funcs: usize,
     globals: &[Global],
     memories: &[MemType],
+    _num_imported_memories: usize,
     data_count: &Option<u32>,
     tables: &[TableType],
     elements: &[ElemType],
