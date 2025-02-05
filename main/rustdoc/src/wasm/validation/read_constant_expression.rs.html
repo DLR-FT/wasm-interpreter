@@ -256,7 +256,7 @@
                 </span><span class="kw">if </span>this_global_valtype.is_some() {
                     stack.assert_val_types(<span class="kw-2">&amp;</span>[this_global_valtype.unwrap()])<span class="question-mark">?</span>;
                 }
-                <span class="kw">return </span><span class="prelude-val">Ok</span>(Span::new(start_pc, wasm.pc - start_pc + <span class="number">1</span>));
+                <span class="kw">return </span><span class="prelude-val">Ok</span>(Span::new(start_pc, wasm.pc - start_pc));
             }
             I32_CONST =&gt; {
                 <span class="kw">let </span>_num = wasm.read_var_i32()<span class="question-mark">?</span>;

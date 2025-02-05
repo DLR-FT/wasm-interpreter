@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["print_beautiful_instruction_name_1_byte"]};

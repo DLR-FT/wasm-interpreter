@@ -84,6 +84,7 @@
 <a href="#82" id="82">82</a>
 <a href="#83" id="83">83</a>
 <a href="#84" id="84">84</a>
+<a href="#85" id="85">85</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>alloc::borrow::ToOwned;
 <span class="kw">use </span>alloc::string::String;
 
@@ -92,7 +93,8 @@
 <span class="kw">use </span><span class="kw">crate</span>::execution::assert_validated::UnwrapValidatedExt;
 <span class="kw">use crate</span>::{unreachable_validated, Error, <span class="prelude-ty">Result</span>};
 
-<span class="kw">use </span><span class="kw">super</span>::TableType;
+<span class="kw">use </span><span class="kw">super</span>::global::GlobalType;
+<span class="kw">use super</span>::{MemType, TableType};
 
 <span class="attr">#[derive(Debug)]
 </span><span class="kw">pub struct </span>Import {
@@ -138,10 +140,10 @@
     </span>Table(TableType),
     <span class="comment">// TODO TableType
     </span><span class="attr">#[allow(dead_code)]
-    </span>Mem(()),
+    </span>Mem(MemType),
     <span class="comment">// TODO MemType
     </span><span class="attr">#[allow(dead_code)]
-    </span>Global(()), <span class="comment">// TODO GlobalType
+    </span>Global(GlobalType), <span class="comment">// TODO GlobalType
 </span>}
 
 <span class="kw">impl </span>WasmReadable <span class="kw">for </span>ImportDesc {
@@ -150,8 +152,8 @@
             <span class="number">0x00 </span>=&gt; <span class="self">Self</span>::Func(wasm.read_var_u32()<span class="question-mark">? </span><span class="kw">as </span>TypeIdx),
             <span class="comment">// https://webassembly.github.io/spec/core/binary/types.html#table-types
             </span><span class="number">0x01 </span>=&gt; <span class="self">Self</span>::Table(TableType::read(wasm)<span class="question-mark">?</span>),
-            <span class="number">0x02 </span>=&gt; <span class="macro">todo!</span>(<span class="string">"read MemType"</span>),
-            <span class="number">0x03 </span>=&gt; <span class="macro">todo!</span>(<span class="string">"read GlobalType"</span>),
+            <span class="number">0x02 </span>=&gt; <span class="self">Self</span>::Mem(MemType::read(wasm)<span class="question-mark">?</span>),
+            <span class="number">0x03 </span>=&gt; <span class="self">Self</span>::Global(GlobalType::read(wasm)<span class="question-mark">?</span>),
             other =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(Error::InvalidImportDesc(other)),
         };
 

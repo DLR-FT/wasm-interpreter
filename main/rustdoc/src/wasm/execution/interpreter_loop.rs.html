@@ -2890,6 +2890,11 @@
 <a href="#2888" id="2888">2888</a>
 <a href="#2889" id="2889">2889</a>
 <a href="#2890" id="2890">2890</a>
+<a href="#2891" id="2891">2891</a>
+<a href="#2892" id="2892">2892</a>
+<a href="#2893" id="2893">2893</a>
+<a href="#2894" id="2894">2894</a>
+<a href="#2895" id="2895">2895</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! This module solely contains the actual interpretation loop that matches instructions, interpreting the WASM bytecode
 //!
 //!
@@ -2961,6 +2966,12 @@
         </span>hooks.instruction_hook(modules[<span class="kw-2">*</span>current_module_idx].wasm_bytecode, wasm.pc);
 
         <span class="kw">let </span>first_instr_byte = wasm.read_u8().unwrap_validated();
+
+        <span class="attr">#[cfg(debug_assertions)]
+        </span><span class="macro">trace!</span>(
+            <span class="string">"Executing instruction {}"</span>,
+            opcode_byte_to_str(first_instr_byte)
+        );
 
         <span class="kw">match </span>first_instr_byte {
             NOP =&gt; {
@@ -3155,7 +3166,7 @@
                 <span class="kw">let </span>r = tab
                     .elem
                     .get(i <span class="kw">as </span>usize)
-                    .ok_or(RuntimeError::TableAccessOutOfBounds)
+                    .ok_or(RuntimeError::UndefinedTableIndex)
                     .and_then(|r| {
                         <span class="kw">if </span>r.is_null() {
                             <span class="macro">trace!</span>(<span class="string">"table_idx ({table_idx}) --- element index in table ({i})"</span>);
@@ -3795,7 +3806,7 @@
             I64_STORE =&gt; {
                 <span class="kw">let </span>memarg = MemArg::read_unvalidated(wasm);
 
-                <span class="kw">let </span>data_to_store: u32 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                <span class="kw">let </span>data_to_store: u64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
                 <span class="kw">let </span>relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
                 <span class="kw">let </span>mem = modules[<span class="kw-2">*</span>current_module_idx]
@@ -3860,7 +3871,7 @@
                 <span class="kw">let </span>memory_location = address
                     .and_then(|address| {
                         <span class="kw">let </span>address = address <span class="kw">as </span>usize;
-                        mem.data.get_mut(address..(address + <span class="number">4</span>))
+                        mem.data.get_mut(address..(address + <span class="number">8</span>))
                     })
                     .ok_or(RuntimeError::MemoryAccessOutOfBounds)<span class="question-mark">?</span>;
 
@@ -4750,7 +4761,7 @@
             }
             F32_NEAREST =&gt; {
                 <span class="kw">let </span>v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
-                <span class="kw">let </span>res: value::F32 = v1.round();
+                <span class="kw">let </span>res: value::F32 = v1.nearest();
 
                 <span class="macro">trace!</span>(<span class="string">"Instruction: f32.nearest [{v1}] -&gt; [{res}]"</span>);
                 stack.push_value(res.into());
@@ -4856,7 +4867,7 @@
             }
             F64_NEAREST =&gt; {
                 <span class="kw">let </span>v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
-                <span class="kw">let </span>res: value::F64 = v1.round();
+                <span class="kw">let </span>res: value::F64 = v1.nearest();
 
                 <span class="macro">trace!</span>(<span class="string">"Instruction: f64.nearest [{v1}] -&gt; [{res}]"</span>);
                 stack.push_value(res.into());
@@ -5505,7 +5516,6 @@
                             .filter(|<span class="kw-2">&amp;</span>res| res &lt;= mem.data.len())
                             .ok_or(RuntimeError::MemoryAccessOutOfBounds)<span class="question-mark">?</span>;
 
-                        <span class="kw">let </span>data: Vec&lt;u8&gt; = <span class="macro">vec!</span>[val <span class="kw">as </span>u8; (n - d) <span class="kw">as </span>usize];
                         modules[<span class="kw-2">*</span>current_module_idx]
                             .store
                             .mems
@@ -5514,7 +5524,7 @@
                             .data
                             .get_mut(d <span class="kw">as </span>usize..final_dst_offset)
                             .unwrap_validated()
-                            .copy_from_slice(<span class="kw-2">&amp;</span>data);
+                            .fill(val <span class="kw">as </span>u8);
 
                         <span class="macro">trace!</span>(<span class="string">"Instruction: memory.fill"</span>);
                     }
