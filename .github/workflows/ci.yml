@@ -34,7 +34,7 @@ jobs:
       - name: Build
         run: cargo build --verbose
       - name: Run tests
-        run: cargo test --verbose -- --nocapture
+        run: cargo test
 
   conventional_commit_check:
     name: Conventional Commits
