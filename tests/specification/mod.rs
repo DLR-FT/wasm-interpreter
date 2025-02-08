@@ -1,9 +1,10 @@
 use std::{
     fs,
+    io::Write,
     path::{Path, PathBuf},
 };
 
-use reports::WastTestReport;
+use reports::{CIReport, CIReportEntry, WastTestReport};
 
 mod reports;
 mod run;
@@ -146,6 +147,42 @@ pub fn spec_tests() {
         "Tests: {} Passed, {} Failed, {} Compilation Errors",
         successful_reports, failed_reports, compile_error_reports
     );
+
+    // Optional: We need to save the result to a file for CI Regression Analysis
+    if std::option_env!("TESTSUITE_SAVE").is_some() {
+        let mut entries = vec![];
+        for report in reports {
+            let filename = report.fp.to_str().unwrap().to_string();
+            match report.report {
+                WastTestReport::CompilationError(_compilation_error) => {
+                    entries.push(CIReportEntry {
+                        filename,
+                        compiled: false,
+                        tests_total: 0,
+                        tests_passed: 0,
+                        tests_failed: 0,
+                    });
+                }
+                WastTestReport::Asserts(assert_report) => {
+                    entries.push(CIReportEntry {
+                        filename,
+                        compiled: true,
+                        tests_total: assert_report.total,
+                        tests_passed: assert_report.successful,
+                        tests_failed: assert_report.failed,
+                    });
+                }
+            }
+        }
+
+        let ci_report = CIReport { entries };
+        let ci_report_json = serde_json::to_string_pretty(&ci_report).unwrap();
+
+        std::fs::File::create("./testsuite_results.json")
+            .unwrap()
+            .write_all(ci_report_json.as_bytes())
+            .unwrap();
+    }
 }
 
 #[allow(dead_code)]
