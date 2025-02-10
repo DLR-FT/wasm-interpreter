@@ -30,11 +30,11 @@ pub fn validate_code_section(
     tables: &[TableType],
     elements: &[ElemType],
     referenced_functions: &BTreeSet<u32>,
-) -> Result<Vec<(Span, Sidetable)>> {
+    sidetable: &mut Sidetable,
+) -> Result<Vec<(Span, usize)>> {
     assert_eq!(section_header.ty, SectionTy::Code);
 
-    // TODO replace with single sidetable per module
-    let code_block_spans_sidetables = wasm.read_vec_enumerated(|wasm, idx| {
+    let code_block_spans_stps = wasm.read_vec_enumerated(|wasm, idx| {
         // We need to offset the index by the number of functions that were
         // imported. Imported functions always live at the start of the index
         // space.
@@ -51,13 +51,13 @@ pub fn validate_code_section(
             params.chain(declared_locals).collect::<Vec<ValType>>()
         };
 
-        let mut stack = ValidationStack::new_for_func(func_ty);
-        let mut sidetable: Sidetable = Sidetable::default();
+        let stp = sidetable.len();
 
+        let mut stack = ValidationStack::new_for_func(func_ty);
         read_instructions(
             wasm,
             &mut stack,
-            &mut sidetable,
+            sidetable,
             &locals,
             globals,
             fn_types,
@@ -76,15 +76,15 @@ pub fn validate_code_section(
             )
         }
 
-        Ok((func_block, sidetable))
+        Ok((func_block, stp))
     })?;
 
     trace!(
         "Read code section. Found {} code blocks",
-        code_block_spans_sidetables.len()
+        code_block_spans_stps.len()
     );
 
-    Ok(code_block_spans_sidetables)
+    Ok(code_block_spans_stps)
 }
 
 pub fn read_declared_locals(wasm: &mut WasmReader) -> Result<Vec<ValType>> {
