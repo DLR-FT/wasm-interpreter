@@ -231,6 +231,7 @@ where
         // Pop return values from stack
         let return_values = Returns::TYS
             .iter()
+            .rev()
             .map(|ty| stack.pop_value(*ty))
             .collect::<Vec<Value>>();
 
@@ -308,6 +309,7 @@ where
             .returns
             .valtypes
             .iter()
+            .rev()
             .map(|ty| stack.pop_value(*ty))
             .collect::<Vec<Value>>();
 
@@ -390,6 +392,7 @@ where
             .returns
             .valtypes
             .iter()
+            .rev()
             .map(|ty| stack.pop_value(*ty))
             .collect::<Vec<Value>>();
 
