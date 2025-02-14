@@ -291,8 +291,12 @@ pub(super) fn run<H: HookSet>(
                     .unwrap_validated();
 
                 let actual_type_idx = func_to_call_inst.ty();
+                let actual_ty = modules[*current_module_idx]
+                    .fn_types
+                    .get(actual_type_idx)
+                    .unwrap_validated();
 
-                if given_type_idx != actual_type_idx {
+                if func_ty != actual_ty {
                     return Err(RuntimeError::SignatureMismatch);
                 }
 
