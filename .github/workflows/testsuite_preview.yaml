@@ -27,7 +27,7 @@ jobs:
         run: |
           TESTSUITE_SAVE=1 cargo test -- spec_tests --show-output
           cp testsuite_results.json old.json
-      
+
       - name: Switch
         run: |
           cargo clean
@@ -36,8 +36,8 @@ jobs:
 
       - name: Generate new report
         run: |
-         TESTSUITE_SAVE=1 cargo test -- spec_tests --show-output
-         cp testsuite_results.json new.json
+          TESTSUITE_SAVE=1 cargo test -- spec_tests --show-output
+          cp testsuite_results.json new.json
       - name: Compare reports
         run: python3 ./ci_tools/compare_testsuite.py old.json new.json > testsuite_report.md
 
