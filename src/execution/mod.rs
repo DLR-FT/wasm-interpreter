@@ -735,7 +735,7 @@ where
         let exports = validation_info.exports.clone();
         Ok(Store {
             funcs: function_instances,
-            mems: memory_instances,
+            memories: memory_instances,
             globals: global_instances,
             data: data_sections,
             tables,
