@@ -267,7 +267,7 @@ fn read_instructions(
                 {
                     if *stp == usize::MAX {
                         //this If was previously matched with an else already, it is already backpatched!
-                        return Err(Error::IfWithoutMatchingElse);
+                        return Err(Error::ElseWithoutMatchingIf);
                     }
                     let stp_here = sidetable.len();
                     sidetable.push(SidetableEntry {
@@ -332,7 +332,7 @@ fn read_instructions(
                 stack.make_unspecified()?;
             }
             END => {
-                let (label_info, _) = stack.assert_pop_ctrl()?;
+                let (label_info, block_ty) = stack.assert_pop_ctrl()?;
                 let stp_here = sidetable.len();
 
                 match label_info {
@@ -347,6 +347,14 @@ fn read_instructions(
                         stps_to_backpatch,
                     } => {
                         if stp != usize::MAX {
+                            //This If is still not backpatched, meaning it does not have a corresponding
+                            //ELSE. This is only allowed when the corresponding If block has the same input
+                            //types as its output types (an untyped ELSE block with no instruction is valid
+                            //if and only if it is of this type)
+                            if !(block_ty.params == block_ty.returns) {
+                                return Err(Error::IfWithoutMatchingElse);
+                            }
+
                             //This If is still not backpatched, meaning it does not have a corresponding
                             //ELSE. Therefore if its condition fails, it jumps after END.
                             sidetable[stp].delta_pc = (wasm.pc as isize) - sidetable[stp].delta_pc;
