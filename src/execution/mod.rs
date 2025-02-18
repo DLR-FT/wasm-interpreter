@@ -53,15 +53,16 @@ where
 }
 
 impl<'b> RuntimeInstance<'b, EmptyHookSet> {
-    pub fn new(validation_info: &'_ ValidationInfo<'b>) -> CustomResult<Self> {
-        Self::new_with_hooks(DEFAULT_MODULE, validation_info, EmptyHookSet)
+    pub fn new(validation_info: &'_ ValidationInfo<'b>, store: &mut Store) -> CustomResult<Self> {
+        Self::new_with_hooks(DEFAULT_MODULE, validation_info, EmptyHookSet, store)
     }
 
     pub fn new_named(
         module_name: &str,
         validation_info: &'_ ValidationInfo<'b>,
+        store: &mut Store,
     ) -> CustomResult<Self> {
-        Self::new_with_hooks(module_name, validation_info, EmptyHookSet)
+        Self::new_with_hooks(module_name, validation_info, EmptyHookSet, store)
     }
 }
 
@@ -73,6 +74,7 @@ where
         module_name: &str,
         validation_info: &'_ ValidationInfo<'b>,
         hook_set: H,
+        store: &mut Store,
     ) -> CustomResult<Self> {
         trace!("Starting instantiation of bytecode");
 
@@ -95,7 +97,7 @@ where
                 function_index: start,
                 exported: false,
             };
-            instance.invoke::<(), ()>(&start_fn, ())?;
+            instance.invoke::<(), ()>(&start_fn, (), store)?;
         }
 
         Ok(instance)
@@ -173,24 +175,42 @@ where
         &mut self,
         function_ref: &FunctionRef,
         params: Param,
+        store: &mut Store,
     ) -> Result<Returns, RuntimeError> {
         // First, verify that the function reference is valid
         let (module_idx, func_idx) = self.verify_function_ref(function_ref)?;
 
         // -=-= Verification =-=-
-        trace!("{:?}", self.modules[module_idx].store.funcs);
+        // trace!("{:?}", self.modules[module_idx].store.funcs);
+        trace!("{:?}", self.modules[module_idx].functions);
 
-        let func_inst = self.modules[module_idx]
-            .store
-            .funcs
+        let func_inst_idx = self.modules[module_idx]
+            .functions
             .get(func_idx)
             .ok_or(RuntimeError::FunctionNotFound)?
-            .try_into_local()
+            .clone();
+
+        let func_inst = store
+            .functions
+            .get(func_inst_idx)
             .ok_or(RuntimeError::FunctionNotFound)?;
-        let func_ty = self.modules[module_idx]
-            .fn_types
-            .get(func_inst.ty)
-            .unwrap_validated();
+
+        let func_ty = func_inst.ty();
+
+        // let func_ty = self.modules
+
+        // let func_inst = self.modules[module_idx]
+        //     .store
+        //     .funcs
+        //     .get(func_idx)
+        //     .ok_or(RuntimeError::FunctionNotFound)?
+        //     .try_into_local()
+        //     .ok_or(RuntimeError::FunctionNotFound)?;
+
+        // let func_ty = self.modules[module_idx]
+        //     .fn_types
+        //     .get(func_inst.ty_idx)
+        //     .unwrap_validated();
 
         // Check correct function parameters and return types
         if func_ty.params.valtypes != Param::TYS {
@@ -204,7 +224,7 @@ where
         let mut stack = Stack::new();
         let locals = Locals::new(
             params.into_values().into_iter(),
-            func_inst.locals.iter().cloned(),
+            func_inst.try_into_local().unwrap().locals.iter().cloned(),
         );
 
         // setting `usize::MAX` as return address for the outermost function ensures that we
@@ -212,7 +232,7 @@ where
         stack.push_stackframe(
             module_idx,
             func_idx,
-            func_ty,
+            &func_ty,
             locals,
             usize::MAX,
             usize::MAX,
@@ -226,6 +246,7 @@ where
             self.lut.as_ref().ok_or(RuntimeError::UnmetImport)?,
             &mut stack,
             EmptyHookSet,
+            store,
         )?;
 
         // Pop return values from stack
@@ -247,22 +268,24 @@ where
         function_ref: &FunctionRef,
         params: Vec<Value>,
         ret_types: &[ValType],
+        store: &mut Store,
     ) -> Result<Vec<Value>, RuntimeError> {
         // First, verify that the function reference is valid
         let (module_idx, func_idx) = self.verify_function_ref(function_ref)?;
 
         // -=-= Verification =-=-
-        let func_inst = self.modules[module_idx]
-            .store
-            .funcs
+        let func_inst_idx = self.modules[module_idx]
+            .functions
             .get(func_idx)
             .ok_or(RuntimeError::FunctionNotFound)?
-            .try_into_local()
+            .clone();
+
+        let func_inst = store
+            .functions
+            .get(func_inst_idx)
             .ok_or(RuntimeError::FunctionNotFound)?;
-        let func_ty = self.modules[module_idx]
-            .fn_types
-            .get(func_inst.ty)
-            .unwrap_validated();
+
+        let func_ty = func_inst.ty();
 
         // Verify that the given parameters match the function parameters
         let param_types = params.iter().map(|v| v.to_ty()).collect::<Vec<_>>();
@@ -278,8 +301,11 @@ where
 
         // Prepare a new stack with the locals for the entry function
         let mut stack = Stack::new();
-        let locals = Locals::new(params.into_iter(), func_inst.locals.iter().cloned());
-        stack.push_stackframe(module_idx, func_idx, func_ty, locals, 0, 0);
+        let locals = Locals::new(
+            params.into_iter(),
+            func_inst.try_into_local().unwrap().locals.iter().cloned(),
+        );
+        stack.push_stackframe(module_idx, func_idx, &func_ty, locals, 0, 0);
 
         let mut currrent_module_idx = module_idx;
         // Run the interpreter
@@ -289,19 +315,21 @@ where
             self.lut.as_ref().ok_or(RuntimeError::UnmetImport)?,
             &mut stack,
             EmptyHookSet,
+            &mut store,
         )?;
 
-        let func_inst = self.modules[module_idx]
-            .store
-            .funcs
+        let func_inst_idx = self.modules[module_idx]
+            .functions
             .get(func_idx)
             .ok_or(RuntimeError::FunctionNotFound)?
-            .try_into_local()
+            .clone();
+
+        let func_inst = store
+            .functions
+            .get(func_inst_idx)
             .ok_or(RuntimeError::FunctionNotFound)?;
-        let func_ty = self.modules[module_idx]
-            .fn_types
-            .get(func_inst.ty)
-            .unwrap_validated();
+
+        let func_ty = func_inst.ty();
 
         // Pop return values from stack
         let return_values = func_ty
@@ -334,22 +362,24 @@ where
         &mut self,
         function_ref: &FunctionRef,
         params: Vec<Value>,
+        store: &mut Store,
     ) -> Result<Vec<Value>, RuntimeError> {
         // First, verify that the function reference is valid
         let (module_idx, func_idx) = self.verify_function_ref(function_ref)?;
 
         // -=-= Verification =-=-
-        let func_inst = self.modules[module_idx]
-            .store
-            .funcs
+        let func_inst_idx = self.modules[module_idx]
+            .functions
             .get(func_idx)
             .ok_or(RuntimeError::FunctionNotFound)?
-            .try_into_local()
+            .clone();
+
+        let func_inst = store
+            .functions
+            .get(func_inst_idx)
             .ok_or(RuntimeError::FunctionNotFound)?;
-        let func_ty = self.modules[module_idx]
-            .fn_types
-            .get(func_inst.ty)
-            .unwrap_validated();
+
+        let func_ty = func_inst.ty();
 
         // Verify that the given parameters match the function parameters
         let param_types = params.iter().map(|v| v.to_ty()).collect::<Vec<_>>();
@@ -371,19 +401,21 @@ where
             self.lut.as_ref().ok_or(RuntimeError::UnmetImport)?,
             &mut stack,
             EmptyHookSet,
+            &mut store,
         )?;
 
-        let func_inst = self.modules[module_idx]
-            .store
-            .funcs
+        let func_inst_idx = self.modules[module_idx]
+            .functions
             .get(func_idx)
             .ok_or(RuntimeError::FunctionNotFound)?
-            .try_into_local()
+            .clone();
+
+        let func_inst = store
+            .functions
+            .get(func_inst_idx)
             .ok_or(RuntimeError::FunctionNotFound)?;
-        let func_ty = self.modules[module_idx]
-            .fn_types
-            .get(func_inst.ty)
-            .unwrap_validated();
+
+        let func_ty = func_inst.ty();
 
         // Pop return values from stack
         let return_values = func_ty

@@ -1,4 +1,5 @@
 use alloc::collections::btree_map::BTreeMap;
+use alloc::collections::btree_set::BTreeSet;
 use alloc::string::{String, ToString};
 use alloc::vec;
 use alloc::vec::Vec;
@@ -11,7 +12,7 @@ use crate::core::reader::types::element::{ElemItems, ElemMode};
 use crate::core::reader::types::export::ExportDesc;
 use crate::core::reader::types::global::Global;
 use crate::core::reader::types::import::ImportDesc;
-use crate::core::reader::types::{MemType, TableType, ValType};
+use crate::core::reader::types::{FuncType, MemType, TableType, ValType};
 use crate::core::reader::WasmReader;
 use crate::core::sidetable::Sidetable;
 use crate::execution::value::{Ref, Value};
@@ -21,6 +22,8 @@ use crate::{Error, RefType, ValidationInfo};
 
 use super::execution_info::ExecutionInfo;
 use super::UnwrapValidatedExt;
+
+use crate::core::error::LinkerError;
 
 /// The store represents all global state that can be manipulated by WebAssembly programs. It
 /// consists of the runtime representation of all instances of functions, tables, memories, and
@@ -114,7 +117,7 @@ impl<'b> Store<'b> {
             exports: module.exports,
         };
 
-        self.module_names.insert(name, self.modules.len());
+        self.module_names.insert(name.clone(), self.modules.len());
         self.modules.push(execution_info);
 
         // TODO: At this point of the code, we can continue in two ways with imports/exports:
@@ -127,21 +130,42 @@ impl<'b> Store<'b> {
 
         // TODO: failing is harder since we already modified 'self'. We will circle back to this later.
 
-        for module in &mut self.modules {
-            for fn_store_idx in &mut module.functions {
-                let func = &self.functions[*fn_store_idx];
+        // let temp = Vec::new();
+
+        for module_idx in 0..self.modules.len() {
+            for function_idx in 0..self.modules[module_idx].functions.len() {
+                let fn_store_idx = self.modules[module_idx].functions[function_idx];
+                let func: &FuncInst = &self.functions[fn_store_idx];
                 if let FuncInst::Imported(import) = func {
                     let resolved_idx =
                         self.lookup_function(&import.module_name, &import.function_name);
 
                     if resolved_idx.is_none() && import.module_name == name {
                         // TODO: Failed resolution... BAD!
+                        return Err(Error::LinkerError(LinkerError::UnmetImport));
                     } else {
-                        *fn_store_idx = resolved_idx.unwrap();
+                        self.modules[module_idx].functions[function_idx] = resolved_idx.unwrap();
                     }
                 }
             }
         }
+
+        // for module in &self.modules {
+        //     for fn_store_idx in &module.functions {
+        //         let func: &FuncInst = &self.functions[*fn_store_idx];
+        //         if let FuncInst::Imported(import) = func {
+        //             let resolved_idx =
+        //                 self.lookup_function(&import.module_name, &import.function_name);
+
+        //             if resolved_idx.is_none() && import.module_name == name {
+        //                 // TODO: Failed resolution... BAD!
+        //                 return Err(Error::LinkerError(LinkerError::UnmetImport));
+        //             } else {
+        //                 // *fn_store_idx = resolved_idx.unwrap();
+        //             }
+        //         }
+        //     }
+        // }
 
         Ok(())
     }
@@ -234,6 +258,7 @@ impl<'b> ValidationInfo<'b> {
                 code_expr,
                 // TODO figure out where we want our sidetables
                 sidetable: sidetable.clone(),
+                function_type: self.types[*ty].clone(),
             })
         });
 
@@ -242,6 +267,7 @@ impl<'b> ValidationInfo<'b> {
                 ty: *type_idx,
                 module_name: import.module_name.clone(),
                 function_name: import.name.clone(),
+                function_type: self.types[*type_idx].clone(),
             })),
             _ => None,
         });
@@ -464,6 +490,7 @@ pub struct LocalFuncInst {
     pub locals: Vec<ValType>,
     pub code_expr: Span,
     pub sidetable: Sidetable,
+    pub function_type: FuncType,
 }
 
 #[derive(Debug)]
@@ -471,13 +498,21 @@ pub struct ImportedFuncInst {
     pub ty: TypeIdx,
     pub module_name: String,
     pub function_name: String,
+    pub function_type: FuncType,
 }
 
 impl FuncInst {
-    pub fn ty(&self) -> TypeIdx {
+    pub fn ty_idx(&self) -> TypeIdx {
         match self {
             FuncInst::Local(f) => f.ty,
             FuncInst::Imported(f) => f.ty,
+        }
+    }
+
+    pub fn ty(&self) -> FuncType {
+        match self {
+            FuncInst::Local(f) => f.function_type.clone(),
+            FuncInst::Imported(f) => f.function_type.clone(),
         }
     }
 

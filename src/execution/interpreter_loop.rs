@@ -33,7 +33,7 @@ use crate::{
 #[cfg(feature = "hooks")]
 use crate::execution::hooks::HookSet;
 
-use super::{execution_info::ExecutionInfo, lut::Lut};
+use super::{execution_info::ExecutionInfo, lut::Lut, store::Store};
 
 /// Interprets a functions. Parameters and return values are passed on the stack.
 pub(super) fn run<H: HookSet>(
@@ -42,6 +42,7 @@ pub(super) fn run<H: HookSet>(
     lut: &Lut,
     stack: &mut Stack,
     mut hooks: H,
+    store: &mut Store,
 ) -> Result<(), RuntimeError> {
     let func_inst = modules[*current_module_idx]
         .store
