@@ -315,10 +315,9 @@ fn read_instructions(
                 let label_vec = wasm.read_vec(|wasm| wasm.read_var_u32().map(|v| v as LabelIdx))?;
                 let max_label_idx = wasm.read_var_u32()? as LabelIdx;
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
-
-                for label_idx in label_vec {
+                for label_idx in &label_vec {
                     validate_intrablock_jump_and_generate_sidetable_entry(
-                        wasm, label_idx, stack, sidetable,
+                        wasm, *label_idx, stack, sidetable,
                     )?;
                 }
 
@@ -328,6 +327,30 @@ fn read_instructions(
                     stack,
                     sidetable,
                 )?;
+
+                // The label arity of the branches must be explicitly checked against each other further
+                // if their arities are the same, then they must unify, as they unify against the stack variables already
+                // If the following check is not made, the algorithm incorrectly unifies label types with different arities
+                // in which the smaller arity type is a suffix in the label type list of the larger arity function
+
+                // stack includes all labels, that check is made in the above fn already
+                let max_label_arity = stack
+                    .ctrl_stack
+                    .get(stack.ctrl_stack.len() - max_label_idx - 1)
+                    .unwrap()
+                    .label_types()
+                    .len();
+                for label_idx in &label_vec {
+                    let label_arity = stack
+                        .ctrl_stack
+                        .get(stack.ctrl_stack.len() - *label_idx - 1)
+                        .unwrap()
+                        .label_types()
+                        .len();
+                    if max_label_arity != label_arity {
+                        return Err(Error::InvalidLabelIdx(*label_idx));
+                    }
+                }
 
                 stack.make_unspecified()?;
             }

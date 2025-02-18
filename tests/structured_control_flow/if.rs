@@ -203,7 +203,10 @@ fn if_without_else_type_check2() {
 )"#,
     )
     .unwrap();
-    assert!(validate(&wasm_bytes).is_err_and(|x| x == wasm::Error::IfWithoutMatchingElse));
+    assert_eq!(
+        validate(&wasm_bytes).err().unwrap(),
+        wasm::Error::IfWithoutMatchingElse
+    );
 }
 
 #[test_log::test]
