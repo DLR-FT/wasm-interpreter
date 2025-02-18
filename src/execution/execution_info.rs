@@ -1,6 +1,7 @@
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 
+use crate::core::reader::types::export::Export;
 use crate::core::reader::types::FuncType;
 use crate::core::reader::WasmReader;
 use crate::execution::Store;
@@ -36,5 +37,5 @@ pub struct ExecutionInfo<'r> {
     pub elements_offset: usize,
 
     pub passive_element_indexes: Vec<usize>,
-    // pub exports: Vec<usize>,
+    pub exports: Vec<Export>,
 }

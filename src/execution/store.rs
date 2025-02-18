@@ -1,4 +1,5 @@
-use alloc::string::String;
+use alloc::collections::btree_map::BTreeMap;
+use alloc::string::{String, ToString};
 use alloc::vec;
 use alloc::vec::Vec;
 use core::iter;
@@ -7,6 +8,7 @@ use crate::core::error::{Proposal, Result, StoreInstantiationError};
 use crate::core::indices::TypeIdx;
 use crate::core::reader::span::Span;
 use crate::core::reader::types::element::{ElemItems, ElemMode};
+use crate::core::reader::types::export::ExportDesc;
 use crate::core::reader::types::global::Global;
 use crate::core::reader::types::import::ImportDesc;
 use crate::core::reader::types::{MemType, TableType, ValType};
@@ -25,7 +27,7 @@ use super::UnwrapValidatedExt;
 /// globals, element segments, and data segments that have been allocated during the life time of
 /// the abstract machine.
 /// <https://webassembly.github.io/spec/core/exec/runtime.html#store>
-pub struct Store {
+pub struct Store<'b> {
     pub functions: Vec<FuncInst>,
     pub memories: Vec<MemInst>,
     pub globals: Vec<GlobalInst>,
@@ -33,14 +35,12 @@ pub struct Store {
     pub tables: Vec<TableInst>,
     pub elements: Vec<ElemInst>,
     // pub exports: Vec<Export>,
+    pub modules: Vec<ExecutionInfo<'b>>,
+    pub module_names: BTreeMap<String, usize>,
 }
 
-impl<'b> Store {
-    pub fn add_module(
-        &mut self,
-        name: String,
-        module: ValidationInfo<'b>,
-    ) -> Result<ExecutionInfo<'b>> {
+impl<'b> Store<'b> {
+    pub fn add_module(&mut self, name: String, module: ValidationInfo<'b>) -> Result<()> {
         // TODO: we can do validation at linktime such that if another module expects module `name` to export something,
         // and it doesn't, we can reject it here instead of accepting it and failing later.
 
@@ -84,7 +84,7 @@ impl<'b> Store {
         self.elements.extend(element_inst);
 
         let execution_info = ExecutionInfo {
-            name,
+            name: name.clone(),
             wasm_bytecode: module.wasm,
             wasm_reader: WasmReader::new(module.wasm),
 
@@ -111,9 +111,100 @@ impl<'b> Store {
             elements_offset,
 
             passive_element_indexes: passive_idxs,
+            exports: module.exports,
         };
 
-        Ok(execution_info)
+        self.module_names.insert(name, self.modules.len());
+        self.modules.push(execution_info);
+
+        // TODO: At this point of the code, we can continue in two ways with imports/exports:
+        // 1. Lazy import resolution: We do the lookup during the interprer loop either directly or via a lookup-table
+        // 2. Active import resolution: We resolve the import dependency now, failing if there are unresolved imports.
+        //    This limits the order in which modules need to be added.
+        // 3. Delayed active import resolution: We resolve the whatever import dependencies we can, but imports which
+        //    can not be resolved are left to wait for another module addition. If an import that should be satisfied by
+        //    this module isn't, we can fail.
+
+        // TODO: failing is harder since we already modified 'self'. We will circle back to this later.
+
+        for module in &mut self.modules {
+            for fn_store_idx in &mut module.functions {
+                let func = &self.functions[*fn_store_idx];
+                if let FuncInst::Imported(import) = func {
+                    let resolved_idx =
+                        self.lookup_function(&import.module_name, &import.function_name);
+
+                    if resolved_idx.is_none() && import.module_name == name {
+                        // TODO: Failed resolution... BAD!
+                    } else {
+                        *fn_store_idx = resolved_idx.unwrap();
+                    }
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    pub fn lookup_function(&self, target_module: &str, target_function: &str) -> Option<usize> {
+        let mut module_name: &str = target_module;
+        let mut function_name: &str = target_function;
+        let mut import_path: Vec<(String, String)> = vec![];
+
+        for _ in 0..100 {
+            import_path.push((module_name.to_string(), function_name.to_string()));
+            let module_idx = self.module_names.get(module_name)?;
+            let module = &self.modules[*module_idx];
+
+            let mut same_name_exports = module.exports.iter().filter_map(|export| {
+                if export.name == function_name {
+                    Some(&export.desc)
+                } else {
+                    None
+                }
+            });
+
+            // TODO: what if there are two exports with the same name -- error out?
+            if same_name_exports.clone().count() != 1 {
+                return None;
+            }
+
+            let target_export = same_name_exports.next()?;
+
+            match target_export {
+                ExportDesc::FuncIdx(local_idx) => {
+                    // Note: if we go ahead with the offset proposal, we can do
+                    // store_idx = module.functions_offset + *local_idx
+                    let store_idx = module.functions[*local_idx];
+
+                    match &self.functions[store_idx] {
+                        FuncInst::Local(_local_func_inst) => {
+                            return Some(store_idx);
+                        }
+                        FuncInst::Imported(import) => {
+                            if import_path.contains(&(
+                                import.module_name.clone(),
+                                import.function_name.clone(),
+                            )) {
+                                // TODO: find a way around this reference to clone thing. Rust is uppsety spaghetti for
+                                // understandable but dumb reasons.
+
+                                // TODO: cycle detected :(
+                                return None;
+                            }
+
+                            module_name = &import.module_name;
+                            function_name = &import.function_name;
+                        }
+                    }
+                }
+                _ => return None,
+            }
+        }
+
+        // At this point, we are 100-imports deep. This isn't okay, and could be a sign of an infinte loop. We don't
+        // want our plane's CPU to keep searching for imports so we just assume we haven't found any.
+        None
     }
 }
 
