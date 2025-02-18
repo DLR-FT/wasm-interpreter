@@ -380,6 +380,30 @@ fn switch_case() {
     assert_eq!(9, instance.invoke(&switch_case_fn, 7).unwrap());
 }
 
+#[test_log::test]
+fn br_table_label_typecheck1() {
+    let wasm_bytes = wat::parse_str(
+        r#"
+    (module
+        (func $test (param $value i32) (result i32)
+        (block
+            (block (result i32)
+              	unreachable
+                (br_table 1 0 1 (i32.const 0))
+            )
+        )
+    )
+    (export "test" (func $test))
+    )"#,
+    )
+    .unwrap();
+
+    assert_eq!(
+        validate(&wasm_bytes).err().unwrap(),
+        wasm::Error::InvalidLabelIdx(0)
+    );
+}
+
 const POLYMORPHIC_SELECT_VALIDATION: &str = r#"
 (module
     (func $polymorphic_select_validation
