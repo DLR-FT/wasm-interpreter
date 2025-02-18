@@ -33,9 +33,10 @@ pub(crate) mod execution_info;
 pub mod function_ref;
 pub mod hooks;
 mod interpreter_loop;
+pub mod linker;
 pub(crate) mod locals;
 pub(crate) mod lut;
-pub(crate) mod store;
+pub mod store;
 pub mod value;
 pub mod value_stack;
 

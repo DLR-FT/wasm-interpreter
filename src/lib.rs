@@ -7,6 +7,7 @@ pub use core::error::{Error, Result, RuntimeError};
 pub use core::reader::types::{Limits, NumType, RefType, ValType};
 pub use execution::value::Value;
 pub use execution::*;
+pub use execution::{linker::*, store::*};
 pub use validation::*;
 
 pub(crate) mod core;

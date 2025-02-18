@@ -27,6 +27,7 @@ use super::UnwrapValidatedExt;
 /// globals, element segments, and data segments that have been allocated during the life time of
 /// the abstract machine.
 /// <https://webassembly.github.io/spec/core/exec/runtime.html#store>
+#[derive(Default)]
 pub struct Store<'b> {
     pub functions: Vec<FuncInst>,
     pub memories: Vec<MemInst>,
@@ -535,6 +536,7 @@ impl TableInst {
     }
 }
 
+#[derive(Debug)]
 pub struct MemInst {
     #[allow(warnings)]
     pub ty: MemType,
@@ -562,12 +564,14 @@ impl MemInst {
     }
 }
 
+#[derive(Debug)]
 pub struct GlobalInst {
     pub global: Global,
     /// Must be of the same type as specified in `ty`
     pub value: Value,
 }
 
+#[derive(Debug)]
 pub struct DataInst {
     pub data: Vec<u8>,
 }
