@@ -166,3 +166,98 @@ fn recursive_fibonacci_if_else() {
     assert_eq!(5, instance.invoke(&fibonacci_fn, 4).unwrap());
     assert_eq!(8, instance.invoke(&fibonacci_fn, 5).unwrap());
 }
+
+#[test_log::test]
+fn if_without_else_type_check1() {
+    let wasm_bytes = wat::parse_str(
+        r#"
+(module
+    (func $empty (param $cond i32)
+        (if (local.get $cond) (then))
+    )
+
+    (export "empty" (func $empty))
+)"#,
+    )
+    .unwrap();
+    let validation_info = validate(&wasm_bytes).expect("validation failed");
+    let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
+
+    let empty_fn = instance.get_function_by_index(0, 0).unwrap();
+
+    assert_eq!((), instance.invoke(&empty_fn, 1).unwrap());
+    assert_eq!((), instance.invoke(&empty_fn, 0).unwrap());
+}
+
+#[test_log::test]
+fn if_without_else_type_check2() {
+    let wasm_bytes = wat::parse_str(
+        r#"
+(module
+    (func $empty (param $cond i32)
+        (i32.const 1)
+        (if (param i32) (local.get $cond) (then drop))
+    )
+
+    (export "empty" (func $empty))
+)"#,
+    )
+    .unwrap();
+    assert!(validate(&wasm_bytes).is_err_and(|x| x == wasm::Error::IfWithoutMatchingElse));
+}
+
+#[test_log::test]
+fn if_without_else_type_check3() {
+    let wasm_bytes = wat::parse_str(
+        r#"
+(module
+    (func $add_one_if_true (param $cond i32) (result i32)
+        (i32.const 5)
+        (if (param i32) (result i32) (local.get $cond) (then (i32.const 2) (i32.add)))
+    )
+
+    (export "add_one_if_true" (func $add_one_if_true))
+)"#,
+    )
+    .unwrap();
+    let validation_info = validate(&wasm_bytes).expect("validation failed");
+    let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
+
+    let add_one_if_true_fn = instance.get_function_by_index(0, 0).unwrap();
+
+    assert_eq!(7, instance.invoke(&add_one_if_true_fn, 1).unwrap());
+    assert_eq!(5, instance.invoke(&add_one_if_true_fn, 0).unwrap());
+}
+
+#[test_log::test]
+fn if_without_else_type_check4() {
+    let wasm_bytes = wat::parse_str(
+        r#"
+(module
+    (func $do_stuff_if_true (param $cond i32) (result i32) (result i64)
+        (i32.const 5)
+        (i64.const 20)
+        (if (param i32) (param i64) (result i32) (result i64) (local.get $cond) (then drop (i32.const 2) (i32.add) (i64.const 42)))
+    )
+
+    (export "do_stuff_if_true" (func $do_stuff_if_true))
+)"#,
+    )
+    .unwrap();
+    let validation_info = validate(&wasm_bytes).expect("validation failed");
+    let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
+
+    let add_one_if_true_fn = instance.get_function_by_index(0, 0).unwrap();
+    assert_eq!(
+        (7, 42),
+        instance
+            .invoke::<i32, (i32, i64)>(&add_one_if_true_fn, 1)
+            .unwrap()
+    );
+    assert_eq!(
+        (5, 20),
+        instance
+            .invoke::<i32, (i32, i64)>(&add_one_if_true_fn, 0)
+            .unwrap()
+    );
+}
