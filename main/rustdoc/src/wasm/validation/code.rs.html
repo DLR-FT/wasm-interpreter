@@ -1202,6 +1202,37 @@
 <a href="#1200" id="1200">1200</a>
 <a href="#1201" id="1201">1201</a>
 <a href="#1202" id="1202">1202</a>
+<a href="#1203" id="1203">1203</a>
+<a href="#1204" id="1204">1204</a>
+<a href="#1205" id="1205">1205</a>
+<a href="#1206" id="1206">1206</a>
+<a href="#1207" id="1207">1207</a>
+<a href="#1208" id="1208">1208</a>
+<a href="#1209" id="1209">1209</a>
+<a href="#1210" id="1210">1210</a>
+<a href="#1211" id="1211">1211</a>
+<a href="#1212" id="1212">1212</a>
+<a href="#1213" id="1213">1213</a>
+<a href="#1214" id="1214">1214</a>
+<a href="#1215" id="1215">1215</a>
+<a href="#1216" id="1216">1216</a>
+<a href="#1217" id="1217">1217</a>
+<a href="#1218" id="1218">1218</a>
+<a href="#1219" id="1219">1219</a>
+<a href="#1220" id="1220">1220</a>
+<a href="#1221" id="1221">1221</a>
+<a href="#1222" id="1222">1222</a>
+<a href="#1223" id="1223">1223</a>
+<a href="#1224" id="1224">1224</a>
+<a href="#1225" id="1225">1225</a>
+<a href="#1226" id="1226">1226</a>
+<a href="#1227" id="1227">1227</a>
+<a href="#1228" id="1228">1228</a>
+<a href="#1229" id="1229">1229</a>
+<a href="#1230" id="1230">1230</a>
+<a href="#1231" id="1231">1231</a>
+<a href="#1232" id="1232">1232</a>
+<a href="#1233" id="1233">1233</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>alloc::collections::btree_set::BTreeSet;
 <span class="kw">use </span>alloc::vec;
 <span class="kw">use </span>alloc::vec::Vec;
@@ -1471,7 +1502,7 @@
                 {
                     <span class="kw">if </span><span class="kw-2">*</span>stp == usize::MAX {
                         <span class="comment">//this If was previously matched with an else already, it is already backpatched!
-                        </span><span class="kw">return </span><span class="prelude-val">Err</span>(Error::IfWithoutMatchingElse);
+                        </span><span class="kw">return </span><span class="prelude-val">Err</span>(Error::ElseWithoutMatchingIf);
                     }
                     <span class="kw">let </span>stp_here = sidetable.len();
                     sidetable.push(SidetableEntry {
@@ -1519,10 +1550,9 @@
                 <span class="kw">let </span>label_vec = wasm.read_vec(|wasm| wasm.read_var_u32().map(|v| v <span class="kw">as </span>LabelIdx))<span class="question-mark">?</span>;
                 <span class="kw">let </span>max_label_idx = wasm.read_var_u32()<span class="question-mark">? </span><span class="kw">as </span>LabelIdx;
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))<span class="question-mark">?</span>;
-
-                <span class="kw">for </span>label_idx <span class="kw">in </span>label_vec {
+                <span class="kw">for </span>label_idx <span class="kw">in </span><span class="kw-2">&amp;</span>label_vec {
                     validate_intrablock_jump_and_generate_sidetable_entry(
-                        wasm, label_idx, stack, sidetable,
+                        wasm, <span class="kw-2">*</span>label_idx, stack, sidetable,
                     )<span class="question-mark">?</span>;
                 }
 
@@ -1533,10 +1563,34 @@
                     sidetable,
                 )<span class="question-mark">?</span>;
 
+                <span class="comment">// The label arity of the branches must be explicitly checked against each other further
+                // if their arities are the same, then they must unify, as they unify against the stack variables already
+                // If the following check is not made, the algorithm incorrectly unifies label types with different arities
+                // in which the smaller arity type is a suffix in the label type list of the larger arity function
+
+                // stack includes all labels, that check is made in the above fn already
+                </span><span class="kw">let </span>max_label_arity = stack
+                    .ctrl_stack
+                    .get(stack.ctrl_stack.len() - max_label_idx - <span class="number">1</span>)
+                    .unwrap()
+                    .label_types()
+                    .len();
+                <span class="kw">for </span>label_idx <span class="kw">in </span><span class="kw-2">&amp;</span>label_vec {
+                    <span class="kw">let </span>label_arity = stack
+                        .ctrl_stack
+                        .get(stack.ctrl_stack.len() - <span class="kw-2">*</span>label_idx - <span class="number">1</span>)
+                        .unwrap()
+                        .label_types()
+                        .len();
+                    <span class="kw">if </span>max_label_arity != label_arity {
+                        <span class="kw">return </span><span class="prelude-val">Err</span>(Error::InvalidLabelIdx(<span class="kw-2">*</span>label_idx));
+                    }
+                }
+
                 stack.make_unspecified()<span class="question-mark">?</span>;
             }
             END =&gt; {
-                <span class="kw">let </span>(label_info, <span class="kw">_</span>) = stack.assert_pop_ctrl()<span class="question-mark">?</span>;
+                <span class="kw">let </span>(label_info, block_ty) = stack.assert_pop_ctrl()<span class="question-mark">?</span>;
                 <span class="kw">let </span>stp_here = sidetable.len();
 
                 <span class="kw">match </span>label_info {
@@ -1551,6 +1605,14 @@
                         stps_to_backpatch,
                     } =&gt; {
                         <span class="kw">if </span>stp != usize::MAX {
+                            <span class="comment">//This If is still not backpatched, meaning it does not have a corresponding
+                            //ELSE. This is only allowed when the corresponding If block has the same input
+                            //types as its output types (an untyped ELSE block with no instruction is valid
+                            //if and only if it is of this type)
+                            </span><span class="kw">if </span>!(block_ty.params == block_ty.returns) {
+                                <span class="kw">return </span><span class="prelude-val">Err</span>(Error::IfWithoutMatchingElse);
+                            }
+
                             <span class="comment">//This If is still not backpatched, meaning it does not have a corresponding
                             //ELSE. Therefore if its condition fails, it jumps after END.
                             </span>sidetable[stp].delta_pc = (wasm.pc <span class="kw">as </span>isize) - sidetable[stp].delta_pc;

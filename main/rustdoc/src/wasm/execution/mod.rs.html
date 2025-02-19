@@ -770,6 +770,9 @@
 <a href="#768" id="768">768</a>
 <a href="#769" id="769">769</a>
 <a href="#770" id="770">770</a>
+<a href="#771" id="771">771</a>
+<a href="#772" id="772">772</a>
+<a href="#773" id="773">773</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>alloc::collections::btree_map::BTreeMap;
 <span class="kw">use </span>alloc::string::{String, ToString};
 <span class="kw">use </span>alloc::vec;
@@ -1003,6 +1006,7 @@
         <span class="comment">// Pop return values from stack
         </span><span class="kw">let </span>return_values = Returns::TYS
             .iter()
+            .rev()
             .map(|ty| stack.pop_value(<span class="kw-2">*</span>ty))
             .collect::&lt;Vec&lt;Value&gt;&gt;();
 
@@ -1080,6 +1084,7 @@
             .returns
             .valtypes
             .iter()
+            .rev()
             .map(|ty| stack.pop_value(<span class="kw-2">*</span>ty))
             .collect::&lt;Vec&lt;Value&gt;&gt;();
 
@@ -1162,6 +1167,7 @@
             .returns
             .valtypes
             .iter()
+            .rev()
             .map(|ty| stack.pop_value(<span class="kw-2">*</span>ty))
             .collect::&lt;Vec&lt;Value&gt;&gt;();
 
