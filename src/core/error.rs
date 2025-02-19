@@ -49,6 +49,11 @@ pub enum StoreInstantiationError {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
+pub enum LinkerError {
+    UnmetImport,
+}
+
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Error {
     /// The magic number at the very start of the given WASM file is invalid.
     InvalidMagic,
@@ -107,6 +112,7 @@ pub enum Error {
     TooManyLocals(usize),
     UnsupportedProposal(Proposal),
     Overflow,
+    LinkerError(LinkerError),
 }
 
 impl Display for Error {
@@ -264,6 +270,7 @@ impl Display for Error {
                 f.write_fmt(format_args!("Unsupported proposal: {:?}", proposal))
             }
             Error::Overflow => f.write_str("Overflow"),
+            Error::LinkerError(err) => err.fmt(f)
         }
     }
 }
@@ -312,6 +319,15 @@ impl Display for StoreInstantiationError {
             )),
             MissingValueOnTheStack => f.write_str(""),
             TooManyMemories(x) => f.write_fmt(format_args!("Too many memories (overflow): {}", x)),
+        }
+    }
+}
+
+impl Display for LinkerError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        use LinkerError::*;
+        match self {
+            UnmetImport => f.write_str("Unmet import"),
         }
     }
 }
