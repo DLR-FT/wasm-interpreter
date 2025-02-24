@@ -2,9 +2,9 @@ use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 
 use crate::core::reader::types::export::Export;
-use crate::core::reader::types::FuncType;
+// use crate::core::reader::types::FuncType;
 use crate::core::reader::WasmReader;
-use crate::execution::Store;
+// use crate::execution::Store;
 
 /// ExecutionInfo is a compilation of relevant information needed by the [interpreter loop](
 /// crate::execution::interpreter_loop::run). The lifetime annotation `'r` represents that this structure needs to be

@@ -5,7 +5,7 @@ use alloc::vec;
 use alloc::vec::Vec;
 use core::iter;
 
-use crate::core::error::{Proposal, Result, StoreInstantiationError};
+use crate::core::error::{Proposal, Result as CustomResult, StoreInstantiationError};
 use crate::core::indices::TypeIdx;
 use crate::core::reader::span::Span;
 use crate::core::reader::types::element::{ElemItems, ElemMode};
@@ -18,10 +18,13 @@ use crate::core::sidetable::Sidetable;
 use crate::execution::value::{Ref, Value};
 use crate::execution::{get_address_offset, run_const, run_const_span, Stack};
 use crate::value::{ExternAddr, FuncAddr};
-use crate::{Error, RefType, ValidationInfo};
+use crate::{Error, RefType, RuntimeError, ValidationInfo};
 
 use super::execution_info::ExecutionInfo;
-use super::UnwrapValidatedExt;
+use super::hooks::EmptyHookSet;
+use super::locals::Locals;
+use super::value::InteropValueList;
+use super::{run, UnwrapValidatedExt};
 
 use crate::core::error::LinkerError;
 
@@ -30,6 +33,7 @@ use crate::core::error::LinkerError;
 /// globals, element segments, and data segments that have been allocated during the life time of
 /// the abstract machine.
 /// <https://webassembly.github.io/spec/core/exec/runtime.html#store>
+#[derive(Default)]
 pub struct Store<'b> {
     pub functions: Vec<FuncInst>,
     pub memories: Vec<MemInst>,
@@ -43,7 +47,7 @@ pub struct Store<'b> {
 }
 
 impl<'b> Store<'b> {
-    pub fn add_module(&mut self, name: String, module: ValidationInfo<'b>) -> Result<()> {
+    pub fn add_module(&mut self, name: String, module: ValidationInfo<'b>) -> CustomResult<()> {
         // TODO: we can do validation at linktime such that if another module expects module `name` to export something,
         // and it doesn't, we can reject it here instead of accepting it and failing later.
 
@@ -140,9 +144,11 @@ impl<'b> Store<'b> {
                     let resolved_idx =
                         self.lookup_function(&import.module_name, &import.function_name);
 
-                    if resolved_idx.is_none() && import.module_name == name {
+                    if resolved_idx.is_none() {
+                        // if import.module_name == name {
                         // TODO: Failed resolution... BAD!
                         return Err(Error::LinkerError(LinkerError::UnmetImport));
+                        // }
                     } else {
                         self.modules[module_idx].functions[function_idx] = resolved_idx.unwrap();
                     }
@@ -230,10 +236,87 @@ impl<'b> Store<'b> {
         // want our plane's CPU to keep searching for imports so we just assume we haven't found any.
         None
     }
+
+    fn get_module_idx(&self, func_idx: usize) -> usize {
+        for module_idx in 0..self.modules.len() {
+            let module = &self.modules[module_idx];
+            let start = module.imported_functions_len;
+            for i in start..module.functions.len() {
+                if module.functions[i] == func_idx {
+                    return module_idx;
+                }
+            }
+        }
+
+        usize::MAX
+    }
+
+    // pub fn new
+    pub fn invoke<Param: InteropValueList, Returns: InteropValueList>(
+        &mut self,
+        func_idx: usize,
+        params: Param,
+    ) -> Result<Returns, RuntimeError> {
+        let func_inst = self
+            .functions
+            .get(func_idx)
+            .ok_or(RuntimeError::FunctionNotFound)?;
+
+        let func_ty = func_inst.ty();
+
+        if func_ty.params.valtypes != Param::TYS {
+            panic!("Invalid `Param` generics");
+        }
+        if func_ty.returns.valtypes != Returns::TYS {
+            panic!("Invalid `Returns` generics");
+        }
+
+        let mut stack = Stack::new();
+        let locals = Locals::new(
+            params.into_values().into_iter(),
+            func_inst.try_into_local().unwrap().locals.iter().cloned(),
+        );
+
+        let module_idx = self.get_module_idx(func_idx);
+        // setting `usize::MAX` as return address for the outermost function ensures that we
+        // observably fail upon errornoeusly continuing execution after that function returns.
+        stack.push_stackframe(
+            module_idx,
+            func_idx,
+            &func_ty,
+            locals,
+            usize::MAX,
+            usize::MAX,
+        );
+
+        let mut current_module_idx = module_idx;
+        // Run the interpreter
+        run(
+            // &mut self.modules,
+            &mut current_module_idx,
+            // self.lut.as_ref().ok_or(RuntimeError::UnmetImport)?,
+            &mut stack,
+            EmptyHookSet,
+            self,
+        )?;
+
+        // Pop return values from stack
+        let return_values = Returns::TYS
+            .iter()
+            .rev()
+            .map(|ty| stack.pop_value(*ty))
+            .collect::<Vec<Value>>();
+
+        // Values are reversed because they were popped from stack one-by-one. Now reverse them back
+        let reversed_values = return_values.into_iter().rev();
+        let ret: Returns = Returns::from_values(reversed_values);
+        debug!("Successfully invoked function");
+        Ok(ret)
+    }
 }
 
 impl<'b> ValidationInfo<'b> {
-    pub fn instantiate_functions(&self) -> Result<Vec<FuncInst>> {
+    pub fn instantiate_functions(&self) -> CustomResult<Vec<FuncInst>> {
         let mut wasm_reader = WasmReader::new(self.wasm);
 
         let functions = self.functions.iter();
@@ -275,14 +358,14 @@ impl<'b> ValidationInfo<'b> {
         Ok(imported_function_inst.chain(local_function_inst).collect())
     }
 
-    pub fn instantiate_tables(&self) -> Result<Vec<TableInst>> {
+    pub fn instantiate_tables(&self) -> CustomResult<Vec<TableInst>> {
         Ok(self.tables.iter().map(|ty| TableInst::new(*ty)).collect())
     }
 
     pub fn instantiate_elements(
         &self,
         tables: &mut [TableInst],
-    ) -> Result<(Vec<ElemInst>, Vec<usize>)> {
+    ) -> CustomResult<(Vec<ElemInst>, Vec<usize>)> {
         let mut passive_elem_indexes: Vec<usize> = vec![];
         // https://webassembly.github.io/spec/core/syntax/modules.html#element-segments
         let elements: Vec<ElemInst> = self
@@ -367,7 +450,7 @@ impl<'b> ValidationInfo<'b> {
         Ok((elements, passive_elem_indexes))
     }
 
-    pub fn instantiate_memories(&self) -> Result<Vec<MemInst>> {
+    pub fn instantiate_memories(&self) -> CustomResult<Vec<MemInst>> {
         let memories: Vec<MemInst> = self.memories.iter().map(|ty| MemInst::new(*ty)).collect();
 
         let import_memory_instances_len = self
@@ -392,7 +475,10 @@ impl<'b> ValidationInfo<'b> {
         Ok(memories)
     }
 
-    pub fn instantiate_data(&self, memory_instances: &mut [MemInst]) -> Result<Vec<DataInst>> {
+    pub fn instantiate_data(
+        &self,
+        memory_instances: &mut [MemInst],
+    ) -> CustomResult<Vec<DataInst>> {
         self.data
             .iter()
             .map(|d| {
@@ -449,10 +535,10 @@ impl<'b> ValidationInfo<'b> {
                     data: d.init.clone(),
                 })
             })
-            .collect::<Result<Vec<DataInst>>>()
+            .collect::<CustomResult<Vec<DataInst>>>()
     }
 
-    pub fn instantiate_globals(&self) -> Result<Vec<GlobalInst>> {
+    pub fn instantiate_globals(&self) -> CustomResult<Vec<GlobalInst>> {
         Ok(self
             .globals
             .iter()
