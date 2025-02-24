@@ -121,3 +121,34 @@ fn recursion_busted_stack() {
         "validation incorrectly passed"
     );
 }
+
+#[test_log::test]
+fn multivalue_call() {
+    let wat = r#"
+    (module
+        (func $foo (param $x i64) (param $y i32) (param $z f32) (result i32 f32 i64)
+            local.get $y
+            local.get $z
+            local.get $x
+        )
+        (func $bar (export "bar") (result i32 f32 i64)
+            i64.const 5
+            i32.const 10
+            f32.const 42.0
+            call $foo
+        )
+    )
+    "#;
+    let wasm_bytes = wat::parse_str(wat).unwrap();
+    let validation_info = validate(&wasm_bytes).expect("validation failed");
+    let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
+
+    let foo_fn = instance
+        .get_function_by_name(DEFAULT_MODULE, "bar")
+        .unwrap();
+
+    assert_eq!(
+        (10, 42.0, 5),
+        instance.invoke::<(), (i32, f32, i64)>(&foo_fn, ()).unwrap()
+    );
+}
