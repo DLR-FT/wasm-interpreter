@@ -36,6 +36,7 @@ use crate::core::error::LinkerError;
 #[derive(Default)]
 pub struct Store<'b> {
     pub functions: Vec<FuncInst>,
+    // pub function_types: Vec<FuncType>,
     pub memories: Vec<MemInst>,
     pub globals: Vec<GlobalInst>,
     pub data: Vec<DataInst>,
@@ -52,6 +53,7 @@ impl<'b> Store<'b> {
         // and it doesn't, we can reject it here instead of accepting it and failing later.
 
         let function_inst = module.instantiate_functions()?;
+        // let function_type_inst = module.instantiate_function_types()?;
         let mut table_inst = module.instantiate_tables()?;
         let (element_inst, passive_idxs) = module.instantiate_elements(&mut table_inst)?;
         let mut memories = module.instantiate_memories()?;
@@ -98,6 +100,8 @@ impl<'b> Store<'b> {
             functions: exec_functions,
             functions_offset,
             imported_functions_len: imported_functions,
+
+            function_types: module.types,
 
             memories: exec_memories,
             memories_offset,

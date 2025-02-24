@@ -2,6 +2,7 @@ use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 
 use crate::core::reader::types::export::Export;
+use crate::core::reader::types::FuncType;
 // use crate::core::reader::types::FuncType;
 use crate::core::reader::WasmReader;
 // use crate::execution::Store;
@@ -17,6 +18,8 @@ pub struct ExecutionInfo<'r> {
     pub functions: Vec<usize>,
     pub functions_offset: usize,
     pub imported_functions_len: usize,
+
+    pub function_types: Vec<FuncType>,
 
     pub memories: Vec<usize>,
     pub memories_offset: usize,

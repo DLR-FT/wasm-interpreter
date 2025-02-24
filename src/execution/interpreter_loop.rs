@@ -142,57 +142,100 @@ pub(super) fn run<H: HookSet>(
 
                 *current_module_idx = return_module;
             }
-            // IF => {
-            //     wasm.read_var_u32().unwrap_validated();
+            IF => {
+                store.modules[current_wasm_index]
+                    .wasm_reader
+                    .read_var_u32()
+                    .unwrap_validated();
 
-            //     let test_val: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let test_val: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-            //     if test_val != 0 {
-            //         stp += 1;
-            //     } else {
-            //         do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable);
-            //     }
-            // }
-            // ELSE => {
-            //     do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable);
-            // }
-            // BR_IF => {
-            //     wasm.read_var_u32().unwrap_validated();
+                if test_val != 0 {
+                    stp += 1;
+                } else {
+                    do_sidetable_control_transfer(
+                        &mut store.modules[current_wasm_index].wasm_reader,
+                        stack,
+                        &mut stp,
+                        current_sidetable,
+                    );
+                }
+            }
+            ELSE => {
+                do_sidetable_control_transfer(
+                    &mut store.modules[current_wasm_index].wasm_reader,
+                    stack,
+                    &mut stp,
+                    current_sidetable,
+                );
+            }
+            BR_IF => {
+                store.modules[current_wasm_index]
+                    .wasm_reader
+                    .read_var_u32()
+                    .unwrap_validated();
 
-            //     let test_val: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let test_val: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-            //     if test_val != 0 {
-            //         do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable);
-            //     } else {
-            //         stp += 1;
-            //     }
-            // }
-            // BR_TABLE => {
-            //     let label_vec = wasm
-            //         .read_vec(|wasm| wasm.read_var_u32().map(|v| v as LabelIdx))
-            //         .unwrap_validated();
-            //     wasm.read_var_u32().unwrap_validated();
+                if test_val != 0 {
+                    do_sidetable_control_transfer(
+                        &mut store.modules[current_wasm_index].wasm_reader,
+                        stack,
+                        &mut stp,
+                        current_sidetable,
+                    );
+                } else {
+                    stp += 1;
+                }
+            }
+            BR_TABLE => {
+                let label_vec = store.modules[current_wasm_index]
+                    .wasm_reader
+                    .read_vec(|wasm| {
+                        store.modules[current_wasm_index]
+                            .wasm_reader
+                            .read_var_u32()
+                            .map(|v| v as LabelIdx)
+                    })
+                    .unwrap_validated();
+                store.modules[current_wasm_index]
+                    .wasm_reader
+                    .read_var_u32()
+                    .unwrap_validated();
 
-            //     // TODO is this correct?
-            //     let case_val_i32: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-            //     let case_val = case_val_i32 as usize;
+                // TODO is this correct?
+                let case_val_i32: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let case_val = case_val_i32 as usize;
 
-            //     if case_val >= label_vec.len() {
-            //         stp += label_vec.len();
-            //     } else {
-            //         stp += case_val;
-            //     }
+                if case_val >= label_vec.len() {
+                    stp += label_vec.len();
+                } else {
+                    stp += case_val;
+                }
 
-            //     do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable);
-            // }
-            // BR => {
-            //     //skip n of BR n
-            //     wasm.read_var_u32().unwrap_validated();
-            //     do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable);
-            // }
-            // BLOCK | LOOP => {
-            //     BlockType::read_unvalidated(wasm);
-            // }
+                do_sidetable_control_transfer(
+                    &mut store.modules[current_wasm_index].wasm_reader,
+                    stack,
+                    &mut stp,
+                    current_sidetable,
+                );
+            }
+            BR => {
+                //skip n of BR n
+                store.modules[current_wasm_index]
+                    .wasm_reader
+                    .read_var_u32()
+                    .unwrap_validated();
+                do_sidetable_control_transfer(
+                    &mut store.modules[current_wasm_index].wasm_reader,
+                    stack,
+                    &mut stp,
+                    current_sidetable,
+                );
+            }
+            BLOCK | LOOP => {
+                BlockType::read_unvalidated(&mut store.modules[current_wasm_index].wasm_reader);
+            }
             RETURN => {
                 //same as BR, except no need to skip n of BR n
                 do_sidetable_control_transfer(
@@ -296,112 +339,112 @@ pub(super) fn run<H: HookSet>(
                     }
                 }
             }
-            // CALL_INDIRECT => {
-            //     let given_type_idx = wasm.read_var_u32().unwrap_validated() as TypeIdx;
-            //     let table_idx = wasm.read_var_u32().unwrap_validated() as TableIdx;
+            CALL_INDIRECT => {
+                let given_type_idx = store.modules[current_wasm_index]
+                    .wasm_reader
+                    .read_var_u32()
+                    .unwrap_validated() as TypeIdx;
+                let table_idx = store.modules[current_wasm_index]
+                    .wasm_reader
+                    .read_var_u32()
+                    .unwrap_validated() as TableIdx;
 
-            //     let tab = modules[*current_module_idx]
-            //         .store
-            //         .tables
-            //         .get(table_idx)
-            //         .unwrap_validated();
-            //     let func_ty = modules[*current_module_idx]
-            //         .fn_types
-            //         .get(given_type_idx)
-            //         .unwrap_validated();
+                let tab = store.tables[store.modules[*current_module_idx].tables[table_idx]];
 
-            //     let i: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let func_ty = store.modules[*current_module_idx]
+                    .function_types
+                    .get(given_type_idx)
+                    .unwrap_validated();
 
-            //     let r = tab
-            //         .elem
-            //         .get(i as usize)
-            //         .ok_or(RuntimeError::UndefinedTableIndex)
-            //         .and_then(|r| {
-            //             if r.is_null() {
-            //                 trace!("table_idx ({table_idx}) --- element index in table ({i})");
-            //                 Err(RuntimeError::UninitializedElement)
-            //             } else {
-            //                 Ok(r)
-            //             }
-            //         })?;
+                let i: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-            //     let func_addr = match *r {
-            //         Ref::Func(func_addr) => func_addr.addr.unwrap_validated(),
-            //         Ref::Extern(_) => unreachable!(),
-            //     };
+                let r = tab
+                    .elem
+                    .get(i as usize)
+                    .ok_or(RuntimeError::UndefinedTableIndex)
+                    .and_then(|r| {
+                        if r.is_null() {
+                            trace!("table_idx ({table_idx}) --- element index in table ({i})");
+                            Err(RuntimeError::UninitializedElement)
+                        } else {
+                            Ok(r)
+                        }
+                    })?;
 
-            //     let func_to_call_inst = modules[*current_module_idx]
-            //         .store
-            //         .funcs
-            //         .get(func_addr)
-            //         .unwrap_validated();
+                let func_addr = match *r {
+                    Ref::Func(func_addr) => func_addr.addr.unwrap_validated(),
+                    Ref::Extern(_) => unreachable!(),
+                };
 
-            //     let actual_type_idx = func_to_call_inst.ty();
-            //     let actual_ty = modules[*current_module_idx]
-            //         .fn_types
-            //         .get(actual_type_idx)
-            //         .unwrap_validated();
+                let func_to_call_inst =
+                    store.functions[store.modules[*current_module_idx].functions[func_addr]];
 
-            //     if func_ty != actual_ty {
-            //         return Err(RuntimeError::SignatureMismatch);
-            //     }
+                let actual_ty = func_to_call_inst.ty();
 
-            //     match func_to_call_inst {
-            //         FuncInst::Local(local_func_inst) => {
-            //             let params = stack.pop_tail_iter(func_ty.params.valtypes.len());
-            //             let remaining_locals = local_func_inst.locals.iter().cloned();
+                if *func_ty != actual_ty {
+                    return Err(RuntimeError::SignatureMismatch);
+                }
 
-            //             trace!("Instruction: call_indirect [{func_addr:?}]");
-            //             let locals = Locals::new(params, remaining_locals);
-            //             stack.push_stackframe(
-            //                 *current_module_idx,
-            //                 func_addr,
-            //                 func_ty,
-            //                 locals,
-            //                 wasm.pc,
-            //                 stp,
-            //             );
+                match func_to_call_inst {
+                    FuncInst::Local(local_func_inst) => {
+                        let params = stack.pop_tail_iter(func_ty.params.valtypes.len());
+                        let remaining_locals = local_func_inst.locals.iter().cloned();
 
-            //             wasm.move_start_to(local_func_inst.code_expr)
-            //                 .unwrap_validated();
+                        trace!("Instruction: call_indirect [{func_addr:?}]");
+                        let locals = Locals::new(params, remaining_locals);
+                        stack.push_stackframe(
+                            *current_module_idx,
+                            func_addr,
+                            func_ty,
+                            locals,
+                            store.modules[current_wasm_index].wasm_reader.pc,
+                            stp,
+                        );
 
-            //             stp = 0;
-            //             current_sidetable = &local_func_inst.sidetable;
-            //         }
-            //         FuncInst::Imported(_imported_func_inst) => {
-            //             let (next_module, next_func_idx) = lut
-            //                 .lookup(*current_module_idx, func_addr)
-            //                 .expect("invalid state for lookup");
+                        store.modules[current_wasm_index]
+                            .wasm_reader
+                            .move_start_to(local_func_inst.code_expr)
+                            .unwrap_validated();
 
-            //             let local_func_inst = modules[next_module].store.funcs[next_func_idx]
-            //                 .try_into_local()
-            //                 .unwrap();
+                        stp = 0;
+                        current_sidetable = &local_func_inst.sidetable;
+                    }
+                    FuncInst::Imported(_imported_func_inst) => {
+                        let (next_module, next_func_idx) = lut
+                            .lookup(*current_module_idx, func_addr)
+                            .expect("invalid state for lookup");
 
-            //             let params = stack.pop_tail_iter(func_ty.params.valtypes.len());
-            //             let remaining_locals = local_func_inst.locals.iter().cloned();
+                        let local_func_inst = modules[next_module].store.funcs[next_func_idx]
+                            .try_into_local()
+                            .unwrap();
 
-            //             trace!("Instruction: call_indirect [{func_addr:?}]");
-            //             let locals = Locals::new(params, remaining_locals);
-            //             stack.push_stackframe(
-            //                 *current_module_idx,
-            //                 func_addr,
-            //                 func_ty,
-            //                 locals,
-            //                 wasm.pc,
-            //                 stp,
-            //             );
+                        let params = stack.pop_tail_iter(func_ty.params.valtypes.len());
+                        let remaining_locals = local_func_inst.locals.iter().cloned();
 
-            //             wasm = &mut modules[next_module].wasm_reader;
-            //             *current_module_idx = next_module;
+                        trace!("Instruction: call_indirect [{func_addr:?}]");
+                        let locals = Locals::new(params, remaining_locals);
+                        stack.push_stackframe(
+                            *current_module_idx,
+                            func_addr,
+                            func_ty,
+                            locals,
+                            store.modules[current_wasm_index].wasm_reader.pc,
+                            stp,
+                        );
 
-            //             wasm.move_start_to(local_func_inst.code_expr)
-            //                 .unwrap_validated();
+                        wasm = &mut modules[next_module].wasm_reader;
+                        *current_module_idx = next_module;
 
-            //             stp = 0;
-            //             current_sidetable = &local_func_inst.sidetable;
-            //         }
-            //     }
-            // }
+                        store.modules[current_wasm_index]
+                            .wasm_reader
+                            .move_start_to(local_func_inst.code_expr)
+                            .unwrap_validated();
+
+                        stp = 0;
+                        current_sidetable = &local_func_inst.sidetable;
+                    }
+                }
+            }
             DROP => {
                 stack.drop_value();
             }
@@ -449,766 +492,807 @@ pub(super) fn run<H: HookSet>(
                     .read_var_u32()
                     .unwrap_validated() as LocalIdx,
             ),
-            // GLOBAL_GET => {
-            //     let global_idx = wasm.read_var_u32().unwrap_validated() as GlobalIdx;
-            //     let global = modules[*current_module_idx]
-            //         .store
-            //         .globals
-            //         .get(global_idx)
-            //         .unwrap_validated();
-
-            //     stack.push_value(global.value);
-            // }
-            // GLOBAL_SET => {
-            //     let global_idx = wasm.read_var_u32().unwrap_validated() as GlobalIdx;
-            //     let global = modules[*current_module_idx]
-            //         .store
-            //         .globals
-            //         .get_mut(global_idx)
-            //         .unwrap_validated();
-
-            //     global.value = stack.pop_value(global.global.ty.ty)
-            // }
-            // TABLE_GET => {
-            //     let table_idx = wasm.read_var_u32().unwrap_validated() as TableIdx;
-
-            //     let tab = modules[*current_module_idx]
-            //         .store
-            //         .tables
-            //         .get(table_idx)
-            //         .unwrap_validated();
-
-            //     let i: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-
-            //     let val = tab
-            //         .elem
-            //         .get(i as usize)
-            //         .ok_or(RuntimeError::TableAccessOutOfBounds)?;
-
-            //     stack.push_value((*val).into());
-            //     trace!(
-            //         "Instruction: table.get '{}' [{}] -> [{}]",
-            //         table_idx,
-            //         i,
-            //         val
-            //     );
-            // }
-            // TABLE_SET => {
-            //     let table_idx = wasm.read_var_u32().unwrap_validated() as TableIdx;
-
-            //     let tab = &mut modules[*current_module_idx].store.tables[table_idx];
-
-            //     let val: Ref = stack.pop_value(ValType::RefType(tab.ty.et)).into();
-            //     let i: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-
-            //     tab.elem
-            //         .get_mut(i as usize)
-            //         .ok_or(RuntimeError::TableAccessOutOfBounds)
-            //         .map(|r| *r = val)?;
-            //     trace!(
-            //         "Instruction: table.set '{}' [{} {}] -> []",
-            //         table_idx,
-            //         i,
-            //         val
-            //     )
-            // }
-            // I32_LOAD => {
-            //     let memarg = MemArg::read_unvalidated(wasm);
-            //     let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-
-            //     let mem = modules[*current_module_idx]
-            //         .store
-            //         .mems
-            //         .first()
-            //         .unwrap_validated(); // there is only one memory allowed as of now
-
-            //     let data: u32 = {
-            //         // The spec states that this should be a 33 bit integer
-            //         // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
-            //         let _address = memarg.offset.checked_add(relative_address);
-            //         let data = memarg
-            //             .offset
-            //             .checked_add(relative_address)
-            //             .and_then(|address| {
-            //                 let address = address as usize;
-            //                 mem.data.get(address..(address + 4))
-            //             })
-            //             .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
-
-            //         let data: [u8; 4] = data.try_into().expect("this to be exactly 4 bytes");
-            //         u32::from_le_bytes(data)
-            //     };
-
-            //     stack.push_value(Value::I32(data));
-            //     trace!("Instruction: i32.load [{relative_address}] -> [{data}]");
-            // }
-            // I64_LOAD => {
-            //     let memarg = MemArg::read_unvalidated(wasm);
-            //     let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-
-            //     let mem = modules[*current_module_idx]
-            //         .store
-            //         .mems
-            //         .first()
-            //         .unwrap_validated();
-
-            //     let data: u64 = {
-            //         // The spec states that this should be a 33 bit integer
-            //         // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
-            //         let _address = memarg.offset.checked_add(relative_address);
-            //         let data = memarg
-            //             .offset
-            //             .checked_add(relative_address)
-            //             .and_then(|address| {
-            //                 let address = address as usize;
-            //                 mem.data
-            //                     .get(address..(address + 8))
-            //                     .map(|slice| slice.try_into().expect("this to be exactly 8 bytes"))
-            //             })
-            //             .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
-
-            //         u64::from_le_bytes(data)
-            //     };
-
-            //     stack.push_value(Value::I64(data));
-            //     trace!("Instruction: i64.load [{relative_address}] -> [{data}]");
-            // }
-            // F32_LOAD => {
-            //     let memarg = MemArg::read_unvalidated(wasm);
-            //     let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-
-            //     let mem = modules[*current_module_idx]
-            //         .store
-            //         .mems
-            //         .first()
-            //         .unwrap_validated(); // there is only one memory allowed as of now
-
-            //     let data: f32 = {
-            //         // The spec states that this should be a 33 bit integer
-            //         // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
-            //         let _address = memarg.offset.checked_add(relative_address);
-            //         let data = memarg
-            //             .offset
-            //             .checked_add(relative_address)
-            //             .and_then(|address| {
-            //                 let address = address as usize;
-            //                 mem.data
-            //                     .get(address..(address + 4))
-            //                     .map(|slice| slice.try_into().expect("this to be exactly 4 bytes"))
-            //             })
-            //             .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
-            //         f32::from_le_bytes(data)
-            //     };
-
-            //     stack.push_value(Value::F32(value::F32(data)));
-            //     trace!("Instruction: f32.load [{relative_address}] -> [{data}]");
-            // }
-            // F64_LOAD => {
-            //     let memarg = MemArg::read_unvalidated(wasm);
-            //     let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-
-            //     let mem = modules[*current_module_idx]
-            //         .store
-            //         .mems
-            //         .first()
-            //         .unwrap_validated();
-
-            //     let data: f64 = {
-            //         // The spec states that this should be a 33 bit integer
-            //         // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
-            //         let _address = memarg.offset.checked_add(relative_address);
-            //         let data = memarg
-            //             .offset
-            //             .checked_add(relative_address)
-            //             .and_then(|address| {
-            //                 let address = address as usize;
-            //                 mem.data
-            //                     .get(address..(address + 8))
-            //                     .map(|slice| slice.try_into().expect("this to be exactly 8 bytes"))
-            //             })
-            //             .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
-
-            //         f64::from_le_bytes(data)
-            //     };
-
-            //     stack.push_value(Value::F64(value::F64(data)));
-            //     trace!("Instruction: f64.load [{relative_address}] -> [{data}]");
-            // }
-            // I32_LOAD8_S => {
-            //     let memarg = MemArg::read_unvalidated(wasm);
-            //     let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-
-            //     let mem = modules[*current_module_idx]
-            //         .store
-            //         .mems
-            //         .first()
-            //         .unwrap_validated(); // there is only one memory allowed as of now
-
-            //     let data: i8 = {
-            //         // The spec states that this should be a 33 bit integer
-            //         // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
-            //         let _address = memarg.offset.checked_add(relative_address);
-            //         let data = memarg
-            //             .offset
-            //             .checked_add(relative_address)
-            //             .and_then(|address| {
-            //                 let address = address as usize;
-            //                 mem.data
-            //                     .get(address..(address + 1))
-            //                     .map(|slice| slice.try_into().expect("this to be exactly 1 byte"))
-            //             })
-            //             .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
-
-            //         // let data: [u8; 1] = data.try_into().expect("this to be exactly 1 byte");
-            //         u8::from_le_bytes(data) as i8
-            //     };
-
-            //     stack.push_value(Value::I32(data as u32));
-            //     trace!("Instruction: i32.load8_s [{relative_address}] -> [{data}]");
-            // }
-            // I32_LOAD8_U => {
-            //     let memarg = MemArg::read_unvalidated(wasm);
-            //     let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-
-            //     let mem = modules[*current_module_idx]
-            //         .store
-            //         .mems
-            //         .first()
-            //         .unwrap_validated(); // there is only one memory allowed as of now
-
-            //     let data: u8 = {
-            //         // The spec states that this should be a 33 bit integer
-            //         // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
-            //         let _address = memarg.offset.checked_add(relative_address);
-            //         let data = memarg
-            //             .offset
-            //             .checked_add(relative_address)
-            //             .and_then(|address| {
-            //                 let address = address as usize;
-            //                 mem.data
-            //                     .get(address..(address + 1))
-            //                     .map(|slice| slice.try_into().expect("this to be exactly 1 byte"))
-            //             })
-            //             .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
-
-            //         u8::from_le_bytes(data)
-            //     };
-
-            //     stack.push_value(Value::I32(data as u32));
-            //     trace!("Instruction: i32.load8_u [{relative_address}] -> [{data}]");
-            // }
-            // I32_LOAD16_S => {
-            //     let memarg = MemArg::read_unvalidated(wasm);
-            //     let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-
-            //     let mem = modules[*current_module_idx]
-            //         .store
-            //         .mems
-            //         .first()
-            //         .unwrap_validated(); // there is only one memory allowed as of now
-
-            //     let data: i16 = {
-            //         // The spec states that this should be a 33 bit integer
-            //         // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
-            //         let _address = memarg.offset.checked_add(relative_address);
-            //         let data = memarg
-            //             .offset
-            //             .checked_add(relative_address)
-            //             .and_then(|address| {
-            //                 let address = address as usize;
-            //                 mem.data
-            //                     .get(address..(address + 2))
-            //                     .map(|slice| slice.try_into().expect("this to be exactly 2 bytes"))
-            //             })
-            //             .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
-
-            //         u16::from_le_bytes(data) as i16
-            //     };
-
-            //     stack.push_value(Value::I32(data as u32));
-            //     trace!("Instruction: i32.load16_s [{relative_address}] -> [{data}]");
-            // }
-            // I32_LOAD16_U => {
-            //     let memarg = MemArg::read_unvalidated(wasm);
-            //     let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-
-            //     let mem = modules[*current_module_idx]
-            //         .store
-            //         .mems
-            //         .first()
-            //         .unwrap_validated(); // there is only one memory allowed as of now
-
-            //     let data: u16 = {
-            //         // The spec states that this should be a 33 bit integer
-            //         // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
-            //         let _address = memarg.offset.checked_add(relative_address);
-            //         let data = memarg
-            //             .offset
-            //             .checked_add(relative_address)
-            //             .and_then(|address| {
-            //                 let address = address as usize;
-            //                 mem.data
-            //                     .get(address..(address + 2))
-            //                     .map(|slice| slice.try_into().expect("this to be exactly 2 bytes"))
-            //             })
-            //             .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
-
-            //         u16::from_le_bytes(data)
-            //     };
-
-            //     stack.push_value(Value::I32(data as u32));
-            //     trace!("Instruction: i32.load16_u [{relative_address}] -> [{data}]");
-            // }
-            // I64_LOAD8_S => {
-            //     let memarg = MemArg::read_unvalidated(wasm);
-            //     let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-
-            //     let mem = modules[*current_module_idx]
-            //         .store
-            //         .mems
-            //         .first()
-            //         .unwrap_validated(); // there is only one memory allowed as of now
-
-            //     let data: i8 = {
-            //         // The spec states that this should be a 33 bit integer
-            //         // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
-            //         let _address = memarg.offset.checked_add(relative_address);
-            //         let data = memarg
-            //             .offset
-            //             .checked_add(relative_address)
-            //             .and_then(|address| {
-            //                 let address = address as usize;
-            //                 mem.data
-            //                     .get(address..(address + 1))
-            //                     .map(|slice| slice.try_into().expect("this to be exactly 1 byte"))
-            //             })
-            //             .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
-
-            //         // let data: [u8; 1] = data.try_into().expect("this to be exactly 1 byte");
-            //         u8::from_le_bytes(data) as i8
-            //     };
-
-            //     stack.push_value(Value::I64(data as u64));
-            //     trace!("Instruction: i64.load8_s [{relative_address}] -> [{data}]");
-            // }
-            // I64_LOAD8_U => {
-            //     let memarg = MemArg::read_unvalidated(wasm);
-            //     let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-
-            //     let mem = modules[*current_module_idx]
-            //         .store
-            //         .mems
-            //         .first()
-            //         .unwrap_validated(); // there is only one memory allowed as of now
-
-            //     let data: u8 = {
-            //         // The spec states that this should be a 33 bit integer
-            //         // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
-            //         let _address = memarg.offset.checked_add(relative_address);
-            //         let data = memarg
-            //             .offset
-            //             .checked_add(relative_address)
-            //             .and_then(|address| {
-            //                 let address = address as usize;
-            //                 mem.data
-            //                     .get(address..(address + 1))
-            //                     .map(|slice| slice.try_into().expect("this to be exactly 1 byte"))
-            //             })
-            //             .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
-
-            //         // let data: [u8; 1] = data.try_into().expect("this to be exactly 1 byte");
-            //         u8::from_le_bytes(data)
-            //     };
-
-            //     stack.push_value(Value::I64(data as u64));
-            //     trace!("Instruction: i64.load8_u [{relative_address}] -> [{data}]");
-            // }
-            // I64_LOAD16_S => {
-            //     let memarg = MemArg::read_unvalidated(wasm);
-            //     let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-
-            //     let mem = modules[*current_module_idx]
-            //         .store
-            //         .mems
-            //         .first()
-            //         .unwrap_validated(); // there is only one memory allowed as of now
-
-            //     let data: i16 = {
-            //         // The spec states that this should be a 33 bit integer
-            //         // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
-            //         let _address = memarg.offset.checked_add(relative_address);
-            //         let data = memarg
-            //             .offset
-            //             .checked_add(relative_address)
-            //             .and_then(|address| {
-            //                 let address = address as usize;
-            //                 mem.data
-            //                     .get(address..(address + 2))
-            //                     .map(|slice| slice.try_into().expect("this to be exactly 2 bytes"))
-            //             })
-            //             .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
-
-            //         u16::from_le_bytes(data) as i16
-            //     };
-
-            //     stack.push_value(Value::I64(data as u64));
-            //     trace!("Instruction: i64.load16_s [{relative_address}] -> [{data}]");
-            // }
-            // I64_LOAD16_U => {
-            //     let memarg = MemArg::read_unvalidated(wasm);
-            //     let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-
-            //     let mem = modules[*current_module_idx]
-            //         .store
-            //         .mems
-            //         .first()
-            //         .unwrap_validated(); // there is only one memory allowed as of now
-
-            //     let data: u16 = {
-            //         // The spec states that this should be a 33 bit integer
-            //         // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
-            //         let _address = memarg.offset.checked_add(relative_address);
-            //         let data = memarg
-            //             .offset
-            //             .checked_add(relative_address)
-            //             .and_then(|address| {
-            //                 let address = address as usize;
-            //                 mem.data
-            //                     .get(address..(address + 2))
-            //                     .map(|slice| slice.try_into().expect("this to be exactly 2 bytes"))
-            //             })
-            //             .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
-
-            //         u16::from_le_bytes(data)
-            //     };
-
-            //     stack.push_value(Value::I64(data as u64));
-            //     trace!("Instruction: i64.load16_u [{relative_address}] -> [{data}]");
-            // }
-            // I64_LOAD32_S => {
-            //     let memarg = MemArg::read_unvalidated(wasm);
-            //     let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-
-            //     let mem = modules[*current_module_idx]
-            //         .store
-            //         .mems
-            //         .first()
-            //         .unwrap_validated(); // there is only one memory allowed as of now
-
-            //     let data: i32 = {
-            //         // The spec states that this should be a 33 bit integer
-            //         // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
-            //         let _address = memarg.offset.checked_add(relative_address);
-            //         let data = memarg
-            //             .offset
-            //             .checked_add(relative_address)
-            //             .and_then(|address| {
-            //                 let address = address as usize;
-            //                 mem.data
-            //                     .get(address..(address + 4))
-            //                     .map(|slice| slice.try_into().expect("this to be exactly 4 bytes"))
-            //             })
-            //             .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
-
-            //         u32::from_le_bytes(data) as i32
-            //     };
-
-            //     stack.push_value(Value::I64(data as u64));
-            //     trace!("Instruction: i64.load32_s [{relative_address}] -> [{data}]");
-            // }
-            // I64_LOAD32_U => {
-            //     let memarg = MemArg::read_unvalidated(wasm);
-            //     let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-
-            //     let mem = modules[*current_module_idx]
-            //         .store
-            //         .mems
-            //         .first()
-            //         .unwrap_validated(); // there is only one memory allowed as of now
-
-            //     let data: u32 = {
-            //         // The spec states that this should be a 33 bit integer
-            //         // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
-            //         let _address = memarg.offset.checked_add(relative_address);
-            //         let data = memarg
-            //             .offset
-            //             .checked_add(relative_address)
-            //             .and_then(|address| {
-            //                 let address = address as usize;
-            //                 mem.data
-            //                     .get(address..(address + 4))
-            //                     .map(|slice| slice.try_into().expect("this to be exactly 4 bytes"))
-            //             })
-            //             .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
-
-            //         u32::from_le_bytes(data)
-            //     };
-
-            //     stack.push_value(Value::I64(data as u64));
-            //     trace!("Instruction: i64.load32_u [{relative_address}] -> [{data}]");
-            // }
-            // I32_STORE => {
-            //     let memarg = MemArg::read_unvalidated(wasm);
-
-            //     let data_to_store: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-            //     let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-
-            //     let mem = modules[*current_module_idx]
-            //         .store
-            //         .mems
-            //         .get_mut(0)
-            //         .unwrap_validated(); // there is only one memory allowed as of now
-
-            //     // The spec states that this should be a 33 bit integer
-            //     // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
-            //     let address = memarg.offset.checked_add(relative_address);
-            //     let memory_location = address
-            //         .and_then(|address| {
-            //             let address = address as usize;
-            //             mem.data.get_mut(address..(address + 4))
-            //         })
-            //         .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
-
-            //     memory_location.copy_from_slice(&data_to_store.to_le_bytes());
-            //     trace!("Instruction: i32.store [{relative_address} {data_to_store}] -> []");
-            // }
-            // I64_STORE => {
-            //     let memarg = MemArg::read_unvalidated(wasm);
-
-            //     let data_to_store: u64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-            //     let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-
-            //     let mem = modules[*current_module_idx]
-            //         .store
-            //         .mems
-            //         .get_mut(0)
-            //         .unwrap_validated(); // there is only one memory allowed as of now
-
-            //     // The spec states that this should be a 33 bit integer
-            //     // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
-            //     let address = memarg.offset.checked_add(relative_address);
-            //     let memory_location = address
-            //         .and_then(|address| {
-            //             let address = address as usize;
-            //             mem.data.get_mut(address..(address + 8))
-            //         })
-            //         .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
-
-            //     memory_location.copy_from_slice(&data_to_store.to_le_bytes());
-            //     trace!("Instruction: i64.store [{relative_address} {data_to_store}] -> []");
-            // }
-            // F32_STORE => {
-            //     let memarg = MemArg::read_unvalidated(wasm);
-
-            //     let data_to_store: f32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
-            //     let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-
-            //     let mem = modules[*current_module_idx]
-            //         .store
-            //         .mems
-            //         .get_mut(0)
-            //         .unwrap_validated(); // there is only one memory allowed as of now
-
-            //     // The spec states that this should be a 33 bit integer
-            //     // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
-            //     let address = memarg.offset.checked_add(relative_address);
-            //     let memory_location = address
-            //         .and_then(|address| {
-            //             let address = address as usize;
-            //             mem.data.get_mut(address..(address + 4))
-            //         })
-            //         .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
-
-            //     memory_location.copy_from_slice(&data_to_store.to_le_bytes());
-            //     trace!("Instruction: f32.store [{relative_address} {data_to_store}] -> []");
-            // }
-            // F64_STORE => {
-            //     let memarg = MemArg::read_unvalidated(wasm);
-
-            //     let data_to_store: f64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
-            //     let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-
-            //     let mem = modules[*current_module_idx]
-            //         .store
-            //         .mems
-            //         .get_mut(0)
-            //         .unwrap_validated(); // there is only one memory allowed as of now
-
-            //     // The spec states that this should be a 33 bit integer
-            //     // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
-            //     let address = memarg.offset.checked_add(relative_address);
-            //     let memory_location = address
-            //         .and_then(|address| {
-            //             let address = address as usize;
-            //             mem.data.get_mut(address..(address + 8))
-            //         })
-            //         .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
-
-            //     memory_location.copy_from_slice(&data_to_store.to_le_bytes());
-            //     trace!("Instruction: f64.store [{relative_address} {data_to_store}] -> []");
-            // }
-            // I32_STORE8 => {
-            //     let memarg = MemArg::read_unvalidated(wasm);
-
-            //     let data_to_store: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-            //     let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-
-            //     let mem = modules[*current_module_idx]
-            //         .store
-            //         .mems
-            //         .get_mut(0)
-            //         .unwrap_validated();
-
-            //     // The spec states that this should be a 33 bit integer
-            //     // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
-            //     // ea => effective address
-            //     let ea = memarg.offset.checked_add(relative_address);
-            //     let memory_location = ea
-            //         .and_then(|address| {
-            //             let address = address as usize;
-            //             mem.data.get_mut(address..(address + 1))
-            //         })
-            //         .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
-
-            //     memory_location.copy_from_slice(&data_to_store.to_le_bytes()[0..1]);
-            //     trace!("Instruction: i32.store8 [{relative_address} {data_to_store}] -> []");
-            // }
-            // I32_STORE16 => {
-            //     let memarg = MemArg::read_unvalidated(wasm);
-
-            //     let data_to_store: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-            //     let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-
-            //     let mem = modules[*current_module_idx]
-            //         .store
-            //         .mems
-            //         .get_mut(0)
-            //         .unwrap_validated();
-
-            //     // The spec states that this should be a 33 bit integer
-            //     // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
-            //     // ea => effective address
-            //     let ea = memarg.offset.checked_add(relative_address);
-            //     let memory_location = ea
-            //         .and_then(|address| {
-            //             let address = address as usize;
-            //             mem.data.get_mut(address..(address + 2))
-            //         })
-            //         .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
-
-            //     memory_location.copy_from_slice(&data_to_store.to_le_bytes()[0..2]);
-            //     trace!("Instruction: i32.store16 [{relative_address} {data_to_store}] -> []");
-            // }
-            // I64_STORE8 => {
-            //     let memarg = MemArg::read_unvalidated(wasm);
-
-            //     let data_to_store: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-            //     let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-
-            //     let mem = modules[*current_module_idx]
-            //         .store
-            //         .mems
-            //         .get_mut(0)
-            //         .unwrap_validated();
-
-            //     // The spec states that this should be a 33 bit integer
-            //     // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
-            //     // ea => effective address
-            //     let ea = memarg.offset.checked_add(relative_address);
-            //     let memory_location = ea
-            //         .and_then(|address| {
-            //             let address = address as usize;
-            //             mem.data.get_mut(address..(address + 1))
-            //         })
-            //         .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
-
-            //     memory_location.copy_from_slice(&data_to_store.to_le_bytes()[0..1]);
-            //     trace!("Instruction: i64.store8 [{relative_address} {data_to_store}] -> []");
-            // }
-            // I64_STORE16 => {
-            //     let memarg = MemArg::read_unvalidated(wasm);
-
-            //     let data_to_store: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-            //     let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-
-            //     let mem = modules[*current_module_idx]
-            //         .store
-            //         .mems
-            //         .get_mut(0)
-            //         .unwrap_validated();
-
-            //     // The spec states that this should be a 33 bit integer
-            //     // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
-            //     // ea => effective address
-            //     let ea = memarg.offset.checked_add(relative_address);
-            //     let memory_location = ea
-            //         .and_then(|address| {
-            //             let address = address as usize;
-            //             mem.data.get_mut(address..(address + 2))
-            //         })
-            //         .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
-
-            //     memory_location.copy_from_slice(&data_to_store.to_le_bytes()[0..2]);
-            //     trace!("Instruction: i64.store16 [{relative_address} {data_to_store}] -> []");
-            // }
-            // I64_STORE32 => {
-            //     let memarg = MemArg::read_unvalidated(wasm);
-
-            //     let data_to_store: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-            //     let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-
-            //     let mem = modules[*current_module_idx]
-            //         .store
-            //         .mems
-            //         .get_mut(0)
-            //         .unwrap_validated();
-
-            //     // The spec states that this should be a 33 bit integer
-            //     // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
-            //     // ea => effective address
-            //     let ea = memarg.offset.checked_add(relative_address);
-            //     let memory_location = ea
-            //         .and_then(|address| {
-            //             let address = address as usize;
-            //             mem.data.get_mut(address..(address + 4))
-            //         })
-            //         .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
-
-            //     memory_location.copy_from_slice(&data_to_store.to_le_bytes()[0..4]);
-            //     trace!("Instruction: i64.store32 [{relative_address} {data_to_store}] -> []");
-            // }
-            // MEMORY_SIZE => {
-            //     let mem_idx = wasm.read_u8().unwrap_validated() as usize;
-            //     let mem = modules[*current_module_idx]
-            //         .store
-            //         .mems
-            //         .get(mem_idx)
-            //         .unwrap_validated();
-            //     let size = mem.size() as u32;
-            //     stack.push_value(Value::I32(size));
-            //     trace!("Instruction: memory.size [] -> [{}]", size);
-            // }
-            // MEMORY_GROW => {
-            //     let mem_idx = wasm.read_u8().unwrap_validated() as usize;
-            //     let mem = modules[*current_module_idx]
-            //         .store
-            //         .mems
-            //         .get_mut(mem_idx)
-            //         .unwrap_validated();
-            //     let delta: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-
-            //     let upper_limit = mem.ty.limits.max.unwrap_or(Limits::MAX_MEM_BYTES);
-            //     let pushed_value = if delta < 0 || delta as u32 + mem.size() as u32 > upper_limit {
-            //         stack.push_value((-1).into());
-            //         -1
-            //     } else {
-            //         let previous_size: i32 = mem.size() as i32;
-            //         mem.grow(delta as usize);
-            //         stack.push_value(previous_size.into());
-            //         previous_size
-            //     };
-            //     trace!("Instruction: memory.grow [{}] -> [{}]", delta, pushed_value);
-            // }
+            GLOBAL_GET => {
+                let global_idx = store.modules[current_wasm_index]
+                    .wasm_reader
+                    .read_var_u32()
+                    .unwrap_validated() as GlobalIdx;
+                let global = modules[*current_module_idx]
+                    .store
+                    .globals
+                    .get(global_idx)
+                    .unwrap_validated();
+
+                stack.push_value(global.value);
+            }
+            GLOBAL_SET => {
+                let global_idx = store.modules[current_wasm_index]
+                    .wasm_reader
+                    .read_var_u32()
+                    .unwrap_validated() as GlobalIdx;
+                let global = modules[*current_module_idx]
+                    .store
+                    .globals
+                    .get_mut(global_idx)
+                    .unwrap_validated();
+
+                global.value = stack.pop_value(global.global.ty.ty)
+            }
+            TABLE_GET => {
+                let table_idx = store.modules[current_wasm_index]
+                    .wasm_reader
+                    .read_var_u32()
+                    .unwrap_validated() as TableIdx;
+
+                let tab = modules[*current_module_idx]
+                    .store
+                    .tables
+                    .get(table_idx)
+                    .unwrap_validated();
+
+                let i: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                let val = tab
+                    .elem
+                    .get(i as usize)
+                    .ok_or(RuntimeError::TableAccessOutOfBounds)?;
+
+                stack.push_value((*val).into());
+                trace!(
+                    "Instruction: table.get '{}' [{}] -> [{}]",
+                    table_idx,
+                    i,
+                    val
+                );
+            }
+            TABLE_SET => {
+                let table_idx = store.modules[current_wasm_index]
+                    .wasm_reader
+                    .read_var_u32()
+                    .unwrap_validated() as TableIdx;
+
+                let tab = &mut modules[*current_module_idx].store.tables[table_idx];
+
+                let val: Ref = stack.pop_value(ValType::RefType(tab.ty.et)).into();
+                let i: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                tab.elem
+                    .get_mut(i as usize)
+                    .ok_or(RuntimeError::TableAccessOutOfBounds)
+                    .map(|r| *r = val)?;
+                trace!(
+                    "Instruction: table.set '{}' [{} {}] -> []",
+                    table_idx,
+                    i,
+                    val
+                )
+            }
+            I32_LOAD => {
+                let memarg =
+                    MemArg::read_unvalidated(&mut store.modules[current_wasm_index].wasm_reader);
+                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                let mem = modules[*current_module_idx]
+                    .store
+                    .mems
+                    .first()
+                    .unwrap_validated(); // there is only one memory allowed as of now
+
+                let data: u32 = {
+                    // The spec states that this should be a 33 bit integer
+                    // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
+                    let _address = memarg.offset.checked_add(relative_address);
+                    let data = memarg
+                        .offset
+                        .checked_add(relative_address)
+                        .and_then(|address| {
+                            let address = address as usize;
+                            mem.data.get(address..(address + 4))
+                        })
+                        .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
+
+                    let data: [u8; 4] = data.try_into().expect("this to be exactly 4 bytes");
+                    u32::from_le_bytes(data)
+                };
+
+                stack.push_value(Value::I32(data));
+                trace!("Instruction: i32.load [{relative_address}] -> [{data}]");
+            }
+            I64_LOAD => {
+                let memarg =
+                    MemArg::read_unvalidated(&mut store.modules[current_wasm_index].wasm_reader);
+                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                let mem = modules[*current_module_idx]
+                    .store
+                    .mems
+                    .first()
+                    .unwrap_validated();
+
+                let data: u64 = {
+                    // The spec states that this should be a 33 bit integer
+                    // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
+                    let _address = memarg.offset.checked_add(relative_address);
+                    let data = memarg
+                        .offset
+                        .checked_add(relative_address)
+                        .and_then(|address| {
+                            let address = address as usize;
+                            mem.data
+                                .get(address..(address + 8))
+                                .map(|slice| slice.try_into().expect("this to be exactly 8 bytes"))
+                        })
+                        .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
+
+                    u64::from_le_bytes(data)
+                };
+
+                stack.push_value(Value::I64(data));
+                trace!("Instruction: i64.load [{relative_address}] -> [{data}]");
+            }
+            F32_LOAD => {
+                let memarg =
+                    MemArg::read_unvalidated(&mut store.modules[current_wasm_index].wasm_reader);
+                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                let mem = modules[*current_module_idx]
+                    .store
+                    .mems
+                    .first()
+                    .unwrap_validated(); // there is only one memory allowed as of now
+
+                let data: f32 = {
+                    // The spec states that this should be a 33 bit integer
+                    // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
+                    let _address = memarg.offset.checked_add(relative_address);
+                    let data = memarg
+                        .offset
+                        .checked_add(relative_address)
+                        .and_then(|address| {
+                            let address = address as usize;
+                            mem.data
+                                .get(address..(address + 4))
+                                .map(|slice| slice.try_into().expect("this to be exactly 4 bytes"))
+                        })
+                        .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
+                    f32::from_le_bytes(data)
+                };
+
+                stack.push_value(Value::F32(value::F32(data)));
+                trace!("Instruction: f32.load [{relative_address}] -> [{data}]");
+            }
+            F64_LOAD => {
+                let memarg =
+                    MemArg::read_unvalidated(&mut store.modules[current_wasm_index].wasm_reader);
+                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                let mem = modules[*current_module_idx]
+                    .store
+                    .mems
+                    .first()
+                    .unwrap_validated();
+
+                let data: f64 = {
+                    // The spec states that this should be a 33 bit integer
+                    // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
+                    let _address = memarg.offset.checked_add(relative_address);
+                    let data = memarg
+                        .offset
+                        .checked_add(relative_address)
+                        .and_then(|address| {
+                            let address = address as usize;
+                            mem.data
+                                .get(address..(address + 8))
+                                .map(|slice| slice.try_into().expect("this to be exactly 8 bytes"))
+                        })
+                        .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
+
+                    f64::from_le_bytes(data)
+                };
+
+                stack.push_value(Value::F64(value::F64(data)));
+                trace!("Instruction: f64.load [{relative_address}] -> [{data}]");
+            }
+            I32_LOAD8_S => {
+                let memarg =
+                    MemArg::read_unvalidated(&mut store.modules[current_wasm_index].wasm_reader);
+                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                let mem = modules[*current_module_idx]
+                    .store
+                    .mems
+                    .first()
+                    .unwrap_validated(); // there is only one memory allowed as of now
+
+                let data: i8 = {
+                    // The spec states that this should be a 33 bit integer
+                    // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
+                    let _address = memarg.offset.checked_add(relative_address);
+                    let data = memarg
+                        .offset
+                        .checked_add(relative_address)
+                        .and_then(|address| {
+                            let address = address as usize;
+                            mem.data
+                                .get(address..(address + 1))
+                                .map(|slice| slice.try_into().expect("this to be exactly 1 byte"))
+                        })
+                        .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
+
+                    // let data: [u8; 1] = data.try_into().expect("this to be exactly 1 byte");
+                    u8::from_le_bytes(data) as i8
+                };
+
+                stack.push_value(Value::I32(data as u32));
+                trace!("Instruction: i32.load8_s [{relative_address}] -> [{data}]");
+            }
+            I32_LOAD8_U => {
+                let memarg =
+                    MemArg::read_unvalidated(&mut store.modules[current_wasm_index].wasm_reader);
+                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                let mem = modules[*current_module_idx]
+                    .store
+                    .mems
+                    .first()
+                    .unwrap_validated(); // there is only one memory allowed as of now
+
+                let data: u8 = {
+                    // The spec states that this should be a 33 bit integer
+                    // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
+                    let _address = memarg.offset.checked_add(relative_address);
+                    let data = memarg
+                        .offset
+                        .checked_add(relative_address)
+                        .and_then(|address| {
+                            let address = address as usize;
+                            mem.data
+                                .get(address..(address + 1))
+                                .map(|slice| slice.try_into().expect("this to be exactly 1 byte"))
+                        })
+                        .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
+
+                    u8::from_le_bytes(data)
+                };
+
+                stack.push_value(Value::I32(data as u32));
+                trace!("Instruction: i32.load8_u [{relative_address}] -> [{data}]");
+            }
+            I32_LOAD16_S => {
+                let memarg =
+                    MemArg::read_unvalidated(&mut store.modules[current_wasm_index].wasm_reader);
+                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                let mem = modules[*current_module_idx]
+                    .store
+                    .mems
+                    .first()
+                    .unwrap_validated(); // there is only one memory allowed as of now
+
+                let data: i16 = {
+                    // The spec states that this should be a 33 bit integer
+                    // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
+                    let _address = memarg.offset.checked_add(relative_address);
+                    let data = memarg
+                        .offset
+                        .checked_add(relative_address)
+                        .and_then(|address| {
+                            let address = address as usize;
+                            mem.data
+                                .get(address..(address + 2))
+                                .map(|slice| slice.try_into().expect("this to be exactly 2 bytes"))
+                        })
+                        .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
+
+                    u16::from_le_bytes(data) as i16
+                };
+
+                stack.push_value(Value::I32(data as u32));
+                trace!("Instruction: i32.load16_s [{relative_address}] -> [{data}]");
+            }
+            I32_LOAD16_U => {
+                let memarg =
+                    MemArg::read_unvalidated(&mut store.modules[current_wasm_index].wasm_reader);
+                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                let mem = modules[*current_module_idx]
+                    .store
+                    .mems
+                    .first()
+                    .unwrap_validated(); // there is only one memory allowed as of now
+
+                let data: u16 = {
+                    // The spec states that this should be a 33 bit integer
+                    // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
+                    let _address = memarg.offset.checked_add(relative_address);
+                    let data = memarg
+                        .offset
+                        .checked_add(relative_address)
+                        .and_then(|address| {
+                            let address = address as usize;
+                            mem.data
+                                .get(address..(address + 2))
+                                .map(|slice| slice.try_into().expect("this to be exactly 2 bytes"))
+                        })
+                        .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
+
+                    u16::from_le_bytes(data)
+                };
+
+                stack.push_value(Value::I32(data as u32));
+                trace!("Instruction: i32.load16_u [{relative_address}] -> [{data}]");
+            }
+            I64_LOAD8_S => {
+                let memarg =
+                    MemArg::read_unvalidated(&mut store.modules[current_wasm_index].wasm_reader);
+                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                let mem = modules[*current_module_idx]
+                    .store
+                    .mems
+                    .first()
+                    .unwrap_validated(); // there is only one memory allowed as of now
+
+                let data: i8 = {
+                    // The spec states that this should be a 33 bit integer
+                    // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
+                    let _address = memarg.offset.checked_add(relative_address);
+                    let data = memarg
+                        .offset
+                        .checked_add(relative_address)
+                        .and_then(|address| {
+                            let address = address as usize;
+                            mem.data
+                                .get(address..(address + 1))
+                                .map(|slice| slice.try_into().expect("this to be exactly 1 byte"))
+                        })
+                        .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
+
+                    // let data: [u8; 1] = data.try_into().expect("this to be exactly 1 byte");
+                    u8::from_le_bytes(data) as i8
+                };
+
+                stack.push_value(Value::I64(data as u64));
+                trace!("Instruction: i64.load8_s [{relative_address}] -> [{data}]");
+            }
+            I64_LOAD8_U => {
+                let memarg =
+                    MemArg::read_unvalidated(&mut store.modules[current_wasm_index].wasm_reader);
+                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                let mem = modules[*current_module_idx]
+                    .store
+                    .mems
+                    .first()
+                    .unwrap_validated(); // there is only one memory allowed as of now
+
+                let data: u8 = {
+                    // The spec states that this should be a 33 bit integer
+                    // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
+                    let _address = memarg.offset.checked_add(relative_address);
+                    let data = memarg
+                        .offset
+                        .checked_add(relative_address)
+                        .and_then(|address| {
+                            let address = address as usize;
+                            mem.data
+                                .get(address..(address + 1))
+                                .map(|slice| slice.try_into().expect("this to be exactly 1 byte"))
+                        })
+                        .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
+
+                    // let data: [u8; 1] = data.try_into().expect("this to be exactly 1 byte");
+                    u8::from_le_bytes(data)
+                };
+
+                stack.push_value(Value::I64(data as u64));
+                trace!("Instruction: i64.load8_u [{relative_address}] -> [{data}]");
+            }
+            I64_LOAD16_S => {
+                let memarg =
+                    MemArg::read_unvalidated(&mut store.modules[current_wasm_index].wasm_reader);
+                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                let mem = modules[*current_module_idx]
+                    .store
+                    .mems
+                    .first()
+                    .unwrap_validated(); // there is only one memory allowed as of now
+
+                let data: i16 = {
+                    // The spec states that this should be a 33 bit integer
+                    // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
+                    let _address = memarg.offset.checked_add(relative_address);
+                    let data = memarg
+                        .offset
+                        .checked_add(relative_address)
+                        .and_then(|address| {
+                            let address = address as usize;
+                            mem.data
+                                .get(address..(address + 2))
+                                .map(|slice| slice.try_into().expect("this to be exactly 2 bytes"))
+                        })
+                        .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
+
+                    u16::from_le_bytes(data) as i16
+                };
+
+                stack.push_value(Value::I64(data as u64));
+                trace!("Instruction: i64.load16_s [{relative_address}] -> [{data}]");
+            }
+            I64_LOAD16_U => {
+                let memarg =
+                    MemArg::read_unvalidated(&mut store.modules[current_wasm_index].wasm_reader);
+                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                let mem = modules[*current_module_idx]
+                    .store
+                    .mems
+                    .first()
+                    .unwrap_validated(); // there is only one memory allowed as of now
+
+                let data: u16 = {
+                    // The spec states that this should be a 33 bit integer
+                    // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
+                    let _address = memarg.offset.checked_add(relative_address);
+                    let data = memarg
+                        .offset
+                        .checked_add(relative_address)
+                        .and_then(|address| {
+                            let address = address as usize;
+                            mem.data
+                                .get(address..(address + 2))
+                                .map(|slice| slice.try_into().expect("this to be exactly 2 bytes"))
+                        })
+                        .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
+
+                    u16::from_le_bytes(data)
+                };
+
+                stack.push_value(Value::I64(data as u64));
+                trace!("Instruction: i64.load16_u [{relative_address}] -> [{data}]");
+            }
+            I64_LOAD32_S => {
+                let memarg =
+                    MemArg::read_unvalidated(&mut store.modules[current_wasm_index].wasm_reader);
+                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                let mem = modules[*current_module_idx]
+                    .store
+                    .mems
+                    .first()
+                    .unwrap_validated(); // there is only one memory allowed as of now
+
+                let data: i32 = {
+                    // The spec states that this should be a 33 bit integer
+                    // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
+                    let _address = memarg.offset.checked_add(relative_address);
+                    let data = memarg
+                        .offset
+                        .checked_add(relative_address)
+                        .and_then(|address| {
+                            let address = address as usize;
+                            mem.data
+                                .get(address..(address + 4))
+                                .map(|slice| slice.try_into().expect("this to be exactly 4 bytes"))
+                        })
+                        .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
+
+                    u32::from_le_bytes(data) as i32
+                };
+
+                stack.push_value(Value::I64(data as u64));
+                trace!("Instruction: i64.load32_s [{relative_address}] -> [{data}]");
+            }
+            I64_LOAD32_U => {
+                let memarg =
+                    MemArg::read_unvalidated(&mut store.modules[current_wasm_index].wasm_reader);
+                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                let mem = modules[*current_module_idx]
+                    .store
+                    .mems
+                    .first()
+                    .unwrap_validated(); // there is only one memory allowed as of now
+
+                let data: u32 = {
+                    // The spec states that this should be a 33 bit integer
+                    // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
+                    let _address = memarg.offset.checked_add(relative_address);
+                    let data = memarg
+                        .offset
+                        .checked_add(relative_address)
+                        .and_then(|address| {
+                            let address = address as usize;
+                            mem.data
+                                .get(address..(address + 4))
+                                .map(|slice| slice.try_into().expect("this to be exactly 4 bytes"))
+                        })
+                        .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
+
+                    u32::from_le_bytes(data)
+                };
+
+                stack.push_value(Value::I64(data as u64));
+                trace!("Instruction: i64.load32_u [{relative_address}] -> [{data}]");
+            }
+            I32_STORE => {
+                let memarg =
+                    MemArg::read_unvalidated(&mut store.modules[current_wasm_index].wasm_reader);
+
+                let data_to_store: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                let mem = modules[*current_module_idx]
+                    .store
+                    .mems
+                    .get_mut(0)
+                    .unwrap_validated(); // there is only one memory allowed as of now
+
+                // The spec states that this should be a 33 bit integer
+                // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
+                let address = memarg.offset.checked_add(relative_address);
+                let memory_location = address
+                    .and_then(|address| {
+                        let address = address as usize;
+                        mem.data.get_mut(address..(address + 4))
+                    })
+                    .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
+
+                memory_location.copy_from_slice(&data_to_store.to_le_bytes());
+                trace!("Instruction: i32.store [{relative_address} {data_to_store}] -> []");
+            }
+            I64_STORE => {
+                let memarg =
+                    MemArg::read_unvalidated(&mut store.modules[current_wasm_index].wasm_reader);
+
+                let data_to_store: u64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                let mem = modules[*current_module_idx]
+                    .store
+                    .mems
+                    .get_mut(0)
+                    .unwrap_validated(); // there is only one memory allowed as of now
+
+                // The spec states that this should be a 33 bit integer
+                // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
+                let address = memarg.offset.checked_add(relative_address);
+                let memory_location = address
+                    .and_then(|address| {
+                        let address = address as usize;
+                        mem.data.get_mut(address..(address + 8))
+                    })
+                    .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
+
+                memory_location.copy_from_slice(&data_to_store.to_le_bytes());
+                trace!("Instruction: i64.store [{relative_address} {data_to_store}] -> []");
+            }
+            F32_STORE => {
+                let memarg =
+                    MemArg::read_unvalidated(&mut store.modules[current_wasm_index].wasm_reader);
+
+                let data_to_store: f32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                let mem = modules[*current_module_idx]
+                    .store
+                    .mems
+                    .get_mut(0)
+                    .unwrap_validated(); // there is only one memory allowed as of now
+
+                // The spec states that this should be a 33 bit integer
+                // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
+                let address = memarg.offset.checked_add(relative_address);
+                let memory_location = address
+                    .and_then(|address| {
+                        let address = address as usize;
+                        mem.data.get_mut(address..(address + 4))
+                    })
+                    .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
+
+                memory_location.copy_from_slice(&data_to_store.to_le_bytes());
+                trace!("Instruction: f32.store [{relative_address} {data_to_store}] -> []");
+            }
+            F64_STORE => {
+                let memarg =
+                    MemArg::read_unvalidated(&mut store.modules[current_wasm_index].wasm_reader);
+
+                let data_to_store: f64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                let mem = modules[*current_module_idx]
+                    .store
+                    .mems
+                    .get_mut(0)
+                    .unwrap_validated(); // there is only one memory allowed as of now
+
+                // The spec states that this should be a 33 bit integer
+                // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
+                let address = memarg.offset.checked_add(relative_address);
+                let memory_location = address
+                    .and_then(|address| {
+                        let address = address as usize;
+                        mem.data.get_mut(address..(address + 8))
+                    })
+                    .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
+
+                memory_location.copy_from_slice(&data_to_store.to_le_bytes());
+                trace!("Instruction: f64.store [{relative_address} {data_to_store}] -> []");
+            }
+            I32_STORE8 => {
+                let memarg =
+                    MemArg::read_unvalidated(&mut store.modules[current_wasm_index].wasm_reader);
+
+                let data_to_store: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                let mem = modules[*current_module_idx]
+                    .store
+                    .mems
+                    .get_mut(0)
+                    .unwrap_validated();
+
+                // The spec states that this should be a 33 bit integer
+                // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
+                // ea => effective address
+                let ea = memarg.offset.checked_add(relative_address);
+                let memory_location = ea
+                    .and_then(|address| {
+                        let address = address as usize;
+                        mem.data.get_mut(address..(address + 1))
+                    })
+                    .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
+
+                memory_location.copy_from_slice(&data_to_store.to_le_bytes()[0..1]);
+                trace!("Instruction: i32.store8 [{relative_address} {data_to_store}] -> []");
+            }
+            I32_STORE16 => {
+                let memarg =
+                    MemArg::read_unvalidated(&mut store.modules[current_wasm_index].wasm_reader);
+
+                let data_to_store: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                let mem = modules[*current_module_idx]
+                    .store
+                    .mems
+                    .get_mut(0)
+                    .unwrap_validated();
+
+                // The spec states that this should be a 33 bit integer
+                // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
+                // ea => effective address
+                let ea = memarg.offset.checked_add(relative_address);
+                let memory_location = ea
+                    .and_then(|address| {
+                        let address = address as usize;
+                        mem.data.get_mut(address..(address + 2))
+                    })
+                    .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
+
+                memory_location.copy_from_slice(&data_to_store.to_le_bytes()[0..2]);
+                trace!("Instruction: i32.store16 [{relative_address} {data_to_store}] -> []");
+            }
+            I64_STORE8 => {
+                let memarg =
+                    MemArg::read_unvalidated(&mut store.modules[current_wasm_index].wasm_reader);
+
+                let data_to_store: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                let mem = modules[*current_module_idx]
+                    .store
+                    .mems
+                    .get_mut(0)
+                    .unwrap_validated();
+
+                // The spec states that this should be a 33 bit integer
+                // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
+                // ea => effective address
+                let ea = memarg.offset.checked_add(relative_address);
+                let memory_location = ea
+                    .and_then(|address| {
+                        let address = address as usize;
+                        mem.data.get_mut(address..(address + 1))
+                    })
+                    .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
+
+                memory_location.copy_from_slice(&data_to_store.to_le_bytes()[0..1]);
+                trace!("Instruction: i64.store8 [{relative_address} {data_to_store}] -> []");
+            }
+            I64_STORE16 => {
+                let memarg =
+                    MemArg::read_unvalidated(&mut store.modules[current_wasm_index].wasm_reader);
+
+                let data_to_store: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                let mem = modules[*current_module_idx]
+                    .store
+                    .mems
+                    .get_mut(0)
+                    .unwrap_validated();
+
+                // The spec states that this should be a 33 bit integer
+                // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
+                // ea => effective address
+                let ea = memarg.offset.checked_add(relative_address);
+                let memory_location = ea
+                    .and_then(|address| {
+                        let address = address as usize;
+                        mem.data.get_mut(address..(address + 2))
+                    })
+                    .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
+
+                memory_location.copy_from_slice(&data_to_store.to_le_bytes()[0..2]);
+                trace!("Instruction: i64.store16 [{relative_address} {data_to_store}] -> []");
+            }
+            I64_STORE32 => {
+                let memarg =
+                    MemArg::read_unvalidated(&mut store.modules[current_wasm_index].wasm_reader);
+
+                let data_to_store: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                let mem = modules[*current_module_idx]
+                    .store
+                    .mems
+                    .get_mut(0)
+                    .unwrap_validated();
+
+                // The spec states that this should be a 33 bit integer
+                // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
+                // ea => effective address
+                let ea = memarg.offset.checked_add(relative_address);
+                let memory_location = ea
+                    .and_then(|address| {
+                        let address = address as usize;
+                        mem.data.get_mut(address..(address + 4))
+                    })
+                    .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
+
+                memory_location.copy_from_slice(&data_to_store.to_le_bytes()[0..4]);
+                trace!("Instruction: i64.store32 [{relative_address} {data_to_store}] -> []");
+            }
+            MEMORY_SIZE => {
+                let mem_idx = store.modules[current_wasm_index]
+                    .wasm_reader
+                    .read_u8()
+                    .unwrap_validated() as usize;
+                let mem = modules[*current_module_idx]
+                    .store
+                    .mems
+                    .get(mem_idx)
+                    .unwrap_validated();
+                let size = mem.size() as u32;
+                stack.push_value(Value::I32(size));
+                trace!("Instruction: memory.size [] -> [{}]", size);
+            }
+            MEMORY_GROW => {
+                let mem_idx = store.modules[current_wasm_index]
+                    .wasm_reader
+                    .read_u8()
+                    .unwrap_validated() as usize;
+                let mem = modules[*current_module_idx]
+                    .store
+                    .mems
+                    .get_mut(mem_idx)
+                    .unwrap_validated();
+                let delta: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                let upper_limit = mem.ty.limits.max.unwrap_or(Limits::MAX_MEM_BYTES);
+                let pushed_value = if delta < 0 || delta as u32 + mem.size() as u32 > upper_limit {
+                    stack.push_value((-1).into());
+                    -1
+                } else {
+                    let previous_size: i32 = mem.size() as i32;
+                    mem.grow(delta as usize);
+                    stack.push_value(previous_size.into());
+                    previous_size
+                };
+                trace!("Instruction: memory.grow [{}] -> [{}]", delta, pushed_value);
+            }
             I32_CONST => {
                 let constant = store.modules[current_wasm_index]
                     .wasm_reader
@@ -2410,545 +2494,590 @@ pub(super) fn run<H: HookSet>(
                     .unwrap_validated() as FuncIdx;
                 stack.push_value(Value::Ref(Ref::Func(FuncAddr::new(Some(func_idx)))));
             }
-            // FC_EXTENSIONS => {
-            //     // Should we call instruction hook here as well? Multibyte instruction
-            //     let second_instr_byte = wasm.read_u8().unwrap_validated();
+            FC_EXTENSIONS => {
+                // Should we call instruction hook here as well? Multibyte instruction
+                let second_instr_byte = store.modules[current_wasm_index]
+                    .wasm_reader
+                    .read_u8()
+                    .unwrap_validated();
 
-            //     use crate::core::reader::types::opcode::fc_extensions::*;
-            //     match second_instr_byte {
-            //         I32_TRUNC_SAT_F32_S => {
-            //             let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
-            //             let res = {
-            //                 if v1.is_nan() {
-            //                     0
-            //                 } else if v1.is_negative_infinity() {
-            //                     i32::MIN
-            //                 } else if v1.is_infinity() {
-            //                     i32::MAX
-            //                 } else {
-            //                     v1.as_i32()
-            //                 }
-            //             };
+                use crate::core::reader::types::opcode::fc_extensions::*;
+                match second_instr_byte {
+                    I32_TRUNC_SAT_F32_S => {
+                        let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                        let res = {
+                            if v1.is_nan() {
+                                0
+                            } else if v1.is_negative_infinity() {
+                                i32::MIN
+                            } else if v1.is_infinity() {
+                                i32::MAX
+                            } else {
+                                v1.as_i32()
+                            }
+                        };
 
-            //             trace!("Instruction: i32.trunc_sat_f32_s [{v1}] -> [{res}]");
-            //             stack.push_value(res.into());
-            //         }
-            //         I32_TRUNC_SAT_F32_U => {
-            //             let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
-            //             let res = {
-            //                 if v1.is_nan() || v1.is_negative_infinity() {
-            //                     0
-            //                 } else if v1.is_infinity() {
-            //                     u32::MAX as i32
-            //                 } else {
-            //                     v1.as_u32() as i32
-            //                 }
-            //             };
+                        trace!("Instruction: i32.trunc_sat_f32_s [{v1}] -> [{res}]");
+                        stack.push_value(res.into());
+                    }
+                    I32_TRUNC_SAT_F32_U => {
+                        let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                        let res = {
+                            if v1.is_nan() || v1.is_negative_infinity() {
+                                0
+                            } else if v1.is_infinity() {
+                                u32::MAX as i32
+                            } else {
+                                v1.as_u32() as i32
+                            }
+                        };
 
-            //             trace!("Instruction: i32.trunc_sat_f32_u [{v1}] -> [{res}]");
-            //             stack.push_value(res.into());
-            //         }
-            //         I32_TRUNC_SAT_F64_S => {
-            //             let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
-            //             let res = {
-            //                 if v1.is_nan() {
-            //                     0
-            //                 } else if v1.is_negative_infinity() {
-            //                     i32::MIN
-            //                 } else if v1.is_infinity() {
-            //                     i32::MAX
-            //                 } else {
-            //                     v1.as_i32()
-            //                 }
-            //             };
+                        trace!("Instruction: i32.trunc_sat_f32_u [{v1}] -> [{res}]");
+                        stack.push_value(res.into());
+                    }
+                    I32_TRUNC_SAT_F64_S => {
+                        let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                        let res = {
+                            if v1.is_nan() {
+                                0
+                            } else if v1.is_negative_infinity() {
+                                i32::MIN
+                            } else if v1.is_infinity() {
+                                i32::MAX
+                            } else {
+                                v1.as_i32()
+                            }
+                        };
 
-            //             trace!("Instruction: i32.trunc_sat_f64_s [{v1}] -> [{res}]");
-            //             stack.push_value(res.into());
-            //         }
-            //         I32_TRUNC_SAT_F64_U => {
-            //             let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
-            //             let res = {
-            //                 if v1.is_nan() || v1.is_negative_infinity() {
-            //                     0
-            //                 } else if v1.is_infinity() {
-            //                     u32::MAX as i32
-            //                 } else {
-            //                     v1.as_u32() as i32
-            //                 }
-            //             };
+                        trace!("Instruction: i32.trunc_sat_f64_s [{v1}] -> [{res}]");
+                        stack.push_value(res.into());
+                    }
+                    I32_TRUNC_SAT_F64_U => {
+                        let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                        let res = {
+                            if v1.is_nan() || v1.is_negative_infinity() {
+                                0
+                            } else if v1.is_infinity() {
+                                u32::MAX as i32
+                            } else {
+                                v1.as_u32() as i32
+                            }
+                        };
 
-            //             trace!("Instruction: i32.trunc_sat_f64_u [{v1}] -> [{res}]");
-            //             stack.push_value(res.into());
-            //         }
-            //         I64_TRUNC_SAT_F32_S => {
-            //             let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
-            //             let res = {
-            //                 if v1.is_nan() {
-            //                     0
-            //                 } else if v1.is_negative_infinity() {
-            //                     i64::MIN
-            //                 } else if v1.is_infinity() {
-            //                     i64::MAX
-            //                 } else {
-            //                     v1.as_i64()
-            //                 }
-            //             };
+                        trace!("Instruction: i32.trunc_sat_f64_u [{v1}] -> [{res}]");
+                        stack.push_value(res.into());
+                    }
+                    I64_TRUNC_SAT_F32_S => {
+                        let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                        let res = {
+                            if v1.is_nan() {
+                                0
+                            } else if v1.is_negative_infinity() {
+                                i64::MIN
+                            } else if v1.is_infinity() {
+                                i64::MAX
+                            } else {
+                                v1.as_i64()
+                            }
+                        };
 
-            //             trace!("Instruction: i64.trunc_sat_f32_s [{v1}] -> [{res}]");
-            //             stack.push_value(res.into());
-            //         }
-            //         I64_TRUNC_SAT_F32_U => {
-            //             let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
-            //             let res = {
-            //                 if v1.is_nan() || v1.is_negative_infinity() {
-            //                     0
-            //                 } else if v1.is_infinity() {
-            //                     u64::MAX as i64
-            //                 } else {
-            //                     v1.as_u64() as i64
-            //                 }
-            //             };
+                        trace!("Instruction: i64.trunc_sat_f32_s [{v1}] -> [{res}]");
+                        stack.push_value(res.into());
+                    }
+                    I64_TRUNC_SAT_F32_U => {
+                        let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                        let res = {
+                            if v1.is_nan() || v1.is_negative_infinity() {
+                                0
+                            } else if v1.is_infinity() {
+                                u64::MAX as i64
+                            } else {
+                                v1.as_u64() as i64
+                            }
+                        };
 
-            //             trace!("Instruction: i64.trunc_sat_f32_u [{v1}] -> [{res}]");
-            //             stack.push_value(res.into());
-            //         }
-            //         I64_TRUNC_SAT_F64_S => {
-            //             let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
-            //             let res = {
-            //                 if v1.is_nan() {
-            //                     0
-            //                 } else if v1.is_negative_infinity() {
-            //                     i64::MIN
-            //                 } else if v1.is_infinity() {
-            //                     i64::MAX
-            //                 } else {
-            //                     v1.as_i64()
-            //                 }
-            //             };
+                        trace!("Instruction: i64.trunc_sat_f32_u [{v1}] -> [{res}]");
+                        stack.push_value(res.into());
+                    }
+                    I64_TRUNC_SAT_F64_S => {
+                        let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                        let res = {
+                            if v1.is_nan() {
+                                0
+                            } else if v1.is_negative_infinity() {
+                                i64::MIN
+                            } else if v1.is_infinity() {
+                                i64::MAX
+                            } else {
+                                v1.as_i64()
+                            }
+                        };
 
-            //             trace!("Instruction: i64.trunc_sat_f64_s [{v1}] -> [{res}]");
-            //             stack.push_value(res.into());
-            //         }
-            //         I64_TRUNC_SAT_F64_U => {
-            //             let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
-            //             let res = {
-            //                 if v1.is_nan() || v1.is_negative_infinity() {
-            //                     0
-            //                 } else if v1.is_infinity() {
-            //                     u64::MAX as i64
-            //                 } else {
-            //                     v1.as_u64() as i64
-            //                 }
-            //             };
+                        trace!("Instruction: i64.trunc_sat_f64_s [{v1}] -> [{res}]");
+                        stack.push_value(res.into());
+                    }
+                    I64_TRUNC_SAT_F64_U => {
+                        let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                        let res = {
+                            if v1.is_nan() || v1.is_negative_infinity() {
+                                0
+                            } else if v1.is_infinity() {
+                                u64::MAX as i64
+                            } else {
+                                v1.as_u64() as i64
+                            }
+                        };
 
-            //             trace!("Instruction: i64.trunc_sat_f64_u [{v1}] -> [{res}]");
-            //             stack.push_value(res.into());
-            //         }
-            //         // See https://webassembly.github.io/bulk-memory-operations/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-init-x
-            //         // Copy a region from a data segment into memory
-            //         MEMORY_INIT => {
-            //             //  mappings:
-            //             //      n => number of bytes to copy
-            //             //      s => starting pointer in the data segment
-            //             //      d => destination address to copy to
-            //             let data_idx = wasm.read_var_u32().unwrap_validated() as DataIdx;
-            //             let data_init_len = modules[*current_module_idx]
-            //                 .store
-            //                 .data
-            //                 .get(data_idx)
-            //                 .unwrap()
-            //                 .data
-            //                 .len();
-            //             let mem_idx = wasm.read_u8().unwrap_validated() as usize;
-            //             let mem = modules[*current_module_idx]
-            //                 .store
-            //                 .mems
-            //                 .get(mem_idx)
-            //                 .unwrap_validated();
-            //             let n: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-            //             let s: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-            //             let d: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                        trace!("Instruction: i64.trunc_sat_f64_u [{v1}] -> [{res}]");
+                        stack.push_value(res.into());
+                    }
+                    // See https://webassembly.github.io/bulk-memory-operations/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-init-x
+                    // Copy a region from a data segment into memory
+                    MEMORY_INIT => {
+                        //  mappings:
+                        //      n => number of bytes to copy
+                        //      s => starting pointer in the data segment
+                        //      d => destination address to copy to
+                        let data_idx = store.modules[current_wasm_index]
+                            .wasm_reader
+                            .read_var_u32()
+                            .unwrap_validated() as DataIdx;
+                        let data_init_len = modules[*current_module_idx]
+                            .store
+                            .data
+                            .get(data_idx)
+                            .unwrap()
+                            .data
+                            .len();
+                        let mem_idx = store.modules[current_wasm_index]
+                            .wasm_reader
+                            .read_u8()
+                            .unwrap_validated() as usize;
+                        let mem = modules[*current_module_idx]
+                            .store
+                            .mems
+                            .get(mem_idx)
+                            .unwrap_validated();
+                        let n: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                        let s: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                        let d: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-            //             let final_src_offset = (n as usize)
-            //                 .checked_add(s as usize)
-            //                 .filter(|&res| res <= data_init_len)
-            //                 .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
+                        let final_src_offset = (n as usize)
+                            .checked_add(s as usize)
+                            .filter(|&res| res <= data_init_len)
+                            .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
 
-            //             let final_dst_offset = (n as usize)
-            //                 .checked_add(d as usize)
-            //                 .filter(|&res| res <= mem.data.len())
-            //                 .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
+                        let final_dst_offset = (n as usize)
+                            .checked_add(d as usize)
+                            .filter(|&res| res <= mem.data.len())
+                            .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
 
-            //             let data = &modules[*current_module_idx]
-            //                 .store
-            //                 .data
-            //                 .get(data_idx)
-            //                 .unwrap()
-            //                 .data[(s as usize)..final_src_offset];
-            //             modules[*current_module_idx]
-            //                 .store
-            //                 .mems
-            //                 .get_mut(mem_idx)
-            //                 .unwrap_validated()
-            //                 .data
-            //                 .get_mut(d as usize..final_dst_offset)
-            //                 .unwrap_validated()
-            //                 .copy_from_slice(data);
+                        let data = &modules[*current_module_idx]
+                            .store
+                            .data
+                            .get(data_idx)
+                            .unwrap()
+                            .data[(s as usize)..final_src_offset];
+                        modules[*current_module_idx]
+                            .store
+                            .mems
+                            .get_mut(mem_idx)
+                            .unwrap_validated()
+                            .data
+                            .get_mut(d as usize..final_dst_offset)
+                            .unwrap_validated()
+                            .copy_from_slice(data);
 
-            //             trace!("Instruction: memory.init");
-            //         }
-            //         DATA_DROP => {
-            //             // Here is debatable
-            //             // If we were to be on par with the spec we'd have to use a DataInst struct
-            //             // But since memory.init is specifically made for Passive data segments
-            //             // I thought that using DataMode would be better because we can see if the
-            //             // data segment is passive or active
+                        trace!("Instruction: memory.init");
+                    }
+                    DATA_DROP => {
+                        // Here is debatable
+                        // If we were to be on par with the spec we'd have to use a DataInst struct
+                        // But since memory.init is specifically made for Passive data segments
+                        // I thought that using DataMode would be better because we can see if the
+                        // data segment is passive or active
 
-            //             // Also, we should set data to null here (empty), which we do using an empty init vec
-            //             let data_idx = wasm.read_var_u32().unwrap_validated() as DataIdx;
-            //             modules[*current_module_idx].store.data[data_idx] =
-            //                 DataInst { data: Vec::new() };
-            //         }
-            //         // See https://webassembly.github.io/bulk-memory-operations/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-copy
-            //         MEMORY_COPY => {
-            //             //  mappings:
-            //             //      n => number of bytes to copy
-            //             //      s => source address to copy from
-            //             //      d => destination address to copy to
-            //             let (dst, src) = (
-            //                 wasm.read_u8().unwrap_validated() as usize,
-            //                 wasm.read_u8().unwrap_validated() as usize,
-            //             );
-            //             let n: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-            //             let s: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-            //             let d: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                        // Also, we should set data to null here (empty), which we do using an empty init vec
+                        let data_idx = store.modules[current_wasm_index]
+                            .wasm_reader
+                            .read_var_u32()
+                            .unwrap_validated() as DataIdx;
+                        modules[*current_module_idx].store.data[data_idx] =
+                            DataInst { data: Vec::new() };
+                    }
+                    // See https://webassembly.github.io/bulk-memory-operations/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-copy
+                    MEMORY_COPY => {
+                        //  mappings:
+                        //      n => number of bytes to copy
+                        //      s => source address to copy from
+                        //      d => destination address to copy to
+                        let (dst, src) = (
+                            store.modules[current_wasm_index]
+                                .wasm_reader
+                                .read_u8()
+                                .unwrap_validated() as usize,
+                            store.modules[current_wasm_index]
+                                .wasm_reader
+                                .read_u8()
+                                .unwrap_validated() as usize,
+                        );
+                        let n: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                        let s: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                        let d: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-            //             let len_src = modules[*current_module_idx]
-            //                 .store
-            //                 .mems
-            //                 .get(src)
-            //                 .unwrap_validated()
-            //                 .data
-            //                 .len();
-            //             let final_src_offset = (n as usize)
-            //                 .checked_add(s as usize)
-            //                 .filter(|&res| res <= len_src)
-            //                 .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
+                        let len_src = modules[*current_module_idx]
+                            .store
+                            .mems
+                            .get(src)
+                            .unwrap_validated()
+                            .data
+                            .len();
+                        let final_src_offset = (n as usize)
+                            .checked_add(s as usize)
+                            .filter(|&res| res <= len_src)
+                            .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
 
-            //             let len_dest = modules[*current_module_idx]
-            //                 .store
-            //                 .mems
-            //                 .get(dst)
-            //                 .unwrap_validated()
-            //                 .data
-            //                 .len();
-            //             // let final_dst_offset =
-            //             (n as usize)
-            //                 .checked_add(d as usize)
-            //                 .filter(|&res| res <= len_dest)
-            //                 .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
+                        let len_dest = modules[*current_module_idx]
+                            .store
+                            .mems
+                            .get(dst)
+                            .unwrap_validated()
+                            .data
+                            .len();
+                        // let final_dst_offset =
+                        (n as usize)
+                            .checked_add(d as usize)
+                            .filter(|&res| res <= len_dest)
+                            .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
 
-            //             if dst == src {
-            //                 // we copy from memory X to memory X
-            //                 let mem = modules[*current_module_idx]
-            //                     .store
-            //                     .mems
-            //                     .get_mut(src)
-            //                     .unwrap_validated();
-            //                 mem.data
-            //                     .copy_within(s as usize..final_src_offset, d as usize);
-            //             } else {
-            //                 // we copy from one memory to another
-            //                 use core::cmp::Ordering::*;
-            //                 let (src_mem, dst_mem) = match dst.cmp(&src) {
-            //                     Greater => {
-            //                         let (left, right) =
-            //                             modules[*current_module_idx].store.mems.split_at_mut(dst);
-            //                         (&left[src], &mut right[0])
-            //                     }
-            //                     Less => {
-            //                         let (left, right) =
-            //                             modules[*current_module_idx].store.mems.split_at_mut(src);
-            //                         (&right[0], &mut left[dst])
-            //                     }
-            //                     Equal => unreachable!(),
-            //                 };
-            //                 dst_mem.data[d as usize..(d + n) as usize]
-            //                     .copy_from_slice(&src_mem.data[s as usize..(s + n) as usize]);
-            //             }
+                        if dst == src {
+                            // we copy from memory X to memory X
+                            let mem = modules[*current_module_idx]
+                                .store
+                                .mems
+                                .get_mut(src)
+                                .unwrap_validated();
+                            mem.data
+                                .copy_within(s as usize..final_src_offset, d as usize);
+                        } else {
+                            // we copy from one memory to another
+                            use core::cmp::Ordering::*;
+                            let (src_mem, dst_mem) = match dst.cmp(&src) {
+                                Greater => {
+                                    let (left, right) =
+                                        modules[*current_module_idx].store.mems.split_at_mut(dst);
+                                    (&left[src], &mut right[0])
+                                }
+                                Less => {
+                                    let (left, right) =
+                                        modules[*current_module_idx].store.mems.split_at_mut(src);
+                                    (&right[0], &mut left[dst])
+                                }
+                                Equal => unreachable!(),
+                            };
+                            dst_mem.data[d as usize..(d + n) as usize]
+                                .copy_from_slice(&src_mem.data[s as usize..(s + n) as usize]);
+                        }
 
-            //             trace!("Instruction: memory.copy");
-            //         }
-            //         // See https://webassembly.github.io/bulk-memory-operations/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-fill
-            //         MEMORY_FILL => {
-            //             //  mappings:
-            //             //      n => number of bytes to update
-            //             //      val => the value to set each byte to (must be < 256)
-            //             //      d => the pointer to the region to update
-            //             let mem_idx = wasm.read_u8().unwrap_validated() as usize;
-            //             let mem = modules[*current_module_idx]
-            //                 .store
-            //                 .mems
-            //                 .get(mem_idx)
-            //                 .unwrap_validated();
-            //             let n: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-            //             let val: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                        trace!("Instruction: memory.copy");
+                    }
+                    // See https://webassembly.github.io/bulk-memory-operations/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-fill
+                    MEMORY_FILL => {
+                        //  mappings:
+                        //      n => number of bytes to update
+                        //      val => the value to set each byte to (must be < 256)
+                        //      d => the pointer to the region to update
+                        let mem_idx = store.modules[current_wasm_index]
+                            .wasm_reader
+                            .read_u8()
+                            .unwrap_validated() as usize;
+                        let mem = modules[*current_module_idx]
+                            .store
+                            .mems
+                            .get(mem_idx)
+                            .unwrap_validated();
+                        let n: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                        let val: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-            //             if !(0..=255).contains(&val) {
-            //                 warn!("Value for memory.fill does not fit in a byte ({val})");
-            //             }
+                        if !(0..=255).contains(&val) {
+                            warn!("Value for memory.fill does not fit in a byte ({val})");
+                        }
 
-            //             let d: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                        let d: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-            //             let final_dst_offset = (n as usize)
-            //                 .checked_add(d as usize)
-            //                 .filter(|&res| res <= mem.data.len())
-            //                 .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
+                        let final_dst_offset = (n as usize)
+                            .checked_add(d as usize)
+                            .filter(|&res| res <= mem.data.len())
+                            .ok_or(RuntimeError::MemoryAccessOutOfBounds)?;
 
-            //             modules[*current_module_idx]
-            //                 .store
-            //                 .mems
-            //                 .get_mut(mem_idx)
-            //                 .unwrap_validated()
-            //                 .data
-            //                 .get_mut(d as usize..final_dst_offset)
-            //                 .unwrap_validated()
-            //                 .fill(val as u8);
+                        modules[*current_module_idx]
+                            .store
+                            .mems
+                            .get_mut(mem_idx)
+                            .unwrap_validated()
+                            .data
+                            .get_mut(d as usize..final_dst_offset)
+                            .unwrap_validated()
+                            .fill(val as u8);
 
-            //             trace!("Instruction: memory.fill");
-            //         }
-            //         // https://webassembly.github.io/spec/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-table-mathsf-table-init-x-y
-            //         // https://webassembly.github.io/spec/core/binary/instructions.html#table-instructions
-            //         // in binary format it seems that elemidx is first ???????
-            //         // this is ONLY for passive elements
-            //         TABLE_INIT => {
-            //             let elem_idx = wasm.read_var_u32().unwrap_validated() as usize;
-            //             let table_idx = wasm.read_var_u32().unwrap_validated() as usize;
+                        trace!("Instruction: memory.fill");
+                    }
+                    // https://webassembly.github.io/spec/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-table-mathsf-table-init-x-y
+                    // https://webassembly.github.io/spec/core/binary/instructions.html#table-instructions
+                    // in binary format it seems that elemidx is first ???????
+                    // this is ONLY for passive elements
+                    TABLE_INIT => {
+                        let elem_idx = store.modules[current_wasm_index]
+                            .wasm_reader
+                            .read_var_u32()
+                            .unwrap_validated() as usize;
+                        let table_idx = store.modules[current_wasm_index]
+                            .wasm_reader
+                            .read_var_u32()
+                            .unwrap_validated() as usize;
 
-            //             let n: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into(); // size
-            //             let s: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into(); // offset
-            //             let d: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into(); // dst
+                        let n: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into(); // size
+                        let s: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into(); // offset
+                        let d: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into(); // dst
 
-            //             let tab_len = modules[*current_module_idx]
-            //                 .store
-            //                 .tables
-            //                 .get(table_idx)
-            //                 .unwrap_validated()
-            //                 .len();
-            //             let tab = modules[*current_module_idx]
-            //                 .store
-            //                 .tables
-            //                 .get_mut(table_idx)
-            //                 .unwrap_validated();
+                        let tab_len = modules[*current_module_idx]
+                            .store
+                            .tables
+                            .get(table_idx)
+                            .unwrap_validated()
+                            .len();
+                        let tab = modules[*current_module_idx]
+                            .store
+                            .tables
+                            .get_mut(table_idx)
+                            .unwrap_validated();
 
-            //             let elem_len = if modules[*current_module_idx]
-            //                 .store
-            //                 .passive_elem_indexes
-            //                 .contains(&elem_idx)
-            //             {
-            //                 modules[*current_module_idx]
-            //                     .store
-            //                     .elements
-            //                     .get(elem_idx)
-            //                     .unwrap_validated()
-            //                     .len()
-            //             } else {
-            //                 0
-            //             };
+                        let elem_len = if modules[*current_module_idx]
+                            .store
+                            .passive_elem_indexes
+                            .contains(&elem_idx)
+                        {
+                            modules[*current_module_idx]
+                                .store
+                                .elements
+                                .get(elem_idx)
+                                .unwrap_validated()
+                                .len()
+                        } else {
+                            0
+                        };
 
-            //             trace!(
-            //                 "Instruction: table.init '{}' '{}' [{} {} {}] -> []",
-            //                 elem_idx,
-            //                 table_idx,
-            //                 d,
-            //                 s,
-            //                 n
-            //             );
+                        trace!(
+                            "Instruction: table.init '{}' '{}' [{} {} {}] -> []",
+                            elem_idx,
+                            table_idx,
+                            d,
+                            s,
+                            n
+                        );
 
-            //             let final_src_offset = (s as usize)
-            //                 .checked_add(n as usize)
-            //                 .filter(|&res| res <= elem_len)
-            //                 .ok_or(RuntimeError::TableAccessOutOfBounds)?;
+                        let final_src_offset = (s as usize)
+                            .checked_add(n as usize)
+                            .filter(|&res| res <= elem_len)
+                            .ok_or(RuntimeError::TableAccessOutOfBounds)?;
 
-            //             (d as usize)
-            //                 .checked_add(n as usize)
-            //                 .filter(|&res| res <= tab_len)
-            //                 .ok_or(RuntimeError::TableAccessOutOfBounds)?;
+                        (d as usize)
+                            .checked_add(n as usize)
+                            .filter(|&res| res <= tab_len)
+                            .ok_or(RuntimeError::TableAccessOutOfBounds)?;
 
-            //             let elem = modules[*current_module_idx]
-            //                 .store
-            //                 .elements
-            //                 .get(elem_idx)
-            //                 .unwrap_validated();
+                        let elem = modules[*current_module_idx]
+                            .store
+                            .elements
+                            .get(elem_idx)
+                            .unwrap_validated();
 
-            //             let dest = &mut tab.elem[d as usize..];
-            //             let src = &elem.references[s as usize..final_src_offset];
-            //             dest[..src.len()].copy_from_slice(src);
-            //         }
-            //         ELEM_DROP => {
-            //             let elem_idx = wasm.read_var_u32().unwrap_validated() as usize;
+                        let dest = &mut tab.elem[d as usize..];
+                        let src = &elem.references[s as usize..final_src_offset];
+                        dest[..src.len()].copy_from_slice(src);
+                    }
+                    ELEM_DROP => {
+                        let elem_idx = store.modules[current_wasm_index]
+                            .wasm_reader
+                            .read_var_u32()
+                            .unwrap_validated() as usize;
 
-            //             // WARN: i'm not sure if this is okay or not
-            //             modules[*current_module_idx]
-            //                 .store
-            //                 .elements
-            //                 .get_mut(elem_idx)
-            //                 .unwrap_validated()
-            //                 .references = vec![];
-            //         }
-            //         // https://webassembly.github.io/spec/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-table-mathsf-table-copy-x-y
-            //         TABLE_COPY => {
-            //             let table_x_idx = wasm.read_var_u32().unwrap_validated() as usize;
-            //             let table_y_idx = wasm.read_var_u32().unwrap_validated() as usize;
+                        // WARN: i'm not sure if this is okay or not
+                        modules[*current_module_idx]
+                            .store
+                            .elements
+                            .get_mut(elem_idx)
+                            .unwrap_validated()
+                            .references = vec![];
+                    }
+                    // https://webassembly.github.io/spec/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-table-mathsf-table-copy-x-y
+                    TABLE_COPY => {
+                        let table_x_idx = store.modules[current_wasm_index]
+                            .wasm_reader
+                            .read_var_u32()
+                            .unwrap_validated() as usize;
+                        let table_y_idx = store.modules[current_wasm_index]
+                            .wasm_reader
+                            .read_var_u32()
+                            .unwrap_validated() as usize;
 
-            //             let tab_x_elem_len = modules[*current_module_idx].store.tables[table_x_idx]
-            //                 .elem
-            //                 .len();
-            //             let tab_y_elem_len = modules[*current_module_idx].store.tables[table_y_idx]
-            //                 .elem
-            //                 .len();
+                        let tab_x_elem_len = modules[*current_module_idx].store.tables[table_x_idx]
+                            .elem
+                            .len();
+                        let tab_y_elem_len = modules[*current_module_idx].store.tables[table_y_idx]
+                            .elem
+                            .len();
 
-            //             let n: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into(); // size
-            //             let s: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into(); // source
-            //             let d: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into(); // destination
+                        let n: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into(); // size
+                        let s: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into(); // source
+                        let d: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into(); // destination
 
-            //             let src_res = match s.checked_add(n) {
-            //                 Some(res) => {
-            //                     if res > tab_y_elem_len as u32 {
-            //                         return Err(RuntimeError::TableAccessOutOfBounds);
-            //                     } else {
-            //                         res as usize
-            //                     }
-            //                 }
-            //                 _ => return Err(RuntimeError::TableAccessOutOfBounds),
-            //             };
+                        let src_res = match s.checked_add(n) {
+                            Some(res) => {
+                                if res > tab_y_elem_len as u32 {
+                                    return Err(RuntimeError::TableAccessOutOfBounds);
+                                } else {
+                                    res as usize
+                                }
+                            }
+                            _ => return Err(RuntimeError::TableAccessOutOfBounds),
+                        };
 
-            //             let dst_res = match d.checked_add(n) {
-            //                 Some(res) => {
-            //                     if res > tab_x_elem_len as u32 {
-            //                         return Err(RuntimeError::TableAccessOutOfBounds);
-            //                     } else {
-            //                         res as usize
-            //                     }
-            //                 }
-            //                 _ => return Err(RuntimeError::TableAccessOutOfBounds),
-            //             };
+                        let dst_res = match d.checked_add(n) {
+                            Some(res) => {
+                                if res > tab_x_elem_len as u32 {
+                                    return Err(RuntimeError::TableAccessOutOfBounds);
+                                } else {
+                                    res as usize
+                                }
+                            }
+                            _ => return Err(RuntimeError::TableAccessOutOfBounds),
+                        };
 
-            //             let dst = table_x_idx;
-            //             let src = table_y_idx;
+                        let dst = table_x_idx;
+                        let src = table_y_idx;
 
-            //             if table_x_idx == table_y_idx {
-            //                 modules[*current_module_idx].store.tables[table_x_idx]
-            //                     .elem
-            //                     .copy_within(s as usize..src_res, d as usize); // }
-            //             } else {
-            //                 use core::cmp::Ordering::*;
-            //                 let (src_table, dst_table) = match dst.cmp(&src) {
-            //                     Greater => {
-            //                         let (left, right) =
-            //                             modules[*current_module_idx].store.tables.split_at_mut(dst);
-            //                         (&left[src], &mut right[0])
-            //                     }
-            //                     Less => {
-            //                         let (left, right) =
-            //                             modules[*current_module_idx].store.tables.split_at_mut(src);
-            //                         (&right[0], &mut left[dst])
-            //                     }
-            //                     Equal => unreachable!(),
-            //                 };
-            //                 dst_table.elem[d as usize..dst_res]
-            //                     .copy_from_slice(&src_table.elem[s as usize..src_res]);
-            //             }
+                        if table_x_idx == table_y_idx {
+                            modules[*current_module_idx].store.tables[table_x_idx]
+                                .elem
+                                .copy_within(s as usize..src_res, d as usize); // }
+                        } else {
+                            use core::cmp::Ordering::*;
+                            let (src_table, dst_table) = match dst.cmp(&src) {
+                                Greater => {
+                                    let (left, right) =
+                                        modules[*current_module_idx].store.tables.split_at_mut(dst);
+                                    (&left[src], &mut right[0])
+                                }
+                                Less => {
+                                    let (left, right) =
+                                        modules[*current_module_idx].store.tables.split_at_mut(src);
+                                    (&right[0], &mut left[dst])
+                                }
+                                Equal => unreachable!(),
+                            };
+                            dst_table.elem[d as usize..dst_res]
+                                .copy_from_slice(&src_table.elem[s as usize..src_res]);
+                        }
 
-            //             trace!(
-            //                 "Instruction: table.copy '{}' '{}' [{} {} {}] -> []",
-            //                 table_x_idx,
-            //                 table_y_idx,
-            //                 d,
-            //                 s,
-            //                 n
-            //             );
-            //         }
-            //         TABLE_GROW => {
-            //             let table_idx = wasm.read_var_u32().unwrap_validated() as usize;
+                        trace!(
+                            "Instruction: table.copy '{}' '{}' [{} {} {}] -> []",
+                            table_x_idx,
+                            table_y_idx,
+                            d,
+                            s,
+                            n
+                        );
+                    }
+                    TABLE_GROW => {
+                        let table_idx = store.modules[current_wasm_index]
+                            .wasm_reader
+                            .read_var_u32()
+                            .unwrap_validated() as usize;
 
-            //             let tab = modules[*current_module_idx]
-            //                 .store
-            //                 .tables
-            //                 .get_mut(table_idx)
-            //                 .unwrap_validated();
+                        let tab = modules[*current_module_idx]
+                            .store
+                            .tables
+                            .get_mut(table_idx)
+                            .unwrap_validated();
 
-            //             let sz = tab.elem.len() as u32;
+                        let sz = tab.elem.len() as u32;
 
-            //             let n: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-            //             let val = stack.pop_unknown_ref();
+                        let n: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                        let val = stack.pop_unknown_ref();
 
-            //             let max = tab.ty.lim.max.unwrap();
+                        let max = tab.ty.lim.max.unwrap();
 
-            //             let final_size = sz.checked_add(n);
+                        let final_size = sz.checked_add(n);
 
-            //             match final_size {
-            //                 Some(final_size) => {
-            //                     if final_size > max {
-            //                         stack.push_value(Value::I32(u32::MAX))
-            //                     } else {
-            //                         tab.elem.extend(vec![val; n as usize]);
+                        match final_size {
+                            Some(final_size) => {
+                                if final_size > max {
+                                    stack.push_value(Value::I32(u32::MAX))
+                                } else {
+                                    tab.elem.extend(vec![val; n as usize]);
 
-            //                         stack.push_value(Value::I32(sz));
-            //                     }
-            //                 }
-            //                 _ => stack.push_value(Value::I32(u32::MAX)),
-            //             }
-            //         }
-            //         TABLE_SIZE => {
-            //             let table_idx = wasm.read_var_u32().unwrap_validated() as usize;
+                                    stack.push_value(Value::I32(sz));
+                                }
+                            }
+                            _ => stack.push_value(Value::I32(u32::MAX)),
+                        }
+                    }
+                    TABLE_SIZE => {
+                        let table_idx = store.modules[current_wasm_index]
+                            .wasm_reader
+                            .read_var_u32()
+                            .unwrap_validated() as usize;
 
-            //             let tab = modules[*current_module_idx]
-            //                 .store
-            //                 .tables
-            //                 .get(table_idx)
-            //                 .unwrap_validated();
+                        let tab = modules[*current_module_idx]
+                            .store
+                            .tables
+                            .get(table_idx)
+                            .unwrap_validated();
 
-            //             let sz = tab.elem.len() as u32;
+                        let sz = tab.elem.len() as u32;
 
-            //             stack.push_value(Value::I32(sz));
+                        stack.push_value(Value::I32(sz));
 
-            //             trace!("Instruction: table.size '{}' [] -> [{}]", table_idx, sz);
-            //         }
-            //         TABLE_FILL => {
-            //             let table_idx = wasm.read_var_u32().unwrap_validated() as usize;
+                        trace!("Instruction: table.size '{}' [] -> [{}]", table_idx, sz);
+                    }
+                    TABLE_FILL => {
+                        let table_idx = store.modules[current_wasm_index]
+                            .wasm_reader
+                            .read_var_u32()
+                            .unwrap_validated() as usize;
 
-            //             let tab = modules[*current_module_idx]
-            //                 .store
-            //                 .tables
-            //                 .get_mut(table_idx)
-            //                 .unwrap_validated();
-            //             let ty = tab.ty.et;
+                        let tab = modules[*current_module_idx]
+                            .store
+                            .tables
+                            .get_mut(table_idx)
+                            .unwrap_validated();
+                        let ty = tab.ty.et;
 
-            //             let n: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into(); // len
-            //             let val: Ref = stack.pop_value(ValType::RefType(ty)).into();
-            //             let i: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into(); // dst
+                        let n: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into(); // len
+                        let val: Ref = stack.pop_value(ValType::RefType(ty)).into();
+                        let i: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into(); // dst
 
-            //             let end = (i as usize)
-            //                 .checked_add(n as usize)
-            //                 .ok_or(RuntimeError::TableAccessOutOfBounds)?;
+                        let end = (i as usize)
+                            .checked_add(n as usize)
+                            .ok_or(RuntimeError::TableAccessOutOfBounds)?;
 
-            //             tab.elem
-            //                 .get_mut(i as usize..end)
-            //                 .ok_or(RuntimeError::TableAccessOutOfBounds)?
-            //                 .fill(val);
+                        tab.elem
+                            .get_mut(i as usize..end)
+                            .ok_or(RuntimeError::TableAccessOutOfBounds)?
+                            .fill(val);
 
-            //             trace!(
-            //                 "Instruction table.fill '{}' [{} {} {}] -> []",
-            //                 table_idx,
-            //                 i,
-            //                 val,
-            //                 n
-            //             )
-            //         }
-            //         _ => unreachable!(),
-            //     }
-            // }
+                        trace!(
+                            "Instruction table.fill '{}' [{} {} {}] -> []",
+                            table_idx,
+                            i,
+                            val,
+                            n
+                        )
+                    }
+                    _ => unreachable!(),
+                }
+            }
             other => {
                 trace!("Unknown instruction {other:#x}, skipping..");
             }
