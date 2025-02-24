@@ -208,7 +208,13 @@ pub(super) fn run<H: HookSet>(
                     .read_var_u32()
                     .unwrap_validated() as FuncIdx;
 
-                let func_to_call_inst = store.functions.get(func_to_call_idx).unwrap_validated();
+                let func_to_call_global_idx =
+                    store.modules[current_wasm_index].functions[func_to_call_idx];
+
+                let func_to_call_inst = store
+                    .functions
+                    .get(func_to_call_global_idx)
+                    .unwrap_validated();
                 let func_to_call_ty = func_to_call_inst.ty();
 
                 // let func_to_call_inst = modules[*current_module_idx]
@@ -227,55 +233,66 @@ pub(super) fn run<H: HookSet>(
 
                 match func_to_call_inst {
                     FuncInst::Local(local_func_inst) => {
-                        let remaining_locals = local_func_inst.locals.iter().cloned();
-                        let locals = Locals::new(params, remaining_locals);
+                        // MIGHT BE IMPORTED
+                        let func_module_idx = store.get_module_idx(func_to_call_global_idx);
+                        match func_module_idx == *current_module_idx {
+                            true => {
+                                // local function
+                                let remaining_locals = local_func_inst.locals.iter().cloned();
+                                let locals = Locals::new(params, remaining_locals);
 
-                        stack.push_stackframe(
-                            *current_module_idx,
-                            func_to_call_idx,
-                            &func_to_call_ty,
-                            locals,
-                            store.modules[current_wasm_index].wasm_reader.pc,
-                            stp,
-                        );
+                                stack.push_stackframe(
+                                    *current_module_idx,
+                                    func_to_call_idx,
+                                    &func_to_call_ty,
+                                    locals,
+                                    store.modules[current_wasm_index].wasm_reader.pc,
+                                    stp,
+                                );
 
-                        store.modules[current_wasm_index]
-                            .wasm_reader
-                            .move_start_to(local_func_inst.code_expr)
-                            .unwrap_validated();
+                                store.modules[current_wasm_index]
+                                    .wasm_reader
+                                    .move_start_to(local_func_inst.code_expr)
+                                    .unwrap_validated();
 
-                        stp = 0;
-                        current_sidetable = &local_func_inst.sidetable;
+                                stp = 0;
+                                current_sidetable = &local_func_inst.sidetable;
+                            }
+                            false => {
+                                let (next_module, next_func_idx) =
+                                    (func_module_idx, func_to_call_global_idx);
+
+                                let local_func_inst =
+                                    store.functions[next_func_idx].try_into_local().unwrap();
+
+                                let remaining_locals = local_func_inst.locals.iter().cloned();
+                                let locals = Locals::new(params, remaining_locals);
+
+                                stack.push_stackframe(
+                                    *current_module_idx,
+                                    func_to_call_idx,
+                                    &func_to_call_ty,
+                                    locals,
+                                    store.modules[current_wasm_index].wasm_reader.pc,
+                                    stp,
+                                );
+
+                                current_wasm_index = next_module;
+                                // wasm = &mut modules[next_module].wasm_reader;
+                                *current_module_idx = next_module;
+
+                                store.modules[current_wasm_index]
+                                    .wasm_reader
+                                    .move_start_to(local_func_inst.code_expr)
+                                    .unwrap_validated();
+
+                                stp = 0;
+                                current_sidetable = &local_func_inst.sidetable;
+                            }
+                        };
                     }
                     FuncInst::Imported(_imported_func_inst) => {
-                        // let (next_module, next_func_idx) = lut
-                        //     .lookup(*current_module_idx, func_to_call_idx)
-                        //     .expect("invalid state for lookup");
-
-                        // let local_func_inst = modules[next_module].store.funcs[next_func_idx]
-                        //     .try_into_local()
-                        //     .unwrap();
-
-                        // let remaining_locals = local_func_inst.locals.iter().cloned();
-                        // let locals = Locals::new(params, remaining_locals);
-
-                        // stack.push_stackframe(
-                        //     *current_module_idx,
-                        //     func_to_call_idx,
-                        //     func_to_call_ty,
-                        //     locals,
-                        //     wasm.pc,
-                        //     stp,
-                        // );
-
-                        // wasm = &mut modules[next_module].wasm_reader;
-                        // *current_module_idx = next_module;
-
-                        // wasm.move_start_to(local_func_inst.code_expr)
-                        //     .unwrap_validated();
-
-                        // stp = 0;
-                        // current_sidetable = &local_func_inst.sidetable;
+                        unreachable!()
                     }
                 }
             }

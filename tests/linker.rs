@@ -25,7 +25,11 @@ pub fn compile_simple_import() {
     let wasm_bytes_addon = wat::parse_str(SIMPLE_IMPORT_ADDON).unwrap();
     let validation_info_addon = validate(&wasm_bytes_addon).expect("validation failed");
 
-    store.add_module("addon".to_string(), validation_info_addon);
+    let res = store.add_module("addon".to_string(), validation_info_addon);
+    if res.is_err() {
+        // println!("{:#?}", res.unwrap_err());
+        panic!("{}", res.unwrap_err());
+    }
 
     let wasm_bytes_base = wat::parse_str(SIMPLE_IMPORT_BASE).unwrap();
     let validation_info_base = validate(&wasm_bytes_base).expect("validation failed");
@@ -40,6 +44,8 @@ pub fn compile_simple_import() {
     //     RuntimeInstance::new_named("base", &validation_info_base).expect("instantiation failed");
 
     let func_idx = store.lookup_function("base", "get_three").unwrap();
+
+    println!("{:#?}", store.invoke::<(), (i32)>(func_idx, ()).unwrap());
 
     // let mut instance_addon = linker
     //     .instantiate(&mut store, &validation_info_addon)

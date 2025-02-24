@@ -237,7 +237,7 @@ impl<'b> Store<'b> {
         None
     }
 
-    fn get_module_idx(&self, func_idx: usize) -> usize {
+    pub(crate) fn get_module_idx(&self, func_idx: usize) -> usize {
         for module_idx in 0..self.modules.len() {
             let module = &self.modules[module_idx];
             let start = module.imported_functions_len;
