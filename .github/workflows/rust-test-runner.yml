@@ -1,0 +1,56 @@
+name: Rust Testsuite CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout main branch
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      - name: Checkout gh-pages branch
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          path: gh-pages
+
+      - name: Fetch previous testsuite_results.json
+        run: |
+          cp gh-pages/main/testsuite_results.json testsuite_results_original.json
+
+      - name: Run tests
+        run: cargo test --package wasm-interpreter --test wasm_spec_testsuite --verbose -- --nocapture
+
+      - name: Save testsuite_results.json to gh-pages
+        if: github.ref == 'refs/heads/main'
+        run: |
+          cp testsuite_results.json gh-pages/main/testsuite_results.json
+
+      - name: Commit and push results to gh-pages
+        if: github.ref == 'refs/heads/main'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd gh-pages
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "Update test suite results" || echo "No changes to commit"
+          git pull --rebase origin gh-pages
+          git push origin gh-pages
