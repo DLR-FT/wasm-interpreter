@@ -20,8 +20,8 @@ use std::panic::AssertUnwindSafe;
 
 use wasm::function_ref::FunctionRef;
 use wasm::RuntimeError;
+use wasm::Store;
 use wasm::Value;
-use wasm::DEFAULT_MODULE;
 use wasm::{validate, RuntimeInstance};
 use wast::core::WastArgCore;
 use wast::core::WastRetCore;
@@ -29,6 +29,8 @@ use wast::WastArg;
 
 use crate::specification::reports::*;
 use crate::specification::test_errors::*;
+
+const DEFAULT_MODULE: &'static str = "__interpreter_default__";
 
 pub fn to_wasm_testsuite_string(runtime_error: RuntimeError) -> std::string::String {
     match runtime_error {
@@ -86,7 +88,7 @@ impl std::error::Error for ErrEVI {}
 fn encode_validate_instantiate<'a>(
     module: &mut wast::QuoteWat,
     bytes: &'a mut Option<Vec<u8>>,
-    runtime_inst: &'a mut Option<RuntimeInstance<'a>>,
+    store: &'a mut Option<Store<'a>>,
 ) -> Result<(), ErrEVI> {
     use wast::*;
     let is_module = match &module {
@@ -108,15 +110,23 @@ fn encode_validate_instantiate<'a>(
                     Ok(validation_info) => match validation_info {
                         Err(_) => Err(ErrEVI::Validate),
                         Ok(validation_info) => {
-                            let runtime_instance_result =
-                                catch_unwind(|| RuntimeInstance::new(&validation_info));
-
-                            match runtime_instance_result {
-                                Err(_) => Err(ErrEVI::Instantiate),
-                                Ok(runtime_instance) => match runtime_instance {
+                            let store_result = catch_unwind(|| {
+                                let mut temp_store = Store::default();
+                                // RuntimeInstance::new(&validation_info)
+                                match temp_store
+                                    .add_module(DEFAULT_MODULE.to_owned(), validation_info)
+                                {
                                     Err(_) => Err(ErrEVI::Instantiate),
-                                    Ok(runtime_instance) => {
-                                        runtime_inst.replace(runtime_instance);
+                                    Ok(_) => Ok(temp_store),
+                                }
+                            });
+
+                            match store_result {
+                                Err(_) => Err(ErrEVI::Instantiate),
+                                Ok(new_store) => match new_store {
+                                    Err(_) => Err(ErrEVI::Instantiate),
+                                    Ok(new_store) => {
+                                        store.replace(new_store);
                                         Ok(())
                                     }
                                 },
@@ -169,7 +179,7 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
     // As such, we hoist the bytes into an Option, and assign it once a module directive is found.
     #[allow(unused_assignments)]
     let mut wasm_bytes: Option<Vec<u8>> = None;
-    let mut interpeter = None;
+    let mut store = None;
 
     for directive in wast.directives {
         match directive {
@@ -215,9 +225,14 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                     }
                 };
 
-                let runtime_instance = catch_unwind(|| RuntimeInstance::new(&validation_info));
+                // let store = catch_unwind(|| RuntimeInstance::new(&validation_info));
+                let temp_store = catch_unwind(|| {
+                    let mut temp_store = Store::default();
+                    temp_store.add_module(DEFAULT_MODULE.to_owned(), validation_info)?;
+                    Ok(temp_store)
+                });
 
-                let instance = match runtime_instance {
+                let instance = match temp_store {
                     Err(_) => {
                         return CompilationError::new(
                             Box::new(ErrEVI::Instantiate),
@@ -239,14 +254,14 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                     },
                 };
 
-                interpeter = Some(instance);
+                store = Some(instance);
             }
             wast::WastDirective::AssertReturn {
                 span,
                 exec,
                 results,
             } => {
-                if interpeter.is_none() {
+                if store.is_none() {
                     return CompilationError::new(
                         Box::new(GenericError::new(
                             "Attempted to assert before module directive",
@@ -257,7 +272,7 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                     .compile_report();
                 }
 
-                let interpeter = interpeter.as_mut().unwrap();
+                let interpeter = store.as_mut().unwrap();
 
                 let err_or_panic: Result<(), Box<dyn Error>> =
                     match catch_unwind(AssertUnwindSafe(|| {
@@ -295,7 +310,7 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                 exec,
                 message,
             } => {
-                if interpeter.is_none() {
+                if store.is_none() {
                     return CompilationError::new(
                         Box::new(GenericError::new(
                             "Attempted to assert before module directive",
@@ -306,11 +321,11 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                     .compile_report();
                 }
 
-                let interpeter = interpeter.as_mut().unwrap();
+                let store = store.as_mut().unwrap();
 
                 let err_or_panic: Result<(), Box<dyn Error>> =
                     match catch_unwind(AssertUnwindSafe(|| {
-                        execute_assert_trap(interpeter, exec, message)
+                        execute_assert_trap(store, exec, message)
                     })) {
                         Err(inner) => {
                             // TODO: Do we want to exit on panic? State may be left in an inconsistent state, and cascading panics may occur.
@@ -397,7 +412,7 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                 ));
             }
             wast::WastDirective::Invoke(invoke) => {
-                match interpeter {
+                match store {
                     None => asserts.push_error(WastError::new(
                         Box::new(GenericError::new(
                             "Couldn't invoke, interpreter not present",
@@ -413,8 +428,8 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                             .collect::<Vec<_>>();
 
                         // TODO: more modules ¯\_(ツ)_/¯
-                        match interpeter.get_function_by_name(DEFAULT_MODULE, invoke.name) {
-                            Err(_) => asserts.push_error(WastError::new(
+                        match interpeter.get_function_idx_by_name(DEFAULT_MODULE, invoke.name) {
+                            None => asserts.push_error(WastError::new(
                                 Box::new(GenericError::new(&format!(
                                     "Couldn't get the function '{}' from module '{}'",
                                     invoke.name, "DEFAULT_MODULE"
@@ -422,8 +437,8 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                                 u32::MAX,
                                 "invoke",
                             )),
-                            Ok(funcref) => {
-                                match interpeter.invoke_dynamic_unchecked_return_ty(&funcref, args)
+                            Some(func_idx) => {
+                                match interpeter.invoke_dynamic_unchecked_return_ty(func_idx, args)
                                 {
                                     Err(e) => asserts.push_error(WastError::new(
                                         Box::new(GenericError::new(&format!(
@@ -456,7 +471,8 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
 }
 
 fn execute_assert_return(
-    interpeter: &mut RuntimeInstance,
+    // interpeter: &mut RuntimeInstance,
+    store: &mut Store,
     exec: wast::WastExecute,
     results: Vec<wast::WastRet>,
 ) -> Result<(), Box<dyn Error>> {
@@ -475,12 +491,17 @@ fn execute_assert_return(
                 .collect::<Vec<_>>();
 
             // TODO: more modules ¯\_(ツ)_/¯
-            let func = interpeter
-                .get_function_by_name(DEFAULT_MODULE, invoke_info.name)
-                .map_err(|err| Box::new(WasmInterpreterError(wasm::Error::RuntimeError(err))))?;
+            let func_idx = store
+                .lookup_function(&DEFAULT_MODULE, invoke_info.name)
+                .ok_or(Box::new(WasmInterpreterError(wasm::Error::RuntimeError(
+                    RuntimeError::FunctionNotFound,
+                ))))?;
+            // let func = store
+            //     .get_function_by_name(DEFAULT_MODULE, invoke_info.name)
+            //     .map_err(|err| Box::new(WasmInterpreterError(wasm::Error::RuntimeError(err))))?;
 
-            let actual = interpeter
-                .invoke_dynamic(&func, args, &result_types)
+            let actual = store
+                .invoke_dynamic(func_idx, args, &result_types)
                 .map_err(|err| Box::new(WasmInterpreterError(wasm::Error::RuntimeError(err))))?;
 
             AssertEqError::assert_eq(actual, result_vals)?;
@@ -499,7 +520,7 @@ fn execute_assert_return(
 }
 
 fn execute_assert_trap(
-    interpeter: &mut RuntimeInstance,
+    store: &mut Store,
     exec: wast::WastExecute,
     message: &str,
 ) -> Result<(), Box<dyn Error>> {
@@ -512,19 +533,13 @@ fn execute_assert_trap(
                 .collect::<Vec<_>>();
 
             // TODO: more modules ¯\_(ツ)_/¯
-            let func_res = interpeter
-                .get_function_by_name(DEFAULT_MODULE, invoke_info.name)
-                .map_err(|err| Box::new(WasmInterpreterError(wasm::Error::RuntimeError(err))));
+            let func_idx = store
+                .get_function_idx_by_name(DEFAULT_MODULE, invoke_info.name)
+                .ok_or(Box::new(WasmInterpreterError(wasm::Error::RuntimeError(
+                    RuntimeError::FunctionNotFound,
+                ))))?;
 
-            let func: FunctionRef;
-            match func_res {
-                Err(e) => {
-                    return Err(e);
-                }
-                Ok(func_ref) => func = func_ref,
-            };
-
-            let actual = interpeter.invoke_dynamic_unchecked_return_ty(&func, args);
+            let actual = store.invoke_dynamic_unchecked_return_ty(func_idx, args);
 
             match actual {
                 Ok(_) => Err(Box::new(GenericError::new("assert_trap did NOT trap"))),

@@ -317,6 +317,158 @@ impl<'b> Store<'b> {
         debug!("Successfully invoked function");
         Ok(ret)
     }
+
+    pub fn invoke_dynamic(
+        &mut self,
+        func_idx: usize,
+        params: Vec<Value>,
+        ret_types: &[ValType],
+    ) -> Result<Vec<Value>, RuntimeError> {
+        let func_inst = self
+            .functions
+            .get(func_idx)
+            .ok_or(RuntimeError::FunctionNotFound)?;
+
+        let module_idx = self.get_module_idx(func_idx);
+
+        let func_ty = func_inst.ty();
+
+        // Verify that the given parameters match the function parameters
+        let param_types = params.iter().map(|v| v.to_ty()).collect::<Vec<_>>();
+
+        if func_ty.params.valtypes != param_types {
+            panic!("Invalid parameters for function");
+        }
+
+        // Verify that the given return types match the function return types
+        if func_ty.returns.valtypes != ret_types {
+            panic!("Invalid return types for function");
+        }
+
+        // Prepare a new stack with the locals for the entry function
+        let mut stack = Stack::new();
+        let locals = Locals::new(
+            params.into_iter(),
+            func_inst.try_into_local().unwrap().locals.iter().cloned(),
+        );
+        stack.push_stackframe(module_idx, func_idx, &func_ty, locals, 0, 0);
+
+        let mut currrent_module_idx = module_idx;
+        // Run the interpreter
+        run(
+            // &mut self.modules,
+            &mut currrent_module_idx,
+            // self.lut.as_ref().ok_or(RuntimeError::UnmetImport)?,
+            &mut stack,
+            EmptyHookSet,
+            self,
+        )?;
+
+        let func_inst_idx = self.modules[module_idx]
+            .functions
+            .get(func_idx)
+            .ok_or(RuntimeError::FunctionNotFound)?
+            .clone();
+
+        let func_inst = self
+            .functions
+            .get(func_inst_idx)
+            .ok_or(RuntimeError::FunctionNotFound)?;
+
+        let func_ty = func_inst.ty();
+
+        // Pop return values from stack
+        let return_values = func_ty
+            .returns
+            .valtypes
+            .iter()
+            .rev()
+            .map(|ty| stack.pop_value(*ty))
+            .collect::<Vec<Value>>();
+
+        // Values are reversed because they were popped from stack one-by-one. Now reverse them back
+        let reversed_values = return_values.into_iter().rev();
+        let ret = reversed_values.collect();
+        debug!("Successfully invoked function");
+        Ok(ret)
+    }
+
+    pub fn invoke_dynamic_unchecked_return_ty(
+        &mut self,
+        func_idx: usize,
+        params: Vec<Value>,
+    ) -> Result<Vec<Value>, RuntimeError> {
+        let func_inst = self
+            .functions
+            .get(func_idx)
+            .ok_or(RuntimeError::FunctionNotFound)?;
+
+        let module_idx = self.get_module_idx(func_idx);
+
+        let func_ty = func_inst.ty();
+
+        // Verify that the given parameters match the function parameters
+        let param_types = params.iter().map(|v| v.to_ty()).collect::<Vec<_>>();
+
+        if func_ty.params.valtypes != param_types {
+            panic!("Invalid parameters for function");
+        }
+
+        // Prepare a new stack with the locals for the entry function
+        let mut stack = Stack::new();
+        let locals = Locals::new(
+            params.into_iter(),
+            func_inst.try_into_local().unwrap().locals.iter().cloned(),
+        );
+        stack.push_stackframe(module_idx, func_idx, &func_ty, locals, 0, 0);
+
+        let mut currrent_module_idx = module_idx;
+        // Run the interpreter
+        run(
+            // &mut self.modules,
+            &mut currrent_module_idx,
+            // self.lut.as_ref().ok_or(RuntimeError::UnmetImport)?,
+            &mut stack,
+            EmptyHookSet,
+            self,
+        )?;
+
+        // Pop return values from stack
+        let return_values = func_ty
+            .returns
+            .valtypes
+            .iter()
+            .rev()
+            .map(|ty| stack.pop_value(*ty))
+            .collect::<Vec<Value>>();
+
+        // Values are reversed because they were popped from stack one-by-one. Now reverse them back
+        let reversed_values = return_values.into_iter().rev();
+        let ret = reversed_values.collect();
+        debug!("Successfully invoked function");
+        Ok(ret)
+    }
+
+    pub fn get_function_idx_by_name(
+        &self,
+        module_name: &str,
+        function_name: &str,
+    ) -> Option<usize> {
+        for module_idx in 0..self.modules.len() {
+            let module = &self.modules[module_idx];
+            if module.name != module_name {
+                continue;
+            }
+
+            for export in &module.exports {
+                if export.name == function_name {
+                    return export.desc.get_function_idx();
+                }
+            }
+        }
+
+        None
+    }
 }
 
 impl<'b> ValidationInfo<'b> {

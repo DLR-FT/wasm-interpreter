@@ -41,6 +41,15 @@ pub enum ExportDesc {
     GlobalIdx(GlobalIdx),
 }
 
+impl ExportDesc {
+    pub fn get_function_idx(&self) -> Option<FuncIdx> {
+        match self {
+            ExportDesc::FuncIdx(func_idx) => Some(*func_idx),
+            _ => None,
+        }
+    }
+}
+
 impl WasmReadable for ExportDesc {
     fn read(wasm: &mut WasmReader) -> Result<Self> {
         let desc_id = wasm.read_u8()?;

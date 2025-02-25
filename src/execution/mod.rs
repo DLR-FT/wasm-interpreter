@@ -35,7 +35,7 @@ pub mod hooks;
 mod interpreter_loop;
 pub(crate) mod locals;
 // pub(crate) mod lut;
-pub(crate) mod store;
+pub mod store;
 pub mod value;
 pub mod value_stack;
 
@@ -348,20 +348,20 @@ where
         Ok(ret)
     }
 
-    // / Get the indicies of a module and function by their names.
-    // /
-    // / # Arguments
-    // / - `module_name`: The module in which to find the function.
-    // / - `function_name`: The name of the function to find inside the module. The function must be a local function and
-    // /   not an import.
-    // /
-    // / # Returns
-    // / - `Ok((module_idx, func_idx))`, where `module_idx` is the internal index of the module inside the
-    // /   [RuntimeInstance], and `func_idx` is the internal index of the function inside the module.
-    // / - `Err(RuntimeError::ModuleNotFound)`, if the module is not found.
-    // / - `Err(RuntimeError::FunctionNotFound`, if the function is not found within the module.
-    // /
-    // TODO: DON'T FORGET TO UNCOMMENT THIS!!!!!!1!
+    // /// Get the indicies of a module and function by their names.
+    // ///
+    // /// # Arguments
+    // /// - `module_name`: The module in which to find the function.
+    // /// - `function_name`: The name of the function to find inside the module. The function must be a local function and
+    // ///   not an import.
+    // ///
+    // /// # Returns
+    // /// - `Ok((module_idx, func_idx))`, where `module_idx` is the internal index of the module inside the
+    // ///   [RuntimeInstance], and `func_idx` is the internal index of the function inside the module.
+    // /// - `Err(RuntimeError::ModuleNotFound)`, if the module is not found.
+    // /// - `Err(RuntimeError::FunctionNotFound`, if the function is not found within the module.
+    // ///
+    // // TODO: DON'T FORGET TO UNCOMMENT THIS!!!!!!1!
     // pub fn invoke_dynamic_unchecked_return_ty(
     //     &mut self,
     //     function_ref: &FunctionRef,
