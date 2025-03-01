@@ -1,2 +1,2 @@
-// mod arithmetic;
-// mod structured_control_flow;
+mod arithmetic;
+mod structured_control_flow;

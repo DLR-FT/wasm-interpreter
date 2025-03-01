@@ -1,4 +1,4 @@
-use wasm::{validate, RuntimeError, RuntimeInstance, Store, DEFAULT_MODULE};
+use wasm::{validate, Store};
 
 const SIMPLE_IMPORT_BASE: &str = r#"
 (module
@@ -45,7 +45,7 @@ pub fn compile_simple_import() {
 
     let func_idx = store.lookup_function("base", "get_three").unwrap();
 
-    println!("{:#?}", store.invoke::<(), (i32)>(func_idx, ()).unwrap());
+    println!("{:#?}", store.invoke::<(), i32>(func_idx, ()).unwrap());
 
     // let mut instance_addon = linker
     //     .instantiate(&mut store, &validation_info_addon)

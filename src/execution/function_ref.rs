@@ -4,8 +4,6 @@ use alloc::vec::Vec;
 use crate::execution::{hooks::HookSet, value::InteropValueList, RuntimeInstance};
 use crate::{RuntimeError, ValType, Value};
 
-use super::store::Store;
-
 pub struct FunctionRef {
     pub(crate) module_name: String,
     pub(crate) function_name: String,
@@ -24,9 +22,9 @@ impl FunctionRef {
         &self,
         runtime: &mut RuntimeInstance<H>,
         params: Param,
-        store: &mut Store,
+        // store: &mut Store,
     ) -> Result<Returns, RuntimeError> {
-        runtime.invoke(self, params, store)
+        runtime.invoke(self, params /* , store */)
     }
 
     pub fn invoke_dynamic<H: HookSet>(
@@ -34,9 +32,9 @@ impl FunctionRef {
         runtime: &mut RuntimeInstance<H>,
         params: Vec<Value>,
         ret_types: &[ValType],
-        store: &mut Store,
+        // store: &mut Store,
     ) -> Result<Vec<Value>, RuntimeError> {
-        runtime.invoke_dynamic(self, params, ret_types, store)
+        runtime.invoke_dynamic(self, params, ret_types /* , store */)
     }
 
     // pub fn get_return_types(&self) -> Vec<Value

@@ -18,7 +18,6 @@ use crate::{
     core::{
         indices::{DataIdx, FuncIdx, GlobalIdx, LabelIdx, LocalIdx, TableIdx, TypeIdx},
         reader::{
-            span::Span,
             types::{memarg::MemArg, BlockType},
             WasmReadable, WasmReader,
         },
@@ -34,7 +33,7 @@ use crate::{
 #[cfg(feature = "hooks")]
 use crate::execution::hooks::HookSet;
 
-use super::{execution_info::ExecutionInfo, /* lut::Lut, */ store::Store};
+use super::store::Store;
 
 /// Interprets a functions. Parameters and return values are passed on the stack.
 pub(super) fn run<H: HookSet>(
@@ -45,9 +44,11 @@ pub(super) fn run<H: HookSet>(
     mut hooks: H,
     store: &mut Store,
 ) -> Result<(), RuntimeError> {
+    let global_func_idx = store.modules[stack.current_stackframe().module_idx].functions
+        [stack.current_stackframe().func_idx];
     let func_inst = store
         .functions
-        .get(stack.current_stackframe().func_idx)
+        .get(global_func_idx)
         .unwrap_validated()
         .try_into_local()
         .unwrap_validated();
@@ -98,10 +99,12 @@ pub(super) fn run<H: HookSet>(
                 // if this is not the very last instruction in the function
                 // just skip because it is a delimiter of a ctrl block
 
+                let current_func_global_idx = store.modules[stack.current_stackframe().module_idx]
+                    .functions[stack.current_stackframe().func_idx];
                 // TODO there is definitely a better to write this
                 let current_func_span = store
                     .functions
-                    .get(stack.current_stackframe().func_idx)
+                    .get(current_func_global_idx)
                     .unwrap_validated()
                     .try_into_local()
                     .unwrap_validated()
@@ -134,7 +137,10 @@ pub(super) fn run<H: HookSet>(
 
                 current_sidetable = &store
                     .functions
-                    .get(stack.current_stackframe().func_idx)
+                    .get(
+                        store.modules[stack.current_stackframe().module_idx].functions
+                            [stack.current_stackframe().func_idx],
+                    )
                     .unwrap_validated()
                     .try_into_local()
                     .unwrap_validated()
@@ -272,7 +278,8 @@ pub(super) fn run<H: HookSet>(
                 match func_to_call_inst {
                     FuncInst::Local(local_func_inst) => {
                         // MIGHT BE IMPORTED
-                        let func_module_idx = store.get_module_idx(func_to_call_global_idx);
+                        let func_module_idx =
+                            store.get_module_idx_from_func_idx(func_to_call_global_idx)?;
                         match func_module_idx == *current_module_idx {
                             true => {
                                 // local function
@@ -383,7 +390,7 @@ pub(super) fn run<H: HookSet>(
                 match func_to_call_inst {
                     FuncInst::Local(local_func_inst) => {
                         // MIGHT BE IMPORTED
-                        let func_module_idx = store.get_module_idx(func_idx);
+                        let func_module_idx = store.get_module_idx_from_func_idx(func_idx)?;
                         match func_module_idx == *current_module_idx {
                             true => {
                                 // local function
@@ -410,7 +417,7 @@ pub(super) fn run<H: HookSet>(
                                 current_sidetable = &local_func_inst.sidetable;
                             }
                             false => {
-                                let (next_module, next_func_idx) = (func_module_idx, func_idx);
+                                let (next_module, _next_func_idx) = (func_module_idx, func_idx);
 
                                 let local_func_inst =
                                     func_to_call_inst.try_into_local().unwrap_validated();
@@ -543,8 +550,7 @@ pub(super) fn run<H: HookSet>(
                     .read_var_u32()
                     .unwrap_validated() as TableIdx;
 
-                let mut tab =
-                    &mut store.tables[store.modules[*current_module_idx].tables[table_idx]];
+                let tab = &mut store.tables[store.modules[*current_module_idx].tables[table_idx]];
 
                 let val: Ref = stack.pop_value(ValType::RefType(tab.ty.et)).into();
                 let i: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();

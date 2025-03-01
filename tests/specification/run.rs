@@ -18,11 +18,10 @@ use std::error::Error;
 use std::panic::catch_unwind;
 use std::panic::AssertUnwindSafe;
 
-use wasm::function_ref::FunctionRef;
+use wasm::validate;
 use wasm::RuntimeError;
 use wasm::Store;
 use wasm::Value;
-use wasm::{validate, RuntimeInstance};
 use wast::core::WastArgCore;
 use wast::core::WastRetCore;
 use wast::WastArg;
@@ -51,6 +50,7 @@ pub fn to_wasm_testsuite_string(runtime_error: RuntimeError) -> std::string::Str
         RuntimeError::UndefinedTableIndex => "undefined element",
         RuntimeError::ModuleNotFound => "module not found",
         RuntimeError::UnmetImport => "unmet import",
+        RuntimeError::StoreNotFound => "store not found",
     }
     .to_string()
 }

@@ -1,5 +1,4 @@
 use alloc::collections::btree_map::BTreeMap;
-use alloc::collections::btree_set::BTreeSet;
 use alloc::string::{String, ToString};
 use alloc::vec;
 use alloc::vec::Vec;
@@ -241,18 +240,35 @@ impl<'b> Store<'b> {
         None
     }
 
-    pub(crate) fn get_module_idx(&self, func_idx: usize) -> usize {
+    pub(crate) fn get_module_idx_from_name(
+        &self,
+        module_name: &str,
+    ) -> Result<usize, RuntimeError> {
+        for module_idx in 0..self.modules.len() {
+            let module = &self.modules[module_idx];
+            if module.name == module_name {
+                return Ok(module_idx);
+            }
+        }
+
+        return Err(RuntimeError::ModuleNotFound);
+    }
+
+    pub(crate) fn get_module_idx_from_func_idx(
+        &self,
+        func_idx: usize,
+    ) -> Result<usize, RuntimeError> {
         for module_idx in 0..self.modules.len() {
             let module = &self.modules[module_idx];
             let start = module.imported_functions_len;
             for i in start..module.functions.len() {
                 if module.functions[i] == func_idx {
-                    return module_idx;
+                    return Ok(module_idx);
                 }
             }
         }
 
-        usize::MAX
+        return Err(RuntimeError::ModuleNotFound);
     }
 
     // pub fn new
@@ -281,7 +297,7 @@ impl<'b> Store<'b> {
             func_inst.try_into_local().unwrap().locals.iter().cloned(),
         );
 
-        let module_idx = self.get_module_idx(func_idx);
+        let module_idx = self.get_module_idx_from_func_idx(func_idx)?;
         // setting `usize::MAX` as return address for the outermost function ensures that we
         // observably fail upon errornoeusly continuing execution after that function returns.
         stack.push_stackframe(
@@ -329,7 +345,7 @@ impl<'b> Store<'b> {
             .get(func_idx)
             .ok_or(RuntimeError::FunctionNotFound)?;
 
-        let module_idx = self.get_module_idx(func_idx);
+        let module_idx = self.get_module_idx_from_func_idx(func_idx)?;
 
         let func_ty = func_inst.ty();
 
@@ -403,7 +419,7 @@ impl<'b> Store<'b> {
             .get(func_idx)
             .ok_or(RuntimeError::FunctionNotFound)?;
 
-        let module_idx = self.get_module_idx(func_idx);
+        let module_idx = self.get_module_idx_from_func_idx(func_idx)?;
 
         let func_ty = func_inst.ty();
 

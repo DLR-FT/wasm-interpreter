@@ -9,7 +9,7 @@ use crate::{unreachable_validated, Error, Result};
 use super::global::GlobalType;
 use super::{MemType, TableType};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Import {
     #[allow(warnings)]
     pub module_name: String,
@@ -45,7 +45,7 @@ impl WasmReadable for Import {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ImportDesc {
     #[allow(dead_code)]
     Func(TypeIdx),

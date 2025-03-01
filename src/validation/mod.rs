@@ -21,6 +21,7 @@ pub(crate) mod validation_stack;
 
 /// Information collected from validating a module.
 /// This can be used to create a [crate::RuntimeInstance].
+#[derive(Clone)]
 pub struct ValidationInfo<'bytecode> {
     pub(crate) wasm: &'bytecode [u8],
     pub(crate) types: Vec<FuncType>,

@@ -31,6 +31,7 @@ pub enum RuntimeError {
     UndefinedTableIndex,
     // "undefined element" <- as-call_indirect-last
     // "unreachable"
+    StoreNotFound,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -298,6 +299,7 @@ impl Display for RuntimeError {
             RuntimeError::UndefinedTableIndex => {
                 f.write_str("Indirect call: table index out of bounds")
             }
+            RuntimeError::StoreNotFound => f.write_str("Store not found"),
         }
     }
 }

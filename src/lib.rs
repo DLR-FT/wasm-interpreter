@@ -3,7 +3,7 @@ extern crate alloc;
 #[macro_use]
 extern crate log;
 
-pub use core::error::{Error, Result, RuntimeError};
+pub use core::error::{Error, LinkerError, Result, RuntimeError};
 pub use core::reader::types::{Limits, NumType, RefType, ValType};
 pub use execution::store::*;
 pub use execution::value::Value;
