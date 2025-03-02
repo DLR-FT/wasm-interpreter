@@ -1,10 +1,41 @@
+use alloc::borrow::ToOwned;
 use alloc::string::String;
 use alloc::vec::Vec;
 
 use crate::execution::{hooks::HookSet, value::InteropValueList, RuntimeInstance};
-use crate::{RuntimeError, ValType, Value};
+use crate::{Result as CustomResult, RuntimeError, Store, ValType, Value};
+
+// use super::assert_validated::UnwrapValidatedExt;
+
+// #[derive(Clone)]
+// pub enum InnerFunctionRef {
+//     Unresolved {
+//         module_name: String,
+//         function_name: String
+//     },
+//     Resolved {
+//         module_index: usize,
+//         function_index: usize
+//     }
+// }
+
+// impl InnerFunctionRef {
+//     /// Always returns a [`InnerFunctionRef::Resolved`], otherwise Err
+//     fn resolve(&self, store: &Store) -> Result<Self> {
+//         match self {
+//             InnerFunctionRef::Resolved { module_index, function_index } => Ok((*self).clone()),
+//             InnerFunctionRef::Unresolved { module_name, function_name } => {
+//                 let module_index = store.get_module_idx_from_name(module_name)?;
+
+//                 let function_idx = store.get_global_function_idx_by_name(module_name, function_name)
+
+//             }
+//         }
+//     }
+// }
 
 pub struct FunctionRef {
+    // inner: InnerFunctionRef,
     pub(crate) module_name: String,
     pub(crate) function_name: String,
     pub(crate) module_index: usize,
@@ -18,6 +49,25 @@ pub struct FunctionRef {
 }
 
 impl FunctionRef {
+    pub fn new_from_name(
+        module_name: &str,
+        function_name: &str,
+        store: &Store,
+    ) -> CustomResult<Self> {
+        let module_idx = store.get_module_idx_from_name(module_name)?;
+        let func_idx = store
+            .get_local_function_idx_by_function_name(module_idx, function_name)
+            .ok_or(RuntimeError::FunctionNotFound)?;
+
+        Ok(Self {
+            function_name: function_name.to_owned(),
+            module_name: module_name.to_owned(),
+            function_index: func_idx,
+            module_index: module_idx,
+            exported: false,
+        })
+    }
+
     pub fn invoke<H: HookSet, Param: InteropValueList, Returns: InteropValueList>(
         &self,
         runtime: &mut RuntimeInstance<H>,

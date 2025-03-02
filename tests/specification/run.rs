@@ -428,7 +428,9 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                             .collect::<Vec<_>>();
 
                         // TODO: more modules ¯\_(ツ)_/¯
-                        match interpeter.get_function_idx_by_name(DEFAULT_MODULE, invoke.name) {
+                        match interpeter
+                            .get_global_function_idx_by_name(DEFAULT_MODULE, invoke.name)
+                        {
                             None => asserts.push_error(WastError::new(
                                 Box::new(GenericError::new(&format!(
                                     "Couldn't get the function '{}' from module '{}'",
@@ -534,7 +536,7 @@ fn execute_assert_trap(
 
             // TODO: more modules ¯\_(ツ)_/¯
             let func_idx = store
-                .get_function_idx_by_name(DEFAULT_MODULE, invoke_info.name)
+                .get_global_function_idx_by_name(DEFAULT_MODULE, invoke_info.name)
                 .ok_or(Box::new(WasmInterpreterError(wasm::Error::RuntimeError(
                     RuntimeError::FunctionNotFound,
                 ))))?;

@@ -240,6 +240,7 @@ impl<'b> Store<'b> {
         None
     }
 
+    // TODO: why do get_module and get_function functions return both Result and Option? Settle on something
     pub(crate) fn get_module_idx_from_name(
         &self,
         module_name: &str,
@@ -271,6 +272,58 @@ impl<'b> Store<'b> {
         return Err(RuntimeError::ModuleNotFound);
     }
 
+    pub fn get_local_function_idx_by_global_function_idx(
+        &self,
+        module_idx: usize,
+        global_function_idx: usize,
+    ) -> Option<usize> {
+        let functions = &self.modules[module_idx].functions;
+        for i in 0..functions.len() {
+            if functions[i] == global_function_idx {
+                return Some(i);
+            }
+        }
+        None
+    }
+
+    pub fn get_local_function_idx_by_function_name(
+        &self,
+        module_idx: usize,
+        function_name: &str,
+    ) -> Option<usize> {
+        for export in &self.modules[module_idx].exports {
+            if export.name == function_name {
+                return export.desc.get_function_idx();
+            }
+        }
+
+        None
+    }
+
+    pub fn get_global_function_idx_by_name(
+        &self,
+        module_name: &str,
+        function_name: &str,
+    ) -> Option<usize> {
+        for module_idx in 0..self.modules.len() {
+            let module = &self.modules[module_idx];
+            if module.name != module_name {
+                continue;
+            }
+
+            for export in &module.exports {
+                if export.name == function_name {
+                    if let Some(local_func_idx) = export.desc.get_function_idx() {
+                        return Some(module.functions[local_func_idx]);
+                    };
+                    return None;
+                }
+            }
+        }
+
+        None
+    }
+
     // pub fn new
     pub fn invoke<Param: InteropValueList, Returns: InteropValueList>(
         &mut self,
@@ -298,11 +351,14 @@ impl<'b> Store<'b> {
         );
 
         let module_idx = self.get_module_idx_from_func_idx(func_idx)?;
+        let local_func_idx = self
+            .get_local_function_idx_by_global_function_idx(module_idx, func_idx)
+            .ok_or(RuntimeError::FunctionNotFound)?;
         // setting `usize::MAX` as return address for the outermost function ensures that we
         // observably fail upon errornoeusly continuing execution after that function returns.
         stack.push_stackframe(
             module_idx,
-            func_idx,
+            local_func_idx,
             &func_ty,
             locals,
             usize::MAX,
@@ -367,7 +423,10 @@ impl<'b> Store<'b> {
             params.into_iter(),
             func_inst.try_into_local().unwrap().locals.iter().cloned(),
         );
-        stack.push_stackframe(module_idx, func_idx, &func_ty, locals, 0, 0);
+        let local_func_idx = self
+            .get_local_function_idx_by_global_function_idx(module_idx, func_idx)
+            .ok_or(RuntimeError::FunctionNotFound)?;
+        stack.push_stackframe(module_idx, local_func_idx, &func_ty, locals, 0, 0);
 
         let mut currrent_module_idx = module_idx;
         // Run the interpreter
@@ -436,7 +495,10 @@ impl<'b> Store<'b> {
             params.into_iter(),
             func_inst.try_into_local().unwrap().locals.iter().cloned(),
         );
-        stack.push_stackframe(module_idx, func_idx, &func_ty, locals, 0, 0);
+        let local_func_idx = self
+            .get_local_function_idx_by_global_function_idx(module_idx, func_idx)
+            .ok_or(RuntimeError::FunctionNotFound)?;
+        stack.push_stackframe(module_idx, local_func_idx, &func_ty, locals, 0, 0);
 
         let mut currrent_module_idx = module_idx;
         // Run the interpreter
@@ -463,27 +525,6 @@ impl<'b> Store<'b> {
         let ret = reversed_values.collect();
         debug!("Successfully invoked function");
         Ok(ret)
-    }
-
-    pub fn get_function_idx_by_name(
-        &self,
-        module_name: &str,
-        function_name: &str,
-    ) -> Option<usize> {
-        for module_idx in 0..self.modules.len() {
-            let module = &self.modules[module_idx];
-            if module.name != module_name {
-                continue;
-            }
-
-            for export in &module.exports {
-                if export.name == function_name {
-                    return export.desc.get_function_idx();
-                }
-            }
-        }
-
-        None
     }
 }
 
