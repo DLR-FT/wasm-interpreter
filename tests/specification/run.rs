@@ -1,3 +1,4 @@
+use std::any::Any;
 /*
 # This file incorporates code from Wasmtime, originally
 # available at https://github.com/bytecodealliance/wasmtime.
@@ -88,12 +89,27 @@ impl std::error::Error for ErrEVI {}
 fn encode_validate_instantiate<'a>(
     module: &mut wast::QuoteWat,
     bytes: &'a mut Option<Vec<u8>>,
-    store: &'a mut Option<Store<'a>>,
+    // store: &'a mut Option<Store<'a>>,
 ) -> Result<(), ErrEVI> {
+    let store = &mut Some(Store::default());
     use wast::*;
     let is_module = match &module {
         QuoteWat::QuoteComponent(..) | QuoteWat::Wat(Wat::Component(..)) => false,
         QuoteWat::Wat(..) | QuoteWat::QuoteModule(..) => true,
+    };
+    let module_name = match &module {
+        QuoteWat::QuoteComponent(..) | QuoteWat::Wat(Wat::Component(..)) => "".to_owned(),
+        QuoteWat::Wat(wat) => match wat {
+            wast::Wat::Module(wat_module) => match wat_module.id {
+                None => DEFAULT_MODULE.to_owned(),
+                Some(name) => name.name().to_owned(),
+            },
+            _ => unreachable!(),
+        },
+        QuoteWat::QuoteModule(_span, _vec_of_smth) => {
+            // todo!()
+            DEFAULT_MODULE.to_owned()
+        }
     };
 
     if is_module {
@@ -112,24 +128,43 @@ fn encode_validate_instantiate<'a>(
                         Ok(validation_info) => {
                             let store_result = catch_unwind(|| {
                                 let mut temp_store = Store::default();
+
                                 // RuntimeInstance::new(&validation_info)
                                 match temp_store
-                                    .add_module(DEFAULT_MODULE.to_owned(), validation_info)
+                                    // match store
+                                    //     .as_mut()
+                                    //     .unwrap()
+                                    .add_module(DEFAULT_MODULE.to_owned(), validation_info.clone())
                                 {
                                     Err(_) => Err(ErrEVI::Instantiate),
-                                    Ok(_) => Ok(temp_store),
+                                    Ok(_) => Ok(()),
                                 }
                             });
 
                             match store_result {
                                 Err(_) => Err(ErrEVI::Instantiate),
-                                Ok(new_store) => match new_store {
-                                    Err(_) => Err(ErrEVI::Instantiate),
-                                    Ok(new_store) => {
-                                        store.replace(new_store);
-                                        Ok(())
-                                    }
-                                },
+                                Ok(_) => {
+                                    let actual_name = if module_name == DEFAULT_MODULE {
+                                        // if we already have a default module, change name
+                                        if store.as_mut().unwrap().modules.len() > 0
+                                            && store.as_mut().unwrap().modules[0].name
+                                                == DEFAULT_MODULE
+                                        {
+                                            store.as_mut().unwrap().modules.len().to_string()
+                                        } else {
+                                            DEFAULT_MODULE.to_owned()
+                                        }
+                                    } else {
+                                        module_name
+                                    };
+                                    store
+                                        .as_mut()
+                                        .unwrap()
+                                        .add_module(actual_name, validation_info)
+                                        .map_err(|_| ErrEVI::Instantiate)?;
+
+                                    Ok(())
+                                }
                             }
                         }
                     },
@@ -178,8 +213,7 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
     // We need to keep the wasm_bytes in-scope for the lifetime of the interpeter.
     // As such, we hoist the bytes into an Option, and assign it once a module directive is found.
     #[allow(unused_assignments)]
-    let mut wasm_bytes: Option<Vec<u8>> = None;
-    let mut store = None;
+    let mut store = Some(Store::default());
 
     for directive in wast.directives {
         match directive {
@@ -193,10 +227,15 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                 )
                 .compile_report()));
 
-                wasm_bytes = Some(encoded);
+                // wasm_bytes_vec.push(encoded);
+                let encoded = Box::leak(Box::new(encoded));
+                // wasm_bytes = Some(encoded);
 
-                let validation_attempt = catch_unwind(|| {
-                    validate(wasm_bytes.as_ref().unwrap()).map_err(|err| {
+                let validation_attempt: Result<
+                    Result<wasm::ValidationInfo<'_>, WastTestReport>,
+                    Box<dyn Any + Send>,
+                > = catch_unwind(|| {
+                    validate(encoded).map_err(|err| {
                         CompilationError::new(
                             Box::new(WasmInterpreterError(err)),
                             filepath,
@@ -225,14 +264,32 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                     }
                 };
 
+                use wast::{QuoteWat, Wat};
+                let mut module_name = match &quoted {
+                    QuoteWat::QuoteComponent(..) | QuoteWat::Wat(Wat::Component(..)) => {
+                        todo!()
+                    }
+                    QuoteWat::Wat(wat) => match wat {
+                        wast::Wat::Module(wat_module) => match wat_module.id {
+                            None => DEFAULT_MODULE.to_owned(),
+                            Some(name) => name.name().to_owned(),
+                        },
+                        _ => unreachable!(),
+                    },
+                    QuoteWat::QuoteModule(_span, _vec_of_smth) => DEFAULT_MODULE.to_owned(),
+                };
+                if store.as_ref().unwrap().modules.len() > 0 && module_name == DEFAULT_MODULE {
+                    module_name = store.as_ref().unwrap().modules.len().to_string();
+                }
+
                 // let store = catch_unwind(|| RuntimeInstance::new(&validation_info));
                 let temp_store = catch_unwind(|| {
                     let mut temp_store = Store::default();
-                    temp_store.add_module(DEFAULT_MODULE.to_owned(), validation_info)?;
+                    temp_store.add_module(module_name.to_string(), validation_info.clone())?;
                     Ok(temp_store)
                 });
 
-                let instance = match temp_store {
+                match temp_store {
                     Err(_) => {
                         return CompilationError::new(
                             Box::new(ErrEVI::Instantiate),
@@ -250,11 +307,13 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                             )
                             .compile_report()
                         }
-                        Ok(instance) => instance,
+                        Ok(_) => store
+                            .as_mut()
+                            .unwrap()
+                            .add_module(module_name, validation_info)
+                            .unwrap(),
                     },
                 };
-
-                store = Some(instance);
             }
             wast::WastDirective::AssertReturn {
                 span,
@@ -272,11 +331,11 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                     .compile_report();
                 }
 
-                let interpeter = store.as_mut().unwrap();
+                let store = store.as_mut().unwrap();
 
                 let err_or_panic: Result<(), Box<dyn Error>> =
                     match catch_unwind(AssertUnwindSafe(|| {
-                        execute_assert_return(interpeter, exec, results)
+                        execute_assert_return(store, exec, results)
                     })) {
                         Ok(original_result) => original_result,
                         Err(inner) => {
@@ -363,7 +422,7 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                 let line_number = span.linecol_in(&contents).0 as u32 + 1;
                 let cmd = get_command(&contents, span);
 
-                match encode_validate_instantiate(&mut module, &mut None, &mut None) {
+                match encode_validate_instantiate(&mut module, &mut None) {
                     Err(_) => asserts.push_success(WastSuccess::new(line_number, cmd)),
                     Ok(_) => asserts.push_error(WastError::new("Module validated and instantiated successfully, when it shouldn't have been".into(), line_number, cmd))
                 };
@@ -377,11 +436,12 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                 let line_number = span.linecol_in(&contents).0 as u32 + 1;
                 let cmd = get_command(&contents, span);
 
-                match encode_validate_instantiate(&mut module, &mut None, &mut None) {
+                match encode_validate_instantiate(&mut module, &mut None) {
                     Err(_) => asserts.push_success(WastSuccess::new(line_number, cmd)),
                     Ok(_) => asserts.push_error(WastError::new("Module validated and instantiated successfully, when it shouldn't have been".into(), line_number, cmd))
                 };
             }
+
             wast::WastDirective::Register {
                 span,
                 name: _,
@@ -493,8 +553,14 @@ fn execute_assert_return(
                 .collect::<Vec<_>>();
 
             // TODO: more modules ¯\_(ツ)_/¯
+            let module_name = if let Some(module_name) = invoke_info.module {
+                module_name.name()
+            } else {
+                &store.modules.last().unwrap().name
+            };
+
             let func_idx = store
-                .lookup_function(&DEFAULT_MODULE, invoke_info.name)
+                .lookup_function(module_name, invoke_info.name)
                 .ok_or(Box::new(WasmInterpreterError(wasm::Error::RuntimeError(
                     RuntimeError::FunctionNotFound,
                 ))))?;
@@ -534,6 +600,7 @@ fn execute_assert_trap(
                 .map(arg_to_value)
                 .collect::<Vec<_>>();
 
+            todo!();
             // TODO: more modules ¯\_(ツ)_/¯
             let func_idx = store
                 .get_global_function_idx_by_name(DEFAULT_MODULE, invoke_info.name)
@@ -654,16 +721,21 @@ fn result_to_value(result: wast::WastRet) -> Value {
                     }
                 },
             },
-            WastRetCore::RefExtern(_) => {
-                todo!("`RefExtern` result not yet implemented")
-            }
+            WastRetCore::RefExtern(index) => match index {
+                None => unreachable!("Expected a non-null extern reference"),
+                Some(index) => {
+                    use wasm::value::*;
+                    Value::Ref(Ref::Extern(ExternAddr::new(Some(index as usize))))
+                    // todo!("RefExterns not yet implemented")
+                } // todo!("`RefExtern` result not yet implemented")
+            },
             WastRetCore::RefHost(_) => todo!("`RefHost` result not yet implemented"),
             WastRetCore::RefFunc(index) => match index {
                 None => unreachable!("Expected a non-null function reference"),
                 Some(_index) => {
                     // use wasm::value::*;
-                    // Value::Ref(Ref::Func(FuncAddr::new(Some(index))))
-                    todo!("RefFuncs not yet implemented")
+                    // Value::Ref(Ref::Func(FuncAddr::new(Some(index as usize))))
+                    todo!("`RefFunc` result not yet implemented")
                 }
             },
             //todo!("`RefFunc` result not yet implemented"),

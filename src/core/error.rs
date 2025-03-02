@@ -114,6 +114,10 @@ pub enum Error {
     UnsupportedProposal(Proposal),
     Overflow,
     LinkerError(LinkerError),
+    UnknownFunction,
+    UnknownMemory,
+    UnknownGlobal,
+    DuplicateExportName,
 }
 
 impl Display for Error {
@@ -271,7 +275,15 @@ impl Display for Error {
                 f.write_fmt(format_args!("Unsupported proposal: {:?}", proposal))
             }
             Error::Overflow => f.write_str("Overflow"),
-            Error::LinkerError(err) => err.fmt(f)
+            Error::LinkerError(err) => err.fmt(f),
+
+            // TODO: maybe move these to LinkerError also add more info to them (the name's export, function idx, etc)
+            Error::UnknownFunction => f.write_str("Unknown function"),
+            Error::UnknownMemory => f.write_str("Unknown table"),
+            Error::UnknownGlobal => f.write_str("Unknown global"),
+            Error::DuplicateExportName => f.write_str("Duplicate export name"),
+            // TODO: maybe move these to LinkerError also add more info to them (the name's export, function idx, etc)
+
         }
     }
 }

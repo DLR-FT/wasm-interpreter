@@ -179,6 +179,23 @@ impl<'b> Store<'b> {
         Ok(())
     }
 
+    pub fn lookup_local_function(
+        &self,
+        target_module: &str,
+        target_function: &str,
+    ) -> Option<usize> {
+        for module in &self.modules {
+            if module.name == target_module {
+                for export in &module.exports {
+                    if export.name == target_function {
+                        return export.desc.get_function_idx();
+                    }
+                }
+            }
+        }
+        return None;
+    }
+
     pub fn lookup_function(&self, target_module: &str, target_function: &str) -> Option<usize> {
         let mut module_name: &str = target_module;
         let mut function_name: &str = target_function;
@@ -401,8 +418,6 @@ impl<'b> Store<'b> {
             .get(func_idx)
             .ok_or(RuntimeError::FunctionNotFound)?;
 
-        let module_idx = self.get_module_idx_from_func_idx(func_idx)?;
-
         let func_ty = func_inst.ty();
 
         // Verify that the given parameters match the function parameters
@@ -423,10 +438,19 @@ impl<'b> Store<'b> {
             params.into_iter(),
             func_inst.try_into_local().unwrap().locals.iter().cloned(),
         );
+        let module_idx = self.get_module_idx_from_func_idx(func_idx)?;
         let local_func_idx = self
             .get_local_function_idx_by_global_function_idx(module_idx, func_idx)
             .ok_or(RuntimeError::FunctionNotFound)?;
-        stack.push_stackframe(module_idx, local_func_idx, &func_ty, locals, 0, 0);
+
+        stack.push_stackframe(
+            module_idx,
+            local_func_idx,
+            &func_ty,
+            locals,
+            usize::MAX,
+            usize::MAX,
+        );
 
         let mut currrent_module_idx = module_idx;
         // Run the interpreter
@@ -439,15 +463,9 @@ impl<'b> Store<'b> {
             self,
         )?;
 
-        let func_inst_idx = self.modules[module_idx]
-            .functions
-            .get(func_idx)
-            .ok_or(RuntimeError::FunctionNotFound)?
-            .clone();
-
         let func_inst = self
             .functions
-            .get(func_inst_idx)
+            .get(func_idx)
             .ok_or(RuntimeError::FunctionNotFound)?;
 
         let func_ty = func_inst.ty();

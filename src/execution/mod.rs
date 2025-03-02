@@ -565,7 +565,7 @@ fn get_address_offset(value: Value) -> Option<u32> {
     match value {
         Value::I32(val) => Some(val),
         Value::Ref(rref) => match rref {
-            Ref::Extern(_) => todo!("Not yet implemented"),
+            Ref::Extern(extern_addr) => extern_addr.addr.map(|addr| addr as u32),
             // TODO: fix
             Ref::Func(func_addr) => func_addr.addr.map(|addr| addr as u32),
         },
