@@ -114,6 +114,14 @@ pub fn read_constant_expression(
                 let _num = wasm.read_var_i64()?;
                 stack.push_valtype(ValType::NumType(NumType::I64));
             }
+            F32_CONST => {
+                let _num = wasm.read_var_f32();
+                stack.push_valtype(ValType::NumType(NumType::F32));
+            }
+            F64_CONST => {
+                let _num = wasm.read_var_f64();
+                stack.push_valtype(ValType::NumType(NumType::F64));
+            }
             I32_ADD | I32_SUB | I32_MUL => {
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;

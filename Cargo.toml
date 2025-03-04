@@ -35,7 +35,3 @@ hexf = "0.2.1"
 [features]
 default = ["hooks"]
 hooks = []
-
-[[bench]]
-name = "hook_performance_impact"
-harness = false

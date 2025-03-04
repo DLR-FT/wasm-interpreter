@@ -21,6 +21,7 @@ pub(crate) mod validation_stack;
 
 /// Information collected from validating a module.
 /// This can be used to create a [crate::RuntimeInstance].
+#[derive(Clone)]
 pub struct ValidationInfo<'bytecode> {
     pub(crate) wasm: &'bytecode [u8],
     pub(crate) types: Vec<FuncType>,
@@ -37,6 +38,41 @@ pub struct ValidationInfo<'bytecode> {
     /// The start function which is automatically executed during instantiation
     pub(crate) start: Option<FuncIdx>,
     pub(crate) elements: Vec<ElemType>,
+}
+
+fn validate_exports(validation_info: &ValidationInfo) -> Result<()> {
+    let mut found_export_names: btree_set::BTreeSet<&str> = btree_set::BTreeSet::new();
+    use crate::core::reader::types::export::ExportDesc::*;
+    for export in &validation_info.exports {
+        if found_export_names.contains(export.name.as_str()) {
+            return Err(Error::DuplicateExportName);
+        }
+        found_export_names.insert(export.name.as_str());
+        match export.desc {
+            FuncIdx(func_idx) => {
+                let functions_len = validation_info.functions.len();
+                if functions_len <= func_idx {
+                    return Err(Error::UnknownFunction);
+                }
+            }
+            TableIdx(table_idx) => {
+                if validation_info.tables.len() <= table_idx {
+                    return Err(Error::UnknownTable);
+                }
+            }
+            MemIdx(mem_idx) => {
+                if validation_info.memories.len() <= mem_idx {
+                    return Err(Error::UnknownMemory);
+                }
+            }
+            GlobalIdx(global_idx) => {
+                if validation_info.globals.len() <= global_idx {
+                    return Err(Error::UnknownGlobal);
+                }
+            }
+        }
+    }
+    Ok(())
 }
 
 pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
@@ -241,7 +277,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
     }
 
     debug!("Validation was successful");
-    Ok(ValidationInfo {
+    let validation_info = ValidationInfo {
         wasm: wasm.into_inner(),
         types,
         imports,
@@ -254,7 +290,10 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
         data: data_section,
         start,
         elements,
-    })
+    };
+    validate_exports(&validation_info)?;
+
+    Ok(validation_info)
 }
 
 fn read_next_header(wasm: &mut WasmReader, header: &mut Option<SectionHeader>) -> Result<()> {

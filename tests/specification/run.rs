@@ -1,3 +1,4 @@
+use std::any::Any;
 /*
 # This file incorporates code from Wasmtime, originally
 # available at https://github.com/bytecodealliance/wasmtime.
@@ -18,17 +19,19 @@ use std::error::Error;
 use std::panic::catch_unwind;
 use std::panic::AssertUnwindSafe;
 
-use wasm::function_ref::FunctionRef;
+use wasm::validate;
 use wasm::RuntimeError;
+use wasm::Store;
 use wasm::Value;
-use wasm::DEFAULT_MODULE;
-use wasm::{validate, RuntimeInstance};
 use wast::core::WastArgCore;
 use wast::core::WastRetCore;
 use wast::WastArg;
+use wast::WastInvoke;
 
 use crate::specification::reports::*;
 use crate::specification::test_errors::*;
+
+const DEFAULT_MODULE: &'static str = "__interpreter_default__";
 
 pub fn to_wasm_testsuite_string(runtime_error: RuntimeError) -> std::string::String {
     match runtime_error {
@@ -49,6 +52,7 @@ pub fn to_wasm_testsuite_string(runtime_error: RuntimeError) -> std::string::Str
         RuntimeError::UndefinedTableIndex => "undefined element",
         RuntimeError::ModuleNotFound => "module not found",
         RuntimeError::UnmetImport => "unmet import",
+        RuntimeError::StoreNotFound => "store not found",
     }
     .to_string()
 }
@@ -86,12 +90,27 @@ impl std::error::Error for ErrEVI {}
 fn encode_validate_instantiate<'a>(
     module: &mut wast::QuoteWat,
     bytes: &'a mut Option<Vec<u8>>,
-    runtime_inst: &'a mut Option<RuntimeInstance<'a>>,
+    // store: &'a mut Option<Store<'a>>,
 ) -> Result<(), ErrEVI> {
+    let store = &mut Some(Store::default());
     use wast::*;
     let is_module = match &module {
         QuoteWat::QuoteComponent(..) | QuoteWat::Wat(Wat::Component(..)) => false,
         QuoteWat::Wat(..) | QuoteWat::QuoteModule(..) => true,
+    };
+    let module_name = match &module {
+        QuoteWat::QuoteComponent(..) | QuoteWat::Wat(Wat::Component(..)) => "".to_owned(),
+        QuoteWat::Wat(wat) => match wat {
+            wast::Wat::Module(wat_module) => match wat_module.id {
+                None => DEFAULT_MODULE.to_owned(),
+                Some(name) => name.name().to_owned(),
+            },
+            _ => unreachable!(),
+        },
+        QuoteWat::QuoteModule(_span, _vec_of_smth) => {
+            // todo!()
+            DEFAULT_MODULE.to_owned()
+        }
     };
 
     if is_module {
@@ -108,18 +127,45 @@ fn encode_validate_instantiate<'a>(
                     Ok(validation_info) => match validation_info {
                         Err(_) => Err(ErrEVI::Validate),
                         Ok(validation_info) => {
-                            let runtime_instance_result =
-                                catch_unwind(|| RuntimeInstance::new(&validation_info));
+                            let store_result = catch_unwind(|| {
+                                let mut temp_store = Store::default();
 
-                            match runtime_instance_result {
-                                Err(_) => Err(ErrEVI::Instantiate),
-                                Ok(runtime_instance) => match runtime_instance {
+                                // RuntimeInstance::new(&validation_info)
+                                match temp_store
+                                    // match store
+                                    //     .as_mut()
+                                    //     .unwrap()
+                                    .add_module(DEFAULT_MODULE.to_owned(), validation_info.clone())
+                                {
                                     Err(_) => Err(ErrEVI::Instantiate),
-                                    Ok(runtime_instance) => {
-                                        runtime_inst.replace(runtime_instance);
-                                        Ok(())
-                                    }
-                                },
+                                    Ok(_) => Ok(()),
+                                }
+                            });
+
+                            match store_result {
+                                Err(_) => Err(ErrEVI::Instantiate),
+                                Ok(_) => {
+                                    let actual_name = if module_name == DEFAULT_MODULE {
+                                        // if we already have a default module, change name
+                                        if store.as_mut().unwrap().modules.len() > 0
+                                            && store.as_mut().unwrap().modules[0].name
+                                                == DEFAULT_MODULE
+                                        {
+                                            store.as_mut().unwrap().modules.len().to_string()
+                                        } else {
+                                            DEFAULT_MODULE.to_owned()
+                                        }
+                                    } else {
+                                        module_name
+                                    };
+                                    store
+                                        .as_mut()
+                                        .unwrap()
+                                        .add_module(actual_name, validation_info)
+                                        .map_err(|_| ErrEVI::Instantiate)?;
+
+                                    Ok(())
+                                }
                             }
                         }
                     },
@@ -168,8 +214,60 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
     // We need to keep the wasm_bytes in-scope for the lifetime of the interpeter.
     // As such, we hoist the bytes into an Option, and assign it once a module directive is found.
     #[allow(unused_assignments)]
-    let mut wasm_bytes: Option<Vec<u8>> = None;
-    let mut interpeter = None;
+    let mut store = Some(Store::default());
+
+    let spectest_wat = r#"
+(module
+  ;; Memory
+  (memory (export "memory") 1 2)
+
+  ;; Table
+  (table (export "table") 10 20 funcref)
+
+  ;; Globals
+  (global (export "global_i32") i32 (i32.const 666))
+  (global (export "global_i64") i64 (i64.const 666))
+  (global (export "global_f32") f32 (f32.const 666.6))
+  (global (export "global_f64") f64 (f64.const 666.6))
+
+  ;; Dummy functions for printing
+  (func (export "print")
+    ;; No params, no results
+  )
+
+  (func (export "print_i32") (param i32)
+    ;; No results
+  )
+
+  (func (export "print_i64") (param i64)
+    ;; No results
+  )
+
+  (func (export "print_f32") (param f32)
+    ;; No results
+  )
+
+  (func (export "print_f64") (param f64)
+    ;; No results
+  )
+
+  (func (export "print_i32_f32") (param i32 f32)
+    ;; No results
+  )
+
+  (func (export "print_f64_f64") (param f64 f64)
+    ;; No results
+  )
+)
+"#;
+    let spectest_wat_parsed = wat::parse_str(spectest_wat).unwrap();
+    let spectest = validate(&spectest_wat_parsed).unwrap();
+
+    store
+        .as_mut()
+        .unwrap()
+        .add_module("spectest".to_owned(), spectest)
+        .unwrap();
 
     for directive in wast.directives {
         match directive {
@@ -183,10 +281,15 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                 )
                 .compile_report()));
 
-                wasm_bytes = Some(encoded);
+                // wasm_bytes_vec.push(encoded);
+                let encoded = Box::leak(Box::new(encoded));
+                // wasm_bytes = Some(encoded);
 
-                let validation_attempt = catch_unwind(|| {
-                    validate(wasm_bytes.as_ref().unwrap()).map_err(|err| {
+                let validation_attempt: Result<
+                    Result<wasm::ValidationInfo<'_>, WastTestReport>,
+                    Box<dyn Any + Send>,
+                > = catch_unwind(|| {
+                    validate(encoded).map_err(|err| {
                         CompilationError::new(
                             Box::new(WasmInterpreterError(err)),
                             filepath,
@@ -215,9 +318,32 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                     }
                 };
 
-                let runtime_instance = catch_unwind(|| RuntimeInstance::new(&validation_info));
+                use wast::{QuoteWat, Wat};
+                let mut module_name = match &quoted {
+                    QuoteWat::QuoteComponent(..) | QuoteWat::Wat(Wat::Component(..)) => {
+                        todo!()
+                    }
+                    QuoteWat::Wat(wat) => match wat {
+                        wast::Wat::Module(wat_module) => match wat_module.id {
+                            None => DEFAULT_MODULE.to_owned(),
+                            Some(name) => name.name().to_owned(),
+                        },
+                        _ => unreachable!(),
+                    },
+                    QuoteWat::QuoteModule(_span, _vec_of_smth) => DEFAULT_MODULE.to_owned(),
+                };
+                if store.as_ref().unwrap().modules.len() > 1 && module_name == DEFAULT_MODULE {
+                    module_name = store.as_ref().unwrap().modules.len().to_string();
+                }
 
-                let instance = match runtime_instance {
+                // let store = catch_unwind(|| RuntimeInstance::new(&validation_info));
+                let temp_store = catch_unwind(|| {
+                    let mut temp_store = Store::default();
+                    temp_store.add_module(module_name.to_string(), validation_info.clone())?;
+                    Ok(temp_store)
+                });
+
+                match temp_store {
                     Err(_) => {
                         return CompilationError::new(
                             Box::new(ErrEVI::Instantiate),
@@ -235,18 +361,20 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                             )
                             .compile_report()
                         }
-                        Ok(instance) => instance,
+                        Ok(_) => store
+                            .as_mut()
+                            .unwrap()
+                            .add_module(module_name, validation_info)
+                            .unwrap(),
                     },
                 };
-
-                interpeter = Some(instance);
             }
             wast::WastDirective::AssertReturn {
                 span,
                 exec,
                 results,
             } => {
-                if interpeter.is_none() {
+                if store.is_none() {
                     return CompilationError::new(
                         Box::new(GenericError::new(
                             "Attempted to assert before module directive",
@@ -257,11 +385,11 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                     .compile_report();
                 }
 
-                let interpeter = interpeter.as_mut().unwrap();
+                let store = store.as_mut().unwrap();
 
                 let err_or_panic: Result<(), Box<dyn Error>> =
                     match catch_unwind(AssertUnwindSafe(|| {
-                        execute_assert_return(interpeter, exec, results)
+                        execute_assert_return(store, exec, results)
                     })) {
                         Ok(original_result) => original_result,
                         Err(inner) => {
@@ -295,7 +423,7 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                 exec,
                 message,
             } => {
-                if interpeter.is_none() {
+                if store.is_none() {
                     return CompilationError::new(
                         Box::new(GenericError::new(
                             "Attempted to assert before module directive",
@@ -306,11 +434,11 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                     .compile_report();
                 }
 
-                let interpeter = interpeter.as_mut().unwrap();
+                let store = store.as_mut().unwrap();
 
                 let err_or_panic: Result<(), Box<dyn Error>> =
                     match catch_unwind(AssertUnwindSafe(|| {
-                        execute_assert_trap(interpeter, exec, message)
+                        execute_assert_trap(store, exec, message)
                     })) {
                         Err(inner) => {
                             // TODO: Do we want to exit on panic? State may be left in an inconsistent state, and cascading panics may occur.
@@ -348,7 +476,7 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                 let line_number = span.linecol_in(&contents).0 as u32 + 1;
                 let cmd = get_command(&contents, span);
 
-                match encode_validate_instantiate(&mut module, &mut None, &mut None) {
+                match encode_validate_instantiate(&mut module, &mut None) {
                     Err(_) => asserts.push_success(WastSuccess::new(line_number, cmd)),
                     Ok(_) => asserts.push_error(WastError::new("Module validated and instantiated successfully, when it shouldn't have been".into(), line_number, cmd))
                 };
@@ -362,11 +490,12 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                 let line_number = span.linecol_in(&contents).0 as u32 + 1;
                 let cmd = get_command(&contents, span);
 
-                match encode_validate_instantiate(&mut module, &mut None, &mut None) {
+                match encode_validate_instantiate(&mut module, &mut None) {
                     Err(_) => asserts.push_success(WastSuccess::new(line_number, cmd)),
                     Ok(_) => asserts.push_error(WastError::new("Module validated and instantiated successfully, when it shouldn't have been".into(), line_number, cmd))
                 };
             }
+
             wast::WastDirective::Register {
                 span,
                 name: _,
@@ -397,7 +526,7 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                 ));
             }
             wast::WastDirective::Invoke(invoke) => {
-                match interpeter {
+                match store {
                     None => asserts.push_error(WastError::new(
                         Box::new(GenericError::new(
                             "Couldn't invoke, interpreter not present",
@@ -406,6 +535,7 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                         "invoke",
                     )),
                     Some(ref mut interpeter) => {
+                        let module_name = get_module_name_from_wast_invoke(&interpeter, &invoke);
                         let args = invoke
                             .args
                             .into_iter()
@@ -413,17 +543,18 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                             .collect::<Vec<_>>();
 
                         // TODO: more modules ¯\_(ツ)_/¯
-                        match interpeter.get_function_by_name(DEFAULT_MODULE, invoke.name) {
-                            Err(_) => asserts.push_error(WastError::new(
+                        match interpeter.get_global_function_idx_by_name(&module_name, invoke.name)
+                        {
+                            None => asserts.push_error(WastError::new(
                                 Box::new(GenericError::new(&format!(
                                     "Couldn't get the function '{}' from module '{}'",
-                                    invoke.name, "DEFAULT_MODULE"
+                                    invoke.name, module_name
                                 ))),
                                 u32::MAX,
                                 "invoke",
                             )),
-                            Ok(funcref) => {
-                                match interpeter.invoke_dynamic_unchecked_return_ty(&funcref, args)
+                            Some(func_idx) => {
+                                match interpeter.invoke_dynamic_unchecked_return_ty(func_idx, args)
                                 {
                                     Err(e) => asserts.push_error(WastError::new(
                                         Box::new(GenericError::new(&format!(
@@ -456,7 +587,8 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
 }
 
 fn execute_assert_return(
-    interpeter: &mut RuntimeInstance,
+    // interpeter: &mut RuntimeInstance,
+    store: &mut Store,
     exec: wast::WastExecute,
     results: Vec<wast::WastRet>,
 ) -> Result<(), Box<dyn Error>> {
@@ -475,21 +607,81 @@ fn execute_assert_return(
                 .collect::<Vec<_>>();
 
             // TODO: more modules ¯\_(ツ)_/¯
-            let func = interpeter
-                .get_function_by_name(DEFAULT_MODULE, invoke_info.name)
-                .map_err(|err| Box::new(WasmInterpreterError(wasm::Error::RuntimeError(err))))?;
+            let module_name = if let Some(module_name) = invoke_info.module {
+                module_name.name()
+            } else {
+                &store.modules.last().unwrap().name
+            };
 
-            let actual = interpeter
-                .invoke_dynamic(&func, args, &result_types)
+            let func_idx = store
+                .lookup_function(module_name, invoke_info.name)
+                .ok_or(Box::new(WasmInterpreterError(wasm::Error::RuntimeError(
+                    RuntimeError::FunctionNotFound,
+                ))))?;
+            // let func = store
+            //     .get_function_by_name(DEFAULT_MODULE, invoke_info.name)
+            //     .map_err(|err| Box::new(WasmInterpreterError(wasm::Error::RuntimeError(err))))?;
+
+            let actual = store
+                .invoke_dynamic(func_idx, args, &result_types)
                 .map_err(|err| Box::new(WasmInterpreterError(wasm::Error::RuntimeError(err))))?;
 
             AssertEqError::assert_eq(actual, result_vals)?;
         }
         wast::WastExecute::Get {
             span: _,
-            module: _,
-            global: _,
-        } => todo!("`get` directive inside `assert_return` not yet implemented"),
+            module,
+            global,
+        } => {
+            let module_idx = match module {
+                None => store.modules.len() - 1,
+                Some(module_name) => store
+                    .modules
+                    .iter()
+                    .enumerate()
+                    .find_map(|(idx, modul)| {
+                        if modul.name == module_name.name() {
+                            Some(idx)
+                        } else {
+                            None
+                        }
+                    })
+                    .ok_or(Box::new(PanicError::new(&format!(
+                        "Couldn't find module '{}'",
+                        module_name.name()
+                    ))))?,
+            };
+
+            let global_export = store.modules[module_idx]
+                .exports
+                .iter()
+                .find_map(|export| {
+                    if export.name == global {
+                        Some(export)
+                    } else {
+                        None
+                    }
+                })
+                .ok_or(Box::new(PanicError::new(&format!(
+                    "No export found with this name '{}'",
+                    global
+                ))))?;
+
+            match global_export.desc {
+                wasm::ExportDesc::GlobalIdx(idx) => {
+                    let actual_global = &store.globals[store.modules[module_idx].globals[idx]];
+                    let value = actual_global.value;
+                    let result_vals = results.into_iter().map(result_to_value).collect::<Vec<_>>();
+                    AssertEqError::assert_eq(result_vals, vec![value])?;
+                }
+                _ => {
+                    return Err(Box::new(PanicError::new(&format!(
+                        "'{}' not a global when it should be",
+                        global
+                    ))))
+                }
+            };
+        }
         wast::WastExecute::Wat(_) => {
             todo!("`wat` directive inside `assert_return` not yet implemented")
         }
@@ -498,13 +690,21 @@ fn execute_assert_return(
     Ok(())
 }
 
+fn get_module_name_from_wast_invoke(store: &Store, invoke_info: &WastInvoke<'_>) -> String {
+    match invoke_info.module {
+        None => store.modules.last().unwrap().name.clone(),
+        Some(module) => String::from(module.name()),
+    }
+}
+
 fn execute_assert_trap(
-    interpeter: &mut RuntimeInstance,
+    store: &mut Store,
     exec: wast::WastExecute,
     message: &str,
 ) -> Result<(), Box<dyn Error>> {
     match exec {
         wast::WastExecute::Invoke(invoke_info) => {
+            let module_name = get_module_name_from_wast_invoke(&store, &invoke_info);
             let args = invoke_info
                 .args
                 .into_iter()
@@ -512,19 +712,13 @@ fn execute_assert_trap(
                 .collect::<Vec<_>>();
 
             // TODO: more modules ¯\_(ツ)_/¯
-            let func_res = interpeter
-                .get_function_by_name(DEFAULT_MODULE, invoke_info.name)
-                .map_err(|err| Box::new(WasmInterpreterError(wasm::Error::RuntimeError(err))));
+            let func_idx = store
+                .get_global_function_idx_by_name(&module_name, invoke_info.name)
+                .ok_or(Box::new(WasmInterpreterError(wasm::Error::RuntimeError(
+                    RuntimeError::FunctionNotFound,
+                ))))?;
 
-            let func: FunctionRef;
-            match func_res {
-                Err(e) => {
-                    return Err(e);
-                }
-                Ok(func_ref) => func = func_ref,
-            };
-
-            let actual = interpeter.invoke_dynamic_unchecked_return_ty(&func, args);
+            let actual = store.invoke_dynamic_unchecked_return_ty(func_idx, args);
 
             match actual {
                 Ok(_) => Err(Box::new(GenericError::new("assert_trap did NOT trap"))),
@@ -637,16 +831,21 @@ fn result_to_value(result: wast::WastRet) -> Value {
                     }
                 },
             },
-            WastRetCore::RefExtern(_) => {
-                todo!("`RefExtern` result not yet implemented")
-            }
+            WastRetCore::RefExtern(index) => match index {
+                None => unreachable!("Expected a non-null extern reference"),
+                Some(index) => {
+                    use wasm::value::*;
+                    Value::Ref(Ref::Extern(ExternAddr::new(Some(index as usize))))
+                    // todo!("RefExterns not yet implemented")
+                } // todo!("`RefExtern` result not yet implemented")
+            },
             WastRetCore::RefHost(_) => todo!("`RefHost` result not yet implemented"),
             WastRetCore::RefFunc(index) => match index {
                 None => unreachable!("Expected a non-null function reference"),
                 Some(_index) => {
                     // use wasm::value::*;
-                    // Value::Ref(Ref::Func(FuncAddr::new(Some(index))))
-                    todo!("RefFuncs not yet implemented")
+                    // Value::Ref(Ref::Func(FuncAddr::new(Some(index as usize))))
+                    todo!("`RefFunc` result not yet implemented")
                 }
             },
             //todo!("`RefFunc` result not yet implemented"),

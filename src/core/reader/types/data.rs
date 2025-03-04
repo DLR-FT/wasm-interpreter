@@ -13,6 +13,7 @@ use crate::{
 
 use super::UnwrapValidatedExt;
 
+#[derive(Clone)]
 pub struct DataSegment {
     pub init: Vec<u8>,
     pub mode: DataMode,
