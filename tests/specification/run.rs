@@ -26,6 +26,7 @@ use wasm::Value;
 use wast::core::WastArgCore;
 use wast::core::WastRetCore;
 use wast::WastArg;
+use wast::WastInvoke;
 
 use crate::specification::reports::*;
 use crate::specification::test_errors::*;
@@ -215,6 +216,59 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
     #[allow(unused_assignments)]
     let mut store = Some(Store::default());
 
+    let spectest_wat = r#"
+(module
+  ;; Memory
+  (memory (export "memory") 1 2)
+
+  ;; Table
+  (table (export "table") 10 20 funcref)
+
+  ;; Globals
+  (global (export "global_i32") i32 (i32.const 666))
+  (global (export "global_i64") i64 (i64.const 666))
+  (global (export "global_f32") f32 (f32.const 666.6))
+  (global (export "global_f64") f64 (f64.const 666.6))
+
+  ;; Dummy functions for printing
+  (func (export "print")
+    ;; No params, no results
+  )
+
+  (func (export "print_i32") (param i32)
+    ;; No results
+  )
+
+  (func (export "print_i64") (param i64)
+    ;; No results
+  )
+
+  (func (export "print_f32") (param f32)
+    ;; No results
+  )
+
+  (func (export "print_f64") (param f64)
+    ;; No results
+  )
+
+  (func (export "print_i32_f32") (param i32 f32)
+    ;; No results
+  )
+
+  (func (export "print_f64_f64") (param f64 f64)
+    ;; No results
+  )
+)
+"#;
+    let spectest_wat_parsed = wat::parse_str(spectest_wat).unwrap();
+    let spectest = validate(&spectest_wat_parsed).unwrap();
+
+    store
+        .as_mut()
+        .unwrap()
+        .add_module("spectest".to_owned(), spectest)
+        .unwrap();
+
     for directive in wast.directives {
         match directive {
             wast::WastDirective::Wat(mut quoted) => {
@@ -278,7 +332,7 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                     },
                     QuoteWat::QuoteModule(_span, _vec_of_smth) => DEFAULT_MODULE.to_owned(),
                 };
-                if store.as_ref().unwrap().modules.len() > 0 && module_name == DEFAULT_MODULE {
+                if store.as_ref().unwrap().modules.len() > 1 && module_name == DEFAULT_MODULE {
                     module_name = store.as_ref().unwrap().modules.len().to_string();
                 }
 
@@ -481,6 +535,7 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                         "invoke",
                     )),
                     Some(ref mut interpeter) => {
+                        let module_name = get_module_name_from_wast_invoke(&interpeter, &invoke);
                         let args = invoke
                             .args
                             .into_iter()
@@ -488,13 +543,12 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                             .collect::<Vec<_>>();
 
                         // TODO: more modules ¯\_(ツ)_/¯
-                        match interpeter
-                            .get_global_function_idx_by_name(DEFAULT_MODULE, invoke.name)
+                        match interpeter.get_global_function_idx_by_name(&module_name, invoke.name)
                         {
                             None => asserts.push_error(WastError::new(
                                 Box::new(GenericError::new(&format!(
                                     "Couldn't get the function '{}' from module '{}'",
-                                    invoke.name, "DEFAULT_MODULE"
+                                    invoke.name, module_name
                                 ))),
                                 u32::MAX,
                                 "invoke",
@@ -576,15 +630,71 @@ fn execute_assert_return(
         }
         wast::WastExecute::Get {
             span: _,
-            module: _,
-            global: _,
-        } => todo!("`get` directive inside `assert_return` not yet implemented"),
+            module,
+            global,
+        } => {
+            let module_idx = match module {
+                None => store.modules.len() - 1,
+                Some(module_name) => store
+                    .modules
+                    .iter()
+                    .enumerate()
+                    .find_map(|(idx, modul)| {
+                        if modul.name == module_name.name() {
+                            Some(idx)
+                        } else {
+                            None
+                        }
+                    })
+                    .ok_or(Box::new(PanicError::new(&format!(
+                        "Couldn't find module '{}'",
+                        module_name.name()
+                    ))))?,
+            };
+
+            let global_export = store.modules[module_idx]
+                .exports
+                .iter()
+                .find_map(|export| {
+                    if export.name == global {
+                        Some(export)
+                    } else {
+                        None
+                    }
+                })
+                .ok_or(Box::new(PanicError::new(&format!(
+                    "No export found with this name '{}'",
+                    global
+                ))))?;
+
+            match global_export.desc {
+                wasm::ExportDesc::GlobalIdx(idx) => {
+                    let actual_global = &store.globals[store.modules[module_idx].globals[idx]];
+                    let value = actual_global.value;
+                    let result_vals = results.into_iter().map(result_to_value).collect::<Vec<_>>();
+                    AssertEqError::assert_eq(result_vals, vec![value])?;
+                }
+                _ => {
+                    return Err(Box::new(PanicError::new(&format!(
+                        "'{}' not a global when it should be",
+                        global
+                    ))))
+                }
+            };
+        }
         wast::WastExecute::Wat(_) => {
             todo!("`wat` directive inside `assert_return` not yet implemented")
         }
     }
 
     Ok(())
+}
+
+fn get_module_name_from_wast_invoke(store: &Store, invoke_info: &WastInvoke<'_>) -> String {
+    match invoke_info.module {
+        None => store.modules.last().unwrap().name.clone(),
+        Some(module) => String::from(module.name()),
+    }
 }
 
 fn execute_assert_trap(
@@ -594,16 +704,16 @@ fn execute_assert_trap(
 ) -> Result<(), Box<dyn Error>> {
     match exec {
         wast::WastExecute::Invoke(invoke_info) => {
+            let module_name = get_module_name_from_wast_invoke(&store, &invoke_info);
             let args = invoke_info
                 .args
                 .into_iter()
                 .map(arg_to_value)
                 .collect::<Vec<_>>();
 
-            todo!();
             // TODO: more modules ¯\_(ツ)_/¯
             let func_idx = store
-                .get_global_function_idx_by_name(DEFAULT_MODULE, invoke_info.name)
+                .get_global_function_idx_by_name(&module_name, invoke_info.name)
                 .ok_or(Box::new(WasmInterpreterError(wasm::Error::RuntimeError(
                     RuntimeError::FunctionNotFound,
                 ))))?;

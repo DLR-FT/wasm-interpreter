@@ -4,7 +4,7 @@ extern crate alloc;
 extern crate log;
 
 pub use core::error::{Error, LinkerError, Result, RuntimeError};
-pub use core::reader::types::{Limits, NumType, RefType, ValType};
+pub use core::reader::types::{export::ExportDesc, Limits, NumType, RefType, ValType};
 pub use execution::store::*;
 pub use execution::value::Value;
 pub use execution::*;

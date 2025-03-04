@@ -1,7 +1,7 @@
 use crate::{
     assert_validated::UnwrapValidatedExt,
     core::reader::{span::Span, WasmReadable, WasmReader},
-    value::{FuncAddr, Ref},
+    value::{self, FuncAddr, Ref},
     value_stack::Stack,
     NumType, RefType, ValType, Value,
 };
@@ -96,6 +96,80 @@ pub(crate) fn run_const(
                 let res = v1.wrapping_mul(v2);
 
                 trace!("Constant instruction: i64.mul [{v1} {v2}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            F32_CONST => {
+                let constant = value::F32::from_bits(wasm.read_var_f32().unwrap_validated());
+                trace!("Constanting instruction: f32.const [] -> [{constant}]");
+                stack.push_value(constant.into());
+            }
+            F32_ADD => {
+                let v2: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let res: value::F32 = v1 + v2;
+
+                trace!("Instruction: f32.add [{v1} {v2}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            F32_SUB => {
+                let v2: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let res: value::F32 = v1 - v2;
+
+                trace!("Instruction: f32.sub [{v1} {v2}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            F32_MUL => {
+                let v2: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let res: value::F32 = v1 * v2;
+
+                trace!("Instruction: f32.mul [{v1} {v2}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            F32_DIV => {
+                let v2: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let res: value::F32 = v1 / v2;
+
+                trace!("Instruction: f32.div [{v1} {v2}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            F64_CONST => {
+                let constant = value::F64::from_bits(wasm.read_var_f64().unwrap_validated());
+                trace!("Constanting instruction: f64.const [] -> [{constant}]");
+                stack.push_value(constant.into());
+            }
+            F64_ADD => {
+                let v2: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let res: value::F64 = v1 + v2;
+
+                trace!("Instruction: f64.add [{v1} {v2}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            F64_SUB => {
+                let v2: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let res: value::F64 = v1 - v2;
+
+                trace!("Instruction: f64.sub [{v1} {v2}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            F64_MUL => {
+                let v2: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let res: value::F64 = v1 * v2;
+
+                trace!("Instruction: f64.mul [{v1} {v2}] -> [{res}]");
+                stack.push_value(res.into());
+            }
+            F64_DIV => {
+                let v2: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let res: value::F64 = v1 / v2;
+
+                trace!("Instruction: f64.div [{v1} {v2}] -> [{res}]");
                 stack.push_value(res.into());
             }
             REF_NULL => {

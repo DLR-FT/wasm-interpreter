@@ -202,23 +202,24 @@ pub mod fc_extensions {
 
 #[cfg(debug_assertions)]
 pub fn opcode_byte_to_str(byte: u8) -> alloc::string::String {
-    use alloc::borrow::ToOwned;
-    match byte {
+    use alloc::{borrow::ToOwned, format};
+    let opcode = match byte {
         UNREACHABLE => "UNREACHABLE",
         NOP => "NOP",
-        // BLOCK => "BLOCK",
-        // LOOP => "LOOP",
-        // IF => "IF",
-        // ELSE => "ELSE",
+        BLOCK => "BLOCK",
+        LOOP => "LOOP",
+        IF => "IF",
+        ELSE => "ELSE",
         END => "END",
-        // BR => "BR",
-        // BR_IF => "BR_IF",
-        // BR_TABLE => "BR_TABLE",
+        BR => "BR",
+        BR_IF => "BR_IF",
+        BR_TABLE => "BR_TABLE",
         RETURN => "RETURN",
         CALL => "CALL",
-        // CALL_INDIRECT => "CALL_INDIRECT",
+        CALL_INDIRECT => "CALL_INDIRECT",
         DROP => "DROP",
-        // SELECT => "SELECT",
+        SELECT => "SELECT",
+        SELECT_T => "SELECT_T",
         LOCAL_GET => "LOCAL_GET",
         LOCAL_SET => "LOCAL_SET",
         LOCAL_TEE => "LOCAL_TEE",
@@ -381,5 +382,11 @@ pub fn opcode_byte_to_str(byte: u8) -> alloc::string::String {
         FC_EXTENSIONS => "FC_EXTENSIONS",
         _ => "UNKNOWN",
     }
-    .to_owned()
+    .to_owned();
+
+    if opcode == "UNKNOWN" {
+        format!("UNKNOWN({:x})", byte)
+    } else {
+        opcode
+    }
 }
