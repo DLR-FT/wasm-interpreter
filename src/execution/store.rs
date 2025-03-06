@@ -114,7 +114,7 @@ impl<'b> Store<'b> {
             exports: module.exports,
         };
 
-        self.module_names.insert(name, self.modules.len());
+        self.module_names.insert(name.clone(), self.modules.len());
         self.modules.push(execution_info);
 
         // TODO: At this point of the code, we can continue in two ways with imports/exports:
@@ -127,17 +127,32 @@ impl<'b> Store<'b> {
 
         // TODO: failing is harder since we already modified 'self'. We will circle back to this later.
 
-        for module in &mut self.modules {
-            for fn_store_idx in &mut module.functions {
-                let func = &self.functions[*fn_store_idx];
+        for module_idx in 0..self.modules.len() {
+            for function_idx in 0..self.modules[module_idx].functions.len() {
+                let fn_store_idx = self.modules[module_idx].functions[function_idx];
+                let func = &self.functions[fn_store_idx];
                 if let FuncInst::Imported(import) = func {
                     let resolved_idx =
                         self.lookup_function(&import.module_name, &import.function_name);
 
                     if resolved_idx.is_none() && import.module_name == name {
                         // TODO: Failed resolution... BAD!
+                        panic!(
+                            "Module {} is missing function {}",
+                            name, import.function_name
+                        );
+                    } else if let Some(final_resolved_idx) = resolved_idx {
+                        self.modules[module_idx].functions[function_idx] = final_resolved_idx;
                     } else {
-                        *fn_store_idx = resolved_idx.unwrap();
+                        // TODO: We're still waiting for a module to be linked.
+                        // We are thinking of making this an error, to force the
+                        // user to provide the modules in the correct order.
+                        // This will make it easier for us to instantiate
+                        // globals which can depend on imports at link-time.
+
+                        // However, as it currently is set up, this should be
+                        // unreachable.
+                        unreachable!()
                     }
                 }
             }
