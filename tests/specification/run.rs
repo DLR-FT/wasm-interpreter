@@ -33,6 +33,51 @@ use crate::specification::test_errors::*;
 
 const DEFAULT_MODULE: &'static str = "__interpreter_default__";
 
+const SPEC_TEST_WAT: &'static str = r#"
+(module
+  ;; Memory
+  (memory (export "memory") 1 2)
+
+  ;; Table
+  (table (export "table") 10 20 funcref)
+
+  ;; Globals
+  (global (export "global_i32") i32 (i32.const 666))
+  (global (export "global_i64") i64 (i64.const 666))
+  (global (export "global_f32") f32 (f32.const 666.6))
+  (global (export "global_f64") f64 (f64.const 666.6))
+
+  ;; Dummy functions for printing
+  (func (export "print")
+    ;; No params, no results
+  )
+
+  (func (export "print_i32") (param i32)
+    ;; No results
+  )
+
+  (func (export "print_i64") (param i64)
+    ;; No results
+  )
+
+  (func (export "print_f32") (param f32)
+    ;; No results
+  )
+
+  (func (export "print_f64") (param f64)
+    ;; No results
+  )
+
+  (func (export "print_i32_f32") (param i32 f32)
+    ;; No results
+  )
+
+  (func (export "print_f64_f64") (param f64 f64)
+    ;; No results
+  )
+)
+"#;
+
 pub fn to_wasm_testsuite_string(runtime_error: RuntimeError) -> std::string::String {
     match runtime_error {
         RuntimeError::DivideBy0 => "integer divide by zero",
@@ -129,7 +174,12 @@ fn encode_validate_instantiate<'a>(
                         Ok(validation_info) => {
                             let store_result = catch_unwind(|| {
                                 let mut temp_store = Store::default();
+                                let spectest_wat_parsed = wat::parse_str(SPEC_TEST_WAT).unwrap();
+                                let spectest = validate(&spectest_wat_parsed).unwrap();
 
+                                temp_store
+                                    .add_module("spectest".to_owned(), spectest)
+                                    .unwrap();
                                 // RuntimeInstance::new(&validation_info)
                                 match temp_store
                                     // match store
@@ -158,6 +208,15 @@ fn encode_validate_instantiate<'a>(
                                     } else {
                                         module_name
                                     };
+                                    let spectest_wat_parsed =
+                                        wat::parse_str(SPEC_TEST_WAT).unwrap();
+                                    let spectest = validate(&spectest_wat_parsed).unwrap();
+
+                                    store
+                                        .as_mut()
+                                        .unwrap()
+                                        .add_module("spectest".to_owned(), spectest)
+                                        .unwrap();
                                     store
                                         .as_mut()
                                         .unwrap()
@@ -216,51 +275,7 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
     #[allow(unused_assignments)]
     let mut store = Some(Store::default());
 
-    let spectest_wat = r#"
-(module
-  ;; Memory
-  (memory (export "memory") 1 2)
-
-  ;; Table
-  (table (export "table") 10 20 funcref)
-
-  ;; Globals
-  (global (export "global_i32") i32 (i32.const 666))
-  (global (export "global_i64") i64 (i64.const 666))
-  (global (export "global_f32") f32 (f32.const 666.6))
-  (global (export "global_f64") f64 (f64.const 666.6))
-
-  ;; Dummy functions for printing
-  (func (export "print")
-    ;; No params, no results
-  )
-
-  (func (export "print_i32") (param i32)
-    ;; No results
-  )
-
-  (func (export "print_i64") (param i64)
-    ;; No results
-  )
-
-  (func (export "print_f32") (param f32)
-    ;; No results
-  )
-
-  (func (export "print_f64") (param f64)
-    ;; No results
-  )
-
-  (func (export "print_i32_f32") (param i32 f32)
-    ;; No results
-  )
-
-  (func (export "print_f64_f64") (param f64 f64)
-    ;; No results
-  )
-)
-"#;
-    let spectest_wat_parsed = wat::parse_str(spectest_wat).unwrap();
+    let spectest_wat_parsed = wat::parse_str(SPEC_TEST_WAT).unwrap();
     let spectest = validate(&spectest_wat_parsed).unwrap();
 
     store
@@ -274,6 +289,7 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
             wast::WastDirective::Wat(mut quoted) => {
                 // If we fail to compile or to validate the main module, then we should treat this
                 // as a fatal (compilation) error.
+
                 let encoded = try_to!(quoted.encode().map_err(|err| CompilationError::new(
                     Box::new(err),
                     filepath,
@@ -337,8 +353,13 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                 }
 
                 // let store = catch_unwind(|| RuntimeInstance::new(&validation_info));
+                let spectest_wat_parsed = wat::parse_str(SPEC_TEST_WAT).unwrap();
+                let spectest = validate(&spectest_wat_parsed).unwrap();
                 let temp_store = catch_unwind(|| {
                     let mut temp_store = Store::default();
+                    temp_store
+                        .add_module("spectest".to_owned(), spectest)
+                        .unwrap();
                     temp_store.add_module(module_name.to_string(), validation_info.clone())?;
                     Ok(temp_store)
                 });
@@ -491,7 +512,9 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                 let cmd = get_command(&contents, span);
 
                 match encode_validate_instantiate(&mut module, &mut None) {
-                    Err(_) => asserts.push_success(WastSuccess::new(line_number, cmd)),
+                    Err(_) => {
+                        asserts.push_success(WastSuccess::new(line_number, cmd))
+                    },
                     Ok(_) => asserts.push_error(WastError::new("Module validated and instantiated successfully, when it shouldn't have been".into(), line_number, cmd))
                 };
             }

@@ -503,6 +503,12 @@ fn read_instructions(
                     .ok_or(Error::InvalidGlobalIdx(global_idx))?;
 
                 stack.push_valtype(global.ty.ty);
+                trace!(
+                    "Instruction: global.get '{}' [] -> [{:?}]",
+                    global_idx,
+                    // global,
+                    global.ty.ty
+                );
             }
             // global.set [t] -> []
             GLOBAL_SET => {

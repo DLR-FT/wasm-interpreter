@@ -2,7 +2,7 @@ use alloc::collections::btree_map::BTreeMap;
 use alloc::string::{String, ToString};
 use alloc::vec;
 use alloc::vec::Vec;
-use core::iter;
+use core::{iter, usize};
 
 use crate::core::error::{Proposal, Result as CustomResult, StoreInstantiationError};
 use crate::core::indices::TypeIdx;
@@ -10,7 +10,7 @@ use crate::core::reader::span::Span;
 use crate::core::reader::types::element::{ElemItems, ElemMode};
 use crate::core::reader::types::export::ExportDesc;
 use crate::core::reader::types::global::Global;
-use crate::core::reader::types::import::ImportDesc;
+use crate::core::reader::types::import::{Import, ImportDesc};
 use crate::core::reader::types::{FuncType, MemType, TableType, ValType};
 use crate::core::reader::WasmReader;
 use crate::core::sidetable::Sidetable;
@@ -46,6 +46,13 @@ pub struct Store<'b> {
     pub module_names: BTreeMap<String, usize>,
 }
 
+struct Imports {
+    pub imported_functions: usize,
+    pub imported_memories: usize,
+    pub imported_globals: usize,
+    pub imported_tables: usize,
+}
+
 impl<'b> Store<'b> {
     pub fn add_module(&mut self, name: String, module: ValidationInfo<'b>) -> CustomResult<()> {
         // TODO: we can do validation at linktime such that if another module expects module `name` to export something,
@@ -54,17 +61,64 @@ impl<'b> Store<'b> {
         let function_inst = module.instantiate_functions()?;
         // let function_type_inst = module.instantiate_function_types()?;
         let mut table_inst = module.instantiate_tables()?;
-        let (element_inst, passive_idxs) = module.instantiate_elements(&mut table_inst)?;
+        let globals_imports = {
+            let mut globals_imports = Vec::new();
+
+            for import in &module.imports {
+                match import.desc {
+                    ImportDesc::Global(_) => globals_imports.push(import.clone()),
+                    _ => {}
+                }
+            }
+
+            globals_imports
+        };
+
+        let imported_globals = {
+            let mut imported_globals = Vec::new();
+            for global_import in &globals_imports {
+                match global_import.desc {
+                    ImportDesc::Global(global_type_import) => {
+                        trace!("Global import module name: {}", global_import.module_name);
+                        let value = self
+                            .get_global_global_idx(
+                                self.get_module_idx_from_name(&global_import.module_name)?,
+                                &global_import.name,
+                            )
+                            .ok_or(Error::UnknownGlobal)?;
+
+                        // let global = self.globals[value].value;
+
+                        imported_globals.push(GlobalInst {
+                            global: Global {
+                                init_expr: Span::new(usize::MAX, 0),
+                                ty: global_type_import,
+                            },
+                            value: self.globals[value].value,
+                        })
+                    }
+                    _ => {
+                        unreachable!()
+                    }
+                }
+            }
+
+            imported_globals
+        };
+        let imported_globals_len = imported_globals.len();
+        let mut globals = module.instantiate_globals(imported_globals)?;
+        let (element_inst, passive_idxs) =
+            module.instantiate_elements(&mut table_inst, &globals)?;
         let mut memories = module.instantiate_memories()?;
-        let data = module.instantiate_data(&mut memories)?;
-        let globals = module.instantiate_globals()?;
+
+        let data = module.instantiate_data(&mut memories, &globals[0..imported_globals_len])?;
 
         let imported_functions = function_inst
             .iter()
             .filter(|func| matches!(func, FuncInst::Imported(_)))
             .count();
         let imported_memories = 0; // TODO: not yet supported
-        let imported_globals = 0; // TODO: not yet supported
+        let imported_globals = imported_globals_len; // TODO: not yet supported
         let imported_tables = 0; // TODO: not yet supported
 
         let functions_offset = self.functions.len();
@@ -76,7 +130,10 @@ impl<'b> Store<'b> {
         self.memories.extend(memories);
 
         let globals_offset = self.globals.len();
-        let exec_globals = (globals_offset..(globals_offset + globals.len())).collect();
+        let exec_globals =
+            self.get_globals_indexes(&globals_imports, &globals[globals_imports.len()..])?;
+        // let exec_globals = (globals_offset..(globals_offset + globals.len())).collect();
+        globals.drain(0..globals_imports.len());
         self.globals.extend(globals);
 
         let data_offset = self.data.len();
@@ -157,6 +214,17 @@ impl<'b> Store<'b> {
                     }
                 }
             }
+
+            // for global_idx in 0..self.modules[module_idx].globals.len() {
+            //     let global_store_idx = self.modules[module_idx].globals[global_idx];
+            //     let global: &GlobalInst = &self.globals[global_store_idx];
+
+            //     if global.global.init_expr.from() == usize::MAX
+            //         && global.global.init_expr.len() == 0
+            //     {
+            //         let resolved_idx = self.lookup_global(&import.module_name, &import.)
+            //     }
+            // }
         }
 
         // for module in &self.modules {
@@ -195,6 +263,67 @@ impl<'b> Store<'b> {
         }
         return None;
     }
+
+    // pub fn lookup_global(&self, target_module: &str, target_global: &str) -> Option<usize> {
+    //     let mut module_name: &str = target_module;
+    //     let mut global_name: &str = target_global;
+    //     let mut import_path: Vec<(String, String)> = vec![];
+
+    //     for _ in 0..100 {
+    //         import_path.push((module_name.to_string(), global_name.to_string()));
+    //         let module_idx = self.module_names.get(module_name)?;
+    //         let module = &self.modules[*module_idx];
+
+    //         let mut same_name_exports = module.exports.iter().filter_map(|export| {
+    //             if export.name == global_name {
+    //                 Some(&export.desc)
+    //             } else {
+    //                 None
+    //             }
+    //         });
+
+    //         // TODO: what if there are two exports with the same name -- error out?
+    //         if same_name_exports.clone().count() != 1 {
+    //             return None;
+    //         }
+
+    //         let target_export = same_name_exports.next()?;
+
+    //         match target_export {
+    //             ExportDesc::GlobalIdx(local_global_idx) => {
+    //                 // Note: if we go ahead with the offset proposal, we can do
+    //                 // store_idx = module.functions_offset + *local_idx
+    //                 let store_idx = module.functions[*local_global_idx];
+
+    //                 match &self.globals[store_idx] {
+    //                     FuncInst::Local(_local_func_inst) => {
+    //                         return Some(store_idx);
+    //                     }
+    //                     FuncInst::Imported(import) => {
+    //                         if import_path.contains(&(
+    //                             import.module_name.clone(),
+    //                             import.function_name.clone(),
+    //                         )) {
+    //                             // TODO: find a way around this reference to clone thing. Rust is uppsety spaghetti for
+    //                             // understandable but dumb reasons.
+
+    //                             // TODO: cycle detected :(
+    //                             return None;
+    //                         }
+
+    //                         module_name = &import.module_name;
+    //                         global_name = &import.function_name;
+    //                     }
+    //                 }
+    //             }
+    //             _ => return None,
+    //         }
+    //     }
+
+    //     // At this point, we are 100-imports deep. This isn't okay, and could be a sign of an infinte loop. We don't
+    //     // want our plane's CPU to keep searching for imports so we just assume we haven't found any.
+    //     None
+    // }
 
     pub fn lookup_function(&self, target_module: &str, target_function: &str) -> Option<usize> {
         let mut module_name: &str = target_module;
@@ -262,8 +391,10 @@ impl<'b> Store<'b> {
         &self,
         module_name: &str,
     ) -> Result<usize, RuntimeError> {
+        trace!("Number of modules: {}", self.modules.len());
         for module_idx in 0..self.modules.len() {
             let module = &self.modules[module_idx];
+            trace!("current module name: {}", module.name);
             if module.name == module_name {
                 return Ok(module_idx);
             }
@@ -339,6 +470,40 @@ impl<'b> Store<'b> {
         }
 
         None
+    }
+
+    pub fn get_global_global_idx(&self, module_idx: usize, global_name: &str) -> Option<usize> {
+        for export in &self.modules[module_idx].exports {
+            if export.name == global_name {
+                return export.desc.get_global_idx();
+            }
+        }
+        None
+    }
+
+    fn get_globals_indexes(
+        &self,
+        globals_imports: &Vec<Import>,
+        local_globals: &[GlobalInst],
+    ) -> CustomResult<Vec<usize>> {
+        let mut indexes: Vec<usize> = Vec::new();
+
+        for import in globals_imports {
+            indexes.push(
+                self.get_global_global_idx(
+                    self.get_module_idx_from_name(&import.module_name)?,
+                    &import.name,
+                )
+                .ok_or(Error::UnknownGlobal)?,
+            );
+        }
+
+        let globals_offset = self.globals.len();
+        for global_idx in globals_offset..local_globals.len() + globals_offset {
+            indexes.push(global_idx)
+        }
+
+        Ok(indexes)
     }
 
     // pub fn new
@@ -596,6 +761,7 @@ impl<'b> ValidationInfo<'b> {
     pub fn instantiate_elements(
         &self,
         tables: &mut [TableInst],
+        globals: &[GlobalInst],
     ) -> CustomResult<(Vec<ElemInst>, Vec<usize>)> {
         let mut passive_elem_indexes: Vec<usize> = vec![];
         // https://webassembly.github.io/spec/core/syntax/modules.html#element-segments
@@ -611,7 +777,7 @@ impl<'b> ValidationInfo<'b> {
                         .iter()
                         .map(|expr| {
                             get_address_offset(
-                                run_const_span(self.wasm, expr, ()).unwrap_validated(),
+                                run_const_span(self.wasm, expr, globals).unwrap_validated(),
                             )
                         })
                         .collect::<Vec<Option<u32>>>(),
@@ -656,13 +822,14 @@ impl<'b> ValidationInfo<'b> {
                     ElemMode::Active(active_elem) => {
                         let table_idx = active_elem.table_idx as usize;
 
-                        let offset = match run_const_span(self.wasm, &active_elem.init_expr, ())
-                            .unwrap_validated()
-                        {
-                            Value::I32(offset) => offset as usize,
-                            // We are already asserting that on top of the stack there is an I32 at validation time
-                            _ => unreachable!(),
-                        };
+                        let offset =
+                            match run_const_span(self.wasm, &active_elem.init_expr, globals)
+                                .unwrap_validated()
+                            {
+                                Value::I32(offset) => offset as usize,
+                                // We are already asserting that on top of the stack there is an I32 at validation time
+                                _ => unreachable!(),
+                            };
 
                         let table = &mut tables[table_idx];
                         // This can't be verified at validation-time because we don't keep track of actual values when validating expressions
@@ -709,6 +876,7 @@ impl<'b> ValidationInfo<'b> {
     pub fn instantiate_data(
         &self,
         memory_instances: &mut [MemInst],
+        imported_globals: &[GlobalInst],
     ) -> CustomResult<Vec<DataInst>> {
         self.data
             .iter()
@@ -729,7 +897,7 @@ impl<'b> ValidationInfo<'b> {
                         let mut wasm = WasmReader::new(self.wasm);
                         wasm.move_start_to(active_data.offset).unwrap_validated();
                         let mut stack = Stack::new();
-                        run_const(wasm, &mut stack, ());
+                        run_const(&mut wasm, &mut stack, imported_globals);
                         stack.pop_value(ValType::NumType(NumType::I32))
                         // stack.peek_unknown_value().ok_or(MissingValueOnTheStack)?
                     };
@@ -769,29 +937,33 @@ impl<'b> ValidationInfo<'b> {
             .collect::<CustomResult<Vec<DataInst>>>()
     }
 
-    pub fn instantiate_globals(&self) -> CustomResult<Vec<GlobalInst>> {
-        Ok(self
-            .globals
-            .iter()
-            .map({
-                let mut stack = Stack::new();
-                move |global| {
-                    let mut wasm = WasmReader::new(self.wasm);
-                    // The place we are moving the start to should, by all means, be inside the wasm bytecode.
-                    wasm.move_start_to(global.init_expr).unwrap_validated();
-                    // We shouldn't need to clear the stack. If validation is correct, it will remain empty after execution.
+    pub fn instantiate_globals(
+        &self,
+        imported_globals: Vec<GlobalInst>,
+    ) -> CustomResult<Vec<GlobalInst>> {
+        // let mut globals = imported_globals;
+        let mut local_globals = Vec::new();
 
-                    // TODO: imported globals
-                    run_const(wasm, &mut stack, ());
-                    let value = stack.pop_value(global.ty.ty);
+        for global in &self.globals {
+            let mut stack = Stack::new();
+            let mut wasm = WasmReader::new(self.wasm);
+            // The place we are moving the start to should, by all means, be inside the wasm bytecode.
+            wasm.move_start_to(global.init_expr).unwrap_validated();
+            // We shouldn't need to clear the stack. If validation is correct, it will remain empty after execution.
 
-                    GlobalInst {
-                        global: *global,
-                        value,
-                    }
-                }
+            // TODO: imported globals
+            run_const(&mut wasm, &mut stack, &imported_globals);
+            let value = stack.pop_value(global.ty.ty);
+
+            local_globals.push(GlobalInst {
+                global: *global,
+                value,
             })
-            .collect())
+        }
+        let mut all_globals = vec![];
+        all_globals.extend(imported_globals);
+        all_globals.extend(local_globals);
+        Ok(all_globals)
     }
 }
 
@@ -914,6 +1086,12 @@ impl MemInst {
     }
 }
 
+// pub struct GlobalInstV2 {
+//     Local(LocalGlobalInst),
+//     Imported(ImportedGlobalInst)
+// }
+
+#[derive(Debug)]
 pub struct GlobalInst {
     pub global: Global,
     /// Must be of the same type as specified in `ty`

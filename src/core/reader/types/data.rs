@@ -40,8 +40,8 @@ impl WasmReadable for DataSegment {
                 // active { memory 0, offset e }
                 trace!("Data section: active");
                 let mut valid_stack = ValidationStack::new();
-                let offset =
-                    { read_constant_expression(wasm, &mut valid_stack, None, None, None)? };
+                // TODO: we need globals here, as well, don't we?
+                let offset = { read_constant_expression(wasm, &mut valid_stack, &[], None)? };
 
                 valid_stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
 
@@ -89,7 +89,8 @@ impl WasmReadable for DataSegment {
                 // active { memory 0, offset e }
                 trace!("Data section: active");
                 let offset = {
-                    read_constant_expression(wasm, &mut ValidationStack::new(), None, None, None)
+                    // TODO: we need globals here, as well, don't we?
+                    read_constant_expression(wasm, &mut ValidationStack::new(), &[], None)
                         .unwrap_validated()
                 };
 

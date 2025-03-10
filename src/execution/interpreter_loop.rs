@@ -511,6 +511,13 @@ pub(super) fn run<H: HookSet>(
                 let global = &store.globals[store.modules[*current_module_idx].globals[global_idx]];
 
                 stack.push_value(global.value);
+
+                trace!(
+                    "Instruction: global.get '{}' [{:?}] -> [{:?}]",
+                    global_idx,
+                    global,
+                    global.value
+                );
             }
             GLOBAL_SET => {
                 let global_idx = store.modules[current_wasm_index]

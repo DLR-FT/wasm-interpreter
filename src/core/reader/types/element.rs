@@ -85,10 +85,39 @@ impl ElemType {
                 }
 
                 let mut valid_stack = ValidationStack::new();
+                // let wasm_pc = wasm.pc;
+                // TODO: we need globals here, as well, don't we?
                 let init_expr =
-                    read_constant_expression(wasm, &mut valid_stack, None, None, Some(functions))?;
+                    read_constant_expression(wasm, &mut valid_stack, &[], Some(functions))?;
 
                 // on top of the stack it's supposed to be the
+                // it might also be an extern ref w/e
+                // let function_idx = valid_stack.peek_const_validation_stack();
+
+                // match function_idx {
+                //     None => return Err(Error::UnknownFunction),
+                //     Some(stack_entry) => match stack_entry {
+                //         crate::validation_stack::ValidationStackEntry::Val(val) => match val {
+                //             super::ValType::NumType(num) => match num {
+                //                 super::NumType::I32 => {
+                //                     wasm.pc = wasm_pc;
+                //                     let stack = &mut Stack::new();
+                //                     run_const(wasm, stack, ());
+                //                     let popped_from_stack: u32 = stack
+                //                         .pop_value(super::ValType::NumType(super::NumType::I32))
+                //                         .into();
+                //                     if functions.len() >= popped_from_stack as usize {
+                //                         return Err(Error::UnknownFunction);
+                //                     }
+                //                 }
+                //                 _ => return Err(Error::UnknownFunction),
+                //             },
+                //             _ => return Err(Error::UnknownFunction),
+                //         },
+                //         _ => return Err(Error::UnknownFunction),
+                //     },
+                // };
+
                 valid_stack.assert_pop_val_type(super::ValType::NumType(super::NumType::I32))?;
 
                 ElemMode::Active(ActiveElem {
@@ -122,13 +151,9 @@ impl ElemType {
                     reftype_or_elemkind.unwrap_or(RefType::FuncRef),
                     wasm.read_vec(|w| {
                         let mut valid_stack = ValidationStack::new();
-                        let span = read_constant_expression(
-                            w,
-                            &mut valid_stack,
-                            None,
-                            None,
-                            Some(functions),
-                        );
+                        // TODO: we need globals here, as well, don't we?
+                        let span =
+                            read_constant_expression(w, &mut valid_stack, &[], Some(functions));
 
                         use crate::validation_stack::ValidationStackEntry::*;
 

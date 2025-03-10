@@ -7,7 +7,7 @@ use crate::core::reader::span::Span;
 use crate::core::reader::types::data::DataSegment;
 use crate::core::reader::types::element::ElemType;
 use crate::core::reader::types::export::Export;
-use crate::core::reader::types::global::Global;
+use crate::core::reader::types::global::{Global, GlobalType};
 use crate::core::reader::types::import::{Import, ImportDesc};
 use crate::core::reader::types::{FuncType, MemType, TableType};
 use crate::core::reader::{WasmReadable, WasmReader};
@@ -185,10 +185,36 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
+    // we start off with the imported globals
+    let mut imported_global_types = imports
+        .iter()
+        .filter_map(|m| match m.desc {
+            ImportDesc::Global(global) => Some(global),
+            _ => None,
+        })
+        .collect::<Vec<GlobalType>>();
+    let imported_global_types_len = imported_global_types.len();
     let globals = handle_section(&mut wasm, &mut header, SectionTy::Global, |wasm, h| {
-        globals::validate_global_section(wasm, h)
+        globals::validate_global_section(wasm, h, &imported_global_types)
     })?
     .unwrap_or_default();
+    // let imported_globals = imported_global_types
+    //     .iter()
+    //     .map(|imported_global_type| Global {
+    //         init_expr: Span::new(usize::MAX, 0),
+    //         ty: imported_global_type.clone(),
+    //     })
+    //     .collect::<Vec<Global>>();
+    let mut all_globals = Vec::new();
+    for i in 0..imported_global_types_len {
+        all_globals.push(Global {
+            init_expr: Span::new(usize::MAX, 0),
+            ty: imported_global_types[i],
+        })
+    }
+    for i in 0..globals.len() {
+        all_globals.push(globals[i].clone())
+    }
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
@@ -241,7 +267,10 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
                 &types,
                 &all_functions,
                 imported_functions.count(),
-                &globals,
+                // TODO: do we need ALL globals here? even the imported ones? Maybe yes
+                //        maybe we need ALL of everything, incl. memories, tables, etc
+                // &globals,
+                &all_globals,
                 &memories,
                 &data_count,
                 &tables,

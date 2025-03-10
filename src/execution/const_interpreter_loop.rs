@@ -1,9 +1,12 @@
 use crate::{
     assert_validated::UnwrapValidatedExt,
-    core::reader::{span::Span, WasmReadable, WasmReader},
+    core::{
+        indices::GlobalIdx,
+        reader::{span::Span, WasmReadable, WasmReader},
+    },
     value::{self, FuncAddr, Ref},
     value_stack::Stack,
-    NumType, RefType, ValType, Value,
+    GlobalInst, NumType, RefType, Store, ValType, Value,
 };
 
 /// Execute a previosly-validated constant expression. These type of expressions are used for initializing global
@@ -28,9 +31,11 @@ use crate::{
 /// - `ref.func`
 /// - `global.get`
 pub(crate) fn run_const(
-    mut wasm: WasmReader,
+    wasm: &mut WasmReader,
     stack: &mut Stack,
-    _imported_globals: (), /*todo!*/
+    // store: &mut Store,
+    // _imported_globals: (), /*todo!*/
+    imported_globals: &[GlobalInst],
 ) {
     use crate::core::reader::types::opcode::*;
     loop {
@@ -38,7 +43,19 @@ pub(crate) fn run_const(
 
         match first_instr_byte {
             END => {
+                trace!("Constant instruction: END");
                 break;
+            }
+            GLOBAL_GET => {
+                let global_idx = wasm.read_var_u32().unwrap_validated() as GlobalIdx;
+
+                let global = &imported_globals[global_idx];
+
+                trace!(
+                    "Constant instruction: global.get [{global_idx}] -> [{:?}]",
+                    global
+                );
+                stack.push_value(global.value);
             }
             I32_CONST => {
                 let constant = wasm.read_var_i32().unwrap_validated();
@@ -173,7 +190,7 @@ pub(crate) fn run_const(
                 stack.push_value(res.into());
             }
             REF_NULL => {
-                let reftype = RefType::read_unvalidated(&mut wasm);
+                let reftype = RefType::read_unvalidated(wasm);
 
                 stack.push_value(Value::Ref(reftype.to_null_ref()));
                 trace!("Instruction: ref.null '{:?}' -> [{:?}]", reftype, reftype);
@@ -193,7 +210,7 @@ pub(crate) fn run_const(
 pub(crate) fn run_const_span(
     wasm: &[u8],
     span: &Span,
-    imported_globals: (),
+    imported_globals: &[GlobalInst],
     // funcs: &[FuncInst],
 ) -> Option<Value> {
     let mut wasm = WasmReader::new(wasm);
@@ -201,7 +218,7 @@ pub(crate) fn run_const_span(
     wasm.move_start_to(*span).unwrap_validated();
 
     let mut stack = Stack::new();
-    run_const(wasm, &mut stack, imported_globals);
+    run_const(&mut wasm, &mut stack, imported_globals);
 
     stack.peek_unknown_value()
 }

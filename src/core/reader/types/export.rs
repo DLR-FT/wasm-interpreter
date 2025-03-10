@@ -48,6 +48,13 @@ impl ExportDesc {
             _ => None,
         }
     }
+
+    pub fn get_global_idx(&self) -> Option<GlobalIdx> {
+        match self {
+            ExportDesc::GlobalIdx(global_idx) => Some(*global_idx),
+            _ => None,
+        }
+    }
 }
 
 impl WasmReadable for ExportDesc {
