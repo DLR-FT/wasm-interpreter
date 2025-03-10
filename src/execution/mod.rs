@@ -366,7 +366,6 @@ where
     /// - `Err(RuntimeError::ModuleNotFound)`, if the module is not found.
     /// - `Err(RuntimeError::FunctionNotFound`, if the function is not found within the module.
     ///
-    // TODO: DON'T FORGET TO UNCOMMENT THIS!!!!!!1!
     pub fn invoke_dynamic_unchecked_return_ty(
         &mut self,
         function_ref: &FunctionRef,

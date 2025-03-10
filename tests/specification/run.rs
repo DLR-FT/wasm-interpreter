@@ -565,7 +565,6 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                             .map(arg_to_value)
                             .collect::<Vec<_>>();
 
-                        // TODO: more modules ¯\_(ツ)_/¯
                         match interpeter.get_global_function_idx_by_name(&module_name, invoke.name)
                         {
                             None => asserts.push_error(WastError::new(
@@ -629,7 +628,6 @@ fn execute_assert_return(
                 .map(|val| val.to_ty())
                 .collect::<Vec<_>>();
 
-            // TODO: more modules ¯\_(ツ)_/¯
             let module_name = if let Some(module_name) = invoke_info.module {
                 module_name.name()
             } else {
@@ -734,7 +732,6 @@ fn execute_assert_trap(
                 .map(arg_to_value)
                 .collect::<Vec<_>>();
 
-            // TODO: more modules ¯\_(ツ)_/¯
             let func_idx = store
                 .get_global_function_idx_by_name(&module_name, invoke_info.name)
                 .ok_or(Box::new(WasmInterpreterError(wasm::Error::RuntimeError(
@@ -768,9 +765,19 @@ fn execute_assert_trap(
             module: _,
             global: _,
         } => todo!("`get` directive inside `assert_return` not yet implemented"),
-        wast::WastExecute::Wat(_) => {
-            todo!("`wat` directive inside `assert_return` not yet implemented")
+        wast::WastExecute::Wat(wast::Wat::Module(module)) => {
+            let mut quote_wat = wast::QuoteWat::Wat(wast::Wat::Module(module));
+            match encode_validate_instantiate(&mut quote_wat, &mut None) {
+                Err(_) => Ok(()),
+                Ok(_) => Err(Box::new(PanicError::new(
+                    "Module validated and instantiated successfully, when it shouldn't have been",
+                ))),
+            }
         }
+        _ => Err(Box::new(PanicError::new(&format!(
+            "Unsupported action: {:?}",
+            exec
+        )))),
     }
 }
 
@@ -859,8 +866,7 @@ fn result_to_value(result: wast::WastRet) -> Value {
                 Some(index) => {
                     use wasm::value::*;
                     Value::Ref(Ref::Extern(ExternAddr::new(Some(index as usize))))
-                    // todo!("RefExterns not yet implemented")
-                } // todo!("`RefExtern` result not yet implemented")
+                }
             },
             WastRetCore::RefHost(_) => todo!("`RefHost` result not yet implemented"),
             WastRetCore::RefFunc(index) => match index {

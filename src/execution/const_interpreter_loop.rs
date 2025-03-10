@@ -6,7 +6,7 @@ use crate::{
     },
     value::{self, FuncAddr, Ref},
     value_stack::Stack,
-    GlobalInst, NumType, RefType, Store, ValType, Value,
+    GlobalInst, NumType, RefType, ValType, Value,
 };
 
 /// Execute a previosly-validated constant expression. These type of expressions are used for initializing global
@@ -33,9 +33,12 @@ use crate::{
 pub(crate) fn run_const(
     wasm: &mut WasmReader,
     stack: &mut Stack,
-    // store: &mut Store,
-    // _imported_globals: (), /*todo!*/
-    imported_globals: &[GlobalInst],
+    // The globals slice should contain ONLY imported globals IF AND ONLY IF we are calling `run_const` for local globals instantiation
+    // As per https://webassembly.github.io/spec/core/valid/modules.html (bottom of the page):
+    //
+    //  Globals, however, are not recursive and not accessible within constant expressions when they are defined locally. The effect of defining the limited context C'
+    //   for validating certain definitions is that they can only access functions and imported globals and nothing else.
+    globals: &[GlobalInst],
 ) {
     use crate::core::reader::types::opcode::*;
     loop {
@@ -49,7 +52,7 @@ pub(crate) fn run_const(
             GLOBAL_GET => {
                 let global_idx = wasm.read_var_u32().unwrap_validated() as GlobalIdx;
 
-                let global = &imported_globals[global_idx];
+                let global = &globals[global_idx];
 
                 trace!(
                     "Constant instruction: global.get [{global_idx}] -> [{:?}]",

@@ -108,26 +108,58 @@ impl<'b> Store<'b> {
         let imported_globals_len = imported_globals.len();
         let mut globals = module.instantiate_globals(imported_globals)?;
         let (element_inst, passive_idxs) =
-            module.instantiate_elements(&mut table_inst, &globals)?;
-        let mut memories = module.instantiate_memories()?;
+            module.instantiate_elements(&mut table_inst, &globals, function_inst.len())?;
+        let local_memories = module.instantiate_local_memories()?;
 
-        let data = module.instantiate_data(&mut memories, &globals[0..imported_globals_len])?;
+        let memory_imports_indexes = {
+            let mut memory_imports_indexes = Vec::new();
+            for import in &module.imports {
+                match import.desc {
+                    ImportDesc::Mem(..) => {
+                        memory_imports_indexes.push(
+                            self.get_global_memory_idx(
+                                self.get_module_idx_from_name(&import.module_name)?,
+                                &import.name,
+                            )
+                            .ok_or(Error::UnknownMemory)?,
+                        );
+                    }
+                    _ => {}
+                }
+            }
+            // &module
+            // .imports
+            // .iter()
+            // .filter_map(|import| {
+            //     if matches!(import.desc, ImportDesc::Mem(..)) {
+            //         Some()
+            //         todo!()
+            //     } else {
+            //         None
+            //     }
+            // })
+            // .collect::<Vec<usize>>();
+            memory_imports_indexes
+        };
+        let memories_offset = self.memories.len();
+        let exec_memories = self.get_memories_indexes(&memory_imports_indexes, &local_memories)?;
+        // let exec_memories = (memories_offset..(memories_offset + memories.len())).collect();
+        self.memories.extend(local_memories);
+
+        let data =
+            module.instantiate_data(self, &exec_memories, &globals[0..imported_globals_len])?;
 
         let imported_functions = function_inst
             .iter()
             .filter(|func| matches!(func, FuncInst::Imported(_)))
             .count();
-        let imported_memories = 0; // TODO: not yet supported
-        let imported_globals = imported_globals_len; // TODO: not yet supported
+        let imported_memories = memory_imports_indexes.len();
+        let imported_globals = imported_globals_len;
         let imported_tables = 0; // TODO: not yet supported
 
         let functions_offset = self.functions.len();
         let exec_functions = (functions_offset..(functions_offset + function_inst.len())).collect();
         self.functions.extend(function_inst);
-
-        let memories_offset = self.memories.len();
-        let exec_memories = (memories_offset..(memories_offset + memories.len())).collect();
-        self.memories.extend(memories);
 
         let globals_offset = self.globals.len();
         let exec_globals =
@@ -481,6 +513,15 @@ impl<'b> Store<'b> {
         None
     }
 
+    pub fn get_global_memory_idx(&self, module_idx: usize, memory_name: &str) -> Option<usize> {
+        for export in &self.modules[module_idx].exports {
+            if export.name == memory_name {
+                return export.desc.get_memory_idx();
+            }
+        }
+        None
+    }
+
     fn get_globals_indexes(
         &self,
         globals_imports: &Vec<Import>,
@@ -501,6 +542,21 @@ impl<'b> Store<'b> {
         let globals_offset = self.globals.len();
         for global_idx in globals_offset..local_globals.len() + globals_offset {
             indexes.push(global_idx)
+        }
+
+        Ok(indexes)
+    }
+
+    fn get_memories_indexes(
+        &self,
+        memories_imports_indexes: &Vec<usize>,
+        local_memories: &[MemInst],
+    ) -> CustomResult<Vec<usize>> {
+        let mut indexes: Vec<usize> = Vec::new();
+        indexes.extend_from_slice(&memories_imports_indexes);
+        let memories_offset = self.memories.len();
+        for memory_idx in memories_offset..local_memories.len() + memories_offset {
+            indexes.push(memory_idx);
         }
 
         Ok(indexes)
@@ -762,93 +818,125 @@ impl<'b> ValidationInfo<'b> {
         &self,
         tables: &mut [TableInst],
         globals: &[GlobalInst],
+        no_of_functions: usize,
     ) -> CustomResult<(Vec<ElemInst>, Vec<usize>)> {
         let mut passive_elem_indexes: Vec<usize> = vec![];
         // https://webassembly.github.io/spec/core/syntax/modules.html#element-segments
-        let elements: Vec<ElemInst> = self
-            .elements
-            .iter()
-            .enumerate()
-            .filter_map(|(i, elem)| {
-                trace!("Instantiating element {:#?}", elem);
+        let mut elements: Vec<ElemInst> = Vec::new();
 
-                let offsets = match &elem.init {
-                    ElemItems::Exprs(_ref_type, init_exprs) => init_exprs
-                        .iter()
-                        .map(|expr| {
-                            get_address_offset(
-                                run_const_span(self.wasm, expr, globals).unwrap_validated(),
-                            )
-                        })
-                        .collect::<Vec<Option<u32>>>(),
-                    ElemItems::RefFuncs(indicies) => {
-                        // This branch gets taken when the elements are direct function references (i32 values), so we just return the indices
-                        indicies
-                            .iter()
-                            .map(|el| Some(*el))
-                            .collect::<Vec<Option<u32>>>()
-                    }
-                };
+        // let elements: Vec<ElemInst> = self
+        for (i, elem) in self.elements.iter().enumerate() {
+            trace!("Instantiating element {:#?}", elem);
 
-                let references: Vec<Ref> = offsets
+            let offsets = match &elem.init {
+                ElemItems::Exprs(_ref_type, init_exprs) => init_exprs
                     .iter()
-                    .map(|offset| {
-                        let offset = offset.as_ref().map(|offset| *offset as usize);
-                        match elem.ty() {
-                            RefType::FuncRef => Ref::Func(FuncAddr::new(offset)),
-                            RefType::ExternRef => Ref::Extern(ExternAddr::new(offset)),
-                        }
+                    .map(|expr| {
+                        get_address_offset(
+                            run_const_span(self.wasm, expr, globals).unwrap_validated(),
+                        )
                     })
-                    .collect();
+                    .collect::<Vec<Option<u32>>>(),
+                ElemItems::RefFuncs(indicies) => {
+                    // This branch gets taken when the elements are direct function references (i32 values), so we just return the indices
+                    indicies
+                        .iter()
+                        .map(|el| Some(*el))
+                        .collect::<Vec<Option<u32>>>()
+                }
+            };
 
-                let instance = ElemInst {
-                    ty: elem.ty(),
-                    references,
-                };
+            // validate
 
-                match &elem.mode {
-                    // As per https://webassembly.github.io/spec/core/syntax/modules.html#element-segments
-                    // A declarative element segment is not available at runtime but merely serves to forward-declare
-                    //  references that are formed in code with instructions like `ref.func`
-
-                    // Also, the answer given by Andreas Rossberg (the editor of the WASM Spec - Release 2.0)
-                    // Per https://stackoverflow.com/questions/78672934/what-is-the-purpose-of-a-wasm-declarative-element-segment
-                    // "[...] The reason Wasm requires this (admittedly ugly) forward declaration is to support streaming compilation [...]"
-                    ElemMode::Declarative => None,
-                    ElemMode::Passive => {
-                        passive_elem_indexes.push(i);
-                        Some(instance)
+            for offset in &offsets {
+                match offset {
+                    None => {
+                        // what should we do here?
+                        // should we just crash?
+                        // for now just don't do anything
                     }
-                    ElemMode::Active(active_elem) => {
-                        let table_idx = active_elem.table_idx as usize;
-
-                        let offset =
-                            match run_const_span(self.wasm, &active_elem.init_expr, globals)
-                                .unwrap_validated()
-                            {
-                                Value::I32(offset) => offset as usize,
-                                // We are already asserting that on top of the stack there is an I32 at validation time
-                                _ => unreachable!(),
-                            };
-
-                        let table = &mut tables[table_idx];
-                        // This can't be verified at validation-time because we don't keep track of actual values when validating expressions
-                        //  we only keep track of the type of the values. As such we can't pop the exact value of an i32 from the validation stack
-                        assert!(table.len() >= (offset + instance.len()));
-
-                        table.elem[offset..offset + instance.references.len()]
-                            .copy_from_slice(&instance.references);
-
-                        Some(instance)
+                    Some(offset) => {
+                        match elem.ty() {
+                            RefType::ExternRef => {
+                                // we don't care about extern refs for now
+                            }
+                            RefType::FuncRef => {
+                                if *offset as usize >= no_of_functions {
+                                    return Err(Error::FunctionIsNotDefined(*offset as usize));
+                                }
+                            }
+                        }
                     }
                 }
-            })
-            .collect();
+            }
+
+            let references: Vec<Ref> = offsets
+                .iter()
+                .map(|offset| {
+                    let offset = offset.as_ref().map(|offset| *offset as usize);
+                    match elem.ty() {
+                        RefType::FuncRef => Ref::Func(FuncAddr::new(offset)),
+                        RefType::ExternRef => Ref::Extern(ExternAddr::new(offset)),
+                    }
+                })
+                .collect();
+
+            let instance = ElemInst {
+                ty: elem.ty(),
+                references,
+            };
+
+            let elem_inst_opt = match &elem.mode {
+                // As per https://webassembly.github.io/spec/core/syntax/modules.html#element-segments
+                // A declarative element segment is not available at runtime but merely serves to forward-declare
+                //  references that are formed in code with instructions like `ref.func`
+
+                // Also, the answer given by Andreas Rossberg (the editor of the WASM Spec - Release 2.0)
+                // Per https://stackoverflow.com/questions/78672934/what-is-the-purpose-of-a-wasm-declarative-element-segment
+                // "[...] The reason Wasm requires this (admittedly ugly) forward declaration is to support streaming compilation [...]"
+                ElemMode::Declarative => None,
+                ElemMode::Passive => {
+                    passive_elem_indexes.push(i);
+                    Some(instance)
+                }
+                ElemMode::Active(active_elem) => {
+                    let table_idx = active_elem.table_idx as usize;
+
+                    let offset = match run_const_span(self.wasm, &active_elem.init_expr, globals)
+                        .unwrap_validated()
+                    {
+                        Value::I32(offset) => offset as usize,
+                        // We are already asserting that on top of the stack there is an I32 at validation time
+                        _ => unreachable!(),
+                    };
+
+                    let table = &mut tables[table_idx];
+                    // This can't be verified at validation-time because we don't keep track of actual values when validating expressions
+                    //  we only keep track of the type of the values. As such we can't pop the exact value of an i32 from the validation stack
+                    assert!(table.len() >= (offset + instance.len()));
+
+                    table.elem[offset..offset + instance.references.len()]
+                        .copy_from_slice(&instance.references);
+
+                    Some(instance)
+                }
+            };
+
+            match elem_inst_opt {
+                None => {
+                    // todo idk
+                }
+                Some(elem_inst) => elements.push(elem_inst),
+            };
+        }
+        // .filter_map(|(i, elem)| {
+        //     })
+        // .collect();
 
         Ok((elements, passive_elem_indexes))
     }
 
-    pub fn instantiate_memories(&self) -> CustomResult<Vec<MemInst>> {
+    pub fn instantiate_local_memories(&self) -> CustomResult<Vec<MemInst>> {
         let memories: Vec<MemInst> = self.memories.iter().map(|ty| MemInst::new(*ty)).collect();
 
         let import_memory_instances_len = self
@@ -875,7 +963,9 @@ impl<'b> ValidationInfo<'b> {
 
     pub fn instantiate_data(
         &self,
-        memory_instances: &mut [MemInst],
+        store: &mut Store,
+        // memory_instances: &mut [MemInst],
+        memories_indexes: &[usize],
         imported_globals: &[GlobalInst],
     ) -> CustomResult<Vec<DataInst>> {
         self.data
@@ -884,12 +974,14 @@ impl<'b> ValidationInfo<'b> {
                 use crate::core::reader::types::data::DataMode;
                 use crate::NumType;
                 if let DataMode::Active(active_data) = d.mode.clone() {
+                    trace!("Instantiating active data (DataMode::Active)...");
                     let mem_idx = active_data.memory_idx;
                     if mem_idx != 0 {
                         todo!("Active data has memory_idx different than 0");
                     }
+
                     assert!(
-                        memory_instances.len() > mem_idx,
+                        memories_indexes.len() <= 1,
                         "Multiple memories not yet supported"
                     );
 
@@ -898,8 +990,15 @@ impl<'b> ValidationInfo<'b> {
                         wasm.move_start_to(active_data.offset).unwrap_validated();
                         let mut stack = Stack::new();
                         run_const(&mut wasm, &mut stack, imported_globals);
-                        stack.pop_value(ValType::NumType(NumType::I32))
+                        let boxed_value = stack.pop_value(ValType::NumType(NumType::I32));
+
+                        // we should have NO value on the stack whatsoever, otherwise it's wrong
+                        if stack.peek_unknown_value().is_some() {
+                            return Err(Error::EndInvalidValueStack);
+                        }
                         // stack.peek_unknown_value().ok_or(MissingValueOnTheStack)?
+
+                        boxed_value
                     };
 
                     // TODO: this shouldn't be a simple value, should it? I mean it can't be, but it can also be any type of ValType
@@ -916,7 +1015,9 @@ impl<'b> ValidationInfo<'b> {
                         _ => todo!(),
                     };
 
-                    let mem_inst = memory_instances.get_mut(mem_idx).unwrap();
+                    let index = memories_indexes.get(mem_idx).ok_or(Error::UnknownMemory)?;
+                    let mem_inst = store.memories.get_mut(*index).ok_or(Error::UnknownMemory)?;
+                    // let mem_inst = memory_instances.get_mut(mem_idx).unwrap();
 
                     let len = mem_inst.data.len();
                     if offset as usize + d.init.len() > len {

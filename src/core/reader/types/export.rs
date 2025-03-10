@@ -55,6 +55,13 @@ impl ExportDesc {
             _ => None,
         }
     }
+
+    pub fn get_memory_idx(&self) -> Option<MemIdx> {
+        match self {
+            ExportDesc::MemIdx(mem_idx) => Some(*mem_idx),
+            _ => None,
+        }
+    }
 }
 
 impl WasmReadable for ExportDesc {

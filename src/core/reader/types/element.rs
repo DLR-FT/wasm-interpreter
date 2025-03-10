@@ -1,3 +1,4 @@
+use super::global::GlobalType;
 use super::RefType;
 use crate::core::reader::span::Span;
 use crate::core::reader::WasmReader;
@@ -51,6 +52,7 @@ impl ElemType {
         functions: &[usize],
         referenced_functions: &mut BTreeSet<u32>,
         tables_length: usize,
+        all_globals_types: &[GlobalType],
     ) -> Result<Vec<Self>> {
         wasm.read_vec(|wasm| {
             let prop = wasm.read_var_u32()?;
@@ -86,9 +88,18 @@ impl ElemType {
 
                 let mut valid_stack = ValidationStack::new();
                 // let wasm_pc = wasm.pc;
-                // TODO: we need globals here, as well, don't we?
-                let init_expr =
-                    read_constant_expression(wasm, &mut valid_stack, &[], Some(functions))?;
+                let init_expr = read_constant_expression(
+                    wasm,
+                    &mut valid_stack,
+                    all_globals_types,
+                    Some(functions),
+                )?;
+
+                // at validation time we actually have to check for the function to be known
+                //  that means a new stack
+                //  nvm we will do that directly at runtime
+                //  we could do a part now, for example, if we don't have imported globals to take care of, just so we are even more
+                //  reliable (more checks at validation/compile time)
 
                 // on top of the stack it's supposed to be the
                 // it might also be an extern ref w/e
@@ -151,9 +162,12 @@ impl ElemType {
                     reftype_or_elemkind.unwrap_or(RefType::FuncRef),
                     wasm.read_vec(|w| {
                         let mut valid_stack = ValidationStack::new();
-                        // TODO: we need globals here, as well, don't we?
-                        let span =
-                            read_constant_expression(w, &mut valid_stack, &[], Some(functions));
+                        let span = read_constant_expression(
+                            w,
+                            &mut valid_stack,
+                            &all_globals_types,
+                            Some(functions),
+                        );
 
                         use crate::validation_stack::ValidationStackEntry::*;
 

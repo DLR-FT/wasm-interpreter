@@ -15,6 +15,7 @@ use crate::core::sidetable::Sidetable;
 use crate::{Error, Result};
 
 pub(crate) mod code;
+pub(crate) mod data;
 pub(crate) mod globals;
 pub(crate) mod read_constant_expression;
 pub(crate) mod validation_stack;
@@ -183,10 +184,24 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
         return Err(Error::MoreThanOneMemory);
     }
 
+    let no_of_total_memories = {
+        let no_of_imported_memories = imports
+            .iter()
+            .filter(|import| {
+                if matches!(import.desc, ImportDesc::Mem(_)) {
+                    true
+                } else {
+                    false
+                }
+            })
+            .count();
+        no_of_imported_memories + memories.len()
+    };
+
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
     // we start off with the imported globals
-    let mut imported_global_types = imports
+    let /* mut */ imported_global_types = imports
         .iter()
         .filter_map(|m| match m.desc {
             ImportDesc::Global(global) => Some(global),
@@ -215,6 +230,10 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
     for i in 0..globals.len() {
         all_globals.push(globals[i].clone())
     }
+    let all_globals_types = &all_globals
+        .iter()
+        .map(|el| el.ty.clone())
+        .collect::<Vec<GlobalType>>();
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
@@ -239,6 +258,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
                 &all_functions,
                 &mut referenced_functions,
                 tables.len(),
+                &all_globals_types,
             )
         })?
         .unwrap_or_default();
@@ -267,9 +287,6 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
                 &types,
                 &all_functions,
                 imported_functions.count(),
-                // TODO: do we need ALL globals here? even the imported ones? Maybe yes
-                //        maybe we need ALL of everything, incl. memories, tables, etc
-                // &globals,
                 &all_globals,
                 &memories,
                 &data_count,
@@ -288,8 +305,9 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
-    let data_section = handle_section(&mut wasm, &mut header, SectionTy::Data, |wasm, _| {
-        wasm.read_vec(DataSegment::read)
+    let data_section = handle_section(&mut wasm, &mut header, SectionTy::Data, |wasm, h| {
+        // wasm.read_vec(DataSegment::read)
+        data::validate_data_section(wasm, h, &imported_global_types, no_of_total_memories)
     })?
     .unwrap_or_default();
 

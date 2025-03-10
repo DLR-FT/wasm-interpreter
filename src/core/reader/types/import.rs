@@ -47,16 +47,10 @@ impl WasmReadable for Import {
 
 #[derive(Debug, Clone)]
 pub enum ImportDesc {
-    #[allow(dead_code)]
     Func(TypeIdx),
-    #[allow(dead_code)]
     Table(TableType),
-    // TODO TableType
-    #[allow(dead_code)]
     Mem(MemType),
-    // TODO MemType
-    #[allow(dead_code)]
-    Global(GlobalType), // TODO GlobalType
+    Global(GlobalType),
 }
 
 impl WasmReadable for ImportDesc {
