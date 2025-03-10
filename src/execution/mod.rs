@@ -33,6 +33,7 @@ pub(crate) mod execution_info;
 pub mod function_ref;
 pub mod hooks;
 mod interpreter_loop;
+pub(crate) mod linear_memory;
 pub(crate) mod locals;
 pub(crate) mod lut;
 pub(crate) mod store;
