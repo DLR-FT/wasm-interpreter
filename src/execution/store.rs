@@ -46,13 +46,6 @@ pub struct Store<'b> {
     pub module_names: BTreeMap<String, usize>,
 }
 
-struct Imports {
-    pub imported_functions: usize,
-    pub imported_memories: usize,
-    pub imported_globals: usize,
-    pub imported_tables: usize,
-}
-
 impl<'b> Store<'b> {
     pub fn add_module(&mut self, name: String, module: ValidationInfo<'b>) -> CustomResult<()> {
         // TODO: we can do validation at linktime such that if another module expects module `name` to export something,
@@ -419,20 +412,21 @@ impl<'b> Store<'b> {
     }
 
     // TODO: why do get_module and get_function functions return both Result and Option? Settle on something
-    pub(crate) fn get_module_idx_from_name(
-        &self,
-        module_name: &str,
-    ) -> Result<usize, RuntimeError> {
+    pub fn get_module_idx_from_name(&self, module_name: &str) -> Result<usize, RuntimeError> {
         trace!("Number of modules: {}", self.modules.len());
-        for module_idx in 0..self.modules.len() {
-            let module = &self.modules[module_idx];
-            trace!("current module name: {}", module.name);
-            if module.name == module_name {
-                return Ok(module_idx);
-            }
-        }
+        // for module_idx in 0..self.modules.len() {
+        //     let module = &self.modules[module_idx];
+        //     trace!("current module name: {}", module.name);
+        //     if module.name == module_name {
+        //         return Ok(module_idx);
+        //     }
+        // }
 
-        return Err(RuntimeError::ModuleNotFound);
+        // return Err(RuntimeError::ModuleNotFound);
+        Ok(*(self
+            .module_names
+            .get(module_name)
+            .ok_or(RuntimeError::ModuleNotFound)?))
     }
 
     pub(crate) fn get_module_idx_from_func_idx(
@@ -482,24 +476,25 @@ impl<'b> Store<'b> {
 
     pub fn get_global_function_idx_by_name(
         &self,
-        module_name: &str,
+        // module_name: &str,
+        module_idx: usize,
         function_name: &str,
     ) -> Option<usize> {
-        for module_idx in 0..self.modules.len() {
-            let module = &self.modules[module_idx];
-            if module.name != module_name {
-                continue;
-            }
+        // for module_idx in 0..self.modules.len() {
+        //     let module = &self.modules[module_idx];
+        //     if module.name != module_name {
+        //         continue;
+        //     }
 
-            for export in &module.exports {
-                if export.name == function_name {
-                    if let Some(local_func_idx) = export.desc.get_function_idx() {
-                        return Some(module.functions[local_func_idx]);
-                    };
-                    return None;
-                }
+        for export in &self.modules[module_idx].exports {
+            if export.name == function_name {
+                if let Some(local_func_idx) = export.desc.get_function_idx() {
+                    return Some(self.modules[module_idx].functions[local_func_idx]);
+                };
+                return None;
             }
         }
+        // }
 
         None
     }
@@ -764,6 +759,10 @@ impl<'b> Store<'b> {
         let ret = reversed_values.collect();
         debug!("Successfully invoked function");
         Ok(ret)
+    }
+
+    pub fn register_alias(&mut self, alias_name: String, module_idx: usize) {
+        self.module_names.insert(alias_name, module_idx);
     }
 }
 

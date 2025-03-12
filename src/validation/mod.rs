@@ -20,6 +20,14 @@ pub(crate) mod globals;
 pub(crate) mod read_constant_expression;
 pub(crate) mod validation_stack;
 
+#[derive(Clone)]
+pub(crate) struct ImportsLength {
+    pub imported_functions: usize,
+    pub imported_globals: usize,
+    pub imported_memories: usize,
+    pub imported_tables: usize,
+}
+
 /// Information collected from validating a module.
 /// This can be used to create a [crate::RuntimeInstance].
 #[derive(Clone)]
@@ -39,6 +47,8 @@ pub struct ValidationInfo<'bytecode> {
     /// The start function which is automatically executed during instantiation
     pub(crate) start: Option<FuncIdx>,
     pub(crate) elements: Vec<ElemType>,
+    pub(crate) imports_length: ImportsLength,
+    // pub(crate) exports_length: Exported,
 }
 
 fn validate_exports(validation_info: &ValidationInfo) -> Result<()> {
@@ -51,29 +61,57 @@ fn validate_exports(validation_info: &ValidationInfo) -> Result<()> {
         found_export_names.insert(export.name.as_str());
         match export.desc {
             FuncIdx(func_idx) => {
-                let functions_len = validation_info.functions.len();
-                if functions_len <= func_idx {
+                if validation_info.functions.len()
+                    + validation_info.imports_length.imported_functions
+                    <= func_idx
+                {
                     return Err(Error::UnknownFunction);
                 }
             }
             TableIdx(table_idx) => {
-                if validation_info.tables.len() <= table_idx {
+                if validation_info.tables.len() + validation_info.imports_length.imported_tables
+                    <= table_idx
+                {
                     return Err(Error::UnknownTable);
                 }
             }
             MemIdx(mem_idx) => {
-                if validation_info.memories.len() <= mem_idx {
+                if validation_info.memories.len() + validation_info.imports_length.imported_memories
+                    <= mem_idx
+                {
                     return Err(Error::UnknownMemory);
                 }
             }
             GlobalIdx(global_idx) => {
-                if validation_info.globals.len() <= global_idx {
+                if validation_info.globals.len() + validation_info.imports_length.imported_globals
+                    <= global_idx
+                {
                     return Err(Error::UnknownGlobal);
                 }
             }
         }
     }
     Ok(())
+}
+
+fn get_imports_length(imports: &Vec<Import>) -> ImportsLength {
+    let mut imports_length = ImportsLength {
+        imported_functions: 0,
+        imported_globals: 0,
+        imported_memories: 0,
+        imported_tables: 0,
+    };
+
+    for import in imports {
+        match import.desc {
+            ImportDesc::Func(_) => imports_length.imported_functions += 1,
+            ImportDesc::Global(_) => imports_length.imported_globals += 1,
+            ImportDesc::Mem(_) => imports_length.imported_memories += 1,
+            ImportDesc::Table(_) => imports_length.imported_tables += 1,
+        }
+    }
+
+    imports_length
 }
 
 pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
@@ -142,6 +180,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
         wasm.read_vec(Import::read)
     })?
     .unwrap_or_default();
+    let imports_length = get_imports_length(&imports);
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
@@ -176,27 +215,41 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
+    let imported_memories = imports
+        .iter()
+        .filter_map(|m| match m.desc {
+            ImportDesc::Mem(mem) => Some(mem),
+            _ => None,
+        })
+        .collect::<Vec<MemType>>();
+    // let imported_memories_length = imported_memories.len();
     let memories = handle_section(&mut wasm, &mut header, SectionTy::Memory, |wasm, _| {
         wasm.read_vec(MemType::read)
     })?
     .unwrap_or_default();
-    if memories.len() > 1 {
+
+    let all_memories = {
+        let mut temp = imported_memories;
+        temp.extend(memories.clone());
+        temp
+    };
+    if all_memories.len() > 1 {
         return Err(Error::MoreThanOneMemory);
     }
 
-    let no_of_total_memories = {
-        let no_of_imported_memories = imports
-            .iter()
-            .filter(|import| {
-                if matches!(import.desc, ImportDesc::Mem(_)) {
-                    true
-                } else {
-                    false
-                }
-            })
-            .count();
-        no_of_imported_memories + memories.len()
-    };
+    // let no_of_total_memories = {
+    //     let no_of_imported_memories = imports
+    //         .iter()
+    //         .filter(|import| {
+    //             if matches!(import.desc, ImportDesc::Mem(_)) {
+    //                 true
+    //             } else {
+    //                 false
+    //             }
+    //         })
+    //         .count();
+    //     no_of_imported_memories + memories.len()
+    // };
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
@@ -288,10 +341,10 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
                 &all_functions,
                 imported_functions.count(),
                 &all_globals,
-                &memories,
+                &all_memories,
                 &data_count,
-                &tables,
-                &elements,
+                &tables,   // TODO: all tables
+                &elements, // TODO: all elements
                 &referenced_functions,
             )
         })?
@@ -307,7 +360,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
 
     let data_section = handle_section(&mut wasm, &mut header, SectionTy::Data, |wasm, h| {
         // wasm.read_vec(DataSegment::read)
-        data::validate_data_section(wasm, h, &imported_global_types, no_of_total_memories)
+        data::validate_data_section(wasm, h, &imported_global_types, all_memories.len())
     })?
     .unwrap_or_default();
 
@@ -337,6 +390,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
         data: data_section,
         start,
         elements,
+        imports_length,
     };
     validate_exports(&validation_info)?;
 

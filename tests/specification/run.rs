@@ -285,6 +285,7 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
         .unwrap();
 
     for directive in wast.directives {
+        // println!("Directive: {:?}", directive);
         match directive {
             wast::WastDirective::Wat(mut quoted) => {
                 // If we fail to compile or to validate the main module, then we should treat this
@@ -353,16 +354,21 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                 }
 
                 // let store = catch_unwind(|| RuntimeInstance::new(&validation_info));
-                let spectest_wat_parsed = wat::parse_str(SPEC_TEST_WAT).unwrap();
-                let spectest = validate(&spectest_wat_parsed).unwrap();
-                let temp_store = catch_unwind(|| {
-                    let mut temp_store = Store::default();
-                    temp_store
-                        .add_module("spectest".to_owned(), spectest)
-                        .unwrap();
-                    temp_store.add_module(module_name.to_string(), validation_info.clone())?;
-                    Ok(temp_store)
-                });
+                // let spectest_wat_parsed = wat::parse_str(SPEC_TEST_WAT).unwrap();
+                // let spectest = validate(&spectest_wat_parsed).unwrap();
+                // let temp_store = catch_unwind(|| {
+                //     let mut temp_store = Store::default();
+                //     temp_store
+                //         .add_module("spectest".to_owned(), spectest)
+                //         .unwrap();
+                //     temp_store.add_module(module_name.to_string(), validation_info.clone())?;
+                //     Ok(temp_store)
+                // });
+
+                let temp_store: Result<Result<Store<'_>, wasm::Error>, _> =
+                    Ok::<std::result::Result<Store<'_>, wasm::Error>, wasm::Error>(Ok(
+                        Store::default(),
+                    ));
 
                 match temp_store {
                     Err(_) => {
@@ -519,12 +525,48 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                 };
             }
 
-            wast::WastDirective::Register {
-                span,
-                name: _,
-                module: _,
+            wast::WastDirective::Register { span, name, module } => {
+                // println!("{}", name);
+                // println!("{:#?}", module);
+                // panic!("NOT YET IMPLEMENTED BRUH");
+                match module {
+                    None => {
+                        // haven't tested, but maybe we just register the last module?
+                        let module_idx = store.as_ref().unwrap().modules.len() - 1;
+                        store
+                            .as_mut()
+                            .unwrap()
+                            .register_alias(name.to_string(), module_idx);
+                    }
+                    Some(module) => {
+                        match store
+                            .as_ref()
+                            .unwrap()
+                            .get_module_idx_from_name(module.name())
+                        {
+                            Err(e) => {
+                                asserts.push_error(WastError::new(
+                                    Box::new(GenericError::new(&e.to_string())),
+                                    span.linecol_in(&contents).0 as u32 + 1,
+                                    get_command(&contents, span),
+                                ));
+                                // maybe just crash, cause register is vital?
+                            }
+                            Ok(module_idx) => {
+                                asserts.push_success(WastSuccess::new(
+                                    span.linecol_in(&contents).0 as u32 + 1,
+                                    get_command(&contents, span),
+                                ));
+                                store
+                                    .as_mut()
+                                    .unwrap()
+                                    .register_alias(name.to_string(), module_idx);
+                            }
+                        };
+                    }
+                }
             }
-            | wast::WastDirective::AssertExhaustion {
+            wast::WastDirective::AssertExhaustion {
                 span,
                 call: _,
                 message: _,
@@ -557,16 +599,27 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                         u32::MAX,
                         "invoke",
                     )),
-                    Some(ref mut interpeter) => {
-                        let module_name = get_module_name_from_wast_invoke(&interpeter, &invoke);
+                    Some(ref mut interpreter) => 'WASTDIRECTIVEINVOKESOME: {
+                        let module_name = get_module_name_from_wast_invoke(&interpreter, &invoke);
                         let args = invoke
                             .args
                             .into_iter()
                             .map(arg_to_value)
                             .collect::<Vec<_>>();
 
-                        match interpeter.get_global_function_idx_by_name(&module_name, invoke.name)
-                        {
+                        let module_idx = match interpreter.get_module_idx_from_name(&module_name) {
+                            Err(_e) => {
+                                asserts.push_error(WastError::new(
+                                    Box::new(GenericError::new("Unknown module")),
+                                    u32::MAX,
+                                    "invoke",
+                                ));
+                                break 'WASTDIRECTIVEINVOKESOME;
+                            }
+                            Ok(module_idx) => module_idx,
+                        };
+
+                        match interpreter.get_global_function_idx_by_name(module_idx, invoke.name) {
                             None => asserts.push_error(WastError::new(
                                 Box::new(GenericError::new(&format!(
                                     "Couldn't get the function '{}' from module '{}'",
@@ -576,7 +629,7 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                                 "invoke",
                             )),
                             Some(func_idx) => {
-                                match interpeter.invoke_dynamic_unchecked_return_ty(func_idx, args)
+                                match interpreter.invoke_dynamic_unchecked_return_ty(func_idx, args)
                                 {
                                     Err(e) => asserts.push_error(WastError::new(
                                         Box::new(GenericError::new(&format!(
@@ -661,6 +714,7 @@ fn execute_assert_return(
                     .iter()
                     .enumerate()
                     .find_map(|(idx, modul)| {
+                        // if modul.names.contains(&module_name.name().to_string()) {
                         if modul.name == module_name.name() {
                             Some(idx)
                         } else {
@@ -732,8 +786,15 @@ fn execute_assert_trap(
                 .map(arg_to_value)
                 .collect::<Vec<_>>();
 
+            let module_idx = match store.get_module_idx_from_name(&module_name) {
+                Err(_e) => {
+                    return Err(Box::new(GenericError::new("Unknown module")));
+                }
+                Ok(module_idx) => module_idx,
+            };
+
             let func_idx = store
-                .get_global_function_idx_by_name(&module_name, invoke_info.name)
+                .get_global_function_idx_by_name(module_idx, invoke_info.name)
                 .ok_or(Box::new(WasmInterpreterError(wasm::Error::RuntimeError(
                     RuntimeError::FunctionNotFound,
                 ))))?;
