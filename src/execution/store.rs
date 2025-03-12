@@ -53,7 +53,28 @@ impl<'b> Store<'b> {
 
         let function_inst = module.instantiate_functions()?;
         // let function_type_inst = module.instantiate_function_types()?;
-        let mut table_inst = module.instantiate_tables()?;
+        let table_imports_indexes = {
+            let mut table_imports_indexes = Vec::new();
+            for import in &module.imports {
+                match import.desc {
+                    ImportDesc::Table(..) => {
+                        table_imports_indexes.push(
+                            self.get_global_table_idx(
+                                self.get_module_idx_from_name(&import.module_name)?,
+                                &import.name,
+                            )
+                            .ok_or(Error::UnknownTable)?,
+                        );
+                    }
+                    _ => {}
+                }
+            }
+            table_imports_indexes
+        };
+        let mut local_tables = module.instantiate_local_tables()?;
+        let tables_offset = self.tables.len();
+        let exec_tables = self.get_tables_indexes(&table_imports_indexes, &local_tables)?;
+
         let globals_imports = {
             let mut globals_imports = Vec::new();
 
@@ -101,7 +122,11 @@ impl<'b> Store<'b> {
         let imported_globals_len = imported_globals.len();
         let mut globals = module.instantiate_globals(imported_globals)?;
         let (element_inst, passive_idxs) =
-            module.instantiate_elements(&mut table_inst, &globals, function_inst.len())?;
+            module.instantiate_elements(&mut local_tables, &globals, function_inst.len())?;
+
+        // TODO: make this prettier, rn the compiler complains wha wha, cause see the instruction above
+        self.tables.extend(local_tables);
+
         let local_memories = module.instantiate_local_memories()?;
 
         let memory_imports_indexes = {
@@ -120,18 +145,6 @@ impl<'b> Store<'b> {
                     _ => {}
                 }
             }
-            // &module
-            // .imports
-            // .iter()
-            // .filter_map(|import| {
-            //     if matches!(import.desc, ImportDesc::Mem(..)) {
-            //         Some()
-            //         todo!()
-            //     } else {
-            //         None
-            //     }
-            // })
-            // .collect::<Vec<usize>>();
             memory_imports_indexes
         };
         let memories_offset = self.memories.len();
@@ -148,7 +161,7 @@ impl<'b> Store<'b> {
             .count();
         let imported_memories = memory_imports_indexes.len();
         let imported_globals = imported_globals_len;
-        let imported_tables = 0; // TODO: not yet supported
+        let imported_tables = table_imports_indexes.len(); // TODO: not yet supported
 
         let functions_offset = self.functions.len();
         let exec_functions = (functions_offset..(functions_offset + function_inst.len())).collect();
@@ -164,10 +177,6 @@ impl<'b> Store<'b> {
         let data_offset = self.data.len();
         let exec_data = (data_offset..(data_offset + data.len())).collect();
         self.data.extend(data);
-
-        let tables_offset = self.tables.len();
-        let exec_tables = (tables_offset..(tables_offset + table_inst.len())).collect();
-        self.tables.extend(table_inst);
 
         let elements_offset = self.elements.len();
         let exec_elements = (elements_offset..(elements_offset + element_inst.len())).collect();
@@ -524,6 +533,18 @@ impl<'b> Store<'b> {
         None
     }
 
+    pub fn get_global_table_idx(&self, module_idx: usize, table_name: &str) -> Option<usize> {
+        for export in &self.modules[module_idx].exports {
+            if export.name == table_name {
+                return match export.desc.get_table_idx() {
+                    None => None,
+                    Some(idx) => Some(self.modules[module_idx].tables[idx]),
+                };
+            }
+        }
+        None
+    }
+
     fn get_globals_indexes(
         &self,
         globals_imports: &Vec<Import>,
@@ -559,6 +580,21 @@ impl<'b> Store<'b> {
         let memories_offset = self.memories.len();
         for memory_idx in memories_offset..local_memories.len() + memories_offset {
             indexes.push(memory_idx);
+        }
+
+        Ok(indexes)
+    }
+
+    fn get_tables_indexes(
+        &self,
+        tables_imports_indexes: &Vec<usize>,
+        local_tables: &[TableInst],
+    ) -> CustomResult<Vec<usize>> {
+        let mut indexes: Vec<usize> = Vec::new();
+        indexes.extend_from_slice(&tables_imports_indexes);
+        let tables_offset = self.tables.len();
+        for table_idx in tables_offset..local_tables.len() + tables_offset {
+            indexes.push(table_idx);
         }
 
         Ok(indexes)
@@ -816,7 +852,7 @@ impl<'b> ValidationInfo<'b> {
         Ok(imported_function_inst.chain(local_function_inst).collect())
     }
 
-    pub fn instantiate_tables(&self) -> CustomResult<Vec<TableInst>> {
+    pub fn instantiate_local_tables(&self) -> CustomResult<Vec<TableInst>> {
         Ok(self.tables.iter().map(|ty| TableInst::new(*ty)).collect())
     }
 

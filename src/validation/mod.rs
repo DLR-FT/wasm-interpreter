@@ -208,10 +208,23 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
+    let imported_tables = imports
+        .iter()
+        .filter_map(|m| match m.desc {
+            ImportDesc::Table(table) => Some(table),
+            _ => None,
+        })
+        .collect::<Vec<TableType>>();
     let tables = handle_section(&mut wasm, &mut header, SectionTy::Table, |wasm, _| {
         wasm.read_vec(TableType::read)
     })?
     .unwrap_or_default();
+
+    let all_tables = {
+        let mut temp = imported_tables;
+        temp.extend(tables.clone());
+        temp
+    };
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
@@ -343,8 +356,8 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
                 &all_globals,
                 &all_memories,
                 &data_count,
-                &tables,   // TODO: all tables
-                &elements, // TODO: all elements
+                &all_tables,
+                &elements,
                 &referenced_functions,
             )
         })?

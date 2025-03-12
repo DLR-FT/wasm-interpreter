@@ -62,6 +62,13 @@ impl ExportDesc {
             _ => None,
         }
     }
+
+    pub fn get_table_idx(&self) -> Option<TableIdx> {
+        match self {
+            ExportDesc::TableIdx(table_idx) => Some(*table_idx),
+            _ => None,
+        }
+    }
 }
 
 impl WasmReadable for ExportDesc {
