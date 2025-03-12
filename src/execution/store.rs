@@ -502,7 +502,10 @@ impl<'b> Store<'b> {
     pub fn get_global_global_idx(&self, module_idx: usize, global_name: &str) -> Option<usize> {
         for export in &self.modules[module_idx].exports {
             if export.name == global_name {
-                return export.desc.get_global_idx();
+                return match export.desc.get_global_idx() {
+                    None => None,
+                    Some(idx) => Some(self.modules[module_idx].globals[idx]),
+                };
             }
         }
         None
@@ -511,7 +514,11 @@ impl<'b> Store<'b> {
     pub fn get_global_memory_idx(&self, module_idx: usize, memory_name: &str) -> Option<usize> {
         for export in &self.modules[module_idx].exports {
             if export.name == memory_name {
-                return export.desc.get_memory_idx();
+                //return export.desc.get_memory_idx();
+                return match export.desc.get_memory_idx() {
+                    None => None,
+                    Some(idx) => Some(self.modules[module_idx].memories[idx]),
+                };
             }
         }
         None
