@@ -31,6 +31,7 @@ pub enum RuntimeError {
     UndefinedTableIndex,
     // "undefined element" <- as-call_indirect-last
     // "unreachable"
+    OutOfFuel,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -290,6 +291,9 @@ impl Display for RuntimeError {
             }
             RuntimeError::UndefinedTableIndex => {
                 f.write_str("Indirect call: table index out of bounds")
+            }
+            RuntimeError::OutOfFuel => {
+                f.write_str("No sufficent fuel for next operation in a non-resumable invocation")
             }
         }
     }

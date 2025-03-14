@@ -1,3 +1,5 @@
+use core::marker::PhantomData;
+
 use alloc::collections::btree_map::BTreeMap;
 use alloc::string::{String, ToString};
 use alloc::vec;
@@ -6,7 +8,7 @@ use alloc::vec::Vec;
 use const_interpreter_loop::{run_const, run_const_span};
 use execution_info::ExecutionInfo;
 use function_ref::FunctionRef;
-use interpreter_loop::run;
+use interpreter_loop::{run, RunState};
 use locals::Locals;
 use lut::Lut;
 use store::{DataInst, ElemInst, ImportedFuncInst, LocalFuncInst, TableInst};
@@ -42,6 +44,39 @@ pub mod value_stack;
 /// The default module name if a [RuntimeInstance] was created using [RuntimeInstance::new].
 pub const DEFAULT_MODULE: &str = "__interpreter_default__";
 
+pub enum InvocationState<'inst, 'wasm, Returns: InteropValueList, H: HookSet> {
+    Finished(Returns),
+    OutOfFuel(Resumable<'inst, 'wasm, Returns, H>),
+    Canceled,
+}
+
+impl<'inst, 'wasm, Returns: InteropValueList, H: HookSet>
+    InvocationState<'inst, 'wasm, Returns, H>
+{
+    pub fn is_finished(self) -> Option<Returns> {
+        match self {
+            InvocationState::Finished(ret) => Some(ret),
+            _ => None,
+        }
+    }
+}
+
+pub struct Resumable<'inst, 'wasm, Returns: InteropValueList, H: HookSet> {
+    instance: &'inst mut RuntimeInstance<'wasm, H>,
+    current_module_idx: usize,
+    _phantom: PhantomData<Returns>,
+}
+
+impl<'inst, 'wasm, Returns: InteropValueList, H: HookSet> Resumable<'inst, 'wasm, Returns, H> {
+    pub fn resume(self) -> Result<InvocationState<'inst, 'wasm, Returns, H>, RuntimeError> {
+        self.instance.resume::<Returns>(self.current_module_idx)
+    }
+
+    pub fn cancel(self) -> Result<InvocationState<'inst, 'wasm, Returns, H>, RuntimeError> {
+        Ok(InvocationState::Canceled)
+    }
+}
+
 pub struct RuntimeInstance<'b, H = EmptyHookSet>
 where
     H: HookSet,
@@ -49,6 +84,7 @@ where
     pub modules: Vec<ExecutionInfo<'b>>,
     module_map: BTreeMap<String, usize>,
     lut: Option<Lut>,
+    stack: Stack,
     pub hook_set: H,
 }
 
@@ -80,6 +116,7 @@ where
             modules: Vec::new(),
             module_map: BTreeMap::new(),
             lut: None,
+            stack: Stack::new(),
             hook_set,
         };
         instance.add_module(module_name, validation_info)?;
@@ -201,7 +238,6 @@ where
         }
 
         // Prepare a new stack with the locals for the entry function
-        let mut stack = Stack::new();
         let locals = Locals::new(
             params.into_values().into_iter(),
             func_inst.locals.iter().cloned(),
@@ -209,7 +245,8 @@ where
 
         // setting `usize::MAX` as return address for the outermost function ensures that we
         // observably fail upon errornoeusly continuing execution after that function returns.
-        stack.push_stackframe(
+        self.stack = Stack::new();
+        self.stack.push_stackframe(
             module_idx,
             func_idx,
             func_ty,
@@ -220,19 +257,23 @@ where
 
         let mut current_module_idx = module_idx;
         // Run the interpreter
-        run(
+        let state = run(
             &mut self.modules,
             &mut current_module_idx,
             self.lut.as_ref().ok_or(RuntimeError::UnmetImport)?,
-            &mut stack,
+            &mut self.stack,
             EmptyHookSet,
         )?;
+
+        if let RunState::OutOfFuel = state {
+            return Err(RuntimeError::OutOfFuel);
+        }
 
         // Pop return values from stack
         let return_values = Returns::TYS
             .iter()
             .rev()
-            .map(|ty| stack.pop_value(*ty))
+            .map(|ty| self.stack.pop_value(*ty))
             .collect::<Vec<Value>>();
 
         // Values are reversed because they were popped from stack one-by-one. Now reverse them back
@@ -240,6 +281,100 @@ where
         let ret: Returns = Returns::from_values(reversed_values);
         debug!("Successfully invoked function");
         Ok(ret)
+    }
+
+    pub fn invoke_resumable<'inst, Param: InteropValueList, Returns: InteropValueList>(
+        &'inst mut self,
+        function_ref: &FunctionRef,
+        params: Param,
+    ) -> Result<InvocationState<'inst, 'b, Returns, H>, RuntimeError> {
+        // First, verify that the function reference is valid
+        let (module_idx, func_idx) = self.verify_function_ref(function_ref)?;
+
+        // -=-= Verification =-=-
+        trace!("{:?}", self.modules[module_idx].store.funcs);
+
+        let func_inst = self.modules[module_idx]
+            .store
+            .funcs
+            .get(func_idx)
+            .ok_or(RuntimeError::FunctionNotFound)?
+            .try_into_local()
+            .ok_or(RuntimeError::FunctionNotFound)?;
+        let func_ty = self.modules[module_idx]
+            .fn_types
+            .get(func_inst.ty)
+            .unwrap_validated();
+
+        // Check correct function parameters and return types
+        if func_ty.params.valtypes != Param::TYS {
+            panic!("Invalid `Param` generics");
+        }
+        if func_ty.returns.valtypes != Returns::TYS {
+            panic!("Invalid `Returns` generics");
+        }
+
+        // Prepare a new stack with the locals for the entry function
+        self.stack = Stack::new();
+        let locals = Locals::new(
+            params.into_values().into_iter(),
+            func_inst.locals.iter().cloned(),
+        );
+
+        // setting `usize::MAX` as return address for the outermost function ensures that we
+        // observably fail upon errornoeusly continuing execution after that function returns.
+        self.stack.push_stackframe(
+            module_idx,
+            func_idx,
+            func_ty,
+            locals,
+            usize::MAX,
+            usize::MAX,
+        );
+
+        // Run the interpreter
+        self.resume::<Returns>(module_idx)
+    }
+
+    fn resume<'inst, Returns: InteropValueList>(
+        &'inst mut self,
+        current_module_idx: usize,
+    ) -> Result<InvocationState<'inst, 'b, Returns, H>, RuntimeError> {
+        let mut current_module_idx = current_module_idx;
+
+        let state = run(
+            &mut self.modules,
+            &mut current_module_idx,
+            self.lut.as_ref().ok_or(RuntimeError::UnmetImport)?,
+            &mut self.stack,
+            EmptyHookSet,
+        )?;
+
+        if let RunState::OutOfFuel = state {
+            return Ok(InvocationState::OutOfFuel(Resumable::<
+                'inst,
+                'b,
+                Returns,
+                H,
+            > {
+                instance: self,
+                current_module_idx,
+                _phantom: PhantomData,
+            }));
+        }
+
+        // Pop return values from stack
+        let return_values = Returns::TYS
+            .iter()
+            .rev()
+            .map(|ty| self.stack.pop_value(*ty))
+            .collect::<Vec<Value>>();
+
+        // Values are reversed because they were popped from stack one-by-one. Now reverse them back
+        let reversed_values = return_values.into_iter().rev();
+        let ret: Returns = Returns::from_values(reversed_values);
+        debug!("Successfully invoked function");
+        Ok(InvocationState::Finished(ret))
     }
 
     /// Invokes a function with the given parameters, and return types which are not known at compile time.

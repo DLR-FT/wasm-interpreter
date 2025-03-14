@@ -35,6 +35,11 @@ use crate::execution::hooks::HookSet;
 
 use super::{execution_info::ExecutionInfo, lut::Lut};
 
+pub(super) enum RunState {
+    Finished,
+    OutOfFuel,
+}
+
 /// Interprets a functions. Parameters and return values are passed on the stack.
 pub(super) fn run<H: HookSet>(
     modules: &mut [ExecutionInfo],
@@ -42,7 +47,7 @@ pub(super) fn run<H: HookSet>(
     lut: &Lut,
     stack: &mut Stack,
     mut hooks: H,
-) -> Result<(), RuntimeError> {
+) -> Result<RunState, RuntimeError> {
     let func_inst = modules[*current_module_idx]
         .store
         .funcs
@@ -79,6 +84,7 @@ pub(super) fn run<H: HookSet>(
         match first_instr_byte {
             NOP => {
                 trace!("Instruction: NOP");
+                return Ok(RunState::OutOfFuel);
             }
             END => {
                 // if this is not the very last instruction in the function
@@ -2872,7 +2878,7 @@ pub(super) fn run<H: HookSet>(
             }
         }
     }
-    Ok(())
+    Ok(RunState::Finished)
 }
 
 //helper function for avoiding code duplication at intraprocedural jumps
