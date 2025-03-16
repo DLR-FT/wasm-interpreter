@@ -35,13 +35,11 @@ use crate::core::error::LinkerError;
 #[derive(Default)]
 pub struct Store<'b> {
     pub functions: Vec<FuncInst>,
-    // pub function_types: Vec<FuncType>,
     pub memories: Vec<MemInst>,
     pub globals: Vec<GlobalInst>,
     pub data: Vec<DataInst>,
     pub tables: Vec<TableInst>,
     pub elements: Vec<ElemInst>,
-    // pub exports: Vec<Export>,
     pub modules: Vec<ExecutionInfo<'b>>,
     pub module_names: BTreeMap<String, usize>,
 }
@@ -149,7 +147,6 @@ impl<'b> Store<'b> {
         };
         let memories_offset = self.memories.len();
         let exec_memories = self.get_memories_indexes(&memory_imports_indexes, &local_memories)?;
-        // let exec_memories = (memories_offset..(memories_offset + memories.len())).collect();
         self.memories.extend(local_memories);
 
         let data =
@@ -248,35 +245,7 @@ impl<'b> Store<'b> {
                     }
                 }
             }
-
-            // for global_idx in 0..self.modules[module_idx].globals.len() {
-            //     let global_store_idx = self.modules[module_idx].globals[global_idx];
-            //     let global: &GlobalInst = &self.globals[global_store_idx];
-
-            //     if global.global.init_expr.from() == usize::MAX
-            //         && global.global.init_expr.len() == 0
-            //     {
-            //         let resolved_idx = self.lookup_global(&import.module_name, &import.)
-            //     }
-            // }
         }
-
-        // for module in &self.modules {
-        //     for fn_store_idx in &module.functions {
-        //         let func: &FuncInst = &self.functions[*fn_store_idx];
-        //         if let FuncInst::Imported(import) = func {
-        //             let resolved_idx =
-        //                 self.lookup_function(&import.module_name, &import.function_name);
-
-        //             if resolved_idx.is_none() && import.module_name == name {
-        //                 // TODO: Failed resolution... BAD!
-        //                 return Err(Error::LinkerError(LinkerError::UnmetImport));
-        //             } else {
-        //                 // *fn_store_idx = resolved_idx.unwrap();
-        //             }
-        //         }
-        //     }
-        // }
 
         Ok(())
     }
@@ -297,67 +266,6 @@ impl<'b> Store<'b> {
         }
         return None;
     }
-
-    // pub fn lookup_global(&self, target_module: &str, target_global: &str) -> Option<usize> {
-    //     let mut module_name: &str = target_module;
-    //     let mut global_name: &str = target_global;
-    //     let mut import_path: Vec<(String, String)> = vec![];
-
-    //     for _ in 0..100 {
-    //         import_path.push((module_name.to_string(), global_name.to_string()));
-    //         let module_idx = self.module_names.get(module_name)?;
-    //         let module = &self.modules[*module_idx];
-
-    //         let mut same_name_exports = module.exports.iter().filter_map(|export| {
-    //             if export.name == global_name {
-    //                 Some(&export.desc)
-    //             } else {
-    //                 None
-    //             }
-    //         });
-
-    //         // TODO: what if there are two exports with the same name -- error out?
-    //         if same_name_exports.clone().count() != 1 {
-    //             return None;
-    //         }
-
-    //         let target_export = same_name_exports.next()?;
-
-    //         match target_export {
-    //             ExportDesc::GlobalIdx(local_global_idx) => {
-    //                 // Note: if we go ahead with the offset proposal, we can do
-    //                 // store_idx = module.functions_offset + *local_idx
-    //                 let store_idx = module.functions[*local_global_idx];
-
-    //                 match &self.globals[store_idx] {
-    //                     FuncInst::Local(_local_func_inst) => {
-    //                         return Some(store_idx);
-    //                     }
-    //                     FuncInst::Imported(import) => {
-    //                         if import_path.contains(&(
-    //                             import.module_name.clone(),
-    //                             import.function_name.clone(),
-    //                         )) {
-    //                             // TODO: find a way around this reference to clone thing. Rust is uppsety spaghetti for
-    //                             // understandable but dumb reasons.
-
-    //                             // TODO: cycle detected :(
-    //                             return None;
-    //                         }
-
-    //                         module_name = &import.module_name;
-    //                         global_name = &import.function_name;
-    //                     }
-    //                 }
-    //             }
-    //             _ => return None,
-    //         }
-    //     }
-
-    //     // At this point, we are 100-imports deep. This isn't okay, and could be a sign of an infinte loop. We don't
-    //     // want our plane's CPU to keep searching for imports so we just assume we haven't found any.
-    //     None
-    // }
 
     pub fn lookup_function(&self, target_module: &str, target_function: &str) -> Option<usize> {
         let mut module_name: &str = target_module;
@@ -422,16 +330,6 @@ impl<'b> Store<'b> {
 
     // TODO: why do get_module and get_function functions return both Result and Option? Settle on something
     pub fn get_module_idx_from_name(&self, module_name: &str) -> Result<usize, RuntimeError> {
-        trace!("Number of modules: {}", self.modules.len());
-        // for module_idx in 0..self.modules.len() {
-        //     let module = &self.modules[module_idx];
-        //     trace!("current module name: {}", module.name);
-        //     if module.name == module_name {
-        //         return Ok(module_idx);
-        //     }
-        // }
-
-        // return Err(RuntimeError::ModuleNotFound);
         Ok(*(self
             .module_names
             .get(module_name)
@@ -489,12 +387,6 @@ impl<'b> Store<'b> {
         module_idx: usize,
         function_name: &str,
     ) -> Option<usize> {
-        // for module_idx in 0..self.modules.len() {
-        //     let module = &self.modules[module_idx];
-        //     if module.name != module_name {
-        //         continue;
-        //     }
-
         for export in &self.modules[module_idx].exports {
             if export.name == function_name {
                 if let Some(local_func_idx) = export.desc.get_function_idx() {
@@ -503,7 +395,6 @@ impl<'b> Store<'b> {
                 return None;
             }
         }
-        // }
 
         None
     }
@@ -600,7 +491,6 @@ impl<'b> Store<'b> {
         Ok(indexes)
     }
 
-    // pub fn new
     pub fn invoke<Param: InteropValueList, Returns: InteropValueList>(
         &mut self,
         func_idx: usize,

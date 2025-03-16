@@ -376,7 +376,7 @@ mod test {
 
     #[test]
     fn reader_transaction_ergonomics() {
-        let bytes = [0x1, 0x2, 0x3, 0x4, 0x5, 0x6];
+        let bytes: [u8; 6] = [0x1, 0x2, 0x3, 0x4, 0x5, 0x6];
         let mut reader = WasmReader::new(&bytes);
 
         assert_eq!(reader.handle_transaction(WasmReader::read_u8), Ok(0x1));

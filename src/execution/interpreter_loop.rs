@@ -37,9 +37,7 @@ use super::store::Store;
 
 /// Interprets a functions. Parameters and return values are passed on the stack.
 pub(super) fn run<H: HookSet>(
-    // modules: &mut [ExecutionInfo],
     current_module_idx: &mut usize,
-    // lut: &Lut,
     stack: &mut Stack,
     mut hooks: H,
     store: &mut Store,
@@ -55,9 +53,6 @@ pub(super) fn run<H: HookSet>(
 
     // Start reading the function's instructions
     let mut current_wasm_index = *current_module_idx;
-    // let mut wasm = &mut modules[*current_module_idx].wasm_reader;
-
-    // let mut wasm = &mut store.modules[*current_module_idx].wasm_reader;
 
     // the sidetable and stp for this function, stp will reset to 0 every call
     // since function instances have their own sidetable.
@@ -86,10 +81,13 @@ pub(super) fn run<H: HookSet>(
             .unwrap_validated();
 
         #[cfg(debug_assertions)]
-        trace!(
-            "Executing instruction {}",
-            opcode_byte_to_str(first_instr_byte)
+        crate::core::utils::print_beautiful_instruction_name_1_byte(
+            first_instr_byte,
+            store.modules[current_wasm_index].wasm_reader.pc,
         );
+
+        #[cfg(not(debug_assertions))]
+        trace!("Read instruction byte {first_instr_byte:#04X?} ({first_instr_byte}) at wasm_binary[{}]", store.modules[current_wasm_index].wasm_reader.pc);
 
         match first_instr_byte {
             NOP => {
@@ -147,6 +145,7 @@ pub(super) fn run<H: HookSet>(
                     .sidetable;
 
                 *current_module_idx = return_module;
+                trace!("Instruction: END");
             }
             IF => {
                 store.modules[current_wasm_index]
@@ -166,6 +165,7 @@ pub(super) fn run<H: HookSet>(
                         current_sidetable,
                     );
                 }
+                trace!("Instruction: IF");
             }
             ELSE => {
                 do_sidetable_control_transfer(
@@ -174,6 +174,7 @@ pub(super) fn run<H: HookSet>(
                     &mut stp,
                     current_sidetable,
                 );
+                trace!("Instruction: ELSE");
             }
             BR_IF => {
                 store.modules[current_wasm_index]
@@ -193,6 +194,7 @@ pub(super) fn run<H: HookSet>(
                 } else {
                     stp += 1;
                 }
+                trace!("Instruction: BR_IF");
             }
             BR_TABLE => {
                 let wasm_reader = &mut store.modules[current_wasm_index].wasm_reader;
@@ -220,6 +222,7 @@ pub(super) fn run<H: HookSet>(
                     &mut stp,
                     current_sidetable,
                 );
+                trace!("Instruction: BR_TABLE");
             }
             BR => {
                 //skip n of BR n
@@ -233,9 +236,11 @@ pub(super) fn run<H: HookSet>(
                     &mut stp,
                     current_sidetable,
                 );
+                trace!("Instruction: BR");
             }
             BLOCK | LOOP => {
                 BlockType::read_unvalidated(&mut store.modules[current_wasm_index].wasm_reader);
+                trace!("Instruction: BLOCK/LOOP");
             }
             RETURN => {
                 //same as BR, except no need to skip n of BR n
@@ -245,6 +250,7 @@ pub(super) fn run<H: HookSet>(
                     &mut stp,
                     current_sidetable,
                 );
+                trace!("Instruction: RETURN");
             }
             CALL => {
                 let func_to_call_idx = store.modules[current_wasm_index]
@@ -340,6 +346,7 @@ pub(super) fn run<H: HookSet>(
                         unreachable!()
                     }
                 }
+                trace!("Instruction: CALL");
             }
             CALL_INDIRECT => {
                 let given_type_idx = store.modules[current_wasm_index]
@@ -454,9 +461,12 @@ pub(super) fn run<H: HookSet>(
                         unreachable!()
                     }
                 }
+
+                trace!("Instruction: CALL_INDIRECT");
             }
             DROP => {
                 stack.drop_value();
+                trace!("Instruction: DROP");
             }
             SELECT => {
                 let test_val: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -467,6 +477,7 @@ pub(super) fn run<H: HookSet>(
                 } else {
                     stack.push_value(val2);
                 }
+                trace!("Instruction: SELECT");
             }
             SELECT_T => {
                 let type_vec = store.modules[current_wasm_index]
@@ -481,6 +492,7 @@ pub(super) fn run<H: HookSet>(
                 } else {
                     stack.push_value(val2);
                 }
+                trace!("Instruction: SELECT_T");
             }
             LOCAL_GET => {
                 let local_idx = store.modules[current_wasm_index]
@@ -490,18 +502,24 @@ pub(super) fn run<H: HookSet>(
                 stack.get_local(local_idx);
                 trace!("Instruction: local.get {} [] -> [t]", local_idx);
             }
-            LOCAL_SET => stack.set_local(
-                store.modules[current_wasm_index]
-                    .wasm_reader
-                    .read_var_u32()
-                    .unwrap_validated() as LocalIdx,
-            ),
-            LOCAL_TEE => stack.tee_local(
-                store.modules[current_wasm_index]
-                    .wasm_reader
-                    .read_var_u32()
-                    .unwrap_validated() as LocalIdx,
-            ),
+            LOCAL_SET => {
+                stack.set_local(
+                    store.modules[current_wasm_index]
+                        .wasm_reader
+                        .read_var_u32()
+                        .unwrap_validated() as LocalIdx,
+                );
+                trace!("Instruction: LOCAL_SET");
+            }
+            LOCAL_TEE => {
+                stack.tee_local(
+                    store.modules[current_wasm_index]
+                        .wasm_reader
+                        .read_var_u32()
+                        .unwrap_validated() as LocalIdx,
+                );
+                trace!("Instruction: LOCAL_TEE");
+            }
             GLOBAL_GET => {
                 let global_idx = store.modules[current_wasm_index]
                     .wasm_reader
@@ -513,9 +531,8 @@ pub(super) fn run<H: HookSet>(
                 stack.push_value(global.value);
 
                 trace!(
-                    "Instruction: global.get '{}' [{:?}] -> [{:?}]",
+                    "Instruction: global.get '{}' [<GLOBAL>] -> [{:?}]",
                     global_idx,
-                    global,
                     global.value
                 );
             }
@@ -527,6 +544,7 @@ pub(super) fn run<H: HookSet>(
                 let global =
                     &mut store.globals[store.modules[*current_module_idx].globals[global_idx]];
                 global.value = stack.pop_value(global.global.ty.ty);
+                trace!("Instruction: GLOBAL_SET");
             }
             TABLE_GET => {
                 let table_idx = store.modules[current_wasm_index]
@@ -2407,6 +2425,15 @@ pub(super) fn run<H: HookSet>(
                     .wasm_reader
                     .read_u8()
                     .unwrap_validated();
+
+                #[cfg(debug_assertions)]
+                crate::core::utils::print_beautiful_fc_extension(
+                    second_instr_byte,
+                    store.modules[current_wasm_index].wasm_reader.pc,
+                );
+
+                #[cfg(not(debug_assertions))]
+                trace!("Read instruction byte {second_instr_byte:#04X?} ({second_instr_byte}) at wasm_binary[{}]", store.modules[current_wasm_index].wasm_reader.pc);
 
                 use crate::core::reader::types::opcode::fc_extensions::*;
                 match second_instr_byte {

@@ -23,13 +23,7 @@ pub(super) fn validate_global_section(
     wasm.read_vec(|wasm| {
         let ty = GlobalType::read(wasm)?;
         let stack = &mut ValidationStack::new();
-        let init_expr = read_constant_expression(
-            wasm,
-            stack,
-            &imported_global_types,
-            // we can't refer to any functions
-            None,
-        )?;
+        let init_expr = read_constant_expression(wasm, stack, &imported_global_types, None)?;
 
         stack.assert_val_types(&[ty.ty])?;
 

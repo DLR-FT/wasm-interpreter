@@ -5,35 +5,6 @@ use alloc::vec::Vec;
 use crate::execution::{hooks::HookSet, value::InteropValueList, RuntimeInstance};
 use crate::{Result as CustomResult, RuntimeError, Store, ValType, Value};
 
-// use super::assert_validated::UnwrapValidatedExt;
-
-// #[derive(Clone)]
-// pub enum InnerFunctionRef {
-//     Unresolved {
-//         module_name: String,
-//         function_name: String
-//     },
-//     Resolved {
-//         module_index: usize,
-//         function_index: usize
-//     }
-// }
-
-// impl InnerFunctionRef {
-//     /// Always returns a [`InnerFunctionRef::Resolved`], otherwise Err
-//     fn resolve(&self, store: &Store) -> Result<Self> {
-//         match self {
-//             InnerFunctionRef::Resolved { module_index, function_index } => Ok((*self).clone()),
-//             InnerFunctionRef::Unresolved { module_name, function_name } => {
-//                 let module_index = store.get_module_idx_from_name(module_name)?;
-
-//                 let function_idx = store.get_global_function_idx_by_name(module_name, function_name)
-
-//             }
-//         }
-//     }
-// }
-
 pub struct FunctionRef {
     // inner: InnerFunctionRef,
     pub(crate) module_name: String,
@@ -86,6 +57,4 @@ impl FunctionRef {
     ) -> Result<Vec<Value>, RuntimeError> {
         runtime.invoke_dynamic(self, params, ret_types /* , store */)
     }
-
-    // pub fn get_return_types(&self) -> Vec<Value
 }

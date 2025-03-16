@@ -95,8 +95,6 @@ pub(super) fn validate_data_section(
                 // https://webassembly.github.io/spec/core/binary/modules.html#data-section
                 // The initial integer can be interpreted as a bitfield. Bit 0 indicates a passive segment, bit 1 indicates the presence of an explicit memory index for an active segment.
                 // In the current version of WebAssembly, at most one memory may be defined or imported in a single module, so all valid active data segments have a memory value of 0
-
-                // todo!("Data section: active - with multiple memories - NOT YET IMPLEMENTED!");
             }
             _ => unreachable!(),
         };

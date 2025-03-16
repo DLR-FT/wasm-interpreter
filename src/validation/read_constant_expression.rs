@@ -102,6 +102,7 @@ pub fn read_constant_expression(
 
         #[cfg(not(debug_assertions))]
         trace!("Read constant instruction byte {first_instr_byte:#X?} ({first_instr_byte})");
+
         #[cfg(debug_assertions)]
         trace!(
             "Validation - Executing instruction {}",

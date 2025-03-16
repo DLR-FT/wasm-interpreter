@@ -17,7 +17,6 @@ use crate::execution::value::Value;
 use crate::value::InteropValueList;
 use crate::{Result as CustomResult, RuntimeError, ValType, ValidationInfo};
 
-// TODO
 pub(crate) mod assert_validated;
 pub mod const_interpreter_loop;
 pub(crate) mod execution_info;
@@ -25,7 +24,6 @@ pub mod function_ref;
 pub mod hooks;
 mod interpreter_loop;
 pub(crate) mod locals;
-// pub(crate) mod lut;
 pub mod store;
 pub mod value;
 pub mod value_stack;
@@ -37,18 +35,11 @@ pub struct RuntimeInstance<'b, H = EmptyHookSet>
 where
     H: HookSet,
 {
-    // pub modules: Vec<ExecutionInfo<'b>>,
-    // module_map: BTreeMap<String, usize>,
-    // lut: Option<Lut>,
     pub hook_set: H,
     pub store: Option<Store<'b>>,
 }
 
 impl<'b> RuntimeInstance<'b, EmptyHookSet> {
-    // pub fn new(validation_info: &'_ ValidationInfo<'b>, store: &mut Store) -> CustomResult<Self> {
-    //     Self::new_with_hooks(DEFAULT_MODULE, validation_info, EmptyHookSet, store)
-    // }
-
     pub fn new(validation_info: &'_ ValidationInfo<'b>) -> CustomResult<Self> {
         Self::new_with_hooks(DEFAULT_MODULE, validation_info, EmptyHookSet)
     }
@@ -101,13 +92,7 @@ where
             }),
         };
 
-        let mut instance = RuntimeInstance {
-            // modules: Vec::new(),
-            // module_map: BTreeMap::new(),
-            // lut: None,
-            hook_set,
-            store,
-        };
+        let mut instance = RuntimeInstance { hook_set, store };
         instance.add_module(module_name, validation_info)?;
 
         if let Some(start_fn) = start {
@@ -181,9 +166,6 @@ where
         let (module_idx, func_idx) = self.verify_function_ref(function_ref)?;
 
         // -=-= Verification =-=-
-        // trace!("{:?}", self.modules[module_idx].store.funcs);
-        // trace!("{:?}", self.modules[module_idx].functions);
-
         trace!(
             "Global function idx: {:?}",
             (&self.store).as_ref().unwrap_validated().modules[module_idx].functions[func_idx]
@@ -231,11 +213,10 @@ where
         );
 
         let mut current_module_idx = module_idx;
+
         // Run the interpreter
         run(
-            // &mut self.modules,
             &mut current_module_idx,
-            // self.lut.as_ref().ok_or(RuntimeError::UnmetImport)?,
             &mut stack,
             EmptyHookSet,
             (&mut self.store).as_mut().unwrap_validated(),
@@ -311,11 +292,10 @@ where
         stack.push_stackframe(module_idx, func_idx, &func_ty, locals, 0, 0);
 
         let mut currrent_module_idx = module_idx;
+
         // Run the interpreter
         run(
-            // &mut self.modules,
             &mut currrent_module_idx,
-            // self.lut.as_ref().ok_or(RuntimeError::UnmetImport)?,
             &mut stack,
             EmptyHookSet,
             (&mut self.store).as_mut().unwrap_validated(),
@@ -411,11 +391,10 @@ where
         stack.push_stackframe(module_idx, func_idx, &func_ty, locals, 0, 0);
 
         let mut currrent_module_idx = module_idx;
+
         // Run the interpreter
         run(
-            // &mut self.modules,
             &mut currrent_module_idx,
-            // self.lut.as_ref().ok_or(RuntimeError::UnmetImport)?,
             &mut stack,
             EmptyHookSet,
             (&mut self.store).as_mut().unwrap_validated(),
@@ -521,11 +500,6 @@ where
         } else {
             let (module_idx, func_idx) = (function_ref.module_index, function_ref.function_index);
 
-            // let module = self
-            //     .modules
-            //     .get(module_idx)
-            //     .ok_or(RuntimeError::ModuleNotFound)?;
-
             let module = (&self.store)
                 .as_ref()
                 .unwrap_validated()
@@ -536,14 +510,6 @@ where
             if module.name != function_ref.module_name {
                 return Err(RuntimeError::ModuleNotFound);
             }
-
-            // Sanity check that the function index is at least in the bounds of the store, though this doesn't mean
-            // that it's a valid function.
-            // module
-            //     .store
-            //     .funcs
-            //     .get(func_idx)
-            //     .ok_or(RuntimeError::FunctionNotFound)?;
 
             Ok((module_idx, func_idx))
         }
@@ -568,7 +534,7 @@ fn get_address_offset(value: Value) -> Option<u32> {
             // TODO: fix
             Ref::Func(func_addr) => func_addr.addr.map(|addr| addr as u32),
         },
-        // INFO: from wasmtime - implement only global
+        // TODO: from wasmtime - implement only global
         _ => unreachable!(),
     }
 }

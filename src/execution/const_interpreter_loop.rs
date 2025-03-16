@@ -44,6 +44,12 @@ pub(crate) fn run_const(
     loop {
         let first_instr_byte = wasm.read_u8().unwrap_validated();
 
+        #[cfg(debug_assertions)]
+        crate::core::utils::print_beautiful_instruction_name_1_byte(first_instr_byte, wasm.pc);
+
+        #[cfg(not(debug_assertions))]
+        trace!("Read instruction byte {first_instr_byte:#04X?} ({first_instr_byte}) at wasm_binary[{}]", wasm.pc);
+
         match first_instr_byte {
             END => {
                 trace!("Constant instruction: END");
@@ -204,7 +210,7 @@ pub(crate) fn run_const(
                 stack.push_value(Value::Ref(Ref::Func(FuncAddr::new(Some(func_idx)))));
             }
             other => {
-                panic!("Unknown constant instruction {other:#x}, validation allowed an unimplemented instruction.");
+                unreachable!("Unknown constant instruction {other:#x}, validation allowed an unimplemented instruction.");
             }
         }
     }

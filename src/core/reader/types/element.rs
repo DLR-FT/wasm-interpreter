@@ -101,6 +101,9 @@ impl ElemType {
                 //  we could do a part now, for example, if we don't have imported globals to take care of, just so we are even more
                 //  reliable (more checks at validation/compile time)
 
+                // now, why do I mention this? most of the testing is done online on the https://webassembly.github.io/wabt/demo/wat2wasm/ website
+                //  chromium's wasm engine actually catches (as much as it can) errors at validation (tries to run the expressions)
+
                 // on top of the stack it's supposed to be the
                 // it might also be an extern ref w/e
                 // let function_idx = valid_stack.peek_const_validation_stack();

@@ -250,20 +250,6 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
         return Err(Error::MoreThanOneMemory);
     }
 
-    // let no_of_total_memories = {
-    //     let no_of_imported_memories = imports
-    //         .iter()
-    //         .filter(|import| {
-    //             if matches!(import.desc, ImportDesc::Mem(_)) {
-    //                 true
-    //             } else {
-    //                 false
-    //             }
-    //         })
-    //         .count();
-    //     no_of_imported_memories + memories.len()
-    // };
-
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
     // we start off with the imported globals
@@ -279,13 +265,6 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
         globals::validate_global_section(wasm, h, &imported_global_types)
     })?
     .unwrap_or_default();
-    // let imported_globals = imported_global_types
-    //     .iter()
-    //     .map(|imported_global_type| Global {
-    //         init_expr: Span::new(usize::MAX, 0),
-    //         ty: imported_global_type.clone(),
-    //     })
-    //     .collect::<Vec<Global>>();
     let mut all_globals = Vec::new();
     for i in 0..imported_global_types_len {
         all_globals.push(Global {
