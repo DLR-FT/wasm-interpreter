@@ -302,7 +302,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
                 wasm,
                 &all_functions,
                 &mut referenced_functions,
-                tables.len(),
+                all_tables.len(),
                 &all_globals_types,
             )
         })?

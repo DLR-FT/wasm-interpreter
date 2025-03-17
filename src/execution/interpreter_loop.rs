@@ -42,8 +42,9 @@ pub(super) fn run<H: HookSet>(
     mut hooks: H,
     store: &mut Store,
 ) -> Result<(), RuntimeError> {
-    let global_func_idx = store.modules[stack.current_stackframe().module_idx].functions
-        [stack.current_stackframe().func_idx];
+    let global_func_idx =
+        store.modules[*current_module_idx].functions[stack.current_stackframe().func_idx];
+
     let func_inst = store
         .functions
         .get(global_func_idx)
@@ -94,11 +95,11 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: NOP");
             }
             END => {
+                let current_func_global_idx = store.modules[*current_module_idx].functions
+                    [stack.current_stackframe().func_idx];
                 // if this is not the very last instruction in the function
                 // just skip because it is a delimiter of a ctrl block
 
-                let current_func_global_idx = store.modules[stack.current_stackframe().module_idx]
-                    .functions[stack.current_stackframe().func_idx];
                 // TODO there is definitely a better to write this
                 let current_func_span = store
                     .functions
@@ -108,11 +109,13 @@ pub(super) fn run<H: HookSet>(
                     .unwrap_validated()
                     .code_expr;
 
+                trace!("current_func_global_idx: {}", current_func_global_idx);
+
+                let function_real_end = current_func_span.from() + current_func_span.len();
+
                 // There might be multiple ENDs in a single function. We want to
                 // exit only when the outermost block (aka function block) ends.
-                if store.modules[*current_module_idx].wasm_reader.pc
-                    != current_func_span.from() + current_func_span.len()
-                {
+                if store.modules[*current_module_idx].wasm_reader.pc != function_real_end {
                     continue;
                 }
 
@@ -128,6 +131,7 @@ pub(super) fn run<H: HookSet>(
 
                 trace!("end of function reached, returning to previous stack frame");
                 current_wasm_index = return_module;
+                *current_module_idx = return_module;
 
                 // wasm = &mut modules[return_module].wasm_reader;
                 store.modules[*current_module_idx].wasm_reader.pc = maybe_return_address;
@@ -258,6 +262,10 @@ pub(super) fn run<H: HookSet>(
                     .read_var_u32()
                     .unwrap_validated() as FuncIdx;
 
+                // let current_wasm_index_copy = current_wasm_index;
+                // *current_module_idx = actual_module_idx_of_this_func;
+                // current_wasm_index = actual_module_idx_of_this_func;
+
                 let func_to_call_global_idx =
                     store.modules[current_wasm_index].functions[func_to_call_idx];
 
@@ -319,6 +327,13 @@ pub(super) fn run<H: HookSet>(
                                 let remaining_locals = local_func_inst.locals.iter().cloned();
                                 let locals = Locals::new(params, remaining_locals);
 
+                                let func_to_call_idx = store
+                                    .get_local_function_idx_by_global_function_idx(
+                                        func_module_idx,
+                                        next_func_idx,
+                                    )
+                                    .ok_or(RuntimeError::FunctionNotFound)?;
+
                                 stack.push_stackframe(
                                     *current_module_idx,
                                     func_to_call_idx,
@@ -346,8 +361,13 @@ pub(super) fn run<H: HookSet>(
                         unreachable!()
                     }
                 }
+
+                // *current_module_idx = current_wasm_index_copy;
+                // current_wasm_index = current_wasm_index_copy;
                 trace!("Instruction: CALL");
             }
+
+            // TODO: fix push_stackframe, because the func idx that you get from the table is global func idx
             CALL_INDIRECT => {
                 let given_type_idx = store.modules[current_wasm_index]
                     .wasm_reader
@@ -385,7 +405,11 @@ pub(super) fn run<H: HookSet>(
                     Ref::Extern(_) => unreachable!(),
                 };
 
-                let func_idx = store.modules[*current_module_idx].functions[func_addr];
+                let func_idx = func_addr;
+                let func_module_idx = store.get_module_idx_from_func_idx(func_idx)?;
+                let local_func_addr = store
+                    .get_local_function_idx_by_global_function_idx(func_module_idx, func_idx)
+                    .unwrap_validated();
                 let func_to_call_inst = &store.functions[func_idx];
 
                 let actual_ty = func_to_call_inst.ty();
@@ -397,18 +421,17 @@ pub(super) fn run<H: HookSet>(
                 match func_to_call_inst {
                     FuncInst::Local(local_func_inst) => {
                         // MIGHT BE IMPORTED
-                        let func_module_idx = store.get_module_idx_from_func_idx(func_idx)?;
                         match func_module_idx == *current_module_idx {
                             true => {
                                 // local function
                                 let params = stack.pop_tail_iter(func_ty.params.valtypes.len());
                                 let remaining_locals = local_func_inst.locals.iter().cloned();
 
-                                trace!("Instruction: call_indirect [{func_addr:?}]");
+                                trace!("Instruction: call_indirect [{local_func_addr:?}]");
                                 let locals = Locals::new(params, remaining_locals);
                                 stack.push_stackframe(
                                     *current_module_idx,
-                                    func_addr,
+                                    local_func_addr,
                                     func_ty,
                                     locals,
                                     store.modules[current_wasm_index].wasm_reader.pc,
@@ -432,11 +455,13 @@ pub(super) fn run<H: HookSet>(
                                 let params = stack.pop_tail_iter(func_ty.params.valtypes.len());
                                 let remaining_locals = local_func_inst.locals.iter().cloned();
 
-                                trace!("Instruction: call_indirect [{func_addr:?}]");
+                                trace!("Instruction: call_indirect [{local_func_addr:?}]");
                                 let locals = Locals::new(params, remaining_locals);
+
+                                trace!("CALL INDIRECT DEBUG: next_module {}, local_func_addr {}, global_func_addr {}, global_func_span from {} len {}", next_module, local_func_addr, func_addr, local_func_inst.code_expr.from(), local_func_inst.code_expr.len());
                                 stack.push_stackframe(
                                     *current_module_idx,
-                                    func_addr,
+                                    local_func_addr,
                                     func_ty,
                                     locals,
                                     store.modules[current_wasm_index].wasm_reader.pc,
@@ -2969,6 +2994,93 @@ pub(super) fn run<H: HookSet>(
                     }
                     _ => unreachable!(),
                 }
+            }
+
+            I32_EXTEND8_S => {
+                let mut v: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                if v | 0xFF != 0xFF {
+                    trace!("Number v ({}) not contained in 8 bits, truncating", v);
+                    v = v & 0xFF;
+                }
+
+                let res = if v | 0x7F != 0x7F { v | 0xFFFFFF00 } else { v };
+
+                stack.push_value(res.into());
+
+                trace!("Instruction i32.extend8_s [{}] -> [{}]", v, res);
+            }
+            I32_EXTEND16_S => {
+                let mut v: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                if v | 0xFFFF != 0xFFFF {
+                    trace!("Number v ({}) not contained in 16 bits, truncating", v);
+                    v = v & 0xFFFF;
+                }
+
+                let res = if v | 0x7FFF != 0x7FFF {
+                    v | 0xFFFF0000
+                } else {
+                    v
+                };
+
+                stack.push_value(res.into());
+
+                trace!("Instruction i32.extend16_s [{}] -> [{}]", v, res);
+            }
+            I64_EXTEND8_S => {
+                let mut v: u64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+
+                if v | 0xFF != 0xFF {
+                    trace!("Number v ({}) not contained in 8 bits, truncating", v);
+                    v = v & 0xFF;
+                }
+
+                let res = if v | 0x7F != 0x7F {
+                    v | 0xFFFFFFFF_FFFFFF00
+                } else {
+                    v
+                };
+
+                stack.push_value(res.into());
+
+                trace!("Instruction i64.extend8_s [{}] -> [{}]", v, res);
+            }
+            I64_EXTEND16_S => {
+                let mut v: u64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+
+                if v | 0xFFFF != 0xFFFF {
+                    trace!("Number v ({}) not contained in 16 bits, truncating", v);
+                    v = v & 0xFFFF;
+                }
+
+                let res = if v | 0x7FFF != 0x7FFF {
+                    v | 0xFFFFFFFF_FFFF0000
+                } else {
+                    v
+                };
+
+                stack.push_value(res.into());
+
+                trace!("Instruction i64.extend16_s [{}] -> [{}]", v, res);
+            }
+            I64_EXTEND32_S => {
+                let mut v: u64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+
+                if v | 0xFFFF_FFFF != 0xFFFF_FFFF {
+                    trace!("Number v ({}) not contained in 32 bits, truncating", v);
+                    v = v & 0xFFFF_FFFF;
+                }
+
+                let res = if v | 0x7FFF_FFFF != 0x7FFF_FFFF {
+                    v | 0xFFFFFFFF_00000000
+                } else {
+                    v
+                };
+
+                stack.push_value(res.into());
+
+                trace!("Instruction i64.extend32_s [{}] -> [{}]", v, res);
             }
             other => {
                 trace!("Unknown instruction {other:#x}, skipping..");

@@ -1,7 +1,7 @@
 use alloc::collections::btree_map::BTreeMap;
 use alloc::string::{String, ToString};
-use alloc::vec;
 use alloc::vec::Vec;
+use alloc::{format, vec};
 use core::{iter, usize};
 
 use crate::core::error::{Proposal, Result as CustomResult, StoreInstantiationError};
@@ -49,7 +49,38 @@ impl<'b> Store<'b> {
         // TODO: we can do validation at linktime such that if another module expects module `name` to export something,
         // and it doesn't, we can reject it here instead of accepting it and failing later.
 
-        let function_inst = module.instantiate_functions()?;
+        let mut all_function_inst = module.instantiate_functions()?;
+
+        let functions_imports_indexes = {
+            let mut function_imports_indexes = Vec::new();
+            for import in &module.imports {
+                match import.desc {
+                    ImportDesc::Func(..) => {
+                        let global_function_idx = self
+                            .get_global_function_idx_by_name(
+                                self.get_module_idx_from_name(&import.module_name)?,
+                                &import.name,
+                            )
+                            .ok_or(Error::UnknownFunction)?;
+                        trace!(
+                            "Imported function! Global function idx: {}",
+                            global_function_idx
+                        );
+                        function_imports_indexes.push(global_function_idx);
+                    }
+                    _ => {}
+                }
+            }
+            function_imports_indexes
+        };
+
+        let local_inst_funcs = all_function_inst.split_off(functions_imports_indexes.len());
+        let _imported_function_inst = all_function_inst;
+
+        let functions_offset = self.functions.len();
+        let exec_functions =
+            self.get_functions_indexes(&functions_imports_indexes, &local_inst_funcs)?;
+
         // let function_type_inst = module.instantiate_function_types()?;
         let table_imports_indexes = {
             let mut table_imports_indexes = Vec::new();
@@ -119,8 +150,16 @@ impl<'b> Store<'b> {
         };
         let imported_globals_len = imported_globals.len();
         let mut globals = module.instantiate_globals(imported_globals)?;
-        let (element_inst, passive_idxs) =
-            module.instantiate_elements(&mut local_tables, &globals, function_inst.len())?;
+        let (element_inst, passive_idxs) = module.instantiate_elements(
+            self,
+            &exec_functions,
+            &mut local_tables,
+            &table_imports_indexes,
+            &globals,
+        )?;
+
+        // TODO: make this prettier, rn the compiler complains wha wha, cause see the instruction above
+        self.functions.extend(local_inst_funcs);
 
         // TODO: make this prettier, rn the compiler complains wha wha, cause see the instruction above
         self.tables.extend(local_tables);
@@ -152,17 +191,10 @@ impl<'b> Store<'b> {
         let data =
             module.instantiate_data(self, &exec_memories, &globals[0..imported_globals_len])?;
 
-        let imported_functions = function_inst
-            .iter()
-            .filter(|func| matches!(func, FuncInst::Imported(_)))
-            .count();
+        let imported_functions = functions_imports_indexes.len();
         let imported_memories = memory_imports_indexes.len();
         let imported_globals = imported_globals_len;
         let imported_tables = table_imports_indexes.len(); // TODO: not yet supported
-
-        let functions_offset = self.functions.len();
-        let exec_functions = (functions_offset..(functions_offset + function_inst.len())).collect();
-        self.functions.extend(function_inst);
 
         let globals_offset = self.globals.len();
         let exec_globals =
@@ -227,25 +259,25 @@ impl<'b> Store<'b> {
 
         // let temp = Vec::new();
 
-        for module_idx in 0..self.modules.len() {
-            for function_idx in 0..self.modules[module_idx].functions.len() {
-                let fn_store_idx = self.modules[module_idx].functions[function_idx];
-                let func: &FuncInst = &self.functions[fn_store_idx];
-                if let FuncInst::Imported(import) = func {
-                    let resolved_idx =
-                        self.lookup_function(&import.module_name, &import.function_name);
+        // for module_idx in 0..self.modules.len() {
+        //     for function_idx in 0..self.modules[module_idx].functions.len() {
+        //         let fn_store_idx = self.modules[module_idx].functions[function_idx];
+        //         let func: &FuncInst = &self.functions[fn_store_idx];
+        //         if let FuncInst::Imported(import) = func {
+        //             let resolved_idx =
+        //                 self.lookup_function(&import.module_name, &import.function_name);
 
-                    if resolved_idx.is_none() {
-                        // if import.module_name == name {
-                        // TODO: Failed resolution... BAD!
-                        return Err(Error::LinkerError(LinkerError::UnmetImport));
-                        // }
-                    } else {
-                        self.modules[module_idx].functions[function_idx] = resolved_idx.unwrap();
-                    }
-                }
-            }
-        }
+        //             if resolved_idx.is_none() {
+        //                 // if import.module_name == name {
+        //                 // TODO: Failed resolution... BAD!
+        //                 return Err(Error::LinkerError(LinkerError::UnmetImport));
+        //                 // }
+        //             } else {
+        //                 self.modules[module_idx].functions[function_idx] = resolved_idx.unwrap();
+        //             }
+        //         }
+        //     }
+        // }
 
         Ok(())
     }
@@ -476,6 +508,21 @@ impl<'b> Store<'b> {
         Ok(indexes)
     }
 
+    fn get_functions_indexes(
+        &self,
+        functions_imports_indexes: &Vec<usize>,
+        local_functions: &[FuncInst],
+    ) -> CustomResult<Vec<usize>> {
+        let mut indexes: Vec<usize> = Vec::new();
+        indexes.extend_from_slice(&functions_imports_indexes);
+        let functions_offset = self.functions.len();
+        for function_idx in functions_offset..local_functions.len() + functions_offset {
+            indexes.push(function_idx);
+        }
+
+        Ok(indexes)
+    }
+
     fn get_tables_indexes(
         &self,
         tables_imports_indexes: &Vec<usize>,
@@ -573,6 +620,12 @@ impl<'b> Store<'b> {
         let param_types = params.iter().map(|v| v.to_ty()).collect::<Vec<_>>();
 
         if func_ty.params.valtypes != param_types {
+            // format!()
+            trace!(
+                "Func param types len: {}; Given args len: {}",
+                func_ty.params.valtypes.len(),
+                param_types.len()
+            );
             panic!("Invalid parameters for function");
         }
 
@@ -653,6 +706,11 @@ impl<'b> Store<'b> {
         let param_types = params.iter().map(|v| v.to_ty()).collect::<Vec<_>>();
 
         if func_ty.params.valtypes != param_types {
+            trace!(
+                "Func param types len: {}; Given args len: {}",
+                func_ty.params.valtypes.len(),
+                param_types.len()
+            );
             panic!("Invalid parameters for function");
         }
 
@@ -746,11 +804,15 @@ impl<'b> ValidationInfo<'b> {
         Ok(self.tables.iter().map(|ty| TableInst::new(*ty)).collect())
     }
 
+    // TODO: funcref tables should contain the GLOBAL index of the functions they reference
+
     pub fn instantiate_elements(
         &self,
+        store: &mut Store,
+        imported_and_local_functions_indexes: &[usize],
         tables: &mut [TableInst],
+        imported_tables_indexes: &[usize],
         globals: &[GlobalInst],
-        no_of_functions: usize,
     ) -> CustomResult<(Vec<ElemInst>, Vec<usize>)> {
         let mut passive_elem_indexes: Vec<usize> = vec![];
         // https://webassembly.github.io/spec/core/syntax/modules.html#element-segments
@@ -793,7 +855,7 @@ impl<'b> ValidationInfo<'b> {
                                 // we don't care about extern refs for now
                             }
                             RefType::FuncRef => {
-                                if *offset as usize >= no_of_functions {
+                                if *offset as usize >= imported_and_local_functions_indexes.len() {
                                     return Err(Error::FunctionIsNotDefined(*offset as usize));
                                 }
                             }
@@ -802,16 +864,45 @@ impl<'b> ValidationInfo<'b> {
                 }
             }
 
-            let references: Vec<Ref> = offsets
-                .iter()
-                .map(|offset| {
+            let references: Vec<Ref> = {
+                let mut temp: Vec<Ref> = Vec::new();
+
+                for offset in offsets {
                     let offset = offset.as_ref().map(|offset| *offset as usize);
-                    match elem.ty() {
-                        RefType::FuncRef => Ref::Func(FuncAddr::new(offset)),
+                    temp.push(match elem.ty() {
+                        RefType::FuncRef => Ref::Func(FuncAddr::new({
+                            match offset {
+                                None => None,
+                                Some(offset) => {
+                                    trace!(
+                                        "Table element with global function idx: {}",
+                                        imported_and_local_functions_indexes[offset]
+                                    );
+                                    Some(imported_and_local_functions_indexes[offset])
+                                }
+                            }
+                        })),
+
+                        // TODO: ExternRefs - when implemented
                         RefType::ExternRef => Ref::Extern(ExternAddr::new(offset)),
-                    }
-                })
-                .collect();
+                    });
+                }
+
+                temp
+            };
+
+            // let references: Vec<Ref> = offsets
+            //     .iter()
+            //     .map(|offset| {
+            //         let offset = offset.as_ref().map(|offset| *offset as usize);
+            //         match elem.ty() {
+            //             RefType::FuncRef => Ref::Func(FuncAddr::new(offset)),
+
+            //             // TODO: ExternRef's
+            //             RefType::ExternRef => Ref::Extern(ExternAddr::new(offset)),
+            //         }
+            //     })
+            //     .collect();
 
             let instance = ElemInst {
                 ty: elem.ty(),
@@ -842,11 +933,18 @@ impl<'b> ValidationInfo<'b> {
                         _ => unreachable!(),
                     };
 
-                    let table = &mut tables[table_idx];
+                    let table = if table_idx >= imported_tables_indexes.len() {
+                        let actual_offset = table_idx - imported_tables_indexes.len();
+                        &mut tables[actual_offset]
+                    } else {
+                        // self.tables[imported_tables_indexes[table_idx]]
+                        &mut store.tables[imported_tables_indexes[table_idx]]
+                    };
                     // This can't be verified at validation-time because we don't keep track of actual values when validating expressions
                     //  we only keep track of the type of the values. As such we can't pop the exact value of an i32 from the validation stack
                     assert!(table.len() >= (offset + instance.len()));
 
+                    // trace!("")
                     table.elem[offset..offset + instance.references.len()]
                         .copy_from_slice(&instance.references);
 
@@ -1069,6 +1167,9 @@ impl ElemInst {
     }
 }
 
+// TODO: The tables have to be both imported and exported (an enum instead of a struct)
+//       That is because when we import tables we can give a different size to the imported table
+//        thus having a wrapper over the initial table
 #[derive(Debug)]
 pub struct TableInst {
     pub ty: TableType,
