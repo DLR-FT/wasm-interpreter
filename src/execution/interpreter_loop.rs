@@ -3001,7 +3001,7 @@ pub(super) fn run<H: HookSet>(
 
                 if v | 0xFF != 0xFF {
                     trace!("Number v ({}) not contained in 8 bits, truncating", v);
-                    v = v & 0xFF;
+                    v &= 0xFF;
                 }
 
                 let res = if v | 0x7F != 0x7F { v | 0xFFFFFF00 } else { v };
@@ -3015,7 +3015,7 @@ pub(super) fn run<H: HookSet>(
 
                 if v | 0xFFFF != 0xFFFF {
                     trace!("Number v ({}) not contained in 16 bits, truncating", v);
-                    v = v & 0xFFFF;
+                    v &= 0xFFFF;
                 }
 
                 let res = if v | 0x7FFF != 0x7FFF {
@@ -3033,7 +3033,7 @@ pub(super) fn run<H: HookSet>(
 
                 if v | 0xFF != 0xFF {
                     trace!("Number v ({}) not contained in 8 bits, truncating", v);
-                    v = v & 0xFF;
+                    v &= 0xFF;
                 }
 
                 let res = if v | 0x7F != 0x7F {
@@ -3051,7 +3051,7 @@ pub(super) fn run<H: HookSet>(
 
                 if v | 0xFFFF != 0xFFFF {
                     trace!("Number v ({}) not contained in 16 bits, truncating", v);
-                    v = v & 0xFFFF;
+                    v &= 0xFFFF;
                 }
 
                 let res = if v | 0x7FFF != 0x7FFF {
@@ -3069,7 +3069,7 @@ pub(super) fn run<H: HookSet>(
 
                 if v | 0xFFFF_FFFF != 0xFFFF_FFFF {
                     trace!("Number v ({}) not contained in 32 bits, truncating", v);
-                    v = v & 0xFFFF_FFFF;
+                    v &= 0xFFFF_FFFF;
                 }
 
                 let res = if v | 0x7FFF_FFFF != 0x7FFF_FFFF {
@@ -3082,6 +3082,7 @@ pub(super) fn run<H: HookSet>(
 
                 trace!("Instruction i64.extend32_s [{}] -> [{}]", v, res);
             }
+
             other => {
                 trace!("Unknown instruction {other:#x}, skipping..");
             }

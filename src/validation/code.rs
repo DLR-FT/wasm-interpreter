@@ -1240,7 +1240,6 @@ fn read_instructions(
             }
 
             I32_EXTEND8_S => {
-                // todo!()
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
 
                 stack.push_valtype(ValType::NumType(NumType::I32));
@@ -1265,6 +1264,7 @@ fn read_instructions(
 
                 stack.push_valtype(ValType::NumType(NumType::I64));
             }
+
             _ => return Err(Error::InvalidInstr(first_instr_byte)),
         }
     }
