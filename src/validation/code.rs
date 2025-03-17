@@ -1227,6 +1227,33 @@ fn read_instructions(
                     }
                 }
             }
+
+            I32_EXTEND8_S => {
+                stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+
+                stack.push_valtype(ValType::NumType(NumType::I32));
+            }
+            I32_EXTEND16_S => {
+                stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+
+                stack.push_valtype(ValType::NumType(NumType::I32));
+            }
+            I64_EXTEND8_S => {
+                stack.assert_pop_val_type(ValType::NumType(NumType::I64))?;
+
+                stack.push_valtype(ValType::NumType(NumType::I64));
+            }
+            I64_EXTEND16_S => {
+                stack.assert_pop_val_type(ValType::NumType(NumType::I64))?;
+
+                stack.push_valtype(ValType::NumType(NumType::I64));
+            }
+            I64_EXTEND32_S => {
+                stack.assert_pop_val_type(ValType::NumType(NumType::I64))?;
+
+                stack.push_valtype(ValType::NumType(NumType::I64));
+            }
+
             _ => return Err(Error::InvalidInstr(first_instr_byte)),
         }
     }

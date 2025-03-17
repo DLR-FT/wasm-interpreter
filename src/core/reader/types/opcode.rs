@@ -178,6 +178,11 @@ pub const REF_NULL: u8 = 0xD0;
 pub const REF_IS_NULL: u8 = 0xD1;
 pub const REF_FUNC: u8 = 0xD2;
 pub const FC_EXTENSIONS: u8 = 0xFC;
+pub const I32_EXTEND8_S: u8 = 0xC0;
+pub const I32_EXTEND16_S: u8 = 0xC1;
+pub const I64_EXTEND8_S: u8 = 0xC2;
+pub const I64_EXTEND16_S: u8 = 0xC3;
+pub const I64_EXTEND32_S: u8 = 0xC4;
 
 pub mod fc_extensions {
     pub const I32_TRUNC_SAT_F32_S: u8 = 0x00;
@@ -379,6 +384,11 @@ pub fn opcode_byte_to_str(byte: u8) -> alloc::string::String {
         REF_NULL => "REF_NULL",
         REF_FUNC => "REF_FUNC",
         FC_EXTENSIONS => "FC_EXTENSIONS",
+        I32_EXTEND8_S => "I32_EXTEND8_S",
+        I32_EXTEND16_S => "I32_EXTEND16_S",
+        I64_EXTEND8_S => "I64_EXTEND8_S",
+        I64_EXTEND16_S => "I64_EXTEND16_S",
+        I64_EXTEND32_S => "I64_EXTEND32_S",
         _ => "UNKNOWN",
     }
     .to_owned()
