@@ -2503,6 +2503,94 @@ pub(super) fn run<H: HookSet>(
                     _ => unreachable!(),
                 }
             }
+
+            I32_EXTEND8_S => {
+                let mut v: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                if v | 0xFF != 0xFF {
+                    trace!("Number v ({}) not contained in 8 bits, truncating", v);
+                    v &= 0xFF;
+                }
+
+                let res = if v | 0x7F != 0x7F { v | 0xFFFFFF00 } else { v };
+
+                stack.push_value(res.into());
+
+                trace!("Instruction i32.extend8_s [{}] -> [{}]", v, res);
+            }
+            I32_EXTEND16_S => {
+                let mut v: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                if v | 0xFFFF != 0xFFFF {
+                    trace!("Number v ({}) not contained in 16 bits, truncating", v);
+                    v &= 0xFFFF;
+                }
+
+                let res = if v | 0x7FFF != 0x7FFF {
+                    v | 0xFFFF0000
+                } else {
+                    v
+                };
+
+                stack.push_value(res.into());
+
+                trace!("Instruction i32.extend16_s [{}] -> [{}]", v, res);
+            }
+            I64_EXTEND8_S => {
+                let mut v: u64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+
+                if v | 0xFF != 0xFF {
+                    trace!("Number v ({}) not contained in 8 bits, truncating", v);
+                    v &= 0xFF;
+                }
+
+                let res = if v | 0x7F != 0x7F {
+                    v | 0xFFFFFFFF_FFFFFF00
+                } else {
+                    v
+                };
+
+                stack.push_value(res.into());
+
+                trace!("Instruction i64.extend8_s [{}] -> [{}]", v, res);
+            }
+            I64_EXTEND16_S => {
+                let mut v: u64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+
+                if v | 0xFFFF != 0xFFFF {
+                    trace!("Number v ({}) not contained in 16 bits, truncating", v);
+                    v &= 0xFFFF;
+                }
+
+                let res = if v | 0x7FFF != 0x7FFF {
+                    v | 0xFFFFFFFF_FFFF0000
+                } else {
+                    v
+                };
+
+                stack.push_value(res.into());
+
+                trace!("Instruction i64.extend16_s [{}] -> [{}]", v, res);
+            }
+            I64_EXTEND32_S => {
+                let mut v: u64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+
+                if v | 0xFFFF_FFFF != 0xFFFF_FFFF {
+                    trace!("Number v ({}) not contained in 32 bits, truncating", v);
+                    v &= 0xFFFF_FFFF;
+                }
+
+                let res = if v | 0x7FFF_FFFF != 0x7FFF_FFFF {
+                    v | 0xFFFFFFFF_00000000
+                } else {
+                    v
+                };
+
+                stack.push_value(res.into());
+
+                trace!("Instruction i64.extend32_s [{}] -> [{}]", v, res);
+            }
+
             other => {
                 trace!("Unknown instruction {other:#x}, skipping..");
             }
