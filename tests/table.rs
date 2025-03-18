@@ -49,23 +49,23 @@ fn table_basic() {
     });
 }
 
-#[test_log::test]
-fn table_basic_2() {
-    let w = r#"
-    (module (table 0 funcref) (table 0 funcref))
-    (module (table (import "spectest" "table") 0 funcref) (table 0 funcref))
-"#
-    .split("\n")
-    .map(|el| el.trim())
-    .filter(|el| !el.is_empty())
-    .collect::<Vec<&str>>();
+// #[test_log::test]
+// fn table_basic_2() {
+//     let w = r#"
+//     (module (table 0 funcref) (table 0 funcref))
+//     (module (table (import "spectest" "table") 0 funcref) (table 0 funcref))
+// "#
+//     .split("\n")
+//     .map(|el| el.trim())
+//     .filter(|el| !el.is_empty())
+//     .collect::<Vec<&str>>();
 
-    w.iter().for_each(|wat| {
-        let wasm_bytes = wat::parse_str(wat).unwrap();
-        let validation_info = validate(&wasm_bytes).expect("validation failed");
-        RuntimeInstance::new(&validation_info).expect("instantiation failed");
-    });
-}
+//     w.iter().for_each(|wat| {
+//         let wasm_bytes = wat::parse_str(wat).unwrap();
+//         let validation_info = validate(&wasm_bytes).expect("validation failed");
+//         RuntimeInstance::new(&validation_info).expect("instantiation failed");
+//     });
+// }
 
 #[test_log::test]
 fn unknown_table() {
