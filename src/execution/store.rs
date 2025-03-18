@@ -25,7 +25,7 @@ use super::locals::Locals;
 use super::value::InteropValueList;
 use super::{run, UnwrapValidatedExt};
 
-use crate::core::error::LinkerError;
+use crate::linear_memory::LinearMemory;
 
 /// The store represents all global state that can be manipulated by WebAssembly programs. It
 /// consists of the runtime representation of all instances of functions, tables, memories, and
@@ -1049,17 +1049,16 @@ impl<'b> ValidationInfo<'b> {
                     let mem_inst = store.memories.get_mut(*index).ok_or(Error::UnknownMemory)?;
                     // let mem_inst = memory_instances.get_mut(mem_idx).unwrap();
 
-                    let len = mem_inst.data.len();
+                    let len = mem_inst.mem.len();
                     if offset as usize + d.init.len() > len {
                         return Err(Error::StoreInstantiationError(
                             StoreInstantiationError::ActiveDataWriteOutOfBounds,
                         ));
                     }
-                    let data = mem_inst
-                        .data
-                        .get_mut(offset as usize..offset as usize + d.init.len())
-                        .unwrap();
-                    data.copy_from_slice(&d.init);
+
+                    mem_inst
+                        .mem
+                        .init(offset as usize, &d.init, 0, d.init.len())?;
                 }
                 Ok(DataInst {
                     data: d.init.clone(),
@@ -1196,27 +1195,24 @@ impl TableInst {
 pub struct MemInst {
     #[allow(warnings)]
     pub ty: MemType,
-    pub data: Vec<u8>,
+    pub mem: LinearMemory,
 }
 
 impl MemInst {
     pub fn new(ty: MemType) -> Self {
-        let initial_size = (crate::Limits::MEM_PAGE_SIZE as usize) * ty.limits.min as usize;
-
         Self {
             ty,
-            data: vec![0u8; initial_size],
+            mem: LinearMemory::new_with_initial_pages(ty.limits.min.try_into().unwrap()),
         }
     }
 
     pub fn grow(&mut self, delta_pages: usize) {
-        self.data
-            .extend(iter::repeat(0).take(delta_pages * (crate::Limits::MEM_PAGE_SIZE as usize)))
+        self.mem.grow(delta_pages.try_into().unwrap())
     }
 
     /// Can never be bigger than 65,356 pages
     pub fn size(&self) -> usize {
-        self.data.len() / (crate::Limits::MEM_PAGE_SIZE as usize)
+        self.mem.len() / (crate::Limits::MEM_PAGE_SIZE as usize)
     }
 }
 
