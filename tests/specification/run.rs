@@ -397,50 +397,85 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                 ));
             }
             wast::WastDirective::Invoke(invoke) => {
-                match interpreter {
-                    None => asserts.push_error(WastError::new(
+                if interpreter.is_none() {
+                    return CompilationError::new(
                         Box::new(GenericError::new(
-                            "Couldn't invoke, interpreter not present",
+                            "Attempted to run invoke directive before interpreter instantiation.",
                         )),
-                        u32::MAX,
-                        "invoke",
-                    )),
-                    Some(ref mut interpreter) => {
-                        let args = invoke
-                            .args
-                            .into_iter()
-                            .map(arg_to_value)
-                            .collect::<Vec<_>>();
+                        filepath,
+                        "no module directive found",
+                    )
+                    .compile_report();
+                }
 
-                        // TODO: more modules ¯\_(ツ)_/¯
-                        match interpreter.get_function_by_name(DEFAULT_MODULE, invoke.name) {
-                            Err(_) => asserts.push_error(WastError::new(
-                                Box::new(GenericError::new(&format!(
-                                    "Couldn't get the function '{}' from module '{}'",
-                                    invoke.name, "DEFAULT_MODULE"
-                                ))),
-                                u32::MAX,
-                                "invoke",
-                            )),
-                            Ok(funcref) => {
-                                match interpreter.invoke_dynamic_unchecked_return_ty(&funcref, args)
-                                {
-                                    Err(e) => asserts.push_error(WastError::new(
-                                        Box::new(GenericError::new(&format!(
-                                            "failed to execute function '{}' from module '{}' - error: {:?}",
-                                            invoke.name, "DEFAULT_MODULE", e
-                                        ))),
-                                        u32::MAX,
-                                        "invoke",
-                                    )),
-                                    Ok(_) => {
-                                        asserts.push_success(WastSuccess::new(u32::MAX, "invoke"))
-                                    }
-                                }
-                            }
+                let interpreter = interpreter.as_mut().unwrap();
+
+                let args = invoke
+                    .args
+                    .into_iter()
+                    .map(arg_to_value)
+                    .collect::<Vec<_>>();
+
+                let function_ref_attempt = catch_unwind(AssertUnwindSafe(|| {
+                    interpreter
+                        .get_function_by_name(DEFAULT_MODULE, invoke.name)
+                        .map_err(|err| {
+                            CompilationError::new(
+                                Box::new(WasmInterpreterError(wasm::Error::RuntimeError(err))),
+                                filepath,
+                                "Invoke directive failed to find function",
+                            )
+                            .compile_report()
+                        })
+                }));
+
+                let function_ref = match function_ref_attempt {
+                    Ok(original_result) => try_to!(original_result),
+                    Err(inner) => {
+                        // TODO: Do we want to exit on panic? State may be left in an inconsistent state, and cascading panics may occur.
+                        let err = if let Ok(msg) = inner.downcast::<&str>() {
+                            Box::new(PanicError::new(&msg))
+                        } else {
+                            Box::new(PanicError::new("Unknown panic"))
                         };
+
+                        return CompilationError::new(
+                            err,
+                            filepath,
+                            "main module validation panicked",
+                        )
+                        .compile_report();
                     }
                 };
+
+                let err_or_panic: Result<_, Box<dyn Error>> =
+                    match catch_unwind(AssertUnwindSafe(|| {
+                        interpreter.invoke_dynamic_unchecked_return_ty(&function_ref, args)
+                    })) {
+                        Ok(original_result) => original_result.map_err(|err| {
+                            Box::new(WasmInterpreterError(wasm::Error::RuntimeError(err))).into()
+                        }),
+                        Err(inner) => {
+                            // TODO: Do we want to exit on panic? State may be left in an inconsistent state, and cascading panics may occur.
+                            if let Ok(msg) = inner.downcast::<&str>() {
+                                Err(Box::new(PanicError::new(&msg)))
+                            } else {
+                                Err(Box::new(PanicError::new("Unknown panic")))
+                            }
+                        }
+                    };
+
+                match err_or_panic {
+                    Ok(_) => (), // This isn't a test, we won't report success
+                    Err(inner) => {
+                        return CompilationError::new(
+                            inner,
+                            filepath,
+                            "Invoke returned error or panicked.",
+                        )
+                        .compile_report();
+                    }
+                }
             }
             wast::WastDirective::Thread(thread) => {
                 asserts.push_error(WastError::new(
