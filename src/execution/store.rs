@@ -1,7 +1,6 @@
 use alloc::string::String;
 use alloc::vec;
 use alloc::vec::Vec;
-use core::iter;
 
 use crate::core::indices::TypeIdx;
 use crate::core::reader::span::Span;
@@ -10,6 +9,7 @@ use crate::core::reader::types::global::Global;
 use crate::core::reader::types::{MemType, TableType, ValType};
 use crate::core::sidetable::Sidetable;
 use crate::execution::value::{Ref, Value};
+use crate::linear_memory::LinearMemory;
 use crate::RefType;
 
 /// The store represents all global state that can be manipulated by WebAssembly programs. It
@@ -114,27 +114,24 @@ impl TableInst {
 pub struct MemInst {
     #[allow(warnings)]
     pub ty: MemType,
-    pub data: Vec<u8>,
+    pub mem: LinearMemory,
 }
 
 impl MemInst {
     pub fn new(ty: MemType) -> Self {
-        let initial_size = (crate::Limits::MEM_PAGE_SIZE as usize) * ty.limits.min as usize;
-
         Self {
             ty,
-            data: vec![0u8; initial_size],
+            mem: LinearMemory::new_with_initial_pages(ty.limits.min.try_into().unwrap()),
         }
     }
 
     pub fn grow(&mut self, delta_pages: usize) {
-        self.data
-            .extend(iter::repeat(0).take(delta_pages * (crate::Limits::MEM_PAGE_SIZE as usize)))
+        self.mem.grow(delta_pages.try_into().unwrap())
     }
 
     /// Can never be bigger than 65,356 pages
     pub fn size(&self) -> usize {
-        self.data.len() / (crate::Limits::MEM_PAGE_SIZE as usize)
+        self.mem.len() / (crate::Limits::MEM_PAGE_SIZE as usize)
     }
 }
 

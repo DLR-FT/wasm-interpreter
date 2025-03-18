@@ -14,6 +14,7 @@ use value::{ExternAddr, FuncAddr, Ref};
 use value_stack::Stack;
 
 use crate::core::error::StoreInstantiationError;
+use crate::core::indices::MemIdx;
 use crate::core::reader::types::element::{ElemItems, ElemMode};
 use crate::core::reader::types::export::ExportDesc;
 use crate::core::reader::types::import::ImportDesc;
@@ -698,15 +699,10 @@ where
 
                     let mem_inst = memory_instances.get_mut(mem_idx).unwrap();
 
-                    let len = mem_inst.data.len();
-                    if offset as usize + d.init.len() > len {
-                        return Err(Error::StoreInstantiationError(ActiveDataWriteOutOfBounds));
-                    }
-                    let data = mem_inst
-                        .data
-                        .get_mut(offset as usize..offset as usize + d.init.len())
-                        .unwrap();
-                    data.copy_from_slice(&d.init);
+                    mem_inst
+                        .mem
+                        .init(offset as MemIdx, &d.init, 0, d.init.len())
+                        .map_err(|_| Error::StoreInstantiationError(ActiveDataWriteOutOfBounds))?;
                 }
                 Ok(DataInst {
                     data: d.init.clone(),
