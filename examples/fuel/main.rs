@@ -49,7 +49,7 @@ fn main() -> ExitCode {
     };
 
     let mut state = instance
-        .invoke_resumable(&instance.get_function_by_index(0, 0).unwrap(), 1.0f64)
+        .invoke_resumable(&instance.get_function_by_index(0, 0).unwrap(), 5.0f64)
         .unwrap();
 
     let mut res: Option<f64> = None;
@@ -68,7 +68,7 @@ fn main() -> ExitCode {
         };
     }
 
-    assert_eq!(res.unwrap(), 1.0f64);
+    assert_eq!(res.unwrap(), 120.0f64);
 
     ExitCode::SUCCESS
 }

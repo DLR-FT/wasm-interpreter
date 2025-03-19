@@ -64,12 +64,14 @@ impl<'inst, 'wasm, Returns: InteropValueList, H: HookSet>
 pub struct Resumable<'inst, 'wasm, Returns: InteropValueList, H: HookSet> {
     instance: &'inst mut RuntimeInstance<'wasm, H>,
     current_module_idx: usize,
+    current_stp: usize,
     _phantom: PhantomData<Returns>,
 }
 
 impl<'inst, 'wasm, Returns: InteropValueList, H: HookSet> Resumable<'inst, 'wasm, Returns, H> {
     pub fn resume(self) -> Result<InvocationState<'inst, 'wasm, Returns, H>, RuntimeError> {
-        self.instance.resume::<Returns>(self.current_module_idx)
+        self.instance
+            .resume::<Returns>(self.current_module_idx, self.current_stp)
     }
 
     pub fn cancel(self) -> Result<InvocationState<'inst, 'wasm, Returns, H>, RuntimeError> {
@@ -217,17 +219,16 @@ where
         // -=-= Verification =-=-
         trace!("{:?}", self.modules[module_idx].store.funcs);
 
-        let func_inst = self.modules[module_idx]
+        let exec_info = &mut self.modules[module_idx];
+
+        let func_inst = exec_info
             .store
             .funcs
             .get(func_idx)
             .ok_or(RuntimeError::FunctionNotFound)?
             .try_into_local()
             .ok_or(RuntimeError::FunctionNotFound)?;
-        let func_ty = self.modules[module_idx]
-            .fn_types
-            .get(func_inst.ty)
-            .unwrap_validated();
+        let func_ty = exec_info.fn_types.get(func_inst.ty).unwrap_validated();
 
         // Check correct function parameters and return types
         if func_ty.params.valtypes != Param::TYS {
@@ -255,13 +256,20 @@ where
             usize::MAX,
         );
 
+        // Start reading the function's instructions
+        let wasm = &mut exec_info.wasm_reader;
+        wasm.move_start_to(func_inst.code_expr).unwrap();
+
         let mut current_module_idx = module_idx;
+        let mut current_stp = 0;
+
         // Run the interpreter
         let state = run(
             &mut self.modules,
-            &mut current_module_idx,
             self.lut.as_ref().ok_or(RuntimeError::UnmetImport)?,
             &mut self.stack,
+            &mut current_module_idx,
+            &mut current_stp,
             EmptyHookSet,
         )?;
 
@@ -294,17 +302,16 @@ where
         // -=-= Verification =-=-
         trace!("{:?}", self.modules[module_idx].store.funcs);
 
-        let func_inst = self.modules[module_idx]
+        let exec_info = &mut self.modules[module_idx];
+
+        let func_inst = exec_info
             .store
             .funcs
             .get(func_idx)
             .ok_or(RuntimeError::FunctionNotFound)?
             .try_into_local()
             .ok_or(RuntimeError::FunctionNotFound)?;
-        let func_ty = self.modules[module_idx]
-            .fn_types
-            .get(func_inst.ty)
-            .unwrap_validated();
+        let func_ty = exec_info.fn_types.get(func_inst.ty).unwrap_validated();
 
         // Check correct function parameters and return types
         if func_ty.params.valtypes != Param::TYS {
@@ -332,21 +339,30 @@ where
             usize::MAX,
         );
 
+        // Start reading the function's instructions
+        let wasm = &mut exec_info.wasm_reader;
+        wasm.move_start_to(func_inst.code_expr).unwrap();
+
         // Run the interpreter
-        self.resume::<Returns>(module_idx)
+        self.resume::<Returns>(module_idx, 0)
     }
 
     fn resume<'inst, Returns: InteropValueList>(
         &'inst mut self,
         current_module_idx: usize,
+        current_stp: usize,
     ) -> Result<InvocationState<'inst, 'b, Returns, H>, RuntimeError> {
+        trace!("Resume ...");
+
         let mut current_module_idx = current_module_idx;
+        let mut current_stp = current_stp;
 
         let state = run(
             &mut self.modules,
-            &mut current_module_idx,
             self.lut.as_ref().ok_or(RuntimeError::UnmetImport)?,
             &mut self.stack,
+            &mut current_module_idx,
+            &mut current_stp,
             EmptyHookSet,
         )?;
 
@@ -359,6 +375,7 @@ where
             > {
                 instance: self,
                 current_module_idx,
+                current_stp,
                 _phantom: PhantomData,
             }));
         }
@@ -387,18 +404,17 @@ where
         // First, verify that the function reference is valid
         let (module_idx, func_idx) = self.verify_function_ref(function_ref)?;
 
+        let exec_info = &mut self.modules[module_idx];
+
         // -=-= Verification =-=-
-        let func_inst = self.modules[module_idx]
+        let func_inst = exec_info
             .store
             .funcs
             .get(func_idx)
             .ok_or(RuntimeError::FunctionNotFound)?
             .try_into_local()
             .ok_or(RuntimeError::FunctionNotFound)?;
-        let func_ty = self.modules[module_idx]
-            .fn_types
-            .get(func_inst.ty)
-            .unwrap_validated();
+        let func_ty = exec_info.fn_types.get(func_inst.ty).unwrap_validated();
 
         // Verify that the given parameters match the function parameters
         let param_types = params.iter().map(|v| v.to_ty()).collect::<Vec<_>>();
@@ -417,15 +433,26 @@ where
         let locals = Locals::new(params.into_iter(), func_inst.locals.iter().cloned());
         stack.push_stackframe(module_idx, func_idx, func_ty, locals, 0, 0);
 
-        let mut currrent_module_idx = module_idx;
+        // Start reading the function's instructions
+        let wasm = &mut exec_info.wasm_reader;
+        wasm.move_start_to(func_inst.code_expr).unwrap();
+
+        let mut current_module_idx = module_idx;
+        let mut current_stp = 0;
+
         // Run the interpreter
-        run(
+        let state = run(
             &mut self.modules,
-            &mut currrent_module_idx,
             self.lut.as_ref().ok_or(RuntimeError::UnmetImport)?,
-            &mut stack,
+            &mut self.stack,
+            &mut current_module_idx,
+            &mut current_stp,
             EmptyHookSet,
         )?;
+
+        if let RunState::OutOfFuel = state {
+            return Err(RuntimeError::OutOfFuel);
+        }
 
         let func_inst = self.modules[module_idx]
             .store
@@ -475,18 +502,17 @@ where
         // First, verify that the function reference is valid
         let (module_idx, func_idx) = self.verify_function_ref(function_ref)?;
 
+        let exec_info = &mut self.modules[module_idx];
+
         // -=-= Verification =-=-
-        let func_inst = self.modules[module_idx]
+        let func_inst = exec_info
             .store
             .funcs
             .get(func_idx)
             .ok_or(RuntimeError::FunctionNotFound)?
             .try_into_local()
             .ok_or(RuntimeError::FunctionNotFound)?;
-        let func_ty = self.modules[module_idx]
-            .fn_types
-            .get(func_inst.ty)
-            .unwrap_validated();
+        let func_ty = exec_info.fn_types.get(func_inst.ty).unwrap_validated();
 
         // Verify that the given parameters match the function parameters
         let param_types = params.iter().map(|v| v.to_ty()).collect::<Vec<_>>();
@@ -500,13 +526,20 @@ where
         let locals = Locals::new(params.into_iter(), func_inst.locals.iter().cloned());
         stack.push_stackframe(module_idx, func_idx, func_ty, locals, 0, 0);
 
+        // Start reading the function's instructions
+        let wasm = &mut exec_info.wasm_reader;
+        wasm.move_start_to(func_inst.code_expr).unwrap();
+
         let mut currrent_module_idx = module_idx;
+        let mut current_stp = 0;
+
         // Run the interpreter
         run(
             &mut self.modules,
-            &mut currrent_module_idx,
             self.lut.as_ref().ok_or(RuntimeError::UnmetImport)?,
             &mut stack,
+            &mut currrent_module_idx,
+            &mut current_stp,
             EmptyHookSet,
         )?;
 
