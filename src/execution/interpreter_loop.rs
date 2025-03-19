@@ -35,12 +35,17 @@ use crate::execution::hooks::HookSet;
 
 use super::{execution_info::ExecutionInfo, lut::Lut};
 
+/// The result state from run()
 pub(super) enum RunState {
+    /// Interpretation was finished.
     Finished,
+    /// Interpretation was interrupted due to insufficent fuel.
     OutOfFuel,
 }
 
 /// Interprets a functions. Parameters and return values are passed on the stack.
+/// Completly stateless. All state is passed in via references. Theirfore this can be called repeatedly to resume an interpretation.
+/// Returns a state which determines whether the interpretation was finished or interrupted.
 pub(super) fn run<H: HookSet>(
     modules: &mut [ExecutionInfo],
     lut: &Lut,

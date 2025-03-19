@@ -44,15 +44,20 @@ pub mod value_stack;
 /// The default module name if a [RuntimeInstance] was created using [RuntimeInstance::new].
 pub const DEFAULT_MODULE: &str = "__interpreter_default__";
 
+/// State of an invocation. An resumable invocation can return before it is finished (for example when lacking suffient fuel) and then might be resumed later.
 pub enum InvocationState<'inst, 'wasm, Returns: InteropValueList, H: HookSet> {
+    /// Invocation is finished; the inner value contains the return values.
     Finished(Returns),
+    /// Invocation was interrupted because of insufficent fuel. The inner value can be used to either resume or cancel the invocation.
     OutOfFuel(Resumable<'inst, 'wasm, Returns, H>),
+    /// Invocation was cancelled. For example after it ran out of fuel.
     Canceled,
 }
 
 impl<'inst, 'wasm, Returns: InteropValueList, H: HookSet>
     InvocationState<'inst, 'wasm, Returns, H>
 {
+    /// Determines whether the invocation was finished and returns the return values as an option.
     pub fn is_finished(self) -> Option<Returns> {
         match self {
             InvocationState::Finished(ret) => Some(ret),
@@ -61,6 +66,7 @@ impl<'inst, 'wasm, Returns: InteropValueList, H: HookSet>
     }
 }
 
+/// Allows for an interrupted interpreter invocation to be resumed or to be canceled.
 pub struct Resumable<'inst, 'wasm, Returns: InteropValueList, H: HookSet> {
     instance: &'inst mut RuntimeInstance<'wasm, H>,
     current_module_idx: usize,
@@ -69,11 +75,13 @@ pub struct Resumable<'inst, 'wasm, Returns: InteropValueList, H: HookSet> {
 }
 
 impl<'inst, 'wasm, Returns: InteropValueList, H: HookSet> Resumable<'inst, 'wasm, Returns, H> {
+    /// Resumes the interrupted interpreter invocation.
     pub fn resume(self) -> Result<InvocationState<'inst, 'wasm, Returns, H>, RuntimeError> {
         self.instance
             .resume::<Returns>(self.current_module_idx, self.current_stp)
     }
 
+    /// Cancels the interrupted interpreter invocation.
     pub fn cancel(self) -> Result<InvocationState<'inst, 'wasm, Returns, H>, RuntimeError> {
         Ok(InvocationState::Canceled)
     }
@@ -273,8 +281,10 @@ where
             EmptyHookSet,
         )?;
 
-        if let RunState::OutOfFuel = state {
-            return Err(RuntimeError::OutOfFuel);
+        match state {
+            // If we are running out of fuel in a non-resumable invocation, there is nothing else we can do
+            RunState::OutOfFuel => return Err(RuntimeError::OutOfFuel),
+            RunState::Finished => {}
         }
 
         // Pop return values from stack
@@ -291,6 +301,7 @@ where
         Ok(ret)
     }
 
+    /// Invoke with the option to interrupt and resume the interpreter
     pub fn invoke_resumable<'inst, Param: InteropValueList, Returns: InteropValueList>(
         &'inst mut self,
         function_ref: &FunctionRef,
@@ -347,6 +358,7 @@ where
         self.resume::<Returns>(module_idx, 0)
     }
 
+    /// Resume an interrupted invocation
     fn resume<'inst, Returns: InteropValueList>(
         &'inst mut self,
         current_module_idx: usize,
@@ -366,18 +378,23 @@ where
             EmptyHookSet,
         )?;
 
-        if let RunState::OutOfFuel = state {
-            return Ok(InvocationState::OutOfFuel(Resumable::<
-                'inst,
-                'b,
-                Returns,
-                H,
-            > {
-                instance: self,
-                current_module_idx,
-                current_stp,
-                _phantom: PhantomData,
-            }));
+        match state {
+            // Return resumable
+            RunState::OutOfFuel => {
+                return Ok(InvocationState::OutOfFuel(Resumable::<
+                    'inst,
+                    'b,
+                    Returns,
+                    H,
+                > {
+                    instance: self,
+                    current_module_idx,
+                    current_stp,
+                    _phantom: PhantomData,
+                }))
+            }
+            // Return the return values
+            RunState::Finished => {}
         }
 
         // Pop return values from stack
