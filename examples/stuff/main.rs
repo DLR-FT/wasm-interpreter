@@ -74,7 +74,5 @@ fn main() -> ExitCode {
         42_i32
     );
 
-    use std::process::ExitCode;
-
     ExitCode::SUCCESS
 }
