@@ -446,9 +446,10 @@ where
         }
 
         // Prepare a new stack with the locals for the entry function
-        let mut stack = Stack::new();
+        self.stack = Stack::new();
         let locals = Locals::new(params.into_iter(), func_inst.locals.iter().cloned());
-        stack.push_stackframe(module_idx, func_idx, func_ty, locals, 0, 0);
+        self.stack
+            .push_stackframe(module_idx, func_idx, func_ty, locals, 0, 0);
 
         // Start reading the function's instructions
         let wasm = &mut exec_info.wasm_reader;
@@ -489,7 +490,7 @@ where
             .valtypes
             .iter()
             .rev()
-            .map(|ty| stack.pop_value(*ty))
+            .map(|ty| self.stack.pop_value(*ty))
             .collect::<Vec<Value>>();
 
         // Values are reversed because they were popped from stack one-by-one. Now reverse them back
@@ -539,9 +540,10 @@ where
         }
 
         // Prepare a new stack with the locals for the entry function
-        let mut stack = Stack::new();
+        self.stack = Stack::new();
         let locals = Locals::new(params.into_iter(), func_inst.locals.iter().cloned());
-        stack.push_stackframe(module_idx, func_idx, func_ty, locals, 0, 0);
+        self.stack
+            .push_stackframe(module_idx, func_idx, func_ty, locals, 0, 0);
 
         // Start reading the function's instructions
         let wasm = &mut exec_info.wasm_reader;
@@ -554,7 +556,7 @@ where
         run(
             &mut self.modules,
             self.lut.as_ref().ok_or(RuntimeError::UnmetImport)?,
-            &mut stack,
+            &mut self.stack,
             &mut currrent_module_idx,
             &mut current_stp,
             EmptyHookSet,
@@ -578,7 +580,7 @@ where
             .valtypes
             .iter()
             .rev()
-            .map(|ty| stack.pop_value(*ty))
+            .map(|ty| self.stack.pop_value(*ty))
             .collect::<Vec<Value>>();
 
         // Values are reversed because they were popped from stack one-by-one. Now reverse them back
