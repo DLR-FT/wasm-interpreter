@@ -1,41 +1,16 @@
-use std::{
-    fs,
-    path::{Path, PathBuf},
-};
-
+use files::{Filter, FnF};
 use reports::WastTestReport;
+use std::path::{Path, PathBuf};
 
+mod files;
 mod reports;
 mod run;
 mod test_errors;
-
-enum Filter {
-    #[allow(dead_code)]
-    Include(FnF),
-    #[allow(dead_code)]
-    Exclude(FnF),
-}
 
 struct Report {
     #[allow(dead_code)]
     fp: PathBuf,
     report: WastTestReport,
-}
-
-struct FnF {
-    #[allow(dead_code)]
-    files: Option<Vec<String>>,
-    #[allow(dead_code)]
-    folders: Option<Vec<String>>,
-}
-
-impl Default for FnF {
-    fn default() -> Self {
-        Self {
-            files: None,
-            folders: None,
-        }
-    }
 }
 
 #[test_log::test]
@@ -45,15 +20,11 @@ pub fn spec_tests() {
 
     let filters = Filter::Exclude(FnF {
         folders: Some(vec!["proposals".to_string()]),
-        ..Default::default()
+        files: None,
     });
 
-    let paths = get_wast_files(Path::new("./tests/specification/testsuite/"), &filters)
+    let paths = files::get_wast_files(Path::new("./tests/specification/testsuite/"), &filters)
         .expect("Failed to find testsuite");
-
-    // let pb: PathBuf = "./tests/specification/testsuite/table_get.wast".into();
-    // let mut paths = Vec::new();
-    // paths.push(pb);
 
     assert!(paths.len() > 0, "Submodules not instantiated");
 
@@ -146,117 +117,4 @@ pub fn spec_tests() {
         "Tests: {} Passed, {} Failed, {} Compilation Errors",
         successful_reports, failed_reports, compile_error_reports
     );
-}
-
-#[allow(dead_code)]
-// See: https://stackoverflow.com/a/76820878
-fn get_wast_files(
-    base_path: &Path,
-    // run_only_these_tests: &Vec<String>,
-    filters: &Filter,
-) -> Result<Vec<PathBuf>, std::io::Error> {
-    let mut buf = vec![];
-    let entries = fs::read_dir(base_path)?;
-
-    for entry in entries {
-        let entry = entry?;
-        let meta = entry.metadata()?;
-
-        if meta.is_dir() {
-            if should_add_folder_to_buffer(&entry.path(), &filters) {
-                let mut subdir = get_wast_files(&entry.path(), &filters)?;
-                buf.append(&mut subdir);
-            }
-        }
-
-        if meta.is_file() && entry.path().extension().unwrap_or_default() == "wast" {
-            if should_add_file_to_buffer(&entry.path(), &filters) {
-                buf.push(entry.path())
-            }
-        }
-    }
-
-    Ok(buf)
-}
-
-fn should_add_file_to_buffer(file_path: &PathBuf, filters: &Filter) -> bool {
-    match filters {
-        Filter::Exclude(ref fnf) => match &fnf.files {
-            None => true,
-            Some(files) => {
-                if files.is_empty() {
-                    return true;
-                }
-
-                if let Some(file_name) = file_path.file_name() {
-                    if files.contains(&file_name.to_str().unwrap().to_owned()) {
-                        false
-                    } else {
-                        true
-                    }
-                } else {
-                    false
-                }
-            }
-        },
-        Filter::Include(ref fnf) => match &fnf.files {
-            None => false,
-            Some(files) => {
-                if files.is_empty() {
-                    return false;
-                }
-
-                if let Some(file_name) = file_path.file_name() {
-                    if files.contains(&file_name.to_str().unwrap().to_owned()) {
-                        true
-                    } else {
-                        false
-                    }
-                } else {
-                    false
-                }
-            }
-        },
-    }
-}
-
-fn should_add_folder_to_buffer(file_path: &PathBuf, filters: &Filter) -> bool {
-    match filters {
-        Filter::Exclude(ref fnf) => match &fnf.folders {
-            None => true,
-            Some(folders) => {
-                if folders.is_empty() {
-                    return true;
-                }
-
-                if let Some(file_name) = file_path.file_name() {
-                    if folders.contains(&file_name.to_str().unwrap().to_owned()) {
-                        false
-                    } else {
-                        true
-                    }
-                } else {
-                    false
-                }
-            }
-        },
-        Filter::Include(ref fnf) => match &fnf.folders {
-            None => false,
-            Some(folders) => {
-                if folders.is_empty() {
-                    return false;
-                }
-
-                if let Some(file_name) = file_path.file_name() {
-                    if folders.contains(&file_name.to_str().unwrap().to_owned()) {
-                        true
-                    } else {
-                        false
-                    }
-                } else {
-                    false
-                }
-            }
-        },
-    }
 }
