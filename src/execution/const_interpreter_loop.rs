@@ -1,7 +1,7 @@
 use crate::{
     assert_validated::UnwrapValidatedExt,
     core::reader::{span::Span, WasmReadable, WasmReader},
-    value::{FuncAddr, Ref},
+    value::{self, FuncAddr, Ref},
     value_stack::Stack,
     NumType, RefType, ValType, Value,
 };
@@ -43,6 +43,16 @@ pub(crate) fn run_const(
             I32_CONST => {
                 let constant = wasm.read_var_i32().unwrap_validated();
                 trace!("Constant instruction: i32.const [] -> [{constant}]");
+                stack.push_value(constant.into());
+            }
+            F32_CONST => {
+                let constant = value::F32::from_bits(wasm.read_var_f32().unwrap_validated());
+                trace!("Constanting instruction: f32.const [] -> [{constant}]");
+                stack.push_value(constant.into());
+            }
+            F64_CONST => {
+                let constant = value::F64::from_bits(wasm.read_var_f64().unwrap_validated());
+                trace!("Constanting instruction: f64.const [] -> [{constant}]");
                 stack.push_value(constant.into());
             }
             I32_ADD => {
