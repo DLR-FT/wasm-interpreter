@@ -84,7 +84,6 @@ pub(super) fn run<H: HookSet>(
         match first_instr_byte {
             NOP => {
                 trace!("Instruction: NOP");
-                return Ok(RunState::OutOfFuel);
             }
             END => {
                 // if this is not the very last instruction in the function
