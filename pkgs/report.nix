@@ -1,4 +1,11 @@
-{ lib, stdenvNoCC, python3Packages, strictdoc, wasm-interpreter, whitepaper }:
+{
+  lib,
+  stdenvNoCC,
+  python3Packages,
+  strictdoc,
+  wasm-interpreter,
+  whitepaper,
+}:
 
 let
   evidenceRoot = lib.strings.escapeShellArg wasm-interpreter;
