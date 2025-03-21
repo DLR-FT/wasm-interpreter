@@ -409,25 +409,26 @@ fn execute_assert_return(
             // TODO: more modules ¯\_(ツ)_/¯
             let func = interpeter
                 .get_function_by_name(DEFAULT_MODULE, invoke_info.name)
-                .map_err(|err| Box::new(WasmInterpreterError(wasm::Error::RuntimeError(err))))?;
+                .map_err(|err| WasmInterpreterError::new_boxed(wasm::Error::RuntimeError(err)))?;
 
             let actual = interpeter
                 .invoke_dynamic(&func, args, &result_types)
-                .map_err(|err| Box::new(WasmInterpreterError(wasm::Error::RuntimeError(err))))?;
+                .map_err(|err| WasmInterpreterError::new_boxed(wasm::Error::RuntimeError(err)))?;
 
             AssertEqError::assert_eq(actual, result_vals)?;
+            Ok(())
         }
         wast::WastExecute::Get {
             span: _,
             module: _,
             global: _,
-        } => todo!("`get` directive inside `assert_return` not yet implemented"),
-        wast::WastExecute::Wat(_) => {
-            todo!("`wat` directive inside `assert_return` not yet implemented")
-        }
+        } => Err(GenericError::new_boxed(
+            "`get` directive inside `assert_return` not yet implemented",
+        )),
+        wast::WastExecute::Wat(_) => Err(GenericError::new_boxed(
+            "`wat` directive inside `assert_return` not yet implemented",
+        )),
     }
-
-    Ok(())
 }
 
 fn execute_assert_trap(
@@ -446,7 +447,7 @@ fn execute_assert_trap(
             // TODO: more modules ¯\_(ツ)_/¯
             let func_res = interpeter
                 .get_function_by_name(DEFAULT_MODULE, invoke_info.name)
-                .map_err(|err| Box::new(WasmInterpreterError(wasm::Error::RuntimeError(err))));
+                .map_err(|err| WasmInterpreterError::new_boxed(wasm::Error::RuntimeError(err)));
 
             let func: FunctionRef;
             match func_res {
@@ -459,7 +460,7 @@ fn execute_assert_trap(
             let actual = interpeter.invoke_dynamic_unchecked_return_ty(&func, args);
 
             match actual {
-                Ok(_) => Err(Box::new(GenericError::new("assert_trap did NOT trap"))),
+                Ok(_) => Err(GenericError::new_boxed("assert_trap did NOT trap")),
                 Err(e) => {
                     let actual = to_wasm_testsuite_string(e)?;
                     let expected = message;
@@ -470,10 +471,10 @@ fn execute_assert_trap(
                     {
                         Ok(())
                     } else {
-                        Err(Box::new(GenericError::new(
+                        Err(GenericError::new_boxed(
                             format!("'assert_trap': Expected '{expected}' - Actual: '{actual}'")
                                 .as_str(),
-                        )))
+                        ))
                     }
                 }
             }
@@ -482,10 +483,12 @@ fn execute_assert_trap(
             span: _,
             module: _,
             global: _,
-        } => todo!("`get` directive inside `assert_return` not yet implemented"),
-        wast::WastExecute::Wat(_) => {
-            todo!("`wat` directive inside `assert_return` not yet implemented")
-        }
+        } => Err(GenericError::new_boxed(
+            "`get` directive inside `assert_return` not yet implemented",
+        )),
+        wast::WastExecute::Wat(_) => Err(GenericError::new_boxed(
+            "`wat` directive inside `assert_return` not yet implemented",
+        )),
     }
 }
 
