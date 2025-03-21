@@ -142,29 +142,17 @@ pub fn read_constant_expression(
                 let _num = wasm.read_var_i64()?;
                 stack.push_valtype(ValType::NumType(NumType::I64));
             }
-            I32_ADD | I32_SUB | I32_MUL | I32_DIV_S | I32_DIV_U => {
+            I32_ADD | I32_SUB | I32_MUL => {
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
 
                 stack.push_valtype(ValType::NumType(NumType::I32));
             }
-            I64_ADD | I64_SUB | I64_MUL | I64_DIV_S | I64_DIV_U => {
+            I64_ADD | I64_SUB | I64_MUL => {
                 stack.assert_pop_val_type(ValType::NumType(NumType::I64))?;
                 stack.assert_pop_val_type(ValType::NumType(NumType::I64))?;
 
                 stack.push_valtype(ValType::NumType(NumType::I64));
-            }
-            F32_ADD | F32_SUB | F32_MUL | F32_DIV => {
-                stack.assert_pop_val_type(ValType::NumType(NumType::F32))?;
-                stack.assert_pop_val_type(ValType::NumType(NumType::F32))?;
-
-                stack.push_valtype(ValType::NumType(NumType::F32));
-            }
-            F64_ADD | F64_SUB | F64_MUL | F64_DIV => {
-                stack.assert_pop_val_type(ValType::NumType(NumType::F64))?;
-                stack.assert_pop_val_type(ValType::NumType(NumType::F64))?;
-
-                stack.push_valtype(ValType::NumType(NumType::F64));
             }
             REF_NULL => {
                 stack.push_valtype(ValType::RefType(RefType::read(wasm)?));
