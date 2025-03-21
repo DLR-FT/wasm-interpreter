@@ -130,7 +130,9 @@ pub struct ScriptError {
     pub filename: String,
     pub error: Box<dyn Error>,
     pub context: String,
+    #[allow(unused)]
     pub line_number: Option<u32>,
+    #[allow(unused)]
     pub command: String,
 }
 
