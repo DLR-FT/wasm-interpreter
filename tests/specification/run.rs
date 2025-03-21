@@ -1,19 +1,3 @@
-/*
-# This file incorporates code from Wasmtime, originally
-# available at https://github.com/bytecodealliance/wasmtime.
-#
-# The original code is licensed under the Apache License, Version 2.0
-# (the "License"); you may not use this file except in compliance
-# with the License. You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-*/
 use std::error::Error;
 use std::panic::catch_unwind;
 use std::panic::AssertUnwindSafe;
@@ -25,32 +9,37 @@ use wasm::DEFAULT_MODULE;
 use wasm::{validate, RuntimeInstance};
 use wast::core::WastArgCore;
 use wast::core::WastRetCore;
+use wast::QuoteWat;
 use wast::WastArg;
 
 use crate::specification::reports::*;
 use crate::specification::test_errors::*;
 
-pub fn to_wasm_testsuite_string(runtime_error: RuntimeError) -> std::string::String {
+pub fn to_wasm_testsuite_string(runtime_error: RuntimeError) -> Result<String, Box<dyn Error>> {
+    let not_represented = Err(GenericError::new_boxed(
+        "Runtime error not represented in WAST",
+    ));
+
     match runtime_error {
-        RuntimeError::DivideBy0 => "integer divide by zero",
-        RuntimeError::UnrepresentableResult => "integer overflow",
-        RuntimeError::FunctionNotFound => todo!(),
-        RuntimeError::StackSmash => todo!(),
-        RuntimeError::BadConversionToInteger => "invalid conversion to integer",
+        RuntimeError::DivideBy0 => Ok("integer divide by zero"),
+        RuntimeError::UnrepresentableResult => Ok("integer overflow"),
+        RuntimeError::FunctionNotFound => not_represented,
+        RuntimeError::StackSmash => not_represented,
+        RuntimeError::BadConversionToInteger => Ok("invalid conversion to integer"),
 
-        RuntimeError::MemoryAccessOutOfBounds => "out of bounds memory access",
-        RuntimeError::TableAccessOutOfBounds => "out of bounds table access",
-        RuntimeError::ElementAccessOutOfBounds => todo!(),
+        RuntimeError::MemoryAccessOutOfBounds => Ok("out of bounds memory access"),
+        RuntimeError::TableAccessOutOfBounds => Ok("out of bounds table access"),
+        RuntimeError::ElementAccessOutOfBounds => not_represented,
 
-        RuntimeError::UninitializedElement => "uninitialized element",
-        RuntimeError::SignatureMismatch => "indirect call type mismatch",
-        RuntimeError::ExpectedAValueOnTheStack => todo!(),
+        RuntimeError::UninitializedElement => Ok("uninitialized element"),
+        RuntimeError::SignatureMismatch => Ok("indirect call type mismatch"),
+        RuntimeError::ExpectedAValueOnTheStack => not_represented,
 
-        RuntimeError::UndefinedTableIndex => "undefined element",
-        RuntimeError::ModuleNotFound => "module not found",
-        RuntimeError::UnmetImport => "unmet import",
+        RuntimeError::UndefinedTableIndex => Ok("undefined element"),
+        RuntimeError::ModuleNotFound => Ok("module not found"),
+        RuntimeError::UnmetImport => Ok("unmet import"),
     }
-    .to_string()
+    .map(|s| s.to_string())
 }
 
 /// Attempt to unwrap the result of an expression. If the expression is an `Err`, then `return` the
@@ -67,96 +56,63 @@ macro_rules! try_to {
     };
 }
 
-#[derive(Debug)]
-enum ErrEVI {
-    Encode,
-    Validate,
-    Instantiate,
-}
-
-impl std::fmt::Display for ErrEVI {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self)
-    }
-}
-
-impl std::error::Error for ErrEVI {}
-
 /// Clear the bytes and runtime instance before calling this function
 fn encode_validate_instantiate<'a>(
     module: &mut wast::QuoteWat,
     bytes: &'a mut Option<Vec<u8>>,
-    runtime_inst: &'a mut Option<RuntimeInstance<'a>>,
-) -> Result<(), ErrEVI> {
-    use wast::*;
-    let is_module = match &module {
-        QuoteWat::QuoteComponent(..) | QuoteWat::Wat(Wat::Component(..)) => false,
-        QuoteWat::Wat(..) | QuoteWat::QuoteModule(..) => true,
+    runtime: &mut Option<RuntimeInstance<'a>>,
+) -> Result<(), Box<dyn Error>> {
+    match &module {
+        QuoteWat::QuoteComponent(..) | QuoteWat::Wat(wast::Wat::Component(..)) => {
+            return Err(GenericError::new_boxed(
+                "Component modules are not supported",
+            ))
+        }
+        QuoteWat::Wat(..) | QuoteWat::QuoteModule(..) => (),
     };
 
-    if is_module {
-        let inner_bytes = module.encode();
+    let inner_bytes = module.encode().map_err(|err| Box::new(err))?;
+    bytes.replace(inner_bytes);
 
-        match inner_bytes {
-            Err(_) => Err(ErrEVI::Encode),
-            Ok(inner_bytes) => {
-                bytes.replace(inner_bytes);
-                let validation_info_attempt = catch_unwind(|| validate(bytes.as_ref().unwrap()));
+    let validation_info_attempt = catch_unwind(|| validate(bytes.as_ref().unwrap()))
+        .map_err(|panic| PanicError::from_panic_boxed(panic))?;
 
-                match validation_info_attempt {
-                    Err(_) => Err(ErrEVI::Validate),
-                    Ok(validation_info) => match validation_info {
-                        Err(_) => Err(ErrEVI::Validate),
-                        Ok(validation_info) => {
-                            let runtime_instance_result =
-                                catch_unwind(|| RuntimeInstance::new(&validation_info));
+    let validation_info =
+        validation_info_attempt.map_err(|err| WasmInterpreterError::new_boxed(err))?;
 
-                            match runtime_instance_result {
-                                Err(_) => Err(ErrEVI::Instantiate),
-                                Ok(runtime_instance) => match runtime_instance {
-                                    Err(_) => Err(ErrEVI::Instantiate),
-                                    Ok(runtime_instance) => {
-                                        runtime_inst.replace(runtime_instance);
-                                        Ok(())
-                                    }
-                                },
-                            }
-                        }
-                    },
-                }
-            }
-        }
-    } else {
-        Err(ErrEVI::Encode)
-    }
+    let runtime_instance_attempt = catch_unwind(|| RuntimeInstance::new(&validation_info))
+        .map_err(|panic| PanicError::from_panic_boxed(panic))?;
+
+    let runtime_instance =
+        runtime_instance_attempt.map_err(|err| WasmInterpreterError::new_boxed(err))?;
+
+    runtime.replace(runtime_instance);
+
+    Ok(())
 }
 
 pub fn run_spec_test(filepath: &str) -> WastTestReport {
     // -=-= Initialization =-=-
-    let contents = try_to!(
-        std::fs::read_to_string(filepath).map_err(|err| CompilationError::new(
-            Box::new(err),
-            filepath,
-            "failed to open wast file"
-        )
-        .compile_report())
-    );
-
-    let buf =
+    let contents =
         try_to!(
-            wast::parser::ParseBuffer::new(&contents).map_err(|err| CompilationError::new(
-                Box::new(err),
+            std::fs::read_to_string(filepath).map_err(|err| ScriptError::new_lineless(
                 filepath,
-                "failed to create wast buffer"
+                Box::new(err),
+                "failed to open wast file",
             )
             .compile_report())
         );
 
+    let buf = try_to!(wast::parser::ParseBuffer::new(&contents).map_err(|err| {
+        ScriptError::new_lineless(filepath, Box::new(err), "failed to create wast buffer")
+            .compile_report()
+    }));
+
     let wast =
         try_to!(
-            wast::parser::parse::<wast::Wast>(&buf).map_err(|err| CompilationError::new(
-                Box::new(err),
+            wast::parser::parse::<wast::Wast>(&buf).map_err(|err| ScriptError::new_lineless(
                 filepath,
+                Box::new(err),
                 "failed to parse wast file"
             )
             .compile_report())
@@ -176,70 +132,19 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
             wast::WastDirective::Wat(mut quoted) => {
                 // If we fail to compile or to validate the main module, then we should treat this
                 // as a fatal (compilation) error.
-                let encoded = try_to!(quoted.encode().map_err(|err| CompilationError::new(
-                    Box::new(err),
-                    filepath,
-                    "failed to encode main module's wat"
-                )
-                .compile_report()));
-
-                wasm_bytes = Some(encoded);
-
-                let validation_attempt = catch_unwind(|| {
-                    validate(wasm_bytes.as_ref().unwrap()).map_err(|err| {
-                        CompilationError::new(
-                            Box::new(WasmInterpreterError(err)),
-                            filepath,
-                            "main module validation failed",
-                        )
-                        .compile_report()
-                    })
-                });
-
-                let validation_info = match validation_attempt {
-                    Ok(original_result) => try_to!(original_result),
-                    Err(panic) => {
-                        // TODO: Do we want to exit on panic? State may be left in an inconsistent state, and cascading panics may occur.
-                        let err = if let Ok(msg) = panic.downcast::<&str>() {
-                            Box::new(PanicError::new(&msg))
-                        } else {
-                            Box::new(PanicError::new("Unknown panic"))
-                        };
-
-                        return CompilationError::new(
-                            err,
-                            filepath,
-                            "main module validation panicked",
-                        )
-                        .compile_report();
-                    }
-                };
-
-                let runtime_instance = catch_unwind(|| RuntimeInstance::new(&validation_info));
-
-                let instance = match runtime_instance {
-                    Err(_) => {
-                        return CompilationError::new(
-                            Box::new(ErrEVI::Instantiate),
-                            filepath,
-                            "failed to create runtime instance",
-                        )
-                        .compile_report();
-                    }
-                    Ok(instance_result) => match instance_result {
-                        Err(e) => {
-                            return CompilationError::new(
-                                Box::new(WasmInterpreterError(e)),
+                try_to!(
+                    encode_validate_instantiate(&mut quoted, &mut wasm_bytes, &mut interpeter)
+                        .map_err(|err| {
+                            ScriptError::new(
                                 filepath,
-                                "failed to create runtime instance",
+                                err,
+                                "Module directive (WAT) failed.",
+                                Some(get_linenum(&contents, quoted.span())),
+                                get_command(&contents, quoted.span()),
                             )
                             .compile_report()
-                        }
-                        Ok(instance) => instance,
-                    },
-                };
-
-                interpeter = Some(instance);
+                        },)
+                );
             }
             wast::WastDirective::AssertReturn {
                 span,
@@ -247,44 +152,35 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                 results,
             } => {
                 if interpeter.is_none() {
-                    return CompilationError::new(
-                        Box::new(GenericError::new(
-                            "Attempted to assert before module directive",
-                        )),
+                    return ScriptError::new(
                         filepath,
-                        "no module directive found",
+                        GenericError::new_boxed("Attempted to assert before module directive"),
+                        "Assert Return",
+                        Some(get_linenum(&contents, span)),
+                        get_command(&contents, span),
                     )
                     .compile_report();
                 }
 
                 let interpeter = interpeter.as_mut().unwrap();
 
-                let err_or_panic: Result<(), Box<dyn Error>> =
-                    match catch_unwind(AssertUnwindSafe(|| {
-                        execute_assert_return(interpeter, exec, results)
-                    })) {
-                        Ok(original_result) => original_result,
-                        Err(inner) => {
-                            // TODO: Do we want to exit on panic? State may be left in an inconsistent state, and cascading panics may occur.
-                            if let Ok(msg) = inner.downcast::<&str>() {
-                                Err(Box::new(PanicError::new(&msg)))
-                            } else {
-                                Err(Box::new(PanicError::new("Unknown panic")))
-                            }
-                        }
-                    };
+                let err_or_panic = catch_unwind(AssertUnwindSafe(|| {
+                    execute_assert_return(interpeter, exec, results)
+                }))
+                .map_err(PanicError::from_panic_boxed)
+                .and_then(|result| result);
 
                 match err_or_panic {
-                    Ok(_) => {
+                    Ok(()) => {
                         asserts.push_success(WastSuccess::new(
-                            span.linecol_in(&contents).0 as u32 + 1,
+                            get_linenum(&contents, span),
                             get_command(&contents, span),
                         ));
                     }
                     Err(inner) => {
                         asserts.push_error(WastError::new(
                             inner,
-                            span.linecol_in(&contents).0 as u32 + 1,
+                            get_linenum(&contents, span),
                             get_command(&contents, span),
                         ));
                     }
@@ -296,12 +192,12 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                 message,
             } => {
                 if interpeter.is_none() {
-                    return CompilationError::new(
-                        Box::new(GenericError::new(
-                            "Attempted to assert before module directive",
-                        )),
+                    return ScriptError::new(
                         filepath,
-                        "no module directive found",
+                        GenericError::new_boxed("Attempted to assert before module directive"),
+                        "Assert Trap",
+                        Some(get_linenum(&contents, span)),
+                        get_command(&contents, span),
                     )
                     .compile_report();
                 }
@@ -309,31 +205,23 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                 let interpeter = interpeter.as_mut().unwrap();
 
                 let err_or_panic: Result<(), Box<dyn Error>> =
-                    match catch_unwind(AssertUnwindSafe(|| {
+                    catch_unwind(AssertUnwindSafe(|| {
                         execute_assert_trap(interpeter, exec, message)
-                    })) {
-                        Err(inner) => {
-                            // TODO: Do we want to exit on panic? State may be left in an inconsistent state, and cascading panics may occur.
-                            if let Ok(msg) = inner.downcast::<&str>() {
-                                Err(Box::new(PanicError::new(&msg)))
-                            } else {
-                                Err(Box::new(PanicError::new("Unknown panic")))
-                            }
-                        }
-                        Ok(original_result) => original_result,
-                    };
+                    }))
+                    .map_err(PanicError::from_panic_boxed)
+                    .and_then(|result| result);
 
                 match err_or_panic {
                     Ok(_) => {
                         asserts.push_success(WastSuccess::new(
-                            span.linecol_in(&contents).0 as u32 + 1,
+                            get_linenum(&contents, span),
                             get_command(&contents, span),
                         ));
                     }
                     Err(inner) => {
                         asserts.push_error(WastError::new(
                             inner,
-                            span.linecol_in(&contents).0 as u32 + 1,
+                            get_linenum(&contents, span),
                             get_command(&contents, span),
                         ));
                     }
@@ -345,12 +233,15 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                 mut module,
                 message: _,
             } => {
-                let line_number = span.linecol_in(&contents).0 as u32 + 1;
+                let line_number = get_linenum(&contents, span);
                 let cmd = get_command(&contents, span);
+                let error = GenericError::new_boxed(
+                    "Module validated and instantiated successfully, when it shouldn't have",
+                );
 
                 match encode_validate_instantiate(&mut module, &mut None, &mut None) {
                     Err(_) => asserts.push_success(WastSuccess::new(line_number, cmd)),
-                    Ok(_) => asserts.push_error(WastError::new("Module validated and instantiated successfully, when it shouldn't have been".into(), line_number, cmd))
+                    Ok(_) => asserts.push_error(WastError::new(error, line_number, cmd)),
                 };
             }
 
@@ -359,20 +250,29 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                 mut module,
                 message: _,
             } => {
-                let line_number = span.linecol_in(&contents).0 as u32 + 1;
+                let line_number = get_linenum(&contents, span);
                 let cmd = get_command(&contents, span);
+                let error = GenericError::new_boxed(
+                    "Module validated and instantiated successfully, when it shouldn't have",
+                );
 
                 match encode_validate_instantiate(&mut module, &mut None, &mut None) {
                     Err(_) => asserts.push_success(WastSuccess::new(line_number, cmd)),
-                    Ok(_) => asserts.push_error(WastError::new("Module validated and instantiated successfully, when it shouldn't have been".into(), line_number, cmd))
+                    Ok(_) => asserts.push_error(WastError::new(error, line_number, cmd)),
                 };
             }
             wast::WastDirective::Register {
                 span,
                 name: _,
                 module: _,
+            } => {
+                asserts.push_error(WastError::new(
+                    GenericError::new_boxed("Register directive not yet implemented"),
+                    get_linenum(&contents, span),
+                    get_command(&contents, span),
+                ));
             }
-            | wast::WastDirective::AssertExhaustion {
+            wast::WastDirective::AssertExhaustion {
                 span,
                 call: _,
                 message: _,
@@ -384,26 +284,28 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
             }
             | wast::WastDirective::AssertException { span, exec: _ } => {
                 asserts.push_error(WastError::new(
-                    Box::new(GenericError::new("Assert directive not yet implemented")),
-                    span.linecol_in(&contents).0 as u32 + 1,
+                    GenericError::new_boxed("Assert directive not yet implemented"),
+                    get_linenum(&contents, span),
                     get_command(&contents, span),
                 ));
             }
             wast::WastDirective::Wait { span, thread: _ } => {
                 asserts.push_error(WastError::new(
-                    Box::new(GenericError::new("Wait directive not yet implemented")),
-                    span.linecol_in(&contents).0 as u32 + 1,
+                    GenericError::new_boxed("Wait directive not yet implemented"),
+                    get_linenum(&contents, span),
                     get_command(&contents, span),
                 ));
             }
             wast::WastDirective::Invoke(invoke) => {
                 if interpeter.is_none() {
-                    return CompilationError::new(
-                        Box::new(GenericError::new(
-                            "Attempted to run invoke directive before interpreter instantiation.",
-                        )),
+                    return ScriptError::new(
                         filepath,
-                        "no module directive found",
+                        GenericError::new_boxed(
+                            "Attempted to run invoke directive before interpreter instantiation.",
+                        ),
+                        "Invoke",
+                        Some(get_linenum(&contents, invoke.span)),
+                        get_command(&contents, invoke.span),
                     )
                     .compile_report();
                 }
@@ -420,10 +322,12 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                     interpeter
                         .get_function_by_name(DEFAULT_MODULE, invoke.name)
                         .map_err(|err| {
-                            CompilationError::new(
-                                Box::new(WasmInterpreterError(wasm::Error::RuntimeError(err))),
+                            ScriptError::new(
                                 filepath,
+                                WasmInterpreterError::new_boxed(wasm::Error::RuntimeError(err)),
                                 "Invoke directive failed to find function",
+                                Some(get_linenum(&contents, invoke.span)),
+                                get_command(&contents, invoke.span),
                             )
                             .compile_report()
                         })
@@ -431,56 +335,42 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
 
                 let function_ref = match function_ref_attempt {
                     Ok(original_result) => try_to!(original_result),
-                    Err(inner) => {
-                        // TODO: Do we want to exit on panic? State may be left in an inconsistent state, and cascading panics may occur.
-                        let err = if let Ok(msg) = inner.downcast::<&str>() {
-                            Box::new(PanicError::new(&msg))
-                        } else {
-                            Box::new(PanicError::new("Unknown panic"))
-                        };
-
-                        return CompilationError::new(
-                            err,
+                    Err(panic) => {
+                        return ScriptError::new(
                             filepath,
+                            PanicError::from_panic_boxed(panic),
                             "main module validation panicked",
+                            Some(get_linenum(&contents, invoke.span)),
+                            get_command(&contents, invoke.span),
                         )
                         .compile_report();
                     }
                 };
 
                 let err_or_panic: Result<_, Box<dyn Error>> =
-                    match catch_unwind(AssertUnwindSafe(|| {
+                    catch_unwind(AssertUnwindSafe(|| {
                         interpeter.invoke_dynamic_unchecked_return_ty(&function_ref, args)
-                    })) {
-                        Ok(original_result) => original_result.map_err(|err| {
-                            Box::new(WasmInterpreterError(wasm::Error::RuntimeError(err))).into()
-                        }),
-                        Err(inner) => {
-                            // TODO: Do we want to exit on panic? State may be left in an inconsistent state, and cascading panics may occur.
-                            if let Ok(msg) = inner.downcast::<&str>() {
-                                Err(Box::new(PanicError::new(&msg)))
-                            } else {
-                                Err(Box::new(PanicError::new("Unknown panic")))
-                            }
-                        }
-                    };
+                    }))
+                    .map_err(PanicError::from_panic_boxed)
+                    .and_then(|result| {
+                        result.map_err(|err| {
+                            WasmInterpreterError::new_boxed(wasm::Error::RuntimeError(err))
+                        })
+                    });
 
-                match err_or_panic {
-                    Ok(_) => (), // This isn't a test, we won't report success
-                    Err(inner) => {
-                        return CompilationError::new(
-                            inner,
-                            filepath,
-                            "Invoke returned error or panicked.",
-                        )
-                        .compile_report();
-                    }
-                }
+                try_to!(err_or_panic.map_err(|inner| ScriptError::new(
+                    filepath,
+                    inner,
+                    "Invoke returned error or panicked",
+                    Some(get_linenum(&contents, invoke.span)),
+                    get_command(&contents, invoke.span)
+                )
+                .compile_report()));
             }
             wast::WastDirective::Thread(thread) => {
                 asserts.push_error(WastError::new(
-                    Box::new(GenericError::new("Thread directive not yet implemented")),
-                    thread.span.linecol_in(&contents).0 as u32 + 1,
+                    GenericError::new_boxed("Thread directive not yet implemented"),
+                    get_linenum(&contents, thread.span),
                     get_command(&contents, thread.span),
                 ));
             }
@@ -564,7 +454,7 @@ fn execute_assert_trap(
             match actual {
                 Ok(_) => Err(Box::new(GenericError::new("assert_trap did NOT trap"))),
                 Err(e) => {
-                    let actual = to_wasm_testsuite_string(e);
+                    let actual = to_wasm_testsuite_string(e)?;
                     let expected = message;
 
                     if actual.contains(expected)
@@ -694,6 +584,10 @@ fn result_to_value(result: wast::WastRet) -> Value {
         },
         wast::WastRet::Component(_) => todo!("`Component` result not yet implemented"),
     }
+}
+
+pub fn get_linenum(contents: &str, span: wast::token::Span) -> u32 {
+    span.linecol_in(&contents).0 as u32 + 1
 }
 
 pub fn get_command(contents: &str, span: wast::token::Span) -> &str {
