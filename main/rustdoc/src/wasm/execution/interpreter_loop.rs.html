@@ -2549,6 +2549,94 @@
 <a href="#2547" id="2547">2547</a>
 <a href="#2548" id="2548">2548</a>
 <a href="#2549" id="2549">2549</a>
+<a href="#2550" id="2550">2550</a>
+<a href="#2551" id="2551">2551</a>
+<a href="#2552" id="2552">2552</a>
+<a href="#2553" id="2553">2553</a>
+<a href="#2554" id="2554">2554</a>
+<a href="#2555" id="2555">2555</a>
+<a href="#2556" id="2556">2556</a>
+<a href="#2557" id="2557">2557</a>
+<a href="#2558" id="2558">2558</a>
+<a href="#2559" id="2559">2559</a>
+<a href="#2560" id="2560">2560</a>
+<a href="#2561" id="2561">2561</a>
+<a href="#2562" id="2562">2562</a>
+<a href="#2563" id="2563">2563</a>
+<a href="#2564" id="2564">2564</a>
+<a href="#2565" id="2565">2565</a>
+<a href="#2566" id="2566">2566</a>
+<a href="#2567" id="2567">2567</a>
+<a href="#2568" id="2568">2568</a>
+<a href="#2569" id="2569">2569</a>
+<a href="#2570" id="2570">2570</a>
+<a href="#2571" id="2571">2571</a>
+<a href="#2572" id="2572">2572</a>
+<a href="#2573" id="2573">2573</a>
+<a href="#2574" id="2574">2574</a>
+<a href="#2575" id="2575">2575</a>
+<a href="#2576" id="2576">2576</a>
+<a href="#2577" id="2577">2577</a>
+<a href="#2578" id="2578">2578</a>
+<a href="#2579" id="2579">2579</a>
+<a href="#2580" id="2580">2580</a>
+<a href="#2581" id="2581">2581</a>
+<a href="#2582" id="2582">2582</a>
+<a href="#2583" id="2583">2583</a>
+<a href="#2584" id="2584">2584</a>
+<a href="#2585" id="2585">2585</a>
+<a href="#2586" id="2586">2586</a>
+<a href="#2587" id="2587">2587</a>
+<a href="#2588" id="2588">2588</a>
+<a href="#2589" id="2589">2589</a>
+<a href="#2590" id="2590">2590</a>
+<a href="#2591" id="2591">2591</a>
+<a href="#2592" id="2592">2592</a>
+<a href="#2593" id="2593">2593</a>
+<a href="#2594" id="2594">2594</a>
+<a href="#2595" id="2595">2595</a>
+<a href="#2596" id="2596">2596</a>
+<a href="#2597" id="2597">2597</a>
+<a href="#2598" id="2598">2598</a>
+<a href="#2599" id="2599">2599</a>
+<a href="#2600" id="2600">2600</a>
+<a href="#2601" id="2601">2601</a>
+<a href="#2602" id="2602">2602</a>
+<a href="#2603" id="2603">2603</a>
+<a href="#2604" id="2604">2604</a>
+<a href="#2605" id="2605">2605</a>
+<a href="#2606" id="2606">2606</a>
+<a href="#2607" id="2607">2607</a>
+<a href="#2608" id="2608">2608</a>
+<a href="#2609" id="2609">2609</a>
+<a href="#2610" id="2610">2610</a>
+<a href="#2611" id="2611">2611</a>
+<a href="#2612" id="2612">2612</a>
+<a href="#2613" id="2613">2613</a>
+<a href="#2614" id="2614">2614</a>
+<a href="#2615" id="2615">2615</a>
+<a href="#2616" id="2616">2616</a>
+<a href="#2617" id="2617">2617</a>
+<a href="#2618" id="2618">2618</a>
+<a href="#2619" id="2619">2619</a>
+<a href="#2620" id="2620">2620</a>
+<a href="#2621" id="2621">2621</a>
+<a href="#2622" id="2622">2622</a>
+<a href="#2623" id="2623">2623</a>
+<a href="#2624" id="2624">2624</a>
+<a href="#2625" id="2625">2625</a>
+<a href="#2626" id="2626">2626</a>
+<a href="#2627" id="2627">2627</a>
+<a href="#2628" id="2628">2628</a>
+<a href="#2629" id="2629">2629</a>
+<a href="#2630" id="2630">2630</a>
+<a href="#2631" id="2631">2631</a>
+<a href="#2632" id="2632">2632</a>
+<a href="#2633" id="2633">2633</a>
+<a href="#2634" id="2634">2634</a>
+<a href="#2635" id="2635">2635</a>
+<a href="#2636" id="2636">2636</a>
+<a href="#2637" id="2637">2637</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! This module solely contains the actual interpretation loop that matches instructions, interpreting the WASM bytecode
 //!
 //!
@@ -5054,6 +5142,94 @@
                     <span class="kw">_ </span>=&gt; <span class="macro">unreachable!</span>(),
                 }
             }
+
+            I32_EXTEND8_S =&gt; {
+                <span class="kw">let </span><span class="kw-2">mut </span>v: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                <span class="kw">if </span>v | <span class="number">0xFF </span>!= <span class="number">0xFF </span>{
+                    <span class="macro">trace!</span>(<span class="string">"Number v ({}) not contained in 8 bits, truncating"</span>, v);
+                    v &amp;= <span class="number">0xFF</span>;
+                }
+
+                <span class="kw">let </span>res = <span class="kw">if </span>v | <span class="number">0x7F </span>!= <span class="number">0x7F </span>{ v | <span class="number">0xFFFFFF00 </span>} <span class="kw">else </span>{ v };
+
+                stack.push_value(res.into());
+
+                <span class="macro">trace!</span>(<span class="string">"Instruction i32.extend8_s [{}] -&gt; [{}]"</span>, v, res);
+            }
+            I32_EXTEND16_S =&gt; {
+                <span class="kw">let </span><span class="kw-2">mut </span>v: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                <span class="kw">if </span>v | <span class="number">0xFFFF </span>!= <span class="number">0xFFFF </span>{
+                    <span class="macro">trace!</span>(<span class="string">"Number v ({}) not contained in 16 bits, truncating"</span>, v);
+                    v &amp;= <span class="number">0xFFFF</span>;
+                }
+
+                <span class="kw">let </span>res = <span class="kw">if </span>v | <span class="number">0x7FFF </span>!= <span class="number">0x7FFF </span>{
+                    v | <span class="number">0xFFFF0000
+                </span>} <span class="kw">else </span>{
+                    v
+                };
+
+                stack.push_value(res.into());
+
+                <span class="macro">trace!</span>(<span class="string">"Instruction i32.extend16_s [{}] -&gt; [{}]"</span>, v, res);
+            }
+            I64_EXTEND8_S =&gt; {
+                <span class="kw">let </span><span class="kw-2">mut </span>v: u64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+
+                <span class="kw">if </span>v | <span class="number">0xFF </span>!= <span class="number">0xFF </span>{
+                    <span class="macro">trace!</span>(<span class="string">"Number v ({}) not contained in 8 bits, truncating"</span>, v);
+                    v &amp;= <span class="number">0xFF</span>;
+                }
+
+                <span class="kw">let </span>res = <span class="kw">if </span>v | <span class="number">0x7F </span>!= <span class="number">0x7F </span>{
+                    v | <span class="number">0xFFFFFFFF_FFFFFF00
+                </span>} <span class="kw">else </span>{
+                    v
+                };
+
+                stack.push_value(res.into());
+
+                <span class="macro">trace!</span>(<span class="string">"Instruction i64.extend8_s [{}] -&gt; [{}]"</span>, v, res);
+            }
+            I64_EXTEND16_S =&gt; {
+                <span class="kw">let </span><span class="kw-2">mut </span>v: u64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+
+                <span class="kw">if </span>v | <span class="number">0xFFFF </span>!= <span class="number">0xFFFF </span>{
+                    <span class="macro">trace!</span>(<span class="string">"Number v ({}) not contained in 16 bits, truncating"</span>, v);
+                    v &amp;= <span class="number">0xFFFF</span>;
+                }
+
+                <span class="kw">let </span>res = <span class="kw">if </span>v | <span class="number">0x7FFF </span>!= <span class="number">0x7FFF </span>{
+                    v | <span class="number">0xFFFFFFFF_FFFF0000
+                </span>} <span class="kw">else </span>{
+                    v
+                };
+
+                stack.push_value(res.into());
+
+                <span class="macro">trace!</span>(<span class="string">"Instruction i64.extend16_s [{}] -&gt; [{}]"</span>, v, res);
+            }
+            I64_EXTEND32_S =&gt; {
+                <span class="kw">let </span><span class="kw-2">mut </span>v: u64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+
+                <span class="kw">if </span>v | <span class="number">0xFFFF_FFFF </span>!= <span class="number">0xFFFF_FFFF </span>{
+                    <span class="macro">trace!</span>(<span class="string">"Number v ({}) not contained in 32 bits, truncating"</span>, v);
+                    v &amp;= <span class="number">0xFFFF_FFFF</span>;
+                }
+
+                <span class="kw">let </span>res = <span class="kw">if </span>v | <span class="number">0x7FFF_FFFF </span>!= <span class="number">0x7FFF_FFFF </span>{
+                    v | <span class="number">0xFFFFFFFF_00000000
+                </span>} <span class="kw">else </span>{
+                    v
+                };
+
+                stack.push_value(res.into());
+
+                <span class="macro">trace!</span>(<span class="string">"Instruction i64.extend32_s [{}] -&gt; [{}]"</span>, v, res);
+            }
+
             other =&gt; {
                 <span class="macro">trace!</span>(<span class="string">"Unknown instruction {other:#x}, skipping.."</span>);
             }

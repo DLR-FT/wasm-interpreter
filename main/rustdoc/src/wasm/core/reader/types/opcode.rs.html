@@ -385,6 +385,16 @@
 <a href="#383" id="383">383</a>
 <a href="#384" id="384">384</a>
 <a href="#385" id="385">385</a>
+<a href="#386" id="386">386</a>
+<a href="#387" id="387">387</a>
+<a href="#388" id="388">388</a>
+<a href="#389" id="389">389</a>
+<a href="#390" id="390">390</a>
+<a href="#391" id="391">391</a>
+<a href="#392" id="392">392</a>
+<a href="#393" id="393">393</a>
+<a href="#394" id="394">394</a>
+<a href="#395" id="395">395</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! All opcodes, in alphanumerical order by their numeric (hex-)value
 </span><span class="kw">pub const </span>UNREACHABLE: u8 = <span class="number">0x00</span>;
 <span class="kw">pub const </span>NOP: u8 = <span class="number">0x01</span>;
@@ -565,6 +575,11 @@
 <span class="kw">pub const </span>REF_IS_NULL: u8 = <span class="number">0xD1</span>;
 <span class="kw">pub const </span>REF_FUNC: u8 = <span class="number">0xD2</span>;
 <span class="kw">pub const </span>FC_EXTENSIONS: u8 = <span class="number">0xFC</span>;
+<span class="kw">pub const </span>I32_EXTEND8_S: u8 = <span class="number">0xC0</span>;
+<span class="kw">pub const </span>I32_EXTEND16_S: u8 = <span class="number">0xC1</span>;
+<span class="kw">pub const </span>I64_EXTEND8_S: u8 = <span class="number">0xC2</span>;
+<span class="kw">pub const </span>I64_EXTEND16_S: u8 = <span class="number">0xC3</span>;
+<span class="kw">pub const </span>I64_EXTEND32_S: u8 = <span class="number">0xC4</span>;
 
 <span class="kw">pub mod </span>fc_extensions {
     <span class="kw">pub const </span>I32_TRUNC_SAT_F32_S: u8 = <span class="number">0x00</span>;
@@ -766,6 +781,11 @@
         REF_NULL =&gt; <span class="string">"REF_NULL"</span>,
         REF_FUNC =&gt; <span class="string">"REF_FUNC"</span>,
         FC_EXTENSIONS =&gt; <span class="string">"FC_EXTENSIONS"</span>,
+        I32_EXTEND8_S =&gt; <span class="string">"I32_EXTEND8_S"</span>,
+        I32_EXTEND16_S =&gt; <span class="string">"I32_EXTEND16_S"</span>,
+        I64_EXTEND8_S =&gt; <span class="string">"I64_EXTEND8_S"</span>,
+        I64_EXTEND16_S =&gt; <span class="string">"I64_EXTEND16_S"</span>,
+        I64_EXTEND32_S =&gt; <span class="string">"I64_EXTEND32_S"</span>,
         <span class="kw">_ </span>=&gt; <span class="string">"UNKNOWN"</span>,
     }
     .to_owned()
