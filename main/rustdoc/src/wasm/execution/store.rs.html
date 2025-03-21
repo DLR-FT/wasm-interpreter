@@ -146,13 +146,9 @@
 <a href="#144" id="144">144</a>
 <a href="#145" id="145">145</a>
 <a href="#146" id="146">146</a>
-<a href="#147" id="147">147</a>
-<a href="#148" id="148">148</a>
-<a href="#149" id="149">149</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>alloc::string::String;
 <span class="kw">use </span>alloc::vec;
 <span class="kw">use </span>alloc::vec::Vec;
-<span class="kw">use </span>core::iter;
 
 <span class="kw">use </span><span class="kw">crate</span>::core::indices::TypeIdx;
 <span class="kw">use </span><span class="kw">crate</span>::core::reader::span::Span;
@@ -161,6 +157,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::core::reader::types::{MemType, TableType, ValType};
 <span class="kw">use </span><span class="kw">crate</span>::core::sidetable::Sidetable;
 <span class="kw">use </span><span class="kw">crate</span>::execution::value::{Ref, Value};
+<span class="kw">use </span><span class="kw">crate</span>::linear_memory::LinearMemory;
 <span class="kw">use </span><span class="kw">crate</span>::RefType;
 
 <span class="doccomment">/// The store represents all global state that can be manipulated by WebAssembly programs. It
@@ -265,27 +262,24 @@
 <span class="kw">pub struct </span>MemInst {
     <span class="attr">#[allow(warnings)]
     </span><span class="kw">pub </span>ty: MemType,
-    <span class="kw">pub </span>data: Vec&lt;u8&gt;,
+    <span class="kw">pub </span>mem: LinearMemory,
 }
 
 <span class="kw">impl </span>MemInst {
     <span class="kw">pub fn </span>new(ty: MemType) -&gt; <span class="self">Self </span>{
-        <span class="kw">let </span>initial_size = (<span class="kw">crate</span>::Limits::MEM_PAGE_SIZE <span class="kw">as </span>usize) * ty.limits.min <span class="kw">as </span>usize;
-
         <span class="self">Self </span>{
             ty,
-            data: <span class="macro">vec!</span>[<span class="number">0u8</span>; initial_size],
+            mem: LinearMemory::new_with_initial_pages(ty.limits.min.try_into().unwrap()),
         }
     }
 
     <span class="kw">pub fn </span>grow(<span class="kw-2">&amp;mut </span><span class="self">self</span>, delta_pages: usize) {
-        <span class="self">self</span>.data
-            .extend(iter::repeat(<span class="number">0</span>).take(delta_pages * (<span class="kw">crate</span>::Limits::MEM_PAGE_SIZE <span class="kw">as </span>usize)))
+        <span class="self">self</span>.mem.grow(delta_pages.try_into().unwrap())
     }
 
     <span class="doccomment">/// Can never be bigger than 65,356 pages
     </span><span class="kw">pub fn </span>size(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
-        <span class="self">self</span>.data.len() / (<span class="kw">crate</span>::Limits::MEM_PAGE_SIZE <span class="kw">as </span>usize)
+        <span class="self">self</span>.mem.len() / (<span class="kw">crate</span>::Limits::MEM_PAGE_SIZE <span class="kw">as </span>usize)
     }
 }
 

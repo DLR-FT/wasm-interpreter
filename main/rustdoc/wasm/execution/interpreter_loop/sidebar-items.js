@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["do_sidetable_control_transfer","run"]};
+window.SIDEBAR_ITEMS = {"fn":["do_sidetable_control_transfer","get_store_index","run"]};

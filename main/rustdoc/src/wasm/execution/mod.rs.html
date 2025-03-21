@@ -770,9 +770,6 @@
 <a href="#768" id="768">768</a>
 <a href="#769" id="769">769</a>
 <a href="#770" id="770">770</a>
-<a href="#771" id="771">771</a>
-<a href="#772" id="772">772</a>
-<a href="#773" id="773">773</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>alloc::collections::btree_map::BTreeMap;
 <span class="kw">use </span>alloc::string::{String, ToString};
 <span class="kw">use </span>alloc::vec;
@@ -789,6 +786,7 @@
 <span class="kw">use </span>value_stack::Stack;
 
 <span class="kw">use </span><span class="kw">crate</span>::core::error::StoreInstantiationError;
+<span class="kw">use </span><span class="kw">crate</span>::core::indices::MemIdx;
 <span class="kw">use </span><span class="kw">crate</span>::core::reader::types::element::{ElemItems, ElemMode};
 <span class="kw">use </span><span class="kw">crate</span>::core::reader::types::export::ExportDesc;
 <span class="kw">use </span><span class="kw">crate</span>::core::reader::types::import::ImportDesc;
@@ -808,6 +806,7 @@
 <span class="kw">pub mod </span>function_ref;
 <span class="kw">pub mod </span>hooks;
 <span class="kw">mod </span>interpreter_loop;
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>linear_memory;
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>locals;
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>lut;
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>store;
@@ -1472,15 +1471,10 @@
 
                     <span class="kw">let </span>mem_inst = memory_instances.get_mut(mem_idx).unwrap();
 
-                    <span class="kw">let </span>len = mem_inst.data.len();
-                    <span class="kw">if </span>offset <span class="kw">as </span>usize + d.init.len() &gt; len {
-                        <span class="kw">return </span><span class="prelude-val">Err</span>(Error::StoreInstantiationError(ActiveDataWriteOutOfBounds));
-                    }
-                    <span class="kw">let </span>data = mem_inst
-                        .data
-                        .get_mut(offset <span class="kw">as </span>usize..offset <span class="kw">as </span>usize + d.init.len())
-                        .unwrap();
-                    data.copy_from_slice(<span class="kw-2">&amp;</span>d.init);
+                    mem_inst
+                        .mem
+                        .init(offset <span class="kw">as </span>MemIdx, <span class="kw-2">&amp;</span>d.init, <span class="number">0</span>, d.init.len())
+                        .map_err(|<span class="kw">_</span>| Error::StoreInstantiationError(ActiveDataWriteOutOfBounds))<span class="question-mark">?</span>;
                 }
                 <span class="prelude-val">Ok</span>(DataInst {
                     data: d.init.clone(),
