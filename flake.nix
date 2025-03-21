@@ -27,176 +27,190 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
-  outputs = { self, nixpkgs, utils, naersk, devshell, treefmt-nix, ... }@inputs:
-    utils.lib.eachSystem [ "x86_64-linux" "i686-linux" "aarch64-linux" ] (system:
-      let
-        lib = nixpkgs.lib;
-        pkgs = import nixpkgs {
-          inherit system;
-          overlays = [
-            devshell.overlays.default
+  outputs =
+    {
+      self,
+      nixpkgs,
+      utils,
+      naersk,
+      devshell,
+      treefmt-nix,
+      ...
+    }@inputs:
+    utils.lib.eachSystem
+      [
+        "x86_64-linux"
+        "i686-linux"
+        "aarch64-linux"
+      ]
+      (
+        system:
+        let
+          lib = nixpkgs.lib;
+          pkgs = import nixpkgs {
+            inherit system;
+            overlays = [
+              devshell.overlays.default
 
-            # We unfortunately need the most up-to-date typst
-            (final: prev: {
-              typst = inputs.nixpkgs-unstable.legacyPackages.${pkgs.hostPlatform.system}.typst;
-            })
-          ];
-        };
-
-        # universal formatter
-        treefmtEval = treefmt-nix.lib.evalModule pkgs ./treefmt.nix;
-
-        # rust target name of the `system`
-        rust-target = pkgs.pkgsStatic.targetPlatform.rust.rustcTarget;
-
-        # Rust distribution for our hostSystem
-        fenix = inputs.fenix.packages.${system};
-
-        rust-toolchain = with fenix; combine [
-          latest.rustc
-          latest.cargo
-          latest.clippy
-          latest.rustfmt
-          targets.${rust-target}.latest.rust-std
-          targets.thumbv6m-none-eabi.latest.rust-std # for no_std test
-          targets.wasm32-unknown-unknown.latest.rust-std
-        ];
-
-        # overrides a naersk-lib which uses the stable toolchain expressed above
-        naersk-lib = (naersk.lib.${system}.override {
-          cargo = rust-toolchain;
-          rustc = rust-toolchain;
-        });
-
-        typstPackagesCache = pkgs.stdenv.mkDerivation {
-          name = "typst-packages-cache";
-          src = inputs.typst-packages;
-          dontBuild = true;
-          installPhase = ''
-            mkdir -p "$out/typst/packages"
-            cp --dereference --no-preserve=mode --recursive --reflink=auto \
-              --target-directory="$out/typst/packages" -- "$src"/packages/*
-          '';
-        };
-      in
-      {
-        # packages
-        packages.wasm-interpreter = pkgs.callPackage pkgs/wasm-interpreter.nix { };
-        packages.whitepaper = inputs.typix.lib.${system}.buildTypstProject {
-          name = "whitepaper.pdf";
-          src = ./whitepaper;
-          XDG_CACHE_HOME = typstPackagesCache;
-        };
-
-        packages.report = pkgs.callPackage pkgs/report.nix {
-          inherit (self.packages.${system}) wasm-interpreter whitepaper;
-        };
-
-
-        # a devshell with all the necessary bells and whistles
-        devShells.default = (pkgs.devshell.mkShell {
-          imports = [ "${devshell}/extra/git/hooks.nix" ];
-          name = "wasm-interpreter";
-          packages = with pkgs; [
-            stdenv.cc
-            coreutils
-            rust-toolchain
-            rust-analyzer
-            cargo-audit
-            cargo-expand
-            cargo-llvm-cov
-            cargo-outdated
-            cargo-udeps
-            cargo-watch
-            nodePackages.prettier
-            strictdoc
-            wabt
-
-            # utilities
-            nixpkgs-fmt
-            nodePackages.prettier
-            treefmtEval.config.build.wrapper
-            typst # for the whitepaper
-          ];
-          env = [
-            {
-              name = "LLVM_COV";
-              value = self.packages.${system}.wasm-interpreter.LLVM_COV;
-            }
-            {
-              name = "LLVM_PROFDATA";
-              value = self.packages.${system}.wasm-interpreter.LLVM_PROFDATA;
-            }
-          ];
-          git.hooks = {
-            enable = true;
-            pre-commit.text = "nix flake check";
+              # We unfortunately need the most up-to-date typst
+              (final: prev: { typst = inputs.nixpkgs-unstable.legacyPackages.${pkgs.hostPlatform.system}.typst; })
+            ];
           };
-          commands = [
-            {
-              name = "requirements-export-excel";
-              command = ''
-                strictdoc export --output-dir "$PRJ_ROOT/requirements/export" \
-                  --formats=excel \
-                  "$PRJ_ROOT/requirements"
-              '';
-              help = "export the requirements to requirements/export";
-            }
-            {
-              name = "requirements-export-html";
-              command = ''
-                strictdoc export --output-dir "$PRJ_ROOT/requirements/export" \
-                  --formats=html \
-                  "$PRJ_ROOT/requirements"
-              '';
-              help = "export the requirements to requirements/export";
-            }
-            {
-              name = "requirements-web-server";
-              command = ''
-                strictdoc server "$PRJ_ROOT/requirements"
-              '';
-              help = "start the requirements editor web-ui";
-            }
-            {
-              name = "cargo-watch-doc";
-              command = ''
-                cargo watch --shell 'cargo doc --document-private-items'
-              '';
-              help = "start cargo watch loop for documentation";
-            }
-            {
-              name = "whitepaper-watch";
-              command = ''
-                typst watch --root "$PRJ_ROOT/whitepaper" "$PRJ_ROOT/whitepaper/main.typ"
-              '';
-              help = "start typst watch loop for the whitepaper";
-            }
-          ];
-        });
 
+          # universal formatter
+          treefmtEval = treefmt-nix.lib.evalModule pkgs ./treefmt.nix;
 
-        # for `nix fmt`
-        formatter = treefmtEval.config.build.wrapper;
+          # rust target name of the `system`
+          rust-target = pkgs.pkgsStatic.targetPlatform.rust.rustcTarget;
 
-        # always check these
-        checks = {
-          formatting = treefmtEval.config.build.check self;
-          # TODO remove once https://github.com/numtide/treefmt/issues/153 is closed
-          format-bug-fix = pkgs.runCommand "yaml-fmt"
-            {
+          # Rust distribution for our hostSystem
+          fenix = inputs.fenix.packages.${system};
+
+          rust-toolchain =
+            with fenix;
+            combine [
+              latest.rustc
+              latest.cargo
+              latest.clippy
+              latest.rustfmt
+              targets.${rust-target}.latest.rust-std
+              targets.thumbv6m-none-eabi.latest.rust-std # for no_std test
+              targets.wasm32-unknown-unknown.latest.rust-std
+            ];
+
+          # overrides a naersk-lib which uses the stable toolchain expressed above
+          naersk-lib = (
+            naersk.lib.${system}.override {
+              cargo = rust-toolchain;
+              rustc = rust-toolchain;
+            }
+          );
+
+          typstPackagesCache = pkgs.stdenv.mkDerivation {
+            name = "typst-packages-cache";
+            src = inputs.typst-packages;
+            dontBuild = true;
+            installPhase = ''
+              mkdir -p "$out/typst/packages"
+              cp --dereference --no-preserve=mode --recursive --reflink=auto \
+                --target-directory="$out/typst/packages" -- "$src"/packages/*
+            '';
+          };
+        in
+        {
+          # packages
+          packages.wasm-interpreter = pkgs.callPackage pkgs/wasm-interpreter.nix { };
+          packages.whitepaper = inputs.typix.lib.${system}.buildTypstProject {
+            name = "whitepaper.pdf";
+            src = ./whitepaper;
+            XDG_CACHE_HOME = typstPackagesCache;
+          };
+
+          packages.report = pkgs.callPackage pkgs/report.nix {
+            inherit (self.packages.${system}) wasm-interpreter whitepaper;
+          };
+
+          # a devshell with all the necessary bells and whistles
+          devShells.default = (
+            pkgs.devshell.mkShell {
+              imports = [ "${devshell}/extra/git/hooks.nix" ];
+              name = "wasm-interpreter";
+              packages = with pkgs; [
+                stdenv.cc
+                coreutils
+                rust-toolchain
+                rust-analyzer
+                cargo-audit
+                cargo-expand
+                cargo-llvm-cov
+                cargo-outdated
+                cargo-udeps
+                cargo-watch
+                nodePackages.prettier
+                strictdoc
+                wabt
+
+                # utilities
+                nixpkgs-fmt
+                nodePackages.prettier
+                treefmtEval.config.build.wrapper
+                typst # for the whitepaper
+              ];
+              env = [
+                {
+                  name = "LLVM_COV";
+                  value = self.packages.${system}.wasm-interpreter.LLVM_COV;
+                }
+                {
+                  name = "LLVM_PROFDATA";
+                  value = self.packages.${system}.wasm-interpreter.LLVM_PROFDATA;
+                }
+              ];
+              git.hooks = {
+                enable = true;
+                pre-commit.text = "nix flake check";
+              };
+              commands = [
+                {
+                  name = "requirements-export-excel";
+                  command = ''
+                    strictdoc export --output-dir "$PRJ_ROOT/requirements/export" \
+                      --formats=excel \
+                      "$PRJ_ROOT/requirements"
+                  '';
+                  help = "export the requirements to requirements/export";
+                }
+                {
+                  name = "requirements-export-html";
+                  command = ''
+                    strictdoc export --output-dir "$PRJ_ROOT/requirements/export" \
+                      --formats=html \
+                      "$PRJ_ROOT/requirements"
+                  '';
+                  help = "export the requirements to requirements/export";
+                }
+                {
+                  name = "requirements-web-server";
+                  command = ''
+                    strictdoc server "$PRJ_ROOT/requirements"
+                  '';
+                  help = "start the requirements editor web-ui";
+                }
+                {
+                  name = "cargo-watch-doc";
+                  command = ''
+                    cargo watch --shell 'cargo doc --document-private-items'
+                  '';
+                  help = "start cargo watch loop for documentation";
+                }
+                {
+                  name = "whitepaper-watch";
+                  command = ''
+                    typst watch --root "$PRJ_ROOT/whitepaper" "$PRJ_ROOT/whitepaper/main.typ"
+                  '';
+                  help = "start typst watch loop for the whitepaper";
+                }
+              ];
+            }
+          );
+
+          # for `nix fmt`
+          formatter = treefmtEval.config.build.wrapper;
+
+          # always check these
+          checks = {
+            formatting = treefmtEval.config.build.check self;
+            # TODO remove once https://github.com/numtide/treefmt/issues/153 is closed
+            format-bug-fix = pkgs.runCommand "yaml-fmt" {
               nativeBuildInputs = [ pkgs.nodePackages.prettier ];
             } "cd ${./.} && prettier --check .github; touch $out";
 
-          requirements = pkgs.runCommand "check-requirement"
-            {
-              nativeBuildInputs = [ pkgs.strictdoc ];
-            } ''
-            shopt -s globstar
-            strictdoc passthrough ${./.}/requirements/**.sdoc
-            touch $out
-          '';
-        };
-      });
+            requirements = pkgs.runCommand "check-requirement" { nativeBuildInputs = [ pkgs.strictdoc ]; } ''
+              shopt -s globstar
+              strictdoc passthrough ${./.}/requirements/**.sdoc
+              touch $out
+            '';
+          };
+        }
+      );
 }
-

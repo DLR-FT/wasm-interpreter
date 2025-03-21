@@ -1,4 +1,8 @@
-{ lib, rustPlatform, cargo-llvm-cov }:
+{
+  lib,
+  rustPlatform,
+  cargo-llvm-cov,
+}:
 
 let
   cargoToml = builtins.fromTOML (builtins.readFile ../Cargo.toml);
@@ -13,13 +17,22 @@ rustPlatform.buildRustPackage rec {
       src = ./..;
 
       # File suffices to include
-      extensions = [ "lock" "rs" "toml" "wast" ];
+      extensions = [
+        "lock"
+        "rs"
+        "toml"
+        "wast"
+      ];
       # Files to explicitly include
       include = [ ];
       # Files to explicitly exclude
-      exclude = [ "flake.lock" "treefmt.toml" ];
+      exclude = [
+        "flake.lock"
+        "treefmt.toml"
+      ];
 
-      filter = (path: type:
+      filter = (
+        path: type:
         let
           inherit (builtins) baseNameOf toString;
           inherit (lib.lists) any;
@@ -36,9 +49,8 @@ rustPlatform.buildRustPackage rec {
           (type == "directory")
           (any (ext: hasSuffix ".${ext}" basename) extensions)
           (any (file: file == relative) include)
-        ]) && !(anyof [
-          (any (file: file == relative) exclude)
         ])
+        && !(anyof [ (any (file: file == relative) exclude) ])
       );
     in
     lib.sources.cleanSourceWith { inherit src filter; };
@@ -54,7 +66,9 @@ rustPlatform.buildRustPackage rec {
 
   # required to measure coverage
   nativeCheckInputs = [ cargo-llvm-cov ];
-  env = { inherit (cargo-llvm-cov) LLVM_COV LLVM_PROFDATA; };
+  env = {
+    inherit (cargo-llvm-cov) LLVM_COV LLVM_PROFDATA;
+  };
 
   # nextest can emit JUnit test reports
   useNextest = true;
@@ -80,7 +94,10 @@ rustPlatform.buildRustPackage rec {
 
   meta = {
     inherit (cargoToml.package) description homepage;
-    license = with lib.licenses; [ asl20 /* OR */ mit ];
+    license = with lib.licenses; [
+      asl20 # OR
+      mit
+    ];
     maintainers = [ lib.maintainers.wucke13 ];
   };
 }
