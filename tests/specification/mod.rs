@@ -5,7 +5,6 @@ use std::path::Path;
 mod files;
 mod reports;
 mod run;
-mod test;
 mod test_errors;
 
 #[test_log::test]
