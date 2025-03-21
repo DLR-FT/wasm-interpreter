@@ -133,10 +133,20 @@
 <a href="#131" id="131">131</a>
 <a href="#132" id="132">132</a>
 <a href="#133" id="133">133</a>
+<a href="#134" id="134">134</a>
+<a href="#135" id="135">135</a>
+<a href="#136" id="136">136</a>
+<a href="#137" id="137">137</a>
+<a href="#138" id="138">138</a>
+<a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
 </pre></div><pre class="rust"><code><span class="kw">use crate</span>::{
     assert_validated::UnwrapValidatedExt,
     core::reader::{span::Span, WasmReadable, WasmReader},
-    value::{FuncAddr, Ref},
+    value::{<span class="self">self</span>, FuncAddr, Ref},
     value_stack::Stack,
     NumType, RefType, ValType, Value,
 };
@@ -178,6 +188,16 @@
             I32_CONST =&gt; {
                 <span class="kw">let </span>constant = wasm.read_var_i32().unwrap_validated();
                 <span class="macro">trace!</span>(<span class="string">"Constant instruction: i32.const [] -&gt; [{constant}]"</span>);
+                stack.push_value(constant.into());
+            }
+            F32_CONST =&gt; {
+                <span class="kw">let </span>constant = value::F32::from_bits(wasm.read_var_f32().unwrap_validated());
+                <span class="macro">trace!</span>(<span class="string">"Constanting instruction: f32.const [] -&gt; [{constant}]"</span>);
+                stack.push_value(constant.into());
+            }
+            F64_CONST =&gt; {
+                <span class="kw">let </span>constant = value::F64::from_bits(wasm.read_var_f64().unwrap_validated());
+                <span class="macro">trace!</span>(<span class="string">"Constanting instruction: f64.const [] -&gt; [{constant}]"</span>);
                 stack.push_value(constant.into());
             }
             I32_ADD =&gt; {

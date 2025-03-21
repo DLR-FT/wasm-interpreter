@@ -150,6 +150,14 @@
 <a href="#148" id="148">148</a>
 <a href="#149" id="149">149</a>
 <a href="#150" id="150">150</a>
+<a href="#151" id="151">151</a>
+<a href="#152" id="152">152</a>
+<a href="#153" id="153">153</a>
+<a href="#154" id="154">154</a>
+<a href="#155" id="155">155</a>
+<a href="#156" id="156">156</a>
+<a href="#157" id="157">157</a>
+<a href="#158" id="158">158</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::core::reader::span::Span;
 <span class="kw">use </span><span class="kw">crate</span>::core::reader::types::global::GlobalType;
 <span class="kw">use </span><span class="kw">crate</span>::core::reader::{WasmReadable, WasmReader};
@@ -261,6 +269,14 @@
             I32_CONST =&gt; {
                 <span class="kw">let </span>_num = wasm.read_var_i32()<span class="question-mark">?</span>;
                 stack.push_valtype(ValType::NumType(NumType::I32));
+            }
+            F32_CONST =&gt; {
+                <span class="kw">let </span>_num = wasm.read_var_f32();
+                stack.push_valtype(ValType::NumType(NumType::F32));
+            }
+            F64_CONST =&gt; {
+                <span class="kw">let </span>_num = wasm.read_var_f64();
+                stack.push_valtype(ValType::NumType(NumType::F64));
             }
             I64_CONST =&gt; {
                 <span class="kw">let </span>_num = wasm.read_var_i64()<span class="question-mark">?</span>;
