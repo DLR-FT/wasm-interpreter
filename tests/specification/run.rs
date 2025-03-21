@@ -57,11 +57,7 @@ macro_rules! try_to {
 }
 
 /// Clear the bytes and runtime instance before calling this function
-fn encode_validate_instantiate<'a>(
-    module: &mut wast::QuoteWat,
-    bytes: &'a mut Option<Vec<u8>>,
-    runtime: &mut Option<RuntimeInstance<'a>>,
-) -> Result<(), Box<dyn Error>> {
+fn encode(module: &mut wast::QuoteWat) -> Result<Vec<u8>, Box<dyn Error>> {
     match &module {
         QuoteWat::QuoteComponent(..) | QuoteWat::Wat(wast::Wat::Component(..)) => {
             return Err(GenericError::new_boxed(
@@ -72,10 +68,12 @@ fn encode_validate_instantiate<'a>(
     };
 
     let inner_bytes = module.encode().map_err(|err| Box::new(err))?;
-    bytes.replace(inner_bytes);
+    Ok(inner_bytes)
+}
 
-    let validation_info_attempt = catch_unwind(|| validate(bytes.as_ref().unwrap()))
-        .map_err(|panic| PanicError::from_panic_boxed(panic))?;
+fn validate_instantiate<'a>(bytes: &'a [u8]) -> Result<RuntimeInstance<'a>, Box<dyn Error>> {
+    let validation_info_attempt =
+        catch_unwind(|| validate(bytes)).map_err(|panic| PanicError::from_panic_boxed(panic))?;
 
     let validation_info =
         validation_info_attempt.map_err(|err| WasmInterpreterError::new_boxed(err))?;
@@ -86,9 +84,7 @@ fn encode_validate_instantiate<'a>(
     let runtime_instance =
         runtime_instance_attempt.map_err(|err| WasmInterpreterError::new_boxed(err))?;
 
-    runtime.replace(runtime_instance);
-
-    Ok(())
+    Ok(runtime_instance)
 }
 
 pub fn run_spec_test(filepath: &str) -> WastTestReport {
@@ -132,19 +128,28 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
             wast::WastDirective::Wat(mut quoted) => {
                 // If we fail to compile or to validate the main module, then we should treat this
                 // as a fatal (compilation) error.
-                try_to!(
-                    encode_validate_instantiate(&mut quoted, &mut wasm_bytes, &mut interpeter)
-                        .map_err(|err| {
-                            ScriptError::new(
-                                filepath,
-                                err,
-                                "Module directive (WAT) failed.",
-                                Some(get_linenum(&contents, quoted.span())),
-                                get_command(&contents, quoted.span()),
-                            )
-                            .compile_report()
-                        },)
-                );
+                wasm_bytes = Some(try_to!(encode(&mut quoted).map_err(|err| {
+                    ScriptError::new(
+                        filepath,
+                        err,
+                        "Module directive (WAT) failed in encoding step.",
+                        Some(get_linenum(&contents, quoted.span())),
+                        get_command(&contents, quoted.span()),
+                    )
+                    .compile_report()
+                })));
+
+                interpeter = Some(try_to!(validate_instantiate(wasm_bytes.as_ref().unwrap())
+                    .map_err(|err| {
+                        ScriptError::new(
+                            filepath,
+                            err,
+                            "Module directive (WAT) failed in validation or instantiation.",
+                            Some(get_linenum(&contents, quoted.span())),
+                            get_command(&contents, quoted.span()),
+                        )
+                        .compile_report()
+                    })));
             }
             wast::WastDirective::AssertReturn {
                 span,
@@ -239,7 +244,8 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                     "Module validated and instantiated successfully, when it shouldn't have",
                 );
 
-                match encode_validate_instantiate(&mut module, &mut None, &mut None) {
+                match encode(&mut module).and_then(|bytes| validate_instantiate(&bytes).map(|_| ()))
+                {
                     Err(_) => asserts.push_success(WastSuccess::new(line_number, cmd)),
                     Ok(_) => asserts.push_error(WastError::new(error, line_number, cmd)),
                 };
@@ -256,7 +262,8 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                     "Module validated and instantiated successfully, when it shouldn't have",
                 );
 
-                match encode_validate_instantiate(&mut module, &mut None, &mut None) {
+                match encode(&mut module).and_then(|bytes| validate_instantiate(&bytes).map(|_| ()))
+                {
                     Err(_) => asserts.push_success(WastSuccess::new(line_number, cmd)),
                     Ok(_) => asserts.push_error(WastError::new(error, line_number, cmd)),
                 };
