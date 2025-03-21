@@ -1,17 +1,12 @@
 use files::{Filter, FnF};
 use reports::WastTestReport;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 mod files;
 mod reports;
 mod run;
+mod test;
 mod test_errors;
-
-struct Report {
-    #[allow(dead_code)]
-    fp: PathBuf,
-    report: WastTestReport,
-}
 
 #[test_log::test]
 pub fn spec_tests() {
@@ -31,7 +26,7 @@ pub fn spec_tests() {
     let mut successful_reports = 0;
     let mut failed_reports = 0;
     let mut compile_error_reports = 0;
-    let mut reports: Vec<Report> = Vec::with_capacity(paths.len());
+    let mut reports: Vec<WastTestReport> = Vec::with_capacity(paths.len());
 
     let mut longest_string_len: usize = 0;
 
@@ -39,9 +34,8 @@ pub fn spec_tests() {
         let mut report = run::run_spec_test(test_path.to_str().unwrap());
 
         match &mut report {
-            reports::WastTestReport::Asserts(ref mut assert_report) => {
+            reports::WastTestReport::Asserts(assert_report) => {
                 // compute auxiliary data
-                assert_report.compute_data();
                 if assert_report.filename.len() > longest_string_len {
                     longest_string_len = assert_report.filename.len();
                 }
@@ -51,27 +45,25 @@ pub fn spec_tests() {
                     successful_reports += 1;
                 }
             }
-            reports::WastTestReport::CompilationError(_) => {
+            reports::WastTestReport::ScriptError(_) => {
                 compile_error_reports += 1;
             }
         };
 
-        let rep = Report {
-            fp: test_path.clone(),
-            report,
-        };
-
-        reports.push(rep);
+        reports.push(report);
     }
 
     let mut no_compile_errors_reports = reports
         .iter()
-        .filter_map(|e| match &e.report {
+        .filter_map(|r| match r {
             WastTestReport::Asserts(asserts) => Some(asserts),
             _ => None,
         })
         .collect::<Vec<&reports::AssertReport>>();
-    no_compile_errors_reports.sort_by(|a, b| b.percentage.total_cmp(&a.percentage));
+    no_compile_errors_reports.sort_by(|a, b| {
+        b.percentage_asserts_passed()
+            .total_cmp(&a.percentage_asserts_passed())
+    });
 
     let mut successful_mini_tests = 0;
     let mut total_mini_tests = 0;
@@ -82,19 +74,19 @@ pub fn spec_tests() {
         final_status += format!(
             "Report for {:filename_width$}: Tests: {:passed_width$} Passed, {:failed_width$} Failed --- {:percentage_width$.2}%\n",
             report.filename,
-            report.successful,
-            report.failed,
-            report.percentage,
+            report.passed_asserts(),
+            report.failed_asserts(),
+            report.percentage_asserts_passed(),
             filename_width = longest_string_len + 1,
             passed_width = 7,
             failed_width = 7,
             percentage_width = 6
         ).as_str();
 
-        successful_mini_tests += report.successful;
-        total_mini_tests += report.total;
+        successful_mini_tests += report.passed_asserts();
+        total_mini_tests += report.total_asserts();
 
-        if report.successful < report.total {
+        if report.passed_asserts() < report.total_asserts() {
             println!("{}", report);
         }
     }
