@@ -43,7 +43,7 @@ fn memory_fill() {
 
     let fill = get_func!(i, "fill");
     i.invoke::<(), ()>(fill, ()).unwrap();
-    let mem = &i.modules[0].store.mems[0];
+    let mem = &(&i.store).as_ref().unwrap().memories[0];
     assert!(mem.data.as_slice()[0..105]
         .eq_ignore_ascii_case(&vec![vec![217u8; 100], vec![0u8; 5]].concat()))
 }

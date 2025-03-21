@@ -503,6 +503,12 @@ fn read_instructions(
                     .ok_or(Error::InvalidGlobalIdx(global_idx))?;
 
                 stack.push_valtype(global.ty.ty);
+                trace!(
+                    "Instruction: global.get '{}' [] -> [{:?}]",
+                    global_idx,
+                    // global,
+                    global.ty.ty
+                );
             }
             // global.set [t] -> []
             GLOBAL_SET => {
@@ -1035,6 +1041,11 @@ fn read_instructions(
                     // TODO only do this if EOF
                     return Err(Error::ExprMissingEnd);
                 };
+
+                #[cfg(debug_assertions)]
+                crate::core::utils::print_beautiful_fc_extension(second_instr_byte, wasm.pc);
+
+                #[cfg(not(debug_assertions))]
                 trace!("Read instruction byte {second_instr_byte:#04X?} ({second_instr_byte}) at wasm_binary[{}]", wasm.pc);
 
                 use crate::core::reader::types::opcode::fc_extensions::*;
@@ -1227,6 +1238,33 @@ fn read_instructions(
                     }
                 }
             }
+
+            I32_EXTEND8_S => {
+                stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+
+                stack.push_valtype(ValType::NumType(NumType::I32));
+            }
+            I32_EXTEND16_S => {
+                stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+
+                stack.push_valtype(ValType::NumType(NumType::I32));
+            }
+            I64_EXTEND8_S => {
+                stack.assert_pop_val_type(ValType::NumType(NumType::I64))?;
+
+                stack.push_valtype(ValType::NumType(NumType::I64));
+            }
+            I64_EXTEND16_S => {
+                stack.assert_pop_val_type(ValType::NumType(NumType::I64))?;
+
+                stack.push_valtype(ValType::NumType(NumType::I64));
+            }
+            I64_EXTEND32_S => {
+                stack.assert_pop_val_type(ValType::NumType(NumType::I64))?;
+
+                stack.push_valtype(ValType::NumType(NumType::I64));
+            }
+
             _ => return Err(Error::InvalidInstr(first_instr_byte)),
         }
     }

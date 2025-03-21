@@ -14,7 +14,6 @@ use crate::{unreachable_validated, Error};
 pub mod data;
 pub mod element;
 pub mod export;
-pub mod function_code_header;
 pub mod global;
 pub mod import;
 pub mod memarg;

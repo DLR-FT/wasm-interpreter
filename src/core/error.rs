@@ -31,6 +31,7 @@ pub enum RuntimeError {
     UndefinedTableIndex,
     // "undefined element" <- as-call_indirect-last
     // "unreachable"
+    StoreNotFound,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -46,6 +47,11 @@ pub enum StoreInstantiationError {
     I64ValueOutOfReach(String),
     MissingValueOnTheStack,
     TooManyMemories(usize),
+}
+
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub enum LinkerError {
+    UnmetImport,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -107,6 +113,11 @@ pub enum Error {
     TooManyLocals(usize),
     UnsupportedProposal(Proposal),
     Overflow,
+    LinkerError(LinkerError),
+    UnknownFunction,
+    UnknownMemory,
+    UnknownGlobal,
+    DuplicateExportName,
 }
 
 impl Display for Error {
@@ -264,6 +275,15 @@ impl Display for Error {
                 f.write_fmt(format_args!("Unsupported proposal: {:?}", proposal))
             }
             Error::Overflow => f.write_str("Overflow"),
+            Error::LinkerError(err) => err.fmt(f),
+
+            // TODO: maybe move these to LinkerError also add more info to them (the name's export, function idx, etc)
+            Error::UnknownFunction => f.write_str("Unknown function"),
+            Error::UnknownMemory => f.write_str("Unknown table"),
+            Error::UnknownGlobal => f.write_str("Unknown global"),
+            Error::DuplicateExportName => f.write_str("Duplicate export name"),
+            // TODO: maybe move these to LinkerError also add more info to them (the name's export, function idx, etc)
+
         }
     }
 }
@@ -291,6 +311,7 @@ impl Display for RuntimeError {
             RuntimeError::UndefinedTableIndex => {
                 f.write_str("Indirect call: table index out of bounds")
             }
+            RuntimeError::StoreNotFound => f.write_str("Store not found"),
         }
     }
 }
@@ -312,6 +333,15 @@ impl Display for StoreInstantiationError {
             )),
             MissingValueOnTheStack => f.write_str(""),
             TooManyMemories(x) => f.write_fmt(format_args!("Too many memories (overflow): {}", x)),
+        }
+    }
+}
+
+impl Display for LinkerError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        use LinkerError::*;
+        match self {
+            UnmetImport => f.write_str("Unmet import"),
         }
     }
 }
