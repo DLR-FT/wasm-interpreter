@@ -333,6 +333,8 @@ sdoc-field {
      positioned relative to it:
   */
   position: relative;
+  flex-grow: 1;
+  width: 100%; /* holds within the width of the parent */
 }
 
 sdoc-field-content {
@@ -1452,4 +1454,8 @@ a.sdoc-table_key_value-key::after {
   font-size: var(--font-size-xxsm);
   font-weight: 600;
   text-transform: uppercase;
+}
+
+.error {
+  color: var(--color-danger);
 }

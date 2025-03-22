@@ -7,6 +7,22 @@
             "GRAMMAR": {
                 "ELEMENTS": [
                     {
+                        "NODE_TYPE": "TEXT",
+                        "FIELDS": [
+                            {
+                                "TITLE": "UID",
+                                "REQUIRED": false,
+                                "TYPE": "String"
+                            },
+                            {
+                                "TITLE": "STATEMENT",
+                                "REQUIRED": true,
+                                "TYPE": "String"
+                            }
+                        ],
+                        "RELATIONS": []
+                    },
+                    {
                         "NODE_TYPE": "REQUIREMENT",
                         "FIELDS": [
                             {
@@ -73,42 +89,42 @@
                             "TYPE": "REQUIREMENT",
                             "UID": "REQ-1",
                             "TITLE": "Resumable",
-                            "STATEMENT": "The interpreter shall be resumable",
-                            "RATIONALE": "Operation with fuel or other implementations of bounded run-time requires that the interpreter can be halted.\nConversely, later on the interpreter may be resumed, as if it was not halted in the first place."
+                            "STATEMENT": "The interpreter shall be resumable\n",
+                            "RATIONALE": "Operation with fuel or other implementations of bounded run-time requires that the interpreter can be halted.\nConversely, later on the interpreter may be resumed, as if it was not halted in the first place.\n"
                         },
                         {
                             "_TOC": "1.2",
                             "TYPE": "REQUIREMENT",
                             "UID": "REQ-3",
                             "TITLE": "Baremetal",
-                            "STATEMENT": "The interpreter shall be executable on bare-metal environments",
-                            "RATIONALE": "No reliance on any specific functionality from the provided execution environment is acceptable, as the interpreter shall be ready for embedding to any environment that Rust can compile for."
+                            "STATEMENT": "The interpreter shall be executable on bare-metal environments\n",
+                            "RATIONALE": "No reliance on any specific functionality from the provided execution environment is acceptable, as the interpreter shall be ready for embedding to any environment that Rust can compile for.\n"
                         },
                         {
                             "_TOC": "1.3",
                             "TYPE": "REQUIREMENT",
                             "UID": "REQ-5",
                             "TITLE": "Bounded execution",
-                            "STATEMENT": "The interpreter shall yield back control flow eventually",
-                            "RATIONALE": "A user shall be able to call the interpreter with a bound, expecting a result in a finite amount of time or bytecode operations. Even if the bytecode itself does never finish execution (i.e. due to a infinite loop), the interpreter shall yield eventually, by pausing the bytecode execution.",
-                            "COMMENT": "It is not acceptable to constraint the interpreter to only those bytecode instances for which the halting-problem is solvable."
+                            "STATEMENT": "The interpreter shall yield back control flow eventually\n",
+                            "RATIONALE": "A user shall be able to call the interpreter with a bound, expecting a result in a finite amount of time or bytecode operations. Even if the bytecode itself does never finish execution (i.e. due to a infinite loop), the interpreter shall yield eventually, by pausing the bytecode execution.\n",
+                            "COMMENT": "It is not acceptable to constraint the interpreter to only those bytecode instances for which the halting-problem is solvable.\n"
                         },
                         {
                             "_TOC": "1.4",
                             "TYPE": "REQUIREMENT",
                             "UID": "REQ-12",
                             "TITLE": "Migrateable",
-                            "STATEMENT": "The interpreter state shall be able to halt on one computer and continue execution on another",
-                            "RATIONALE": "This enables various workflows in deployments of multiple computers. For load-balancing or redundancy purposes, running applications can be migrated to other computers without disruption."
+                            "STATEMENT": "The interpreter state shall be able to halt on one computer and continue execution on another\n",
+                            "RATIONALE": "This enables various workflows in deployments of multiple computers. For load-balancing or redundancy purposes, running applications can be migrated to other computers without disruption.\n"
                         },
                         {
                             "_TOC": "1.5",
                             "TYPE": "REQUIREMENT",
                             "UID": "REQ-14",
                             "TITLE": "No Dependencies",
-                            "STATEMENT": "No dependencies but those explicitly allowed by a requirement shall be used",
-                            "RATIONALE": "Dependencies have to forego the full V&V process as well, which quickly adds enormous work.",
-                            "COMMENT": "All requirements that allow a dependency must specify the exact version of the dependency (at least major, minor and patch release)"
+                            "STATEMENT": "No dependencies but those explicitly allowed by a requirement shall be used\n",
+                            "RATIONALE": "Dependencies have to forego the full V&V process as well, which quickly adds enormous work.\n",
+                            "COMMENT": "All requirements that allow a dependency must specify the exact version of the dependency (at least major, minor and patch release)\n"
                         },
                         {
                             "_TOC": "1.6",
@@ -120,8 +136,8 @@
                                     "TYPE": "REQUIREMENT",
                                     "UID": "REQ-2",
                                     "TITLE": "Stackless",
-                                    "STATEMENT": "The interpreter shall be stackless",
-                                    "RATIONALE": "A stackless interpreter is one that does not use function calls in the host environment to implement function calls inside the interpreter. Instead, the stack of the interpreted bytecode is stored in a traditional data structure (such as a Vec<u8>). Interpretation can be interrupted between any two virtual instructions of the bytecode, and crucially so resumed from there.\n\nFurther information: https://kyju.org/blog/piccolo-a-stackless-lua-interpreter/#a-stackless-interpreter-design",
+                                    "STATEMENT": "The interpreter shall be stackless\n",
+                                    "RATIONALE": "A stackless interpreter is one that does not use function calls in the host environment to implement function calls inside the interpreter. Instead, the stack of the interpreted bytecode is stored in a traditional data structure (such as a Vec<u8>). Interpretation can be interrupted between any two virtual instructions of the bytecode, and crucially so resumed from there.\n\nFurther information: https://kyju.org/blog/piccolo-a-stackless-lua-interpreter/#a-stackless-interpreter-design\n",
                                     "RELATIONS": [
                                         {
                                             "TYPE": "Parent",
@@ -134,9 +150,9 @@
                                     "TYPE": "REQUIREMENT",
                                     "UID": "REQ-4",
                                     "TITLE": "no_std",
-                                    "STATEMENT": "The interpreter shall be implemented in no_std Rust",
-                                    "RATIONALE": "Only relying on the functionality that is provided by no_std enables execution on bare environments where operating system is available.",
-                                    "COMMENT": "Reliance on alloc is allowable, as an allocator can be implemented without further reliance on the execution environment.",
+                                    "STATEMENT": "The interpreter shall be implemented in no_std Rust\n",
+                                    "RATIONALE": "Only relying on the functionality that is provided by no_std enables execution on bare environments where operating system is available.\n",
+                                    "COMMENT": "Reliance on alloc is allowable, as an allocator can be implemented without further reliance on the execution environment.\n",
                                     "RELATIONS": [
                                         {
                                             "TYPE": "Parent",
@@ -149,8 +165,8 @@
                                     "TYPE": "REQUIREMENT",
                                     "UID": "REQ-6",
                                     "TITLE": "Fuel",
-                                    "STATEMENT": "The interpreter shall support fuel bounded execution",
-                                    "RATIONALE": "Fuel is a mechanism to limit the amount of bytecode operations conducted when calling the interpreter. Each bytecode instruction is associated with a specific amount of fuel consumed when executing it. The interpreter is provided a finite amount of fuel, that is deplete during execution, until the amount of fuel is insufficient to conduct further bytecode operations. At this point, the interpreter yields back the control flow. Later on, the execution may be resumed.\n\nFurther information: https://docs.rs/wasmtime/latest/wasmtime/struct.Config.html#method.consume_fuel",
+                                    "STATEMENT": "The interpreter shall support fuel bounded execution\n",
+                                    "RATIONALE": "Fuel is a mechanism to limit the amount of bytecode operations conducted when calling the interpreter. Each bytecode instruction is associated with a specific amount of fuel consumed when executing it. The interpreter is provided a finite amount of fuel, that is deplete during execution, until the amount of fuel is insufficient to conduct further bytecode operations. At this point, the interpreter yields back the control flow. Later on, the execution may be resumed.\n\nFurther information: https://docs.rs/wasmtime/latest/wasmtime/struct.Config.html#method.consume_fuel\n",
                                     "RELATIONS": [
                                         {
                                             "TYPE": "Parent",
@@ -163,8 +179,8 @@
                                     "TYPE": "REQUIREMENT",
                                     "UID": "REQ-13",
                                     "TITLE": "De-/Serializable",
-                                    "STATEMENT": "The interpreter state shall be de-/serializable",
-                                    "RATIONALE": "If the interpreter state can be serialized to and deserialized from a canonical representation, migration to other computers as well as check-point/lock-step like execution become simple to implement.",
+                                    "STATEMENT": "The interpreter state shall be de-/serializable\n",
+                                    "RATIONALE": "If the interpreter state can be serialized to and deserialized from a canonical representation, migration to other computers as well as check-point/lock-step like execution become simple to implement.\n",
                                     "RELATIONS": [
                                         {
                                             "TYPE": "Parent",
@@ -177,8 +193,8 @@
                                     "TYPE": "REQUIREMENT",
                                     "UID": "REQ-15",
                                     "TITLE": "Allow log dependency",
-                                    "STATEMENT": "The interpreter shall have an optional dependency on the ``log`` crate version ``0.4.22``",
-                                    "RATIONALE": "Logging is an essential tool to make a system observable, and aid in debugging. Bespoke crate is widely used in the Rust ecosystem and can be attached to any (or no) logging backend. Using conditional compilation, all of the ``log`` crate's footprint in the WASM interpreter (foremost the ``debug``, ``error``, ``info``, ``trace`` and ``warn`` macro) can be expanded to empty statements to avoid **any** run-time impact when opting out of the dependency on ``log``.",
+                                    "STATEMENT": "The interpreter shall have an optional dependency on the ``log`` crate version ``0.4.22``\n",
+                                    "RATIONALE": "Logging is an essential tool to make a system observable, and aid in debugging. Bespoke crate is widely used in the Rust ecosystem and can be attached to any (or no) logging backend. Using conditional compilation, all of the ``log`` crate's footprint in the WASM interpreter (foremost the ``debug``, ``error``, ``info``, ``trace`` and ``warn`` macro) can be expanded to empty statements to avoid **any** run-time impact when opting out of the dependency on ``log``.\n",
                                     "RELATIONS": [
                                         {
                                             "TYPE": "Parent",
@@ -191,8 +207,8 @@
                                     "TYPE": "REQUIREMENT",
                                     "UID": "REQ-16",
                                     "TITLE": "Allow libm dependency",
-                                    "STATEMENT": "The interpreter may depend on the ``libm`` crate version ``0.2.8``",
-                                    "RATIONALE": "Rust does not expose all floating point operations in a bare-metal (as in ``no_std``) target, as to not introduce any dependency on the C standard library's ``libm`` (respective PR: https://github.com/rust-lang/rust/pull/27823). However, we identified at least the following operations to be required for WASM interpretation while unavailable in ``no_std``:\n\n- ``abs``\n- ``ceil``\n- ``floor``\n- ``trunc``\n- ``round``\n- ``sqrt``\n- ``copysign``\n\nIn order use these operations, having the ``libm`` crate as dependencies of the WASM interpreter is an acceptable trade-off.",
+                                    "STATEMENT": "The interpreter may depend on the ``libm`` crate version ``0.2.8``\n",
+                                    "RATIONALE": "Rust does not expose all floating point operations in a bare-metal (as in ``no_std``) target, as to not introduce any dependency on the C standard library's ``libm`` (respective PR: https://github.com/rust-lang/rust/pull/27823). However, we identified at least the following operations to be required for WASM interpretation while unavailable in ``no_std``:\n\n- ``abs``\n- ``ceil``\n- ``floor``\n- ``trunc``\n- ``round``\n- ``sqrt``\n- ``copysign``\n\nIn order use these operations, having the ``libm`` crate as dependencies of the WASM interpreter is an acceptable trade-off.\n",
                                     "RELATIONS": [
                                         {
                                             "TYPE": "Parent",
@@ -205,8 +221,8 @@
                                     "TYPE": "REQUIREMENT",
                                     "UID": "REQ-17",
                                     "TITLE": "Minimum Supported Rust Version (MSRV)",
-                                    "STATEMENT": "The interpreter shall compile on Rust ``1.76.0`` and later versions",
-                                    "RATIONALE": "An MSRV should be clearly stated to specify which toolchain is acceptable."
+                                    "STATEMENT": "The interpreter shall compile on Rust ``1.76.0`` and later versions\n",
+                                    "RATIONALE": "An MSRV should be clearly stated to specify which toolchain is acceptable.\n"
                                 }
                             ]
                         }
@@ -222,8 +238,8 @@
                             "TYPE": "REQUIREMENT",
                             "UID": "REQ-7",
                             "TITLE": "Instrumentation",
-                            "STATEMENT": "The interpreter shall implement means for instrumentation",
-                            "RATIONALE": "Instrumentation is needed to generate evidence for certification. Instrumentation eases debugging. Instrumentation enables elaborate run-time monitoring."
+                            "STATEMENT": "The interpreter shall implement means for instrumentation\n",
+                            "RATIONALE": "Instrumentation is needed to generate evidence for certification. Instrumentation eases debugging. Instrumentation enables elaborate run-time monitoring.\n"
                         },
                         {
                             "_TOC": "2.2",
@@ -235,8 +251,8 @@
                                     "TYPE": "REQUIREMENT",
                                     "UID": "REQ-8",
                                     "TITLE": "Statement Coverage",
-                                    "STATEMENT": "The instrumentation shall enable the measurement of statement coverage",
-                                    "RATIONALE": "Statement coverage is required by DO-178C starting at DAL-C (6.4.4.c)",
+                                    "STATEMENT": "The instrumentation shall enable the measurement of statement coverage\n",
+                                    "RATIONALE": "Statement coverage is required by DO-178C starting at DAL-C (6.4.4.c)\n",
                                     "RELATIONS": [
                                         {
                                             "TYPE": "Parent",
@@ -253,8 +269,8 @@
                                     "TYPE": "REQUIREMENT",
                                     "UID": "REQ-9",
                                     "TITLE": "Decision Coverage",
-                                    "STATEMENT": "The instrumentation shall enable the measurement of decision coverage",
-                                    "RATIONALE": "Decision coverage is required by DO-178C starting at DAL-B (6.4.4.c)",
+                                    "STATEMENT": "The instrumentation shall enable the measurement of decision coverage\n",
+                                    "RATIONALE": "Decision coverage is required by DO-178C starting at DAL-B (6.4.4.c)\n",
                                     "RELATIONS": [
                                         {
                                             "TYPE": "Parent",
@@ -271,8 +287,8 @@
                                     "TYPE": "REQUIREMENT",
                                     "UID": "REQ-10",
                                     "TITLE": "Modified Condition/Decision Coverage",
-                                    "STATEMENT": "The instrumentation shall enable the measurement of modified condition/decision coverage",
-                                    "RATIONALE": "Modified condition/decision coverage is required by DO-178C starting at DAL-A (6.4.4.c)",
+                                    "STATEMENT": "The instrumentation shall enable the measurement of modified condition/decision coverage\n",
+                                    "RATIONALE": "Modified condition/decision coverage is required by DO-178C starting at DAL-A (6.4.4.c)\n",
                                     "RELATIONS": [
                                         {
                                             "TYPE": "Parent",
@@ -289,7 +305,7 @@
                                     "TYPE": "REQUIREMENT",
                                     "UID": "REQ-11",
                                     "TITLE": "Certification Evidence",
-                                    "STATEMENT": "The interpreter shall support the generation of certification evidence"
+                                    "STATEMENT": "The interpreter shall support the generation of certification evidence\n"
                                 }
                             ]
                         }
