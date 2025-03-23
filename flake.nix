@@ -188,6 +188,26 @@
                   '';
                   help = "start typst watch loop for the whitepaper";
                 }
+                {
+                  name = "generate-testsuite-report";
+                  # TODO maybe accept the name of the target branch as an argument and use it instead of `main`
+                  command = ''
+                    (
+                      cd $PRJ_ROOT
+                      TESTSUITE_SAVE=1 cargo test -- spec_tests --show-output
+                      cp testsuite_results.json new.json
+                      mkdir .main_clone
+                      git clone --depth 1 --single-branch --no-tags --recursive -b main $(git config --get remote.origin.url) .main_clone
+                      cd .main_clone
+                      TESTSUITE_SAVE=1  cargo test -- spec_tests --show-output
+                      mv testsuite_results.json ../old.json
+                      cd ..
+                      rm -rf .main_clone
+                      python3 ./ci-tools/compare_testsuite.py old.json new.json > testsuite_report.md
+                    )
+                  '';
+                  help = "generates a comparison document for the official wasm testsuite w.r.t. project main branch";
+                }
               ];
             }
           );
