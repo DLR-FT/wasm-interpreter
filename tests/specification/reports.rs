@@ -209,3 +209,17 @@ impl std::fmt::Display for WastTestReport {
         Ok(())
     }
 }
+
+#[derive(serde::Serialize)]
+pub struct CIReport {
+    pub entries: Vec<CIReportEntry>,
+}
+
+#[derive(serde::Serialize)]
+pub struct CIReportEntry {
+    pub filename: String,
+    pub compiled: bool,
+    pub tests_total: usize,
+    pub tests_passed: usize,
+    pub tests_failed: usize,
+}
