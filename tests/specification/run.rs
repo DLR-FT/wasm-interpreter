@@ -639,7 +639,8 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                                         Err(e) => match e {
                                             // TODO: maybe move Linking to Runtime and then check for it here?
                                             //        also move the needed linking errors to the LinkingError when you do the above as well
-                                            wasm::Error::UnknownFunction
+                                            wasm::Error::InvalidImportType
+                                            | wasm::Error::UnknownFunction
                                             | wasm::Error::UnknownMemory
                                             | wasm::Error::UnknownGlobal
                                             | wasm::Error::UnknownTable

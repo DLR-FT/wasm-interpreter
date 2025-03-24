@@ -330,6 +330,20 @@ impl Limits {
     pub const MEM_PAGE_SIZE: u32 = 1 << 16;
 }
 
+pub fn check_limits(fmin: u32, fmax: Option<u32>, tmin: u32, tmax: Option<u32>) -> bool {
+    if fmin < tmin {
+        return false;
+    }
+
+    match tmax {
+        None => true,
+        Some(tmax_val) => match fmax {
+            None => false,
+            Some(fmax_val) => fmax_val <= tmax_val,
+        },
+    }
+}
+
 impl Debug for Limits {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         match self.max {
