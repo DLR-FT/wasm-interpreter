@@ -266,18 +266,18 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
     })?
     .unwrap_or_default();
     let mut all_globals = Vec::new();
-    for i in 0..imported_global_types_len {
+    for item in imported_global_types.iter().take(imported_global_types_len) {
         all_globals.push(Global {
             init_expr: Span::new(usize::MAX, 0),
-            ty: imported_global_types[i],
+            ty: *item,
         })
     }
-    for i in 0..globals.len() {
-        all_globals.push(globals[i].clone())
+    for item in &globals {
+        all_globals.push(*item)
     }
     let all_globals_types = &all_globals
         .iter()
-        .map(|el| el.ty.clone())
+        .map(|el| el.ty)
         .collect::<Vec<GlobalType>>();
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
@@ -303,7 +303,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
                 &all_functions,
                 &mut referenced_functions,
                 all_tables.len(),
-                &all_globals_types,
+                all_globals_types,
             )
         })?
         .unwrap_or_default();

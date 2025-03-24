@@ -1,6 +1,6 @@
-use wasm::{validate, Error, LinkerError, RuntimeInstance};
+use wasm::{validate, RuntimeInstance};
 
-const UNMET_IMPORTS: &str = r#"
+const _UNMET_IMPORTS: &str = r#"
 (module
     (import "env" "dummy1" (func (param i32)))
     (import "env" "dummy2" (func (param i32)))

@@ -1,8 +1,7 @@
 use alloc::collections::btree_map::BTreeMap;
 use alloc::string::{String, ToString};
+use alloc::vec;
 use alloc::vec::Vec;
-use alloc::{format, vec};
-use core::{iter, usize};
 
 use crate::core::error::{Proposal, Result as CustomResult, StoreInstantiationError};
 use crate::core::indices::TypeIdx;
@@ -25,7 +24,6 @@ use super::locals::Locals;
 use super::value::InteropValueList;
 use super::{run, UnwrapValidatedExt};
 
-use crate::core::error::LinkerError;
 use crate::linear_memory::LinearMemory;
 
 /// The store represents all global state that can be manipulated by WebAssembly programs. It
@@ -55,21 +53,18 @@ impl<'b> Store<'b> {
         let functions_imports_indexes = {
             let mut function_imports_indexes = Vec::new();
             for import in &module.imports {
-                match import.desc {
-                    ImportDesc::Func(..) => {
-                        let global_function_idx = self
-                            .get_global_function_idx_by_name(
-                                self.get_module_idx_from_name(&import.module_name)?,
-                                &import.name,
-                            )
-                            .ok_or(Error::UnknownFunction)?;
-                        trace!(
-                            "Imported function! Global function idx: {}",
-                            global_function_idx
-                        );
-                        function_imports_indexes.push(global_function_idx);
-                    }
-                    _ => {}
+                if let ImportDesc::Func(..) = import.desc {
+                    let global_function_idx = self
+                        .get_global_function_idx_by_name(
+                            self.get_module_idx_from_name(&import.module_name)?,
+                            &import.name,
+                        )
+                        .ok_or(Error::UnknownFunction)?;
+                    trace!(
+                        "Imported function! Global function idx: {}",
+                        global_function_idx
+                    );
+                    function_imports_indexes.push(global_function_idx);
                 }
             }
             function_imports_indexes
@@ -86,17 +81,14 @@ impl<'b> Store<'b> {
         let table_imports_indexes = {
             let mut table_imports_indexes = Vec::new();
             for import in &module.imports {
-                match import.desc {
-                    ImportDesc::Table(..) => {
-                        table_imports_indexes.push(
-                            self.get_global_table_idx(
-                                self.get_module_idx_from_name(&import.module_name)?,
-                                &import.name,
-                            )
-                            .ok_or(Error::UnknownTable)?,
-                        );
-                    }
-                    _ => {}
+                if let ImportDesc::Table(..) = import.desc {
+                    table_imports_indexes.push(
+                        self.get_global_table_idx(
+                            self.get_module_idx_from_name(&import.module_name)?,
+                            &import.name,
+                        )
+                        .ok_or(Error::UnknownTable)?,
+                    );
                 }
             }
             table_imports_indexes
@@ -109,9 +101,8 @@ impl<'b> Store<'b> {
             let mut globals_imports = Vec::new();
 
             for import in &module.imports {
-                match import.desc {
-                    ImportDesc::Global(_) => globals_imports.push(import.clone()),
-                    _ => {}
+                if let ImportDesc::Global(..) = import.desc {
+                    globals_imports.push(import.clone());
                 }
             }
 
@@ -170,17 +161,14 @@ impl<'b> Store<'b> {
         let memory_imports_indexes = {
             let mut memory_imports_indexes = Vec::new();
             for import in &module.imports {
-                match import.desc {
-                    ImportDesc::Mem(..) => {
-                        memory_imports_indexes.push(
-                            self.get_global_memory_idx(
-                                self.get_module_idx_from_name(&import.module_name)?,
-                                &import.name,
-                            )
-                            .ok_or(Error::UnknownMemory)?,
-                        );
-                    }
-                    _ => {}
+                if let ImportDesc::Mem(..) = import.desc {
+                    memory_imports_indexes.push(
+                        self.get_global_memory_idx(
+                            self.get_module_idx_from_name(&import.module_name)?,
+                            &import.name,
+                        )
+                        .ok_or(Error::UnknownMemory)?,
+                    );
                 }
             }
             memory_imports_indexes
@@ -297,7 +285,7 @@ impl<'b> Store<'b> {
                 }
             }
         }
-        return None;
+        None
     }
 
     pub fn lookup_function(&self, target_module: &str, target_function: &str) -> Option<usize> {
@@ -383,7 +371,7 @@ impl<'b> Store<'b> {
             }
         }
 
-        return Err(RuntimeError::ModuleNotFound);
+        Err(RuntimeError::ModuleNotFound)
     }
 
     pub fn get_local_function_idx_by_global_function_idx(
@@ -392,8 +380,8 @@ impl<'b> Store<'b> {
         global_function_idx: usize,
     ) -> Option<usize> {
         let functions = &self.modules[module_idx].functions;
-        for i in 0..functions.len() {
-            if functions[i] == global_function_idx {
+        for (i, item) in functions.iter().enumerate() {
+            if *item == global_function_idx {
                 return Some(i);
             }
         }
@@ -435,10 +423,10 @@ impl<'b> Store<'b> {
     pub fn get_global_global_idx(&self, module_idx: usize, global_name: &str) -> Option<usize> {
         for export in &self.modules[module_idx].exports {
             if export.name == global_name {
-                return match export.desc.get_global_idx() {
-                    None => None,
-                    Some(idx) => Some(self.modules[module_idx].globals[idx]),
-                };
+                return export
+                    .desc
+                    .get_global_idx()
+                    .map(|idx| self.modules[module_idx].globals[idx]);
             }
         }
         None
@@ -447,11 +435,10 @@ impl<'b> Store<'b> {
     pub fn get_global_memory_idx(&self, module_idx: usize, memory_name: &str) -> Option<usize> {
         for export in &self.modules[module_idx].exports {
             if export.name == memory_name {
-                //return export.desc.get_memory_idx();
-                return match export.desc.get_memory_idx() {
-                    None => None,
-                    Some(idx) => Some(self.modules[module_idx].memories[idx]),
-                };
+                return export
+                    .desc
+                    .get_memory_idx()
+                    .map(|idx| self.modules[module_idx].memories[idx]);
             }
         }
         None
@@ -460,10 +447,10 @@ impl<'b> Store<'b> {
     pub fn get_global_table_idx(&self, module_idx: usize, table_name: &str) -> Option<usize> {
         for export in &self.modules[module_idx].exports {
             if export.name == table_name {
-                return match export.desc.get_table_idx() {
-                    None => None,
-                    Some(idx) => Some(self.modules[module_idx].tables[idx]),
-                };
+                return export
+                    .desc
+                    .get_table_idx()
+                    .map(|idx| self.modules[module_idx].tables[idx]);
             }
         }
         None
@@ -496,11 +483,11 @@ impl<'b> Store<'b> {
 
     fn get_memories_indexes(
         &self,
-        memories_imports_indexes: &Vec<usize>,
+        memories_imports_indexes: &[usize],
         local_memories: &[MemInst],
     ) -> CustomResult<Vec<usize>> {
         let mut indexes: Vec<usize> = Vec::new();
-        indexes.extend_from_slice(&memories_imports_indexes);
+        indexes.extend_from_slice(memories_imports_indexes);
         let memories_offset = self.memories.len();
         for memory_idx in memories_offset..local_memories.len() + memories_offset {
             indexes.push(memory_idx);
@@ -511,11 +498,11 @@ impl<'b> Store<'b> {
 
     fn get_functions_indexes(
         &self,
-        functions_imports_indexes: &Vec<usize>,
+        functions_imports_indexes: &[usize],
         local_functions: &[FuncInst],
     ) -> CustomResult<Vec<usize>> {
         let mut indexes: Vec<usize> = Vec::new();
-        indexes.extend_from_slice(&functions_imports_indexes);
+        indexes.extend_from_slice(functions_imports_indexes);
         let functions_offset = self.functions.len();
         for function_idx in functions_offset..local_functions.len() + functions_offset {
             indexes.push(function_idx);
@@ -526,11 +513,11 @@ impl<'b> Store<'b> {
 
     fn get_tables_indexes(
         &self,
-        tables_imports_indexes: &Vec<usize>,
+        tables_imports_indexes: &[usize],
         local_tables: &[TableInst],
     ) -> CustomResult<Vec<usize>> {
         let mut indexes: Vec<usize> = Vec::new();
-        indexes.extend_from_slice(&tables_imports_indexes);
+        indexes.extend_from_slice(tables_imports_indexes);
         let tables_offset = self.tables.len();
         for table_idx in tables_offset..local_tables.len() + tables_offset {
             indexes.push(table_idx);
@@ -758,7 +745,7 @@ impl<'b> Store<'b> {
     }
 }
 
-impl<'b> ValidationInfo<'b> {
+impl ValidationInfo<'_> {
     pub fn instantiate_functions(&self) -> CustomResult<Vec<FuncInst>> {
         let mut wasm_reader = WasmReader::new(self.wasm);
 
@@ -1057,7 +1044,9 @@ impl<'b> ValidationInfo<'b> {
                         ));
                     }
 
-                    mem_inst.mem.init(offset as usize, &d.init, 0, d.init.len());
+                    mem_inst
+                        .mem
+                        .init(offset as usize, &d.init, 0, d.init.len())?;
                 }
                 Ok(DataInst {
                     data: d.init.clone(),
