@@ -39,3 +39,19 @@ hooks = []
 [[bench]]
 name = "hook_performance_impact"
 harness = false
+
+[profile.dev]
+opt-level = 0
+debug = true
+split-debuginfo = '...'  # Platform-specific.
+strip = "none"
+debug-assertions = true
+overflow-checks = true
+lto = false
+panic = 'unwind'
+incremental = true
+codegen-units = 256
+rpath = false
+
+[profile.test]
+debug-assertions = true

@@ -177,9 +177,11 @@ fn encode_validate_instantiate<'a>(
                                 let spectest_wat_parsed = wat::parse_str(SPEC_TEST_WAT).unwrap();
                                 let spectest = validate(&spectest_wat_parsed).unwrap();
 
+                                // println!("Adding 'spectest' module");
                                 temp_store
                                     .add_module("spectest".to_owned(), spectest)
                                     .unwrap();
+                                // println!("Added 'spectest' module");
                                 // RuntimeInstance::new(&validation_info)
                                 match temp_store
                                     // match store
@@ -212,11 +214,13 @@ fn encode_validate_instantiate<'a>(
                                         wat::parse_str(SPEC_TEST_WAT).unwrap();
                                     let spectest = validate(&spectest_wat_parsed).unwrap();
 
+                                    // println!("Adding 'spectest' module");
                                     store
                                         .as_mut()
                                         .unwrap()
                                         .add_module("spectest".to_owned(), spectest)
                                         .unwrap();
+                                    // println!("Added 'spectest' module");
                                     store
                                         .as_mut()
                                         .unwrap()
@@ -278,11 +282,13 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
     let spectest_wat_parsed = wat::parse_str(SPEC_TEST_WAT).unwrap();
     let spectest = validate(&spectest_wat_parsed).unwrap();
 
+    // println!("Adding 'spectest' module");
     store
         .as_mut()
         .unwrap()
         .add_module("spectest".to_owned(), spectest)
         .unwrap();
+    // println!("Added 'spectest' module");
 
     for directive in wast.directives {
         // println!("Directive: {:?}", directive);
@@ -421,6 +427,7 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                         Ok(original_result) => original_result,
                         Err(inner) => {
                             // TODO: Do we want to exit on panic? State may be left in an inconsistent state, and cascading panics may occur.
+                            println!("{:#?}", inner);
                             if let Ok(msg) = inner.downcast::<&str>() {
                                 Err(Box::new(PanicError::new(&msg)))
                             } else {
@@ -629,6 +636,7 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                                 "invoke",
                             )),
                             Some(func_idx) => {
+                                println!("GLOBAL FUNC IDX: {}", func_idx);
                                 match interpreter.invoke_dynamic_unchecked_return_ty(func_idx, args)
                                 {
                                     Err(e) => asserts.push_error(WastError::new(
@@ -686,6 +694,11 @@ fn execute_assert_return(
             } else {
                 &store.modules.last().unwrap().name
             };
+
+            println!(
+                "Module name: {}; Exported function name: {}",
+                module_name, invoke_info.name
+            );
 
             let func_idx = store
                 .lookup_function(module_name, invoke_info.name)
