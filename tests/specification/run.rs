@@ -177,16 +177,11 @@ fn encode_validate_instantiate<'a>(
                                 let spectest_wat_parsed = wat::parse_str(SPEC_TEST_WAT).unwrap();
                                 let spectest = validate(&spectest_wat_parsed).unwrap();
 
-                                // println!("Adding 'spectest' module");
                                 temp_store
                                     .add_module("spectest".to_owned(), spectest)
                                     .unwrap();
-                                // println!("Added 'spectest' module");
-                                // RuntimeInstance::new(&validation_info)
+
                                 match temp_store
-                                    // match store
-                                    //     .as_mut()
-                                    //     .unwrap()
                                     .add_module(DEFAULT_MODULE.to_owned(), validation_info.clone())
                                 {
                                     Err(_) => Err(ErrEVI::Instantiate),
@@ -214,13 +209,12 @@ fn encode_validate_instantiate<'a>(
                                         wat::parse_str(SPEC_TEST_WAT).unwrap();
                                     let spectest = validate(&spectest_wat_parsed).unwrap();
 
-                                    // println!("Adding 'spectest' module");
                                     store
                                         .as_mut()
                                         .unwrap()
                                         .add_module("spectest".to_owned(), spectest)
                                         .unwrap();
-                                    // println!("Added 'spectest' module");
+
                                     store
                                         .as_mut()
                                         .unwrap()
@@ -282,13 +276,11 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
     let spectest_wat_parsed = wat::parse_str(SPEC_TEST_WAT).unwrap();
     let spectest = validate(&spectest_wat_parsed).unwrap();
 
-    // println!("Adding 'spectest' module");
     store
         .as_mut()
         .unwrap()
         .add_module("spectest".to_owned(), spectest)
         .unwrap();
-    // println!("Added 'spectest' module");
 
     for directive in wast.directives {
         // println!("Directive: {:?}", directive);
@@ -533,9 +525,6 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
             }
 
             wast::WastDirective::Register { span, name, module } => {
-                // println!("{}", name);
-                // println!("{:#?}", module);
-                // panic!("NOT YET IMPLEMENTED BRUH");
                 match module {
                     None => {
                         // haven't tested, but maybe we just register the last module?
@@ -573,14 +562,113 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                     }
                 }
             }
+            wast::WastDirective::AssertUnlinkable {
+                span,
+                module,
+                message: _,
+            } => match store {
+                None => {
+                    asserts.push_error(WastError::new(
+                        Box::new(GenericError::new(
+                            "AssertUnlinkable: No store present to try and link",
+                        )),
+                        span.linecol_in(&contents).0 as u32 + 1,
+                        get_command(&contents, span),
+                    ));
+                }
+                Some(ref mut store) => match module {
+                    wast::Wat::Component(_) => {
+                        asserts.push_error(WastError::new(
+                            Box::new(GenericError::new(
+                                "AssertUnlinkable: Components not supported yet",
+                            )),
+                            span.linecol_in(&contents).0 as u32 + 1,
+                            get_command(&contents, span),
+                        ));
+                    }
+                    wast::Wat::Module(mut module) => {
+                        // TODO: maybe remove the unwrap? but we are testing ONLY on official testsuite files
+                        //        which SHOULD encode 100% of the time
+                        let encoded = module.encode().unwrap();
+
+                        let encoded = Box::leak(Box::new(encoded));
+
+                        let validation_info_attempt = catch_unwind(|| validate(encoded));
+
+                        match validation_info_attempt {
+                            Err(_) => {
+                                asserts.push_error(WastError::new(
+                                    Box::new(GenericError::new(
+                                        "AssertUnlinkable: Couldn't validate",
+                                    )),
+                                    span.linecol_in(&contents).0 as u32 + 1,
+                                    get_command(&contents, span),
+                                ));
+                            }
+                            Ok(validation_info) => match validation_info {
+                                Err(_) => {
+                                    asserts.push_error(WastError::new(
+                                        Box::new(GenericError::new(
+                                            "AssertUnlinkable: Couldn't validate",
+                                        )),
+                                        span.linecol_in(&contents).0 as u32 + 1,
+                                        get_command(&contents, span),
+                                    ));
+                                }
+                                Ok(validation_info) => {
+                                    let mut module_name = match module.name {
+                                        None => DEFAULT_MODULE.to_owned(),
+                                        Some(name) => name.name.to_owned(),
+                                    };
+                                    if store.modules.len() > 1 && module_name == DEFAULT_MODULE {
+                                        module_name = store.modules.len().to_string();
+                                    }
+
+                                    let res = store.add_module(module_name, validation_info);
+
+                                    match res {
+                                        Ok(_) => {
+                                            asserts.push_error(WastError::new(
+                                                    Box::new(GenericError::new(
+                                                        "Module linked successfully when it shouldn't have been",
+                                                    )),
+                                                    span.linecol_in(&contents).0 as u32 + 1,
+                                                    get_command(&contents, span),
+                                                ));
+                                        }
+                                        Err(e) => match e {
+                                            // TODO: maybe move Linking to Runtime and then check for it here?
+                                            //        also move the needed linking errors to the LinkingError when you do the above as well
+                                            wasm::Error::UnknownFunction
+                                            | wasm::Error::UnknownMemory
+                                            | wasm::Error::UnknownGlobal
+                                            | wasm::Error::UnknownTable
+                                            | wasm::Error::RuntimeError(..) => {
+                                                asserts.push_success(WastSuccess::new(
+                                                    span.linecol_in(&contents).0 as u32 + 1,
+                                                    get_command(&contents, span),
+                                                ));
+                                            }
+                                            _ => {
+                                                asserts.push_error(WastError::new(
+                                                            Box::new(GenericError::new(
+                                                                &format!("Module failed to link, but with an error of {} instead of a linking (Runtime) error", e.to_string()),
+                                                            )),
+                                                            span.linecol_in(&contents).0 as u32 + 1,
+                                                            get_command(&contents, span),
+                                                        ));
+                                            }
+                                        },
+                                    }
+                                }
+                            },
+                        }
+                    }
+                },
+            },
             wast::WastDirective::AssertExhaustion {
                 span,
                 call: _,
-                message: _,
-            }
-            | wast::WastDirective::AssertUnlinkable {
-                span,
-                module: _,
                 message: _,
             }
             | wast::WastDirective::AssertException { span, exec: _ } => {
@@ -636,7 +724,6 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                                 "invoke",
                             )),
                             Some(func_idx) => {
-                                println!("GLOBAL FUNC IDX: {}", func_idx);
                                 match interpreter.invoke_dynamic_unchecked_return_ty(func_idx, args)
                                 {
                                     Err(e) => asserts.push_error(WastError::new(
@@ -694,11 +781,6 @@ fn execute_assert_return(
             } else {
                 &store.modules.last().unwrap().name
             };
-
-            println!(
-                "Module name: {}; Exported function name: {}",
-                module_name, invoke_info.name
-            );
 
             let func_idx = store
                 .lookup_function(module_name, invoke_info.name)
