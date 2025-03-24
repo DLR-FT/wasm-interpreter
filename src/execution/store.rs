@@ -43,8 +43,49 @@ pub struct Store<'b> {
     pub module_names: BTreeMap<String, usize>,
 }
 
+#[derive(Default)]
+pub struct CleanupStore {
+    pub added_functions: usize,
+    pub added_memories: usize,
+    pub added_globals: usize,
+    pub added_data: usize,
+    pub added_tables: usize,
+    pub added_elements: usize,
+}
+
 impl<'b> Store<'b> {
     pub fn add_module(&mut self, name: String, module: ValidationInfo<'b>) -> CustomResult<()> {
+        // we need a wrapper, because we need to do cleanup
+        let mut cleanup_store_struct: CleanupStore = Default::default();
+
+        let res = self.add_module_inner(name, module, &mut cleanup_store_struct);
+
+        match res {
+            Err(e) => {
+                self.functions
+                    .truncate(self.functions.len() - cleanup_store_struct.added_functions);
+                self.memories
+                    .truncate(self.memories.len() - cleanup_store_struct.added_memories);
+                self.globals
+                    .truncate(self.globals.len() - cleanup_store_struct.added_globals);
+                self.data
+                    .truncate(self.data.len() - cleanup_store_struct.added_data);
+                self.tables
+                    .truncate(self.tables.len() - cleanup_store_struct.added_tables);
+                self.elements
+                    .truncate(self.elements.len() - cleanup_store_struct.added_elements);
+                Err(e)
+            }
+            Ok(..) => Ok(()),
+        }
+    }
+
+    fn add_module_inner(
+        &mut self,
+        name: String,
+        module: ValidationInfo<'b>,
+        cleanup_store_struct: &mut CleanupStore,
+    ) -> CustomResult<()> {
         // TODO: we can do validation at linktime such that if another module expects module `name` to export something,
         // and it doesn't, we can reject it here instead of accepting it and failing later.
 
@@ -71,7 +112,6 @@ impl<'b> Store<'b> {
         };
 
         let local_inst_funcs = all_function_inst.split_off(functions_imports_indexes.len());
-        let _imported_function_inst = all_function_inst;
 
         let functions_offset = self.functions.len();
         let exec_functions =
@@ -151,9 +191,11 @@ impl<'b> Store<'b> {
         )?;
 
         // TODO: make this prettier, rn the compiler complains wha wha, cause see the instruction above
+        cleanup_store_struct.added_functions = local_inst_funcs.len();
         self.functions.extend(local_inst_funcs);
 
         // TODO: make this prettier, rn the compiler complains wha wha, cause see the instruction above
+        cleanup_store_struct.added_tables = local_tables.len();
         self.tables.extend(local_tables);
 
         let local_memories = module.instantiate_local_memories()?;
@@ -175,6 +217,7 @@ impl<'b> Store<'b> {
         };
         let memories_offset = self.memories.len();
         let exec_memories = self.get_memories_indexes(&memory_imports_indexes, &local_memories)?;
+        cleanup_store_struct.added_memories = local_memories.len();
         self.memories.extend(local_memories);
 
         let data =
@@ -190,14 +233,17 @@ impl<'b> Store<'b> {
             self.get_globals_indexes(&globals_imports, &globals[globals_imports.len()..])?;
         // let exec_globals = (globals_offset..(globals_offset + globals.len())).collect();
         globals.drain(0..globals_imports.len());
+        cleanup_store_struct.added_globals = globals.len();
         self.globals.extend(globals);
 
         let data_offset = self.data.len();
         let exec_data = (data_offset..(data_offset + data.len())).collect();
+        cleanup_store_struct.added_data = data.len();
         self.data.extend(data);
 
         let elements_offset = self.elements.len();
         let exec_elements = (elements_offset..(elements_offset + element_inst.len())).collect();
+        cleanup_store_struct.added_elements = element_inst.len();
         self.elements.extend(element_inst);
 
         let execution_info = ExecutionInfo {
@@ -235,38 +281,6 @@ impl<'b> Store<'b> {
 
         self.module_names.insert(name.clone(), self.modules.len());
         self.modules.push(execution_info);
-
-        // TODO: At this point of the code, we can continue in two ways with imports/exports:
-        // 1. Lazy import resolution: We do the lookup during the interprer loop either directly or via a lookup-table
-        // 2. Active import resolution: We resolve the import dependency now, failing if there are unresolved imports.
-        //    This limits the order in which modules need to be added.
-        // 3. Delayed active import resolution: We resolve the whatever import dependencies we can, but imports which
-        //    can not be resolved are left to wait for another module addition. If an import that should be satisfied by
-        //    this module isn't, we can fail.
-
-        // TODO: failing is harder since we already modified 'self'. We will circle back to this later.
-
-        // let temp = Vec::new();
-
-        // for module_idx in 0..self.modules.len() {
-        //     for function_idx in 0..self.modules[module_idx].functions.len() {
-        //         let fn_store_idx = self.modules[module_idx].functions[function_idx];
-        //         let func: &FuncInst = &self.functions[fn_store_idx];
-        //         if let FuncInst::Imported(import) = func {
-        //             let resolved_idx =
-        //                 self.lookup_function(&import.module_name, &import.function_name);
-
-        //             if resolved_idx.is_none() {
-        //                 // if import.module_name == name {
-        //                 // TODO: Failed resolution... BAD!
-        //                 return Err(Error::LinkerError(LinkerError::UnmetImport));
-        //                 // }
-        //             } else {
-        //                 self.modules[module_idx].functions[function_idx] = resolved_idx.unwrap();
-        //             }
-        //         }
-        //     }
-        // }
 
         Ok(())
     }
