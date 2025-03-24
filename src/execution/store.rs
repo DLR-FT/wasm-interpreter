@@ -10,7 +10,7 @@ use crate::core::reader::types::element::{ElemItems, ElemMode};
 use crate::core::reader::types::export::ExportDesc;
 use crate::core::reader::types::global::Global;
 use crate::core::reader::types::import::{Import, ImportDesc};
-use crate::core::reader::types::{FuncType, MemType, TableType, ValType};
+use crate::core::reader::types::{check_limits, FuncType, MemType, TableType, ValType};
 use crate::core::reader::WasmReader;
 use crate::core::sidetable::Sidetable;
 use crate::execution::value::{Ref, Value};
@@ -94,13 +94,22 @@ impl<'b> Store<'b> {
         let functions_imports_indexes = {
             let mut function_imports_indexes = Vec::new();
             for import in &module.imports {
-                if let ImportDesc::Func(..) = import.desc {
+                if let ImportDesc::Func(func) = import.desc {
                     let global_function_idx = self
                         .get_global_function_idx_by_name(
                             self.get_module_idx_from_name(&import.module_name)?,
                             &import.name,
                         )
                         .ok_or(Error::UnknownFunction)?;
+
+                    let ty = &module.types[func];
+
+                    let global_func_ty = self.functions[global_function_idx].ty();
+
+                    if global_func_ty != *ty {
+                        return Err(Error::InvalidImportType);
+                    }
+
                     trace!(
                         "Imported function! Global function idx: {}",
                         global_function_idx
@@ -121,14 +130,26 @@ impl<'b> Store<'b> {
         let table_imports_indexes = {
             let mut table_imports_indexes = Vec::new();
             for import in &module.imports {
-                if let ImportDesc::Table(..) = import.desc {
-                    table_imports_indexes.push(
-                        self.get_global_table_idx(
+                if let ImportDesc::Table(table) = import.desc {
+                    let global_table_idx = self
+                        .get_global_table_idx(
                             self.get_module_idx_from_name(&import.module_name)?,
                             &import.name,
                         )
-                        .ok_or(Error::UnknownTable)?,
-                    );
+                        .ok_or(Error::UnknownTable)?;
+
+                    if table.et != self.tables[global_table_idx].ty.et
+                        || !check_limits(
+                            // the table could've grown, don't take initial min size
+                            self.tables[global_table_idx].len() as u32,
+                            self.tables[global_table_idx].ty.lim.max,
+                            table.lim.min,
+                            table.lim.max,
+                        )
+                    {
+                        return Err(Error::InvalidImportType);
+                    }
+                    table_imports_indexes.push(global_table_idx);
                 }
             }
             table_imports_indexes
@@ -154,7 +175,6 @@ impl<'b> Store<'b> {
             for global_import in &globals_imports {
                 match global_import.desc {
                     ImportDesc::Global(global_type_import) => {
-                        trace!("Global import module name: {}", global_import.module_name);
                         let value = self
                             .get_global_global_idx(
                                 self.get_module_idx_from_name(&global_import.module_name)?,
@@ -162,6 +182,9 @@ impl<'b> Store<'b> {
                             )
                             .ok_or(Error::UnknownGlobal)?;
 
+                        if global_type_import != self.globals[value].global.ty {
+                            return Err(Error::InvalidImportType);
+                        }
                         // let global = self.globals[value].value;
 
                         imported_globals.push(GlobalInst {
@@ -203,14 +226,24 @@ impl<'b> Store<'b> {
         let memory_imports_indexes = {
             let mut memory_imports_indexes = Vec::new();
             for import in &module.imports {
-                if let ImportDesc::Mem(..) = import.desc {
-                    memory_imports_indexes.push(
-                        self.get_global_memory_idx(
+                if let ImportDesc::Mem(mem) = import.desc {
+                    let global_memory_idx = self
+                        .get_global_memory_idx(
                             self.get_module_idx_from_name(&import.module_name)?,
                             &import.name,
                         )
-                        .ok_or(Error::UnknownMemory)?,
-                    );
+                        .ok_or(Error::UnknownMemory)?;
+
+                    if !check_limits(
+                        // the memory could've grown, don't take initial min size
+                        self.memories[global_memory_idx].size() as u32,
+                        self.memories[global_memory_idx].ty.limits.max,
+                        mem.limits.min,
+                        mem.limits.max,
+                    ) {
+                        return Err(Error::InvalidImportType);
+                    };
+                    memory_imports_indexes.push(global_memory_idx);
                 }
             }
             memory_imports_indexes
@@ -794,7 +827,7 @@ impl ValidationInfo<'_> {
                 ty: *type_idx,
                 module_name: import.module_name.clone(),
                 function_name: import.name.clone(),
-                function_type: self.types[*type_idx].clone(),
+                function_type: self.types.get(*type_idx)?.clone(),
             })),
             _ => None,
         });
