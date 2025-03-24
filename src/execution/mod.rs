@@ -9,6 +9,9 @@ use locals::Locals;
 use value::Ref;
 use value_stack::Stack;
 
+use crate::core::error::StoreInstantiationError;
+use crate::core::indices::MemIdx;
+use crate::core::reader::types::element::{ElemItems, ElemMode};
 use crate::core::reader::types::export::ExportDesc;
 use crate::execution::assert_validated::UnwrapValidatedExt;
 use crate::execution::hooks::{EmptyHookSet, HookSet};
@@ -23,6 +26,7 @@ pub(crate) mod execution_info;
 pub mod function_ref;
 pub mod hooks;
 mod interpreter_loop;
+pub(crate) mod linear_memory;
 pub(crate) mod locals;
 pub mod store;
 pub mod value;
@@ -514,6 +518,260 @@ where
             Ok((module_idx, func_idx))
         }
     }
+
+    // fn init_store(validation_info: &ValidationInfo) -> CustomResult<Store> {
+    //     use crate::core::error::*;
+    //     use StoreInstantiationError::*;
+    //     let function_instances: Vec<FuncInst> = {
+    //         let mut wasm_reader = WasmReader::new(validation_info.wasm);
+
+    //         let functions = validation_info.functions.iter();
+    //         let func_blocks = validation_info.func_blocks.iter();
+
+    //         let local_function_inst = functions.zip(func_blocks).map(|(ty, (func, sidetable))| {
+    //             wasm_reader
+    //                 .move_start_to(*func)
+    //                 .expect("function index to be in the bounds of the WASM binary");
+
+    //             let (locals, bytes_read) = wasm_reader
+    //                 .measure_num_read_bytes(read_declared_locals)
+    //                 .unwrap_validated();
+
+    //             let code_expr = wasm_reader
+    //                 .make_span(func.len() - bytes_read)
+    //                 .expect("TODO remove this expect");
+
+    //             FuncInst::Local(LocalFuncInst {
+    //                 ty: *ty,
+    //                 locals,
+    //                 code_expr,
+    //                 // TODO fix this ugly clone
+    //                 sidetable: sidetable.clone(),
+    //             })
+    //         });
+
+    //         let imported_function_inst =
+    //             validation_info
+    //                 .imports
+    //                 .iter()
+    //                 .filter_map(|import| match &import.desc {
+    //                     ImportDesc::Func(type_idx) => Some(FuncInst::Imported(ImportedFuncInst {
+    //                         ty: *type_idx,
+    //                         module_name: import.module_name.clone(),
+    //                         function_name: import.name.clone(),
+    //                     })),
+    //                     _ => None,
+    //                 });
+
+    //         imported_function_inst.chain(local_function_inst).collect()
+    //     };
+
+    //     // https://webassembly.github.io/spec/core/exec/modules.html#tables
+    //     let mut tables: Vec<TableInst> = validation_info
+    //         .tables
+    //         .iter()
+    //         .map(|ty| TableInst::new(*ty))
+    //         .collect();
+
+    //     let mut passive_elem_indexes: Vec<usize> = vec![];
+    //     // https://webassembly.github.io/spec/core/syntax/modules.html#element-segments
+    //     let elements: Vec<ElemInst> = validation_info
+    //         .elements
+    //         .iter()
+    //         .enumerate()
+    //         .filter_map(|(i, elem)| {
+    //             trace!("Instantiating element {:#?}", elem);
+
+    //             let offsets = match &elem.init {
+    //                 ElemItems::Exprs(_ref_type, init_exprs) => init_exprs
+    //                     .iter()
+    //                     .map(|expr| {
+    //                         get_address_offset(
+    //                             run_const_span(validation_info.wasm, expr, ()).unwrap_validated(),
+    //                         )
+    //                     })
+    //                     .collect::<Vec<Option<u32>>>(),
+    //                 ElemItems::RefFuncs(indicies) => {
+    //                     // This branch gets taken when the elements are direct function references (i32 values), so we just return the indices
+    //                     indicies
+    //                         .iter()
+    //                         .map(|el| Some(*el))
+    //                         .collect::<Vec<Option<u32>>>()
+    //                 }
+    //             };
+
+    //             let references: Vec<Ref> = offsets
+    //                 .iter()
+    //                 .map(|offset| {
+    //                     let offset = offset.as_ref().map(|offset| *offset as usize);
+    //                     match elem.ty() {
+    //                         RefType::FuncRef => Ref::Func(FuncAddr::new(offset)),
+    //                         RefType::ExternRef => Ref::Extern(ExternAddr::new(offset)),
+    //                     }
+    //                 })
+    //                 .collect();
+
+    //             let instance = ElemInst {
+    //                 ty: elem.ty(),
+    //                 references,
+    //             };
+
+    //             match &elem.mode {
+    //                 // As per https://webassembly.github.io/spec/core/syntax/modules.html#element-segments
+    //                 // A declarative element segment is not available at runtime but merely serves to forward-declare
+    //                 //  references that are formed in code with instructions like `ref.func`
+
+    //                 // Also, the answer given by Andreas Rossberg (the editor of the WASM Spec - Release 2.0)
+    //                 // Per https://stackoverflow.com/questions/78672934/what-is-the-purpose-of-a-wasm-declarative-element-segment
+    //                 // "[...] The reason Wasm requires this (admittedly ugly) forward declaration is to support streaming compilation [...]"
+    //                 ElemMode::Declarative => None,
+    //                 ElemMode::Passive => {
+    //                     passive_elem_indexes.push(i);
+    //                     Some(instance)
+    //                 }
+    //                 ElemMode::Active(active_elem) => {
+    //                     let table_idx = active_elem.table_idx as usize;
+
+    //                     let offset =
+    //                         match run_const_span(validation_info.wasm, &active_elem.init_expr, ())
+    //                             .unwrap_validated()
+    //                         {
+    //                             Value::I32(offset) => offset as usize,
+    //                             // We are already asserting that on top of the stack there is an I32 at validation time
+    //                             _ => unreachable!(),
+    //                         };
+
+    //                     let table = &mut tables[table_idx];
+    //                     // This can't be verified at validation-time because we don't keep track of actual values when validating expressions
+    //                     //  we only keep track of the type of the values. As such we can't pop the exact value of an i32 from the validation stack
+    //                     assert!(table.len() >= (offset + instance.len()));
+
+    //                     table.elem[offset..offset + instance.references.len()]
+    //                         .copy_from_slice(&instance.references);
+
+    //                     Some(instance)
+    //                 }
+    //             }
+    //         })
+    //         .collect();
+
+    //     let mut memory_instances: Vec<MemInst> = validation_info
+    //         .memories
+    //         .iter()
+    //         .map(|ty| MemInst::new(*ty))
+    //         .collect();
+
+    //     let import_memory_instances_len = {
+    //         let mut len: usize = 0;
+    //         for import in &validation_info.imports {
+    //             if let crate::core::reader::types::import::ImportDesc::Mem(_) = import.desc {
+    //                 len += 1;
+    //             }
+    //         }
+    //         len
+    //     };
+    //     match memory_instances
+    //         .len()
+    //         .checked_add(import_memory_instances_len)
+    //     {
+    //         None => {
+    //             return Err(Error::StoreInstantiationError(
+    //                 StoreInstantiationError::TooManyMemories(usize::MAX),
+    //             ))
+    //         }
+    //         Some(mem_instances) => {
+    //             if mem_instances > 1 {
+    //                 return Err(Error::UnsupportedProposal(Proposal::MultipleMemories));
+    //             }
+    //         }
+    //     };
+
+    //     let data_sections: Vec<DataInst> = validation_info
+    //         .data
+    //         .iter()
+    //         .map(|d| {
+    //             use crate::core::reader::types::data::DataMode;
+    //             use crate::NumType;
+    //             if let DataMode::Active(active_data) = d.mode.clone() {
+    //                 let mem_idx = active_data.memory_idx;
+    //                 if mem_idx != 0 {
+    //                     todo!("Active data has memory_idx different than 0");
+    //                 }
+    //                 assert!(
+    //                     memory_instances.len() > mem_idx,
+    //                     "Multiple memories not yet supported"
+    //                 );
+
+    //                 let boxed_value = {
+    //                     let mut wasm = WasmReader::new(validation_info.wasm);
+    //                     wasm.move_start_to(active_data.offset).unwrap_validated();
+    //                     let mut stack = Stack::new();
+    //                     run_const(wasm, &mut stack, ());
+    //                     stack.pop_value(ValType::NumType(NumType::I32))
+    //                     // stack.peek_unknown_value().ok_or(MissingValueOnTheStack)?
+    //                 };
+
+    //                 // TODO: this shouldn't be a simple value, should it? I mean it can't be, but it can also be any type of ValType
+    //                 // TODO: also, do we need to forcefully make it i32?
+    //                 let offset: u32 = match boxed_value {
+    //                     Value::I32(val) => val,
+    //                     // Value::I64(val) => {
+    //                     //     if val > u32::MAX as u64 {
+    //                     //         return Err(I64ValueOutOfReach("data segment".to_owned()));
+    //                     //     }
+    //                     //     val as u32
+    //                     // }
+    //                     // TODO: implement all value types
+    //                     _ => todo!(),
+    //                 };
+
+    //                 let mem_inst = memory_instances.get_mut(mem_idx).unwrap();
+
+    //                 mem_inst
+    //                     .mem
+    //                     .init(offset, &d.init, 0, d.init.len())
+    //                     .map_err(|_| Error::StoreInstantiationError(ActiveDataWriteOutOfBounds))?;
+    //             }
+    //             Ok(DataInst {
+    //                 data: d.init.clone(),
+    //             })
+    //         })
+    //         .collect::<Result<Vec<DataInst>>>()?;
+
+    //     let global_instances: Vec<GlobalInst> = validation_info
+    //         .globals
+    //         .iter()
+    //         .map({
+    //             let mut stack = Stack::new();
+    //             move |global| {
+    //                 let mut wasm = WasmReader::new(validation_info.wasm);
+    //                 // The place we are moving the start to should, by all means, be inside the wasm bytecode.
+    //                 wasm.move_start_to(global.init_expr).unwrap_validated();
+    //                 // We shouldn't need to clear the stack. If validation is correct, it will remain empty after execution.
+
+    //                 run_const(wasm, &mut stack, ());
+    //                 let value = stack.pop_value(global.ty.ty);
+
+    //                 GlobalInst {
+    //                     global: *global,
+    //                     value,
+    //                 }
+    //             }
+    //         })
+    //         .collect();
+
+    //     let exports = validation_info.exports.clone();
+    //     Ok(Store {
+    //         funcs: function_instances,
+    //         mems: memory_instances,
+    //         globals: global_instances,
+    //         data: data_sections,
+    //         tables,
+    //         elements,
+    //         passive_elem_indexes,
+    //         exports,
+    //     })
+    // }
 }
 
 /// Used for getting the offset of an address.
