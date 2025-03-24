@@ -133,7 +133,7 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                         filepath,
                         err,
                         "Module directive (WAT) failed in encoding step.",
-                        Some(get_linenum(&contents, quoted.span())),
+                        get_linenum(&contents, quoted.span()),
                         get_command(&contents, quoted.span()),
                     )
                     .compile_report()
@@ -145,7 +145,7 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                             filepath,
                             err,
                             "Module directive (WAT) failed in validation or instantiation.",
-                            Some(get_linenum(&contents, quoted.span())),
+                            get_linenum(&contents, quoted.span()),
                             get_command(&contents, quoted.span()),
                         )
                         .compile_report()
@@ -161,7 +161,7 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                         filepath,
                         GenericError::new_boxed("Attempted to assert before module directive"),
                         "Assert Return",
-                        Some(get_linenum(&contents, span)),
+                        get_linenum(&contents, span),
                         get_command(&contents, span),
                     )
                     .compile_report();
@@ -201,7 +201,7 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                         filepath,
                         GenericError::new_boxed("Attempted to assert before module directive"),
                         "Assert Trap",
-                        Some(get_linenum(&contents, span)),
+                        get_linenum(&contents, span),
                         get_command(&contents, span),
                     )
                     .compile_report();
@@ -311,7 +311,7 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                             "Attempted to run invoke directive before interpreter instantiation.",
                         ),
                         "Invoke",
-                        Some(get_linenum(&contents, invoke.span)),
+                        get_linenum(&contents, invoke.span),
                         get_command(&contents, invoke.span),
                     )
                     .compile_report();
@@ -333,7 +333,7 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                                 filepath,
                                 WasmInterpreterError::new_boxed(wasm::Error::RuntimeError(err)),
                                 "Invoke directive failed to find function",
-                                Some(get_linenum(&contents, invoke.span)),
+                                get_linenum(&contents, invoke.span),
                                 get_command(&contents, invoke.span),
                             )
                             .compile_report()
@@ -347,7 +347,7 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                             filepath,
                             PanicError::from_panic_boxed(panic),
                             "main module validation panicked",
-                            Some(get_linenum(&contents, invoke.span)),
+                            get_linenum(&contents, invoke.span),
                             get_command(&contents, invoke.span),
                         )
                         .compile_report();
@@ -369,7 +369,7 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                     filepath,
                     inner,
                     "Invoke returned error or panicked",
-                    Some(get_linenum(&contents, invoke.span)),
+                    get_linenum(&contents, invoke.span),
                     get_command(&contents, invoke.span)
                 )
                 .compile_report()));

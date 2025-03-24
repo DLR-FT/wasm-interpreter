@@ -1,8 +1,8 @@
 use std::error::Error;
 
 pub struct WastSuccess {
-    line_number: u32,
-    command: String,
+    pub line_number: u32,
+    pub command: String,
 }
 
 impl WastSuccess {
@@ -15,16 +15,16 @@ impl WastSuccess {
 }
 
 pub struct WastError {
-    inner: Box<dyn Error>,
-    line_number: Option<u32>,
-    command: String,
+    pub inner: Box<dyn Error>,
+    pub line_number: u32,
+    pub command: String,
 }
 
 impl WastError {
     pub fn new(error: Box<dyn Error>, line_number: u32, command: &str) -> Self {
         Self {
             inner: error,
-            line_number: Some(line_number),
+            line_number,
             command: command.to_string(),
         }
     }
@@ -103,17 +103,7 @@ impl std::fmt::Display for AssertReport {
                     writeln!(
                         f,
                         "❌ {}:{} -> {}",
-                        self.filename,
-                        match error.line_number {
-                            None => u32::MAX.to_string(),
-                            Some(line_number) =>
-                                if line_number == u32::MAX {
-                                    "?".to_string()
-                                } else {
-                                    line_number.to_string()
-                                },
-                        },
-                        error.command
+                        self.filename, error.line_number, error.command
                     )?;
                     writeln!(f, "    Error: {}", error.inner)?;
                 }
@@ -133,7 +123,7 @@ pub struct ScriptError {
     #[allow(unused)]
     pub line_number: Option<u32>,
     #[allow(unused)]
-    pub command: String,
+    pub command: Option<String>,
 }
 
 impl ScriptError {
@@ -141,15 +131,15 @@ impl ScriptError {
         filename: &str,
         error: Box<dyn Error>,
         context: &str,
-        line_number: Option<u32>,
+        line_number: u32,
         command: &str,
     ) -> Self {
         Self {
             filename: filename.to_string(),
             error,
             context: context.to_string(),
-            line_number,
-            command: command.to_string(),
+            line_number: Some(line_number),
+            command: Some(command.to_string()),
         }
     }
 
@@ -159,7 +149,7 @@ impl ScriptError {
             error,
             context: context.to_string(),
             line_number: None,
-            command: "".to_string(),
+            command: None,
         }
     }
 
@@ -208,18 +198,4 @@ impl std::fmt::Display for WastTestReport {
 
         Ok(())
     }
-}
-
-#[derive(serde::Serialize)]
-pub struct CIReport {
-    pub entries: Vec<CIReportEntry>,
-}
-
-#[derive(serde::Serialize)]
-pub struct CIReportEntry {
-    pub filename: String,
-    pub compiled: bool,
-    pub tests_total: usize,
-    pub tests_passed: usize,
-    pub tests_failed: usize,
 }
