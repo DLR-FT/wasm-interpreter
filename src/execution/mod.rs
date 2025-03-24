@@ -82,16 +82,13 @@ where
 
         let store = Some(Store::default());
 
-        let start = match validation_info.start {
-            None => None,
-            Some(start) => Some(FunctionRef {
-                module_name: module_name.to_string(),
-                function_name: "start".to_string(),
-                module_index: 0,
-                function_index: start,
-                exported: false,
-            }),
-        };
+        let start = validation_info.start.map(|start| FunctionRef {
+            module_name: module_name.to_string(),
+            function_name: "start".to_string(),
+            module_index: 0,
+            function_index: start,
+            exported: false,
+        });
 
         let mut instance = RuntimeInstance { hook_set, store };
         instance.add_module(module_name, validation_info)?;
@@ -128,7 +125,7 @@ where
             return Err(RuntimeError::StoreNotFound);
         }
 
-        let module = (&self.store)
+        let module = (self.store)
             .as_ref()
             .unwrap_validated()
             .modules
@@ -169,16 +166,16 @@ where
         // -=-= Verification =-=-
         trace!(
             "Global function idx: {:?}",
-            (&self.store).as_ref().unwrap_validated().modules[module_idx].functions[func_idx]
+            self.store.as_ref().unwrap_validated().modules[module_idx].functions[func_idx]
         );
 
-        let func_inst_idx = (&self.store).as_ref().unwrap_validated().modules[module_idx]
+        let func_inst_idx = *self.store.as_ref().unwrap_validated().modules[module_idx]
             .functions
             .get(func_idx)
-            .ok_or(RuntimeError::FunctionNotFound)?
-            .clone();
+            .ok_or(RuntimeError::FunctionNotFound)?;
 
-        let func_inst = (&self.store)
+        let func_inst = self
+            .store
             .as_ref()
             .unwrap_validated()
             .functions
@@ -220,7 +217,7 @@ where
             &mut current_module_idx,
             &mut stack,
             EmptyHookSet,
-            (&mut self.store).as_mut().unwrap_validated(),
+            self.store.as_mut().unwrap_validated(),
         )?;
 
         // Pop return values from stack
@@ -254,16 +251,16 @@ where
         // -=-= Verification =-=-
         trace!(
             "Global function idx: {:?}",
-            (&self.store).as_ref().unwrap_validated().modules[module_idx].functions[func_idx]
+            self.store.as_ref().unwrap_validated().modules[module_idx].functions[func_idx]
         );
 
-        let func_inst_idx = (&self.store).as_ref().unwrap_validated().modules[module_idx]
+        let func_inst_idx = *self.store.as_ref().unwrap_validated().modules[module_idx]
             .functions
             .get(func_idx)
-            .ok_or(RuntimeError::FunctionNotFound)?
-            .clone();
+            .ok_or(RuntimeError::FunctionNotFound)?;
 
-        let func_inst = (&self.store)
+        let func_inst = self
+            .store
             .as_ref()
             .unwrap_validated()
             .functions
@@ -299,14 +296,13 @@ where
             &mut currrent_module_idx,
             &mut stack,
             EmptyHookSet,
-            (&mut self.store).as_mut().unwrap_validated(),
+            self.store.as_mut().unwrap_validated(),
         )?;
 
-        let func_inst_idx = (&self.store).as_ref().unwrap_validated().modules[module_idx]
+        let func_inst_idx = *self.store.as_ref().unwrap_validated().modules[module_idx]
             .functions
             .get(func_idx)
-            .ok_or(RuntimeError::FunctionNotFound)?
-            .clone();
+            .ok_or(RuntimeError::FunctionNotFound)?;
 
         let func_inst = self
             .store
@@ -360,11 +356,10 @@ where
         let (module_idx, func_idx) = self.verify_function_ref(function_ref)?;
 
         // -=-= Verification =-=-
-        let func_inst_idx = (&self.store).as_ref().unwrap_validated().modules[module_idx]
+        let func_inst_idx = *self.store.as_ref().unwrap_validated().modules[module_idx]
             .functions
             .get(func_idx)
-            .ok_or(RuntimeError::FunctionNotFound)?
-            .clone();
+            .ok_or(RuntimeError::FunctionNotFound)?;
 
         let func_inst = self
             .store
@@ -398,14 +393,13 @@ where
             &mut currrent_module_idx,
             &mut stack,
             EmptyHookSet,
-            (&mut self.store).as_mut().unwrap_validated(),
+            self.store.as_mut().unwrap_validated(),
         )?;
 
-        let func_inst_idx = (&self.store).as_ref().unwrap_validated().modules[module_idx]
+        let func_inst_idx = *self.store.as_ref().unwrap_validated().modules[module_idx]
             .functions
             .get(func_idx)
-            .ok_or(RuntimeError::FunctionNotFound)?
-            .clone();
+            .ok_or(RuntimeError::FunctionNotFound)?;
 
         let func_inst = store
             .functions
@@ -439,12 +433,13 @@ where
             return Err(RuntimeError::StoreNotFound);
         }
 
-        let module_idx = (&self.store)
+        let module_idx = self
+            .store
             .as_ref()
             .unwrap_validated()
             .get_module_idx_from_name(module_name)?;
 
-        let func_idx = (&self.store).as_ref().unwrap_validated().modules[module_idx]
+        let func_idx = self.store.as_ref().unwrap_validated().modules[module_idx]
             .exports
             .iter()
             .find_map(|export| {
@@ -501,7 +496,8 @@ where
         } else {
             let (module_idx, func_idx) = (function_ref.module_index, function_ref.function_index);
 
-            let module = (&self.store)
+            let module = self
+                .store
                 .as_ref()
                 .unwrap_validated()
                 .modules

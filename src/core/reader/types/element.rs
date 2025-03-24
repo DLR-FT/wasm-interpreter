@@ -168,7 +168,7 @@ impl ElemType {
                         let span = read_constant_expression(
                             w,
                             &mut valid_stack,
-                            &all_globals_types,
+                            all_globals_types,
                             Some(functions),
                         );
 

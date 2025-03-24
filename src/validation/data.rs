@@ -21,7 +21,7 @@ use crate::{
 pub(super) fn validate_data_section(
     wasm: &mut WasmReader,
     section_header: SectionHeader,
-    imported_global_types: &Vec<GlobalType>,
+    imported_global_types: &[GlobalType],
     no_of_total_memories: usize,
 ) -> Result<Vec<DataSegment>> {
     assert_eq!(section_header.ty, SectionTy::Data);
@@ -35,7 +35,7 @@ pub(super) fn validate_data_section(
                 trace!("Data section: active {{ memory 0, offset e }}");
                 let mut valid_stack = ValidationStack::new();
                 let offset = {
-                    read_constant_expression(wasm, &mut valid_stack, &imported_global_types, None)?
+                    read_constant_expression(wasm, &mut valid_stack, imported_global_types, None)?
                 };
 
                 valid_stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
@@ -74,7 +74,7 @@ pub(super) fn validate_data_section(
 
                 let mut valid_stack = ValidationStack::new();
                 let offset = {
-                    read_constant_expression(wasm, &mut valid_stack, &imported_global_types, None)?
+                    read_constant_expression(wasm, &mut valid_stack, imported_global_types, None)?
                 };
 
                 valid_stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
