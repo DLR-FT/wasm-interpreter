@@ -227,7 +227,6 @@ impl Display for Error {
             Error::IfWithoutMatchingElse => {
                 f.write_str("read 'end' without matching 'else' instruction to 'if' instruction")
             }
-            Error::UnknownTable => f.write_str("Unknown Table"),
             Error::TableIsNotDefined(table_idx) => f.write_fmt(format_args!(
                 "C.tables[{}] is NOT defined when it should be",
                 table_idx
@@ -279,8 +278,9 @@ impl Display for Error {
 
             // TODO: maybe move these to LinkerError also add more info to them (the name's export, function idx, etc)
             Error::UnknownFunction => f.write_str("Unknown function"),
-            Error::UnknownMemory => f.write_str("Unknown table"),
+            Error::UnknownMemory => f.write_str("Unknown memory"),
             Error::UnknownGlobal => f.write_str("Unknown global"),
+            Error::UnknownTable => f.write_str("Unknown table"),
             Error::DuplicateExportName => f.write_str("Duplicate export name"),
             // TODO: maybe move these to LinkerError also add more info to them (the name's export, function idx, etc)
 
