@@ -8,7 +8,7 @@ fully `no_std`.
 ## Features:
 
 - Fast startup times. This interpreter operates in-place and unlike other interpreters does not require an intermediate
-  parsing step.
+  parsing step
 - A fuel mechanic which also allows for pausing and resuming
 - No external dependencies (except `log` for now)
 - Fully `no_std`
