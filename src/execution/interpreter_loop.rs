@@ -35,14 +35,25 @@ use crate::execution::hooks::HookSet;
 
 use super::{execution_info::ExecutionInfo, lut::Lut};
 
+/// The result state from run()
+pub(super) enum RunState {
+    /// Interpretation was finished.
+    Finished,
+    /// Interpretation was interrupted due to insufficent fuel.
+    OutOfFuel,
+}
+
 /// Interprets a functions. Parameters and return values are passed on the stack.
+/// Completly stateless. All state is passed in via references. Theirfore this can be called repeatedly to resume an interpretation.
+/// Returns a state which determines whether the interpretation was finished or interrupted.
 pub(super) fn run<H: HookSet>(
     modules: &mut [ExecutionInfo],
-    current_module_idx: &mut usize,
     lut: &Lut,
     stack: &mut Stack,
-    mut hooks: H,
-) -> Result<(), RuntimeError> {
+    current_module_idx: &mut usize,
+    current_stp: &mut usize,
+    hooks: H,
+) -> Result<RunState, RuntimeError> {
     let func_inst = modules[*current_module_idx]
         .store
         .funcs
@@ -51,16 +62,10 @@ pub(super) fn run<H: HookSet>(
         .try_into_local()
         .unwrap_validated();
 
-    // Start reading the function's instructions
     let mut wasm = &mut modules[*current_module_idx].wasm_reader;
-
-    // the sidetable and stp for this function, stp will reset to 0 every call
-    // since function instances have their own sidetable.
     let mut current_sidetable: &Sidetable = &func_inst.sidetable;
-    let mut stp = 0;
 
-    // unwrap is sound, because the validation assures that the function points to valid subslice of the WASM binary
-    wasm.move_start_to(func_inst.code_expr).unwrap();
+    let mut hooks = hooks;
 
     use crate::core::reader::types::opcode::*;
     loop {
@@ -113,7 +118,7 @@ pub(super) fn run<H: HookSet>(
                 trace!("end of function reached, returning to previous stack frame");
                 wasm = &mut modules[return_module].wasm_reader;
                 wasm.pc = maybe_return_address;
-                stp = maybe_return_stp;
+                *current_stp = maybe_return_stp;
 
                 current_sidetable = &modules[return_module]
                     .store
@@ -132,13 +137,13 @@ pub(super) fn run<H: HookSet>(
                 let test_val: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
                 if test_val != 0 {
-                    stp += 1;
+                    *current_stp += 1;
                 } else {
-                    do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable);
+                    do_sidetable_control_transfer(wasm, stack, current_stp, current_sidetable);
                 }
             }
             ELSE => {
-                do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable);
+                do_sidetable_control_transfer(wasm, stack, current_stp, current_sidetable);
             }
             BR_IF => {
                 wasm.read_var_u32().unwrap_validated();
@@ -146,9 +151,9 @@ pub(super) fn run<H: HookSet>(
                 let test_val: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
                 if test_val != 0 {
-                    do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable);
+                    do_sidetable_control_transfer(wasm, stack, current_stp, current_sidetable);
                 } else {
-                    stp += 1;
+                    *current_stp += 1;
                 }
             }
             BR_TABLE => {
@@ -162,24 +167,24 @@ pub(super) fn run<H: HookSet>(
                 let case_val = case_val_i32 as usize;
 
                 if case_val >= label_vec.len() {
-                    stp += label_vec.len();
+                    *current_stp += label_vec.len();
                 } else {
-                    stp += case_val;
+                    *current_stp += case_val;
                 }
 
-                do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable);
+                do_sidetable_control_transfer(wasm, stack, current_stp, current_sidetable);
             }
             BR => {
                 //skip n of BR n
                 wasm.read_var_u32().unwrap_validated();
-                do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable);
+                do_sidetable_control_transfer(wasm, stack, current_stp, current_sidetable);
             }
             BLOCK | LOOP => {
                 BlockType::read_unvalidated(wasm);
             }
             RETURN => {
                 //same as BR, except no need to skip n of BR n
-                do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable);
+                do_sidetable_control_transfer(wasm, stack, current_stp, current_sidetable);
             }
             CALL => {
                 let func_to_call_idx = wasm.read_var_u32().unwrap_validated() as FuncIdx;
@@ -209,13 +214,13 @@ pub(super) fn run<H: HookSet>(
                             func_to_call_ty,
                             locals,
                             wasm.pc,
-                            stp,
+                            *current_stp,
                         );
 
                         wasm.move_start_to(local_func_inst.code_expr)
                             .unwrap_validated();
 
-                        stp = 0;
+                        *current_stp = 0;
                         current_sidetable = &local_func_inst.sidetable;
                     }
                     FuncInst::Imported(_imported_func_inst) => {
@@ -236,7 +241,7 @@ pub(super) fn run<H: HookSet>(
                             func_to_call_ty,
                             locals,
                             wasm.pc,
-                            stp,
+                            *current_stp,
                         );
 
                         wasm = &mut modules[next_module].wasm_reader;
@@ -245,7 +250,7 @@ pub(super) fn run<H: HookSet>(
                         wasm.move_start_to(local_func_inst.code_expr)
                             .unwrap_validated();
 
-                        stp = 0;
+                        *current_stp = 0;
                         current_sidetable = &local_func_inst.sidetable;
                     }
                 }
@@ -313,13 +318,13 @@ pub(super) fn run<H: HookSet>(
                             func_ty,
                             locals,
                             wasm.pc,
-                            stp,
+                            *current_stp,
                         );
 
                         wasm.move_start_to(local_func_inst.code_expr)
                             .unwrap_validated();
 
-                        stp = 0;
+                        *current_stp = 0;
                         current_sidetable = &local_func_inst.sidetable;
                     }
                     FuncInst::Imported(_imported_func_inst) => {
@@ -342,7 +347,7 @@ pub(super) fn run<H: HookSet>(
                             func_ty,
                             locals,
                             wasm.pc,
-                            stp,
+                            *current_stp,
                         );
 
                         wasm = &mut modules[next_module].wasm_reader;
@@ -351,7 +356,7 @@ pub(super) fn run<H: HookSet>(
                         wasm.move_start_to(local_func_inst.code_expr)
                             .unwrap_validated();
 
-                        stp = 0;
+                        *current_stp = 0;
                         current_sidetable = &local_func_inst.sidetable;
                     }
                 }
@@ -2596,7 +2601,7 @@ pub(super) fn run<H: HookSet>(
             }
         }
     }
-    Ok(())
+    Ok(RunState::Finished)
 }
 
 //helper function for avoiding code duplication at intraprocedural jumps
