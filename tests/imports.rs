@@ -179,6 +179,15 @@ const USE_MEMORY: &str = r#"
         local.get $size    ;; size in bytes
         memory.copy
     )
+
+    (func (export "memory_size") (result i32)
+        memory.size
+    )
+
+    (func (export "memory_grow")  (param $pages i32) (result i32)
+        local.get $pages
+        memory.grow
+    )
 )
 "#;
 
@@ -199,6 +208,12 @@ pub fn run_memory() {
     let load_i32 = instance.get_function_by_name("base", "load_i32").unwrap();
     let memory_copy = instance
         .get_function_by_name("base", "memory_copy")
+        .unwrap();
+    let memory_size = instance
+        .get_function_by_name("base", "memory_size")
+        .unwrap();
+    let memory_grow = instance
+        .get_function_by_name("base", "memory_grow")
         .unwrap();
 
     // TODO: debug access for memory contents
@@ -235,4 +250,16 @@ pub fn run_memory() {
     // );
     assert_eq!(res, 123);
     assert_eq!(res2, 123);
+
+    let res: i32 = instance.invoke(&memory_size, ()).unwrap();
+    assert_eq!(res, 1);
+
+    let res: i32 = instance.invoke(&memory_grow, 1).unwrap();
+    assert_eq!(res, 1);
+
+    let res: i32 = instance.invoke(&memory_size, ()).unwrap();
+    assert_eq!(res, 2);
+
+    let res: i32 = instance.invoke(&memory_grow, 1).unwrap();
+    assert_eq!(res, -1);
 }

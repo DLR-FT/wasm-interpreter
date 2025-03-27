@@ -10,8 +10,6 @@
 //!      [`Error::RuntimeError`](crate::Error::RuntimeError) variant, which as per 2., we don not
 //!      want
 
-use core::cmp::Ordering;
-
 use alloc::vec;
 use alloc::vec::Vec;
 
