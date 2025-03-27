@@ -22,16 +22,22 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.base.ref }}
           submodules: true
+          repository: ${{ github.event.pull_request.base.repo.full_name }}
 
       - name: Generate old report
         run: |
           TESTSUITE_SAVE=1 cargo test -- spec_tests --show-output
           cp testsuite_results.json old.json || :
       
+      - run: cargo clean
+      
       - name: Switch
-        run: |
-          cargo clean
-          git checkout ${{ github.event.pull_request.head.sha }}
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.ref }}
+          submodules: true
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
 
       - name: Generate new report
         run: |
