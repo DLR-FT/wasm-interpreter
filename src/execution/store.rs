@@ -7,7 +7,6 @@ use crate::core::reader::span::Span;
 use crate::core::reader::types::export::Export;
 use crate::core::reader::types::global::Global;
 use crate::core::reader::types::{MemType, TableType, ValType};
-use crate::core::sidetable::Sidetable;
 use crate::execution::value::{Ref, Value};
 use crate::linear_memory::LinearMemory;
 use crate::RefType;
@@ -39,7 +38,8 @@ pub struct LocalFuncInst {
     pub ty: TypeIdx,
     pub locals: Vec<ValType>,
     pub code_expr: Span,
-    pub sidetable: Sidetable,
+    /// where stp should point to when pc points to the beginning of the function
+    pub stp: usize,
 }
 
 #[derive(Debug)]
@@ -111,13 +111,46 @@ impl TableInst {
     }
 }
 
-pub struct MemInst {
-    #[allow(warnings)]
+pub enum MemInst {
+    Local(LocalMemInst),
+    Imported(ImportedMemInst),
+}
+
+pub struct LocalMemInst {
     pub ty: MemType,
     pub mem: LinearMemory,
 }
 
+pub struct ImportedMemInst {
+    pub ty: MemType,
+    pub module_name: String,
+    pub function_name: String,
+}
+
 impl MemInst {
+    pub fn ty(&self) -> MemType {
+        match self {
+            MemInst::Local(f) => f.ty,
+            MemInst::Imported(f) => f.ty,
+        }
+    }
+
+    pub fn try_into_local(&mut self) -> Option<&mut LocalMemInst> {
+        match self {
+            MemInst::Local(f) => Some(f),
+            MemInst::Imported(_) => None,
+        }
+    }
+
+    pub fn try_into_imported(&mut self) -> Option<&mut ImportedMemInst> {
+        match self {
+            MemInst::Local(_) => None,
+            MemInst::Imported(f) => Some(f),
+        }
+    }
+}
+
+impl LocalMemInst {
     pub fn new(ty: MemType) -> Self {
         Self {
             ty,

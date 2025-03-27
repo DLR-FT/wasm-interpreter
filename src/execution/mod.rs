@@ -4,12 +4,14 @@ use alloc::vec;
 use alloc::vec::Vec;
 
 use const_interpreter_loop::{run_const, run_const_span};
-use execution_info::ExecutionInfo;
+use execution_info::{ExecutionInfo, StateData};
 use function_ref::FunctionRef;
 use interpreter_loop::run;
 use locals::Locals;
 use lut::Lut;
-use store::{DataInst, ElemInst, ImportedFuncInst, LocalFuncInst, TableInst};
+use store::{
+    DataInst, ElemInst, ImportedFuncInst, ImportedMemInst, LocalFuncInst, LocalMemInst, TableInst,
+};
 use value::{ExternAddr, FuncAddr, Ref};
 use value_stack::Stack;
 
@@ -48,7 +50,8 @@ pub struct RuntimeInstance<'b, H = EmptyHookSet>
 where
     H: HookSet,
 {
-    pub modules: Vec<ExecutionInfo<'b>>,
+    pub modules: Vec<ExecutionInfo>,
+    pub state_data: Vec<StateData<'b>>,
     module_map: BTreeMap<String, usize>,
     lut: Option<Lut>,
     pub hook_set: H,
@@ -80,6 +83,7 @@ where
 
         let mut instance = RuntimeInstance {
             modules: Vec::new(),
+            state_data: Vec::new(),
             module_map: BTreeMap::new(),
             lut: None,
             hook_set,
@@ -155,16 +159,17 @@ where
         validation_info: &'_ ValidationInfo<'b>,
     ) -> CustomResult<()> {
         let store = Self::init_store(validation_info)?;
-        let exec_info = ExecutionInfo::new(
-            module_name,
-            validation_info.wasm,
-            validation_info.types.clone(),
-            store,
-        );
+        let exec_info = ExecutionInfo::new(module_name, validation_info.types.clone(), store);
 
         self.module_map
             .insert(module_name.to_string(), self.modules.len());
         self.modules.push(exec_info);
+
+        //TODO: fix the clone
+        self.state_data.push(StateData::new(
+            validation_info.wasm,
+            validation_info.sidetable.clone(),
+        ));
 
         self.lut = Lut::new(&self.modules, &self.module_map);
 
@@ -224,6 +229,7 @@ where
         // Run the interpreter
         run(
             &mut self.modules,
+            &mut self.state_data,
             &mut current_module_idx,
             self.lut.as_ref().ok_or(RuntimeError::UnmetImport)?,
             &mut stack,
@@ -288,6 +294,7 @@ where
         // Run the interpreter
         run(
             &mut self.modules,
+            &mut self.state_data,
             &mut currrent_module_idx,
             self.lut.as_ref().ok_or(RuntimeError::UnmetImport)?,
             &mut stack,
@@ -371,6 +378,7 @@ where
         // Run the interpreter
         run(
             &mut self.modules,
+            &mut self.state_data,
             &mut currrent_module_idx,
             self.lut.as_ref().ok_or(RuntimeError::UnmetImport)?,
             &mut stack,
@@ -498,9 +506,9 @@ where
             let mut wasm_reader = WasmReader::new(validation_info.wasm);
 
             let functions = validation_info.functions.iter();
-            let func_blocks = validation_info.func_blocks.iter();
+            let func_blocks_stps = validation_info.func_blocks_stps.iter();
 
-            let local_function_inst = functions.zip(func_blocks).map(|(ty, (func, sidetable))| {
+            let local_function_inst = functions.zip(func_blocks_stps).map(|(ty, (func, stp))| {
                 wasm_reader
                     .move_start_to(*func)
                     .expect("function index to be in the bounds of the WASM binary");
@@ -517,8 +525,7 @@ where
                     ty: *ty,
                     locals,
                     code_expr,
-                    // TODO fix this ugly clone
-                    sidetable: sidetable.clone(),
+                    stp: *stp,
                 })
             });
 
@@ -627,36 +634,31 @@ where
             })
             .collect();
 
-        let mut memory_instances: Vec<MemInst> = validation_info
-            .memories
-            .iter()
-            .map(|ty| MemInst::new(*ty))
-            .collect();
+        let mut memory_instances: Vec<MemInst> = {
+            let local_mems = validation_info
+                .memories
+                .iter()
+                .map(|ty| MemInst::Local(LocalMemInst::new(*ty)));
 
-        let import_memory_instances_len = {
-            let mut len: usize = 0;
-            for import in &validation_info.imports {
-                if let crate::core::reader::types::import::ImportDesc::Mem(_) = import.desc {
-                    len += 1;
-                }
-            }
-            len
+            let imported_mems =
+                validation_info
+                    .imports
+                    .iter()
+                    .filter_map(|import| match &import.desc {
+                        ImportDesc::Mem(mem_type) => Some(MemInst::Imported(ImportedMemInst {
+                            ty: *mem_type,
+                            module_name: import.module_name.clone(),
+                            function_name: import.name.clone(),
+                        })),
+                        _ => None,
+                    });
+
+            imported_mems.chain(local_mems).collect()
         };
-        match memory_instances
-            .len()
-            .checked_add(import_memory_instances_len)
-        {
-            None => {
-                return Err(Error::StoreInstantiationError(
-                    StoreInstantiationError::TooManyMemories(usize::MAX),
-                ))
-            }
-            Some(mem_instances) => {
-                if mem_instances > 1 {
-                    return Err(Error::UnsupportedProposal(Proposal::MultipleMemories));
-                }
-            }
-        };
+
+        if memory_instances.len() > 1 {
+            return Err(Error::UnsupportedProposal(Proposal::MultipleMemories));
+        }
 
         let data_sections: Vec<DataInst> = validation_info
             .data
@@ -697,7 +699,11 @@ where
                         _ => todo!(),
                     };
 
-                    let mem_inst = memory_instances.get_mut(mem_idx).unwrap();
+                    let mem_inst = memory_instances
+                        .get_mut(mem_idx)
+                        .unwrap()
+                        .try_into_local() // TODO: remove
+                        .unwrap();
 
                     mem_inst
                         .mem
