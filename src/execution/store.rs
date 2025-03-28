@@ -51,6 +51,17 @@ pub struct CleanupStore {
     pub added_data: usize,
     pub added_tables: usize,
     pub added_elements: usize,
+    // EXAMPLE: testsuite -> linking.wast lines 252-261 (assert_unlinkable) and line 262 (assert_trap)
+    //          see the TODO's right below for explanation of the problem
+    //            if we execute the assert_unlinkable we can still have a broken state of the store as we've tried to instantiate elements (and maybe data in other cases)
+    //            that is because we only check for added functoins, memories, globals, data, tables AND elements BUT NOT FOR MODIFIED TABLES AND MEMORY!
+
+    // TODO: add instantiated elements before the module
+    //          so basically, we can error after instantiating elements (and possible data as well)
+    // TODO: maybe add for instantiated data, as well
+    // for now, for both the first TODO: dirty fix: moved instantiate_elements at the bottom
+    // another solution would be to do the checks for both elements and data before actually instantiating
+    // for now im done
 }
 
 impl<'b> Store<'b> {
@@ -205,21 +216,10 @@ impl<'b> Store<'b> {
         };
         let imported_globals_len = imported_globals.len();
         let mut globals = module.instantiate_globals(imported_globals)?;
-        let (element_inst, passive_idxs) = module.instantiate_elements(
-            self,
-            &exec_functions,
-            &mut local_tables,
-            &table_imports_indexes,
-            &globals,
-        )?;
 
         // TODO: make this prettier, rn the compiler complains wha wha, cause see the instruction above
         cleanup_store_struct.added_functions = local_inst_funcs.len();
         self.functions.extend(local_inst_funcs);
-
-        // TODO: make this prettier, rn the compiler complains wha wha, cause see the instruction above
-        cleanup_store_struct.added_tables = local_tables.len();
-        self.tables.extend(local_tables);
 
         let local_memories = module.instantiate_local_memories()?;
 
@@ -255,6 +255,17 @@ impl<'b> Store<'b> {
 
         let data =
             module.instantiate_data(self, &exec_memories, &globals[0..imported_globals_len])?;
+
+        let (element_inst, passive_idxs) = module.instantiate_elements(
+            self,
+            &exec_functions,
+            &mut local_tables,
+            &table_imports_indexes,
+            &globals,
+        )?;
+        // TODO: make this prettier, rn the compiler complains wha wha, cause see the instruction above
+        cleanup_store_struct.added_tables = local_tables.len();
+        self.tables.extend(local_tables);
 
         let imported_functions = functions_imports_indexes.len();
         let imported_memories = memory_imports_indexes.len();

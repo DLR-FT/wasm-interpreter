@@ -78,7 +78,7 @@ const SPEC_TEST_WAT: &'static str = r#"
 )
 "#;
 
-pub fn to_wasm_testsuite_string(runtime_error: RuntimeError) -> std::string::String {
+pub fn runtime_err_to_wasm_testsuite_string(runtime_error: RuntimeError) -> std::string::String {
     match runtime_error {
         RuntimeError::DivideBy0 => "integer divide by zero",
         RuntimeError::UnrepresentableResult => "integer overflow",
@@ -100,6 +100,18 @@ pub fn to_wasm_testsuite_string(runtime_error: RuntimeError) -> std::string::Str
         RuntimeError::StoreNotFound => "store not found",
     }
     .to_string()
+}
+
+pub fn linker_err_to_wasm_testsuite_string(linker_err: wasm::Error) -> Option<std::string::String> {
+    use wasm::Error::*;
+    match linker_err {
+        InvalidImportType => Some("incompatible import type".to_string()),
+        UnknownFunction | UnknownMemory | UnknownGlobal | UnknownTable => {
+            Some("unknown import".to_string())
+        }
+        RuntimeError(rt_err) => Some(runtime_err_to_wasm_testsuite_string(rt_err)),
+        _ => None,
+    }
 }
 
 /// Attempt to unwrap the result of an expression. If the expression is an `Err`, then `return` the
@@ -135,6 +147,11 @@ impl std::error::Error for ErrEVI {}
 fn encode_validate_instantiate<'a>(
     module: &mut wast::QuoteWat,
     bytes: &'a mut Option<Vec<u8>>,
+    // TODO: first: patch all panics in the lib
+    //        next: uncomment the store arg and make it Option<Store<'a>>, as you can pass to this function without having to use catch_unwind
+    //        this is needed for AssertTrap, see file from testsuite: linking.wast:266 where assert_trap can still fail
+    //        also read the message above that assert directive, as it says about v2 that we still keep broken state in store even
+    //        if module fails to be added to the store
     // store: &'a mut Option<Store<'a>>,
 ) -> Result<(), ErrEVI> {
     let store = &mut Some(Store::default());
@@ -565,7 +582,7 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
             wast::WastDirective::AssertUnlinkable {
                 span,
                 module,
-                message: _,
+                message,
             } => match store {
                 None => {
                     asserts.push_error(WastError::new(
@@ -636,30 +653,44 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                                                     get_command(&contents, span),
                                                 ));
                                         }
-                                        Err(e) => match e {
-                                            // TODO: maybe move Linking to Runtime and then check for it here?
-                                            //        also move the needed linking errors to the LinkingError when you do the above as well
-                                            wasm::Error::InvalidImportType
-                                            | wasm::Error::UnknownFunction
-                                            | wasm::Error::UnknownMemory
-                                            | wasm::Error::UnknownGlobal
-                                            | wasm::Error::UnknownTable
-                                            | wasm::Error::RuntimeError(..) => {
-                                                asserts.push_success(WastSuccess::new(
-                                                    span.linecol_in(&contents).0 as u32 + 1,
-                                                    get_command(&contents, span),
-                                                ));
-                                            }
-                                            _ => {
-                                                asserts.push_error(WastError::new(
+                                        Err(e) => {
+                                            let actual_linker_err =
+                                                linker_err_to_wasm_testsuite_string(e.clone());
+
+                                            println!(
+                                                "Actual: {}; Expected: {}",
+                                                e.clone(),
+                                                message
+                                            );
+
+                                            match actual_linker_err {
+                                                None => {
+                                                    asserts.push_error(WastError::new(
+                                                        Box::new(GenericError::new(
+                                                            &format!("Module failed to link, but with an error of {} instead of a linking (Runtime) error", e.to_string()),
+                                                        )),
+                                                        span.linecol_in(&contents).0 as u32 + 1,
+                                                        get_command(&contents, span),
+                                                    ));
+                                                }
+                                                Some(actual) => {
+                                                    if actual != message {
+                                                        asserts.push_error(WastError::new(
                                                             Box::new(GenericError::new(
                                                                 &format!("Module failed to link, but with an error of {} instead of a linking (Runtime) error", e.to_string()),
                                                             )),
                                                             span.linecol_in(&contents).0 as u32 + 1,
                                                             get_command(&contents, span),
                                                         ));
+                                                    } else {
+                                                        asserts.push_success(WastSuccess::new(
+                                                            span.linecol_in(&contents).0 as u32 + 1,
+                                                            get_command(&contents, span),
+                                                        ));
+                                                    }
+                                                }
                                             }
-                                        },
+                                        }
                                     }
                                 }
                             },
@@ -876,6 +907,7 @@ fn execute_assert_trap(
     match exec {
         wast::WastExecute::Invoke(invoke_info) => {
             let module_name = get_module_name_from_wast_invoke(&store, &invoke_info);
+
             let args = invoke_info
                 .args
                 .into_iter()
@@ -900,7 +932,7 @@ fn execute_assert_trap(
             match actual {
                 Ok(_) => Err(Box::new(GenericError::new("assert_trap did NOT trap"))),
                 Err(e) => {
-                    let actual = to_wasm_testsuite_string(e);
+                    let actual = runtime_err_to_wasm_testsuite_string(e);
                     let expected = message;
 
                     if actual.contains(expected)
