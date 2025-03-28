@@ -43,13 +43,20 @@ fn memory_fill() {
 
     let fill = get_func!(i, "fill");
     i.invoke::<(), ()>(fill, ()).unwrap();
-    let mem_inst = &i.modules[0].store.mems[0];
+    // <<<<<<< HEAD
+    //     let mem = &(&i.store).as_ref().unwrap().memories[0];
+    //     assert!(mem.data.as_slice()[0..105]
+    //         .eq_ignore_ascii_case(&vec![vec![217u8; 100], vec![0u8; 5]].concat()))
+    // =======
+    let mem = &(&i.store).as_ref().unwrap().memories[0];
+    // let mem_inst = &i.modules[0].store.mems[0];
 
     let expected = [vec![217u8; 100], vec![0u8; 5]].concat();
     for (idx, expected_byte) in expected.into_iter().enumerate() {
-        let mem_byte: u8 = mem_inst.mem.load(idx).unwrap();
+        let mem_byte: u8 = mem.mem.load(idx).unwrap();
         assert!(mem_byte.eq_ignore_ascii_case(&expected_byte));
     }
+    // >>>>>>> main
 }
 
 // we need control flow implemented for any of these tests
