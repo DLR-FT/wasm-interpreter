@@ -50,6 +50,7 @@ def get_summary(entries) -> str:
             - Count number of passing and failing asserts, calculate percentage
     """
     result = ""
+    result += "<details><summary>Click here to open</summary>\n\n"
     result += "| **File** | **Passed Asserts** | **Failed Asserts** | **% Passed** | **Notes** |\n"
     result += "|:--------:|:------------------:|:------------------:|:------------:|-----------|\n"
 
@@ -80,6 +81,7 @@ def get_summary(entries) -> str:
             # result += f'Command: `{sanatize_table_item(script_error["command"])}`'
             result += "|\n"
 
+    result += "\n\n</details>\n"
     return result
 
 
