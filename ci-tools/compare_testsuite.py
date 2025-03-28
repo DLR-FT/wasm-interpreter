@@ -103,8 +103,9 @@ def get_delta(old_entries, new_entries) -> str:
                 - (Basically a combination of case [i] and case [ii])
     """
     result = ""
-    result += "| **File** | **Notes** | ❓ |\n"
-    result += "|:--------:|:---------:|:--:|\n"
+    header = ""
+    header += "| **File** | **Notes** | ❓ |\n"
+    header += "|:--------:|:---------:|:--:|\n"
 
     def find_entry(haystack, filepath):
         for entry in haystack:
@@ -189,7 +190,10 @@ def get_delta(old_entries, new_entries) -> str:
         elif old_entry is None:
             result += f"| {file} | File missing in target branch | ⚠️ |\n"
 
-    return result
+    if result != "":
+        return header + result
+    else:
+        return "<b> No changes detected. </b>"
 
 
 def main():
