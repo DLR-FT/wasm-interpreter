@@ -18,6 +18,9 @@ pub struct ExecutionInfo<'r> {
 
 impl<'r> ExecutionInfo<'r> {
     pub fn new(name: &str, wasm_bytecode: &'r [u8], fn_types: Vec<FuncType>, store: Store) -> Self {
+        if (name == "abc") {
+            panic!("BAD");
+        }
         ExecutionInfo {
             name: name.to_string(),
             wasm_bytecode,

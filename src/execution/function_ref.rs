@@ -23,7 +23,10 @@ impl FunctionRef {
         runtime: &mut RuntimeInstance<H>,
         params: Param,
     ) -> Result<Returns, RuntimeError> {
-        runtime.invoke(self, params)
+        if runtime.lut.is_none() {
+            panic!("At the disco");
+        }
+        todo!();
     }
 
     pub fn invoke_dynamic<H: HookSet>(
@@ -32,6 +35,10 @@ impl FunctionRef {
         params: Vec<Value>,
         ret_types: &[ValType],
     ) -> Result<Vec<Value>, RuntimeError> {
+        if runtime.lut.is_none() {
+            panic!("At the disco");
+        }
+
         runtime.invoke_dynamic(self, params, ret_types)
     }
 

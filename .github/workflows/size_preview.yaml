@@ -1,0 +1,117 @@
+name: Testsuite Preview
+
+on:
+- pull_request_target
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  generate-base-report:
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      RUSTFLAGS: "-D warnings"
+      RUSTDOCFLAGS: "-D warnings"
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.base.ref }}
+          submodules: true
+          repository: ${{ github.event.pull_request.base.repo.full_name }}
+
+      - name: Install cargo bloat
+        run: cargo install cargo-bloat
+
+      - name: Generate old reports
+        run: |
+          cargo bloat --example stuff --message-format json -n 0 > size_funcs_debug.json
+          cargo bloat --example stuff --message-format json -n 0 --crates > size_crates_debug.json
+          cargo bloat --example stuff --message-format json --release -n 0 > size_funcs_release.json
+          cargo bloat --example stuff --message-format json --release -n 0 --crates > size_crates_release.json
+      
+      - name: Merge reports
+        run: jq -n 'reduce inputs as $in ({}; . + {(input_filename): $in})' size_*.json > base_sizes.json
+
+      - name: Upload Base Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: base-sizes
+          path: base_sizes.json
+          retention-days: 1
+
+      - run: cargo clean
+      
+  generate-head-report:
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      RUSTFLAGS: "-D warnings"
+      RUSTDOCFLAGS: "-D warnings"
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.ref }}
+          submodules: true
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+
+      - name: Install cargo bloat
+        run: cargo install cargo-bloat
+
+      - name: Generate old reports
+        run: |
+          cargo bloat --example stuff --message-format json -n 0 > size_funcs_debug.json
+          cargo bloat --example stuff --message-format json -n 0 --crates > size_crates_debug.json
+          cargo bloat --example stuff --message-format json --release -n 0 > size_funcs_release.json
+          cargo bloat --example stuff --message-format json --release -n 0 --crates > size_crates_release.json
+      
+      - name: Merge reports
+        run: jq -n 'reduce inputs as $in ({}; . + {(input_filename): $in})' size_*.json > head_sizes.json
+
+      - name: Upload Base Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: head-sizes
+          path: head_sizes.json
+          retention-days: 1
+
+      - run: cargo clean
+
+  compare-reports:
+    needs: [generate-base-report, generate-head-report]
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Download Base Report
+        uses: actions/download-artifact@v4
+        with:
+          name: base-sizes
+
+      
+      - name: Download Head Report
+        uses: actions/download-artifact@v4
+        with:
+          name: head-sizes
+
+      - name: Compare reports
+        run: python3 ./ci-tools/compare_sizes.py old.json new.json > sizes_report.md
+
+      - name: Sticky Pull Request Comment
+        uses: marocchino/sticky-pull-request-comment@v2.9.1
+        with:
+          header: sizes
+          path: sizes_report.md
