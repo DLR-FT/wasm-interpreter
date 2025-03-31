@@ -33,26 +33,27 @@ use crate::{
 #[cfg(feature = "hooks")]
 use crate::execution::hooks::HookSet;
 
-use super::{execution_info::ExecutionInfo, lut::Lut};
+use super::store::Store;
 
 /// Interprets a functions. Parameters and return values are passed on the stack.
 pub(super) fn run<H: HookSet>(
-    modules: &mut [ExecutionInfo],
     current_module_idx: &mut usize,
-    lut: &Lut,
     stack: &mut Stack,
     mut hooks: H,
+    store: &mut Store,
 ) -> Result<(), RuntimeError> {
-    let func_inst = modules[*current_module_idx]
-        .store
-        .funcs
-        .get(stack.current_stackframe().func_idx)
+    let global_func_idx =
+        store.modules[*current_module_idx].functions[stack.current_stackframe().func_idx];
+
+    let func_inst = store
+        .functions
+        .get(global_func_idx)
         .unwrap_validated()
         .try_into_local()
         .unwrap_validated();
 
     // Start reading the function's instructions
-    let mut wasm = &mut modules[*current_module_idx].wasm_reader;
+    let mut current_wasm_index = *current_module_idx;
 
     // the sidetable and stp for this function, stp will reset to 0 every call
     // since function instances have their own sidetable.
@@ -60,43 +61,61 @@ pub(super) fn run<H: HookSet>(
     let mut stp = 0;
 
     // unwrap is sound, because the validation assures that the function points to valid subslice of the WASM binary
-    wasm.move_start_to(func_inst.code_expr).unwrap();
+    store.modules[current_wasm_index]
+        .wasm_reader
+        .move_start_to(func_inst.code_expr)
+        .unwrap();
 
     use crate::core::reader::types::opcode::*;
     loop {
         // call the instruction hook
         #[cfg(feature = "hooks")]
-        hooks.instruction_hook(modules[*current_module_idx].wasm_bytecode, wasm.pc);
+        // hooks.instruction_hook(modules[*current_module_idx].wasm_bytecode, wasm.pc);
+        hooks.instruction_hook(
+            store.modules[*current_module_idx].wasm_bytecode,
+            store.modules[current_wasm_index].wasm_reader.pc,
+        );
 
-        let first_instr_byte = wasm.read_u8().unwrap_validated();
+        let first_instr_byte = store.modules[current_wasm_index]
+            .wasm_reader
+            .read_u8()
+            .unwrap_validated();
 
         #[cfg(debug_assertions)]
-        trace!(
-            "Executing instruction {}",
-            opcode_byte_to_str(first_instr_byte)
+        crate::core::utils::print_beautiful_instruction_name_1_byte(
+            first_instr_byte,
+            store.modules[current_wasm_index].wasm_reader.pc,
         );
+
+        #[cfg(not(debug_assertions))]
+        trace!("Read instruction byte {first_instr_byte:#04X?} ({first_instr_byte}) at wasm_binary[{}]", store.modules[current_wasm_index].wasm_reader.pc);
 
         match first_instr_byte {
             NOP => {
                 trace!("Instruction: NOP");
             }
             END => {
+                let current_func_global_idx = store.modules[*current_module_idx].functions
+                    [stack.current_stackframe().func_idx];
                 // if this is not the very last instruction in the function
                 // just skip because it is a delimiter of a ctrl block
 
                 // TODO there is definitely a better to write this
-                let current_func_span = modules[*current_module_idx]
-                    .store
-                    .funcs
-                    .get(stack.current_stackframe().func_idx)
+                let current_func_span = store
+                    .functions
+                    .get(current_func_global_idx)
                     .unwrap_validated()
                     .try_into_local()
                     .unwrap_validated()
                     .code_expr;
 
+                trace!("current_func_global_idx: {}", current_func_global_idx);
+
+                let function_real_end = current_func_span.from() + current_func_span.len();
+
                 // There might be multiple ENDs in a single function. We want to
                 // exit only when the outermost block (aka function block) ends.
-                if wasm.pc != current_func_span.from() + current_func_span.len() {
+                if store.modules[*current_module_idx].wasm_reader.pc != function_real_end {
                     continue;
                 }
 
@@ -111,51 +130,85 @@ pub(super) fn run<H: HookSet>(
                 }
 
                 trace!("end of function reached, returning to previous stack frame");
-                wasm = &mut modules[return_module].wasm_reader;
-                wasm.pc = maybe_return_address;
+                current_wasm_index = return_module;
+                *current_module_idx = return_module;
+
+                // wasm = &mut modules[return_module].wasm_reader;
+                store.modules[*current_module_idx].wasm_reader.pc = maybe_return_address;
                 stp = maybe_return_stp;
 
-                current_sidetable = &modules[return_module]
-                    .store
-                    .funcs
-                    .get(stack.current_stackframe().func_idx)
+                current_sidetable = &store
+                    .functions
+                    .get(
+                        store.modules[stack.current_stackframe().module_idx].functions
+                            [stack.current_stackframe().func_idx],
+                    )
                     .unwrap_validated()
                     .try_into_local()
                     .unwrap_validated()
                     .sidetable;
 
                 *current_module_idx = return_module;
+                trace!("Instruction: END");
             }
             IF => {
-                wasm.read_var_u32().unwrap_validated();
+                store.modules[current_wasm_index]
+                    .wasm_reader
+                    .read_var_u32()
+                    .unwrap_validated();
 
                 let test_val: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
                 if test_val != 0 {
                     stp += 1;
                 } else {
-                    do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable);
+                    do_sidetable_control_transfer(
+                        &mut store.modules[current_wasm_index].wasm_reader,
+                        stack,
+                        &mut stp,
+                        current_sidetable,
+                    );
                 }
+                trace!("Instruction: IF");
             }
             ELSE => {
-                do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable);
+                do_sidetable_control_transfer(
+                    &mut store.modules[current_wasm_index].wasm_reader,
+                    stack,
+                    &mut stp,
+                    current_sidetable,
+                );
+                trace!("Instruction: ELSE");
             }
             BR_IF => {
-                wasm.read_var_u32().unwrap_validated();
+                store.modules[current_wasm_index]
+                    .wasm_reader
+                    .read_var_u32()
+                    .unwrap_validated();
 
                 let test_val: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
                 if test_val != 0 {
-                    do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable);
+                    do_sidetable_control_transfer(
+                        &mut store.modules[current_wasm_index].wasm_reader,
+                        stack,
+                        &mut stp,
+                        current_sidetable,
+                    );
                 } else {
                     stp += 1;
                 }
+                trace!("Instruction: BR_IF");
             }
             BR_TABLE => {
-                let label_vec = wasm
+                let wasm_reader = &mut store.modules[current_wasm_index].wasm_reader;
+                let label_vec = wasm_reader
                     .read_vec(|wasm| wasm.read_var_u32().map(|v| v as LabelIdx))
                     .unwrap_validated();
-                wasm.read_var_u32().unwrap_validated();
+                store.modules[current_wasm_index]
+                    .wasm_reader
+                    .read_var_u32()
+                    .unwrap_validated();
 
                 // TODO is this correct?
                 let case_val_i32: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -167,32 +220,70 @@ pub(super) fn run<H: HookSet>(
                     stp += case_val;
                 }
 
-                do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable);
+                do_sidetable_control_transfer(
+                    &mut store.modules[current_wasm_index].wasm_reader,
+                    stack,
+                    &mut stp,
+                    current_sidetable,
+                );
+                trace!("Instruction: BR_TABLE");
             }
             BR => {
                 //skip n of BR n
-                wasm.read_var_u32().unwrap_validated();
-                do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable);
+                store.modules[current_wasm_index]
+                    .wasm_reader
+                    .read_var_u32()
+                    .unwrap_validated();
+                do_sidetable_control_transfer(
+                    &mut store.modules[current_wasm_index].wasm_reader,
+                    stack,
+                    &mut stp,
+                    current_sidetable,
+                );
+                trace!("Instruction: BR");
             }
             BLOCK | LOOP => {
-                BlockType::read_unvalidated(wasm);
+                BlockType::read_unvalidated(&mut store.modules[current_wasm_index].wasm_reader);
+                trace!("Instruction: BLOCK/LOOP");
             }
             RETURN => {
                 //same as BR, except no need to skip n of BR n
-                do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable);
+                do_sidetable_control_transfer(
+                    &mut store.modules[current_wasm_index].wasm_reader,
+                    stack,
+                    &mut stp,
+                    current_sidetable,
+                );
+                trace!("Instruction: RETURN");
             }
             CALL => {
-                let func_to_call_idx = wasm.read_var_u32().unwrap_validated() as FuncIdx;
+                let func_to_call_idx = store.modules[current_wasm_index]
+                    .wasm_reader
+                    .read_var_u32()
+                    .unwrap_validated() as FuncIdx;
 
-                let func_to_call_inst = modules[*current_module_idx]
-                    .store
-                    .funcs
-                    .get(func_to_call_idx)
+                // let current_wasm_index_copy = current_wasm_index;
+                // *current_module_idx = actual_module_idx_of_this_func;
+                // current_wasm_index = actual_module_idx_of_this_func;
+
+                let func_to_call_global_idx =
+                    store.modules[current_wasm_index].functions[func_to_call_idx];
+
+                let func_to_call_inst = store
+                    .functions
+                    .get(func_to_call_global_idx)
                     .unwrap_validated();
-                let func_to_call_ty = modules[*current_module_idx]
-                    .fn_types
-                    .get(func_to_call_inst.ty())
-                    .unwrap_validated();
+                let func_to_call_ty = func_to_call_inst.ty();
+
+                // let func_to_call_inst = modules[*current_module_idx]
+                //     .store
+                //     .funcs
+                //     .get(func_to_call_idx)
+                //     .unwrap_validated();
+                // let func_to_call_ty = modules[*current_module_idx]
+                //     .fn_types
+                //     .get(func_to_call_inst.ty())
+                //     .unwrap_validated();
 
                 let params = stack.pop_tail_iter(func_to_call_ty.params.valtypes.len());
 
@@ -200,67 +291,97 @@ pub(super) fn run<H: HookSet>(
 
                 match func_to_call_inst {
                     FuncInst::Local(local_func_inst) => {
-                        let remaining_locals = local_func_inst.locals.iter().cloned();
-                        let locals = Locals::new(params, remaining_locals);
+                        // MIGHT BE IMPORTED
+                        let func_module_idx =
+                            store.get_module_idx_from_func_idx(func_to_call_global_idx)?;
+                        match func_module_idx == *current_module_idx {
+                            true => {
+                                // local function
+                                let remaining_locals = local_func_inst.locals.iter().cloned();
+                                let locals = Locals::new(params, remaining_locals);
 
-                        stack.push_stackframe(
-                            *current_module_idx,
-                            func_to_call_idx,
-                            func_to_call_ty,
-                            locals,
-                            wasm.pc,
-                            stp,
-                        );
+                                stack.push_stackframe(
+                                    *current_module_idx,
+                                    func_to_call_idx,
+                                    &func_to_call_ty,
+                                    locals,
+                                    store.modules[current_wasm_index].wasm_reader.pc,
+                                    stp,
+                                );
 
-                        wasm.move_start_to(local_func_inst.code_expr)
-                            .unwrap_validated();
+                                store.modules[current_wasm_index]
+                                    .wasm_reader
+                                    .move_start_to(local_func_inst.code_expr)
+                                    .unwrap_validated();
 
-                        stp = 0;
-                        current_sidetable = &local_func_inst.sidetable;
+                                stp = 0;
+                                current_sidetable = &local_func_inst.sidetable;
+                            }
+                            false => {
+                                let (next_module, next_func_idx) =
+                                    (func_module_idx, func_to_call_global_idx);
+
+                                let local_func_inst =
+                                    store.functions[next_func_idx].try_into_local().unwrap();
+
+                                let remaining_locals = local_func_inst.locals.iter().cloned();
+                                let locals = Locals::new(params, remaining_locals);
+
+                                let func_to_call_idx = store
+                                    .get_local_function_idx_by_global_function_idx(
+                                        func_module_idx,
+                                        next_func_idx,
+                                    )
+                                    .ok_or(RuntimeError::FunctionNotFound)?;
+
+                                stack.push_stackframe(
+                                    *current_module_idx,
+                                    func_to_call_idx,
+                                    &func_to_call_ty,
+                                    locals,
+                                    store.modules[current_wasm_index].wasm_reader.pc,
+                                    stp,
+                                );
+
+                                current_wasm_index = next_module;
+                                // wasm = &mut modules[next_module].wasm_reader;
+                                *current_module_idx = next_module;
+
+                                store.modules[current_wasm_index]
+                                    .wasm_reader
+                                    .move_start_to(local_func_inst.code_expr)
+                                    .unwrap_validated();
+
+                                stp = 0;
+                                current_sidetable = &local_func_inst.sidetable;
+                            }
+                        };
                     }
                     FuncInst::Imported(_imported_func_inst) => {
-                        let (next_module, next_func_idx) = lut
-                            .lookup(*current_module_idx, func_to_call_idx)
-                            .expect("invalid state for lookup");
-
-                        let local_func_inst = modules[next_module].store.funcs[next_func_idx]
-                            .try_into_local()
-                            .unwrap();
-
-                        let remaining_locals = local_func_inst.locals.iter().cloned();
-                        let locals = Locals::new(params, remaining_locals);
-
-                        stack.push_stackframe(
-                            *current_module_idx,
-                            func_to_call_idx,
-                            func_to_call_ty,
-                            locals,
-                            wasm.pc,
-                            stp,
-                        );
-
-                        wasm = &mut modules[next_module].wasm_reader;
-                        *current_module_idx = next_module;
-
-                        wasm.move_start_to(local_func_inst.code_expr)
-                            .unwrap_validated();
-
-                        stp = 0;
-                        current_sidetable = &local_func_inst.sidetable;
+                        unreachable!()
                     }
                 }
-            }
-            CALL_INDIRECT => {
-                let given_type_idx = wasm.read_var_u32().unwrap_validated() as TypeIdx;
-                let table_idx = wasm.read_var_u32().unwrap_validated() as TableIdx;
 
-                let tab = modules[*current_module_idx]
-                    .store
-                    .tables
-                    .get(table_idx)
-                    .unwrap_validated();
-                let func_ty = modules[*current_module_idx]
-                    .fn_types
+                // *current_module_idx = current_wasm_index_copy;
+                // current_wasm_index = current_wasm_index_copy;
+                trace!("Instruction: CALL");
+            }
+
+            // TODO: fix push_stackframe, because the func idx that you get from the table is global func idx
+            CALL_INDIRECT => {
+                let given_type_idx = store.modules[current_wasm_index]
+                    .wasm_reader
+                    .read_var_u32()
+                    .unwrap_validated() as TypeIdx;
+                let table_idx = store.modules[current_wasm_index]
+                    .wasm_reader
+                    .read_var_u32()
+                    .unwrap_validated() as TableIdx;
+
+                let tab = &store.tables[store.modules[*current_module_idx].tables[table_idx]];
+
+                let func_ty = store.modules[*current_module_idx]
+                    .function_types
                     .get(given_type_idx)
                     .unwrap_validated();
 
@@ -284,80 +405,93 @@ pub(super) fn run<H: HookSet>(
                     Ref::Extern(_) => unreachable!(),
                 };
 
-                let func_to_call_inst = modules[*current_module_idx]
-                    .store
-                    .funcs
-                    .get(func_addr)
+                let func_idx = func_addr;
+                let func_module_idx = store.get_module_idx_from_func_idx(func_idx)?;
+                let local_func_addr = store
+                    .get_local_function_idx_by_global_function_idx(func_module_idx, func_idx)
                     .unwrap_validated();
+                let func_to_call_inst = &store.functions[func_idx];
 
-                let actual_type_idx = func_to_call_inst.ty();
-                let actual_ty = modules[*current_module_idx]
-                    .fn_types
-                    .get(actual_type_idx)
-                    .unwrap_validated();
+                let actual_ty = func_to_call_inst.ty();
 
-                if func_ty != actual_ty {
+                if *func_ty != actual_ty {
                     return Err(RuntimeError::SignatureMismatch);
                 }
 
                 match func_to_call_inst {
                     FuncInst::Local(local_func_inst) => {
-                        let params = stack.pop_tail_iter(func_ty.params.valtypes.len());
-                        let remaining_locals = local_func_inst.locals.iter().cloned();
+                        // MIGHT BE IMPORTED
+                        match func_module_idx == *current_module_idx {
+                            true => {
+                                // local function
+                                let params = stack.pop_tail_iter(func_ty.params.valtypes.len());
+                                let remaining_locals = local_func_inst.locals.iter().cloned();
 
-                        trace!("Instruction: call_indirect [{func_addr:?}]");
-                        let locals = Locals::new(params, remaining_locals);
-                        stack.push_stackframe(
-                            *current_module_idx,
-                            func_addr,
-                            func_ty,
-                            locals,
-                            wasm.pc,
-                            stp,
-                        );
+                                trace!("Instruction: call_indirect [{local_func_addr:?}]");
+                                let locals = Locals::new(params, remaining_locals);
+                                stack.push_stackframe(
+                                    *current_module_idx,
+                                    local_func_addr,
+                                    func_ty,
+                                    locals,
+                                    store.modules[current_wasm_index].wasm_reader.pc,
+                                    stp,
+                                );
 
-                        wasm.move_start_to(local_func_inst.code_expr)
-                            .unwrap_validated();
+                                store.modules[current_wasm_index]
+                                    .wasm_reader
+                                    .move_start_to(local_func_inst.code_expr)
+                                    .unwrap_validated();
 
-                        stp = 0;
-                        current_sidetable = &local_func_inst.sidetable;
+                                stp = 0;
+                                current_sidetable = &local_func_inst.sidetable;
+                            }
+                            false => {
+                                let (next_module, _next_func_idx) = (func_module_idx, func_idx);
+
+                                let local_func_inst =
+                                    func_to_call_inst.try_into_local().unwrap_validated();
+
+                                let params = stack.pop_tail_iter(func_ty.params.valtypes.len());
+                                let remaining_locals = local_func_inst.locals.iter().cloned();
+
+                                trace!("Instruction: call_indirect [{local_func_addr:?}]");
+                                let locals = Locals::new(params, remaining_locals);
+
+                                trace!("CALL INDIRECT DEBUG: next_module {}, local_func_addr {}, global_func_addr {}, global_func_span from {} len {}", next_module, local_func_addr, func_addr, local_func_inst.code_expr.from(), local_func_inst.code_expr.len());
+                                stack.push_stackframe(
+                                    *current_module_idx,
+                                    local_func_addr,
+                                    func_ty,
+                                    locals,
+                                    store.modules[current_wasm_index].wasm_reader.pc,
+                                    stp,
+                                );
+
+                                current_wasm_index = next_module;
+                                // wasm = &mut modules[next_module].wasm_reader;
+                                *current_module_idx = next_module;
+
+                                store.modules[current_wasm_index]
+                                    .wasm_reader
+                                    .move_start_to(local_func_inst.code_expr)
+                                    .unwrap_validated();
+
+                                stp = 0;
+                                current_sidetable = &local_func_inst.sidetable;
+                            }
+                        }
                     }
                     FuncInst::Imported(_imported_func_inst) => {
-                        let (next_module, next_func_idx) = lut
-                            .lookup(*current_module_idx, func_addr)
-                            .expect("invalid state for lookup");
-
-                        let local_func_inst = modules[next_module].store.funcs[next_func_idx]
-                            .try_into_local()
-                            .unwrap();
-
-                        let params = stack.pop_tail_iter(func_ty.params.valtypes.len());
-                        let remaining_locals = local_func_inst.locals.iter().cloned();
-
-                        trace!("Instruction: call_indirect [{func_addr:?}]");
-                        let locals = Locals::new(params, remaining_locals);
-                        stack.push_stackframe(
-                            *current_module_idx,
-                            func_addr,
-                            func_ty,
-                            locals,
-                            wasm.pc,
-                            stp,
-                        );
-
-                        wasm = &mut modules[next_module].wasm_reader;
-                        *current_module_idx = next_module;
-
-                        wasm.move_start_to(local_func_inst.code_expr)
-                            .unwrap_validated();
-
-                        stp = 0;
-                        current_sidetable = &local_func_inst.sidetable;
+                        unreachable!()
                     }
                 }
+
+                trace!("Instruction: CALL_INDIRECT");
             }
             DROP => {
                 stack.drop_value();
+                trace!("Instruction: DROP");
             }
             SELECT => {
                 let test_val: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -368,9 +502,13 @@ pub(super) fn run<H: HookSet>(
                 } else {
                     stack.push_value(val2);
                 }
+                trace!("Instruction: SELECT");
             }
             SELECT_T => {
-                let type_vec = wasm.read_vec(ValType::read).unwrap_validated();
+                let type_vec = store.modules[current_wasm_index]
+                    .wasm_reader
+                    .read_vec(ValType::read)
+                    .unwrap_validated();
                 let test_val: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                 let val2 = stack.pop_value(type_vec[0]);
                 let val1 = stack.pop_value(type_vec[0]);
@@ -379,42 +517,67 @@ pub(super) fn run<H: HookSet>(
                 } else {
                     stack.push_value(val2);
                 }
+                trace!("Instruction: SELECT_T");
             }
             LOCAL_GET => {
-                let local_idx = wasm.read_var_u32().unwrap_validated() as LocalIdx;
+                let local_idx = store.modules[current_wasm_index]
+                    .wasm_reader
+                    .read_var_u32()
+                    .unwrap_validated() as LocalIdx;
                 stack.get_local(local_idx);
                 trace!("Instruction: local.get {} [] -> [t]", local_idx);
             }
-            LOCAL_SET => stack.set_local(wasm.read_var_u32().unwrap_validated() as LocalIdx),
-            LOCAL_TEE => stack.tee_local(wasm.read_var_u32().unwrap_validated() as LocalIdx),
+            LOCAL_SET => {
+                stack.set_local(
+                    store.modules[current_wasm_index]
+                        .wasm_reader
+                        .read_var_u32()
+                        .unwrap_validated() as LocalIdx,
+                );
+                trace!("Instruction: LOCAL_SET");
+            }
+            LOCAL_TEE => {
+                stack.tee_local(
+                    store.modules[current_wasm_index]
+                        .wasm_reader
+                        .read_var_u32()
+                        .unwrap_validated() as LocalIdx,
+                );
+                trace!("Instruction: LOCAL_TEE");
+            }
             GLOBAL_GET => {
-                let global_idx = wasm.read_var_u32().unwrap_validated() as GlobalIdx;
-                let global = modules[*current_module_idx]
-                    .store
-                    .globals
-                    .get(global_idx)
-                    .unwrap_validated();
+                let global_idx = store.modules[current_wasm_index]
+                    .wasm_reader
+                    .read_var_u32()
+                    .unwrap_validated() as GlobalIdx;
+
+                let global = &store.globals[store.modules[*current_module_idx].globals[global_idx]];
 
                 stack.push_value(global.value);
+
+                trace!(
+                    "Instruction: global.get '{}' [<GLOBAL>] -> [{:?}]",
+                    global_idx,
+                    global.value
+                );
             }
             GLOBAL_SET => {
-                let global_idx = wasm.read_var_u32().unwrap_validated() as GlobalIdx;
-                let global = modules[*current_module_idx]
-                    .store
-                    .globals
-                    .get_mut(global_idx)
-                    .unwrap_validated();
-
-                global.value = stack.pop_value(global.global.ty.ty)
+                let global_idx = store.modules[current_wasm_index]
+                    .wasm_reader
+                    .read_var_u32()
+                    .unwrap_validated() as GlobalIdx;
+                let global =
+                    &mut store.globals[store.modules[*current_module_idx].globals[global_idx]];
+                global.value = stack.pop_value(global.global.ty.ty);
+                trace!("Instruction: GLOBAL_SET");
             }
             TABLE_GET => {
-                let table_idx = wasm.read_var_u32().unwrap_validated() as TableIdx;
+                let table_idx = store.modules[current_wasm_index]
+                    .wasm_reader
+                    .read_var_u32()
+                    .unwrap_validated() as TableIdx;
 
-                let tab = modules[*current_module_idx]
-                    .store
-                    .tables
-                    .get(table_idx)
-                    .unwrap_validated();
+                let tab = &store.tables[store.modules[*current_module_idx].tables[table_idx]];
 
                 let i: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
@@ -432,9 +595,12 @@ pub(super) fn run<H: HookSet>(
                 );
             }
             TABLE_SET => {
-                let table_idx = wasm.read_var_u32().unwrap_validated() as TableIdx;
+                let table_idx = store.modules[current_wasm_index]
+                    .wasm_reader
+                    .read_var_u32()
+                    .unwrap_validated() as TableIdx;
 
-                let tab = &mut modules[*current_module_idx].store.tables[table_idx];
+                let tab = &mut store.tables[store.modules[*current_module_idx].tables[table_idx]];
 
                 let val: Ref = stack.pop_value(ValType::RefType(tab.ty.et)).into();
                 let i: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -451,14 +617,11 @@ pub(super) fn run<H: HookSet>(
                 )
             }
             I32_LOAD => {
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg =
+                    MemArg::read_unvalidated(&mut store.modules[current_wasm_index].wasm_reader);
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                let mem_inst = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .first()
-                    .unwrap_validated(); // there is only one memory allowed as of now
+                let mem_inst = &store.memories[store.modules[*current_module_idx].memories[0]];
 
                 let idx = get_store_index(&memarg, relative_address)?;
                 let data = mem_inst.mem.load(idx)?;
@@ -467,14 +630,11 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: i32.load [{relative_address}] -> [{data}]");
             }
             I64_LOAD => {
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg =
+                    MemArg::read_unvalidated(&mut store.modules[current_wasm_index].wasm_reader);
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .first()
-                    .unwrap_validated();
+                let mem = &store.memories[store.modules[*current_module_idx].memories[0]]; // there is only one memory allowed as of now
 
                 let idx = get_store_index(&memarg, relative_address)?;
                 let data = mem.mem.load(idx)?;
@@ -483,14 +643,11 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: i64.load [{relative_address}] -> [{data}]");
             }
             F32_LOAD => {
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg =
+                    MemArg::read_unvalidated(&mut store.modules[current_wasm_index].wasm_reader);
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .first()
-                    .unwrap_validated(); // there is only one memory allowed as of now
+                let mem = &store.memories[store.modules[*current_module_idx].memories[0]]; // there is only one memory allowed as of now
 
                 let idx = get_store_index(&memarg, relative_address)?;
                 let data = mem.mem.load(idx)?;
@@ -499,14 +656,11 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: f32.load [{relative_address}] -> [{data}]");
             }
             F64_LOAD => {
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg =
+                    MemArg::read_unvalidated(&mut store.modules[current_wasm_index].wasm_reader);
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .first()
-                    .unwrap_validated();
+                let mem = &store.memories[store.modules[*current_module_idx].memories[0]]; // there is only one memory allowed as of now
 
                 let idx = get_store_index(&memarg, relative_address)?;
                 let data = mem.mem.load(idx)?;
@@ -515,14 +669,11 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: f64.load [{relative_address}] -> [{data}]");
             }
             I32_LOAD8_S => {
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg =
+                    MemArg::read_unvalidated(&mut store.modules[current_wasm_index].wasm_reader);
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .first()
-                    .unwrap_validated(); // there is only one memory allowed as of now
+                let mem = &store.memories[store.modules[*current_module_idx].memories[0]]; // there is only one memory allowed as of now
 
                 let idx = get_store_index(&memarg, relative_address)?;
                 let data: i8 = mem.mem.load(idx)?;
@@ -531,14 +682,11 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: i32.load8_s [{relative_address}] -> [{data}]");
             }
             I32_LOAD8_U => {
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg =
+                    MemArg::read_unvalidated(&mut store.modules[current_wasm_index].wasm_reader);
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .first()
-                    .unwrap_validated(); // there is only one memory allowed as of now
+                let mem = &store.memories[store.modules[*current_module_idx].memories[0]]; // there is only one memory allowed as of now
 
                 let idx = get_store_index(&memarg, relative_address)?;
                 let data: u8 = mem.mem.load(idx)?;
@@ -547,14 +695,11 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: i32.load8_u [{relative_address}] -> [{data}]");
             }
             I32_LOAD16_S => {
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg =
+                    MemArg::read_unvalidated(&mut store.modules[current_wasm_index].wasm_reader);
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .first()
-                    .unwrap_validated(); // there is only one memory allowed as of now
+                let mem = &store.memories[store.modules[*current_module_idx].memories[0]]; // there is only one memory allowed as of now
 
                 let idx = get_store_index(&memarg, relative_address)?;
                 let data: i16 = mem.mem.load(idx)?;
@@ -563,14 +708,11 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: i32.load16_s [{relative_address}] -> [{data}]");
             }
             I32_LOAD16_U => {
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg =
+                    MemArg::read_unvalidated(&mut store.modules[current_wasm_index].wasm_reader);
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .first()
-                    .unwrap_validated(); // there is only one memory allowed as of now
+                let mem = &store.memories[store.modules[*current_module_idx].memories[0]]; // there is only one memory allowed as of now
 
                 let idx = get_store_index(&memarg, relative_address)?;
                 let data: u16 = mem.mem.load(idx)?;
@@ -579,14 +721,11 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: i32.load16_u [{relative_address}] -> [{data}]");
             }
             I64_LOAD8_S => {
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg =
+                    MemArg::read_unvalidated(&mut store.modules[current_wasm_index].wasm_reader);
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .first()
-                    .unwrap_validated(); // there is only one memory allowed as of now
+                let mem = &store.memories[store.modules[*current_module_idx].memories[0]]; // there is only one memory allowed as of now
 
                 let idx = get_store_index(&memarg, relative_address)?;
                 let data: i8 = mem.mem.load(idx)?;
@@ -595,14 +734,11 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: i64.load8_s [{relative_address}] -> [{data}]");
             }
             I64_LOAD8_U => {
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg =
+                    MemArg::read_unvalidated(&mut store.modules[current_wasm_index].wasm_reader);
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .first()
-                    .unwrap_validated(); // there is only one memory allowed as of now
+                let mem = &store.memories[store.modules[*current_module_idx].memories[0]]; // there is only one memory allowed as of now
 
                 let idx = get_store_index(&memarg, relative_address)?;
                 let data: u8 = mem.mem.load(idx)?;
@@ -611,14 +747,11 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: i64.load8_u [{relative_address}] -> [{data}]");
             }
             I64_LOAD16_S => {
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg =
+                    MemArg::read_unvalidated(&mut store.modules[current_wasm_index].wasm_reader);
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .first()
-                    .unwrap_validated(); // there is only one memory allowed as of now
+                let mem = &store.memories[store.modules[*current_module_idx].memories[0]]; // there is only one memory allowed as of now
 
                 let idx = get_store_index(&memarg, relative_address)?;
                 let data: i16 = mem.mem.load(idx)?;
@@ -627,14 +760,11 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: i64.load16_s [{relative_address}] -> [{data}]");
             }
             I64_LOAD16_U => {
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg =
+                    MemArg::read_unvalidated(&mut store.modules[current_wasm_index].wasm_reader);
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .first()
-                    .unwrap_validated(); // there is only one memory allowed as of now
+                let mem = &store.memories[store.modules[*current_module_idx].memories[0]]; // there is only one memory allowed as of now
 
                 let idx = get_store_index(&memarg, relative_address)?;
                 let data: u16 = mem.mem.load(idx)?;
@@ -643,14 +773,11 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: i64.load16_u [{relative_address}] -> [{data}]");
             }
             I64_LOAD32_S => {
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg =
+                    MemArg::read_unvalidated(&mut store.modules[current_wasm_index].wasm_reader);
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .first()
-                    .unwrap_validated(); // there is only one memory allowed as of now
+                let mem = &store.memories[store.modules[*current_module_idx].memories[0]]; // there is only one memory allowed as of now
 
                 let idx = get_store_index(&memarg, relative_address)?;
                 let data: i32 = mem.mem.load(idx)?;
@@ -659,14 +786,11 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: i64.load32_s [{relative_address}] -> [{data}]");
             }
             I64_LOAD32_U => {
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg =
+                    MemArg::read_unvalidated(&mut store.modules[current_wasm_index].wasm_reader);
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .first()
-                    .unwrap_validated(); // there is only one memory allowed as of now
+                let mem = &store.memories[store.modules[*current_module_idx].memories[0]]; // there is only one memory allowed as of now
 
                 let idx = get_store_index(&memarg, relative_address)?;
                 let data: u32 = mem.mem.load(idx)?;
@@ -675,16 +799,13 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: i64.load32_u [{relative_address}] -> [{data}]");
             }
             I32_STORE => {
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg =
+                    MemArg::read_unvalidated(&mut store.modules[current_wasm_index].wasm_reader);
 
                 let data_to_store: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .get_mut(0)
-                    .unwrap_validated(); // there is only one memory allowed as of now
+                let mem = &mut store.memories[store.modules[*current_module_idx].memories[0]]; // there is only one memory allowed as of now
 
                 let idx = get_store_index(&memarg, relative_address)?;
                 mem.mem.store(idx, data_to_store)?;
@@ -692,16 +813,13 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: i32.store [{relative_address} {data_to_store}] -> []");
             }
             I64_STORE => {
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg =
+                    MemArg::read_unvalidated(&mut store.modules[current_wasm_index].wasm_reader);
 
                 let data_to_store: u64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .get_mut(0)
-                    .unwrap_validated(); // there is only one memory allowed as of now
+                let mem = &mut store.memories[store.modules[*current_module_idx].memories[0]]; // there is only one memory allowed as of now
 
                 let idx = get_store_index(&memarg, relative_address)?;
                 mem.mem.store(idx, data_to_store)?;
@@ -709,16 +827,13 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: i64.store [{relative_address} {data_to_store}] -> []");
             }
             F32_STORE => {
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg =
+                    MemArg::read_unvalidated(&mut store.modules[current_wasm_index].wasm_reader);
 
                 let data_to_store: f32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .get_mut(0)
-                    .unwrap_validated(); // there is only one memory allowed as of now
+                let mem = &mut store.memories[store.modules[*current_module_idx].memories[0]]; // there is only one memory allowed as of now
 
                 let idx = get_store_index(&memarg, relative_address)?;
                 mem.mem.store(idx, data_to_store)?;
@@ -726,16 +841,13 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: f32.store [{relative_address} {data_to_store}] -> []");
             }
             F64_STORE => {
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg =
+                    MemArg::read_unvalidated(&mut store.modules[current_wasm_index].wasm_reader);
 
                 let data_to_store: f64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .get_mut(0)
-                    .unwrap_validated(); // there is only one memory allowed as of now
+                let mem = &mut store.memories[store.modules[*current_module_idx].memories[0]]; // there is only one memory allowed as of now
 
                 let idx = get_store_index(&memarg, relative_address)?;
                 mem.mem.store(idx, data_to_store)?;
@@ -743,16 +855,13 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: f64.store [{relative_address} {data_to_store}] -> []");
             }
             I32_STORE8 => {
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg =
+                    MemArg::read_unvalidated(&mut store.modules[current_wasm_index].wasm_reader);
 
                 let data_to_store: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .get_mut(0)
-                    .unwrap_validated();
+                let mem = &mut store.memories[store.modules[*current_module_idx].memories[0]];
 
                 let idx = get_store_index(&memarg, relative_address)?;
                 mem.mem.store(idx, data_to_store)?;
@@ -760,16 +869,13 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: i32.store8 [{relative_address} {data_to_store}] -> []");
             }
             I32_STORE16 => {
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg =
+                    MemArg::read_unvalidated(&mut store.modules[current_wasm_index].wasm_reader);
 
                 let data_to_store: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .get_mut(0)
-                    .unwrap_validated();
+                let mem = &mut store.memories[store.modules[*current_module_idx].memories[0]];
 
                 let idx = get_store_index(&memarg, relative_address)?;
                 mem.mem.store(idx, data_to_store)?;
@@ -777,16 +883,13 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: i32.store16 [{relative_address} {data_to_store}] -> []");
             }
             I64_STORE8 => {
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg =
+                    MemArg::read_unvalidated(&mut store.modules[current_wasm_index].wasm_reader);
 
                 let data_to_store: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .get_mut(0)
-                    .unwrap_validated();
+                let mem = &mut store.memories[store.modules[*current_module_idx].memories[0]];
 
                 let idx = get_store_index(&memarg, relative_address)?;
                 mem.mem.store(idx, data_to_store)?;
@@ -794,16 +897,13 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: i64.store8 [{relative_address} {data_to_store}] -> []");
             }
             I64_STORE16 => {
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg =
+                    MemArg::read_unvalidated(&mut store.modules[current_wasm_index].wasm_reader);
 
                 let data_to_store: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .get_mut(0)
-                    .unwrap_validated();
+                let mem = &mut store.memories[store.modules[*current_module_idx].memories[0]];
 
                 let idx = get_store_index(&memarg, relative_address)?;
                 mem.mem.store(idx, data_to_store)?;
@@ -811,16 +911,13 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: i64.store16 [{relative_address} {data_to_store}] -> []");
             }
             I64_STORE32 => {
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg =
+                    MemArg::read_unvalidated(&mut store.modules[current_wasm_index].wasm_reader);
 
                 let data_to_store: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .get_mut(0)
-                    .unwrap_validated();
+                let mem = &mut store.memories[store.modules[*current_module_idx].memories[0]];
 
                 let idx = get_store_index(&memarg, relative_address)?;
                 mem.mem.store(idx, data_to_store)?;
@@ -828,23 +925,22 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: i64.store32 [{relative_address} {data_to_store}] -> []");
             }
             MEMORY_SIZE => {
-                let mem_idx = wasm.read_u8().unwrap_validated() as usize;
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .get(mem_idx)
-                    .unwrap_validated();
+                let mem_idx = store.modules[current_wasm_index]
+                    .wasm_reader
+                    .read_u8()
+                    .unwrap_validated() as usize;
+                let mem = &mut store.memories[store.modules[*current_module_idx].memories[mem_idx]];
                 let size = mem.size() as u32;
                 stack.push_value(Value::I32(size));
                 trace!("Instruction: memory.size [] -> [{}]", size);
             }
             MEMORY_GROW => {
-                let mem_idx = wasm.read_u8().unwrap_validated() as usize;
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .get_mut(mem_idx)
-                    .unwrap_validated();
+                let mem_idx = store.modules[current_wasm_index]
+                    .wasm_reader
+                    .read_u8()
+                    .unwrap_validated() as usize;
+
+                let mem = &mut store.memories[store.modules[*current_module_idx].memories[mem_idx]];
                 let delta: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
                 let upper_limit = mem.ty.limits.max.unwrap_or(Limits::MAX_MEM_BYTES);
@@ -860,12 +956,20 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: memory.grow [{}] -> [{}]", delta, pushed_value);
             }
             I32_CONST => {
-                let constant = wasm.read_var_i32().unwrap_validated();
+                let constant = store.modules[current_wasm_index]
+                    .wasm_reader
+                    .read_var_i32()
+                    .unwrap_validated();
                 trace!("Instruction: i32.const [] -> [{constant}]");
                 stack.push_value(constant.into());
             }
             F32_CONST => {
-                let constant = f32::from_bits(wasm.read_var_f32().unwrap_validated());
+                let constant = f32::from_bits(
+                    store.modules[current_wasm_index]
+                        .wasm_reader
+                        .read_var_f32()
+                        .unwrap_validated(),
+                );
                 trace!("Instruction: f32.const [] -> [{constant:.7}]");
                 stack.push_value(constant.into());
             }
@@ -1199,12 +1303,20 @@ pub(super) fn run<H: HookSet>(
                 stack.push_value(res.into());
             }
             I64_CONST => {
-                let constant = wasm.read_var_i64().unwrap_validated();
+                let constant = store.modules[current_wasm_index]
+                    .wasm_reader
+                    .read_var_i64()
+                    .unwrap_validated();
                 trace!("Instruction: i64.const [] -> [{constant}]");
                 stack.push_value(constant.into());
             }
             F64_CONST => {
-                let constant = f64::from_bits(wasm.read_var_f64().unwrap_validated());
+                let constant = f64::from_bits(
+                    store.modules[current_wasm_index]
+                        .wasm_reader
+                        .read_var_f64()
+                        .unwrap_validated(),
+                );
                 trace!("Instruction: f64.const [] -> [{constant}]");
                 stack.push_value(constant.into());
             }
@@ -2019,7 +2131,8 @@ pub(super) fn run<H: HookSet>(
                 stack.push_value(res.into());
             }
             REF_NULL => {
-                let reftype = RefType::read_unvalidated(wasm);
+                let reftype =
+                    RefType::read_unvalidated(&mut store.modules[current_wasm_index].wasm_reader);
 
                 stack.push_value(Value::Ref(reftype.to_null_ref()));
                 trace!("Instruction: ref.null '{:?}' -> [{:?}]", reftype, reftype);
@@ -2037,12 +2150,27 @@ pub(super) fn run<H: HookSet>(
             }
             // https://webassembly.github.io/spec/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-ref-mathsf-ref-func-x
             REF_FUNC => {
-                let func_idx = wasm.read_var_u32().unwrap_validated() as FuncIdx;
+                let func_idx = store.modules[current_wasm_index]
+                    .wasm_reader
+                    .read_var_u32()
+                    .unwrap_validated() as FuncIdx;
                 stack.push_value(Value::Ref(Ref::Func(FuncAddr::new(Some(func_idx)))));
             }
             FC_EXTENSIONS => {
                 // Should we call instruction hook here as well? Multibyte instruction
-                let second_instr_byte = wasm.read_u8().unwrap_validated();
+                let second_instr_byte = store.modules[current_wasm_index]
+                    .wasm_reader
+                    .read_u8()
+                    .unwrap_validated();
+
+                #[cfg(debug_assertions)]
+                crate::core::utils::print_beautiful_fc_extension(
+                    second_instr_byte,
+                    store.modules[current_wasm_index].wasm_reader.pc,
+                );
+
+                #[cfg(not(debug_assertions))]
+                trace!("Read instruction byte {second_instr_byte:#04X?} ({second_instr_byte}) at wasm_binary[{}]", store.modules[current_wasm_index].wasm_reader.pc);
 
                 use crate::core::reader::types::opcode::fc_extensions::*;
                 match second_instr_byte {
@@ -2181,24 +2309,28 @@ pub(super) fn run<H: HookSet>(
                         //      n => number of bytes to copy
                         //      s => starting pointer in the data segment
                         //      d => destination address to copy to
-                        let data_idx = wasm.read_var_u32().unwrap_validated() as DataIdx;
-                        let data = modules[*current_module_idx]
-                            .store
-                            .data
-                            .get(data_idx)
-                            .unwrap();
-                        let mem_idx = wasm.read_u8().unwrap_validated() as usize;
-                        let mem = modules[*current_module_idx]
-                            .store
-                            .mems
-                            .get(mem_idx)
-                            .unwrap_validated();
+                        let data_idx = store.modules[current_wasm_index]
+                            .wasm_reader
+                            .read_var_u32()
+                            .unwrap_validated() as DataIdx;
+
+                        let mem_idx = store.modules[current_wasm_index]
+                            .wasm_reader
+                            .read_u8()
+                            .unwrap_validated() as usize;
+
+                        let mem =
+                            &store.memories[store.modules[*current_module_idx].memories[mem_idx]];
                         let n: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                         let s: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                         let d: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                        mem.mem
-                            .init(d as MemIdx, &data.data, s as MemIdx, n as MemIdx)?;
+                        mem.mem.init(
+                            d as MemIdx,
+                            &store.data[store.modules[*current_module_idx].data[data_idx]].data,
+                            s as MemIdx,
+                            n as MemIdx,
+                        )?;
 
                         trace!("Instruction: memory.init");
                     }
@@ -2210,8 +2342,12 @@ pub(super) fn run<H: HookSet>(
                         // data segment is passive or active
 
                         // Also, we should set data to null here (empty), which we do using an empty init vec
-                        let data_idx = wasm.read_var_u32().unwrap_validated() as DataIdx;
-                        modules[*current_module_idx].store.data[data_idx] =
+                        let data_idx = store.modules[current_wasm_index]
+                            .wasm_reader
+                            .read_var_u32()
+                            .unwrap_validated() as DataIdx;
+
+                        store.data[store.modules[*current_module_idx].data[data_idx]] =
                             DataInst { data: Vec::new() };
                     }
                     // See https://webassembly.github.io/bulk-memory-operations/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-copy
@@ -2220,30 +2356,28 @@ pub(super) fn run<H: HookSet>(
                         //      n => number of bytes to copy
                         //      s => source address to copy from
                         //      d => destination address to copy to
-                        let (dst_idx, src_idx) = (
-                            wasm.read_u8().unwrap_validated() as usize,
-                            wasm.read_u8().unwrap_validated() as usize,
+                        let (dst, src) = (
+                            store.modules[current_wasm_index]
+                                .wasm_reader
+                                .read_u8()
+                                .unwrap_validated() as usize,
+                            store.modules[current_wasm_index]
+                                .wasm_reader
+                                .read_u8()
+                                .unwrap_validated() as usize,
                         );
                         let n: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                         let s: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                         let d: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                        let src_mem = modules[*current_module_idx]
-                            .store
-                            .mems
-                            .get(src_idx)
-                            .unwrap_validated();
-
-                        let dest_mem = modules[*current_module_idx]
-                            .store
-                            .mems
-                            .get(dst_idx)
-                            .unwrap_validated();
+                        let src_mem =
+                            &store.memories[store.modules[*current_module_idx].memories[src]];
+                        let dest_mem =
+                            &store.memories[store.modules[*current_module_idx].memories[dst]];
 
                         dest_mem
                             .mem
                             .copy(d as MemIdx, &src_mem.mem, s as MemIdx, n as MemIdx)?;
-
                         trace!("Instruction: memory.copy");
                     }
                     // See https://webassembly.github.io/bulk-memory-operations/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-fill
@@ -2252,12 +2386,13 @@ pub(super) fn run<H: HookSet>(
                         //      n => number of bytes to update
                         //      val => the value to set each byte to (must be < 256)
                         //      d => the pointer to the region to update
-                        let mem_idx = wasm.read_u8().unwrap_validated() as usize;
-                        let mem = modules[*current_module_idx]
-                            .store
-                            .mems
-                            .get(mem_idx)
-                            .unwrap_validated();
+                        let mem_idx = store.modules[current_wasm_index]
+                            .wasm_reader
+                            .read_u8()
+                            .unwrap_validated() as usize;
+
+                        let mem = &mut store.memories
+                            [store.modules[*current_module_idx].memories[mem_idx]];
                         let n: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                         let val: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
@@ -2276,35 +2411,31 @@ pub(super) fn run<H: HookSet>(
                     // in binary format it seems that elemidx is first ???????
                     // this is ONLY for passive elements
                     TABLE_INIT => {
-                        let elem_idx = wasm.read_var_u32().unwrap_validated() as usize;
-                        let table_idx = wasm.read_var_u32().unwrap_validated() as usize;
+                        let elem_idx = store.modules[current_wasm_index]
+                            .wasm_reader
+                            .read_var_u32()
+                            .unwrap_validated() as usize;
+                        let table_idx = store.modules[current_wasm_index]
+                            .wasm_reader
+                            .read_var_u32()
+                            .unwrap_validated() as usize;
 
                         let n: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into(); // size
                         let s: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into(); // offset
                         let d: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into(); // dst
 
-                        let tab_len = modules[*current_module_idx]
-                            .store
-                            .tables
-                            .get(table_idx)
-                            .unwrap_validated()
+                        let tab_len = store.tables
+                            [store.modules[*current_module_idx].tables[table_idx]]
                             .len();
-                        let tab = modules[*current_module_idx]
-                            .store
-                            .tables
-                            .get_mut(table_idx)
-                            .unwrap_validated();
 
-                        let elem_len = if modules[*current_module_idx]
-                            .store
-                            .passive_elem_indexes
+                        let tab =
+                            &mut store.tables[store.modules[*current_module_idx].tables[table_idx]];
+
+                        let elem_len = if store.modules[*current_module_idx]
+                            .passive_element_indexes
                             .contains(&elem_idx)
                         {
-                            modules[*current_module_idx]
-                                .store
-                                .elements
-                                .get(elem_idx)
-                                .unwrap_validated()
+                            store.elements[store.modules[*current_module_idx].elements[elem_idx]]
                                 .len()
                         } else {
                             0
@@ -2329,36 +2460,40 @@ pub(super) fn run<H: HookSet>(
                             .filter(|&res| res <= tab_len)
                             .ok_or(RuntimeError::TableAccessOutOfBounds)?;
 
-                        let elem = modules[*current_module_idx]
-                            .store
-                            .elements
-                            .get(elem_idx)
-                            .unwrap_validated();
+                        let elem = &mut store.elements
+                            [store.modules[*current_module_idx].elements[elem_idx]];
 
                         let dest = &mut tab.elem[d as usize..];
                         let src = &elem.references[s as usize..final_src_offset];
                         dest[..src.len()].copy_from_slice(src);
                     }
                     ELEM_DROP => {
-                        let elem_idx = wasm.read_var_u32().unwrap_validated() as usize;
+                        let elem_idx = store.modules[current_wasm_index]
+                            .wasm_reader
+                            .read_var_u32()
+                            .unwrap_validated() as usize;
 
                         // WARN: i'm not sure if this is okay or not
-                        modules[*current_module_idx]
-                            .store
-                            .elements
-                            .get_mut(elem_idx)
-                            .unwrap_validated()
+                        store.elements[store.modules[*current_module_idx].elements[elem_idx]]
                             .references = vec![];
                     }
                     // https://webassembly.github.io/spec/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-table-mathsf-table-copy-x-y
                     TABLE_COPY => {
-                        let table_x_idx = wasm.read_var_u32().unwrap_validated() as usize;
-                        let table_y_idx = wasm.read_var_u32().unwrap_validated() as usize;
+                        let table_x_idx = store.modules[current_wasm_index]
+                            .wasm_reader
+                            .read_var_u32()
+                            .unwrap_validated() as usize;
+                        let table_y_idx = store.modules[current_wasm_index]
+                            .wasm_reader
+                            .read_var_u32()
+                            .unwrap_validated() as usize;
 
-                        let tab_x_elem_len = modules[*current_module_idx].store.tables[table_x_idx]
+                        let tab_x_elem_len = store.tables
+                            [store.modules[*current_module_idx].tables[table_x_idx]]
                             .elem
                             .len();
-                        let tab_y_elem_len = modules[*current_module_idx].store.tables[table_y_idx]
+                        let tab_y_elem_len = store.tables
+                            [store.modules[*current_module_idx].tables[table_y_idx]]
                             .elem
                             .len();
 
@@ -2392,24 +2527,26 @@ pub(super) fn run<H: HookSet>(
                         let src = table_y_idx;
 
                         if table_x_idx == table_y_idx {
-                            modules[*current_module_idx].store.tables[table_x_idx]
+                            store.tables[store.modules[*current_module_idx].tables[table_x_idx]]
                                 .elem
                                 .copy_within(s as usize..src_res, d as usize); // }
                         } else {
                             use core::cmp::Ordering::*;
+                            let src = store.modules[*current_module_idx].tables[src];
+                            let dst = store.modules[*current_module_idx].tables[dst];
+
                             let (src_table, dst_table) = match dst.cmp(&src) {
                                 Greater => {
-                                    let (left, right) =
-                                        modules[*current_module_idx].store.tables.split_at_mut(dst);
+                                    let (left, right) = store.tables.split_at_mut(dst);
                                     (&left[src], &mut right[0])
                                 }
                                 Less => {
-                                    let (left, right) =
-                                        modules[*current_module_idx].store.tables.split_at_mut(src);
+                                    let (left, right) = store.tables.split_at_mut(src);
                                     (&right[0], &mut left[dst])
                                 }
                                 Equal => unreachable!(),
                             };
+
                             dst_table.elem[d as usize..dst_res]
                                 .copy_from_slice(&src_table.elem[s as usize..src_res]);
                         }
@@ -2424,13 +2561,13 @@ pub(super) fn run<H: HookSet>(
                         );
                     }
                     TABLE_GROW => {
-                        let table_idx = wasm.read_var_u32().unwrap_validated() as usize;
+                        let table_idx = store.modules[current_wasm_index]
+                            .wasm_reader
+                            .read_var_u32()
+                            .unwrap_validated() as usize;
 
-                        let tab = modules[*current_module_idx]
-                            .store
-                            .tables
-                            .get_mut(table_idx)
-                            .unwrap_validated();
+                        let tab =
+                            &mut store.tables[store.modules[*current_module_idx].tables[table_idx]];
 
                         let sz = tab.elem.len() as u32;
 
@@ -2455,13 +2592,13 @@ pub(super) fn run<H: HookSet>(
                         }
                     }
                     TABLE_SIZE => {
-                        let table_idx = wasm.read_var_u32().unwrap_validated() as usize;
+                        let table_idx = store.modules[current_wasm_index]
+                            .wasm_reader
+                            .read_var_u32()
+                            .unwrap_validated() as usize;
 
-                        let tab = modules[*current_module_idx]
-                            .store
-                            .tables
-                            .get(table_idx)
-                            .unwrap_validated();
+                        let tab =
+                            &mut store.tables[store.modules[*current_module_idx].tables[table_idx]];
 
                         let sz = tab.elem.len() as u32;
 
@@ -2470,13 +2607,13 @@ pub(super) fn run<H: HookSet>(
                         trace!("Instruction: table.size '{}' [] -> [{}]", table_idx, sz);
                     }
                     TABLE_FILL => {
-                        let table_idx = wasm.read_var_u32().unwrap_validated() as usize;
+                        let table_idx = store.modules[current_wasm_index]
+                            .wasm_reader
+                            .read_var_u32()
+                            .unwrap_validated() as usize;
 
-                        let tab = modules[*current_module_idx]
-                            .store
-                            .tables
-                            .get_mut(table_idx)
-                            .unwrap_validated();
+                        let tab =
+                            &mut store.tables[store.modules[*current_module_idx].tables[table_idx]];
                         let ty = tab.ty.et;
 
                         let n: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into(); // len
@@ -2590,7 +2727,6 @@ pub(super) fn run<H: HookSet>(
 
                 trace!("Instruction i64.extend32_s [{}] -> [{}]", v, res);
             }
-
             other => {
                 trace!("Unknown instruction {other:#x}, skipping..");
             }

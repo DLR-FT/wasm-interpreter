@@ -16,19 +16,16 @@ use crate::Result;
 pub(super) fn validate_global_section(
     wasm: &mut WasmReader,
     section_header: SectionHeader,
+    imported_global_types: &[GlobalType],
 ) -> Result<Vec<Global>> {
     assert_eq!(section_header.ty, SectionTy::Global);
 
     wasm.read_vec(|wasm| {
         let ty = GlobalType::read(wasm)?;
-        let init_expr = read_constant_expression(
-            wasm,
-            &mut ValidationStack::new(),
-            Some(ty.ty),
-            Some(&[/* todo!(imported globals tpyes) */]),
-            // we can't refer to any functions
-            None,
-        )?;
+        let stack = &mut ValidationStack::new();
+        let init_expr = read_constant_expression(wasm, stack, imported_global_types, None)?;
+
+        stack.assert_val_types(&[ty.ty])?;
 
         Ok(Global { ty, init_expr })
     })

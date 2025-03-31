@@ -1,3 +1,4 @@
+use crate::core::indices::GlobalIdx;
 use crate::core::reader::span::Span;
 use crate::core::reader::types::global::GlobalType;
 use crate::core::reader::{WasmReadable, WasmReader};
@@ -84,8 +85,12 @@ use super::validation_stack::ValidationStack;
 pub fn read_constant_expression(
     wasm: &mut WasmReader,
     stack: &mut ValidationStack,
-    this_global_valtype: Option<ValType>,
-    _globals_ty: Option<&[GlobalType]>,
+    // The globals slice should contain ONLY imported globals IF AND ONLY IF we are calling `read_constant_expression` for local globals instantiation
+    // As per https://webassembly.github.io/spec/core/valid/modules.html (bottom of the page):
+    //
+    //  Globals, however, are not recursive and not accessible within constant expressions when they are defined locally. The effect of defining the limited context C'
+    //   for validating certain definitions is that they can only access functions and imported globals and nothing else.
+    globals_ty: &[GlobalType],
     funcs: Option<&[usize]>,
 ) -> Result<Span> {
     let start_pc = wasm.pc;
@@ -94,17 +99,32 @@ pub fn read_constant_expression(
         let Ok(first_instr_byte) = wasm.read_u8() else {
             return Err(Error::ExprMissingEnd);
         };
+
+        #[cfg(not(debug_assertions))]
         trace!("Read constant instruction byte {first_instr_byte:#X?} ({first_instr_byte})");
+
+        #[cfg(debug_assertions)]
+        trace!(
+            "Validation - Executing instruction {}",
+            opcode_byte_to_str(first_instr_byte)
+        );
 
         use crate::core::reader::types::opcode::*;
         match first_instr_byte {
             // Missing: ref.null, ref.func, global.get
             END => {
-                // The stack must only contain the global's valtype
-                if this_global_valtype.is_some() {
-                    stack.assert_val_types(&[this_global_valtype.unwrap()])?;
-                }
+                // The code here for checking the global type was moved to where the global is actually validated
                 return Ok(Span::new(start_pc, wasm.pc - start_pc));
+            }
+            GLOBAL_GET => {
+                let global_idx = wasm.read_var_u32()? as GlobalIdx;
+                trace!("{:?}", globals_ty);
+                let global = globals_ty
+                    .get(global_idx)
+                    .ok_or(Error::InvalidGlobalIdx(global_idx))?;
+
+                trace!("{:?}", global.ty);
+                stack.push_valtype(global.ty);
             }
             I32_CONST => {
                 let _num = wasm.read_var_i32()?;
@@ -152,7 +172,10 @@ pub fn read_constant_expression(
 
                 stack.push_valtype(ValType::RefType(crate::RefType::FuncRef));
             }
-            _ => return Err(Error::InvalidInstr(first_instr_byte)),
+            _ => {
+                trace!("Encountered unknown instruction in validation - constant expression - {first_instr_byte:x?}");
+                return Err(Error::InvalidInstr(first_instr_byte));
+            }
         }
     }
 }
