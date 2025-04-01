@@ -157,9 +157,6 @@ impl<'b> Store<'b> {
             }
             table_imports_indexes
         };
-        let mut local_tables = module.instantiate_local_tables()?;
-        let tables_offset = self.tables.len();
-        let exec_tables = self.get_tables_indexes(&table_imports_indexes, &local_tables)?;
 
         let globals_imports = {
             let mut globals_imports = Vec::new();
@@ -255,6 +252,7 @@ impl<'b> Store<'b> {
         let data =
             module.instantiate_data(self, &exec_memories, &globals[0..imported_globals_len])?;
 
+        let mut local_tables = module.instantiate_local_tables()?;
         let (element_inst, passive_idxs) = module.instantiate_elements(
             self,
             &exec_functions,
@@ -262,7 +260,9 @@ impl<'b> Store<'b> {
             &table_imports_indexes,
             &globals,
         )?;
-        // TODO: make this prettier, rn the compiler complains wha wha, cause see the instruction above
+
+        let tables_offset = self.tables.len();
+        let exec_tables = self.get_tables_indexes(&table_imports_indexes, &local_tables)?;
         cleanup_store_struct.added_tables = local_tables.len();
         self.tables.extend(local_tables);
 
