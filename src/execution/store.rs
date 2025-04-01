@@ -66,40 +66,6 @@ pub struct CleanupStore {
 
 impl<'b> Store<'b> {
     pub fn add_module(&mut self, name: String, module: ValidationInfo<'b>) -> CustomResult<()> {
-        // we need a wrapper, because we need to do cleanup
-        let mut cleanup_store_struct: CleanupStore = Default::default();
-
-        let res = self.add_module_inner(name, module, &mut cleanup_store_struct);
-
-        match res {
-            Err(e) => {
-                self.functions
-                    .truncate(self.functions.len() - cleanup_store_struct.added_functions);
-                self.memories
-                    .truncate(self.memories.len() - cleanup_store_struct.added_memories);
-                self.globals
-                    .truncate(self.globals.len() - cleanup_store_struct.added_globals);
-                self.data
-                    .truncate(self.data.len() - cleanup_store_struct.added_data);
-                self.tables
-                    .truncate(self.tables.len() - cleanup_store_struct.added_tables);
-                self.elements
-                    .truncate(self.elements.len() - cleanup_store_struct.added_elements);
-                Err(e)
-            }
-            Ok(..) => Ok(()),
-        }
-    }
-
-    fn add_module_inner(
-        &mut self,
-        name: String,
-        module: ValidationInfo<'b>,
-        cleanup_store_struct: &mut CleanupStore,
-    ) -> CustomResult<()> {
-        // TODO: we can do validation at linktime such that if another module expects module `name` to export something,
-        // and it doesn't, we can reject it here instead of accepting it and failing later.
-
         let functions_imports_indexes = {
             let mut function_imports_indexes = Vec::new();
             for import in &module.imports {
@@ -232,7 +198,6 @@ impl<'b> Store<'b> {
         let local_memories = module.instantiate_local_memories()?;
         let memories_offset = self.memories.len();
         let exec_memories = self.get_memories_indexes(&memory_imports_indexes, &local_memories)?;
-        cleanup_store_struct.added_memories = local_memories.len();
         self.memories.extend(local_memories);
 
         let mut all_function_inst = module.instantiate_functions()?;
@@ -241,7 +206,6 @@ impl<'b> Store<'b> {
         let functions_offset = self.functions.len();
         let exec_functions =
             self.get_functions_indexes(&functions_imports_indexes, &local_inst_funcs)?;
-        cleanup_store_struct.added_functions = local_inst_funcs.len();
         self.functions.extend(local_inst_funcs);
 
         let imported_globals_len = imported_globals.len();
@@ -261,7 +225,6 @@ impl<'b> Store<'b> {
 
         let tables_offset = self.tables.len();
         let exec_tables = self.get_tables_indexes(&table_imports_indexes, &local_tables)?;
-        cleanup_store_struct.added_tables = local_tables.len();
         self.tables.extend(local_tables);
 
         let imported_functions = functions_imports_indexes.len();
@@ -274,17 +237,14 @@ impl<'b> Store<'b> {
             self.get_globals_indexes(&globals_imports, &globals[globals_imports.len()..])?;
         // let exec_globals = (globals_offset..(globals_offset + globals.len())).collect();
         globals.drain(0..globals_imports.len());
-        cleanup_store_struct.added_globals = globals.len();
         self.globals.extend(globals);
 
         let data_offset = self.data.len();
         let exec_data = (data_offset..(data_offset + data.len())).collect();
-        cleanup_store_struct.added_data = data.len();
         self.data.extend(data);
 
         let elements_offset = self.elements.len();
         let exec_elements = (elements_offset..(elements_offset + element_inst.len())).collect();
-        cleanup_store_struct.added_elements = element_inst.len();
         self.elements.extend(element_inst);
 
         let execution_info = ExecutionInfo {

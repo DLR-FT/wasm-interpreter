@@ -583,46 +583,39 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                 span,
                 module,
                 message,
-            } => match store {
-                None => {
-                    asserts.push_error(WastError::new(
-                        Box::new(GenericError::new(
-                            "AssertUnlinkable: No store present to try and link",
-                        )),
-                        span.linecol_in(&contents).0 as u32 + 1,
-                        get_command(&contents, span),
-                    ));
-                }
-                Some(ref mut store) => match module {
-                    wast::Wat::Component(_) => {
+            } => {
+                // this directive is not used with other messages in the official testsuite in except memory64 proposal, which is not implemented for this interpreter
+                assert!(message == "incompatible import type" || message == "unknown import");
+                match store {
+                    None => {
                         asserts.push_error(WastError::new(
                             Box::new(GenericError::new(
-                                "AssertUnlinkable: Components not supported yet",
+                                "AssertUnlinkable: No store present to try and link",
                             )),
                             span.linecol_in(&contents).0 as u32 + 1,
                             get_command(&contents, span),
                         ));
                     }
-                    wast::Wat::Module(mut module) => {
-                        // TODO: maybe remove the unwrap? but we are testing ONLY on official testsuite files
-                        //        which SHOULD encode 100% of the time
-                        let encoded = module.encode().unwrap();
+                    Some(ref mut store) => match module {
+                        wast::Wat::Component(_) => {
+                            asserts.push_error(WastError::new(
+                                Box::new(GenericError::new(
+                                    "AssertUnlinkable: Components not supported yet",
+                                )),
+                                span.linecol_in(&contents).0 as u32 + 1,
+                                get_command(&contents, span),
+                            ));
+                        }
+                        wast::Wat::Module(mut module) => {
+                            // TODO: maybe remove the unwrap? but we are testing ONLY on official testsuite files
+                            //        which SHOULD encode 100% of the time
+                            let encoded = module.encode().unwrap();
 
-                        let encoded = Box::leak(Box::new(encoded));
+                            let encoded = Box::leak(Box::new(encoded));
 
-                        let validation_info_attempt = catch_unwind(|| validate(encoded));
+                            let validation_info_attempt = catch_unwind(|| validate(encoded));
 
-                        match validation_info_attempt {
-                            Err(_) => {
-                                asserts.push_error(WastError::new(
-                                    Box::new(GenericError::new(
-                                        "AssertUnlinkable: Couldn't validate",
-                                    )),
-                                    span.linecol_in(&contents).0 as u32 + 1,
-                                    get_command(&contents, span),
-                                ));
-                            }
-                            Ok(validation_info) => match validation_info {
+                            match validation_info_attempt {
                                 Err(_) => {
                                     asserts.push_error(WastError::new(
                                         Box::new(GenericError::new(
@@ -632,72 +625,85 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                                         get_command(&contents, span),
                                     ));
                                 }
-                                Ok(validation_info) => {
-                                    let mut module_name = match module.name {
-                                        None => DEFAULT_MODULE.to_owned(),
-                                        Some(name) => name.name.to_owned(),
-                                    };
-                                    if store.modules.len() > 1 && module_name == DEFAULT_MODULE {
-                                        module_name = store.modules.len().to_string();
+                                Ok(validation_info) => match validation_info {
+                                    Err(_) => {
+                                        asserts.push_error(WastError::new(
+                                            Box::new(GenericError::new(
+                                                "AssertUnlinkable: Couldn't validate",
+                                            )),
+                                            span.linecol_in(&contents).0 as u32 + 1,
+                                            get_command(&contents, span),
+                                        ));
                                     }
+                                    Ok(validation_info) => {
+                                        let mut module_name = match module.name {
+                                            None => DEFAULT_MODULE.to_owned(),
+                                            Some(name) => name.name.to_owned(),
+                                        };
+                                        if store.modules.len() > 1 && module_name == DEFAULT_MODULE
+                                        {
+                                            module_name = store.modules.len().to_string();
+                                        }
 
-                                    let res = store.add_module(module_name, validation_info);
+                                        let res = store.add_module(module_name, validation_info);
 
-                                    match res {
-                                        Ok(_) => {
-                                            asserts.push_error(WastError::new(
+                                        match res {
+                                            Ok(_) => {
+                                                asserts.push_error(WastError::new(
                                                     Box::new(GenericError::new(
                                                         "Module linked successfully when it shouldn't have been",
                                                     )),
                                                     span.linecol_in(&contents).0 as u32 + 1,
                                                     get_command(&contents, span),
                                                 ));
-                                        }
-                                        Err(e) => {
-                                            let actual_linker_err =
-                                                linker_err_to_wasm_testsuite_string(e.clone());
+                                            }
+                                            Err(e) => {
+                                                let actual_linker_err =
+                                                    linker_err_to_wasm_testsuite_string(e.clone());
 
-                                            println!(
-                                                "Actual: {}; Expected: {}",
-                                                e.clone(),
-                                                message
-                                            );
+                                                println!(
+                                                    "Actual: {}; Expected: {}",
+                                                    e.clone(),
+                                                    message
+                                                );
 
-                                            match actual_linker_err {
-                                                None => {
-                                                    asserts.push_error(WastError::new(
+                                                match actual_linker_err {
+                                                    None => {
+                                                        asserts.push_error(WastError::new(
                                                         Box::new(GenericError::new(
                                                             &format!("Module failed to link, but with an error of {} instead of a linking (Runtime) error", e.to_string()),
                                                         )),
                                                         span.linecol_in(&contents).0 as u32 + 1,
                                                         get_command(&contents, span),
                                                     ));
-                                                }
-                                                Some(actual) => {
-                                                    if actual != message {
-                                                        asserts.push_error(WastError::new(
+                                                    }
+                                                    Some(actual) => {
+                                                        if actual != message {
+                                                            asserts.push_error(WastError::new(
                                                             Box::new(GenericError::new(
                                                                 &format!("Module failed to link, but with an error of {} instead of a linking (Runtime) error", e.to_string()),
                                                             )),
                                                             span.linecol_in(&contents).0 as u32 + 1,
                                                             get_command(&contents, span),
                                                         ));
-                                                    } else {
-                                                        asserts.push_success(WastSuccess::new(
-                                                            span.linecol_in(&contents).0 as u32 + 1,
-                                                            get_command(&contents, span),
-                                                        ));
+                                                        } else {
+                                                            asserts.push_success(WastSuccess::new(
+                                                                span.linecol_in(&contents).0 as u32
+                                                                    + 1,
+                                                                get_command(&contents, span),
+                                                            ));
+                                                        }
                                                     }
                                                 }
                                             }
                                         }
                                     }
-                                }
-                            },
+                                },
+                            }
                         }
-                    }
-                },
-            },
+                    },
+                }
+            }
             wast::WastDirective::AssertExhaustion {
                 span,
                 call: _,
