@@ -203,12 +203,6 @@ impl<'b> Store<'b> {
 
             imported_globals
         };
-        let imported_globals_len = imported_globals.len();
-        let mut globals = module.instantiate_globals(imported_globals)?;
-
-        // TODO: make this prettier, rn the compiler complains wha wha, cause see the instruction above
-
-        let local_memories = module.instantiate_local_memories()?;
 
         let memory_imports_indexes = {
             let mut memory_imports_indexes = Vec::new();
@@ -235,6 +229,7 @@ impl<'b> Store<'b> {
             }
             memory_imports_indexes
         };
+        let local_memories = module.instantiate_local_memories()?;
         let memories_offset = self.memories.len();
         let exec_memories = self.get_memories_indexes(&memory_imports_indexes, &local_memories)?;
         cleanup_store_struct.added_memories = local_memories.len();
@@ -248,6 +243,9 @@ impl<'b> Store<'b> {
             self.get_functions_indexes(&functions_imports_indexes, &local_inst_funcs)?;
         cleanup_store_struct.added_functions = local_inst_funcs.len();
         self.functions.extend(local_inst_funcs);
+
+        let imported_globals_len = imported_globals.len();
+        let mut globals = module.instantiate_globals(imported_globals)?;
 
         let data =
             module.instantiate_data(self, &exec_memories, &globals[0..imported_globals_len])?;
