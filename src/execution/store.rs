@@ -100,8 +100,6 @@ impl<'b> Store<'b> {
         // TODO: we can do validation at linktime such that if another module expects module `name` to export something,
         // and it doesn't, we can reject it here instead of accepting it and failing later.
 
-        let mut all_function_inst = module.instantiate_functions()?;
-
         let functions_imports_indexes = {
             let mut function_imports_indexes = Vec::new();
             for import in &module.imports {
@@ -131,12 +129,6 @@ impl<'b> Store<'b> {
             function_imports_indexes
         };
 
-        let local_inst_funcs = all_function_inst.split_off(functions_imports_indexes.len());
-
-        let functions_offset = self.functions.len();
-        let exec_functions =
-            self.get_functions_indexes(&functions_imports_indexes, &local_inst_funcs)?;
-
         // let function_type_inst = module.instantiate_function_types()?;
         let table_imports_indexes = {
             let mut table_imports_indexes = Vec::new();
@@ -165,9 +157,6 @@ impl<'b> Store<'b> {
             }
             table_imports_indexes
         };
-        let mut local_tables = module.instantiate_local_tables()?;
-        let tables_offset = self.tables.len();
-        let exec_tables = self.get_tables_indexes(&table_imports_indexes, &local_tables)?;
 
         let globals_imports = {
             let mut globals_imports = Vec::new();
@@ -214,14 +203,6 @@ impl<'b> Store<'b> {
 
             imported_globals
         };
-        let imported_globals_len = imported_globals.len();
-        let mut globals = module.instantiate_globals(imported_globals)?;
-
-        // TODO: make this prettier, rn the compiler complains wha wha, cause see the instruction above
-        cleanup_store_struct.added_functions = local_inst_funcs.len();
-        self.functions.extend(local_inst_funcs);
-
-        let local_memories = module.instantiate_local_memories()?;
 
         let memory_imports_indexes = {
             let mut memory_imports_indexes = Vec::new();
@@ -248,14 +229,28 @@ impl<'b> Store<'b> {
             }
             memory_imports_indexes
         };
+        let local_memories = module.instantiate_local_memories()?;
         let memories_offset = self.memories.len();
         let exec_memories = self.get_memories_indexes(&memory_imports_indexes, &local_memories)?;
         cleanup_store_struct.added_memories = local_memories.len();
         self.memories.extend(local_memories);
 
+        let mut all_function_inst = module.instantiate_functions()?;
+        let local_inst_funcs = all_function_inst.split_off(functions_imports_indexes.len());
+
+        let functions_offset = self.functions.len();
+        let exec_functions =
+            self.get_functions_indexes(&functions_imports_indexes, &local_inst_funcs)?;
+        cleanup_store_struct.added_functions = local_inst_funcs.len();
+        self.functions.extend(local_inst_funcs);
+
+        let imported_globals_len = imported_globals.len();
+        let mut globals = module.instantiate_globals(imported_globals)?;
+
         let data =
             module.instantiate_data(self, &exec_memories, &globals[0..imported_globals_len])?;
 
+        let mut local_tables = module.instantiate_local_tables()?;
         let (element_inst, passive_idxs) = module.instantiate_elements(
             self,
             &exec_functions,
@@ -263,7 +258,9 @@ impl<'b> Store<'b> {
             &table_imports_indexes,
             &globals,
         )?;
-        // TODO: make this prettier, rn the compiler complains wha wha, cause see the instruction above
+
+        let tables_offset = self.tables.len();
+        let exec_tables = self.get_tables_indexes(&table_imports_indexes, &local_tables)?;
         cleanup_store_struct.added_tables = local_tables.len();
         self.tables.extend(local_tables);
 
