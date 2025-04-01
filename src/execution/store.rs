@@ -100,8 +100,6 @@ impl<'b> Store<'b> {
         // TODO: we can do validation at linktime such that if another module expects module `name` to export something,
         // and it doesn't, we can reject it here instead of accepting it and failing later.
 
-        let mut all_function_inst = module.instantiate_functions()?;
-
         let functions_imports_indexes = {
             let mut function_imports_indexes = Vec::new();
             for import in &module.imports {
@@ -130,12 +128,6 @@ impl<'b> Store<'b> {
             }
             function_imports_indexes
         };
-
-        let local_inst_funcs = all_function_inst.split_off(functions_imports_indexes.len());
-
-        let functions_offset = self.functions.len();
-        let exec_functions =
-            self.get_functions_indexes(&functions_imports_indexes, &local_inst_funcs)?;
 
         // let function_type_inst = module.instantiate_function_types()?;
         let table_imports_indexes = {
@@ -218,8 +210,6 @@ impl<'b> Store<'b> {
         let mut globals = module.instantiate_globals(imported_globals)?;
 
         // TODO: make this prettier, rn the compiler complains wha wha, cause see the instruction above
-        cleanup_store_struct.added_functions = local_inst_funcs.len();
-        self.functions.extend(local_inst_funcs);
 
         let local_memories = module.instantiate_local_memories()?;
 
@@ -252,6 +242,15 @@ impl<'b> Store<'b> {
         let exec_memories = self.get_memories_indexes(&memory_imports_indexes, &local_memories)?;
         cleanup_store_struct.added_memories = local_memories.len();
         self.memories.extend(local_memories);
+
+        let mut all_function_inst = module.instantiate_functions()?;
+        let local_inst_funcs = all_function_inst.split_off(functions_imports_indexes.len());
+
+        let functions_offset = self.functions.len();
+        let exec_functions =
+            self.get_functions_indexes(&functions_imports_indexes, &local_inst_funcs)?;
+        cleanup_store_struct.added_functions = local_inst_funcs.len();
+        self.functions.extend(local_inst_funcs);
 
         let data =
             module.instantiate_data(self, &exec_memories, &globals[0..imported_globals_len])?;
