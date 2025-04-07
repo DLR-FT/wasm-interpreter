@@ -14,8 +14,8 @@
     };
     utils.url = "git+https://github.com/numtide/flake-utils.git";
     devshell.url = "github:numtide/devshell";
-    fenix = {
-      url = "git+https://github.com/nix-community/fenix.git?ref=main";
+    rust-overlay = {
+      url = "github:oxalica/rust-overlay";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     naersk = {
@@ -51,6 +51,7 @@
             inherit system;
             overlays = [
               devshell.overlays.default
+              (import inputs.rust-overlay)
 
               # We unfortunately need the most up-to-date typst
               (final: prev: { typst = inputs.nixpkgs-unstable.legacyPackages.${pkgs.hostPlatform.system}.typst; })
@@ -63,30 +64,25 @@
           # rust target name of the `system`
           rust-target = pkgs.pkgsStatic.targetPlatform.rust.rustcTarget;
 
+          # parsed contents of Cargo.toml
+          cargoToml = lib.trivial.importTOML ./Cargo.toml;
+
+          # minimum rust version that we support according to Cargo.toml
+          msrv = cargoToml.package.rust-version;
+
           # Rust distribution for our hostSystem
-          fenix = inputs.fenix.packages.${system};
+          rust-toolchain = pkgs.rust-bin.stable.${msrv}.default.override {
+            extensions = [ "rust-src" ];
+            targets = [
+              rust-target
+              "wasm32-unknown-unknown"
+              "thumbv6m-none-eabi" # for no_std test
+              "i686-unknown-linux-musl" # to test if we can run on 32 Bit architectures
 
-          rust-toolchain =
-            with fenix;
-            combine [
-              latest.rustc
-              latest.cargo
-              latest.clippy
-              latest.rustfmt
-              targets.${rust-target}.latest.rust-std
-              targets.thumbv6m-none-eabi.latest.rust-std # for no_std test
-              targets.wasm32-unknown-unknown.latest.rust-std
-              targets.i686-unknown-linux-musl.latest.rust-std # to test if we can run on 32 Bit architectures
             ];
+          };
 
-          # overrides a naersk-lib which uses the stable toolchain expressed above
-          naersk-lib = (
-            naersk.lib.${system}.override {
-              cargo = rust-toolchain;
-              rustc = rust-toolchain;
-            }
-          );
-
+          # Typst packages for the whitepaper
           typstPackagesCache = pkgs.stdenv.mkDerivation {
             name = "typst-packages-cache";
             src = inputs.typst-packages;
