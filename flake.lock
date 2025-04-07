@@ -18,28 +18,6 @@
         "type": "github"
       }
     },
-    "fenix": {
-      "inputs": {
-        "nixpkgs": [
-          "nixpkgs"
-        ],
-        "rust-analyzer-src": "rust-analyzer-src"
-      },
-      "locked": {
-        "lastModified": 1742452566,
-        "narHash": "sha256-sVuLDQ2UIWfXUBbctzrZrXM2X05YjX08K7XHMztt36E=",
-        "ref": "main",
-        "rev": "7d9ba794daf5e8cc7ee728859bc688d8e26d5f06",
-        "revCount": 2203,
-        "type": "git",
-        "url": "https://github.com/nix-community/fenix.git"
-      },
-      "original": {
-        "ref": "main",
-        "type": "git",
-        "url": "https://github.com/nix-community/fenix.git"
-      }
-    },
     "naersk": {
       "inputs": {
         "nixpkgs": [
@@ -111,30 +89,33 @@
     "root": {
       "inputs": {
         "devshell": "devshell",
-        "fenix": "fenix",
         "naersk": "naersk",
         "nixpkgs": "nixpkgs_2",
         "nixpkgs-unstable": "nixpkgs-unstable",
+        "rust-overlay": "rust-overlay",
         "treefmt-nix": "treefmt-nix",
         "typix": "typix",
         "typst-packages": "typst-packages",
         "utils": "utils"
       }
     },
-    "rust-analyzer-src": {
-      "flake": false,
+    "rust-overlay": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
       "locked": {
-        "lastModified": 1742296961,
-        "narHash": "sha256-gCpvEQOrugHWLimD1wTFOJHagnSEP6VYBDspq96Idu0=",
-        "owner": "rust-lang",
-        "repo": "rust-analyzer",
-        "rev": "15d87419f1a123d8f888d608129c3ce3ff8f13d4",
+        "lastModified": 1743993291,
+        "narHash": "sha256-u8GHvduU1gCtoFXvTS/wGjH1ouv5S/GRGq6MAT+sG/k=",
+        "owner": "oxalica",
+        "repo": "rust-overlay",
+        "rev": "0cb3c8979c65dc6a5812dfe67499a8c7b8b4325b",
         "type": "github"
       },
       "original": {
-        "owner": "rust-lang",
-        "ref": "nightly",
-        "repo": "rust-analyzer",
+        "owner": "oxalica",
+        "repo": "rust-overlay",
         "type": "github"
       }
     },
