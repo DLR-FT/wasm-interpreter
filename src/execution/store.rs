@@ -229,7 +229,6 @@ impl<'b> Store<'b> {
         let execution_info = ExecutionInfo {
             name: name.clone(),
             wasm_bytecode: module.wasm,
-            wasm_reader: WasmReader::new(module.wasm),
 
             functions: exec_functions,
             functions_offset,
