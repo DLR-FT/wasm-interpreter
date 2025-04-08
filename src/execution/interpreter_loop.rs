@@ -24,7 +24,7 @@ use crate::{
         sidetable::Sidetable,
     },
     locals::Locals,
-    store::{DataInst, FuncInst},
+    store::DataInst,
     value::{self, FuncAddr, Ref},
     value_stack::Stack,
     Limits, NumType, RefType, RuntimeError, ValType, Value,
@@ -45,12 +45,7 @@ pub(super) fn run<H: HookSet>(
     let global_func_idx =
         store.modules[*current_module_idx].functions[stack.current_stackframe().func_idx];
 
-    let func_inst = store
-        .functions
-        .get(global_func_idx)
-        .unwrap_validated()
-        .try_into_local()
-        .unwrap_validated();
+    let func_inst = store.functions.get(global_func_idx).unwrap_validated();
 
     // Start reading the function's instructions
     let wasm = &mut WasmReader::new(store.modules[*current_module_idx].wasm_bytecode);
@@ -92,8 +87,6 @@ pub(super) fn run<H: HookSet>(
                     .functions
                     .get(current_func_global_idx)
                     .unwrap_validated()
-                    .try_into_local()
-                    .unwrap_validated()
                     .code_expr;
 
                 // There might be multiple ENDs in a single function. We want to
@@ -124,8 +117,6 @@ pub(super) fn run<H: HookSet>(
                         store.modules[stack.current_stackframe().module_idx].functions
                             [stack.current_stackframe().func_idx],
                     )
-                    .unwrap_validated()
-                    .try_into_local()
                     .unwrap_validated()
                     .sidetable;
 
@@ -203,74 +194,35 @@ pub(super) fn run<H: HookSet>(
                 let params = stack.pop_tail_iter(func_to_call_ty.params.valtypes.len());
 
                 trace!("Instruction: call [{func_to_call_idx:?}]");
+                let func_module_idx =
+                    store.get_module_idx_from_func_idx(func_to_call_global_idx)?;
+                let (next_module, next_func_idx) = (func_module_idx, func_to_call_global_idx);
 
-                match func_to_call_inst {
-                    FuncInst::Local(local_func_inst) => {
-                        // MIGHT BE IMPORTED
-                        let func_module_idx =
-                            store.get_module_idx_from_func_idx(func_to_call_global_idx)?;
-                        match func_module_idx == *current_module_idx {
-                            true => {
-                                // local function
-                                let remaining_locals = local_func_inst.locals.iter().cloned();
-                                let locals = Locals::new(params, remaining_locals);
+                let local_func_inst = &store.functions[next_func_idx];
 
-                                stack.push_stackframe(
-                                    *current_module_idx,
-                                    func_to_call_idx,
-                                    &func_to_call_ty,
-                                    locals,
-                                    wasm.pc,
-                                    stp,
-                                );
+                let remaining_locals = local_func_inst.locals.iter().cloned();
+                let locals = Locals::new(params, remaining_locals);
 
-                                wasm.move_start_to(local_func_inst.code_expr)
-                                    .unwrap_validated();
+                let func_to_call_idx = store
+                    .get_local_function_idx_by_global_function_idx(func_module_idx, next_func_idx)
+                    .ok_or(RuntimeError::FunctionNotFound)?;
 
-                                stp = 0;
-                                current_sidetable = &local_func_inst.sidetable;
-                            }
-                            false => {
-                                let (next_module, next_func_idx) =
-                                    (func_module_idx, func_to_call_global_idx);
+                stack.push_stackframe(
+                    *current_module_idx,
+                    func_to_call_idx,
+                    &func_to_call_ty,
+                    locals,
+                    wasm.pc,
+                    stp,
+                );
 
-                                let local_func_inst =
-                                    store.functions[next_func_idx].try_into_local().unwrap();
+                *current_module_idx = next_module;
+                wasm.full_wasm_binary = store.modules[*current_module_idx].wasm_bytecode;
+                wasm.move_start_to(local_func_inst.code_expr)
+                    .unwrap_validated();
 
-                                let remaining_locals = local_func_inst.locals.iter().cloned();
-                                let locals = Locals::new(params, remaining_locals);
-
-                                let func_to_call_idx = store
-                                    .get_local_function_idx_by_global_function_idx(
-                                        func_module_idx,
-                                        next_func_idx,
-                                    )
-                                    .ok_or(RuntimeError::FunctionNotFound)?;
-
-                                stack.push_stackframe(
-                                    *current_module_idx,
-                                    func_to_call_idx,
-                                    &func_to_call_ty,
-                                    locals,
-                                    wasm.pc,
-                                    stp,
-                                );
-
-                                *current_module_idx = next_module;
-                                wasm.full_wasm_binary =
-                                    store.modules[*current_module_idx].wasm_bytecode;
-                                wasm.move_start_to(local_func_inst.code_expr)
-                                    .unwrap_validated();
-
-                                stp = 0;
-                                current_sidetable = &local_func_inst.sidetable;
-                            }
-                        };
-                    }
-                    FuncInst::Imported(_imported_func_inst) => {
-                        unreachable!()
-                    }
-                }
+                stp = 0;
+                current_sidetable = &local_func_inst.sidetable;
 
                 // *current_module_idx = current_wasm_index_copy;
                 // current_wasm_index = current_wasm_index_copy;
@@ -321,68 +273,32 @@ pub(super) fn run<H: HookSet>(
                     return Err(RuntimeError::SignatureMismatch);
                 }
 
-                match func_to_call_inst {
-                    FuncInst::Local(local_func_inst) => {
-                        // MIGHT BE IMPORTED
-                        match func_module_idx == *current_module_idx {
-                            true => {
-                                // local function
-                                let params = stack.pop_tail_iter(func_ty.params.valtypes.len());
-                                let remaining_locals = local_func_inst.locals.iter().cloned();
+                let (next_module, _next_func_idx) = (func_module_idx, func_idx);
 
-                                trace!("Instruction: call_indirect [{local_func_addr:?}]");
-                                let locals = Locals::new(params, remaining_locals);
-                                stack.push_stackframe(
-                                    *current_module_idx,
-                                    local_func_addr,
-                                    func_ty,
-                                    locals,
-                                    wasm.pc,
-                                    stp,
-                                );
+                let local_func_inst = func_to_call_inst;
 
-                                wasm.move_start_to(local_func_inst.code_expr)
-                                    .unwrap_validated();
+                let params = stack.pop_tail_iter(func_ty.params.valtypes.len());
+                let remaining_locals = local_func_inst.locals.iter().cloned();
 
-                                stp = 0;
-                                current_sidetable = &local_func_inst.sidetable;
-                            }
-                            false => {
-                                let (next_module, _next_func_idx) = (func_module_idx, func_idx);
+                trace!("Instruction: call_indirect [{local_func_addr:?}]");
+                let locals = Locals::new(params, remaining_locals);
 
-                                let local_func_inst =
-                                    func_to_call_inst.try_into_local().unwrap_validated();
+                trace!("CALL INDIRECT DEBUG: next_module {}, local_func_addr {}, global_func_addr {}, global_func_span from {} len {}", next_module, local_func_addr, func_addr, local_func_inst.code_expr.from(), local_func_inst.code_expr.len());
+                stack.push_stackframe(
+                    *current_module_idx,
+                    local_func_addr,
+                    func_ty,
+                    locals,
+                    wasm.pc,
+                    stp,
+                );
+                *current_module_idx = next_module;
+                wasm.full_wasm_binary = store.modules[*current_module_idx].wasm_bytecode;
+                wasm.move_start_to(local_func_inst.code_expr)
+                    .unwrap_validated();
 
-                                let params = stack.pop_tail_iter(func_ty.params.valtypes.len());
-                                let remaining_locals = local_func_inst.locals.iter().cloned();
-
-                                trace!("Instruction: call_indirect [{local_func_addr:?}]");
-                                let locals = Locals::new(params, remaining_locals);
-
-                                trace!("CALL INDIRECT DEBUG: next_module {}, local_func_addr {}, global_func_addr {}, global_func_span from {} len {}", next_module, local_func_addr, func_addr, local_func_inst.code_expr.from(), local_func_inst.code_expr.len());
-                                stack.push_stackframe(
-                                    *current_module_idx,
-                                    local_func_addr,
-                                    func_ty,
-                                    locals,
-                                    wasm.pc,
-                                    stp,
-                                );
-                                *current_module_idx = next_module;
-                                wasm.full_wasm_binary =
-                                    store.modules[*current_module_idx].wasm_bytecode;
-                                wasm.move_start_to(local_func_inst.code_expr)
-                                    .unwrap_validated();
-
-                                stp = 0;
-                                current_sidetable = &local_func_inst.sidetable;
-                            }
-                        }
-                    }
-                    FuncInst::Imported(_imported_func_inst) => {
-                        unreachable!()
-                    }
-                }
+                stp = 0;
+                current_sidetable = &local_func_inst.sidetable;
 
                 trace!("Instruction: CALL_INDIRECT");
             }
