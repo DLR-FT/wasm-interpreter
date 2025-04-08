@@ -50,10 +50,8 @@ pub(super) fn run<H: HookSet>(
     // Start reading the function's instructions
     let wasm = &mut WasmReader::new(store.modules[*current_module_idx].wasm_bytecode);
 
-    // the sidetable and stp for this function, stp will reset to 0 every call
-    // since function instances have their own sidetable.
-    let mut current_sidetable: &Sidetable = &func_inst.sidetable;
-    let mut stp = 0;
+    let mut current_sidetable: &Sidetable = &store.modules[*current_module_idx].sidetable;
+    let mut stp = func_inst.stp;
 
     // unwrap is sound, because the validation assures that the function points to valid subslice of the WASM binary
     wasm.move_start_to(func_inst.code_expr).unwrap();
@@ -111,14 +109,7 @@ pub(super) fn run<H: HookSet>(
                 wasm.pc = maybe_return_address;
                 stp = maybe_return_stp;
 
-                current_sidetable = &store
-                    .functions
-                    .get(
-                        store.modules[stack.current_stackframe().module_idx].functions
-                            [stack.current_stackframe().func_idx],
-                    )
-                    .unwrap_validated()
-                    .sidetable;
+                current_sidetable = &store.modules[*current_module_idx].sidetable;
 
                 trace!("Instruction: END");
             }
@@ -221,11 +212,8 @@ pub(super) fn run<H: HookSet>(
                 wasm.move_start_to(local_func_inst.code_expr)
                     .unwrap_validated();
 
-                stp = 0;
-                current_sidetable = &local_func_inst.sidetable;
-
-                // *current_module_idx = current_wasm_index_copy;
-                // current_wasm_index = current_wasm_index_copy;
+                stp = local_func_inst.stp;
+                current_sidetable = &store.modules[*current_module_idx].sidetable;
                 trace!("Instruction: CALL");
             }
 
@@ -297,8 +285,8 @@ pub(super) fn run<H: HookSet>(
                 wasm.move_start_to(local_func_inst.code_expr)
                     .unwrap_validated();
 
-                stp = 0;
-                current_sidetable = &local_func_inst.sidetable;
+                stp = local_func_inst.stp;
+                current_sidetable = &store.modules[*current_module_idx].sidetable;
 
                 trace!("Instruction: CALL_INDIRECT");
             }

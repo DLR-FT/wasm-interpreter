@@ -41,8 +41,10 @@ pub struct ValidationInfo<'bytecode> {
     pub(crate) globals: Vec<Global>,
     #[allow(dead_code)]
     pub(crate) exports: Vec<Export>,
-    /// Each block contains the validated code section and the generated sidetable
-    pub(crate) func_blocks: Vec<(Span, Sidetable)>,
+    /// Each block contains the validated code section and the stp corresponding to
+    /// the beginning of that code section
+    pub(crate) func_blocks_stps: Vec<(Span, usize)>,
+    pub(crate) sidetable: Sidetable,
     pub(crate) data: Vec<DataSegment>,
     /// The start function which is automatically executed during instantiation
     pub(crate) start: Option<FuncIdx>,
@@ -324,26 +326,27 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
-    let func_blocks_sidetables =
-        handle_section(&mut wasm, &mut header, SectionTy::Code, |wasm, h| {
-            code::validate_code_section(
-                wasm,
-                h,
-                &types,
-                &all_functions,
-                imported_functions.count(),
-                &all_globals,
-                &all_memories,
-                &data_count,
-                &all_tables,
-                &elements,
-                &referenced_functions,
-            )
-        })?
-        .unwrap_or_default();
+    let mut sidetable = Sidetable::new();
+    let func_blocks_stps = handle_section(&mut wasm, &mut header, SectionTy::Code, |wasm, h| {
+        code::validate_code_section(
+            wasm,
+            h,
+            &types,
+            &all_functions,
+            imported_functions.count(),
+            &all_globals,
+            &all_memories,
+            &data_count,
+            &all_tables,
+            &elements,
+            &referenced_functions,
+            &mut sidetable,
+        )
+    })?
+    .unwrap_or_default();
 
     assert_eq!(
-        func_blocks_sidetables.len(),
+        func_blocks_stps.len(),
         local_functions.len(),
         "these should be equal"
     ); // TODO check if this is in the spec
@@ -378,7 +381,8 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
         memories,
         globals,
         exports,
-        func_blocks: func_blocks_sidetables,
+        func_blocks_stps,
+        sidetable,
         data: data_section,
         start,
         elements,

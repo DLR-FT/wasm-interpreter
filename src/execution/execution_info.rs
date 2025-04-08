@@ -3,6 +3,7 @@ use alloc::vec::Vec;
 
 use crate::core::reader::types::export::Export;
 use crate::core::reader::types::FuncType;
+use crate::core::sidetable::Sidetable;
 // use crate::core::reader::types::FuncType;
 // use crate::execution::Store;
 
@@ -12,6 +13,8 @@ use crate::core::reader::types::FuncType;
 pub struct ExecutionInfo<'r> {
     pub name: String,
     pub wasm_bytecode: &'r [u8],
+    //TODO turn this into ref
+    pub sidetable: Sidetable,
 
     pub functions: Vec<usize>,
     pub functions_offset: usize,

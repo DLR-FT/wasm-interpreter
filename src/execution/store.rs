@@ -12,7 +12,6 @@ use crate::core::reader::types::global::Global;
 use crate::core::reader::types::import::{Import, ImportDesc};
 use crate::core::reader::types::{check_limits, FuncType, MemType, TableType, ValType};
 use crate::core::reader::WasmReader;
-use crate::core::sidetable::Sidetable;
 use crate::execution::value::{Ref, Value};
 use crate::execution::{get_address_offset, run_const, run_const_span, Stack};
 use crate::value::{ExternAddr, FuncAddr};
@@ -228,6 +227,8 @@ impl<'b> Store<'b> {
         let execution_info = ExecutionInfo {
             name: name.clone(),
             wasm_bytecode: module.wasm,
+            //TODO make this a ref
+            sidetable: module.sidetable.clone(),
 
             functions: exec_functions,
             functions_offset,
@@ -711,11 +712,11 @@ impl ValidationInfo<'_> {
         let mut wasm_reader = WasmReader::new(self.wasm);
 
         let functions = self.functions.iter();
-        let func_blocks = self.func_blocks.iter();
+        let func_blocks_stps = self.func_blocks_stps.iter();
 
         Ok(functions
-            .zip(func_blocks)
-            .map(|(ty, (func, sidetable))| {
+            .zip(func_blocks_stps)
+            .map(|(ty, (func, stp))| {
                 wasm_reader
                     .move_start_to(*func)
                     .expect("function index to be in the bounds of the WASM binary");
@@ -732,8 +733,7 @@ impl ValidationInfo<'_> {
                     ty: *ty,
                     locals,
                     code_expr,
-                    // TODO figure out where we want our sidetables
-                    sidetable: sidetable.clone(),
+                    stp: *stp,
                     function_type: self.types[*ty].clone(),
                 }
             })
@@ -1042,7 +1042,8 @@ pub struct FuncInst {
     pub ty: TypeIdx,
     pub locals: Vec<ValType>,
     pub code_expr: Span,
-    pub sidetable: Sidetable,
+    ///index of the sidetable corresponding to the beginning of this functions code
+    pub stp: usize,
     pub function_type: FuncType,
 }
 
