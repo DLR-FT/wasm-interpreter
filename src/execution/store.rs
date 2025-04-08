@@ -200,8 +200,7 @@ impl<'b> Store<'b> {
         let exec_memories = self.get_memories_indexes(&memory_imports_indexes, &local_memories)?;
         self.memories.extend(local_memories);
 
-        let mut all_function_inst = module.instantiate_functions()?;
-        let local_inst_funcs = all_function_inst.split_off(functions_imports_indexes.len());
+        let local_inst_funcs = module.instantiate_functions()?;
 
         let functions_offset = self.functions.len();
         let exec_functions =
@@ -303,8 +302,8 @@ impl<'b> Store<'b> {
     }
 
     pub fn lookup_function(&self, target_module: &str, target_function: &str) -> Option<usize> {
-        let mut module_name: &str = target_module;
-        let mut function_name: &str = target_function;
+        let module_name: &str = target_module;
+        let function_name: &str = target_function;
         let mut import_path: Vec<(String, String)> = vec![];
 
         for _ in 0..100 {
@@ -328,32 +327,7 @@ impl<'b> Store<'b> {
             let target_export = same_name_exports.next()?;
 
             match target_export {
-                ExportDesc::FuncIdx(local_idx) => {
-                    // Note: if we go ahead with the offset proposal, we can do
-                    // store_idx = module.functions_offset + *local_idx
-                    let store_idx = module.functions[*local_idx];
-
-                    match &self.functions[store_idx] {
-                        FuncInst::Local(_local_func_inst) => {
-                            return Some(store_idx);
-                        }
-                        FuncInst::Imported(import) => {
-                            if import_path.contains(&(
-                                import.module_name.clone(),
-                                import.function_name.clone(),
-                            )) {
-                                // TODO: find a way around this reference to clone thing. Rust is uppsety spaghetti for
-                                // understandable but dumb reasons.
-
-                                // TODO: cycle detected :(
-                                return None;
-                            }
-
-                            module_name = &import.module_name;
-                            function_name = &import.function_name;
-                        }
-                    }
-                }
+                ExportDesc::FuncIdx(local_idx) => return Some(module.functions[*local_idx]),
                 _ => return None,
             }
         }
@@ -562,7 +536,7 @@ impl<'b> Store<'b> {
         let mut stack = Stack::new();
         let locals = Locals::new(
             params.into_values().into_iter(),
-            func_inst.try_into_local().unwrap().locals.iter().cloned(),
+            func_inst.locals.iter().cloned(),
         );
 
         let module_idx = self.get_module_idx_from_func_idx(func_idx)?;
@@ -638,10 +612,7 @@ impl<'b> Store<'b> {
 
         // Prepare a new stack with the locals for the entry function
         let mut stack = Stack::new();
-        let locals = Locals::new(
-            params.into_iter(),
-            func_inst.try_into_local().unwrap().locals.iter().cloned(),
-        );
+        let locals = Locals::new(params.into_iter(), func_inst.locals.iter().cloned());
         let module_idx = self.get_module_idx_from_func_idx(func_idx)?;
         let local_func_idx = self
             .get_local_function_idx_by_global_function_idx(module_idx, func_idx)
@@ -718,10 +689,7 @@ impl<'b> Store<'b> {
 
         // Prepare a new stack with the locals for the entry function
         let mut stack = Stack::new();
-        let locals = Locals::new(
-            params.into_iter(),
-            func_inst.try_into_local().unwrap().locals.iter().cloned(),
-        );
+        let locals = Locals::new(params.into_iter(), func_inst.locals.iter().cloned());
         let local_func_idx = self
             .get_local_function_idx_by_global_function_idx(module_idx, func_idx)
             .ok_or(RuntimeError::FunctionNotFound)?;
@@ -766,40 +734,31 @@ impl ValidationInfo<'_> {
         let functions = self.functions.iter();
         let func_blocks = self.func_blocks.iter();
 
-        let local_function_inst = functions.zip(func_blocks).map(|(ty, (func, sidetable))| {
-            wasm_reader
-                .move_start_to(*func)
-                .expect("function index to be in the bounds of the WASM binary");
+        Ok(functions
+            .zip(func_blocks)
+            .map(|(ty, (func, sidetable))| {
+                wasm_reader
+                    .move_start_to(*func)
+                    .expect("function index to be in the bounds of the WASM binary");
 
-            let (locals, bytes_read) = wasm_reader
-                .measure_num_read_bytes(crate::code::read_declared_locals)
-                .unwrap_validated();
+                let (locals, bytes_read) = wasm_reader
+                    .measure_num_read_bytes(crate::code::read_declared_locals)
+                    .unwrap_validated();
 
-            let code_expr = wasm_reader
-                .make_span(func.len() - bytes_read)
-                .expect("TODO remove this expect");
+                let code_expr = wasm_reader
+                    .make_span(func.len() - bytes_read)
+                    .expect("TODO remove this expect");
 
-            FuncInst::Local(LocalFuncInst {
-                ty: *ty,
-                locals,
-                code_expr,
-                // TODO figure out where we want our sidetables
-                sidetable: sidetable.clone(),
-                function_type: self.types[*ty].clone(),
+                FuncInst {
+                    ty: *ty,
+                    locals,
+                    code_expr,
+                    // TODO figure out where we want our sidetables
+                    sidetable: sidetable.clone(),
+                    function_type: self.types[*ty].clone(),
+                }
             })
-        });
-
-        let imported_function_inst = self.imports.iter().filter_map(|import| match &import.desc {
-            ImportDesc::Func(type_idx) => Some(FuncInst::Imported(ImportedFuncInst {
-                ty: *type_idx,
-                module_name: import.module_name.clone(),
-                function_name: import.name.clone(),
-                function_type: self.types.get(*type_idx)?.clone(),
-            })),
-            _ => None,
-        });
-
-        Ok(imported_function_inst.chain(local_function_inst).collect())
+            .collect())
     }
 
     pub fn instantiate_local_tables(&self) -> CustomResult<Vec<TableInst>> {
@@ -1100,13 +1059,7 @@ impl ValidationInfo<'_> {
 }
 
 #[derive(Debug)]
-pub enum FuncInst {
-    Local(LocalFuncInst),
-    Imported(ImportedFuncInst),
-}
-
-#[derive(Debug)]
-pub struct LocalFuncInst {
+pub struct FuncInst {
     pub ty: TypeIdx,
     pub locals: Vec<ValType>,
     pub code_expr: Span,
@@ -1114,41 +1067,13 @@ pub struct LocalFuncInst {
     pub function_type: FuncType,
 }
 
-#[derive(Debug)]
-pub struct ImportedFuncInst {
-    pub ty: TypeIdx,
-    pub module_name: String,
-    pub function_name: String,
-    pub function_type: FuncType,
-}
-
 impl FuncInst {
     pub fn ty_idx(&self) -> TypeIdx {
-        match self {
-            FuncInst::Local(f) => f.ty,
-            FuncInst::Imported(f) => f.ty,
-        }
+        self.ty
     }
 
     pub fn ty(&self) -> FuncType {
-        match self {
-            FuncInst::Local(f) => f.function_type.clone(),
-            FuncInst::Imported(f) => f.function_type.clone(),
-        }
-    }
-
-    pub fn try_into_local(&self) -> Option<&LocalFuncInst> {
-        match self {
-            FuncInst::Local(f) => Some(f),
-            FuncInst::Imported(_) => None,
-        }
-    }
-
-    pub fn try_into_imported(&self) -> Option<&ImportedFuncInst> {
-        match self {
-            FuncInst::Local(_) => None,
-            FuncInst::Imported(f) => Some(f),
-        }
+        self.function_type.clone()
     }
 }
 

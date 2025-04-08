@@ -196,7 +196,7 @@ where
         let mut stack = Stack::new();
         let locals = Locals::new(
             params.into_values().into_iter(),
-            func_inst.try_into_local().unwrap().locals.iter().cloned(),
+            func_inst.locals.iter().cloned(),
         );
 
         // setting `usize::MAX` as return address for the outermost function ensures that we
@@ -283,10 +283,7 @@ where
 
         // Prepare a new stack with the locals for the entry function
         let mut stack = Stack::new();
-        let locals = Locals::new(
-            params.into_iter(),
-            func_inst.try_into_local().unwrap().locals.iter().cloned(),
-        );
+        let locals = Locals::new(params.into_iter(), func_inst.locals.iter().cloned());
         stack.push_stackframe(module_idx, func_idx, &func_ty, locals, 0, 0);
 
         let mut currrent_module_idx = module_idx;
@@ -380,10 +377,7 @@ where
 
         // Prepare a new stack with the locals for the entry function
         let mut stack = Stack::new();
-        let locals = Locals::new(
-            params.into_iter(),
-            func_inst.try_into_local().unwrap().locals.iter().cloned(),
-        );
+        let locals = Locals::new(params.into_iter(), func_inst.locals.iter().cloned());
         stack.push_stackframe(module_idx, func_idx, &func_ty, locals, 0, 0);
 
         let mut currrent_module_idx = module_idx;
