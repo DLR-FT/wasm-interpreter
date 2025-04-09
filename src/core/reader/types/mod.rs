@@ -14,7 +14,6 @@ use crate::{unreachable_validated, Error};
 pub mod data;
 pub mod element;
 pub mod export;
-pub mod function_code_header;
 pub mod global;
 pub mod import;
 pub mod memarg;
@@ -329,6 +328,20 @@ impl Limits {
     // https://webassembly.github.io/reference-types/core/exec/runtime.html#memory-instances
     // memory size is 65536 (1 << 16)
     pub const MEM_PAGE_SIZE: u32 = 1 << 16;
+}
+
+pub fn check_limits(fmin: u32, fmax: Option<u32>, tmin: u32, tmax: Option<u32>) -> bool {
+    if fmin < tmin {
+        return false;
+    }
+
+    match tmax {
+        None => true,
+        Some(tmax_val) => match fmax {
+            None => false,
+            Some(fmax_val) => fmax_val <= tmax_val,
+        },
+    }
 }
 
 impl Debug for Limits {
