@@ -49,6 +49,8 @@ pub fn to_wasm_testsuite_string(runtime_error: RuntimeError) -> std::string::Str
         RuntimeError::UndefinedTableIndex => "undefined element",
         RuntimeError::ModuleNotFound => "module not found",
         RuntimeError::UnmetImport => "unmet import",
+
+        RuntimeError::OutOfFuel => "out of fuel",
     }
     .to_string()
 }
