@@ -41,22 +41,26 @@ impl AssertEqError {
             let left_el = left[i];
             let right_el = right[i];
 
-            if !match (left_el, right_el) {
+            match (left_el, right_el) {
                 (Value::F32(a), Value::F32(b)) => {
                     match_f32(a, b)?;
-                    true
+                    Ok(())
                 }
                 (Value::F64(a), Value::F64(b)) => {
                     match_f64(a, b)?;
-                    true
+                    Ok(())
                 }
-                (a, b) => a == b,
-            } {
-                return Err(AssertEqError {
-                    left: format!("{:?}", left),
-                    right: format!("{:?}", right),
-                });
-            }
+                (a, b) => {
+                    if a != b {
+                        Err(AssertEqError {
+                            left: format!("{:?}", left),
+                            right: format!("{:?}", right),
+                        })
+                    } else {
+                        Ok(())
+                    }
+                }
+            }?;
         }
         Ok(())
     }
@@ -186,6 +190,18 @@ impl PanicError {
             message: message.to_string(),
         }
     }
+
+    pub fn from_panic(panic: Box<dyn std::any::Any + Send>) -> Self {
+        if let Ok(msg) = panic.downcast::<&str>() {
+            PanicError::new(&msg)
+        } else {
+            PanicError::new("Unknown panic")
+        }
+    }
+
+    pub fn from_panic_boxed(panic: Box<dyn std::any::Any + Send>) -> Box<dyn Error> {
+        Box::new(Self::from_panic(panic))
+    }
 }
 
 impl Error for PanicError {}
@@ -197,6 +213,12 @@ impl std::fmt::Display for PanicError {
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct WasmInterpreterError(pub wasm::Error);
+
+impl WasmInterpreterError {
+    pub fn new_boxed(error: wasm::Error) -> Box<dyn Error> {
+        Box::new(Self(error))
+    }
+}
 
 impl Error for WasmInterpreterError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
@@ -219,6 +241,10 @@ pub struct GenericError(String);
 impl GenericError {
     pub fn new(message: &str) -> Self {
         GenericError(message.to_string())
+    }
+
+    pub fn new_boxed(message: &str) -> Box<dyn Error> {
+        Box::new(Self::new(message))
     }
 }
 
