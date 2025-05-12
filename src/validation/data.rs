@@ -5,6 +5,7 @@ use crate::{
         indices::MemIdx,
         reader::{
             section_header::{SectionHeader, SectionTy},
+            span::Span,
             types::{
                 data::{DataMode, DataModeActive, DataSegment},
                 global::GlobalType,
@@ -23,11 +24,12 @@ pub(super) fn validate_data_section(
     section_header: SectionHeader,
     imported_global_types: &[GlobalType],
     no_of_total_memories: usize,
-) -> Result<Vec<DataSegment>> {
+) -> Result<Vec<Span>> {
     assert_eq!(section_header.ty, SectionTy::Data);
 
     wasm.read_vec(|wasm| {
         use crate::{NumType, ValType};
+        let from = wasm.pc;
         let mode = wasm.read_var_u32()?;
         let data_sec: DataSegment = match mode {
             0 => {
@@ -100,6 +102,9 @@ pub(super) fn validate_data_section(
         };
 
         trace!("{:?}", data_sec.init);
-        Ok(data_sec)
+        Ok(Span {
+            from,
+            len: wasm.pc - from,
+        })
     })
 }

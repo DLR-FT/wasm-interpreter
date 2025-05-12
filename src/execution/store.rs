@@ -6,12 +6,13 @@ use alloc::vec::Vec;
 use crate::core::error::{Proposal, Result as CustomResult, StoreInstantiationError};
 use crate::core::indices::TypeIdx;
 use crate::core::reader::span::Span;
+use crate::core::reader::types::data::DataSegment;
 use crate::core::reader::types::element::{ElemItems, ElemMode};
 use crate::core::reader::types::export::ExportDesc;
 use crate::core::reader::types::global::Global;
 use crate::core::reader::types::import::{Import, ImportDesc};
 use crate::core::reader::types::{check_limits, FuncType, MemType, TableType, ValType};
-use crate::core::reader::WasmReader;
+use crate::core::reader::{WasmReadable, WasmReader};
 use crate::execution::value::{Ref, Value};
 use crate::execution::{get_address_offset, run_const, run_const_span, Stack};
 use crate::value::{ExternAddr, FuncAddr};
@@ -941,6 +942,9 @@ impl ValidationInfo<'_> {
         self.data
             .iter()
             .map(|d| {
+                let mut wasm = WasmReader::new(self.wasm);
+                wasm.move_start_to(*d).unwrap();
+                let d = DataSegment::read(&mut wasm).unwrap();
                 use crate::core::reader::types::data::DataMode;
                 use crate::NumType;
                 if let DataMode::Active(active_data) = d.mode.clone() {

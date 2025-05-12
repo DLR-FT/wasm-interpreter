@@ -4,7 +4,6 @@ use alloc::vec::Vec;
 use crate::core::indices::{FuncIdx, TypeIdx};
 use crate::core::reader::section_header::{SectionHeader, SectionTy};
 use crate::core::reader::span::Span;
-use crate::core::reader::types::data::DataSegment;
 use crate::core::reader::types::element::ElemType;
 use crate::core::reader::types::export::Export;
 use crate::core::reader::types::global::{Global, GlobalType};
@@ -45,7 +44,7 @@ pub struct ValidationInfo<'bytecode> {
     /// the beginning of that code section
     pub(crate) func_blocks_stps: Vec<(Span, usize)>,
     pub(crate) sidetable: Sidetable,
-    pub(crate) data: Vec<DataSegment>,
+    pub(crate) data: Vec<Span>,
     /// The start function which is automatically executed during instantiation
     pub(crate) start: Option<FuncIdx>,
     pub(crate) elements: Vec<ElemType>,
