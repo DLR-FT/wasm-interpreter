@@ -24,7 +24,7 @@ use crate::{
         sidetable::Sidetable,
     },
     locals::Locals,
-    store::{DataInst, FuncInst},
+    store::DataInst,
     value::{self, FuncAddr, Ref},
     value_stack::Stack,
     Limits, NumType, RefType, RuntimeError, ValType, Value,
@@ -33,31 +33,25 @@ use crate::{
 #[cfg(feature = "hooks")]
 use crate::execution::hooks::HookSet;
 
-use super::{execution_info::ExecutionInfo, lut::Lut};
+use super::store::Store;
 
 /// Interprets a functions. Parameters and return values are passed on the stack.
 pub(super) fn run<H: HookSet>(
-    modules: &mut [ExecutionInfo],
     current_module_idx: &mut usize,
-    lut: &Lut,
     stack: &mut Stack,
     mut hooks: H,
+    store: &mut Store,
 ) -> Result<(), RuntimeError> {
-    let func_inst = modules[*current_module_idx]
-        .store
-        .funcs
-        .get(stack.current_stackframe().func_idx)
-        .unwrap_validated()
-        .try_into_local()
-        .unwrap_validated();
+    let global_func_idx =
+        store.modules[*current_module_idx].functions[stack.current_stackframe().func_idx];
+
+    let func_inst = store.functions.get(global_func_idx).unwrap_validated();
 
     // Start reading the function's instructions
-    let mut wasm = &mut modules[*current_module_idx].wasm_reader;
+    let wasm = &mut WasmReader::new(store.modules[*current_module_idx].wasm_bytecode);
 
-    // the sidetable and stp for this function, stp will reset to 0 every call
-    // since function instances have their own sidetable.
-    let mut current_sidetable: &Sidetable = &func_inst.sidetable;
-    let mut stp = 0;
+    let mut current_sidetable: &Sidetable = &store.modules[*current_module_idx].sidetable;
+    let mut stp = func_inst.stp;
 
     // unwrap is sound, because the validation assures that the function points to valid subslice of the WASM binary
     wasm.move_start_to(func_inst.code_expr).unwrap();
@@ -66,7 +60,7 @@ pub(super) fn run<H: HookSet>(
     loop {
         // call the instruction hook
         #[cfg(feature = "hooks")]
-        hooks.instruction_hook(modules[*current_module_idx].wasm_bytecode, wasm.pc);
+        hooks.instruction_hook(store.modules[*current_module_idx].wasm_bytecode, wasm.pc);
 
         let first_instr_byte = wasm.read_u8().unwrap_validated();
 
@@ -81,16 +75,15 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: NOP");
             }
             END => {
+                let current_func_global_idx = store.modules[*current_module_idx].functions
+                    [stack.current_stackframe().func_idx];
                 // if this is not the very last instruction in the function
                 // just skip because it is a delimiter of a ctrl block
 
                 // TODO there is definitely a better to write this
-                let current_func_span = modules[*current_module_idx]
-                    .store
-                    .funcs
-                    .get(stack.current_stackframe().func_idx)
-                    .unwrap_validated()
-                    .try_into_local()
+                let current_func_span = store
+                    .functions
+                    .get(current_func_global_idx)
                     .unwrap_validated()
                     .code_expr;
 
@@ -111,20 +104,14 @@ pub(super) fn run<H: HookSet>(
                 }
 
                 trace!("end of function reached, returning to previous stack frame");
-                wasm = &mut modules[return_module].wasm_reader;
+                *current_module_idx = return_module;
+                wasm.full_wasm_binary = store.modules[*current_module_idx].wasm_bytecode;
                 wasm.pc = maybe_return_address;
                 stp = maybe_return_stp;
 
-                current_sidetable = &modules[return_module]
-                    .store
-                    .funcs
-                    .get(stack.current_stackframe().func_idx)
-                    .unwrap_validated()
-                    .try_into_local()
-                    .unwrap_validated()
-                    .sidetable;
+                current_sidetable = &store.modules[*current_module_idx].sidetable;
 
-                *current_module_idx = return_module;
+                trace!("Instruction: END");
             }
             IF => {
                 wasm.read_var_u32().unwrap_validated();
@@ -136,6 +123,7 @@ pub(super) fn run<H: HookSet>(
                 } else {
                     do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable);
                 }
+                trace!("Instruction: IF");
             }
             ELSE => {
                 do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable);
@@ -150,6 +138,7 @@ pub(super) fn run<H: HookSet>(
                 } else {
                     stp += 1;
                 }
+                trace!("Instruction: BR_IF");
             }
             BR_TABLE => {
                 let label_vec = wasm
@@ -184,83 +173,58 @@ pub(super) fn run<H: HookSet>(
             CALL => {
                 let func_to_call_idx = wasm.read_var_u32().unwrap_validated() as FuncIdx;
 
-                let func_to_call_inst = modules[*current_module_idx]
-                    .store
-                    .funcs
-                    .get(func_to_call_idx)
+                let func_to_call_global_idx =
+                    store.modules[*current_module_idx].functions[func_to_call_idx];
+
+                let func_to_call_inst = store
+                    .functions
+                    .get(func_to_call_global_idx)
                     .unwrap_validated();
-                let func_to_call_ty = modules[*current_module_idx]
-                    .fn_types
-                    .get(func_to_call_inst.ty())
-                    .unwrap_validated();
+                let func_to_call_ty = func_to_call_inst.ty();
 
                 let params = stack.pop_tail_iter(func_to_call_ty.params.valtypes.len());
 
                 trace!("Instruction: call [{func_to_call_idx:?}]");
+                let func_module_idx =
+                    store.get_module_idx_from_func_idx(func_to_call_global_idx)?;
+                let (next_module, next_func_idx) = (func_module_idx, func_to_call_global_idx);
 
-                match func_to_call_inst {
-                    FuncInst::Local(local_func_inst) => {
-                        let remaining_locals = local_func_inst.locals.iter().cloned();
-                        let locals = Locals::new(params, remaining_locals);
+                let local_func_inst = &store.functions[next_func_idx];
 
-                        stack.push_stackframe(
-                            *current_module_idx,
-                            func_to_call_idx,
-                            func_to_call_ty,
-                            locals,
-                            wasm.pc,
-                            stp,
-                        );
+                let remaining_locals = local_func_inst.locals.iter().cloned();
+                let locals = Locals::new(params, remaining_locals);
 
-                        wasm.move_start_to(local_func_inst.code_expr)
-                            .unwrap_validated();
+                let func_to_call_idx = store
+                    .get_local_function_idx_by_global_function_idx(func_module_idx, next_func_idx)
+                    .ok_or(RuntimeError::FunctionNotFound)?;
 
-                        stp = 0;
-                        current_sidetable = &local_func_inst.sidetable;
-                    }
-                    FuncInst::Imported(_imported_func_inst) => {
-                        let (next_module, next_func_idx) = lut
-                            .lookup(*current_module_idx, func_to_call_idx)
-                            .expect("invalid state for lookup");
+                stack.push_stackframe(
+                    *current_module_idx,
+                    func_to_call_idx,
+                    &func_to_call_ty,
+                    locals,
+                    wasm.pc,
+                    stp,
+                );
 
-                        let local_func_inst = modules[next_module].store.funcs[next_func_idx]
-                            .try_into_local()
-                            .unwrap();
+                *current_module_idx = next_module;
+                wasm.full_wasm_binary = store.modules[*current_module_idx].wasm_bytecode;
+                wasm.move_start_to(local_func_inst.code_expr)
+                    .unwrap_validated();
 
-                        let remaining_locals = local_func_inst.locals.iter().cloned();
-                        let locals = Locals::new(params, remaining_locals);
-
-                        stack.push_stackframe(
-                            *current_module_idx,
-                            func_to_call_idx,
-                            func_to_call_ty,
-                            locals,
-                            wasm.pc,
-                            stp,
-                        );
-
-                        wasm = &mut modules[next_module].wasm_reader;
-                        *current_module_idx = next_module;
-
-                        wasm.move_start_to(local_func_inst.code_expr)
-                            .unwrap_validated();
-
-                        stp = 0;
-                        current_sidetable = &local_func_inst.sidetable;
-                    }
-                }
+                stp = local_func_inst.stp;
+                current_sidetable = &store.modules[*current_module_idx].sidetable;
+                trace!("Instruction: CALL");
             }
+
+            // TODO: fix push_stackframe, because the func idx that you get from the table is global func idx
             CALL_INDIRECT => {
                 let given_type_idx = wasm.read_var_u32().unwrap_validated() as TypeIdx;
                 let table_idx = wasm.read_var_u32().unwrap_validated() as TableIdx;
 
-                let tab = modules[*current_module_idx]
-                    .store
-                    .tables
-                    .get(table_idx)
-                    .unwrap_validated();
-                let func_ty = modules[*current_module_idx]
-                    .fn_types
+                let tab = &store.tables[store.modules[*current_module_idx].tables[table_idx]];
+                let func_ty = store.modules[*current_module_idx]
+                    .function_types
                     .get(given_type_idx)
                     .unwrap_validated();
 
@@ -284,80 +248,51 @@ pub(super) fn run<H: HookSet>(
                     Ref::Extern(_) => unreachable!(),
                 };
 
-                let func_to_call_inst = modules[*current_module_idx]
-                    .store
-                    .funcs
-                    .get(func_addr)
+                let func_idx = func_addr;
+                let func_module_idx = store.get_module_idx_from_func_idx(func_idx)?;
+                let local_func_addr = store
+                    .get_local_function_idx_by_global_function_idx(func_module_idx, func_idx)
                     .unwrap_validated();
+                let func_to_call_inst = &store.functions[func_idx];
 
-                let actual_type_idx = func_to_call_inst.ty();
-                let actual_ty = modules[*current_module_idx]
-                    .fn_types
-                    .get(actual_type_idx)
-                    .unwrap_validated();
+                let actual_ty = func_to_call_inst.ty();
 
-                if func_ty != actual_ty {
+                if *func_ty != actual_ty {
                     return Err(RuntimeError::SignatureMismatch);
                 }
 
-                match func_to_call_inst {
-                    FuncInst::Local(local_func_inst) => {
-                        let params = stack.pop_tail_iter(func_ty.params.valtypes.len());
-                        let remaining_locals = local_func_inst.locals.iter().cloned();
+                let (next_module, _next_func_idx) = (func_module_idx, func_idx);
 
-                        trace!("Instruction: call_indirect [{func_addr:?}]");
-                        let locals = Locals::new(params, remaining_locals);
-                        stack.push_stackframe(
-                            *current_module_idx,
-                            func_addr,
-                            func_ty,
-                            locals,
-                            wasm.pc,
-                            stp,
-                        );
+                let local_func_inst = func_to_call_inst;
 
-                        wasm.move_start_to(local_func_inst.code_expr)
-                            .unwrap_validated();
+                let params = stack.pop_tail_iter(func_ty.params.valtypes.len());
+                let remaining_locals = local_func_inst.locals.iter().cloned();
 
-                        stp = 0;
-                        current_sidetable = &local_func_inst.sidetable;
-                    }
-                    FuncInst::Imported(_imported_func_inst) => {
-                        let (next_module, next_func_idx) = lut
-                            .lookup(*current_module_idx, func_addr)
-                            .expect("invalid state for lookup");
+                trace!("Instruction: call_indirect [{local_func_addr:?}]");
+                let locals = Locals::new(params, remaining_locals);
 
-                        let local_func_inst = modules[next_module].store.funcs[next_func_idx]
-                            .try_into_local()
-                            .unwrap();
+                trace!("CALL INDIRECT DEBUG: next_module {}, local_func_addr {}, global_func_addr {}, global_func_span from {} len {}", next_module, local_func_addr, func_addr, local_func_inst.code_expr.from(), local_func_inst.code_expr.len());
+                stack.push_stackframe(
+                    *current_module_idx,
+                    local_func_addr,
+                    func_ty,
+                    locals,
+                    wasm.pc,
+                    stp,
+                );
+                *current_module_idx = next_module;
+                wasm.full_wasm_binary = store.modules[*current_module_idx].wasm_bytecode;
+                wasm.move_start_to(local_func_inst.code_expr)
+                    .unwrap_validated();
 
-                        let params = stack.pop_tail_iter(func_ty.params.valtypes.len());
-                        let remaining_locals = local_func_inst.locals.iter().cloned();
+                stp = local_func_inst.stp;
+                current_sidetable = &store.modules[*current_module_idx].sidetable;
 
-                        trace!("Instruction: call_indirect [{func_addr:?}]");
-                        let locals = Locals::new(params, remaining_locals);
-                        stack.push_stackframe(
-                            *current_module_idx,
-                            func_addr,
-                            func_ty,
-                            locals,
-                            wasm.pc,
-                            stp,
-                        );
-
-                        wasm = &mut modules[next_module].wasm_reader;
-                        *current_module_idx = next_module;
-
-                        wasm.move_start_to(local_func_inst.code_expr)
-                            .unwrap_validated();
-
-                        stp = 0;
-                        current_sidetable = &local_func_inst.sidetable;
-                    }
-                }
+                trace!("Instruction: CALL_INDIRECT");
             }
             DROP => {
                 stack.drop_value();
+                trace!("Instruction: DROP");
             }
             SELECT => {
                 let test_val: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -368,6 +303,7 @@ pub(super) fn run<H: HookSet>(
                 } else {
                     stack.push_value(val2);
                 }
+                trace!("Instruction: SELECT");
             }
             SELECT_T => {
                 let type_vec = wasm.read_vec(ValType::read).unwrap_validated();
@@ -379,6 +315,7 @@ pub(super) fn run<H: HookSet>(
                 } else {
                     stack.push_value(val2);
                 }
+                trace!("Instruction: SELECT_T");
             }
             LOCAL_GET => {
                 let local_idx = wasm.read_var_u32().unwrap_validated() as LocalIdx;
@@ -389,32 +326,26 @@ pub(super) fn run<H: HookSet>(
             LOCAL_TEE => stack.tee_local(wasm.read_var_u32().unwrap_validated() as LocalIdx),
             GLOBAL_GET => {
                 let global_idx = wasm.read_var_u32().unwrap_validated() as GlobalIdx;
-                let global = modules[*current_module_idx]
-                    .store
-                    .globals
-                    .get(global_idx)
-                    .unwrap_validated();
+                let global = &store.globals[store.modules[*current_module_idx].globals[global_idx]];
 
                 stack.push_value(global.value);
+
+                trace!(
+                    "Instruction: global.get '{}' [<GLOBAL>] -> [{:?}]",
+                    global_idx,
+                    global.value
+                );
             }
             GLOBAL_SET => {
                 let global_idx = wasm.read_var_u32().unwrap_validated() as GlobalIdx;
-                let global = modules[*current_module_idx]
-                    .store
-                    .globals
-                    .get_mut(global_idx)
-                    .unwrap_validated();
-
-                global.value = stack.pop_value(global.global.ty.ty)
+                let global =
+                    &mut store.globals[store.modules[*current_module_idx].globals[global_idx]];
+                global.value = stack.pop_value(global.global.ty.ty);
+                trace!("Instruction: GLOBAL_SET");
             }
             TABLE_GET => {
                 let table_idx = wasm.read_var_u32().unwrap_validated() as TableIdx;
-
-                let tab = modules[*current_module_idx]
-                    .store
-                    .tables
-                    .get(table_idx)
-                    .unwrap_validated();
+                let tab = &store.tables[store.modules[*current_module_idx].tables[table_idx]];
 
                 let i: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
@@ -434,7 +365,7 @@ pub(super) fn run<H: HookSet>(
             TABLE_SET => {
                 let table_idx = wasm.read_var_u32().unwrap_validated() as TableIdx;
 
-                let tab = &mut modules[*current_module_idx].store.tables[table_idx];
+                let tab = &mut store.tables[store.modules[*current_module_idx].tables[table_idx]];
 
                 let val: Ref = stack.pop_value(ValType::RefType(tab.ty.et)).into();
                 let i: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -454,11 +385,7 @@ pub(super) fn run<H: HookSet>(
                 let memarg = MemArg::read_unvalidated(wasm);
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                let mem_inst = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .first()
-                    .unwrap_validated(); // there is only one memory allowed as of now
+                let mem_inst = &store.memories[store.modules[*current_module_idx].memories[0]];
 
                 let idx = get_store_index(&memarg, relative_address)?;
                 let data = mem_inst.mem.load(idx)?;
@@ -470,11 +397,7 @@ pub(super) fn run<H: HookSet>(
                 let memarg = MemArg::read_unvalidated(wasm);
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .first()
-                    .unwrap_validated();
+                let mem = &store.memories[store.modules[*current_module_idx].memories[0]]; // there is only one memory allowed as of now
 
                 let idx = get_store_index(&memarg, relative_address)?;
                 let data = mem.mem.load(idx)?;
@@ -486,11 +409,7 @@ pub(super) fn run<H: HookSet>(
                 let memarg = MemArg::read_unvalidated(wasm);
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .first()
-                    .unwrap_validated(); // there is only one memory allowed as of now
+                let mem = &store.memories[store.modules[*current_module_idx].memories[0]]; // there is only one memory allowed as of now
 
                 let idx = get_store_index(&memarg, relative_address)?;
                 let data = mem.mem.load(idx)?;
@@ -502,11 +421,7 @@ pub(super) fn run<H: HookSet>(
                 let memarg = MemArg::read_unvalidated(wasm);
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .first()
-                    .unwrap_validated();
+                let mem = &store.memories[store.modules[*current_module_idx].memories[0]]; // there is only one memory allowed as of now
 
                 let idx = get_store_index(&memarg, relative_address)?;
                 let data = mem.mem.load(idx)?;
@@ -518,11 +433,7 @@ pub(super) fn run<H: HookSet>(
                 let memarg = MemArg::read_unvalidated(wasm);
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .first()
-                    .unwrap_validated(); // there is only one memory allowed as of now
+                let mem = &store.memories[store.modules[*current_module_idx].memories[0]]; // there is only one memory allowed as of now
 
                 let idx = get_store_index(&memarg, relative_address)?;
                 let data: i8 = mem.mem.load(idx)?;
@@ -534,11 +445,7 @@ pub(super) fn run<H: HookSet>(
                 let memarg = MemArg::read_unvalidated(wasm);
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .first()
-                    .unwrap_validated(); // there is only one memory allowed as of now
+                let mem = &store.memories[store.modules[*current_module_idx].memories[0]]; // there is only one memory allowed as of now
 
                 let idx = get_store_index(&memarg, relative_address)?;
                 let data: u8 = mem.mem.load(idx)?;
@@ -550,11 +457,7 @@ pub(super) fn run<H: HookSet>(
                 let memarg = MemArg::read_unvalidated(wasm);
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .first()
-                    .unwrap_validated(); // there is only one memory allowed as of now
+                let mem = &store.memories[store.modules[*current_module_idx].memories[0]]; // there is only one memory allowed as of now
 
                 let idx = get_store_index(&memarg, relative_address)?;
                 let data: i16 = mem.mem.load(idx)?;
@@ -566,11 +469,7 @@ pub(super) fn run<H: HookSet>(
                 let memarg = MemArg::read_unvalidated(wasm);
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .first()
-                    .unwrap_validated(); // there is only one memory allowed as of now
+                let mem = &store.memories[store.modules[*current_module_idx].memories[0]]; // there is only one memory allowed as of now
 
                 let idx = get_store_index(&memarg, relative_address)?;
                 let data: u16 = mem.mem.load(idx)?;
@@ -582,11 +481,7 @@ pub(super) fn run<H: HookSet>(
                 let memarg = MemArg::read_unvalidated(wasm);
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .first()
-                    .unwrap_validated(); // there is only one memory allowed as of now
+                let mem = &store.memories[store.modules[*current_module_idx].memories[0]]; // there is only one memory allowed as of now
 
                 let idx = get_store_index(&memarg, relative_address)?;
                 let data: i8 = mem.mem.load(idx)?;
@@ -598,11 +493,7 @@ pub(super) fn run<H: HookSet>(
                 let memarg = MemArg::read_unvalidated(wasm);
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .first()
-                    .unwrap_validated(); // there is only one memory allowed as of now
+                let mem = &store.memories[store.modules[*current_module_idx].memories[0]]; // there is only one memory allowed as of now
 
                 let idx = get_store_index(&memarg, relative_address)?;
                 let data: u8 = mem.mem.load(idx)?;
@@ -614,11 +505,7 @@ pub(super) fn run<H: HookSet>(
                 let memarg = MemArg::read_unvalidated(wasm);
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .first()
-                    .unwrap_validated(); // there is only one memory allowed as of now
+                let mem = &store.memories[store.modules[*current_module_idx].memories[0]]; // there is only one memory allowed as of now
 
                 let idx = get_store_index(&memarg, relative_address)?;
                 let data: i16 = mem.mem.load(idx)?;
@@ -630,11 +517,7 @@ pub(super) fn run<H: HookSet>(
                 let memarg = MemArg::read_unvalidated(wasm);
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .first()
-                    .unwrap_validated(); // there is only one memory allowed as of now
+                let mem = &store.memories[store.modules[*current_module_idx].memories[0]]; // there is only one memory allowed as of now
 
                 let idx = get_store_index(&memarg, relative_address)?;
                 let data: u16 = mem.mem.load(idx)?;
@@ -646,11 +529,7 @@ pub(super) fn run<H: HookSet>(
                 let memarg = MemArg::read_unvalidated(wasm);
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .first()
-                    .unwrap_validated(); // there is only one memory allowed as of now
+                let mem = &store.memories[store.modules[*current_module_idx].memories[0]]; // there is only one memory allowed as of now
 
                 let idx = get_store_index(&memarg, relative_address)?;
                 let data: i32 = mem.mem.load(idx)?;
@@ -662,11 +541,7 @@ pub(super) fn run<H: HookSet>(
                 let memarg = MemArg::read_unvalidated(wasm);
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .first()
-                    .unwrap_validated(); // there is only one memory allowed as of now
+                let mem = &store.memories[store.modules[*current_module_idx].memories[0]]; // there is only one memory allowed as of now
 
                 let idx = get_store_index(&memarg, relative_address)?;
                 let data: u32 = mem.mem.load(idx)?;
@@ -680,11 +555,7 @@ pub(super) fn run<H: HookSet>(
                 let data_to_store: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .get_mut(0)
-                    .unwrap_validated(); // there is only one memory allowed as of now
+                let mem = &mut store.memories[store.modules[*current_module_idx].memories[0]]; // there is only one memory allowed as of now
 
                 let idx = get_store_index(&memarg, relative_address)?;
                 mem.mem.store(idx, data_to_store)?;
@@ -697,11 +568,7 @@ pub(super) fn run<H: HookSet>(
                 let data_to_store: u64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .get_mut(0)
-                    .unwrap_validated(); // there is only one memory allowed as of now
+                let mem = &mut store.memories[store.modules[*current_module_idx].memories[0]]; // there is only one memory allowed as of now
 
                 let idx = get_store_index(&memarg, relative_address)?;
                 mem.mem.store(idx, data_to_store)?;
@@ -714,11 +581,7 @@ pub(super) fn run<H: HookSet>(
                 let data_to_store: f32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .get_mut(0)
-                    .unwrap_validated(); // there is only one memory allowed as of now
+                let mem = &mut store.memories[store.modules[*current_module_idx].memories[0]]; // there is only one memory allowed as of now
 
                 let idx = get_store_index(&memarg, relative_address)?;
                 mem.mem.store(idx, data_to_store)?;
@@ -731,11 +594,7 @@ pub(super) fn run<H: HookSet>(
                 let data_to_store: f64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .get_mut(0)
-                    .unwrap_validated(); // there is only one memory allowed as of now
+                let mem = &mut store.memories[store.modules[*current_module_idx].memories[0]]; // there is only one memory allowed as of now
 
                 let idx = get_store_index(&memarg, relative_address)?;
                 mem.mem.store(idx, data_to_store)?;
@@ -748,11 +607,7 @@ pub(super) fn run<H: HookSet>(
                 let data_to_store: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .get_mut(0)
-                    .unwrap_validated();
+                let mem = &mut store.memories[store.modules[*current_module_idx].memories[0]];
 
                 let idx = get_store_index(&memarg, relative_address)?;
                 mem.mem.store(idx, data_to_store)?;
@@ -765,11 +620,7 @@ pub(super) fn run<H: HookSet>(
                 let data_to_store: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .get_mut(0)
-                    .unwrap_validated();
+                let mem = &mut store.memories[store.modules[*current_module_idx].memories[0]];
 
                 let idx = get_store_index(&memarg, relative_address)?;
                 mem.mem.store(idx, data_to_store)?;
@@ -782,11 +633,7 @@ pub(super) fn run<H: HookSet>(
                 let data_to_store: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .get_mut(0)
-                    .unwrap_validated();
+                let mem = &mut store.memories[store.modules[*current_module_idx].memories[0]];
 
                 let idx = get_store_index(&memarg, relative_address)?;
                 mem.mem.store(idx, data_to_store)?;
@@ -799,11 +646,7 @@ pub(super) fn run<H: HookSet>(
                 let data_to_store: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .get_mut(0)
-                    .unwrap_validated();
+                let mem = &mut store.memories[store.modules[*current_module_idx].memories[0]];
 
                 let idx = get_store_index(&memarg, relative_address)?;
                 mem.mem.store(idx, data_to_store)?;
@@ -816,11 +659,7 @@ pub(super) fn run<H: HookSet>(
                 let data_to_store: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .get_mut(0)
-                    .unwrap_validated();
+                let mem = &mut store.memories[store.modules[*current_module_idx].memories[0]];
 
                 let idx = get_store_index(&memarg, relative_address)?;
                 mem.mem.store(idx, data_to_store)?;
@@ -829,22 +668,14 @@ pub(super) fn run<H: HookSet>(
             }
             MEMORY_SIZE => {
                 let mem_idx = wasm.read_u8().unwrap_validated() as usize;
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .get(mem_idx)
-                    .unwrap_validated();
+                let mem = &mut store.memories[store.modules[*current_module_idx].memories[mem_idx]];
                 let size = mem.size() as u32;
                 stack.push_value(Value::I32(size));
                 trace!("Instruction: memory.size [] -> [{}]", size);
             }
             MEMORY_GROW => {
                 let mem_idx = wasm.read_u8().unwrap_validated() as usize;
-                let mem = modules[*current_module_idx]
-                    .store
-                    .mems
-                    .get_mut(mem_idx)
-                    .unwrap_validated();
+                let mem = &mut store.memories[store.modules[*current_module_idx].memories[mem_idx]];
                 let delta: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
                 let upper_limit = mem.ty.limits.max.unwrap_or(Limits::MAX_MEM_BYTES);
@@ -2182,23 +2013,19 @@ pub(super) fn run<H: HookSet>(
                         //      s => starting pointer in the data segment
                         //      d => destination address to copy to
                         let data_idx = wasm.read_var_u32().unwrap_validated() as DataIdx;
-                        let data = modules[*current_module_idx]
-                            .store
-                            .data
-                            .get(data_idx)
-                            .unwrap();
                         let mem_idx = wasm.read_u8().unwrap_validated() as usize;
-                        let mem = modules[*current_module_idx]
-                            .store
-                            .mems
-                            .get(mem_idx)
-                            .unwrap_validated();
+                        let mem =
+                            &store.memories[store.modules[*current_module_idx].memories[mem_idx]];
                         let n: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                         let s: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                         let d: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                        mem.mem
-                            .init(d as MemIdx, &data.data, s as MemIdx, n as MemIdx)?;
+                        mem.mem.init(
+                            d as MemIdx,
+                            &store.data[store.modules[*current_module_idx].data[data_idx]].data,
+                            s as MemIdx,
+                            n as MemIdx,
+                        )?;
 
                         trace!("Instruction: memory.init");
                     }
@@ -2211,7 +2038,7 @@ pub(super) fn run<H: HookSet>(
 
                         // Also, we should set data to null here (empty), which we do using an empty init vec
                         let data_idx = wasm.read_var_u32().unwrap_validated() as DataIdx;
-                        modules[*current_module_idx].store.data[data_idx] =
+                        store.data[store.modules[*current_module_idx].data[data_idx]] =
                             DataInst { data: Vec::new() };
                     }
                     // See https://webassembly.github.io/bulk-memory-operations/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-copy
@@ -2228,22 +2055,14 @@ pub(super) fn run<H: HookSet>(
                         let s: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                         let d: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                        let src_mem = modules[*current_module_idx]
-                            .store
-                            .mems
-                            .get(src_idx)
-                            .unwrap_validated();
-
-                        let dest_mem = modules[*current_module_idx]
-                            .store
-                            .mems
-                            .get(dst_idx)
-                            .unwrap_validated();
+                        let src_mem =
+                            &store.memories[store.modules[*current_module_idx].memories[src_idx]];
+                        let dest_mem =
+                            &store.memories[store.modules[*current_module_idx].memories[dst_idx]];
 
                         dest_mem
                             .mem
                             .copy(d as MemIdx, &src_mem.mem, s as MemIdx, n as MemIdx)?;
-
                         trace!("Instruction: memory.copy");
                     }
                     // See https://webassembly.github.io/bulk-memory-operations/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-fill
@@ -2253,11 +2072,8 @@ pub(super) fn run<H: HookSet>(
                         //      val => the value to set each byte to (must be < 256)
                         //      d => the pointer to the region to update
                         let mem_idx = wasm.read_u8().unwrap_validated() as usize;
-                        let mem = modules[*current_module_idx]
-                            .store
-                            .mems
-                            .get(mem_idx)
-                            .unwrap_validated();
+                        let mem = &mut store.memories
+                            [store.modules[*current_module_idx].memories[mem_idx]];
                         let n: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                         let val: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
@@ -2283,28 +2099,18 @@ pub(super) fn run<H: HookSet>(
                         let s: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into(); // offset
                         let d: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into(); // dst
 
-                        let tab_len = modules[*current_module_idx]
-                            .store
-                            .tables
-                            .get(table_idx)
-                            .unwrap_validated()
+                        let tab_len = store.tables
+                            [store.modules[*current_module_idx].tables[table_idx]]
                             .len();
-                        let tab = modules[*current_module_idx]
-                            .store
-                            .tables
-                            .get_mut(table_idx)
-                            .unwrap_validated();
 
-                        let elem_len = if modules[*current_module_idx]
-                            .store
-                            .passive_elem_indexes
+                        let tab =
+                            &mut store.tables[store.modules[*current_module_idx].tables[table_idx]];
+
+                        let elem_len = if store.modules[*current_module_idx]
+                            .passive_element_indexes
                             .contains(&elem_idx)
                         {
-                            modules[*current_module_idx]
-                                .store
-                                .elements
-                                .get(elem_idx)
-                                .unwrap_validated()
+                            store.elements[store.modules[*current_module_idx].elements[elem_idx]]
                                 .len()
                         } else {
                             0
@@ -2329,11 +2135,8 @@ pub(super) fn run<H: HookSet>(
                             .filter(|&res| res <= tab_len)
                             .ok_or(RuntimeError::TableAccessOutOfBounds)?;
 
-                        let elem = modules[*current_module_idx]
-                            .store
-                            .elements
-                            .get(elem_idx)
-                            .unwrap_validated();
+                        let elem = &mut store.elements
+                            [store.modules[*current_module_idx].elements[elem_idx]];
 
                         let dest = &mut tab.elem[d as usize..];
                         let src = &elem.references[s as usize..final_src_offset];
@@ -2343,11 +2146,7 @@ pub(super) fn run<H: HookSet>(
                         let elem_idx = wasm.read_var_u32().unwrap_validated() as usize;
 
                         // WARN: i'm not sure if this is okay or not
-                        modules[*current_module_idx]
-                            .store
-                            .elements
-                            .get_mut(elem_idx)
-                            .unwrap_validated()
+                        store.elements[store.modules[*current_module_idx].elements[elem_idx]]
                             .references = vec![];
                     }
                     // https://webassembly.github.io/spec/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-table-mathsf-table-copy-x-y
@@ -2355,10 +2154,12 @@ pub(super) fn run<H: HookSet>(
                         let table_x_idx = wasm.read_var_u32().unwrap_validated() as usize;
                         let table_y_idx = wasm.read_var_u32().unwrap_validated() as usize;
 
-                        let tab_x_elem_len = modules[*current_module_idx].store.tables[table_x_idx]
+                        let tab_x_elem_len = store.tables
+                            [store.modules[*current_module_idx].tables[table_x_idx]]
                             .elem
                             .len();
-                        let tab_y_elem_len = modules[*current_module_idx].store.tables[table_y_idx]
+                        let tab_y_elem_len = store.tables
+                            [store.modules[*current_module_idx].tables[table_y_idx]]
                             .elem
                             .len();
 
@@ -2392,24 +2193,26 @@ pub(super) fn run<H: HookSet>(
                         let src = table_y_idx;
 
                         if table_x_idx == table_y_idx {
-                            modules[*current_module_idx].store.tables[table_x_idx]
+                            store.tables[store.modules[*current_module_idx].tables[table_x_idx]]
                                 .elem
                                 .copy_within(s as usize..src_res, d as usize); // }
                         } else {
                             use core::cmp::Ordering::*;
+                            let src = store.modules[*current_module_idx].tables[src];
+                            let dst = store.modules[*current_module_idx].tables[dst];
+
                             let (src_table, dst_table) = match dst.cmp(&src) {
                                 Greater => {
-                                    let (left, right) =
-                                        modules[*current_module_idx].store.tables.split_at_mut(dst);
+                                    let (left, right) = store.tables.split_at_mut(dst);
                                     (&left[src], &mut right[0])
                                 }
                                 Less => {
-                                    let (left, right) =
-                                        modules[*current_module_idx].store.tables.split_at_mut(src);
+                                    let (left, right) = store.tables.split_at_mut(src);
                                     (&right[0], &mut left[dst])
                                 }
                                 Equal => unreachable!(),
                             };
+
                             dst_table.elem[d as usize..dst_res]
                                 .copy_from_slice(&src_table.elem[s as usize..src_res]);
                         }
@@ -2425,12 +2228,8 @@ pub(super) fn run<H: HookSet>(
                     }
                     TABLE_GROW => {
                         let table_idx = wasm.read_var_u32().unwrap_validated() as usize;
-
-                        let tab = modules[*current_module_idx]
-                            .store
-                            .tables
-                            .get_mut(table_idx)
-                            .unwrap_validated();
+                        let tab =
+                            &mut store.tables[store.modules[*current_module_idx].tables[table_idx]];
 
                         let sz = tab.elem.len() as u32;
 
@@ -2456,12 +2255,8 @@ pub(super) fn run<H: HookSet>(
                     }
                     TABLE_SIZE => {
                         let table_idx = wasm.read_var_u32().unwrap_validated() as usize;
-
-                        let tab = modules[*current_module_idx]
-                            .store
-                            .tables
-                            .get(table_idx)
-                            .unwrap_validated();
+                        let tab =
+                            &mut store.tables[store.modules[*current_module_idx].tables[table_idx]];
 
                         let sz = tab.elem.len() as u32;
 
@@ -2471,12 +2266,8 @@ pub(super) fn run<H: HookSet>(
                     }
                     TABLE_FILL => {
                         let table_idx = wasm.read_var_u32().unwrap_validated() as usize;
-
-                        let tab = modules[*current_module_idx]
-                            .store
-                            .tables
-                            .get_mut(table_idx)
-                            .unwrap_validated();
+                        let tab =
+                            &mut store.tables[store.modules[*current_module_idx].tables[table_idx]];
                         let ty = tab.ty.et;
 
                         let n: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into(); // len
