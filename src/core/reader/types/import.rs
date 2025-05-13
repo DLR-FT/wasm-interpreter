@@ -4,10 +4,10 @@ use alloc::string::String;
 use crate::core::indices::TypeIdx;
 use crate::core::reader::{WasmReadable, WasmReader};
 use crate::execution::assert_validated::UnwrapValidatedExt;
-use crate::{unreachable_validated, Error, Result};
+use crate::{unreachable_validated, Error, Result, ValidationInfo};
 
 use super::global::GlobalType;
-use super::{MemType, TableType};
+use super::{ExternType, MemType, TableType};
 
 #[derive(Debug, Clone)]
 pub struct Import {
@@ -45,6 +45,16 @@ impl WasmReadable for Import {
     }
 }
 
+impl Import {
+    /// returns the external type of `self` according to typing relation,
+    /// taking `validation_info` as validation context C
+    /// may fail only with function imports when C does not inhabit the function type
+    ///<https://webassembly.github.io/spec/core/valid/modules.html#imports>
+    pub fn extern_type(&self, validation_info: ValidationInfo) -> Result<ExternType> {
+        self.desc.extern_type(validation_info)
+    }
+}
+
 #[derive(Debug, Clone)]
 pub enum ImportDesc {
     Func(TypeIdx),
@@ -75,5 +85,31 @@ impl WasmReadable for ImportDesc {
             0x03 => todo!("read GlobalType"),
             _ => unreachable_validated!(),
         }
+    }
+}
+
+impl ImportDesc {
+    /// returns the external type of `self` according to typing relation,
+    /// taking `validation_info` as validation context C
+    /// may fail only with function imports when C does not inhabit the function type
+    ///<https://webassembly.github.io/spec/core/valid/modules.html#imports>
+    pub fn extern_type(&self, validation_info: ValidationInfo) -> Result<ExternType> {
+        Ok(match self {
+            ImportDesc::Func(func_idx) => {
+                let type_idx = validation_info
+                    .functions
+                    .get(*func_idx)
+                    .ok_or(Error::InvalidFuncTypeIdx)?;
+                let func_type = validation_info
+                    .types
+                    .get(*type_idx)
+                    .ok_or(Error::InvalidFuncType)?;
+                // TODO ugly clone that should disappear when types are directly parsed from bytecode instead of vector copies
+                ExternType::Func(func_type.clone())
+            }
+            ImportDesc::Table(ty) => ExternType::Table(*ty),
+            ImportDesc::Mem(ty) => ExternType::Mem(*ty),
+            ImportDesc::Global(ty) => ExternType::Global(*ty),
+        })
     }
 }

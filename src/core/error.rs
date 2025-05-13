@@ -119,6 +119,7 @@ pub enum Error {
     UnknownGlobal,
     DuplicateExportName,
     InvalidImportType,
+    TodoErrorVariantError,
 }
 
 impl Display for Error {
@@ -283,8 +284,9 @@ impl Display for Error {
             Error::UnknownGlobal => f.write_str("Unknown global"),
             Error::UnknownTable => f.write_str("Unknown table"),
             Error::DuplicateExportName => f.write_str("Duplicate export name"),
-            Error::InvalidImportType => f.write_str("Invalid import type")
+            Error::InvalidImportType => f.write_str("Invalid import type"),
             // TODO: maybe move these to LinkerError also add more info to them (the name's export, function idx, etc)
+            Error::TodoErrorVariantError =>  f.write_str("Error with not implemented variant")
 
         }
     }

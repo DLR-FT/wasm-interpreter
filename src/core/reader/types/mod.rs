@@ -4,6 +4,7 @@
 
 use alloc::vec::Vec;
 use core::fmt::{Debug, Formatter};
+use global::{Global, GlobalType};
 
 use crate::core::reader::{WasmReadable, WasmReader};
 use crate::execution::assert_validated::UnwrapValidatedExt;
@@ -456,4 +457,15 @@ impl WasmReadable for MemType {
             limits: Limits::read_unvalidated(wasm),
         }
     }
+}
+
+// TODO: PartialOrd needs to be implemented for subtyping relation
+// <https://webassembly.github.io/spec/core/valid/types.html#import-subtyping>
+///<https://webassembly.github.io/spec/core/valid/types.html#external-types>
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub enum ExternType {
+    Func(FuncType),
+    Table(TableType),
+    Mem(MemType),
+    Global(GlobalType),
 }

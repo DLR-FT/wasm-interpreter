@@ -10,7 +10,7 @@ use crate::core::reader::types::element::{ElemItems, ElemMode};
 use crate::core::reader::types::export::ExportDesc;
 use crate::core::reader::types::global::Global;
 use crate::core::reader::types::import::{Import, ImportDesc};
-use crate::core::reader::types::{check_limits, FuncType, MemType, TableType, ValType};
+use crate::core::reader::types::{check_limits, ExternType, FuncType, MemType, TableType, ValType};
 use crate::core::reader::WasmReader;
 use crate::execution::value::{Ref, Value};
 use crate::execution::{get_address_offset, run_const, run_const_span, Stack};
@@ -1137,4 +1137,72 @@ pub struct GlobalInst {
 
 pub struct DataInst {
     pub data: Vec<u8>,
+}
+
+///<https://webassembly.github.io/spec/core/exec/runtime.html#external-values>
+pub enum ExternVal {
+    Func(usize),
+    Table(usize),
+    Mem(usize),
+    Global(usize),
+}
+
+impl ExternVal {
+    /// returns the external type of `self` according to typing relation,
+    /// taking `store` as context S.
+    /// typing fails if this external value does not exist within S.
+    ///<https://webassembly.github.io/spec/core/valid/modules.html#imports>
+    pub fn extern_type(&self, store: &Store) -> CustomResult<ExternType> {
+        // TODO: implement error variants
+        Ok(match self {
+            // TODO: fix ugly clone in function types
+            ExternVal::Func(func_addr) => ExternType::Func(
+                store
+                    .functions
+                    .get(*func_addr)
+                    .ok_or(Error::TodoErrorVariantError)?
+                    .ty(),
+            ),
+            ExternVal::Table(table_addr) => ExternType::Table(
+                store
+                    .tables
+                    .get(*table_addr)
+                    .ok_or(Error::TodoErrorVariantError)?
+                    .ty,
+            ),
+            ExternVal::Mem(mem_addr) => ExternType::Mem(
+                store
+                    .memories
+                    .get(*mem_addr)
+                    .ok_or(Error::TodoErrorVariantError)?
+                    .ty,
+            ),
+            ExternVal::Global(global_addr) => ExternType::Global(
+                store
+                    .globals
+                    .get(*global_addr)
+                    .ok_or(Error::TodoErrorVariantError)?
+                    .global
+                    .ty,
+            ),
+        })
+    }
+}
+
+///<https://webassembly.github.io/spec/core/exec/runtime.html#export-instances>
+pub struct ExportInst {
+    pub name: String,
+    pub value: ExternVal,
+}
+
+///<https://webassembly.github.io/spec/core/exec/runtime.html#module-instances>
+pub struct ModuleInst {
+    pub types: Vec<FuncType>,
+    pub func_addrs: Vec<usize>,
+    pub table_addrs: Vec<usize>,
+    pub mem_addrs: Vec<usize>,
+    pub global_addrs: Vec<usize>,
+    pub elem_addrs: Vec<usize>,
+    pub data_addrs: Vec<usize>,
+    pub exports: Vec<ExportInst>,
 }
