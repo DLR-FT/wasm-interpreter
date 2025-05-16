@@ -50,7 +50,7 @@ impl Import {
     /// taking `validation_info` as validation context C
     /// may fail only with function imports when C does not inhabit the function type
     ///<https://webassembly.github.io/spec/core/valid/modules.html#imports>
-    pub fn extern_type(&self, validation_info: ValidationInfo) -> Result<ExternType> {
+    pub fn extern_type(&self, validation_info: &ValidationInfo) -> Result<ExternType> {
         self.desc.extern_type(validation_info)
     }
 }
@@ -93,7 +93,7 @@ impl ImportDesc {
     /// taking `validation_info` as validation context C
     /// may fail only with function imports when C does not inhabit the function type
     ///<https://webassembly.github.io/spec/core/valid/modules.html#imports>
-    pub fn extern_type(&self, validation_info: ValidationInfo) -> Result<ExternType> {
+    pub fn extern_type(&self, validation_info: &ValidationInfo) -> Result<ExternType> {
         Ok(match self {
             ImportDesc::Func(func_idx) => {
                 let type_idx = validation_info

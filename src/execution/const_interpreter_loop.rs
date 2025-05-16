@@ -6,39 +6,25 @@ use crate::{
     },
     value::{self, FuncAddr, Ref},
     value_stack::Stack,
-    GlobalInst, NumType, RefType, ValType, Value,
+    GlobalInst, ModuleInst, NumType, RefType, Store, ValType, Value,
 };
 
+// TODO update this documentation
 /// Execute a previosly-validated constant expression. These type of expressions are used for initializing global
-/// variables.
+/// variables, data and element segments.
 ///
 /// # Arguments
-/// - `wasm` - a [WasmReader] whose [program counter](WasmReader::pc) is set at the beginning of the constant
-///   expression. Reader will be consumed.
-/// - `stack` - a [Stack]. It is preferrable for it to be clean, but that is not required. As long as the executed code
-///   is validated, the values on this stack will remain the same except for the addition of the return value of this
-///   code sequence. A global's final value can be popped off the top of the stack.
-/// - `imported_globals` (TODO) - instances of all imported globals. They are required as local globals can reference
-///   imported globals in their initialization.
+/// TODO
 ///
 /// # Safety
 /// This function assumes that the expression has been validated. Passing unvalidated code will likely result in a
 /// panic, or undefined behaviour.
-///
-/// # Note
-/// The following instructions are not yet supported:
-/// - `ref.null`
-/// - `ref.func`
-/// - `global.get`
+// TODO this signature might change to support hooks or match the spec better
 pub(crate) fn run_const(
     wasm: &mut WasmReader,
     stack: &mut Stack,
-    // The globals slice should contain ONLY imported globals IF AND ONLY IF we are calling `run_const` for local globals instantiation
-    // As per https://webassembly.github.io/spec/core/valid/modules.html (bottom of the page):
-    //
-    //  Globals, however, are not recursive and not accessible within constant expressions when they are defined locally. The effect of defining the limited context C'
-    //   for validating certain definitions is that they can only access functions and imported globals and nothing else.
-    globals: &[GlobalInst],
+    module: &ModuleInst,
+    store: &Store,
 ) {
     use crate::core::reader::types::opcode::*;
     loop {
@@ -58,7 +44,8 @@ pub(crate) fn run_const(
             GLOBAL_GET => {
                 let global_idx = wasm.read_var_u32().unwrap_validated() as GlobalIdx;
 
-                let global = &globals[global_idx];
+                //TODO replace double indirection
+                let global = store.globals[module.global_addrs[global_idx]];
 
                 trace!(
                     "Constant instruction: global.get [{global_idx}] -> [{:?}]",
@@ -207,7 +194,10 @@ pub(crate) fn run_const(
             REF_FUNC => {
                 // we already checked for the func_idx to be in bounds during validation
                 let func_idx = wasm.read_var_u32().unwrap_validated() as usize;
-                stack.push_value(Value::Ref(Ref::Func(FuncAddr::new(Some(func_idx)))));
+                // TODO replace double indirection
+                stack.push_value(Value::Ref(Ref::Func(FuncAddr::new(Some(
+                    module.func_addrs[func_idx],
+                )))));
             }
             other => {
                 unreachable!("Unknown constant instruction {other:#x}, validation allowed an unimplemented instruction.");
@@ -219,15 +209,15 @@ pub(crate) fn run_const(
 pub(crate) fn run_const_span(
     wasm: &[u8],
     span: &Span,
-    imported_globals: &[GlobalInst],
-    // funcs: &[FuncInst],
+    module: &ModuleInst,
+    store: &Store,
 ) -> Option<Value> {
     let mut wasm = WasmReader::new(wasm);
 
     wasm.move_start_to(*span).unwrap_validated();
 
     let mut stack = Stack::new();
-    run_const(&mut wasm, &mut stack, imported_globals);
+    run_const(&mut wasm, &mut stack, module, store);
 
     stack.peek_unknown_value()
 }

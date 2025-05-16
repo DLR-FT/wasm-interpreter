@@ -21,7 +21,7 @@ impl Export {
     /// taking `validation_info` as validation context C
     /// may fail if the external type is not possible to infer with C
     /// <https://webassembly.github.io/spec/core/valid/modules.html#exports>
-    pub fn extern_type(&self, validation_info: ValidationInfo) -> Result<ExternType> {
+    pub fn extern_type(&self, validation_info: &ValidationInfo) -> Result<ExternType> {
         self.desc.extern_type(validation_info)
     }
 }
@@ -59,7 +59,7 @@ impl ExportDesc {
     /// taking `validation_info` as validation context C
     /// may fail if the external type is not possible to infer with C
     /// <https://webassembly.github.io/spec/core/valid/modules.html#exports>
-    pub fn extern_type(&self, validation_info: ValidationInfo) -> Result<ExternType> {
+    pub fn extern_type(&self, validation_info: &ValidationInfo) -> Result<ExternType> {
         Ok(match self {
             ExportDesc::FuncIdx(func_idx) => {
                 let type_idx = validation_info
