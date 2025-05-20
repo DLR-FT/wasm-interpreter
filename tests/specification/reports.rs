@@ -1,8 +1,8 @@
 use std::error::Error;
 
 pub struct WastSuccess {
-    line_number: u32,
-    command: String,
+    pub line_number: u32,
+    pub command: String,
 }
 
 impl WastSuccess {
@@ -15,9 +15,9 @@ impl WastSuccess {
 }
 
 pub struct WastError {
-    inner: Box<dyn Error>,
+    pub inner: Box<dyn Error>,
     pub line_number: u32,
-    command: String,
+    pub command: String,
 }
 
 impl WastError {

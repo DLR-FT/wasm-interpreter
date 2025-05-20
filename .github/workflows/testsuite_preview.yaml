@@ -1,0 +1,102 @@
+name: Testsuite Preview
+
+on:
+  - pull_request_target
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  generate-base-report:
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      RUSTFLAGS: "-D warnings"
+      RUSTDOCFLAGS: "-D warnings"
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.base.ref }}
+          submodules: true
+          repository: ${{ github.event.pull_request.base.repo.full_name }}
+
+      - name: Generate old report
+        run: |
+          TESTSUITE_SAVE=1 cargo test -- spec_tests --show-output
+          cp testsuite_results.json old.json || :
+
+      - name: Upload Base Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: base-report
+          path: old.json
+          retention-days: 1
+
+      - run: cargo clean
+
+  generate-head-report:
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      RUSTFLAGS: "-D warnings"
+      RUSTDOCFLAGS: "-D warnings"
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.ref }}
+          submodules: true
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+
+      - name: Generate new report
+        run: |
+          TESTSUITE_SAVE=1 cargo test -- spec_tests --show-output
+          cp testsuite_results.json new.json || :
+
+      - name: Upload Head Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: head-report
+          path: new.json
+          retention-days: 1
+
+      - run: cargo clean
+
+  compare-reports:
+    needs: [generate-base-report, generate-head-report]
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Base Report
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: base-report
+
+      - name: Download Head Report
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: head-report
+
+      - name: Compare reports
+        run: python3 ./ci-tools/compare_testsuite.py old.json new.json > testsuite_report.md
+
+      - name: Sticky Pull Request Comment
+        uses: marocchino/sticky-pull-request-comment@v2.9.1
+        with:
+          header: testsuite
+          path: testsuite_report.md
