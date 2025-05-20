@@ -1,7 +1,10 @@
+use ci_reports::CIFullReport;
 use files::{Filter, FnF};
 use reports::WastTestReport;
+use std::io::Write;
 use std::path::Path;
 
+mod ci_reports;
 mod files;
 mod reports;
 mod run;
@@ -108,4 +111,15 @@ pub fn spec_tests() {
         "Tests: {} Passed, {} Failed, {} Compilation Errors",
         successful_reports, failed_reports, compile_error_reports
     );
+
+    // Optional: We need to save the result to a file for CI Regression Analysis
+    if std::option_env!("TESTSUITE_SAVE").is_some() {
+        let ci_report = CIFullReport::new(&reports);
+        let ci_report_json = serde_json::to_string_pretty(&ci_report).unwrap();
+
+        std::fs::File::create("./testsuite_results.json")
+            .unwrap()
+            .write_all(ci_report_json.as_bytes())
+            .unwrap();
+    }
 }

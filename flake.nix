@@ -132,6 +132,7 @@
                 nodePackages.prettier
                 treefmtEval.config.build.wrapper
                 typst # for the whitepaper
+                python3 # for comparing official testsuite results
               ];
               env = [
                 {
