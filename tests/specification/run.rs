@@ -165,11 +165,11 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
     // -=-= Testing & Compilation =-=-
     let mut asserts = AssertReport::new(filepath);
 
-    // We need to keep the wasm_bytes in-scope for the lifetime of the interpeter.
+    // We need to keep the wasm_bytes in-scope for the lifetime of the interpreter.
     // As such, we hoist the bytes into an Option, and assign it once a module directive is found.
     #[allow(unused_assignments)]
     let mut wasm_bytes: Option<Vec<u8>> = None;
-    let mut interpeter = None;
+    let mut interpreter = None;
 
     for directive in wast.directives {
         match directive {
@@ -239,14 +239,14 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                     },
                 };
 
-                interpeter = Some(instance);
+                interpreter = Some(instance);
             }
             wast::WastDirective::AssertReturn {
                 span,
                 exec,
                 results,
             } => {
-                if interpeter.is_none() {
+                if interpreter.is_none() {
                     return CompilationError::new(
                         Box::new(GenericError::new(
                             "Attempted to assert before module directive",
@@ -257,11 +257,11 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                     .compile_report();
                 }
 
-                let interpeter = interpeter.as_mut().unwrap();
+                let interpreter = interpreter.as_mut().unwrap();
 
                 let err_or_panic: Result<(), Box<dyn Error>> =
                     match catch_unwind(AssertUnwindSafe(|| {
-                        execute_assert_return(interpeter, exec, results)
+                        execute_assert_return(interpreter, exec, results)
                     })) {
                         Ok(original_result) => original_result,
                         Err(inner) => {
@@ -295,7 +295,7 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                 exec,
                 message,
             } => {
-                if interpeter.is_none() {
+                if interpreter.is_none() {
                     return CompilationError::new(
                         Box::new(GenericError::new(
                             "Attempted to assert before module directive",
@@ -306,11 +306,11 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                     .compile_report();
                 }
 
-                let interpeter = interpeter.as_mut().unwrap();
+                let interpreter = interpreter.as_mut().unwrap();
 
                 let err_or_panic: Result<(), Box<dyn Error>> =
                     match catch_unwind(AssertUnwindSafe(|| {
-                        execute_assert_trap(interpeter, exec, message)
+                        execute_assert_trap(interpreter, exec, message)
                     })) {
                         Err(inner) => {
                             // TODO: Do we want to exit on panic? State may be left in an inconsistent state, and cascading panics may occur.
@@ -397,7 +397,7 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                 ));
             }
             wast::WastDirective::Invoke(invoke) => {
-                match interpeter {
+                match interpreter {
                     None => asserts.push_error(WastError::new(
                         Box::new(GenericError::new(
                             "Couldn't invoke, interpreter not present",
@@ -405,7 +405,7 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                         u32::MAX,
                         "invoke",
                     )),
-                    Some(ref mut interpeter) => {
+                    Some(ref mut interpreter) => {
                         let args = invoke
                             .args
                             .into_iter()
@@ -413,7 +413,7 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                             .collect::<Vec<_>>();
 
                         // TODO: more modules ¯\_(ツ)_/¯
-                        match interpeter.get_function_by_name(DEFAULT_MODULE, invoke.name) {
+                        match interpreter.get_function_by_name(DEFAULT_MODULE, invoke.name) {
                             Err(_) => asserts.push_error(WastError::new(
                                 Box::new(GenericError::new(&format!(
                                     "Couldn't get the function '{}' from module '{}'",
@@ -423,7 +423,7 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                                 "invoke",
                             )),
                             Ok(funcref) => {
-                                match interpeter.invoke_dynamic_unchecked_return_ty(&funcref, args)
+                                match interpreter.invoke_dynamic_unchecked_return_ty(&funcref, args)
                                 {
                                     Err(e) => asserts.push_error(WastError::new(
                                         Box::new(GenericError::new(&format!(
@@ -456,7 +456,7 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
 }
 
 fn execute_assert_return(
-    interpeter: &mut RuntimeInstance,
+    interpreter: &mut RuntimeInstance,
     exec: wast::WastExecute,
     results: Vec<wast::WastRet>,
 ) -> Result<(), Box<dyn Error>> {
@@ -475,11 +475,11 @@ fn execute_assert_return(
                 .collect::<Vec<_>>();
 
             // TODO: more modules ¯\_(ツ)_/¯
-            let func = interpeter
+            let func = interpreter
                 .get_function_by_name(DEFAULT_MODULE, invoke_info.name)
                 .map_err(|err| Box::new(WasmInterpreterError(wasm::Error::RuntimeError(err))))?;
 
-            let actual = interpeter
+            let actual = interpreter
                 .invoke_dynamic(&func, args, &result_types)
                 .map_err(|err| Box::new(WasmInterpreterError(wasm::Error::RuntimeError(err))))?;
 
@@ -499,7 +499,7 @@ fn execute_assert_return(
 }
 
 fn execute_assert_trap(
-    interpeter: &mut RuntimeInstance,
+    interpreter: &mut RuntimeInstance,
     exec: wast::WastExecute,
     message: &str,
 ) -> Result<(), Box<dyn Error>> {
@@ -512,7 +512,7 @@ fn execute_assert_trap(
                 .collect::<Vec<_>>();
 
             // TODO: more modules ¯\_(ツ)_/¯
-            let func_res = interpeter
+            let func_res = interpreter
                 .get_function_by_name(DEFAULT_MODULE, invoke_info.name)
                 .map_err(|err| Box::new(WasmInterpreterError(wasm::Error::RuntimeError(err))));
 
@@ -524,7 +524,7 @@ fn execute_assert_trap(
                 Ok(func_ref) => func = func_ref,
             };
 
-            let actual = interpeter.invoke_dynamic_unchecked_return_ty(&func, args);
+            let actual = interpreter.invoke_dynamic_unchecked_return_ty(&func, args);
 
             match actual {
                 Ok(_) => Err(Box::new(GenericError::new("assert_trap did NOT trap"))),
