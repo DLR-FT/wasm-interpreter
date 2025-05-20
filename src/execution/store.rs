@@ -1,14 +1,18 @@
+use core::intrinsics::float_to_int_unchecked;
+
 use alloc::collections::btree_map::BTreeMap;
 use alloc::string::{String, ToString};
 use alloc::vec;
 use alloc::vec::Vec;
+use wast::core::{Module, Type};
+use wast::kw::offset;
 
 use crate::core::error::{Proposal, Result as CustomResult, StoreInstantiationError};
-use crate::core::indices::TypeIdx;
+use crate::core::indices::{MemIdx, TypeIdx};
 use crate::core::reader::span::Span;
 use crate::core::reader::types::data::DataSegment;
-use crate::core::reader::types::element::{ElemItems, ElemMode};
-use crate::core::reader::types::export::ExportDesc;
+use crate::core::reader::types::element::{ActiveElem, ElemItems, ElemMode, ElemType};
+use crate::core::reader::types::export::{Export, ExportDesc};
 use crate::core::reader::types::global::Global;
 use crate::core::reader::types::import::{Import, ImportDesc};
 use crate::core::reader::types::{check_limits, ExternType, FuncType, MemType, TableType, ValType};
@@ -54,9 +58,31 @@ impl<'b> Store<'b> {
         name: String,
         validation_info: &ValidationInfo<'b>,
     ) -> CustomResult<()> {
-        // instantiation: step 1 and 2 are skipped since validation_info acts as validation evidence.
 
-        // instantation: the loop below for gathering extern_vals implicitly satisfy step 3 and 4.
+        // TODO hacky horrible evaluate function for non branching instr sequences that might not be situated in the sourcecode
+        // for instantiation steps
+        // should be killed with fire
+        // # preconditions: 
+        // - the instr sequence may not contain IF,ELSE,BLOCK,LOOP,BR,BR_IF,BR_TABLE instructions, as that warrants the sidetable to be extended.
+        // - the instr sequence should be delimited with END instruction.
+        fn evaluate(store: &mut Store, module_inst: &ModuleInst, instrs: &[u8], expected_ty: FuncType) {
+            let mut fake_module_inst = ModuleInst{..*module_inst};
+            fake_module_inst.types.push(expected_ty);
+            let fake_func_inst = FuncInst{
+                ty: fake_module_inst.types.len(),
+                locals: Vec::new(),
+                code_expr: Span {from: 0, len: instrs.len()},
+                stp: 0,
+                function_type: expected_ty
+            };
+            // push fake function to store temporarily
+            store.functions.push(fake_func_inst);
+            fake_module_inst.func_addrs.push(store.functions.len());
+            // push fake extended module to store temporarily
+            store.modules.push(fake_module_inst);
+            let module_addr = store.modules.len();
+
+        }
 
         let mut extern_vals = Vec::new();
 
@@ -101,10 +127,10 @@ impl<'b> Store<'b> {
         // https://github.com/WebAssembly/spec/blob/8d6792e3d6709e8d3e90828f9c8468253287f7ed/interpreter/exec/eval.ml#L789
         let mut module_inst = ModuleInst {
             types: validation_info.types,
-            func_addrs: ExternVal::funcs(&extern_vals),
+            func_addrs: extern_vals.iter().funcs().collect(),
             table_addrs: Vec::new(),
             mem_addrs: Vec::new(),
-            global_addrs: ExternVal::globals(&extern_vals),
+            global_addrs: extern_vals.iter().globals().collect(),
             elem_addrs: Vec::new(),
             data_addrs: Vec::new(),
             exports: Vec::new(),
@@ -135,6 +161,7 @@ impl<'b> Store<'b> {
             .collect();
 
         // instantiation: this roughly matches step 9,10
+
         fn cast_val_to_ref_validated(val: Value) -> Ref {
             match val {
                 Value::Ref(reff) => reff,
@@ -222,19 +249,56 @@ impl<'b> Store<'b> {
             // allocation: skip step 14 as it was done in instantiation step 5
 
             // allocation: step 15,16
-            // let mut table_addrs_mod = ExternVal::tables(&extern_vals);
-            // table_addrs_mod.extend(table_addrs);
+            let mut table_addrs_mod = extern_vals.iter().tables().collect();
+            table_addrs_mod.extend(table_addrs);
 
-            // let mut mem
 
-            // // skipping step 17 as it was partially done in instantiation step
+            let mut mem_addrs_mod = extern_vals.iter().mems().collect();
+            mem_addrs_mod.extend(mem_addrs);
 
-            // // allocation: step 18
-            // let export_insts = module.exports.iter().map(|Export{name, export_desc}| {
-            //     match export_desc {
+            // skipping step 17 partially as it was partially done in instantiation step
+            module_inst.global_addrs.extend(global_addrs);
 
-            //     }
-            // });
+            // allocation: step 18,19
+            let export_insts = module.exports.iter().map(|Export{name, desc}| {
+                let value = match desc {
+                    ExportDesc::FuncIdx(func_idx) => ExternVal::Func(module_inst.func_addrs[*func_idx]),
+                    ExportDesc::TableIdx(table_idx) => ExternVal::Table(table_addrs_mod[*table_idx]),
+                    ExportDesc::MemIdx(mem_idx) => ExternVal::Mem(mem_addrs_mod[*mem_idx]),
+                    ExportDesc::GlobalIdx(global_idx) => ExternVal::Global(module_inst.global_addrs[*global_idx])
+                };
+                ExportInst{name: *name, value}
+            }).collect();
+
+            // allocation: step 20,21 initialize module (except functions and globals due to instantiation step 5, allocation step 14,17) 
+            module_inst.table_addrs = table_addrs_mod;
+            module_inst.mem_addrs = mem_addrs_mod;
+            module_inst.elem_addrs = elem_addrs;
+            module_inst.data_addrs  = data_addrs;
+            module_inst.exports = export_insts;
+        }
+        // instantiation step 11 end: module_inst properly allocated after this point.
+
+        // instantiation: step 12-15
+        // TODO have to stray away from the spec a bit since our codebase does not lend itself well to freely executing instructions by themselves
+        for ElemType{init: elem_items, mode} in validation_info.elements {
+            match mode {
+
+                ElemMode::Active(ActiveElem{table_idx, init_expr: offsett}) => {
+                    let n = elem_items.len(); // equivalent to init.len() in spec
+                    // execute instruction sequence einstr*. This should produce 
+                    let Vec match elem_items {
+                        ElemItems::RefFuncs(ref_funcs) => {
+
+                        }
+                        ElemItems::Exprs(_, exprs) => {
+                            
+                        }
+                    }
+                }
+                ElemMode::Declarative => todo!(),
+                ElemMode::Passive => ()          
+            }
         }
 
         Ok(())
@@ -699,59 +763,62 @@ impl ExternVal {
             ),
         })
     }
+}
 
-    // conventional functions for extern_vals
-    // https://webassembly.github.io/spec/core/exec/runtime.html#conventions
-    pub fn funcs(extern_vals: &Vec<Self>) -> Vec<usize> {
-        extern_vals
-            .iter()
-            .filter_map(|extern_val| {
-                if let ExternVal::Func(func_addr) = extern_val {
-                    Some(*func_addr)
-                } else {
-                    None
-                }
-            })
-            .collect()
+/// common convention functions defined for lists of ExternVals, ExternTypes, Exports
+/// https://webassembly.github.io/spec/core/exec/runtime.html#conventions
+/// https://webassembly.github.io/spec/core/syntax/types.html#id3
+/// https://webassembly.github.io/spec/core/syntax/modules.html?highlight=convention#id1
+// TODO implement this trait for ExternType lists Export lists
+pub trait ExternFilterable<T> {
+    fn funcs(self) -> impl Iterator<Item = T>;
+    fn tables(self) -> impl Iterator<Item = T>;
+    fn mems(self) -> impl Iterator<Item = T>;
+    fn globals(self) -> impl Iterator<Item = T>;
+}
+
+impl<'a,I> ExternFilterable<usize> for I 
+where 
+    I : Iterator<Item = &'a ExternVal>
+{
+    fn funcs(self) -> impl Iterator<Item = usize> {
+        self.filter_map(|extern_val| {
+            if let ExternVal::Func(func_addr) = extern_val {
+                Some(*func_addr)
+            } else {
+                None
+            }
+        })
     }
 
-    pub fn tables(extern_vals: &Vec<Self>) -> Vec<usize> {
-        extern_vals
-            .iter()
-            .filter_map(|extern_val| {
-                if let ExternVal::Table(table_addr) = extern_val {
-                    Some(*table_addr)
-                } else {
-                    None
-                }
-            })
-            .collect()
+    fn tables(self) -> impl Iterator<Item = usize> {
+        self.filter_map(|extern_val| {
+            if let ExternVal::Table(table_addr) = extern_val {
+                Some(*table_addr)
+            } else {
+                None
+            }
+        })   
     }
 
-    pub fn mems(extern_vals: &Vec<Self>) -> Vec<usize> {
-        extern_vals
-            .iter()
-            .filter_map(|extern_val| {
-                if let ExternVal::Mem(mem_addr) = extern_val {
-                    Some(*mem_addr)
-                } else {
-                    None
-                }
-            })
-            .collect()
+    fn mems(self) -> impl Iterator<Item = usize> {
+        self.filter_map(|extern_val| {
+            if let ExternVal::Mem(mem_addr) = extern_val {
+                Some(*mem_addr)
+            } else {
+                None
+            }
+        })
     }
 
-    pub fn globals(extern_vals: &Vec<Self>) -> Vec<usize> {
-        extern_vals
-            .iter()
-            .filter_map(|extern_val| {
-                if let ExternVal::Global(global_addr) = extern_val {
-                    Some(*global_addr)
-                } else {
-                    None
-                }
-            })
-            .collect()
+    fn globals(self) -> impl Iterator<Item = usize> {
+        self.filter_map(|extern_val| {
+            if let ExternVal::Global(global_addr) = extern_val {
+                Some(*global_addr)
+            } else {
+                None
+            }
+        })
     }
 }
 
