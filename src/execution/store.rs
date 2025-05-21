@@ -1,29 +1,29 @@
-use core::intrinsics::float_to_int_unchecked;
-
-use alloc::collections::btree_map::BTreeMap;
-use alloc::string::{String, ToString};
-use alloc::vec;
-use alloc::vec::Vec;
-use wast::core::{Module, Type};
-use wast::kw::offset;
-
 use crate::core::error::{Proposal, Result as CustomResult, StoreInstantiationError};
 use crate::core::indices::{MemIdx, TypeIdx};
 use crate::core::reader::span::Span;
-use crate::core::reader::types::data::DataSegment;
+use crate::core::reader::types::data::{DataModeActive, DataSegment};
 use crate::core::reader::types::element::{ActiveElem, ElemItems, ElemMode, ElemType};
 use crate::core::reader::types::export::{Export, ExportDesc};
-use crate::core::reader::types::global::Global;
+use crate::core::reader::types::global::{Global, GlobalType};
 use crate::core::reader::types::import::{Import, ImportDesc};
-use crate::core::reader::types::{check_limits, ExternType, FuncType, MemType, TableType, ValType};
+use crate::core::reader::types::{
+    check_limits, ExternType, FuncType, MemType, ResultType, TableType, ValType,
+};
 use crate::core::reader::WasmReader;
+use crate::core::sidetable::{self, Sidetable, SidetableEntry};
+use crate::execution::interpreter_loop::{memory_init, table_init};
 use crate::execution::value::{Ref, Value};
 use crate::execution::{get_address_offset, run_const, run_const_span, Stack};
 use crate::value::{ExternAddr, FuncAddr};
 use crate::{unreachable_validated, Error, RefType, RuntimeError, ValidationInfo};
+use alloc::collections::btree_map::BTreeMap;
+use alloc::string::{String, ToString};
+use alloc::vec;
+use alloc::vec::Vec;
 
 use super::execution_info::ExecutionInfo;
 use super::hooks::EmptyHookSet;
+use super::interpreter_loop::elem_drop;
 use super::locals::Locals;
 use super::value::InteropValueList;
 use super::{run, UnwrapValidatedExt};
@@ -58,32 +58,7 @@ impl<'b> Store<'b> {
         name: String,
         validation_info: &ValidationInfo<'b>,
     ) -> CustomResult<()> {
-
-        // TODO hacky horrible evaluate function for non branching instr sequences that might not be situated in the sourcecode
-        // for instantiation steps
-        // should be killed with fire
-        // # preconditions: 
-        // - the instr sequence may not contain IF,ELSE,BLOCK,LOOP,BR,BR_IF,BR_TABLE instructions, as that warrants the sidetable to be extended.
-        // - the instr sequence should be delimited with END instruction.
-        fn evaluate(store: &mut Store, module_inst: &ModuleInst, instrs: &[u8], expected_ty: FuncType) {
-            let mut fake_module_inst = ModuleInst{..*module_inst};
-            fake_module_inst.types.push(expected_ty);
-            let fake_func_inst = FuncInst{
-                ty: fake_module_inst.types.len(),
-                locals: Vec::new(),
-                code_expr: Span {from: 0, len: instrs.len()},
-                stp: 0,
-                function_type: expected_ty
-            };
-            // push fake function to store temporarily
-            store.functions.push(fake_func_inst);
-            fake_module_inst.func_addrs.push(store.functions.len());
-            // push fake extended module to store temporarily
-            store.modules.push(fake_module_inst);
-            let module_addr = store.modules.len();
-
-        }
-
+        // instantiation step -1: collect extern_vals, this section basically acts as a linker between modules
         let mut extern_vals = Vec::new();
 
         for Import {
@@ -135,6 +110,7 @@ impl<'b> Store<'b> {
             data_addrs: Vec::new(),
             exports: Vec::new(),
             wasm: validation_info.wasm,
+            sidetable: validation_info.sidetable,
         };
 
         // TODO possibly rewrite to reflect Function struct from validation better
@@ -145,7 +121,7 @@ impl<'b> Store<'b> {
                 .iter()
                 .zip(validation_info.func_blocks_stps.iter())
                 .map(|(ty_idx, (span, stp))| {
-                    self.alloc_func((*ty_idx, (*span, *stp)), module_inst)
+                    self.alloc_func((*ty_idx, (*span, *stp)), &module_inst, self.modules.len())
                 }),
         );
 
@@ -161,14 +137,6 @@ impl<'b> Store<'b> {
             .collect();
 
         // instantiation: this roughly matches step 9,10
-
-        fn cast_val_to_ref_validated(val: Value) -> Ref {
-            match val {
-                Value::Ref(reff) => reff,
-                _ => unreachable_validated!(),
-            }
-        }
-
         let element_init_ref_lists: Vec<Vec<Ref>> = validation_info
             .elements
             .iter()
@@ -187,10 +155,9 @@ impl<'b> Store<'b> {
                     ElemItems::Exprs(ref_typ, exprs) => exprs
                         .iter()
                         .map(|expr| {
-                            cast_val_to_ref_validated(
-                                run_const_span(validation_info.wasm, expr, &module_inst, self)
-                                    .unwrap_validated(),
-                            )
+                            run_const_span(validation_info.wasm, expr, &module_inst, self)
+                                .unwrap_validated()
+                                .into()
                         })
                         .collect(),
                 }
@@ -211,17 +178,17 @@ impl<'b> Store<'b> {
             let mut module_inst = module_inst;
 
             // allocation: step 3-13
-            let table_addrs = module
+            let table_addrs: Vec<usize> = module
                 .tables
                 .iter()
                 .map(|table_type| self.alloc_table(*table_type, Ref::Func(FuncAddr { addr: None })))
                 .collect();
-            let mem_addrs = module
+            let mem_addrs: Vec<usize> = module
                 .memories
                 .iter()
                 .map(|mem_type| self.alloc_mem(*mem_type))
                 .collect();
-            let global_addrs = module
+            let global_addrs: Vec<usize> = module
                 .globals
                 .iter()
                 .zip(vals)
@@ -231,7 +198,7 @@ impl<'b> Store<'b> {
                             ty: global_type, ..
                         },
                         val,
-                    )| self.alloc_global(global_type, val),
+                    )| self.alloc_global(*global_type, val),
                 )
                 .collect();
             let elem_addrs = module
@@ -249,57 +216,133 @@ impl<'b> Store<'b> {
             // allocation: skip step 14 as it was done in instantiation step 5
 
             // allocation: step 15,16
-            let mut table_addrs_mod = extern_vals.iter().tables().collect();
+            let mut table_addrs_mod: Vec<usize> = extern_vals.iter().tables().collect();
             table_addrs_mod.extend(table_addrs);
 
-
-            let mut mem_addrs_mod = extern_vals.iter().mems().collect();
+            let mut mem_addrs_mod: Vec<usize> = extern_vals.iter().mems().collect();
             mem_addrs_mod.extend(mem_addrs);
 
             // skipping step 17 partially as it was partially done in instantiation step
             module_inst.global_addrs.extend(global_addrs);
 
             // allocation: step 18,19
-            let export_insts = module.exports.iter().map(|Export{name, desc}| {
-                let value = match desc {
-                    ExportDesc::FuncIdx(func_idx) => ExternVal::Func(module_inst.func_addrs[*func_idx]),
-                    ExportDesc::TableIdx(table_idx) => ExternVal::Table(table_addrs_mod[*table_idx]),
-                    ExportDesc::MemIdx(mem_idx) => ExternVal::Mem(mem_addrs_mod[*mem_idx]),
-                    ExportDesc::GlobalIdx(global_idx) => ExternVal::Global(module_inst.global_addrs[*global_idx])
-                };
-                ExportInst{name: *name, value}
-            }).collect();
+            let export_insts = module
+                .exports
+                .iter()
+                .map(|Export { name, desc }| {
+                    let value = match desc {
+                        ExportDesc::FuncIdx(func_idx) => {
+                            ExternVal::Func(module_inst.func_addrs[*func_idx])
+                        }
+                        ExportDesc::TableIdx(table_idx) => {
+                            ExternVal::Table(table_addrs_mod[*table_idx])
+                        }
+                        ExportDesc::MemIdx(mem_idx) => ExternVal::Mem(mem_addrs_mod[*mem_idx]),
+                        ExportDesc::GlobalIdx(global_idx) => {
+                            ExternVal::Global(module_inst.global_addrs[*global_idx])
+                        }
+                    };
+                    ExportInst { name: *name, value }
+                })
+                .collect();
 
-            // allocation: step 20,21 initialize module (except functions and globals due to instantiation step 5, allocation step 14,17) 
+            // allocation: step 20,21 initialize module (except functions and globals due to instantiation step 5, allocation step 14,17)
             module_inst.table_addrs = table_addrs_mod;
             module_inst.mem_addrs = mem_addrs_mod;
             module_inst.elem_addrs = elem_addrs;
-            module_inst.data_addrs  = data_addrs;
+            module_inst.data_addrs = data_addrs;
             module_inst.exports = export_insts;
+
+            // extra steps for our interpreter: wasm and sidetable are already initialized at instantiation step 5
         }
         // instantiation step 11 end: module_inst properly allocated after this point.
+        // TODO: it is too hard with our codebase to do the following steps without adding the module to the store
+        let current_module_idx = &self.modules.len();
+        self.modules.push(module_inst);
 
         // instantiation: step 12-15
         // TODO have to stray away from the spec a bit since our codebase does not lend itself well to freely executing instructions by themselves
-        for ElemType{init: elem_items, mode} in validation_info.elements {
+        for (
+            i,
+            ElemType {
+                init: elem_items,
+                mode,
+            },
+        ) in validation_info.elements.iter().enumerate()
+        {
             match mode {
-
-                ElemMode::Active(ActiveElem{table_idx, init_expr: offsett}) => {
-                    let n = elem_items.len(); // equivalent to init.len() in spec
-                    // execute instruction sequence einstr*. This should produce 
-                    let Vec match elem_items {
-                        ElemItems::RefFuncs(ref_funcs) => {
-
-                        }
-                        ElemItems::Exprs(_, exprs) => {
-                            
-                        }
-                    }
+                ElemMode::Active(ActiveElem {
+                    table_idx: table_idx_i,
+                    init_expr: einstr_i,
+                }) => {
+                    let n = elem_items.len() as i32; // equivalent to init.len() in spec
+                                                     // instantiation step 14:
+                                                     // TODO (for now, we are doing hopefully what is equivalent to it)
+                                                     // execute:
+                                                     //   einstr_i
+                                                     //   i32.const 0
+                                                     //   i32.const n
+                                                     //   table.init table_idx_i i
+                                                     //   elem.drop i
+                    let d: i32 = run_const_span(validation_info.wasm, einstr_i, &module_inst, self)
+                        .unwrap_validated()
+                        .into();
+                    let s = 0;
+                    table_init(self, current_module_idx, i, *table_idx_i as usize, n, s, d)
+                        .map_err(|e| Error::TodoErrorVariantError);
+                    elem_drop(self, current_module_idx, i)
+                        .map_err(|e| Error::TodoErrorVariantError);
                 }
-                ElemMode::Declarative => todo!(),
-                ElemMode::Passive => ()          
+                ElemMode::Declarative => {
+                    // instantiation step 15:
+                    // TODO (for now, we are doing hopefully what is equivalent to it)
+                    // execute:
+                    //   elem.drop i
+                    elem_drop(self, current_module_idx, i);
+                }
+                ElemMode::Passive => (),
             }
         }
+
+        // instantiation: step 16
+        // TODO have to stray away from the spec a bit since our codebase does not lend itself well to freely executing instructions by themselves
+        for (i, DataSegment { init, mode }) in validation_info.data.iter().enumerate() {
+            match mode {
+                crate::core::reader::types::data::DataMode::Active(DataModeActive {
+                    memory_idx: mem_idx_i,
+                    offset: dinstr_i,
+                }) => {
+                    let n = init.len() as i32;
+                    // TODO (for now, we are doing hopefully what is equivalent to it)
+                    // execute:
+                    //   dinstr_i
+                    //   i32.const 0
+                    //   i32.const n
+                    //   memory.init i
+                    //   data.drop i
+                    let d: i32 = run_const_span(validation_info.wasm, dinstr_i, &module_inst, self)
+                        .unwrap_validated()
+                        .into();
+                    let s = 0;
+                    memory_init(self, current_module_idx, i, 0, n, s, d)
+                        .map_err(|e| Error::TodoErrorVariantError);
+                }
+                crate::core::reader::types::data::DataMode::Passive => (),
+            }
+        }
+
+        // instantiation: step 17
+        match validation_info.start {
+            Some(func_idx) => {
+                // TODO (for now, we are doing hopefully what is equivalent to it)
+                // execute
+                //   call func_ifx
+                let func_addr = module_inst.func_addrs[func_idx];
+                self.invoke_dynamic(func_addr, Vec::new(), &[])
+                    .map_err(|e| Error::TodoErrorVariantError)?;
+            }
+            None => (),
+        };
 
         Ok(())
     }
@@ -308,7 +351,13 @@ impl<'b> Store<'b> {
 
     /// roughly matches <https://webassembly.github.io/spec/core/exec/modules.html#functions> with the addition of sidetable pointer to the input signature
     // TODO refactor the type of func
-    fn alloc_func(&mut self, func: (TypeIdx, (Span, usize)), module_inst: ModuleInst) -> usize {
+    // TODO module_addr
+    fn alloc_func(
+        &mut self,
+        func: (TypeIdx, (Span, usize)),
+        module_inst: &ModuleInst,
+        module_addr: usize,
+    ) -> usize {
         let (ty, (span, stp)) = func;
 
         // TODO rewrite this huge chunk of parsing after generic way to re-parse(?) structs lands
@@ -332,6 +381,7 @@ impl<'b> Store<'b> {
             stp,
             // validation guarantees func_ty_idx exists within module_inst.types
             function_type: module_inst.types[ty],
+            module_addr,
         };
 
         let addr = self.functions.len();
@@ -400,12 +450,12 @@ impl<'b> Store<'b> {
 
     pub fn invoke<Param: InteropValueList, Returns: InteropValueList>(
         &mut self,
-        func_idx: usize,
+        func_addr: usize,
         params: Param,
     ) -> Result<Returns, RuntimeError> {
         let func_inst = self
             .functions
-            .get(func_idx)
+            .get(func_addr)
             .ok_or(RuntimeError::FunctionNotFound)?;
 
         let func_ty = func_inst.ty();
@@ -423,22 +473,26 @@ impl<'b> Store<'b> {
             func_inst.locals.iter().cloned(),
         );
 
-        let module_idx = self.get_module_idx_from_func_idx(func_idx)?;
-        let local_func_idx = self
-            .get_local_function_idx_by_global_function_idx(module_idx, func_idx)
+        let module_addr = func_inst.module_addr;
+
+        // TODO handle this bad linear search that is unavoidable
+        let func_idx = self.modules[module_addr]
+            .func_addrs
+            .into_iter()
+            .find(|addr| *addr == func_addr)
             .ok_or(RuntimeError::FunctionNotFound)?;
         // setting `usize::MAX` as return address for the outermost function ensures that we
         // observably fail upon errornoeusly continuing execution after that function returns.
         stack.push_stackframe(
-            module_idx,
-            local_func_idx,
+            module_addr,
+            func_idx,
             &func_ty,
             locals,
             usize::MAX,
             usize::MAX,
         );
 
-        let mut current_module_idx = module_idx;
+        let mut current_module_idx = module_addr;
         // Run the interpreter
         run(
             // &mut self.modules,
@@ -465,13 +519,13 @@ impl<'b> Store<'b> {
 
     pub fn invoke_dynamic(
         &mut self,
-        func_idx: usize,
+        func_addr: usize,
         params: Vec<Value>,
         ret_types: &[ValType],
     ) -> Result<Vec<Value>, RuntimeError> {
         let func_inst = self
             .functions
-            .get(func_idx)
+            .get(func_addr)
             .ok_or(RuntimeError::FunctionNotFound)?;
 
         let func_ty = func_inst.ty();
@@ -497,21 +551,25 @@ impl<'b> Store<'b> {
         // Prepare a new stack with the locals for the entry function
         let mut stack = Stack::new();
         let locals = Locals::new(params.into_iter(), func_inst.locals.iter().cloned());
-        let module_idx = self.get_module_idx_from_func_idx(func_idx)?;
-        let local_func_idx = self
-            .get_local_function_idx_by_global_function_idx(module_idx, func_idx)
+        let module_addr = func_inst.module_addr;
+
+        // TODO handle this bad linear search that is unavoidable
+        let func_idx = self.modules[module_addr]
+            .func_addrs
+            .into_iter()
+            .find(|addr| *addr == func_addr)
             .ok_or(RuntimeError::FunctionNotFound)?;
 
         stack.push_stackframe(
-            module_idx,
-            local_func_idx,
+            module_addr,
+            func_idx,
             &func_ty,
             locals,
             usize::MAX,
             usize::MAX,
         );
 
-        let mut currrent_module_idx = module_idx;
+        let mut currrent_module_idx = module_addr;
         // Run the interpreter
         run(
             // &mut self.modules,
@@ -524,7 +582,7 @@ impl<'b> Store<'b> {
 
         let func_inst = self
             .functions
-            .get(func_idx)
+            .get(func_addr)
             .ok_or(RuntimeError::FunctionNotFound)?;
 
         let func_ty = func_inst.ty();
@@ -547,15 +605,15 @@ impl<'b> Store<'b> {
 
     pub fn invoke_dynamic_unchecked_return_ty(
         &mut self,
-        func_idx: usize,
+        func_addr: usize,
         params: Vec<Value>,
     ) -> Result<Vec<Value>, RuntimeError> {
         let func_inst = self
             .functions
-            .get(func_idx)
+            .get(func_addr)
             .ok_or(RuntimeError::FunctionNotFound)?;
 
-        let module_idx = self.get_module_idx_from_func_idx(func_idx)?;
+        let module_addr = func_inst.module_addr;
 
         let func_ty = func_inst.ty();
 
@@ -574,12 +632,16 @@ impl<'b> Store<'b> {
         // Prepare a new stack with the locals for the entry function
         let mut stack = Stack::new();
         let locals = Locals::new(params.into_iter(), func_inst.locals.iter().cloned());
-        let local_func_idx = self
-            .get_local_function_idx_by_global_function_idx(module_idx, func_idx)
-            .ok_or(RuntimeError::FunctionNotFound)?;
-        stack.push_stackframe(module_idx, local_func_idx, &func_ty, locals, 0, 0);
 
-        let mut currrent_module_idx = module_idx;
+        // TODO handle this bad linear search that is unavoidable
+        let func_idx = self.modules[module_addr]
+            .func_addrs
+            .into_iter()
+            .find(|addr| *addr == func_addr)
+            .ok_or(RuntimeError::FunctionNotFound)?;
+        stack.push_stackframe(module_addr, func_idx, &func_ty, locals, 0, 0);
+
+        let mut currrent_module_idx = module_addr;
         // Run the interpreter
         run(
             // &mut self.modules,
@@ -613,6 +675,7 @@ impl<'b> Store<'b> {
 
 #[derive(Debug)]
 // TODO does not match the spec FuncInst
+
 pub struct FuncInst {
     pub ty: TypeIdx,
     pub locals: Vec<ValType>,
@@ -620,6 +683,9 @@ pub struct FuncInst {
     ///index of the sidetable corresponding to the beginning of this functions code
     pub stp: usize,
     pub function_type: FuncType,
+    // implicit back ref required for function invocation and is in the spec
+    // TODO module_addr or module ref?
+    pub module_addr: usize,
 }
 
 impl FuncInst {
@@ -758,7 +824,6 @@ impl ExternVal {
                     .globals
                     .get(*global_addr)
                     .ok_or(Error::TodoErrorVariantError)?
-                    .global
                     .ty,
             ),
         })
@@ -777,9 +842,9 @@ pub trait ExternFilterable<T> {
     fn globals(self) -> impl Iterator<Item = T>;
 }
 
-impl<'a,I> ExternFilterable<usize> for I 
-where 
-    I : Iterator<Item = &'a ExternVal>
+impl<'a, I> ExternFilterable<usize> for I
+where
+    I: Iterator<Item = &'a ExternVal>,
 {
     fn funcs(self) -> impl Iterator<Item = usize> {
         self.filter_map(|extern_val| {
@@ -798,7 +863,7 @@ where
             } else {
                 None
             }
-        })   
+        })
     }
 
     fn mems(self) -> impl Iterator<Item = usize> {
@@ -839,6 +904,9 @@ pub struct ModuleInst<'b> {
     pub data_addrs: Vec<usize>,
     pub exports: Vec<ExportInst>,
 
-    //TODO the bytecode is not in the spec, but required for re-parsing
+    // TODO the bytecode is not in the spec, but required for re-parsing
     pub wasm: &'b [u8],
+
+    // TODO sidetable is not in the spec, but required
+    pub sidetable: Sidetable,
 }

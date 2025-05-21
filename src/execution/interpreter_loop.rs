@@ -2014,32 +2014,16 @@ pub(super) fn run<H: HookSet>(
                         //      d => destination address to copy to
                         let data_idx = wasm.read_var_u32().unwrap_validated() as DataIdx;
                         let mem_idx = wasm.read_u8().unwrap_validated() as usize;
-                        let mem =
-                            &store.memories[store.modules[*current_module_idx].memories[mem_idx]];
+
                         let n: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                         let s: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                         let d: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                        mem.mem.init(
-                            d as MemIdx,
-                            &store.data[store.modules[*current_module_idx].data[data_idx]].data,
-                            s as MemIdx,
-                            n as MemIdx,
-                        )?;
-
-                        trace!("Instruction: memory.init");
+                        memory_init(store, current_module_idx, data_idx, mem_idx, n, s, d)?;
                     }
                     DATA_DROP => {
-                        // Here is debatable
-                        // If we were to be on par with the spec we'd have to use a DataInst struct
-                        // But since memory.init is specifically made for Passive data segments
-                        // I thought that using DataMode would be better because we can see if the
-                        // data segment is passive or active
-
-                        // Also, we should set data to null here (empty), which we do using an empty init vec
                         let data_idx = wasm.read_var_u32().unwrap_validated() as DataIdx;
-                        store.data[store.modules[*current_module_idx].data[data_idx]] =
-                            DataInst { data: Vec::new() };
+                        data_drop(store, current_module_idx, data_idx)?;
                     }
                     // See https://webassembly.github.io/bulk-memory-operations/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-copy
                     MEMORY_COPY => {
@@ -2099,55 +2083,12 @@ pub(super) fn run<H: HookSet>(
                         let s: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into(); // offset
                         let d: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into(); // dst
 
-                        let tab_len = store.tables
-                            [store.modules[*current_module_idx].tables[table_idx]]
-                            .len();
-
-                        let tab =
-                            &mut store.tables[store.modules[*current_module_idx].tables[table_idx]];
-
-                        let elem_len = if store.modules[*current_module_idx]
-                            .passive_element_indexes
-                            .contains(&elem_idx)
-                        {
-                            store.elements[store.modules[*current_module_idx].elements[elem_idx]]
-                                .len()
-                        } else {
-                            0
-                        };
-
-                        trace!(
-                            "Instruction: table.init '{}' '{}' [{} {} {}] -> []",
-                            elem_idx,
-                            table_idx,
-                            d,
-                            s,
-                            n
-                        );
-
-                        let final_src_offset = (s as usize)
-                            .checked_add(n as usize)
-                            .filter(|&res| res <= elem_len)
-                            .ok_or(RuntimeError::TableAccessOutOfBounds)?;
-
-                        (d as usize)
-                            .checked_add(n as usize)
-                            .filter(|&res| res <= tab_len)
-                            .ok_or(RuntimeError::TableAccessOutOfBounds)?;
-
-                        let elem = &mut store.elements
-                            [store.modules[*current_module_idx].elements[elem_idx]];
-
-                        let dest = &mut tab.elem[d as usize..];
-                        let src = &elem.references[s as usize..final_src_offset];
-                        dest[..src.len()].copy_from_slice(src);
+                        table_init(store, current_module_idx, elem_idx, table_idx, n, s, d)?;
                     }
                     ELEM_DROP => {
                         let elem_idx = wasm.read_var_u32().unwrap_validated() as usize;
 
-                        // WARN: i'm not sure if this is okay or not
-                        store.elements[store.modules[*current_module_idx].elements[elem_idx]]
-                            .references = vec![];
+                        elem_drop(store, current_module_idx, elem_idx)?;
                     }
                     // https://webassembly.github.io/spec/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-table-mathsf-table-copy-x-y
                     TABLE_COPY => {
@@ -2425,4 +2366,106 @@ fn get_store_index(memarg: &MemArg, relative_address: u32) -> Result<MemIdx, Run
         .ok_or(RuntimeError::MemoryAccessOutOfBounds)?
         .try_into()
         .map_err(|_| RuntimeError::MemoryAccessOutOfBounds)
+}
+
+//helpers for avoiding code duplication during module instantiation
+#[inline(always)]
+pub(in execution::store) fn table_init(
+    store: &mut Store,
+    current_module_idx: &usize,
+    elem_idx: usize,
+    table_idx: usize,
+    n: i32,
+    s: i32,
+    d: i32,
+) -> Result<(), RuntimeError> {
+    let tab_len = store.tables[store.modules[*current_module_idx].tables[table_idx]].len();
+
+    let tab = &mut store.tables[store.modules[*current_module_idx].tables[table_idx]];
+
+    let elem_len = if store.modules[*current_module_idx]
+        .passive_element_indexes
+        .contains(&elem_idx)
+    {
+        store.elements[store.modules[*current_module_idx].elements[elem_idx]].len()
+    } else {
+        0
+    };
+
+    trace!(
+        "Instruction: table.init '{}' '{}' [{} {} {}] -> []",
+        elem_idx,
+        table_idx,
+        d,
+        s,
+        n
+    );
+
+    let final_src_offset = (s as usize)
+        .checked_add(n as usize)
+        .filter(|&res| res <= elem_len)
+        .ok_or(RuntimeError::TableAccessOutOfBounds)?;
+
+    (d as usize)
+        .checked_add(n as usize)
+        .filter(|&res| res <= tab_len)
+        .ok_or(RuntimeError::TableAccessOutOfBounds)?;
+
+    let elem = &mut store.elements[store.modules[*current_module_idx].elements[elem_idx]];
+
+    let dest = &mut tab.elem[d as usize..];
+    let src = &elem.references[s as usize..final_src_offset];
+    dest[..src.len()].copy_from_slice(src);
+    Ok(())
+}
+
+#[inline(always)]
+pub(in execution::store) fn elem_drop(
+    store: &mut Store,
+    current_module_idx: &usize,
+    elem_idx: usize,
+) -> Result<(), RuntimeError> {
+    // WARN: i'm not sure if this is okay or not
+    store.elements[store.modules[*current_module_idx].elements[elem_idx]].references = vec![];
+    Ok(())
+}
+
+#[inline(always)]
+pub(in execution::store) fn memory_init(
+    store: &mut Store,
+    current_module_idx: &usize,
+    data_idx: usize,
+    mem_idx: usize,
+    n: i32,
+    s: i32,
+    d: i32,
+) -> Result<(), RuntimeError> {
+    let mem = &store.memories[store.modules[*current_module_idx].memories[mem_idx]];
+
+    mem.mem.init(
+        d as MemIdx,
+        &store.data[store.modules[*current_module_idx].data[data_idx]].data,
+        s as MemIdx,
+        n as MemIdx,
+    )?;
+
+    trace!("Instruction: memory.init");
+    Ok(())
+}
+
+#[inline(always)]
+pub(in execution::store) fn data_drop(
+    store: &mut Store,
+    current_module_idx: &mut usize,
+    data_idx: usize,
+) -> Result<(), RuntimeError> {
+    // Here is debatable
+    // If we were to be on par with the spec we'd have to use a DataInst struct
+    // But since memory.init is specifically made for Passive data segments
+    // I thought that using DataMode would be better because we can see if the
+    // data segment is passive or active
+
+    // Also, we should set data to null here (empty), which we do using an empty init vec
+    store.data[store.modules[*current_module_idx].data[data_idx]] = DataInst { data: Vec::new() };
+    Ok(())
 }
