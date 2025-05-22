@@ -27,7 +27,8 @@ use crate::{
     store::DataInst,
     value::{self, FuncAddr, Ref},
     value_stack::Stack,
-    Limits, NumType, RefType, RuntimeError, ValType, Value,
+    ElemInst, Limits, MemInst, ModuleInst, NumType, RefType, RuntimeError, TableInst, ValType,
+    Value,
 };
 
 #[cfg(feature = "hooks")]
@@ -173,30 +174,18 @@ pub(super) fn run<H: HookSet>(
             CALL => {
                 let func_to_call_idx = wasm.read_var_u32().unwrap_validated() as FuncIdx;
 
-                let func_to_call_global_idx =
+                let func_to_call_addr =
                     store.modules[*current_module_idx].functions[func_to_call_idx];
 
-                let func_to_call_inst = store
-                    .functions
-                    .get(func_to_call_global_idx)
-                    .unwrap_validated();
+                let func_to_call_inst = store.functions.get(func_to_call_addr).unwrap_validated();
                 let func_to_call_ty = func_to_call_inst.ty();
 
                 let params = stack.pop_tail_iter(func_to_call_ty.params.valtypes.len());
 
                 trace!("Instruction: call [{func_to_call_idx:?}]");
-                let func_module_idx =
-                    store.get_module_idx_from_func_idx(func_to_call_global_idx)?;
-                let (next_module, next_func_idx) = (func_module_idx, func_to_call_global_idx);
-
-                let local_func_inst = &store.functions[next_func_idx];
-
-                let remaining_locals = local_func_inst.locals.iter().cloned();
+                let func_to_call_module_addr = func_to_call_inst.module_addr;
+                let remaining_locals = func_to_call_inst.locals.iter().cloned();
                 let locals = Locals::new(params, remaining_locals);
-
-                let func_to_call_idx = store
-                    .get_local_function_idx_by_global_function_idx(func_module_idx, next_func_idx)
-                    .ok_or(RuntimeError::FunctionNotFound)?;
 
                 stack.push_stackframe(
                     *current_module_idx,
@@ -207,12 +196,12 @@ pub(super) fn run<H: HookSet>(
                     stp,
                 );
 
-                *current_module_idx = next_module;
+                *current_module_idx = func_to_call_module_addr;
                 wasm.full_wasm_binary = store.modules[*current_module_idx].wasm_bytecode;
-                wasm.move_start_to(local_func_inst.code_expr)
+                wasm.move_start_to(func_to_call_inst.code_expr)
                     .unwrap_validated();
 
-                stp = local_func_inst.stp;
+                stp = func_to_call_inst.stp;
                 current_sidetable = &store.modules[*current_module_idx].sidetable;
                 trace!("Instruction: CALL");
             }
@@ -243,17 +232,20 @@ pub(super) fn run<H: HookSet>(
                         }
                     })?;
 
-                let func_addr = match *r {
+                let func_to_call_addr = match *r {
                     Ref::Func(func_addr) => func_addr.addr.unwrap_validated(),
                     Ref::Extern(_) => unreachable!(),
                 };
 
-                let func_idx = func_addr;
-                let func_module_idx = store.get_module_idx_from_func_idx(func_idx)?;
-                let local_func_addr = store
-                    .get_local_function_idx_by_global_function_idx(func_module_idx, func_idx)
-                    .unwrap_validated();
-                let func_to_call_inst = &store.functions[func_idx];
+                let func_to_call_inst = &store.functions[func_to_call_addr];
+                let func_to_call_module_addr = func_to_call_inst.module_addr;
+
+                // TODO no option but to do linear search here for now
+                let func_to_call_idx = *store.modules[func_to_call_module_addr]
+                    .functions
+                    .iter()
+                    .find(|addr| **addr == func_to_call_addr)
+                    .ok_or(RuntimeError::FunctionNotFound)?;
 
                 let actual_ty = func_to_call_inst.ty();
 
@@ -261,31 +253,25 @@ pub(super) fn run<H: HookSet>(
                     return Err(RuntimeError::SignatureMismatch);
                 }
 
-                let (next_module, _next_func_idx) = (func_module_idx, func_idx);
-
-                let local_func_inst = func_to_call_inst;
-
                 let params = stack.pop_tail_iter(func_ty.params.valtypes.len());
-                let remaining_locals = local_func_inst.locals.iter().cloned();
+                let remaining_locals = func_to_call_inst.locals.iter().cloned();
 
-                trace!("Instruction: call_indirect [{local_func_addr:?}]");
                 let locals = Locals::new(params, remaining_locals);
 
-                trace!("CALL INDIRECT DEBUG: next_module {}, local_func_addr {}, global_func_addr {}, global_func_span from {} len {}", next_module, local_func_addr, func_addr, local_func_inst.code_expr.from(), local_func_inst.code_expr.len());
                 stack.push_stackframe(
                     *current_module_idx,
-                    local_func_addr,
+                    func_to_call_idx,
                     func_ty,
                     locals,
                     wasm.pc,
                     stp,
                 );
-                *current_module_idx = next_module;
+                *current_module_idx = func_to_call_module_addr;
                 wasm.full_wasm_binary = store.modules[*current_module_idx].wasm_bytecode;
-                wasm.move_start_to(local_func_inst.code_expr)
+                wasm.move_start_to(func_to_call_inst.code_expr)
                     .unwrap_validated();
 
-                stp = local_func_inst.stp;
+                stp = func_to_call_inst.stp;
                 current_sidetable = &store.modules[*current_module_idx].sidetable;
 
                 trace!("Instruction: CALL_INDIRECT");
@@ -340,7 +326,7 @@ pub(super) fn run<H: HookSet>(
                 let global_idx = wasm.read_var_u32().unwrap_validated() as GlobalIdx;
                 let global =
                     &mut store.globals[store.modules[*current_module_idx].globals[global_idx]];
-                global.value = stack.pop_value(global.global.ty.ty);
+                global.value = stack.pop_value(global.ty.ty);
                 trace!("Instruction: GLOBAL_SET");
             }
             TABLE_GET => {
@@ -1869,7 +1855,9 @@ pub(super) fn run<H: HookSet>(
             // https://webassembly.github.io/spec/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-ref-mathsf-ref-func-x
             REF_FUNC => {
                 let func_idx = wasm.read_var_u32().unwrap_validated() as FuncIdx;
-                stack.push_value(Value::Ref(Ref::Func(FuncAddr::new(Some(func_idx)))));
+                stack.push_value(Value::Ref(Ref::Func(FuncAddr::new(Some(
+                    store.modules[*current_module_idx].functions[func_idx],
+                )))));
             }
             FC_EXTENSIONS => {
                 // Should we call instruction hook here as well? Multibyte instruction
@@ -2019,11 +2007,26 @@ pub(super) fn run<H: HookSet>(
                         let s: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                         let d: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
-                        memory_init(store, current_module_idx, data_idx, mem_idx, n, s, d)?;
+                        memory_init(
+                            &store.modules,
+                            &mut store.memories,
+                            &store.data,
+                            current_module_idx,
+                            data_idx,
+                            mem_idx,
+                            n,
+                            s,
+                            d,
+                        )?;
                     }
                     DATA_DROP => {
                         let data_idx = wasm.read_var_u32().unwrap_validated() as DataIdx;
-                        data_drop(store, current_module_idx, data_idx)?;
+                        data_drop(
+                            &store.modules,
+                            &mut store.data,
+                            current_module_idx,
+                            data_idx,
+                        )?;
                     }
                     // See https://webassembly.github.io/bulk-memory-operations/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-copy
                     MEMORY_COPY => {
@@ -2083,12 +2086,27 @@ pub(super) fn run<H: HookSet>(
                         let s: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into(); // offset
                         let d: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into(); // dst
 
-                        table_init(store, current_module_idx, elem_idx, table_idx, n, s, d)?;
+                        table_init(
+                            &store.modules,
+                            &mut store.tables,
+                            &store.elements,
+                            current_module_idx,
+                            elem_idx,
+                            table_idx,
+                            n,
+                            s,
+                            d,
+                        )?;
                     }
                     ELEM_DROP => {
                         let elem_idx = wasm.read_var_u32().unwrap_validated() as usize;
 
-                        elem_drop(store, current_module_idx, elem_idx)?;
+                        elem_drop(
+                            &store.modules,
+                            &mut store.elements,
+                            current_module_idx,
+                            elem_idx,
+                        )?;
                     }
                     // https://webassembly.github.io/spec/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-table-mathsf-table-copy-x-y
                     TABLE_COPY => {
@@ -2370,8 +2388,10 @@ fn get_store_index(memarg: &MemArg, relative_address: u32) -> Result<MemIdx, Run
 
 //helpers for avoiding code duplication during module instantiation
 #[inline(always)]
-pub(in execution::store) fn table_init(
-    store: &mut Store,
+pub(super) fn table_init(
+    store_modules: &Vec<ModuleInst>,
+    store_tables: &mut Vec<TableInst>,
+    store_elements: &Vec<ElemInst>,
     current_module_idx: &usize,
     elem_idx: usize,
     table_idx: usize,
@@ -2379,18 +2399,16 @@ pub(in execution::store) fn table_init(
     s: i32,
     d: i32,
 ) -> Result<(), RuntimeError> {
-    let tab_len = store.tables[store.modules[*current_module_idx].tables[table_idx]].len();
+    let tab_len = store_tables[store_modules[*current_module_idx].tables[table_idx]].len();
 
-    let tab = &mut store.tables[store.modules[*current_module_idx].tables[table_idx]];
+    let tab = &mut store_tables[store_modules[*current_module_idx].tables[table_idx]];
 
-    let elem_len = if store.modules[*current_module_idx]
-        .passive_element_indexes
-        .contains(&elem_idx)
-    {
-        store.elements[store.modules[*current_module_idx].elements[elem_idx]].len()
-    } else {
-        0
-    };
+    // TODO is this spec compliant?
+    let elem_len = store_modules[*current_module_idx]
+        .elements
+        .get(elem_idx)
+        .map(|elem_addr| store_elements[*elem_addr].len())
+        .unwrap_or(0);
 
     trace!(
         "Instruction: table.init '{}' '{}' [{} {} {}] -> []",
@@ -2411,7 +2429,7 @@ pub(in execution::store) fn table_init(
         .filter(|&res| res <= tab_len)
         .ok_or(RuntimeError::TableAccessOutOfBounds)?;
 
-    let elem = &mut store.elements[store.modules[*current_module_idx].elements[elem_idx]];
+    let elem = &store_elements[store_modules[*current_module_idx].elements[elem_idx]];
 
     let dest = &mut tab.elem[d as usize..];
     let src = &elem.references[s as usize..final_src_offset];
@@ -2420,19 +2438,22 @@ pub(in execution::store) fn table_init(
 }
 
 #[inline(always)]
-pub(in execution::store) fn elem_drop(
-    store: &mut Store,
+pub(super) fn elem_drop(
+    store_modules: &Vec<ModuleInst>,
+    store_elements: &mut Vec<ElemInst>,
     current_module_idx: &usize,
     elem_idx: usize,
 ) -> Result<(), RuntimeError> {
     // WARN: i'm not sure if this is okay or not
-    store.elements[store.modules[*current_module_idx].elements[elem_idx]].references = vec![];
+    store_elements[store_modules[*current_module_idx].elements[elem_idx]].references = vec![];
     Ok(())
 }
 
 #[inline(always)]
-pub(in execution::store) fn memory_init(
-    store: &mut Store,
+pub(super) fn memory_init(
+    store_modules: &Vec<ModuleInst>,
+    store_memories: &mut Vec<MemInst>,
+    store_data: &Vec<DataInst>,
     current_module_idx: &usize,
     data_idx: usize,
     mem_idx: usize,
@@ -2440,11 +2461,11 @@ pub(in execution::store) fn memory_init(
     s: i32,
     d: i32,
 ) -> Result<(), RuntimeError> {
-    let mem = &store.memories[store.modules[*current_module_idx].memories[mem_idx]];
+    let mem = &store_memories[store_modules[*current_module_idx].memories[mem_idx]];
 
     mem.mem.init(
         d as MemIdx,
-        &store.data[store.modules[*current_module_idx].data[data_idx]].data,
+        &store_data[store_modules[*current_module_idx].data[data_idx]].data,
         s as MemIdx,
         n as MemIdx,
     )?;
@@ -2454,9 +2475,10 @@ pub(in execution::store) fn memory_init(
 }
 
 #[inline(always)]
-pub(in execution::store) fn data_drop(
-    store: &mut Store,
-    current_module_idx: &mut usize,
+pub(super) fn data_drop(
+    store_modules: &Vec<ModuleInst>,
+    store_data: &mut Vec<DataInst>,
+    current_module_idx: &usize,
     data_idx: usize,
 ) -> Result<(), RuntimeError> {
     // Here is debatable
@@ -2466,6 +2488,6 @@ pub(in execution::store) fn data_drop(
     // data segment is passive or active
 
     // Also, we should set data to null here (empty), which we do using an empty init vec
-    store.data[store.modules[*current_module_idx].data[data_idx]] = DataInst { data: Vec::new() };
+    store_data[store_modules[*current_module_idx].data[data_idx]] = DataInst { data: Vec::new() };
     Ok(())
 }

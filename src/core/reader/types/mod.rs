@@ -4,7 +4,7 @@
 
 use alloc::vec::Vec;
 use core::fmt::{Debug, Formatter};
-use global::{Global, GlobalType};
+use global::GlobalType;
 
 use crate::core::reader::{WasmReadable, WasmReader};
 use crate::execution::assert_validated::UnwrapValidatedExt;

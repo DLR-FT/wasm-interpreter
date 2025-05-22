@@ -6,7 +6,7 @@ use crate::{
     },
     value::{self, FuncAddr, Ref},
     value_stack::Stack,
-    GlobalInst, ModuleInst, NumType, RefType, Store, ValType, Value,
+    ModuleInst, NumType, RefType, Store, ValType, Value,
 };
 
 // TODO update this documentation
@@ -45,7 +45,7 @@ pub(crate) fn run_const(
                 let global_idx = wasm.read_var_u32().unwrap_validated() as GlobalIdx;
 
                 //TODO replace double indirection
-                let global = store.globals[module.global_addrs[global_idx]];
+                let global = &store.globals[module.globals[global_idx]];
 
                 trace!(
                     "Constant instruction: global.get [{global_idx}] -> [{:?}]",
@@ -196,7 +196,7 @@ pub(crate) fn run_const(
                 let func_idx = wasm.read_var_u32().unwrap_validated() as usize;
                 // TODO replace double indirection
                 stack.push_value(Value::Ref(Ref::Func(FuncAddr::new(Some(
-                    module.func_addrs[func_idx],
+                    module.functions[func_idx],
                 )))));
             }
             other => {

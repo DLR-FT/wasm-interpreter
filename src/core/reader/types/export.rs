@@ -4,7 +4,7 @@ use alloc::string::String;
 use crate::core::indices::{FuncIdx, GlobalIdx, MemIdx, TableIdx};
 use crate::core::reader::{WasmReadable, WasmReader};
 use crate::execution::assert_validated::UnwrapValidatedExt;
-use crate::{unreachable_validated, validation, Error, Result, ValidationInfo};
+use crate::{unreachable_validated, Error, Result, ValidationInfo};
 
 use super::ExternType;
 
