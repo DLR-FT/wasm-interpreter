@@ -93,7 +93,7 @@ jobs:
           name: head-report
 
       - name: Compare reports
-        run: python3 ./ci-tools/compare_testsuite.py old.json new.json > testsuite_report.md
+        run: cargo run --manifest-path ci-tools/compare-testsuite-rs/Cargo.toml -- old.json new.json > testsuite_report.md
 
       - name: Sticky Pull Request Comment
         uses: marocchino/sticky-pull-request-comment@v2.9.1
