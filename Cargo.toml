@@ -1,3 +1,5 @@
+workspace.members = ["ci-tools/compare-testsuite-rs"]
+
 [package]
 name = "wasm-interpreter"
 version = "0.1.0"
