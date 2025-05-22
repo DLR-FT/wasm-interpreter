@@ -12,8 +12,6 @@ mod test_errors;
 
 #[test_log::test]
 pub fn spec_tests() {
-    // so we don't see unnecessary stacktraces of catch_unwind (sadly this also means we don't see panics from outside catch_unwind either)
-    std::panic::set_hook(Box::new(|_| {}));
     let filter = Filter {
         mode: FilterMode::Exclude,
         files: vec![OsString::from("proposals")],
