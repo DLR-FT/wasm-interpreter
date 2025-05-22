@@ -84,10 +84,10 @@ fn match_f32(actual: F32, expected: F32) -> Result<(), AssertEqError> {
             if (actual_bits & 0x7fff_ffff) == canon_nan {
                 Ok(())
             } else {
-                return Err(AssertEqError {
+                Err(AssertEqError {
                     left: actual_bits.to_string(),
                     right: canon_nan.to_string(),
-                });
+                })
             }
         }
         NanPattern::ArithmeticNan => {
@@ -98,20 +98,20 @@ fn match_f32(actual: F32, expected: F32) -> Result<(), AssertEqError> {
             if is_nan && is_msb_set {
                 Ok(())
             } else {
-                return Err(AssertEqError {
+                Err(AssertEqError {
                     left: actual_bits.to_string(),
                     right: AF32_NAN.to_string(),
-                });
+                })
             }
         }
         NanPattern::Value(val) => {
             if actual_bits == val {
                 Ok(())
             } else {
-                return Err(AssertEqError {
+                Err(AssertEqError {
                     left: actual_bits.to_string(),
                     right: val.to_string(),
-                });
+                })
             }
         }
     }
@@ -135,10 +135,10 @@ fn match_f64(actual: F64, expected: F64) -> Result<(), AssertEqError> {
             if (actual_bits & 0x7fff_ffff_ffff_ffff) == canon_nan {
                 Ok(())
             } else {
-                return Err(AssertEqError {
+                Err(AssertEqError {
                     left: actual_bits.to_string(),
                     right: canon_nan.to_string(),
-                });
+                })
             }
         }
         NanPattern::ArithmeticNan => {
@@ -149,20 +149,20 @@ fn match_f64(actual: F64, expected: F64) -> Result<(), AssertEqError> {
             if is_nan && is_msb_set {
                 Ok(())
             } else {
-                return Err(AssertEqError {
+                Err(AssertEqError {
                     left: actual_bits.to_string(),
                     right: AF64_NAN.to_string(),
-                });
+                })
             }
         }
         NanPattern::Value(val) => {
             if actual_bits == val {
                 Ok(())
             } else {
-                return Err(AssertEqError {
+                Err(AssertEqError {
                     left: actual_bits.to_string(),
                     right: val.to_string(),
-                });
+                })
             }
         }
     }

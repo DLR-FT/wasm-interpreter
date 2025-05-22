@@ -68,19 +68,19 @@ fn encode(module: &mut wast::QuoteWat) -> Result<Vec<u8>, Box<dyn Error>> {
         QuoteWat::Wat(..) | QuoteWat::QuoteModule(..) => (),
     };
 
-    let inner_bytes = module.encode().map_err(|err| Box::new(err))?;
+    let inner_bytes = module.encode().map_err(Box::new)?;
     Ok(inner_bytes)
 }
 
-fn validate_instantiate<'a>(bytes: &'a [u8]) -> Result<RuntimeInstance<'a>, Box<dyn Error>> {
+fn validate_instantiate(bytes: &[u8]) -> Result<RuntimeInstance<'_>, Box<dyn Error>> {
     let validation_info = catch_unwind_and_suppress_panic_handler(|| validate(bytes))
-        .map_err(|panic| PanicError::from_panic_boxed(panic))?
-        .map_err(|err| WasmInterpreterError::new_boxed(err))?;
+        .map_err(PanicError::from_panic_boxed)?
+        .map_err(WasmInterpreterError::new_boxed)?;
 
     let runtime_instance =
         catch_unwind_and_suppress_panic_handler(|| RuntimeInstance::new(&validation_info))
-            .map_err(|panic| PanicError::from_panic_boxed(panic))?
-            .map_err(|err| WasmInterpreterError::new_boxed(err))?;
+            .map_err(PanicError::from_panic_boxed)?
+            .map_err(WasmInterpreterError::new_boxed)?;
 
     Ok(runtime_instance)
 }
@@ -449,12 +449,11 @@ fn execute_assert_trap(
             .map_err(PanicError::from_panic_boxed)?
             .map_err(|err| WasmInterpreterError::new_boxed(wasm::Error::RuntimeError(err)));
 
-            let func: FunctionRef;
-            match func_res {
+            let func: FunctionRef = match func_res {
                 Err(e) => {
                     return Err(e);
                 }
-                Ok(func_ref) => func = func_ref,
+                Ok(func_ref) => func_ref,
             };
 
             let actual = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
@@ -593,7 +592,7 @@ fn result_to_value(result: wast::WastRet) -> Result<Value, Box<dyn Error>> {
 }
 
 pub fn get_linenum(contents: &str, span: wast::token::Span) -> u32 {
-    span.linecol_in(&contents).0 as u32 + 1
+    span.linecol_in(contents).0 as u32 + 1
 }
 
 pub fn get_command(contents: &str, span: wast::token::Span) -> &str {

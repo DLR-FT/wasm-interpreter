@@ -21,7 +21,7 @@ pub fn spec_tests() {
     let paths = files::find_wast_files(Path::new("./tests/specification/testsuite/"), &filter)
         .expect("Failed to find testsuite");
 
-    assert!(paths.len() > 0, "Submodules not instantiated");
+    assert!(!paths.is_empty(), "Submodules not instantiated");
 
     // Some statistics about the reports
     let mut num_failures = 0;
@@ -76,8 +76,8 @@ pub fn spec_tests() {
     let mut final_status: String = String::new();
     // Printing success rate per file for those that did NOT error out when compiling
     for report in assert_reports {
-        write!(final_status,
-            "Report for {:filename_width$}: Tests: {:passed_width$} Passed, {:failed_width$} Failed --- {:percentage_width$.2}%\n",
+        writeln!(final_status,
+            "Report for {:filename_width$}: Tests: {:passed_width$} Passed, {:failed_width$} Failed --- {:percentage_width$.2}%",
             report.filename,
             report.passed_asserts(),
             report.failed_asserts(),
