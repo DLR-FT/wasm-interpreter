@@ -2,6 +2,7 @@ use ci_reports::CIFullReport;
 use files::{Filter, FilterMode};
 use reports::WastTestReport;
 use std::ffi::OsString;
+use std::fmt::Write as _;
 use std::path::Path;
 
 mod ci_reports;
@@ -22,68 +23,70 @@ pub fn spec_tests() {
 
     assert!(paths.len() > 0, "Submodules not instantiated");
 
-    let mut successful_reports = 0;
-    let mut failed_reports = 0;
-    let mut compile_error_reports = 0;
-    let mut reports: Vec<WastTestReport> = Vec::with_capacity(paths.len());
+    // Some statistics about the reports
+    let mut num_failures = 0;
+    let mut num_script_errors = 0;
 
-    let mut longest_string_len: usize = 0;
+    // Used for padding of filenames with spaces later
+    let mut longest_filename_len: usize = 0;
 
-    for test_path in paths {
-        let mut report = run::run_spec_test(test_path.to_str().unwrap());
+    let reports: Vec<WastTestReport> = paths
+        .into_iter()
+        .map(|path| run::run_spec_test(path.to_str().unwrap()))
+        .inspect(|report| {
+            match report {
+                reports::WastTestReport::Asserts(assert_report) => {
+                    longest_filename_len = longest_filename_len.max(assert_report.filename.len());
 
-        match &mut report {
-            reports::WastTestReport::Asserts(assert_report) => {
-                // compute auxiliary data
-                if assert_report.filename.len() > longest_string_len {
-                    longest_string_len = assert_report.filename.len();
+                    if assert_report.has_errors() {
+                        num_failures += 1;
+                    }
                 }
-                if assert_report.has_errors() {
-                    failed_reports += 1;
-                } else {
-                    successful_reports += 1;
+                reports::WastTestReport::ScriptError(_) => {
+                    num_script_errors += 1;
                 }
-            }
-            reports::WastTestReport::ScriptError(_) => {
-                compile_error_reports += 1;
-            }
-        };
+            };
+        })
+        .collect();
 
-        reports.push(report);
-    }
+    // Calculate another required statistic
+    let num_successes = reports.len() - num_script_errors - num_failures;
 
-    let mut no_compile_errors_reports = reports
+    // Collect all reports without errors along with some statistic
+    let mut successful_mini_tests = 0;
+    let mut total_mini_tests = 0;
+    let mut assert_reports: Vec<&reports::AssertReport> = reports
         .iter()
         .filter_map(|r| match r {
             WastTestReport::Asserts(asserts) => Some(asserts),
-            _ => None,
+            WastTestReport::ScriptError(_) => None,
         })
-        .collect::<Vec<&reports::AssertReport>>();
-    no_compile_errors_reports.sort_by(|a, b| {
+        .inspect(|assert_report| {
+            successful_mini_tests += assert_report.passed_asserts();
+            total_mini_tests += assert_report.total_asserts();
+        })
+        .collect();
+
+    // Sort all reports without errors for displaying it to the user later
+    assert_reports.sort_by(|a, b| {
         b.percentage_asserts_passed()
             .total_cmp(&a.percentage_asserts_passed())
     });
 
-    let mut successful_mini_tests = 0;
-    let mut total_mini_tests = 0;
-
     let mut final_status: String = String::new();
     // Printing success rate per file for those that did NOT error out when compiling
-    for report in no_compile_errors_reports {
-        final_status += format!(
+    for report in assert_reports {
+        write!(final_status,
             "Report for {:filename_width$}: Tests: {:passed_width$} Passed, {:failed_width$} Failed --- {:percentage_width$.2}%\n",
             report.filename,
             report.passed_asserts(),
             report.failed_asserts(),
             report.percentage_asserts_passed(),
-            filename_width = longest_string_len + 1,
+            filename_width = longest_filename_len + 1,
             passed_width = 7,
             failed_width = 7,
             percentage_width = 6
-        ).as_str();
-
-        successful_mini_tests += report.passed_asserts();
-        total_mini_tests += report.total_asserts();
+        ).expect("writing into strings to never fail");
 
         if report.passed_asserts() < report.total_asserts() {
             println!("{}", report);
@@ -98,7 +101,7 @@ pub fn spec_tests() {
         successful_mini_tests,
         total_mini_tests - successful_mini_tests,
         if total_mini_tests == 0 { 0.0 } else {(successful_mini_tests as f64) * 100.0 / (total_mini_tests as f64)},
-        filename_width = longest_string_len + 1,
+        filename_width = longest_filename_len + 1,
         passed_width = 7,
         failed_width = 7,
         percentage_width = 6
@@ -106,7 +109,7 @@ pub fn spec_tests() {
 
     println!(
         "Tests: {} Passed, {} Failed, {} Compilation Errors",
-        successful_reports, failed_reports, compile_error_reports
+        num_successes, num_failures, num_script_errors
     );
 
     // Optional: We need to save the result to a file for CI Regression Analysis
