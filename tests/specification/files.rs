@@ -1,121 +1,64 @@
-use std::fs;
+use std::ffi::{OsStr, OsString};
 use std::path::{Path, PathBuf};
 
-pub enum Filter {
-    #[allow(dead_code)]
-    Include(FnF),
-    Exclude(FnF),
+#[derive(Debug, Clone)]
+pub struct Filter {
+    pub mode: FilterMode,
+    pub files: Vec<OsString>,
 }
 
-pub struct FnF {
-    pub files: Option<Vec<String>>,
-    pub folders: Option<Vec<String>>,
+#[allow(dead_code)] // Currently, we can always use only one variant at a time
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum FilterMode {
+    Include,
+    Exclude,
 }
 
-// See: https://stackoverflow.com/a/76820878
-pub fn get_wast_files(base_path: &Path, filter: &Filter) -> Result<Vec<PathBuf>, std::io::Error> {
-    let mut buf = vec![];
-    let entries = fs::read_dir(base_path)?;
+impl Filter {
+    fn allows(&self, file_path: &Path) -> bool {
+        // If the file does not have a file name, we simply disallow it
+        let Some(file_name) = file_path.file_name() else {
+            return false;
+        };
 
-    for entry in entries {
+        // Assume filter includes for now
+        let result = self
+            .files
+            .iter()
+            .any(|os_string| os_string.as_os_str() == file_name);
+
+        // Now if the filter excludes, invert the result
+        result ^ (self.mode == FilterMode::Exclude)
+    }
+}
+
+/// Simple depth-first directory traversal with a filter for `wast` files
+pub fn find_wast_files(base_path: &Path, filter: &Filter) -> std::io::Result<Vec<PathBuf>> {
+    let mut paths = vec![];
+
+    // The stack containing all directories we still have to traverse. At first contains only the base directory.
+    let mut read_dirs = vec![std::fs::read_dir(base_path)?];
+
+    while let Some(last_read_dir) = read_dirs.last_mut() {
+        let Some(entry) = last_read_dir.next() else {
+            read_dirs.pop();
+            continue;
+        };
+
         let entry = entry?;
         let meta = entry.metadata()?;
+        let path = entry.path();
 
-        if meta.is_dir() {
-            if should_add_folder_to_buffer(&entry.path(), &filter) {
-                let mut subdir = get_wast_files(&entry.path(), &filter)?;
-                buf.append(&mut subdir);
+        if filter.allows(&path) {
+            if meta.is_file() && entry.path().extension() == Some(OsStr::new("wast")) {
+                paths.push(entry.path())
+            }
+
+            if meta.is_dir() {
+                read_dirs.push(std::fs::read_dir(path)?);
             }
         }
-
-        if meta.is_file() && entry.path().extension().unwrap_or_default() == "wast" {
-            if should_add_file_to_buffer(&entry.path(), &filter) {
-                buf.push(entry.path())
-            }
-        }
     }
 
-    Ok(buf)
-}
-
-fn should_add_file_to_buffer(file_path: &PathBuf, filter: &Filter) -> bool {
-    match filter {
-        Filter::Exclude(ref fnf) => match &fnf.files {
-            None => true,
-            Some(files) => {
-                if files.is_empty() {
-                    return true;
-                }
-
-                if let Some(file_name) = file_path.file_name() {
-                    if files.contains(&file_name.to_str().unwrap().to_owned()) {
-                        false
-                    } else {
-                        true
-                    }
-                } else {
-                    false
-                }
-            }
-        },
-        Filter::Include(ref fnf) => match &fnf.files {
-            None => false,
-            Some(files) => {
-                if files.is_empty() {
-                    return false;
-                }
-
-                if let Some(file_name) = file_path.file_name() {
-                    if files.contains(&file_name.to_str().unwrap().to_owned()) {
-                        true
-                    } else {
-                        false
-                    }
-                } else {
-                    false
-                }
-            }
-        },
-    }
-}
-
-fn should_add_folder_to_buffer(file_path: &PathBuf, filter: &Filter) -> bool {
-    match filter {
-        Filter::Exclude(fnf) => match &fnf.folders {
-            None => true,
-            Some(folders) => {
-                if folders.is_empty() {
-                    return true;
-                }
-
-                if let Some(file_name) = file_path.file_name() {
-                    if folders.contains(&file_name.to_str().unwrap().to_owned()) {
-                        false
-                    } else {
-                        true
-                    }
-                } else {
-                    false
-                }
-            }
-        },
-        Filter::Include(fnf) => match &fnf.folders {
-            None => false,
-            Some(folders) => {
-                if folders.is_empty() {
-                    return false;
-                }
-
-                if let Some(file_name) = file_path.file_name() {
-                    if folders.contains(&file_name.to_str().unwrap().to_owned()) {
-                        true
-                    } else {
-                        false
-                    }
-                } else {
-                    false
-                }
-            }
-        },
-    }
+    Ok(paths)
 }

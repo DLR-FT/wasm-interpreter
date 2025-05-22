@@ -1,6 +1,7 @@
 use ci_reports::CIFullReport;
-use files::{Filter, FnF};
+use files::{Filter, FilterMode};
 use reports::WastTestReport;
+use std::ffi::OsString;
 use std::path::Path;
 
 mod ci_reports;
@@ -13,13 +14,12 @@ mod test_errors;
 pub fn spec_tests() {
     // so we don't see unnecessary stacktraces of catch_unwind (sadly this also means we don't see panics from outside catch_unwind either)
     std::panic::set_hook(Box::new(|_| {}));
+    let filter = Filter {
+        mode: FilterMode::Exclude,
+        files: vec![OsString::from("proposals")],
+    };
 
-    let filters = Filter::Exclude(FnF {
-        folders: Some(vec!["proposals".to_string()]),
-        files: None,
-    });
-
-    let paths = files::get_wast_files(Path::new("./tests/specification/testsuite/"), &filters)
+    let paths = files::find_wast_files(Path::new("./tests/specification/testsuite/"), &filter)
         .expect("Failed to find testsuite");
 
     assert!(paths.len() > 0, "Submodules not instantiated");
