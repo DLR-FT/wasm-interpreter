@@ -103,21 +103,18 @@ def get_delta(old_entries, new_entries) -> str:
                 - (Basically a combination of case [i] and case [ii])
     """
     result = ""
-    header = ""
-    header += "| **File** | **Notes** | ❓ |\n"
-    header += "|:--------:|:---------:|:--:|\n"
 
     def find_entry(haystack, filepath):
-        for entry in haystack:
-            if entry["filepath"] == filepath:
-                return entry
-        return None
+        return next(
+            (entry for entry in haystack if entry["filepath"] == filepath),
+            None
+        )
 
     def find_assert(haystack, line, command):
-        for an_assert in haystack:
-            if an_assert["line_number"] == line and an_assert["command"] == command:
-                return an_assert
-        return None
+        return next(
+            (an_assert for an_assert in haystack if an_assert["line_number"] == line and an_assert["command"] == command),
+            None
+        )
 
     # Get reunion of entries
     all_entries = list(old_entries)
@@ -132,65 +129,71 @@ def get_delta(old_entries, new_entries) -> str:
         old_entry = find_entry(old_entries, full_file)
         new_entry = find_entry(new_entries, full_file)
 
-        if old_entry is not None and new_entry is not None:
-            # First, compare if script error
-            se_old = "ScriptError" in old_entry["data"]
-            se_new = "ScriptError" in new_entry["data"]
-
-            if se_old and not se_new:
-                result += f"| {file} | File now compiles | ✅ |\n"
-            elif not se_old and se_new:
-                result += f"| {file} | File no longer compiles | ❌ |\n"
-            elif not se_old and not se_new:
-                # Secondly, test if file is the same.
-                asserts_old = old_entry["data"]["Assert"]["results"]
-                asserts_new = new_entry["data"]["Assert"]["results"]
-                same_file_contents = len(asserts_old) == len(asserts_new) and all(
-                    [
-                        find_assert(asserts_new, old["line_number"], old["command"]) is not None
-                        for old in asserts_old
-                    ]
-                )
-
-                if not same_file_contents:
-                    result += f"| {file} | File has changed. Cannot check | ⚠️ |\n"
-                else:
-                    # Sort by line number
-                    asserts_old = sorted(
-                        asserts_old, key=lambda an_assert: an_assert["line_number"]
-                    )
-                    asserts_new = sorted(
-                        asserts_new, key=lambda an_assert: an_assert["line_number"]
-                    )
-
-                    new_passing = 0
-                    new_failing = 0
-                    for i in range(len(asserts_old)):
-                        old_is_err = asserts_old[i]["error"] is not None
-                        new_is_err = asserts_new[i]["error"] is not None
-
-                        if old_is_err and not new_is_err:
-                            new_passing += 1
-                        elif not old_is_err and new_is_err:
-                            new_failing += 1
-
-                    if new_passing != 0 or new_failing != 0:
-                        result += f"| {file} | "
-                        if new_passing != 0 and new_failing == 0:
-                            result += f"+{new_passing} asserts PASS | ✅ |\n"
-                        elif new_passing == 0 and new_failing != 0:
-                            result += f"-{new_failing} asserts FAIL | ❌ |\n"
-                        else:
-                            result += f"+{new_passing} asserts PASS<br>-{new_failing} asserts FAIL | ⚠️ |\n"
-
-            else:  # Script error both in old and new
-                pass
-        elif new_entry is None:
+        if new_entry is None:
             result += f"| {file} | File missing in this PR | ⚠️ |\n"
+            continue
         elif old_entry is None:
             result += f"| {file} | File missing in target branch | ⚠️ |\n"
+            continue
+
+        # First, compare if script error
+        se_old = "ScriptError" in old_entry["data"]
+        se_new = "ScriptError" in new_entry["data"]
+
+        if se_old and se_new: # Script error both in old and new
+            continue
+
+
+        if se_old and not se_new:
+            result += f"| {file} | File now compiles | ✅ |\n"
+        elif not se_old and se_new:
+            result += f"| {file} | File no longer compiles | ❌ |\n"
+        elif not se_old and not se_new:
+            # Secondly, test if file is the same.
+            asserts_old = old_entry["data"]["Assert"]["results"]
+            asserts_new = new_entry["data"]["Assert"]["results"]
+            same_file_contents = len(asserts_old) == len(asserts_new) and all(
+                [
+                    find_assert(asserts_new, old["line_number"], old["command"]) is not None
+                    for old in asserts_old
+                ]
+            )
+
+            if not same_file_contents:
+                result += f"| {file} | File has changed. Cannot check | ⚠️ |\n"
+            else:
+                # Sort by line number
+                asserts_old = sorted(
+                    asserts_old, key=lambda an_assert: an_assert["line_number"]
+                )
+                asserts_new = sorted(
+                    asserts_new, key=lambda an_assert: an_assert["line_number"]
+                )
+
+                new_passing = 0
+                new_failing = 0
+                for i in range(len(asserts_old)):
+                    old_is_err = asserts_old[i]["error"] is not None
+                    new_is_err = asserts_new[i]["error"] is not None
+
+                    if old_is_err and not new_is_err:
+                        new_passing += 1
+                    elif not old_is_err and new_is_err:
+                        new_failing += 1
+
+                if new_passing != 0 or new_failing != 0:
+                    result += f"| {file} | "
+                    if new_passing != 0 and new_failing == 0:
+                        result += f"+{new_passing} asserts PASS | ✅ |\n"
+                    elif new_passing == 0 and new_failing != 0:
+                        result += f"-{new_failing} asserts FAIL | ❌ |\n"
+                    else:
+                        result += f"+{new_passing} asserts PASS<br>-{new_failing} asserts FAIL | ⚠️ |\n"
 
     if result != "":
+        header = ""
+        header += "| **File** | **Notes** | ❓ |\n"
+        header += "|:--------:|:---------:|:--:|\n"
         return header + result
     else:
         return "<b> No changes detected. </b>"
