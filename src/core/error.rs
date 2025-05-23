@@ -117,9 +117,9 @@ pub enum Error {
     UnknownFunction,
     UnknownMemory,
     UnknownGlobal,
+    UnknownImport, // TODO refactor
     DuplicateExportName,
     InvalidImportType,
-    TodoErrorVariantError,
 }
 
 impl Display for Error {
@@ -286,7 +286,7 @@ impl Display for Error {
             Error::DuplicateExportName => f.write_str("Duplicate export name"),
             Error::InvalidImportType => f.write_str("Invalid import type"),
             // TODO: maybe move these to LinkerError also add more info to them (the name's export, function idx, etc)
-            Error::TodoErrorVariantError =>  f.write_str("Error with not implemented variant")
+            Error::UnknownImport => f.write_str("Unknown Import"),
 
         }
     }

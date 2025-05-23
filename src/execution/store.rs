@@ -14,6 +14,7 @@ use crate::execution::value::{Ref, Value};
 use crate::execution::{run_const_span, Stack};
 use crate::value::FuncAddr;
 use crate::{Error, RefType, RuntimeError, ValidationInfo};
+use alloc::borrow::ToOwned;
 use alloc::collections::btree_map::BTreeMap;
 use alloc::string::String;
 use alloc::vec;
@@ -56,6 +57,8 @@ impl<'b> Store<'b> {
         validation_info: &ValidationInfo<'b>,
     ) -> CustomResult<()> {
         // instantiation step -1: collect extern_vals, this section basically acts as a linker between modules
+        // best attempt at trying to match the spec implementation in terms of errors
+
         let mut extern_vals = Vec::new();
 
         for Import {
@@ -71,26 +74,28 @@ impl<'b> Store<'b> {
                     *self
                         .module_names
                         .get(exporting_module_name)
-                        .ok_or(Error::TodoErrorVariantError)?,
+                        .ok_or(Error::RuntimeError(RuntimeError::ModuleNotFound))?,
                 )
-                .ok_or(Error::TodoErrorVariantError)?;
-            extern_vals.push(
-                *exporting_module
-                    .exports
-                    .iter()
-                    .find_map(
-                        |ExportInst {
-                             name: export_name,
-                             value: export_extern_val,
-                         }| {
-                            // TODO: this should be a subtyping relation import_extern_type => export_extern_type
-                            (import_name == export_name
-                                && import_extern_type == export_extern_val.extern_type(self))
-                            .then_some(export_extern_val)
-                        },
-                    )
-                    .ok_or(Error::TodoErrorVariantError)?,
-            );
+                .ok_or(Error::RuntimeError(RuntimeError::ModuleNotFound))?;
+
+            let export_extern_val_candidate = *exporting_module
+                .exports
+                .iter()
+                .find_map(
+                    |ExportInst {
+                         name: export_name,
+                         value: export_extern_val,
+                     }| {
+                        (import_name == export_name).then_some(export_extern_val)
+                    },
+                )
+                .ok_or(Error::UnknownImport)?;
+            // TODO: this should be a subtyping relation import_extern_type >= export_extern_type
+
+            if export_extern_val_candidate.extern_type(self) != import_extern_type {
+                return Err(Error::InvalidImportType);
+            }
+            extern_vals.push(export_extern_val_candidate)
         }
 
         // instantiation: step 5
@@ -108,6 +113,7 @@ impl<'b> Store<'b> {
             exports: Vec::new(),
             wasm_bytecode: validation_info.wasm,
             sidetable: validation_info.sidetable.clone(),
+            name: name.to_owned(),
         };
 
         // TODO rewrite this part
@@ -309,9 +315,9 @@ impl<'b> Store<'b> {
                         s,
                         d,
                     )
-                    .map_err(|_| Error::TodoErrorVariantError)?;
+                    .map_err(|e| Error::RuntimeError(e))?;
                     elem_drop(&mut self.modules, &mut self.elements, current_module_idx, i)
-                        .map_err(|_| Error::TodoErrorVariantError)?;
+                        .map_err(|e| Error::RuntimeError(e))?;
                 }
                 ElemMode::Declarative => {
                     // instantiation step 15:
@@ -319,7 +325,7 @@ impl<'b> Store<'b> {
                     // execute:
                     //   elem.drop i
                     elem_drop(&mut self.modules, &mut self.elements, current_module_idx, i)
-                        .map_err(|_| Error::TodoErrorVariantError)?;
+                        .map_err(|e| Error::RuntimeError(e))?;
                 }
                 ElemMode::Passive => (),
             }
@@ -336,7 +342,8 @@ impl<'b> Store<'b> {
                     let n = init.len() as i32;
                     // assert: mem_idx is 0
                     if *memory_idx != 0 {
-                        return Err(Error::TodoErrorVariantError);
+                        // TODO fix error
+                        return Err(Error::MoreThanOneMemory);
                     }
 
                     // TODO (for now, we are doing hopefully what is equivalent to it)
@@ -366,9 +373,9 @@ impl<'b> Store<'b> {
                         s,
                         d,
                     )
-                    .map_err(|_| Error::TodoErrorVariantError)?;
+                    .map_err(|e| Error::RuntimeError(e))?;
                     data_drop(&self.modules, &mut self.data, current_module_idx, i)
-                        .map_err(|_| Error::TodoErrorVariantError)?;
+                        .map_err(|e| Error::RuntimeError(e))?;
                 }
                 crate::core::reader::types::data::DataMode::Passive => (),
             }
@@ -382,7 +389,7 @@ impl<'b> Store<'b> {
                 //   call func_ifx
                 let func_addr = self.modules[*current_module_idx].functions[func_idx];
                 self.invoke_dynamic(func_addr, Vec::new(), &[])
-                    .map_err(|_| Error::TodoErrorVariantError)?;
+                    .map_err(|e| Error::RuntimeError(e))?;
             }
             None => (),
         };
@@ -714,8 +721,44 @@ impl<'b> Store<'b> {
         Ok(ret)
     }
 
+    //TODO consider further refactor
+    pub fn get_module_idx_from_name(&self, module_name: &str) -> Result<usize, RuntimeError> {
+        self.module_names
+            .get(module_name)
+            .copied()
+            .ok_or(RuntimeError::ModuleNotFound)
+    }
+
+    //TODO consider further refactor
+    pub fn get_global_function_idx_by_name(
+        &self,
+        module_addr: usize,
+        function_name: &str,
+    ) -> Option<usize> {
+        self.modules
+            .get(module_addr)?
+            .exports
+            .iter()
+            .find_map(|ExportInst { name, value }| {
+                if name != function_name {
+                    return None;
+                };
+                match value {
+                    ExternVal::Func(func_addr) => Some(*func_addr),
+                    _ => None,
+                }
+            })
+    }
+
+    //TODO consider further refactor
     pub fn register_alias(&mut self, alias_name: String, module_idx: usize) {
         self.module_names.insert(alias_name, module_idx);
+    }
+
+    //TODO consider further refactor
+    pub fn lookup_function(&self, target_module: &str, target_function: &str) -> Option<usize> {
+        let module_addr = *self.module_names.get(target_module)?;
+        self.get_global_function_idx_by_name(module_addr, target_function)
     }
 }
 
@@ -841,35 +884,35 @@ impl ExternVal {
     /// typing fails if this external value does not exist within S.
     ///<https://webassembly.github.io/spec/core/valid/modules.html#imports>
     pub fn extern_type(&self, store: &Store) -> CustomResult<ExternType> {
-        // TODO: implement error variants
+        // TODO: implement proper errors
         Ok(match self {
             // TODO: fix ugly clone in function types
             ExternVal::Func(func_addr) => ExternType::Func(
                 store
                     .functions
                     .get(*func_addr)
-                    .ok_or(Error::TodoErrorVariantError)?
+                    .ok_or(Error::InvalidImportType)?
                     .ty(),
             ),
             ExternVal::Table(table_addr) => ExternType::Table(
                 store
                     .tables
                     .get(*table_addr)
-                    .ok_or(Error::TodoErrorVariantError)?
+                    .ok_or(Error::InvalidImportType)?
                     .ty,
             ),
             ExternVal::Mem(mem_addr) => ExternType::Mem(
                 store
                     .memories
                     .get(*mem_addr)
-                    .ok_or(Error::TodoErrorVariantError)?
+                    .ok_or(Error::InvalidImportType)?
                     .ty,
             ),
             ExternVal::Global(global_addr) => ExternType::Global(
                 store
                     .globals
                     .get(*global_addr)
-                    .ok_or(Error::TodoErrorVariantError)?
+                    .ok_or(Error::InvalidImportType)?
                     .ty,
             ),
         })
@@ -953,6 +996,10 @@ pub struct ModuleInst<'b> {
     // TODO the bytecode is not in the spec, but required for re-parsing
     pub wasm_bytecode: &'b [u8],
 
-    // TODO sidetable is not in the spec, but required
+    //sidetable is not in the spec, but required for control flow
     pub sidetable: Sidetable,
+
+    // TODO name field is not in the spec but used by the testsuite crate, might need to be refactored out
+    // this data is unfortunately duplicated within store.module_names kv store.
+    pub name: String,
 }

@@ -106,7 +106,7 @@ pub fn linker_err_to_wasm_testsuite_string(linker_err: wasm::Error) -> Option<st
     use wasm::Error::*;
     match linker_err {
         InvalidImportType => Some("incompatible import type".to_string()),
-        UnknownFunction | UnknownMemory | UnknownGlobal | UnknownTable => {
+        UnknownFunction | UnknownMemory | UnknownGlobal | UnknownTable | UnknownImport => {
             Some("unknown import".to_string())
         }
         RuntimeError(rt_err) => Some(runtime_err_to_wasm_testsuite_string(rt_err)),
@@ -161,17 +161,17 @@ fn encode_validate_instantiate<'a>(
         QuoteWat::Wat(..) | QuoteWat::QuoteModule(..) => true,
     };
     let module_name = match &module {
-        QuoteWat::QuoteComponent(..) | QuoteWat::Wat(Wat::Component(..)) => "".to_owned(),
+        QuoteWat::QuoteComponent(..) | QuoteWat::Wat(Wat::Component(..)) => "",
         QuoteWat::Wat(wat) => match wat {
             wast::Wat::Module(wat_module) => match wat_module.id {
-                None => DEFAULT_MODULE.to_owned(),
-                Some(name) => name.name().to_owned(),
+                None => DEFAULT_MODULE,
+                Some(name) => name.name(),
             },
             _ => unreachable!(),
         },
         QuoteWat::QuoteModule(_span, _vec_of_smth) => {
             // todo!()
-            DEFAULT_MODULE.to_owned()
+            DEFAULT_MODULE
         }
     };
 
@@ -194,13 +194,9 @@ fn encode_validate_instantiate<'a>(
                                 let spectest_wat_parsed = wat::parse_str(SPEC_TEST_WAT).unwrap();
                                 let spectest = validate(&spectest_wat_parsed).unwrap();
 
-                                temp_store
-                                    .add_module("spectest".to_owned(), spectest)
-                                    .unwrap();
+                                temp_store.add_module("spectest", &spectest).unwrap();
 
-                                match temp_store
-                                    .add_module(DEFAULT_MODULE.to_owned(), validation_info.clone())
-                                {
+                                match temp_store.add_module(DEFAULT_MODULE, &validation_info) {
                                     Err(_) => Err(ErrEVI::Instantiate),
                                     Ok(_) => Ok(()),
                                 }
@@ -213,14 +209,14 @@ fn encode_validate_instantiate<'a>(
                                         // if we already have a default module, change name
                                         if store.as_mut().unwrap().modules.len() > 0
                                             && store.as_mut().unwrap().modules[0].name
-                                                == DEFAULT_MODULE
+                                                == DEFAULT_MODULE.to_owned()
                                         {
                                             store.as_mut().unwrap().modules.len().to_string()
                                         } else {
                                             DEFAULT_MODULE.to_owned()
                                         }
                                     } else {
-                                        module_name
+                                        module_name.to_owned()
                                     };
                                     let spectest_wat_parsed =
                                         wat::parse_str(SPEC_TEST_WAT).unwrap();
@@ -229,13 +225,13 @@ fn encode_validate_instantiate<'a>(
                                     store
                                         .as_mut()
                                         .unwrap()
-                                        .add_module("spectest".to_owned(), spectest)
+                                        .add_module("spectest", &spectest)
                                         .unwrap();
 
                                     store
                                         .as_mut()
                                         .unwrap()
-                                        .add_module(actual_name, validation_info)
+                                        .add_module(actual_name.as_str(), &validation_info)
                                         .map_err(|_| ErrEVI::Instantiate)?;
 
                                     Ok(())
@@ -296,7 +292,7 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
     store
         .as_mut()
         .unwrap()
-        .add_module("spectest".to_owned(), spectest)
+        .add_module("spectest", &spectest)
         .unwrap();
 
     for directive in wast.directives {
@@ -406,7 +402,7 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                         Ok(_) => store
                             .as_mut()
                             .unwrap()
-                            .add_module(module_name, validation_info)
+                            .add_module(module_name.as_str(), &validation_info)
                             .unwrap(),
                     },
                 };
@@ -645,7 +641,8 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                                             module_name = store.modules.len().to_string();
                                         }
 
-                                        let res = store.add_module(module_name, validation_info);
+                                        let res = store
+                                            .add_module(module_name.as_str(), &validation_info);
 
                                         match res {
                                             Ok(_) => {
@@ -865,7 +862,7 @@ fn execute_assert_return(
                 .iter()
                 .find_map(|export| {
                     if export.name == global {
-                        Some(export)
+                        Some(export.value)
                     } else {
                         None
                     }
@@ -875,9 +872,9 @@ fn execute_assert_return(
                     global
                 ))))?;
 
-            match global_export.desc {
-                wasm::ExportDesc::GlobalIdx(idx) => {
-                    let actual_global = &store.globals[store.modules[module_idx].globals[idx]];
+            match global_export {
+                wasm::ExternVal::Global(global_addr) => {
+                    let actual_global = &store.globals[global_addr];
                     let value = actual_global.value;
                     let result_vals = results.into_iter().map(result_to_value).collect::<Vec<_>>();
                     AssertEqError::assert_eq(result_vals, vec![value])?;
