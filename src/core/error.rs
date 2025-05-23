@@ -117,6 +117,7 @@ pub enum Error {
     UnknownFunction,
     UnknownMemory,
     UnknownGlobal,
+    UnknownImport, // TODO refactor
     DuplicateExportName,
     InvalidImportType,
 }
@@ -283,8 +284,9 @@ impl Display for Error {
             Error::UnknownGlobal => f.write_str("Unknown global"),
             Error::UnknownTable => f.write_str("Unknown table"),
             Error::DuplicateExportName => f.write_str("Duplicate export name"),
-            Error::InvalidImportType => f.write_str("Invalid import type")
+            Error::InvalidImportType => f.write_str("Invalid import type"),
             // TODO: maybe move these to LinkerError also add more info to them (the name's export, function idx, etc)
+            Error::UnknownImport => f.write_str("Unknown Import"),
 
         }
     }

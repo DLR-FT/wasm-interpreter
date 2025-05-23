@@ -1,24 +1,27 @@
+use crate::core::error::Result as CustomResult;
+use crate::core::indices::TypeIdx;
+use crate::core::reader::span::Span;
+use crate::core::reader::types::data::{DataModeActive, DataSegment};
+use crate::core::reader::types::element::{ActiveElem, ElemItems, ElemMode, ElemType};
+use crate::core::reader::types::export::{Export, ExportDesc};
+use crate::core::reader::types::global::{Global, GlobalType};
+use crate::core::reader::types::import::Import;
+use crate::core::reader::types::{ExternType, FuncType, MemType, TableType, ValType};
+use crate::core::reader::WasmReader;
+use crate::core::sidetable::Sidetable;
+use crate::execution::interpreter_loop::{memory_init, table_init};
+use crate::execution::value::{Ref, Value};
+use crate::execution::{run_const_span, Stack};
+use crate::value::FuncAddr;
+use crate::{Error, RefType, RuntimeError, ValidationInfo};
+use alloc::borrow::ToOwned;
 use alloc::collections::btree_map::BTreeMap;
-use alloc::string::{String, ToString};
+use alloc::string::String;
 use alloc::vec;
 use alloc::vec::Vec;
 
-use crate::core::error::{Proposal, Result as CustomResult, StoreInstantiationError};
-use crate::core::indices::TypeIdx;
-use crate::core::reader::span::Span;
-use crate::core::reader::types::element::{ElemItems, ElemMode};
-use crate::core::reader::types::export::ExportDesc;
-use crate::core::reader::types::global::Global;
-use crate::core::reader::types::import::{Import, ImportDesc};
-use crate::core::reader::types::{check_limits, FuncType, MemType, TableType, ValType};
-use crate::core::reader::WasmReader;
-use crate::execution::value::{Ref, Value};
-use crate::execution::{get_address_offset, run_const, run_const_span, Stack};
-use crate::value::{ExternAddr, FuncAddr};
-use crate::{Error, RefType, RuntimeError, ValidationInfo};
-
-use super::execution_info::ExecutionInfo;
 use super::hooks::EmptyHookSet;
+use super::interpreter_loop::{data_drop, elem_drop};
 use super::locals::Locals;
 use super::value::InteropValueList;
 use super::{run, UnwrapValidatedExt};
@@ -38,470 +41,474 @@ pub struct Store<'b> {
     pub data: Vec<DataInst>,
     pub tables: Vec<TableInst>,
     pub elements: Vec<ElemInst>,
-    pub modules: Vec<ExecutionInfo<'b>>,
+    pub modules: Vec<ModuleInst<'b>>,
     pub module_names: BTreeMap<String, usize>,
 }
 
 impl<'b> Store<'b> {
-    pub fn add_module(&mut self, name: String, module: ValidationInfo<'b>) -> CustomResult<()> {
-        let functions_imports_indexes = {
-            let mut function_imports_indexes = Vec::new();
-            for import in &module.imports {
-                if let ImportDesc::Func(func) = import.desc {
-                    let global_function_idx = self
-                        .get_global_function_idx_by_name(
-                            self.get_module_idx_from_name(&import.module_name)?,
-                            &import.name,
-                        )
-                        .ok_or(Error::UnknownFunction)?;
+    /// instantiates a validated module with `validation_info` as validation evidence with name `name`
+    /// with the steps in <https://webassembly.github.io/spec/core/exec/modules.html#instantiation>
+    /// this method roughly matches the suggested embedder function`module_instantiate`
+    /// https://webassembly.github.io/spec/core/appendix/embedding.html#modules
+    /// except external values for module instantiation are retrieved from `self`.
+    pub fn add_module(
+        &mut self,
+        name: &str,
+        validation_info: &ValidationInfo<'b>,
+    ) -> CustomResult<()> {
+        // instantiation step -1: collect extern_vals, this section basically acts as a linker between modules
+        // best attempt at trying to match the spec implementation in terms of errors
 
-                    let ty = &module.types[func];
+        let mut extern_vals = Vec::new();
 
-                    let global_func_ty = self.functions[global_function_idx].ty();
+        for Import {
+            module_name: exporting_module_name,
+            name: import_name,
+            desc: import_desc,
+        } in &validation_info.imports
+        {
+            let import_extern_type = import_desc.extern_type(validation_info);
+            let exporting_module = self
+                .modules
+                .get(
+                    *self
+                        .module_names
+                        .get(exporting_module_name)
+                        .ok_or(Error::RuntimeError(RuntimeError::ModuleNotFound))?,
+                )
+                .ok_or(Error::RuntimeError(RuntimeError::ModuleNotFound))?;
 
-                    if global_func_ty != *ty {
-                        return Err(Error::InvalidImportType);
-                    }
+            let export_extern_val_candidate = *exporting_module
+                .exports
+                .iter()
+                .find_map(
+                    |ExportInst {
+                         name: export_name,
+                         value: export_extern_val,
+                     }| {
+                        (import_name == export_name).then_some(export_extern_val)
+                    },
+                )
+                .ok_or(Error::UnknownImport)?;
+            // TODO: this should be a subtyping relation import_extern_type >= export_extern_type
 
-                    trace!(
-                        "Imported function! Global function idx: {}",
-                        global_function_idx
-                    );
-                    function_imports_indexes.push(global_function_idx);
-                }
+            if export_extern_val_candidate.extern_type(self) != import_extern_type {
+                return Err(Error::InvalidImportType);
             }
-            function_imports_indexes
+            extern_vals.push(export_extern_val_candidate)
+        }
+
+        // instantiation: step 5
+        // module_inst_init is unfortunately circularly defined from parts of module_inst that would be defined in step 11, which uses module_inst_init again implicitly.
+        // therefore I am mimicking the reference interpreter code here, I will allocate functions in the store in this step instead of step 11.
+        // https://github.com/WebAssembly/spec/blob/8d6792e3d6709e8d3e90828f9c8468253287f7ed/interpreter/exec/eval.ml#L789
+        let mut module_inst = ModuleInst {
+            function_types: validation_info.types.clone(),
+            functions: extern_vals.iter().funcs().collect(),
+            tables: Vec::new(),
+            memories: Vec::new(),
+            globals: extern_vals.iter().globals().collect(),
+            elements: Vec::new(),
+            data: Vec::new(),
+            exports: Vec::new(),
+            wasm_bytecode: validation_info.wasm,
+            sidetable: validation_info.sidetable.clone(),
+            name: name.to_owned(),
         };
 
-        // let function_type_inst = module.instantiate_function_types()?;
-        let table_imports_indexes = {
-            let mut table_imports_indexes = Vec::new();
-            for import in &module.imports {
-                if let ImportDesc::Table(table) = import.desc {
-                    let global_table_idx = self
-                        .get_global_table_idx(
-                            self.get_module_idx_from_name(&import.module_name)?,
-                            &import.name,
-                        )
-                        .ok_or(Error::UnknownTable)?;
+        // TODO rewrite this part
+        // <https://webassembly.github.io/spec/core/exec/modules.html#functions>
+        let func_addrs: Vec<usize> = validation_info
+            .functions
+            .iter()
+            .zip(validation_info.func_blocks_stps.iter())
+            .map(|(ty_idx, (span, stp))| {
+                self.alloc_func((*ty_idx, (*span, *stp)), &module_inst, self.modules.len())
+            })
+            .collect();
 
-                    if table.et != self.tables[global_table_idx].ty.et
-                        || !check_limits(
-                            // the table could've grown, don't take initial min size
-                            self.tables[global_table_idx].len() as u32,
-                            self.tables[global_table_idx].ty.lim.max,
-                            table.lim.min,
-                            table.lim.max,
-                        )
-                    {
-                        return Err(Error::InvalidImportType);
-                    }
-                    table_imports_indexes.push(global_table_idx);
-                }
-            }
-            table_imports_indexes
-        };
+        module_inst.functions.extend(func_addrs);
 
-        let globals_imports = {
-            let mut globals_imports = Vec::new();
+        // instantiation: this roughly matches step 6,7,8
+        // validation guarantees these will evaluate without errors.
+        let global_init_vals: Vec<Value> = validation_info
+            .globals
+            .iter()
+            .map(|global| {
+                run_const_span(validation_info.wasm, &global.init_expr, &module_inst, self)
+                    .unwrap_validated()
+            })
+            .collect();
 
-            for import in &module.imports {
-                if let ImportDesc::Global(..) = import.desc {
-                    globals_imports.push(import.clone());
-                }
-            }
-
-            globals_imports
-        };
-
-        let imported_globals = {
-            let mut imported_globals = Vec::new();
-            for global_import in &globals_imports {
-                match global_import.desc {
-                    ImportDesc::Global(global_type_import) => {
-                        let value = self
-                            .get_global_global_idx(
-                                self.get_module_idx_from_name(&global_import.module_name)?,
-                                &global_import.name,
-                            )
-                            .ok_or(Error::UnknownGlobal)?;
-
-                        if global_type_import != self.globals[value].global.ty {
-                            return Err(Error::InvalidImportType);
-                        }
-                        // let global = self.globals[value].value;
-
-                        imported_globals.push(GlobalInst {
-                            global: Global {
-                                init_expr: Span::new(usize::MAX, 0),
-                                ty: global_type_import,
-                            },
-                            value: self.globals[value].value,
+        // instantiation: this roughly matches step 9,10
+        let element_init_ref_lists: Vec<Vec<Ref>> = validation_info
+            .elements
+            .iter()
+            .map(|elem| {
+                match &elem.init {
+                    // shortcut of evaluation of "ref.func <func_idx>; end;"
+                    // validation guarantees corresponding func_idx's existence
+                    ElemItems::RefFuncs(ref_funcs) => ref_funcs
+                        .iter()
+                        .map(|func_idx| {
+                            Ref::Func(FuncAddr {
+                                addr: Some(module_inst.functions[*func_idx as usize]),
+                            })
                         })
-                    }
-                    _ => {
-                        unreachable!()
-                    }
+                        .collect(),
+                    ElemItems::Exprs(_, exprs) => exprs
+                        .iter()
+                        .map(|expr| {
+                            run_const_span(validation_info.wasm, expr, &module_inst, self)
+                                .unwrap_validated()
+                                .into()
+                        })
+                        .collect(),
                 }
-            }
+            })
+            .collect();
 
-            imported_globals
-        };
+        // instantiation: step 11 - module allocation (except function allocation - which was made in step 5)
+        // https://webassembly.github.io/spec/core/exec/modules.html#alloc-module
 
-        let memory_imports_indexes = {
-            let mut memory_imports_indexes = Vec::new();
-            for import in &module.imports {
-                if let ImportDesc::Mem(mem) = import.desc {
-                    let global_memory_idx = self
-                        .get_global_memory_idx(
-                            self.get_module_idx_from_name(&import.module_name)?,
-                            &import.name,
-                        )
-                        .ok_or(Error::UnknownMemory)?;
+        // allocation: begin
 
-                    if !check_limits(
-                        // the memory could've grown, don't take initial min size
-                        self.memories[global_memory_idx].size() as u32,
-                        self.memories[global_memory_idx].ty.limits.max,
-                        mem.limits.min,
-                        mem.limits.max,
-                    ) {
-                        return Err(Error::InvalidImportType);
-                    };
-                    memory_imports_indexes.push(global_memory_idx);
+        // allocation: step 1
+        let module = validation_info;
+
+        let extern_vals = extern_vals;
+        let vals = global_init_vals;
+        let ref_lists = element_init_ref_lists;
+
+        // allocation: skip step 2 as it was done in instantiation step 5
+
+        // allocation: step 3-13
+        let table_addrs: Vec<usize> = module
+            .tables
+            .iter()
+            .map(|table_type| self.alloc_table(*table_type, Ref::Func(FuncAddr { addr: None })))
+            .collect();
+        let mem_addrs: Vec<usize> = module
+            .memories
+            .iter()
+            .map(|mem_type| self.alloc_mem(*mem_type))
+            .collect();
+        let global_addrs: Vec<usize> = module
+            .globals
+            .iter()
+            .zip(vals)
+            .map(
+                |(
+                    Global {
+                        ty: global_type, ..
+                    },
+                    val,
+                )| self.alloc_global(*global_type, val),
+            )
+            .collect();
+        let elem_addrs = module
+            .elements
+            .iter()
+            .zip(ref_lists)
+            .map(|(elem, refs)| self.alloc_elem(elem.ty(), refs))
+            .collect();
+        let data_addrs = module
+            .data
+            .iter()
+            .map(|DataSegment { init: bytes, .. }| self.alloc_data(bytes))
+            .collect();
+
+        // allocation: skip step 14 as it was done in instantiation step 5
+
+        // allocation: step 15,16
+        let mut table_addrs_mod: Vec<usize> = extern_vals.iter().tables().collect();
+        table_addrs_mod.extend(table_addrs);
+
+        let mut mem_addrs_mod: Vec<usize> = extern_vals.iter().mems().collect();
+        mem_addrs_mod.extend(mem_addrs);
+
+        // skipping step 17 partially as it was partially done in instantiation step
+        module_inst.globals.extend(global_addrs);
+
+        // allocation: step 18,19
+        let export_insts = module
+            .exports
+            .iter()
+            .map(|Export { name, desc }| {
+                let value = match desc {
+                    ExportDesc::FuncIdx(func_idx) => {
+                        ExternVal::Func(module_inst.functions[*func_idx])
+                    }
+                    ExportDesc::TableIdx(table_idx) => {
+                        ExternVal::Table(table_addrs_mod[*table_idx])
+                    }
+                    ExportDesc::MemIdx(mem_idx) => ExternVal::Mem(mem_addrs_mod[*mem_idx]),
+                    ExportDesc::GlobalIdx(global_idx) => {
+                        ExternVal::Global(module_inst.globals[*global_idx])
+                    }
+                };
+                ExportInst {
+                    name: String::from(name),
+                    value,
                 }
+            })
+            .collect();
+
+        // allocation: step 20,21 initialize module (except functions and globals due to instantiation step 5, allocation step 14,17)
+        module_inst.tables = table_addrs_mod;
+        module_inst.memories = mem_addrs_mod;
+        module_inst.elements = elem_addrs;
+        module_inst.data = data_addrs;
+        module_inst.exports = export_insts;
+
+        // allocation: end
+
+        // instantiation step 11 end: module_inst properly allocated after this point.
+        // TODO: it is too hard with our codebase to do the following steps without adding the module to the store
+        let current_module_idx = &self.modules.len();
+        self.modules.push(module_inst);
+        self.module_names
+            .insert(String::from(name), *current_module_idx);
+
+        // instantiation: step 12-15
+        // TODO have to stray away from the spec a bit since our codebase does not lend itself well to freely executing instructions by themselves
+        for (
+            i,
+            ElemType {
+                init: elem_items,
+                mode,
+            },
+        ) in validation_info.elements.iter().enumerate()
+        {
+            match mode {
+                ElemMode::Active(ActiveElem {
+                    table_idx: table_idx_i,
+                    init_expr: einstr_i,
+                }) => {
+                    let n = elem_items.len() as i32;
+                    // equivalent to init.len() in spec
+                    // instantiation step 14:
+                    // TODO (for now, we are doing hopefully what is equivalent to it)
+                    // execute:
+                    //   einstr_i
+                    //   i32.const 0
+                    //   i32.const n
+                    //   table.init table_idx_i i
+                    //   elem.drop i
+                    let d: i32 = run_const_span(
+                        validation_info.wasm,
+                        einstr_i,
+                        &self.modules[*current_module_idx],
+                        self,
+                    )
+                    .unwrap_validated()
+                    .into();
+                    let s = 0;
+                    table_init(
+                        &mut self.modules,
+                        &mut self.tables,
+                        &mut self.elements,
+                        current_module_idx,
+                        i,
+                        *table_idx_i as usize,
+                        n,
+                        s,
+                        d,
+                    )
+                    .map_err(|e| Error::RuntimeError(e))?;
+                    elem_drop(&mut self.modules, &mut self.elements, current_module_idx, i)
+                        .map_err(|e| Error::RuntimeError(e))?;
+                }
+                ElemMode::Declarative => {
+                    // instantiation step 15:
+                    // TODO (for now, we are doing hopefully what is equivalent to it)
+                    // execute:
+                    //   elem.drop i
+                    elem_drop(&mut self.modules, &mut self.elements, current_module_idx, i)
+                        .map_err(|e| Error::RuntimeError(e))?;
+                }
+                ElemMode::Passive => (),
             }
-            memory_imports_indexes
+        }
+
+        // instantiation: step 16
+        // TODO have to stray away from the spec a bit since our codebase does not lend itself well to freely executing instructions by themselves
+        for (i, DataSegment { init, mode }) in validation_info.data.iter().enumerate() {
+            match mode {
+                crate::core::reader::types::data::DataMode::Active(DataModeActive {
+                    memory_idx,
+                    offset: dinstr_i,
+                }) => {
+                    let n = init.len() as i32;
+                    // assert: mem_idx is 0
+                    if *memory_idx != 0 {
+                        // TODO fix error
+                        return Err(Error::MoreThanOneMemory);
+                    }
+
+                    // TODO (for now, we are doing hopefully what is equivalent to it)
+                    // execute:
+                    //   dinstr_i
+                    //   i32.const 0
+                    //   i32.const n
+                    //   memory.init i
+                    //   data.drop i
+                    let d: i32 = run_const_span(
+                        validation_info.wasm,
+                        dinstr_i,
+                        &self.modules[*current_module_idx],
+                        self,
+                    )
+                    .unwrap_validated()
+                    .into();
+                    let s = 0;
+                    memory_init(
+                        &self.modules,
+                        &mut self.memories,
+                        &self.data,
+                        current_module_idx,
+                        i,
+                        0,
+                        n,
+                        s,
+                        d,
+                    )
+                    .map_err(|e| Error::RuntimeError(e))?;
+                    data_drop(&self.modules, &mut self.data, current_module_idx, i)
+                        .map_err(|e| Error::RuntimeError(e))?;
+                }
+                crate::core::reader::types::data::DataMode::Passive => (),
+            }
+        }
+
+        // instantiation: step 17
+        match validation_info.start {
+            Some(func_idx) => {
+                // TODO (for now, we are doing hopefully what is equivalent to it)
+                // execute
+                //   call func_ifx
+                let func_addr = self.modules[*current_module_idx].functions[func_idx];
+                self.invoke_dynamic(func_addr, Vec::new(), &[])
+                    .map_err(|e| Error::RuntimeError(e))?;
+            }
+            None => (),
         };
-        let local_memories = module.instantiate_local_memories()?;
-        let memories_offset = self.memories.len();
-        let exec_memories = self.get_memories_indexes(&memory_imports_indexes, &local_memories)?;
-        self.memories.extend(local_memories);
-
-        let local_inst_funcs = module.instantiate_functions()?;
-
-        let functions_offset = self.functions.len();
-        let exec_functions =
-            self.get_functions_indexes(&functions_imports_indexes, &local_inst_funcs)?;
-        self.functions.extend(local_inst_funcs);
-
-        let imported_globals_len = imported_globals.len();
-        let mut globals = module.instantiate_globals(imported_globals)?;
-
-        let data =
-            module.instantiate_data(self, &exec_memories, &globals[0..imported_globals_len])?;
-
-        let mut local_tables = module.instantiate_local_tables()?;
-        let (element_inst, passive_idxs) = module.instantiate_elements(
-            self,
-            &exec_functions,
-            &mut local_tables,
-            &table_imports_indexes,
-            &globals,
-        )?;
-
-        let tables_offset = self.tables.len();
-        let exec_tables = self.get_tables_indexes(&table_imports_indexes, &local_tables)?;
-        self.tables.extend(local_tables);
-
-        let imported_functions = functions_imports_indexes.len();
-        let imported_memories = memory_imports_indexes.len();
-        let imported_globals = imported_globals_len;
-        let imported_tables = table_imports_indexes.len(); // TODO: not yet supported
-
-        let globals_offset = self.globals.len();
-        let exec_globals =
-            self.get_globals_indexes(&globals_imports, &globals[globals_imports.len()..])?;
-        // let exec_globals = (globals_offset..(globals_offset + globals.len())).collect();
-        globals.drain(0..globals_imports.len());
-        self.globals.extend(globals);
-
-        let data_offset = self.data.len();
-        let exec_data = (data_offset..(data_offset + data.len())).collect();
-        self.data.extend(data);
-
-        let elements_offset = self.elements.len();
-        let exec_elements = (elements_offset..(elements_offset + element_inst.len())).collect();
-        self.elements.extend(element_inst);
-
-        let execution_info = ExecutionInfo {
-            name: name.clone(),
-            wasm_bytecode: module.wasm,
-            //TODO make this a ref
-            sidetable: module.sidetable.clone(),
-
-            functions: exec_functions,
-            functions_offset,
-            imported_functions_len: imported_functions,
-
-            function_types: module.types,
-
-            memories: exec_memories,
-            memories_offset,
-            imported_memories_len: imported_memories,
-
-            globals: exec_globals,
-            globals_offset,
-            imported_globals_len: imported_globals,
-
-            tables: exec_tables,
-            tables_offset,
-            imported_tables_len: imported_tables,
-
-            data: exec_data,
-            data_offset,
-
-            elements: exec_elements,
-            elements_offset,
-
-            passive_element_indexes: passive_idxs,
-            exports: module.exports,
-        };
-
-        self.module_names.insert(name.clone(), self.modules.len());
-        self.modules.push(execution_info);
 
         Ok(())
     }
 
-    pub fn lookup_local_function(
-        &self,
-        target_module: &str,
-        target_function: &str,
-    ) -> Option<usize> {
-        for module in &self.modules {
-            if module.name == target_module {
-                for export in &module.exports {
-                    if export.name == target_function {
-                        return export.desc.get_function_idx();
-                    }
-                }
-            }
-        }
-        None
+    /// returns the module instance within the store
+
+    /// roughly matches <https://webassembly.github.io/spec/core/exec/modules.html#functions> with the addition of sidetable pointer to the input signature
+    // TODO refactor the type of func
+    // TODO module_addr
+    fn alloc_func(
+        &mut self,
+        func: (TypeIdx, (Span, usize)),
+        module_inst: &ModuleInst,
+        module_addr: usize,
+    ) -> usize {
+        let (ty, (span, stp)) = func;
+
+        // TODO rewrite this huge chunk of parsing after generic way to re-parse(?) structs lands
+        let mut wasm_reader = WasmReader::new(module_inst.wasm_bytecode);
+        wasm_reader.move_start_to(span).unwrap_validated();
+
+        let (locals, bytes_read) = wasm_reader
+            .measure_num_read_bytes(crate::code::read_declared_locals)
+            .unwrap_validated();
+
+        let code_expr = wasm_reader
+            .make_span(span.len() - bytes_read)
+            .unwrap_validated();
+
+        // core of the method below
+
+        let func_inst = FuncInst {
+            ty,
+            locals,
+            code_expr,
+            stp,
+            // validation guarantees func_ty_idx exists within module_inst.types
+            // TODO fix clone
+            function_type: module_inst.function_types[ty].clone(),
+            module_addr,
+        };
+
+        let addr = self.functions.len();
+        self.functions.push(func_inst);
+        addr
     }
 
-    pub fn lookup_function(&self, target_module: &str, target_function: &str) -> Option<usize> {
-        let module_name: &str = target_module;
-        let function_name: &str = target_function;
-        let mut import_path: Vec<(String, String)> = vec![];
+    /// https://webassembly.github.io/spec/core/exec/modules.html#tables
+    fn alloc_table(&mut self, table_type: TableType, reff: Ref) -> usize {
+        let table_inst = TableInst {
+            ty: table_type,
+            elem: vec![reff; table_type.lim.min as usize],
+        };
 
-        for _ in 0..100 {
-            import_path.push((module_name.to_string(), function_name.to_string()));
-            let module_idx = self.module_names.get(module_name)?;
-            let module = &self.modules[*module_idx];
-
-            let mut same_name_exports = module.exports.iter().filter_map(|export| {
-                if export.name == function_name {
-                    Some(&export.desc)
-                } else {
-                    None
-                }
-            });
-
-            // TODO: what if there are two exports with the same name -- error out?
-            if same_name_exports.clone().count() != 1 {
-                return None;
-            }
-
-            let target_export = same_name_exports.next()?;
-
-            match target_export {
-                ExportDesc::FuncIdx(local_idx) => return Some(module.functions[*local_idx]),
-                _ => return None,
-            }
-        }
-
-        // At this point, we are 100-imports deep. This isn't okay, and could be a sign of an infinte loop. We don't
-        // want our plane's CPU to keep searching for imports so we just assume we haven't found any.
-        None
+        let addr = self.tables.len();
+        self.tables.push(table_inst);
+        addr
     }
 
-    // TODO: why do get_module and get_function functions return both Result and Option? Settle on something
-    pub fn get_module_idx_from_name(&self, module_name: &str) -> Result<usize, RuntimeError> {
-        Ok(*(self
-            .module_names
-            .get(module_name)
-            .ok_or(RuntimeError::ModuleNotFound)?))
+    /// https://webassembly.github.io/spec/core/exec/modules.html#memories
+    fn alloc_mem(&mut self, mem_type: MemType) -> usize {
+        let mem_inst = MemInst {
+            ty: mem_type,
+            mem: LinearMemory::new_with_initial_pages(
+                mem_type.limits.min.try_into().unwrap_validated(),
+            ),
+        };
+
+        let addr = self.memories.len();
+        self.memories.push(mem_inst);
+        addr
     }
 
-    pub(crate) fn get_module_idx_from_func_idx(
-        &self,
-        func_idx: usize,
-    ) -> Result<usize, RuntimeError> {
-        for module_idx in 0..self.modules.len() {
-            let module = &self.modules[module_idx];
-            let start = module.imported_functions_len;
-            for i in start..module.functions.len() {
-                if module.functions[i] == func_idx {
-                    return Ok(module_idx);
-                }
-            }
-        }
+    /// https://webassembly.github.io/spec/core/exec/modules.html#globals
+    fn alloc_global(&mut self, global_type: GlobalType, val: Value) -> usize {
+        let global_inst = GlobalInst {
+            ty: global_type,
+            value: val,
+        };
 
-        Err(RuntimeError::ModuleNotFound)
+        let addr = self.globals.len();
+        self.globals.push(global_inst);
+        addr
     }
 
-    pub fn get_local_function_idx_by_global_function_idx(
-        &self,
-        module_idx: usize,
-        global_function_idx: usize,
-    ) -> Option<usize> {
-        let functions = &self.modules[module_idx].functions;
-        for (i, item) in functions.iter().enumerate() {
-            if *item == global_function_idx {
-                return Some(i);
-            }
-        }
-        None
+    /// https://webassembly.github.io/spec/core/exec/modules.html#element-segments
+    fn alloc_elem(&mut self, ref_type: RefType, refs: Vec<Ref>) -> usize {
+        let elem_inst = ElemInst {
+            ty: ref_type,
+            references: refs,
+        };
+
+        let addr = self.elements.len();
+        self.elements.push(elem_inst);
+        addr
     }
 
-    pub fn get_local_function_idx_by_function_name(
-        &self,
-        module_idx: usize,
-        function_name: &str,
-    ) -> Option<usize> {
-        for export in &self.modules[module_idx].exports {
-            if export.name == function_name {
-                return export.desc.get_function_idx();
-            }
-        }
+    /// https://webassembly.github.io/spec/core/exec/modules.html#data-segments
+    fn alloc_data(&mut self, bytes: &[u8]) -> usize {
+        let data_inst = DataInst {
+            data: Vec::from(bytes),
+        };
 
-        None
-    }
-
-    pub fn get_global_function_idx_by_name(
-        &self,
-        // module_name: &str,
-        module_idx: usize,
-        function_name: &str,
-    ) -> Option<usize> {
-        for export in &self.modules[module_idx].exports {
-            if export.name == function_name {
-                if let Some(local_func_idx) = export.desc.get_function_idx() {
-                    return Some(self.modules[module_idx].functions[local_func_idx]);
-                };
-                return None;
-            }
-        }
-
-        None
-    }
-
-    pub fn get_global_global_idx(&self, module_idx: usize, global_name: &str) -> Option<usize> {
-        for export in &self.modules[module_idx].exports {
-            if export.name == global_name {
-                return export
-                    .desc
-                    .get_global_idx()
-                    .map(|idx| self.modules[module_idx].globals[idx]);
-            }
-        }
-        None
-    }
-
-    pub fn get_global_memory_idx(&self, module_idx: usize, memory_name: &str) -> Option<usize> {
-        for export in &self.modules[module_idx].exports {
-            if export.name == memory_name {
-                return export
-                    .desc
-                    .get_memory_idx()
-                    .map(|idx| self.modules[module_idx].memories[idx]);
-            }
-        }
-        None
-    }
-
-    pub fn get_global_table_idx(&self, module_idx: usize, table_name: &str) -> Option<usize> {
-        for export in &self.modules[module_idx].exports {
-            if export.name == table_name {
-                return export
-                    .desc
-                    .get_table_idx()
-                    .map(|idx| self.modules[module_idx].tables[idx]);
-            }
-        }
-        None
-    }
-
-    fn get_globals_indexes(
-        &self,
-        globals_imports: &Vec<Import>,
-        local_globals: &[GlobalInst],
-    ) -> CustomResult<Vec<usize>> {
-        let mut indexes: Vec<usize> = Vec::new();
-
-        for import in globals_imports {
-            indexes.push(
-                self.get_global_global_idx(
-                    self.get_module_idx_from_name(&import.module_name)?,
-                    &import.name,
-                )
-                .ok_or(Error::UnknownGlobal)?,
-            );
-        }
-
-        let globals_offset = self.globals.len();
-        for global_idx in globals_offset..local_globals.len() + globals_offset {
-            indexes.push(global_idx)
-        }
-
-        Ok(indexes)
-    }
-
-    fn get_memories_indexes(
-        &self,
-        memories_imports_indexes: &[usize],
-        local_memories: &[MemInst],
-    ) -> CustomResult<Vec<usize>> {
-        let mut indexes: Vec<usize> = Vec::new();
-        indexes.extend_from_slice(memories_imports_indexes);
-        let memories_offset = self.memories.len();
-        for memory_idx in memories_offset..local_memories.len() + memories_offset {
-            indexes.push(memory_idx);
-        }
-
-        Ok(indexes)
-    }
-
-    fn get_functions_indexes(
-        &self,
-        functions_imports_indexes: &[usize],
-        local_functions: &[FuncInst],
-    ) -> CustomResult<Vec<usize>> {
-        let mut indexes: Vec<usize> = Vec::new();
-        indexes.extend_from_slice(functions_imports_indexes);
-        let functions_offset = self.functions.len();
-        for function_idx in functions_offset..local_functions.len() + functions_offset {
-            indexes.push(function_idx);
-        }
-
-        Ok(indexes)
-    }
-
-    fn get_tables_indexes(
-        &self,
-        tables_imports_indexes: &[usize],
-        local_tables: &[TableInst],
-    ) -> CustomResult<Vec<usize>> {
-        let mut indexes: Vec<usize> = Vec::new();
-        indexes.extend_from_slice(tables_imports_indexes);
-        let tables_offset = self.tables.len();
-        for table_idx in tables_offset..local_tables.len() + tables_offset {
-            indexes.push(table_idx);
-        }
-
-        Ok(indexes)
+        let addr = self.data.len();
+        self.data.push(data_inst);
+        addr
     }
 
     pub fn invoke<Param: InteropValueList, Returns: InteropValueList>(
         &mut self,
-        func_idx: usize,
+        func_addr: usize,
         params: Param,
     ) -> Result<Returns, RuntimeError> {
         let func_inst = self
             .functions
-            .get(func_idx)
+            .get(func_addr)
             .ok_or(RuntimeError::FunctionNotFound)?;
 
         let func_ty = func_inst.ty();
@@ -519,22 +526,26 @@ impl<'b> Store<'b> {
             func_inst.locals.iter().cloned(),
         );
 
-        let module_idx = self.get_module_idx_from_func_idx(func_idx)?;
-        let local_func_idx = self
-            .get_local_function_idx_by_global_function_idx(module_idx, func_idx)
+        let module_addr = func_inst.module_addr;
+
+        // TODO handle this bad linear search that is unavoidable
+        let func_idx = *self.modules[module_addr]
+            .functions
+            .iter()
+            .find(|addr| **addr == func_addr)
             .ok_or(RuntimeError::FunctionNotFound)?;
         // setting `usize::MAX` as return address for the outermost function ensures that we
         // observably fail upon errornoeusly continuing execution after that function returns.
         stack.push_stackframe(
-            module_idx,
-            local_func_idx,
+            module_addr,
+            func_idx,
             &func_ty,
             locals,
             usize::MAX,
             usize::MAX,
         );
 
-        let mut current_module_idx = module_idx;
+        let mut current_module_idx = module_addr;
         // Run the interpreter
         run(
             // &mut self.modules,
@@ -561,13 +572,13 @@ impl<'b> Store<'b> {
 
     pub fn invoke_dynamic(
         &mut self,
-        func_idx: usize,
+        func_addr: usize,
         params: Vec<Value>,
         ret_types: &[ValType],
     ) -> Result<Vec<Value>, RuntimeError> {
         let func_inst = self
             .functions
-            .get(func_idx)
+            .get(func_addr)
             .ok_or(RuntimeError::FunctionNotFound)?;
 
         let func_ty = func_inst.ty();
@@ -593,21 +604,25 @@ impl<'b> Store<'b> {
         // Prepare a new stack with the locals for the entry function
         let mut stack = Stack::new();
         let locals = Locals::new(params.into_iter(), func_inst.locals.iter().cloned());
-        let module_idx = self.get_module_idx_from_func_idx(func_idx)?;
-        let local_func_idx = self
-            .get_local_function_idx_by_global_function_idx(module_idx, func_idx)
+        let module_addr = func_inst.module_addr;
+
+        // TODO handle this bad linear search that is unavoidable
+        let func_idx = *self.modules[module_addr]
+            .functions
+            .iter()
+            .find(|addr| **addr == func_addr)
             .ok_or(RuntimeError::FunctionNotFound)?;
 
         stack.push_stackframe(
-            module_idx,
-            local_func_idx,
+            module_addr,
+            func_idx,
             &func_ty,
             locals,
             usize::MAX,
             usize::MAX,
         );
 
-        let mut currrent_module_idx = module_idx;
+        let mut currrent_module_idx = module_addr;
         // Run the interpreter
         run(
             // &mut self.modules,
@@ -620,7 +635,7 @@ impl<'b> Store<'b> {
 
         let func_inst = self
             .functions
-            .get(func_idx)
+            .get(func_addr)
             .ok_or(RuntimeError::FunctionNotFound)?;
 
         let func_ty = func_inst.ty();
@@ -643,15 +658,15 @@ impl<'b> Store<'b> {
 
     pub fn invoke_dynamic_unchecked_return_ty(
         &mut self,
-        func_idx: usize,
+        func_addr: usize,
         params: Vec<Value>,
     ) -> Result<Vec<Value>, RuntimeError> {
         let func_inst = self
             .functions
-            .get(func_idx)
+            .get(func_addr)
             .ok_or(RuntimeError::FunctionNotFound)?;
 
-        let module_idx = self.get_module_idx_from_func_idx(func_idx)?;
+        let module_addr = func_inst.module_addr;
 
         let func_ty = func_inst.ty();
 
@@ -670,12 +685,16 @@ impl<'b> Store<'b> {
         // Prepare a new stack with the locals for the entry function
         let mut stack = Stack::new();
         let locals = Locals::new(params.into_iter(), func_inst.locals.iter().cloned());
-        let local_func_idx = self
-            .get_local_function_idx_by_global_function_idx(module_idx, func_idx)
-            .ok_or(RuntimeError::FunctionNotFound)?;
-        stack.push_stackframe(module_idx, local_func_idx, &func_ty, locals, 0, 0);
 
-        let mut currrent_module_idx = module_idx;
+        // TODO handle this bad linear search that is unavoidable
+        let func_idx = *self.modules[module_addr]
+            .functions
+            .iter()
+            .find(|addr| **addr == func_addr)
+            .ok_or(RuntimeError::FunctionNotFound)?;
+        stack.push_stackframe(module_addr, func_idx, &func_ty, locals, 0, 0);
+
+        let mut currrent_module_idx = module_addr;
         // Run the interpreter
         run(
             // &mut self.modules,
@@ -702,342 +721,50 @@ impl<'b> Store<'b> {
         Ok(ret)
     }
 
+    //TODO consider further refactor
+    pub fn get_module_idx_from_name(&self, module_name: &str) -> Result<usize, RuntimeError> {
+        self.module_names
+            .get(module_name)
+            .copied()
+            .ok_or(RuntimeError::ModuleNotFound)
+    }
+
+    //TODO consider further refactor
+    pub fn get_global_function_idx_by_name(
+        &self,
+        module_addr: usize,
+        function_name: &str,
+    ) -> Option<usize> {
+        self.modules
+            .get(module_addr)?
+            .exports
+            .iter()
+            .find_map(|ExportInst { name, value }| {
+                if name != function_name {
+                    return None;
+                };
+                match value {
+                    ExternVal::Func(func_addr) => Some(*func_addr),
+                    _ => None,
+                }
+            })
+    }
+
+    //TODO consider further refactor
     pub fn register_alias(&mut self, alias_name: String, module_idx: usize) {
         self.module_names.insert(alias_name, module_idx);
     }
-}
 
-impl ValidationInfo<'_> {
-    pub fn instantiate_functions(&self) -> CustomResult<Vec<FuncInst>> {
-        let mut wasm_reader = WasmReader::new(self.wasm);
-
-        let functions = self.functions.iter();
-        let func_blocks_stps = self.func_blocks_stps.iter();
-
-        Ok(functions
-            .zip(func_blocks_stps)
-            .map(|(ty, (func, stp))| {
-                wasm_reader
-                    .move_start_to(*func)
-                    .expect("function index to be in the bounds of the WASM binary");
-
-                let (locals, bytes_read) = wasm_reader
-                    .measure_num_read_bytes(crate::code::read_declared_locals)
-                    .unwrap_validated();
-
-                let code_expr = wasm_reader
-                    .make_span(func.len() - bytes_read)
-                    .expect("TODO remove this expect");
-
-                FuncInst {
-                    ty: *ty,
-                    locals,
-                    code_expr,
-                    stp: *stp,
-                    function_type: self.types[*ty].clone(),
-                }
-            })
-            .collect())
-    }
-
-    pub fn instantiate_local_tables(&self) -> CustomResult<Vec<TableInst>> {
-        Ok(self.tables.iter().map(|ty| TableInst::new(*ty)).collect())
-    }
-
-    // TODO: funcref tables should contain the GLOBAL index of the functions they reference
-
-    pub fn instantiate_elements(
-        &self,
-        store: &mut Store,
-        imported_and_local_functions_indexes: &[usize],
-        tables: &mut [TableInst],
-        imported_tables_indexes: &[usize],
-        globals: &[GlobalInst],
-    ) -> CustomResult<(Vec<ElemInst>, Vec<usize>)> {
-        let mut passive_elem_indexes: Vec<usize> = vec![];
-        // https://webassembly.github.io/spec/core/syntax/modules.html#element-segments
-        let mut elements: Vec<ElemInst> = Vec::new();
-
-        // let elements: Vec<ElemInst> = self
-        for (i, elem) in self.elements.iter().enumerate() {
-            trace!("Instantiating element {:#?}", elem);
-
-            let offsets = match &elem.init {
-                ElemItems::Exprs(_ref_type, init_exprs) => init_exprs
-                    .iter()
-                    .map(|expr| {
-                        get_address_offset(
-                            run_const_span(self.wasm, expr, globals).unwrap_validated(),
-                        )
-                    })
-                    .collect::<Vec<Option<u32>>>(),
-                ElemItems::RefFuncs(indicies) => {
-                    // This branch gets taken when the elements are direct function references (i32 values), so we just return the indices
-                    indicies
-                        .iter()
-                        .map(|el| Some(*el))
-                        .collect::<Vec<Option<u32>>>()
-                }
-            };
-
-            // validate
-
-            for offset in &offsets {
-                match offset {
-                    None => {
-                        // what should we do here?
-                        // should we just crash?
-                        // for now just don't do anything
-                    }
-                    Some(offset) => {
-                        match elem.ty() {
-                            RefType::ExternRef => {
-                                // we don't care about extern refs for now
-                            }
-                            RefType::FuncRef => {
-                                if *offset as usize >= imported_and_local_functions_indexes.len() {
-                                    return Err(Error::FunctionIsNotDefined(*offset as usize));
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            let references: Vec<Ref> = {
-                let mut temp: Vec<Ref> = Vec::new();
-
-                for offset in offsets {
-                    let offset = offset.as_ref().map(|offset| *offset as usize);
-                    temp.push(match elem.ty() {
-                        RefType::FuncRef => Ref::Func(FuncAddr::new({
-                            match offset {
-                                None => None,
-                                Some(offset) => {
-                                    trace!(
-                                        "Table element with global function idx: {}",
-                                        imported_and_local_functions_indexes[offset]
-                                    );
-                                    Some(imported_and_local_functions_indexes[offset])
-                                }
-                            }
-                        })),
-
-                        // TODO: ExternRefs - when implemented
-                        RefType::ExternRef => Ref::Extern(ExternAddr::new(offset)),
-                    });
-                }
-
-                temp
-            };
-
-            // let references: Vec<Ref> = offsets
-            //     .iter()
-            //     .map(|offset| {
-            //         let offset = offset.as_ref().map(|offset| *offset as usize);
-            //         match elem.ty() {
-            //             RefType::FuncRef => Ref::Func(FuncAddr::new(offset)),
-
-            //             // TODO: ExternRef's
-            //             RefType::ExternRef => Ref::Extern(ExternAddr::new(offset)),
-            //         }
-            //     })
-            //     .collect();
-
-            let instance = ElemInst {
-                ty: elem.ty(),
-                references,
-            };
-
-            let elem_inst_opt = match &elem.mode {
-                // As per https://webassembly.github.io/spec/core/syntax/modules.html#element-segments
-                // A declarative element segment is not available at runtime but merely serves to forward-declare
-                //  references that are formed in code with instructions like `ref.func`
-
-                // Also, the answer given by Andreas Rossberg (the editor of the WASM Spec - Release 2.0)
-                // Per https://stackoverflow.com/questions/78672934/what-is-the-purpose-of-a-wasm-declarative-element-segment
-                // "[...] The reason Wasm requires this (admittedly ugly) forward declaration is to support streaming compilation [...]"
-                ElemMode::Declarative => None,
-                ElemMode::Passive => {
-                    passive_elem_indexes.push(i);
-                    Some(instance)
-                }
-                ElemMode::Active(active_elem) => {
-                    let table_idx = active_elem.table_idx as usize;
-
-                    let offset = match run_const_span(self.wasm, &active_elem.init_expr, globals)
-                        .unwrap_validated()
-                    {
-                        Value::I32(offset) => offset as usize,
-                        // We are already asserting that on top of the stack there is an I32 at validation time
-                        _ => unreachable!(),
-                    };
-
-                    let table = if table_idx >= imported_tables_indexes.len() {
-                        let actual_offset = table_idx - imported_tables_indexes.len();
-                        &mut tables[actual_offset]
-                    } else {
-                        // self.tables[imported_tables_indexes[table_idx]]
-                        &mut store.tables[imported_tables_indexes[table_idx]]
-                    };
-                    // This can't be verified at validation-time because we don't keep track of actual values when validating expressions
-                    //  we only keep track of the type of the values. As such we can't pop the exact value of an i32 from the validation stack
-                    assert!(table.len() >= (offset + instance.len()));
-
-                    // trace!("")
-                    table.elem[offset..offset + instance.references.len()]
-                        .copy_from_slice(&instance.references);
-
-                    Some(instance)
-                }
-            };
-
-            match elem_inst_opt {
-                None => {
-                    // todo idk
-                }
-                Some(elem_inst) => elements.push(elem_inst),
-            };
-        }
-        // .filter_map(|(i, elem)| {
-        //     })
-        // .collect();
-
-        Ok((elements, passive_elem_indexes))
-    }
-
-    pub fn instantiate_local_memories(&self) -> CustomResult<Vec<MemInst>> {
-        let memories: Vec<MemInst> = self.memories.iter().map(|ty| MemInst::new(*ty)).collect();
-
-        let import_memory_instances_len = self
-            .imports
-            .iter()
-            .filter(|import| matches!(import.desc, ImportDesc::Mem(_)))
-            .count();
-
-        match memories.len().checked_add(import_memory_instances_len) {
-            None => {
-                return Err(Error::StoreInstantiationError(
-                    StoreInstantiationError::TooManyMemories(usize::MAX),
-                ))
-            }
-            Some(mem_instances) => {
-                if mem_instances > 1 {
-                    return Err(Error::UnsupportedProposal(Proposal::MultipleMemories));
-                }
-            }
-        };
-
-        Ok(memories)
-    }
-
-    pub fn instantiate_data(
-        &self,
-        store: &mut Store,
-        // memory_instances: &mut [MemInst],
-        memories_indexes: &[usize],
-        imported_globals: &[GlobalInst],
-    ) -> CustomResult<Vec<DataInst>> {
-        self.data
-            .iter()
-            .map(|d| {
-                use crate::core::reader::types::data::DataMode;
-                use crate::NumType;
-                if let DataMode::Active(active_data) = d.mode.clone() {
-                    trace!("Instantiating active data (DataMode::Active)...");
-                    let mem_idx = active_data.memory_idx;
-                    if mem_idx != 0 {
-                        todo!("Active data has memory_idx different than 0");
-                    }
-
-                    assert!(
-                        memories_indexes.len() <= 1,
-                        "Multiple memories not yet supported"
-                    );
-
-                    let boxed_value = {
-                        let mut wasm = WasmReader::new(self.wasm);
-                        wasm.move_start_to(active_data.offset).unwrap_validated();
-                        let mut stack = Stack::new();
-                        run_const(&mut wasm, &mut stack, imported_globals);
-                        let boxed_value = stack.pop_value(ValType::NumType(NumType::I32));
-
-                        // we should have NO value on the stack whatsoever, otherwise it's wrong
-                        if stack.peek_unknown_value().is_some() {
-                            return Err(Error::EndInvalidValueStack);
-                        }
-                        // stack.peek_unknown_value().ok_or(MissingValueOnTheStack)?
-
-                        boxed_value
-                    };
-
-                    // TODO: this shouldn't be a simple value, should it? I mean it can't be, but it can also be any type of ValType
-                    // TODO: also, do we need to forcefully make it i32?
-                    let offset: u32 = match boxed_value {
-                        Value::I32(val) => val,
-                        // Value::I64(val) => {
-                        //     if val > u32::MAX as u64 {
-                        //         return Err(I64ValueOutOfReach("data segment".to_owned()));
-                        //     }
-                        //     val as u32
-                        // }
-                        // TODO: implement all value types
-                        _ => todo!(),
-                    };
-
-                    let index = memories_indexes.get(mem_idx).ok_or(Error::UnknownMemory)?;
-                    let mem_inst = store.memories.get_mut(*index).ok_or(Error::UnknownMemory)?;
-                    // let mem_inst = memory_instances.get_mut(mem_idx).unwrap();
-
-                    let len = mem_inst.mem.len();
-                    if offset as usize + d.init.len() > len {
-                        return Err(Error::StoreInstantiationError(
-                            StoreInstantiationError::ActiveDataWriteOutOfBounds,
-                        ));
-                    }
-
-                    mem_inst
-                        .mem
-                        .init(offset as usize, &d.init, 0, d.init.len())?;
-                }
-                Ok(DataInst {
-                    data: d.init.clone(),
-                })
-            })
-            .collect::<CustomResult<Vec<DataInst>>>()
-    }
-
-    pub fn instantiate_globals(
-        &self,
-        imported_globals: Vec<GlobalInst>,
-    ) -> CustomResult<Vec<GlobalInst>> {
-        // let mut globals = imported_globals;
-        let mut local_globals = Vec::new();
-
-        for global in &self.globals {
-            let mut stack = Stack::new();
-            let mut wasm = WasmReader::new(self.wasm);
-            // The place we are moving the start to should, by all means, be inside the wasm bytecode.
-            wasm.move_start_to(global.init_expr).unwrap_validated();
-            // We shouldn't need to clear the stack. If validation is correct, it will remain empty after execution.
-
-            // TODO: imported globals
-            run_const(&mut wasm, &mut stack, &imported_globals);
-            let value = stack.pop_value(global.ty.ty);
-
-            local_globals.push(GlobalInst {
-                global: *global,
-                value,
-            })
-        }
-        let mut all_globals = vec![];
-        all_globals.extend(imported_globals);
-        all_globals.extend(local_globals);
-        Ok(all_globals)
+    //TODO consider further refactor
+    pub fn lookup_function(&self, target_module: &str, target_function: &str) -> Option<usize> {
+        let module_addr = *self.module_names.get(target_module)?;
+        self.get_global_function_idx_by_name(module_addr, target_function)
     }
 }
 
 #[derive(Debug)]
+// TODO does not match the spec FuncInst
+
 pub struct FuncInst {
     pub ty: TypeIdx,
     pub locals: Vec<ValType>,
@@ -1045,6 +772,9 @@ pub struct FuncInst {
     ///index of the sidetable corresponding to the beginning of this functions code
     pub stp: usize,
     pub function_type: FuncType,
+    // implicit back ref required for function invocation and is in the spec
+    // TODO module_addr or module ref?
+    pub module_addr: usize,
 }
 
 impl FuncInst {
@@ -1130,11 +860,146 @@ impl MemInst {
 
 #[derive(Debug)]
 pub struct GlobalInst {
-    pub global: Global,
+    pub ty: GlobalType,
     /// Must be of the same type as specified in `ty`
     pub value: Value,
 }
 
 pub struct DataInst {
     pub data: Vec<u8>,
+}
+
+///<https://webassembly.github.io/spec/core/exec/runtime.html#external-values>
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum ExternVal {
+    Func(usize),
+    Table(usize),
+    Mem(usize),
+    Global(usize),
+}
+
+impl ExternVal {
+    /// returns the external type of `self` according to typing relation,
+    /// taking `store` as context S.
+    /// typing fails if this external value does not exist within S.
+    ///<https://webassembly.github.io/spec/core/valid/modules.html#imports>
+    pub fn extern_type(&self, store: &Store) -> CustomResult<ExternType> {
+        // TODO: implement proper errors
+        Ok(match self {
+            // TODO: fix ugly clone in function types
+            ExternVal::Func(func_addr) => ExternType::Func(
+                store
+                    .functions
+                    .get(*func_addr)
+                    .ok_or(Error::InvalidImportType)?
+                    .ty(),
+            ),
+            ExternVal::Table(table_addr) => ExternType::Table(
+                store
+                    .tables
+                    .get(*table_addr)
+                    .ok_or(Error::InvalidImportType)?
+                    .ty,
+            ),
+            ExternVal::Mem(mem_addr) => ExternType::Mem(
+                store
+                    .memories
+                    .get(*mem_addr)
+                    .ok_or(Error::InvalidImportType)?
+                    .ty,
+            ),
+            ExternVal::Global(global_addr) => ExternType::Global(
+                store
+                    .globals
+                    .get(*global_addr)
+                    .ok_or(Error::InvalidImportType)?
+                    .ty,
+            ),
+        })
+    }
+}
+
+/// common convention functions defined for lists of ExternVals, ExternTypes, Exports
+/// https://webassembly.github.io/spec/core/exec/runtime.html#conventions
+/// https://webassembly.github.io/spec/core/syntax/types.html#id3
+/// https://webassembly.github.io/spec/core/syntax/modules.html?highlight=convention#id1
+// TODO implement this trait for ExternType lists Export lists
+pub trait ExternFilterable<T> {
+    fn funcs(self) -> impl Iterator<Item = T>;
+    fn tables(self) -> impl Iterator<Item = T>;
+    fn mems(self) -> impl Iterator<Item = T>;
+    fn globals(self) -> impl Iterator<Item = T>;
+}
+
+impl<'a, I> ExternFilterable<usize> for I
+where
+    I: Iterator<Item = &'a ExternVal>,
+{
+    fn funcs(self) -> impl Iterator<Item = usize> {
+        self.filter_map(|extern_val| {
+            if let ExternVal::Func(func_addr) = extern_val {
+                Some(*func_addr)
+            } else {
+                None
+            }
+        })
+    }
+
+    fn tables(self) -> impl Iterator<Item = usize> {
+        self.filter_map(|extern_val| {
+            if let ExternVal::Table(table_addr) = extern_val {
+                Some(*table_addr)
+            } else {
+                None
+            }
+        })
+    }
+
+    fn mems(self) -> impl Iterator<Item = usize> {
+        self.filter_map(|extern_val| {
+            if let ExternVal::Mem(mem_addr) = extern_val {
+                Some(*mem_addr)
+            } else {
+                None
+            }
+        })
+    }
+
+    fn globals(self) -> impl Iterator<Item = usize> {
+        self.filter_map(|extern_val| {
+            if let ExternVal::Global(global_addr) = extern_val {
+                Some(*global_addr)
+            } else {
+                None
+            }
+        })
+    }
+}
+
+///<https://webassembly.github.io/spec/core/exec/runtime.html#export-instances>
+pub struct ExportInst {
+    pub name: String,
+    pub value: ExternVal,
+}
+
+///<https://webassembly.github.io/spec/core/exec/runtime.html#module-instances>
+pub struct ModuleInst<'b> {
+    pub function_types: Vec<FuncType>,
+    pub functions: Vec<usize>,
+    pub tables: Vec<usize>,
+    pub memories: Vec<usize>,
+    pub globals: Vec<usize>,
+    pub elements: Vec<usize>,
+    pub data: Vec<usize>,
+    pub exports: Vec<ExportInst>,
+
+    // TODO the bytecode is not in the spec, but required for re-parsing
+    pub wasm_bytecode: &'b [u8],
+
+    //sidetable is not in the spec, but required for control flow
+    pub sidetable: Sidetable,
+
+    // TODO name field is not in the spec but used by the testsuite crate, might need to be refactored out
+    // this data is unfortunately duplicated within store.module_names kv store.
+    pub name: String,
 }

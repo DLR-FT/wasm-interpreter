@@ -228,6 +228,13 @@ impl ElemItems {
             Self::Exprs(rty, _) => *rty,
         }
     }
+
+    pub fn len(&self) -> usize {
+        match self {
+            Self::RefFuncs(ref_funcs) => ref_funcs.len(),
+            Self::Exprs(_, exprs) => exprs.len(),
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
