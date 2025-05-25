@@ -240,11 +240,12 @@ pub(super) fn run<H: HookSet>(
                 let func_to_call_inst = &store.functions[func_to_call_addr];
                 let func_to_call_module_addr = func_to_call_inst.module_addr;
 
-                // TODO no option but to do linear search here for now
-                let func_to_call_idx = *store.modules[func_to_call_module_addr]
+                // TODO handle this bad linear search that is unavoidable
+                let (func_to_call_idx, _) = store.modules[func_to_call_inst.module_addr]
                     .functions
                     .iter()
-                    .find(|addr| **addr == func_to_call_addr)
+                    .enumerate()
+                    .find(|&(idx, addr)| *addr == func_to_call_addr)
                     .ok_or(RuntimeError::FunctionNotFound)?;
 
                 let actual_ty = func_to_call_inst.ty();

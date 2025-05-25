@@ -6,7 +6,7 @@ use crate::{
 };
 
 pub struct FunctionRef {
-    pub(super) func_addr: usize,
+    pub func_addr: usize,
 }
 
 impl FunctionRef {

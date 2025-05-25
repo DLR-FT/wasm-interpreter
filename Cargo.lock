@@ -946,6 +946,7 @@ dependencies = [
 name = "wasm-interpreter"
 version = "0.1.0"
 dependencies = [
+ "bumpalo",
  "criterion",
  "env_logger 0.10.2",
  "hexf",

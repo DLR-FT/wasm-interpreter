@@ -529,10 +529,11 @@ impl<'b> Store<'b> {
         let module_addr = func_inst.module_addr;
 
         // TODO handle this bad linear search that is unavoidable
-        let func_idx = *self.modules[module_addr]
+        let (func_idx, _) = self.modules[module_addr]
             .functions
             .iter()
-            .find(|addr| **addr == func_addr)
+            .enumerate()
+            .find(|&(idx, addr)| *addr == func_addr)
             .ok_or(RuntimeError::FunctionNotFound)?;
         // setting `usize::MAX` as return address for the outermost function ensures that we
         // observably fail upon errornoeusly continuing execution after that function returns.
@@ -607,12 +608,12 @@ impl<'b> Store<'b> {
         let module_addr = func_inst.module_addr;
 
         // TODO handle this bad linear search that is unavoidable
-        let func_idx = *self.modules[module_addr]
+        let (func_idx, _) = self.modules[module_addr]
             .functions
             .iter()
-            .find(|addr| **addr == func_addr)
+            .enumerate()
+            .find(|&(idx, addr)| *addr == func_addr)
             .ok_or(RuntimeError::FunctionNotFound)?;
-
         stack.push_stackframe(
             module_addr,
             func_idx,
@@ -687,12 +688,12 @@ impl<'b> Store<'b> {
         let locals = Locals::new(params.into_iter(), func_inst.locals.iter().cloned());
 
         // TODO handle this bad linear search that is unavoidable
-        let func_idx = *self.modules[module_addr]
+        let (func_idx, _) = self.modules[module_addr]
             .functions
             .iter()
-            .find(|addr| **addr == func_addr)
+            .enumerate()
+            .find(|&(idx, addr)| *addr == func_addr)
             .ok_or(RuntimeError::FunctionNotFound)?;
-        stack.push_stackframe(module_addr, func_idx, &func_ty, locals, 0, 0);
 
         let mut currrent_module_idx = module_addr;
         // Run the interpreter

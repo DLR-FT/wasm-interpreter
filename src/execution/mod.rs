@@ -137,10 +137,11 @@ where
         let module_addr = func_inst.module_addr;
 
         // TODO handle this bad linear search that is unavoidable
-        let func_idx = *store.modules[module_addr]
+        let (func_idx, _) = store.modules[module_addr]
             .functions
             .iter()
-            .find(|addr| **addr == func_addr)
+            .enumerate()
+            .find(|&(idx, addr)| *addr == func_addr)
             .ok_or(RuntimeError::FunctionNotFound)?;
 
         let func_ty = func_inst.ty();
@@ -215,10 +216,11 @@ where
         let module_addr = func_inst.module_addr;
 
         // TODO handle this bad linear search that is unavoidable
-        let func_idx = *store.modules[module_addr]
+        let (func_idx, _) = store.modules[module_addr]
             .functions
             .iter()
-            .find(|addr| **addr == func_addr)
+            .enumerate()
+            .find(|&(idx, addr)| *addr == func_addr)
             .ok_or(RuntimeError::FunctionNotFound)?;
 
         let func_ty = func_inst.ty();
@@ -293,15 +295,15 @@ where
             .get(func_addr)
             .ok_or(RuntimeError::FunctionNotFound)?;
 
-        let module_idx = func_inst.module_addr;
+        let module_addr = func_inst.module_addr;
 
         // TODO handle this bad linear search that is unavoidable
-        let func_idx = *store.modules[module_idx]
+        let (func_idx, _) = store.modules[module_addr]
             .functions
             .iter()
-            .find(|addr| **addr == func_addr)
+            .enumerate()
+            .find(|&(idx, addr)| *addr == func_addr)
             .ok_or(RuntimeError::FunctionNotFound)?;
-
         let func_ty = func_inst.ty();
 
         // Verify that the given parameters match the function parameters
@@ -314,9 +316,9 @@ where
         // Prepare a new stack with the locals for the entry function
         let mut stack = Stack::new();
         let locals = Locals::new(params.into_iter(), func_inst.locals.iter().cloned());
-        stack.push_stackframe(module_idx, func_idx, &func_ty, locals, 0, 0);
+        stack.push_stackframe(module_addr, func_idx, &func_ty, locals, 0, 0);
 
-        let mut currrent_module_idx = module_idx;
+        let mut currrent_module_idx = module_addr;
 
         // Run the interpreter
         run(
