@@ -2,15 +2,14 @@
   description = "a minimal WASM interpreter";
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-24.11";
-    nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-25.05";
     typst-packages = {
       url = "github:typst/packages";
       flake = false;
     };
     typix = {
       url = "github:loqusion/typix";
-      inputs.nixpkgs.follows = "nixpkgs-unstable";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
     utils.url = "git+https://github.com/numtide/flake-utils.git";
     devshell.url = "github:numtide/devshell";
@@ -52,9 +51,6 @@
             overlays = [
               devshell.overlays.default
               (import inputs.rust-overlay)
-
-              # We unfortunately need the most up-to-date typst
-              (final: prev: { typst = inputs.nixpkgs-unstable.legacyPackages.${pkgs.hostPlatform.system}.typst; })
             ];
           };
 
@@ -217,11 +213,6 @@
           # always check these
           checks = {
             formatting = treefmtEval.config.build.check self;
-            # TODO remove once https://github.com/numtide/treefmt/issues/153 is closed
-            format-bug-fix = pkgs.runCommand "yaml-fmt" {
-              nativeBuildInputs = [ pkgs.nodePackages.prettier ];
-            } "cd ${./.} && prettier --check .github; touch $out";
-
             requirements = pkgs.runCommand "check-requirement" { nativeBuildInputs = [ pkgs.strictdoc ]; } ''
               shopt -s globstar
               strictdoc passthrough ${./.}/requirements/**.sdoc
