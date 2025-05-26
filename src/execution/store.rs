@@ -6,7 +6,9 @@ use crate::core::reader::types::element::{ActiveElem, ElemItems, ElemMode, ElemT
 use crate::core::reader::types::export::{Export, ExportDesc};
 use crate::core::reader::types::global::{Global, GlobalType};
 use crate::core::reader::types::import::Import;
-use crate::core::reader::types::{ExternType, FuncType, MemType, TableType, ValType};
+use crate::core::reader::types::{
+    ExternType, FuncType, ImportSubTypeRelation, MemType, TableType, ValType,
+};
 use crate::core::reader::WasmReader;
 use crate::core::sidetable::Sidetable;
 use crate::execution::interpreter_loop::{memory_init, table_init};
@@ -67,7 +69,7 @@ impl<'b> Store<'b> {
             desc: import_desc,
         } in &validation_info.imports
         {
-            let import_extern_type = import_desc.extern_type(validation_info);
+            let import_extern_type = import_desc.extern_type(validation_info)?;
             let exporting_module = self
                 .modules
                 .get(
@@ -90,9 +92,11 @@ impl<'b> Store<'b> {
                     },
                 )
                 .ok_or(Error::UnknownImport)?;
-            // TODO: this should be a subtyping relation import_extern_type >= export_extern_type
 
-            if export_extern_val_candidate.extern_type(self) != import_extern_type {
+            if !export_extern_val_candidate
+                .extern_type(self)?
+                .is_subtype_of(&import_extern_type)
+            {
                 return Err(Error::InvalidImportType);
             }
             extern_vals.push(export_extern_val_candidate)
