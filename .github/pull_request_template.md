@@ -1,23 +1,33 @@
 ### Pull Request Overview
 
+<!--
 This pull request adds/changes/fixes...
-
-### Testing Strategy
-
-This pull request was tested by...
+-->
 
 ### TODO or Help Wanted
 
+<!--
 This pull request still needs...
+-->
 
-### Formatting
+### Checks
 
-- [ ] Ran `cargo fmt`
-- [ ] Ran `cargo check`
-- [ ] Ran `cargo build`
-- [ ] Ran `cargo doc`
-- [ ] Ran `nix fmt`
+<!--
+Please tick off what you did
+-->
+
+- Using Nix
+  - [ ] Ran `nix fmt`
+  - [ ] Ran `nix flake check '.?submodules=1'`
+- Using Rust tooling
+  - [ ] Ran `cargo fmt`
+  - [ ] Ran `cargo test`
+  - [ ] Ran `cargo check`
+  - [ ] Ran `cargo build`
+  - [ ] Ran `cargo doc`
 
 ### Github Issue
 
+<!--
 This pull request closes <GITHUB_ISSUE>
+-->
