@@ -43,7 +43,7 @@ jobs:
         if: |
           (github.event.action == 'labeled' &&  github.event.label.name == 'coverage') ||
           (github.event.action != 'labeled' && github.event.action != 'unlabeled' && contains(github.event.pull_request.labels.*.name, 'coverage'))
-        run: nix build .#report --print-build-logs
+        run: nix build .?submodules=1#report --print-build-logs
       # -=-=-=-= Deploy (when labeled) =-=-=-=-
       - name: Deploy Preview (labeled)
         if: ${{ github.event.action == 'labeled' &&  github.event.label.name == 'coverage' }}
