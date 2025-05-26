@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ lib, ... }:
 {
   # Used to find the project root
   projectRootFile = "flake.nix";
@@ -13,16 +13,14 @@
       "*.json5"
       "*.md"
       "*.mdx"
-      "*.toml"
       "*.yaml"
       "*.yml"
     ];
-    settings = {
-      plugins = [
-        "${pkgs.nodePackages.prettier-plugin-toml}/lib/node_modules/prettier-plugin-toml/lib/index.js"
-      ];
-    };
   };
-  programs.rustfmt.enable = true;
+  programs.rustfmt = {
+    enable = true;
+    edition = (lib.importTOML ./Cargo.toml).package.edition;
+  };
+  programs.taplo.enable = true; # formats TOML files
   programs.typstfmt.enable = true;
 }
