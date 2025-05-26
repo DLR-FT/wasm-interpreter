@@ -17,10 +17,6 @@
       url = "github:oxalica/rust-overlay";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    naersk = {
-      url = "git+https://github.com/nix-community/naersk.git";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
     treefmt-nix = {
       url = "github:numtide/treefmt-nix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -31,7 +27,6 @@
       self,
       nixpkgs,
       utils,
-      naersk,
       devshell,
       treefmt-nix,
       ...
@@ -67,14 +62,24 @@
           msrv = cargoToml.package.rust-version;
 
           # Rust distribution for our hostSystem
-          rust-toolchain = pkgs.rust-bin.stable.${msrv}.default.override {
+          rust-toolchain-nixpkgs-current = pkgs.rust-bin.stable.${pkgs.rustc.version}.default.override {
             extensions = [ "rust-src" ];
             targets = [
               rust-target
               "wasm32-unknown-unknown"
               "thumbv6m-none-eabi" # for no_std test
               "i686-unknown-linux-musl" # to test if we can run on 32 Bit architectures
+            ];
+          };
 
+          # Rust toolchain for the MSRV
+          rust-toolchain-msrv = pkgs.rust-bin.stable.${msrv}.default.override {
+            extensions = [ "rust-src" ];
+            targets = [
+              rust-target
+              "wasm32-unknown-unknown"
+              "thumbv6m-none-eabi" # for no_std test
+              "i686-unknown-linux-musl" # to test if we can run on 32 Bit architectures
             ];
           };
 
@@ -111,7 +116,7 @@
               packages = with pkgs; [
                 stdenv.cc
                 coreutils
-                rust-toolchain
+                rust-toolchain-nixpkgs-current
                 rust-analyzer
                 cargo-audit
                 cargo-expand
@@ -141,7 +146,7 @@
               ];
               git.hooks = {
                 enable = true;
-                pre-commit.text = "nix flake check";
+                pre-commit.text = "nix flake check '.?submodules=1'";
               };
               commands = [
                 {
@@ -207,12 +212,34 @@
             }
           );
 
+          # a simple devshell to compile with the MSRV
+          devShells.msrv = pkgs.mkShell {
+            inputsFrom = [ self.checks.${system}.wasm-interpreter-msrv ];
+          };
+
           # for `nix fmt`
           formatter = treefmtEval.config.build.wrapper;
 
           # always check these
           checks = {
+            # check that all files are properly formatted
             formatting = treefmtEval.config.build.check self;
+
+            # check that the Minimum Supported Rust Version (MSRV) we promise does actually compile
+            wasm-interpreter-msrv = self.packages.${system}.wasm-interpreter.override {
+              # rustPlatform based on the MSRV we promise
+              rustPlatform = pkgs.makeRustPlatform {
+                cargo = rust-toolchain-msrv;
+                rustc = rust-toolchain-msrv;
+              };
+
+              # we do not mandate benchmark and coverage measurement to work
+              doBench = false;
+              doMeasureCoverage = false;
+              isMsrvCheck = true;
+            };
+
+            # check that the requirements can be parsed
             requirements = pkgs.runCommand "check-requirement" { nativeBuildInputs = [ pkgs.strictdoc ]; } ''
               shopt -s globstar
               strictdoc passthrough ${./.}/requirements/**.sdoc

@@ -1,10 +1,17 @@
 {
   lib,
   rustPlatform,
-  cargo-llvm-cov,
+  cargo-llvm-cov ? null,
   doBench ? true,
   doMeasureCoverage ? true,
+  isMsrvCheck ? false,
 }:
+
+# cargo-llvm-cov does not respect the MSRV toolchain override, so the two are mutually exclusive
+assert doMeasureCoverage -> !isMsrvCheck;
+
+# when we do coverage, we need cargo-llvm-cov to be a derivation
+assert doMeasureCoverage -> lib.attrsets.isDerivation cargo-llvm-cov;
 
 let
   cargoToml = builtins.fromTOML (builtins.readFile ../Cargo.toml);
@@ -67,14 +74,17 @@ rustPlatform.buildRustPackage rec {
   '';
 
   # required to measure coverage
-  nativeCheckInputs = [ cargo-llvm-cov ];
-  env = {
+  nativeCheckInputs = lib.lists.optional doMeasureCoverage cargo-llvm-cov;
+  env = lib.attrsets.optionalAttrs doMeasureCoverage {
     inherit (cargo-llvm-cov) LLVM_COV LLVM_PROFDATA;
   };
 
   # nextest can emit JUnit test reports
   useNextest = true;
-  cargoTestFlags = [ "--profile=ci" ];
+  cargoTestFlags =
+    [ "--profile=ci" ]
+    # we allow MSRV version missmatches from dev-dependencies as long as all tests still pass
+    ++ lib.lists.optional isMsrvCheck "--ignore-rust-version";
 
   # TODO `cargo llvm-cov report --doctest` is only available on nightly :(
   postCheck =
