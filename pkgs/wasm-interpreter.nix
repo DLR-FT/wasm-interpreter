@@ -2,6 +2,8 @@
   lib,
   rustPlatform,
   cargo-llvm-cov,
+  doBench ? true,
+  doMeasureCoverage ? true,
 }:
 
 let
@@ -75,27 +77,28 @@ rustPlatform.buildRustPackage rec {
   cargoTestFlags = [ "--profile=ci" ];
 
   # TODO `cargo llvm-cov report --doctest` is only available on nightly :(
-  postCheck = ''
-    # bench
-    cargo bench
-    mv target/criterion "$out/bench-html"
-
-    # coverage stuff
-    export RUST_LOG=trace
-    cargo llvm-cov --no-report nextest
-    cargo llvm-cov report --lcov --output-path lcov.info
-    cargo llvm-cov report --json --output-path lcov.json
-    cargo llvm-cov report --cobertura --output-path lcov-cobertura.xml
-    cargo llvm-cov report --codecov --output-path lcov-codecov.json
-    cargo llvm-cov report --text --output-path lcov.txt
-    cargo llvm-cov report --html --output-dir lcov-html
-    mv lcov* target/nextest/ci/junit.xml "$out/"
-  '';
+  postCheck =
+    lib.strings.optionalString doBench ''
+      cargo bench
+      mv target/criterion "$out/bench-html"
+    ''
+    + lib.strings.optionalString doMeasureCoverage ''
+      export RUST_LOG=info
+      cargo llvm-cov --no-report nextest
+      cargo llvm-cov report --lcov --output-path lcov.info
+      cargo llvm-cov report --json --output-path lcov.json
+      cargo llvm-cov report --cobertura --output-path lcov-cobertura.xml
+      cargo llvm-cov report --codecov --output-path lcov-codecov.json
+      cargo llvm-cov report --text --output-path lcov.txt
+      cargo llvm-cov report --html --output-dir lcov-html
+      mv lcov* target/nextest/ci/junit.xml "$out/"
+    '';
 
   meta = {
     inherit (cargoToml.package) description homepage;
     license = with lib.licenses; [
-      asl20 # OR
+      asl20
+      # OR
       mit
     ];
     maintainers = [ lib.maintainers.wucke13 ];
