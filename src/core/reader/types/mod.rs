@@ -313,6 +313,11 @@ impl BlockType {
     }
 }
 
+//https://webassembly.github.io/spec/core/valid/types.html#import-subtyping
+pub trait ImportSubTypeRelation {
+    // corresponds to "matches" (<=) in the spec
+    fn is_subtype_of(&self, other: &Self) -> bool;
+}
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub struct Limits {
     pub min: u32,
@@ -331,17 +336,17 @@ impl Limits {
     pub const MEM_PAGE_SIZE: u32 = 1 << 16;
 }
 
-pub fn check_limits(fmin: u32, fmax: Option<u32>, tmin: u32, tmax: Option<u32>) -> bool {
-    if fmin < tmin {
-        return false;
-    }
-
-    match tmax {
-        None => true,
-        Some(tmax_val) => match fmax {
-            None => false,
-            Some(fmax_val) => fmax_val <= tmax_val,
-        },
+impl ImportSubTypeRelation for Limits {
+    //https://webassembly.github.io/spec/core/valid/types.html#match-limits
+    fn is_subtype_of(&self, other: &Self) -> bool {
+        (self.min >= other.min)
+            && (match other.max {
+                None => true,
+                Some(other_max) => match self.max {
+                    None => false,
+                    Some(self_max) => self_max <= other_max,
+                },
+            })
     }
 }
 
@@ -459,7 +464,6 @@ impl WasmReadable for MemType {
     }
 }
 
-// TODO: PartialOrd needs to be implemented for subtyping relation
 // <https://webassembly.github.io/spec/core/valid/types.html#import-subtyping>
 ///<https://webassembly.github.io/spec/core/valid/types.html#external-types>
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -468,4 +472,25 @@ pub enum ExternType {
     Table(TableType),
     Mem(MemType),
     Global(GlobalType),
+}
+
+impl ImportSubTypeRelation for ExternType {
+    // https://webassembly.github.io/spec/core/valid/types.html#match-limits
+    fn is_subtype_of(&self, other: &Self) -> bool {
+        match self {
+            ExternType::Table(self_table_type) => match other {
+                ExternType::Table(other_table_type) => {
+                    self_table_type.lim.is_subtype_of(&other_table_type.lim)
+                }
+                _ => false,
+            },
+            ExternType::Mem(self_mem_type) => match other {
+                ExternType::Mem(other_mem_type) => {
+                    self_mem_type.limits.is_subtype_of(&other_mem_type.limits)
+                }
+                _ => false,
+            },
+            _ => self == other,
+        }
+    }
 }
