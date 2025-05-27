@@ -2,6 +2,7 @@
   lib,
   rustPlatform,
   cargo-llvm-cov ? null,
+  doDoc ? true,
   doBench ? true,
   doMeasureCoverage ? true,
   isMsrvCheck ? false,
@@ -67,10 +68,10 @@ rustPlatform.buildRustPackage rec {
   cargoLock.lockFile = src + "/Cargo.lock";
 
   # we want a full documentation
-  postBuild = ''
+  postBuild = lib.strings.optionalString doDoc ''
     cargo doc --document-private-items
     mkdir -- "$out"
-    mv target/doc "$out/"
+    mv -- target/doc "$out/"
   '';
 
   # required to measure coverage

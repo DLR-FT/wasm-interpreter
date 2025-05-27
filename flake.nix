@@ -97,22 +97,51 @@
         in
         {
           # packages
-          packages.wasm-interpreter = pkgs.callPackage pkgs/wasm-interpreter.nix { };
-          packages.whitepaper = inputs.typix.lib.${system}.buildTypstProject {
-            name = "whitepaper.pdf";
-            src = ./whitepaper;
-            XDG_CACHE_HOME = typstPackagesCache;
-          };
+          packages =
+            {
+              wasm-interpreter = pkgs.callPackage pkgs/wasm-interpreter.nix { };
 
-          packages.report = pkgs.callPackage pkgs/report.nix {
-            inherit (self.packages.${system}) wasm-interpreter whitepaper;
-          };
+              whitepaper = inputs.typix.lib.${system}.buildTypstProject {
+                name = "whitepaper.pdf";
+                src = ./whitepaper;
+                XDG_CACHE_HOME = typstPackagesCache;
+              };
+
+              report = pkgs.callPackage pkgs/report.nix {
+                inherit (self.packages.${system}) wasm-interpreter whitepaper;
+              };
+
+            }
+            // lib.attrsets.optionalAttrs pkgs.hostPlatform.isx86 {
+              # Interpreter package tailored for i686 build. As the upstream Nix binary cache does not
+              # contain most 32 bit binaries anymore, we inject the oxalica toolchain into the x86_64
+              # build, to avoid massive recompilation. Apparently cargo-nextest has a transitive depency
+              # on Firefox, which would lead to days of rebuilding when using the Nix built-in cross
+              # compilation mechanism.
+              wasm-interpreter-cross-i686-linux =
+                (self.packages.${system}.wasm-interpreter.override {
+                  # for the 32 bit check we are fine if the tests pass, no need for documentation,
+                  # benchmarking or coverage measurement
+                  doDoc = false;
+                  doBench = false;
+                  doMeasureCoverage = false;
+                }).overrideAttrs
+                  (old: {
+                    env = old.env // {
+                      CARGO_BUILD_TARGET = "i686-unknown-linux-musl";
+                    };
+                  });
+            };
 
           # a devshell with all the necessary bells and whistles
           devShells.default = (
             pkgs.devshell.mkShell {
               imports = [ "${devshell}/extra/git/hooks.nix" ];
               name = "wasm-interpreter";
+              packagesFrom = [
+                self.packages.${system}.report
+                self.packages.${system}.whitepaper
+              ];
               packages = with pkgs; [
                 stdenv.cc
                 coreutils
@@ -125,14 +154,10 @@
                 cargo-udeps
                 cargo-watch
                 nodePackages.prettier
-                strictdoc
                 wabt
 
                 # utilities
-                nixpkgs-fmt
-                nodePackages.prettier
                 treefmtEval.config.build.wrapper
-                typst # for the whitepaper
               ];
               env = [
                 {
@@ -233,7 +258,9 @@
                 rustc = rust-toolchain-msrv;
               };
 
-              # we do not mandate benchmark and coverage measurement to work
+              # we do neither need documentation nor mandate benchmarking or coverage measurement to
+              # work for the MSRV
+              doDoc = false;
               doBench = false;
               doMeasureCoverage = false;
               isMsrvCheck = true;
