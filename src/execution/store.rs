@@ -328,17 +328,17 @@ impl<'b> Store<'b> {
                         s,
                         d,
                     )
-                    .map_err(|e| Error::RuntimeError(e))?;
-                    elem_drop(&mut self.modules, &mut self.elements, current_module_idx, i)
-                        .map_err(|e| Error::RuntimeError(e))?;
+                    .map_err(Error::RuntimeError)?;
+                    elem_drop(&self.modules, &mut self.elements, current_module_idx, i)
+                        .map_err(Error::RuntimeError)?;
                 }
                 ElemMode::Declarative => {
                     // instantiation step 15:
                     // TODO (for now, we are doing hopefully what is equivalent to it)
                     // execute:
                     //   elem.drop i
-                    elem_drop(&mut self.modules, &mut self.elements, current_module_idx, i)
-                        .map_err(|e| Error::RuntimeError(e))?;
+                    elem_drop(&self.modules, &mut self.elements, current_module_idx, i)
+                        .map_err(Error::RuntimeError)?;
                 }
                 ElemMode::Passive => (),
             }
@@ -386,25 +386,22 @@ impl<'b> Store<'b> {
                         s,
                         d,
                     )
-                    .map_err(|e| Error::RuntimeError(e))?;
+                    .map_err(Error::RuntimeError)?;
                     data_drop(&self.modules, &mut self.data, current_module_idx, i)
-                        .map_err(|e| Error::RuntimeError(e))?;
+                        .map_err(Error::RuntimeError)?;
                 }
                 crate::core::reader::types::data::DataMode::Passive => (),
             }
         }
 
         // instantiation: step 17
-        match validation_info.start {
-            Some(func_idx) => {
-                // TODO (for now, we are doing hopefully what is equivalent to it)
-                // execute
-                //   call func_ifx
-                let func_addr = self.modules[*current_module_idx].functions[func_idx];
-                self.invoke_dynamic(func_addr, Vec::new(), &[])
-                    .map_err(|e| Error::RuntimeError(e))?;
-            }
-            None => (),
+        if let Some(func_idx) = validation_info.start {
+            // TODO (for now, we are doing hopefully what is equivalent to it)
+            // execute
+            //   call func_ifx
+            let func_addr = self.modules[*current_module_idx].functions[func_idx];
+            self.invoke_dynamic(func_addr, Vec::new(), &[])
+                .map_err(Error::RuntimeError)?;
         };
 
         Ok(())
@@ -544,7 +541,7 @@ impl<'b> Store<'b> {
             .functions
             .iter()
             .enumerate()
-            .find(|&(idx, addr)| *addr == func_addr)
+            .find(|&(_idx, addr)| *addr == func_addr)
             .ok_or(RuntimeError::FunctionNotFound)?;
         // setting `usize::MAX` as return address for the outermost function ensures that we
         // observably fail upon errornoeusly continuing execution after that function returns.
@@ -623,7 +620,7 @@ impl<'b> Store<'b> {
             .functions
             .iter()
             .enumerate()
-            .find(|&(idx, addr)| *addr == func_addr)
+            .find(|&(_idx, addr)| *addr == func_addr)
             .ok_or(RuntimeError::FunctionNotFound)?;
         stack.push_stackframe(
             module_addr,

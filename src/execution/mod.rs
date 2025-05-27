@@ -1,4 +1,3 @@
-use alloc::borrow::ToOwned;
 use alloc::vec::Vec;
 
 use const_interpreter_loop::run_const_span;
@@ -96,7 +95,7 @@ where
         if !store.module_names.contains_key(module_name) {
             return Err(RuntimeError::ModuleNotFound);
         };
-        FunctionRef::new_from_name(module_name, function_name, &store)
+        FunctionRef::new_from_name(module_name, function_name, store)
             .map_err(|_| RuntimeError::FunctionNotFound)
     }
 
@@ -142,7 +141,7 @@ where
             .functions
             .iter()
             .enumerate()
-            .find(|&(idx, addr)| *addr == func_addr)
+            .find(|&(_idx, addr)| *addr == func_addr)
             .ok_or(RuntimeError::FunctionNotFound)?;
 
         let func_ty = func_inst.ty();
@@ -224,7 +223,7 @@ where
             .functions
             .iter()
             .enumerate()
-            .find(|&(idx, addr)| *addr == func_addr)
+            .find(|&(_idx, addr)| *addr == func_addr)
             .ok_or(RuntimeError::FunctionNotFound)?;
 
         let func_ty = func_inst.ty();
@@ -306,7 +305,7 @@ where
             .functions
             .iter()
             .enumerate()
-            .find(|&(idx, addr)| *addr == func_addr)
+            .find(|&(_idx, addr)| *addr == func_addr)
             .ok_or(RuntimeError::FunctionNotFound)?;
         let func_ty = func_inst.ty();
 

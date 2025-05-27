@@ -155,7 +155,7 @@ fn memory_size_5() {
         i += 1;
         if i % 8 == 0 {
             i = 0;
-            println!("");
+            println!();
         }
     }
     let validation_info = validate(&wasm_bytes);
@@ -181,7 +181,7 @@ fn memory_size_6() {
         i += 1;
         if i % 8 == 0 {
             i = 0;
-            println!("");
+            println!();
         }
     }
     let validation_info = validate(&wasm_bytes);
