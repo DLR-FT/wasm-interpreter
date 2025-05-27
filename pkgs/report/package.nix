@@ -1,8 +1,6 @@
 {
   stdenvNoCC,
   python3Packages,
-  strictdoc,
-  flakeRoot,
   wasm-interpreter-pkgs,
 }:
 
@@ -13,7 +11,6 @@ stdenvNoCC.mkDerivation {
 
   nativeBuildInputs = [
     python3Packages.junit2html
-    strictdoc
   ];
 
   installPhase = ''
@@ -24,6 +21,7 @@ stdenvNoCC.mkDerivation {
 
     cp --recursive -- ${wasm-interpreter-pkgs.benchmark} bench
     cp --recursive -- ${wasm-interpreter-pkgs.coverage}/lcov-html coverage
+    cp --recursive -- ${wasm-interpreter-pkgs.requirements} requirements
     cp --recursive -- ${
       wasm-interpreter-pkgs.wasm-interpreter.override { doDoc = true; }
     }/share/doc/ rustdoc
@@ -34,8 +32,6 @@ stdenvNoCC.mkDerivation {
       wasm-interpreter-pkgs.wasm-interpreter.override { useNextest = true; }
     }/junit.xml test/index.html
 
-    strictdoc export --formats html,json --enable-mathjax ${flakeRoot + "/requirements"}
-    mv output requirements
 
     cp ${./report_index.html} index.html
 
