@@ -264,6 +264,8 @@ pub fn opcode_byte_to_str(byte: u8) -> alloc::string::String {
         LOCAL_TEE => "LOCAL_TEE",
         GLOBAL_GET => "GLOBAL_GET",
         GLOBAL_SET => "GLOBAL_SET",
+        TABLE_GET => "TABLE_GET",
+        TABLE_SET => "TABLE_SET",
         I32_LOAD => "I32_LOAD",
         I64_LOAD => "I64_LOAD",
         F32_LOAD => "F32_LOAD",
