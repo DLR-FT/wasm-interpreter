@@ -1,8 +1,8 @@
 use ci_reports::CIFullReport;
-use files::{Filter, FilterMode};
 use reports::WastTestReport;
-use std::ffi::OsString;
+use std::ffi::OsStr;
 use std::fmt::Write as _;
+use std::os::unix::ffi::OsStrExt;
 use std::path::Path;
 
 mod ci_reports;
@@ -13,15 +13,24 @@ mod test_errors;
 
 #[test_log::test]
 pub fn spec_tests() {
-    let filter = Filter {
-        mode: FilterMode::Exclude,
-        files: vec![OsString::from("proposals")],
+    // Edit this to ignore or only run specific tests
+    let file_name_filter = |file_name: &OsStr| {
+        let is_simd = file_name.as_bytes().starts_with("simd_".as_bytes());
+        let is_proposal = file_name == OsStr::new("proposals");
+
+        !is_simd && !is_proposal
     };
 
-    let paths = files::find_wast_files(Path::new("./tests/specification/testsuite/"), &filter)
-        .expect("Failed to find testsuite");
+    let paths = files::find_wast_files(
+        Path::new("./tests/specification/testsuite/"),
+        file_name_filter,
+    )
+    .expect("Failed to open testsuite directory");
 
-    assert!(!paths.is_empty(), "Submodules not instantiated");
+    assert!(
+        !paths.is_empty(),
+        "No paths were found, please check if the git submodules are correctly fetched"
+    );
 
     // Some statistics about the reports
     let mut num_failures = 0;
