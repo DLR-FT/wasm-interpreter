@@ -1,3 +1,4 @@
+#![allow(clippy::approx_constant)]
 /*
 # This file incorporates code from the WebAssembly testsuite, originally
 # available at https://github.com/WebAssembly/testsuite.

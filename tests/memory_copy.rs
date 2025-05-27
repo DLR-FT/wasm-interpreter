@@ -55,8 +55,8 @@ fn memory_copy_test_1() {
     let results = Vec::from([
         0, 0, 3, 1, 4, 1, 0, 0, 0, 0, 0, 0, 7, 5, 2, 3, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     ]);
-    for j in 0..30 {
-        assert_result!(i, load8_u, j as i32, results[j]);
+    for (j, result) in results.into_iter().enumerate() {
+        assert_result!(i, load8_u, j as i32, result);
     }
 }
 
@@ -86,8 +86,8 @@ fn memory_copy_test_2() {
     let results = Vec::from([
         0, 0, 3, 1, 4, 1, 0, 0, 0, 0, 0, 0, 7, 3, 1, 4, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     ]);
-    for j in 0..30 {
-        assert_result!(i, load8_u, j as i32, results[j]);
+    for (j, result) in results.into_iter().enumerate() {
+        assert_result!(i, load8_u, j as i32, result);
     }
 }
 
