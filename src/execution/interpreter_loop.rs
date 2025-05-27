@@ -172,13 +172,21 @@ pub(super) fn run<H: HookSet>(
                 do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable);
             }
             CALL => {
-                let func_to_call_idx = wasm.read_var_u32().unwrap_validated() as FuncIdx;
+                let local_func_idx = wasm.read_var_u32().unwrap_validated() as FuncIdx;
 
                 let func_to_call_addr =
-                    store.modules[*current_module_idx].func_addrs[func_to_call_idx];
+                    store.modules[*current_module_idx].func_addrs[local_func_idx];
 
                 let func_to_call_inst = store.functions.get(func_to_call_addr).unwrap_validated();
                 let func_to_call_ty = func_to_call_inst.ty();
+
+                // TODO handle this bad linear search that is unavoidable
+                let (func_to_call_idx, _) = store.modules[func_to_call_inst.module_addr]
+                    .func_addrs
+                    .iter()
+                    .enumerate()
+                    .find(|&(_idx, addr)| *addr == func_to_call_addr)
+                    .ok_or(RuntimeError::FunctionNotFound)?;
 
                 let params = stack.pop_tail_iter(func_to_call_ty.params.valtypes.len());
 
