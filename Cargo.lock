@@ -80,6 +80,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ace50bade8e6234aa140d9a2f552bbee1db4d353f69b8217bc503490fc1a9f26"
 
 [[package]]
+name = "benchmark"
+version = "0.1.0"
+dependencies = [
+ "criterion",
+ "wasm-interpreter",
+ "wat",
+]
+
+[[package]]
 name = "bitflags"
 version = "2.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -382,15 +391,6 @@ name = "itertools"
 version = "0.10.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b0fd2260e829bddf4cb6ea802289de2f86d6a7a690192fbe91b3f46e0f2c8473"
-dependencies = [
- "either",
-]
-
-[[package]]
-name = "itertools"
-version = "0.12.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ba291022dbbd398a455acf126c1e341954079855bc60dfdda641363bd6922569"
 dependencies = [
  "either",
 ]
@@ -939,7 +939,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e62baf58bc14f219d1d12d082ea99860acb479b582e8f3d292d8a7c8f756091c"
 dependencies = [
  "leb128fmt",
- "wasmparser 0.231.0",
+ "wasmparser",
 ]
 
 [[package]]
@@ -947,29 +947,16 @@ name = "wasm-interpreter"
 version = "0.1.0"
 dependencies = [
  "bumpalo",
- "criterion",
  "env_logger 0.10.2",
  "hexf",
- "itertools 0.12.1",
+ "itertools 0.14.0",
  "libm",
  "log",
  "serde",
  "serde_json",
  "test-log",
- "wasmparser 0.119.0",
  "wast 212.0.0",
  "wat",
-]
-
-[[package]]
-name = "wasmparser"
-version = "0.119.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8c35daf77afb4f9b14016625144a391085ec2ca99ca9cc53ed291bb53ab5278d"
-dependencies = [
- "bitflags",
- "indexmap",
- "semver",
 ]
 
 [[package]]

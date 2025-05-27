@@ -57,7 +57,6 @@
         "rust-overlay": "rust-overlay",
         "treefmt-nix": "treefmt-nix",
         "typix": "typix",
-        "typst-packages": "typst-packages",
         "utils": "utils"
       }
     },
@@ -133,22 +132,6 @@
       "original": {
         "owner": "loqusion",
         "repo": "typix",
-        "type": "github"
-      }
-    },
-    "typst-packages": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1748262362,
-        "narHash": "sha256-x5Ygk09rk+GArfNulQhIetNxlAc6+TLYj6Jy/kk9bmA=",
-        "owner": "typst",
-        "repo": "packages",
-        "rev": "2b5fe729d3b7cd7b2619718b3fa7b22c18803b99",
-        "type": "github"
-      },
-      "original": {
-        "owner": "typst",
-        "repo": "packages",
         "type": "github"
       }
     },

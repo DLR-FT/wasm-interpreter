@@ -1,18 +1,9 @@
 {
   lib,
   rustPlatform,
-  cargo-llvm-cov ? null,
   doDoc ? true,
-  doBench ? true,
-  doMeasureCoverage ? true,
-  isMsrvCheck ? false,
+  useNextest ? true,
 }:
-
-# cargo-llvm-cov does not respect the MSRV toolchain override, so the two are mutually exclusive
-assert doMeasureCoverage -> !isMsrvCheck;
-
-# when we do coverage, we need cargo-llvm-cov to be a derivation
-assert doMeasureCoverage -> lib.attrsets.isDerivation cargo-llvm-cov;
 
 let
   cargoToml = builtins.fromTOML (builtins.readFile ../Cargo.toml);
@@ -67,43 +58,29 @@ rustPlatform.buildRustPackage rec {
 
   cargoLock.lockFile = src + "/Cargo.lock";
 
-  # we want a full documentation
+  # we want a full documentation, if at all
   postBuild = lib.strings.optionalString doDoc ''
     cargo doc --document-private-items
     mkdir -- "$out"
-    mv -- target/doc "$out/"
+
+    shopt -s globstar
+    mv -- target/**/doc "$out/"
+    shopt -u globstar
   '';
 
-  # required to measure coverage
-  nativeCheckInputs = lib.lists.optional doMeasureCoverage cargo-llvm-cov;
-  env = lib.attrsets.optionalAttrs doMeasureCoverage {
-    inherit (cargo-llvm-cov) LLVM_COV LLVM_PROFDATA;
-  };
-
   # nextest can emit JUnit test reports
-  useNextest = true;
-  cargoTestFlags =
-    [ "--profile=ci" ]
-    # we allow MSRV version missmatches from dev-dependencies as long as all tests still pass
-    ++ lib.lists.optional isMsrvCheck "--ignore-rust-version";
+  inherit useNextest;
 
-  # TODO `cargo llvm-cov report --doctest` is only available on nightly :(
-  postCheck =
-    lib.strings.optionalString doBench ''
-      cargo bench
-      mv target/criterion "$out/bench-html"
-    ''
-    + lib.strings.optionalString doMeasureCoverage ''
-      export RUST_LOG=info
-      cargo llvm-cov --no-report nextest
-      cargo llvm-cov report --lcov --output-path lcov.info
-      cargo llvm-cov report --json --output-path lcov.json
-      cargo llvm-cov report --cobertura --output-path lcov-cobertura.xml
-      cargo llvm-cov report --codecov --output-path lcov-codecov.json
-      cargo llvm-cov report --text --output-path lcov.txt
-      cargo llvm-cov report --html --output-dir lcov-html
-      mv lcov* target/nextest/ci/junit.xml "$out/"
-    '';
+  # if using nextest, use the ci profile
+  cargoTestFlags = lib.lists.optional useNextest "--profile=ci";
+
+  # if using nextest, it will create a junit.xml
+  postCheck = lib.strings.optionalString useNextest ''
+    shopt -s globstar
+    mv -- target/**/nextest/ci/junit.xml "$out/" 2> /dev/null \
+      && echo 'installed junit.xml' || true
+    shopt -u globstar
+  '';
 
   meta = {
     inherit (cargoToml.package) description homepage;
