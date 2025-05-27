@@ -12,7 +12,7 @@ pub trait HookSet: Default {
 }
 
 /// Default implementation of a hookset, with all hooks empty
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct EmptyHookSet;
 
 impl HookSet for EmptyHookSet {}

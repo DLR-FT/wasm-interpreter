@@ -20,7 +20,7 @@ pub(crate) mod globals;
 pub(crate) mod read_constant_expression;
 pub(crate) mod validation_stack;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub(crate) struct ImportsLength {
     pub imported_functions: usize,
     pub imported_globals: usize,
@@ -30,7 +30,7 @@ pub(crate) struct ImportsLength {
 
 /// Information collected from validating a module.
 /// This can be used to create a [crate::RuntimeInstance].
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct ValidationInfo<'bytecode> {
     pub(crate) wasm: &'bytecode [u8],
     pub(crate) types: Vec<FuncType>,

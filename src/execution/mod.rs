@@ -28,9 +28,10 @@ pub mod value_stack;
 /// The default module name if a [RuntimeInstance] was created using [RuntimeInstance::new].
 pub const DEFAULT_MODULE: &str = "__interpreter_default__";
 
+#[derive(Debug)]
 pub struct RuntimeInstance<'b, H = EmptyHookSet>
 where
-    H: HookSet,
+    H: HookSet + core::fmt::Debug,
 {
     pub hook_set: H,
     pub store: Option<Store<'b>>,
@@ -52,7 +53,7 @@ impl<'b> RuntimeInstance<'b, EmptyHookSet> {
 
 impl<'b, H> RuntimeInstance<'b, H>
 where
-    H: HookSet,
+    H: HookSet + core::fmt::Debug,
 {
     pub fn add_module(
         &mut self,
@@ -151,7 +152,10 @@ where
             panic!("Invalid `Param` generics");
         }
         if func_ty.returns.valtypes != Returns::TYS {
-            panic!("Invalid `Returns` generics");
+            panic!(
+                "Invalid `Returns` generics, expected {:?}",
+                func_ty.returns.valtypes
+            );
         }
 
         // Prepare a new stack with the locals for the entry function
