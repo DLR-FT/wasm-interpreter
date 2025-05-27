@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["do_sidetable_control_transfer","get_store_index","run"]};
+window.SIDEBAR_ITEMS = {"fn":["data_drop","do_sidetable_control_transfer","elem_drop","get_store_index","memory_init","run","table_init"]};

@@ -7,4 +7,15 @@
 <a href=#7 id=7 data-nosnippet>7</a>        opcode_byte_to_str(first_byte),
 <a href=#8 id=8 data-nosnippet>8</a>        pc
 <a href=#9 id=9 data-nosnippet>9</a>    );
-<a href=#10 id=10 data-nosnippet>10</a>}</code></pre></div></section></main></body></html>
+<a href=#10 id=10 data-nosnippet>10</a>}
+<a href=#11 id=11 data-nosnippet>11</a>
+<a href=#12 id=12 data-nosnippet>12</a><span class="attr">#[cfg(debug_assertions)]
+<a href=#13 id=13 data-nosnippet>13</a></span><span class="kw">pub fn </span>print_beautiful_fc_extension(second_byte: u8, pc: usize) {
+<a href=#14 id=14 data-nosnippet>14</a>    <span class="kw">use </span><span class="kw">crate</span>::core::reader::types::opcode::fc_extension_opcode_second_byte_to_str;
+<a href=#15 id=15 data-nosnippet>15</a>
+<a href=#16 id=16 data-nosnippet>16</a>    <span class="macro">trace!</span>(
+<a href=#17 id=17 data-nosnippet>17</a>        <span class="string">"Read instruction {} at wasm_binary[{}]"</span>,
+<a href=#18 id=18 data-nosnippet>18</a>        fc_extension_opcode_second_byte_to_str(second_byte),
+<a href=#19 id=19 data-nosnippet>19</a>        pc,
+<a href=#20 id=20 data-nosnippet>20</a>    );
+<a href=#21 id=21 data-nosnippet>21</a>}</code></pre></div></section></main></body></html>

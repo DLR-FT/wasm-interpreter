@@ -16,20 +16,17 @@
 <a href=#16 id=16 data-nosnippet>16</a></span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>validate_global_section(
 <a href=#17 id=17 data-nosnippet>17</a>    wasm: <span class="kw-2">&amp;mut </span>WasmReader,
 <a href=#18 id=18 data-nosnippet>18</a>    section_header: SectionHeader,
-<a href=#19 id=19 data-nosnippet>19</a>) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;Global&gt;&gt; {
-<a href=#20 id=20 data-nosnippet>20</a>    <span class="macro">assert_eq!</span>(section_header.ty, SectionTy::Global);
-<a href=#21 id=21 data-nosnippet>21</a>
-<a href=#22 id=22 data-nosnippet>22</a>    wasm.read_vec(|wasm| {
-<a href=#23 id=23 data-nosnippet>23</a>        <span class="kw">let </span>ty = GlobalType::read(wasm)<span class="question-mark">?</span>;
-<a href=#24 id=24 data-nosnippet>24</a>        <span class="kw">let </span>init_expr = read_constant_expression(
-<a href=#25 id=25 data-nosnippet>25</a>            wasm,
-<a href=#26 id=26 data-nosnippet>26</a>            <span class="kw-2">&amp;mut </span>ValidationStack::new(),
-<a href=#27 id=27 data-nosnippet>27</a>            <span class="prelude-val">Some</span>(ty.ty),
-<a href=#28 id=28 data-nosnippet>28</a>            <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>[<span class="comment">/* todo!(imported globals tpyes) */</span>]),
-<a href=#29 id=29 data-nosnippet>29</a>            <span class="comment">// we can't refer to any functions
-<a href=#30 id=30 data-nosnippet>30</a>            </span><span class="prelude-val">None</span>,
-<a href=#31 id=31 data-nosnippet>31</a>        )<span class="question-mark">?</span>;
-<a href=#32 id=32 data-nosnippet>32</a>
-<a href=#33 id=33 data-nosnippet>33</a>        <span class="prelude-val">Ok</span>(Global { ty, init_expr })
-<a href=#34 id=34 data-nosnippet>34</a>    })
-<a href=#35 id=35 data-nosnippet>35</a>}</code></pre></div></section></main></body></html>
+<a href=#19 id=19 data-nosnippet>19</a>    imported_global_types: <span class="kw-2">&amp;</span>[GlobalType],
+<a href=#20 id=20 data-nosnippet>20</a>) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;Global&gt;&gt; {
+<a href=#21 id=21 data-nosnippet>21</a>    <span class="macro">assert_eq!</span>(section_header.ty, SectionTy::Global);
+<a href=#22 id=22 data-nosnippet>22</a>
+<a href=#23 id=23 data-nosnippet>23</a>    wasm.read_vec(|wasm| {
+<a href=#24 id=24 data-nosnippet>24</a>        <span class="kw">let </span>ty = GlobalType::read(wasm)<span class="question-mark">?</span>;
+<a href=#25 id=25 data-nosnippet>25</a>        <span class="kw">let </span>stack = <span class="kw-2">&amp;mut </span>ValidationStack::new();
+<a href=#26 id=26 data-nosnippet>26</a>        <span class="kw">let </span>init_expr = read_constant_expression(wasm, stack, imported_global_types, <span class="prelude-val">None</span>)<span class="question-mark">?</span>;
+<a href=#27 id=27 data-nosnippet>27</a>
+<a href=#28 id=28 data-nosnippet>28</a>        stack.assert_val_types(<span class="kw-2">&amp;</span>[ty.ty])<span class="question-mark">?</span>;
+<a href=#29 id=29 data-nosnippet>29</a>
+<a href=#30 id=30 data-nosnippet>30</a>        <span class="prelude-val">Ok</span>(Global { ty, init_expr })
+<a href=#31 id=31 data-nosnippet>31</a>    })
+<a href=#32 id=32 data-nosnippet>32</a>}</code></pre></div></section></main></body></html>
