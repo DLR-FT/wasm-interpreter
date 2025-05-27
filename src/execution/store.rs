@@ -318,9 +318,9 @@ impl<'b> Store<'b> {
                     .into();
                     let s = 0;
                     table_init(
-                        &mut self.modules,
+                        &self.modules,
                         &mut self.tables,
-                        &mut self.elements,
+                        &self.elements,
                         current_module_idx,
                         i,
                         *table_idx_i as usize,
@@ -409,8 +409,6 @@ impl<'b> Store<'b> {
 
         Ok(())
     }
-
-    /// returns the module instance within the store
 
     /// roughly matches <https://webassembly.github.io/spec/core/exec/modules.html#functions> with the addition of sidetable pointer to the input signature
     // TODO refactor the type of func
@@ -705,8 +703,17 @@ impl<'b> Store<'b> {
             .functions
             .iter()
             .enumerate()
-            .find(|&(idx, addr)| *addr == func_addr)
+            .find(|&(_idx, addr)| *addr == func_addr)
             .ok_or(RuntimeError::FunctionNotFound)?;
+
+        stack.push_stackframe(
+            module_addr,
+            func_idx,
+            &func_ty,
+            locals,
+            usize::MAX,
+            usize::MAX,
+        );
 
         let mut currrent_module_idx = module_addr;
         // Run the interpreter
