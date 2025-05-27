@@ -79,9 +79,9 @@ impl Lut {
     /// # Returns
     /// - `None`, if the module or function is not found.
     /// - `Some(export_module_idx, export_function_idx)`, where the new indicies are the indicies of the module which
-    ///    contains the implementation of the imported function, and the implementation has the returned index within.
-    ///    Note that this function returns the first matching function, if there are multiple functions with the same
-    ///    name.
+    ///   contains the implementation of the imported function, and the implementation has the returned index within.
+    ///   Note that this function returns the first matching function, if there are multiple functions with the same
+    ///   name.
     pub fn manual_lookup(
         modules: &[ExecutionInfo],
         module_map: &BTreeMap<String, usize>,
