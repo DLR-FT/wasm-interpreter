@@ -125,6 +125,9 @@ impl<'b> Store<'b> {
         let func_addrs: Vec<usize> = validation_info
             .functions
             .iter()
+            // `validation_info.functions` contains function types for imports and normal functions,
+            // but `validation_info.func_blocks_stps` only concerns with non-imported functions
+            .skip(module_inst.functions.len())
             .zip(validation_info.func_blocks_stps.iter())
             .map(|(ty_idx, (span, stp))| {
                 self.alloc_func((*ty_idx, (*span, *stp)), &module_inst, self.modules.len())
