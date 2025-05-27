@@ -228,7 +228,7 @@
                       mv testsuite_results.json ../old.json
                       cd ..
                       rm -rf .main_clone
-                      python3 ./ci-tools/compare_testsuite.py old.json new.json > testsuite_report.md
+                      cargo run --manifest-path ./ci-tools/compare-testsuite-rs/Cargo.toml -- old.json new.json > testsuite_report.md
                     )
                   '';
                   help = "generates a comparison document for the official wasm testsuite w.r.t. project main branch";
