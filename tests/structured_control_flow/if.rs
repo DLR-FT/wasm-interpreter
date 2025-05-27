@@ -185,8 +185,8 @@ fn if_without_else_type_check1() {
 
     let empty_fn = instance.get_function_by_index(0, 0).unwrap();
 
-    assert_eq!((), instance.invoke(&empty_fn, 1).unwrap());
-    assert_eq!((), instance.invoke(&empty_fn, 0).unwrap());
+    instance.invoke::<i32, ()>(&empty_fn, 1).unwrap();
+    instance.invoke::<i32, ()>(&empty_fn, 0).unwrap();
 }
 
 #[test_log::test]

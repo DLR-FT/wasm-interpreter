@@ -1,3 +1,4 @@
+#![allow(clippy::approx_constant)]
 use core::f64;
 
 use wasm::{validate, RuntimeInstance};

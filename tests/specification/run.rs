@@ -320,9 +320,9 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
             }
 
             wast::WastDirective::Register {
-                span,
                 name,
                 module: modulee,
+                ..
             } => {
                 // TODO this implementation is incorrect, but a correct implementation requires a refactor discussion
 
@@ -338,11 +338,7 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                 };
                 store.module_names.insert(String::from(name), module_addr);
             }
-            wast::WastDirective::AssertUnlinkable {
-                span,
-                module: modulee,
-                message,
-            } => {
+            wast::WastDirective::AssertUnlinkable { span, .. } => {
                 asserts.push_error(WastError::new(
                     GenericError::new_boxed("Assert directive not yet implemented"),
                     get_linenum(&contents, span),

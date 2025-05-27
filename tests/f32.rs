@@ -1,3 +1,4 @@
+#![allow(clippy::approx_constant)]
 use core::f32;
 
 use wasm::{validate, RuntimeInstance};

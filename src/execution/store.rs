@@ -51,7 +51,7 @@ impl<'b> Store<'b> {
     /// instantiates a validated module with `validation_info` as validation evidence with name `name`
     /// with the steps in <https://webassembly.github.io/spec/core/exec/modules.html#instantiation>
     /// this method roughly matches the suggested embedder function`module_instantiate`
-    /// https://webassembly.github.io/spec/core/appendix/embedding.html#modules
+    /// <https://webassembly.github.io/spec/core/appendix/embedding.html#modules>
     /// except external values for module instantiation are retrieved from `self`.
     pub fn add_module(
         &mut self,
@@ -448,7 +448,7 @@ impl<'b> Store<'b> {
         addr
     }
 
-    /// https://webassembly.github.io/spec/core/exec/modules.html#tables
+    /// <https://webassembly.github.io/spec/core/exec/modules.html#tables>
     fn alloc_table(&mut self, table_type: TableType, reff: Ref) -> usize {
         let table_inst = TableInst {
             ty: table_type,
@@ -460,7 +460,7 @@ impl<'b> Store<'b> {
         addr
     }
 
-    /// https://webassembly.github.io/spec/core/exec/modules.html#memories
+    /// <https://webassembly.github.io/spec/core/exec/modules.html#memories>
     fn alloc_mem(&mut self, mem_type: MemType) -> usize {
         let mem_inst = MemInst {
             ty: mem_type,
@@ -474,7 +474,7 @@ impl<'b> Store<'b> {
         addr
     }
 
-    /// https://webassembly.github.io/spec/core/exec/modules.html#globals
+    /// <https://webassembly.github.io/spec/core/exec/modules.html#globals>
     fn alloc_global(&mut self, global_type: GlobalType, val: Value) -> usize {
         let global_inst = GlobalInst {
             ty: global_type,
@@ -486,7 +486,7 @@ impl<'b> Store<'b> {
         addr
     }
 
-    /// https://webassembly.github.io/spec/core/exec/modules.html#element-segments
+    /// <https://webassembly.github.io/spec/core/exec/modules.html#element-segments>
     fn alloc_elem(&mut self, ref_type: RefType, refs: Vec<Ref>) -> usize {
         let elem_inst = ElemInst {
             ty: ref_type,
@@ -498,7 +498,7 @@ impl<'b> Store<'b> {
         addr
     }
 
-    /// https://webassembly.github.io/spec/core/exec/modules.html#data-segments
+    /// <https://webassembly.github.io/spec/core/exec/modules.html#data-segments>
     fn alloc_data(&mut self, bytes: &[u8]) -> usize {
         let data_inst = DataInst {
             data: Vec::from(bytes),
@@ -951,9 +951,9 @@ impl ExternVal {
 }
 
 /// common convention functions defined for lists of ExternVals, ExternTypes, Exports
-/// https://webassembly.github.io/spec/core/exec/runtime.html#conventions
-/// https://webassembly.github.io/spec/core/syntax/types.html#id3
-/// https://webassembly.github.io/spec/core/syntax/modules.html?highlight=convention#id1
+/// <https://webassembly.github.io/spec/core/exec/runtime.html#conventions>
+/// <https://webassembly.github.io/spec/core/syntax/types.html#id3>
+/// <https://webassembly.github.io/spec/core/syntax/modules.html?highlight=convention#id1>
 // TODO implement this trait for ExternType lists Export lists
 pub trait ExternFilterable<T> {
     fn funcs(self) -> impl Iterator<Item = T>;

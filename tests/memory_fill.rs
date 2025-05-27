@@ -56,5 +56,5 @@ fn memory_fill() {
 #[ignore = "not yet implemented"]
 #[test_log::test]
 fn memory_fill_with_control_flow() {
-    assert!(1 == 2);
+    todo!()
 }
