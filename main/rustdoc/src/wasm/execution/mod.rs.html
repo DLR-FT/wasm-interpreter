@@ -112,7 +112,7 @@
 <a href=#112 id=112 data-nosnippet>112</a>            .get(module_addr)
 <a href=#113 id=113 data-nosnippet>113</a>            .ok_or(RuntimeError::ModuleNotFound)<span class="question-mark">?</span>;
 <a href=#114 id=114 data-nosnippet>114</a>        <span class="kw">let </span>func_addr = <span class="kw-2">*</span>module_inst
-<a href=#115 id=115 data-nosnippet>115</a>            .functions
+<a href=#115 id=115 data-nosnippet>115</a>            .func_addrs
 <a href=#116 id=116 data-nosnippet>116</a>            .get(function_idx)
 <a href=#117 id=117 data-nosnippet>117</a>            .ok_or(RuntimeError::FunctionNotFound)<span class="question-mark">?</span>;
 <a href=#118 id=118 data-nosnippet>118</a>
@@ -138,7 +138,7 @@
 <a href=#138 id=138 data-nosnippet>138</a>
 <a href=#139 id=139 data-nosnippet>139</a>        <span class="comment">// TODO handle this bad linear search that is unavoidable
 <a href=#140 id=140 data-nosnippet>140</a>        </span><span class="kw">let </span>(func_idx, <span class="kw">_</span>) = store.modules[module_addr]
-<a href=#141 id=141 data-nosnippet>141</a>            .functions
+<a href=#141 id=141 data-nosnippet>141</a>            .func_addrs
 <a href=#142 id=142 data-nosnippet>142</a>            .iter()
 <a href=#143 id=143 data-nosnippet>143</a>            .enumerate()
 <a href=#144 id=144 data-nosnippet>144</a>            .find(|<span class="kw-2">&amp;</span>(_idx, addr)| <span class="kw-2">*</span>addr == func_addr)
@@ -220,7 +220,7 @@
 <a href=#220 id=220 data-nosnippet>220</a>
 <a href=#221 id=221 data-nosnippet>221</a>        <span class="comment">// TODO handle this bad linear search that is unavoidable
 <a href=#222 id=222 data-nosnippet>222</a>        </span><span class="kw">let </span>(func_idx, <span class="kw">_</span>) = store.modules[module_addr]
-<a href=#223 id=223 data-nosnippet>223</a>            .functions
+<a href=#223 id=223 data-nosnippet>223</a>            .func_addrs
 <a href=#224 id=224 data-nosnippet>224</a>            .iter()
 <a href=#225 id=225 data-nosnippet>225</a>            .enumerate()
 <a href=#226 id=226 data-nosnippet>226</a>            .find(|<span class="kw-2">&amp;</span>(_idx, addr)| <span class="kw-2">*</span>addr == func_addr)
@@ -302,7 +302,7 @@
 <a href=#302 id=302 data-nosnippet>302</a>
 <a href=#303 id=303 data-nosnippet>303</a>        <span class="comment">// TODO handle this bad linear search that is unavoidable
 <a href=#304 id=304 data-nosnippet>304</a>        </span><span class="kw">let </span>(func_idx, <span class="kw">_</span>) = store.modules[module_addr]
-<a href=#305 id=305 data-nosnippet>305</a>            .functions
+<a href=#305 id=305 data-nosnippet>305</a>            .func_addrs
 <a href=#306 id=306 data-nosnippet>306</a>            .iter()
 <a href=#307 id=307 data-nosnippet>307</a>            .enumerate()
 <a href=#308 id=308 data-nosnippet>308</a>            .find(|<span class="kw-2">&amp;</span>(_idx, addr)| <span class="kw-2">*</span>addr == func_addr)
