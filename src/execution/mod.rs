@@ -112,7 +112,7 @@ where
             .get(module_addr)
             .ok_or(RuntimeError::ModuleNotFound)?;
         let func_addr = *module_inst
-            .functions
+            .func_addrs
             .get(function_idx)
             .ok_or(RuntimeError::FunctionNotFound)?;
 
@@ -138,7 +138,7 @@ where
 
         // TODO handle this bad linear search that is unavoidable
         let (func_idx, _) = store.modules[module_addr]
-            .functions
+            .func_addrs
             .iter()
             .enumerate()
             .find(|&(_idx, addr)| *addr == func_addr)
@@ -220,7 +220,7 @@ where
 
         // TODO handle this bad linear search that is unavoidable
         let (func_idx, _) = store.modules[module_addr]
-            .functions
+            .func_addrs
             .iter()
             .enumerate()
             .find(|&(_idx, addr)| *addr == func_addr)
@@ -302,7 +302,7 @@ where
 
         // TODO handle this bad linear search that is unavoidable
         let (func_idx, _) = store.modules[module_addr]
-            .functions
+            .func_addrs
             .iter()
             .enumerate()
             .find(|&(_idx, addr)| *addr == func_addr)

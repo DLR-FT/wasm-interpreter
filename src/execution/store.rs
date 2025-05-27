@@ -107,13 +107,13 @@ impl<'b> Store<'b> {
         // therefore I am mimicking the reference interpreter code here, I will allocate functions in the store in this step instead of step 11.
         // https://github.com/WebAssembly/spec/blob/8d6792e3d6709e8d3e90828f9c8468253287f7ed/interpreter/exec/eval.ml#L789
         let mut module_inst = ModuleInst {
-            function_types: validation_info.types.clone(),
-            functions: extern_vals.iter().funcs().collect(),
-            tables: Vec::new(),
-            memories: Vec::new(),
-            globals: extern_vals.iter().globals().collect(),
-            elements: Vec::new(),
-            data: Vec::new(),
+            types: validation_info.types.clone(),
+            func_addrs: extern_vals.iter().funcs().collect(),
+            table_addrs: Vec::new(),
+            mem_addrs: Vec::new(),
+            global_addrs: extern_vals.iter().globals().collect(),
+            elem_addrs: Vec::new(),
+            data_addrs: Vec::new(),
             exports: Vec::new(),
             wasm_bytecode: validation_info.wasm,
             sidetable: validation_info.sidetable.clone(),
@@ -127,14 +127,14 @@ impl<'b> Store<'b> {
             .iter()
             // `validation_info.functions` contains function types for imports and normal functions,
             // but `validation_info.func_blocks_stps` only concerns with non-imported functions
-            .skip(module_inst.functions.len())
+            .skip(module_inst.func_addrs.len())
             .zip(validation_info.func_blocks_stps.iter())
             .map(|(ty_idx, (span, stp))| {
                 self.alloc_func((*ty_idx, (*span, *stp)), &module_inst, self.modules.len())
             })
             .collect();
 
-        module_inst.functions.extend(func_addrs);
+        module_inst.func_addrs.extend(func_addrs);
 
         // instantiation: this roughly matches step 6,7,8
         // validation guarantees these will evaluate without errors.
@@ -159,7 +159,7 @@ impl<'b> Store<'b> {
                         .iter()
                         .map(|func_idx| {
                             Ref::Func(FuncAddr {
-                                addr: Some(module_inst.functions[*func_idx as usize]),
+                                addr: Some(module_inst.func_addrs[*func_idx as usize]),
                             })
                         })
                         .collect(),
@@ -241,7 +241,7 @@ impl<'b> Store<'b> {
         mem_addrs_mod.extend(mem_addrs);
 
         // skipping step 17 partially as it was partially done in instantiation step
-        module_inst.globals.extend(global_addrs);
+        module_inst.global_addrs.extend(global_addrs);
 
         // allocation: step 18,19
         let export_insts = module
@@ -250,14 +250,14 @@ impl<'b> Store<'b> {
             .map(|Export { name, desc }| {
                 let value = match desc {
                     ExportDesc::FuncIdx(func_idx) => {
-                        ExternVal::Func(module_inst.functions[*func_idx])
+                        ExternVal::Func(module_inst.func_addrs[*func_idx])
                     }
                     ExportDesc::TableIdx(table_idx) => {
                         ExternVal::Table(table_addrs_mod[*table_idx])
                     }
                     ExportDesc::MemIdx(mem_idx) => ExternVal::Mem(mem_addrs_mod[*mem_idx]),
                     ExportDesc::GlobalIdx(global_idx) => {
-                        ExternVal::Global(module_inst.globals[*global_idx])
+                        ExternVal::Global(module_inst.global_addrs[*global_idx])
                     }
                 };
                 ExportInst {
@@ -268,10 +268,10 @@ impl<'b> Store<'b> {
             .collect();
 
         // allocation: step 20,21 initialize module (except functions and globals due to instantiation step 5, allocation step 14,17)
-        module_inst.tables = table_addrs_mod;
-        module_inst.memories = mem_addrs_mod;
-        module_inst.elements = elem_addrs;
-        module_inst.data = data_addrs;
+        module_inst.table_addrs = table_addrs_mod;
+        module_inst.mem_addrs = mem_addrs_mod;
+        module_inst.elem_addrs = elem_addrs;
+        module_inst.data_addrs = data_addrs;
         module_inst.exports = export_insts;
 
         // allocation: end
@@ -399,7 +399,7 @@ impl<'b> Store<'b> {
             // TODO (for now, we are doing hopefully what is equivalent to it)
             // execute
             //   call func_ifx
-            let func_addr = self.modules[*current_module_idx].functions[func_idx];
+            let func_addr = self.modules[*current_module_idx].func_addrs[func_idx];
             self.invoke_dynamic(func_addr, Vec::new(), &[])
                 .map_err(Error::RuntimeError)?;
         };
@@ -439,7 +439,7 @@ impl<'b> Store<'b> {
             stp,
             // validation guarantees func_ty_idx exists within module_inst.types
             // TODO fix clone
-            function_type: module_inst.function_types[ty].clone(),
+            function_type: module_inst.types[ty].clone(),
             module_addr,
         };
 
@@ -538,7 +538,7 @@ impl<'b> Store<'b> {
 
         // TODO handle this bad linear search that is unavoidable
         let (func_idx, _) = self.modules[module_addr]
-            .functions
+            .func_addrs
             .iter()
             .enumerate()
             .find(|&(_idx, addr)| *addr == func_addr)
@@ -617,7 +617,7 @@ impl<'b> Store<'b> {
 
         // TODO handle this bad linear search that is unavoidable
         let (func_idx, _) = self.modules[module_addr]
-            .functions
+            .func_addrs
             .iter()
             .enumerate()
             .find(|&(_idx, addr)| *addr == func_addr)
@@ -697,7 +697,7 @@ impl<'b> Store<'b> {
 
         // TODO handle this bad linear search that is unavoidable
         let (func_idx, _) = self.modules[module_addr]
-            .functions
+            .func_addrs
             .iter()
             .enumerate()
             .find(|&(_idx, addr)| *addr == func_addr)
@@ -1017,19 +1017,19 @@ pub struct ExportInst {
 ///<https://webassembly.github.io/spec/core/exec/runtime.html#module-instances>
 #[derive(Debug)]
 pub struct ModuleInst<'b> {
-    pub function_types: Vec<FuncType>,
-    pub functions: Vec<usize>,
-    pub tables: Vec<usize>,
-    pub memories: Vec<usize>,
-    pub globals: Vec<usize>,
-    pub elements: Vec<usize>,
-    pub data: Vec<usize>,
+    pub types: Vec<FuncType>,
+    pub func_addrs: Vec<usize>,
+    pub table_addrs: Vec<usize>,
+    pub mem_addrs: Vec<usize>,
+    pub global_addrs: Vec<usize>,
+    pub elem_addrs: Vec<usize>,
+    pub data_addrs: Vec<usize>,
     pub exports: Vec<ExportInst>,
 
     // TODO the bytecode is not in the spec, but required for re-parsing
     pub wasm_bytecode: &'b [u8],
 
-    //sidetable is not in the spec, but required for control flow
+    // sidetable is not in the spec, but required for control flow
     pub sidetable: Sidetable,
 
     // TODO name field is not in the spec but used by the testsuite crate, might need to be refactored out
