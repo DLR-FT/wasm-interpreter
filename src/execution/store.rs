@@ -60,7 +60,7 @@ impl<'b> Store<'b> {
     ) -> CustomResult<()> {
         // instantiation step -1: collect extern_vals, this section basically acts as a linker between modules
         // best attempt at trying to match the spec implementation in terms of errors
-
+        debug!("adding module with name {:?}", name);
         let mut extern_vals = Vec::new();
 
         for Import {
@@ -69,6 +69,12 @@ impl<'b> Store<'b> {
             desc: import_desc,
         } in &validation_info.imports
         {
+            trace!(
+                "trying to import from exporting module instance named {:?}, the entity with name {:?} with desc: {:?}",
+                exporting_module_name,
+                import_name,
+                import_desc
+            );
             let import_extern_type = import_desc.extern_type(validation_info)?;
             let exporting_module = self
                 .modules
@@ -92,13 +98,14 @@ impl<'b> Store<'b> {
                     },
                 )
                 .ok_or(Error::UnknownImport)?;
-
+            trace!("export candidate found: {:?}", export_extern_val_candidate);
             if !export_extern_val_candidate
                 .extern_type(self)?
                 .is_subtype_of(&import_extern_type)
             {
                 return Err(Error::InvalidImportType);
             }
+            trace!("import and export matches. Adding to externvals");
             extern_vals.push(export_extern_val_candidate)
         }
 
@@ -125,9 +132,6 @@ impl<'b> Store<'b> {
         let func_addrs: Vec<usize> = validation_info
             .functions
             .iter()
-            // `validation_info.functions` contains function types for imports and normal functions,
-            // but `validation_info.func_blocks_stps` only concerns with non-imported functions
-            .skip(module_inst.func_addrs.len())
             .zip(validation_info.func_blocks_stps.iter())
             .map(|(ty_idx, (span, stp))| {
                 self.alloc_func((*ty_idx, (*span, *stp)), &module_inst, self.modules.len())
