@@ -1,0 +1,17 @@
+[package]
+name = "benchmark"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.80.0"
+
+
+[dependencies]
+
+[dev-dependencies]
+criterion = { version = "0.5.1", features = ["html_reports"] }
+wasm-interpreter = { path = "../.." }
+wat = { workspace = true }
+
+[[bench]]
+name = "hook_performance_impact"
+harness = false
