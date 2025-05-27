@@ -1,39 +1,32 @@
-use std::ffi::{OsStr, OsString};
+use std::ffi::OsStr;
+use std::fs::Metadata;
 use std::path::{Path, PathBuf};
 
-#[derive(Debug, Clone)]
-pub struct Filter {
-    pub mode: FilterMode,
-    pub files: Vec<OsString>,
-}
-
-#[allow(dead_code)] // Currently, we can always use only one variant at a time
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum FilterMode {
-    Include,
-    Exclude,
-}
-
-impl Filter {
-    fn allows(&self, file_path: &Path) -> bool {
-        // If the file does not have a file name, we simply disallow it
-        let Some(file_name) = file_path.file_name() else {
+pub fn find_wast_files(
+    base_path: &Path,
+    mut file_name_filter: impl FnMut(&OsStr) -> bool,
+) -> std::io::Result<Vec<PathBuf>> {
+    find_files_filtered(base_path, |path, meta| {
+        let Some(file_name) = path.file_name() else {
             return false;
         };
 
-        // Assume filter includes for now
-        let result = self
-            .files
-            .iter()
-            .any(|os_string| os_string.as_os_str() == file_name);
+        let if_file_then_wast_extension =
+            meta.is_file() && path.extension() == Some(OsStr::new("wast"));
 
-        // Now if the filter excludes, invert the result
-        result ^ (self.mode == FilterMode::Exclude)
-    }
+        file_name_filter(file_name) && if_file_then_wast_extension
+    })
 }
 
-/// Simple depth-first directory traversal with a filter for `wast` files
-pub fn find_wast_files(base_path: &Path, filter: &Filter) -> std::io::Result<Vec<PathBuf>> {
+/// Simple non-recursive depth-first directory traversal
+fn find_files_filtered(
+    base_path: &Path,
+    mut filter: impl FnMut(&Path, &Metadata) -> bool,
+) -> std::io::Result<Vec<PathBuf>> {
+    let base_path = base_path
+        .to_str()
+        .expect("path to contain valid unicode, which is required by glob");
+
     let mut paths = vec![];
 
     // The stack containing all directories we still have to traverse. At first contains only the base directory.
@@ -49,8 +42,8 @@ pub fn find_wast_files(base_path: &Path, filter: &Filter) -> std::io::Result<Vec
         let meta = entry.metadata()?;
         let path = entry.path();
 
-        if filter.allows(&path) {
-            if meta.is_file() && entry.path().extension() == Some(OsStr::new("wast")) {
+        if filter(&path, &meta) {
+            if meta.is_file() {
                 paths.push(entry.path())
             }
 
