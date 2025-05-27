@@ -33,7 +33,7 @@ pub struct RwSpinLock<T> {
     /// - `u32::MAX` means there is a single active writer
     /// - `state % 2 == 0` means there are `state / 2` active readers
     /// - `state % 2 != 0` means there are `(state - 1) / 2` active readers and at least one waiting
-    ///    writer
+    ///   writer
     state: AtomicU32,
 }
 
