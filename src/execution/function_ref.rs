@@ -39,7 +39,11 @@ impl FunctionRef {
         })
     }
 
-    pub fn invoke<H: HookSet, Param: InteropValueList, Returns: InteropValueList>(
+    pub fn invoke<
+        H: HookSet + core::fmt::Debug,
+        Param: InteropValueList,
+        Returns: InteropValueList,
+    >(
         &self,
         runtime: &mut RuntimeInstance<H>,
         params: Param,
@@ -48,7 +52,7 @@ impl FunctionRef {
         runtime.invoke(self, params /* , store */)
     }
 
-    pub fn invoke_dynamic<H: HookSet>(
+    pub fn invoke_dynamic<H: HookSet + core::fmt::Debug>(
         &self,
         runtime: &mut RuntimeInstance<H>,
         params: Vec<Value>,

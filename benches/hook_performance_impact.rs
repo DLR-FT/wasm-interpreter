@@ -41,7 +41,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     //
     // Set up an interpreter with an non-empty hook-set
     //
-    #[derive(Default)]
+    #[derive(Default, Debug)]
     struct MyCustomHookSet;
     impl HookSet for MyCustomHookSet {
         fn instruction_hook(&mut self, bytecode: &[u8], pc: usize) {

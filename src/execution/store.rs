@@ -35,7 +35,7 @@ use crate::linear_memory::LinearMemory;
 /// globals, element segments, and data segments that have been allocated during the life time of
 /// the abstract machine.
 /// <https://webassembly.github.io/spec/core/exec/runtime.html#store>
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct Store<'b> {
     pub functions: Vec<FuncInst>,
     pub memories: Vec<MemInst>,
@@ -848,6 +848,13 @@ pub struct MemInst {
     pub ty: MemType,
     pub mem: LinearMemory,
 }
+impl core::fmt::Debug for MemInst {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("MemInst")
+            .field("ty", &self.ty)
+            .finish_non_exhaustive()
+    }
+}
 
 impl MemInst {
     pub fn new(ty: MemType) -> Self {
@@ -881,6 +888,12 @@ pub struct GlobalInst {
 
 pub struct DataInst {
     pub data: Vec<u8>,
+}
+
+impl core::fmt::Debug for DataInst {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("DataInst").finish_non_exhaustive()
+    }
 }
 
 ///<https://webassembly.github.io/spec/core/exec/runtime.html#external-values>
@@ -991,12 +1004,14 @@ where
 }
 
 ///<https://webassembly.github.io/spec/core/exec/runtime.html#export-instances>
+#[derive(Debug)]
 pub struct ExportInst {
     pub name: String,
     pub value: ExternVal,
 }
 
 ///<https://webassembly.github.io/spec/core/exec/runtime.html#module-instances>
+#[derive(Debug)]
 pub struct ModuleInst<'b> {
     pub function_types: Vec<FuncType>,
     pub functions: Vec<usize>,
