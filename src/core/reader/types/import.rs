@@ -96,11 +96,10 @@ impl ImportDesc {
     ///<https://webassembly.github.io/spec/core/valid/modules.html#imports>
     pub fn extern_type(&self, validation_info: &ValidationInfo) -> Result<ExternType> {
         Ok(match self {
-            ImportDesc::Func(func_idx) => {
-                let type_idx = validation_info
-                    .functions
-                    .get(*func_idx)
-                    .ok_or(Error::InvalidFuncTypeIdx)?;
+            ImportDesc::Func(type_idx) => {
+                // unlike ExportDescs, these directly refer to the types section
+                // since a corresponding function entry in function section or body
+                // in code section does not exist for these
                 let func_type = validation_info
                     .types
                     .get(*type_idx)

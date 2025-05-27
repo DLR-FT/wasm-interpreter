@@ -376,7 +376,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
         wasm: wasm.into_inner(),
         types,
         imports,
-        functions: all_functions,
+        functions: local_functions,
         tables,
         memories,
         globals,
