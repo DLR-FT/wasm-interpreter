@@ -1,13 +1,15 @@
 name: Nix based CI
 
 on:
-  pull_request:
   push:
-    branches: [main]
+    branches-ignore:
+      - "gh-readonly-queue/**"
+      - "gh-pages"
+  merge_group:
 
 jobs:
   checks:
-    name: Nix Checks
+    name: Nix flake check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -22,9 +24,24 @@ jobs:
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
       - run: nix flake check .?submodules=1
 
-  build-test-cover-document:
-    name: Nix build wasm-interpreter and report
-    needs: checks
+  bench:
+    name: Nix benchmark
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: cachix/install-nix-action@v31
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: cachix/cachix-action@v16
+        with:
+          name: dlr-ft
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+      - run: nix build .?submodules=1#benchmark --print-build-logs
+
+  build:
+    name: Nix build and test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -38,6 +55,22 @@ jobs:
           name: dlr-ft
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
       - run: nix build .?submodules=1#wasm-interpreter --print-build-logs
+
+  cover:
+    name: Nix coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: cachix/install-nix-action@v31
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: cachix/cachix-action@v16
+        with:
+          name: dlr-ft
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+      - run: nix build .?submodules=1#coverage --print-build-logs
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
@@ -45,6 +78,22 @@ jobs:
           file: result/lcov-codecov.json
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  report:
+    name: Nix report
+    needs: [bench, build, cover]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: cachix/install-nix-action@v31
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: cachix/cachix-action@v16
+        with:
+          name: dlr-ft
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
       - run: nix build .?submodules=1#report --print-build-logs
       - name: Archive report
         uses: actions/upload-artifact@v4
@@ -54,7 +103,6 @@ jobs:
 
   build-test-32bit:
     name: Test for 32 bit target
-    needs: checks
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

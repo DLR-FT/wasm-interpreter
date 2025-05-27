@@ -36,7 +36,7 @@ jobs:
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
       - run: nix build .?submodules=1#whitepaper --print-build-logs
 
-      - run: mkdir output && cp ./result ./output/whitepaper.pdf && cp ./whitepaper/index.html ./output/index.html
+      - run: mkdir output && cp ./result ./output/whitepaper.pdf && cp ./pkgs/whitepaper/index.html ./output/index.html
 
       # -=-=-=-= Deploy =-=-=-=-
       - name: Deploy Preview

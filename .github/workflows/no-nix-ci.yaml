@@ -4,9 +4,7 @@ on:
   push:
     branches-ignore:
       - "gh-readonly-queue/**"
-      # i don't think we should run CI for examples
-      - "example/**"
-  pull_request:
+      - "gh-pages"
   merge_group:
 
 jobs:
