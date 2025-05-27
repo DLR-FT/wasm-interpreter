@@ -22,7 +22,7 @@ impl FunctionRef {
             .get(module_name)
             .ok_or(Error::RuntimeError(RuntimeError::ModuleNotFound))?;
         Ok(Self {
-            func_addr: *&store.modules[module_addr]
+            func_addr: store.modules[module_addr]
                 .exports
                 .iter()
                 .find_map(|ExportInst { name, value }| {

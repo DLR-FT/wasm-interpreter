@@ -245,7 +245,7 @@ pub(super) fn run<H: HookSet>(
                     .functions
                     .iter()
                     .enumerate()
-                    .find(|&(idx, addr)| *addr == func_to_call_addr)
+                    .find(|&(_idx, addr)| *addr == func_to_call_addr)
                     .ok_or(RuntimeError::FunctionNotFound)?;
 
                 let actual_ty = func_to_call_inst.ty();
@@ -2389,10 +2389,11 @@ fn get_store_index(memarg: &MemArg, relative_address: u32) -> Result<MemIdx, Run
 
 //helpers for avoiding code duplication during module instantiation
 #[inline(always)]
+#[allow(clippy::too_many_arguments)]
 pub(super) fn table_init(
-    store_modules: &Vec<ModuleInst>,
-    store_tables: &mut Vec<TableInst>,
-    store_elements: &Vec<ElemInst>,
+    store_modules: &[ModuleInst],
+    store_tables: &mut [TableInst],
+    store_elements: &[ElemInst],
     current_module_idx: &usize,
     elem_idx: usize,
     table_idx: usize,
@@ -2440,8 +2441,8 @@ pub(super) fn table_init(
 
 #[inline(always)]
 pub(super) fn elem_drop(
-    store_modules: &Vec<ModuleInst>,
-    store_elements: &mut Vec<ElemInst>,
+    store_modules: &[ModuleInst],
+    store_elements: &mut [ElemInst],
     current_module_idx: &usize,
     elem_idx: usize,
 ) -> Result<(), RuntimeError> {
@@ -2451,10 +2452,11 @@ pub(super) fn elem_drop(
 }
 
 #[inline(always)]
+#[allow(clippy::too_many_arguments)]
 pub(super) fn memory_init(
-    store_modules: &Vec<ModuleInst>,
-    store_memories: &mut Vec<MemInst>,
-    store_data: &Vec<DataInst>,
+    store_modules: &[ModuleInst],
+    store_memories: &mut [MemInst],
+    store_data: &[DataInst],
     current_module_idx: &usize,
     data_idx: usize,
     mem_idx: usize,
@@ -2477,8 +2479,8 @@ pub(super) fn memory_init(
 
 #[inline(always)]
 pub(super) fn data_drop(
-    store_modules: &Vec<ModuleInst>,
-    store_data: &mut Vec<DataInst>,
+    store_modules: &[ModuleInst],
+    store_data: &mut [DataInst],
     current_module_idx: &usize,
     data_idx: usize,
 ) -> Result<(), RuntimeError> {

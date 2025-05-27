@@ -1,6 +1,5 @@
 use std::any::Any;
 use std::collections::HashMap;
-use std::collections::LinkedList;
 use std::error::Error;
 use std::panic::AssertUnwindSafe;
 use std::panic::UnwindSafe;
@@ -9,15 +8,11 @@ use itertools::enumerate;
 use log::debug;
 use wasm::function_ref::FunctionRef;
 use wasm::ExportInst;
-use wasm::ModuleInst;
 use wasm::RuntimeError;
 use wasm::Value;
-use wasm::DEFAULT_MODULE;
 use wasm::{validate, RuntimeInstance};
 use wast::core::WastArgCore;
 use wast::core::WastRetCore;
-use wast::kw::module;
-use wast::token::Id;
 use wast::QuoteWat;
 use wast::WastArg;
 
@@ -27,7 +22,7 @@ use crate::specification::test_errors::*;
 //Each script runs within an interpreter that has the following module with name "spectest" defined
 //https://github.com/WebAssembly/spec/tree/main/interpreter#spectest-host-module
 // TODO printing not possible since host functions are not implemented yet
-const SPEC_TEST_WAT: &'static str = r#"
+const SPEC_TEST_WAT: &str = r#"
 (module
   ;; Memory
   (memory (export "memory") 1 2)

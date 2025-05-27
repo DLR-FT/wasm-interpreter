@@ -122,7 +122,7 @@ fn table_elem_test() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
     // let table = &instance.modules[0].store.tables[0];
-    let table = &(&instance.store).as_ref().unwrap().tables[0];
+    let table = &instance.store.as_ref().unwrap().tables[0];
     assert!(table.len() == 2);
     let wanted: [usize; 2] = [0, 2];
     table
