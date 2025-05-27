@@ -96,21 +96,20 @@
 <a href=#96 id=96 data-nosnippet>96</a>    ///&lt;https://webassembly.github.io/spec/core/valid/modules.html#imports&gt;
 <a href=#97 id=97 data-nosnippet>97</a>    </span><span class="kw">pub fn </span>extern_type(<span class="kw-2">&amp;</span><span class="self">self</span>, validation_info: <span class="kw-2">&amp;</span>ValidationInfo) -&gt; <span class="prelude-ty">Result</span>&lt;ExternType&gt; {
 <a href=#98 id=98 data-nosnippet>98</a>        <span class="prelude-val">Ok</span>(<span class="kw">match </span><span class="self">self </span>{
-<a href=#99 id=99 data-nosnippet>99</a>            ImportDesc::Func(func_idx) =&gt; {
-<a href=#100 id=100 data-nosnippet>100</a>                <span class="kw">let </span>type_idx = validation_info
-<a href=#101 id=101 data-nosnippet>101</a>                    .functions
-<a href=#102 id=102 data-nosnippet>102</a>                    .get(<span class="kw-2">*</span>func_idx)
-<a href=#103 id=103 data-nosnippet>103</a>                    .ok_or(Error::InvalidFuncTypeIdx)<span class="question-mark">?</span>;
-<a href=#104 id=104 data-nosnippet>104</a>                <span class="kw">let </span>func_type = validation_info
-<a href=#105 id=105 data-nosnippet>105</a>                    .types
-<a href=#106 id=106 data-nosnippet>106</a>                    .get(<span class="kw-2">*</span>type_idx)
-<a href=#107 id=107 data-nosnippet>107</a>                    .ok_or(Error::InvalidFuncType)<span class="question-mark">?</span>;
-<a href=#108 id=108 data-nosnippet>108</a>                <span class="comment">// TODO ugly clone that should disappear when types are directly parsed from bytecode instead of vector copies
-<a href=#109 id=109 data-nosnippet>109</a>                </span>ExternType::Func(func_type.clone())
-<a href=#110 id=110 data-nosnippet>110</a>            }
-<a href=#111 id=111 data-nosnippet>111</a>            ImportDesc::Table(ty) =&gt; ExternType::Table(<span class="kw-2">*</span>ty),
-<a href=#112 id=112 data-nosnippet>112</a>            ImportDesc::Mem(ty) =&gt; ExternType::Mem(<span class="kw-2">*</span>ty),
-<a href=#113 id=113 data-nosnippet>113</a>            ImportDesc::Global(ty) =&gt; ExternType::Global(<span class="kw-2">*</span>ty),
-<a href=#114 id=114 data-nosnippet>114</a>        })
-<a href=#115 id=115 data-nosnippet>115</a>    }
-<a href=#116 id=116 data-nosnippet>116</a>}</code></pre></div></section></main></body></html>
+<a href=#99 id=99 data-nosnippet>99</a>            ImportDesc::Func(type_idx) =&gt; {
+<a href=#100 id=100 data-nosnippet>100</a>                <span class="comment">// unlike ExportDescs, these directly refer to the types section
+<a href=#101 id=101 data-nosnippet>101</a>                // since a corresponding function entry in function section or body
+<a href=#102 id=102 data-nosnippet>102</a>                // in code section does not exist for these
+<a href=#103 id=103 data-nosnippet>103</a>                </span><span class="kw">let </span>func_type = validation_info
+<a href=#104 id=104 data-nosnippet>104</a>                    .types
+<a href=#105 id=105 data-nosnippet>105</a>                    .get(<span class="kw-2">*</span>type_idx)
+<a href=#106 id=106 data-nosnippet>106</a>                    .ok_or(Error::InvalidFuncType)<span class="question-mark">?</span>;
+<a href=#107 id=107 data-nosnippet>107</a>                <span class="comment">// TODO ugly clone that should disappear when types are directly parsed from bytecode instead of vector copies
+<a href=#108 id=108 data-nosnippet>108</a>                </span>ExternType::Func(func_type.clone())
+<a href=#109 id=109 data-nosnippet>109</a>            }
+<a href=#110 id=110 data-nosnippet>110</a>            ImportDesc::Table(ty) =&gt; ExternType::Table(<span class="kw-2">*</span>ty),
+<a href=#111 id=111 data-nosnippet>111</a>            ImportDesc::Mem(ty) =&gt; ExternType::Mem(<span class="kw-2">*</span>ty),
+<a href=#112 id=112 data-nosnippet>112</a>            ImportDesc::Global(ty) =&gt; ExternType::Global(<span class="kw-2">*</span>ty),
+<a href=#113 id=113 data-nosnippet>113</a>        })
+<a href=#114 id=114 data-nosnippet>114</a>    }
+<a href=#115 id=115 data-nosnippet>115</a>}</code></pre></div></section></main></body></html>
