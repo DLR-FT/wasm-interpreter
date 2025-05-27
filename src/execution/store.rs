@@ -25,7 +25,7 @@ use alloc::vec::Vec;
 use super::hooks::EmptyHookSet;
 use super::interpreter_loop::{data_drop, elem_drop};
 use super::locals::Locals;
-use super::value::InteropValueList;
+use super::value::{ExternAddr, InteropValueList};
 use super::{run, UnwrapValidatedExt};
 
 use crate::linear_memory::LinearMemory;
@@ -190,7 +190,13 @@ impl<'b> Store<'b> {
         let table_addrs: Vec<usize> = module
             .tables
             .iter()
-            .map(|table_type| self.alloc_table(*table_type, Ref::Func(FuncAddr { addr: None })))
+            .map(|table_type| {
+                let null_ref = match table_type.et {
+                    RefType::FuncRef => Ref::Func(FuncAddr { addr: None }),
+                    RefType::ExternRef => Ref::Extern(ExternAddr { addr: None }),
+                };
+                self.alloc_table(*table_type, null_ref)
+            })
             .collect();
         let mem_addrs: Vec<usize> = module
             .memories
