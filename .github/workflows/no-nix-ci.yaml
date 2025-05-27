@@ -1,4 +1,4 @@
-name: wasm-interpreter-ci
+name: No-Nix based CI
 
 on:
   push:
@@ -10,7 +10,7 @@ on:
   merge_group:
 
 jobs:
-  ci:
+  build:
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -36,7 +36,7 @@ jobs:
       - name: Run tests
         run: cargo test --verbose -- --nocapture
 
-  conventional_commit_check:
+  conventional-commit-check:
     name: Conventional Commits
     runs-on: ubuntu-latest
     steps:
@@ -45,7 +45,7 @@ jobs:
           submodules: true
       - uses: webiny/action-conventional-commits@v1.3.0
 
-  msrv:
+  msrv-check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -53,20 +53,3 @@ jobs:
           submodules: true
       - uses: taiki-e/install-action@cargo-hack
       - run: cargo hack check --rust-version --workspace --all-targets --ignore-private
-
-  test_for_32bit:
-    name: Test for 32 bit target
-    needs: checks
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: true
-      - uses: cachix/install-nix-action@v27
-        with:
-          github_access_token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: cachix/cachix-action@v14
-        with:
-          name: dlr-ft
-          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
-      - run: nix develop . --command cargo test --target i686-unknown-linux-musl
