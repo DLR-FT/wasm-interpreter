@@ -717,6 +717,12 @@ fn result_to_value(result: wast::WastRet) -> Result<Value, Box<dyn Error>> {
                     return Err(GenericError::new_boxed("RefFuncs not yet implemented"));
                 }
             },
+            WastRetCore::RefExtern(None) => unreachable!("Expected a non-null extern reference"),
+            WastRetCore::RefExtern(Some(index)) => {
+                Value::Ref(wasm::value::Ref::Extern(wasm::value::ExternAddr {
+                    addr: Some(index as usize),
+                }))
+            }
             other => {
                 return Err(Box::new(GenericError::new(&format!(
                     "handling of wast ret type {other:?} not yet implemented"
