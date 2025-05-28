@@ -23,10 +23,6 @@ fn find_files_filtered(
     base_path: &Path,
     mut filter: impl FnMut(&Path, &Metadata) -> bool,
 ) -> std::io::Result<Vec<PathBuf>> {
-    let base_path = base_path
-        .to_str()
-        .expect("path to contain valid unicode, which is required by glob");
-
     let mut paths = vec![];
 
     // The stack containing all directories we still have to traverse. At first contains only the base directory.
