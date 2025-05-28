@@ -30,7 +30,7 @@ pub enum RuntimeError {
     UnmetImport,
     UndefinedTableIndex,
     // "undefined element" <- as-call_indirect-last
-    // "unreachable"
+    ReachedUnreachable,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -313,6 +313,9 @@ impl Display for RuntimeError {
             }
             RuntimeError::UndefinedTableIndex => {
                 f.write_str("Indirect call: table index out of bounds")
+            }
+            RuntimeError::ReachedUnreachable => {
+                f.write_str("an unreachable statement was reached, triggered a trap")
             }
         }
     }
