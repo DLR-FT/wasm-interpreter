@@ -31,6 +31,7 @@ pub enum RuntimeError {
     UndefinedTableIndex,
     // "undefined element" <- as-call_indirect-last
     ReachedUnreachable,
+    StackExhaustion,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -316,6 +317,9 @@ impl Display for RuntimeError {
             }
             RuntimeError::ReachedUnreachable => {
                 f.write_str("an unreachable statement was reached, triggered a trap")
+            }
+            RuntimeError::StackExhaustion => {
+                f.write_str("either the call stack or the value stack overflowed")
             }
         }
     }

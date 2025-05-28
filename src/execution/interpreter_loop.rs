@@ -122,12 +122,12 @@ pub(super) fn run<H: HookSet>(
                 if test_val != 0 {
                     stp += 1;
                 } else {
-                    do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable);
+                    do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable)?;
                 }
                 trace!("Instruction: IF");
             }
             ELSE => {
-                do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable);
+                do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable)?;
             }
             BR_IF => {
                 wasm.read_var_u32().unwrap_validated();
@@ -135,7 +135,7 @@ pub(super) fn run<H: HookSet>(
                 let test_val: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
                 if test_val != 0 {
-                    do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable);
+                    do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable)?;
                 } else {
                     stp += 1;
                 }
@@ -157,19 +157,19 @@ pub(super) fn run<H: HookSet>(
                     stp += case_val;
                 }
 
-                do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable);
+                do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable)?;
             }
             BR => {
                 //skip n of BR n
                 wasm.read_var_u32().unwrap_validated();
-                do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable);
+                do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable)?;
             }
             BLOCK | LOOP => {
                 BlockType::read_unvalidated(wasm);
             }
             RETURN => {
                 //same as BR, except no need to skip n of BR n
-                do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable);
+                do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable)?;
             }
             CALL => {
                 let local_func_idx = wasm.read_var_u32().unwrap_validated() as FuncIdx;
@@ -202,7 +202,7 @@ pub(super) fn run<H: HookSet>(
                     locals,
                     wasm.pc,
                     stp,
-                );
+                )?;
 
                 *current_module_idx = func_to_call_module_addr;
                 wasm.full_wasm_binary = store.modules[*current_module_idx].wasm_bytecode;
@@ -274,7 +274,7 @@ pub(super) fn run<H: HookSet>(
                     locals,
                     wasm.pc,
                     stp,
-                );
+                )?;
                 *current_module_idx = func_to_call_module_addr;
                 wasm.full_wasm_binary = store.modules[*current_module_idx].wasm_bytecode;
                 wasm.move_start_to(func_to_call_inst.code_expr)
@@ -294,9 +294,9 @@ pub(super) fn run<H: HookSet>(
                 let val2 = stack.pop_value_with_unknown_type();
                 let val1 = stack.pop_value_with_unknown_type();
                 if test_val != 0 {
-                    stack.push_value(val1);
+                    stack.push_value(val1)?;
                 } else {
-                    stack.push_value(val2);
+                    stack.push_value(val2)?;
                 }
                 trace!("Instruction: SELECT");
             }
@@ -306,9 +306,9 @@ pub(super) fn run<H: HookSet>(
                 let val2 = stack.pop_value(type_vec[0]);
                 let val1 = stack.pop_value(type_vec[0]);
                 if test_val != 0 {
-                    stack.push_value(val1);
+                    stack.push_value(val1)?;
                 } else {
-                    stack.push_value(val2);
+                    stack.push_value(val2)?;
                 }
                 trace!("Instruction: SELECT_T");
             }
@@ -324,7 +324,7 @@ pub(super) fn run<H: HookSet>(
                 let global =
                     &store.globals[store.modules[*current_module_idx].global_addrs[global_idx]];
 
-                stack.push_value(global.value);
+                stack.push_value(global.value)?;
 
                 trace!(
                     "Instruction: global.get '{}' [<GLOBAL>] -> [{:?}]",
@@ -350,7 +350,7 @@ pub(super) fn run<H: HookSet>(
                     .get(i as usize)
                     .ok_or(RuntimeError::TableAccessOutOfBounds)?;
 
-                stack.push_value((*val).into());
+                stack.push_value((*val).into())?;
                 trace!(
                     "Instruction: table.get '{}' [{}] -> [{}]",
                     table_idx,
@@ -390,7 +390,7 @@ pub(super) fn run<H: HookSet>(
                 let idx = get_store_index(&memarg, relative_address)?;
                 let data = mem_inst.mem.load(idx)?;
 
-                stack.push_value(Value::I32(data));
+                stack.push_value(Value::I32(data))?;
                 trace!("Instruction: i32.load [{relative_address}] -> [{data}]");
             }
             I64_LOAD => {
@@ -402,7 +402,7 @@ pub(super) fn run<H: HookSet>(
                 let idx = get_store_index(&memarg, relative_address)?;
                 let data = mem.mem.load(idx)?;
 
-                stack.push_value(Value::I64(data));
+                stack.push_value(Value::I64(data))?;
                 trace!("Instruction: i64.load [{relative_address}] -> [{data}]");
             }
             F32_LOAD => {
@@ -414,7 +414,7 @@ pub(super) fn run<H: HookSet>(
                 let idx = get_store_index(&memarg, relative_address)?;
                 let data = mem.mem.load(idx)?;
 
-                stack.push_value(Value::F32(value::F32(data)));
+                stack.push_value(Value::F32(value::F32(data)))?;
                 trace!("Instruction: f32.load [{relative_address}] -> [{data}]");
             }
             F64_LOAD => {
@@ -426,7 +426,7 @@ pub(super) fn run<H: HookSet>(
                 let idx = get_store_index(&memarg, relative_address)?;
                 let data = mem.mem.load(idx)?;
 
-                stack.push_value(Value::F64(value::F64(data)));
+                stack.push_value(Value::F64(value::F64(data)))?;
                 trace!("Instruction: f64.load [{relative_address}] -> [{data}]");
             }
             I32_LOAD8_S => {
@@ -438,7 +438,7 @@ pub(super) fn run<H: HookSet>(
                 let idx = get_store_index(&memarg, relative_address)?;
                 let data: i8 = mem.mem.load(idx)?;
 
-                stack.push_value(Value::I32(data as u32));
+                stack.push_value(Value::I32(data as u32))?;
                 trace!("Instruction: i32.load8_s [{relative_address}] -> [{data}]");
             }
             I32_LOAD8_U => {
@@ -450,7 +450,7 @@ pub(super) fn run<H: HookSet>(
                 let idx = get_store_index(&memarg, relative_address)?;
                 let data: u8 = mem.mem.load(idx)?;
 
-                stack.push_value(Value::I32(data as u32));
+                stack.push_value(Value::I32(data as u32))?;
                 trace!("Instruction: i32.load8_u [{relative_address}] -> [{data}]");
             }
             I32_LOAD16_S => {
@@ -462,7 +462,7 @@ pub(super) fn run<H: HookSet>(
                 let idx = get_store_index(&memarg, relative_address)?;
                 let data: i16 = mem.mem.load(idx)?;
 
-                stack.push_value(Value::I32(data as u32));
+                stack.push_value(Value::I32(data as u32))?;
                 trace!("Instruction: i32.load16_s [{relative_address}] -> [{data}]");
             }
             I32_LOAD16_U => {
@@ -474,7 +474,7 @@ pub(super) fn run<H: HookSet>(
                 let idx = get_store_index(&memarg, relative_address)?;
                 let data: u16 = mem.mem.load(idx)?;
 
-                stack.push_value(Value::I32(data as u32));
+                stack.push_value(Value::I32(data as u32))?;
                 trace!("Instruction: i32.load16_u [{relative_address}] -> [{data}]");
             }
             I64_LOAD8_S => {
@@ -486,7 +486,7 @@ pub(super) fn run<H: HookSet>(
                 let idx = get_store_index(&memarg, relative_address)?;
                 let data: i8 = mem.mem.load(idx)?;
 
-                stack.push_value(Value::I64(data as u64));
+                stack.push_value(Value::I64(data as u64))?;
                 trace!("Instruction: i64.load8_s [{relative_address}] -> [{data}]");
             }
             I64_LOAD8_U => {
@@ -498,7 +498,7 @@ pub(super) fn run<H: HookSet>(
                 let idx = get_store_index(&memarg, relative_address)?;
                 let data: u8 = mem.mem.load(idx)?;
 
-                stack.push_value(Value::I64(data as u64));
+                stack.push_value(Value::I64(data as u64))?;
                 trace!("Instruction: i64.load8_u [{relative_address}] -> [{data}]");
             }
             I64_LOAD16_S => {
@@ -510,7 +510,7 @@ pub(super) fn run<H: HookSet>(
                 let idx = get_store_index(&memarg, relative_address)?;
                 let data: i16 = mem.mem.load(idx)?;
 
-                stack.push_value(Value::I64(data as u64));
+                stack.push_value(Value::I64(data as u64))?;
                 trace!("Instruction: i64.load16_s [{relative_address}] -> [{data}]");
             }
             I64_LOAD16_U => {
@@ -522,7 +522,7 @@ pub(super) fn run<H: HookSet>(
                 let idx = get_store_index(&memarg, relative_address)?;
                 let data: u16 = mem.mem.load(idx)?;
 
-                stack.push_value(Value::I64(data as u64));
+                stack.push_value(Value::I64(data as u64))?;
                 trace!("Instruction: i64.load16_u [{relative_address}] -> [{data}]");
             }
             I64_LOAD32_S => {
@@ -534,7 +534,7 @@ pub(super) fn run<H: HookSet>(
                 let idx = get_store_index(&memarg, relative_address)?;
                 let data: i32 = mem.mem.load(idx)?;
 
-                stack.push_value(Value::I64(data as u64));
+                stack.push_value(Value::I64(data as u64))?;
                 trace!("Instruction: i64.load32_s [{relative_address}] -> [{data}]");
             }
             I64_LOAD32_U => {
@@ -546,7 +546,7 @@ pub(super) fn run<H: HookSet>(
                 let idx = get_store_index(&memarg, relative_address)?;
                 let data: u32 = mem.mem.load(idx)?;
 
-                stack.push_value(Value::I64(data as u64));
+                stack.push_value(Value::I64(data as u64))?;
                 trace!("Instruction: i64.load32_u [{relative_address}] -> [{data}]");
             }
             I32_STORE => {
@@ -671,7 +671,7 @@ pub(super) fn run<H: HookSet>(
                 let mem =
                     &mut store.memories[store.modules[*current_module_idx].mem_addrs[mem_idx]];
                 let size = mem.size() as u32;
-                stack.push_value(Value::I32(size));
+                stack.push_value(Value::I32(size))?;
                 trace!("Instruction: memory.size [] -> [{}]", size);
             }
             MEMORY_GROW => {
@@ -682,12 +682,12 @@ pub(super) fn run<H: HookSet>(
 
                 let upper_limit = mem.ty.limits.max.unwrap_or(Limits::MAX_MEM_BYTES);
                 let pushed_value = if delta < 0 || delta as u32 + mem.size() as u32 > upper_limit {
-                    stack.push_value((-1).into());
+                    stack.push_value((-1).into())?;
                     -1
                 } else {
                     let previous_size: i32 = mem.size() as i32;
                     mem.grow(delta as usize);
-                    stack.push_value(previous_size.into());
+                    stack.push_value(previous_size.into())?;
                     previous_size
                 };
                 trace!("Instruction: memory.grow [{}] -> [{}]", delta, pushed_value);
@@ -695,12 +695,12 @@ pub(super) fn run<H: HookSet>(
             I32_CONST => {
                 let constant = wasm.read_var_i32().unwrap_validated();
                 trace!("Instruction: i32.const [] -> [{constant}]");
-                stack.push_value(constant.into());
+                stack.push_value(constant.into())?;
             }
             F32_CONST => {
                 let constant = f32::from_bits(wasm.read_var_f32().unwrap_validated());
                 trace!("Instruction: f32.const [] -> [{constant:.7}]");
-                stack.push_value(constant.into());
+                stack.push_value(constant.into())?;
             }
             I32_EQZ => {
                 let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -708,7 +708,7 @@ pub(super) fn run<H: HookSet>(
                 let res = if v1 == 0 { 1 } else { 0 };
 
                 trace!("Instruction: i32.eqz [{v1}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I32_EQ => {
                 let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -717,7 +717,7 @@ pub(super) fn run<H: HookSet>(
                 let res = if v1 == v2 { 1 } else { 0 };
 
                 trace!("Instruction: i32.eq [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I32_NE => {
                 let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -726,7 +726,7 @@ pub(super) fn run<H: HookSet>(
                 let res = if v1 != v2 { 1 } else { 0 };
 
                 trace!("Instruction: i32.ne [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I32_LT_S => {
                 let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -735,7 +735,7 @@ pub(super) fn run<H: HookSet>(
                 let res = if v1 < v2 { 1 } else { 0 };
 
                 trace!("Instruction: i32.lt_s [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
 
             I32_LT_U => {
@@ -745,7 +745,7 @@ pub(super) fn run<H: HookSet>(
                 let res = if (v1 as u32) < (v2 as u32) { 1 } else { 0 };
 
                 trace!("Instruction: i32.lt_u [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I32_GT_S => {
                 let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -754,7 +754,7 @@ pub(super) fn run<H: HookSet>(
                 let res = if v1 > v2 { 1 } else { 0 };
 
                 trace!("Instruction: i32.gt_s [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I32_GT_U => {
                 let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -763,7 +763,7 @@ pub(super) fn run<H: HookSet>(
                 let res = if (v1 as u32) > (v2 as u32) { 1 } else { 0 };
 
                 trace!("Instruction: i32.gt_u [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I32_LE_S => {
                 let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -772,7 +772,7 @@ pub(super) fn run<H: HookSet>(
                 let res = if v1 <= v2 { 1 } else { 0 };
 
                 trace!("Instruction: i32.le_s [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I32_LE_U => {
                 let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -1854,7 +1854,7 @@ pub(super) fn run<H: HookSet>(
             REF_NULL => {
                 let reftype = RefType::read_unvalidated(wasm);
 
-                stack.push_value(Value::Ref(reftype.to_null_ref()));
+                stack.push_value(Value::Ref(reftype.to_null_ref()))?;
                 trace!("Instruction: ref.null '{:?}' -> [{:?}]", reftype, reftype);
             }
             REF_IS_NULL => {
@@ -1866,14 +1866,14 @@ pub(super) fn run<H: HookSet>(
 
                 let res = if is_null { 1 } else { 0 };
                 trace!("Instruction: ref.is_null [{}] -> [{}]", rref, res);
-                stack.push_value(Value::I32(res));
+                stack.push_value(Value::I32(res))?;
             }
             // https://webassembly.github.io/spec/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-ref-mathsf-ref-func-x
             REF_FUNC => {
                 let func_idx = wasm.read_var_u32().unwrap_validated() as FuncIdx;
                 stack.push_value(Value::Ref(Ref::Func(FuncAddr::new(Some(
                     store.modules[*current_module_idx].func_addrs[func_idx],
-                )))));
+                )))))?;
             }
             FC_EXTENSIONS => {
                 // Should we call instruction hook here as well? Multibyte instruction
@@ -1896,7 +1896,7 @@ pub(super) fn run<H: HookSet>(
                         };
 
                         trace!("Instruction: i32.trunc_sat_f32_s [{v1}] -> [{res}]");
-                        stack.push_value(res.into());
+                        stack.push_value(res.into())?;
                     }
                     I32_TRUNC_SAT_F32_U => {
                         let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
@@ -1911,7 +1911,7 @@ pub(super) fn run<H: HookSet>(
                         };
 
                         trace!("Instruction: i32.trunc_sat_f32_u [{v1}] -> [{res}]");
-                        stack.push_value(res.into());
+                        stack.push_value(res.into())?;
                     }
                     I32_TRUNC_SAT_F64_S => {
                         let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
@@ -1928,7 +1928,7 @@ pub(super) fn run<H: HookSet>(
                         };
 
                         trace!("Instruction: i32.trunc_sat_f64_s [{v1}] -> [{res}]");
-                        stack.push_value(res.into());
+                        stack.push_value(res.into())?;
                     }
                     I32_TRUNC_SAT_F64_U => {
                         let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
@@ -1943,7 +1943,7 @@ pub(super) fn run<H: HookSet>(
                         };
 
                         trace!("Instruction: i32.trunc_sat_f64_u [{v1}] -> [{res}]");
-                        stack.push_value(res.into());
+                        stack.push_value(res.into())?;
                     }
                     I64_TRUNC_SAT_F32_S => {
                         let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
@@ -1960,7 +1960,7 @@ pub(super) fn run<H: HookSet>(
                         };
 
                         trace!("Instruction: i64.trunc_sat_f32_s [{v1}] -> [{res}]");
-                        stack.push_value(res.into());
+                        stack.push_value(res.into())?;
                     }
                     I64_TRUNC_SAT_F32_U => {
                         let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
@@ -1975,7 +1975,7 @@ pub(super) fn run<H: HookSet>(
                         };
 
                         trace!("Instruction: i64.trunc_sat_f32_u [{v1}] -> [{res}]");
-                        stack.push_value(res.into());
+                        stack.push_value(res.into())?;
                     }
                     I64_TRUNC_SAT_F64_S => {
                         let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
@@ -1992,7 +1992,7 @@ pub(super) fn run<H: HookSet>(
                         };
 
                         trace!("Instruction: i64.trunc_sat_f64_s [{v1}] -> [{res}]");
-                        stack.push_value(res.into());
+                        stack.push_value(res.into())?;
                     }
                     I64_TRUNC_SAT_F64_U => {
                         let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
@@ -2007,7 +2007,7 @@ pub(super) fn run<H: HookSet>(
                         };
 
                         trace!("Instruction: i64.trunc_sat_f64_u [{v1}] -> [{res}]");
-                        stack.push_value(res.into());
+                        stack.push_value(res.into())?;
                     }
                     // See https://webassembly.github.io/bulk-memory-operations/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-init-x
                     // Copy a region from a data segment into memory
@@ -2219,14 +2219,14 @@ pub(super) fn run<H: HookSet>(
                         match final_size {
                             Some(final_size) => {
                                 if final_size > max {
-                                    stack.push_value(Value::I32(u32::MAX))
+                                    stack.push_value(Value::I32(u32::MAX))?
                                 } else {
                                     tab.elem.extend(vec![val; n as usize]);
 
-                                    stack.push_value(Value::I32(sz));
+                                    stack.push_value(Value::I32(sz))?
                                 }
                             }
-                            _ => stack.push_value(Value::I32(u32::MAX)),
+                            _ => stack.push_value(Value::I32(u32::MAX))?,
                         }
                     }
                     TABLE_SIZE => {
@@ -2236,7 +2236,7 @@ pub(super) fn run<H: HookSet>(
 
                         let sz = tab.elem.len() as u32;
 
-                        stack.push_value(Value::I32(sz));
+                        stack.push_value(Value::I32(sz))?;
 
                         trace!("Instruction: table.size '{}' [] -> [{}]", table_idx, sz);
                     }
@@ -2281,7 +2281,7 @@ pub(super) fn run<H: HookSet>(
 
                 let res = if v | 0x7F != 0x7F { v | 0xFFFFFF00 } else { v };
 
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
 
                 trace!("Instruction i32.extend8_s [{}] -> [{}]", v, res);
             }
@@ -2299,7 +2299,7 @@ pub(super) fn run<H: HookSet>(
                     v
                 };
 
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
 
                 trace!("Instruction i32.extend16_s [{}] -> [{}]", v, res);
             }
@@ -2317,7 +2317,7 @@ pub(super) fn run<H: HookSet>(
                     v
                 };
 
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
 
                 trace!("Instruction i64.extend8_s [{}] -> [{}]", v, res);
             }
@@ -2335,7 +2335,7 @@ pub(super) fn run<H: HookSet>(
                     v
                 };
 
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
 
                 trace!("Instruction i64.extend16_s [{}] -> [{}]", v, res);
             }
@@ -2372,7 +2372,7 @@ fn do_sidetable_control_transfer(
     stack: &mut Stack,
     current_stp: &mut usize,
     current_sidetable: &Sidetable,
-) {
+) -> Result<(), RuntimeError> {
     let sidetable_entry = &current_sidetable[*current_stp];
 
     // TODO fix this corner cutting implementation
@@ -2382,11 +2382,13 @@ fn do_sidetable_control_transfer(
     stack.pop_n_values(sidetable_entry.popcnt);
 
     for val in jump_vals {
-        stack.push_value(val);
+        stack.push_value(val)?;
     }
 
     *current_stp = (*current_stp as isize + sidetable_entry.delta_stp) as usize;
     wasm.pc = (wasm.pc as isize + sidetable_entry.delta_pc) as usize;
+
+    Ok(())
 }
 
 #[inline(always)]
