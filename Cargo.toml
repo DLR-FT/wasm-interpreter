@@ -44,6 +44,9 @@ serde_json = { workspace = true }
 test-log = { workspace = true, features = ["log"] }
 wast = "212.0.0"
 wat = { workspace = true }
+regex = "1.11.1"
+envconfig = "0.11.0"
+lazy_static = "1.5.0"
 
 [features]
 default = ["hooks"]

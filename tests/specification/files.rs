@@ -4,10 +4,10 @@ use std::path::{Path, PathBuf};
 
 pub fn find_wast_files(
     base_path: &Path,
-    mut file_name_filter: impl FnMut(&OsStr) -> bool,
+    mut file_name_filter: impl FnMut(&str) -> bool,
 ) -> std::io::Result<Vec<PathBuf>> {
     find_files_filtered(base_path, |path, meta| {
-        let Some(file_name) = path.file_name() else {
+        let Some(file_name) = path.file_name().and_then(OsStr::to_str) else {
             return false;
         };
 
