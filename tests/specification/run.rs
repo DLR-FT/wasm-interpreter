@@ -78,6 +78,7 @@ pub fn to_wasm_testsuite_string(runtime_error: RuntimeError) -> Result<String, B
         RuntimeError::FunctionNotFound => not_represented,
         RuntimeError::StackSmash => not_represented,
         RuntimeError::BadConversionToInteger => Ok("invalid conversion to integer"),
+        RuntimeError::ReachedUnreachable => Ok("unreachable"),
 
         RuntimeError::MemoryAccessOutOfBounds => Ok("out of bounds memory access"),
         RuntimeError::TableAccessOutOfBounds => Ok("out of bounds table access"),

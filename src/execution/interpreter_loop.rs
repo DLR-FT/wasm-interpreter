@@ -378,6 +378,9 @@ pub(super) fn run<H: HookSet>(
                     val
                 )
             }
+            UNREACHABLE => {
+                return Err(RuntimeError::ReachedUnreachable);
+            }
             I32_LOAD => {
                 let memarg = MemArg::read_unvalidated(wasm);
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
