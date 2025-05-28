@@ -1,8 +1,8 @@
 use ci_reports::CIFullReport;
+use envconfig::Envconfig;
+use regex::Regex;
 use reports::WastTestReport;
-use std::ffi::OsStr;
 use std::fmt::Write as _;
-use std::os::unix::ffi::OsStrExt;
 use std::path::Path;
 
 mod ci_reports;
@@ -11,14 +11,37 @@ mod reports;
 mod run;
 mod test_errors;
 
+#[derive(Envconfig)]
+pub struct GlobalConfig {
+    /// A regex that acts as an allowlist filter for tests.
+    /// By default all tests are allowed.
+    #[envconfig(default = ".*")]
+    pub allow_test_pattern: Regex,
+
+    /// A regex that acts as a blocklist filter for tests.
+    /// By default all `simd_*` and `proposals` tests are blocked.
+    /// To not block anything use: `^$`
+    #[envconfig(default = "^(simd_.*|proposals)$")]
+    pub block_test_pattern: Regex,
+
+    /// This makes the testsuite runner re-enable the panic hook during all interpreter calls, resulting in the printing of panic info on every interpreter panic.
+    #[envconfig(default = "false")]
+    pub reenable_panic_hook: bool,
+}
+
+lazy_static::lazy_static! {
+    pub static ref ENV_CONFIG: GlobalConfig = GlobalConfig::init_from_env().expect("valid environment variables");
+}
+
 #[test_log::test]
 pub fn spec_tests() {
-    // Edit this to ignore or only run specific tests
-    let file_name_filter = |file_name: &OsStr| {
-        let is_simd = file_name.as_bytes().starts_with("simd_".as_bytes());
-        let is_proposal = file_name == OsStr::new("proposals");
+    // Load environment variables
+    let _ = *ENV_CONFIG;
 
-        !is_simd && !is_proposal
+    // Edit this to ignore or only run specific tests
+    let file_name_filter = |file_name: &str| {
+        ENV_CONFIG.allow_test_pattern.is_match(file_name)
+            && !ENV_CONFIG.block_test_pattern.is_match(file_name)
     };
 
     let paths = files::find_wast_files(

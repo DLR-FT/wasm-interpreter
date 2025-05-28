@@ -19,6 +19,8 @@ use wast::WastArg;
 use crate::specification::reports::*;
 use crate::specification::test_errors::*;
 
+use super::ENV_CONFIG;
+
 //Each script runs within an interpreter that has the following module with name "spectest" defined
 //https://github.com/WebAssembly/spec/tree/main/interpreter#spectest-host-module
 // TODO printing not possible since host functions are not implemented yet
@@ -750,8 +752,15 @@ pub fn get_command(contents: &str, span: wast::token::Span) -> &str {
 pub fn catch_unwind_and_suppress_panic_handler<R>(
     f: impl FnOnce() -> R + UnwindSafe,
 ) -> Result<R, Box<dyn Any + Send + 'static>> {
-    std::panic::set_hook(Box::new(|_| {}));
+    if !ENV_CONFIG.reenable_panic_hook {
+        std::panic::set_hook(Box::new(|_| {}));
+    }
+
     let result = std::panic::catch_unwind(f);
-    let _ = std::panic::take_hook();
+
+    if !ENV_CONFIG.reenable_panic_hook {
+        let _ = std::panic::take_hook();
+    }
+
     result
 }
