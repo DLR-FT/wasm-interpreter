@@ -536,10 +536,24 @@ fn execute_assert_return(
         }
         wast::WastExecute::Get {
             span: _,
+            module: Some(module_id),
+            global: _,
+        } => {
+            let _module_idx = visible_modules
+                .get(module_id.name())
+                .ok_or(RuntimeError::ModuleNotFound)
+                .map_err(|err| WasmInterpreterError::new_boxed(wasm::Error::RuntimeError(err)))?;
+
+            // TODO implement a lookup in the interpreter to get the globals value
+
+            todo!()
+        }
+        wast::WastExecute::Get {
+            span: _,
             module: _,
             global: _,
         } => Err(GenericError::new_boxed(
-            "`get` directive inside `assert_return` not yet implemented",
+            "`get` directive inside `assert_return` not implemented for when the module name is not set",
         )),
         wast::WastExecute::Wat(_) => Err(GenericError::new_boxed(
             "`wat` directive inside `assert_return` not yet implemented",
