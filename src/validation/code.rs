@@ -1036,19 +1036,22 @@ fn read_instructions(
             }
 
             FC_EXTENSIONS => {
-                let Ok(second_instr_byte) = wasm.read_u8() else {
+                let Ok(second_instr) = wasm.read_var_u32() else {
                     // TODO only do this if EOF
                     return Err(Error::ExprMissingEnd);
                 };
 
                 #[cfg(debug_assertions)]
-                crate::core::utils::print_beautiful_fc_extension(second_instr_byte, wasm.pc);
+                crate::core::utils::print_beautiful_fc_extension(second_instr, wasm.pc);
 
                 #[cfg(not(debug_assertions))]
-                trace!("Read instruction byte {second_instr_byte:#04X?} ({second_instr_byte}) at wasm_binary[{}]", wasm.pc);
+                trace!(
+                    "Read instruction byte {second_instr} at wasm_binary[{}]",
+                    wasm.pc
+                );
 
                 use crate::core::reader::types::opcode::fc_extensions::*;
-                match second_instr_byte {
+                match second_instr {
                     I32_TRUNC_SAT_F32_S => {
                         stack.assert_pop_val_type(ValType::NumType(NumType::F32))?;
                         stack.push_valtype(ValType::NumType(NumType::I32));
@@ -1229,12 +1232,7 @@ fn read_instructions(
                         stack.assert_pop_ref_type(Some(t))?;
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                     }
-                    _ => {
-                        return Err(Error::InvalidMultiByteInstr(
-                            first_instr_byte,
-                            second_instr_byte,
-                        ))
-                    }
+                    _ => return Err(Error::InvalidMultiByteInstr(first_instr_byte, second_instr)),
                 }
             }
 

@@ -73,7 +73,7 @@ pub enum Error {
     InvalidImportDesc(u8),
     ExprMissingEnd,
     InvalidInstr(u8),
-    InvalidMultiByteInstr(u8, u8),
+    InvalidMultiByteInstr(u8, u32),
     EndInvalidValueStack,
     InvalidLocalIdx,
     InvalidValidationStackValType(Option<ValType>),
