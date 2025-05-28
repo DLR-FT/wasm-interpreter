@@ -215,25 +215,33 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
     /// <https://webassembly.github.io/spec/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-fill>.
     /// Note, that the WASM spec defines the behavior by recursion, while our implementation uses
     /// the memset like [`core::ptr::write_bytes`].
+    ///
+    /// <https://webassembly.github.io/spec/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-fill>
     pub fn fill(&self, index: MemIdx, data_byte: u8, count: MemIdx) -> Result<(), RuntimeError> {
-        if count == 0 {
-            return Ok(());
-        }
-
         let lock_guard = self.inner_data.read();
 
+        /* check destination for out of bounds access */
+        // Specification step 12.
         if count > lock_guard.len() {
             error!("fill count is bigger than the linear memory");
             return Err(RuntimeError::MemoryAccessOutOfBounds);
         }
 
+        // Specification step 12.
         if index > lock_guard.len() - count {
             error!("fill extends beyond the linear memory's end");
             return Err(RuntimeError::MemoryAccessOutOfBounds);
         }
 
+        /* check if there is anything to be done */
+        // Specification step 13.
+        if count == 0 {
+            return Ok(());
+        }
+
         let ptr = lock_guard[index].get();
         unsafe {
+            // Specification step 14-21.
             ptr.write_bytes(data_byte, count);
         }
 
@@ -246,6 +254,8 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
     /// - Both regions may overlap
     /// - Copies the `count` bytes starting from `source_index`, overwriting the `count` bytes
     ///   starting from `destination_index`
+    ///
+    /// <https://webassembly.github.io/spec/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-copy>
     pub fn copy(
         &self,
         destination_index: MemIdx,
@@ -253,36 +263,42 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
         source_index: MemIdx,
         count: MemIdx,
     ) -> Result<(), RuntimeError> {
-        if count == 0 {
-            return Ok(());
-        }
-
         // self is the destination
         let lock_guard_self = self.inner_data.read();
 
         // other is the source
         let lock_guard_other = source_mem.inner_data.read();
 
-        // check destination for out of bounds access
+        /* check destination for out of bounds access */
+        // Specification step 12.
         if count > lock_guard_self.len() {
             error!("copy count is bigger than the destination linear memory");
             return Err(RuntimeError::MemoryAccessOutOfBounds);
         }
 
+        // Specification step 12.
         if destination_index > lock_guard_self.len() - count {
             error!("copy destination extends beyond the linear memory's end");
             return Err(RuntimeError::MemoryAccessOutOfBounds);
         }
 
-        // check source for out of bounds access
+        /* check source for out of bounds access */
+        // Specification step 12.
         if count > lock_guard_other.len() {
             error!("copy count is bigger than the source linear memory");
             return Err(RuntimeError::MemoryAccessOutOfBounds);
         }
 
+        // Specification step 12.
         if source_index > lock_guard_other.len() - count {
             error!("copy source extends beyond the linear memory's end");
             return Err(RuntimeError::MemoryAccessOutOfBounds);
+        }
+
+        /* check if there is anything to be done */
+        // Specification step 13.
+        if count == 0 {
+            return Ok(());
         }
 
         // acquire pointers
@@ -294,6 +310,8 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
             // TODO investigate if it is worth to use a conditional `copy_from_nonoverlapping`
             // if the non-overlapping can be confirmed (and the count is bigger than a certain
             // threshold).
+
+            // Specification step 14-15.
             destination_ptr.copy_from(source_ptr, count);
         }
 
@@ -301,6 +319,8 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
     }
 
     // Rationale behind having `source_index` and `count` when the callsite could also just create a subslice for `source_data`? Have all the index error checks in one place.
+    //
+    // <https://webassembly.github.io/spec/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-init-x>
     pub fn init(
         &self,
         destination_index: MemIdx,
@@ -308,33 +328,40 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
         source_index: MemIdx,
         count: MemIdx,
     ) -> Result<(), RuntimeError> {
-        if count == 0 {
-            return Ok(());
-        }
-
+        // self is the destination
         let lock_guard_self = self.inner_data.read();
         let data_len = source_data.len();
 
-        // check destination for out of bounds access
-        if count > lock_guard_self.len() {
-            error!("init count is bigger than the linear memory");
-            return Err(RuntimeError::MemoryAccessOutOfBounds);
-        }
-
-        if destination_index > lock_guard_self.len() - count {
-            error!("init extends beyond the linear memory's end");
-            return Err(RuntimeError::MemoryAccessOutOfBounds);
-        }
-
-        // check source for out of bounds access
+        /* check source for out of bounds access */
+        // Specification step 16.
         if count > data_len {
             error!("init count is bigger than the data instance");
             return Err(RuntimeError::MemoryAccessOutOfBounds);
         }
 
+        // Specification step 16.
         if source_index > data_len - count {
             error!("init source extends beyond the data instance's end");
             return Err(RuntimeError::MemoryAccessOutOfBounds);
+        }
+
+        /* check destination for out of bounds access */
+        // Specification step 16.
+        if count > lock_guard_self.len() {
+            error!("init count is bigger than the linear memory");
+            return Err(RuntimeError::MemoryAccessOutOfBounds);
+        }
+
+        // Specification step 16.
+        if destination_index > lock_guard_self.len() - count {
+            error!("init extends beyond the linear memory's end");
+            return Err(RuntimeError::MemoryAccessOutOfBounds);
+        }
+
+        /* check if there is anything to be done */
+        // Specification step 17.
+        if count == 0 {
+            return Ok(());
         }
 
         // acquire pointers
@@ -343,6 +370,7 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
 
         // copy the data
         unsafe {
+            // Specification step 18-27.
             destination_ptr.copy_from_nonoverlapping(source_ptr, count);
         }
 
