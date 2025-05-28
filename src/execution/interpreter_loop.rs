@@ -387,7 +387,7 @@ pub(super) fn run<H: HookSet>(
 
                 let mem_inst = &store.memories[store.modules[*current_module_idx].mem_addrs[0]];
 
-                let idx = get_store_index(&memarg, relative_address)?;
+                let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data = mem_inst.mem.load(idx)?;
 
                 stack.push_value(Value::I32(data));
@@ -399,7 +399,7 @@ pub(super) fn run<H: HookSet>(
 
                 let mem = &store.memories[store.modules[*current_module_idx].mem_addrs[0]]; // there is only one memory allowed as of now
 
-                let idx = get_store_index(&memarg, relative_address)?;
+                let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data = mem.mem.load(idx)?;
 
                 stack.push_value(Value::I64(data));
@@ -411,7 +411,7 @@ pub(super) fn run<H: HookSet>(
 
                 let mem = &store.memories[store.modules[*current_module_idx].mem_addrs[0]]; // there is only one memory allowed as of now
 
-                let idx = get_store_index(&memarg, relative_address)?;
+                let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data = mem.mem.load(idx)?;
 
                 stack.push_value(Value::F32(value::F32(data)));
@@ -423,7 +423,7 @@ pub(super) fn run<H: HookSet>(
 
                 let mem = &store.memories[store.modules[*current_module_idx].mem_addrs[0]]; // there is only one memory allowed as of now
 
-                let idx = get_store_index(&memarg, relative_address)?;
+                let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data = mem.mem.load(idx)?;
 
                 stack.push_value(Value::F64(value::F64(data)));
@@ -435,7 +435,7 @@ pub(super) fn run<H: HookSet>(
 
                 let mem = &store.memories[store.modules[*current_module_idx].mem_addrs[0]]; // there is only one memory allowed as of now
 
-                let idx = get_store_index(&memarg, relative_address)?;
+                let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data: i8 = mem.mem.load(idx)?;
 
                 stack.push_value(Value::I32(data as u32));
@@ -447,7 +447,7 @@ pub(super) fn run<H: HookSet>(
 
                 let mem = &store.memories[store.modules[*current_module_idx].mem_addrs[0]]; // there is only one memory allowed as of now
 
-                let idx = get_store_index(&memarg, relative_address)?;
+                let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data: u8 = mem.mem.load(idx)?;
 
                 stack.push_value(Value::I32(data as u32));
@@ -459,7 +459,7 @@ pub(super) fn run<H: HookSet>(
 
                 let mem = &store.memories[store.modules[*current_module_idx].mem_addrs[0]]; // there is only one memory allowed as of now
 
-                let idx = get_store_index(&memarg, relative_address)?;
+                let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data: i16 = mem.mem.load(idx)?;
 
                 stack.push_value(Value::I32(data as u32));
@@ -471,7 +471,7 @@ pub(super) fn run<H: HookSet>(
 
                 let mem = &store.memories[store.modules[*current_module_idx].mem_addrs[0]]; // there is only one memory allowed as of now
 
-                let idx = get_store_index(&memarg, relative_address)?;
+                let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data: u16 = mem.mem.load(idx)?;
 
                 stack.push_value(Value::I32(data as u32));
@@ -483,7 +483,7 @@ pub(super) fn run<H: HookSet>(
 
                 let mem = &store.memories[store.modules[*current_module_idx].mem_addrs[0]]; // there is only one memory allowed as of now
 
-                let idx = get_store_index(&memarg, relative_address)?;
+                let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data: i8 = mem.mem.load(idx)?;
 
                 stack.push_value(Value::I64(data as u64));
@@ -495,7 +495,7 @@ pub(super) fn run<H: HookSet>(
 
                 let mem = &store.memories[store.modules[*current_module_idx].mem_addrs[0]]; // there is only one memory allowed as of now
 
-                let idx = get_store_index(&memarg, relative_address)?;
+                let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data: u8 = mem.mem.load(idx)?;
 
                 stack.push_value(Value::I64(data as u64));
@@ -507,7 +507,7 @@ pub(super) fn run<H: HookSet>(
 
                 let mem = &store.memories[store.modules[*current_module_idx].mem_addrs[0]]; // there is only one memory allowed as of now
 
-                let idx = get_store_index(&memarg, relative_address)?;
+                let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data: i16 = mem.mem.load(idx)?;
 
                 stack.push_value(Value::I64(data as u64));
@@ -519,7 +519,7 @@ pub(super) fn run<H: HookSet>(
 
                 let mem = &store.memories[store.modules[*current_module_idx].mem_addrs[0]]; // there is only one memory allowed as of now
 
-                let idx = get_store_index(&memarg, relative_address)?;
+                let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data: u16 = mem.mem.load(idx)?;
 
                 stack.push_value(Value::I64(data as u64));
@@ -531,7 +531,7 @@ pub(super) fn run<H: HookSet>(
 
                 let mem = &store.memories[store.modules[*current_module_idx].mem_addrs[0]]; // there is only one memory allowed as of now
 
-                let idx = get_store_index(&memarg, relative_address)?;
+                let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data: i32 = mem.mem.load(idx)?;
 
                 stack.push_value(Value::I64(data as u64));
@@ -543,7 +543,7 @@ pub(super) fn run<H: HookSet>(
 
                 let mem = &store.memories[store.modules[*current_module_idx].mem_addrs[0]]; // there is only one memory allowed as of now
 
-                let idx = get_store_index(&memarg, relative_address)?;
+                let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data: u32 = mem.mem.load(idx)?;
 
                 stack.push_value(Value::I64(data as u64));
@@ -557,7 +557,7 @@ pub(super) fn run<H: HookSet>(
 
                 let mem = &mut store.memories[store.modules[*current_module_idx].mem_addrs[0]]; // there is only one memory allowed as of now
 
-                let idx = get_store_index(&memarg, relative_address)?;
+                let idx = calculate_mem_address(&memarg, relative_address)?;
                 mem.mem.store(idx, data_to_store)?;
 
                 trace!("Instruction: i32.store [{relative_address} {data_to_store}] -> []");
@@ -570,7 +570,7 @@ pub(super) fn run<H: HookSet>(
 
                 let mem = &mut store.memories[store.modules[*current_module_idx].mem_addrs[0]]; // there is only one memory allowed as of now
 
-                let idx = get_store_index(&memarg, relative_address)?;
+                let idx = calculate_mem_address(&memarg, relative_address)?;
                 mem.mem.store(idx, data_to_store)?;
 
                 trace!("Instruction: i64.store [{relative_address} {data_to_store}] -> []");
@@ -583,7 +583,7 @@ pub(super) fn run<H: HookSet>(
 
                 let mem = &mut store.memories[store.modules[*current_module_idx].mem_addrs[0]]; // there is only one memory allowed as of now
 
-                let idx = get_store_index(&memarg, relative_address)?;
+                let idx = calculate_mem_address(&memarg, relative_address)?;
                 mem.mem.store(idx, data_to_store)?;
 
                 trace!("Instruction: f32.store [{relative_address} {data_to_store}] -> []");
@@ -596,7 +596,7 @@ pub(super) fn run<H: HookSet>(
 
                 let mem = &mut store.memories[store.modules[*current_module_idx].mem_addrs[0]]; // there is only one memory allowed as of now
 
-                let idx = get_store_index(&memarg, relative_address)?;
+                let idx = calculate_mem_address(&memarg, relative_address)?;
                 mem.mem.store(idx, data_to_store)?;
 
                 trace!("Instruction: f64.store [{relative_address} {data_to_store}] -> []");
@@ -615,7 +615,7 @@ pub(super) fn run<H: HookSet>(
 
                 let mem = &mut store.memories[store.modules[*current_module_idx].mem_addrs[0]];
 
-                let idx = get_store_index(&memarg, relative_address)?;
+                let idx = calculate_mem_address(&memarg, relative_address)?;
                 mem.mem.store(idx, wrapped_data)?;
 
                 trace!("Instruction: i32.store8 [{relative_address} {wrapped_data}] -> []");
@@ -634,7 +634,7 @@ pub(super) fn run<H: HookSet>(
 
                 let mem = &mut store.memories[store.modules[*current_module_idx].mem_addrs[0]];
 
-                let idx = get_store_index(&memarg, relative_address)?;
+                let idx = calculate_mem_address(&memarg, relative_address)?;
                 mem.mem.store(idx, wrapped_data)?;
 
                 trace!("Instruction: i32.store16 [{relative_address} {data_to_store}] -> []");
@@ -653,7 +653,7 @@ pub(super) fn run<H: HookSet>(
 
                 let mem = &mut store.memories[store.modules[*current_module_idx].mem_addrs[0]];
 
-                let idx = get_store_index(&memarg, relative_address)?;
+                let idx = calculate_mem_address(&memarg, relative_address)?;
                 mem.mem.store(idx, wrapped_data)?;
 
                 trace!("Instruction: i64.store8 [{relative_address} {data_to_store}] -> []");
@@ -672,7 +672,7 @@ pub(super) fn run<H: HookSet>(
 
                 let mem = &mut store.memories[store.modules[*current_module_idx].mem_addrs[0]];
 
-                let idx = get_store_index(&memarg, relative_address)?;
+                let idx = calculate_mem_address(&memarg, relative_address)?;
                 mem.mem.store(idx, wrapped_data)?;
 
                 trace!("Instruction: i64.store16 [{relative_address} {data_to_store}] -> []");
@@ -691,7 +691,7 @@ pub(super) fn run<H: HookSet>(
 
                 let mem = &mut store.memories[store.modules[*current_module_idx].mem_addrs[0]];
 
-                let idx = get_store_index(&memarg, relative_address)?;
+                let idx = calculate_mem_address(&memarg, relative_address)?;
                 mem.mem.store(idx, wrapped_data)?;
 
                 trace!("Instruction: i64.store32 [{relative_address} {data_to_store}] -> []");
@@ -2420,7 +2420,7 @@ fn do_sidetable_control_transfer(
 }
 
 #[inline(always)]
-fn get_store_index(memarg: &MemArg, relative_address: u32) -> Result<MemIdx, RuntimeError> {
+fn calculate_mem_address(memarg: &MemArg, relative_address: u32) -> Result<usize, RuntimeError> {
     memarg
         .offset
         // The spec states that this should be a 33 bit integer, e.g. it is not legal to wrap if the
