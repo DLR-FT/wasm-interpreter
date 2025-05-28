@@ -185,31 +185,31 @@ pub const I64_EXTEND16_S: u8 = 0xC3;
 pub const I64_EXTEND32_S: u8 = 0xC4;
 
 pub mod fc_extensions {
-    pub const I32_TRUNC_SAT_F32_S: u8 = 0x00;
-    pub const I32_TRUNC_SAT_F32_U: u8 = 0x01;
-    pub const I32_TRUNC_SAT_F64_S: u8 = 0x02;
-    pub const I32_TRUNC_SAT_F64_U: u8 = 0x03;
-    pub const I64_TRUNC_SAT_F32_S: u8 = 0x04;
-    pub const I64_TRUNC_SAT_F32_U: u8 = 0x05;
-    pub const I64_TRUNC_SAT_F64_S: u8 = 0x06;
-    pub const I64_TRUNC_SAT_F64_U: u8 = 0x07;
-    pub const MEMORY_INIT: u8 = 0x08;
-    pub const DATA_DROP: u8 = 0x09;
-    pub const MEMORY_COPY: u8 = 0x0A;
-    pub const MEMORY_FILL: u8 = 0x0B;
-    pub const TABLE_INIT: u8 = 0x0C;
-    pub const ELEM_DROP: u8 = 0x0D;
-    pub const TABLE_COPY: u8 = 0x0E;
-    pub const TABLE_GROW: u8 = 0x0F;
-    pub const TABLE_SIZE: u8 = 0x10;
-    pub const TABLE_FILL: u8 = 0x11;
+    pub const I32_TRUNC_SAT_F32_S: u32 = 0x00;
+    pub const I32_TRUNC_SAT_F32_U: u32 = 0x01;
+    pub const I32_TRUNC_SAT_F64_S: u32 = 0x02;
+    pub const I32_TRUNC_SAT_F64_U: u32 = 0x03;
+    pub const I64_TRUNC_SAT_F32_S: u32 = 0x04;
+    pub const I64_TRUNC_SAT_F32_U: u32 = 0x05;
+    pub const I64_TRUNC_SAT_F64_S: u32 = 0x06;
+    pub const I64_TRUNC_SAT_F64_U: u32 = 0x07;
+    pub const MEMORY_INIT: u32 = 0x08;
+    pub const DATA_DROP: u32 = 0x09;
+    pub const MEMORY_COPY: u32 = 0x0A;
+    pub const MEMORY_FILL: u32 = 0x0B;
+    pub const TABLE_INIT: u32 = 0x0C;
+    pub const ELEM_DROP: u32 = 0x0D;
+    pub const TABLE_COPY: u32 = 0x0E;
+    pub const TABLE_GROW: u32 = 0x0F;
+    pub const TABLE_SIZE: u32 = 0x10;
+    pub const TABLE_FILL: u32 = 0x11;
 }
 
 #[cfg(debug_assertions)]
-pub fn fc_extension_opcode_second_byte_to_str(byte: u8) -> alloc::string::String {
+pub fn fc_extension_opcode_second_byte_to_str(instr: u32) -> alloc::string::String {
     use alloc::{borrow::ToOwned, format};
 
-    let opcode = match byte {
+    let opcode = match instr {
         0x00 => "I32_TRUNC_SAT_F32_S",
         0x01 => "I32_TRUNC_SAT_F32_U",
         0x02 => "I32_TRUNC_SAT_F64_S",
@@ -233,7 +233,7 @@ pub fn fc_extension_opcode_second_byte_to_str(byte: u8) -> alloc::string::String
     .to_owned();
 
     if opcode == "UNKNOWN" {
-        format!("UNKNOWN({:x})", byte)
+        format!("UNKNOWN({:x})", instr)
     } else {
         opcode
     }
