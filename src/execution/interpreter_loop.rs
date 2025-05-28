@@ -1907,10 +1907,10 @@ pub(super) fn run<H: HookSet>(
             }
             FC_EXTENSIONS => {
                 // Should we call instruction hook here as well? Multibyte instruction
-                let second_instr_byte = wasm.read_u8().unwrap_validated();
+                let second_instr = wasm.read_var_u32().unwrap_validated();
 
                 use crate::core::reader::types::opcode::fc_extensions::*;
-                match second_instr_byte {
+                match second_instr {
                     I32_TRUNC_SAT_F32_S => {
                         let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
                         let res = {
