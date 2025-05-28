@@ -607,12 +607,18 @@ pub(super) fn run<H: HookSet>(
                 let data_to_store: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
+                let wrapped_data: i8 = i8::from_le_bytes(
+                    data_to_store.rem_euclid(2_i32.pow(8)).to_le_bytes()[0..1]
+                        .try_into()
+                        .expect("array to be of length 1"),
+                );
+
                 let mem = &mut store.memories[store.modules[*current_module_idx].mem_addrs[0]];
 
                 let idx = get_store_index(&memarg, relative_address)?;
-                mem.mem.store(idx, data_to_store)?;
+                mem.mem.store(idx, wrapped_data)?;
 
-                trace!("Instruction: i32.store8 [{relative_address} {data_to_store}] -> []");
+                trace!("Instruction: i32.store8 [{relative_address} {wrapped_data}] -> []");
             }
             I32_STORE16 => {
                 let memarg = MemArg::read_unvalidated(wasm);
@@ -620,10 +626,16 @@ pub(super) fn run<H: HookSet>(
                 let data_to_store: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
+                let wrapped_data: i16 = i16::from_le_bytes(
+                    data_to_store.rem_euclid(2_i32.pow(16)).to_le_bytes()[0..2]
+                        .try_into()
+                        .expect("array to be of length 2"),
+                );
+
                 let mem = &mut store.memories[store.modules[*current_module_idx].mem_addrs[0]];
 
                 let idx = get_store_index(&memarg, relative_address)?;
-                mem.mem.store(idx, data_to_store)?;
+                mem.mem.store(idx, wrapped_data)?;
 
                 trace!("Instruction: i32.store16 [{relative_address} {data_to_store}] -> []");
             }
@@ -633,10 +645,16 @@ pub(super) fn run<H: HookSet>(
                 let data_to_store: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
+                let wrapped_data: i8 = i8::from_le_bytes(
+                    data_to_store.rem_euclid(2_i64.pow(8)).to_le_bytes()[0..1]
+                        .try_into()
+                        .expect("array to be of length 1"),
+                );
+
                 let mem = &mut store.memories[store.modules[*current_module_idx].mem_addrs[0]];
 
                 let idx = get_store_index(&memarg, relative_address)?;
-                mem.mem.store(idx, data_to_store)?;
+                mem.mem.store(idx, wrapped_data)?;
 
                 trace!("Instruction: i64.store8 [{relative_address} {data_to_store}] -> []");
             }
@@ -646,10 +664,16 @@ pub(super) fn run<H: HookSet>(
                 let data_to_store: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
+                let wrapped_data: i16 = i16::from_le_bytes(
+                    data_to_store.rem_euclid(2_i64.pow(16)).to_le_bytes()[0..2]
+                        .try_into()
+                        .expect("array to be of length 2"),
+                );
+
                 let mem = &mut store.memories[store.modules[*current_module_idx].mem_addrs[0]];
 
                 let idx = get_store_index(&memarg, relative_address)?;
-                mem.mem.store(idx, data_to_store)?;
+                mem.mem.store(idx, wrapped_data)?;
 
                 trace!("Instruction: i64.store16 [{relative_address} {data_to_store}] -> []");
             }
@@ -659,10 +683,16 @@ pub(super) fn run<H: HookSet>(
                 let data_to_store: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
+                let wrapped_data: i32 = i32::from_le_bytes(
+                    data_to_store.rem_euclid(2_i64.pow(32)).to_le_bytes()[0..4]
+                        .try_into()
+                        .expect("array to be of length 4"),
+                );
+
                 let mem = &mut store.memories[store.modules[*current_module_idx].mem_addrs[0]];
 
                 let idx = get_store_index(&memarg, relative_address)?;
-                mem.mem.store(idx, data_to_store)?;
+                mem.mem.store(idx, wrapped_data)?;
 
                 trace!("Instruction: i64.store32 [{relative_address} {data_to_store}] -> []");
             }
