@@ -173,7 +173,7 @@ where
             locals,
             usize::MAX,
             usize::MAX,
-        );
+        )?;
 
         let mut current_module_idx = module_addr;
 
@@ -243,7 +243,7 @@ where
         // Prepare a new stack with the locals for the entry function
         let mut stack = Stack::new();
         let locals = Locals::new(params.into_iter(), func_inst.locals.iter().cloned());
-        stack.push_stackframe(module_addr, func_idx, &func_ty, locals, 0, 0);
+        stack.push_stackframe(module_addr, func_idx, &func_ty, locals, 0, 0)?;
 
         let mut currrent_module_idx = module_addr;
 
@@ -319,7 +319,7 @@ where
         // Prepare a new stack with the locals for the entry function
         let mut stack = Stack::new();
         let locals = Locals::new(params.into_iter(), func_inst.locals.iter().cloned());
-        stack.push_stackframe(module_addr, func_idx, &func_ty, locals, 0, 0);
+        stack.push_stackframe(module_addr, func_idx, &func_ty, locals, 0, 0)?;
 
         let mut currrent_module_idx = module_addr;
 

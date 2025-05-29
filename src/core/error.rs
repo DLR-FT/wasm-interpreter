@@ -17,7 +17,6 @@ pub enum RuntimeError {
     DivideBy0,
     UnrepresentableResult,
     FunctionNotFound,
-    StackSmash,
     // https://github.com/wasmi-labs/wasmi/blob/37d1449524a322817c55026eb21eb97dd693b9ce/crates/core/src/trap.rs#L265C5-L265C27
     BadConversionToInteger,
     MemoryAccessOutOfBounds,
@@ -31,6 +30,7 @@ pub enum RuntimeError {
     UndefinedTableIndex,
     // "undefined element" <- as-call_indirect-last
     ReachedUnreachable,
+    StackExhaustion,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -297,7 +297,6 @@ impl Display for RuntimeError {
             RuntimeError::DivideBy0 => f.write_str("Divide by zero is not permitted"),
             RuntimeError::UnrepresentableResult => f.write_str("Result is unrepresentable"),
             RuntimeError::FunctionNotFound => f.write_str("Function not found"),
-            RuntimeError::StackSmash => f.write_str("Stack smashed"),
             RuntimeError::BadConversionToInteger => f.write_str("Bad conversion to integer"),
             RuntimeError::MemoryAccessOutOfBounds => f.write_str("Memory access out of bounds"),
             RuntimeError::TableAccessOutOfBounds => f.write_str("Table access out of bounds"),
@@ -316,6 +315,9 @@ impl Display for RuntimeError {
             }
             RuntimeError::ReachedUnreachable => {
                 f.write_str("an unreachable statement was reached, triggered a trap")
+            }
+            RuntimeError::StackExhaustion => {
+                f.write_str("either the call stack or the value stack overflowed")
             }
         }
     }
