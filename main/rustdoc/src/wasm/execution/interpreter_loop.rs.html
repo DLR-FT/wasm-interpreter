@@ -1907,10 +1907,10 @@
 <a href=#1907 id=1907 data-nosnippet>1907</a>            }
 <a href=#1908 id=1908 data-nosnippet>1908</a>            FC_EXTENSIONS =&gt; {
 <a href=#1909 id=1909 data-nosnippet>1909</a>                <span class="comment">// Should we call instruction hook here as well? Multibyte instruction
-<a href=#1910 id=1910 data-nosnippet>1910</a>                </span><span class="kw">let </span>second_instr_byte = wasm.read_u8().unwrap_validated();
+<a href=#1910 id=1910 data-nosnippet>1910</a>                </span><span class="kw">let </span>second_instr = wasm.read_var_u32().unwrap_validated();
 <a href=#1911 id=1911 data-nosnippet>1911</a>
 <a href=#1912 id=1912 data-nosnippet>1912</a>                <span class="kw">use </span><span class="kw">crate</span>::core::reader::types::opcode::fc_extensions::<span class="kw-2">*</span>;
-<a href=#1913 id=1913 data-nosnippet>1913</a>                <span class="kw">match </span>second_instr_byte {
+<a href=#1913 id=1913 data-nosnippet>1913</a>                <span class="kw">match </span>second_instr {
 <a href=#1914 id=1914 data-nosnippet>1914</a>                    I32_TRUNC_SAT_F32_S =&gt; {
 <a href=#1915 id=1915 data-nosnippet>1915</a>                        <span class="kw">let </span>v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
 <a href=#1916 id=1916 data-nosnippet>1916</a>                        <span class="kw">let </span>res = {
