@@ -341,12 +341,36 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                 };
                 store.module_names.insert(String::from(name), module_addr);
             }
-            wast::WastDirective::AssertUnlinkable { span, .. } => {
-                asserts.push_error(WastError::new(
-                    GenericError::new_boxed("Assert directive not yet implemented"),
-                    get_linenum(&contents, span),
-                    get_command(&contents, span),
-                ));
+            wast::WastDirective::AssertUnlinkable {
+                span,
+                mut module,
+                message: _,
+            } => {
+                let line_number = get_linenum(&contents, span);
+                let cmd = get_command(&contents, span);
+                let error =
+                    GenericError::new_boxed("Module linked successfully, when it shouldn't have");
+
+                // if it can't be parsed, then the test itself must be written incorrectly, thus the unwrap
+                let bytes: &[u8] = arena.alloc_slice_clone(&module.encode().unwrap());
+
+                match validate_instantiate(interpreter, bytes) {
+                    // module shouldn't have instantiated
+                    Ok(_) => asserts.push_error(WastError::new(error, line_number, cmd)),
+                    Err(err) => match err.downcast_ref::<WasmInterpreterError>() {
+                        Some(WasmInterpreterError(wasm::Error::UnknownImport))
+                        | Some(WasmInterpreterError(wasm::Error::RuntimeError(
+                            RuntimeError::ModuleNotFound,
+                        )))
+                        | Some(WasmInterpreterError(wasm::Error::InvalidImportType)) => {
+                            asserts.push_success(WastSuccess::new(line_number, cmd));
+                        }
+                        // module failed to instantiate due to a reason not related to linking
+                        _ => {
+                            asserts.push_error(WastError::new(err, line_number, cmd));
+                        }
+                    },
+                }
             }
             wast::WastDirective::AssertExhaustion {
                 span,
