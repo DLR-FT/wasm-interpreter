@@ -419,6 +419,7 @@ pub fn opcode_byte_to_str(byte: u8) -> alloc::string::String {
         F32_REINTERPRET_I32 => "F32_REINTERPRET_I32",
         F64_REINTERPRET_I64 => "F64_REINTERPRET_I64",
         REF_NULL => "REF_NULL",
+        REF_IS_NULL => "REF_IS_NULL",
         REF_FUNC => "REF_FUNC",
         FC_EXTENSIONS => "FC_EXTENSIONS",
         I32_EXTEND8_S => "I32_EXTEND8_S",
