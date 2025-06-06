@@ -560,11 +560,47 @@ fn execute_assert_return(
         }
         wast::WastExecute::Get {
             span: _,
-            module: _,
-            global: _,
-        } => Err(GenericError::new_boxed(
-            "`get` directive inside `assert_return` not yet implemented",
-        )),
+            module,
+            global,
+        } => {
+            let result_vals = results
+                .into_iter()
+                .map(result_to_value)
+                .collect::<Result<Vec<_>, _>>()?;
+            let actual = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
+                let store = interpreter.store.as_ref().unwrap();
+                let module_inst = match module {
+                    None => store.modules.last().unwrap(),
+                    Some(id) => {
+                        let module_addr = visible_modules
+                            .get(id.name())
+                            .ok_or(RuntimeError::ModuleNotFound)?;
+                        store
+                            .modules
+                            .get(*module_addr)
+                            .ok_or(RuntimeError::ModuleNotFound)?
+                    }
+                };
+                let global_addr = module_inst
+                    .exports
+                    .iter()
+                    .find_map(|ExportInst { name, value }| {
+                        if name != global {
+                            return None;
+                        }
+                        match value {
+                            wasm::ExternVal::Global(global_addr) => Some(*global_addr),
+                            _ => None,
+                        }
+                    })
+                    .ok_or(RuntimeError::FunctionNotFound)?; // TODO fix error
+                Ok(store.globals[global_addr].value)
+            }))
+            .map_err(PanicError::from_panic_boxed)?
+            .map_err(|err| WasmInterpreterError::new_boxed(wasm::Error::RuntimeError(err)))?;
+            AssertEqError::assert_eq(vec![actual], result_vals)?;
+            Ok(())
+        }
         wast::WastExecute::Wat(_) => Err(GenericError::new_boxed(
             "`wat` directive inside `assert_return` not yet implemented",
         )),
