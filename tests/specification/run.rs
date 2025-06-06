@@ -15,6 +15,7 @@ use wast::core::WastArgCore;
 use wast::core::WastRetCore;
 use wast::QuoteWat;
 use wast::WastArg;
+use wast::Wat;
 
 use crate::specification::reports::*;
 use crate::specification::test_errors::*;
@@ -278,7 +279,7 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                 message,
             } => {
                 let err_or_panic =
-                    execute_assert_trap(&visible_modules, interpreter, exec, message);
+                    execute_assert_trap(&arena, &visible_modules, interpreter, exec, message);
 
                 match err_or_panic {
                     Ok(_) => {
@@ -560,20 +561,57 @@ fn execute_assert_return(
         }
         wast::WastExecute::Get {
             span: _,
-            module: _,
-            global: _,
-        } => Err(GenericError::new_boxed(
-            "`get` directive inside `assert_return` not yet implemented",
-        )),
+            module,
+            global,
+        } => {
+            let result_vals = results
+                .into_iter()
+                .map(result_to_value)
+                .collect::<Result<Vec<_>, _>>()?;
+            let actual = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
+                let store = interpreter.store.as_ref().unwrap();
+                let module_inst = match module {
+                    None => store.modules.last().unwrap(),
+                    Some(id) => {
+                        let module_addr = visible_modules
+                            .get(id.name())
+                            .ok_or(RuntimeError::ModuleNotFound)?;
+                        store
+                            .modules
+                            .get(*module_addr)
+                            .ok_or(RuntimeError::ModuleNotFound)?
+                    }
+                };
+                let global_addr = module_inst
+                    .exports
+                    .iter()
+                    .find_map(|ExportInst { name, value }| {
+                        if name != global {
+                            return None;
+                        }
+                        match value {
+                            wasm::ExternVal::Global(global_addr) => Some(*global_addr),
+                            _ => None,
+                        }
+                    })
+                    .ok_or(RuntimeError::FunctionNotFound)?; // TODO fix error
+                Ok(store.globals[global_addr].value)
+            }))
+            .map_err(PanicError::from_panic_boxed)?
+            .map_err(|err| WasmInterpreterError::new_boxed(wasm::Error::RuntimeError(err)))?;
+            AssertEqError::assert_eq(vec![actual], result_vals)?;
+            Ok(())
+        }
         wast::WastExecute::Wat(_) => Err(GenericError::new_boxed(
             "`wat` directive inside `assert_return` not yet implemented",
         )),
     }
 }
 
-fn execute_assert_trap(
+fn execute_assert_trap<'a>(
+    arena: &'a bumpalo::Bump,
     visible_modules: &HashMap<String, usize>,
-    interpreter: &mut RuntimeInstance,
+    interpreter: &mut RuntimeInstance<'a>,
     exec: wast::WastExecute,
     message: &str,
 ) -> Result<(), Box<dyn Error>> {
@@ -651,10 +689,50 @@ fn execute_assert_trap(
             module: _,
             global: _,
         } => Err(GenericError::new_boxed(
-            "`get` directive inside `assert_return` not yet implemented",
+            "`get` directive inside `assert_trap` not yet implemented",
         )),
-        wast::WastExecute::Wat(_) => Err(GenericError::new_boxed(
-            "`wat` directive inside `assert_return` not yet implemented",
+        wast::WastExecute::Wat(Wat::Module(mut module)) => {
+            let bytecode: &[u8] = arena.alloc_slice_clone(&module.encode()?);
+            let validation_info = catch_unwind_and_suppress_panic_handler(|| validate(bytecode))
+                .map_err(PanicError::from_panic_boxed)?
+                .map_err(WasmInterpreterError::new_boxed)?;
+
+            // TODO change hacky hidden name that uses interpreter internals
+            let module_name = format!(
+                "module_{}",
+                interpreter.store.as_ref().unwrap().modules.len()
+            );
+            let instantiation_result =
+                catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
+                    interpreter.add_module(module_name.as_str(), &validation_info)
+                }))
+                .map_err(PanicError::from_panic_boxed)?;
+            // TODO taken from (assert_trap (invoke ...) ...) error checking
+            match instantiation_result {
+                Ok(_) => Err(GenericError::new_boxed("assert_trap did NOT trap")),
+                Err(wasm::Error::RuntimeError(e)) => {
+                    let actual = to_wasm_testsuite_string(e)?;
+                    let expected = message;
+
+                    if actual.contains(expected)
+                        || (expected.contains("uninitialized element 2")
+                            && actual.contains("uninitialized element"))
+                    {
+                        Ok(())
+                    } else {
+                        Err(GenericError::new_boxed(
+                            format!("'assert_trap': Expected '{expected}' - Actual: '{actual}'")
+                                .as_str(),
+                        ))
+                    }
+                }
+                _ => Err(GenericError::new_boxed(
+                    "instantiation failed for a reason other than a trap",
+                )),
+            }
+        }
+        wast::WastExecute::Wat(Wat::Component(_)) => Err(GenericError::new_boxed(
+            "components inside `assert_trap` not yet implemented",
         )),
     }
 }
