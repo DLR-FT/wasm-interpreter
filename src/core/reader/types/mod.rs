@@ -481,6 +481,7 @@ impl ImportSubTypeRelation for ExternType {
             ExternType::Table(self_table_type) => match other {
                 ExternType::Table(other_table_type) => {
                     self_table_type.lim.is_subtype_of(&other_table_type.lim)
+                        && self_table_type.et == other_table_type.et
                 }
                 _ => false,
             },
