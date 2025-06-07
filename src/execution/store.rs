@@ -142,14 +142,16 @@ impl<'b> Store<'b> {
 
         // instantiation: this roughly matches step 6,7,8
         // validation guarantees these will evaluate without errors.
-        let global_init_vals: Vec<Value> = validation_info
+        let maybe_global_init_vals: Result<Vec<Value>, _> = validation_info
             .globals
             .iter()
             .map(|global| {
                 run_const_span(validation_info.wasm, &global.init_expr, &module_inst, self)
+                    .transpose()
                     .unwrap_validated()
             })
             .collect();
+        let global_init_vals = maybe_global_init_vals?;
 
         // instantiation: this roughly matches step 9,10
         let element_init_ref_lists: Vec<Vec<Ref>> = validation_info
@@ -171,6 +173,7 @@ impl<'b> Store<'b> {
                         .iter()
                         .map(|expr| {
                             run_const_span(validation_info.wasm, expr, &module_inst, self)
+                                .unwrap() // TODO this can totally fail, we need to handle it better
                                 .unwrap_validated()
                                 .into()
                         })
@@ -317,7 +320,7 @@ impl<'b> Store<'b> {
                         einstr_i,
                         &self.modules[*current_module_idx],
                         self,
-                    )
+                    )?
                     .unwrap_validated()
                     .into();
                     let s = 0;
@@ -375,7 +378,7 @@ impl<'b> Store<'b> {
                         dinstr_i,
                         &self.modules[*current_module_idx],
                         self,
-                    )
+                    )?
                     .unwrap_validated()
                     .into();
                     let s = 0;
@@ -556,7 +559,7 @@ impl<'b> Store<'b> {
             locals,
             usize::MAX,
             usize::MAX,
-        );
+        )?;
 
         let mut current_module_idx = module_addr;
         // Run the interpreter
@@ -633,7 +636,7 @@ impl<'b> Store<'b> {
             locals,
             usize::MAX,
             usize::MAX,
-        );
+        )?;
 
         let mut currrent_module_idx = module_addr;
         // Run the interpreter
@@ -714,7 +717,7 @@ impl<'b> Store<'b> {
             locals,
             usize::MAX,
             usize::MAX,
-        );
+        )?;
 
         let mut currrent_module_idx = module_addr;
         // Run the interpreter
