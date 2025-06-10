@@ -132,7 +132,7 @@ impl ElemType {
                 //     },
                 // };
 
-                valid_stack.assert_pop_val_type(super::ValType::NumType(super::NumType::I32))?;
+                valid_stack.assert_val_types(&[super::ValType::NumType(super::NumType::I32)])?;
 
                 ElemMode::Active(ActiveElem {
                     table_idx,
@@ -172,6 +172,11 @@ impl ElemType {
                             Some(functions),
                         );
 
+                        // if there are multiple types on the stack, it is invalid
+                        if valid_stack.len() != 1 {
+                            // TODO fix error type
+                            return Err(Error::InvalidValidationStackValType(None));
+                        }
                         use crate::validation_stack::ValidationStackEntry::*;
 
                         if let Some(val) = valid_stack.peek_const_validation_stack() {

@@ -234,7 +234,7 @@ impl ValidationStack {
     ///
     /// - `Ok(())` if all expected valtypes were found
     /// - `Err(_)` otherwise
-    pub(super) fn assert_val_types(&mut self, expected_val_types: &[ValType]) -> Result<()> {
+    pub fn assert_val_types(&mut self, expected_val_types: &[ValType]) -> Result<()> {
         ValidationStack::assert_val_types_with_custom_stacks(
             &mut self.stack,
             &self.ctrl_stack,
