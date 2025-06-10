@@ -38,7 +38,7 @@ pub(super) fn validate_data_section(
                     read_constant_expression(wasm, &mut valid_stack, imported_global_types, None)?
                 };
 
-                valid_stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                valid_stack.assert_val_types(&[ValType::NumType(NumType::I32)])?;
 
                 let byte_vec = wasm.read_vec(|el| el.read_u8())?;
 
@@ -77,7 +77,7 @@ pub(super) fn validate_data_section(
                     read_constant_expression(wasm, &mut valid_stack, imported_global_types, None)?
                 };
 
-                valid_stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                valid_stack.assert_val_types(&[ValType::NumType(NumType::I32)])?;
 
                 let byte_vec = wasm.read_vec(|el| el.read_u8())?;
 
