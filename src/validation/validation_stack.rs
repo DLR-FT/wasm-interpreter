@@ -1,3 +1,5 @@
+use core::iter;
+
 use super::Result;
 use alloc::vec;
 use alloc::vec::Vec;
@@ -138,11 +140,11 @@ impl ValidationStack {
 
     // private fns to shut the borrow checker up when calling methods with mutable ref to self with immutable ref to self arguments
     // TODO ugly but I can't come up with anything else better
-
     fn assert_val_types_on_top_with_custom_stacks(
         stack: &mut Vec<ValidationStackEntry>,
         ctrl_stack: &[CtrlStackEntry],
         expected_val_types: &[ValType],
+        unify_to_expected_types: bool,
     ) -> Result<()> {
         let last_ctrl_stack_entry = ctrl_stack.last().ok_or(Error::ValidationCtrlStackEmpty)?;
         let stack_len = stack.len();
@@ -151,13 +153,21 @@ impl ValidationStack {
         for (i, expected_ty) in rev_iterator {
             if stack_len - last_ctrl_stack_entry.height <= i {
                 if last_ctrl_stack_entry.unreachable {
-                    // Unify(t2*,expected_val_types) := [t2* expected_val_types]
-                    stack.splice(
-                        stack_len - i..stack_len - i,
-                        expected_val_types[..expected_val_types.len() - i]
-                            .iter()
-                            .map(|ty| ValidationStackEntry::Val(*ty)),
-                    );
+                    if unify_to_expected_types {
+                        // Unify(t2*,expected_val_types) := [t2* expected_val_types]
+                        stack.splice(
+                            stack_len - i..stack_len - i,
+                            expected_val_types[..expected_val_types.len() - i]
+                                .iter()
+                                .map(|ty| ValidationStackEntry::Val(*ty)),
+                        );
+                    } else {
+                        stack.splice(
+                            stack_len - i..stack_len - i,
+                            iter::repeat(ValidationStackEntry::Bottom)
+                                .take(expected_val_types.len() - i),
+                        );
+                    }
                     return Ok(());
                 } else {
                     return Err(Error::EndInvalidValueStack);
@@ -175,7 +185,9 @@ impl ValidationStack {
                 }
                 ValidationStackEntry::Bottom => {
                     // Bottom will always unify to the expected ty
-                    *actual_ty = ValidationStackEntry::Val(*expected_ty);
+                    if unify_to_expected_types {
+                        *actual_ty = ValidationStackEntry::Val(*expected_ty);
+                    }
                 }
             }
         }
@@ -187,11 +199,13 @@ impl ValidationStack {
         stack: &mut Vec<ValidationStackEntry>,
         ctrl_stack: &[CtrlStackEntry],
         expected_val_types: &[ValType],
+        unify_to_expected_types: bool,
     ) -> Result<()> {
         ValidationStack::assert_val_types_on_top_with_custom_stacks(
             stack,
             ctrl_stack,
             expected_val_types,
+            unify_to_expected_types,
         )?;
         //if we can assert types in the above there is a last ctrl stack entry, this access is valid.
         let last_ctrl_stack_entry = &ctrl_stack[ctrl_stack.len() - 1];
@@ -216,11 +230,16 @@ impl ValidationStack {
     /// - `Ok(_)`, the tail of the stack matches the `expected_val_types`
     /// - `Err(_)` otherwise
     ///
-    pub(super) fn assert_val_types_on_top(&mut self, expected_val_types: &[ValType]) -> Result<()> {
+    pub(super) fn assert_val_types_on_top(
+        &mut self,
+        expected_val_types: &[ValType],
+        unify_to_expected_types: bool,
+    ) -> Result<()> {
         ValidationStack::assert_val_types_on_top_with_custom_stacks(
             &mut self.stack,
             &self.ctrl_stack,
             expected_val_types,
+            unify_to_expected_types,
         )
     }
 
@@ -234,15 +253,24 @@ impl ValidationStack {
     ///
     /// - `Ok(())` if all expected valtypes were found
     /// - `Err(_)` otherwise
-    pub fn assert_val_types(&mut self, expected_val_types: &[ValType]) -> Result<()> {
+    pub fn assert_val_types(
+        &mut self,
+        expected_val_types: &[ValType],
+        unify_to_expected_types: bool,
+    ) -> Result<()> {
         ValidationStack::assert_val_types_with_custom_stacks(
             &mut self.stack,
             &self.ctrl_stack,
             expected_val_types,
+            unify_to_expected_types,
         )
     }
 
-    pub fn assert_val_types_of_label_jump_types_on_top(&mut self, label_idx: usize) -> Result<()> {
+    pub fn assert_val_types_of_label_jump_types_on_top(
+        &mut self,
+        label_idx: usize,
+        unify_to_expected_types: bool,
+    ) -> Result<()> {
         let label_types = self
             .ctrl_stack
             .get(self.ctrl_stack.len() - label_idx - 1)
@@ -252,11 +280,17 @@ impl ValidationStack {
             &mut self.stack,
             &self.ctrl_stack,
             label_types,
+            unify_to_expected_types,
         )
     }
 
-    pub fn assert_push_ctrl(&mut self, label_info: LabelInfo, block_ty: FuncType) -> Result<()> {
-        self.assert_val_types_on_top(&block_ty.params.valtypes)?;
+    pub fn assert_push_ctrl(
+        &mut self,
+        label_info: LabelInfo,
+        block_ty: FuncType,
+        unify_to_expected_types: bool,
+    ) -> Result<()> {
+        self.assert_val_types_on_top(&block_ty.params.valtypes, unify_to_expected_types)?;
         let height = self.stack.len() - block_ty.params.valtypes.len();
         self.ctrl_stack.push(CtrlStackEntry {
             label_info,
@@ -269,7 +303,10 @@ impl ValidationStack {
 
     // TODO: rename/refactor this function to make it more clear that it ALSO
     // checks the stack for valid return types.
-    pub fn assert_pop_ctrl(&mut self) -> Result<(LabelInfo, FuncType)> {
+    pub fn assert_pop_ctrl(
+        &mut self,
+        unify_to_expected_types: bool,
+    ) -> Result<(LabelInfo, FuncType)> {
         let return_types = &self
             .ctrl_stack
             .last()
@@ -281,6 +318,7 @@ impl ValidationStack {
             &mut self.stack,
             &self.ctrl_stack,
             return_types,
+            unify_to_expected_types,
         )?;
 
         //if we can assert types in the above there is a last ctrl stack entry, this access is valid.
@@ -467,11 +505,14 @@ mod tests {
         stack.push_valtype(ValType::NumType(NumType::F32));
 
         stack
-            .assert_val_types(&[
-                ValType::NumType(NumType::F64),
-                ValType::NumType(NumType::I32),
-                ValType::NumType(NumType::F32),
-            ])
+            .assert_val_types(
+                &[
+                    ValType::NumType(NumType::F64),
+                    ValType::NumType(NumType::I32),
+                    ValType::NumType(NumType::F32),
+                ],
+                true,
+            )
             .unwrap();
 
         push_dummy_untyped_label(&mut stack);
@@ -479,7 +520,7 @@ mod tests {
         stack.push_valtype(ValType::NumType(NumType::I32));
 
         stack
-            .assert_val_types(&[ValType::NumType(NumType::I32)])
+            .assert_val_types(&[ValType::NumType(NumType::I32)], true)
             .unwrap();
     }
 
@@ -487,45 +528,51 @@ mod tests {
     fn assert_emtpy_valtypes() {
         let mut stack = ValidationStack::new();
 
-        stack.assert_val_types(&[]).unwrap();
+        stack.assert_val_types(&[], true).unwrap();
 
         stack.push_valtype(ValType::NumType(NumType::I32));
         push_dummy_untyped_label(&mut stack);
 
         // Valtypes separated by a label should also not be detected
-        stack.assert_val_types(&[]).unwrap();
+        stack.assert_val_types(&[], true).unwrap();
     }
 
     #[test]
     fn assert_valtypes_on_top() {
         let mut stack = ValidationStack::new();
 
-        stack.assert_val_types_on_top(&[]).unwrap();
+        stack.assert_val_types_on_top(&[], true).unwrap();
 
         stack.push_valtype(ValType::NumType(NumType::I32));
         stack.push_valtype(ValType::NumType(NumType::F32));
         stack.push_valtype(ValType::NumType(NumType::I64));
 
         // There are always zero valtypes on top of the stack
-        stack.assert_val_types_on_top(&[]).unwrap();
+        stack.assert_val_types_on_top(&[], true).unwrap();
 
         stack
-            .assert_val_types_on_top(&[ValType::NumType(NumType::I64)])
+            .assert_val_types_on_top(&[ValType::NumType(NumType::I64)], true)
             .unwrap();
 
         stack
-            .assert_val_types_on_top(&[
-                ValType::NumType(NumType::F32),
-                ValType::NumType(NumType::I64),
-            ])
+            .assert_val_types_on_top(
+                &[
+                    ValType::NumType(NumType::F32),
+                    ValType::NumType(NumType::I64),
+                ],
+                true,
+            )
             .unwrap();
 
         stack
-            .assert_val_types_on_top(&[
-                ValType::NumType(NumType::I32),
-                ValType::NumType(NumType::F32),
-                ValType::NumType(NumType::I64),
-            ])
+            .assert_val_types_on_top(
+                &[
+                    ValType::NumType(NumType::I32),
+                    ValType::NumType(NumType::F32),
+                    ValType::NumType(NumType::I64),
+                ],
+                true,
+            )
             .unwrap();
     }
 
@@ -551,7 +598,7 @@ mod tests {
         stack.ctrl_stack.pop();
 
         // Now there are no values left on the stack
-        assert_eq!(stack.assert_val_types(&[]), Ok(()));
+        assert_eq!(stack.assert_val_types(&[], true), Ok(()));
     }
 
     #[test]
@@ -563,11 +610,14 @@ mod tests {
 
         // Stack needs to keep track of unified types, I64 and F32 and I32 will appear.
         stack
-            .assert_val_types(&[
-                ValType::NumType(NumType::I64),
-                ValType::NumType(NumType::F32),
-                ValType::NumType(NumType::I32),
-            ])
+            .assert_val_types(
+                &[
+                    ValType::NumType(NumType::I64),
+                    ValType::NumType(NumType::F32),
+                    ValType::NumType(NumType::I32),
+                ],
+                true,
+            )
             .unwrap();
 
         stack.ctrl_stack.pop();
@@ -598,11 +648,14 @@ mod tests {
         // Stack needs to keep track of unified types, I64 and F32 will appear under I32.
         // Stack needs to keep track of unified types, I64 and F32 and I32 will appear.
         stack
-            .assert_val_types(&[
-                ValType::NumType(NumType::I64),
-                ValType::NumType(NumType::F32),
-                ValType::NumType(NumType::I32),
-            ])
+            .assert_val_types(
+                &[
+                    ValType::NumType(NumType::I64),
+                    ValType::NumType(NumType::F32),
+                    ValType::NumType(NumType::I32),
+                ],
+                true,
+            )
             .unwrap();
 
         stack.ctrl_stack.pop();
@@ -638,12 +691,15 @@ mod tests {
         // Stack needs to keep track of unified types, I64 and F32 will appear below VecType and RefType
         // and above I32 and VecType
         stack
-            .assert_val_types(&[
-                ValType::NumType(NumType::I64),
-                ValType::NumType(NumType::F32),
-                ValType::VecType,
-                ValType::RefType(RefType::FuncRef),
-            ])
+            .assert_val_types(
+                &[
+                    ValType::NumType(NumType::I64),
+                    ValType::NumType(NumType::F32),
+                    ValType::VecType,
+                    ValType::RefType(RefType::FuncRef),
+                ],
+                true,
+            )
             .unwrap();
 
         stack.ctrl_stack.pop();

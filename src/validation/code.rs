@@ -168,10 +168,11 @@ fn validate_intrablock_jump_and_generate_sidetable_entry(
     label_idx: usize,
     stack: &mut ValidationStack,
     sidetable: &mut Sidetable,
+    unify_to_expected_types: bool,
 ) -> Result<()> {
     let ctrl_stack_len = stack.ctrl_stack.len();
 
-    stack.assert_val_types_of_label_jump_types_on_top(label_idx)?;
+    stack.assert_val_types_of_label_jump_types_on_top(label_idx, unify_to_expected_types)?;
 
     let targeted_ctrl_block_entry = stack
         .ctrl_stack
@@ -228,7 +229,7 @@ fn read_instructions(
                 let label_info = LabelInfo::Block {
                     stps_to_backpatch: Vec::new(),
                 };
-                stack.assert_push_ctrl(label_info, block_ty)?;
+                stack.assert_push_ctrl(label_info, block_ty, true)?;
             }
             LOOP => {
                 let block_ty = BlockType::read(wasm)?.as_func_type(fn_types)?;
@@ -236,7 +237,7 @@ fn read_instructions(
                     ip: wasm.pc,
                     stp: sidetable.len(),
                 };
-                stack.assert_push_ctrl(label_info, block_ty)?;
+                stack.assert_push_ctrl(label_info, block_ty, true)?;
             }
             IF => {
                 let block_ty = BlockType::read(wasm)?.as_func_type(fn_types)?;
@@ -255,10 +256,10 @@ fn read_instructions(
                     stp: stp_here,
                     stps_to_backpatch: Vec::new(),
                 };
-                stack.assert_push_ctrl(label_info, block_ty)?;
+                stack.assert_push_ctrl(label_info, block_ty, true)?;
             }
             ELSE => {
-                let (mut label_info, block_ty) = stack.assert_pop_ctrl()?;
+                let (mut label_info, block_ty) = stack.assert_pop_ctrl(true)?;
                 if let LabelInfo::If {
                     stp,
                     stps_to_backpatch,
@@ -291,7 +292,7 @@ fn read_instructions(
                         stack.push_valtype(*valtype);
                     }
 
-                    stack.assert_push_ctrl(label_info, block_ty)?;
+                    stack.assert_push_ctrl(label_info, block_ty, true)?;
                 } else {
                     return Err(Error::ElseWithoutMatchingIf);
                 }
@@ -299,7 +300,7 @@ fn read_instructions(
             BR => {
                 let label_idx = wasm.read_var_u32()? as LabelIdx;
                 validate_intrablock_jump_and_generate_sidetable_entry(
-                    wasm, label_idx, stack, sidetable,
+                    wasm, label_idx, stack, sidetable, false,
                 )?;
                 stack.make_unspecified()?;
             }
@@ -307,7 +308,7 @@ fn read_instructions(
                 let label_idx = wasm.read_var_u32()? as LabelIdx;
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 validate_intrablock_jump_and_generate_sidetable_entry(
-                    wasm, label_idx, stack, sidetable,
+                    wasm, label_idx, stack, sidetable, true,
                 )?;
             }
             BR_TABLE => {
@@ -316,7 +317,7 @@ fn read_instructions(
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 for label_idx in &label_vec {
                     validate_intrablock_jump_and_generate_sidetable_entry(
-                        wasm, *label_idx, stack, sidetable,
+                        wasm, *label_idx, stack, sidetable, false,
                     )?;
                 }
 
@@ -325,6 +326,7 @@ fn read_instructions(
                     max_label_idx,
                     stack,
                     sidetable,
+                    false,
                 )?;
 
                 // The label arity of the branches must be explicitly checked against each other further
@@ -354,7 +356,7 @@ fn read_instructions(
                 stack.make_unspecified()?;
             }
             END => {
-                let (label_info, block_ty) = stack.assert_pop_ctrl()?;
+                let (label_info, block_ty) = stack.assert_pop_ctrl(true)?;
                 let stp_here = sidetable.len();
 
                 match label_info {
@@ -408,7 +410,7 @@ fn read_instructions(
             RETURN => {
                 let label_idx = stack.ctrl_stack.len() - 1; // return behaves the same as br <most_outer>
                 validate_intrablock_jump_and_generate_sidetable_entry(
-                    wasm, label_idx, stack, sidetable,
+                    wasm, label_idx, stack, sidetable, false,
                 )?;
                 stack.make_unspecified()?;
             }
@@ -492,7 +494,7 @@ fn read_instructions(
             LOCAL_TEE => {
                 let local_idx = wasm.read_var_u32()? as LocalIdx;
                 let local_ty = locals.get(local_idx).ok_or(Error::InvalidLocalIdx)?;
-                stack.assert_val_types_on_top(&[*local_ty])?;
+                stack.assert_val_types_on_top(&[*local_ty], true)?;
             }
             // global.get [] -> [t]
             GLOBAL_GET => {
