@@ -79,7 +79,7 @@ pub fn to_wasm_testsuite_string(runtime_error: RuntimeError) -> Result<String, B
         RuntimeError::DivideBy0 => Ok("integer divide by zero"),
         RuntimeError::UnrepresentableResult => Ok("integer overflow"),
         RuntimeError::FunctionNotFound => not_represented,
-        RuntimeError::StackSmash => not_represented,
+        RuntimeError::StackExhaustion => Ok("call stack exhausted"),
         RuntimeError::BadConversionToInteger => Ok("invalid conversion to integer"),
         RuntimeError::ReachedUnreachable => Ok("unreachable"),
 
@@ -375,10 +375,18 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
             }
             wast::WastDirective::AssertExhaustion {
                 span,
-                call: _,
+                call,
                 message: _,
+            } => {
+                asserts.push_error(WastError::new(
+                    GenericError::new_boxed("Thread directive not yet implemented"),
+                    get_linenum(&contents, span),
+                    get_command(&contents, span),
+                ));
+                // call contains a `WastInvoke`, the same first element found in `WastDirective::Invoke`
+                // TODO run the thing and assure that the result is an `Err(RuntimeError::StackExhaustion)`
             }
-            | wast::WastDirective::AssertException { span, exec: _ } => {
+            wast::WastDirective::AssertException { span, exec: _ } => {
                 asserts.push_error(WastError::new(
                     GenericError::new_boxed("Assert directive not yet implemented"),
                     get_linenum(&contents, span),
