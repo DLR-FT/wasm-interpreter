@@ -419,20 +419,21 @@
 <a href=#419 id=419 data-nosnippet>419</a>        F32_REINTERPRET_I32 =&gt; <span class="string">"F32_REINTERPRET_I32"</span>,
 <a href=#420 id=420 data-nosnippet>420</a>        F64_REINTERPRET_I64 =&gt; <span class="string">"F64_REINTERPRET_I64"</span>,
 <a href=#421 id=421 data-nosnippet>421</a>        REF_NULL =&gt; <span class="string">"REF_NULL"</span>,
-<a href=#422 id=422 data-nosnippet>422</a>        REF_FUNC =&gt; <span class="string">"REF_FUNC"</span>,
-<a href=#423 id=423 data-nosnippet>423</a>        FC_EXTENSIONS =&gt; <span class="string">"FC_EXTENSIONS"</span>,
-<a href=#424 id=424 data-nosnippet>424</a>        I32_EXTEND8_S =&gt; <span class="string">"I32_EXTEND8_S"</span>,
-<a href=#425 id=425 data-nosnippet>425</a>        I32_EXTEND16_S =&gt; <span class="string">"I32_EXTEND16_S"</span>,
-<a href=#426 id=426 data-nosnippet>426</a>        I64_EXTEND8_S =&gt; <span class="string">"I64_EXTEND8_S"</span>,
-<a href=#427 id=427 data-nosnippet>427</a>        I64_EXTEND16_S =&gt; <span class="string">"I64_EXTEND16_S"</span>,
-<a href=#428 id=428 data-nosnippet>428</a>        I64_EXTEND32_S =&gt; <span class="string">"I64_EXTEND32_S"</span>,
-<a href=#429 id=429 data-nosnippet>429</a>        <span class="kw">_ </span>=&gt; <span class="string">"UNKNOWN"</span>,
-<a href=#430 id=430 data-nosnippet>430</a>    }
-<a href=#431 id=431 data-nosnippet>431</a>    .to_owned();
-<a href=#432 id=432 data-nosnippet>432</a>
-<a href=#433 id=433 data-nosnippet>433</a>    <span class="kw">if </span>opcode == <span class="string">"UNKNOWN" </span>{
-<a href=#434 id=434 data-nosnippet>434</a>        <span class="macro">format!</span>(<span class="string">"UNKNOWN({:x})"</span>, byte)
-<a href=#435 id=435 data-nosnippet>435</a>    } <span class="kw">else </span>{
-<a href=#436 id=436 data-nosnippet>436</a>        opcode
-<a href=#437 id=437 data-nosnippet>437</a>    }
-<a href=#438 id=438 data-nosnippet>438</a>}</code></pre></div></section></main></body></html>
+<a href=#422 id=422 data-nosnippet>422</a>        REF_IS_NULL =&gt; <span class="string">"REF_IS_NULL"</span>,
+<a href=#423 id=423 data-nosnippet>423</a>        REF_FUNC =&gt; <span class="string">"REF_FUNC"</span>,
+<a href=#424 id=424 data-nosnippet>424</a>        FC_EXTENSIONS =&gt; <span class="string">"FC_EXTENSIONS"</span>,
+<a href=#425 id=425 data-nosnippet>425</a>        I32_EXTEND8_S =&gt; <span class="string">"I32_EXTEND8_S"</span>,
+<a href=#426 id=426 data-nosnippet>426</a>        I32_EXTEND16_S =&gt; <span class="string">"I32_EXTEND16_S"</span>,
+<a href=#427 id=427 data-nosnippet>427</a>        I64_EXTEND8_S =&gt; <span class="string">"I64_EXTEND8_S"</span>,
+<a href=#428 id=428 data-nosnippet>428</a>        I64_EXTEND16_S =&gt; <span class="string">"I64_EXTEND16_S"</span>,
+<a href=#429 id=429 data-nosnippet>429</a>        I64_EXTEND32_S =&gt; <span class="string">"I64_EXTEND32_S"</span>,
+<a href=#430 id=430 data-nosnippet>430</a>        <span class="kw">_ </span>=&gt; <span class="string">"UNKNOWN"</span>,
+<a href=#431 id=431 data-nosnippet>431</a>    }
+<a href=#432 id=432 data-nosnippet>432</a>    .to_owned();
+<a href=#433 id=433 data-nosnippet>433</a>
+<a href=#434 id=434 data-nosnippet>434</a>    <span class="kw">if </span>opcode == <span class="string">"UNKNOWN" </span>{
+<a href=#435 id=435 data-nosnippet>435</a>        <span class="macro">format!</span>(<span class="string">"UNKNOWN({:x})"</span>, byte)
+<a href=#436 id=436 data-nosnippet>436</a>    } <span class="kw">else </span>{
+<a href=#437 id=437 data-nosnippet>437</a>        opcode
+<a href=#438 id=438 data-nosnippet>438</a>    }
+<a href=#439 id=439 data-nosnippet>439</a>}</code></pre></div></section></main></body></html>
