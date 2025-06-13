@@ -79,7 +79,7 @@ pub fn to_wasm_testsuite_string(runtime_error: RuntimeError) -> Result<String, B
         RuntimeError::DivideBy0 => Ok("integer divide by zero"),
         RuntimeError::UnrepresentableResult => Ok("integer overflow"),
         RuntimeError::FunctionNotFound => not_represented,
-        RuntimeError::StackSmash => not_represented,
+        RuntimeError::StackExhaustion => Ok("call stack exhausted"),
         RuntimeError::BadConversionToInteger => Ok("invalid conversion to integer"),
         RuntimeError::ReachedUnreachable => Ok("unreachable"),
 
@@ -278,8 +278,21 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                 exec,
                 message,
             } => {
-                let err_or_panic =
-                    execute_assert_trap(&arena, &visible_modules, interpreter, exec, message);
+                let err_or_panic = execute_assert_trap(&arena, &visible_modules, interpreter, exec)
+                    .and_then(|e| {
+                        let actual = to_wasm_testsuite_string(e)?;
+                        if actual.contains(message)
+                            || (message.contains("uninitialized element 2")
+                                && actual.contains("uninitialized element"))
+                        {
+                            Ok(())
+                        } else {
+                            Err(GenericError::new_boxed(
+                                format!("'assert_trap': Expected '{message}' - Actual: '{actual}'")
+                                    .as_str(),
+                            ))
+                        }
+                    });
 
                 match err_or_panic {
                     Ok(_) => {
@@ -375,10 +388,44 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
             }
             wast::WastDirective::AssertExhaustion {
                 span,
-                call: _,
-                message: _,
+                call,
+                message,
+            } => {
+                let err_or_panic = execute_assert_trap(
+                    &arena,
+                    &visible_modules,
+                    interpreter,
+                    wast::WastExecute::Invoke(call),
+                )
+                .and_then(|e| {
+                    let actual = to_wasm_testsuite_string(e)?;
+                    if actual.contains(message) {
+                        Ok(())
+                    } else {
+                        Err(GenericError::new_boxed(
+                            format!("'assert_trap': Expected '{message}' - Actual: '{actual}'")
+                                .as_str(),
+                        ))
+                    }
+                });
+
+                match err_or_panic {
+                    Ok(_) => {
+                        asserts.push_success(WastSuccess::new(
+                            get_linenum(&contents, span),
+                            get_command(&contents, span),
+                        ));
+                    }
+                    Err(inner) => {
+                        asserts.push_error(WastError::new(
+                            inner,
+                            get_linenum(&contents, span),
+                            get_command(&contents, span),
+                        ));
+                    }
+                }
             }
-            | wast::WastDirective::AssertException { span, exec: _ } => {
+            wast::WastDirective::AssertException { span, exec: _ } => {
                 asserts.push_error(WastError::new(
                     GenericError::new_boxed("Assert directive not yet implemented"),
                     get_linenum(&contents, span),
@@ -613,8 +660,7 @@ fn execute_assert_trap<'a>(
     visible_modules: &HashMap<String, usize>,
     interpreter: &mut RuntimeInstance<'a>,
     exec: wast::WastExecute,
-    message: &str,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<RuntimeError, Box<dyn Error>> {
     match exec {
         wast::WastExecute::Invoke(invoke_info) => {
             let args = invoke_info
@@ -666,22 +712,7 @@ fn execute_assert_trap<'a>(
 
             match actual {
                 Ok(_) => Err(GenericError::new_boxed("assert_trap did NOT trap")),
-                Err(e) => {
-                    let actual = to_wasm_testsuite_string(e)?;
-                    let expected = message;
-
-                    if actual.contains(expected)
-                        || (expected.contains("uninitialized element 2")
-                            && actual.contains("uninitialized element"))
-                    {
-                        Ok(())
-                    } else {
-                        Err(GenericError::new_boxed(
-                            format!("'assert_trap': Expected '{expected}' - Actual: '{actual}'")
-                                .as_str(),
-                        ))
-                    }
-                }
+                Err(e) => Ok(e),
             }
         }
         wast::WastExecute::Get {
@@ -710,22 +741,7 @@ fn execute_assert_trap<'a>(
             // TODO taken from (assert_trap (invoke ...) ...) error checking
             match instantiation_result {
                 Ok(_) => Err(GenericError::new_boxed("assert_trap did NOT trap")),
-                Err(wasm::Error::RuntimeError(e)) => {
-                    let actual = to_wasm_testsuite_string(e)?;
-                    let expected = message;
-
-                    if actual.contains(expected)
-                        || (expected.contains("uninitialized element 2")
-                            && actual.contains("uninitialized element"))
-                    {
-                        Ok(())
-                    } else {
-                        Err(GenericError::new_boxed(
-                            format!("'assert_trap': Expected '{expected}' - Actual: '{actual}'")
-                                .as_str(),
-                        ))
-                    }
-                }
+                Err(wasm::Error::RuntimeError(e)) => Ok(e),
                 _ => Err(GenericError::new_boxed(
                     "instantiation failed for a reason other than a trap",
                 )),
