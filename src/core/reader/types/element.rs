@@ -132,7 +132,8 @@ impl ElemType {
                 //     },
                 // };
 
-                valid_stack.assert_val_types(&[super::ValType::NumType(super::NumType::I32)])?;
+                valid_stack
+                    .assert_val_types(&[super::ValType::NumType(super::NumType::I32)], true)?;
 
                 ElemMode::Active(ActiveElem {
                     table_idx,

@@ -25,7 +25,7 @@ pub(super) fn validate_global_section(
         let stack = &mut ValidationStack::new();
         let init_expr = read_constant_expression(wasm, stack, imported_global_types, None)?;
 
-        stack.assert_val_types(&[ty.ty])?;
+        stack.assert_val_types(&[ty.ty], true)?;
 
         Ok(Global { ty, init_expr })
     })
