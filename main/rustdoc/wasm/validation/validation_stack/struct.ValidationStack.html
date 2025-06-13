@@ -46,10 +46,7 @@ The last element of <code>expected_val_types</code> is unified to the top-most
 <li><code>Ok(_)</code>, the tail of the stack matches the <code>expected_val_types</code></li>
 <li><code>Err(_)</code> otherwise</li>
 </ul>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.assert_val_types" class="method"><a class="src rightside" href="../../../src/wasm/validation/validation_stack.rs.html#237-243">Source</a><h4 class="code-header">pub(super) fn <a href="#method.assert_val_types" class="fn">assert_val_types</a>(
-    &amp;mut self,
-    expected_val_types: &amp;[<a class="enum" href="../../enum.ValType.html" title="enum wasm::ValType">ValType</a>],
-) -&gt; <a class="type" href="../../type.Result.html" title="type wasm::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.86.0/core/primitive.unit.html">()</a>&gt;</h4></section></summary><div class="docblock"><p>Asserts that the valtypes on the stack match the expected valtypes and no other type is on the stack.
+</div></details><details class="toggle method-toggle" open><summary><section id="method.assert_val_types" class="method"><a class="src rightside" href="../../../src/wasm/validation/validation_stack.rs.html#237-243">Source</a><h4 class="code-header">pub fn <a href="#method.assert_val_types" class="fn">assert_val_types</a>(&amp;mut self, expected_val_types: &amp;[<a class="enum" href="../../enum.ValType.html" title="enum wasm::ValType">ValType</a>]) -&gt; <a class="type" href="../../type.Result.html" title="type wasm::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.86.0/core/primitive.unit.html">()</a>&gt;</h4></section></summary><div class="docblock"><p>Asserts that the valtypes on the stack match the expected valtypes and no other type is on the stack.
 This method will unify the types on the stack to the expected valtypes.
 This starts by comparing the top-most valtype with the last element from <code>expected_val_types</code> and then continues downwards on the stack.
 If a label is reached and not all <code>expected_val_types</code> have been checked, the assertion fails.</p>

@@ -38,7 +38,7 @@
 <a href=#38 id=38 data-nosnippet>38</a>                    read_constant_expression(wasm, <span class="kw-2">&amp;mut </span>valid_stack, imported_global_types, <span class="prelude-val">None</span>)<span class="question-mark">?
 <a href=#39 id=39 data-nosnippet>39</a>                </span>};
 <a href=#40 id=40 data-nosnippet>40</a>
-<a href=#41 id=41 data-nosnippet>41</a>                valid_stack.assert_pop_val_type(ValType::NumType(NumType::I32))<span class="question-mark">?</span>;
+<a href=#41 id=41 data-nosnippet>41</a>                valid_stack.assert_val_types(<span class="kw-2">&amp;</span>[ValType::NumType(NumType::I32)])<span class="question-mark">?</span>;
 <a href=#42 id=42 data-nosnippet>42</a>
 <a href=#43 id=43 data-nosnippet>43</a>                <span class="kw">let </span>byte_vec = wasm.read_vec(|el| el.read_u8())<span class="question-mark">?</span>;
 <a href=#44 id=44 data-nosnippet>44</a>
@@ -77,7 +77,7 @@
 <a href=#77 id=77 data-nosnippet>77</a>                    read_constant_expression(wasm, <span class="kw-2">&amp;mut </span>valid_stack, imported_global_types, <span class="prelude-val">None</span>)<span class="question-mark">?
 <a href=#78 id=78 data-nosnippet>78</a>                </span>};
 <a href=#79 id=79 data-nosnippet>79</a>
-<a href=#80 id=80 data-nosnippet>80</a>                valid_stack.assert_pop_val_type(ValType::NumType(NumType::I32))<span class="question-mark">?</span>;
+<a href=#80 id=80 data-nosnippet>80</a>                valid_stack.assert_val_types(<span class="kw-2">&amp;</span>[ValType::NumType(NumType::I32)])<span class="question-mark">?</span>;
 <a href=#81 id=81 data-nosnippet>81</a>
 <a href=#82 id=82 data-nosnippet>82</a>                <span class="kw">let </span>byte_vec = wasm.read_vec(|el| el.read_u8())<span class="question-mark">?</span>;
 <a href=#83 id=83 data-nosnippet>83</a>
