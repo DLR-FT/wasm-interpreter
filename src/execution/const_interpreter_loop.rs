@@ -6,7 +6,7 @@ use crate::{
     },
     value::{self, FuncAddr, Ref},
     value_stack::Stack,
-    ModuleInst, RefType, Store, Value,
+    ModuleInst, RefType, RuntimeError, Store, Value,
 };
 
 // TODO update this documentation
@@ -25,7 +25,7 @@ pub(crate) fn run_const(
     stack: &mut Stack,
     module: &ModuleInst,
     store: &Store,
-) {
+) -> Result<(), RuntimeError> {
     use crate::core::reader::types::opcode::*;
     loop {
         let first_instr_byte = wasm.read_u8().unwrap_validated();
@@ -51,32 +51,32 @@ pub(crate) fn run_const(
                     "Constant instruction: global.get [{global_idx}] -> [{:?}]",
                     global
                 );
-                stack.push_value(global.value);
+                stack.push_value(global.value)?;
             }
             I32_CONST => {
                 let constant = wasm.read_var_i32().unwrap_validated();
                 trace!("Constant instruction: i32.const [] -> [{constant}]");
-                stack.push_value(constant.into());
+                stack.push_value(constant.into())?;
             }
             F32_CONST => {
                 let constant = value::F32::from_bits(wasm.read_var_f32().unwrap_validated());
                 trace!("Constanting instruction: f32.const [] -> [{constant}]");
-                stack.push_value(constant.into());
+                stack.push_value(constant.into())?;
             }
             F64_CONST => {
                 let constant = value::F64::from_bits(wasm.read_var_f64().unwrap_validated());
                 trace!("Constanting instruction: f64.const [] -> [{constant}]");
-                stack.push_value(constant.into());
+                stack.push_value(constant.into())?;
             }
             I64_CONST => {
                 let constant = wasm.read_var_i64().unwrap_validated();
                 trace!("Constant instruction: i64.const [] -> [{constant}]");
-                stack.push_value(constant.into());
+                stack.push_value(constant.into())?;
             }
             REF_NULL => {
                 let reftype = RefType::read_unvalidated(wasm);
 
-                stack.push_value(Value::Ref(reftype.to_null_ref()));
+                stack.push_value(Value::Ref(reftype.to_null_ref()))?;
                 trace!("Instruction: ref.null '{:?}' -> [{:?}]", reftype, reftype);
             }
             REF_FUNC => {
@@ -85,13 +85,14 @@ pub(crate) fn run_const(
                 // TODO replace double indirection
                 stack.push_value(Value::Ref(Ref::Func(FuncAddr::new(Some(
                     module.func_addrs[func_idx],
-                )))));
+                )))))?;
             }
             other => {
                 unreachable!("Unknown constant instruction {other:#x}, validation allowed an unimplemented instruction.");
             }
         }
     }
+    Ok(())
 }
 
 pub(crate) fn run_const_span(
@@ -99,13 +100,13 @@ pub(crate) fn run_const_span(
     span: &Span,
     module: &ModuleInst,
     store: &Store,
-) -> Option<Value> {
+) -> Result<Option<Value>, RuntimeError> {
     let mut wasm = WasmReader::new(wasm);
 
     wasm.move_start_to(*span).unwrap_validated();
 
     let mut stack = Stack::new();
-    run_const(&mut wasm, &mut stack, module, store);
+    run_const(&mut wasm, &mut stack, module, store)?;
 
-    stack.peek_unknown_value()
+    Ok(stack.peek_unknown_value())
 }
