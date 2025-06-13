@@ -5,9 +5,13 @@ use crate::core::reader::types::{FuncType, ValType};
 use crate::execution::assert_validated::UnwrapValidatedExt;
 use crate::execution::value::Value;
 use crate::locals::Locals;
-use crate::unreachable_validated;
+use crate::{unreachable_validated, RuntimeError};
 
 use super::value::Ref;
+
+// TODO make these configurable
+const MAX_VALUE_STACK_SIZE: usize = 0xf1000; // 4096
+const MAX_CALL_STACK_SIZE: usize = 0xff; // 256
 
 /// The stack at runtime containing
 /// 1. Values
@@ -117,14 +121,22 @@ impl Stack {
     }
 
     /// Push a value to the value stack
-    pub fn push_value(&mut self, value: Value) {
+    pub fn push_value(&mut self, value: Value) -> Result<(), RuntimeError> {
+        // check for value stack exhaustion
+        if self.values.len() > MAX_VALUE_STACK_SIZE {
+            return Err(RuntimeError::StackExhaustion);
+        }
+
+        // push the value
         self.values.push(value);
+
+        Ok(())
     }
 
     /// Copy a local variable to the top of the value stack
-    pub fn get_local(&mut self, idx: LocalIdx) {
+    pub fn get_local(&mut self, idx: LocalIdx) -> Result<(), RuntimeError> {
         let local_value = self.frames.last().unwrap_validated().locals.get(idx);
-        self.values.push(*local_value);
+        self.push_value(*local_value)
     }
 
     /// Pop value from the top of the value stack, writing it to the given local
@@ -194,7 +206,12 @@ impl Stack {
         locals: Locals,
         return_addr: usize,
         return_stp: usize,
-    ) {
+    ) -> Result<(), RuntimeError> {
+        // check for call stack exhaustion
+        if self.frames.len() > MAX_CALL_STACK_SIZE {
+            return Err(RuntimeError::StackExhaustion);
+        }
+
         self.frames.push(CallFrame {
             module_idx: return_module_idx,
             func_idx,
@@ -203,7 +220,9 @@ impl Stack {
             value_stack_base_idx: self.values.len(),
             return_value_count: func_ty.returns.valtypes.len(),
             return_stp,
-        })
+        });
+
+        Ok(())
     }
 
     /// Returns how many stackframes are on the stack, in total.

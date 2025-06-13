@@ -121,12 +121,12 @@ pub(super) fn run<H: HookSet>(
                 if test_val != 0 {
                     stp += 1;
                 } else {
-                    do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable);
+                    do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable)?;
                 }
                 trace!("Instruction: IF");
             }
             ELSE => {
-                do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable);
+                do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable)?;
             }
             BR_IF => {
                 wasm.read_var_u32().unwrap_validated();
@@ -134,7 +134,7 @@ pub(super) fn run<H: HookSet>(
                 let test_val: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
                 if test_val != 0 {
-                    do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable);
+                    do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable)?;
                 } else {
                     stp += 1;
                 }
@@ -156,19 +156,19 @@ pub(super) fn run<H: HookSet>(
                     stp += case_val;
                 }
 
-                do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable);
+                do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable)?;
             }
             BR => {
                 //skip n of BR n
                 wasm.read_var_u32().unwrap_validated();
-                do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable);
+                do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable)?;
             }
             BLOCK | LOOP => {
                 BlockType::read_unvalidated(wasm);
             }
             RETURN => {
                 //same as BR, except no need to skip n of BR n
-                do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable);
+                do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable)?;
             }
             CALL => {
                 let local_func_idx = wasm.read_var_u32().unwrap_validated() as FuncIdx;
@@ -201,7 +201,7 @@ pub(super) fn run<H: HookSet>(
                     locals,
                     wasm.pc,
                     stp,
-                );
+                )?;
 
                 *current_module_idx = func_to_call_module_addr;
                 wasm.full_wasm_binary = store.modules[*current_module_idx].wasm_bytecode;
@@ -273,7 +273,7 @@ pub(super) fn run<H: HookSet>(
                     locals,
                     wasm.pc,
                     stp,
-                );
+                )?;
                 *current_module_idx = func_to_call_module_addr;
                 wasm.full_wasm_binary = store.modules[*current_module_idx].wasm_bytecode;
                 wasm.move_start_to(func_to_call_inst.code_expr)
@@ -293,9 +293,9 @@ pub(super) fn run<H: HookSet>(
                 let val2 = stack.pop_value_with_unknown_type();
                 let val1 = stack.pop_value_with_unknown_type();
                 if test_val != 0 {
-                    stack.push_value(val1);
+                    stack.push_value(val1)?;
                 } else {
-                    stack.push_value(val2);
+                    stack.push_value(val2)?;
                 }
                 trace!("Instruction: SELECT");
             }
@@ -305,15 +305,15 @@ pub(super) fn run<H: HookSet>(
                 let val2 = stack.pop_value(type_vec[0]);
                 let val1 = stack.pop_value(type_vec[0]);
                 if test_val != 0 {
-                    stack.push_value(val1);
+                    stack.push_value(val1)?;
                 } else {
-                    stack.push_value(val2);
+                    stack.push_value(val2)?;
                 }
                 trace!("Instruction: SELECT_T");
             }
             LOCAL_GET => {
                 let local_idx = wasm.read_var_u32().unwrap_validated() as LocalIdx;
-                stack.get_local(local_idx);
+                stack.get_local(local_idx)?;
                 trace!("Instruction: local.get {} [] -> [t]", local_idx);
             }
             LOCAL_SET => stack.set_local(wasm.read_var_u32().unwrap_validated() as LocalIdx),
@@ -323,7 +323,7 @@ pub(super) fn run<H: HookSet>(
                 let global =
                     &store.globals[store.modules[*current_module_idx].global_addrs[global_idx]];
 
-                stack.push_value(global.value);
+                stack.push_value(global.value)?;
 
                 trace!(
                     "Instruction: global.get '{}' [<GLOBAL>] -> [{:?}]",
@@ -349,7 +349,7 @@ pub(super) fn run<H: HookSet>(
                     .get(i as usize)
                     .ok_or(RuntimeError::TableAccessOutOfBounds)?;
 
-                stack.push_value((*val).into());
+                stack.push_value((*val).into())?;
                 trace!(
                     "Instruction: table.get '{}' [{}] -> [{}]",
                     table_idx,
@@ -389,7 +389,7 @@ pub(super) fn run<H: HookSet>(
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data = mem_inst.mem.load(idx)?;
 
-                stack.push_value(Value::I32(data));
+                stack.push_value(Value::I32(data))?;
                 trace!("Instruction: i32.load [{relative_address}] -> [{data}]");
             }
             I64_LOAD => {
@@ -401,7 +401,7 @@ pub(super) fn run<H: HookSet>(
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data = mem.mem.load(idx)?;
 
-                stack.push_value(Value::I64(data));
+                stack.push_value(Value::I64(data))?;
                 trace!("Instruction: i64.load [{relative_address}] -> [{data}]");
             }
             F32_LOAD => {
@@ -413,7 +413,7 @@ pub(super) fn run<H: HookSet>(
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data = mem.mem.load(idx)?;
 
-                stack.push_value(Value::F32(value::F32(data)));
+                stack.push_value(Value::F32(value::F32(data)))?;
                 trace!("Instruction: f32.load [{relative_address}] -> [{data}]");
             }
             F64_LOAD => {
@@ -425,7 +425,7 @@ pub(super) fn run<H: HookSet>(
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data = mem.mem.load(idx)?;
 
-                stack.push_value(Value::F64(value::F64(data)));
+                stack.push_value(Value::F64(value::F64(data)))?;
                 trace!("Instruction: f64.load [{relative_address}] -> [{data}]");
             }
             I32_LOAD8_S => {
@@ -437,7 +437,7 @@ pub(super) fn run<H: HookSet>(
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data: i8 = mem.mem.load(idx)?;
 
-                stack.push_value(Value::I32(data as u32));
+                stack.push_value(Value::I32(data as u32))?;
                 trace!("Instruction: i32.load8_s [{relative_address}] -> [{data}]");
             }
             I32_LOAD8_U => {
@@ -449,7 +449,7 @@ pub(super) fn run<H: HookSet>(
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data: u8 = mem.mem.load(idx)?;
 
-                stack.push_value(Value::I32(data as u32));
+                stack.push_value(Value::I32(data as u32))?;
                 trace!("Instruction: i32.load8_u [{relative_address}] -> [{data}]");
             }
             I32_LOAD16_S => {
@@ -461,7 +461,7 @@ pub(super) fn run<H: HookSet>(
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data: i16 = mem.mem.load(idx)?;
 
-                stack.push_value(Value::I32(data as u32));
+                stack.push_value(Value::I32(data as u32))?;
                 trace!("Instruction: i32.load16_s [{relative_address}] -> [{data}]");
             }
             I32_LOAD16_U => {
@@ -473,7 +473,7 @@ pub(super) fn run<H: HookSet>(
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data: u16 = mem.mem.load(idx)?;
 
-                stack.push_value(Value::I32(data as u32));
+                stack.push_value(Value::I32(data as u32))?;
                 trace!("Instruction: i32.load16_u [{relative_address}] -> [{data}]");
             }
             I64_LOAD8_S => {
@@ -485,7 +485,7 @@ pub(super) fn run<H: HookSet>(
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data: i8 = mem.mem.load(idx)?;
 
-                stack.push_value(Value::I64(data as u64));
+                stack.push_value(Value::I64(data as u64))?;
                 trace!("Instruction: i64.load8_s [{relative_address}] -> [{data}]");
             }
             I64_LOAD8_U => {
@@ -497,7 +497,7 @@ pub(super) fn run<H: HookSet>(
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data: u8 = mem.mem.load(idx)?;
 
-                stack.push_value(Value::I64(data as u64));
+                stack.push_value(Value::I64(data as u64))?;
                 trace!("Instruction: i64.load8_u [{relative_address}] -> [{data}]");
             }
             I64_LOAD16_S => {
@@ -509,7 +509,7 @@ pub(super) fn run<H: HookSet>(
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data: i16 = mem.mem.load(idx)?;
 
-                stack.push_value(Value::I64(data as u64));
+                stack.push_value(Value::I64(data as u64))?;
                 trace!("Instruction: i64.load16_s [{relative_address}] -> [{data}]");
             }
             I64_LOAD16_U => {
@@ -521,7 +521,7 @@ pub(super) fn run<H: HookSet>(
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data: u16 = mem.mem.load(idx)?;
 
-                stack.push_value(Value::I64(data as u64));
+                stack.push_value(Value::I64(data as u64))?;
                 trace!("Instruction: i64.load16_u [{relative_address}] -> [{data}]");
             }
             I64_LOAD32_S => {
@@ -533,7 +533,7 @@ pub(super) fn run<H: HookSet>(
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data: i32 = mem.mem.load(idx)?;
 
-                stack.push_value(Value::I64(data as u64));
+                stack.push_value(Value::I64(data as u64))?;
                 trace!("Instruction: i64.load32_s [{relative_address}] -> [{data}]");
             }
             I64_LOAD32_U => {
@@ -545,7 +545,7 @@ pub(super) fn run<H: HookSet>(
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data: u32 = mem.mem.load(idx)?;
 
-                stack.push_value(Value::I64(data as u64));
+                stack.push_value(Value::I64(data as u64))?;
                 trace!("Instruction: i64.load32_u [{relative_address}] -> [{data}]");
             }
             I32_STORE => {
@@ -700,7 +700,7 @@ pub(super) fn run<H: HookSet>(
                 let mem =
                     &mut store.memories[store.modules[*current_module_idx].mem_addrs[mem_idx]];
                 let size = mem.size() as u32;
-                stack.push_value(Value::I32(size));
+                stack.push_value(Value::I32(size))?;
                 trace!("Instruction: memory.size [] -> [{}]", size);
             }
             MEMORY_GROW => {
@@ -718,18 +718,18 @@ pub(super) fn run<H: HookSet>(
                     Ok(_) => sz,
                     Err(_) => u32::MAX,
                 };
-                stack.push_value(Value::I32(pushed_value));
+                stack.push_value(Value::I32(pushed_value))?;
                 trace!("Instruction: memory.grow [{}] -> [{}]", n, pushed_value);
             }
             I32_CONST => {
                 let constant = wasm.read_var_i32().unwrap_validated();
                 trace!("Instruction: i32.const [] -> [{constant}]");
-                stack.push_value(constant.into());
+                stack.push_value(constant.into())?;
             }
             F32_CONST => {
                 let constant = f32::from_bits(wasm.read_var_f32().unwrap_validated());
                 trace!("Instruction: f32.const [] -> [{constant:.7}]");
-                stack.push_value(constant.into());
+                stack.push_value(constant.into())?;
             }
             I32_EQZ => {
                 let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -737,7 +737,7 @@ pub(super) fn run<H: HookSet>(
                 let res = if v1 == 0 { 1 } else { 0 };
 
                 trace!("Instruction: i32.eqz [{v1}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I32_EQ => {
                 let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -746,7 +746,7 @@ pub(super) fn run<H: HookSet>(
                 let res = if v1 == v2 { 1 } else { 0 };
 
                 trace!("Instruction: i32.eq [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I32_NE => {
                 let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -755,7 +755,7 @@ pub(super) fn run<H: HookSet>(
                 let res = if v1 != v2 { 1 } else { 0 };
 
                 trace!("Instruction: i32.ne [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I32_LT_S => {
                 let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -764,7 +764,7 @@ pub(super) fn run<H: HookSet>(
                 let res = if v1 < v2 { 1 } else { 0 };
 
                 trace!("Instruction: i32.lt_s [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
 
             I32_LT_U => {
@@ -774,7 +774,7 @@ pub(super) fn run<H: HookSet>(
                 let res = if (v1 as u32) < (v2 as u32) { 1 } else { 0 };
 
                 trace!("Instruction: i32.lt_u [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I32_GT_S => {
                 let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -783,7 +783,7 @@ pub(super) fn run<H: HookSet>(
                 let res = if v1 > v2 { 1 } else { 0 };
 
                 trace!("Instruction: i32.gt_s [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I32_GT_U => {
                 let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -792,7 +792,7 @@ pub(super) fn run<H: HookSet>(
                 let res = if (v1 as u32) > (v2 as u32) { 1 } else { 0 };
 
                 trace!("Instruction: i32.gt_u [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I32_LE_S => {
                 let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -801,7 +801,7 @@ pub(super) fn run<H: HookSet>(
                 let res = if v1 <= v2 { 1 } else { 0 };
 
                 trace!("Instruction: i32.le_s [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I32_LE_U => {
                 let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -810,7 +810,7 @@ pub(super) fn run<H: HookSet>(
                 let res = if (v1 as u32) <= (v2 as u32) { 1 } else { 0 };
 
                 trace!("Instruction: i32.le_u [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I32_GE_S => {
                 let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -819,7 +819,7 @@ pub(super) fn run<H: HookSet>(
                 let res = if v1 >= v2 { 1 } else { 0 };
 
                 trace!("Instruction: i32.ge_s [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I32_GE_U => {
                 let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -828,7 +828,7 @@ pub(super) fn run<H: HookSet>(
                 let res = if (v1 as u32) >= (v2 as u32) { 1 } else { 0 };
 
                 trace!("Instruction: i32.ge_u [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I64_EQZ => {
                 let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
@@ -836,7 +836,7 @@ pub(super) fn run<H: HookSet>(
                 let res = if v1 == 0 { 1 } else { 0 };
 
                 trace!("Instruction: i64.eqz [{v1}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I64_EQ => {
                 let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
@@ -845,7 +845,7 @@ pub(super) fn run<H: HookSet>(
                 let res = if v1 == v2 { 1 } else { 0 };
 
                 trace!("Instruction: i64.eq [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I64_NE => {
                 let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
@@ -854,7 +854,7 @@ pub(super) fn run<H: HookSet>(
                 let res = if v1 != v2 { 1 } else { 0 };
 
                 trace!("Instruction: i64.ne [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I64_LT_S => {
                 let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
@@ -863,7 +863,7 @@ pub(super) fn run<H: HookSet>(
                 let res = if v1 < v2 { 1 } else { 0 };
 
                 trace!("Instruction: i64.lt_s [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
 
             I64_LT_U => {
@@ -873,7 +873,7 @@ pub(super) fn run<H: HookSet>(
                 let res = if (v1 as u64) < (v2 as u64) { 1 } else { 0 };
 
                 trace!("Instruction: i64.lt_u [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I64_GT_S => {
                 let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
@@ -882,7 +882,7 @@ pub(super) fn run<H: HookSet>(
                 let res = if v1 > v2 { 1 } else { 0 };
 
                 trace!("Instruction: i64.gt_s [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I64_GT_U => {
                 let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
@@ -891,7 +891,7 @@ pub(super) fn run<H: HookSet>(
                 let res = if (v1 as u64) > (v2 as u64) { 1 } else { 0 };
 
                 trace!("Instruction: i64.gt_u [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I64_LE_S => {
                 let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
@@ -900,7 +900,7 @@ pub(super) fn run<H: HookSet>(
                 let res = if v1 <= v2 { 1 } else { 0 };
 
                 trace!("Instruction: i64.le_s [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I64_LE_U => {
                 let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
@@ -909,7 +909,7 @@ pub(super) fn run<H: HookSet>(
                 let res = if (v1 as u64) <= (v2 as u64) { 1 } else { 0 };
 
                 trace!("Instruction: i64.le_u [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I64_GE_S => {
                 let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
@@ -918,7 +918,7 @@ pub(super) fn run<H: HookSet>(
                 let res = if v1 >= v2 { 1 } else { 0 };
 
                 trace!("Instruction: i64.ge_s [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I64_GE_U => {
                 let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
@@ -927,7 +927,7 @@ pub(super) fn run<H: HookSet>(
                 let res = if (v1 as u64) >= (v2 as u64) { 1 } else { 0 };
 
                 trace!("Instruction: i64.ge_u [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             F32_EQ => {
                 let v2: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
@@ -936,7 +936,7 @@ pub(super) fn run<H: HookSet>(
                 let res = if v1 == v2 { 1 } else { 0 };
 
                 trace!("Instruction: f32.eq [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             F32_NE => {
                 let v2: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
@@ -945,7 +945,7 @@ pub(super) fn run<H: HookSet>(
                 let res = if v1 != v2 { 1 } else { 0 };
 
                 trace!("Instruction: f32.ne [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             F32_LT => {
                 let v2: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
@@ -954,7 +954,7 @@ pub(super) fn run<H: HookSet>(
                 let res = if v1 < v2 { 1 } else { 0 };
 
                 trace!("Instruction: f32.lt [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             F32_GT => {
                 let v2: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
@@ -963,7 +963,7 @@ pub(super) fn run<H: HookSet>(
                 let res = if v1 > v2 { 1 } else { 0 };
 
                 trace!("Instruction: f32.gt [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             F32_LE => {
                 let v2: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
@@ -972,7 +972,7 @@ pub(super) fn run<H: HookSet>(
                 let res = if v1 <= v2 { 1 } else { 0 };
 
                 trace!("Instruction: f32.le [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             F32_GE => {
                 let v2: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
@@ -981,7 +981,7 @@ pub(super) fn run<H: HookSet>(
                 let res = if v1 >= v2 { 1 } else { 0 };
 
                 trace!("Instruction: f32.ge [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
 
             F64_EQ => {
@@ -991,7 +991,7 @@ pub(super) fn run<H: HookSet>(
                 let res = if v1 == v2 { 1 } else { 0 };
 
                 trace!("Instruction: f64.eq [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             F64_NE => {
                 let v2: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
@@ -1000,7 +1000,7 @@ pub(super) fn run<H: HookSet>(
                 let res = if v1 != v2 { 1 } else { 0 };
 
                 trace!("Instruction: f64.ne [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             F64_LT => {
                 let v2: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
@@ -1009,7 +1009,7 @@ pub(super) fn run<H: HookSet>(
                 let res = if v1 < v2 { 1 } else { 0 };
 
                 trace!("Instruction: f64.lt [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             F64_GT => {
                 let v2: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
@@ -1018,7 +1018,7 @@ pub(super) fn run<H: HookSet>(
                 let res = if v1 > v2 { 1 } else { 0 };
 
                 trace!("Instruction: f64.gt [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             F64_LE => {
                 let v2: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
@@ -1027,7 +1027,7 @@ pub(super) fn run<H: HookSet>(
                 let res = if v1 <= v2 { 1 } else { 0 };
 
                 trace!("Instruction: f64.le [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             F64_GE => {
                 let v2: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
@@ -1036,7 +1036,7 @@ pub(super) fn run<H: HookSet>(
                 let res = if v1 >= v2 { 1 } else { 0 };
 
                 trace!("Instruction: f64.ge [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
 
             I32_CLZ => {
@@ -1044,31 +1044,31 @@ pub(super) fn run<H: HookSet>(
                 let res = v1.leading_zeros() as i32;
 
                 trace!("Instruction: i32.clz [{v1}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I32_CTZ => {
                 let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                 let res = v1.trailing_zeros() as i32;
 
                 trace!("Instruction: i32.ctz [{v1}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I32_POPCNT => {
                 let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                 let res = v1.count_ones() as i32;
 
                 trace!("Instruction: i32.popcnt [{v1}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I64_CONST => {
                 let constant = wasm.read_var_i64().unwrap_validated();
                 trace!("Instruction: i64.const [] -> [{constant}]");
-                stack.push_value(constant.into());
+                stack.push_value(constant.into())?;
             }
             F64_CONST => {
                 let constant = f64::from_bits(wasm.read_var_f64().unwrap_validated());
                 trace!("Instruction: f64.const [] -> [{constant}]");
-                stack.push_value(constant.into());
+                stack.push_value(constant.into())?;
             }
             I32_ADD => {
                 let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -1076,7 +1076,7 @@ pub(super) fn run<H: HookSet>(
                 let res = v1.wrapping_add(v2);
 
                 trace!("Instruction: i32.add [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I32_SUB => {
                 let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -1084,7 +1084,7 @@ pub(super) fn run<H: HookSet>(
                 let res = v1.wrapping_sub(v2);
 
                 trace!("Instruction: i32.sub [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I32_MUL => {
                 let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -1092,7 +1092,7 @@ pub(super) fn run<H: HookSet>(
                 let res = v1.wrapping_mul(v2);
 
                 trace!("Instruction: i32.mul [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I32_DIV_S => {
                 let dividend: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -1108,7 +1108,7 @@ pub(super) fn run<H: HookSet>(
                 let res = divisor / dividend;
 
                 trace!("Instruction: i32.div_s [{divisor} {dividend}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I32_DIV_U => {
                 let dividend: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -1124,7 +1124,7 @@ pub(super) fn run<H: HookSet>(
                 let res = (divisor / dividend) as i32;
 
                 trace!("Instruction: i32.div_u [{divisor} {dividend}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I32_REM_S => {
                 let dividend: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -1138,28 +1138,28 @@ pub(super) fn run<H: HookSet>(
                 let res = res.unwrap_or_default();
 
                 trace!("Instruction: i32.rem_s [{divisor} {dividend}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I64_CLZ => {
                 let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
                 let res = v1.leading_zeros() as i64;
 
                 trace!("Instruction: i64.clz [{v1}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I64_CTZ => {
                 let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
                 let res = v1.trailing_zeros() as i64;
 
                 trace!("Instruction: i64.ctz [{v1}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I64_POPCNT => {
                 let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
                 let res = v1.count_ones() as i64;
 
                 trace!("Instruction: i64.popcnt [{v1}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I64_ADD => {
                 let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
@@ -1167,7 +1167,7 @@ pub(super) fn run<H: HookSet>(
                 let res = v1.wrapping_add(v2);
 
                 trace!("Instruction: i64.add [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I64_SUB => {
                 let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
@@ -1175,7 +1175,7 @@ pub(super) fn run<H: HookSet>(
                 let res = v1.wrapping_sub(v2);
 
                 trace!("Instruction: i64.sub [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I64_MUL => {
                 let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
@@ -1183,7 +1183,7 @@ pub(super) fn run<H: HookSet>(
                 let res = v1.wrapping_mul(v2);
 
                 trace!("Instruction: i64.mul [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I64_DIV_S => {
                 let dividend: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
@@ -1199,7 +1199,7 @@ pub(super) fn run<H: HookSet>(
                 let res = divisor / dividend;
 
                 trace!("Instruction: i64.div_s [{divisor} {dividend}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I64_DIV_U => {
                 let dividend: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
@@ -1215,7 +1215,7 @@ pub(super) fn run<H: HookSet>(
                 let res = (divisor / dividend) as i64;
 
                 trace!("Instruction: i64.div_u [{divisor} {dividend}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I64_REM_S => {
                 let dividend: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
@@ -1229,7 +1229,7 @@ pub(super) fn run<H: HookSet>(
                 let res = res.unwrap_or_default();
 
                 trace!("Instruction: i64.rem_s [{divisor} {dividend}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I64_REM_U => {
                 let dividend: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
@@ -1245,7 +1245,7 @@ pub(super) fn run<H: HookSet>(
                 let res = (divisor % dividend) as i64;
 
                 trace!("Instruction: i64.rem_u [{divisor} {dividend}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I64_AND => {
                 let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
@@ -1254,7 +1254,7 @@ pub(super) fn run<H: HookSet>(
                 let res = v1 & v2;
 
                 trace!("Instruction: i64.and [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I64_OR => {
                 let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
@@ -1263,7 +1263,7 @@ pub(super) fn run<H: HookSet>(
                 let res = v1 | v2;
 
                 trace!("Instruction: i64.or [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I64_XOR => {
                 let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
@@ -1272,7 +1272,7 @@ pub(super) fn run<H: HookSet>(
                 let res = v1 ^ v2;
 
                 trace!("Instruction: i64.xor [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I64_SHL => {
                 let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
@@ -1281,7 +1281,7 @@ pub(super) fn run<H: HookSet>(
                 let res = v1.wrapping_shl((v2 & 63) as u32);
 
                 trace!("Instruction: i64.shl [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I64_SHR_S => {
                 let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
@@ -1290,7 +1290,7 @@ pub(super) fn run<H: HookSet>(
                 let res = v1.wrapping_shr((v2 & 63) as u32);
 
                 trace!("Instruction: i64.shr_s [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I64_SHR_U => {
                 let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
@@ -1299,7 +1299,7 @@ pub(super) fn run<H: HookSet>(
                 let res = (v1 as u64).wrapping_shr((v2 & 63) as u32);
 
                 trace!("Instruction: i64.shr_u [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I64_ROTL => {
                 let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
@@ -1308,7 +1308,7 @@ pub(super) fn run<H: HookSet>(
                 let res = v1.rotate_left((v2 & 63) as u32);
 
                 trace!("Instruction: i64.rotl [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I64_ROTR => {
                 let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
@@ -1317,7 +1317,7 @@ pub(super) fn run<H: HookSet>(
                 let res = v1.rotate_right((v2 & 63) as u32);
 
                 trace!("Instruction: i64.rotr [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I32_REM_U => {
                 let dividend: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -1334,7 +1334,7 @@ pub(super) fn run<H: HookSet>(
                 let res = res.unwrap_or_default() as i32;
 
                 trace!("Instruction: i32.rem_u [{divisor} {dividend}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I32_AND => {
                 let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -1342,7 +1342,7 @@ pub(super) fn run<H: HookSet>(
                 let res = v1 & v2;
 
                 trace!("Instruction: i32.and [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I32_OR => {
                 let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -1350,7 +1350,7 @@ pub(super) fn run<H: HookSet>(
                 let res = v1 | v2;
 
                 trace!("Instruction: i32.or [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I32_XOR => {
                 let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -1358,7 +1358,7 @@ pub(super) fn run<H: HookSet>(
                 let res = v1 ^ v2;
 
                 trace!("Instruction: i32.xor [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I32_SHL => {
                 let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -1366,7 +1366,7 @@ pub(super) fn run<H: HookSet>(
                 let res = v2.wrapping_shl(v1 as u32);
 
                 trace!("Instruction: i32.shl [{v2} {v1}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I32_SHR_S => {
                 let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -1375,7 +1375,7 @@ pub(super) fn run<H: HookSet>(
                 let res = v2.wrapping_shr(v1 as u32);
 
                 trace!("Instruction: i32.shr_s [{v2} {v1}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I32_SHR_U => {
                 let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -1384,7 +1384,7 @@ pub(super) fn run<H: HookSet>(
                 let res = (v2 as u32).wrapping_shr(v1 as u32) as i32;
 
                 trace!("Instruction: i32.shr_u [{v2} {v1}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I32_ROTL => {
                 let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -1393,7 +1393,7 @@ pub(super) fn run<H: HookSet>(
                 let res = v2.rotate_left(v1 as u32);
 
                 trace!("Instruction: i32.rotl [{v2} {v1}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I32_ROTR => {
                 let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -1402,7 +1402,7 @@ pub(super) fn run<H: HookSet>(
                 let res = v2.rotate_right(v1 as u32);
 
                 trace!("Instruction: i32.rotr [{v2} {v1}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
 
             F32_ABS => {
@@ -1410,49 +1410,49 @@ pub(super) fn run<H: HookSet>(
                 let res: value::F32 = v1.abs();
 
                 trace!("Instruction: f32.abs [{v1}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             F32_NEG => {
                 let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
                 let res: value::F32 = v1.neg();
 
                 trace!("Instruction: f32.neg [{v1}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             F32_CEIL => {
                 let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
                 let res: value::F32 = v1.ceil();
 
                 trace!("Instruction: f32.ceil [{v1}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             F32_FLOOR => {
                 let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
                 let res: value::F32 = v1.floor();
 
                 trace!("Instruction: f32.floor [{v1}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             F32_TRUNC => {
                 let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
                 let res: value::F32 = v1.trunc();
 
                 trace!("Instruction: f32.trunc [{v1}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             F32_NEAREST => {
                 let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
                 let res: value::F32 = v1.nearest();
 
                 trace!("Instruction: f32.nearest [{v1}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             F32_SQRT => {
                 let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
                 let res: value::F32 = v1.sqrt();
 
                 trace!("Instruction: f32.sqrt [{v1}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             F32_ADD => {
                 let v2: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
@@ -1460,7 +1460,7 @@ pub(super) fn run<H: HookSet>(
                 let res: value::F32 = v1 + v2;
 
                 trace!("Instruction: f32.add [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             F32_SUB => {
                 let v2: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
@@ -1468,7 +1468,7 @@ pub(super) fn run<H: HookSet>(
                 let res: value::F32 = v1 - v2;
 
                 trace!("Instruction: f32.sub [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             F32_MUL => {
                 let v2: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
@@ -1476,7 +1476,7 @@ pub(super) fn run<H: HookSet>(
                 let res: value::F32 = v1 * v2;
 
                 trace!("Instruction: f32.mul [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             F32_DIV => {
                 let v2: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
@@ -1484,7 +1484,7 @@ pub(super) fn run<H: HookSet>(
                 let res: value::F32 = v1 / v2;
 
                 trace!("Instruction: f32.div [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             F32_MIN => {
                 let v2: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
@@ -1492,7 +1492,7 @@ pub(super) fn run<H: HookSet>(
                 let res: value::F32 = v1.min(v2);
 
                 trace!("Instruction: f32.min [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             F32_MAX => {
                 let v2: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
@@ -1500,7 +1500,7 @@ pub(super) fn run<H: HookSet>(
                 let res: value::F32 = v1.max(v2);
 
                 trace!("Instruction: f32.max [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             F32_COPYSIGN => {
                 let v2: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
@@ -1508,7 +1508,7 @@ pub(super) fn run<H: HookSet>(
                 let res: value::F32 = v1.copysign(v2);
 
                 trace!("Instruction: f32.copysign [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
 
             F64_ABS => {
@@ -1516,49 +1516,49 @@ pub(super) fn run<H: HookSet>(
                 let res: value::F64 = v1.abs();
 
                 trace!("Instruction: f64.abs [{v1}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             F64_NEG => {
                 let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
                 let res: value::F64 = v1.neg();
 
                 trace!("Instruction: f64.neg [{v1}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             F64_CEIL => {
                 let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
                 let res: value::F64 = v1.ceil();
 
                 trace!("Instruction: f64.ceil [{v1}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             F64_FLOOR => {
                 let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
                 let res: value::F64 = v1.floor();
 
                 trace!("Instruction: f64.floor [{v1}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             F64_TRUNC => {
                 let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
                 let res: value::F64 = v1.trunc();
 
                 trace!("Instruction: f64.trunc [{v1}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             F64_NEAREST => {
                 let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
                 let res: value::F64 = v1.nearest();
 
                 trace!("Instruction: f64.nearest [{v1}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             F64_SQRT => {
                 let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
                 let res: value::F64 = v1.sqrt();
 
                 trace!("Instruction: f64.sqrt [{v1}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             F64_ADD => {
                 let v2: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
@@ -1566,7 +1566,7 @@ pub(super) fn run<H: HookSet>(
                 let res: value::F64 = v1 + v2;
 
                 trace!("Instruction: f64.add [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             F64_SUB => {
                 let v2: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
@@ -1574,7 +1574,7 @@ pub(super) fn run<H: HookSet>(
                 let res: value::F64 = v1 - v2;
 
                 trace!("Instruction: f64.sub [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             F64_MUL => {
                 let v2: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
@@ -1582,7 +1582,7 @@ pub(super) fn run<H: HookSet>(
                 let res: value::F64 = v1 * v2;
 
                 trace!("Instruction: f64.mul [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             F64_DIV => {
                 let v2: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
@@ -1590,7 +1590,7 @@ pub(super) fn run<H: HookSet>(
                 let res: value::F64 = v1 / v2;
 
                 trace!("Instruction: f64.div [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             F64_MIN => {
                 let v2: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
@@ -1598,7 +1598,7 @@ pub(super) fn run<H: HookSet>(
                 let res: value::F64 = v1.min(v2);
 
                 trace!("Instruction: f64.min [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             F64_MAX => {
                 let v2: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
@@ -1606,7 +1606,7 @@ pub(super) fn run<H: HookSet>(
                 let res: value::F64 = v1.max(v2);
 
                 trace!("Instruction: f64.max [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             F64_COPYSIGN => {
                 let v2: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
@@ -1614,14 +1614,14 @@ pub(super) fn run<H: HookSet>(
                 let res: value::F64 = v1.copysign(v2);
 
                 trace!("Instruction: f64.copysign [{v1} {v2}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I32_WRAP_I64 => {
                 let v: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
                 let res: i32 = v as i32;
 
                 trace!("Instruction: i32.wrap_i64 [{v}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I32_TRUNC_F32_S => {
                 let v: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
@@ -1638,7 +1638,7 @@ pub(super) fn run<H: HookSet>(
                 let res: i32 = v.as_i32();
 
                 trace!("Instruction: i32.trunc_f32_s [{v:.7}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I32_TRUNC_F32_U => {
                 let v: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
@@ -1655,7 +1655,7 @@ pub(super) fn run<H: HookSet>(
                 let res: i32 = v.as_u32() as i32;
 
                 trace!("Instruction: i32.trunc_f32_u [{v:.7}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
 
             I32_TRUNC_F64_S => {
@@ -1673,7 +1673,7 @@ pub(super) fn run<H: HookSet>(
                 let res: i32 = v.as_i32();
 
                 trace!("Instruction: i32.trunc_f64_s [{v:.7}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I32_TRUNC_F64_U => {
                 let v: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
@@ -1690,7 +1690,7 @@ pub(super) fn run<H: HookSet>(
                 let res: i32 = v.as_u32() as i32;
 
                 trace!("Instruction: i32.trunc_f32_u [{v:.7}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
 
             I64_EXTEND_I32_S => {
@@ -1699,7 +1699,7 @@ pub(super) fn run<H: HookSet>(
                 let res: i64 = v as i64;
 
                 trace!("Instruction: i64.extend_i32_s [{v}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
 
             I64_EXTEND_I32_U => {
@@ -1708,7 +1708,7 @@ pub(super) fn run<H: HookSet>(
                 let res: i64 = v as u32 as i64;
 
                 trace!("Instruction: i64.extend_i32_u [{v}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
 
             I64_TRUNC_F32_S => {
@@ -1727,7 +1727,7 @@ pub(super) fn run<H: HookSet>(
                 let res: i64 = v.as_i64();
 
                 trace!("Instruction: i64.trunc_f32_s [{v:.7}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I64_TRUNC_F32_U => {
                 let v: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
@@ -1744,7 +1744,7 @@ pub(super) fn run<H: HookSet>(
                 let res: i64 = v.as_u64() as i64;
 
                 trace!("Instruction: i64.trunc_f32_u [{v:.7}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
 
             I64_TRUNC_F64_S => {
@@ -1763,7 +1763,7 @@ pub(super) fn run<H: HookSet>(
                 let res: i64 = v.as_i64();
 
                 trace!("Instruction: i64.trunc_f64_s [{v:.17}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I64_TRUNC_F64_U => {
                 let v: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
@@ -1780,110 +1780,110 @@ pub(super) fn run<H: HookSet>(
                 let res: i64 = v.as_u64() as i64;
 
                 trace!("Instruction: i64.trunc_f64_u [{v:.17}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             F32_CONVERT_I32_S => {
                 let v: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                 let res: value::F32 = value::F32(v as f32);
 
                 trace!("Instruction: f32.convert_i32_s [{v}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             F32_CONVERT_I32_U => {
                 let v: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                 let res: value::F32 = value::F32(v as u32 as f32);
 
                 trace!("Instruction: f32.convert_i32_u [{v}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             F32_CONVERT_I64_S => {
                 let v: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
                 let res: value::F32 = value::F32(v as f32);
 
                 trace!("Instruction: f32.convert_i64_s [{v}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             F32_CONVERT_I64_U => {
                 let v: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
                 let res: value::F32 = value::F32(v as u64 as f32);
 
                 trace!("Instruction: f32.convert_i64_u [{v}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             F32_DEMOTE_F64 => {
                 let v: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
                 let res: value::F32 = v.as_f32();
 
                 trace!("Instruction: f32.demote_f64 [{v:.17}] -> [{res:.7}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             F64_CONVERT_I32_S => {
                 let v: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                 let res: value::F64 = value::F64(v as f64);
 
                 trace!("Instruction: f64.convert_i32_s [{v}] -> [{res:.17}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             F64_CONVERT_I32_U => {
                 let v: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                 let res: value::F64 = value::F64(v as u32 as f64);
 
                 trace!("Instruction: f64.convert_i32_u [{v}] -> [{res:.17}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             F64_CONVERT_I64_S => {
                 let v: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
                 let res: value::F64 = value::F64(v as f64);
 
                 trace!("Instruction: f64.convert_i64_s [{v}] -> [{res:.17}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             F64_CONVERT_I64_U => {
                 let v: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
                 let res: value::F64 = value::F64(v as u64 as f64);
 
                 trace!("Instruction: f64.convert_i64_u [{v}] -> [{res:.17}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             F64_PROMOTE_F32 => {
                 let v: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
                 let res: value::F64 = v.as_f32();
 
                 trace!("Instruction: f64.promote_f32 [{v:.7}] -> [{res:.17}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I32_REINTERPRET_F32 => {
                 let v: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
                 let res: i32 = v.reinterpret_as_i32();
 
                 trace!("Instruction: i32.reinterpret_f32 [{v:.7}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             I64_REINTERPRET_F64 => {
                 let v: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
                 let res: i64 = v.reinterpret_as_i64();
 
                 trace!("Instruction: i64.reinterpret_f64 [{v:.17}] -> [{res}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             F32_REINTERPRET_I32 => {
                 let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                 let res: value::F32 = value::F32::from_bits(v1 as u32);
 
                 trace!("Instruction: f32.reinterpret_i32 [{v1}] -> [{res:.7}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             F64_REINTERPRET_I64 => {
                 let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
                 let res: value::F64 = value::F64::from_bits(v1 as u64);
 
                 trace!("Instruction: f64.reinterpret_i64 [{v1}] -> [{res:.17}]");
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
             }
             REF_NULL => {
                 let reftype = RefType::read_unvalidated(wasm);
 
-                stack.push_value(Value::Ref(reftype.to_null_ref()));
+                stack.push_value(Value::Ref(reftype.to_null_ref()))?;
                 trace!("Instruction: ref.null '{:?}' -> [{:?}]", reftype, reftype);
             }
             REF_IS_NULL => {
@@ -1895,14 +1895,14 @@ pub(super) fn run<H: HookSet>(
 
                 let res = if is_null { 1 } else { 0 };
                 trace!("Instruction: ref.is_null [{}] -> [{}]", rref, res);
-                stack.push_value(Value::I32(res));
+                stack.push_value(Value::I32(res))?;
             }
             // https://webassembly.github.io/spec/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-ref-mathsf-ref-func-x
             REF_FUNC => {
                 let func_idx = wasm.read_var_u32().unwrap_validated() as FuncIdx;
                 stack.push_value(Value::Ref(Ref::Func(FuncAddr::new(Some(
                     store.modules[*current_module_idx].func_addrs[func_idx],
-                )))));
+                )))))?;
             }
             FC_EXTENSIONS => {
                 // Should we call instruction hook here as well? Multibyte instruction
@@ -1925,7 +1925,7 @@ pub(super) fn run<H: HookSet>(
                         };
 
                         trace!("Instruction: i32.trunc_sat_f32_s [{v1}] -> [{res}]");
-                        stack.push_value(res.into());
+                        stack.push_value(res.into())?;
                     }
                     I32_TRUNC_SAT_F32_U => {
                         let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
@@ -1940,7 +1940,7 @@ pub(super) fn run<H: HookSet>(
                         };
 
                         trace!("Instruction: i32.trunc_sat_f32_u [{v1}] -> [{res}]");
-                        stack.push_value(res.into());
+                        stack.push_value(res.into())?;
                     }
                     I32_TRUNC_SAT_F64_S => {
                         let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
@@ -1957,7 +1957,7 @@ pub(super) fn run<H: HookSet>(
                         };
 
                         trace!("Instruction: i32.trunc_sat_f64_s [{v1}] -> [{res}]");
-                        stack.push_value(res.into());
+                        stack.push_value(res.into())?;
                     }
                     I32_TRUNC_SAT_F64_U => {
                         let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
@@ -1972,7 +1972,7 @@ pub(super) fn run<H: HookSet>(
                         };
 
                         trace!("Instruction: i32.trunc_sat_f64_u [{v1}] -> [{res}]");
-                        stack.push_value(res.into());
+                        stack.push_value(res.into())?;
                     }
                     I64_TRUNC_SAT_F32_S => {
                         let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
@@ -1989,7 +1989,7 @@ pub(super) fn run<H: HookSet>(
                         };
 
                         trace!("Instruction: i64.trunc_sat_f32_s [{v1}] -> [{res}]");
-                        stack.push_value(res.into());
+                        stack.push_value(res.into())?;
                     }
                     I64_TRUNC_SAT_F32_U => {
                         let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
@@ -2004,7 +2004,7 @@ pub(super) fn run<H: HookSet>(
                         };
 
                         trace!("Instruction: i64.trunc_sat_f32_u [{v1}] -> [{res}]");
-                        stack.push_value(res.into());
+                        stack.push_value(res.into())?;
                     }
                     I64_TRUNC_SAT_F64_S => {
                         let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
@@ -2021,7 +2021,7 @@ pub(super) fn run<H: HookSet>(
                         };
 
                         trace!("Instruction: i64.trunc_sat_f64_s [{v1}] -> [{res}]");
-                        stack.push_value(res.into());
+                        stack.push_value(res.into())?;
                     }
                     I64_TRUNC_SAT_F64_U => {
                         let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
@@ -2036,7 +2036,7 @@ pub(super) fn run<H: HookSet>(
                         };
 
                         trace!("Instruction: i64.trunc_sat_f64_u [{v1}] -> [{res}]");
-                        stack.push_value(res.into());
+                        stack.push_value(res.into())?;
                     }
                     // See https://webassembly.github.io/bulk-memory-operations/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-init-x
                     // Copy a region from a data segment into memory
@@ -2246,10 +2246,10 @@ pub(super) fn run<H: HookSet>(
                         // if the grow operation fails, err := Value::I32(2^32-1) is pushed to the stack per spec
                         match tab.grow(n, val) {
                             Ok(_) => {
-                                stack.push_value(Value::I32(sz));
+                                stack.push_value(Value::I32(sz))?;
                             }
                             Err(_) => {
-                                stack.push_value(Value::I32(u32::MAX));
+                                stack.push_value(Value::I32(u32::MAX))?;
                             }
                         }
                     }
@@ -2260,7 +2260,7 @@ pub(super) fn run<H: HookSet>(
 
                         let sz = tab.elem.len() as u32;
 
-                        stack.push_value(Value::I32(sz));
+                        stack.push_value(Value::I32(sz))?;
 
                         trace!("Instruction: table.size '{}' [] -> [{}]", table_idx, sz);
                     }
@@ -2305,7 +2305,7 @@ pub(super) fn run<H: HookSet>(
 
                 let res = if v | 0x7F != 0x7F { v | 0xFFFFFF00 } else { v };
 
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
 
                 trace!("Instruction i32.extend8_s [{}] -> [{}]", v, res);
             }
@@ -2323,7 +2323,7 @@ pub(super) fn run<H: HookSet>(
                     v
                 };
 
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
 
                 trace!("Instruction i32.extend16_s [{}] -> [{}]", v, res);
             }
@@ -2341,7 +2341,7 @@ pub(super) fn run<H: HookSet>(
                     v
                 };
 
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
 
                 trace!("Instruction i64.extend8_s [{}] -> [{}]", v, res);
             }
@@ -2359,7 +2359,7 @@ pub(super) fn run<H: HookSet>(
                     v
                 };
 
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
 
                 trace!("Instruction i64.extend16_s [{}] -> [{}]", v, res);
             }
@@ -2377,7 +2377,7 @@ pub(super) fn run<H: HookSet>(
                     v
                 };
 
-                stack.push_value(res.into());
+                stack.push_value(res.into())?;
 
                 trace!("Instruction i64.extend32_s [{}] -> [{}]", v, res);
             }
@@ -2396,7 +2396,7 @@ fn do_sidetable_control_transfer(
     stack: &mut Stack,
     current_stp: &mut usize,
     current_sidetable: &Sidetable,
-) {
+) -> Result<(), RuntimeError> {
     let sidetable_entry = &current_sidetable[*current_stp];
 
     // TODO fix this corner cutting implementation
@@ -2406,11 +2406,13 @@ fn do_sidetable_control_transfer(
     stack.pop_n_values(sidetable_entry.popcnt);
 
     for val in jump_vals {
-        stack.push_value(val);
+        stack.push_value(val)?;
     }
 
     *current_stp = (*current_stp as isize + sidetable_entry.delta_stp) as usize;
     wasm.pc = (wasm.pc as isize + sidetable_entry.delta_pc) as usize;
+
+    Ok(())
 }
 
 #[inline(always)]
