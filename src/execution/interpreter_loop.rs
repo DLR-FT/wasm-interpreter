@@ -27,8 +27,7 @@ use crate::{
     store::DataInst,
     value::{self, FuncAddr, Ref},
     value_stack::Stack,
-    ElemInst, Limits, MemInst, ModuleInst, NumType, RefType, RuntimeError, TableInst, ValType,
-    Value,
+    ElemInst, MemInst, ModuleInst, NumType, RefType, RuntimeError, TableInst, ValType, Value,
 };
 
 #[cfg(feature = "hooks")]
@@ -708,19 +707,19 @@ pub(super) fn run<H: HookSet>(
                 let mem_idx = wasm.read_u8().unwrap_validated() as usize;
                 let mem =
                     &mut store.memories[store.modules[*current_module_idx].mem_addrs[mem_idx]];
-                let delta: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let sz: u32 = mem.size() as u32;
 
-                let upper_limit = mem.ty.limits.max.unwrap_or(Limits::MAX_MEM_BYTES);
-                let pushed_value = if delta < 0 || delta as u32 + mem.size() as u32 > upper_limit {
-                    stack.push_value((-1).into());
-                    -1
-                } else {
-                    let previous_size: i32 = mem.size() as i32;
-                    mem.grow(delta as usize);
-                    stack.push_value(previous_size.into());
-                    previous_size
+                let n: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+
+                // TODO this instruction is non-deterministic w.r.t. spec, and can fail if the embedder wills it.
+                // for now we execute it always according to the following match expr.
+                // if the grow operation fails, err := Value::I32(2^32-1) is pushed to the stack per spec
+                let pushed_value = match mem.grow(n) {
+                    Ok(_) => sz,
+                    Err(_) => u32::MAX,
                 };
-                trace!("Instruction: memory.grow [{}] -> [{}]", delta, pushed_value);
+                stack.push_value(Value::I32(pushed_value));
+                trace!("Instruction: memory.grow [{}] -> [{}]", n, pushed_value);
             }
             I32_CONST => {
                 let constant = wasm.read_var_i32().unwrap_validated();
@@ -2242,21 +2241,16 @@ pub(super) fn run<H: HookSet>(
                         let n: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                         let val = stack.pop_unknown_ref();
 
-                        let max = tab.ty.lim.max.unwrap();
-
-                        let final_size = sz.checked_add(n);
-
-                        match final_size {
-                            Some(final_size) => {
-                                if final_size > max {
-                                    stack.push_value(Value::I32(u32::MAX))
-                                } else {
-                                    tab.elem.extend(vec![val; n as usize]);
-
-                                    stack.push_value(Value::I32(sz));
-                                }
+                        // TODO this instruction is non-deterministic w.r.t. spec, and can fail if the embedder wills it.
+                        // for now we execute it always according to the following match expr.
+                        // if the grow operation fails, err := Value::I32(2^32-1) is pushed to the stack per spec
+                        match tab.grow(n, val) {
+                            Ok(_) => {
+                                stack.push_value(Value::I32(sz));
                             }
-                            _ => stack.push_value(Value::I32(u32::MAX)),
+                            Err(_) => {
+                                stack.push_value(Value::I32(u32::MAX));
+                            }
                         }
                     }
                     TABLE_SIZE => {
