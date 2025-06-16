@@ -229,6 +229,9 @@ fn read_instructions(
                 let label_info = LabelInfo::Block {
                     stps_to_backpatch: Vec::new(),
                 };
+                // The types are explicitly popped and pushed in
+                // https://webassembly.github.io/spec/core/appendix/algorithm.html
+                // therefore types on the stack might change.
                 stack.assert_push_ctrl(label_info, block_ty, true)?;
             }
             LOOP => {
@@ -237,6 +240,9 @@ fn read_instructions(
                     ip: wasm.pc,
                     stp: sidetable.len(),
                 };
+                // The types are explicitly popped and pushed in
+                // https://webassembly.github.io/spec/core/appendix/algorithm.html
+                // therefore types on the stack might change.
                 stack.assert_push_ctrl(label_info, block_ty, true)?;
             }
             IF => {
@@ -256,6 +262,9 @@ fn read_instructions(
                     stp: stp_here,
                     stps_to_backpatch: Vec::new(),
                 };
+                // The types are explicitly popped and pushed in
+                // https://webassembly.github.io/spec/core/appendix/algorithm.html
+                // therefore types on the stack might change.
                 stack.assert_push_ctrl(label_info, block_ty, true)?;
             }
             ELSE => {
@@ -291,7 +300,9 @@ fn read_instructions(
                     for valtype in block_ty.params.valtypes.iter() {
                         stack.push_valtype(*valtype);
                     }
-
+                    // The types are explicitly popped and pushed in
+                    // https://webassembly.github.io/spec/core/appendix/algorithm.html
+                    // therefore types on the stack might change.
                     stack.assert_push_ctrl(label_info, block_ty, true)?;
                 } else {
                     return Err(Error::ElseWithoutMatchingIf);
@@ -307,6 +318,9 @@ fn read_instructions(
             BR_IF => {
                 let label_idx = wasm.read_var_u32()? as LabelIdx;
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                // The types are explicitly popped and pushed in
+                // https://webassembly.github.io/spec/core/appendix/algorithm.html
+                // therefore types on the stack might change.
                 validate_intrablock_jump_and_generate_sidetable_entry(
                     wasm, label_idx, stack, sidetable, true,
                 )?;
@@ -356,6 +370,9 @@ fn read_instructions(
                 stack.make_unspecified()?;
             }
             END => {
+                // The types are explicitly popped and pushed in
+                // https://webassembly.github.io/spec/core/appendix/algorithm.html
+                // therefore types on the stack might change.
                 let (label_info, block_ty) = stack.assert_pop_ctrl(true)?;
                 let stp_here = sidetable.len();
 
