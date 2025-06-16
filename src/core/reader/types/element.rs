@@ -1,5 +1,6 @@
 use super::global::GlobalType;
 use super::RefType;
+use crate::core::indices::FuncIdx;
 use crate::core::reader::span::Span;
 use crate::core::reader::WasmReader;
 use crate::read_constant_expression::read_constant_expression;
@@ -50,7 +51,7 @@ impl ElemType {
     pub fn read_from_wasm(
         wasm: &mut WasmReader,
         functions: &[usize],
-        referenced_functions: &mut BTreeSet<u32>,
+        validation_context_refs: &mut BTreeSet<FuncIdx>,
         tables_length: usize,
         all_globals_types: &[GlobalType],
     ) -> Result<Vec<Self>> {
@@ -71,6 +72,11 @@ impl ElemType {
             // NOTE: This assert breaks my rustfmt :(
             // assert!(prop <= 0b111, "Element section is not encoded correctly. The type of this element is over 7 (0b111)");
 
+            // TODO fix error
+            if prop > 7 {
+                return Err(Error::InvalidSectionType(9));
+            };
+
             let elem_mode = if prop & 0b011 == 0b011 {
                 ElemMode::Declarative
             } else if prop & 0b001 == 0b001 {
@@ -88,11 +94,11 @@ impl ElemType {
 
                 let mut valid_stack = ValidationStack::new();
                 // let wasm_pc = wasm.pc;
-                let init_expr = read_constant_expression(
+                let (init_expr, _) = read_constant_expression(
                     wasm,
                     &mut valid_stack,
                     all_globals_types,
-                    Some(functions),
+                    functions.len(),
                 )?;
 
                 // at validation time we actually have to check for the function to be known
@@ -166,12 +172,14 @@ impl ElemType {
                     reftype_or_elemkind.unwrap_or(RefType::FuncRef),
                     wasm.read_vec(|w| {
                         let mut valid_stack = ValidationStack::new();
-                        let span = read_constant_expression(
+                        let (span, seen_func_refs) = read_constant_expression(
                             w,
                             &mut valid_stack,
                             all_globals_types,
-                            Some(functions),
-                        );
+                            functions.len(),
+                        )?;
+
+                        validation_context_refs.extend(seen_func_refs);
 
                         // if there are multiple types on the stack, it is invalid
                         if valid_stack.len() != 1 {
@@ -199,14 +207,14 @@ impl ElemType {
                             return Err(Error::InvalidValidationStackValType(None));
                         }
 
-                        span
+                        Ok(span)
                     })?,
                 )
             } else {
                 assert!(reftype_or_elemkind.is_none());
                 ElemItems::RefFuncs(wasm.read_vec(|w| {
                     let offset = w.read_var_u32()?;
-                    referenced_functions.insert(offset);
+                    validation_context_refs.insert(offset as FuncIdx);
                     Ok(offset)
                 })?)
             };
