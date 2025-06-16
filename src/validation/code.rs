@@ -1,5 +1,4 @@
 use alloc::collections::btree_set::BTreeSet;
-use alloc::vec;
 use alloc::vec::Vec;
 use core::iter;
 
@@ -29,7 +28,7 @@ pub fn validate_code_section(
     data_count: &Option<u32>,
     tables: &[TableType],
     elements: &[ElemType],
-    referenced_functions: &BTreeSet<u32>,
+    validation_context_refs: &BTreeSet<FuncIdx>,
     sidetable: &mut Sidetable,
 ) -> Result<Vec<(Span, usize)>> {
     assert_eq!(section_header.ty, SectionTy::Code);
@@ -65,7 +64,7 @@ pub fn validate_code_section(
             data_count,
             tables,
             elements,
-            referenced_functions,
+            validation_context_refs,
         )?;
 
         // Check if there were unread trailing instructions after the last END
@@ -204,7 +203,7 @@ fn read_instructions(
     data_count: &Option<u32>,
     tables: &[TableType],
     elements: &[ElemType],
-    referenced_functions: &BTreeSet<u32>,
+    validation_context_refs: &BTreeSet<FuncIdx>,
 ) -> Result<()> {
     loop {
         let Ok(first_instr_byte) = wasm.read_u8() else {
@@ -1016,19 +1015,17 @@ fn read_instructions(
                 stack.push_valtype(ValType::NumType(NumType::I32));
             }
 
-            // TODO finish this
-            // https://webassembly.github.io/spec/core/valid/instructions.html#xref-syntax-instructions-syntax-instr-ref-mathsf-ref-func-x
             REF_FUNC => {
-                // We will be making use of fn_types to check for length of possible functions
-                // Is this okay?
-                // I don't know
-                let funcs: Vec<()> = vec![(); fn_types.len()];
                 let func_idx = wasm.read_var_u32()? as FuncIdx;
-                if func_idx >= funcs.len() {
+
+                // checking for existence suffices for checking whether this function has a valid type.
+                if type_idx_of_fn.len() <= func_idx {
                     return Err(Error::FunctionIsNotDefined(func_idx));
                 }
 
-                if !referenced_functions.contains(&(func_idx as u32)) {
+                // check whether func_idx is in C.refs
+                // https://webassembly.github.io/spec/core/valid/conventions.html#context
+                if !validation_context_refs.contains(&func_idx) {
                     return Err(Error::ReferencingAnUnreferencedFunction(func_idx));
                 }
 
