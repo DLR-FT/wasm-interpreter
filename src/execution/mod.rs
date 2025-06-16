@@ -1,3 +1,5 @@
+use core::marker::PhantomData;
+
 use alloc::vec::Vec;
 
 use const_interpreter_loop::run_const_span;
@@ -27,16 +29,73 @@ pub mod value_stack;
 /// The default module name if a [RuntimeInstance] was created using [RuntimeInstance::new].
 pub const DEFAULT_MODULE: &str = "__interpreter_default__";
 
-#[derive(Debug)]
-pub struct RuntimeInstance<'b, H = EmptyHookSet>
+pub enum InvocationState<'b, Returns: InteropValueList, H: HookSet> {
+    Finished(Returns, RuntimeInstance<'b, H, Finished>),
+    OutOfFuel(RuntimeInstance<'b, H, Resumable>),
+    Canceled(RuntimeInstance<'b, H, Canceled>),
+}
+
+impl<'b, Returns: InteropValueList, H: HookSet> InvocationState<'b, Returns, H> {
+    pub fn is_finished(self) -> Option<Returns> {
+        match self {
+            InvocationState::Finished(returns, _) => Some(returns),
+            _ => None,
+        }
+    }
+}
+
+trait RuntimeState {
+    type STATE;
+}
+
+pub struct Invocable;
+impl RuntimeState for Invocable {
+    type STATE = ();
+}
+
+pub struct Finished;
+impl RuntimeState for Finished {
+    type STATE = FinishedState;
+}
+
+pub struct Resumable;
+impl RuntimeState for Resumable {
+    type STATE = ResumableState;
+}
+
+pub struct Canceled;
+impl RuntimeState for Canceled {
+    type STATE = CanceledState;
+}
+
+struct FinishedState {
+    remaining_fuel: Option<usize>,
+}
+
+struct ResumableState {
+    stack: Stack,
+    current_module_idx: usize,
+    current_fuel: Option<usize>,
+}
+
+struct CanceledState {
+    remaining_fuel: Option<usize>,
+}
+
+pub struct RuntimeInstance<'b, H = EmptyHookSet, S = Invocable>
 where
-    H: HookSet + core::fmt::Debug,
+    H: HookSet,
+    S: RuntimeState,
 {
     pub hook_set: H,
     pub store: Option<Store<'b>>,
+
+    state: S::STATE,
+
+    pub _phantom: PhantomData<S>,
 }
 
-impl<'b> RuntimeInstance<'b, EmptyHookSet> {
+impl<'b> RuntimeInstance<'b, EmptyHookSet, Invocable> {
     pub fn new(validation_info: &'_ ValidationInfo<'b>) -> CustomResult<Self> {
         Self::new_with_hooks(DEFAULT_MODULE, validation_info, EmptyHookSet)
     }
@@ -50,9 +109,9 @@ impl<'b> RuntimeInstance<'b, EmptyHookSet> {
     }
 }
 
-impl<'b, H> RuntimeInstance<'b, H>
+impl<'b, H> RuntimeInstance<'b, H, Invocable>
 where
-    H: HookSet + core::fmt::Debug,
+    H: HookSet,
 {
     pub fn add_module(
         &mut self,
@@ -79,7 +138,12 @@ where
 
         let store = Some(Store::default());
 
-        let mut instance = RuntimeInstance { hook_set, store };
+        let mut instance = RuntimeInstance {
+            hook_set,
+            store,
+            state: (),
+            _phantom: PhantomData,
+        };
         instance.add_module(module_name, validation_info)?;
 
         Ok(instance)
@@ -120,11 +184,12 @@ where
     }
 
     pub fn invoke<Param: InteropValueList, Returns: InteropValueList>(
-        &mut self,
+        self,
         function_ref: &FunctionRef,
         params: Param,
+        fuel: Option<usize>,
         // store: &mut Store,
-    ) -> Result<Returns, RuntimeError> {
+    ) -> Result<InvocationState<'b, Returns, H>, RuntimeError> {
         // TODO fix error
         let store = self.store.as_ref().ok_or(RuntimeError::ModuleNotFound)?;
 
@@ -175,28 +240,20 @@ where
             usize::MAX,
         );
 
-        let mut current_module_idx = module_addr;
+        let current_module_idx = module_addr;
 
-        // Run the interpreter
-        run(
-            &mut current_module_idx,
-            &mut stack,
-            EmptyHookSet,
-            self.store.as_mut().unwrap_validated(),
-        )?;
+        let resumable = RuntimeInstance::<'b, H, Resumable> {
+            hook_set: self.hook_set,
+            store: self.store,
+            state: ResumableState {
+                stack,
+                current_module_idx,
+                current_fuel: fuel,
+            },
+            _phantom: PhantomData,
+        };
 
-        // Pop return values from stack
-        let return_values = Returns::TYS
-            .iter()
-            .rev()
-            .map(|ty| stack.pop_value(*ty))
-            .collect::<Vec<Value>>();
-
-        // Values are reversed because they were popped from stack one-by-one. Now reverse them back
-        let reversed_values = return_values.into_iter().rev();
-        let ret: Returns = Returns::from_values(reversed_values);
-        debug!("Successfully invoked function");
-        Ok(ret)
+        resumable.resume::<Returns>()
     }
 
     /// Invokes a function with the given parameters, and return types which are not known at compile time.
@@ -253,6 +310,7 @@ where
             &mut stack,
             EmptyHookSet,
             self.store.as_mut().unwrap_validated(),
+            &mut None,
         )?;
 
         // Pop return values from stack
@@ -329,6 +387,7 @@ where
             &mut stack,
             EmptyHookSet,
             self.store.as_mut().unwrap_validated(),
+            &mut None,
         )?;
 
         // Pop return values from stack
@@ -345,5 +404,105 @@ where
         let ret = reversed_values.collect();
         debug!("Successfully invoked function");
         Ok(ret)
+    }
+}
+
+impl<'b, H: HookSet> RuntimeInstance<'b, H, Resumable> {
+    pub fn resume<Returns: InteropValueList>(
+        mut self,
+    ) -> Result<InvocationState<'b, Returns, H>, RuntimeError> {
+        // Run the interpreter
+        let state = run(
+            &mut self.state.current_module_idx,
+            &mut self.state.stack,
+            H::default(),
+            self.store.as_mut().unwrap_validated(),
+            &mut self.state.current_fuel,
+        )?;
+
+        let state = match state {
+            interpreter_loop::RunState::OutOfFuel => {
+                let inst = RuntimeInstance::<'b, H, Resumable> {
+                    hook_set: self.hook_set,
+                    store: self.store,
+                    state: self.state,
+                    _phantom: PhantomData,
+                };
+
+                InvocationState::OutOfFuel(inst)
+            }
+            interpreter_loop::RunState::Finished => {
+                let vals = Returns::TYS
+                    .iter()
+                    .rev()
+                    .map(|ty| self.state.stack.pop_value(*ty))
+                    .rev();
+
+                let return_values = Returns::from_values(vals);
+
+                let inst = RuntimeInstance::<'b, H, Finished> {
+                    hook_set: self.hook_set,
+                    store: self.store,
+                    state: FinishedState {
+                        remaining_fuel: self.state.current_fuel,
+                    },
+                    _phantom: PhantomData,
+                };
+
+                debug!("Successfully invoked function");
+                InvocationState::Finished(return_values, inst)
+            }
+        };
+
+        Ok(state)
+    }
+
+    pub fn cancel(self) -> InvocationState<'b, (), H> {
+        InvocationState::Canceled(RuntimeInstance::<H, Canceled> {
+            hook_set: self.hook_set,
+            store: self.store,
+            state: CanceledState {
+                remaining_fuel: self.state.current_fuel,
+            },
+            _phantom: PhantomData,
+        })
+    }
+
+    pub fn get_fuel(&self) -> Option<usize> {
+        self.state.current_fuel
+    }
+
+    pub fn set_fuel(&mut self, fuel: Option<usize>) {
+        self.state.current_fuel = fuel
+    }
+}
+
+impl<'b, H: HookSet> RuntimeInstance<'b, H, Finished> {
+    pub fn get_fuel(&self) -> Option<usize> {
+        self.state.remaining_fuel
+    }
+
+    pub fn reset(self) -> RuntimeInstance<'b, H, Invocable> {
+        return RuntimeInstance::<'b, H, Invocable> {
+            hook_set: self.hook_set,
+            store: self.store,
+            state: (),
+            _phantom: PhantomData,
+        };
+    }
+}
+
+impl<'b, H: HookSet> RuntimeInstance<'b, H, Canceled> {
+    pub fn get_fuel(&self) -> Option<usize> {
+        self.state.remaining_fuel
+    }
+
+    pub fn reset(self) -> RuntimeInstance<'b, H, Invocable> {
+        return RuntimeInstance::<'b, H, Invocable> {
+            hook_set: self.hook_set,
+            store: self.store,
+            state: (),
+            _phantom: PhantomData,
+        };
     }
 }

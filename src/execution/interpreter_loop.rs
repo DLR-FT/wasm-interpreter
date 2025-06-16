@@ -36,13 +36,19 @@ use crate::execution::hooks::HookSet;
 
 use super::store::Store;
 
+pub enum RunState {
+    Finished,
+    OutOfFuel,
+}
+
 /// Interprets a functions. Parameters and return values are passed on the stack.
 pub(super) fn run<H: HookSet>(
     current_module_idx: &mut usize,
     stack: &mut Stack,
     mut hooks: H,
     store: &mut Store,
-) -> Result<(), RuntimeError> {
+    current_fuel: &mut Option<usize>,
+) -> Result<RunState, RuntimeError> {
     let global_func_idx =
         store.modules[*current_module_idx].func_addrs[stack.current_stackframe().func_idx];
 
@@ -59,6 +65,15 @@ pub(super) fn run<H: HookSet>(
 
     use crate::core::reader::types::opcode::*;
     loop {
+        // Check fuel
+        if let Some(current_fuel) = current_fuel {
+            if *current_fuel == 0 {
+                return Ok(RunState::OutOfFuel);
+            }
+
+            *current_fuel -= 1;
+        };
+
         // call the instruction hook
         #[cfg(feature = "hooks")]
         hooks.instruction_hook(store.modules[*current_module_idx].wasm_bytecode, wasm.pc);
@@ -2393,7 +2408,7 @@ pub(super) fn run<H: HookSet>(
             }
         }
     }
-    Ok(())
+    Ok(RunState::Finished)
 }
 
 //helper function for avoiding code duplication at intraprocedural jumps
