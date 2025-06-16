@@ -17,7 +17,7 @@ pub struct ValidationStack {
 }
 
 impl ValidationStack {
-    /// Initialize a new ValidationStack
+    /// Initialize a new ValidationStack to validate a block of type [] -> []
     pub fn new() -> Self {
         Self {
             stack: Vec::new(),
@@ -37,6 +37,7 @@ impl ValidationStack {
         }
     }
 
+    /// Initialize a new ValidationStack to validate a block of type `block_ty`
     pub(super) fn new_for_func(block_ty: FuncType) -> Self {
         Self {
             stack: Vec::new(),
@@ -71,6 +72,12 @@ impl ValidationStack {
         Ok(())
     }
 
+    /// Mark the current control block as unreachable, removing all of the types pushed to the stack since the current control block was entered.
+    /// pop operations from the stack will yield `Ok(ValidationStackEntry::Bottom)` if the stack height is the same as the height when this control
+    /// block was entered.
+    ///
+    /// Returns `Ok(())` if called during validation of a control block. `Returns Err(Error::ValidationCtrlStackEmpty)` if no control block context is found
+    /// in the control block stack.
     pub(super) fn make_unspecified(&mut self) -> Result<()> {
         let last_ctrl_stack_entry = self
             .ctrl_stack
@@ -86,8 +93,9 @@ impl ValidationStack {
     /// # Returns
     ///
     /// - Returns `Ok(_)` with the former top-most [`ValidationStackEntry`] inside, if the stack had
-    ///   at least one element.
-    /// - Returns `Err(_)` if the stack was already empty.
+    ///   at least one element pushed after the current control block is entered. May also return `Ok(ValidationStackEntry::Bottom)`
+    ///   if `make_unspecified` is called within the current control block.
+    /// - Returns `Err(_)` otherwise.
     fn pop_valtype(&mut self) -> Result<ValidationStackEntry> {
         // TODO unwrapping might not be the best option
         // TODO ugly
@@ -106,6 +114,11 @@ impl ValidationStack {
         }
     }
 
+    /// Attempt popping `Valtype::RefType(expected_ty)` from type stack.
+    ///
+    /// # Returns
+    ///
+    /// - Returns `Ok(())` if `Valtype::RefType(expected_ty)` unifies to the item returned by `pop_valtype` operation and `Err(_)` otherwise.
     pub fn assert_pop_ref_type(&mut self, expected_ty: Option<RefType>) -> Result<()> {
         match self.pop_valtype()? {
             ValidationStackEntry::Val(ValType::RefType(ref_type)) => {
@@ -120,15 +133,11 @@ impl ValidationStack {
         }
     }
 
-    /// Assert the top-most [`ValidationStackEntry`] is a specific [`ValType`], after popping it from the [`ValidationStack`]
-    /// This assertion will unify the the top-most entry with `expected_ty`.
+    /// Attempt popping expected_ty from type stack.
     ///
     /// # Returns
     ///
-    /// - Returns `Ok(())` if the top-most [`ValidationStackEntry`] is a [`ValType`] identical to
-    ///   `expected_ty`.
-    /// - Returns `Err(_)` otherwise.
-    ///
+    /// - Returns `Ok(())` if expected_ty unifies to the item returned by `pop_valtype` operation and `Err(_)` otherwise.
     pub fn assert_pop_val_type(&mut self, expected_ty: ValType) -> Result<()> {
         match self.pop_valtype()? {
             ValidationStackEntry::Val(ty) => (ty == expected_ty)
@@ -215,19 +224,15 @@ impl ValidationStack {
             Err(Error::EndInvalidValueStack)
         }
     }
-    /// Asserts that the values on top of the stack match those of a value iterator
-    /// This method will unify the types on the stack to the expected valtypes.
-    /// The last element of `expected_val_types` is unified to the top-most
-    /// [`ValidationStackEntry`], the second last `expected_val_types` element to the second top-most
-    /// [`ValidationStackEntry`] etc.
-    ///
-    /// Any unification failure or arity mismatch will cause an error.
-    ///
+
+    /// Assert that the types retrieved from the type stack by `pop_valtype` unify to `expected_val_types`, and
+    /// after this operation the type stack would be the same as the first time the current control block is entered.
+    /// This method will unify the types on the stack to the expected valtypes if `unify_to_expected_types` is set.
     /// Any occurence of an error may leave the stack in an invalid state.
     ///
     /// # Returns
     ///
-    /// - `Ok(_)`, the tail of the stack matches the `expected_val_types`
+    /// - `Ok(_)`, the tail of the stack unifies to the `expected_val_types`
     /// - `Err(_)` otherwise
     ///
     pub(super) fn assert_val_types_on_top(
@@ -243,16 +248,15 @@ impl ValidationStack {
         )
     }
 
-    // TODO better documentation
-    /// Asserts that the valtypes on the stack match the expected valtypes and no other type is on the stack.
-    /// This method will unify the types on the stack to the expected valtypes.
-    /// This starts by comparing the top-most valtype with the last element from `expected_val_types` and then continues downwards on the stack.
-    /// If a label is reached and not all `expected_val_types` have been checked, the assertion fails.
+    /// Assert that the types retrieved from the type stack by `pop_valtype` unify to `expected_val_types`.
+    /// This method will unify the types on the stack to the expected valtypes if `unify_to_expected_types` is set.
+    /// Any occurence of an error may leave the stack in an invalid state.
     ///
     /// # Returns
     ///
-    /// - `Ok(())` if all expected valtypes were found
+    /// - `Ok(_)`, the tail of the stack unifies to the `expected_val_types`
     /// - `Err(_)` otherwise
+    ///
     pub fn assert_val_types(
         &mut self,
         expected_val_types: &[ValType],
@@ -266,6 +270,15 @@ impl ValidationStack {
         )
     }
 
+    /// Call `assert_val_types_on_top` for the label signature of the `label_idx`th outer control block (0 corresponds to the current control block).
+    /// Label signature of all controi blocks are the output signature of the control blocks except for the Loop block. For Loop blocks, it is the input signature.
+    /// This method will unify the types on the stack to the expected valtypes if `unify_to_expected_types` is set.
+    ///
+    /// # Returns
+    ///
+    /// - `Ok(_)`, the tail of the stack unifies to the label signature of the  `label_idx`th outer control block
+    /// - `Err(_)` otherwise
+    ///
     pub fn assert_val_types_of_label_jump_types_on_top(
         &mut self,
         label_idx: usize,
@@ -284,6 +297,14 @@ impl ValidationStack {
         )
     }
 
+    /// Signal to this struct that a new control block is entered, and calls `assert_val_types_on_top` with the input signature of the new control block.
+    /// This method will unify the types on the stack to the expected valtypes if `unify_to_expected_types` is set.
+    ///
+    /// # Returns
+    ///
+    /// - `Ok(_)`, the tail of the stack unifies to the input signature of the  new control block
+    /// - `Err(_)` otherwise
+    ///
     pub fn assert_push_ctrl(
         &mut self,
         label_info: LabelInfo,
@@ -301,8 +322,14 @@ impl ValidationStack {
         Ok(())
     }
 
-    // TODO: rename/refactor this function to make it more clear that it ALSO
-    // checks the stack for valid return types.
+    /// Signal to this struct that the current control block is exited, and calls `assert_val_types_on_top` with the output signature of the new control block.
+    /// This method will unify the types on the stack to the expected valtypes if `unify_to_expected_types` is set.
+    ///
+    /// # Returns
+    ///
+    /// - `Ok(_)`, the tail of the stack unifies to the output signature of the current control block
+    /// - `Err(_)` otherwise
+    ///
     pub fn assert_pop_ctrl(
         &mut self,
         unify_to_expected_types: bool,
@@ -329,6 +356,7 @@ impl ValidationStack {
         ))
     }
 
+    /// Validate the `SELECT` instruction within the current control block. Returns OK(()) on success, Err(_) otherwise.
     pub fn validate_polymorphic_select(&mut self) -> Result<()> {
         //SELECT instruction has the type signature
         //[t t i32] -> [t] where t unifies to a NumType(_) or VecType
