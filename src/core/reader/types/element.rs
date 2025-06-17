@@ -2,6 +2,7 @@ use super::global::GlobalType;
 use super::RefType;
 use crate::core::indices::FuncIdx;
 use crate::core::reader::span::Span;
+use crate::core::reader::types::TableType;
 use crate::core::reader::{WasmReadable, WasmReader};
 use crate::read_constant_expression::read_constant_expression;
 use crate::validation_stack::ValidationStack;
@@ -52,7 +53,7 @@ impl ElemType {
         wasm: &mut WasmReader,
         functions: &[usize],
         validation_context_refs: &mut BTreeSet<FuncIdx>,
-        tables_length: usize,
+        tables: &[TableType],
         imported_global_types: &[GlobalType],
     ) -> Result<Vec<Self>> {
         wasm.read_vec(|wasm| {
@@ -218,7 +219,7 @@ impl ElemType {
 
             // assume the element segment is well formed in terms of abstract syntax from now on.
             // start validating element segment of form {type t, init e*, mode elemmode}: https://webassembly.github.io/spec/core/valid/modules.html#element-segments
-            let _t = elem.ty();
+            let t = elem.ty();
             // 1. Each e_i must be valid with type t and be const: this is already checked during the parse of initializer expressions above.
             // 2. elemmode must be valid with type t
             // -- start validating elemmode for type t:
@@ -229,10 +230,10 @@ impl ElemType {
                 }) => {
                     // start validating elemmode of form active {table x, offset expr}
                     // 1-2. C.tables[x] must be defined with type: limits t
-                    if x as usize >= tables_length {
+                    let table_type = tables.get(x as usize).ok_or(Error::UnknownTable)?.et;
+                    if table_type != t {
                         return Err(Error::UnknownTable);
                     }
-                    // TODO check type of C.tables[x]!
                     // 3-4. _expr must be valid with type I32 and be const: already checked during the parse of initializer expressions above.
                     // Then elemmode is valid with type t.
                 }

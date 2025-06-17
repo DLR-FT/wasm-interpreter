@@ -319,7 +319,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
                 wasm,
                 &all_functions,
                 &mut validation_context_refs,
-                all_tables.len(),
+                &all_tables,
                 &imported_global_types,
             )
         })?
