@@ -60,11 +60,6 @@ impl ValidationStack {
         self.stack.push(ValidationStackEntry::Val(valtype));
     }
 
-    /// DANGER! only to be used within const validation! use within non-const validation may result in algorithmically incorrect validation
-    pub fn peek_const_validation_stack(&self) -> Option<ValidationStackEntry> {
-        self.stack.last().cloned()
-    }
-
     /// Similar to [`ValidationStack::pop_valtype`], because it pops a value from the stack,
     /// but more public and doesn't actually return the popped value.
     pub(super) fn drop_val(&mut self) -> Result<()> {

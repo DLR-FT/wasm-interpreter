@@ -2,10 +2,10 @@ use super::global::GlobalType;
 use super::RefType;
 use crate::core::indices::FuncIdx;
 use crate::core::reader::span::Span;
-use crate::core::reader::WasmReader;
+use crate::core::reader::{WasmReadable, WasmReader};
 use crate::read_constant_expression::read_constant_expression;
 use crate::validation_stack::ValidationStack;
-use crate::{Error, Result};
+use crate::{Error, NumType, Result, ValType};
 
 use alloc::collections::btree_set::BTreeSet;
 use alloc::vec::Vec;
@@ -53,178 +53,194 @@ impl ElemType {
         functions: &[usize],
         validation_context_refs: &mut BTreeSet<FuncIdx>,
         tables_length: usize,
-        all_globals_types: &[GlobalType],
+        imported_global_types: &[GlobalType],
     ) -> Result<Vec<Self>> {
         wasm.read_vec(|wasm| {
             let prop = wasm.read_var_u32()?;
 
-            // TODO: @nerodesu017 revisit this comment
-            // https://webassembly.github.io/spec/core/syntax/modules.html#element-segments
-            // https://webassembly.github.io/spec/core/binary/modules.html#element-section
-            // We can treat the ty as a 3bit integer
-            // If it's not 3 bits I am not sure what to do
-            // bit 0 => diff between passive|declartive and active segment
-            // bit 1 => presence of an explicit table index for an active segment
-            // bit 2 => use of element type and element expressions instead of element kind and element indices
-            // decide if we should
+            // hack to assert that C.funcs[...] exists
+            let num_funcs = functions.len();
 
-            // TODO: @nerodesu017 error, this is a parse error, not validation FYI
-            // NOTE: This assert breaks my rustfmt :(
-            // assert!(prop <= 0b111, "Element section is not encoded correctly. The type of this element is over 7 (0b111)");
-
-            // TODO fix error
-            if prop > 7 {
-                return Err(Error::InvalidSectionType(9));
+            let elem = match prop {
+                0 => {
+                    // binary format is: 0:u32 e:expr y*:vec(funcidx)
+                    // should parse to spec struct {type funcref, init ((ref.func y) end)*, mode active {table 0, offset e}}
+                    // which is equivalent to ElemType{init: ElemItems::RefFuncs(y*), mode: ElemMode::Active{0, e}} here
+                    let e = parse_validate_active_segment_offset_expr(
+                        wasm,
+                        imported_global_types,
+                        num_funcs,
+                        validation_context_refs,
+                    )?;
+                    let init = parse_validate_shortened_initializer_list(
+                        wasm,
+                        num_funcs,
+                        validation_context_refs,
+                    )?;
+                    let mode = ElemMode::Active(ActiveElem {
+                        table_idx: 0,
+                        init_expr: e,
+                    });
+                    ElemType { init, mode }
+                }
+                1 => {
+                    // binary format is: 1:u32 et:elemkind y*:vec(funcidx)
+                    // should parse to spec struct {type et, init ((ref.func y) end)*, mode passive}
+                    // which is equivalent to ElemType{init: ElemItems::RefFuncs(y*), mode: ElemMode::Passive} here
+                    let _et = parse_elemkind(wasm)?;
+                    let init = parse_validate_shortened_initializer_list(
+                        wasm,
+                        num_funcs,
+                        validation_context_refs,
+                    )?;
+                    let mode = ElemMode::Passive;
+                    ElemType { init, mode }
+                }
+                2 => {
+                    // binary format is: 2:u32 x:tableidx e:expr et:elemkind y*:vec(funcidx)
+                    // should parse to spec struct {type et, init ((ref.func y) end)*, mode active {table x, offset e}}
+                    // which reflects to ElemType{init: ElemItems::RefFuncs(y*), mode: ElemMode::Active{x, e}} here
+                    let x = wasm.read_var_u32()?;
+                    let e = parse_validate_active_segment_offset_expr(
+                        wasm,
+                        imported_global_types,
+                        num_funcs,
+                        validation_context_refs,
+                    )?;
+                    let _et = parse_elemkind(wasm)?;
+                    let init = parse_validate_shortened_initializer_list(
+                        wasm,
+                        num_funcs,
+                        validation_context_refs,
+                    )?;
+                    let mode = ElemMode::Active(ActiveElem {
+                        table_idx: x,
+                        init_expr: e,
+                    });
+                    ElemType { init, mode }
+                }
+                3 => {
+                    // binary format is: 3:u32 et:elemkind y*:vec(funcidx)
+                    // should parse to spec struct {type et, init ((ref.func y) end)*, mode declarative}
+                    // which is equivalent to ElemType{init: ElemItems::RefFuncs(y*), mode: ElemMode::Declarative} here
+                    let _et = parse_elemkind(wasm)?;
+                    let init = parse_validate_shortened_initializer_list(
+                        wasm,
+                        num_funcs,
+                        validation_context_refs,
+                    )?;
+                    let mode = ElemMode::Declarative;
+                    ElemType { init, mode }
+                }
+                4 => {
+                    // binary format is: 4:u32 e:expr el*:vec(expr)
+                    // should parse to spec struct {type funcref, init el*, mode active { table 0, offset e}}
+                    // which is equivalent to ElemType{init: ElemItems::Exprs(funcref, el*), mode: ElemMode::Active{0, e}}
+                    let e = parse_validate_active_segment_offset_expr(
+                        wasm,
+                        imported_global_types,
+                        num_funcs,
+                        validation_context_refs,
+                    )?;
+                    let init = parse_validate_generic_initializer_list(
+                        wasm,
+                        RefType::FuncRef,
+                        imported_global_types,
+                        num_funcs,
+                        validation_context_refs,
+                    )?;
+                    let mode = ElemMode::Active(ActiveElem {
+                        table_idx: 0,
+                        init_expr: e,
+                    });
+                    ElemType { init, mode }
+                }
+                5 => {
+                    // binary format is 5:u32 et: reftype el*:vec(expr)
+                    // should parse to spec struct {type et, init el*, mode passive}
+                    // which is equivalent to ElemType{init: ElemItems::Exprs(et, el*), mode: ElemMode::Passive} here
+                    let et = RefType::read(wasm)?;
+                    let init = parse_validate_generic_initializer_list(
+                        wasm,
+                        et,
+                        imported_global_types,
+                        num_funcs,
+                        validation_context_refs,
+                    )?;
+                    let mode = ElemMode::Passive;
+                    ElemType { init, mode }
+                }
+                6 => {
+                    // binary format is 6:u32 x:table_idx e:expr et:reftype el*:vec(expr)
+                    // should parse to spec struct {type et, init el*, mode passive}
+                    // which is equivalent to ElemType{init: Exprs(et, el*), mode: ElemMode::Active{table x, offset e}} here
+                    let x = wasm.read_var_u32()?;
+                    let e = parse_validate_active_segment_offset_expr(
+                        wasm,
+                        imported_global_types,
+                        num_funcs,
+                        validation_context_refs,
+                    )?;
+                    let et = RefType::read(wasm)?;
+                    let init = parse_validate_generic_initializer_list(
+                        wasm,
+                        et,
+                        imported_global_types,
+                        num_funcs,
+                        validation_context_refs,
+                    )?;
+                    let mode = ElemMode::Active(ActiveElem {
+                        table_idx: x,
+                        init_expr: e,
+                    });
+                    ElemType { init, mode }
+                }
+                7 => {
+                    // binary format is 7:u32 et:reftype el*:vec(expr)
+                    // should parse to spec struct {type et, init el*, mode declarative}
+                    // which is equivalent to ElemType{init: Exprs(et, el*), mode: ElemMode::Declarative} here
+                    let et = RefType::read(wasm)?;
+                    let init = parse_validate_generic_initializer_list(
+                        wasm,
+                        et,
+                        imported_global_types,
+                        num_funcs,
+                        validation_context_refs,
+                    )?;
+                    let mode = ElemMode::Declarative;
+                    ElemType { init, mode }
+                }
+                8.. => {
+                    // TODO fix error
+                    return Err(Error::InvalidVersion);
+                }
             };
 
-            let elem_mode = if prop & 0b011 == 0b011 {
-                ElemMode::Declarative
-            } else if prop & 0b001 == 0b001 {
-                ElemMode::Passive
-            } else {
-                let table_idx = if prop & 0b010 == 0b010 {
-                    wasm.read_var_u32()?
-                } else {
-                    0
-                };
-
-                if tables_length <= table_idx as usize {
-                    return Err(Error::UnknownTable);
-                }
-
-                let mut valid_stack = ValidationStack::new();
-                // let wasm_pc = wasm.pc;
-                let (init_expr, _) = read_constant_expression(
-                    wasm,
-                    &mut valid_stack,
-                    all_globals_types,
-                    functions.len(),
-                )?;
-
-                // at validation time we actually have to check for the function to be known
-                //  that means a new stack
-                //  nvm we will do that directly at runtime
-                //  we could do a part now, for example, if we don't have imported globals to take care of, just so we are even more
-                //  reliable (more checks at validation/compile time)
-
-                // now, why do I mention this? most of the testing is done online on the https://webassembly.github.io/wabt/demo/wat2wasm/ website
-                //  chromium's wasm engine actually catches (as much as it can) errors at validation (tries to run the expressions)
-
-                // on top of the stack it's supposed to be the
-                // it might also be an extern ref w/e
-                // let function_idx = valid_stack.peek_const_validation_stack();
-
-                // match function_idx {
-                //     None => return Err(Error::UnknownFunction),
-                //     Some(stack_entry) => match stack_entry {
-                //         crate::validation_stack::ValidationStackEntry::Val(val) => match val {
-                //             super::ValType::NumType(num) => match num {
-                //                 super::NumType::I32 => {
-                //                     wasm.pc = wasm_pc;
-                //                     let stack = &mut Stack::new();
-                //                     run_const(wasm, stack, ());
-                //                     let popped_from_stack: u32 = stack
-                //                         .pop_value(super::ValType::NumType(super::NumType::I32))
-                //                         .into();
-                //                     if functions.len() >= popped_from_stack as usize {
-                //                         return Err(Error::UnknownFunction);
-                //                     }
-                //                 }
-                //                 _ => return Err(Error::UnknownFunction),
-                //             },
-                //             _ => return Err(Error::UnknownFunction),
-                //         },
-                //         _ => return Err(Error::UnknownFunction),
-                //     },
-                // };
-
-                valid_stack
-                    .assert_val_types(&[super::ValType::NumType(super::NumType::I32)], true)?;
-
+            // assume the element segment is well formed in terms of abstract syntax from now on.
+            // start validating element segment of form {type t, init e*, mode elemmode}: https://webassembly.github.io/spec/core/valid/modules.html#element-segments
+            let _t = elem.ty();
+            // 1. Each e_i must be valid with type t and be const: this is already checked during the parse of initializer expressions above.
+            // 2. elemmode must be valid with type t
+            // -- start validating elemmode for type t:
+            match elem.mode {
                 ElemMode::Active(ActiveElem {
-                    table_idx,
-                    init_expr,
-                })
-            };
-
-            let third_bit_set = prop & 0b100 == 0b100;
-
-            let type_kind = if prop & 0b011 != 0 {
-                if third_bit_set {
-                    Some(wasm.read_u8()?)
-                } else {
-                    match wasm.read_u8()? {
-                        0x00 => None,
-                        _ => return Err(Error::OnlyFuncRefIsAllowed),
+                    table_idx: x,
+                    init_expr: _expr,
+                }) => {
+                    // start validating elemmode of form active {table x, offset expr}
+                    // 1-2. C.tables[x] must be defined with type: limits t
+                    if x as usize >= tables_length {
+                        return Err(Error::UnknownTable);
                     }
+                    // TODO check type of C.tables[x]!
+                    // 3-4. _expr must be valid with type I32 and be const: already checked during the parse of initializer expressions above.
+                    // Then elemmode is valid with type t.
                 }
-            } else {
-                None
-            };
-
-            let reftype_or_elemkind: Option<RefType> = match type_kind {
-                Some(ty) => Some(RefType::from_byte(ty)?),
-                None => None,
-            };
-
-            let items: ElemItems = if third_bit_set {
-                ElemItems::Exprs(
-                    reftype_or_elemkind.unwrap_or(RefType::FuncRef),
-                    wasm.read_vec(|w| {
-                        let mut valid_stack = ValidationStack::new();
-                        let (span, seen_func_refs) = read_constant_expression(
-                            w,
-                            &mut valid_stack,
-                            all_globals_types,
-                            functions.len(),
-                        )?;
-
-                        validation_context_refs.extend(seen_func_refs);
-
-                        // if there are multiple types on the stack, it is invalid
-                        if valid_stack.len() != 1 {
-                            // TODO fix error type
-                            return Err(Error::InvalidValidationStackValType(None));
-                        }
-                        use crate::validation_stack::ValidationStackEntry::*;
-
-                        if let Some(val) = valid_stack.peek_const_validation_stack() {
-                            if let Val(val) = val {
-                                match val {
-                                    crate::ValType::RefType(_) => {}
-                                    crate::ValType::NumType(crate::NumType::I32) => {}
-                                    crate::ValType::NumType(_) => {
-                                        return Err(Error::InvalidValidationStackValType(Some(val)))
-                                    }
-                                    _ => {
-                                        return Err(Error::InvalidValidationStackValType(Some(val)))
-                                    }
-                                }
-                            } else {
-                                return Err(Error::InvalidValidationStackType(val));
-                            }
-                        } else {
-                            return Err(Error::InvalidValidationStackValType(None));
-                        }
-
-                        Ok(span)
-                    })?,
-                )
-            } else {
-                assert!(reftype_or_elemkind.is_none());
-                ElemItems::RefFuncs(wasm.read_vec(|w| {
-                    let offset = w.read_var_u32()?;
-                    validation_context_refs.insert(offset as FuncIdx);
-                    Ok(offset)
-                })?)
-            };
-
-            let el = ElemType {
-                init: items,
-                mode: elem_mode,
-            };
-
-            Ok(el)
+                ElemMode::Declarative | ElemMode::Passive => (), // these are valid for any type t.
+            }
+            // -- Then elemmmode is valid with type t.
+            // Then the element segment is valid with type t.
+            Ok(elem)
         })
     }
 }
@@ -239,6 +255,9 @@ impl ElemItems {
     pub fn ty(&self) -> RefType {
         match self {
             Self::RefFuncs(_) => RefType::FuncRef,
+            // the mapping for shortened lists above is always true, as the binary format
+            // either parses an elemkind or assumes funcref, and the current spec always maps a well-formed elemkind to a funcref
+            // https://webassembly.github.io/spec/core/binary/modules.html#element-section
             Self::Exprs(rty, _) => *rty,
         }
     }
@@ -262,4 +281,91 @@ pub enum ElemMode {
 pub struct ActiveElem {
     pub table_idx: u32,
     pub init_expr: Span,
+}
+
+// helpers for avoiding code duplication during parsing/validation of element segment
+// https://webassembly.github.io/spec/core/binary/modules.html#element-section
+
+/// Parse and validate an active segment offset.
+/// An active segment offset is valid if its offset expr is of type I32 and is a const expr.
+/// Additionally inserts new items to the set validation_context_refs.
+/// Validation_context_refs corresponds to C.refs in <https://webassembly.github.io/spec/core/valid/conventions.html#context>
+///
+/// # Returns
+/// - `Ok(Span)` of the expr validated to be of type I32 if parsing & validating succeeds, `Err(_)` otherwise.
+fn parse_validate_active_segment_offset_expr(
+    wasm: &mut WasmReader,
+    imported_global_types: &[GlobalType],
+    num_funcs: usize,
+    validation_context_refs: &mut BTreeSet<FuncIdx>,
+) -> Result<Span> {
+    let mut valid_stack = ValidationStack::new();
+    let (span, seen_func_refs) =
+        read_constant_expression(wasm, &mut valid_stack, imported_global_types, num_funcs)?;
+    validation_context_refs.extend(seen_func_refs);
+    valid_stack.assert_val_types(&[ValType::NumType(NumType::I32)], true)?;
+    Ok(span)
+}
+
+/// Parse and validate a vector of func_idx's that reflect as the initializer list of an element segment in the form of ((ref.func func_idx) end) of in the abstract syntax.
+/// An expression of such form is valid and const with type funcref if `C.funcs[func_idx]` exists (see link for the definition of validation context)
+/// This codebase holds these as `ElemItems::RefFuncs(Vec<u32>)` to sidestep the need to show `Span` for each expression.
+/// Additionally inserts new items to the set validation_context_refs.
+/// validation_context_refs corresponds to C.refs in <https://webassembly.github.io/spec/core/valid/conventions.html#context>
+///
+/// # Returns
+/// - `Ok(ElemItems::RefFuncs(_))` corresponding to the parsed list if parsing & validating succeeds, `Err(_)` otherwise.
+fn parse_validate_shortened_initializer_list(
+    wasm: &mut WasmReader,
+    num_funcs: usize,
+    validation_context_refs: &mut BTreeSet<FuncIdx>,
+) -> Result<ElemItems> {
+    wasm.read_vec(|w| {
+        let func_idx = w.read_var_u32()?;
+        if num_funcs <= func_idx as usize {
+            // TODO fix error
+            return Err(Error::InvalidLocalIdx);
+        }
+        validation_context_refs.insert(func_idx as FuncIdx);
+        Ok(func_idx)
+    })
+    .map(ElemItems::RefFuncs)
+}
+
+/// Parse and validate the initializer list of an element segment for the supplied type `expected_type`.
+/// An initializer list is valid with type `expected_type` if all of the expressions within is const and is of type `expected_type`.
+/// This codebase holds these as `ElemItems::Exprs(RefType, Vec<Span>)`.
+/// Additionally inserts new items to the set validation_context_refs.
+/// validation_context_refs corresponds to C.refs in <https://webassembly.github.io/spec/core/valid/conventions.html#context>
+///
+/// # Returns
+/// - `Ok(ElemItems::Exprs(expected_type, _))` corresponding to the parsed list if parsing & validating succeeds, `Err(_)` otherwise.
+fn parse_validate_generic_initializer_list(
+    wasm: &mut WasmReader,
+    expected_type: RefType,
+    imported_global_types: &[GlobalType],
+    num_funcs: usize,
+    validation_context_refs: &mut BTreeSet<FuncIdx>,
+) -> Result<ElemItems> {
+    wasm.read_vec(|w| {
+        let mut valid_stack = ValidationStack::new();
+        let (span, seen_func_refs) =
+            read_constant_expression(w, &mut valid_stack, imported_global_types, num_funcs)?;
+        validation_context_refs.extend(seen_func_refs);
+        valid_stack.assert_val_types(&[ValType::RefType(expected_type)], true)?;
+        Ok(span)
+    })
+    .map(|v| ElemItems::Exprs(expected_type, v))
+}
+
+/// Parse an elemkind: <https://webassembly.github.io/spec/core/binary/modules.html#element-section>
+/// # Returns
+/// - `Ok(elemkind)` if parsing is successful, Err(_) otherwise
+fn parse_elemkind(wasm: &mut WasmReader) -> Result<u8> {
+    let et = wasm.read_u8()?;
+    if et != 0x00 {
+        Err(Error::OnlyFuncRefIsAllowed)
+    } else {
+        Ok(et)
+    }
 }
