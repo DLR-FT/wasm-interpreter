@@ -291,10 +291,6 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
     for item in &globals {
         all_globals.push(*item)
     }
-    let all_globals_types = &all_globals
-        .iter()
-        .map(|el| el.ty)
-        .collect::<Vec<GlobalType>>();
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
@@ -324,7 +320,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
                 &all_functions,
                 &mut validation_context_refs,
                 all_tables.len(),
-                all_globals_types,
+                &imported_global_types,
             )
         })?
         .unwrap_or_default();
