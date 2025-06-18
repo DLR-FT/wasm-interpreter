@@ -43,12 +43,16 @@ impl WasmReader<'_> {
 
     /// Parses a variable-length `u64` (can be casted to a smaller uint if the result fits)
     /// Taken from <https://github.com/bytecodealliance/wasm-tools>
+    #[allow(unused)]
     pub fn read_var_u64(&mut self) -> Result<u64> {
         let mut result = 0;
         let mut shift = 0;
 
         loop {
             let mut byte = self.read_u8()?;
+            // maximum allowed num of leb bytes for u32 is ceil(32.0/7.0) == 10
+            // shift >= 63 checks we're at the 10th bit or larger
+            // byte != 1 checks whether (this byte lost bits when shifted) or (the continuation bit is set)
             if shift == 63 && byte != 0 && byte != 1 {
                 while byte & Self::CONTINUATION_BIT != 0 {
                     byte = self.read_u8()?;
@@ -70,9 +74,25 @@ impl WasmReader<'_> {
     /// Parses a variable-length `u32` as specified by [LEB128](https://en.wikipedia.org/wiki/LEB128#Unsigned_LEB128).
     /// Note: If `Err`, the [WasmReader] object is no longer guaranteed to be in a valid state
     pub fn read_var_u32(&mut self) -> Result<u32> {
-        Self::read_var_u64(self)?
-            .try_into()
-            .map_err(|_| Error::Overflow)
+        let mut result: u32 = 0;
+        let mut shift = 0;
+
+        loop {
+            let byte = self.read_u8()?;
+            result |= ((byte & 0x7F) as u32) << shift;
+            // maximum allowed num of leb bytes for u32 is ceil(32.0/7.0) == 5
+            // shift >= 28 checks we're at the 5th bit or larger
+            // byte >> 32-28 checks whether (this byte lost bits when shifted) or (the continuation bit is set)
+            if shift >= 28 && byte >> (32 - shift) != 0 {
+                return Err(Error::Overflow);
+            }
+
+            if byte & Self::CONTINUATION_BIT == 0 {
+                return Ok(result);
+            }
+
+            shift += 7;
+        }
     }
 
     pub fn read_var_f64(&mut self) -> Result<u64> {
@@ -81,46 +101,74 @@ impl WasmReader<'_> {
         Ok(word)
     }
 
+    /// Adapted from <https://github.com/bytecodealliance/wasm-tools>
     pub fn read_var_i32(&mut self) -> Result<i32> {
         let mut result: i32 = 0;
         let mut shift: u32 = 0;
 
-        let mut byte: i32;
         loop {
-            byte = self.read_u8()? as i32;
-            result |= (byte & 0b01111111) << shift;
+            let byte = self.read_u8()?;
+            result |= ((byte & 0x7F) as i32) << shift;
+
+            if shift >= 28 {
+                // maximum allowed num of leb bytes for u32 is ceil(32.0/7.0) == 5
+                // shift >= 28 checks we're at the 5th bit or larger
+                let there_are_more_bytes = (byte & Self::CONTINUATION_BIT) != 0;
+                let ashifted_unused_bits = (byte << 1) as i8 >> (32 - shift);
+                // the top unused bits of 35 bytes should be either 111 for negative numbers or 000 for positive numbers
+                // therefore ashifted_unused_bits should be -1 or 0
+                if there_are_more_bytes || (ashifted_unused_bits != 0 && ashifted_unused_bits != -1)
+                {
+                    return Err(Error::Overflow);
+                } else {
+                    // no need to ashift unfilled bits, all 32 bits are filled
+                    return Ok(result);
+                }
+            }
+
             shift += 7;
+
             if (byte & 0b10000000) == 0 {
                 break;
             }
         }
 
-        if (shift < mem::size_of::<i32>() as u32 * 8) && (byte & 0x40 != 0) {
-            result |= !0 << shift;
-        }
-
-        Ok(result)
+        // fill in unfilled bits with sign bit
+        let ashift = mem::size_of::<i32>() * 8 - shift as usize;
+        Ok((result << ashift) >> ashift)
     }
 
     pub fn read_var_i33(&mut self) -> Result<i64> {
         let mut result: i64 = 0;
-        let mut shift: u64 = 0;
+        let mut shift: u32 = 0;
 
-        let mut byte: i64;
         loop {
-            byte = self.read_u8()? as i64;
-            result |= (byte & 0b0111_1111) << shift;
+            let byte = self.read_u8()?;
+            result |= ((byte & 0x7F) as i64) << shift;
+
+            if shift >= 28 {
+                // maximum allowed num of leb bytes for i33 is ceil(33.0/7.0) == 5
+                // shift >= 28 checks we're at the 5th bit or larger
+                let there_are_more_bytes = (byte & Self::CONTINUATION_BIT) != 0;
+                let ashifted_unused_bits = (byte << 1) as i8 >> (33 - shift);
+                // the top unused bits of 35 bytes should be either 11 for negative numbers or 00 for positive numbers
+                // therefore ashifted_unused_bits should be -1 or 0
+                if there_are_more_bytes || (ashifted_unused_bits != 0 && ashifted_unused_bits != -1)
+                {
+                    return Err(Error::Overflow);
+                }
+            }
+
             shift += 7;
-            if (byte & 0b1000_0000) == 0 {
+
+            if (byte & 0b10000000) == 0 {
                 break;
             }
         }
 
-        if shift < 33 && (byte & 0x40 != 0) {
-            result |= !0 << shift;
-        }
-
-        Ok(result)
+        // fill in unfilled bits with sign bit
+        let ashift = mem::size_of::<i64>() * 8 - shift as usize;
+        Ok((result << ashift) >> ashift)
     }
 
     pub fn read_var_f32(&mut self) -> Result<u32> {
@@ -141,23 +189,38 @@ impl WasmReader<'_> {
 
     pub fn read_var_i64(&mut self) -> Result<i64> {
         let mut result: i64 = 0;
-        let mut shift: u64 = 0;
+        let mut shift: u32 = 0;
 
-        let mut byte: i64;
         loop {
-            byte = self.read_u8()? as i64;
-            result |= (byte & 0b0111_1111) << shift;
+            let byte = self.read_u8()?;
+            result |= ((byte & 0x7F) as i64) << shift;
+
+            if shift >= 63 {
+                // maximum allowed num of leb bytes for i33 is ceil(64.0/7.0) == 10
+                // shift >= 63 checks we're at the 10th bit or larger
+                let there_are_more_bytes = (byte & Self::CONTINUATION_BIT) != 0;
+                let ashifted_unused_bits = (byte << 1) as i8 >> (64 - shift);
+                // the top unused bits of 70 bytes should be either 111111 for negative numbers or 000000 for positive numbers
+                // therefore ashifted_unused_bits should be -1 or 0
+                if there_are_more_bytes || (ashifted_unused_bits != 0 && ashifted_unused_bits != -1)
+                {
+                    return Err(Error::Overflow);
+                } else {
+                    // no need to ashift unfilled bits, all 64 bits are filled
+                    return Ok(result);
+                }
+            }
+
             shift += 7;
-            if (byte & 0b1000_0000) == 0 {
+
+            if (byte & 0b10000000) == 0 {
                 break;
             }
         }
 
-        if shift < 64 && (byte & 0x40 != 0) {
-            result |= !0 << shift;
-        }
-
-        Ok(result)
+        // fill in unfilled bits with sign bit
+        let ashift = mem::size_of::<i64>() * 8 - shift as usize;
+        Ok((result << ashift) >> ashift)
     }
 
     /// Note: If `Err`, the [WasmReader] object is no longer guaranteed to be in a valid state
