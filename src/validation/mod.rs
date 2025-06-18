@@ -141,10 +141,6 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
             // custom ::= name byte*
             // name ::= b*:vec(byte) => name (if utf8(name) = b*)
             // vec(B) ::= n:u32 (x:B)^n => x^n
-
-            if h.contents.len() == 0 {
-                return Ok(());
-            }
             let _name = wasm.read_name()?;
 
             let remaining_bytes = match h
