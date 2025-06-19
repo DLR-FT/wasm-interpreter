@@ -141,280 +141,276 @@
 <a href=#141 id=141 data-nosnippet>141</a>            // custom ::= name byte*
 <a href=#142 id=142 data-nosnippet>142</a>            // name ::= b*:vec(byte) =&gt; name (if utf8(name) = b*)
 <a href=#143 id=143 data-nosnippet>143</a>            // vec(B) ::= n:u32 (x:B)^n =&gt; x^n
-<a href=#144 id=144 data-nosnippet>144</a>
-<a href=#145 id=145 data-nosnippet>145</a>            </span><span class="kw">if </span>h.contents.len() == <span class="number">0 </span>{
-<a href=#146 id=146 data-nosnippet>146</a>                <span class="kw">return </span><span class="prelude-val">Ok</span>(());
-<a href=#147 id=147 data-nosnippet>147</a>            }
-<a href=#148 id=148 data-nosnippet>148</a>            <span class="kw">let </span>_name = wasm.read_name()<span class="question-mark">?</span>;
-<a href=#149 id=149 data-nosnippet>149</a>
-<a href=#150 id=150 data-nosnippet>150</a>            <span class="kw">let </span>remaining_bytes = <span class="kw">match </span>h
-<a href=#151 id=151 data-nosnippet>151</a>                .contents
-<a href=#152 id=152 data-nosnippet>152</a>                .from()
-<a href=#153 id=153 data-nosnippet>153</a>                .checked_add(h.contents.len())
-<a href=#154 id=154 data-nosnippet>154</a>                .and_then(|res| res.checked_sub(wasm.pc))
-<a href=#155 id=155 data-nosnippet>155</a>            {
-<a href=#156 id=156 data-nosnippet>156</a>                <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Err</span>(Error::InvalidSection(
-<a href=#157 id=157 data-nosnippet>157</a>                    SectionTy::Custom,
-<a href=#158 id=158 data-nosnippet>158</a>                    <span class="string">"Remaining bytes less than 0 after reading name!"</span>.to_string(),
-<a href=#159 id=159 data-nosnippet>159</a>                )),
-<a href=#160 id=160 data-nosnippet>160</a>                <span class="prelude-val">Some</span>(remaining_bytes) =&gt; <span class="prelude-val">Ok</span>(remaining_bytes),
-<a href=#161 id=161 data-nosnippet>161</a>            }<span class="question-mark">?</span>;
-<a href=#162 id=162 data-nosnippet>162</a>
-<a href=#163 id=163 data-nosnippet>163</a>            <span class="comment">// TODO: maybe do something with these remaining bytes?
-<a href=#164 id=164 data-nosnippet>164</a>            </span><span class="kw">let </span><span class="kw-2">mut </span>_bytes = Vec::new();
-<a href=#165 id=165 data-nosnippet>165</a>            <span class="kw">for _ in </span><span class="number">0</span>..remaining_bytes {
-<a href=#166 id=166 data-nosnippet>166</a>                _bytes.push(wasm.read_u8()<span class="question-mark">?</span>)
-<a href=#167 id=167 data-nosnippet>167</a>            }
-<a href=#168 id=168 data-nosnippet>168</a>            <span class="prelude-val">Ok</span>(())
-<a href=#169 id=169 data-nosnippet>169</a>        })
-<a href=#170 id=170 data-nosnippet>170</a>    };
-<a href=#171 id=171 data-nosnippet>171</a>
-<a href=#172 id=172 data-nosnippet>172</a>    <span class="kw">while </span>(skip_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header)<span class="question-mark">?</span>).is_some() {}
-<a href=#173 id=173 data-nosnippet>173</a>
-<a href=#174 id=174 data-nosnippet>174</a>    <span class="kw">let </span>types = handle_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header, SectionTy::Type, |wasm, <span class="kw">_</span>| {
-<a href=#175 id=175 data-nosnippet>175</a>        wasm.read_vec(FuncType::read)
-<a href=#176 id=176 data-nosnippet>176</a>    })<span class="question-mark">?
-<a href=#177 id=177 data-nosnippet>177</a>    </span>.unwrap_or_default();
-<a href=#178 id=178 data-nosnippet>178</a>
-<a href=#179 id=179 data-nosnippet>179</a>    <span class="kw">while </span>(skip_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header)<span class="question-mark">?</span>).is_some() {}
-<a href=#180 id=180 data-nosnippet>180</a>
-<a href=#181 id=181 data-nosnippet>181</a>    <span class="kw">let </span>imports = handle_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header, SectionTy::Import, |wasm, <span class="kw">_</span>| {
-<a href=#182 id=182 data-nosnippet>182</a>        wasm.read_vec(Import::read)
-<a href=#183 id=183 data-nosnippet>183</a>    })<span class="question-mark">?
-<a href=#184 id=184 data-nosnippet>184</a>    </span>.unwrap_or_default();
-<a href=#185 id=185 data-nosnippet>185</a>    <span class="kw">let </span>imports_length = get_imports_length(<span class="kw-2">&amp;</span>imports);
-<a href=#186 id=186 data-nosnippet>186</a>
-<a href=#187 id=187 data-nosnippet>187</a>    <span class="kw">while </span>(skip_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header)<span class="question-mark">?</span>).is_some() {}
-<a href=#188 id=188 data-nosnippet>188</a>
-<a href=#189 id=189 data-nosnippet>189</a>    <span class="comment">// The `Function` section only covers module-level (or "local") functions.
-<a href=#190 id=190 data-nosnippet>190</a>    // Imported functions have their types known in the `import` section. Both
-<a href=#191 id=191 data-nosnippet>191</a>    // local and imported functions share the same index space.
-<a href=#192 id=192 data-nosnippet>192</a>    //
-<a href=#193 id=193 data-nosnippet>193</a>    // Imported functions are given priority and have the first indicies, and
-<a href=#194 id=194 data-nosnippet>194</a>    // only after that do the local functions get assigned their indices.
-<a href=#195 id=195 data-nosnippet>195</a>    </span><span class="kw">let </span>local_functions =
-<a href=#196 id=196 data-nosnippet>196</a>        handle_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header, SectionTy::Function, |wasm, <span class="kw">_</span>| {
-<a href=#197 id=197 data-nosnippet>197</a>            wasm.read_vec(|wasm| wasm.read_var_u32().map(|u| u <span class="kw">as </span>usize))
-<a href=#198 id=198 data-nosnippet>198</a>        })<span class="question-mark">?
-<a href=#199 id=199 data-nosnippet>199</a>        </span>.unwrap_or_default();
-<a href=#200 id=200 data-nosnippet>200</a>
-<a href=#201 id=201 data-nosnippet>201</a>    <span class="kw">let </span>imported_functions = imports.iter().filter_map(|import| <span class="kw">match </span><span class="kw-2">&amp;</span>import.desc {
-<a href=#202 id=202 data-nosnippet>202</a>        ImportDesc::Func(type_idx) =&gt; <span class="prelude-val">Some</span>(<span class="kw-2">*</span>type_idx),
-<a href=#203 id=203 data-nosnippet>203</a>        <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
-<a href=#204 id=204 data-nosnippet>204</a>    });
-<a href=#205 id=205 data-nosnippet>205</a>
-<a href=#206 id=206 data-nosnippet>206</a>    <span class="kw">let </span>all_functions = imported_functions
-<a href=#207 id=207 data-nosnippet>207</a>        .clone()
-<a href=#208 id=208 data-nosnippet>208</a>        .chain(local_functions.iter().cloned())
-<a href=#209 id=209 data-nosnippet>209</a>        .collect::&lt;Vec&lt;TypeIdx&gt;&gt;();
-<a href=#210 id=210 data-nosnippet>210</a>
-<a href=#211 id=211 data-nosnippet>211</a>    <span class="kw">while </span>(skip_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header)<span class="question-mark">?</span>).is_some() {}
-<a href=#212 id=212 data-nosnippet>212</a>
-<a href=#213 id=213 data-nosnippet>213</a>    <span class="kw">let </span>imported_tables = imports
-<a href=#214 id=214 data-nosnippet>214</a>        .iter()
-<a href=#215 id=215 data-nosnippet>215</a>        .filter_map(|m| <span class="kw">match </span>m.desc {
-<a href=#216 id=216 data-nosnippet>216</a>            ImportDesc::Table(table) =&gt; <span class="prelude-val">Some</span>(table),
-<a href=#217 id=217 data-nosnippet>217</a>            <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
-<a href=#218 id=218 data-nosnippet>218</a>        })
-<a href=#219 id=219 data-nosnippet>219</a>        .collect::&lt;Vec&lt;TableType&gt;&gt;();
-<a href=#220 id=220 data-nosnippet>220</a>    <span class="kw">let </span>tables = handle_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header, SectionTy::Table, |wasm, <span class="kw">_</span>| {
-<a href=#221 id=221 data-nosnippet>221</a>        wasm.read_vec(TableType::read)
-<a href=#222 id=222 data-nosnippet>222</a>    })<span class="question-mark">?
-<a href=#223 id=223 data-nosnippet>223</a>    </span>.unwrap_or_default();
-<a href=#224 id=224 data-nosnippet>224</a>
-<a href=#225 id=225 data-nosnippet>225</a>    <span class="kw">let </span>all_tables = {
-<a href=#226 id=226 data-nosnippet>226</a>        <span class="kw">let </span><span class="kw-2">mut </span>temp = imported_tables;
-<a href=#227 id=227 data-nosnippet>227</a>        temp.extend(tables.clone());
-<a href=#228 id=228 data-nosnippet>228</a>        temp
-<a href=#229 id=229 data-nosnippet>229</a>    };
-<a href=#230 id=230 data-nosnippet>230</a>
-<a href=#231 id=231 data-nosnippet>231</a>    <span class="kw">while </span>(skip_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header)<span class="question-mark">?</span>).is_some() {}
-<a href=#232 id=232 data-nosnippet>232</a>
-<a href=#233 id=233 data-nosnippet>233</a>    <span class="kw">let </span>imported_memories = imports
-<a href=#234 id=234 data-nosnippet>234</a>        .iter()
-<a href=#235 id=235 data-nosnippet>235</a>        .filter_map(|m| <span class="kw">match </span>m.desc {
-<a href=#236 id=236 data-nosnippet>236</a>            ImportDesc::Mem(mem) =&gt; <span class="prelude-val">Some</span>(mem),
-<a href=#237 id=237 data-nosnippet>237</a>            <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
-<a href=#238 id=238 data-nosnippet>238</a>        })
-<a href=#239 id=239 data-nosnippet>239</a>        .collect::&lt;Vec&lt;MemType&gt;&gt;();
-<a href=#240 id=240 data-nosnippet>240</a>    <span class="comment">// let imported_memories_length = imported_memories.len();
-<a href=#241 id=241 data-nosnippet>241</a>    </span><span class="kw">let </span>memories = handle_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header, SectionTy::Memory, |wasm, <span class="kw">_</span>| {
-<a href=#242 id=242 data-nosnippet>242</a>        wasm.read_vec(MemType::read)
-<a href=#243 id=243 data-nosnippet>243</a>    })<span class="question-mark">?
-<a href=#244 id=244 data-nosnippet>244</a>    </span>.unwrap_or_default();
-<a href=#245 id=245 data-nosnippet>245</a>
-<a href=#246 id=246 data-nosnippet>246</a>    <span class="kw">let </span>all_memories = {
-<a href=#247 id=247 data-nosnippet>247</a>        <span class="kw">let </span><span class="kw-2">mut </span>temp = imported_memories;
-<a href=#248 id=248 data-nosnippet>248</a>        temp.extend(memories.clone());
-<a href=#249 id=249 data-nosnippet>249</a>        temp
-<a href=#250 id=250 data-nosnippet>250</a>    };
-<a href=#251 id=251 data-nosnippet>251</a>    <span class="kw">if </span>all_memories.len() &gt; <span class="number">1 </span>{
-<a href=#252 id=252 data-nosnippet>252</a>        <span class="kw">return </span><span class="prelude-val">Err</span>(Error::MoreThanOneMemory);
-<a href=#253 id=253 data-nosnippet>253</a>    }
-<a href=#254 id=254 data-nosnippet>254</a>
-<a href=#255 id=255 data-nosnippet>255</a>    <span class="kw">while </span>(skip_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header)<span class="question-mark">?</span>).is_some() {}
-<a href=#256 id=256 data-nosnippet>256</a>
-<a href=#257 id=257 data-nosnippet>257</a>    <span class="comment">// we start off with the imported globals
-<a href=#258 id=258 data-nosnippet>258</a>    </span><span class="kw">let </span><span class="comment">/* mut */ </span>imported_global_types = imports
-<a href=#259 id=259 data-nosnippet>259</a>        .iter()
-<a href=#260 id=260 data-nosnippet>260</a>        .filter_map(|m| <span class="kw">match </span>m.desc {
-<a href=#261 id=261 data-nosnippet>261</a>            ImportDesc::Global(global) =&gt; <span class="prelude-val">Some</span>(global),
-<a href=#262 id=262 data-nosnippet>262</a>            <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
-<a href=#263 id=263 data-nosnippet>263</a>        })
-<a href=#264 id=264 data-nosnippet>264</a>        .collect::&lt;Vec&lt;GlobalType&gt;&gt;();
-<a href=#265 id=265 data-nosnippet>265</a>    <span class="kw">let </span>imported_global_types_len = imported_global_types.len();
-<a href=#266 id=266 data-nosnippet>266</a>    <span class="kw">let </span>globals = handle_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header, SectionTy::Global, |wasm, h| {
-<a href=#267 id=267 data-nosnippet>267</a>        globals::validate_global_section(wasm, h, <span class="kw-2">&amp;</span>imported_global_types)
-<a href=#268 id=268 data-nosnippet>268</a>    })<span class="question-mark">?
-<a href=#269 id=269 data-nosnippet>269</a>    </span>.unwrap_or_default();
-<a href=#270 id=270 data-nosnippet>270</a>    <span class="kw">let </span><span class="kw-2">mut </span>all_globals = Vec::new();
-<a href=#271 id=271 data-nosnippet>271</a>    <span class="kw">for </span>item <span class="kw">in </span>imported_global_types.iter().take(imported_global_types_len) {
-<a href=#272 id=272 data-nosnippet>272</a>        all_globals.push(Global {
-<a href=#273 id=273 data-nosnippet>273</a>            init_expr: Span::new(usize::MAX, <span class="number">0</span>),
-<a href=#274 id=274 data-nosnippet>274</a>            ty: <span class="kw-2">*</span>item,
-<a href=#275 id=275 data-nosnippet>275</a>        })
-<a href=#276 id=276 data-nosnippet>276</a>    }
-<a href=#277 id=277 data-nosnippet>277</a>    <span class="kw">for </span>item <span class="kw">in </span><span class="kw-2">&amp;</span>globals {
-<a href=#278 id=278 data-nosnippet>278</a>        all_globals.push(<span class="kw-2">*</span>item)
-<a href=#279 id=279 data-nosnippet>279</a>    }
-<a href=#280 id=280 data-nosnippet>280</a>    <span class="kw">let </span>all_globals_types = <span class="kw-2">&amp;</span>all_globals
-<a href=#281 id=281 data-nosnippet>281</a>        .iter()
-<a href=#282 id=282 data-nosnippet>282</a>        .map(|el| el.ty)
-<a href=#283 id=283 data-nosnippet>283</a>        .collect::&lt;Vec&lt;GlobalType&gt;&gt;();
-<a href=#284 id=284 data-nosnippet>284</a>
-<a href=#285 id=285 data-nosnippet>285</a>    <span class="kw">while </span>(skip_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header)<span class="question-mark">?</span>).is_some() {}
-<a href=#286 id=286 data-nosnippet>286</a>
-<a href=#287 id=287 data-nosnippet>287</a>    <span class="kw">let </span>exports = handle_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header, SectionTy::Export, |wasm, <span class="kw">_</span>| {
-<a href=#288 id=288 data-nosnippet>288</a>        wasm.read_vec(Export::read)
-<a href=#289 id=289 data-nosnippet>289</a>    })<span class="question-mark">?
-<a href=#290 id=290 data-nosnippet>290</a>    </span>.unwrap_or_default();
-<a href=#291 id=291 data-nosnippet>291</a>
-<a href=#292 id=292 data-nosnippet>292</a>    <span class="kw">while </span>(skip_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header)<span class="question-mark">?</span>).is_some() {}
+<a href=#144 id=144 data-nosnippet>144</a>            </span><span class="kw">let </span>_name = wasm.read_name()<span class="question-mark">?</span>;
+<a href=#145 id=145 data-nosnippet>145</a>
+<a href=#146 id=146 data-nosnippet>146</a>            <span class="kw">let </span>remaining_bytes = <span class="kw">match </span>h
+<a href=#147 id=147 data-nosnippet>147</a>                .contents
+<a href=#148 id=148 data-nosnippet>148</a>                .from()
+<a href=#149 id=149 data-nosnippet>149</a>                .checked_add(h.contents.len())
+<a href=#150 id=150 data-nosnippet>150</a>                .and_then(|res| res.checked_sub(wasm.pc))
+<a href=#151 id=151 data-nosnippet>151</a>            {
+<a href=#152 id=152 data-nosnippet>152</a>                <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Err</span>(Error::InvalidSection(
+<a href=#153 id=153 data-nosnippet>153</a>                    SectionTy::Custom,
+<a href=#154 id=154 data-nosnippet>154</a>                    <span class="string">"Remaining bytes less than 0 after reading name!"</span>.to_string(),
+<a href=#155 id=155 data-nosnippet>155</a>                )),
+<a href=#156 id=156 data-nosnippet>156</a>                <span class="prelude-val">Some</span>(remaining_bytes) =&gt; <span class="prelude-val">Ok</span>(remaining_bytes),
+<a href=#157 id=157 data-nosnippet>157</a>            }<span class="question-mark">?</span>;
+<a href=#158 id=158 data-nosnippet>158</a>
+<a href=#159 id=159 data-nosnippet>159</a>            <span class="comment">// TODO: maybe do something with these remaining bytes?
+<a href=#160 id=160 data-nosnippet>160</a>            </span><span class="kw">let </span><span class="kw-2">mut </span>_bytes = Vec::new();
+<a href=#161 id=161 data-nosnippet>161</a>            <span class="kw">for _ in </span><span class="number">0</span>..remaining_bytes {
+<a href=#162 id=162 data-nosnippet>162</a>                _bytes.push(wasm.read_u8()<span class="question-mark">?</span>)
+<a href=#163 id=163 data-nosnippet>163</a>            }
+<a href=#164 id=164 data-nosnippet>164</a>            <span class="prelude-val">Ok</span>(())
+<a href=#165 id=165 data-nosnippet>165</a>        })
+<a href=#166 id=166 data-nosnippet>166</a>    };
+<a href=#167 id=167 data-nosnippet>167</a>
+<a href=#168 id=168 data-nosnippet>168</a>    <span class="kw">while </span>(skip_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header)<span class="question-mark">?</span>).is_some() {}
+<a href=#169 id=169 data-nosnippet>169</a>
+<a href=#170 id=170 data-nosnippet>170</a>    <span class="kw">let </span>types = handle_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header, SectionTy::Type, |wasm, <span class="kw">_</span>| {
+<a href=#171 id=171 data-nosnippet>171</a>        wasm.read_vec(FuncType::read)
+<a href=#172 id=172 data-nosnippet>172</a>    })<span class="question-mark">?
+<a href=#173 id=173 data-nosnippet>173</a>    </span>.unwrap_or_default();
+<a href=#174 id=174 data-nosnippet>174</a>
+<a href=#175 id=175 data-nosnippet>175</a>    <span class="kw">while </span>(skip_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header)<span class="question-mark">?</span>).is_some() {}
+<a href=#176 id=176 data-nosnippet>176</a>
+<a href=#177 id=177 data-nosnippet>177</a>    <span class="kw">let </span>imports = handle_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header, SectionTy::Import, |wasm, <span class="kw">_</span>| {
+<a href=#178 id=178 data-nosnippet>178</a>        wasm.read_vec(Import::read)
+<a href=#179 id=179 data-nosnippet>179</a>    })<span class="question-mark">?
+<a href=#180 id=180 data-nosnippet>180</a>    </span>.unwrap_or_default();
+<a href=#181 id=181 data-nosnippet>181</a>    <span class="kw">let </span>imports_length = get_imports_length(<span class="kw-2">&amp;</span>imports);
+<a href=#182 id=182 data-nosnippet>182</a>
+<a href=#183 id=183 data-nosnippet>183</a>    <span class="kw">while </span>(skip_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header)<span class="question-mark">?</span>).is_some() {}
+<a href=#184 id=184 data-nosnippet>184</a>
+<a href=#185 id=185 data-nosnippet>185</a>    <span class="comment">// The `Function` section only covers module-level (or "local") functions.
+<a href=#186 id=186 data-nosnippet>186</a>    // Imported functions have their types known in the `import` section. Both
+<a href=#187 id=187 data-nosnippet>187</a>    // local and imported functions share the same index space.
+<a href=#188 id=188 data-nosnippet>188</a>    //
+<a href=#189 id=189 data-nosnippet>189</a>    // Imported functions are given priority and have the first indicies, and
+<a href=#190 id=190 data-nosnippet>190</a>    // only after that do the local functions get assigned their indices.
+<a href=#191 id=191 data-nosnippet>191</a>    </span><span class="kw">let </span>local_functions =
+<a href=#192 id=192 data-nosnippet>192</a>        handle_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header, SectionTy::Function, |wasm, <span class="kw">_</span>| {
+<a href=#193 id=193 data-nosnippet>193</a>            wasm.read_vec(|wasm| wasm.read_var_u32().map(|u| u <span class="kw">as </span>usize))
+<a href=#194 id=194 data-nosnippet>194</a>        })<span class="question-mark">?
+<a href=#195 id=195 data-nosnippet>195</a>        </span>.unwrap_or_default();
+<a href=#196 id=196 data-nosnippet>196</a>
+<a href=#197 id=197 data-nosnippet>197</a>    <span class="kw">let </span>imported_functions = imports.iter().filter_map(|import| <span class="kw">match </span><span class="kw-2">&amp;</span>import.desc {
+<a href=#198 id=198 data-nosnippet>198</a>        ImportDesc::Func(type_idx) =&gt; <span class="prelude-val">Some</span>(<span class="kw-2">*</span>type_idx),
+<a href=#199 id=199 data-nosnippet>199</a>        <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
+<a href=#200 id=200 data-nosnippet>200</a>    });
+<a href=#201 id=201 data-nosnippet>201</a>
+<a href=#202 id=202 data-nosnippet>202</a>    <span class="kw">let </span>all_functions = imported_functions
+<a href=#203 id=203 data-nosnippet>203</a>        .clone()
+<a href=#204 id=204 data-nosnippet>204</a>        .chain(local_functions.iter().cloned())
+<a href=#205 id=205 data-nosnippet>205</a>        .collect::&lt;Vec&lt;TypeIdx&gt;&gt;();
+<a href=#206 id=206 data-nosnippet>206</a>
+<a href=#207 id=207 data-nosnippet>207</a>    <span class="kw">while </span>(skip_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header)<span class="question-mark">?</span>).is_some() {}
+<a href=#208 id=208 data-nosnippet>208</a>
+<a href=#209 id=209 data-nosnippet>209</a>    <span class="kw">let </span>imported_tables = imports
+<a href=#210 id=210 data-nosnippet>210</a>        .iter()
+<a href=#211 id=211 data-nosnippet>211</a>        .filter_map(|m| <span class="kw">match </span>m.desc {
+<a href=#212 id=212 data-nosnippet>212</a>            ImportDesc::Table(table) =&gt; <span class="prelude-val">Some</span>(table),
+<a href=#213 id=213 data-nosnippet>213</a>            <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
+<a href=#214 id=214 data-nosnippet>214</a>        })
+<a href=#215 id=215 data-nosnippet>215</a>        .collect::&lt;Vec&lt;TableType&gt;&gt;();
+<a href=#216 id=216 data-nosnippet>216</a>    <span class="kw">let </span>tables = handle_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header, SectionTy::Table, |wasm, <span class="kw">_</span>| {
+<a href=#217 id=217 data-nosnippet>217</a>        wasm.read_vec(TableType::read)
+<a href=#218 id=218 data-nosnippet>218</a>    })<span class="question-mark">?
+<a href=#219 id=219 data-nosnippet>219</a>    </span>.unwrap_or_default();
+<a href=#220 id=220 data-nosnippet>220</a>
+<a href=#221 id=221 data-nosnippet>221</a>    <span class="kw">let </span>all_tables = {
+<a href=#222 id=222 data-nosnippet>222</a>        <span class="kw">let </span><span class="kw-2">mut </span>temp = imported_tables;
+<a href=#223 id=223 data-nosnippet>223</a>        temp.extend(tables.clone());
+<a href=#224 id=224 data-nosnippet>224</a>        temp
+<a href=#225 id=225 data-nosnippet>225</a>    };
+<a href=#226 id=226 data-nosnippet>226</a>
+<a href=#227 id=227 data-nosnippet>227</a>    <span class="kw">while </span>(skip_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header)<span class="question-mark">?</span>).is_some() {}
+<a href=#228 id=228 data-nosnippet>228</a>
+<a href=#229 id=229 data-nosnippet>229</a>    <span class="kw">let </span>imported_memories = imports
+<a href=#230 id=230 data-nosnippet>230</a>        .iter()
+<a href=#231 id=231 data-nosnippet>231</a>        .filter_map(|m| <span class="kw">match </span>m.desc {
+<a href=#232 id=232 data-nosnippet>232</a>            ImportDesc::Mem(mem) =&gt; <span class="prelude-val">Some</span>(mem),
+<a href=#233 id=233 data-nosnippet>233</a>            <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
+<a href=#234 id=234 data-nosnippet>234</a>        })
+<a href=#235 id=235 data-nosnippet>235</a>        .collect::&lt;Vec&lt;MemType&gt;&gt;();
+<a href=#236 id=236 data-nosnippet>236</a>    <span class="comment">// let imported_memories_length = imported_memories.len();
+<a href=#237 id=237 data-nosnippet>237</a>    </span><span class="kw">let </span>memories = handle_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header, SectionTy::Memory, |wasm, <span class="kw">_</span>| {
+<a href=#238 id=238 data-nosnippet>238</a>        wasm.read_vec(MemType::read)
+<a href=#239 id=239 data-nosnippet>239</a>    })<span class="question-mark">?
+<a href=#240 id=240 data-nosnippet>240</a>    </span>.unwrap_or_default();
+<a href=#241 id=241 data-nosnippet>241</a>
+<a href=#242 id=242 data-nosnippet>242</a>    <span class="kw">let </span>all_memories = {
+<a href=#243 id=243 data-nosnippet>243</a>        <span class="kw">let </span><span class="kw-2">mut </span>temp = imported_memories;
+<a href=#244 id=244 data-nosnippet>244</a>        temp.extend(memories.clone());
+<a href=#245 id=245 data-nosnippet>245</a>        temp
+<a href=#246 id=246 data-nosnippet>246</a>    };
+<a href=#247 id=247 data-nosnippet>247</a>    <span class="kw">if </span>all_memories.len() &gt; <span class="number">1 </span>{
+<a href=#248 id=248 data-nosnippet>248</a>        <span class="kw">return </span><span class="prelude-val">Err</span>(Error::MoreThanOneMemory);
+<a href=#249 id=249 data-nosnippet>249</a>    }
+<a href=#250 id=250 data-nosnippet>250</a>
+<a href=#251 id=251 data-nosnippet>251</a>    <span class="kw">while </span>(skip_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header)<span class="question-mark">?</span>).is_some() {}
+<a href=#252 id=252 data-nosnippet>252</a>
+<a href=#253 id=253 data-nosnippet>253</a>    <span class="comment">// we start off with the imported globals
+<a href=#254 id=254 data-nosnippet>254</a>    </span><span class="kw">let </span><span class="comment">/* mut */ </span>imported_global_types = imports
+<a href=#255 id=255 data-nosnippet>255</a>        .iter()
+<a href=#256 id=256 data-nosnippet>256</a>        .filter_map(|m| <span class="kw">match </span>m.desc {
+<a href=#257 id=257 data-nosnippet>257</a>            ImportDesc::Global(global) =&gt; <span class="prelude-val">Some</span>(global),
+<a href=#258 id=258 data-nosnippet>258</a>            <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
+<a href=#259 id=259 data-nosnippet>259</a>        })
+<a href=#260 id=260 data-nosnippet>260</a>        .collect::&lt;Vec&lt;GlobalType&gt;&gt;();
+<a href=#261 id=261 data-nosnippet>261</a>    <span class="kw">let </span>imported_global_types_len = imported_global_types.len();
+<a href=#262 id=262 data-nosnippet>262</a>    <span class="kw">let </span>globals = handle_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header, SectionTy::Global, |wasm, h| {
+<a href=#263 id=263 data-nosnippet>263</a>        globals::validate_global_section(wasm, h, <span class="kw-2">&amp;</span>imported_global_types)
+<a href=#264 id=264 data-nosnippet>264</a>    })<span class="question-mark">?
+<a href=#265 id=265 data-nosnippet>265</a>    </span>.unwrap_or_default();
+<a href=#266 id=266 data-nosnippet>266</a>    <span class="kw">let </span><span class="kw-2">mut </span>all_globals = Vec::new();
+<a href=#267 id=267 data-nosnippet>267</a>    <span class="kw">for </span>item <span class="kw">in </span>imported_global_types.iter().take(imported_global_types_len) {
+<a href=#268 id=268 data-nosnippet>268</a>        all_globals.push(Global {
+<a href=#269 id=269 data-nosnippet>269</a>            init_expr: Span::new(usize::MAX, <span class="number">0</span>),
+<a href=#270 id=270 data-nosnippet>270</a>            ty: <span class="kw-2">*</span>item,
+<a href=#271 id=271 data-nosnippet>271</a>        })
+<a href=#272 id=272 data-nosnippet>272</a>    }
+<a href=#273 id=273 data-nosnippet>273</a>    <span class="kw">for </span>item <span class="kw">in </span><span class="kw-2">&amp;</span>globals {
+<a href=#274 id=274 data-nosnippet>274</a>        all_globals.push(<span class="kw-2">*</span>item)
+<a href=#275 id=275 data-nosnippet>275</a>    }
+<a href=#276 id=276 data-nosnippet>276</a>    <span class="kw">let </span>all_globals_types = <span class="kw-2">&amp;</span>all_globals
+<a href=#277 id=277 data-nosnippet>277</a>        .iter()
+<a href=#278 id=278 data-nosnippet>278</a>        .map(|el| el.ty)
+<a href=#279 id=279 data-nosnippet>279</a>        .collect::&lt;Vec&lt;GlobalType&gt;&gt;();
+<a href=#280 id=280 data-nosnippet>280</a>
+<a href=#281 id=281 data-nosnippet>281</a>    <span class="kw">while </span>(skip_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header)<span class="question-mark">?</span>).is_some() {}
+<a href=#282 id=282 data-nosnippet>282</a>
+<a href=#283 id=283 data-nosnippet>283</a>    <span class="kw">let </span>exports = handle_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header, SectionTy::Export, |wasm, <span class="kw">_</span>| {
+<a href=#284 id=284 data-nosnippet>284</a>        wasm.read_vec(Export::read)
+<a href=#285 id=285 data-nosnippet>285</a>    })<span class="question-mark">?
+<a href=#286 id=286 data-nosnippet>286</a>    </span>.unwrap_or_default();
+<a href=#287 id=287 data-nosnippet>287</a>
+<a href=#288 id=288 data-nosnippet>288</a>    <span class="kw">while </span>(skip_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header)<span class="question-mark">?</span>).is_some() {}
+<a href=#289 id=289 data-nosnippet>289</a>
+<a href=#290 id=290 data-nosnippet>290</a>    <span class="kw">let </span>start = handle_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header, SectionTy::Start, |wasm, <span class="kw">_</span>| {
+<a href=#291 id=291 data-nosnippet>291</a>        wasm.read_var_u32().map(|idx| idx <span class="kw">as </span>FuncIdx)
+<a href=#292 id=292 data-nosnippet>292</a>    })<span class="question-mark">?</span>;
 <a href=#293 id=293 data-nosnippet>293</a>
-<a href=#294 id=294 data-nosnippet>294</a>    <span class="kw">let </span>start = handle_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header, SectionTy::Start, |wasm, <span class="kw">_</span>| {
-<a href=#295 id=295 data-nosnippet>295</a>        wasm.read_var_u32().map(|idx| idx <span class="kw">as </span>FuncIdx)
-<a href=#296 id=296 data-nosnippet>296</a>    })<span class="question-mark">?</span>;
-<a href=#297 id=297 data-nosnippet>297</a>
-<a href=#298 id=298 data-nosnippet>298</a>    <span class="kw">while </span>(skip_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header)<span class="question-mark">?</span>).is_some() {}
-<a href=#299 id=299 data-nosnippet>299</a>
-<a href=#300 id=300 data-nosnippet>300</a>    <span class="kw">let </span><span class="kw-2">mut </span>referenced_functions = btree_set::BTreeSet::new();
-<a href=#301 id=301 data-nosnippet>301</a>    <span class="kw">let </span>elements: Vec&lt;ElemType&gt; =
-<a href=#302 id=302 data-nosnippet>302</a>        handle_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header, SectionTy::Element, |wasm, <span class="kw">_</span>| {
-<a href=#303 id=303 data-nosnippet>303</a>            ElemType::read_from_wasm(
-<a href=#304 id=304 data-nosnippet>304</a>                wasm,
-<a href=#305 id=305 data-nosnippet>305</a>                <span class="kw-2">&amp;</span>all_functions,
-<a href=#306 id=306 data-nosnippet>306</a>                <span class="kw-2">&amp;mut </span>referenced_functions,
-<a href=#307 id=307 data-nosnippet>307</a>                all_tables.len(),
-<a href=#308 id=308 data-nosnippet>308</a>                all_globals_types,
-<a href=#309 id=309 data-nosnippet>309</a>            )
-<a href=#310 id=310 data-nosnippet>310</a>        })<span class="question-mark">?
-<a href=#311 id=311 data-nosnippet>311</a>        </span>.unwrap_or_default();
-<a href=#312 id=312 data-nosnippet>312</a>
-<a href=#313 id=313 data-nosnippet>313</a>    <span class="kw">while </span>(skip_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header)<span class="question-mark">?</span>).is_some() {}
-<a href=#314 id=314 data-nosnippet>314</a>
-<a href=#315 id=315 data-nosnippet>315</a>    <span class="comment">// https://webassembly.github.io/spec/core/binary/modules.html#data-count-section
-<a href=#316 id=316 data-nosnippet>316</a>    // As per the official documentation:
-<a href=#317 id=317 data-nosnippet>317</a>    //
-<a href=#318 id=318 data-nosnippet>318</a>    // The data count section is used to simplify single-pass validation. Since the data section occurs after the code section, the `memory.init` and `data.drop` and instructions would not be able to check whether the data segment index is valid until the data section is read. The data count section occurs before the code section, so a single-pass validator can use this count instead of deferring validation.
-<a href=#319 id=319 data-nosnippet>319</a>    </span><span class="kw">let </span>data_count: <span class="prelude-ty">Option</span>&lt;u32&gt; =
-<a href=#320 id=320 data-nosnippet>320</a>        handle_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header, SectionTy::DataCount, |wasm, <span class="kw">_</span>| {
-<a href=#321 id=321 data-nosnippet>321</a>            wasm.read_var_u32()
-<a href=#322 id=322 data-nosnippet>322</a>        })<span class="question-mark">?</span>;
-<a href=#323 id=323 data-nosnippet>323</a>    <span class="kw">if </span>data_count.is_some() {
-<a href=#324 id=324 data-nosnippet>324</a>        <span class="macro">trace!</span>(<span class="string">"data count: {}"</span>, data_count.unwrap());
-<a href=#325 id=325 data-nosnippet>325</a>    }
-<a href=#326 id=326 data-nosnippet>326</a>
-<a href=#327 id=327 data-nosnippet>327</a>    <span class="kw">while </span>(skip_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header)<span class="question-mark">?</span>).is_some() {}
-<a href=#328 id=328 data-nosnippet>328</a>
-<a href=#329 id=329 data-nosnippet>329</a>    <span class="kw">let </span><span class="kw-2">mut </span>sidetable = Sidetable::new();
-<a href=#330 id=330 data-nosnippet>330</a>    <span class="kw">let </span>func_blocks_stps = handle_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header, SectionTy::Code, |wasm, h| {
-<a href=#331 id=331 data-nosnippet>331</a>        code::validate_code_section(
-<a href=#332 id=332 data-nosnippet>332</a>            wasm,
-<a href=#333 id=333 data-nosnippet>333</a>            h,
-<a href=#334 id=334 data-nosnippet>334</a>            <span class="kw-2">&amp;</span>types,
-<a href=#335 id=335 data-nosnippet>335</a>            <span class="kw-2">&amp;</span>all_functions,
-<a href=#336 id=336 data-nosnippet>336</a>            imported_functions.count(),
-<a href=#337 id=337 data-nosnippet>337</a>            <span class="kw-2">&amp;</span>all_globals,
-<a href=#338 id=338 data-nosnippet>338</a>            <span class="kw-2">&amp;</span>all_memories,
-<a href=#339 id=339 data-nosnippet>339</a>            <span class="kw-2">&amp;</span>data_count,
-<a href=#340 id=340 data-nosnippet>340</a>            <span class="kw-2">&amp;</span>all_tables,
-<a href=#341 id=341 data-nosnippet>341</a>            <span class="kw-2">&amp;</span>elements,
-<a href=#342 id=342 data-nosnippet>342</a>            <span class="kw-2">&amp;</span>referenced_functions,
-<a href=#343 id=343 data-nosnippet>343</a>            <span class="kw-2">&amp;mut </span>sidetable,
-<a href=#344 id=344 data-nosnippet>344</a>        )
-<a href=#345 id=345 data-nosnippet>345</a>    })<span class="question-mark">?
-<a href=#346 id=346 data-nosnippet>346</a>    </span>.unwrap_or_default();
-<a href=#347 id=347 data-nosnippet>347</a>
-<a href=#348 id=348 data-nosnippet>348</a>    <span class="macro">assert_eq!</span>(
-<a href=#349 id=349 data-nosnippet>349</a>        func_blocks_stps.len(),
-<a href=#350 id=350 data-nosnippet>350</a>        local_functions.len(),
-<a href=#351 id=351 data-nosnippet>351</a>        <span class="string">"these should be equal"
-<a href=#352 id=352 data-nosnippet>352</a>    </span>); <span class="comment">// TODO check if this is in the spec
-<a href=#353 id=353 data-nosnippet>353</a>
-<a href=#354 id=354 data-nosnippet>354</a>    </span><span class="kw">while </span>(skip_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header)<span class="question-mark">?</span>).is_some() {}
-<a href=#355 id=355 data-nosnippet>355</a>
-<a href=#356 id=356 data-nosnippet>356</a>    <span class="kw">let </span>data_section = handle_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header, SectionTy::Data, |wasm, h| {
-<a href=#357 id=357 data-nosnippet>357</a>        <span class="comment">// wasm.read_vec(DataSegment::read)
-<a href=#358 id=358 data-nosnippet>358</a>        </span>data::validate_data_section(wasm, h, <span class="kw-2">&amp;</span>imported_global_types, all_memories.len())
-<a href=#359 id=359 data-nosnippet>359</a>    })<span class="question-mark">?
-<a href=#360 id=360 data-nosnippet>360</a>    </span>.unwrap_or_default();
-<a href=#361 id=361 data-nosnippet>361</a>
-<a href=#362 id=362 data-nosnippet>362</a>    <span class="comment">// https://webassembly.github.io/spec/core/binary/modules.html#data-count-section
-<a href=#363 id=363 data-nosnippet>363</a>    </span><span class="kw">if </span>data_count.is_some() {
-<a href=#364 id=364 data-nosnippet>364</a>        <span class="macro">assert_eq!</span>(data_count.unwrap() <span class="kw">as </span>usize, data_section.len());
-<a href=#365 id=365 data-nosnippet>365</a>    }
-<a href=#366 id=366 data-nosnippet>366</a>
-<a href=#367 id=367 data-nosnippet>367</a>    <span class="kw">while </span>(skip_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header)<span class="question-mark">?</span>).is_some() {}
-<a href=#368 id=368 data-nosnippet>368</a>
-<a href=#369 id=369 data-nosnippet>369</a>    <span class="comment">// All sections should have been handled
-<a href=#370 id=370 data-nosnippet>370</a>    </span><span class="kw">if let </span><span class="prelude-val">Some</span>(header) = header {
-<a href=#371 id=371 data-nosnippet>371</a>        <span class="kw">return </span><span class="prelude-val">Err</span>(Error::SectionOutOfOrder(header.ty));
-<a href=#372 id=372 data-nosnippet>372</a>    }
-<a href=#373 id=373 data-nosnippet>373</a>
-<a href=#374 id=374 data-nosnippet>374</a>    <span class="macro">debug!</span>(<span class="string">"Validation was successful"</span>);
-<a href=#375 id=375 data-nosnippet>375</a>    <span class="kw">let </span>validation_info = ValidationInfo {
-<a href=#376 id=376 data-nosnippet>376</a>        wasm: wasm.into_inner(),
-<a href=#377 id=377 data-nosnippet>377</a>        types,
-<a href=#378 id=378 data-nosnippet>378</a>        imports,
-<a href=#379 id=379 data-nosnippet>379</a>        functions: local_functions,
-<a href=#380 id=380 data-nosnippet>380</a>        tables,
-<a href=#381 id=381 data-nosnippet>381</a>        memories,
-<a href=#382 id=382 data-nosnippet>382</a>        globals,
-<a href=#383 id=383 data-nosnippet>383</a>        exports,
-<a href=#384 id=384 data-nosnippet>384</a>        func_blocks_stps,
-<a href=#385 id=385 data-nosnippet>385</a>        sidetable,
-<a href=#386 id=386 data-nosnippet>386</a>        data: data_section,
-<a href=#387 id=387 data-nosnippet>387</a>        start,
-<a href=#388 id=388 data-nosnippet>388</a>        elements,
-<a href=#389 id=389 data-nosnippet>389</a>        imports_length,
-<a href=#390 id=390 data-nosnippet>390</a>    };
-<a href=#391 id=391 data-nosnippet>391</a>    validate_exports(<span class="kw-2">&amp;</span>validation_info)<span class="question-mark">?</span>;
-<a href=#392 id=392 data-nosnippet>392</a>
-<a href=#393 id=393 data-nosnippet>393</a>    <span class="prelude-val">Ok</span>(validation_info)
-<a href=#394 id=394 data-nosnippet>394</a>}
-<a href=#395 id=395 data-nosnippet>395</a>
-<a href=#396 id=396 data-nosnippet>396</a><span class="kw">fn </span>read_next_header(wasm: <span class="kw-2">&amp;mut </span>WasmReader, header: <span class="kw-2">&amp;mut </span><span class="prelude-ty">Option</span>&lt;SectionHeader&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-<a href=#397 id=397 data-nosnippet>397</a>    <span class="kw">if </span>header.is_none() &amp;&amp; !wasm.remaining_bytes().is_empty() {
-<a href=#398 id=398 data-nosnippet>398</a>        <span class="kw-2">*</span>header = <span class="prelude-val">Some</span>(SectionHeader::read(wasm)<span class="question-mark">?</span>);
-<a href=#399 id=399 data-nosnippet>399</a>    }
-<a href=#400 id=400 data-nosnippet>400</a>    <span class="prelude-val">Ok</span>(())
-<a href=#401 id=401 data-nosnippet>401</a>}
-<a href=#402 id=402 data-nosnippet>402</a>
-<a href=#403 id=403 data-nosnippet>403</a><span class="attr">#[inline(always)]
-<a href=#404 id=404 data-nosnippet>404</a></span><span class="kw">fn </span>handle_section&lt;T, F: FnOnce(<span class="kw-2">&amp;mut </span>WasmReader, SectionHeader) -&gt; <span class="prelude-ty">Result</span>&lt;T&gt;&gt;(
-<a href=#405 id=405 data-nosnippet>405</a>    wasm: <span class="kw-2">&amp;mut </span>WasmReader,
-<a href=#406 id=406 data-nosnippet>406</a>    header: <span class="kw-2">&amp;mut </span><span class="prelude-ty">Option</span>&lt;SectionHeader&gt;,
-<a href=#407 id=407 data-nosnippet>407</a>    section_ty: SectionTy,
-<a href=#408 id=408 data-nosnippet>408</a>    handler: F,
-<a href=#409 id=409 data-nosnippet>409</a>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;T&gt;&gt; {
-<a href=#410 id=410 data-nosnippet>410</a>    <span class="kw">match </span><span class="kw-2">&amp;</span>header {
-<a href=#411 id=411 data-nosnippet>411</a>        <span class="prelude-val">Some</span>(SectionHeader { ty, .. }) <span class="kw">if </span><span class="kw-2">*</span>ty == section_ty =&gt; {
-<a href=#412 id=412 data-nosnippet>412</a>            <span class="kw">let </span>h = header.take().unwrap();
-<a href=#413 id=413 data-nosnippet>413</a>            <span class="macro">trace!</span>(<span class="string">"Handling section {:?}"</span>, h.ty);
-<a href=#414 id=414 data-nosnippet>414</a>            <span class="kw">let </span>ret = handler(wasm, h)<span class="question-mark">?</span>;
-<a href=#415 id=415 data-nosnippet>415</a>            read_next_header(wasm, header)<span class="question-mark">?</span>;
-<a href=#416 id=416 data-nosnippet>416</a>            <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(ret))
-<a href=#417 id=417 data-nosnippet>417</a>        }
-<a href=#418 id=418 data-nosnippet>418</a>        <span class="kw">_ </span>=&gt; <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>),
-<a href=#419 id=419 data-nosnippet>419</a>    }
-<a href=#420 id=420 data-nosnippet>420</a>}</code></pre></div></section></main></body></html>
+<a href=#294 id=294 data-nosnippet>294</a>    <span class="kw">while </span>(skip_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header)<span class="question-mark">?</span>).is_some() {}
+<a href=#295 id=295 data-nosnippet>295</a>
+<a href=#296 id=296 data-nosnippet>296</a>    <span class="kw">let </span><span class="kw-2">mut </span>referenced_functions = btree_set::BTreeSet::new();
+<a href=#297 id=297 data-nosnippet>297</a>    <span class="kw">let </span>elements: Vec&lt;ElemType&gt; =
+<a href=#298 id=298 data-nosnippet>298</a>        handle_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header, SectionTy::Element, |wasm, <span class="kw">_</span>| {
+<a href=#299 id=299 data-nosnippet>299</a>            ElemType::read_from_wasm(
+<a href=#300 id=300 data-nosnippet>300</a>                wasm,
+<a href=#301 id=301 data-nosnippet>301</a>                <span class="kw-2">&amp;</span>all_functions,
+<a href=#302 id=302 data-nosnippet>302</a>                <span class="kw-2">&amp;mut </span>referenced_functions,
+<a href=#303 id=303 data-nosnippet>303</a>                all_tables.len(),
+<a href=#304 id=304 data-nosnippet>304</a>                all_globals_types,
+<a href=#305 id=305 data-nosnippet>305</a>            )
+<a href=#306 id=306 data-nosnippet>306</a>        })<span class="question-mark">?
+<a href=#307 id=307 data-nosnippet>307</a>        </span>.unwrap_or_default();
+<a href=#308 id=308 data-nosnippet>308</a>
+<a href=#309 id=309 data-nosnippet>309</a>    <span class="kw">while </span>(skip_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header)<span class="question-mark">?</span>).is_some() {}
+<a href=#310 id=310 data-nosnippet>310</a>
+<a href=#311 id=311 data-nosnippet>311</a>    <span class="comment">// https://webassembly.github.io/spec/core/binary/modules.html#data-count-section
+<a href=#312 id=312 data-nosnippet>312</a>    // As per the official documentation:
+<a href=#313 id=313 data-nosnippet>313</a>    //
+<a href=#314 id=314 data-nosnippet>314</a>    // The data count section is used to simplify single-pass validation. Since the data section occurs after the code section, the `memory.init` and `data.drop` and instructions would not be able to check whether the data segment index is valid until the data section is read. The data count section occurs before the code section, so a single-pass validator can use this count instead of deferring validation.
+<a href=#315 id=315 data-nosnippet>315</a>    </span><span class="kw">let </span>data_count: <span class="prelude-ty">Option</span>&lt;u32&gt; =
+<a href=#316 id=316 data-nosnippet>316</a>        handle_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header, SectionTy::DataCount, |wasm, <span class="kw">_</span>| {
+<a href=#317 id=317 data-nosnippet>317</a>            wasm.read_var_u32()
+<a href=#318 id=318 data-nosnippet>318</a>        })<span class="question-mark">?</span>;
+<a href=#319 id=319 data-nosnippet>319</a>    <span class="kw">if </span>data_count.is_some() {
+<a href=#320 id=320 data-nosnippet>320</a>        <span class="macro">trace!</span>(<span class="string">"data count: {}"</span>, data_count.unwrap());
+<a href=#321 id=321 data-nosnippet>321</a>    }
+<a href=#322 id=322 data-nosnippet>322</a>
+<a href=#323 id=323 data-nosnippet>323</a>    <span class="kw">while </span>(skip_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header)<span class="question-mark">?</span>).is_some() {}
+<a href=#324 id=324 data-nosnippet>324</a>
+<a href=#325 id=325 data-nosnippet>325</a>    <span class="kw">let </span><span class="kw-2">mut </span>sidetable = Sidetable::new();
+<a href=#326 id=326 data-nosnippet>326</a>    <span class="kw">let </span>func_blocks_stps = handle_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header, SectionTy::Code, |wasm, h| {
+<a href=#327 id=327 data-nosnippet>327</a>        code::validate_code_section(
+<a href=#328 id=328 data-nosnippet>328</a>            wasm,
+<a href=#329 id=329 data-nosnippet>329</a>            h,
+<a href=#330 id=330 data-nosnippet>330</a>            <span class="kw-2">&amp;</span>types,
+<a href=#331 id=331 data-nosnippet>331</a>            <span class="kw-2">&amp;</span>all_functions,
+<a href=#332 id=332 data-nosnippet>332</a>            imported_functions.count(),
+<a href=#333 id=333 data-nosnippet>333</a>            <span class="kw-2">&amp;</span>all_globals,
+<a href=#334 id=334 data-nosnippet>334</a>            <span class="kw-2">&amp;</span>all_memories,
+<a href=#335 id=335 data-nosnippet>335</a>            <span class="kw-2">&amp;</span>data_count,
+<a href=#336 id=336 data-nosnippet>336</a>            <span class="kw-2">&amp;</span>all_tables,
+<a href=#337 id=337 data-nosnippet>337</a>            <span class="kw-2">&amp;</span>elements,
+<a href=#338 id=338 data-nosnippet>338</a>            <span class="kw-2">&amp;</span>referenced_functions,
+<a href=#339 id=339 data-nosnippet>339</a>            <span class="kw-2">&amp;mut </span>sidetable,
+<a href=#340 id=340 data-nosnippet>340</a>        )
+<a href=#341 id=341 data-nosnippet>341</a>    })<span class="question-mark">?
+<a href=#342 id=342 data-nosnippet>342</a>    </span>.unwrap_or_default();
+<a href=#343 id=343 data-nosnippet>343</a>
+<a href=#344 id=344 data-nosnippet>344</a>    <span class="macro">assert_eq!</span>(
+<a href=#345 id=345 data-nosnippet>345</a>        func_blocks_stps.len(),
+<a href=#346 id=346 data-nosnippet>346</a>        local_functions.len(),
+<a href=#347 id=347 data-nosnippet>347</a>        <span class="string">"these should be equal"
+<a href=#348 id=348 data-nosnippet>348</a>    </span>); <span class="comment">// TODO check if this is in the spec
+<a href=#349 id=349 data-nosnippet>349</a>
+<a href=#350 id=350 data-nosnippet>350</a>    </span><span class="kw">while </span>(skip_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header)<span class="question-mark">?</span>).is_some() {}
+<a href=#351 id=351 data-nosnippet>351</a>
+<a href=#352 id=352 data-nosnippet>352</a>    <span class="kw">let </span>data_section = handle_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header, SectionTy::Data, |wasm, h| {
+<a href=#353 id=353 data-nosnippet>353</a>        <span class="comment">// wasm.read_vec(DataSegment::read)
+<a href=#354 id=354 data-nosnippet>354</a>        </span>data::validate_data_section(wasm, h, <span class="kw-2">&amp;</span>imported_global_types, all_memories.len())
+<a href=#355 id=355 data-nosnippet>355</a>    })<span class="question-mark">?
+<a href=#356 id=356 data-nosnippet>356</a>    </span>.unwrap_or_default();
+<a href=#357 id=357 data-nosnippet>357</a>
+<a href=#358 id=358 data-nosnippet>358</a>    <span class="comment">// https://webassembly.github.io/spec/core/binary/modules.html#data-count-section
+<a href=#359 id=359 data-nosnippet>359</a>    </span><span class="kw">if </span>data_count.is_some() {
+<a href=#360 id=360 data-nosnippet>360</a>        <span class="macro">assert_eq!</span>(data_count.unwrap() <span class="kw">as </span>usize, data_section.len());
+<a href=#361 id=361 data-nosnippet>361</a>    }
+<a href=#362 id=362 data-nosnippet>362</a>
+<a href=#363 id=363 data-nosnippet>363</a>    <span class="kw">while </span>(skip_section(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>header)<span class="question-mark">?</span>).is_some() {}
+<a href=#364 id=364 data-nosnippet>364</a>
+<a href=#365 id=365 data-nosnippet>365</a>    <span class="comment">// All sections should have been handled
+<a href=#366 id=366 data-nosnippet>366</a>    </span><span class="kw">if let </span><span class="prelude-val">Some</span>(header) = header {
+<a href=#367 id=367 data-nosnippet>367</a>        <span class="kw">return </span><span class="prelude-val">Err</span>(Error::SectionOutOfOrder(header.ty));
+<a href=#368 id=368 data-nosnippet>368</a>    }
+<a href=#369 id=369 data-nosnippet>369</a>
+<a href=#370 id=370 data-nosnippet>370</a>    <span class="macro">debug!</span>(<span class="string">"Validation was successful"</span>);
+<a href=#371 id=371 data-nosnippet>371</a>    <span class="kw">let </span>validation_info = ValidationInfo {
+<a href=#372 id=372 data-nosnippet>372</a>        wasm: wasm.into_inner(),
+<a href=#373 id=373 data-nosnippet>373</a>        types,
+<a href=#374 id=374 data-nosnippet>374</a>        imports,
+<a href=#375 id=375 data-nosnippet>375</a>        functions: local_functions,
+<a href=#376 id=376 data-nosnippet>376</a>        tables,
+<a href=#377 id=377 data-nosnippet>377</a>        memories,
+<a href=#378 id=378 data-nosnippet>378</a>        globals,
+<a href=#379 id=379 data-nosnippet>379</a>        exports,
+<a href=#380 id=380 data-nosnippet>380</a>        func_blocks_stps,
+<a href=#381 id=381 data-nosnippet>381</a>        sidetable,
+<a href=#382 id=382 data-nosnippet>382</a>        data: data_section,
+<a href=#383 id=383 data-nosnippet>383</a>        start,
+<a href=#384 id=384 data-nosnippet>384</a>        elements,
+<a href=#385 id=385 data-nosnippet>385</a>        imports_length,
+<a href=#386 id=386 data-nosnippet>386</a>    };
+<a href=#387 id=387 data-nosnippet>387</a>    validate_exports(<span class="kw-2">&amp;</span>validation_info)<span class="question-mark">?</span>;
+<a href=#388 id=388 data-nosnippet>388</a>
+<a href=#389 id=389 data-nosnippet>389</a>    <span class="prelude-val">Ok</span>(validation_info)
+<a href=#390 id=390 data-nosnippet>390</a>}
+<a href=#391 id=391 data-nosnippet>391</a>
+<a href=#392 id=392 data-nosnippet>392</a><span class="kw">fn </span>read_next_header(wasm: <span class="kw-2">&amp;mut </span>WasmReader, header: <span class="kw-2">&amp;mut </span><span class="prelude-ty">Option</span>&lt;SectionHeader&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+<a href=#393 id=393 data-nosnippet>393</a>    <span class="kw">if </span>header.is_none() &amp;&amp; !wasm.remaining_bytes().is_empty() {
+<a href=#394 id=394 data-nosnippet>394</a>        <span class="kw-2">*</span>header = <span class="prelude-val">Some</span>(SectionHeader::read(wasm)<span class="question-mark">?</span>);
+<a href=#395 id=395 data-nosnippet>395</a>    }
+<a href=#396 id=396 data-nosnippet>396</a>    <span class="prelude-val">Ok</span>(())
+<a href=#397 id=397 data-nosnippet>397</a>}
+<a href=#398 id=398 data-nosnippet>398</a>
+<a href=#399 id=399 data-nosnippet>399</a><span class="attr">#[inline(always)]
+<a href=#400 id=400 data-nosnippet>400</a></span><span class="kw">fn </span>handle_section&lt;T, F: FnOnce(<span class="kw-2">&amp;mut </span>WasmReader, SectionHeader) -&gt; <span class="prelude-ty">Result</span>&lt;T&gt;&gt;(
+<a href=#401 id=401 data-nosnippet>401</a>    wasm: <span class="kw-2">&amp;mut </span>WasmReader,
+<a href=#402 id=402 data-nosnippet>402</a>    header: <span class="kw-2">&amp;mut </span><span class="prelude-ty">Option</span>&lt;SectionHeader&gt;,
+<a href=#403 id=403 data-nosnippet>403</a>    section_ty: SectionTy,
+<a href=#404 id=404 data-nosnippet>404</a>    handler: F,
+<a href=#405 id=405 data-nosnippet>405</a>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;T&gt;&gt; {
+<a href=#406 id=406 data-nosnippet>406</a>    <span class="kw">match </span><span class="kw-2">&amp;</span>header {
+<a href=#407 id=407 data-nosnippet>407</a>        <span class="prelude-val">Some</span>(SectionHeader { ty, .. }) <span class="kw">if </span><span class="kw-2">*</span>ty == section_ty =&gt; {
+<a href=#408 id=408 data-nosnippet>408</a>            <span class="kw">let </span>h = header.take().unwrap();
+<a href=#409 id=409 data-nosnippet>409</a>            <span class="macro">trace!</span>(<span class="string">"Handling section {:?}"</span>, h.ty);
+<a href=#410 id=410 data-nosnippet>410</a>            <span class="kw">let </span>ret = handler(wasm, h)<span class="question-mark">?</span>;
+<a href=#411 id=411 data-nosnippet>411</a>            read_next_header(wasm, header)<span class="question-mark">?</span>;
+<a href=#412 id=412 data-nosnippet>412</a>            <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(ret))
+<a href=#413 id=413 data-nosnippet>413</a>        }
+<a href=#414 id=414 data-nosnippet>414</a>        <span class="kw">_ </span>=&gt; <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>),
+<a href=#415 id=415 data-nosnippet>415</a>    }
+<a href=#416 id=416 data-nosnippet>416</a>}</code></pre></div></section></main></body></html>
