@@ -1,4 +1,4 @@
-use alloc::collections::btree_set;
+use alloc::collections::btree_set::{self, BTreeSet};
 use alloc::vec::Vec;
 
 use crate::core::indices::{FuncIdx, TypeIdx};
@@ -12,7 +12,7 @@ use crate::core::reader::types::import::{Import, ImportDesc};
 use crate::core::reader::types::{FuncType, MemType, TableType};
 use crate::core::reader::{WasmReadable, WasmReader};
 use crate::core::sidetable::Sidetable;
-use crate::{Error, Result};
+use crate::{Error, ExportDesc, Result};
 
 pub(crate) mod code;
 pub(crate) mod data;
@@ -118,6 +118,18 @@ fn get_imports_length(imports: &Vec<Import>) -> ImportsLength {
 
 pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
     let mut wasm = WasmReader::new(wasm);
+
+    // represents C.refs in https://webassembly.github.io/spec/core/valid/conventions.html#context
+    // A func.ref instruction is onlv valid if it has an immediate that is a member of C.refs.
+    // this list holds all the func_idx's occurring in the module, except in its functions or start function.
+    // I make an exception here by not including func_idx's occuring within data segments in C.refs as well, so that single pass validation is possible.
+    // If there is a func_idx within the data segment, this would ultimately mean that data segment cannot be validated,
+    // therefore this hack is acceptable.
+    // https://webassembly.github.io/spec/core/valid/modules.html#data-segments
+    // https://webassembly.github.io/spec/core/valid/modules.html#valid-module
+
+    let mut validation_context_refs: BTreeSet<FuncIdx> = BTreeSet::new();
+
     trace!("Starting validation of bytecode");
 
     trace!("Validating magic value");
@@ -260,7 +272,13 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
         .collect::<Vec<GlobalType>>();
     let imported_global_types_len = imported_global_types.len();
     let globals = handle_section(&mut wasm, &mut header, SectionTy::Global, |wasm, h| {
-        globals::validate_global_section(wasm, h, &imported_global_types)
+        globals::validate_global_section(
+            wasm,
+            h,
+            &imported_global_types,
+            &mut validation_context_refs,
+            all_functions.len(),
+        )
     })?
     .unwrap_or_default();
     let mut all_globals = Vec::new();
@@ -284,6 +302,12 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
         wasm.read_vec(Export::read)
     })?
     .unwrap_or_default();
+    validation_context_refs.extend(exports.iter().filter_map(
+        |Export { name: _, desc }| match *desc {
+            ExportDesc::FuncIdx(func_idx) => Some(func_idx),
+            _ => None,
+        },
+    ));
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
@@ -293,13 +317,12 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
-    let mut referenced_functions = btree_set::BTreeSet::new();
     let elements: Vec<ElemType> =
         handle_section(&mut wasm, &mut header, SectionTy::Element, |wasm, _| {
             ElemType::read_from_wasm(
                 wasm,
                 &all_functions,
-                &mut referenced_functions,
+                &mut validation_context_refs,
                 all_tables.len(),
                 all_globals_types,
             )
@@ -335,7 +358,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
             &data_count,
             &all_tables,
             &elements,
-            &referenced_functions,
+            &validation_context_refs,
             &mut sidetable,
         )
     })?
@@ -351,7 +374,13 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
 
     let data_section = handle_section(&mut wasm, &mut header, SectionTy::Data, |wasm, h| {
         // wasm.read_vec(DataSegment::read)
-        data::validate_data_section(wasm, h, &imported_global_types, all_memories.len())
+        data::validate_data_section(
+            wasm,
+            h,
+            &imported_global_types,
+            all_memories.len(),
+            all_functions.len(),
+        )
     })?
     .unwrap_or_default();
 

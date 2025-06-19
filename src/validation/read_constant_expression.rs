@@ -1,4 +1,6 @@
-use crate::core::indices::GlobalIdx;
+use alloc::vec::Vec;
+
+use crate::core::indices::{FuncIdx, GlobalIdx};
 use crate::core::reader::span::Span;
 use crate::core::reader::types::global::GlobalType;
 use crate::core::reader::{WasmReadable, WasmReader};
@@ -91,9 +93,10 @@ pub fn read_constant_expression(
     //  Globals, however, are not recursive and not accessible within constant expressions when they are defined locally. The effect of defining the limited context C'
     //   for validating certain definitions is that they can only access functions and imported globals and nothing else.
     globals_ty: &[GlobalType],
-    funcs: Option<&[usize]>,
-) -> Result<Span> {
+    num_funcs: usize,
+) -> Result<(Span, Vec<FuncIdx>)> {
     let start_pc = wasm.pc;
+    let mut seen_func_idxs: Vec<FuncIdx> = Vec::new();
 
     loop {
         let Ok(first_instr_byte) = wasm.read_u8() else {
@@ -114,7 +117,7 @@ pub fn read_constant_expression(
             // Missing: ref.null, ref.func, global.get
             END => {
                 // The code here for checking the global type was moved to where the global is actually validated
-                return Ok(Span::new(start_pc, wasm.pc - start_pc));
+                return Ok((Span::new(start_pc, wasm.pc - start_pc), seen_func_idxs));
             }
             GLOBAL_GET => {
                 let global_idx = wasm.read_var_u32()? as GlobalIdx;
@@ -159,16 +162,15 @@ pub fn read_constant_expression(
             }
             REF_FUNC => {
                 let func_idx = wasm.read_var_u32()? as usize;
-                match funcs {
-                    Some(funcs) => {
-                        if func_idx >= funcs.len() {
-                            return Err(Error::FunctionIsNotDefined(func_idx));
-                        }
-                    }
-                    None => {
-                        return Err(Error::FunctionIsNotDefined(u32::MAX as usize));
-                    }
+
+                // checking for existence suffices for checking whether this function has a valid type.
+                if num_funcs <= func_idx {
+                    return Err(Error::FunctionIsNotDefined(func_idx));
                 }
+
+                // This func_idx is automatically in C.refs. No need to check.
+                // as we are single pass validating, add it to C.refs set.
+                seen_func_idxs.push(func_idx);
 
                 stack.push_valtype(ValType::RefType(crate::RefType::FuncRef));
             }
