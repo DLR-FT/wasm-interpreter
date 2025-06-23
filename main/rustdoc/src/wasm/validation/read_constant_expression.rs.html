@@ -145,39 +145,27 @@
 <a href=#145 id=145 data-nosnippet>145</a>                <span class="kw">let </span>_num = wasm.read_var_i64()<span class="question-mark">?</span>;
 <a href=#146 id=146 data-nosnippet>146</a>                stack.push_valtype(ValType::NumType(NumType::I64));
 <a href=#147 id=147 data-nosnippet>147</a>            }
-<a href=#148 id=148 data-nosnippet>148</a>            I32_ADD | I32_SUB | I32_MUL =&gt; {
-<a href=#149 id=149 data-nosnippet>149</a>                stack.assert_pop_val_type(ValType::NumType(NumType::I32))<span class="question-mark">?</span>;
-<a href=#150 id=150 data-nosnippet>150</a>                stack.assert_pop_val_type(ValType::NumType(NumType::I32))<span class="question-mark">?</span>;
-<a href=#151 id=151 data-nosnippet>151</a>
-<a href=#152 id=152 data-nosnippet>152</a>                stack.push_valtype(ValType::NumType(NumType::I32));
-<a href=#153 id=153 data-nosnippet>153</a>            }
-<a href=#154 id=154 data-nosnippet>154</a>            I64_ADD | I64_SUB | I64_MUL =&gt; {
-<a href=#155 id=155 data-nosnippet>155</a>                stack.assert_pop_val_type(ValType::NumType(NumType::I64))<span class="question-mark">?</span>;
-<a href=#156 id=156 data-nosnippet>156</a>                stack.assert_pop_val_type(ValType::NumType(NumType::I64))<span class="question-mark">?</span>;
-<a href=#157 id=157 data-nosnippet>157</a>
-<a href=#158 id=158 data-nosnippet>158</a>                stack.push_valtype(ValType::NumType(NumType::I64));
-<a href=#159 id=159 data-nosnippet>159</a>            }
-<a href=#160 id=160 data-nosnippet>160</a>            REF_NULL =&gt; {
-<a href=#161 id=161 data-nosnippet>161</a>                stack.push_valtype(ValType::RefType(RefType::read(wasm)<span class="question-mark">?</span>));
-<a href=#162 id=162 data-nosnippet>162</a>            }
-<a href=#163 id=163 data-nosnippet>163</a>            REF_FUNC =&gt; {
-<a href=#164 id=164 data-nosnippet>164</a>                <span class="kw">let </span>func_idx = wasm.read_var_u32()<span class="question-mark">? </span><span class="kw">as </span>usize;
-<a href=#165 id=165 data-nosnippet>165</a>
-<a href=#166 id=166 data-nosnippet>166</a>                <span class="comment">// checking for existence suffices for checking whether this function has a valid type.
-<a href=#167 id=167 data-nosnippet>167</a>                </span><span class="kw">if </span>num_funcs &lt;= func_idx {
-<a href=#168 id=168 data-nosnippet>168</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(Error::FunctionIsNotDefined(func_idx));
-<a href=#169 id=169 data-nosnippet>169</a>                }
-<a href=#170 id=170 data-nosnippet>170</a>
-<a href=#171 id=171 data-nosnippet>171</a>                <span class="comment">// This func_idx is automatically in C.refs. No need to check.
-<a href=#172 id=172 data-nosnippet>172</a>                // as we are single pass validating, add it to C.refs set.
-<a href=#173 id=173 data-nosnippet>173</a>                </span>seen_func_idxs.push(func_idx);
-<a href=#174 id=174 data-nosnippet>174</a>
-<a href=#175 id=175 data-nosnippet>175</a>                stack.push_valtype(ValType::RefType(<span class="kw">crate</span>::RefType::FuncRef));
-<a href=#176 id=176 data-nosnippet>176</a>            }
-<a href=#177 id=177 data-nosnippet>177</a>            <span class="kw">_ </span>=&gt; {
-<a href=#178 id=178 data-nosnippet>178</a>                <span class="macro">trace!</span>(<span class="string">"Encountered unknown instruction in validation - constant expression - {first_instr_byte:x?}"</span>);
-<a href=#179 id=179 data-nosnippet>179</a>                <span class="kw">return </span><span class="prelude-val">Err</span>(Error::InvalidInstr(first_instr_byte));
-<a href=#180 id=180 data-nosnippet>180</a>            }
-<a href=#181 id=181 data-nosnippet>181</a>        }
-<a href=#182 id=182 data-nosnippet>182</a>    }
-<a href=#183 id=183 data-nosnippet>183</a>}</code></pre></div></section></main></body></html>
+<a href=#148 id=148 data-nosnippet>148</a>            REF_NULL =&gt; {
+<a href=#149 id=149 data-nosnippet>149</a>                stack.push_valtype(ValType::RefType(RefType::read(wasm)<span class="question-mark">?</span>));
+<a href=#150 id=150 data-nosnippet>150</a>            }
+<a href=#151 id=151 data-nosnippet>151</a>            REF_FUNC =&gt; {
+<a href=#152 id=152 data-nosnippet>152</a>                <span class="kw">let </span>func_idx = wasm.read_var_u32()<span class="question-mark">? </span><span class="kw">as </span>usize;
+<a href=#153 id=153 data-nosnippet>153</a>
+<a href=#154 id=154 data-nosnippet>154</a>                <span class="comment">// checking for existence suffices for checking whether this function has a valid type.
+<a href=#155 id=155 data-nosnippet>155</a>                </span><span class="kw">if </span>num_funcs &lt;= func_idx {
+<a href=#156 id=156 data-nosnippet>156</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(Error::FunctionIsNotDefined(func_idx));
+<a href=#157 id=157 data-nosnippet>157</a>                }
+<a href=#158 id=158 data-nosnippet>158</a>
+<a href=#159 id=159 data-nosnippet>159</a>                <span class="comment">// This func_idx is automatically in C.refs. No need to check.
+<a href=#160 id=160 data-nosnippet>160</a>                // as we are single pass validating, add it to C.refs set.
+<a href=#161 id=161 data-nosnippet>161</a>                </span>seen_func_idxs.push(func_idx);
+<a href=#162 id=162 data-nosnippet>162</a>
+<a href=#163 id=163 data-nosnippet>163</a>                stack.push_valtype(ValType::RefType(<span class="kw">crate</span>::RefType::FuncRef));
+<a href=#164 id=164 data-nosnippet>164</a>            }
+<a href=#165 id=165 data-nosnippet>165</a>            <span class="kw">_ </span>=&gt; {
+<a href=#166 id=166 data-nosnippet>166</a>                <span class="macro">trace!</span>(<span class="string">"Encountered unknown instruction in validation - constant expression - {first_instr_byte:x?}"</span>);
+<a href=#167 id=167 data-nosnippet>167</a>                <span class="kw">return </span><span class="prelude-val">Err</span>(Error::InvalidInstr(first_instr_byte));
+<a href=#168 id=168 data-nosnippet>168</a>            }
+<a href=#169 id=169 data-nosnippet>169</a>        }
+<a href=#170 id=170 data-nosnippet>170</a>    }
+<a href=#171 id=171 data-nosnippet>171</a>}</code></pre></div></section></main></body></html>
