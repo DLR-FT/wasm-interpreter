@@ -11,9 +11,7 @@ fn valid_global() {
     let wat = r#"
     (module
         (global $my_global (mut i32)
-            i32.const 2
-            i32.const 3
-            i32.add
+            i32.const 5
         )
 
         ;; Set global to a value and return the previous one
@@ -73,7 +71,6 @@ fn global_invalid_value_stack() {
             i32.const 2
             i32.const 2
             i32.const 3
-            i32.add
         )
     )
     "#;
@@ -137,7 +134,7 @@ fn imported_globals() {
 }
 
 #[test_log::test]
-fn global_f32_and_f64() {
+fn global_invalid_instr() {
     use wasm::validate;
 
     let wat = r#"
@@ -146,11 +143,12 @@ fn global_f32_and_f64() {
             i32.const 2
             i32.const 2
             i32.const 2
+            i32.add
             i32.const 2
             i32.const 2
             i32.const 2
             i32.const 3
-            i32.add
+
         )
     )
     "#;
