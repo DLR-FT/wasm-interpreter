@@ -6,7 +6,7 @@
 <a href=#6 id=6 data-nosnippet>6</a>    },
 <a href=#7 id=7 data-nosnippet>7</a>    value::{<span class="self">self</span>, FuncAddr, Ref},
 <a href=#8 id=8 data-nosnippet>8</a>    value_stack::Stack,
-<a href=#9 id=9 data-nosnippet>9</a>    ModuleInst, RefType, Store, Value,
+<a href=#9 id=9 data-nosnippet>9</a>    ModuleInst, RefType, RuntimeError, Store, Value,
 <a href=#10 id=10 data-nosnippet>10</a>};
 <a href=#11 id=11 data-nosnippet>11</a>
 <a href=#12 id=12 data-nosnippet>12</a><span class="comment">// TODO update this documentation
@@ -25,7 +25,7 @@
 <a href=#25 id=25 data-nosnippet>25</a>    stack: <span class="kw-2">&amp;mut </span>Stack,
 <a href=#26 id=26 data-nosnippet>26</a>    module: <span class="kw-2">&amp;</span>ModuleInst,
 <a href=#27 id=27 data-nosnippet>27</a>    store: <span class="kw-2">&amp;</span>Store,
-<a href=#28 id=28 data-nosnippet>28</a>) {
+<a href=#28 id=28 data-nosnippet>28</a>) -&gt; <span class="prelude-ty">Result</span>&lt;(), RuntimeError&gt; {
 <a href=#29 id=29 data-nosnippet>29</a>    <span class="kw">use </span><span class="kw">crate</span>::core::reader::types::opcode::<span class="kw-2">*</span>;
 <a href=#30 id=30 data-nosnippet>30</a>    <span class="kw">loop </span>{
 <a href=#31 id=31 data-nosnippet>31</a>        <span class="kw">let </span>first_instr_byte = wasm.read_u8().unwrap_validated();
@@ -51,32 +51,32 @@
 <a href=#51 id=51 data-nosnippet>51</a>                    <span class="string">"Constant instruction: global.get [{global_idx}] -&gt; [{:?}]"</span>,
 <a href=#52 id=52 data-nosnippet>52</a>                    global
 <a href=#53 id=53 data-nosnippet>53</a>                );
-<a href=#54 id=54 data-nosnippet>54</a>                stack.push_value(global.value);
+<a href=#54 id=54 data-nosnippet>54</a>                stack.push_value(global.value)<span class="question-mark">?</span>;
 <a href=#55 id=55 data-nosnippet>55</a>            }
 <a href=#56 id=56 data-nosnippet>56</a>            I32_CONST =&gt; {
 <a href=#57 id=57 data-nosnippet>57</a>                <span class="kw">let </span>constant = wasm.read_var_i32().unwrap_validated();
 <a href=#58 id=58 data-nosnippet>58</a>                <span class="macro">trace!</span>(<span class="string">"Constant instruction: i32.const [] -&gt; [{constant}]"</span>);
-<a href=#59 id=59 data-nosnippet>59</a>                stack.push_value(constant.into());
+<a href=#59 id=59 data-nosnippet>59</a>                stack.push_value(constant.into())<span class="question-mark">?</span>;
 <a href=#60 id=60 data-nosnippet>60</a>            }
 <a href=#61 id=61 data-nosnippet>61</a>            F32_CONST =&gt; {
 <a href=#62 id=62 data-nosnippet>62</a>                <span class="kw">let </span>constant = value::F32::from_bits(wasm.read_var_f32().unwrap_validated());
 <a href=#63 id=63 data-nosnippet>63</a>                <span class="macro">trace!</span>(<span class="string">"Constanting instruction: f32.const [] -&gt; [{constant}]"</span>);
-<a href=#64 id=64 data-nosnippet>64</a>                stack.push_value(constant.into());
+<a href=#64 id=64 data-nosnippet>64</a>                stack.push_value(constant.into())<span class="question-mark">?</span>;
 <a href=#65 id=65 data-nosnippet>65</a>            }
 <a href=#66 id=66 data-nosnippet>66</a>            F64_CONST =&gt; {
 <a href=#67 id=67 data-nosnippet>67</a>                <span class="kw">let </span>constant = value::F64::from_bits(wasm.read_var_f64().unwrap_validated());
 <a href=#68 id=68 data-nosnippet>68</a>                <span class="macro">trace!</span>(<span class="string">"Constanting instruction: f64.const [] -&gt; [{constant}]"</span>);
-<a href=#69 id=69 data-nosnippet>69</a>                stack.push_value(constant.into());
+<a href=#69 id=69 data-nosnippet>69</a>                stack.push_value(constant.into())<span class="question-mark">?</span>;
 <a href=#70 id=70 data-nosnippet>70</a>            }
 <a href=#71 id=71 data-nosnippet>71</a>            I64_CONST =&gt; {
 <a href=#72 id=72 data-nosnippet>72</a>                <span class="kw">let </span>constant = wasm.read_var_i64().unwrap_validated();
 <a href=#73 id=73 data-nosnippet>73</a>                <span class="macro">trace!</span>(<span class="string">"Constant instruction: i64.const [] -&gt; [{constant}]"</span>);
-<a href=#74 id=74 data-nosnippet>74</a>                stack.push_value(constant.into());
+<a href=#74 id=74 data-nosnippet>74</a>                stack.push_value(constant.into())<span class="question-mark">?</span>;
 <a href=#75 id=75 data-nosnippet>75</a>            }
 <a href=#76 id=76 data-nosnippet>76</a>            REF_NULL =&gt; {
 <a href=#77 id=77 data-nosnippet>77</a>                <span class="kw">let </span>reftype = RefType::read_unvalidated(wasm);
 <a href=#78 id=78 data-nosnippet>78</a>
-<a href=#79 id=79 data-nosnippet>79</a>                stack.push_value(Value::Ref(reftype.to_null_ref()));
+<a href=#79 id=79 data-nosnippet>79</a>                stack.push_value(Value::Ref(reftype.to_null_ref()))<span class="question-mark">?</span>;
 <a href=#80 id=80 data-nosnippet>80</a>                <span class="macro">trace!</span>(<span class="string">"Instruction: ref.null '{:?}' -&gt; [{:?}]"</span>, reftype, reftype);
 <a href=#81 id=81 data-nosnippet>81</a>            }
 <a href=#82 id=82 data-nosnippet>82</a>            REF_FUNC =&gt; {
@@ -85,27 +85,28 @@
 <a href=#85 id=85 data-nosnippet>85</a>                <span class="comment">// TODO replace double indirection
 <a href=#86 id=86 data-nosnippet>86</a>                </span>stack.push_value(Value::Ref(Ref::Func(FuncAddr::new(<span class="prelude-val">Some</span>(
 <a href=#87 id=87 data-nosnippet>87</a>                    module.func_addrs[func_idx],
-<a href=#88 id=88 data-nosnippet>88</a>                )))));
+<a href=#88 id=88 data-nosnippet>88</a>                )))))<span class="question-mark">?</span>;
 <a href=#89 id=89 data-nosnippet>89</a>            }
 <a href=#90 id=90 data-nosnippet>90</a>            other =&gt; {
 <a href=#91 id=91 data-nosnippet>91</a>                <span class="macro">unreachable!</span>(<span class="string">"Unknown constant instruction {other:#x}, validation allowed an unimplemented instruction."</span>);
 <a href=#92 id=92 data-nosnippet>92</a>            }
 <a href=#93 id=93 data-nosnippet>93</a>        }
 <a href=#94 id=94 data-nosnippet>94</a>    }
-<a href=#95 id=95 data-nosnippet>95</a>}
-<a href=#96 id=96 data-nosnippet>96</a>
-<a href=#97 id=97 data-nosnippet>97</a><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>run_const_span(
-<a href=#98 id=98 data-nosnippet>98</a>    wasm: <span class="kw-2">&amp;</span>[u8],
-<a href=#99 id=99 data-nosnippet>99</a>    span: <span class="kw-2">&amp;</span>Span,
-<a href=#100 id=100 data-nosnippet>100</a>    module: <span class="kw-2">&amp;</span>ModuleInst,
-<a href=#101 id=101 data-nosnippet>101</a>    store: <span class="kw-2">&amp;</span>Store,
-<a href=#102 id=102 data-nosnippet>102</a>) -&gt; <span class="prelude-ty">Option</span>&lt;Value&gt; {
-<a href=#103 id=103 data-nosnippet>103</a>    <span class="kw">let </span><span class="kw-2">mut </span>wasm = WasmReader::new(wasm);
-<a href=#104 id=104 data-nosnippet>104</a>
-<a href=#105 id=105 data-nosnippet>105</a>    wasm.move_start_to(<span class="kw-2">*</span>span).unwrap_validated();
-<a href=#106 id=106 data-nosnippet>106</a>
-<a href=#107 id=107 data-nosnippet>107</a>    <span class="kw">let </span><span class="kw-2">mut </span>stack = Stack::new();
-<a href=#108 id=108 data-nosnippet>108</a>    run_const(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>stack, module, store);
-<a href=#109 id=109 data-nosnippet>109</a>
-<a href=#110 id=110 data-nosnippet>110</a>    stack.peek_unknown_value()
-<a href=#111 id=111 data-nosnippet>111</a>}</code></pre></div></section></main></body></html>
+<a href=#95 id=95 data-nosnippet>95</a>    <span class="prelude-val">Ok</span>(())
+<a href=#96 id=96 data-nosnippet>96</a>}
+<a href=#97 id=97 data-nosnippet>97</a>
+<a href=#98 id=98 data-nosnippet>98</a><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>run_const_span(
+<a href=#99 id=99 data-nosnippet>99</a>    wasm: <span class="kw-2">&amp;</span>[u8],
+<a href=#100 id=100 data-nosnippet>100</a>    span: <span class="kw-2">&amp;</span>Span,
+<a href=#101 id=101 data-nosnippet>101</a>    module: <span class="kw-2">&amp;</span>ModuleInst,
+<a href=#102 id=102 data-nosnippet>102</a>    store: <span class="kw-2">&amp;</span>Store,
+<a href=#103 id=103 data-nosnippet>103</a>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Value&gt;, RuntimeError&gt; {
+<a href=#104 id=104 data-nosnippet>104</a>    <span class="kw">let </span><span class="kw-2">mut </span>wasm = WasmReader::new(wasm);
+<a href=#105 id=105 data-nosnippet>105</a>
+<a href=#106 id=106 data-nosnippet>106</a>    wasm.move_start_to(<span class="kw-2">*</span>span).unwrap_validated();
+<a href=#107 id=107 data-nosnippet>107</a>
+<a href=#108 id=108 data-nosnippet>108</a>    <span class="kw">let </span><span class="kw-2">mut </span>stack = Stack::new();
+<a href=#109 id=109 data-nosnippet>109</a>    run_const(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>stack, module, store)<span class="question-mark">?</span>;
+<a href=#110 id=110 data-nosnippet>110</a>
+<a href=#111 id=111 data-nosnippet>111</a>    <span class="prelude-val">Ok</span>(stack.peek_unknown_value())
+<a href=#112 id=112 data-nosnippet>112</a>}</code></pre></div></section></main></body></html>

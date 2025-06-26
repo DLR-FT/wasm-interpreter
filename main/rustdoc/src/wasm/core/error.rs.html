@@ -17,20 +17,20 @@
 <a href=#17 id=17 data-nosnippet>17</a>    DivideBy0,
 <a href=#18 id=18 data-nosnippet>18</a>    UnrepresentableResult,
 <a href=#19 id=19 data-nosnippet>19</a>    FunctionNotFound,
-<a href=#20 id=20 data-nosnippet>20</a>    StackSmash,
-<a href=#21 id=21 data-nosnippet>21</a>    <span class="comment">// https://github.com/wasmi-labs/wasmi/blob/37d1449524a322817c55026eb21eb97dd693b9ce/crates/core/src/trap.rs#L265C5-L265C27
-<a href=#22 id=22 data-nosnippet>22</a>    </span>BadConversionToInteger,
-<a href=#23 id=23 data-nosnippet>23</a>    MemoryAccessOutOfBounds,
-<a href=#24 id=24 data-nosnippet>24</a>    TableAccessOutOfBounds,
-<a href=#25 id=25 data-nosnippet>25</a>    ElementAccessOutOfBounds,
-<a href=#26 id=26 data-nosnippet>26</a>    UninitializedElement,
-<a href=#27 id=27 data-nosnippet>27</a>    SignatureMismatch,
-<a href=#28 id=28 data-nosnippet>28</a>    ExpectedAValueOnTheStack,
-<a href=#29 id=29 data-nosnippet>29</a>    ModuleNotFound,
-<a href=#30 id=30 data-nosnippet>30</a>    UnmetImport,
-<a href=#31 id=31 data-nosnippet>31</a>    UndefinedTableIndex,
-<a href=#32 id=32 data-nosnippet>32</a>    <span class="comment">// "undefined element" &lt;- as-call_indirect-last
-<a href=#33 id=33 data-nosnippet>33</a>    </span>ReachedUnreachable,
+<a href=#20 id=20 data-nosnippet>20</a>    <span class="comment">// https://github.com/wasmi-labs/wasmi/blob/37d1449524a322817c55026eb21eb97dd693b9ce/crates/core/src/trap.rs#L265C5-L265C27
+<a href=#21 id=21 data-nosnippet>21</a>    </span>BadConversionToInteger,
+<a href=#22 id=22 data-nosnippet>22</a>    MemoryAccessOutOfBounds,
+<a href=#23 id=23 data-nosnippet>23</a>    TableAccessOutOfBounds,
+<a href=#24 id=24 data-nosnippet>24</a>    ElementAccessOutOfBounds,
+<a href=#25 id=25 data-nosnippet>25</a>    UninitializedElement,
+<a href=#26 id=26 data-nosnippet>26</a>    SignatureMismatch,
+<a href=#27 id=27 data-nosnippet>27</a>    ExpectedAValueOnTheStack,
+<a href=#28 id=28 data-nosnippet>28</a>    ModuleNotFound,
+<a href=#29 id=29 data-nosnippet>29</a>    UnmetImport,
+<a href=#30 id=30 data-nosnippet>30</a>    UndefinedTableIndex,
+<a href=#31 id=31 data-nosnippet>31</a>    <span class="comment">// "undefined element" &lt;- as-call_indirect-last
+<a href=#32 id=32 data-nosnippet>32</a>    </span>ReachedUnreachable,
+<a href=#33 id=33 data-nosnippet>33</a>    StackExhaustion,
 <a href=#34 id=34 data-nosnippet>34</a>}
 <a href=#35 id=35 data-nosnippet>35</a>
 <a href=#36 id=36 data-nosnippet>36</a><span class="attr">#[derive(Debug, PartialEq, Eq, Clone)]
@@ -297,70 +297,72 @@
 <a href=#297 id=297 data-nosnippet>297</a>            RuntimeError::DivideBy0 =&gt; f.write_str(<span class="string">"Divide by zero is not permitted"</span>),
 <a href=#298 id=298 data-nosnippet>298</a>            RuntimeError::UnrepresentableResult =&gt; f.write_str(<span class="string">"Result is unrepresentable"</span>),
 <a href=#299 id=299 data-nosnippet>299</a>            RuntimeError::FunctionNotFound =&gt; f.write_str(<span class="string">"Function not found"</span>),
-<a href=#300 id=300 data-nosnippet>300</a>            RuntimeError::StackSmash =&gt; f.write_str(<span class="string">"Stack smashed"</span>),
-<a href=#301 id=301 data-nosnippet>301</a>            RuntimeError::BadConversionToInteger =&gt; f.write_str(<span class="string">"Bad conversion to integer"</span>),
-<a href=#302 id=302 data-nosnippet>302</a>            RuntimeError::MemoryAccessOutOfBounds =&gt; f.write_str(<span class="string">"Memory access out of bounds"</span>),
-<a href=#303 id=303 data-nosnippet>303</a>            RuntimeError::TableAccessOutOfBounds =&gt; f.write_str(<span class="string">"Table access out of bounds"</span>),
-<a href=#304 id=304 data-nosnippet>304</a>            RuntimeError::ElementAccessOutOfBounds =&gt; f.write_str(<span class="string">"Element access out of bounds"</span>),
-<a href=#305 id=305 data-nosnippet>305</a>            RuntimeError::UninitializedElement =&gt; f.write_str(<span class="string">"Uninitialized element"</span>),
-<a href=#306 id=306 data-nosnippet>306</a>            RuntimeError::SignatureMismatch =&gt; f.write_str(<span class="string">"Indirect call signature mismatch"</span>),
-<a href=#307 id=307 data-nosnippet>307</a>            RuntimeError::ExpectedAValueOnTheStack =&gt; {
-<a href=#308 id=308 data-nosnippet>308</a>                f.write_str(<span class="string">"Expected a value on the stack, but None was found"</span>)
-<a href=#309 id=309 data-nosnippet>309</a>            }
-<a href=#310 id=310 data-nosnippet>310</a>            RuntimeError::ModuleNotFound =&gt; f.write_str(<span class="string">"No such module exists"</span>),
-<a href=#311 id=311 data-nosnippet>311</a>            RuntimeError::UnmetImport =&gt; {
-<a href=#312 id=312 data-nosnippet>312</a>                f.write_str(<span class="string">"There is at least one import which has no corresponding export"</span>)
-<a href=#313 id=313 data-nosnippet>313</a>            }
-<a href=#314 id=314 data-nosnippet>314</a>            RuntimeError::UndefinedTableIndex =&gt; {
-<a href=#315 id=315 data-nosnippet>315</a>                f.write_str(<span class="string">"Indirect call: table index out of bounds"</span>)
-<a href=#316 id=316 data-nosnippet>316</a>            }
-<a href=#317 id=317 data-nosnippet>317</a>            RuntimeError::ReachedUnreachable =&gt; {
-<a href=#318 id=318 data-nosnippet>318</a>                f.write_str(<span class="string">"an unreachable statement was reached, triggered a trap"</span>)
-<a href=#319 id=319 data-nosnippet>319</a>            }
-<a href=#320 id=320 data-nosnippet>320</a>        }
-<a href=#321 id=321 data-nosnippet>321</a>    }
-<a href=#322 id=322 data-nosnippet>322</a>}
-<a href=#323 id=323 data-nosnippet>323</a>
-<a href=#324 id=324 data-nosnippet>324</a><span class="kw">impl </span>Display <span class="kw">for </span>StoreInstantiationError {
-<a href=#325 id=325 data-nosnippet>325</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; core::fmt::Result {
-<a href=#326 id=326 data-nosnippet>326</a>        <span class="kw">use </span>StoreInstantiationError::<span class="kw-2">*</span>;
-<a href=#327 id=327 data-nosnippet>327</a>        <span class="kw">match </span><span class="self">self </span>{
-<a href=#328 id=328 data-nosnippet>328</a>            ActiveDataWriteOutOfBounds =&gt; {
-<a href=#329 id=329 data-nosnippet>329</a>                f.write_str(<span class="string">"Active data writing in memory is out of bounds"</span>)
-<a href=#330 id=330 data-nosnippet>330</a>            }
-<a href=#331 id=331 data-nosnippet>331</a>            I64ValueOutOfReach(s) =&gt; f.write_fmt(<span class="macro">format_args!</span>(
-<a href=#332 id=332 data-nosnippet>332</a>                <span class="string">"I64 value {}is out of reach"</span>,
-<a href=#333 id=333 data-nosnippet>333</a>                <span class="kw">if </span>!s.is_empty() {
-<a href=#334 id=334 data-nosnippet>334</a>                    <span class="macro">format!</span>(<span class="string">"for {s} "</span>)
-<a href=#335 id=335 data-nosnippet>335</a>                } <span class="kw">else </span>{
-<a href=#336 id=336 data-nosnippet>336</a>                    <span class="string">""</span>.to_string()
-<a href=#337 id=337 data-nosnippet>337</a>                }
-<a href=#338 id=338 data-nosnippet>338</a>            )),
-<a href=#339 id=339 data-nosnippet>339</a>            MissingValueOnTheStack =&gt; f.write_str(<span class="string">""</span>),
-<a href=#340 id=340 data-nosnippet>340</a>            TooManyMemories(x) =&gt; f.write_fmt(<span class="macro">format_args!</span>(<span class="string">"Too many memories (overflow): {}"</span>, x)),
-<a href=#341 id=341 data-nosnippet>341</a>        }
-<a href=#342 id=342 data-nosnippet>342</a>    }
-<a href=#343 id=343 data-nosnippet>343</a>}
-<a href=#344 id=344 data-nosnippet>344</a>
-<a href=#345 id=345 data-nosnippet>345</a><span class="kw">impl </span>Display <span class="kw">for </span>LinkerError {
-<a href=#346 id=346 data-nosnippet>346</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; core::fmt::Result {
-<a href=#347 id=347 data-nosnippet>347</a>        <span class="kw">use </span>LinkerError::<span class="kw-2">*</span>;
-<a href=#348 id=348 data-nosnippet>348</a>        <span class="kw">match </span><span class="self">self </span>{
-<a href=#349 id=349 data-nosnippet>349</a>            UnmetImport =&gt; f.write_str(<span class="string">"Unmet import"</span>),
-<a href=#350 id=350 data-nosnippet>350</a>        }
-<a href=#351 id=351 data-nosnippet>351</a>    }
-<a href=#352 id=352 data-nosnippet>352</a>}
-<a href=#353 id=353 data-nosnippet>353</a>
-<a href=#354 id=354 data-nosnippet>354</a><span class="kw">pub type </span><span class="prelude-ty">Result</span>&lt;T&gt; = core::result::Result&lt;T, Error&gt;;
+<a href=#300 id=300 data-nosnippet>300</a>            RuntimeError::BadConversionToInteger =&gt; f.write_str(<span class="string">"Bad conversion to integer"</span>),
+<a href=#301 id=301 data-nosnippet>301</a>            RuntimeError::MemoryAccessOutOfBounds =&gt; f.write_str(<span class="string">"Memory access out of bounds"</span>),
+<a href=#302 id=302 data-nosnippet>302</a>            RuntimeError::TableAccessOutOfBounds =&gt; f.write_str(<span class="string">"Table access out of bounds"</span>),
+<a href=#303 id=303 data-nosnippet>303</a>            RuntimeError::ElementAccessOutOfBounds =&gt; f.write_str(<span class="string">"Element access out of bounds"</span>),
+<a href=#304 id=304 data-nosnippet>304</a>            RuntimeError::UninitializedElement =&gt; f.write_str(<span class="string">"Uninitialized element"</span>),
+<a href=#305 id=305 data-nosnippet>305</a>            RuntimeError::SignatureMismatch =&gt; f.write_str(<span class="string">"Indirect call signature mismatch"</span>),
+<a href=#306 id=306 data-nosnippet>306</a>            RuntimeError::ExpectedAValueOnTheStack =&gt; {
+<a href=#307 id=307 data-nosnippet>307</a>                f.write_str(<span class="string">"Expected a value on the stack, but None was found"</span>)
+<a href=#308 id=308 data-nosnippet>308</a>            }
+<a href=#309 id=309 data-nosnippet>309</a>            RuntimeError::ModuleNotFound =&gt; f.write_str(<span class="string">"No such module exists"</span>),
+<a href=#310 id=310 data-nosnippet>310</a>            RuntimeError::UnmetImport =&gt; {
+<a href=#311 id=311 data-nosnippet>311</a>                f.write_str(<span class="string">"There is at least one import which has no corresponding export"</span>)
+<a href=#312 id=312 data-nosnippet>312</a>            }
+<a href=#313 id=313 data-nosnippet>313</a>            RuntimeError::UndefinedTableIndex =&gt; {
+<a href=#314 id=314 data-nosnippet>314</a>                f.write_str(<span class="string">"Indirect call: table index out of bounds"</span>)
+<a href=#315 id=315 data-nosnippet>315</a>            }
+<a href=#316 id=316 data-nosnippet>316</a>            RuntimeError::ReachedUnreachable =&gt; {
+<a href=#317 id=317 data-nosnippet>317</a>                f.write_str(<span class="string">"an unreachable statement was reached, triggered a trap"</span>)
+<a href=#318 id=318 data-nosnippet>318</a>            }
+<a href=#319 id=319 data-nosnippet>319</a>            RuntimeError::StackExhaustion =&gt; {
+<a href=#320 id=320 data-nosnippet>320</a>                f.write_str(<span class="string">"either the call stack or the value stack overflowed"</span>)
+<a href=#321 id=321 data-nosnippet>321</a>            }
+<a href=#322 id=322 data-nosnippet>322</a>        }
+<a href=#323 id=323 data-nosnippet>323</a>    }
+<a href=#324 id=324 data-nosnippet>324</a>}
+<a href=#325 id=325 data-nosnippet>325</a>
+<a href=#326 id=326 data-nosnippet>326</a><span class="kw">impl </span>Display <span class="kw">for </span>StoreInstantiationError {
+<a href=#327 id=327 data-nosnippet>327</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; core::fmt::Result {
+<a href=#328 id=328 data-nosnippet>328</a>        <span class="kw">use </span>StoreInstantiationError::<span class="kw-2">*</span>;
+<a href=#329 id=329 data-nosnippet>329</a>        <span class="kw">match </span><span class="self">self </span>{
+<a href=#330 id=330 data-nosnippet>330</a>            ActiveDataWriteOutOfBounds =&gt; {
+<a href=#331 id=331 data-nosnippet>331</a>                f.write_str(<span class="string">"Active data writing in memory is out of bounds"</span>)
+<a href=#332 id=332 data-nosnippet>332</a>            }
+<a href=#333 id=333 data-nosnippet>333</a>            I64ValueOutOfReach(s) =&gt; f.write_fmt(<span class="macro">format_args!</span>(
+<a href=#334 id=334 data-nosnippet>334</a>                <span class="string">"I64 value {}is out of reach"</span>,
+<a href=#335 id=335 data-nosnippet>335</a>                <span class="kw">if </span>!s.is_empty() {
+<a href=#336 id=336 data-nosnippet>336</a>                    <span class="macro">format!</span>(<span class="string">"for {s} "</span>)
+<a href=#337 id=337 data-nosnippet>337</a>                } <span class="kw">else </span>{
+<a href=#338 id=338 data-nosnippet>338</a>                    <span class="string">""</span>.to_string()
+<a href=#339 id=339 data-nosnippet>339</a>                }
+<a href=#340 id=340 data-nosnippet>340</a>            )),
+<a href=#341 id=341 data-nosnippet>341</a>            MissingValueOnTheStack =&gt; f.write_str(<span class="string">""</span>),
+<a href=#342 id=342 data-nosnippet>342</a>            TooManyMemories(x) =&gt; f.write_fmt(<span class="macro">format_args!</span>(<span class="string">"Too many memories (overflow): {}"</span>, x)),
+<a href=#343 id=343 data-nosnippet>343</a>        }
+<a href=#344 id=344 data-nosnippet>344</a>    }
+<a href=#345 id=345 data-nosnippet>345</a>}
+<a href=#346 id=346 data-nosnippet>346</a>
+<a href=#347 id=347 data-nosnippet>347</a><span class="kw">impl </span>Display <span class="kw">for </span>LinkerError {
+<a href=#348 id=348 data-nosnippet>348</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; core::fmt::Result {
+<a href=#349 id=349 data-nosnippet>349</a>        <span class="kw">use </span>LinkerError::<span class="kw-2">*</span>;
+<a href=#350 id=350 data-nosnippet>350</a>        <span class="kw">match </span><span class="self">self </span>{
+<a href=#351 id=351 data-nosnippet>351</a>            UnmetImport =&gt; f.write_str(<span class="string">"Unmet import"</span>),
+<a href=#352 id=352 data-nosnippet>352</a>        }
+<a href=#353 id=353 data-nosnippet>353</a>    }
+<a href=#354 id=354 data-nosnippet>354</a>}
 <a href=#355 id=355 data-nosnippet>355</a>
-<a href=#356 id=356 data-nosnippet>356</a><span class="kw">impl </span>From&lt;RuntimeError&gt; <span class="kw">for </span>Error {
-<a href=#357 id=357 data-nosnippet>357</a>    <span class="kw">fn </span>from(value: RuntimeError) -&gt; <span class="self">Self </span>{
-<a href=#358 id=358 data-nosnippet>358</a>        <span class="self">Self</span>::RuntimeError(value)
-<a href=#359 id=359 data-nosnippet>359</a>    }
-<a href=#360 id=360 data-nosnippet>360</a>}
-<a href=#361 id=361 data-nosnippet>361</a>
-<a href=#362 id=362 data-nosnippet>362</a><span class="kw">impl </span>From&lt;StoreInstantiationError&gt; <span class="kw">for </span>Error {
-<a href=#363 id=363 data-nosnippet>363</a>    <span class="kw">fn </span>from(value: StoreInstantiationError) -&gt; <span class="self">Self </span>{
-<a href=#364 id=364 data-nosnippet>364</a>        <span class="self">Self</span>::StoreInstantiationError(value)
-<a href=#365 id=365 data-nosnippet>365</a>    }
-<a href=#366 id=366 data-nosnippet>366</a>}</code></pre></div></section></main></body></html>
+<a href=#356 id=356 data-nosnippet>356</a><span class="kw">pub type </span><span class="prelude-ty">Result</span>&lt;T&gt; = core::result::Result&lt;T, Error&gt;;
+<a href=#357 id=357 data-nosnippet>357</a>
+<a href=#358 id=358 data-nosnippet>358</a><span class="kw">impl </span>From&lt;RuntimeError&gt; <span class="kw">for </span>Error {
+<a href=#359 id=359 data-nosnippet>359</a>    <span class="kw">fn </span>from(value: RuntimeError) -&gt; <span class="self">Self </span>{
+<a href=#360 id=360 data-nosnippet>360</a>        <span class="self">Self</span>::RuntimeError(value)
+<a href=#361 id=361 data-nosnippet>361</a>    }
+<a href=#362 id=362 data-nosnippet>362</a>}
+<a href=#363 id=363 data-nosnippet>363</a>
+<a href=#364 id=364 data-nosnippet>364</a><span class="kw">impl </span>From&lt;StoreInstantiationError&gt; <span class="kw">for </span>Error {
+<a href=#365 id=365 data-nosnippet>365</a>    <span class="kw">fn </span>from(value: StoreInstantiationError) -&gt; <span class="self">Self </span>{
+<a href=#366 id=366 data-nosnippet>366</a>        <span class="self">Self</span>::StoreInstantiationError(value)
+<a href=#367 id=367 data-nosnippet>367</a>    }
+<a href=#368 id=368 data-nosnippet>368</a>}</code></pre></div></section></main></body></html>
