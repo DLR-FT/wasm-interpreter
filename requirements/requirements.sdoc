@@ -70,6 +70,19 @@ COMMENT: >>>
 All requirements that allow a dependency must specify the exact version of the dependency (at least major, minor and patch release)
 <<<
 
+[REQUIREMENT]
+UID: REQ-18
+TITLE: Standard Compliance
+STATEMENT: >>>
+The interpreter shall be compliant with version 2.0, 16 June 2025, of the core WebAssembly standard (https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/).
+<<<
+RATIONALE: >>>
+Correct execution of web assembly code requires that the interpreter adheres to the standard.
+<<<
+COMMENT: >>>
+The chosen version is the most recent Candidate Recommendation Draft, which is considered the current standard as per https://webassembly.org/news/2025-03-20-wasm-2.0/.
+<<<
+
 [SECTION]
 TITLE: Low-Level Functional Requirements
 
