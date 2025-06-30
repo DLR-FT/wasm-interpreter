@@ -119,6 +119,8 @@
                   cargo-watch
                   wabt
 
+                  strictdoc
+
                   # utilities
                   treefmtEval.config.build.wrapper
                 ];
