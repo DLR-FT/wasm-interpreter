@@ -123,6 +123,8 @@
                   critcmp # compare criterion.rs benchmark results
                   wabt
 
+                  strictdoc
+
                   # utilities
                   treefmtEval.config.build.wrapper
                 ];
