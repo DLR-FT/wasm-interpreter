@@ -1,5 +1,5 @@
 /* imports */
-#import "@preview/acrostiche:0.4.1": *
+#import "@preview/acrostiche:0.5.2": *
 #import "template.typ": setup_template
 
 #show: setup_template.with(
