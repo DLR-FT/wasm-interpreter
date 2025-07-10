@@ -172,7 +172,7 @@
                   {
                     name = "whitepaper-watch";
                     command = ''
-                      typst watch --root "$PRJ_ROOT/whitepaper" "$PRJ_ROOT/whitepaper/main.typ"
+                      typst watch --root "$PRJ_ROOT/pkgs/whitepaper" "$PRJ_ROOT/pkgs/whitepaper/main.typ"
                     '';
                     help = "start typst watch loop for the whitepaper";
                   }
