@@ -1,4 +1,4 @@
-#import "@preview/ccicons:1.0.0": cc-by-sa
+#import "@preview/ccicons:1.0.1": cc-by-sa
 
 #let setup_template(title: [], author: [], keywords: (), affiliation: [], contents) = {
   set document(title: title, author: author, keywords: keywords)
