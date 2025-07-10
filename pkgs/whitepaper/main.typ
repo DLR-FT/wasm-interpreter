@@ -22,7 +22,7 @@
 
 = Introduction
 This white paper provides an overview over our WebAssembly interpreter
-@our-repo. It Primarily serves to highlight and explain design decisions and the
+@our-repo. It primarily serves to highlight and explain design decisions and the
 goals we aim to achieve.
 
 The development of this project currently takes place as a joint effort between
