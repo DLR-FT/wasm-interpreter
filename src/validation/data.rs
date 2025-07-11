@@ -74,8 +74,7 @@ pub(super) fn validate_data_section(
                 }
                 assert!(
                     mem_idx == 0,
-                    "Memory index is not 0 - it's {}! Multiple memories are NOT supported",
-                    mem_idx
+                    "Memory index is not 0 - it's {mem_idx}! Multiple memories are NOT supported"
                 );
 
                 let mut valid_stack = ValidationStack::new();

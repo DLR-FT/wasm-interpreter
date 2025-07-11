@@ -1015,8 +1015,7 @@ pub fn f32_convert_i32_u() {
         .unwrap();
     assert!(
         result > 4294967040.0 && result <= 4294967296.0,
-        "Large value conversion imprecise: got {}",
-        result
+        "Large value conversion imprecise: got {result}"
     );
 }
 
@@ -1123,9 +1122,9 @@ pub fn f32_reinterpret_i32() {
             .invoke::<i32, f32>(&instance.get_function_by_index(0, 0).unwrap(), input)
             .unwrap();
         if expected.is_nan() {
-            assert!(result.is_nan(), "Failed for input: {:x}", input);
+            assert!(result.is_nan(), "Failed for input: {input:x}");
         } else {
-            assert_eq!(result, expected, "Failed for input: {:x}", input);
+            assert_eq!(result, expected, "Failed for input: {input:x}");
         }
     }
 }

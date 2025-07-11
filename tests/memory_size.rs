@@ -151,7 +151,7 @@ fn memory_size_5() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     let mut i = 0;
     for byte in wasm_bytes.iter() {
-        print!("{:#04X} ", byte);
+        print!("{byte:#04X} ");
         i += 1;
         if i % 8 == 0 {
             i = 0;
@@ -177,7 +177,7 @@ fn memory_size_6() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     let mut i = 0;
     for byte in wasm_bytes.iter() {
-        print!("{:#04X} ", byte);
+        print!("{byte:#04X} ");
         i += 1;
         if i % 8 == 0 {
             i = 0;

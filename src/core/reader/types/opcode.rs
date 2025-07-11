@@ -233,7 +233,7 @@ pub fn fc_extension_opcode_second_byte_to_str(instr: u32) -> alloc::string::Stri
     .to_owned();
 
     if opcode == "UNKNOWN" {
-        format!("UNKNOWN({:x})", instr)
+        format!("UNKNOWN({instr:x})")
     } else {
         opcode
     }
@@ -432,7 +432,7 @@ pub fn opcode_byte_to_str(byte: u8) -> alloc::string::String {
     .to_owned();
 
     if opcode == "UNKNOWN" {
-        format!("UNKNOWN({:x})", byte)
+        format!("UNKNOWN({byte:x})")
     } else {
         opcode
     }

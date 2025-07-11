@@ -53,8 +53,8 @@ impl AssertEqError {
                 (a, b) => {
                     if a != b {
                         Err(AssertEqError {
-                            left: format!("{:?}", left),
-                            right: format!("{:?}", right),
+                            left: format!("{left:?}"),
+                            right: format!("{right:?}"),
                         })
                     } else {
                         Ok(())

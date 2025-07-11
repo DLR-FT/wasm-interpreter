@@ -135,8 +135,7 @@ impl Display for Error {
                 "A value was expected in the WASM binary but the end of file was reached instead",
             ),
             Error::InvalidSection(section, reason) => f.write_fmt(format_args!(
-                "Section '{:?}' invalid! Reason: {}",
-                section, reason
+                "Section '{section:?}' invalid! Reason: {reason}"
             )),
             Error::InvalidSectionType(ty) => f.write_fmt(format_args!(
                 "An invalid section type id was found in a section header: {ty}"
@@ -203,21 +202,19 @@ impl Display for Error {
             Error::RuntimeError(err) => err.fmt(f),
             Error::ExpectedAnOperand => f.write_str("Expected a ValType"), // Error => f.write_str("Expected an operand (ValType) on the stack")
             Error::MemoryIsNotDefined(memidx) => f.write_fmt(format_args!(
-                "C.mems[{}] is NOT defined when it should be",
-                memidx
+                "C.mems[{memidx}] is NOT defined when it should be"
             )),
             Error::ErroneousAlignment(mem_align, minimum_wanted_alignment) => {
                 f.write_fmt(format_args!(
-                    "Alignment ({}) is not less or equal to {}",
-                    mem_align, minimum_wanted_alignment
+                    "Alignment ({mem_align}) is not less or equal to {minimum_wanted_alignment}"
                 ))
             }
             Error::NoDataSegments => f.write_str("Data Count is None"),
             Error::DataSegmentNotFound(data_idx) => {
-                f.write_fmt(format_args!("Data Segment {} not found", data_idx))
+                f.write_fmt(format_args!("Data Segment {data_idx} not found"))
             }
             Error::InvalidLabelIdx(label_idx) => {
-                f.write_fmt(format_args!("invalid label index {}", label_idx))
+                f.write_fmt(format_args!("invalid label index {label_idx}"))
             }
             Error::ValidationCtrlStackEmpty => {
                 f.write_str("cannot retrieve last ctrl block, validation ctrl stack is empty")
@@ -229,36 +226,28 @@ impl Display for Error {
                 f.write_str("read 'end' without matching 'else' instruction to 'if' instruction")
             }
             Error::TableIsNotDefined(table_idx) => f.write_fmt(format_args!(
-                "C.tables[{}] is NOT defined when it should be",
-                table_idx
+                "C.tables[{table_idx}] is NOT defined when it should be"
             )),
             Error::ElementIsNotDefined(elem_idx) => f.write_fmt(format_args!(
-                "C.elems[{}] is NOT defined when it should be",
-                elem_idx
+                "C.elems[{elem_idx}] is NOT defined when it should be"
             )),
             Error::DifferentRefTypes(rref1, rref2) => f.write_fmt(format_args!(
-                "RefType {:?} is NOT equal to RefType {:?}",
-                rref1, rref2
+                "RefType {rref1:?} is NOT equal to RefType {rref2:?}"
             )),
             Error::ExpectedARefType(found_valtype) => f.write_fmt(format_args!(
-                "Expected a RefType, found a {:?} instead",
-                found_valtype
+                "Expected a RefType, found a {found_valtype:?} instead"
             )),
             Error::WrongRefTypeForInteropValue(ref_given, ref_wanted) => f.write_fmt(format_args!(
-                "Wrong RefType for InteropValue: Given {:?} - Needed {:?}",
-                ref_given, ref_wanted
+                "Wrong RefType for InteropValue: Given {ref_given:?} - Needed {ref_wanted:?}"
             )),
             Error::FunctionIsNotDefined(func_idx) => f.write_fmt(format_args!(
-                "C.functions[{}] is NOT defined when it should be",
-                func_idx
+                "C.functions[{func_idx}] is NOT defined when it should be"
             )),
             Error::ReferencingAnUnreferencedFunction(func_idx) => f.write_fmt(format_args!(
-                "Referenced a function ({}) that was not referenced in validation",
-                func_idx
+                "Referenced a function ({func_idx}) that was not referenced in validation"
             )),
             Error::FunctionTypeIsNotDefined(func_ty_idx) => f.write_fmt(format_args!(
-                "C.fn_types[{}] is NOT defined when it should be",
-                func_ty_idx
+                "C.fn_types[{func_ty_idx}] is NOT defined when it should be"
             )),
             Error::StoreInstantiationError(err) => err.fmt(f),
             Error::OnlyFuncRefIsAllowed => f.write_str("Only FuncRef is allowed"),
@@ -269,10 +258,10 @@ impl Display for Error {
                 f.write_str("SELECT T* (0x1C) instruction must have exactly one type in the subsequent type vector")
             }
             Error::TooManyLocals(x) => {
-                f.write_fmt(format_args!("Too many locals (more than 2^32-1): {}", x))
+                f.write_fmt(format_args!("Too many locals (more than 2^32-1): {x}"))
             }
             Error::UnsupportedProposal(proposal) => {
-                f.write_fmt(format_args!("Unsupported proposal: {:?}", proposal))
+                f.write_fmt(format_args!("Unsupported proposal: {proposal:?}"))
             }
             Error::Overflow => f.write_str("Overflow"),
             Error::LinkerError(err) => err.fmt(f),
@@ -339,7 +328,7 @@ impl Display for StoreInstantiationError {
                 }
             )),
             MissingValueOnTheStack => f.write_str(""),
-            TooManyMemories(x) => f.write_fmt(format_args!("Too many memories (overflow): {}", x)),
+            TooManyMemories(x) => f.write_fmt(format_args!("Too many memories (overflow): {x}")),
         }
     }
 }
