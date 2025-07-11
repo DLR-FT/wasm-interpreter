@@ -32,7 +32,7 @@
 <a href=#32 id=32 data-nosnippet>32</a>            <span class="kw">if let </span><span class="prelude-val">Ok</span>(valid_char) = alloc::string::String::from_utf8(Vec::from(<span class="kw-2">&amp;</span>[byte])) {
 <a href=#33 id=33 data-nosnippet>33</a>                init_str.push_str(valid_char.as_str());
 <a href=#34 id=34 data-nosnippet>34</a>            } <span class="kw">else </span>{
-<a href=#35 id=35 data-nosnippet>35</a>                init_str.push_str(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"\\x{:02x}"</span>, byte));
+<a href=#35 id=35 data-nosnippet>35</a>                init_str.push_str(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"\\x{byte:02x}"</span>));
 <a href=#36 id=36 data-nosnippet>36</a>            }
 <a href=#37 id=37 data-nosnippet>37</a>        }
 <a href=#38 id=38 data-nosnippet>38</a>
@@ -66,7 +66,7 @@
 <a href=#66 id=66 data-nosnippet>66</a>                    <span class="comment">// .field("offset", format_args!("[{}..={}]", from, to))
 <a href=#67 id=67 data-nosnippet>67</a>                    </span>.field(
 <a href=#68 id=68 data-nosnippet>68</a>                        <span class="string">"offset"</span>,
-<a href=#69 id=69 data-nosnippet>69</a>                        <span class="kw-2">&amp;</span><span class="macro">format_args!</span>(<span class="string">"[{}..={}] (hex = [{:X}..={:X}])"</span>, from, to, from, to),
+<a href=#69 id=69 data-nosnippet>69</a>                        <span class="kw-2">&amp;</span><span class="macro">format_args!</span>(<span class="string">"[{from}..={to}] (hex = [{from:X}..={to:X}])"</span>),
 <a href=#70 id=70 data-nosnippet>70</a>                    )
 <a href=#71 id=71 data-nosnippet>71</a>                    .finish()
 <a href=#72 id=72 data-nosnippet>72</a>                <span class="comment">// f.
@@ -89,7 +89,7 @@
 <a href=#89 id=89 data-nosnippet>89</a>                init_str.push_str(valid_char.as_str());
 <a href=#90 id=90 data-nosnippet>90</a>            } <span class="kw">else </span>{
 <a href=#91 id=91 data-nosnippet>91</a>                <span class="comment">// If it's not valid UTF-8, print it as hex
-<a href=#92 id=92 data-nosnippet>92</a>                </span>init_str.push_str(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"\\x{:02x}"</span>, byte));
+<a href=#92 id=92 data-nosnippet>92</a>                </span>init_str.push_str(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"\\x{byte:02x}"</span>));
 <a href=#93 id=93 data-nosnippet>93</a>            }
 <a href=#94 id=94 data-nosnippet>94</a>        }
 <a href=#95 id=95 data-nosnippet>95</a>        f.debug_struct(<span class="string">"PassiveData"</span>)

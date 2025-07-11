@@ -74,43 +74,42 @@
 <a href=#74 id=74 data-nosnippet>74</a>                }
 <a href=#75 id=75 data-nosnippet>75</a>                <span class="macro">assert!</span>(
 <a href=#76 id=76 data-nosnippet>76</a>                    mem_idx == <span class="number">0</span>,
-<a href=#77 id=77 data-nosnippet>77</a>                    <span class="string">"Memory index is not 0 - it's {}! Multiple memories are NOT supported"</span>,
-<a href=#78 id=78 data-nosnippet>78</a>                    mem_idx
-<a href=#79 id=79 data-nosnippet>79</a>                );
-<a href=#80 id=80 data-nosnippet>80</a>
-<a href=#81 id=81 data-nosnippet>81</a>                <span class="kw">let </span><span class="kw-2">mut </span>valid_stack = ValidationStack::new();
-<a href=#82 id=82 data-nosnippet>82</a>                <span class="kw">let </span>(offset, <span class="kw">_</span>) = {
-<a href=#83 id=83 data-nosnippet>83</a>                    read_constant_expression(
-<a href=#84 id=84 data-nosnippet>84</a>                        wasm,
-<a href=#85 id=85 data-nosnippet>85</a>                        <span class="kw-2">&amp;mut </span>valid_stack,
-<a href=#86 id=86 data-nosnippet>86</a>                        imported_global_types,
-<a href=#87 id=87 data-nosnippet>87</a>                        num_funcs,
-<a href=#88 id=88 data-nosnippet>88</a>                    )<span class="question-mark">?
-<a href=#89 id=89 data-nosnippet>89</a>                </span>};
-<a href=#90 id=90 data-nosnippet>90</a>
-<a href=#91 id=91 data-nosnippet>91</a>                valid_stack.assert_val_types(<span class="kw-2">&amp;</span>[ValType::NumType(NumType::I32)], <span class="bool-val">true</span>)<span class="question-mark">?</span>;
-<a href=#92 id=92 data-nosnippet>92</a>
-<a href=#93 id=93 data-nosnippet>93</a>                <span class="kw">let </span>byte_vec = wasm.read_vec(|el| el.read_u8())<span class="question-mark">?</span>;
-<a href=#94 id=94 data-nosnippet>94</a>
-<a href=#95 id=95 data-nosnippet>95</a>                DataSegment {
-<a href=#96 id=96 data-nosnippet>96</a>                    mode: DataMode::Active(DataModeActive {
-<a href=#97 id=97 data-nosnippet>97</a>                        memory_idx: <span class="number">0</span>,
-<a href=#98 id=98 data-nosnippet>98</a>                        offset,
-<a href=#99 id=99 data-nosnippet>99</a>                    }),
-<a href=#100 id=100 data-nosnippet>100</a>                    init: byte_vec,
-<a href=#101 id=101 data-nosnippet>101</a>                }
-<a href=#102 id=102 data-nosnippet>102</a>                <span class="comment">// mode active { memory x, offset e }
-<a href=#103 id=103 data-nosnippet>103</a>                // this hasn't been yet implemented in wasm
-<a href=#104 id=104 data-nosnippet>104</a>                // as per docs:
-<a href=#105 id=105 data-nosnippet>105</a>
-<a href=#106 id=106 data-nosnippet>106</a>                // https://webassembly.github.io/spec/core/binary/modules.html#data-section
-<a href=#107 id=107 data-nosnippet>107</a>                // The initial integer can be interpreted as a bitfield. Bit 0 indicates a passive segment, bit 1 indicates the presence of an explicit memory index for an active segment.
-<a href=#108 id=108 data-nosnippet>108</a>                // In the current version of WebAssembly, at most one memory may be defined or imported in a single module, so all valid active data segments have a memory value of 0
-<a href=#109 id=109 data-nosnippet>109</a>            </span>}
-<a href=#110 id=110 data-nosnippet>110</a>            <span class="kw">_ </span>=&gt; <span class="macro">unreachable!</span>(),
-<a href=#111 id=111 data-nosnippet>111</a>        };
-<a href=#112 id=112 data-nosnippet>112</a>
-<a href=#113 id=113 data-nosnippet>113</a>        <span class="macro">trace!</span>(<span class="string">"{:?}"</span>, data_sec.init);
-<a href=#114 id=114 data-nosnippet>114</a>        <span class="prelude-val">Ok</span>(data_sec)
-<a href=#115 id=115 data-nosnippet>115</a>    })
-<a href=#116 id=116 data-nosnippet>116</a>}</code></pre></div></section></main></body></html>
+<a href=#77 id=77 data-nosnippet>77</a>                    <span class="string">"Memory index is not 0 - it's {mem_idx}! Multiple memories are NOT supported"
+<a href=#78 id=78 data-nosnippet>78</a>                </span>);
+<a href=#79 id=79 data-nosnippet>79</a>
+<a href=#80 id=80 data-nosnippet>80</a>                <span class="kw">let </span><span class="kw-2">mut </span>valid_stack = ValidationStack::new();
+<a href=#81 id=81 data-nosnippet>81</a>                <span class="kw">let </span>(offset, <span class="kw">_</span>) = {
+<a href=#82 id=82 data-nosnippet>82</a>                    read_constant_expression(
+<a href=#83 id=83 data-nosnippet>83</a>                        wasm,
+<a href=#84 id=84 data-nosnippet>84</a>                        <span class="kw-2">&amp;mut </span>valid_stack,
+<a href=#85 id=85 data-nosnippet>85</a>                        imported_global_types,
+<a href=#86 id=86 data-nosnippet>86</a>                        num_funcs,
+<a href=#87 id=87 data-nosnippet>87</a>                    )<span class="question-mark">?
+<a href=#88 id=88 data-nosnippet>88</a>                </span>};
+<a href=#89 id=89 data-nosnippet>89</a>
+<a href=#90 id=90 data-nosnippet>90</a>                valid_stack.assert_val_types(<span class="kw-2">&amp;</span>[ValType::NumType(NumType::I32)], <span class="bool-val">true</span>)<span class="question-mark">?</span>;
+<a href=#91 id=91 data-nosnippet>91</a>
+<a href=#92 id=92 data-nosnippet>92</a>                <span class="kw">let </span>byte_vec = wasm.read_vec(|el| el.read_u8())<span class="question-mark">?</span>;
+<a href=#93 id=93 data-nosnippet>93</a>
+<a href=#94 id=94 data-nosnippet>94</a>                DataSegment {
+<a href=#95 id=95 data-nosnippet>95</a>                    mode: DataMode::Active(DataModeActive {
+<a href=#96 id=96 data-nosnippet>96</a>                        memory_idx: <span class="number">0</span>,
+<a href=#97 id=97 data-nosnippet>97</a>                        offset,
+<a href=#98 id=98 data-nosnippet>98</a>                    }),
+<a href=#99 id=99 data-nosnippet>99</a>                    init: byte_vec,
+<a href=#100 id=100 data-nosnippet>100</a>                }
+<a href=#101 id=101 data-nosnippet>101</a>                <span class="comment">// mode active { memory x, offset e }
+<a href=#102 id=102 data-nosnippet>102</a>                // this hasn't been yet implemented in wasm
+<a href=#103 id=103 data-nosnippet>103</a>                // as per docs:
+<a href=#104 id=104 data-nosnippet>104</a>
+<a href=#105 id=105 data-nosnippet>105</a>                // https://webassembly.github.io/spec/core/binary/modules.html#data-section
+<a href=#106 id=106 data-nosnippet>106</a>                // The initial integer can be interpreted as a bitfield. Bit 0 indicates a passive segment, bit 1 indicates the presence of an explicit memory index for an active segment.
+<a href=#107 id=107 data-nosnippet>107</a>                // In the current version of WebAssembly, at most one memory may be defined or imported in a single module, so all valid active data segments have a memory value of 0
+<a href=#108 id=108 data-nosnippet>108</a>            </span>}
+<a href=#109 id=109 data-nosnippet>109</a>            <span class="kw">_ </span>=&gt; <span class="macro">unreachable!</span>(),
+<a href=#110 id=110 data-nosnippet>110</a>        };
+<a href=#111 id=111 data-nosnippet>111</a>
+<a href=#112 id=112 data-nosnippet>112</a>        <span class="macro">trace!</span>(<span class="string">"{:?}"</span>, data_sec.init);
+<a href=#113 id=113 data-nosnippet>113</a>        <span class="prelude-val">Ok</span>(data_sec)
+<a href=#114 id=114 data-nosnippet>114</a>    })
+<a href=#115 id=115 data-nosnippet>115</a>}</code></pre></div></section></main></body></html>
