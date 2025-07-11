@@ -105,6 +105,7 @@
                 name = "wasm-interpreter";
                 packagesFrom = [
                   self.packages.${system}.report
+                  self.packages.${system}.requirements
                   self.packages.${system}.whitepaper
                 ];
                 packages = with pkgs; [
