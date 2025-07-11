@@ -348,8 +348,8 @@ impl Ref {
 impl Display for Ref {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
-            Ref::Func(func_addr) => write!(f, "FuncRef({:?})", func_addr),
-            Ref::Extern(extern_addr) => write!(f, "ExternRef({:?})", extern_addr),
+            Ref::Func(func_addr) => write!(f, "FuncRef({func_addr:?})"),
+            Ref::Extern(extern_addr) => write!(f, "ExternRef({extern_addr:?})"),
         }
     }
 }

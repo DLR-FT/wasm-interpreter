@@ -121,11 +121,11 @@ pub fn spec_tests() {
         ).expect("writing into strings to never fail");
 
         if report.passed_asserts() < report.total_asserts() {
-            println!("{}", report);
+            println!("{report}");
         }
     }
 
-    println!("{}", final_status);
+    println!("{final_status}");
 
     println!(
         "\nReport for {:filename_width$}: Tests: {:passed_width$} Passed, {:failed_width$} Failed --- {:percentage_width$.2}%\n\n",
@@ -140,8 +140,7 @@ pub fn spec_tests() {
     );
 
     println!(
-        "Tests: {} Passed, {} Failed, {} Compilation Errors",
-        num_successes, num_failures, num_script_errors
+        "Tests: {num_successes} Passed, {num_failures} Failed, {num_script_errors} Compilation Errors"
     );
 
     // Optional: We need to save the result to a file for CI Regression Analysis

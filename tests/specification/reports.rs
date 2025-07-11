@@ -180,7 +180,7 @@ impl std::fmt::Display for WastTestReport {
             }
             WastTestReport::Asserts(assert_report) => {
                 writeln!(f, "------ {} ------", assert_report.filename)?;
-                writeln!(f, "{}", assert_report)?;
+                writeln!(f, "{assert_report}")?;
                 let passed_asserts = assert_report.results.iter().filter(|r| r.is_ok()).count();
                 let failed_asserts = assert_report.results.iter().filter(|r| r.is_err()).count();
                 let total_asserts = assert_report.results.len();
@@ -188,8 +188,7 @@ impl std::fmt::Display for WastTestReport {
                 writeln!(f)?;
                 writeln!(
                     f,
-                    "Execution finished. Passed: {}, Failed: {}, Total: {}",
-                    passed_asserts, failed_asserts, total_asserts
+                    "Execution finished. Passed: {passed_asserts}, Failed: {failed_asserts}, Total: {total_asserts}"
                 )?;
                 writeln!(f, "~~~~~~~~~~~~~~~~")?;
                 writeln!(f)?;

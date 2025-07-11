@@ -32,7 +32,7 @@ impl Debug for DataSegment {
             if let Ok(valid_char) = alloc::string::String::from_utf8(Vec::from(&[byte])) {
                 init_str.push_str(valid_char.as_str());
             } else {
-                init_str.push_str(&format!("\\x{:02x}", byte));
+                init_str.push_str(&format!("\\x{byte:02x}"));
             }
         }
 
@@ -66,7 +66,7 @@ impl Debug for DataMode {
                     // .field("offset", format_args!("[{}..={}]", from, to))
                     .field(
                         "offset",
-                        &format_args!("[{}..={}] (hex = [{:X}..={:X}])", from, to, from, to),
+                        &format_args!("[{from}..={to}] (hex = [{from:X}..={to:X}])"),
                     )
                     .finish()
                 // f.
@@ -89,7 +89,7 @@ impl Debug for PassiveData {
                 init_str.push_str(valid_char.as_str());
             } else {
                 // If it's not valid UTF-8, print it as hex
-                init_str.push_str(&format!("\\x{:02x}", byte));
+                init_str.push_str(&format!("\\x{byte:02x}"));
             }
         }
         f.debug_struct("PassiveData")
