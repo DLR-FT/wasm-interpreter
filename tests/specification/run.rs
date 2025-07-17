@@ -7,7 +7,6 @@ use std::panic::UnwindSafe;
 use itertools::enumerate;
 use log::debug;
 use wasm::function_ref::FunctionRef;
-use wasm::ExportInst;
 use wasm::RuntimeError;
 use wasm::Value;
 use wasm::{validate, RuntimeInstance};
@@ -349,11 +348,14 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                 let module_addr = match modulee {
                     None => store.modules.len() - 1,
                     Some(id) => {
-                        log::error!("looking for {:?}\n{:?}", id.name(), store.module_names);
+                        log::error!("looking for {:?} in \n{:?}", id.name(), visible_modules);
                         visible_modules[id.name()]
                     }
                 };
-                store.module_names.insert(String::from(name), module_addr);
+                store
+                    .registry
+                    .register_module(name.to_owned().into(), &store.modules[module_addr])
+                    .unwrap();
             }
             wast::WastDirective::AssertUnlinkable {
                 span,
@@ -464,17 +466,12 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
 
                         module_inst
                             .exports
-                            .iter()
-                            .find_map(|ExportInst { name, value }| {
-                                if name != invoke.name {
-                                    return None;
-                                }
-                                match value {
-                                    wasm::ExternVal::Func(func_addr) => Some(FunctionRef {
-                                        func_addr: *func_addr,
-                                    }),
-                                    _ => None,
-                                }
+                            .get(invoke.name)
+                            .and_then(|value| match value {
+                                wasm::ExternVal::Func(func_addr) => Some(FunctionRef {
+                                    func_addr: *func_addr,
+                                }),
+                                _ => None,
                             })
                             .ok_or(RuntimeError::FunctionNotFound)
                     }))
@@ -580,17 +577,12 @@ fn execute_assert_return(
 
                 module_inst
                     .exports
-                    .iter()
-                    .find_map(|ExportInst { name, value }| {
-                        if name != invoke_info.name {
-                            return None;
-                        }
-                        match value {
-                            wasm::ExternVal::Func(func_addr) => Some(FunctionRef {
-                                func_addr: *func_addr,
-                            }),
-                            _ => None,
-                        }
+                    .get(invoke_info.name)
+                    .and_then(|value| match value {
+                        wasm::ExternVal::Func(func_addr) => Some(FunctionRef {
+                            func_addr: *func_addr,
+                        }),
+                        _ => None,
                     })
                     .ok_or(RuntimeError::FunctionNotFound)
             }))
@@ -631,15 +623,10 @@ fn execute_assert_return(
                 };
                 let global_addr = module_inst
                     .exports
-                    .iter()
-                    .find_map(|ExportInst { name, value }| {
-                        if name != global {
-                            return None;
-                        }
-                        match value {
-                            wasm::ExternVal::Global(global_addr) => Some(*global_addr),
-                            _ => None,
-                        }
+                    .get(global)
+                    .and_then(|value| match value {
+                        wasm::ExternVal::Global(global_addr) => Some(*global_addr),
+                        _ => None,
                     })
                     .ok_or(RuntimeError::FunctionNotFound)?; // TODO fix error
                 Ok(store.globals[global_addr].value)
@@ -688,17 +675,12 @@ fn execute_assert_trap<'a>(
 
                 module_inst
                     .exports
-                    .iter()
-                    .find_map(|ExportInst { name, value }| {
-                        if name != invoke_info.name {
-                            return None;
-                        }
-                        match value {
-                            wasm::ExternVal::Func(func_addr) => Some(FunctionRef {
-                                func_addr: *func_addr,
-                            }),
-                            _ => None,
-                        }
+                    .get(invoke_info.name)
+                    .and_then(|value| match value {
+                        wasm::ExternVal::Func(func_addr) => Some(FunctionRef {
+                            func_addr: *func_addr,
+                        }),
+                        _ => None,
                     })
                     .ok_or(RuntimeError::FunctionNotFound)
             }))

@@ -16,7 +16,7 @@ use crate::execution::value::{Ref, Value};
 use crate::execution::{run_const_span, Stack};
 use crate::value::FuncAddr;
 use crate::{Error, Limits, RefType, RuntimeError, ValidationInfo};
-use alloc::borrow::ToOwned;
+use alloc::borrow::{Cow, ToOwned};
 use alloc::collections::btree_map::BTreeMap;
 use alloc::string::String;
 use alloc::vec;
@@ -44,7 +44,15 @@ pub struct Store<'b> {
     pub tables: Vec<TableInst>,
     pub elements: Vec<ElemInst>,
     pub modules: Vec<ModuleInst<'b>>,
+
+    // fields outside of the spec but are convenient are below
+
+    // kv pair for module names and module "addresses" (that make sense with `Self.modules[module_addr]`)
     pub module_names: BTreeMap<String, usize>,
+
+    // all visible exports and entities added by hand or module instantiation by the interpreter
+    // currently, all of the exports of an instantiated module is made visible (this is outside of spec)
+    pub registry: Registry,
 }
 
 impl<'b> Store<'b> {
@@ -76,28 +84,10 @@ impl<'b> Store<'b> {
                 import_desc
             );
             let import_extern_type = import_desc.extern_type(validation_info)?;
-            let exporting_module = self
-                .modules
-                .get(
-                    *self
-                        .module_names
-                        .get(exporting_module_name)
-                        .ok_or(Error::RuntimeError(RuntimeError::ModuleNotFound))?,
-                )
-                .ok_or(Error::RuntimeError(RuntimeError::ModuleNotFound))?;
-
-            let export_extern_val_candidate = *exporting_module
-                .exports
-                .iter()
-                .find_map(
-                    |ExportInst {
-                         name: export_name,
-                         value: export_extern_val,
-                     }| {
-                        (import_name == export_name).then_some(export_extern_val)
-                    },
-                )
-                .ok_or(Error::UnknownImport)?;
+            let export_extern_val_candidate = *self.registry.lookup(
+                exporting_module_name.clone().into(),
+                import_name.clone().into(),
+            )?;
             trace!("export candidate found: {:?}", export_extern_val_candidate);
             if !export_extern_val_candidate
                 .extern_type(self)?
@@ -121,7 +111,7 @@ impl<'b> Store<'b> {
             global_addrs: extern_vals.iter().globals().collect(),
             elem_addrs: Vec::new(),
             data_addrs: Vec::new(),
-            exports: Vec::new(),
+            exports: BTreeMap::new(),
             wasm_bytecode: validation_info.wasm,
             sidetable: validation_info.sidetable.clone(),
             name: name.to_owned(),
@@ -252,7 +242,7 @@ impl<'b> Store<'b> {
         module_inst.global_addrs.extend(global_addrs);
 
         // allocation: step 18,19
-        let export_insts = module
+        let export_insts: BTreeMap<String, ExternVal> = module
             .exports
             .iter()
             .map(|Export { name, desc }| {
@@ -268,10 +258,7 @@ impl<'b> Store<'b> {
                         ExternVal::Global(module_inst.global_addrs[*global_idx])
                     }
                 };
-                ExportInst {
-                    name: String::from(name),
-                    value,
-                }
+                (String::from(name), value)
             })
             .collect();
 
@@ -284,10 +271,16 @@ impl<'b> Store<'b> {
 
         // allocation: end
 
+        // register module exports, this is outside of the spec
+        self.registry
+            .register_module(name.to_owned().into(), &module_inst)?;
+
         // instantiation step 11 end: module_inst properly allocated after this point.
         // TODO: it is too hard with our codebase to do the following steps without adding the module to the store
         let current_module_idx = &self.modules.len();
         self.modules.push(module_inst);
+
+        // keep module names, this is outside of the spec
         self.module_names
             .insert(String::from(name), *current_module_idx);
 
@@ -764,15 +757,10 @@ impl<'b> Store<'b> {
         self.modules
             .get(module_addr)?
             .exports
-            .iter()
-            .find_map(|ExportInst { name, value }| {
-                if name != function_name {
-                    return None;
-                };
-                match value {
-                    ExternVal::Func(func_addr) => Some(*func_addr),
-                    _ => None,
-                }
+            .get(function_name)
+            .and_then(|value| match value {
+                ExternVal::Func(func_addr) => Some(*func_addr),
+                _ => None,
             })
     }
 
@@ -1060,13 +1048,6 @@ where
     }
 }
 
-///<https://webassembly.github.io/spec/core/exec/runtime.html#export-instances>
-#[derive(Debug)]
-pub struct ExportInst {
-    pub name: String,
-    pub value: ExternVal,
-}
-
 ///<https://webassembly.github.io/spec/core/exec/runtime.html#module-instances>
 #[derive(Debug)]
 pub struct ModuleInst<'b> {
@@ -1077,15 +1058,69 @@ pub struct ModuleInst<'b> {
     pub global_addrs: Vec<usize>,
     pub elem_addrs: Vec<usize>,
     pub data_addrs: Vec<usize>,
-    pub exports: Vec<ExportInst>,
+    ///<https://webassembly.github.io/spec/core/exec/runtime.html#export-instances>
+    /// matches the list of ExportInst structs in the spec, however the spec never uses the name attribute
+    /// except during linking, which is up to the embedder to implement.
+    /// therefore this is a map data structure instead.
+    pub exports: BTreeMap<String, ExternVal>,
 
     // TODO the bytecode is not in the spec, but required for re-parsing
     pub wasm_bytecode: &'b [u8],
 
     // sidetable is not in the spec, but required for control flow
-    pub sidetable: Sidetable,
+    pub sidetable: Sidetable
+}
 
-    // TODO name field is not in the spec but used by the testsuite crate, might need to be refactored out
-    // this data is unfortunately duplicated within store.module_names kv store.
-    pub name: String,
+#[derive(Debug, PartialEq, PartialOrd, Eq, Ord)]
+struct ImportKey {
+    module_name: Cow<'static, str>,
+    name: Cow<'static, str>,
+}
+#[derive(Default, Debug)]
+pub struct Registry(BTreeMap<ImportKey, ExternVal>);
+
+impl Registry {
+    pub fn register(
+        &mut self,
+        module_name: Cow<'static, str>,
+        name: Cow<'static, str>,
+        extern_val: ExternVal,
+    ) -> Result<(), Error> {
+        if self
+            .0
+            .insert(ImportKey { module_name, name }, extern_val)
+            .is_some()
+        {
+            return Err(Error::InvalidImportType);
+        }
+
+        Ok(())
+    }
+
+    pub fn lookup(
+        &self,
+        module_name: Cow<'static, str>,
+        name: Cow<'static, str>,
+    ) -> Result<&ExternVal, Error> {
+        // Note: We cannot do a &str lookup on a [`String`] map key. Thus we have to use `Cow<'static, str> as a key (at least this prevents allocations with static names).
+        self.0
+            .get(&ImportKey { module_name, name })
+            .ok_or(Error::UnknownImport)
+    }
+
+    pub fn register_module(
+        &mut self,
+        module_name: Cow<'static, str>,
+        module_inst: &ModuleInst,
+    ) -> Result<(), Error> {
+        for (entity_name, extern_val) in &module_inst.exports {
+            // FIXME this clones module_name. Maybe prevent by using `Cow<'static, Arc<str>>`.
+            self.register(
+                module_name.clone(),
+                Cow::Owned(entity_name.clone()),
+                *extern_val,
+            )?;
+        }
+        Ok(())
+    }
 }
