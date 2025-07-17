@@ -91,9 +91,6 @@ where
     ) -> Result<FunctionRef, RuntimeError> {
         // TODO fix error
         let store = self.store.as_ref().ok_or(RuntimeError::ModuleNotFound)?;
-        if !store.module_names.contains_key(module_name) {
-            return Err(RuntimeError::ModuleNotFound);
-        };
         FunctionRef::new_from_name(module_name, function_name, store)
             .map_err(|_| RuntimeError::FunctionNotFound)
     }

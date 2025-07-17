@@ -1,4 +1,4 @@
-use wasm::{validate, Store};
+use wasm::{validate, ExternVal, Store};
 
 const SIMPLE_IMPORT_BASE: &str = r#"
 (module
@@ -41,12 +41,15 @@ pub fn compile_simple_import() {
     // let mut instance =
     //     RuntimeInstance::new_named("base", &validation_info_base).expect("instantiation failed");
 
-    let func_addr = match store.registry.lookup("base".into(), "get_three".into()).unwrap() {
-        ExternVal::Func(func_addr) => *func_addr,
-        _ => panic!("this entity is not a function"),
+    let &ExternVal::Func(func_addr) = store
+        .registry
+        .lookup("base".into(), "get_three".into())
+        .unwrap()
+    else {
+        panic!("this entity is not a function")
     };
 
-    println!("{:#?}", store.invoke::<(), i32>(func_idx, ()).unwrap());
+    println!("{:#?}", store.invoke::<(), i32>(func_addr, ()).unwrap());
 
     // let mut instance_addon = linker
     //     .instantiate(&mut store, &validation_info_addon)
