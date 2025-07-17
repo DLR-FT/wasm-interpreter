@@ -47,9 +47,6 @@ pub struct Store<'b> {
 
     // fields outside of the spec but are convenient are below
 
-    // kv pair for module names and module "addresses" (that make sense with `Self.modules[module_addr]`)
-    pub module_names: BTreeMap<String, usize>,
-
     // all visible exports and entities added by hand or module instantiation by the interpreter
     // currently, all of the exports of an instantiated module is made visible (this is outside of spec)
     pub registry: Registry,
@@ -114,7 +111,6 @@ impl<'b> Store<'b> {
             exports: BTreeMap::new(),
             wasm_bytecode: validation_info.wasm,
             sidetable: validation_info.sidetable.clone(),
-            name: name.to_owned(),
         };
 
         // TODO rewrite this part
@@ -279,10 +275,6 @@ impl<'b> Store<'b> {
         // TODO: it is too hard with our codebase to do the following steps without adding the module to the store
         let current_module_idx = &self.modules.len();
         self.modules.push(module_inst);
-
-        // keep module names, this is outside of the spec
-        self.module_names
-            .insert(String::from(name), *current_module_idx);
 
         // instantiation: step 12-15
         // TODO have to stray away from the spec a bit since our codebase does not lend itself well to freely executing instructions by themselves
@@ -739,41 +731,6 @@ impl<'b> Store<'b> {
         debug!("Successfully invoked function");
         Ok(ret)
     }
-
-    //TODO consider further refactor
-    pub fn get_module_idx_from_name(&self, module_name: &str) -> Result<usize, RuntimeError> {
-        self.module_names
-            .get(module_name)
-            .copied()
-            .ok_or(RuntimeError::ModuleNotFound)
-    }
-
-    //TODO consider further refactor
-    pub fn get_global_function_idx_by_name(
-        &self,
-        module_addr: usize,
-        function_name: &str,
-    ) -> Option<usize> {
-        self.modules
-            .get(module_addr)?
-            .exports
-            .get(function_name)
-            .and_then(|value| match value {
-                ExternVal::Func(func_addr) => Some(*func_addr),
-                _ => None,
-            })
-    }
-
-    //TODO consider further refactor
-    pub fn register_alias(&mut self, alias_name: String, module_idx: usize) {
-        self.module_names.insert(alias_name, module_idx);
-    }
-
-    //TODO consider further refactor
-    pub fn lookup_function(&self, target_module: &str, target_function: &str) -> Option<usize> {
-        let module_addr = *self.module_names.get(target_module)?;
-        self.get_global_function_idx_by_name(module_addr, target_function)
-    }
 }
 
 #[derive(Debug)]
@@ -1068,7 +1025,7 @@ pub struct ModuleInst<'b> {
     pub wasm_bytecode: &'b [u8],
 
     // sidetable is not in the spec, but required for control flow
-    pub sidetable: Sidetable
+    pub sidetable: Sidetable,
 }
 
 #[derive(Debug, PartialEq, PartialOrd, Eq, Ord)]
