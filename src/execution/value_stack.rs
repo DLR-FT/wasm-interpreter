@@ -248,25 +248,19 @@ impl Stack {
 
 /// The [WASM spec](https://webassembly.github.io/spec/core/exec/runtime.html#stack) calls this `Activations`, however it refers to the call frames of functions.
 pub(crate) struct CallFrame {
-    /// Index to the module idx the function originates in.
-    /// This seems to be used as a return module id LOL
-    pub module_idx: usize,
-
-    /// Index to the function of this [`CallFrame`]
-    pub func_idx: FuncIdx,
+    /// Store address of the function of this [`CallFrame`]
+    pub func_addr: usize,
 
     /// Local variables such as parameters for this [`CallFrame`]'s function
-    pub locals: Locals,
+    /// on the stack, in [value_stack_base_idx-locals.len()..value_stack_base_idx]?
+    //  pub locals: Locals,
 
-    /// Value that the PC has to be set to when this function returns
-    pub return_addr: usize,
+    /// Value of the current program counter
+    pub pc: usize,
 
     /// The index to the first value on [`Stack::values`] that belongs to this [`CallFrame`]
     pub value_stack_base_idx: usize,
 
-    /// Number of return values to retain on [`Stack::values`] when unwinding/popping a [`CallFrame`]
-    pub return_value_count: usize,
-
-    // Value that the stp has to be set to when this function returns
-    pub return_stp: usize,
+    // Value of the current sidetable pointer
+    pub stp: usize,
 }
