@@ -3,7 +3,6 @@ use alloc::vec::Vec;
 use const_interpreter_loop::run_const_span;
 use function_ref::FunctionRef;
 use interpreter_loop::run;
-use locals::Locals;
 use value_stack::Stack;
 
 use crate::execution::assert_validated::UnwrapValidatedExt;
@@ -119,6 +118,7 @@ where
         Ok(FunctionRef { func_addr })
     }
 
+    /// Invokes a function with the given parameters of type `Param`, and return types of type `Returns`.
     pub fn invoke<Param: InteropValueList, Returns: InteropValueList>(
         &mut self,
         function_ref: &FunctionRef,
@@ -126,77 +126,10 @@ where
         // store: &mut Store,
     ) -> Result<Returns, RuntimeError> {
         // TODO fix error
-        let store = self.store.as_ref().ok_or(RuntimeError::ModuleNotFound)?;
+        let store = self.store.as_mut().ok_or(RuntimeError::ModuleNotFound)?;
 
         let FunctionRef { func_addr } = *function_ref;
-        let func_inst = store
-            .functions
-            .get(func_addr)
-            .ok_or(RuntimeError::FunctionNotFound)?;
-
-        let module_addr = func_inst.module_addr;
-
-        // TODO handle this bad linear search that is unavoidable
-        let (func_idx, _) = store.modules[module_addr]
-            .func_addrs
-            .iter()
-            .enumerate()
-            .find(|&(_idx, addr)| *addr == func_addr)
-            .ok_or(RuntimeError::FunctionNotFound)?;
-
-        let func_ty = func_inst.ty();
-
-        // Check correct function parameters and return types
-        if func_ty.params.valtypes != Param::TYS {
-            panic!("Invalid `Param` generics");
-        }
-        if func_ty.returns.valtypes != Returns::TYS {
-            panic!(
-                "Invalid `Returns` generics, expected {:?}",
-                func_ty.returns.valtypes
-            );
-        }
-
-        // Prepare a new stack with the locals for the entry function
-        let mut stack = Stack::new();
-        let locals = Locals::new(
-            params.into_values().into_iter(),
-            func_inst.locals.iter().cloned(),
-        );
-
-        // setting `usize::MAX` as return address for the outermost function ensures that we
-        // observably fail upon errornoeusly continuing execution after that function returns.
-        stack.push_stackframe(
-            module_addr,
-            func_idx,
-            &func_ty,
-            locals,
-            usize::MAX,
-            usize::MAX,
-        )?;
-
-        let mut current_module_idx = module_addr;
-
-        // Run the interpreter
-        run(
-            &mut current_module_idx,
-            &mut stack,
-            EmptyHookSet,
-            self.store.as_mut().unwrap_validated(),
-        )?;
-
-        // Pop return values from stack
-        let return_values = Returns::TYS
-            .iter()
-            .rev()
-            .map(|ty| stack.pop_value(*ty))
-            .collect::<Vec<Value>>();
-
-        // Values are reversed because they were popped from stack one-by-one. Now reverse them back
-        let reversed_values = return_values.into_iter().rev();
-        let ret: Returns = Returns::from_values(reversed_values);
-        debug!("Successfully invoked function");
-        Ok(ret)
+        store.invoke(func_addr, params)
     }
 
     /// Invokes a function with the given parameters, and return types which are not known at compile time.
@@ -208,142 +141,22 @@ where
         // store: &mut Store,
     ) -> Result<Vec<Value>, RuntimeError> {
         // TODO fix error
-        let store = self.store.as_ref().ok_or(RuntimeError::ModuleNotFound)?;
+        let store = self.store.as_mut().ok_or(RuntimeError::ModuleNotFound)?;
 
         let FunctionRef { func_addr } = *function_ref;
-        let func_inst = store
-            .functions
-            .get(func_addr)
-            .ok_or(RuntimeError::FunctionNotFound)?;
-
-        let module_addr = func_inst.module_addr;
-
-        // TODO handle this bad linear search that is unavoidable
-        let (func_idx, _) = store.modules[module_addr]
-            .func_addrs
-            .iter()
-            .enumerate()
-            .find(|&(_idx, addr)| *addr == func_addr)
-            .ok_or(RuntimeError::FunctionNotFound)?;
-
-        let func_ty = func_inst.ty();
-
-        // Verify that the given parameters match the function parameters
-        let param_types = params.iter().map(|v| v.to_ty()).collect::<Vec<_>>();
-
-        if func_ty.params.valtypes != param_types {
-            panic!("Invalid parameters for function");
-        }
-
-        // Verify that the given return types match the function return types
-        if func_ty.returns.valtypes != ret_types {
-            panic!("Invalid return types for function");
-        }
-
-        // Prepare a new stack with the locals for the entry function
-        let mut stack = Stack::new();
-        let locals = Locals::new(params.into_iter(), func_inst.locals.iter().cloned());
-        stack.push_stackframe(module_addr, func_idx, &func_ty, locals, 0, 0)?;
-
-        let mut currrent_module_idx = module_addr;
-
-        // Run the interpreter
-        run(
-            &mut currrent_module_idx,
-            &mut stack,
-            EmptyHookSet,
-            self.store.as_mut().unwrap_validated(),
-        )?;
-
-        // Pop return values from stack
-        let return_values = func_ty
-            .returns
-            .valtypes
-            .iter()
-            .rev()
-            .map(|ty| stack.pop_value(*ty))
-            .collect::<Vec<Value>>();
-
-        // Values are reversed because they were popped from stack one-by-one. Now reverse them back
-        let reversed_values = return_values.into_iter().rev();
-        let ret = reversed_values.collect();
-        debug!("Successfully invoked function");
-        Ok(ret)
+        store.invoke_dynamic(func_addr, params, ret_types)
     }
 
-    /// Get the indicies of a module and function by their names.
-    ///
-    /// # Arguments
-    /// - `module_name`: The module in which to find the function.
-    /// - `function_name`: The name of the function to find inside the module. The function must be a local function and
-    ///   not an import.
-    ///
-    /// # Returns
-    /// - `Ok((module_idx, func_idx))`, where `module_idx` is the internal index of the module inside the
-    ///   [RuntimeInstance], and `func_idx` is the internal index of the function inside the module.
-    /// - `Err(RuntimeError::ModuleNotFound)`, if the module is not found.
-    /// - `Err(RuntimeError::FunctionNotFound`, if the function is not found within the module.
-    ///
+    /// Invokes a function with the given parameters. The return types depend on the function signature.
     pub fn invoke_dynamic_unchecked_return_ty(
         &mut self,
         function_ref: &FunctionRef,
         params: Vec<Value>,
     ) -> Result<Vec<Value>, RuntimeError> {
         // TODO fix error
-        let store = self.store.as_ref().ok_or(RuntimeError::ModuleNotFound)?;
+        let store = self.store.as_mut().ok_or(RuntimeError::ModuleNotFound)?;
 
         let FunctionRef { func_addr } = *function_ref;
-        let func_inst = store
-            .functions
-            .get(func_addr)
-            .ok_or(RuntimeError::FunctionNotFound)?;
-
-        let module_addr = func_inst.module_addr;
-
-        // TODO handle this bad linear search that is unavoidable
-        let (func_idx, _) = store.modules[module_addr]
-            .func_addrs
-            .iter()
-            .enumerate()
-            .find(|&(_idx, addr)| *addr == func_addr)
-            .ok_or(RuntimeError::FunctionNotFound)?;
-        let func_ty = func_inst.ty();
-
-        // Verify that the given parameters match the function parameters
-        let param_types = params.iter().map(|v| v.to_ty()).collect::<Vec<_>>();
-
-        if func_ty.params.valtypes != param_types {
-            panic!("Invalid parameters for function");
-        }
-
-        // Prepare a new stack with the locals for the entry function
-        let mut stack = Stack::new();
-        let locals = Locals::new(params.into_iter(), func_inst.locals.iter().cloned());
-        stack.push_stackframe(module_addr, func_idx, &func_ty, locals, 0, 0)?;
-
-        let mut currrent_module_idx = module_addr;
-
-        // Run the interpreter
-        run(
-            &mut currrent_module_idx,
-            &mut stack,
-            EmptyHookSet,
-            self.store.as_mut().unwrap_validated(),
-        )?;
-
-        // Pop return values from stack
-        let return_values = func_ty
-            .returns
-            .valtypes
-            .iter()
-            .rev()
-            .map(|ty| stack.pop_value(*ty))
-            .collect::<Vec<Value>>();
-
-        // Values are reversed because they were popped from stack one-by-one. Now reverse them back
-        let reversed_values = return_values.into_iter().rev();
-        let ret = reversed_values.collect();
-        debug!("Successfully invoked function");
-        Ok(ret)
+        store.invoke_dynamic_unchecked_return_ty(func_addr, params)
     }
 }
