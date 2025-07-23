@@ -37,15 +37,15 @@ use super::store::Store;
 
 /// Interprets a functions. Parameters and return values are passed on the stack.
 pub(super) fn run<H: HookSet>(
-    current_module_idx: &mut usize,
+    func_addr: usize,
     stack: &mut Stack,
     mut hooks: H,
     store: &mut Store,
 ) -> Result<(), RuntimeError> {
-    let global_func_idx =
-        store.modules[*current_module_idx].func_addrs[stack.current_stackframe().func_idx];
-
-    let func_inst = store.functions.get(global_func_idx).unwrap_validated();
+    let mut current_func_addr = func_addr;
+    let func_inst = &store.functions[current_func_addr];
+    let mut current_module_idx = func_inst.module_addr;
+    let current_module_idx = &mut current_module_idx;
 
     // Start reading the function's instructions
     let wasm = &mut WasmReader::new(store.modules[*current_module_idx].wasm_bytecode);
@@ -75,17 +75,7 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: NOP");
             }
             END => {
-                let current_func_global_idx = store.modules[*current_module_idx].func_addrs
-                    [stack.current_stackframe().func_idx];
-                // if this is not the very last instruction in the function
-                // just skip because it is a delimiter of a ctrl block
-
-                // TODO there is definitely a better to write this
-                let current_func_span = store
-                    .functions
-                    .get(current_func_global_idx)
-                    .unwrap_validated()
-                    .code_expr;
+                let current_func_span = store.functions[current_func_addr].code_expr;
 
                 // There might be multiple ENDs in a single function. We want to
                 // exit only when the outermost block (aka function block) ends.
@@ -93,7 +83,7 @@ pub(super) fn run<H: HookSet>(
                     continue;
                 }
 
-                let (return_module, maybe_return_address, maybe_return_stp) =
+                let (maybe_return_func_addr, maybe_return_address, maybe_return_stp) =
                     stack.pop_stackframe();
 
                 // We finished this entire invocation if there is no stackframe left. If there are
@@ -104,7 +94,8 @@ pub(super) fn run<H: HookSet>(
                 }
 
                 trace!("end of function reached, returning to previous stack frame");
-                *current_module_idx = return_module;
+                current_func_addr = maybe_return_func_addr;
+                *current_module_idx = store.functions[current_func_addr].module_addr;
                 wasm.full_wasm_binary = store.modules[*current_module_idx].wasm_bytecode;
                 wasm.pc = maybe_return_address;
                 stp = maybe_return_stp;
@@ -173,37 +164,23 @@ pub(super) fn run<H: HookSet>(
             CALL => {
                 let local_func_idx = wasm.read_var_u32().unwrap_validated() as FuncIdx;
 
-                let func_to_call_addr =
-                    store.modules[*current_module_idx].func_addrs[local_func_idx];
+                let func_to_call_addr = store.modules
+                    [store.functions[current_func_addr].module_addr]
+                    .func_addrs[local_func_idx];
 
                 let func_to_call_inst = store.functions.get(func_to_call_addr).unwrap_validated();
                 let func_to_call_ty = func_to_call_inst.ty();
 
-                // TODO handle this bad linear search that is unavoidable
-                let (func_to_call_idx, _) = store.modules[func_to_call_inst.module_addr]
-                    .func_addrs
-                    .iter()
-                    .enumerate()
-                    .find(|&(_idx, addr)| *addr == func_to_call_addr)
-                    .ok_or(RuntimeError::FunctionNotFound)?;
-
                 let params = stack.pop_tail_iter(func_to_call_ty.params.valtypes.len());
 
-                trace!("Instruction: call [{func_to_call_idx:?}]");
-                let func_to_call_module_addr = func_to_call_inst.module_addr;
+                trace!("Instruction: call [{func_to_call_addr:?}]");
                 let remaining_locals = func_to_call_inst.locals.iter().cloned();
                 let locals = Locals::new(params, remaining_locals);
 
-                stack.push_stackframe(
-                    *current_module_idx,
-                    func_to_call_idx,
-                    &func_to_call_ty,
-                    locals,
-                    wasm.pc,
-                    stp,
-                )?;
+                stack.push_stackframe(current_func_addr, &func_to_call_ty, locals, wasm.pc, stp)?;
 
-                *current_module_idx = func_to_call_module_addr;
+                current_func_addr = func_to_call_addr;
+                *current_module_idx = func_to_call_inst.module_addr;
                 wasm.full_wasm_binary = store.modules[*current_module_idx].wasm_bytecode;
                 wasm.move_start_to(func_to_call_inst.code_expr)
                     .unwrap_validated();
@@ -245,16 +222,6 @@ pub(super) fn run<H: HookSet>(
                 };
 
                 let func_to_call_inst = &store.functions[func_to_call_addr];
-                let func_to_call_module_addr = func_to_call_inst.module_addr;
-
-                // TODO handle this bad linear search that is unavoidable
-                let (func_to_call_idx, _) = store.modules[func_to_call_inst.module_addr]
-                    .func_addrs
-                    .iter()
-                    .enumerate()
-                    .find(|&(_idx, addr)| *addr == func_to_call_addr)
-                    .ok_or(RuntimeError::FunctionNotFound)?;
-
                 let actual_ty = func_to_call_inst.ty();
 
                 if *func_ty != actual_ty {
@@ -266,15 +233,9 @@ pub(super) fn run<H: HookSet>(
 
                 let locals = Locals::new(params, remaining_locals);
 
-                stack.push_stackframe(
-                    *current_module_idx,
-                    func_to_call_idx,
-                    func_ty,
-                    locals,
-                    wasm.pc,
-                    stp,
-                )?;
-                *current_module_idx = func_to_call_module_addr;
+                stack.push_stackframe(current_func_addr, func_ty, locals, wasm.pc, stp)?;
+                current_func_addr = func_to_call_addr;
+                *current_module_idx = func_to_call_inst.module_addr;
                 wasm.full_wasm_binary = store.modules[*current_module_idx].wasm_bytecode;
                 wasm.move_start_to(func_to_call_inst.code_expr)
                     .unwrap_validated();

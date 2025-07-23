@@ -1,6 +1,6 @@
 use alloc::vec::{Drain, Vec};
 
-use crate::core::indices::{FuncIdx, LocalIdx};
+use crate::core::indices::LocalIdx;
 use crate::core::reader::types::{FuncType, ValType};
 use crate::execution::assert_validated::UnwrapValidatedExt;
 use crate::execution::value::Value;
@@ -172,10 +172,10 @@ impl Stack {
         self.frames.last_mut().unwrap_validated()
     }
 
-    /// Pop a [`CallFrame`] from the call stack, returning the module id, return address, and the return stp
+    /// Pop a [`CallFrame`] from the call stack, returning the caller function store address, return address, and the return stp
     pub fn pop_stackframe(&mut self) -> (usize, usize, usize) {
         let CallFrame {
-            module_idx,
+            return_func_addr,
             return_addr,
             value_stack_base_idx,
             return_value_count,
@@ -192,7 +192,7 @@ impl Stack {
             "after a function call finished, the stack must have exactly as many values as it had before calling the function plus the number of function return values"
         );
 
-        (module_idx, return_addr, return_stp)
+        (return_func_addr, return_addr, return_stp)
     }
 
     /// Push a stackframe to the call stack
@@ -200,8 +200,7 @@ impl Stack {
     /// Takes the current [`Self::values`]'s length as [`CallFrame::value_stack_base_idx`].
     pub fn push_stackframe(
         &mut self,
-        return_module_idx: usize,
-        func_idx: FuncIdx,
+        return_func_addr: usize,
         func_ty: &FuncType,
         locals: Locals,
         return_addr: usize,
@@ -213,8 +212,7 @@ impl Stack {
         }
 
         self.frames.push(CallFrame {
-            module_idx: return_module_idx,
-            func_idx,
+            return_func_addr,
             locals,
             return_addr,
             value_stack_base_idx: self.values.len(),
@@ -248,12 +246,8 @@ impl Stack {
 
 /// The [WASM spec](https://webassembly.github.io/spec/core/exec/runtime.html#stack) calls this `Activations`, however it refers to the call frames of functions.
 pub(crate) struct CallFrame {
-    /// Index to the module idx the function originates in.
-    /// This seems to be used as a return module id LOL
-    pub module_idx: usize,
-
-    /// Index to the function of this [`CallFrame`]
-    pub func_idx: FuncIdx,
+    /// Store address of the function that called this [`CallFrame`]'s function
+    pub return_func_addr: usize,
 
     /// Local variables such as parameters for this [`CallFrame`]'s function
     pub locals: Locals,

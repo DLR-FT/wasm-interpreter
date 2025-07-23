@@ -528,31 +528,14 @@ impl<'b> Store<'b> {
             func_inst.locals.iter().cloned(),
         );
 
-        let module_addr = func_inst.module_addr;
-
-        // TODO handle this bad linear search that is unavoidable
-        let (func_idx, _) = self.modules[module_addr]
-            .func_addrs
-            .iter()
-            .enumerate()
-            .find(|&(_idx, addr)| *addr == func_addr)
-            .ok_or(RuntimeError::FunctionNotFound)?;
         // setting `usize::MAX` as return address for the outermost function ensures that we
         // observably fail upon errornoeusly continuing execution after that function returns.
-        stack.push_stackframe(
-            module_addr,
-            func_idx,
-            &func_ty,
-            locals,
-            usize::MAX,
-            usize::MAX,
-        )?;
+        stack.push_stackframe(usize::MAX, &func_ty, locals, usize::MAX, usize::MAX)?;
 
-        let mut current_module_idx = module_addr;
         // Run the interpreter
         run(
             // &mut self.modules,
-            &mut current_module_idx,
+            func_addr,
             // self.lut.as_ref().ok_or(RuntimeError::UnmetImport)?,
             &mut stack,
             EmptyHookSet,
@@ -607,29 +590,13 @@ impl<'b> Store<'b> {
         // Prepare a new stack with the locals for the entry function
         let mut stack = Stack::new();
         let locals = Locals::new(params.into_iter(), func_inst.locals.iter().cloned());
-        let module_addr = func_inst.module_addr;
 
-        // TODO handle this bad linear search that is unavoidable
-        let (func_idx, _) = self.modules[module_addr]
-            .func_addrs
-            .iter()
-            .enumerate()
-            .find(|&(_idx, addr)| *addr == func_addr)
-            .ok_or(RuntimeError::FunctionNotFound)?;
-        stack.push_stackframe(
-            module_addr,
-            func_idx,
-            &func_ty,
-            locals,
-            usize::MAX,
-            usize::MAX,
-        )?;
+        stack.push_stackframe(usize::MAX, &func_ty, locals, usize::MAX, usize::MAX)?;
 
-        let mut currrent_module_idx = module_addr;
         // Run the interpreter
         run(
             // &mut self.modules,
-            &mut currrent_module_idx,
+            func_addr,
             // self.lut.as_ref().ok_or(RuntimeError::UnmetImport)?,
             &mut stack,
             EmptyHookSet,
@@ -669,8 +636,6 @@ impl<'b> Store<'b> {
             .get(func_addr)
             .ok_or(RuntimeError::FunctionNotFound)?;
 
-        let module_addr = func_inst.module_addr;
-
         let func_ty = func_inst.ty();
 
         // Verify that the given parameters match the function parameters
@@ -689,28 +654,12 @@ impl<'b> Store<'b> {
         let mut stack = Stack::new();
         let locals = Locals::new(params.into_iter(), func_inst.locals.iter().cloned());
 
-        // TODO handle this bad linear search that is unavoidable
-        let (func_idx, _) = self.modules[module_addr]
-            .func_addrs
-            .iter()
-            .enumerate()
-            .find(|&(_idx, addr)| *addr == func_addr)
-            .ok_or(RuntimeError::FunctionNotFound)?;
+        stack.push_stackframe(usize::MAX, &func_ty, locals, usize::MAX, usize::MAX)?;
 
-        stack.push_stackframe(
-            module_addr,
-            func_idx,
-            &func_ty,
-            locals,
-            usize::MAX,
-            usize::MAX,
-        )?;
-
-        let mut currrent_module_idx = module_addr;
         // Run the interpreter
         run(
             // &mut self.modules,
-            &mut currrent_module_idx,
+            func_addr,
             // self.lut.as_ref().ok_or(RuntimeError::UnmetImport)?,
             &mut stack,
             EmptyHookSet,
