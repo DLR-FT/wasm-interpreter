@@ -10,8 +10,8 @@ use crate::{unreachable_validated, RuntimeError};
 use super::value::Ref;
 
 // TODO make these configurable
-const MAX_VALUE_STACK_SIZE: usize = 0xf1000; // 4096
-const MAX_CALL_STACK_SIZE: usize = 0xff; // 256
+const MAX_VALUE_STACK_SIZE: usize = 0xf0000; // 64 Kibi-Values
+const MAX_CALL_STACK_SIZE: usize = 0x1000; // 4 Kibi-Functions
 
 /// The stack at runtime containing
 /// 1. Values
