@@ -12,8 +12,8 @@ use crate::core::reader::types::{
 use crate::core::reader::WasmReader;
 use crate::core::sidetable::Sidetable;
 use crate::execution::interpreter_loop::{memory_init, table_init};
+use crate::execution::run_const_span;
 use crate::execution::value::{Ref, Value};
-use crate::execution::{run_const_span, Stack};
 use crate::registry::Registry;
 use crate::value::FuncAddr;
 use crate::{Error, Limits, RefType, RuntimeError, ValidationInfo};
@@ -25,7 +25,6 @@ use alloc::vec::Vec;
 
 use super::hooks::EmptyHookSet;
 use super::interpreter_loop::{data_drop, elem_drop};
-use super::locals::Locals;
 use super::value::{ExternAddr, InteropValueList};
 use super::{run, UnwrapValidatedExt};
 
@@ -522,38 +521,16 @@ impl<'b> Store<'b> {
             panic!("Invalid `Returns` generics");
         }
 
-        let mut stack = Stack::new();
-        let locals = Locals::new(
-            params.into_values().into_iter(),
-            func_inst.locals.iter().cloned(),
-        );
-
-        // setting `usize::MAX` as return address for the outermost function ensures that we
-        // observably fail upon errornoeusly continuing execution after that function returns.
-        stack.push_stackframe(usize::MAX, &func_ty, locals, usize::MAX, usize::MAX)?;
-
         // Run the interpreter
-        run(
+        let values = run(
             // &mut self.modules,
             func_addr,
             // self.lut.as_ref().ok_or(RuntimeError::UnmetImport)?,
-            &mut stack,
+            params.into_values(),
             EmptyHookSet,
             self,
         )?;
-
-        // Pop return values from stack
-        let return_values = Returns::TYS
-            .iter()
-            .rev()
-            .map(|ty| stack.pop_value(*ty))
-            .collect::<Vec<Value>>();
-
-        // Values are reversed because they were popped from stack one-by-one. Now reverse them back
-        let reversed_values = return_values.into_iter().rev();
-        let ret: Returns = Returns::from_values(reversed_values);
-        debug!("Successfully invoked function");
-        Ok(ret)
+        Ok(Returns::from_values(values.into_iter()))
     }
 
     pub fn invoke_dynamic(
@@ -587,43 +564,8 @@ impl<'b> Store<'b> {
             panic!("Invalid return types for function");
         }
 
-        // Prepare a new stack with the locals for the entry function
-        let mut stack = Stack::new();
-        let locals = Locals::new(params.into_iter(), func_inst.locals.iter().cloned());
-
-        stack.push_stackframe(usize::MAX, &func_ty, locals, usize::MAX, usize::MAX)?;
-
         // Run the interpreter
-        run(
-            // &mut self.modules,
-            func_addr,
-            // self.lut.as_ref().ok_or(RuntimeError::UnmetImport)?,
-            &mut stack,
-            EmptyHookSet,
-            self,
-        )?;
-
-        let func_inst = self
-            .functions
-            .get(func_addr)
-            .ok_or(RuntimeError::FunctionNotFound)?;
-
-        let func_ty = func_inst.ty();
-
-        // Pop return values from stack
-        let return_values = func_ty
-            .returns
-            .valtypes
-            .iter()
-            .rev()
-            .map(|ty| stack.pop_value(*ty))
-            .collect::<Vec<Value>>();
-
-        // Values are reversed because they were popped from stack one-by-one. Now reverse them back
-        let reversed_values = return_values.into_iter().rev();
-        let ret = reversed_values.collect();
-        debug!("Successfully invoked function");
-        Ok(ret)
+        run(func_addr, params, EmptyHookSet, self)
     }
 
     pub fn invoke_dynamic_unchecked_return_ty(
@@ -650,36 +592,8 @@ impl<'b> Store<'b> {
             panic!("Invalid parameters for function");
         }
 
-        // Prepare a new stack with the locals for the entry function
-        let mut stack = Stack::new();
-        let locals = Locals::new(params.into_iter(), func_inst.locals.iter().cloned());
-
-        stack.push_stackframe(usize::MAX, &func_ty, locals, usize::MAX, usize::MAX)?;
-
         // Run the interpreter
-        run(
-            // &mut self.modules,
-            func_addr,
-            // self.lut.as_ref().ok_or(RuntimeError::UnmetImport)?,
-            &mut stack,
-            EmptyHookSet,
-            self,
-        )?;
-
-        // Pop return values from stack
-        let return_values = func_ty
-            .returns
-            .valtypes
-            .iter()
-            .rev()
-            .map(|ty| stack.pop_value(*ty))
-            .collect::<Vec<Value>>();
-
-        // Values are reversed because they were popped from stack one-by-one. Now reverse them back
-        let reversed_values = return_values.into_iter().rev();
-        let ret = reversed_values.collect();
-        debug!("Successfully invoked function");
-        Ok(ret)
+        run(func_addr, params, EmptyHookSet, self)
     }
 }
 

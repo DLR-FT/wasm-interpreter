@@ -38,12 +38,20 @@ use super::store::Store;
 /// Interprets a functions. Parameters and return values are passed on the stack.
 pub(super) fn run<H: HookSet>(
     func_addr: usize,
-    stack: &mut Stack,
+    params: Vec<Value>,
     mut hooks: H,
     store: &mut Store,
-) -> Result<(), RuntimeError> {
+) -> Result<Vec<Value>, RuntimeError> {
     let mut current_func_addr = func_addr;
     let func_inst = &store.functions[current_func_addr];
+
+    let mut stack = Stack::new();
+    let locals = Locals::new(params.into_iter(), func_inst.locals.iter().cloned());
+
+    // setting `usize::MAX` as return address for the outermost function ensures that we
+    // observably fail upon errornoeusly continuing execution after that function returns.
+    stack.push_stackframe(usize::MAX, &func_inst.ty(), locals, usize::MAX, usize::MAX)?;
+
     let mut current_module_idx = func_inst.module_addr;
 
     // Start reading the function's instructions
@@ -111,12 +119,12 @@ pub(super) fn run<H: HookSet>(
                 if test_val != 0 {
                     stp += 1;
                 } else {
-                    do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable)?;
+                    do_sidetable_control_transfer(wasm, &mut stack, &mut stp, current_sidetable)?;
                 }
                 trace!("Instruction: IF");
             }
             ELSE => {
-                do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable)?;
+                do_sidetable_control_transfer(wasm, &mut stack, &mut stp, current_sidetable)?;
             }
             BR_IF => {
                 wasm.read_var_u32().unwrap_validated();
@@ -124,7 +132,7 @@ pub(super) fn run<H: HookSet>(
                 let test_val: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
                 if test_val != 0 {
-                    do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable)?;
+                    do_sidetable_control_transfer(wasm, &mut stack, &mut stp, current_sidetable)?;
                 } else {
                     stp += 1;
                 }
@@ -146,19 +154,19 @@ pub(super) fn run<H: HookSet>(
                     stp += case_val;
                 }
 
-                do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable)?;
+                do_sidetable_control_transfer(wasm, &mut stack, &mut stp, current_sidetable)?;
             }
             BR => {
                 //skip n of BR n
                 wasm.read_var_u32().unwrap_validated();
-                do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable)?;
+                do_sidetable_control_transfer(wasm, &mut stack, &mut stp, current_sidetable)?;
             }
             BLOCK | LOOP => {
                 BlockType::read_unvalidated(wasm);
             }
             RETURN => {
                 //same as BR, except no need to skip n of BR n
-                do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable)?;
+                do_sidetable_control_transfer(wasm, &mut stack, &mut stp, current_sidetable)?;
             }
             CALL => {
                 let local_func_idx = wasm.read_var_u32().unwrap_validated() as FuncIdx;
@@ -2345,7 +2353,16 @@ pub(super) fn run<H: HookSet>(
             }
         }
     }
-    Ok(())
+    let return_values = func_inst
+        .ty()
+        .returns
+        .valtypes
+        .iter()
+        .rev()
+        .map(|ty| stack.pop_value(*ty))
+        .collect::<Vec<Value>>();
+    debug!("Successfully invoked function");
+    Ok(return_values.into_iter().rev().collect())
 }
 
 //helper function for avoiding code duplication at intraprocedural jumps

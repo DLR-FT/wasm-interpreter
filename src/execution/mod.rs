@@ -3,7 +3,6 @@ use alloc::vec::Vec;
 use const_interpreter_loop::run_const_span;
 use function_ref::FunctionRef;
 use interpreter_loop::run;
-use value_stack::Stack;
 
 use crate::execution::assert_validated::UnwrapValidatedExt;
 use crate::execution::hooks::{EmptyHookSet, HookSet};
