@@ -425,15 +425,17 @@ impl<'b> Store<'b> {
 
         // core of the method below
 
+        // validation guarantees func_ty_idx exists within module_inst.types
+        // TODO fix clone
         let func_inst = FuncInst {
-            ty,
-            locals,
-            code_expr,
-            stp,
-            // validation guarantees func_ty_idx exists within module_inst.types
-            // TODO fix clone
             function_type: module_inst.types[ty].clone(),
-            module_addr,
+            closure: FuncClosure::WasmFunc(WasmFuncInst {
+                ty,
+                locals,
+                code_expr,
+                stp,
+                module_addr,
+            }),
         };
 
         let addr = self.functions.len();
@@ -599,24 +601,36 @@ impl<'b> Store<'b> {
 
 #[derive(Debug)]
 // TODO does not match the spec FuncInst
-
 pub struct FuncInst {
+    pub function_type: FuncType,
+    pub closure: FuncClosure,
+}
+
+#[derive(Debug)]
+pub enum FuncClosure {
+    WasmFunc(WasmFuncInst),
+    HostFunc(HostFuncInst),
+}
+
+#[derive(Debug)]
+pub struct WasmFuncInst {
     pub ty: TypeIdx,
     pub locals: Vec<ValType>,
     pub code_expr: Span,
     ///index of the sidetable corresponding to the beginning of this functions code
     pub stp: usize,
-    pub function_type: FuncType,
+
     // implicit back ref required for function invocation and is in the spec
     // TODO module_addr or module ref?
     pub module_addr: usize,
 }
 
-impl FuncInst {
-    pub fn ty_idx(&self) -> TypeIdx {
-        self.ty
-    }
+#[derive(Debug)]
+pub struct HostFuncInst {
+    pub hostcode: fn() -> (),
+}
 
+impl FuncInst {
     pub fn ty(&self) -> FuncType {
         self.function_type.clone()
     }
