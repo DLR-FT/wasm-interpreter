@@ -31,6 +31,7 @@ pub enum RuntimeError {
     // "undefined element" <- as-call_indirect-last
     ReachedUnreachable,
     StackExhaustion,
+    HostFunctionSignatureMismatch,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -307,6 +308,9 @@ impl Display for RuntimeError {
             }
             RuntimeError::StackExhaustion => {
                 f.write_str("either the call stack or the value stack overflowed")
+            }
+            RuntimeError::HostFunctionSignatureMismatch => {
+                f.write_str("host function call did not respect its type signature")
             }
         }
     }

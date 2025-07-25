@@ -93,6 +93,7 @@ pub fn to_wasm_testsuite_string(runtime_error: RuntimeError) -> Result<String, B
         RuntimeError::UndefinedTableIndex => Ok("undefined element"),
         RuntimeError::ModuleNotFound => Ok("module not found"),
         RuntimeError::UnmetImport => Ok("unmet import"),
+        RuntimeError::HostFunctionSignatureMismatch => Ok("host function signature mismatch"),
     }
     .map(|s| s.to_string())
 }
