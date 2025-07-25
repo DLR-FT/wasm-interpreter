@@ -274,7 +274,7 @@ impl<'b> Store<'b> {
 
         // instantiation step 11 end: module_inst properly allocated after this point.
         // TODO: it is too hard with our codebase to do the following steps without adding the module to the store
-        let current_module_idx = &self.modules.len();
+        let current_module_idx = self.modules.len();
         self.modules.push(module_inst);
 
         // instantiation: step 12-15
@@ -305,7 +305,7 @@ impl<'b> Store<'b> {
                     let d: i32 = run_const_span(
                         validation_info.wasm,
                         einstr_i,
-                        &self.modules[*current_module_idx],
+                        &self.modules[current_module_idx],
                         self,
                     )?
                     .unwrap_validated()
@@ -363,7 +363,7 @@ impl<'b> Store<'b> {
                     let d: i32 = run_const_span(
                         validation_info.wasm,
                         dinstr_i,
-                        &self.modules[*current_module_idx],
+                        &self.modules[current_module_idx],
                         self,
                     )?
                     .unwrap_validated()
@@ -393,7 +393,7 @@ impl<'b> Store<'b> {
             // TODO (for now, we are doing hopefully what is equivalent to it)
             // execute
             //   call func_ifx
-            let func_addr = self.modules[*current_module_idx].func_addrs[func_idx];
+            let func_addr = self.modules[current_module_idx].func_addrs[func_idx];
             self.invoke_dynamic(func_addr, Vec::new(), &[])
                 .map_err(Error::RuntimeError)?;
         };
