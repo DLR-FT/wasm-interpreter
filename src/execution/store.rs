@@ -11,7 +11,7 @@ use crate::core::reader::types::{
 };
 use crate::core::reader::WasmReader;
 use crate::core::sidetable::Sidetable;
-use crate::execution::interpreter_loop::{memory_init, table_init};
+use crate::execution::interpreter_loop::{memory_init, run_wasm_func, table_init};
 use crate::execution::value::{Ref, Value};
 use crate::execution::{run_const_span, Stack};
 use crate::registry::Registry;
@@ -27,7 +27,7 @@ use super::hooks::EmptyHookSet;
 use super::interpreter_loop::{data_drop, elem_drop};
 use super::locals::Locals;
 use super::value::ExternAddr;
-use super::{run, UnwrapValidatedExt};
+use super::UnwrapValidatedExt;
 
 use crate::linear_memory::LinearMemory;
 
@@ -426,15 +426,17 @@ impl<'b> Store<'b> {
 
         // core of the method below
 
+        // validation guarantees func_ty_idx exists within module_inst.types
+        // TODO fix clone
         let func_inst = FuncInst {
-            ty,
-            locals,
-            code_expr,
-            stp,
-            // validation guarantees func_ty_idx exists within module_inst.types
-            // TODO fix clone
             function_type: module_inst.types[ty].clone(),
-            module_addr,
+            closure: FuncClosure::WasmFunc(WasmFuncInst {
+                ty,
+                locals,
+                code_expr,
+                stp,
+                module_addr,
+            }),
         };
 
         let addr = self.functions.len();
@@ -515,58 +517,79 @@ impl<'b> Store<'b> {
 
         let func_ty = func_inst.ty();
 
-        // Verify that the given parameters match the function parameters
-        let param_types = params.iter().map(|v| v.to_ty()).collect::<Vec<_>>();
+        match &func_inst.closure {
+            FuncClosure::HostFunc(host_func_inst) => {
+                (host_func_inst.hostcode)();
+                debug!("Successfully invoked function");
+                Ok(Vec::new())
+            }
+            FuncClosure::WasmFunc(wasm_func_inst) => {
+                // Verify that the given parameters match the function parameters
+                let param_types = params.iter().map(|v| v.to_ty()).collect::<Vec<_>>();
 
-        if func_ty.params.valtypes != param_types {
-            trace!(
-                "Func param types len: {}; Given args len: {}",
-                func_ty.params.valtypes.len(),
-                param_types.len()
-            );
-            panic!("Invalid parameters for function");
+                if func_ty.params.valtypes != param_types {
+                    trace!(
+                        "Func param types len: {}; Given args len: {}",
+                        func_ty.params.valtypes.len(),
+                        param_types.len()
+                    );
+                    panic!("Invalid parameters for function");
+                }
+
+                // Prepare a new stack with the locals for the entry function
+                let mut stack = Stack::new();
+                let locals = Locals::new(params.into_iter(), wasm_func_inst.locals.iter().cloned());
+
+                stack.push_stackframe(usize::MAX, &func_ty, locals, usize::MAX, usize::MAX)?;
+
+                // Run the interpreter
+                run_wasm_func(
+                    // &mut self.modules,
+                    func_addr,
+                    // self.lut.as_ref().ok_or(RuntimeError::UnmetImport)?,
+                    &mut stack,
+                    EmptyHookSet,
+                    self,
+                )?;
+                debug!("Successfully invoked function");
+                Ok(stack.into_values())
+            }
         }
-
-        // Prepare a new stack with the locals for the entry function
-        let mut stack = Stack::new();
-        let locals = Locals::new(params.into_iter(), func_inst.locals.iter().cloned());
-
-        stack.push_stackframe(usize::MAX, &func_ty, locals, usize::MAX, usize::MAX)?;
-
-        // Run the interpreter
-        run(
-            // &mut self.modules,
-            func_addr,
-            // self.lut.as_ref().ok_or(RuntimeError::UnmetImport)?,
-            &mut stack,
-            EmptyHookSet,
-            self,
-        )?;
-        debug!("Successfully invoked function");
-        Ok(stack.into_values())
     }
 }
 
 #[derive(Debug)]
 // TODO does not match the spec FuncInst
-
 pub struct FuncInst {
+    pub function_type: FuncType,
+    pub closure: FuncClosure,
+}
+
+#[derive(Debug)]
+pub enum FuncClosure {
+    WasmFunc(WasmFuncInst),
+    HostFunc(HostFuncInst),
+}
+
+#[derive(Debug)]
+pub struct WasmFuncInst {
     pub ty: TypeIdx,
     pub locals: Vec<ValType>,
     pub code_expr: Span,
     ///index of the sidetable corresponding to the beginning of this functions code
     pub stp: usize,
-    pub function_type: FuncType,
+
     // implicit back ref required for function invocation and is in the spec
     // TODO module_addr or module ref?
     pub module_addr: usize,
 }
 
-impl FuncInst {
-    pub fn ty_idx(&self) -> TypeIdx {
-        self.ty
-    }
+#[derive(Debug)]
+pub struct HostFuncInst {
+    pub hostcode: fn() -> (),
+}
 
+impl FuncInst {
     pub fn ty(&self) -> FuncType {
         self.function_type.clone()
     }
