@@ -1,4 +1,4 @@
-use wasm::{validate, ExternVal, Store};
+use wasm::{validate, ExternVal, RuntimeInstance, Store};
 
 const SIMPLE_IMPORT_BASE: &str = r#"
 (module
@@ -58,4 +58,42 @@ pub fn compile_simple_import() {
     // instance
     //     .add_module("addon", &validation_info)
     // .expect("Successful instantiation");
+}
+
+#[test_log::test]
+pub fn host_func_call_within_module() {
+    let wat = r#"(module
+    (import "hello_mod" "hello" (func $hello (param) (result)))
+    (func (export "hello_caller") (param i32) (result i32)
+        local.get 0
+        i32.const 2
+        call $hello
+        i32.add
+    )
+)"#;
+    let wat_dummy = "(module)";
+    let wasm_bytes = wat::parse_str(wat).unwrap();
+    let wasm_dummy = wat::parse_str(wat_dummy).unwrap();
+
+    fn hello() {
+        println!("Host function says hello from wasm!");
+    }
+
+    let mut runtime_instance = RuntimeInstance::new(&validate(&wasm_dummy).unwrap()).unwrap();
+    runtime_instance
+        .add_host_function("hello_mod", "hello", hello)
+        .expect("function registration failed");
+    runtime_instance
+        .add_module(
+            "importing_mod",
+            &validate(&wasm_bytes).expect("validation failed"),
+        )
+        .expect("instantiation failed");
+    let function_ref = runtime_instance
+        .get_function_by_name("importing_mod", "hello_caller")
+        .expect("wasm function could not be found");
+    let result = runtime_instance
+        .invoke::<i32, i32>(&function_ref, 2)
+        .expect("wasm function invocation failed");
+    assert_eq!(4, result);
 }

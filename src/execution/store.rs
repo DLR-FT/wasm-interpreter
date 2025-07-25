@@ -443,6 +443,19 @@ impl<'b> Store<'b> {
         addr
     }
 
+    /// <https://webassembly.github.io/spec/core/exec/modules.html#host-functions>
+    pub(super) fn alloc_host_func(&mut self, func_type: FuncType, host_func: fn() -> ()) -> usize {
+        let func_inst = FuncInst {
+            function_type: func_type,
+            closure: FuncClosure::HostFunc(HostFuncInst {
+                hostcode: host_func,
+            }),
+        };
+        let addr = self.functions.len();
+        self.functions.push(func_inst);
+        addr
+    }
+
     /// <https://webassembly.github.io/spec/core/exec/modules.html#tables>
     fn alloc_table(&mut self, table_type: TableType, reff: Ref) -> usize {
         let table_inst = TableInst {

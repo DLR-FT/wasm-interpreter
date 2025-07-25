@@ -1,9 +1,13 @@
+use crate::Error;
+
+use alloc::borrow::ToOwned;
 use alloc::vec::Vec;
 
 use const_interpreter_loop::run_const_span;
 use function_ref::FunctionRef;
 use interpreter_loop::run;
 
+use crate::core::reader::types::{FuncType, ResultType};
 use crate::execution::assert_validated::UnwrapValidatedExt;
 use crate::execution::hooks::{EmptyHookSet, HookSet};
 use crate::execution::store::Store;
@@ -155,5 +159,37 @@ where
 
         let FunctionRef { func_addr } = *function_ref;
         store.invoke_dynamic_unchecked_return_ty(func_addr, params)
+    }
+
+    /// Adds a host function under module namespace `module_name` with name `name`.
+    /// roughly similar to `func_alloc` in <https://webassembly.github.io/spec/core/appendix/embedding.html#functions>
+    /// except the host function is made visible to other modules through these names.
+    /// Returns
+    pub fn add_host_function(
+        &mut self,
+        module_name: &str,
+        name: &str,
+        host_func: fn() -> (),
+    ) -> Result<FunctionRef, Error> {
+        // TODO fix error
+        let store = self.store.as_mut().ok_or(RuntimeError::ModuleNotFound)?;
+
+        let func_addr = store.alloc_host_func(
+            FuncType {
+                params: ResultType {
+                    valtypes: Vec::new(),
+                },
+                returns: ResultType {
+                    valtypes: Vec::new(),
+                },
+            },
+            host_func,
+        );
+        store.registry.register(
+            module_name.to_owned().into(),
+            name.to_owned().into(),
+            store::ExternVal::Func(func_addr),
+        )?;
+        Ok(FunctionRef { func_addr })
     }
 }
