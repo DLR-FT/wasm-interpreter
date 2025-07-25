@@ -12,6 +12,7 @@
 
 use alloc::vec;
 use alloc::vec::Vec;
+use core::iter::zip;
 
 use crate::{
     assert_validated::UnwrapValidatedExt,
@@ -27,7 +28,8 @@ use crate::{
     store::DataInst,
     value::{self, FuncAddr, Ref},
     value_stack::Stack,
-    ElemInst, MemInst, ModuleInst, NumType, RefType, RuntimeError, TableInst, ValType, Value,
+    ElemInst, FuncInst, MemInst, ModuleInst, NumType, RefType, RuntimeError, TableInst, ValType,
+    Value,
 };
 
 #[cfg(feature = "hooks")]
@@ -35,7 +37,7 @@ use crate::execution::hooks::HookSet;
 
 use super::store::Store;
 
-/// Interprets a functions. Parameters and return values are passed on the stack.
+/// Interprets wasm native functions. Parameters and return values are passed on the stack.
 pub(super) fn run<H: HookSet>(
     func_addr: usize,
     stack: &mut Stack,
@@ -44,16 +46,26 @@ pub(super) fn run<H: HookSet>(
 ) -> Result<(), RuntimeError> {
     let mut current_func_addr = func_addr;
     let func_inst = &store.functions[current_func_addr];
-    let mut current_module_idx = func_inst.module_addr;
+    let FuncInst::WasmFunc(wasm_func_inst) = &func_inst else {
+        unreachable!(
+            "the interpreter loop shall only be executed with native wasm functions as root call"
+        );
+    };
+
+    let mut current_module_idx = wasm_func_inst.module_addr;
 
     // Start reading the function's instructions
     let wasm = &mut WasmReader::new(store.modules[current_module_idx].wasm_bytecode);
 
     let mut current_sidetable: &Sidetable = &store.modules[current_module_idx].sidetable;
-    let mut stp = func_inst.stp;
+    let mut stp = wasm_func_inst.stp;
+
+    // local variable for holding where the function code ends (last END instr address + 1) to avoid lookup at every END instr
+    let mut current_function_end_marker =
+        wasm_func_inst.code_expr.from() + wasm_func_inst.code_expr.len();
 
     // unwrap is sound, because the validation assures that the function points to valid subslice of the WASM binary
-    wasm.move_start_to(func_inst.code_expr).unwrap();
+    wasm.move_start_to(wasm_func_inst.code_expr).unwrap();
 
     use crate::core::reader::types::opcode::*;
     loop {
@@ -74,11 +86,9 @@ pub(super) fn run<H: HookSet>(
                 trace!("Instruction: NOP");
             }
             END => {
-                let current_func_span = store.functions[current_func_addr].code_expr;
-
                 // There might be multiple ENDs in a single function. We want to
                 // exit only when the outermost block (aka function block) ends.
-                if wasm.pc != current_func_span.from() + current_func_span.len() {
+                if wasm.pc != current_function_end_marker {
                     continue;
                 }
 
@@ -94,12 +104,20 @@ pub(super) fn run<H: HookSet>(
 
                 trace!("end of function reached, returning to previous stack frame");
                 current_func_addr = maybe_return_func_addr;
-                current_module_idx = store.functions[current_func_addr].module_addr;
+                let FuncInst::WasmFunc(current_wasm_func_inst) =
+                    &store.functions[current_func_addr]
+                else {
+                    unreachable!("function addresses on the stack always correspond to native wasm functions")
+                };
+                current_module_idx = current_wasm_func_inst.module_addr;
                 wasm.full_wasm_binary = store.modules[current_module_idx].wasm_bytecode;
                 wasm.pc = maybe_return_address;
                 stp = maybe_return_stp;
 
                 current_sidetable = &store.modules[current_module_idx].sidetable;
+
+                current_function_end_marker = current_wasm_func_inst.code_expr.from()
+                    + current_wasm_func_inst.code_expr.len();
 
                 trace!("Instruction: END");
             }
@@ -162,30 +180,60 @@ pub(super) fn run<H: HookSet>(
             }
             CALL => {
                 let local_func_idx = wasm.read_var_u32().unwrap_validated() as FuncIdx;
+                let FuncInst::WasmFunc(current_wasm_func_inst) =
+                    &store.functions[current_func_addr]
+                else {
+                    unreachable!()
+                };
 
-                let func_to_call_addr = store.modules
-                    [store.functions[current_func_addr].module_addr]
-                    .func_addrs[local_func_idx];
+                let func_to_call_addr =
+                    store.modules[current_wasm_func_inst.module_addr].func_addrs[local_func_idx];
 
-                let func_to_call_inst = store.functions.get(func_to_call_addr).unwrap_validated();
-                let func_to_call_ty = func_to_call_inst.ty();
+                let func_to_call_ty = store.functions[func_to_call_addr].ty();
 
                 let params = stack.pop_tail_iter(func_to_call_ty.params.valtypes.len());
-
                 trace!("Instruction: call [{func_to_call_addr:?}]");
-                let remaining_locals = func_to_call_inst.locals.iter().cloned();
-                let locals = Locals::new(params, remaining_locals);
 
-                stack.push_stackframe(current_func_addr, &func_to_call_ty, locals, wasm.pc, stp)?;
+                match &store.functions[func_to_call_addr] {
+                    FuncInst::HostFunc(host_func_to_call_inst) => {
+                        let returns = (host_func_to_call_inst.hostcode)(params.collect());
 
-                current_func_addr = func_to_call_addr;
-                current_module_idx = func_to_call_inst.module_addr;
-                wasm.full_wasm_binary = store.modules[current_module_idx].wasm_bytecode;
-                wasm.move_start_to(func_to_call_inst.code_expr)
-                    .unwrap_validated();
+                        // Verify that the return parameters match the host function parameters
+                        // since we have no validation guarantees for host functions
+                        if returns.len() != func_to_call_ty.returns.valtypes.len() {
+                            return Err(RuntimeError::HostFunctionSignatureMismatch);
+                        }
+                        for (value, ty) in zip(returns, func_to_call_ty.returns.valtypes) {
+                            if value.to_ty() != ty {
+                                return Err(RuntimeError::HostFunctionSignatureMismatch);
+                            }
+                            stack.push_value(value)?;
+                        }
+                    }
+                    FuncInst::WasmFunc(wasm_func_to_call_inst) => {
+                        let remaining_locals = wasm_func_to_call_inst.locals.iter().cloned();
+                        let locals = Locals::new(params, remaining_locals);
 
-                stp = func_to_call_inst.stp;
-                current_sidetable = &store.modules[current_module_idx].sidetable;
+                        stack.push_stackframe(
+                            current_func_addr,
+                            &func_to_call_ty,
+                            locals,
+                            wasm.pc,
+                            stp,
+                        )?;
+
+                        current_func_addr = func_to_call_addr;
+                        current_module_idx = wasm_func_to_call_inst.module_addr;
+                        wasm.full_wasm_binary = store.modules[current_module_idx].wasm_bytecode;
+                        wasm.move_start_to(wasm_func_to_call_inst.code_expr)
+                            .unwrap_validated();
+
+                        stp = wasm_func_to_call_inst.stp;
+                        current_sidetable = &store.modules[current_module_idx].sidetable;
+                        current_function_end_marker = wasm_func_to_call_inst.code_expr.from()
+                            + wasm_func_to_call_inst.code_expr.len();
+                    }
+                }
                 trace!("Instruction: CALL");
             }
 
@@ -220,28 +268,54 @@ pub(super) fn run<H: HookSet>(
                     Ref::Extern(_) => unreachable!(),
                 };
 
-                let func_to_call_inst = &store.functions[func_to_call_addr];
-                let actual_ty = func_to_call_inst.ty();
-
-                if *func_ty != actual_ty {
+                let func_to_call_ty = store.functions[func_to_call_addr].ty();
+                if *func_ty != func_to_call_ty {
                     return Err(RuntimeError::SignatureMismatch);
                 }
 
-                let params = stack.pop_tail_iter(func_ty.params.valtypes.len());
-                let remaining_locals = func_to_call_inst.locals.iter().cloned();
+                let params = stack.pop_tail_iter(func_to_call_ty.params.valtypes.len());
+                trace!("Instruction: call [{func_to_call_addr:?}]");
 
-                let locals = Locals::new(params, remaining_locals);
+                match &store.functions[func_to_call_addr] {
+                    FuncInst::HostFunc(host_func_to_call_inst) => {
+                        let returns = (host_func_to_call_inst.hostcode)(params.collect());
 
-                stack.push_stackframe(current_func_addr, func_ty, locals, wasm.pc, stp)?;
-                current_func_addr = func_to_call_addr;
-                current_module_idx = func_to_call_inst.module_addr;
-                wasm.full_wasm_binary = store.modules[current_module_idx].wasm_bytecode;
-                wasm.move_start_to(func_to_call_inst.code_expr)
-                    .unwrap_validated();
+                        // Verify that the return parameters match the host function parameters
+                        // since we have no validation guarantees for host functions
+                        if returns.len() != func_to_call_ty.returns.valtypes.len() {
+                            return Err(RuntimeError::HostFunctionSignatureMismatch);
+                        }
+                        for (value, ty) in zip(returns, func_to_call_ty.returns.valtypes) {
+                            if value.to_ty() != ty {
+                                return Err(RuntimeError::HostFunctionSignatureMismatch);
+                            }
+                            stack.push_value(value)?;
+                        }
+                    }
+                    FuncInst::WasmFunc(wasm_func_to_call_inst) => {
+                        let remaining_locals = wasm_func_to_call_inst.locals.iter().cloned();
+                        let locals = Locals::new(params, remaining_locals);
 
-                stp = func_to_call_inst.stp;
-                current_sidetable = &store.modules[current_module_idx].sidetable;
+                        stack.push_stackframe(
+                            current_func_addr,
+                            &func_to_call_ty,
+                            locals,
+                            wasm.pc,
+                            stp,
+                        )?;
 
+                        current_func_addr = func_to_call_addr;
+                        current_module_idx = wasm_func_to_call_inst.module_addr;
+                        wasm.full_wasm_binary = store.modules[current_module_idx].wasm_bytecode;
+                        wasm.move_start_to(wasm_func_to_call_inst.code_expr)
+                            .unwrap_validated();
+
+                        stp = wasm_func_to_call_inst.stp;
+                        current_sidetable = &store.modules[current_module_idx].sidetable;
+                        current_function_end_marker = wasm_func_to_call_inst.code_expr.from()
+                            + wasm_func_to_call_inst.code_expr.len();
+                    }
+                }
                 trace!("Instruction: CALL_INDIRECT");
             }
             DROP => {
