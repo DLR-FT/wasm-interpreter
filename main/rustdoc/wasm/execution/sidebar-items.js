@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["DEFAULT_MODULE"],"mod":["assert_validated","const_interpreter_loop","function_ref","hooks","interpreter_loop","linear_memory","locals","store","value","value_stack"],"struct":["RuntimeInstance"]};
+window.SIDEBAR_ITEMS = {"constant":["DEFAULT_MODULE"],"mod":["assert_validated","const_interpreter_loop","function_ref","hooks","interpreter_loop","linear_memory","locals","registry","store","value","value_stack"],"struct":["RuntimeInstance"]};
