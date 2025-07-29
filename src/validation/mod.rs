@@ -9,7 +9,7 @@ use crate::core::reader::types::element::ElemType;
 use crate::core::reader::types::export::Export;
 use crate::core::reader::types::global::{Global, GlobalType};
 use crate::core::reader::types::import::{Import, ImportDesc};
-use crate::core::reader::types::{FuncType, MemType, TableType};
+use crate::core::reader::types::{FuncType, MemType, ResultType, TableType};
 use crate::core::reader::{WasmReadable, WasmReader};
 use crate::core::sidetable::Sidetable;
 use crate::{Error, ExportDesc, Result};
@@ -308,7 +308,24 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
     let start = handle_section(&mut wasm, &mut header, SectionTy::Start, |wasm, _| {
-        wasm.read_var_u32().map(|idx| idx as FuncIdx)
+        let idx = wasm.read_var_u32().map(|idx| idx as FuncIdx)?;
+        // start function signature must be [] -> []
+        // https://webassembly.github.io/spec/core/valid/modules.html#start-function
+        if types[all_functions[idx]]
+            != (FuncType {
+                params: ResultType {
+                    valtypes: Vec::new(),
+                },
+                returns: ResultType {
+                    valtypes: Vec::new(),
+                },
+            })
+        {
+            // TODO fix error type
+            Err(Error::InvalidFuncType)
+        } else {
+            Ok(idx)
+        }
     })?;
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
