@@ -27,14 +27,14 @@ macro_rules! get_func {
 
 macro_rules! assert_result {
     ($instance:expr, $func:expr, $arg:expr, $result:expr) => {
-        assert_eq!($result, $instance.invoke($func, $arg).unwrap());
+        assert_eq!($result, $instance.invoke_typed($func, $arg).unwrap());
     };
 }
 
 macro_rules! assert_error {
     ($instance:expr, $func:expr, $arg:expr, $ret_type:ty, $invoke_param_type:ty, $invoke_return_type:ty, $err_type:expr) => {
         let val: $ret_type =
-            $instance.invoke::<$invoke_param_type, $invoke_return_type>($func, $arg);
+            $instance.invoke_typed::<$invoke_param_type, $invoke_return_type>($func, $arg);
         assert!(val.is_err());
         assert!(val.unwrap_err() == $err_type);
     };
@@ -58,7 +58,7 @@ fn memory_init_test_1() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut i = RuntimeInstance::new(&validation_info).expect("instantiation failed");
     let test = get_func!(i, "test");
-    i.invoke::<(), ()>(test, ()).unwrap();
+    i.invoke_typed::<(), ()>(test, ()).unwrap();
 
     let load8_u = get_func!(i, "load8_u");
 
@@ -92,7 +92,7 @@ fn memory_init_test_2() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut i = RuntimeInstance::new(&validation_info).expect("instantiation failed");
     let test = get_func!(i, "test");
-    i.invoke::<(), ()>(test, ()).unwrap();
+    i.invoke_typed::<(), ()>(test, ()).unwrap();
 
     let load8_u = get_func!(i, "load8_u");
 
@@ -126,7 +126,7 @@ fn memory_init_test_3() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut i = RuntimeInstance::new(&validation_info).expect("instantiation failed");
     let test = get_func!(i, "test");
-    i.invoke::<(), ()>(test, ()).unwrap();
+    i.invoke_typed::<(), ()>(test, ()).unwrap();
 
     let load8_u = get_func!(i, "load8_u");
 
@@ -168,7 +168,7 @@ fn memory_init_test_4() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut i = RuntimeInstance::new(&validation_info).expect("instantiation failed");
     let test = get_func!(i, "test");
-    i.invoke::<(), ()>(test, ()).unwrap();
+    i.invoke_typed::<(), ()>(test, ()).unwrap();
 
     let load8_u = get_func!(i, "load8_u");
 
@@ -225,7 +225,7 @@ fn memory_init_test_7() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut i = RuntimeInstance::new(&validation_info).expect("instantiation failed");
     let test = get_func!(i, "test");
-    i.invoke::<(), ()>(test, ()).unwrap();
+    i.invoke_typed::<(), ()>(test, ()).unwrap();
 }
 
 #[test_log::test]
@@ -301,7 +301,7 @@ fn memory_init_test_12() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut i = RuntimeInstance::new(&validation_info).expect("instantiation failed");
     let test = get_func!(i, "test");
-    i.invoke::<(), ()>(test, ()).unwrap();
+    i.invoke_typed::<(), ()>(test, ()).unwrap();
 }
 
 #[test_log::test]

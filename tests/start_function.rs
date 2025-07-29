@@ -30,7 +30,7 @@ fn start_function() {
     assert_eq!(
         42,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance
                     .get_function_by_name(DEFAULT_MODULE, "load_num")
                     .unwrap(),

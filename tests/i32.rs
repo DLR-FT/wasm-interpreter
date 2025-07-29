@@ -36,25 +36,25 @@ pub fn i32_add() {
     assert_eq!(
         2,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (1, 1))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (1, 1))
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (1, 0))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (1, 0))
             .unwrap()
     );
     assert_eq!(
         -2,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (-1, -1))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (-1, -1))
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (-1, 1))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (-1, 1))
             .unwrap()
     );
     // Chaned the following value from the spec:
@@ -64,7 +64,7 @@ pub fn i32_add() {
     assert_eq!(
         i32_min,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x7fffffff, 1)
             )
@@ -73,7 +73,7 @@ pub fn i32_add() {
     assert_eq!(
         0x7fffffff,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (i32_min, -1)
             )
@@ -82,7 +82,7 @@ pub fn i32_add() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (i32_min, i32_min)
             )
@@ -91,7 +91,7 @@ pub fn i32_add() {
     assert_eq!(
         0x40000000,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x3fffffff, 1)
             )
@@ -110,19 +110,19 @@ pub fn i32_sub() {
     assert_eq!(
         0,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (1, 1))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (1, 1))
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (1, 0))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (1, 0))
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (-1, -1))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (-1, -1))
             .unwrap()
     );
     // Chaned the following value from the spec:
@@ -132,7 +132,7 @@ pub fn i32_sub() {
     assert_eq!(
         i32_min,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x7fffffff, -1)
             )
@@ -141,13 +141,13 @@ pub fn i32_sub() {
     assert_eq!(
         0x7fffffff,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (i32_min, 1))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (i32_min, 1))
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (i32_min, i32_min)
             )
@@ -156,7 +156,7 @@ pub fn i32_sub() {
     assert_eq!(
         0x40000000,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x3fffffff, -1)
             )
@@ -185,7 +185,7 @@ pub fn i32_eqz_panic() {
     assert_eq!(
         1,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), ())
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), ())
             .unwrap()
     );
 }
@@ -211,19 +211,19 @@ pub fn i32_eqz() {
     assert_eq!(
         1,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), 0)
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 0)
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), 1)
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 1)
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 0x80000000u32 as i32
             )
@@ -232,13 +232,13 @@ pub fn i32_eqz() {
     assert_eq!(
         0,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), 0x7fffffff)
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 0x7fffffff)
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 0xffffffffu32 as i32
             )
@@ -268,7 +268,7 @@ pub fn i32_eq_panic_first_arg() {
     assert_eq!(
         1,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), ())
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), ())
             .unwrap()
     );
 }
@@ -295,7 +295,7 @@ pub fn i32_eq_panic_second_arg() {
     assert_eq!(
         1,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), ())
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), ())
             .unwrap()
     );
 }
@@ -311,25 +311,25 @@ pub fn i32_eq() {
     assert_eq!(
         1,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (0, 0))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (0, 0))
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (1, 1))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (1, 1))
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (-1, 1))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (-1, 1))
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x80000000u32 as i32, 0x80000000u32 as i32)
             )
@@ -338,7 +338,7 @@ pub fn i32_eq() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x7fffffff, 0x7fffffff)
             )
@@ -347,25 +347,25 @@ pub fn i32_eq() {
     assert_eq!(
         1,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (-1, -1))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (-1, -1))
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (1, 0))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (1, 0))
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (0, 1))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (0, 1))
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x80000000u32 as i32, 0)
             )
@@ -374,7 +374,7 @@ pub fn i32_eq() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0, 0x80000000u32 as i32)
             )
@@ -383,7 +383,7 @@ pub fn i32_eq() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x80000000u32 as i32, -1)
             )
@@ -392,7 +392,7 @@ pub fn i32_eq() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (-1, 0x80000000u32 as i32)
             )
@@ -401,7 +401,7 @@ pub fn i32_eq() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x80000000u32 as i32, 0x7fffffff)
             )
@@ -410,7 +410,7 @@ pub fn i32_eq() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x7fffffff, 0x80000000u32 as i32)
             )
@@ -429,25 +429,25 @@ pub fn i32_ne() {
     assert_eq!(
         0,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (0, 0))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (0, 0))
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (1, 1))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (1, 1))
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (-1, 1))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (-1, 1))
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x80000000u32 as i32, 0x80000000u32 as i32)
             )
@@ -456,7 +456,7 @@ pub fn i32_ne() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x7fffffff, 0x7fffffff)
             )
@@ -465,25 +465,25 @@ pub fn i32_ne() {
     assert_eq!(
         0,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (-1, -1))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (-1, -1))
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (1, 0))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (1, 0))
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (0, 1))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (0, 1))
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x80000000u32 as i32, 0)
             )
@@ -492,7 +492,7 @@ pub fn i32_ne() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0, 0x80000000u32 as i32)
             )
@@ -501,7 +501,7 @@ pub fn i32_ne() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x80000000u32 as i32, -1)
             )
@@ -510,7 +510,7 @@ pub fn i32_ne() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (-1, 0x80000000u32 as i32)
             )
@@ -519,7 +519,7 @@ pub fn i32_ne() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x80000000u32 as i32, 0x7fffffff)
             )
@@ -528,7 +528,7 @@ pub fn i32_ne() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x7fffffff, 0x80000000u32 as i32)
             )
@@ -547,25 +547,25 @@ pub fn i32_lt_s() {
     assert_eq!(
         0,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (0, 0))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (0, 0))
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (1, 1))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (1, 1))
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (-1, 1))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (-1, 1))
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x80000000u32 as i32, 0x80000000u32 as i32)
             )
@@ -574,7 +574,7 @@ pub fn i32_lt_s() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x7fffffff, 0x7fffffff)
             )
@@ -583,25 +583,25 @@ pub fn i32_lt_s() {
     assert_eq!(
         0,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (-1, -1))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (-1, -1))
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (1, 0))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (1, 0))
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (0, 1))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (0, 1))
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x80000000u32 as i32, 0)
             )
@@ -610,7 +610,7 @@ pub fn i32_lt_s() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0, 0x80000000u32 as i32)
             )
@@ -619,7 +619,7 @@ pub fn i32_lt_s() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x80000000u32 as i32, -1)
             )
@@ -628,7 +628,7 @@ pub fn i32_lt_s() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (-1, 0x80000000u32 as i32)
             )
@@ -637,7 +637,7 @@ pub fn i32_lt_s() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x80000000u32 as i32, 0x7fffffff)
             )
@@ -646,7 +646,7 @@ pub fn i32_lt_s() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x7fffffff, 0x80000000u32 as i32)
             )
@@ -665,25 +665,25 @@ pub fn i32_lt_u() {
     assert_eq!(
         0,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (0, 0))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (0, 0))
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (1, 1))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (1, 1))
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (-1, 1))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (-1, 1))
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x80000000u32 as i32, 0x80000000u32 as i32)
             )
@@ -692,7 +692,7 @@ pub fn i32_lt_u() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x7fffffff, 0x7fffffff)
             )
@@ -701,25 +701,25 @@ pub fn i32_lt_u() {
     assert_eq!(
         0,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (-1, -1))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (-1, -1))
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (1, 0))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (1, 0))
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (0, 1))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (0, 1))
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x80000000u32 as i32, 0)
             )
@@ -728,7 +728,7 @@ pub fn i32_lt_u() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0, 0x80000000u32 as i32)
             )
@@ -737,7 +737,7 @@ pub fn i32_lt_u() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x80000000u32 as i32, -1)
             )
@@ -746,7 +746,7 @@ pub fn i32_lt_u() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (-1, 0x80000000u32 as i32)
             )
@@ -755,7 +755,7 @@ pub fn i32_lt_u() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x80000000u32 as i32, 0x7fffffff)
             )
@@ -764,7 +764,7 @@ pub fn i32_lt_u() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x7fffffff, 0x80000000u32 as i32)
             )
@@ -783,25 +783,25 @@ pub fn i32_gt_s() {
     assert_eq!(
         0,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (0, 0))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (0, 0))
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (1, 1))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (1, 1))
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (-1, 1))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (-1, 1))
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x80000000u32 as i32, 0x80000000u32 as i32)
             )
@@ -810,7 +810,7 @@ pub fn i32_gt_s() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x7fffffff, 0x7fffffff)
             )
@@ -819,25 +819,25 @@ pub fn i32_gt_s() {
     assert_eq!(
         0,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (-1, -1))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (-1, -1))
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (1, 0))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (1, 0))
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (0, 1))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (0, 1))
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x80000000u32 as i32, 0)
             )
@@ -846,7 +846,7 @@ pub fn i32_gt_s() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0, 0x80000000u32 as i32)
             )
@@ -855,7 +855,7 @@ pub fn i32_gt_s() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x80000000u32 as i32, -1)
             )
@@ -864,7 +864,7 @@ pub fn i32_gt_s() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (-1, 0x80000000u32 as i32)
             )
@@ -873,7 +873,7 @@ pub fn i32_gt_s() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x80000000u32 as i32, 0x7fffffff)
             )
@@ -882,7 +882,7 @@ pub fn i32_gt_s() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x7fffffff, 0x80000000u32 as i32)
             )
@@ -901,25 +901,25 @@ pub fn i32_gt_u() {
     assert_eq!(
         0,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (0, 0))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (0, 0))
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (1, 1))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (1, 1))
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (-1, 1))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (-1, 1))
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x80000000u32 as i32, 0x80000000u32 as i32)
             )
@@ -928,7 +928,7 @@ pub fn i32_gt_u() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x7fffffff, 0x7fffffff)
             )
@@ -937,25 +937,25 @@ pub fn i32_gt_u() {
     assert_eq!(
         0,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (-1, -1))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (-1, -1))
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (1, 0))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (1, 0))
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (0, 1))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (0, 1))
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x80000000u32 as i32, 0)
             )
@@ -964,7 +964,7 @@ pub fn i32_gt_u() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0, 0x80000000u32 as i32)
             )
@@ -973,7 +973,7 @@ pub fn i32_gt_u() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x80000000u32 as i32, -1)
             )
@@ -982,7 +982,7 @@ pub fn i32_gt_u() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (-1, 0x80000000u32 as i32)
             )
@@ -991,7 +991,7 @@ pub fn i32_gt_u() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x80000000u32 as i32, 0x7fffffff)
             )
@@ -1000,7 +1000,7 @@ pub fn i32_gt_u() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x7fffffff, 0x80000000u32 as i32)
             )
@@ -1019,25 +1019,25 @@ pub fn i32_le_s() {
     assert_eq!(
         1,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (0, 0))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (0, 0))
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (1, 1))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (1, 1))
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (-1, 1))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (-1, 1))
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x80000000u32 as i32, 0x80000000u32 as i32)
             )
@@ -1046,7 +1046,7 @@ pub fn i32_le_s() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x7fffffff, 0x7fffffff)
             )
@@ -1055,25 +1055,25 @@ pub fn i32_le_s() {
     assert_eq!(
         1,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (-1, -1))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (-1, -1))
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (1, 0))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (1, 0))
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (0, 1))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (0, 1))
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x80000000u32 as i32, 0)
             )
@@ -1082,7 +1082,7 @@ pub fn i32_le_s() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0, 0x80000000u32 as i32)
             )
@@ -1091,7 +1091,7 @@ pub fn i32_le_s() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x80000000u32 as i32, -1)
             )
@@ -1100,7 +1100,7 @@ pub fn i32_le_s() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (-1, 0x80000000u32 as i32)
             )
@@ -1109,7 +1109,7 @@ pub fn i32_le_s() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x80000000u32 as i32, 0x7fffffff)
             )
@@ -1118,7 +1118,7 @@ pub fn i32_le_s() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x7fffffff, 0x80000000u32 as i32)
             )
@@ -1138,25 +1138,25 @@ pub fn i32_le_u() {
     assert_eq!(
         1,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (0, 0))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (0, 0))
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (1, 1))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (1, 1))
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (-1, 1))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (-1, 1))
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x80000000u32 as i32, 0x80000000u32 as i32)
             )
@@ -1165,7 +1165,7 @@ pub fn i32_le_u() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x7fffffff, 0x7fffffff)
             )
@@ -1174,25 +1174,25 @@ pub fn i32_le_u() {
     assert_eq!(
         1,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (-1, -1))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (-1, -1))
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (1, 0))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (1, 0))
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (0, 1))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (0, 1))
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x80000000u32 as i32, 0)
             )
@@ -1201,7 +1201,7 @@ pub fn i32_le_u() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0, 0x80000000u32 as i32)
             )
@@ -1210,7 +1210,7 @@ pub fn i32_le_u() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x80000000u32 as i32, -1)
             )
@@ -1219,7 +1219,7 @@ pub fn i32_le_u() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (-1, 0x80000000u32 as i32)
             )
@@ -1228,7 +1228,7 @@ pub fn i32_le_u() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x80000000u32 as i32, 0x7fffffff)
             )
@@ -1237,7 +1237,7 @@ pub fn i32_le_u() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x7fffffff, 0x80000000u32 as i32)
             )
@@ -1256,25 +1256,25 @@ pub fn i32_ge_s() {
     assert_eq!(
         1,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (0, 0))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (0, 0))
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (1, 1))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (1, 1))
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (-1, 1))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (-1, 1))
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x80000000u32 as i32, 0x80000000u32 as i32)
             )
@@ -1283,7 +1283,7 @@ pub fn i32_ge_s() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x7fffffff, 0x7fffffff)
             )
@@ -1292,25 +1292,25 @@ pub fn i32_ge_s() {
     assert_eq!(
         1,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (-1, -1))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (-1, -1))
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (1, 0))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (1, 0))
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (0, 1))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (0, 1))
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x80000000u32 as i32, 0)
             )
@@ -1319,7 +1319,7 @@ pub fn i32_ge_s() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0, 0x80000000u32 as i32)
             )
@@ -1328,7 +1328,7 @@ pub fn i32_ge_s() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x80000000u32 as i32, -1)
             )
@@ -1337,7 +1337,7 @@ pub fn i32_ge_s() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (-1, 0x80000000u32 as i32)
             )
@@ -1346,7 +1346,7 @@ pub fn i32_ge_s() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x80000000u32 as i32, 0x7fffffff)
             )
@@ -1355,7 +1355,7 @@ pub fn i32_ge_s() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x7fffffff, 0x80000000u32 as i32)
             )
@@ -1374,25 +1374,25 @@ pub fn i32_ge_u() {
     assert_eq!(
         1,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (0, 0))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (0, 0))
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (1, 1))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (1, 1))
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (-1, 1))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (-1, 1))
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x80000000u32 as i32, 0x80000000u32 as i32)
             )
@@ -1401,7 +1401,7 @@ pub fn i32_ge_u() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x7fffffff, 0x7fffffff)
             )
@@ -1410,25 +1410,25 @@ pub fn i32_ge_u() {
     assert_eq!(
         1,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (-1, -1))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (-1, -1))
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (1, 0))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (1, 0))
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), (0, 1))
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (0, 1))
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x80000000u32 as i32, 0)
             )
@@ -1437,7 +1437,7 @@ pub fn i32_ge_u() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0, 0x80000000u32 as i32)
             )
@@ -1446,7 +1446,7 @@ pub fn i32_ge_u() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x80000000u32 as i32, -1)
             )
@@ -1455,7 +1455,7 @@ pub fn i32_ge_u() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (-1, 0x80000000u32 as i32)
             )
@@ -1464,7 +1464,7 @@ pub fn i32_ge_u() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x80000000u32 as i32, 0x7fffffff)
             )
@@ -1473,7 +1473,7 @@ pub fn i32_ge_u() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x7fffffff, 0x80000000u32 as i32)
             )

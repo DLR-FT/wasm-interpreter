@@ -26,14 +26,14 @@ macro_rules! get_func {
 
 macro_rules! assert_result {
     ($instance:expr, $func:expr, $arg:expr, $result:expr) => {
-        assert_eq!($result, $instance.invoke($func, $arg).unwrap());
+        assert_eq!($result, $instance.invoke_typed($func, $arg).unwrap());
     };
 }
 
 macro_rules! assert_error {
     ($instance:expr, $func:expr, $arg:expr, $ret_type:ty, $invoke_param_type:ty, $invoke_return_type:ty, $err_type:expr) => {
         let val: $ret_type =
-            $instance.invoke::<$invoke_param_type, $invoke_return_type>($func, $arg);
+            $instance.invoke_typed::<$invoke_param_type, $invoke_return_type>($func, $arg);
         assert!(val.is_err());
         assert!(val.unwrap_err() == $err_type);
     };

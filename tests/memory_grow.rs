@@ -26,14 +26,14 @@ macro_rules! get_func {
 
 macro_rules! assert_result {
     ($instance:expr, $func_name:expr, $arg:expr, $result:expr) => {
-        assert_eq!($result, $instance.invoke($func_name, $arg).unwrap());
+        assert_eq!($result, $instance.invoke_typed($func_name, $arg).unwrap());
     };
 }
 
 macro_rules! assert_error {
     ($instance:expr, $func_name:expr, $arg:expr, $ret_type:ty, $invoke_param_type:ty, $invoke_return_type:ty, $err_type:expr) => {
         let val: $ret_type =
-            $instance.invoke::<$invoke_param_type, $invoke_return_type>($func_name, $arg);
+            $instance.invoke_typed::<$invoke_param_type, $invoke_return_type>($func_name, $arg);
         assert!(val.is_err());
         assert!(val.unwrap_err() == $err_type);
     };
@@ -59,7 +59,7 @@ fn memory_grow_test_1() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut i = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    // let x = i.invoke(function_ref, params)
+    // let x = i.invoke_typed(function_ref, params)
     assert_result!(i, get_func!(i, "size"), (), 0);
     assert_error!(i, get_func!(i, "store_at_zero"), (), Result<(), RuntimeError>, (), (), RuntimeError::MemoryAccessOutOfBounds);
     assert_error!(i, get_func!(i, "load_at_zero"), (), Result<i32, RuntimeError>, (), i32, RuntimeError::MemoryAccessOutOfBounds);

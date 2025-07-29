@@ -26,7 +26,7 @@ macro_rules! get_func {
 
 macro_rules! assert_result {
     ($instance:expr, $func:expr, $arg:expr, $result:expr) => {
-        assert_eq!($result, $instance.invoke($func, $arg).unwrap());
+        assert_eq!($result, $instance.invoke_typed($func, $arg).unwrap());
     };
 }
 

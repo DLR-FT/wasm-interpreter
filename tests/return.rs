@@ -29,7 +29,7 @@ fn return_valid() {
     assert_eq!(
         12,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance
                     .get_function_by_name(DEFAULT_MODULE, "add")
                     .unwrap(),
@@ -40,7 +40,7 @@ fn return_valid() {
     assert_eq!(
         2,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance
                     .get_function_by_name(DEFAULT_MODULE, "add")
                     .unwrap(),
@@ -51,7 +51,7 @@ fn return_valid() {
     assert_eq!(
         -4,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance
                     .get_function_by_name(DEFAULT_MODULE, "add")
                     .unwrap(),

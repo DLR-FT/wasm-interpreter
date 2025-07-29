@@ -23,7 +23,7 @@ pub fn i32_multiply() {
     assert_eq!(
         33,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance
                     .get_function_by_name(DEFAULT_MODULE, "multiply")
                     .unwrap(),
@@ -34,7 +34,7 @@ pub fn i32_multiply() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance
                     .get_function_by_name(DEFAULT_MODULE, "multiply")
                     .unwrap(),
@@ -45,7 +45,7 @@ pub fn i32_multiply() {
     assert_eq!(
         -30,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance
                     .get_function_by_name(DEFAULT_MODULE, "multiply")
                     .unwrap(),
@@ -57,7 +57,7 @@ pub fn i32_multiply() {
     assert_eq!(
         i32::MAX - 5,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance
                     .get_function_by_name(DEFAULT_MODULE, "multiply")
                     .unwrap(),
@@ -68,7 +68,7 @@ pub fn i32_multiply() {
     assert_eq!(
         i32::MIN + 3,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance
                     .get_function_by_name(DEFAULT_MODULE, "multiply")
                     .unwrap(),
@@ -92,32 +92,32 @@ pub fn i64_multiply() {
     assert_eq!(
         33_i64,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), 11_i64)
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 11_i64)
             .unwrap()
     );
     assert_eq!(
         0_i64,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), 0_i64)
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 0_i64)
             .unwrap()
     );
     assert_eq!(
         -30_i64,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), -10_i64)
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -10_i64)
             .unwrap()
     );
 
     assert_eq!(
         i64::MAX - 5,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), i64::MAX - 1)
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), i64::MAX - 1)
             .unwrap()
     );
     assert_eq!(
         i64::MIN + 3,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), i64::MIN + 1)
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), i64::MIN + 1)
             .unwrap()
     );
 }

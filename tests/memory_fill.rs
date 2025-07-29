@@ -42,7 +42,7 @@ fn memory_fill() {
     let mut i = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
     let fill = get_func!(i, "fill");
-    i.invoke::<(), ()>(fill, ()).unwrap();
+    i.invoke_typed::<(), ()>(fill, ()).unwrap();
     let mem_inst = &i.store.as_ref().unwrap().memories[0];
 
     let expected = [vec![217u8; 100], vec![0u8; 5]].concat();

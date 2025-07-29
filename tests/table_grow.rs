@@ -27,7 +27,7 @@ macro_rules! get_func {
 
 macro_rules! assert_result {
     ($instance:expr, $func:expr, $arg:expr, $result:expr) => {
-        assert_eq!($result, $instance.invoke($func, $arg).unwrap());
+        assert_eq!($result, $instance.invoke_typed($func, $arg).unwrap());
     };
 }
 
@@ -58,9 +58,9 @@ fn table_grow_test() {
     let grow_abbrev = get_func!(i, "grow-abbrev");
     let size = get_func!(i, "size");
 
-    assert!(i.invoke::<(), i32>(size, ()).unwrap() == 0);
+    assert!(i.invoke_typed::<(), i32>(size, ()).unwrap() == 0);
     assert!(
-        i.invoke::<(i32, FuncRefForInteropValue), ()>(
+        i.invoke_typed::<(i32, FuncRefForInteropValue), ()>(
             set,
             (
                 0,
@@ -72,14 +72,14 @@ fn table_grow_test() {
             == RuntimeError::TableAccessOutOfBounds
     );
     assert!(
-        i.invoke::<i32, FuncRefForInteropValue>(get, 0)
+        i.invoke_typed::<i32, FuncRefForInteropValue>(get, 0)
             .err()
             .unwrap()
             == RuntimeError::TableAccessOutOfBounds
     );
 
     assert!(
-        i.invoke::<(i32, FuncRefForInteropValue), i32>(
+        i.invoke_typed::<(i32, FuncRefForInteropValue), i32>(
             grow,
             (
                 1,
@@ -89,14 +89,14 @@ fn table_grow_test() {
         .unwrap()
             == 0
     );
-    assert!(i.invoke::<(), i32>(size, ()).unwrap() == 1);
+    assert!(i.invoke_typed::<(), i32>(size, ()).unwrap() == 1);
     assert!(i
-        .invoke::<i32, FuncRefForInteropValue>(get, 0)
+        .invoke_typed::<i32, FuncRefForInteropValue>(get, 0)
         .unwrap()
         .get_ref()
         .is_null());
     assert!(i
-        .invoke::<(i32, FuncRefForInteropValue), ()>(
+        .invoke_typed::<(i32, FuncRefForInteropValue), ()>(
             set,
             (
                 0,
@@ -105,11 +105,12 @@ fn table_grow_test() {
         )
         .is_ok());
     assert!(
-        i.invoke::<i32, FuncRefForInteropValue>(get, 0).unwrap()
+        i.invoke_typed::<i32, FuncRefForInteropValue>(get, 0)
+            .unwrap()
             == FuncRefForInteropValue::new(Ref::Func(FuncAddr::new(Some(2)))).unwrap()
     );
     assert!(
-        i.invoke::<(i32, FuncRefForInteropValue), ()>(
+        i.invoke_typed::<(i32, FuncRefForInteropValue), ()>(
             set,
             (
                 1,
@@ -121,14 +122,14 @@ fn table_grow_test() {
             == RuntimeError::TableAccessOutOfBounds
     );
     assert!(
-        i.invoke::<i32, FuncRefForInteropValue>(get, 1)
+        i.invoke_typed::<i32, FuncRefForInteropValue>(get, 1)
             .err()
             .unwrap()
             == RuntimeError::TableAccessOutOfBounds
     );
 
     assert!(
-        i.invoke::<(i32, FuncRefForInteropValue), i32>(
+        i.invoke_typed::<(i32, FuncRefForInteropValue), i32>(
             grow_abbrev,
             (
                 4,
@@ -138,13 +139,14 @@ fn table_grow_test() {
         .unwrap()
             == 1
     );
-    assert!(i.invoke::<(), i32>(size, ()).unwrap() == 5);
+    assert!(i.invoke_typed::<(), i32>(size, ()).unwrap() == 5);
     assert!(
-        i.invoke::<i32, FuncRefForInteropValue>(get, 0).unwrap()
+        i.invoke_typed::<i32, FuncRefForInteropValue>(get, 0)
+            .unwrap()
             == FuncRefForInteropValue::new(Ref::Func(FuncAddr::new(Some(2)))).unwrap()
     );
     assert!(i
-        .invoke::<(i32, FuncRefForInteropValue), ()>(
+        .invoke_typed::<(i32, FuncRefForInteropValue), ()>(
             set,
             (
                 0,
@@ -153,19 +155,22 @@ fn table_grow_test() {
         )
         .is_ok());
     assert!(
-        i.invoke::<i32, FuncRefForInteropValue>(get, 0).unwrap()
+        i.invoke_typed::<i32, FuncRefForInteropValue>(get, 0)
+            .unwrap()
             == FuncRefForInteropValue::new(Ref::Func(FuncAddr::new(Some(2)))).unwrap()
     );
     assert!(
-        i.invoke::<i32, FuncRefForInteropValue>(get, 1).unwrap()
+        i.invoke_typed::<i32, FuncRefForInteropValue>(get, 1)
+            .unwrap()
             == FuncRefForInteropValue::new(Ref::Func(FuncAddr::new(Some(3)))).unwrap()
     );
     assert!(
-        i.invoke::<i32, FuncRefForInteropValue>(get, 4).unwrap()
+        i.invoke_typed::<i32, FuncRefForInteropValue>(get, 4)
+            .unwrap()
             == FuncRefForInteropValue::new(Ref::Func(FuncAddr::new(Some(3)))).unwrap()
     );
     assert!(i
-        .invoke::<(i32, FuncRefForInteropValue), ()>(
+        .invoke_typed::<(i32, FuncRefForInteropValue), ()>(
             set,
             (
                 4,
@@ -174,11 +179,12 @@ fn table_grow_test() {
         )
         .is_ok());
     assert!(
-        i.invoke::<i32, FuncRefForInteropValue>(get, 4).unwrap()
+        i.invoke_typed::<i32, FuncRefForInteropValue>(get, 4)
+            .unwrap()
             == FuncRefForInteropValue::new(Ref::Func(FuncAddr::new(Some(4)))).unwrap()
     );
     assert!(
-        i.invoke::<(i32, FuncRefForInteropValue), ()>(
+        i.invoke_typed::<(i32, FuncRefForInteropValue), ()>(
             set,
             (
                 5,
@@ -190,7 +196,7 @@ fn table_grow_test() {
             == RuntimeError::TableAccessOutOfBounds
     );
     assert!(
-        i.invoke::<i32, FuncRefForInteropValue>(get, 5)
+        i.invoke_typed::<i32, FuncRefForInteropValue>(get, 5)
             .err()
             .unwrap()
             == RuntimeError::TableAccessOutOfBounds
@@ -216,7 +222,7 @@ fn table_grow_outside_i32_range() {
     let mut i = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
     let grow = get_func!(i, "grow");
-    assert_eq!(i.invoke::<(), i32>(grow, ()).unwrap(), -1);
+    assert_eq!(i.invoke_typed::<(), i32>(grow, ()).unwrap(), -1);
 }
 
 #[test_log::test]
@@ -303,13 +309,13 @@ fn table_grow_check_null() {
     let check_table_null = get_func!(i, "check-table-null");
 
     assert_eq!(
-        i.invoke::<(i32, i32), FuncRefForInteropValue>(check_table_null, (0, 9))
+        i.invoke_typed::<(i32, i32), FuncRefForInteropValue>(check_table_null, (0, 9))
             .unwrap(),
         FuncRefForInteropValue::new(Ref::Func(FuncAddr::null())).unwrap()
     );
     assert_result!(i, grow, 10, 10);
     assert_eq!(
-        i.invoke::<(i32, i32), FuncRefForInteropValue>(check_table_null, (0, 19))
+        i.invoke_typed::<(i32, i32), FuncRefForInteropValue>(check_table_null, (0, 19))
             .unwrap(),
         FuncRefForInteropValue::new(Ref::Func(FuncAddr::null())).unwrap()
     );
