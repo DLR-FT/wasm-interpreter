@@ -10,7 +10,7 @@ use crate::execution::hooks::{EmptyHookSet, HookSet};
 use crate::execution::store::Store;
 use crate::execution::value::Value;
 use crate::value::InteropValueList;
-use crate::{Result as CustomResult, RuntimeError, ValType, ValidationInfo};
+use crate::{Result as CustomResult, RuntimeError, ValidationInfo};
 
 pub(crate) mod assert_validated;
 pub mod const_interpreter_loop;
@@ -117,7 +117,7 @@ where
     }
 
     /// Invokes a function with the given parameters of type `Param`, and return types of type `Returns`.
-    pub fn invoke<Param: InteropValueList, Returns: InteropValueList>(
+    pub fn invoke_typed<Param: InteropValueList, Returns: InteropValueList>(
         &mut self,
         function_ref: &FunctionRef,
         params: Param,
@@ -127,26 +127,13 @@ where
         let store = self.store.as_mut().ok_or(RuntimeError::ModuleNotFound)?;
 
         let FunctionRef { func_addr } = *function_ref;
-        store.invoke(func_addr, params)
-    }
-
-    /// Invokes a function with the given parameters, and return types which are not known at compile time.
-    pub fn invoke_dynamic(
-        &mut self,
-        function_ref: &FunctionRef,
-        params: Vec<Value>,
-        ret_types: &[ValType],
-        // store: &mut Store,
-    ) -> Result<Vec<Value>, RuntimeError> {
-        // TODO fix error
-        let store = self.store.as_mut().ok_or(RuntimeError::ModuleNotFound)?;
-
-        let FunctionRef { func_addr } = *function_ref;
-        store.invoke_dynamic(func_addr, params, ret_types)
+        store
+            .invoke(func_addr, params.into_values())
+            .map(|values| Returns::from_values(values.into_iter()))
     }
 
     /// Invokes a function with the given parameters. The return types depend on the function signature.
-    pub fn invoke_dynamic_unchecked_return_ty(
+    pub fn invoke(
         &mut self,
         function_ref: &FunctionRef,
         params: Vec<Value>,
@@ -155,6 +142,6 @@ where
         let store = self.store.as_mut().ok_or(RuntimeError::ModuleNotFound)?;
 
         let FunctionRef { func_addr } = *function_ref;
-        store.invoke_dynamic_unchecked_return_ty(func_addr, params)
+        store.invoke(func_addr, params)
     }
 }

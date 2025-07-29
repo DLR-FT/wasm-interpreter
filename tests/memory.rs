@@ -87,7 +87,7 @@ macro_rules! get_func {
 
 macro_rules! assert_result {
     ($instance:expr, $func_name:expr, $arg:expr, $result:expr) => {
-        assert_eq!($result, $instance.invoke($func_name, $arg).unwrap());
+        assert_eq!($result, $instance.invoke_typed($func_name, $arg).unwrap());
     };
 }
 
@@ -202,7 +202,7 @@ fn i32_and_i64_loads() {
     // let cast = get_func!(i, "cast");
 
     // assert_result!(i, data, (), 1);
-    assert_eq!(1, i.invoke(data, ()).unwrap());
+    assert_eq!(1, i.invoke_typed(data, ()).unwrap());
     // (assert_return (invoke "cast") (f64.const 42.0))
 
     assert_result!(i, i32_load8_s, -1, -1);

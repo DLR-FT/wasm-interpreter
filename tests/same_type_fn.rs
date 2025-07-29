@@ -26,7 +26,7 @@ fn same_type_fn() {
     assert_eq!(
         -5,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance
                     .get_function_by_name(DEFAULT_MODULE, "add_one")
                     .unwrap(),
@@ -37,7 +37,7 @@ fn same_type_fn() {
     assert_eq!(
         -4,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance
                     .get_function_by_name(DEFAULT_MODULE, "add_two")
                     .unwrap(),

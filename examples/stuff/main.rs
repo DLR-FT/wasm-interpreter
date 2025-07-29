@@ -54,22 +54,22 @@ fn main() -> ExitCode {
     };
 
     let twelve: i32 = instance
-        .invoke(&instance.get_function_by_index(0, 1).unwrap(), (5, 7))
+        .invoke_typed(&instance.get_function_by_index(0, 1).unwrap(), (5, 7))
         .unwrap();
     assert_eq!(twelve, 12);
 
     let twelve_plus_one: i32 = instance
-        .invoke(&instance.get_function_by_index(0, 0).unwrap(), twelve)
+        .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), twelve)
         .unwrap();
     assert_eq!(twelve_plus_one, 13);
 
     instance
-        .invoke::<_, ()>(&instance.get_function_by_index(0, 2).unwrap(), 42_i32)
+        .invoke_typed::<_, ()>(&instance.get_function_by_index(0, 2).unwrap(), 42_i32)
         .unwrap();
 
     assert_eq!(
         instance
-            .invoke::<(), i32>(&instance.get_function_by_index(0, 3).unwrap(), ())
+            .invoke_typed::<(), i32>(&instance.get_function_by_index(0, 3).unwrap(), ())
             .unwrap(),
         42_i32
     );

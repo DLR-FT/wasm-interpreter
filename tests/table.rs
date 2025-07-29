@@ -166,7 +166,7 @@ fn table_get_set_test() {
     // assert the function at index 1 is a FuncRef and is NOT null
     {
         let funcref = i
-            .invoke::<i32, FuncRefForInteropValue>(get_funcref, 1)
+            .invoke_typed::<i32, FuncRefForInteropValue>(get_funcref, 1)
             .unwrap();
 
         let rref = funcref.get_ref();
@@ -182,7 +182,7 @@ fn table_get_set_test() {
     // assert the function at index 2 is a FuncRef and is null
     {
         let funcref = i
-            .invoke::<i32, FuncRefForInteropValue>(get_funcref, 2)
+            .invoke_typed::<i32, FuncRefForInteropValue>(get_funcref, 2)
             .unwrap();
 
         let rref = funcref.get_ref();
@@ -196,11 +196,11 @@ fn table_get_set_test() {
     }
 
     // set the function at index 2 the same as the one at index 1
-    i.invoke::<(), ()>(init, ()).unwrap();
+    i.invoke_typed::<(), ()>(init, ()).unwrap();
     // assert the function at index 2 is a FuncRef and is NOT null
     {
         let funcref = i
-            .invoke::<i32, FuncRefForInteropValue>(get_funcref, 2)
+            .invoke_typed::<i32, FuncRefForInteropValue>(get_funcref, 2)
             .unwrap();
 
         let rref = funcref.get_ref();
@@ -258,25 +258,25 @@ fn call_indirect_type_check() {
     assert_eq!(
         4,
         instance
-            .invoke::<(i32, i32), i32>(&call_fn, (3, 0))
+            .invoke_typed::<(i32, i32), i32>(&call_fn, (3, 0))
             .unwrap()
     );
     assert_eq!(
         6,
         instance
-            .invoke::<(i32, i32), i32>(&call_fn, (5, 0))
+            .invoke_typed::<(i32, i32), i32>(&call_fn, (5, 0))
             .unwrap()
     );
     assert_eq!(
         6,
         instance
-            .invoke::<(i32, i32), i32>(&call_fn, (3, 1))
+            .invoke_typed::<(i32, i32), i32>(&call_fn, (3, 1))
             .unwrap()
     );
     assert_eq!(
         10,
         instance
-            .invoke::<(i32, i32), i32>(&call_fn, (5, 1))
+            .invoke_typed::<(i32, i32), i32>(&call_fn, (5, 1))
             .unwrap()
     );
 }

@@ -26,7 +26,7 @@ use alloc::vec::Vec;
 use super::hooks::EmptyHookSet;
 use super::interpreter_loop::{data_drop, elem_drop};
 use super::locals::Locals;
-use super::value::{ExternAddr, InteropValueList};
+use super::value::ExternAddr;
 use super::{run, UnwrapValidatedExt};
 
 use crate::linear_memory::LinearMemory;
@@ -394,7 +394,7 @@ impl<'b> Store<'b> {
             // execute
             //   call func_ifx
             let func_addr = self.modules[current_module_idx].func_addrs[func_idx];
-            self.invoke_dynamic(func_addr, Vec::new(), &[])
+            self.invoke(func_addr, Vec::new())
                 .map_err(Error::RuntimeError)?;
         };
 
@@ -503,130 +503,7 @@ impl<'b> Store<'b> {
         addr
     }
 
-    pub fn invoke<Param: InteropValueList, Returns: InteropValueList>(
-        &mut self,
-        func_addr: usize,
-        params: Param,
-    ) -> Result<Returns, RuntimeError> {
-        let func_inst = self
-            .functions
-            .get(func_addr)
-            .ok_or(RuntimeError::FunctionNotFound)?;
-
-        let func_ty = func_inst.ty();
-
-        if func_ty.params.valtypes != Param::TYS {
-            panic!("Invalid `Param` generics");
-        }
-        if func_ty.returns.valtypes != Returns::TYS {
-            panic!("Invalid `Returns` generics");
-        }
-
-        let mut stack = Stack::new();
-        let locals = Locals::new(
-            params.into_values().into_iter(),
-            func_inst.locals.iter().cloned(),
-        );
-
-        // setting `usize::MAX` as return address for the outermost function ensures that we
-        // observably fail upon errornoeusly continuing execution after that function returns.
-        stack.push_stackframe(usize::MAX, &func_ty, locals, usize::MAX, usize::MAX)?;
-
-        // Run the interpreter
-        run(
-            // &mut self.modules,
-            func_addr,
-            // self.lut.as_ref().ok_or(RuntimeError::UnmetImport)?,
-            &mut stack,
-            EmptyHookSet,
-            self,
-        )?;
-
-        // Pop return values from stack
-        let return_values = Returns::TYS
-            .iter()
-            .rev()
-            .map(|ty| stack.pop_value(*ty))
-            .collect::<Vec<Value>>();
-
-        // Values are reversed because they were popped from stack one-by-one. Now reverse them back
-        let reversed_values = return_values.into_iter().rev();
-        let ret: Returns = Returns::from_values(reversed_values);
-        debug!("Successfully invoked function");
-        Ok(ret)
-    }
-
-    pub fn invoke_dynamic(
-        &mut self,
-        func_addr: usize,
-        params: Vec<Value>,
-        ret_types: &[ValType],
-    ) -> Result<Vec<Value>, RuntimeError> {
-        let func_inst = self
-            .functions
-            .get(func_addr)
-            .ok_or(RuntimeError::FunctionNotFound)?;
-
-        let func_ty = func_inst.ty();
-
-        // Verify that the given parameters match the function parameters
-        let param_types = params.iter().map(|v| v.to_ty()).collect::<Vec<_>>();
-
-        if func_ty.params.valtypes != param_types {
-            // format!()
-            trace!(
-                "Func param types len: {}; Given args len: {}",
-                func_ty.params.valtypes.len(),
-                param_types.len()
-            );
-            panic!("Invalid parameters for function");
-        }
-
-        // Verify that the given return types match the function return types
-        if func_ty.returns.valtypes != ret_types {
-            panic!("Invalid return types for function");
-        }
-
-        // Prepare a new stack with the locals for the entry function
-        let mut stack = Stack::new();
-        let locals = Locals::new(params.into_iter(), func_inst.locals.iter().cloned());
-
-        stack.push_stackframe(usize::MAX, &func_ty, locals, usize::MAX, usize::MAX)?;
-
-        // Run the interpreter
-        run(
-            // &mut self.modules,
-            func_addr,
-            // self.lut.as_ref().ok_or(RuntimeError::UnmetImport)?,
-            &mut stack,
-            EmptyHookSet,
-            self,
-        )?;
-
-        let func_inst = self
-            .functions
-            .get(func_addr)
-            .ok_or(RuntimeError::FunctionNotFound)?;
-
-        let func_ty = func_inst.ty();
-
-        // Pop return values from stack
-        let return_values = func_ty
-            .returns
-            .valtypes
-            .iter()
-            .rev()
-            .map(|ty| stack.pop_value(*ty))
-            .collect::<Vec<Value>>();
-
-        // Values are reversed because they were popped from stack one-by-one. Now reverse them back
-        let reversed_values = return_values.into_iter().rev();
-        let ret = reversed_values.collect();
-        debug!("Successfully invoked function");
-        Ok(ret)
-    }
-
-    pub fn invoke_dynamic_unchecked_return_ty(
+    pub fn invoke(
         &mut self,
         func_addr: usize,
         params: Vec<Value>,

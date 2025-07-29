@@ -27,7 +27,7 @@ macro_rules! get_func {
 
 macro_rules! assert_result {
     ($instance:expr, $func:expr, $arg:expr, $result:expr) => {
-        assert_eq!($result, $instance.invoke($func, $arg).unwrap());
+        assert_eq!($result, $instance.invoke_typed($func, $arg).unwrap());
     };
 }
 
@@ -93,15 +93,15 @@ fn memory_redundancy() {
     let mut i = RuntimeInstance::new(&validation_info).expect("instantiation failed");
     let zero_everything = get_func!(i, "zero_everything");
     assert_result!(i, get_func!(i, "test_store_to_load"), (), 0x00000080);
-    i.invoke::<(), ()>(zero_everything, ()).unwrap();
+    i.invoke_typed::<(), ()>(zero_everything, ()).unwrap();
     assert_result!(i, get_func!(i, "test_redundant_load"), (), 0x00000080);
-    i.invoke::<(), ()>(zero_everything, ()).unwrap();
+    i.invoke_typed::<(), ()>(zero_everything, ()).unwrap();
     assert_result!(
         i,
         get_func!(i, "test_dead_store"),
         (),
         hexf32!("0x1.18p-144")
     );
-    i.invoke::<(), ()>(zero_everything, ()).unwrap();
+    i.invoke_typed::<(), ()>(zero_everything, ()).unwrap();
     assert_result!(i, get_func!(i, "malloc_aliasing"), (), 43);
 }

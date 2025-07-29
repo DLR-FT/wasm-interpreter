@@ -46,7 +46,7 @@ pub fn i64_eqz_panic() {
     assert_eq!(
         1,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), ())
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), ())
             .unwrap()
     );
 }
@@ -72,19 +72,19 @@ pub fn i64_eqz() {
     assert_eq!(
         1,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), 0_i64)
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 0_i64)
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), 1_i64)
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 1_i64)
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 0x8000000000000000u64 as i64
             )
@@ -93,7 +93,7 @@ pub fn i64_eqz() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 0x7fffffffffffffffu64 as i64
             )
@@ -102,7 +102,7 @@ pub fn i64_eqz() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 0xffffffffffffffffu64 as i64
             )
@@ -132,7 +132,7 @@ pub fn i64_eq_panic_first_arg() {
     assert_eq!(
         1,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), ())
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), ())
             .unwrap()
     );
 }
@@ -159,7 +159,7 @@ pub fn i64_eq_panic_second_arg() {
     assert_eq!(
         1,
         instance
-            .invoke(&instance.get_function_by_index(0, 0).unwrap(), ())
+            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), ())
             .unwrap()
     );
 }
@@ -175,7 +175,7 @@ pub fn i64_eq() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0_i64, 0_i64)
             )
@@ -184,7 +184,7 @@ pub fn i64_eq() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (1_i64, 1_i64)
             )
@@ -193,7 +193,7 @@ pub fn i64_eq() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (-1_i64, 1_i64)
             )
@@ -202,7 +202,7 @@ pub fn i64_eq() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x8000000000000000u64 as i64, 0x8000000000000000u64 as i64)
             )
@@ -211,7 +211,7 @@ pub fn i64_eq() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x7fffffffffffffffu64 as i64, 0x7fffffffffffffffu64 as i64)
             )
@@ -220,7 +220,7 @@ pub fn i64_eq() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (-1_i64, -1_i64)
             )
@@ -229,7 +229,7 @@ pub fn i64_eq() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (1_i64, 0_i64)
             )
@@ -238,7 +238,7 @@ pub fn i64_eq() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0_i64, 1_i64)
             )
@@ -247,7 +247,7 @@ pub fn i64_eq() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x8000000000000000u64 as i64, 0_i64)
             )
@@ -256,7 +256,7 @@ pub fn i64_eq() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0_i64, 0x8000000000000000u64 as i64)
             )
@@ -265,7 +265,7 @@ pub fn i64_eq() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x8000000000000000u64 as i64, -1_i64)
             )
@@ -274,7 +274,7 @@ pub fn i64_eq() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (-1_i64, 0x8000000000000000u64 as i64)
             )
@@ -283,7 +283,7 @@ pub fn i64_eq() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x8000000000000000u64 as i64, 0x7fffffffffffffffu64 as i64)
             )
@@ -292,7 +292,7 @@ pub fn i64_eq() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x7fffffffffffffffu64 as i64, 0x8000000000000000u64 as i64)
             )
@@ -311,7 +311,7 @@ pub fn i64_ne() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0_i64, 0_i64)
             )
@@ -320,7 +320,7 @@ pub fn i64_ne() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (1_i64, 1_i64)
             )
@@ -329,7 +329,7 @@ pub fn i64_ne() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (-1_i64, 1_i64)
             )
@@ -338,7 +338,7 @@ pub fn i64_ne() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x8000000000000000u64 as i64, 0x8000000000000000u64 as i64)
             )
@@ -347,7 +347,7 @@ pub fn i64_ne() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x7fffffffffffffffu64 as i64, 0x7fffffffffffffffu64 as i64)
             )
@@ -356,7 +356,7 @@ pub fn i64_ne() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (-1_i64, -1_i64)
             )
@@ -365,7 +365,7 @@ pub fn i64_ne() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (1_i64, 0_i64)
             )
@@ -374,7 +374,7 @@ pub fn i64_ne() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0_i64, 1_i64)
             )
@@ -383,7 +383,7 @@ pub fn i64_ne() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x8000000000000000u64 as i64, 0_i64)
             )
@@ -392,7 +392,7 @@ pub fn i64_ne() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0_i64, 0x8000000000000000u64 as i64)
             )
@@ -401,7 +401,7 @@ pub fn i64_ne() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x8000000000000000u64 as i64, -1_i64)
             )
@@ -410,7 +410,7 @@ pub fn i64_ne() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (-1_i64, 0x8000000000000000u64 as i64)
             )
@@ -419,7 +419,7 @@ pub fn i64_ne() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x8000000000000000u64 as i64, 0x7fffffffffffffffu64 as i64)
             )
@@ -428,7 +428,7 @@ pub fn i64_ne() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x7fffffffffffffffu64 as i64, 0x8000000000000000u64 as i64)
             )
@@ -447,7 +447,7 @@ pub fn i64_lt_s() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0_i64, 0_i64)
             )
@@ -456,7 +456,7 @@ pub fn i64_lt_s() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (1_i64, 1_i64)
             )
@@ -465,7 +465,7 @@ pub fn i64_lt_s() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (-1_i64, 1_i64)
             )
@@ -474,7 +474,7 @@ pub fn i64_lt_s() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x8000000000000000u64 as i64, 0x8000000000000000u64 as i64)
             )
@@ -483,7 +483,7 @@ pub fn i64_lt_s() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x7fffffffffffffffu64 as i64, 0x7fffffffffffffffu64 as i64)
             )
@@ -492,7 +492,7 @@ pub fn i64_lt_s() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (-1_i64, -1_i64)
             )
@@ -501,7 +501,7 @@ pub fn i64_lt_s() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (1_i64, 0_i64)
             )
@@ -510,7 +510,7 @@ pub fn i64_lt_s() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0_i64, 1_i64)
             )
@@ -519,7 +519,7 @@ pub fn i64_lt_s() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x8000000000000000u64 as i64, 0_i64)
             )
@@ -528,7 +528,7 @@ pub fn i64_lt_s() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0_i64, 0x8000000000000000u64 as i64)
             )
@@ -537,7 +537,7 @@ pub fn i64_lt_s() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x8000000000000000u64 as i64, -1_i64)
             )
@@ -546,7 +546,7 @@ pub fn i64_lt_s() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (-1_i64, 0x8000000000000000u64 as i64)
             )
@@ -555,7 +555,7 @@ pub fn i64_lt_s() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x8000000000000000u64 as i64, 0x7fffffffffffffffu64 as i64)
             )
@@ -564,7 +564,7 @@ pub fn i64_lt_s() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x7fffffffffffffffu64 as i64, 0x8000000000000000u64 as i64)
             )
@@ -583,7 +583,7 @@ pub fn i64_lt_u() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0_i64, 0_i64)
             )
@@ -592,7 +592,7 @@ pub fn i64_lt_u() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (1_i64, 1_i64)
             )
@@ -601,7 +601,7 @@ pub fn i64_lt_u() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (-1_i64, 1_i64)
             )
@@ -610,7 +610,7 @@ pub fn i64_lt_u() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x8000000000000000u64 as i64, 0x8000000000000000u64 as i64)
             )
@@ -619,7 +619,7 @@ pub fn i64_lt_u() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x7fffffffffffffffu64 as i64, 0x7fffffffffffffffu64 as i64)
             )
@@ -628,7 +628,7 @@ pub fn i64_lt_u() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (-1_i64, -1_i64)
             )
@@ -637,7 +637,7 @@ pub fn i64_lt_u() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (1_i64, 0_i64)
             )
@@ -646,7 +646,7 @@ pub fn i64_lt_u() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0_i64, 1_i64)
             )
@@ -655,7 +655,7 @@ pub fn i64_lt_u() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x8000000000000000u64 as i64, 0_i64)
             )
@@ -664,7 +664,7 @@ pub fn i64_lt_u() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0_i64, 0x8000000000000000u64 as i64)
             )
@@ -673,7 +673,7 @@ pub fn i64_lt_u() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x8000000000000000u64 as i64, -1_i64)
             )
@@ -682,7 +682,7 @@ pub fn i64_lt_u() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (-1_i64, 0x8000000000000000u64 as i64)
             )
@@ -691,7 +691,7 @@ pub fn i64_lt_u() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x8000000000000000u64 as i64, 0x7fffffffffffffffu64 as i64)
             )
@@ -700,7 +700,7 @@ pub fn i64_lt_u() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x7fffffffffffffffu64 as i64, 0x8000000000000000u64 as i64)
             )
@@ -719,7 +719,7 @@ pub fn i64_gt_s() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0_i64, 0_i64)
             )
@@ -728,7 +728,7 @@ pub fn i64_gt_s() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (1_i64, 1_i64)
             )
@@ -737,7 +737,7 @@ pub fn i64_gt_s() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (-1_i64, 1_i64)
             )
@@ -746,7 +746,7 @@ pub fn i64_gt_s() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x8000000000000000u64 as i64, 0x8000000000000000u64 as i64)
             )
@@ -755,7 +755,7 @@ pub fn i64_gt_s() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x7fffffffffffffffu64 as i64, 0x7fffffffffffffffu64 as i64)
             )
@@ -764,7 +764,7 @@ pub fn i64_gt_s() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (-1_i64, -1_i64)
             )
@@ -773,7 +773,7 @@ pub fn i64_gt_s() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (1_i64, 0_i64)
             )
@@ -782,7 +782,7 @@ pub fn i64_gt_s() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0_i64, 1_i64)
             )
@@ -791,7 +791,7 @@ pub fn i64_gt_s() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x8000000000000000u64 as i64, 0_i64)
             )
@@ -800,7 +800,7 @@ pub fn i64_gt_s() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0_i64, 0x8000000000000000u64 as i64)
             )
@@ -809,7 +809,7 @@ pub fn i64_gt_s() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x8000000000000000u64 as i64, -1_i64)
             )
@@ -818,7 +818,7 @@ pub fn i64_gt_s() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (-1_i64, 0x8000000000000000u64 as i64)
             )
@@ -827,7 +827,7 @@ pub fn i64_gt_s() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x8000000000000000u64 as i64, 0x7fffffffffffffffu64 as i64)
             )
@@ -836,7 +836,7 @@ pub fn i64_gt_s() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x7fffffffffffffffu64 as i64, 0x8000000000000000u64 as i64)
             )
@@ -855,7 +855,7 @@ pub fn i64_gt_u() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0_i64, 0_i64)
             )
@@ -864,7 +864,7 @@ pub fn i64_gt_u() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (1_i64, 1_i64)
             )
@@ -873,7 +873,7 @@ pub fn i64_gt_u() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (-1_i64, 1_i64)
             )
@@ -882,7 +882,7 @@ pub fn i64_gt_u() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x8000000000000000u64 as i64, 0x8000000000000000u64 as i64)
             )
@@ -891,7 +891,7 @@ pub fn i64_gt_u() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x7fffffffffffffffu64 as i64, 0x7fffffffffffffffu64 as i64)
             )
@@ -900,7 +900,7 @@ pub fn i64_gt_u() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (-1_i64, -1_i64)
             )
@@ -909,7 +909,7 @@ pub fn i64_gt_u() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (1_i64, 0_i64)
             )
@@ -918,7 +918,7 @@ pub fn i64_gt_u() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0_i64, 1_i64)
             )
@@ -927,7 +927,7 @@ pub fn i64_gt_u() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x8000000000000000u64 as i64, 0_i64)
             )
@@ -936,7 +936,7 @@ pub fn i64_gt_u() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0_i64, 0x8000000000000000u64 as i64)
             )
@@ -945,7 +945,7 @@ pub fn i64_gt_u() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x8000000000000000u64 as i64, -1_i64)
             )
@@ -954,7 +954,7 @@ pub fn i64_gt_u() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (-1_i64, 0x8000000000000000u64 as i64)
             )
@@ -963,7 +963,7 @@ pub fn i64_gt_u() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x8000000000000000u64 as i64, 0x7fffffffffffffffu64 as i64)
             )
@@ -972,7 +972,7 @@ pub fn i64_gt_u() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x7fffffffffffffffu64 as i64, 0x8000000000000000u64 as i64)
             )
@@ -991,7 +991,7 @@ pub fn i64_le_s() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0_i64, 0_i64)
             )
@@ -1000,7 +1000,7 @@ pub fn i64_le_s() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (1_i64, 1_i64)
             )
@@ -1009,7 +1009,7 @@ pub fn i64_le_s() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (-1_i64, 1_i64)
             )
@@ -1018,7 +1018,7 @@ pub fn i64_le_s() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x8000000000000000u64 as i64, 0x8000000000000000u64 as i64)
             )
@@ -1027,7 +1027,7 @@ pub fn i64_le_s() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x7fffffffffffffffu64 as i64, 0x7fffffffffffffffu64 as i64)
             )
@@ -1036,7 +1036,7 @@ pub fn i64_le_s() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (-1_i64, -1_i64)
             )
@@ -1045,7 +1045,7 @@ pub fn i64_le_s() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (1_i64, 0_i64)
             )
@@ -1054,7 +1054,7 @@ pub fn i64_le_s() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0_i64, 1_i64)
             )
@@ -1063,7 +1063,7 @@ pub fn i64_le_s() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x8000000000000000u64 as i64, 0_i64)
             )
@@ -1072,7 +1072,7 @@ pub fn i64_le_s() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0_i64, 0x8000000000000000u64 as i64)
             )
@@ -1081,7 +1081,7 @@ pub fn i64_le_s() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x8000000000000000u64 as i64, -1_i64)
             )
@@ -1090,7 +1090,7 @@ pub fn i64_le_s() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (-1_i64, 0x8000000000000000u64 as i64)
             )
@@ -1099,7 +1099,7 @@ pub fn i64_le_s() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x8000000000000000u64 as i64, 0x7fffffffffffffffu64 as i64)
             )
@@ -1108,7 +1108,7 @@ pub fn i64_le_s() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x7fffffffffffffffu64 as i64, 0x8000000000000000u64 as i64)
             )
@@ -1128,7 +1128,7 @@ pub fn i64_le_u() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0_i64, 0_i64)
             )
@@ -1137,7 +1137,7 @@ pub fn i64_le_u() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (1_i64, 1_i64)
             )
@@ -1146,7 +1146,7 @@ pub fn i64_le_u() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (-1_i64, 1_i64)
             )
@@ -1155,7 +1155,7 @@ pub fn i64_le_u() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x8000000000000000u64 as i64, 0x8000000000000000u64 as i64)
             )
@@ -1164,7 +1164,7 @@ pub fn i64_le_u() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x7fffffffffffffffu64 as i64, 0x7fffffffffffffffu64 as i64)
             )
@@ -1173,7 +1173,7 @@ pub fn i64_le_u() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (-1_i64, -1_i64)
             )
@@ -1182,7 +1182,7 @@ pub fn i64_le_u() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (1_i64, 0_i64)
             )
@@ -1191,7 +1191,7 @@ pub fn i64_le_u() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0_i64, 1_i64)
             )
@@ -1200,7 +1200,7 @@ pub fn i64_le_u() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x8000000000000000u64 as i64, 0_i64)
             )
@@ -1209,7 +1209,7 @@ pub fn i64_le_u() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0_i64, 0x8000000000000000u64 as i64)
             )
@@ -1218,7 +1218,7 @@ pub fn i64_le_u() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x8000000000000000u64 as i64, -1_i64)
             )
@@ -1227,7 +1227,7 @@ pub fn i64_le_u() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (-1_i64, 0x8000000000000000u64 as i64)
             )
@@ -1236,7 +1236,7 @@ pub fn i64_le_u() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x8000000000000000u64 as i64, 0x7fffffffffffffffu64 as i64)
             )
@@ -1245,7 +1245,7 @@ pub fn i64_le_u() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x7fffffffffffffffu64 as i64, 0x8000000000000000u64 as i64)
             )
@@ -1264,7 +1264,7 @@ pub fn i64_ge_s() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0_i64, 0_i64)
             )
@@ -1273,7 +1273,7 @@ pub fn i64_ge_s() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (1_i64, 1_i64)
             )
@@ -1282,7 +1282,7 @@ pub fn i64_ge_s() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (-1_i64, 1_i64)
             )
@@ -1291,7 +1291,7 @@ pub fn i64_ge_s() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x8000000000000000u64 as i64, 0x8000000000000000u64 as i64)
             )
@@ -1300,7 +1300,7 @@ pub fn i64_ge_s() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x7fffffffffffffffu64 as i64, 0x7fffffffffffffffu64 as i64)
             )
@@ -1309,7 +1309,7 @@ pub fn i64_ge_s() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (-1_i64, -1_i64)
             )
@@ -1318,7 +1318,7 @@ pub fn i64_ge_s() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (1_i64, 0_i64)
             )
@@ -1327,7 +1327,7 @@ pub fn i64_ge_s() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0_i64, 1_i64)
             )
@@ -1336,7 +1336,7 @@ pub fn i64_ge_s() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x8000000000000000u64 as i64, 0_i64)
             )
@@ -1345,7 +1345,7 @@ pub fn i64_ge_s() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0_i64, 0x8000000000000000u64 as i64)
             )
@@ -1354,7 +1354,7 @@ pub fn i64_ge_s() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x8000000000000000u64 as i64, -1_i64)
             )
@@ -1363,7 +1363,7 @@ pub fn i64_ge_s() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (-1_i64, 0x8000000000000000u64 as i64)
             )
@@ -1372,7 +1372,7 @@ pub fn i64_ge_s() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x8000000000000000u64 as i64, 0x7fffffffffffffffu64 as i64)
             )
@@ -1381,7 +1381,7 @@ pub fn i64_ge_s() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x7fffffffffffffffu64 as i64, 0x8000000000000000u64 as i64)
             )
@@ -1400,7 +1400,7 @@ pub fn i64_ge_u() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0_i64, 0_i64)
             )
@@ -1409,7 +1409,7 @@ pub fn i64_ge_u() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (1_i64, 1_i64)
             )
@@ -1418,7 +1418,7 @@ pub fn i64_ge_u() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (-1_i64, 1_i64)
             )
@@ -1427,7 +1427,7 @@ pub fn i64_ge_u() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x8000000000000000u64 as i64, 0x8000000000000000u64 as i64)
             )
@@ -1436,7 +1436,7 @@ pub fn i64_ge_u() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x7fffffffffffffffu64 as i64, 0x7fffffffffffffffu64 as i64)
             )
@@ -1445,7 +1445,7 @@ pub fn i64_ge_u() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (-1_i64, -1_i64)
             )
@@ -1454,7 +1454,7 @@ pub fn i64_ge_u() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (1_i64, 0_i64)
             )
@@ -1463,7 +1463,7 @@ pub fn i64_ge_u() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0_i64, 1_i64)
             )
@@ -1472,7 +1472,7 @@ pub fn i64_ge_u() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x8000000000000000u64 as i64, 0_i64)
             )
@@ -1481,7 +1481,7 @@ pub fn i64_ge_u() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0_i64, 0x8000000000000000u64 as i64)
             )
@@ -1490,7 +1490,7 @@ pub fn i64_ge_u() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x8000000000000000u64 as i64, -1_i64)
             )
@@ -1499,7 +1499,7 @@ pub fn i64_ge_u() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (-1_i64, 0x8000000000000000u64 as i64)
             )
@@ -1508,7 +1508,7 @@ pub fn i64_ge_u() {
     assert_eq!(
         1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x8000000000000000u64 as i64, 0x7fffffffffffffffu64 as i64)
             )
@@ -1517,7 +1517,7 @@ pub fn i64_ge_u() {
     assert_eq!(
         0,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0x7fffffffffffffffu64 as i64, 0x8000000000000000u64 as i64)
             )

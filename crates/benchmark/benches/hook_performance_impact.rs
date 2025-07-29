@@ -56,14 +56,14 @@ fn criterion_benchmark(c: &mut Criterion) {
 
     let test_fn = instance_empty_hookset.get_function_by_index(0, 2).unwrap();
     c.bench_function("invoke_func EmptyHookSet", |b| {
-        b.iter(|| instance_empty_hookset.invoke::<_, ()>(&test_fn, black_box(42_i32)))
+        b.iter(|| instance_empty_hookset.invoke_typed::<_, ()>(&test_fn, black_box(42_i32)))
     });
 
     let test_fn = instance_non_empty_hookset
         .get_function_by_index(0, 2)
         .unwrap();
     c.bench_function("invoke_func MyCustomHookSet", |b| {
-        b.iter(|| instance_non_empty_hookset.invoke::<_, ()>(&test_fn, black_box(42_i32)))
+        b.iter(|| instance_non_empty_hookset.invoke_typed::<_, ()>(&test_fn, black_box(42_i32)))
     });
 }
 

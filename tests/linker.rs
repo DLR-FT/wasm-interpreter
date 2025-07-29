@@ -49,7 +49,7 @@ pub fn compile_simple_import() {
         panic!("this entity is not a function")
     };
 
-    println!("{:#?}", store.invoke::<(), i32>(func_addr, ()).unwrap());
+    println!("{:#?}", store.invoke(func_addr, Vec::new()).unwrap());
 
     // let mut instance_addon = linker
     //     .instantiate(&mut store, &validation_info_addon)

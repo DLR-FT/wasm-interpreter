@@ -63,32 +63,32 @@ fn table_fill_test() {
     let fill_abbrev = get_func!(i, "fill-abbrev");
 
     assert!(i
-        .invoke::<i32, FuncRefForInteropValue>(get, 1)
+        .invoke_typed::<i32, FuncRefForInteropValue>(get, 1)
         .unwrap()
         .get_ref()
         .is_null());
     assert!(i
-        .invoke::<i32, FuncRefForInteropValue>(get, 2)
+        .invoke_typed::<i32, FuncRefForInteropValue>(get, 2)
         .unwrap()
         .get_ref()
         .is_null());
     assert!(i
-        .invoke::<i32, FuncRefForInteropValue>(get, 3)
+        .invoke_typed::<i32, FuncRefForInteropValue>(get, 3)
         .unwrap()
         .get_ref()
         .is_null());
     assert!(i
-        .invoke::<i32, FuncRefForInteropValue>(get, 4)
+        .invoke_typed::<i32, FuncRefForInteropValue>(get, 4)
         .unwrap()
         .get_ref()
         .is_null());
     assert!(i
-        .invoke::<i32, FuncRefForInteropValue>(get, 5)
+        .invoke_typed::<i32, FuncRefForInteropValue>(get, 5)
         .unwrap()
         .get_ref()
         .is_null());
 
-    i.invoke::<(i32, FuncRefForInteropValue, i32), ()>(
+    i.invoke_typed::<(i32, FuncRefForInteropValue, i32), ()>(
         fill,
         (
             2,
@@ -99,35 +99,35 @@ fn table_fill_test() {
     .unwrap();
 
     assert!(i
-        .invoke::<i32, FuncRefForInteropValue>(get, 1)
+        .invoke_typed::<i32, FuncRefForInteropValue>(get, 1)
         .unwrap()
         .get_ref()
         .is_null());
     assert!(is_specific_func!(
-        i.invoke::<i32, FuncRefForInteropValue>(get, 2)
+        i.invoke_typed::<i32, FuncRefForInteropValue>(get, 2)
             .unwrap()
             .get_ref(),
         1
     ));
     assert!(is_specific_func!(
-        i.invoke::<i32, FuncRefForInteropValue>(get, 3)
+        i.invoke_typed::<i32, FuncRefForInteropValue>(get, 3)
             .unwrap()
             .get_ref(),
         1
     ));
     assert!(is_specific_func!(
-        i.invoke::<i32, FuncRefForInteropValue>(get, 4)
+        i.invoke_typed::<i32, FuncRefForInteropValue>(get, 4)
             .unwrap()
             .get_ref(),
         1
     ));
     assert!(i
-        .invoke::<i32, FuncRefForInteropValue>(get, 5)
+        .invoke_typed::<i32, FuncRefForInteropValue>(get, 5)
         .unwrap()
         .get_ref()
         .is_null());
 
-    i.invoke::<(i32, FuncRefForInteropValue, i32), ()>(
+    i.invoke_typed::<(i32, FuncRefForInteropValue, i32), ()>(
         fill,
         (
             4,
@@ -138,30 +138,30 @@ fn table_fill_test() {
     .unwrap();
 
     assert!(is_specific_func!(
-        i.invoke::<i32, FuncRefForInteropValue>(get, 3)
+        i.invoke_typed::<i32, FuncRefForInteropValue>(get, 3)
             .unwrap()
             .get_ref(),
         1
     ));
     assert!(is_specific_func!(
-        i.invoke::<i32, FuncRefForInteropValue>(get, 4)
+        i.invoke_typed::<i32, FuncRefForInteropValue>(get, 4)
             .unwrap()
             .get_ref(),
         2
     ));
     assert!(is_specific_func!(
-        i.invoke::<i32, FuncRefForInteropValue>(get, 5)
+        i.invoke_typed::<i32, FuncRefForInteropValue>(get, 5)
             .unwrap()
             .get_ref(),
         2
     ));
     assert!(i
-        .invoke::<i32, FuncRefForInteropValue>(get, 6)
+        .invoke_typed::<i32, FuncRefForInteropValue>(get, 6)
         .unwrap()
         .get_ref()
         .is_null());
 
-    i.invoke::<(i32, FuncRefForInteropValue, i32), ()>(
+    i.invoke_typed::<(i32, FuncRefForInteropValue, i32), ()>(
         fill,
         (
             4,
@@ -172,25 +172,25 @@ fn table_fill_test() {
     .unwrap();
 
     assert!(is_specific_func!(
-        i.invoke::<i32, FuncRefForInteropValue>(get, 3)
+        i.invoke_typed::<i32, FuncRefForInteropValue>(get, 3)
             .unwrap()
             .get_ref(),
         1
     ));
     assert!(is_specific_func!(
-        i.invoke::<i32, FuncRefForInteropValue>(get, 4)
+        i.invoke_typed::<i32, FuncRefForInteropValue>(get, 4)
             .unwrap()
             .get_ref(),
         2
     ));
     assert!(is_specific_func!(
-        i.invoke::<i32, FuncRefForInteropValue>(get, 5)
+        i.invoke_typed::<i32, FuncRefForInteropValue>(get, 5)
             .unwrap()
             .get_ref(),
         2
     ));
 
-    i.invoke::<(i32, FuncRefForInteropValue, i32), ()>(
+    i.invoke_typed::<(i32, FuncRefForInteropValue, i32), ()>(
         fill,
         (
             8,
@@ -201,24 +201,24 @@ fn table_fill_test() {
     .unwrap();
 
     assert!(i
-        .invoke::<i32, FuncRefForInteropValue>(get, 7)
+        .invoke_typed::<i32, FuncRefForInteropValue>(get, 7)
         .unwrap()
         .get_ref()
         .is_null());
     assert!(is_specific_func!(
-        i.invoke::<i32, FuncRefForInteropValue>(get, 8)
+        i.invoke_typed::<i32, FuncRefForInteropValue>(get, 8)
             .unwrap()
             .get_ref(),
         4
     ));
     assert!(is_specific_func!(
-        i.invoke::<i32, FuncRefForInteropValue>(get, 9)
+        i.invoke_typed::<i32, FuncRefForInteropValue>(get, 9)
             .unwrap()
             .get_ref(),
         4
     ));
 
-    i.invoke::<(i32, FuncRefForInteropValue, i32), ()>(
+    i.invoke_typed::<(i32, FuncRefForInteropValue, i32), ()>(
         fill_abbrev,
         (
             9,
@@ -228,18 +228,18 @@ fn table_fill_test() {
     )
     .unwrap();
     assert!(is_specific_func!(
-        i.invoke::<i32, FuncRefForInteropValue>(get, 8)
+        i.invoke_typed::<i32, FuncRefForInteropValue>(get, 8)
             .unwrap()
             .get_ref(),
         4
     ));
     assert!(i
-        .invoke::<i32, FuncRefForInteropValue>(get, 9)
+        .invoke_typed::<i32, FuncRefForInteropValue>(get, 9)
         .unwrap()
         .get_ref()
         .is_null());
 
-    i.invoke::<(i32, FuncRefForInteropValue, i32), ()>(
+    i.invoke_typed::<(i32, FuncRefForInteropValue, i32), ()>(
         fill,
         (
             10,
@@ -249,13 +249,13 @@ fn table_fill_test() {
     )
     .unwrap();
     assert!(i
-        .invoke::<i32, FuncRefForInteropValue>(get, 9)
+        .invoke_typed::<i32, FuncRefForInteropValue>(get, 9)
         .unwrap()
         .get_ref()
         .is_null());
 
     assert!(
-        i.invoke::<(i32, FuncRefForInteropValue, i32), ()>(
+        i.invoke_typed::<(i32, FuncRefForInteropValue, i32), ()>(
             fill,
             (
                 8,
@@ -269,24 +269,24 @@ fn table_fill_test() {
     );
 
     assert!(i
-        .invoke::<i32, FuncRefForInteropValue>(get, 7)
+        .invoke_typed::<i32, FuncRefForInteropValue>(get, 7)
         .unwrap()
         .get_ref()
         .is_null());
     assert!(is_specific_func!(
-        i.invoke::<i32, FuncRefForInteropValue>(get, 8)
+        i.invoke_typed::<i32, FuncRefForInteropValue>(get, 8)
             .unwrap()
             .get_ref(),
         4
     ));
     assert!(i
-        .invoke::<i32, FuncRefForInteropValue>(get, 9)
+        .invoke_typed::<i32, FuncRefForInteropValue>(get, 9)
         .unwrap()
         .get_ref()
         .is_null());
 
     assert!(
-        i.invoke::<(i32, FuncRefForInteropValue, i32), ()>(
+        i.invoke_typed::<(i32, FuncRefForInteropValue, i32), ()>(
             fill,
             (
                 11,
@@ -300,7 +300,7 @@ fn table_fill_test() {
     );
 
     assert!(
-        i.invoke::<(i32, FuncRefForInteropValue, i32), ()>(
+        i.invoke_typed::<(i32, FuncRefForInteropValue, i32), ()>(
             fill,
             (
                 11,

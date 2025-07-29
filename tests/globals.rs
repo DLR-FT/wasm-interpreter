@@ -34,7 +34,7 @@ fn valid_global() {
     assert_eq!(
         5,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance
                     .get_function_by_name(DEFAULT_MODULE, "set")
                     .unwrap(),
@@ -47,7 +47,7 @@ fn valid_global() {
     assert_eq!(
         17,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance
                     .get_function_by_name(DEFAULT_MODULE, "get")
                     .unwrap(),
@@ -110,7 +110,7 @@ fn imported_globals() {
     assert_eq!(
         3,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance
                     .get_function_by_name(DEFAULT_MODULE, "set")
                     .unwrap(),
@@ -123,7 +123,7 @@ fn imported_globals() {
     assert_eq!(
         17,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance
                     .get_function_by_name(DEFAULT_MODULE, "get")
                     .unwrap(),

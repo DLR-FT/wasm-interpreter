@@ -24,7 +24,7 @@ pub fn i64_subtract() {
     assert_eq!(
         -10_i64,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (1_i64, 11_i64)
             )
@@ -33,7 +33,7 @@ pub fn i64_subtract() {
     assert_eq!(
         0_i64,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (0_i64, 0_i64)
             )
@@ -42,7 +42,7 @@ pub fn i64_subtract() {
     assert_eq!(
         10_i64,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (-10_i64, -20_i64)
             )
@@ -52,7 +52,7 @@ pub fn i64_subtract() {
     assert_eq!(
         i64::MAX - 1,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (i64::MAX - 1, 0_i64)
             )
@@ -61,7 +61,7 @@ pub fn i64_subtract() {
     assert_eq!(
         i64::MIN + 3,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance.get_function_by_index(0, 0).unwrap(),
                 (i64::MIN + 3, 0_i64)
             )

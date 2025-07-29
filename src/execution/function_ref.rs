@@ -2,7 +2,7 @@ use alloc::borrow::ToOwned;
 use alloc::vec::Vec;
 
 use crate::execution::{hooks::HookSet, value::InteropValueList, RuntimeInstance};
-use crate::{Error, ExternVal, Result as CustomResult, RuntimeError, Store, ValType, Value};
+use crate::{Error, ExternVal, Result as CustomResult, RuntimeError, Store, Value};
 
 pub struct FunctionRef {
     pub func_addr: usize,
@@ -31,7 +31,7 @@ impl FunctionRef {
         }
     }
 
-    pub fn invoke<
+    pub fn invoke_typed<
         H: HookSet + core::fmt::Debug,
         Param: InteropValueList,
         Returns: InteropValueList,
@@ -41,16 +41,15 @@ impl FunctionRef {
         params: Param,
         // store: &mut Store,
     ) -> Result<Returns, RuntimeError> {
-        runtime.invoke(self, params /* , store */)
+        runtime.invoke_typed(self, params /* , store */)
     }
 
-    pub fn invoke_dynamic<H: HookSet + core::fmt::Debug>(
+    pub fn invoke<H: HookSet + core::fmt::Debug>(
         &self,
         runtime: &mut RuntimeInstance<H>,
         params: Vec<Value>,
-        ret_types: &[ValType],
         // store: &mut Store,
     ) -> Result<Vec<Value>, RuntimeError> {
-        runtime.invoke_dynamic(self, params, ret_types /* , store */)
+        runtime.invoke(self, params)
     }
 }

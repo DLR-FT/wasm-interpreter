@@ -19,7 +19,7 @@ fn basic_memory() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
-    let _ = instance.invoke::<i32, ()>(
+    let _ = instance.invoke_typed::<i32, ()>(
         &instance
             .get_function_by_name(DEFAULT_MODULE, "store_num")
             .unwrap(),
@@ -28,7 +28,7 @@ fn basic_memory() {
     assert_eq!(
         42,
         instance
-            .invoke(
+            .invoke_typed(
                 &instance
                     .get_function_by_name(DEFAULT_MODULE, "load_num")
                     .unwrap(),
@@ -48,12 +48,12 @@ fn f32_basic_memory() {
     let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
     instance
-        .invoke::<f32, ()>(&instance.get_function_by_index(0, 0).unwrap(), 133.7_f32)
+        .invoke_typed::<f32, ()>(&instance.get_function_by_index(0, 0).unwrap(), 133.7_f32)
         .unwrap();
     assert_eq!(
         133.7_f32,
         instance
-            .invoke(&instance.get_function_by_index(0, 1).unwrap(), ())
+            .invoke_typed(&instance.get_function_by_index(0, 1).unwrap(), ())
             .unwrap()
     );
 }

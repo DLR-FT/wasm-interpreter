@@ -26,7 +26,7 @@ macro_rules! get_func {
 
 macro_rules! assert_result {
     ($instance:expr, $func_name:expr, $arg:expr, $result:expr) => {
-        assert_eq!($result, $instance.invoke($func_name, $arg).unwrap());
+        assert_eq!($result, $instance.invoke_typed($func_name, $arg).unwrap());
     };
 }
 
@@ -49,7 +49,7 @@ fn memory_copy_test_1() {
     let mut i = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
     let test = get_func!(i, "test");
-    i.invoke::<(), ()>(test, ()).unwrap();
+    i.invoke_typed::<(), ()>(test, ()).unwrap();
 
     let load8_u = get_func!(i, "load8_u");
     let results = Vec::from([
@@ -80,7 +80,7 @@ fn memory_copy_test_2() {
     let mut i = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
     let test = get_func!(i, "test");
-    i.invoke::<(), ()>(test, ()).unwrap();
+    i.invoke_typed::<(), ()>(test, ()).unwrap();
 
     let load8_u = get_func!(i, "load8_u");
     let results = Vec::from([
@@ -111,7 +111,7 @@ fn memory_copy_test_3() {
     let mut i = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
     let test = get_func!(i, "test");
-    i.invoke::<(), ()>(test, ()).unwrap();
+    i.invoke_typed::<(), ()>(test, ()).unwrap();
 
     let load8_u = get_func!(i, "load8_u");
     let offsets = Vec::from([
@@ -146,7 +146,7 @@ fn memory_copy_test_4() {
     let mut i = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
     let test = get_func!(i, "test");
-    i.invoke::<(), ()>(test, ()).unwrap();
+    i.invoke_typed::<(), ()>(test, ()).unwrap();
 
     let load8_u = get_func!(i, "load8_u");
     let offsets = Vec::from([
@@ -181,7 +181,7 @@ fn memory_copy_test_5() {
     let mut i = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
     let test = get_func!(i, "test");
-    i.invoke::<(), ()>(test, ()).unwrap();
+    i.invoke_typed::<(), ()>(test, ()).unwrap();
 
     let load8_u = get_func!(i, "load8_u");
     let offsets = Vec::from([
@@ -215,7 +215,7 @@ fn memory_copy_test_6() {
     let mut i = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
     let run = get_func!(i, "run");
-    let err = i.invoke::<(i32, i32, i32), ()>(run, (65516, 0, 40));
+    let err = i.invoke_typed::<(i32, i32, i32), ()>(run, (65516, 0, 40));
     if err.is_err() {
         assert!(err.unwrap_err() == RuntimeError::MemoryAccessOutOfBounds);
     }
@@ -287,7 +287,7 @@ fn memory_copy_test_7() {
     let mut i = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
     let run = get_func!(i, "run");
-    let err = i.invoke::<(i32, i32, i32), ()>(run, (65515, 0, 39));
+    let err = i.invoke_typed::<(i32, i32, i32), ()>(run, (65515, 0, 39));
     if err.is_err() {
         assert!(err.unwrap_err() == RuntimeError::MemoryAccessOutOfBounds);
     }
@@ -359,7 +359,7 @@ fn memory_copy_test_8() {
     let mut i = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
     let run = get_func!(i, "run");
-    let err = i.invoke::<(i32, i32, i32), ()>(run, (65515, 0, 39));
+    let err = i.invoke_typed::<(i32, i32, i32), ()>(run, (65515, 0, 39));
     if err.is_err() {
         assert!(err.unwrap_err() == RuntimeError::MemoryAccessOutOfBounds);
     }
@@ -431,7 +431,7 @@ fn memory_copy_test_9() {
     let mut i = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
     let run = get_func!(i, "run");
-    let err = i.invoke::<(i32, i32, i32), ()>(run, (0, 65516, 40));
+    let err = i.invoke_typed::<(i32, i32, i32), ()>(run, (0, 65516, 40));
     if err.is_err() {
         assert!(err.unwrap_err() == RuntimeError::MemoryAccessOutOfBounds);
     }
@@ -504,7 +504,7 @@ fn memory_copy_test_10() {
     let mut i = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
     let run = get_func!(i, "run");
-    let err = i.invoke::<(i32, i32, i32), ()>(run, (0, 65515, 39));
+    let err = i.invoke_typed::<(i32, i32, i32), ()>(run, (0, 65515, 39));
     if err.is_err() {
         assert!(err.unwrap_err() == RuntimeError::MemoryAccessOutOfBounds);
     }
@@ -577,7 +577,7 @@ fn memory_copy_test_11() {
     let mut i = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
     let run = get_func!(i, "run");
-    let err = i.invoke::<(i32, i32, i32), ()>(run, (65516, 65486, 40));
+    let err = i.invoke_typed::<(i32, i32, i32), ()>(run, (65516, 65486, 40));
     if err.is_err() {
         assert!(err.unwrap_err() == RuntimeError::MemoryAccessOutOfBounds);
     }
@@ -650,7 +650,7 @@ fn memory_copy_test_12() {
     let mut i = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
     let run = get_func!(i, "run");
-    let err = i.invoke::<(i32, i32, i32), ()>(run, (65486, 65516, 40));
+    let err = i.invoke_typed::<(i32, i32, i32), ()>(run, (65486, 65516, 40));
     if err.is_err() {
         assert!(err.unwrap_err() == RuntimeError::MemoryAccessOutOfBounds);
     }
@@ -723,7 +723,7 @@ fn memory_copy_test_13() {
     let mut i = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
     let run = get_func!(i, "run");
-    let err = i.invoke::<(i32, i32, i32), ()>(run, (65516, 65506, 40));
+    let err = i.invoke_typed::<(i32, i32, i32), ()>(run, (65516, 65506, 40));
     if err.is_err() {
         assert!(err.unwrap_err() == RuntimeError::MemoryAccessOutOfBounds);
     }
@@ -796,7 +796,7 @@ fn memory_copy_test_14() {
     let mut i = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
     let run = get_func!(i, "run");
-    let err = i.invoke::<(i32, i32, i32), ()>(run, (65506, 65516, 40));
+    let err = i.invoke_typed::<(i32, i32, i32), ()>(run, (65506, 65516, 40));
     if err.is_err() {
         assert!(err.unwrap_err() == RuntimeError::MemoryAccessOutOfBounds);
     }
@@ -869,7 +869,7 @@ fn memory_copy_test_15() {
     let mut i = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
     let run = get_func!(i, "run");
-    let err = i.invoke::<(i32, i32, i32), ()>(run, (65516, 65516, 40));
+    let err = i.invoke_typed::<(i32, i32, i32), ()>(run, (65516, 65516, 40));
     if err.is_err() {
         assert!(err.unwrap_err() == RuntimeError::MemoryAccessOutOfBounds);
     }
@@ -942,7 +942,7 @@ fn memory_copy_test_16() {
     let mut i = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
     let run = get_func!(i, "run");
-    let err = i.invoke::<(i32, i32, i32), ()>(run, (0, 65516, 4294963200_u32 as i32));
+    let err = i.invoke_typed::<(i32, i32, i32), ()>(run, (0, 65516, 4294963200_u32 as i32));
     if err.is_err() {
         assert!(err.unwrap_err() == RuntimeError::MemoryAccessOutOfBounds);
     }
@@ -1015,7 +1015,7 @@ fn memory_copy_test_17() {
     let mut i = RuntimeInstance::new(&validation_info).expect("instantiation failed");
 
     let run = get_func!(i, "run");
-    let err = i.invoke::<(i32, i32, i32), ()>(run, (65516, 61440, 4294967040_u32 as i32));
+    let err = i.invoke_typed::<(i32, i32, i32), ()>(run, (65516, 61440, 4294967040_u32 as i32));
     if err.is_err() {
         assert!(err.unwrap_err() == RuntimeError::MemoryAccessOutOfBounds);
     }

@@ -504,7 +504,7 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
 
                 let err_or_panic: Result<_, Box<dyn Error>> =
                     catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
-                        interpreter.invoke_dynamic_unchecked_return_ty(&function_ref, args)
+                        interpreter.invoke(&function_ref, args)
                     }))
                     .map_err(PanicError::from_panic_boxed)
                     .and_then(|result| {
@@ -553,10 +553,6 @@ fn execute_assert_return(
                 .into_iter()
                 .map(result_to_value)
                 .collect::<Result<Vec<_>, _>>()?;
-            let result_types = result_vals
-                .iter()
-                .map(|val| val.to_ty())
-                .collect::<Vec<_>>();
 
             // spec tests tells us to use the last defined module if module name is not specified
             // TODO this ugly chunk might need to be refactored out
@@ -590,7 +586,7 @@ fn execute_assert_return(
             .map_err(|err| WasmInterpreterError::new_boxed(wasm::Error::RuntimeError(err)))?;
 
             let actual = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
-                interpreter.invoke_dynamic(&func, args, &result_types)
+                interpreter.invoke(&func, args)
             }))
             .map_err(PanicError::from_panic_boxed)?
             .map_err(|err| WasmInterpreterError::new_boxed(wasm::Error::RuntimeError(err)))?;
@@ -688,7 +684,7 @@ fn execute_assert_trap<'a>(
             .map_err(|err| WasmInterpreterError::new_boxed(wasm::Error::RuntimeError(err)))?;
 
             let actual = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
-                interpreter.invoke_dynamic_unchecked_return_ty(&func, args)
+                interpreter.invoke(&func, args)
             }))
             .map_err(PanicError::from_panic_boxed)?;
 
