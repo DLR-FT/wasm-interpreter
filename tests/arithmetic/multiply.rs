@@ -18,7 +18,8 @@ pub fn i32_multiply() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
+    let mut instance =
+        RuntimeInstance::new_with_default_module(&validation_info).expect("instantiation failed");
 
     assert_eq!(
         33,
@@ -87,7 +88,8 @@ pub fn i64_multiply() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
+    let mut instance =
+        RuntimeInstance::new_with_default_module(&validation_info).expect("instantiation failed");
 
     assert_eq!(
         33_i64,

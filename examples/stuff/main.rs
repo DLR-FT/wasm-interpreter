@@ -45,7 +45,7 @@ fn main() -> ExitCode {
         }
     };
 
-    let mut instance = match RuntimeInstance::new(&validation_info) {
+    let mut instance = match RuntimeInstance::new_with_default_module(&validation_info) {
         Ok(instance) => instance,
         Err(err) => {
             error!("Instantiation failed: {err:?} [{err}]");

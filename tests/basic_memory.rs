@@ -17,7 +17,8 @@ fn basic_memory() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
+    let mut instance =
+        RuntimeInstance::new_with_default_module(&validation_info).expect("instantiation failed");
 
     let _ = instance.invoke_typed::<i32, ()>(
         &instance
@@ -45,7 +46,8 @@ fn f32_basic_memory() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
+    let mut instance =
+        RuntimeInstance::new_with_default_module(&validation_info).expect("instantiation failed");
 
     instance
         .invoke_typed::<f32, ()>(&instance.get_function_by_index(0, 0).unwrap(), 133.7_f32)
