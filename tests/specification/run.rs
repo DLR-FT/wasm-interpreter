@@ -135,10 +135,7 @@ fn validate_instantiate<'a, 'b: 'a>(
         .map_err(WasmInterpreterError::new_boxed)?;
 
     // TODO change hacky hidden name that uses interpreter internals
-    let module_name = format!(
-        "module_{}",
-        interpreter.store.as_ref().unwrap().modules.len()
-    );
+    let module_name = format!("module_{}", interpreter.store.modules.len());
     catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
         interpreter.add_module(module_name.as_str(), &validation_info)
     }))
@@ -224,10 +221,8 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                     | QuoteWat::Wat(wast::Wat::Component(wast::component::Component {
                         id: _maybe_id @ Some(id),
                         ..
-                    })) => visible_modules.insert(
-                        id.name().to_owned(),
-                        interpreter.store.as_ref().unwrap().modules.len(),
-                    ),
+                    })) => visible_modules
+                        .insert(id.name().to_owned(), interpreter.store.modules.len()),
                     _ => None,
                 };
 
@@ -344,7 +339,7 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
 
                 // spec tests tells us to use the last defined module if module name is not specified
                 // TODO this ugly chunk might need to be refactored out
-                let store = interpreter.store.as_mut().unwrap();
+                let store = &mut interpreter.store;
                 let module_addr = match modulee {
                     None => store.modules.len() - 1,
                     Some(id) => {
@@ -450,7 +445,7 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
 
                 let function_ref_attempt =
                     catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
-                        let store = interpreter.store.as_ref().unwrap();
+                        let store = &mut interpreter.store;
                         let module_inst = match invoke.module {
                             None => store.modules.last().unwrap(),
                             Some(id) => {
@@ -557,7 +552,7 @@ fn execute_assert_return(
             // spec tests tells us to use the last defined module if module name is not specified
             // TODO this ugly chunk might need to be refactored out
             let func = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
-                let store = interpreter.store.as_ref().unwrap();
+                let store = &mut interpreter.store;
                 let module_inst = match invoke_info.module {
                     None => store.modules.last().unwrap(),
                     Some(id) => {
@@ -604,7 +599,7 @@ fn execute_assert_return(
                 .map(result_to_value)
                 .collect::<Result<Vec<_>, _>>()?;
             let actual = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
-                let store = interpreter.store.as_ref().unwrap();
+                let store = &mut interpreter.store;
                 let module_inst = match module {
                     None => store.modules.last().unwrap(),
                     Some(id) => {
@@ -655,7 +650,7 @@ fn execute_assert_trap<'a>(
             // spec tests tells us to use the last defined module if module name is not specified
             // TODO this ugly chunk might need to be refactored out
             let func = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
-                let store = interpreter.store.as_ref().unwrap();
+                let store = &mut interpreter.store;
                 let module_inst = match invoke_info.module {
                     None => store.modules.last().unwrap(),
                     Some(id) => {
@@ -707,10 +702,7 @@ fn execute_assert_trap<'a>(
                 .map_err(WasmInterpreterError::new_boxed)?;
 
             // TODO change hacky hidden name that uses interpreter internals
-            let module_name = format!(
-                "module_{}",
-                interpreter.store.as_ref().unwrap().modules.len()
-            );
+            let module_name = format!("module_{}", interpreter.store.modules.len());
             let instantiation_result =
                 catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
                     interpreter.add_module(module_name.as_str(), &validation_info)

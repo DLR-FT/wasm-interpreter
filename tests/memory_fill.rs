@@ -43,7 +43,7 @@ fn memory_fill() {
 
     let fill = get_func!(i, "fill");
     i.invoke_typed::<(), ()>(fill, ()).unwrap();
-    let mem_inst = &i.store.as_ref().unwrap().memories[0];
+    let mem_inst = &i.store.memories[0];
 
     let expected = [vec![217u8; 100], vec![0u8; 5]].concat();
     for (idx, expected_byte) in expected.into_iter().enumerate() {

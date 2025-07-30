@@ -33,7 +33,7 @@ where
     H: HookSet + core::fmt::Debug,
 {
     pub hook_set: H,
-    pub store: Option<Store<'b>>,
+    pub store: Store<'b>,
 }
 
 impl<'b> RuntimeInstance<'b, EmptyHookSet> {
@@ -59,14 +59,7 @@ where
         module_name: &str,
         validation_info: &'_ ValidationInfo<'b>,
     ) -> CustomResult<()> {
-        match self.store {
-            // TODO fix error
-            None => return Err(crate::Error::RuntimeError(RuntimeError::ModuleNotFound)),
-            Some(ref mut store) => {
-                store.add_module(module_name, validation_info)?;
-            }
-        };
-        Ok(())
+        self.store.add_module(module_name, validation_info)
     }
 
     pub fn new_with_hooks(
@@ -77,7 +70,7 @@ where
     ) -> CustomResult<Self> {
         trace!("Starting instantiation of bytecode");
 
-        let store = Some(Store::default());
+        let store = Store::default();
 
         let mut instance = RuntimeInstance { hook_set, store };
         instance.add_module(module_name, validation_info)?;
@@ -90,9 +83,7 @@ where
         module_name: &str,
         function_name: &str,
     ) -> Result<FunctionRef, RuntimeError> {
-        // TODO fix error
-        let store = self.store.as_ref().ok_or(RuntimeError::ModuleNotFound)?;
-        FunctionRef::new_from_name(module_name, function_name, store)
+        FunctionRef::new_from_name(module_name, function_name, &self.store)
             .map_err(|_| RuntimeError::FunctionNotFound)
     }
 
@@ -101,10 +92,8 @@ where
         module_addr: usize,
         function_idx: usize,
     ) -> Result<FunctionRef, RuntimeError> {
-        // TODO fix error
-        let store = self.store.as_ref().ok_or(RuntimeError::ModuleNotFound)?;
-
-        let module_inst = store
+        let module_inst = self
+            .store
             .modules
             .get(module_addr)
             .ok_or(RuntimeError::ModuleNotFound)?;
@@ -123,11 +112,8 @@ where
         params: Param,
         // store: &mut Store,
     ) -> Result<Returns, RuntimeError> {
-        // TODO fix error
-        let store = self.store.as_mut().ok_or(RuntimeError::ModuleNotFound)?;
-
         let FunctionRef { func_addr } = *function_ref;
-        store
+        self.store
             .invoke(func_addr, params.into_values())
             .map(|values| Returns::from_values(values.into_iter()))
     }
@@ -138,10 +124,7 @@ where
         function_ref: &FunctionRef,
         params: Vec<Value>,
     ) -> Result<Vec<Value>, RuntimeError> {
-        // TODO fix error
-        let store = self.store.as_mut().ok_or(RuntimeError::ModuleNotFound)?;
-
         let FunctionRef { func_addr } = *function_ref;
-        store.invoke(func_addr, params)
+        self.store.invoke(func_addr, params)
     }
 }
