@@ -19,7 +19,8 @@ fn simple_function_call() {
     let wasm_bytes = wat::parse_str(FUNCTION_CALL).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
+    let mut instance =
+        RuntimeInstance::new_with_default_module(&validation_info).expect("instantiation failed");
 
     assert_eq!(
         3 * 7 + 13,
@@ -56,7 +57,8 @@ fn recursion_valid() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
+    let mut instance =
+        RuntimeInstance::new_with_default_module(&validation_info).expect("instantiation failed");
 
     assert_eq!(
         12,
@@ -141,7 +143,8 @@ fn multivalue_call() {
     "#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new(&validation_info).expect("instantiation failed");
+    let mut instance =
+        RuntimeInstance::new_with_default_module(&validation_info).expect("instantiation failed");
 
     let foo_fn = instance
         .get_function_by_name(DEFAULT_MODULE, "bar")

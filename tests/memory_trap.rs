@@ -64,7 +64,8 @@ fn memory_trap_1() {
 "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new(&validation_info).expect("instantiation failed");
+    let mut i =
+        RuntimeInstance::new_with_default_module(&validation_info).expect("instantiation failed");
 
     let store = get_func!(i, "store");
     let load = get_func!(i, "load");

@@ -50,7 +50,8 @@ fn table_grow_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new(&validation_info).expect("instantiation failed");
+    let mut i =
+        RuntimeInstance::new_with_default_module(&validation_info).expect("instantiation failed");
 
     let get = get_func!(i, "get");
     let set = get_func!(i, "set");
@@ -219,7 +220,8 @@ fn table_grow_outside_i32_range() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new(&validation_info).expect("instantiation failed");
+    let mut i =
+        RuntimeInstance::new_with_default_module(&validation_info).expect("instantiation failed");
 
     let grow = get_func!(i, "grow");
     assert_eq!(i.invoke_typed::<(), i32>(grow, ()).unwrap(), -1);
@@ -238,7 +240,8 @@ fn table_grow_unlimited() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new(&validation_info).expect("instantiation failed");
+    let mut i =
+        RuntimeInstance::new_with_default_module(&validation_info).expect("instantiation failed");
 
     let grow = get_func!(i, "grow");
     assert_result!(i, grow, 0, 0);
@@ -261,7 +264,8 @@ fn table_grow_with_max() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new(&validation_info).expect("instantiation failed");
+    let mut i =
+        RuntimeInstance::new_with_default_module(&validation_info).expect("instantiation failed");
 
     let grow = get_func!(i, "grow");
     assert_result!(i, grow, 0, 0);
@@ -303,7 +307,8 @@ fn table_grow_check_null() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new(&validation_info).expect("instantiation failed");
+    let mut i =
+        RuntimeInstance::new_with_default_module(&validation_info).expect("instantiation failed");
 
     let grow = get_func!(i, "grow");
     let check_table_null = get_func!(i, "check-table-null");
@@ -335,8 +340,8 @@ fn table_grow_with_exported_table_test() {
 
     let wasm_bytes = wat::parse_str(target_wat).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut target_instance =
-        RuntimeInstance::new(&validation_info).expect("target instantiation failed");
+    let mut target_instance = RuntimeInstance::new_with_default_module(&validation_info)
+        .expect("target instantiation failed");
 
     let grow = get_func!(target_instance, "grow");
     assert_result!(target_instance, grow, (), 1);

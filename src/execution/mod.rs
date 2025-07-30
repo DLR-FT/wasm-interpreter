@@ -36,9 +36,21 @@ where
     pub store: Store<'b>,
 }
 
+impl Default for RuntimeInstance<'_, EmptyHookSet> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<'b> RuntimeInstance<'b, EmptyHookSet> {
-    pub fn new(validation_info: &'_ ValidationInfo<'b>) -> CustomResult<Self> {
-        Self::new_with_hooks(DEFAULT_MODULE, validation_info, EmptyHookSet)
+    pub fn new() -> Self {
+        Self::new_with_hooks(EmptyHookSet)
+    }
+
+    pub fn new_with_default_module(validation_info: &'_ ValidationInfo<'b>) -> CustomResult<Self> {
+        let mut instance = Self::new_with_hooks(EmptyHookSet);
+        instance.add_module(DEFAULT_MODULE, validation_info)?;
+        Ok(instance)
     }
 
     pub fn new_named(
@@ -46,7 +58,9 @@ impl<'b> RuntimeInstance<'b, EmptyHookSet> {
         validation_info: &'_ ValidationInfo<'b>,
         // store: &mut Store,
     ) -> CustomResult<Self> {
-        Self::new_with_hooks(module_name, validation_info, EmptyHookSet)
+        let mut instance = Self::new_with_hooks(EmptyHookSet);
+        instance.add_module(module_name, validation_info)?;
+        Ok(instance)
     }
 }
 
@@ -63,19 +77,13 @@ where
     }
 
     pub fn new_with_hooks(
-        module_name: &str,
-        validation_info: &'_ ValidationInfo<'b>,
         hook_set: H,
         // store: &mut Store,
-    ) -> CustomResult<Self> {
-        trace!("Starting instantiation of bytecode");
-
-        let store = Store::default();
-
-        let mut instance = RuntimeInstance { hook_set, store };
-        instance.add_module(module_name, validation_info)?;
-
-        Ok(instance)
+    ) -> Self {
+        RuntimeInstance {
+            hook_set,
+            store: Store::default(),
+        }
     }
 
     pub fn get_function_by_name(
