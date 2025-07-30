@@ -542,21 +542,8 @@ impl<'b> Store<'b> {
             EmptyHookSet,
             self,
         )?;
-
-        // Pop return values from stack
-        let return_values = func_ty
-            .returns
-            .valtypes
-            .iter()
-            .rev()
-            .map(|ty| stack.pop_value(*ty))
-            .collect::<Vec<Value>>();
-
-        // Values are reversed because they were popped from stack one-by-one. Now reverse them back
-        let reversed_values = return_values.into_iter().rev();
-        let ret = reversed_values.collect();
         debug!("Successfully invoked function");
-        Ok(ret)
+        Ok(stack.into_values())
     }
 }
 
