@@ -35,6 +35,10 @@ impl Stack {
         Self::default()
     }
 
+    pub(super) fn into_values(self) -> Vec<Value> {
+        self.values
+    }
+
     pub fn drop_value(&mut self) {
         // If there is at least one stack frame, we shall not pop values past the current
         // stackframe. However, there is one legitimate reason to pop when there is **no** current
