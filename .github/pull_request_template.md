@@ -26,6 +26,14 @@ Please tick off what you did
   - [ ] Ran `cargo build`
   - [ ] Ran `cargo doc`
 
+### Benchmark Results
+
+<!--
+Remove this section if performance is likely unaffected
+
+Put your benchmark results here
+-->
+
 ### Github Issue
 
 <!--
