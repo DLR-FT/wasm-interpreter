@@ -445,7 +445,11 @@ impl<'b> Store<'b> {
     }
 
     /// <https://webassembly.github.io/spec/core/exec/modules.html#host-functions>
-    pub(super) fn alloc_host_func(&mut self, func_type: FuncType, host_func: fn() -> ()) -> usize {
+    pub(super) fn alloc_host_func(
+        &mut self,
+        func_type: FuncType,
+        host_func: fn(Vec<Value>) -> Vec<Value>,
+    ) -> usize {
         let func_inst = FuncInst {
             function_type: func_type,
             closure: FuncClosure::HostFunc(HostFuncInst {
@@ -530,25 +534,39 @@ impl<'b> Store<'b> {
 
         let func_ty = func_inst.ty();
 
+        // Verify that the given parameters match the function parameters
+        let param_types = params.iter().map(|v| v.to_ty()).collect::<Vec<_>>();
+
+        if func_ty.params.valtypes != param_types {
+            trace!(
+                "Func param types len: {}; Given args len: {}",
+                func_ty.params.valtypes.len(),
+                param_types.len()
+            );
+            panic!("Invalid parameters for function");
+        }
+
         match &func_inst.closure {
             FuncClosure::HostFunc(host_func_inst) => {
-                (host_func_inst.hostcode)();
+                let returns = (host_func_inst.hostcode)(params);
                 debug!("Successfully invoked function");
-                Ok(Vec::new())
-            }
-            FuncClosure::WasmFunc(wasm_func_inst) => {
-                // Verify that the given parameters match the function parameters
-                let param_types = params.iter().map(|v| v.to_ty()).collect::<Vec<_>>();
 
-                if func_ty.params.valtypes != param_types {
+                // Verify that the return parameters match the host function parameters
+                // since we have no validation guarantees for host functions
+
+                let return_types = returns.iter().map(|v| v.to_ty()).collect::<Vec<_>>();
+                if func_ty.returns.valtypes != return_types {
                     trace!(
                         "Func param types len: {}; Given args len: {}",
                         func_ty.params.valtypes.len(),
                         param_types.len()
                     );
-                    panic!("Invalid parameters for function");
+                    return Err(RuntimeError::HostFunctionSignatureMismatch);
                 }
 
+                Ok(returns)
+            }
+            FuncClosure::WasmFunc(wasm_func_inst) => {
                 // Prepare a new stack with the locals for the entry function
                 let mut stack = Stack::new();
                 let locals = Locals::new(params.into_iter(), wasm_func_inst.locals.iter().cloned());
@@ -599,7 +617,7 @@ pub struct WasmFuncInst {
 
 #[derive(Debug)]
 pub struct HostFuncInst {
-    pub hostcode: fn() -> (),
+    pub hostcode: fn(Vec<Value>) -> Vec<Value>,
 }
 
 impl FuncInst {

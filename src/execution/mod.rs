@@ -117,10 +117,10 @@ where
     }
 
     /// Invokes a function with the given parameters of type `Param`, and return types of type `Returns`.
-    pub fn invoke_typed<Param: InteropValueList, Returns: InteropValueList>(
+    pub fn invoke_typed<Params: InteropValueList, Returns: InteropValueList>(
         &mut self,
         function_ref: &FunctionRef,
-        params: Param,
+        params: Params,
         // store: &mut Store,
     ) -> Result<Returns, RuntimeError> {
         let FunctionRef { func_addr } = *function_ref;
@@ -142,24 +142,31 @@ where
     /// Adds a host function under module namespace `module_name` with name `name`.
     /// roughly similar to `func_alloc` in <https://webassembly.github.io/spec/core/appendix/embedding.html#functions>
     /// except the host function is made visible to other modules through these names.
-    /// Returns
+    pub fn add_host_function_typed<Params: InteropValueList, Returns: InteropValueList>(
+        &mut self,
+        module_name: &str,
+        name: &str,
+        host_func: fn(Vec<Value>) -> Vec<Value>,
+    ) -> Result<FunctionRef, Error> {
+        let host_func_ty = FuncType {
+            params: ResultType {
+                valtypes: Vec::from(Params::TYS),
+            },
+            returns: ResultType {
+                valtypes: Vec::from(Returns::TYS),
+            },
+        };
+        self.add_host_function(module_name, name, host_func_ty, host_func)
+    }
+
     pub fn add_host_function(
         &mut self,
         module_name: &str,
         name: &str,
-        host_func: fn() -> (),
+        host_func_ty: FuncType,
+        host_func: fn(Vec<Value>) -> Vec<Value>,
     ) -> Result<FunctionRef, Error> {
-        let func_addr = self.store.alloc_host_func(
-            FuncType {
-                params: ResultType {
-                    valtypes: Vec::new(),
-                },
-                returns: ResultType {
-                    valtypes: Vec::new(),
-                },
-            },
-            host_func,
-        );
+        let func_addr = self.store.alloc_host_func(host_func_ty, host_func);
         self.store.registry.register(
             module_name.to_owned().into(),
             name.to_owned().into(),

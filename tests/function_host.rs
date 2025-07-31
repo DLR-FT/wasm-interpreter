@@ -1,4 +1,4 @@
-use wasm::{validate, RuntimeInstance};
+use wasm::{validate, RuntimeInstance, Value};
 
 #[test_log::test]
 pub fn host_func_call_within_module() {
@@ -12,13 +12,14 @@ pub fn host_func_call_within_module() {
     )
 )"#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
-    fn hello() {
+    fn hello(_values: Vec<Value>) -> Vec<Value> {
         println!("Host function says hello from wasm!");
+        Vec::new()
     }
 
     let mut runtime_instance = RuntimeInstance::new();
     runtime_instance
-        .add_host_function("hello_mod", "hello", hello)
+        .add_host_function_typed::<(), ()>("hello_mod", "hello", hello)
         .expect("function registration failed");
     runtime_instance
         .add_module(

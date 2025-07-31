@@ -12,6 +12,7 @@
 
 use alloc::vec;
 use alloc::vec::Vec;
+use core::iter::zip;
 
 use crate::{
     assert_validated::UnwrapValidatedExt,
@@ -186,18 +187,28 @@ pub(super) fn run_wasm_func<H: HookSet>(
                 let func_to_call_addr =
                     store.modules[current_wasm_func_inst.module_addr].func_addrs[local_func_idx];
 
+                let func_to_call_ty = store.functions[func_to_call_addr].ty();
+
+                let params = stack.pop_tail_iter(func_to_call_ty.params.valtypes.len());
+                trace!("Instruction: call [{func_to_call_addr:?}]");
+
                 match &store.functions[func_to_call_addr].closure {
                     FuncClosure::HostFunc(host_func_to_call_inst) => {
-                        //TODO pop from stack
-                        (host_func_to_call_inst.hostcode)();
-                        //TODO push to stack
+                        let returns = (host_func_to_call_inst.hostcode)(params.collect());
+
+                        // Verify that the return parameters match the host function parameters
+                        // since we have no validation guarantees for host functions
+                        if returns.len() != func_to_call_ty.returns.valtypes.len() {
+                            return Err(RuntimeError::HostFunctionSignatureMismatch);
+                        }
+                        for (value, ty) in zip(returns, func_to_call_ty.returns.valtypes) {
+                            if value.to_ty() != ty {
+                                return Err(RuntimeError::HostFunctionSignatureMismatch);
+                            }
+                            stack.push_value(value)?;
+                        }
                     }
                     FuncClosure::WasmFunc(wasm_func_to_call_inst) => {
-                        let func_to_call_ty = store.functions[func_to_call_addr].ty();
-
-                        let params = stack.pop_tail_iter(func_to_call_ty.params.valtypes.len());
-
-                        trace!("Instruction: call [{func_to_call_addr:?}]");
                         let remaining_locals = wasm_func_to_call_inst.locals.iter().cloned();
                         let locals = Locals::new(params, remaining_locals);
 
@@ -260,16 +271,26 @@ pub(super) fn run_wasm_func<H: HookSet>(
                     return Err(RuntimeError::SignatureMismatch);
                 }
 
+                let params = stack.pop_tail_iter(func_to_call_ty.params.valtypes.len());
+                trace!("Instruction: call [{func_to_call_addr:?}]");
+
                 match &store.functions[func_to_call_addr].closure {
                     FuncClosure::HostFunc(host_func_to_call_inst) => {
-                        //TODO pop from stack
-                        (host_func_to_call_inst.hostcode)();
-                        //TODO push to stack
+                        let returns = (host_func_to_call_inst.hostcode)(params.collect());
+
+                        // Verify that the return parameters match the host function parameters
+                        // since we have no validation guarantees for host functions
+                        if returns.len() != func_to_call_ty.returns.valtypes.len() {
+                            return Err(RuntimeError::HostFunctionSignatureMismatch);
+                        }
+                        for (value, ty) in zip(returns, func_to_call_ty.returns.valtypes) {
+                            if value.to_ty() != ty {
+                                return Err(RuntimeError::HostFunctionSignatureMismatch);
+                            }
+                            stack.push_value(value)?;
+                        }
                     }
                     FuncClosure::WasmFunc(wasm_func_to_call_inst) => {
-                        let params = stack.pop_tail_iter(func_to_call_ty.params.valtypes.len());
-
-                        trace!("Instruction: call [{func_to_call_addr:?}]");
                         let remaining_locals = wasm_func_to_call_inst.locals.iter().cloned();
                         let locals = Locals::new(params, remaining_locals);
 
