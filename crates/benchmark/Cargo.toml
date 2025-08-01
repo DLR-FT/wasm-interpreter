@@ -16,6 +16,11 @@ wasmtime = { version = "27.0.0", default-features = false, features = [
 ] }
 wat = { workspace = true }
 
+[features]
+foreign-interpreters = ["wasmi", "wasmtime"]
+wasmi = []
+wasmtime = []
+
 [[bench]]
 name = "general_purpose"
 harness = false
