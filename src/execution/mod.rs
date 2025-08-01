@@ -1,10 +1,13 @@
+use crate::Error;
+
+use alloc::borrow::ToOwned;
 use alloc::vec::Vec;
 
 use const_interpreter_loop::run_const_span;
 use function_ref::FunctionRef;
-use interpreter_loop::run;
 use value_stack::Stack;
 
+use crate::core::reader::types::{FuncType, ResultType};
 use crate::execution::assert_validated::UnwrapValidatedExt;
 use crate::execution::hooks::{EmptyHookSet, HookSet};
 use crate::execution::store::Store;
@@ -114,10 +117,10 @@ where
     }
 
     /// Invokes a function with the given parameters of type `Param`, and return types of type `Returns`.
-    pub fn invoke_typed<Param: InteropValueList, Returns: InteropValueList>(
+    pub fn invoke_typed<Params: InteropValueList, Returns: InteropValueList>(
         &mut self,
         function_ref: &FunctionRef,
-        params: Param,
+        params: Params,
         // store: &mut Store,
     ) -> Result<Returns, RuntimeError> {
         let FunctionRef { func_addr } = *function_ref;
@@ -135,4 +138,64 @@ where
         let FunctionRef { func_addr } = *function_ref;
         self.store.invoke(func_addr, params)
     }
+
+    /// Adds a host function under module namespace `module_name` with name `name`.
+    /// roughly similar to `func_alloc` in <https://webassembly.github.io/spec/core/appendix/embedding.html#functions>
+    /// except the host function is made visible to other modules through these names.
+    pub fn add_host_function_typed<Params: InteropValueList, Returns: InteropValueList>(
+        &mut self,
+        module_name: &str,
+        name: &str,
+        host_func: fn(Vec<Value>) -> Vec<Value>,
+    ) -> Result<FunctionRef, Error> {
+        let host_func_ty = FuncType {
+            params: ResultType {
+                valtypes: Vec::from(Params::TYS),
+            },
+            returns: ResultType {
+                valtypes: Vec::from(Returns::TYS),
+            },
+        };
+        self.add_host_function(module_name, name, host_func_ty, host_func)
+    }
+
+    pub fn add_host_function(
+        &mut self,
+        module_name: &str,
+        name: &str,
+        host_func_ty: FuncType,
+        host_func: fn(Vec<Value>) -> Vec<Value>,
+    ) -> Result<FunctionRef, Error> {
+        let func_addr = self.store.alloc_host_func(host_func_ty, host_func);
+        self.store.registry.register(
+            module_name.to_owned().into(),
+            name.to_owned().into(),
+            store::ExternVal::Func(func_addr),
+        )?;
+        Ok(FunctionRef { func_addr })
+    }
+}
+
+/// Helper function to quickly construct host functions without worrying about wasm to Rust
+/// type conversion.
+/// # Example
+/// ```
+/// use wasm::{validate, RuntimeInstance, host_function_wrapper, Value};
+/// fn my_wrapped_host_func(params: Vec<Value>) -> Vec<Value> {
+///     host_function_wrapper(params, |(x, y): (u32, i32)| -> u32 {
+///         x + (y as u32)
+///  })
+/// }
+/// fn main() {
+///     let mut instance = RuntimeInstance::new();
+///     let foo_bar = instance.add_host_function_typed::<(u32,i32),u32>("foo", "bar", my_wrapped_host_func).unwrap();
+/// }
+/// ```
+pub fn host_function_wrapper<Params: InteropValueList, Results: InteropValueList>(
+    params: Vec<Value>,
+    f: impl FnOnce(Params) -> Results,
+) -> Vec<Value> {
+    let params = Params::from_values(params.into_iter());
+    let results = f(params);
+    results.into_values()
 }
