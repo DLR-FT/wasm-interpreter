@@ -175,3 +175,27 @@ where
         Ok(FunctionRef { func_addr })
     }
 }
+
+/// Helper function to quickly construct host functions without worrying about wasm to Rust
+/// type conversion.
+/// # Example
+/// ```
+/// use wasm::{validate, RuntimeInstance, host_function_wrapper, Value};
+/// fn my_wrapped_host_func(params: Vec<Value>) -> Vec<Value> {
+///     host_function_wrapper(params, |(x, y): (u32, i32)| -> u32 {
+///         x + (y as u32)
+///  })
+/// }
+/// fn main() {
+///     let mut instance = RuntimeInstance::new();
+///     let foo_bar = instance.add_host_function_typed::<(u32,i32),u32>("foo", "bar", my_wrapped_host_func).unwrap();
+/// }
+/// ```
+pub fn host_function_wrapper<Params: InteropValueList, Results: InteropValueList>(
+    params: Vec<Value>,
+    f: impl FnOnce(Params) -> Results,
+) -> Vec<Value> {
+    let params = Params::from_values(params.into_iter());
+    let results = f(params);
+    results.into_values()
+}

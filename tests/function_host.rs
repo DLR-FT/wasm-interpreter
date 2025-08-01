@@ -1,5 +1,5 @@
 use wasm::{
-    validate,
+    host_function_wrapper, validate,
     value::{F32, F64},
     RuntimeError, RuntimeInstance, Value,
 };
@@ -111,9 +111,7 @@ fn fancy_add_mult(values: Vec<Value>) -> Vec<Value> {
     Vec::from([Value::F64(F64((x as f64) * y)), Value::I32(x + (y as u32))])
 }
 
-#[test_log::test]
-pub fn simple_multivariate_host_func_within_module() {
-    let wat = r#"(module
+const SIMPLE_MULTIVARIATE_MODULE_EXAMPLE: &str = r#"(module
     (import "hello_mod" "fancy_add_mult" (func $fancy_add_mult (param i32 f64) (result f64 i32)))
     (func $fancy_add_mult_caller (export "fancy_add_mult_caller") (param) (result f64 i32 i64)
         i32.const 2
@@ -122,7 +120,10 @@ pub fn simple_multivariate_host_func_within_module() {
         i64.const 5
     )
 )"#;
-    let wasm_bytes = wat::parse_str(wat).unwrap();
+
+#[test_log::test]
+pub fn simple_multivariate_host_func_within_module() {
+    let wasm_bytes = wat::parse_str(SIMPLE_MULTIVARIATE_MODULE_EXAMPLE).unwrap();
 
     let mut runtime_instance = RuntimeInstance::new();
     runtime_instance
@@ -145,6 +146,39 @@ pub fn simple_multivariate_host_func_within_module() {
         .invoke_typed::<(), (f64, i32, i64)>(&function_ref, ())
         .expect("wasm function invocation failed");
     assert_eq!((8.0, 6, 5), result);
+}
+
+#[test_log::test]
+pub fn simple_multivariate_host_func_with_host_func_wrapper() {
+    let wasm_bytes = wat::parse_str(SIMPLE_MULTIVARIATE_MODULE_EXAMPLE).unwrap();
+
+    fn wrapped_add_mult(params: Vec<Value>) -> Vec<Value> {
+        host_function_wrapper(params, |(x, y): (i32, f64)| -> (f64, i32) {
+            (y + (x as f64), x * (y as i32))
+        })
+    }
+
+    let mut runtime_instance = RuntimeInstance::new();
+    runtime_instance
+        .add_host_function_typed::<(i32, f64), (f64, i32)>(
+            "hello_mod",
+            "fancy_add_mult",
+            wrapped_add_mult,
+        )
+        .expect("function registration failed");
+    runtime_instance
+        .add_module(
+            "importing_mod",
+            &validate(&wasm_bytes).expect("validation failed"),
+        )
+        .expect("instantiation failed");
+    let function_ref = runtime_instance
+        .get_function_by_name("importing_mod", "fancy_add_mult_caller")
+        .expect("wasm function could not be found");
+    let result = runtime_instance
+        .invoke_typed::<(), (f64, i32, i64)>(&function_ref, ())
+        .expect("wasm function invocation failed");
+    assert_eq!((6.0, 8, 5), result);
 }
 
 #[test_log::test]
