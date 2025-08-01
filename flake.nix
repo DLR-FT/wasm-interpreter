@@ -118,6 +118,7 @@
                   cargo-llvm-cov
                   cargo-outdated
                   cargo-watch
+                  critcmp # compare criterion.rs benchmark results
                   wabt
 
                   # utilities
@@ -138,6 +139,32 @@
                   pre-commit.text = "nix flake check '.?submodules=1'";
                 };
                 commands = [
+                  {
+                    name = "bench-against-main";
+                    command = ''
+                      cd -- "$PRJ_ROOT"
+                      COMMON_BENCH_CMD=(cargo bench --package benchmark --bench general_purpose --)
+
+                      # clone main branch of this repo to temporary copy; with trap based self clean-up
+                      trap -- "rm --recursive --force -- \"$PRJ_ROOT/.main_clone\"" EXIT
+                      git clone --depth=1 --single-branch --no-tags --recursive --branch=main -- "file://$PRJ_ROOT" "$PRJ_ROOT/.main_clone"
+
+                      # bench main
+                      pushd -- .main_clone
+                      "''${COMMON_BENCH_CMD[@]}" --save-baseline benchmark-main.baseline
+                      popd
+
+                      # bench current
+                      "''${COMMON_BENCH_CMD[@]}" --save-baseline benchmark-current.baseline
+
+                      # copy results from current to main clone dir
+                      find target/ -type d -name 'benchmark-current.baseline' -exec cp --recursive --no-target-directory -- {} .main_clone/{} \;
+
+                      # compare results
+                      critcmp --target-dir .main_clone/target -- "benchmark-main.baseline" "benchmark-current.baseline"
+                    '';
+                    help = "benchmark the current HEAD against the main branch";
+                  }
                   {
                     name = "requirements-export-excel";
                     command = ''
