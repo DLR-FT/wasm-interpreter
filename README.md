@@ -7,8 +7,8 @@
 </p>
 <p align="center">
   <a href="https://github.com/DLR-FT/wasm-interpreter/actions/workflows/nix.yaml"><img src="https://github.com/DLR-FT/wasm-interpreter/actions/workflows/nix.yaml/badge.svg" alt="ci status" /></a>
-  <!-- alternatively link to https://app.codecov.io/github/dlr-ft/wasm-interpreter -->
-  <a href="https://dlr-ft.github.io/wasm-interpreter/main/coverage/html/index.html"><img src="https://img.shields.io/codecov/c/github/DLR-FT/wasm-interpreter" alt="code coverage" /></a>
+  <a href="https://app.codecov.io/github/dlr-ft/wasm-interpreter"><img src="https://img.shields.io/codecov/c/github/DLR-FT/wasm-interpreter" alt="code coverage" /></a>
+  <a href="https://dlr-ft.github.io/wasm-interpreter/main/rustdoc/wasm"><img src="https://img.shields.io/badge/rustdoc-passing-orange" alt="license" /></a>
   <a href="#license"><img src="https://img.shields.io/badge/license-MIT%20or%20Apache%202.0-blue" alt="license" /></a>
 </p>
 
