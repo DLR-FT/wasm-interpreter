@@ -1,6 +1,6 @@
 [workspace]
 
-members = ["crates/benchmark", "crates/compare-testsuite-rs"]
+members = ["crates/benchmark", "crates/c-api", "crates/compare-testsuite-rs"]
 resolver = "2"
 
 [workspace.dependencies]
