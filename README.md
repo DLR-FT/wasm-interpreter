@@ -12,7 +12,7 @@
   <a href="#license"><img src="https://img.shields.io/badge/license-MIT%20or%20Apache%202.0-blue" alt="license" /></a>
 </p>
 
-A minimal in-place interpreter for [WebAssembly](https://webassembly.org/) bytecode (almost without) dependencies and while being `no_std`.
+A minimal in-place interpreter for [WebAssembly](https://webassembly.org/) bytecode (almost without) dependencies while being `no_std`.
 
 ## Features
 
