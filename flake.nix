@@ -142,56 +142,32 @@
                   {
                     name = "bench-against-main";
                     command = ''
-                      cd "$PRJ_ROOT/crates/benchmark"
-                      BASE_BRANCH="''${BASE_BRANCH:-origin/main}"
+                      BASE_BRANCH="''${BASE_BRANCH:-main}"
 
-                      # get current branch
-                      if GIT_CURRENT_BRANCH=$(git symbolic-ref --short HEAD)
-                      then :
-                      # or if in detached mode, current hash
-                      elif GIT_CURRENT_HASH="$(git rev-parse HEAD)"
-                      then :
-                      # TODO handle orphan branches
-                      else
-                        echo "wouldn't know how to restore the current state"
-                        exit 1
-                      fi
+                      # remove old benchmark data
+                      rm -rf $PRJ_ROOT/target/criterion
 
-                      # remove old benchmark remnants
-                      rm --force -- benchmark-*.baseline
+                      # do the benchmark on main first
+                      cd $PRJ_ROOT/
+                      git clone --depth 1 --single-branch --no-tags -b $BASE_BRANCH file://$PRJ_ROOT .main_clone
+                      cd .main_clone/crates/benchmark
+                      # save benchmark results in the original project target dir for comparison
+                      # criterion ignores cargo bench --target-dir, thus this env variable
+                      CARGO_TARGET_DIR=$PRJ_ROOT/target cargo bench --bench general_purpose -- --save-baseline "benchmark-$BASE_BRANCH.baseline"
 
-                      # stash away all uncommitted things, if any
-                      if [ -n "$(git ls-files --deleted --modified --others --unmerged --killed --exclude-standard \
-                        --directory --no-empty-directory)" ]
-                      then
-                        git stash push --all --message="bench-against-main-$(date --iso-8601)-$(uuidgen)"
-                        RESTORE_STASH=true
-                      fi
+                      # do the benchmark on working tree
+                      cd $PRJ_ROOT/crates/benchmark
 
-                      # do the benchmark on main
-                      git checkout --quiet "$BASE_BRANCH"
-                      cargo bench --bench general_purpose -- --save-baseline "benchmark-$BASE_BRANCH.baseline"
+                      # delete clone for benchmarking main
+                      rm -rf $PRJ_ROOT/.main_clone
 
-                      # restore the head to before running this script
-                      if [ -n "''${GIT_CURRENT_HASH-}" ]
-                      then
-                        git switch --detach --quiet -- "$GIT_CURRENT_HASH"
-                      elif [ -n "''${GIT_CURRENT_BRANCH-}" ]
-                      then
-                        git switch --quiet -- "$GIT_CURRENT_BRANCH"
-                      fi
+                      cargo bench --bench general_purpose -- --save-baseline "benchmark-current.baseline"
 
-                      # do the benchmark again
-                      cargo bench --bench general_purpose -- --save-baseline "benchmark-HEAD.baseline"
+                      # update comparison report to comparison with main, not previous run without re-measuring
+                      cargo bench --bench general_purpose -- --load-baseline "benchmark-current.baseline" --baseline "benchmark-$BASE_BRANCH.baseline"
 
-                      # report the results
-                      critcmp "benchmark-$BASE_BRANCH.baseline" "benchmark-HEAD.baseline"
-
-                      # and restore all the uncommitted files
-                      if [ "''${RESTORE_STASH:-false}" = true ]
-                      then
-                        git stash pop --quiet
-                      fi
+                      # print comparison summary
+                      critcmp "benchmark-$BASE_BRANCH.baseline" "benchmark-current.baseline"
                     '';
                     help = "benchmark the current HEAD against the main branch";
                   }
