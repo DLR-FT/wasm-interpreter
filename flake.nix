@@ -181,16 +181,19 @@
                     name = "generate-testsuite-report";
                     # TODO maybe accept the name of the target branch as an argument and use it instead of `main`
                     command = ''
-                      cd $PRJ_ROOT
+                      cd -- "$PRJ_ROOT"
+
                       TESTSUITE_SAVE=1 cargo test -- spec_tests --show-output
-                      cp testsuite_results.json new.json
-                      mkdir .main_clone
-                      git clone --depth 1 --single-branch --no-tags --recursive -b main file://$PRJ_ROOT .main_clone
-                      cd .main_clone
-                      TESTSUITE_SAVE=1  cargo test -- spec_tests --show-output
-                      mv testsuite_results.json ../old.json
-                      cd ..
-                      rm -rf .main_clone
+                      cp -- testsuite_results.json new.json
+
+                      trap -- "rm --recursive --force -- \"$PRJ_ROOT/.main_clone\"" EXIT
+                      git clone --depth=1 --single-branch --no-tags --recursive --branch=main -- "file://$PRJ_ROOT" "$PRJ_ROOT/.main_clone"
+
+                      pushd -- .main_clone
+                      TESTSUITE_SAVE=1 cargo test -- spec_tests --show-output
+                      mv -- testsuite_results.json ../old.json
+                      popd
+
                       cargo run --package=compare-testsuite-rs -- old.json new.json > testsuite_report.md
                     '';
                     help = "generates a comparison document for the official wasm testsuite w.r.t. project main branch";
