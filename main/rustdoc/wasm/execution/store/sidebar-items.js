@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["ExternVal"],"struct":["DataInst","ElemInst","FuncInst","GlobalInst","MemInst","ModuleInst","Store","TableInst"],"trait":["ExternFilterable"]};
+window.SIDEBAR_ITEMS = {"enum":["ExternVal","FuncInst"],"struct":["DataInst","ElemInst","GlobalInst","HostFuncInst","MemInst","ModuleInst","Store","TableInst","WasmFuncInst"],"trait":["ExternFilterable"]};
