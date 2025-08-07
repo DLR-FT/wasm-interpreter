@@ -206,10 +206,8 @@ pub mod fc_extensions {
 }
 
 #[cfg(debug_assertions)]
-pub fn fc_extension_opcode_second_byte_to_str(instr: u32) -> alloc::string::String {
-    use alloc::{borrow::ToOwned, format};
-
-    let opcode = match instr {
+pub fn fc_extension_opcode_to_str(instr: u32) -> alloc::borrow::Cow<'static, str> {
+    match instr {
         0x00 => "I32_TRUNC_SAT_F32_S",
         0x01 => "I32_TRUNC_SAT_F32_U",
         0x02 => "I32_TRUNC_SAT_F64_S",
@@ -228,21 +226,14 @@ pub fn fc_extension_opcode_second_byte_to_str(instr: u32) -> alloc::string::Stri
         0x0F => "TABLE_GROW",
         0x10 => "TABLE_SIZE",
         0x11 => "TABLE_FILL",
-        _ => "UNKNOWN",
+        instr => return alloc::format!("UNKNOWN({instr:x})").into(),
     }
-    .to_owned();
-
-    if opcode == "UNKNOWN" {
-        format!("UNKNOWN({instr:x})")
-    } else {
-        opcode
-    }
+    .into()
 }
 
 #[cfg(debug_assertions)]
-pub fn opcode_byte_to_str(byte: u8) -> alloc::string::String {
-    use alloc::{borrow::ToOwned, format};
-    let opcode = match byte {
+pub fn opcode_byte_to_str(byte: u8) -> alloc::borrow::Cow<'static, str> {
+    match byte {
         UNREACHABLE => "UNREACHABLE",
         NOP => "NOP",
         BLOCK => "BLOCK",
@@ -427,13 +418,7 @@ pub fn opcode_byte_to_str(byte: u8) -> alloc::string::String {
         I64_EXTEND8_S => "I64_EXTEND8_S",
         I64_EXTEND16_S => "I64_EXTEND16_S",
         I64_EXTEND32_S => "I64_EXTEND32_S",
-        _ => "UNKNOWN",
+        instr => return alloc::format!("UNKNOWN({instr:x})").into(),
     }
-    .to_owned();
-
-    if opcode == "UNKNOWN" {
-        format!("UNKNOWN({byte:x})")
-    } else {
-        opcode
-    }
+    .into()
 }
