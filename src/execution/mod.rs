@@ -31,43 +31,47 @@ pub mod value_stack;
 pub const DEFAULT_MODULE: &str = "__interpreter_default__";
 
 #[derive(Debug)]
-pub struct RuntimeInstance<'b, H = EmptyHookSet>
+pub struct RuntimeInstance<'b, T = (), H = EmptyHookSet>
 where
     H: HookSet + core::fmt::Debug,
 {
     pub hook_set: H,
-    pub store: Store<'b>,
+    pub store: Store<'b, T>,
 }
 
-impl Default for RuntimeInstance<'_, EmptyHookSet> {
+impl<T: Default> Default for RuntimeInstance<'_, T, EmptyHookSet> {
     fn default() -> Self {
-        Self::new()
+        Self::new(T::default())
     }
 }
 
-impl<'b> RuntimeInstance<'b, EmptyHookSet> {
-    pub fn new() -> Self {
-        Self::new_with_hooks(EmptyHookSet)
+impl<'b, T> RuntimeInstance<'b, T, EmptyHookSet> {
+    pub fn new(user_data: T) -> Self {
+        Self::new_with_hooks(user_data, EmptyHookSet)
     }
 
-    pub fn new_with_default_module(validation_info: &'_ ValidationInfo<'b>) -> CustomResult<Self> {
-        let mut instance = Self::new_with_hooks(EmptyHookSet);
+    pub fn new_with_default_module(
+        user_data: T,
+        validation_info: &'_ ValidationInfo<'b>,
+    ) -> CustomResult<Self> {
+        let mut instance = Self::new_with_hooks(user_data, EmptyHookSet);
         instance.add_module(DEFAULT_MODULE, validation_info)?;
         Ok(instance)
     }
 
     pub fn new_named(
+        user_data: T,
         module_name: &str,
         validation_info: &'_ ValidationInfo<'b>,
         // store: &mut Store,
     ) -> CustomResult<Self> {
-        let mut instance = Self::new_with_hooks(EmptyHookSet);
+        let mut instance = Self::new_with_hooks(user_data, EmptyHookSet);
         instance.add_module(module_name, validation_info)?;
         Ok(instance)
     }
 }
 
-impl<'b, H> RuntimeInstance<'b, H>
+impl<'b, T, H> RuntimeInstance<'b, T, H>
 where
     H: HookSet + core::fmt::Debug,
 {
@@ -79,13 +83,10 @@ where
         self.store.add_module(module_name, validation_info)
     }
 
-    pub fn new_with_hooks(
-        hook_set: H,
-        // store: &mut Store,
-    ) -> Self {
+    pub fn new_with_hooks(user_data: T, hook_set: H) -> Self {
         RuntimeInstance {
             hook_set,
-            store: Store::default(),
+            store: Store::new(user_data),
         }
     }
 
@@ -146,7 +147,7 @@ where
         &mut self,
         module_name: &str,
         name: &str,
-        host_func: fn(Vec<Value>) -> Vec<Value>,
+        host_func: fn(&mut T, Vec<Value>) -> Vec<Value>,
     ) -> Result<FunctionRef, Error> {
         let host_func_ty = FuncType {
             params: ResultType {
@@ -164,7 +165,7 @@ where
         module_name: &str,
         name: &str,
         host_func_ty: FuncType,
-        host_func: fn(Vec<Value>) -> Vec<Value>,
+        host_func: fn(&mut T, Vec<Value>) -> Vec<Value>,
     ) -> Result<FunctionRef, Error> {
         let func_addr = self.store.alloc_host_func(host_func_ty, host_func);
         self.store.registry.register(
@@ -174,20 +175,29 @@ where
         )?;
         Ok(FunctionRef { func_addr })
     }
+
+    pub fn user_data(&self) -> &T {
+        &self.store.user_data
+    }
+
+    pub fn user_data_mut(&mut self) -> &mut T {
+        &mut self.store.user_data
+    }
 }
 
 /// Helper function to quickly construct host functions without worrying about wasm to Rust
-/// type conversion.
+/// type conversion. For user data, simply move the mutable reference into the passed closure.
 /// # Example
 /// ```
 /// use wasm::{validate, RuntimeInstance, host_function_wrapper, Value};
-/// fn my_wrapped_host_func(params: Vec<Value>) -> Vec<Value> {
+/// fn my_wrapped_host_func(user_data: &mut (), params: Vec<Value>) -> Vec<Value> {
 ///     host_function_wrapper(params, |(x, y): (u32, i32)| -> u32 {
+///         let _user_data = user_data;
 ///         x + (y as u32)
 ///  })
 /// }
 /// fn main() {
-///     let mut instance = RuntimeInstance::new();
+///     let mut instance = RuntimeInstance::new(());
 ///     let foo_bar = instance.add_host_function_typed::<(u32,i32),u32>("foo", "bar", my_wrapped_host_func).unwrap();
 /// }
 /// ```

@@ -39,8 +39,8 @@ fn polymorphic_select_test() {
     validate(&wasm_bytes).expect("validation failed");
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance =
-        RuntimeInstance::new_with_default_module(&validation_info).expect("instantiation failed");
+    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     let select_test_fn = instance.get_function_by_index(0, 0).unwrap();
 
@@ -59,8 +59,8 @@ fn typed_select_test() {
     validate(&wasm_bytes).expect("validation failed");
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance =
-        RuntimeInstance::new_with_default_module(&validation_info).expect("instantiation failed");
+    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     let select_test_fn = instance.get_function_by_index(0, 0).unwrap();
 

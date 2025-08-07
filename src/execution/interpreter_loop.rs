@@ -38,11 +38,11 @@ use crate::execution::hooks::HookSet;
 use super::store::Store;
 
 /// Interprets wasm native functions. Parameters and return values are passed on the stack.
-pub(super) fn run<H: HookSet>(
+pub(super) fn run<T, H: HookSet>(
     func_addr: usize,
     stack: &mut Stack,
     mut hooks: H,
-    store: &mut Store,
+    store: &mut Store<T>,
 ) -> Result<(), RuntimeError> {
     let mut current_func_addr = func_addr;
     let func_inst = &store.functions[current_func_addr];
@@ -196,7 +196,10 @@ pub(super) fn run<H: HookSet>(
 
                 match &store.functions[func_to_call_addr] {
                     FuncInst::HostFunc(host_func_to_call_inst) => {
-                        let returns = (host_func_to_call_inst.hostcode)(params.collect());
+                        let returns = (host_func_to_call_inst.hostcode)(
+                            &mut store.user_data,
+                            params.collect(),
+                        );
 
                         // Verify that the return parameters match the host function parameters
                         // since we have no validation guarantees for host functions
@@ -278,7 +281,10 @@ pub(super) fn run<H: HookSet>(
 
                 match &store.functions[func_to_call_addr] {
                     FuncInst::HostFunc(host_func_to_call_inst) => {
-                        let returns = (host_func_to_call_inst.hostcode)(params.collect());
+                        let returns = (host_func_to_call_inst.hostcode)(
+                            &mut store.user_data,
+                            params.collect(),
+                        );
 
                         // Verify that the return parameters match the host function parameters
                         // since we have no validation guarantees for host functions

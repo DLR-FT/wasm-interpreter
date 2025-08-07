@@ -37,7 +37,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     // Set up an interpreter with the empty hook-set
     //
     let mut instance_empty_hookset =
-        RuntimeInstance::new_with_default_module(&validation_info).unwrap();
+        RuntimeInstance::new_with_default_module((), &validation_info).unwrap();
 
     //
     // Set up an interpreter with an non-empty hook-set
@@ -52,7 +52,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         }
     }
 
-    let mut instance_non_empty_hookset = RuntimeInstance::new_with_hooks(MyCustomHookSet);
+    let mut instance_non_empty_hookset = RuntimeInstance::new_with_hooks((), MyCustomHookSet);
     instance_non_empty_hookset
         .add_module(DEFAULT_MODULE, &validation_info)
         .unwrap();

@@ -9,10 +9,10 @@ pub struct FunctionRef {
 }
 
 impl FunctionRef {
-    pub fn new_from_name(
+    pub fn new_from_name<T>(
         module_name: &str,
         function_name: &str,
-        store: &Store,
+        store: &Store<T>,
     ) -> CustomResult<Self> {
         // https://webassembly.github.io/spec/core/appendix/embedding.html#module-instances
         // inspired by instance_export
@@ -44,9 +44,9 @@ impl FunctionRef {
         runtime.invoke_typed(self, params /* , store */)
     }
 
-    pub fn invoke<H: HookSet + core::fmt::Debug>(
+    pub fn invoke<T, H: HookSet + core::fmt::Debug>(
         &self,
-        runtime: &mut RuntimeInstance<H>,
+        runtime: &mut RuntimeInstance<T, H>,
         params: Vec<Value>,
         // store: &mut Store,
     ) -> Result<Vec<Value>, RuntimeError> {

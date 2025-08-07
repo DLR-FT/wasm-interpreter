@@ -36,9 +36,9 @@ use crate::linear_memory::LinearMemory;
 /// globals, element segments, and data segments that have been allocated during the life time of
 /// the abstract machine.
 /// <https://webassembly.github.io/spec/core/exec/runtime.html#store>
-#[derive(Default, Debug)]
-pub struct Store<'b> {
-    pub functions: Vec<FuncInst>,
+#[derive(Debug)]
+pub struct Store<'b, T> {
+    pub functions: Vec<FuncInst<T>>,
     pub memories: Vec<MemInst>,
     pub globals: Vec<GlobalInst>,
     pub data: Vec<DataInst>,
@@ -51,9 +51,25 @@ pub struct Store<'b> {
     // all visible exports and entities added by hand or module instantiation by the interpreter
     // currently, all of the exports of an instantiated module is made visible (this is outside of spec)
     pub registry: Registry,
+    pub user_data: T,
 }
 
-impl<'b> Store<'b> {
+impl<'b, T> Store<'b, T> {
+    /// Creates a new empty store with some user data
+    pub fn new(user_data: T) -> Self {
+        Self {
+            functions: Vec::default(),
+            memories: Vec::default(),
+            globals: Vec::default(),
+            data: Vec::default(),
+            tables: Vec::default(),
+            elements: Vec::default(),
+            modules: Vec::default(),
+            registry: Registry::default(),
+            user_data,
+        }
+    }
+
     /// instantiates a validated module with `validation_info` as validation evidence with name `name`
     /// with the steps in <https://webassembly.github.io/spec/core/exec/modules.html#instantiation>
     /// this method roughly matches the suggested embedder function`module_instantiate`
@@ -446,7 +462,7 @@ impl<'b> Store<'b> {
     pub(super) fn alloc_host_func(
         &mut self,
         func_type: FuncType,
-        host_func: fn(Vec<Value>) -> Vec<Value>,
+        host_func: fn(&mut T, Vec<Value>) -> Vec<Value>,
     ) -> usize {
         let func_inst = FuncInst::HostFunc(HostFuncInst {
             function_type: func_type,
@@ -544,7 +560,7 @@ impl<'b> Store<'b> {
 
         match &func_inst {
             FuncInst::HostFunc(host_func_inst) => {
-                let returns = (host_func_inst.hostcode)(params);
+                let returns = (host_func_inst.hostcode)(&mut self.user_data, params);
                 debug!("Successfully invoked function");
 
                 // Verify that the return parameters match the host function parameters
@@ -587,9 +603,9 @@ impl<'b> Store<'b> {
 
 #[derive(Debug)]
 // TODO does not match the spec FuncInst
-pub enum FuncInst {
+pub enum FuncInst<T> {
     WasmFunc(WasmFuncInst),
-    HostFunc(HostFuncInst),
+    HostFunc(HostFuncInst<T>),
 }
 
 #[derive(Debug)]
@@ -607,12 +623,12 @@ pub struct WasmFuncInst {
 }
 
 #[derive(Debug)]
-pub struct HostFuncInst {
+pub struct HostFuncInst<T> {
     pub function_type: FuncType,
-    pub hostcode: fn(Vec<Value>) -> Vec<Value>,
+    pub hostcode: fn(&mut T, Vec<Value>) -> Vec<Value>,
 }
 
-impl FuncInst {
+impl<T> FuncInst<T> {
     pub fn ty(&self) -> FuncType {
         match self {
             FuncInst::WasmFunc(wasm_func_inst) => wasm_func_inst.function_type.clone(),
@@ -775,7 +791,7 @@ impl ExternVal {
     /// taking `store` as context S.
     /// typing fails if this external value does not exist within S.
     ///<https://webassembly.github.io/spec/core/valid/modules.html#imports>
-    pub fn extern_type(&self, store: &Store) -> CustomResult<ExternType> {
+    pub fn extern_type<T>(&self, store: &Store<T>) -> CustomResult<ExternType> {
         // TODO: implement proper errors
         Ok(match self {
             // TODO: fix ugly clone in function types
