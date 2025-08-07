@@ -15,21 +15,14 @@ use alloc::vec::Vec;
 use core::iter::zip;
 
 use crate::{
-    assert_validated::UnwrapValidatedExt,
-    core::{
+    assert_validated::UnwrapValidatedExt, core::{
         indices::{DataIdx, FuncIdx, GlobalIdx, LabelIdx, LocalIdx, MemIdx, TableIdx, TypeIdx},
         reader::{
             types::{memarg::MemArg, BlockType},
             WasmReadable, WasmReader,
         },
         sidetable::Sidetable,
-    },
-    locals::Locals,
-    store::DataInst,
-    value::{self, FuncAddr, Ref},
-    value_stack::Stack,
-    ElemInst, FuncInst, MemInst, ModuleInst, NumType, RefType, RuntimeError, TableInst, ValType,
-    Value,
+    }, locals::Locals, store::DataInst, unreachable_validated, value::{self, FuncAddr, Ref}, value_stack::Stack, ElemInst, FuncInst, MemInst, ModuleInst, NumType, RefType, RuntimeError, TableInst, ValType, Value
 };
 
 #[cfg(feature = "hooks")]
@@ -2418,6 +2411,18 @@ pub(super) fn run<T, H: HookSet>(
                 stack.push_value(res.into())?;
 
                 trace!("Instruction i64.extend32_s [{}] -> [{}]", v, res);
+            }
+            FD_EXTENSIONS => {
+                // Should we call instruction hook here as well? Multibyte instruction
+                let second_instr = wasm.read_var_u32().unwrap_validated();
+
+                use crate::core::reader::types::opcode::fd_extensions::*;
+                match second_instr {
+                    V128_CONST => {
+                        todo!()
+                    }
+                    _ => unreachable_validated!(),
+                }
             }
 
             other => {
