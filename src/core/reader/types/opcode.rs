@@ -178,7 +178,6 @@ pub const REF_NULL: u8 = 0xD0;
 pub const REF_IS_NULL: u8 = 0xD1;
 pub const REF_FUNC: u8 = 0xD2;
 pub const FC_EXTENSIONS: u8 = 0xFC;
-#[allow(unused)]
 pub const FD_EXTENSIONS: u8 = 0xFD;
 pub const I32_EXTEND8_S: u8 = 0xC0;
 pub const I32_EXTEND16_S: u8 = 0xC1;
@@ -233,7 +232,6 @@ pub fn fc_extension_opcode_to_str(instr: u32) -> alloc::borrow::Cow<'static, str
     .into()
 }
 
-#[allow(unused)]
 pub mod fd_extensions {
     pub const V128_LOAD: u32 = 0;
     pub const V128_LOAD8X8_S: u32 = 1;
@@ -510,7 +508,6 @@ pub mod fd_extensions {
     pub const F64X2_CONVERT_LOW_I32X4_U: u32 = 255;
 }
 
-#[allow(unused)]
 #[cfg(debug_assertions)]
 pub fn fd_extension_opcode_to_str(instr: u32) -> alloc::borrow::Cow<'static, str> {
     use fd_extensions::*;
