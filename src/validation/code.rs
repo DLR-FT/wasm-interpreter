@@ -1275,6 +1275,35 @@ fn read_instructions(
                 stack.push_valtype(ValType::NumType(NumType::I64));
             }
 
+            FD_EXTENSIONS => {
+                let Ok(second_instr) = wasm.read_var_u32() else {
+                    // TODO only do this if EOF
+                    return Err(ValidationError::ExprMissingEnd);
+                };
+
+                #[cfg(debug_assertions)]
+                crate::core::utils::print_beautiful_fd_extension(second_instr, wasm.pc);
+
+                #[cfg(not(debug_assertions))]
+                trace!(
+                    "Read instruction byte {second_instr} at wasm_binary[{}]",
+                    wasm.pc
+                );
+
+                use crate::core::reader::types::opcode::fd_extensions::*;
+                match second_instr {
+                    V128_CONST => {
+                        todo!()
+                    }
+                    _ => {
+                        return Err(ValidationError::InvalidMultiByteInstr(
+                            first_instr_byte,
+                            second_instr,
+                        ))
+                    }
+                }
+            }
+
             // Unimplemented or invalid instructions
             0x06..=0x0A
             | 0x12..=0x19
@@ -1282,7 +1311,6 @@ fn read_instructions(
             | 0x25..=0x27
             | 0xC0..=0xFA
             | 0xFB
-            | 0xFD
             | 0xFE
             | 0xFF => {
                 return Err(ValidationError::InvalidInstr(first_instr_byte));

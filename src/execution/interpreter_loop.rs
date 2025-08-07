@@ -2546,6 +2546,18 @@ pub(super) fn run<T, H: HookSet>(
 
                 trace!("Instruction i64.extend32_s [{}] -> [{}]", v, res);
             }
+            FD_EXTENSIONS => {
+                // Should we call instruction hook here as well? Multibyte instruction
+                let second_instr = wasm.read_var_u32().unwrap_validated();
+
+                use crate::core::reader::types::opcode::fd_extensions::*;
+                match second_instr {
+                    V128_CONST => {
+                        todo!()
+                    }
+                    _ => unreachable_validated!(),
+                }
+            }
 
             // Unimplemented or invalid instructions
             0x06..=0x0A
@@ -2554,7 +2566,6 @@ pub(super) fn run<T, H: HookSet>(
             | 0x25..=0x27
             | 0xC0..=0xFA
             | 0xFB
-            | 0xFD
             | 0xFE
             | 0xFF => {
                 unreachable_validated!();
