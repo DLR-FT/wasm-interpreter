@@ -19,7 +19,7 @@ const SIMPLE_IMPORT_ADDON: &str = r#"
 
 #[test_log::test]
 pub fn compile_simple_import() {
-    let mut store: Store = Default::default();
+    let mut store = Store::new(());
     // let mut linker: Linker = Default::default();
 
     let wasm_bytes_addon = wat::parse_str(SIMPLE_IMPORT_ADDON).unwrap();
@@ -39,7 +39,7 @@ pub fn compile_simple_import() {
     //     .instantiate(&mut store, &validation_info_base)
     //     .unwrap();
     // let mut instance =
-    //     RuntimeInstance::new_named("base", &validation_info_base).expect("instantiation failed");
+    //     RuntimeInstance::new_named((), "base", &validation_info_base).expect("instantiation failed");
 
     let &ExternVal::Func(func_addr) = store
         .registry

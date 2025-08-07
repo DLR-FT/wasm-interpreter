@@ -4,7 +4,7 @@ use wasm::{
     RuntimeError, RuntimeInstance, Value,
 };
 
-fn hello(_values: Vec<Value>) -> Vec<Value> {
+fn hello(_: &mut (), _values: Vec<Value>) -> Vec<Value> {
     println!("Host function says hello from wasm!");
     Vec::new()
 }
@@ -21,12 +21,12 @@ pub fn host_func_call_within_module() {
     )
 )"#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
-    fn hello(_values: Vec<Value>) -> Vec<Value> {
+    fn hello(_: &mut (), _values: Vec<Value>) -> Vec<Value> {
         println!("Host function says hello from wasm!");
         Vec::new()
     }
 
-    let mut runtime_instance = RuntimeInstance::new();
+    let mut runtime_instance = RuntimeInstance::new(());
     runtime_instance
         .add_host_function_typed::<(), ()>("hello_mod", "hello", hello)
         .expect("function registration failed");
@@ -47,7 +47,7 @@ pub fn host_func_call_within_module() {
 
 #[test_log::test]
 pub fn host_func_call_as_first_func() {
-    let mut runtime_instance = RuntimeInstance::new();
+    let mut runtime_instance = RuntimeInstance::new(());
     runtime_instance
         .add_host_function_typed::<(), ()>("hello_mod", "hello", hello)
         .expect("function registration failed");
@@ -66,7 +66,7 @@ pub fn host_func_call_as_start_func() {
 )"#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
-    let mut runtime_instance = RuntimeInstance::new();
+    let mut runtime_instance = RuntimeInstance::new(());
     runtime_instance
         .add_host_function_typed::<(), ()>("hello_mod", "hello", hello)
         .expect("function registration failed");
@@ -91,7 +91,7 @@ pub fn host_func_call_within_start_func() {
     (start $hello_caller)
 )"#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
-    let mut runtime_instance = RuntimeInstance::new();
+    let mut runtime_instance = RuntimeInstance::new(());
     runtime_instance
         .add_host_function_typed::<(), ()>("hello_mod", "hello", hello)
         .expect("function registration failed");
@@ -102,7 +102,7 @@ pub fn host_func_call_within_start_func() {
     assert_eq!(Ok(()), result);
 }
 
-fn fancy_add_mult(values: Vec<Value>) -> Vec<Value> {
+fn fancy_add_mult(_: &mut (), values: Vec<Value>) -> Vec<Value> {
     let x: u32 = values[0].into();
     let y: f64 = values[1].into();
 
@@ -125,7 +125,7 @@ const SIMPLE_MULTIVARIATE_MODULE_EXAMPLE: &str = r#"(module
 pub fn simple_multivariate_host_func_within_module() {
     let wasm_bytes = wat::parse_str(SIMPLE_MULTIVARIATE_MODULE_EXAMPLE).unwrap();
 
-    let mut runtime_instance = RuntimeInstance::new();
+    let mut runtime_instance = RuntimeInstance::new(());
     runtime_instance
         .add_host_function_typed::<(i32, f64), (f64, i32)>(
             "hello_mod",
@@ -152,13 +152,13 @@ pub fn simple_multivariate_host_func_within_module() {
 pub fn simple_multivariate_host_func_with_host_func_wrapper() {
     let wasm_bytes = wat::parse_str(SIMPLE_MULTIVARIATE_MODULE_EXAMPLE).unwrap();
 
-    fn wrapped_add_mult(params: Vec<Value>) -> Vec<Value> {
+    fn wrapped_add_mult(_: &mut (), params: Vec<Value>) -> Vec<Value> {
         host_function_wrapper(params, |(x, y): (i32, f64)| -> (f64, i32) {
             (y + (x as f64), x * (y as i32))
         })
     }
 
-    let mut runtime_instance = RuntimeInstance::new();
+    let mut runtime_instance = RuntimeInstance::new(());
     runtime_instance
         .add_host_function_typed::<(i32, f64), (f64, i32)>(
             "hello_mod",
@@ -183,7 +183,7 @@ pub fn simple_multivariate_host_func_with_host_func_wrapper() {
 
 #[test_log::test]
 pub fn simple_multivariate_host_func_as_first_func() {
-    let mut runtime_instance = RuntimeInstance::new();
+    let mut runtime_instance = RuntimeInstance::new(());
     runtime_instance
         .add_host_function_typed::<(i32, f64), (f64, i32)>(
             "hello_mod",
@@ -213,7 +213,7 @@ pub fn weird_multi_typed_host_func() {
 ))"#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
-    fn weird_add_mult(values: Vec<Value>) -> Vec<Value> {
+    fn weird_add_mult(_: &mut (), values: Vec<Value>) -> Vec<Value> {
         Vec::from([match values[0] {
             Value::I32(val) => {
                 println!("host function saw I32");
@@ -227,7 +227,7 @@ pub fn weird_multi_typed_host_func() {
         }])
     }
 
-    let mut runtime_instance = RuntimeInstance::new();
+    let mut runtime_instance = RuntimeInstance::new(());
     runtime_instance
         .add_host_function_typed::<i32, f64>("hello_mod", "weird_mult", weird_add_mult)
         .expect("function registration failed");
@@ -261,13 +261,13 @@ pub fn host_func_runtime_error() {
 )"#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
-    fn mult3(values: Vec<Value>) -> Vec<Value> {
+    fn mult3(_: &mut (), values: Vec<Value>) -> Vec<Value> {
         let val: i32 = values[0].into();
         println!("careless host function making type errors...");
         Vec::from([Value::I64((val * 3) as u64)])
     }
 
-    let mut runtime_instance = RuntimeInstance::new();
+    let mut runtime_instance = RuntimeInstance::new(());
     runtime_instance
         .add_host_function_typed::<i32, i32>("hello_mod", "mult3", mult3)
         .expect("function registration failed");

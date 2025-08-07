@@ -34,7 +34,8 @@ fn memory_basic() {
     w.iter().for_each(|wat| {
         let wasm_bytes = wat::parse_str(wat).unwrap();
         let validation_info = validate(&wasm_bytes).expect("validation failed");
-        RuntimeInstance::new_with_default_module(&validation_info).expect("instantiation failed");
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
     });
 }
 
@@ -186,8 +187,8 @@ fn i32_and_i64_loads() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i =
-        RuntimeInstance::new_with_default_module(&validation_info).expect("instantiation failed");
+    let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     let i32_load8_s = get_func!(i, "i32_load8_s");
     let i32_load8_u = get_func!(i, "i32_load8_u");
@@ -287,8 +288,8 @@ fn memory_test_exporting_rand_globals_doesnt_change_a_memory_s_semantics() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i =
-        RuntimeInstance::new_with_default_module(&validation_info).expect("instantiation failed");
+    let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     let load = get_func!(i, "load");
 

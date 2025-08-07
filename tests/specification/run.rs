@@ -191,7 +191,7 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
             .unwrap()
             .unwrap();
     let interpreter = &mut catch_unwind_and_suppress_panic_handler(|| {
-        RuntimeInstance::new_named("spectest", &spectest_validation_info)
+        RuntimeInstance::new_named((), "spectest", &spectest_validation_info)
     })
     .unwrap()
     .unwrap();
