@@ -20,11 +20,11 @@
 <a href=#20 id=20 data-nosnippet>20</a>/// This function assumes that the expression has been validated. Passing unvalidated code will likely result in a
 <a href=#21 id=21 data-nosnippet>21</a>/// panic, or undefined behaviour.
 <a href=#22 id=22 data-nosnippet>22</a></span><span class="comment">// TODO this signature might change to support hooks or match the spec better
-<a href=#23 id=23 data-nosnippet>23</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>run_const(
+<a href=#23 id=23 data-nosnippet>23</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>run_const&lt;T&gt;(
 <a href=#24 id=24 data-nosnippet>24</a>    wasm: <span class="kw-2">&amp;mut </span>WasmReader,
 <a href=#25 id=25 data-nosnippet>25</a>    stack: <span class="kw-2">&amp;mut </span>Stack,
 <a href=#26 id=26 data-nosnippet>26</a>    module: <span class="kw-2">&amp;</span>ModuleInst,
-<a href=#27 id=27 data-nosnippet>27</a>    store: <span class="kw-2">&amp;</span>Store,
+<a href=#27 id=27 data-nosnippet>27</a>    store: <span class="kw-2">&amp;</span>Store&lt;T&gt;,
 <a href=#28 id=28 data-nosnippet>28</a>) -&gt; <span class="prelude-ty">Result</span>&lt;(), RuntimeError&gt; {
 <a href=#29 id=29 data-nosnippet>29</a>    <span class="kw">use </span><span class="kw">crate</span>::core::reader::types::opcode::<span class="kw-2">*</span>;
 <a href=#30 id=30 data-nosnippet>30</a>    <span class="kw">loop </span>{
@@ -95,11 +95,11 @@
 <a href=#95 id=95 data-nosnippet>95</a>    <span class="prelude-val">Ok</span>(())
 <a href=#96 id=96 data-nosnippet>96</a>}
 <a href=#97 id=97 data-nosnippet>97</a>
-<a href=#98 id=98 data-nosnippet>98</a><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>run_const_span(
+<a href=#98 id=98 data-nosnippet>98</a><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>run_const_span&lt;T&gt;(
 <a href=#99 id=99 data-nosnippet>99</a>    wasm: <span class="kw-2">&amp;</span>[u8],
 <a href=#100 id=100 data-nosnippet>100</a>    span: <span class="kw-2">&amp;</span>Span,
 <a href=#101 id=101 data-nosnippet>101</a>    module: <span class="kw-2">&amp;</span>ModuleInst,
-<a href=#102 id=102 data-nosnippet>102</a>    store: <span class="kw-2">&amp;</span>Store,
+<a href=#102 id=102 data-nosnippet>102</a>    store: <span class="kw-2">&amp;</span>Store&lt;T&gt;,
 <a href=#103 id=103 data-nosnippet>103</a>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Value&gt;, RuntimeError&gt; {
 <a href=#104 id=104 data-nosnippet>104</a>    <span class="kw">let </span><span class="kw-2">mut </span>wasm = WasmReader::new(wasm);
 <a href=#105 id=105 data-nosnippet>105</a>
