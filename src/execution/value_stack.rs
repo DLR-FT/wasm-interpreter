@@ -242,9 +242,21 @@ impl Stack {
         self.values.drain(start..)
     }
 
-    // TODO change this interface
-    pub fn pop_n_values(&mut self, n: usize) {
-        self.values.truncate(self.values.len() - n);
+    /// Remove `remove_count` values from the stack, keeping the topmost `keep_count` values
+    ///
+    /// From the stack, remove `remove_count` elements, by sliding down the `keep_count` topmost
+    /// values `remove_count` positions.
+    ///
+    /// **Effects**
+    ///
+    /// - after the operation, [`Stack`] will contain `remove_count` fewer elements
+    /// - `keep_count` topmost elements will be identical before and after the operation
+    /// - all elements below the `remove_count + keep_count` topmost stack entry remain
+    pub fn remove_inbetween(&mut self, remove_count: usize, keep_count: usize) {
+        let len = self.values.len();
+        self.values
+            .copy_within(len - keep_count.., len - keep_count - remove_count);
+        self.values.truncate(len - remove_count);
     }
 }
 
