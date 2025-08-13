@@ -5,7 +5,10 @@ edition = "2021"
 rust-version = "1.80.0"
 
 [dev-dependencies]
-criterion = { version = "0.5.1", features = ["html_reports"] }
+criterion = { version = "0.5.1", default-features = false, features = [
+  "cargo_bench_support",
+  "plotters",
+] }
 wasm-interpreter = { path = "../.." }
 wasmi = "0.40.0"
 wasmtime = { version = "27.0.0", default-features = false, features = [
