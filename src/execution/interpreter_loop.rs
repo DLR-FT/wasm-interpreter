@@ -2437,15 +2437,7 @@ fn do_sidetable_control_transfer(
 ) -> Result<(), RuntimeError> {
     let sidetable_entry = &current_sidetable[*current_stp];
 
-    // TODO fix this corner cutting implementation
-    let jump_vals = stack
-        .pop_tail_iter(sidetable_entry.valcnt)
-        .collect::<Vec<_>>();
-    stack.pop_n_values(sidetable_entry.popcnt);
-
-    for val in jump_vals {
-        stack.push_value(val)?;
-    }
+    stack.remove_inbetween(sidetable_entry.popcnt, sidetable_entry.valcnt);
 
     *current_stp = (*current_stp as isize + sidetable_entry.delta_stp) as usize;
     wasm.pc = (wasm.pc as isize + sidetable_entry.delta_pc) as usize;
