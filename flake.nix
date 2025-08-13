@@ -115,6 +115,7 @@
                   rust-analyzer
                   cargo-audit
                   cargo-expand
+                  cargo-flamegraph
                   cargo-llvm-cov
                   cargo-outdated
                   cargo-watch
@@ -164,6 +165,16 @@
                       critcmp --target-dir .main_clone/target -- "benchmark-main.baseline" "benchmark-current.baseline"
                     '';
                     help = "benchmark the current HEAD against the main branch";
+                    category = "benchmark";
+                  }
+                  {
+                    name = "bench-flamegraph";
+                    command = ''
+                      cd -- "$PRJ_ROOT"
+                      CARGO_PROFILE_BENCH_DEBUG=true cargo flamegraph --package benchmark --bench general_purpose -- --bench
+                    '';
+                    help = "run the benchmarks and draw a flamegraph";
+                    category = "benchmark";
                   }
                   {
                     name = "requirements-export-excel";
@@ -173,6 +184,7 @@
                         "$PRJ_ROOT/requirements"
                     '';
                     help = "export the requirements to requirements/export";
+                    category = "requirements";
                   }
                   {
                     name = "requirements-export-html";
@@ -182,6 +194,7 @@
                         "$PRJ_ROOT/requirements"
                     '';
                     help = "export the requirements to requirements/export";
+                    category = "requirements";
                   }
                   {
                     name = "requirements-web-server";
@@ -189,6 +202,7 @@
                       strictdoc server "$PRJ_ROOT/requirements"
                     '';
                     help = "start the requirements editor web-ui";
+                    category = "requirements";
                   }
                   {
                     name = "cargo-watch-doc";
