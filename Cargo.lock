@@ -373,7 +373,6 @@ dependencies = [
  "once_cell",
  "oorandom",
  "plotters",
- "rayon",
  "regex",
  "serde",
  "serde_derive",
