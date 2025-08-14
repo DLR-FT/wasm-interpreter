@@ -2437,141 +2437,133 @@
 <a href=#2437 id=2437 data-nosnippet>2437</a>) -&gt; <span class="prelude-ty">Result</span>&lt;(), RuntimeError&gt; {
 <a href=#2438 id=2438 data-nosnippet>2438</a>    <span class="kw">let </span>sidetable_entry = <span class="kw-2">&amp;</span>current_sidetable[<span class="kw-2">*</span>current_stp];
 <a href=#2439 id=2439 data-nosnippet>2439</a>
-<a href=#2440 id=2440 data-nosnippet>2440</a>    <span class="comment">// TODO fix this corner cutting implementation
-<a href=#2441 id=2441 data-nosnippet>2441</a>    </span><span class="kw">let </span>jump_vals = stack
-<a href=#2442 id=2442 data-nosnippet>2442</a>        .pop_tail_iter(sidetable_entry.valcnt)
-<a href=#2443 id=2443 data-nosnippet>2443</a>        .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
-<a href=#2444 id=2444 data-nosnippet>2444</a>    stack.pop_n_values(sidetable_entry.popcnt);
-<a href=#2445 id=2445 data-nosnippet>2445</a>
-<a href=#2446 id=2446 data-nosnippet>2446</a>    <span class="kw">for </span>val <span class="kw">in </span>jump_vals {
-<a href=#2447 id=2447 data-nosnippet>2447</a>        stack.push_value(val)<span class="question-mark">?</span>;
-<a href=#2448 id=2448 data-nosnippet>2448</a>    }
-<a href=#2449 id=2449 data-nosnippet>2449</a>
-<a href=#2450 id=2450 data-nosnippet>2450</a>    <span class="kw-2">*</span>current_stp = (<span class="kw-2">*</span>current_stp <span class="kw">as </span>isize + sidetable_entry.delta_stp) <span class="kw">as </span>usize;
-<a href=#2451 id=2451 data-nosnippet>2451</a>    wasm.pc = (wasm.pc <span class="kw">as </span>isize + sidetable_entry.delta_pc) <span class="kw">as </span>usize;
-<a href=#2452 id=2452 data-nosnippet>2452</a>
-<a href=#2453 id=2453 data-nosnippet>2453</a>    <span class="prelude-val">Ok</span>(())
-<a href=#2454 id=2454 data-nosnippet>2454</a>}
-<a href=#2455 id=2455 data-nosnippet>2455</a>
-<a href=#2456 id=2456 data-nosnippet>2456</a><span class="attr">#[inline(always)]
-<a href=#2457 id=2457 data-nosnippet>2457</a></span><span class="kw">fn </span>calculate_mem_address(memarg: <span class="kw-2">&amp;</span>MemArg, relative_address: u32) -&gt; <span class="prelude-ty">Result</span>&lt;usize, RuntimeError&gt; {
-<a href=#2458 id=2458 data-nosnippet>2458</a>    memarg
-<a href=#2459 id=2459 data-nosnippet>2459</a>        .offset
-<a href=#2460 id=2460 data-nosnippet>2460</a>        <span class="comment">// The spec states that this should be a 33 bit integer, e.g. it is not legal to wrap if the
-<a href=#2461 id=2461 data-nosnippet>2461</a>        // sum of offset and relative_address exceeds u32::MAX. To emulate this behavior, we use a
-<a href=#2462 id=2462 data-nosnippet>2462</a>        // checked addition.
-<a href=#2463 id=2463 data-nosnippet>2463</a>        // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
-<a href=#2464 id=2464 data-nosnippet>2464</a>        </span>.checked_add(relative_address)
-<a href=#2465 id=2465 data-nosnippet>2465</a>        .ok_or(RuntimeError::MemoryAccessOutOfBounds)<span class="question-mark">?
-<a href=#2466 id=2466 data-nosnippet>2466</a>        </span>.try_into()
-<a href=#2467 id=2467 data-nosnippet>2467</a>        .map_err(|<span class="kw">_</span>| RuntimeError::MemoryAccessOutOfBounds)
-<a href=#2468 id=2468 data-nosnippet>2468</a>}
-<a href=#2469 id=2469 data-nosnippet>2469</a>
-<a href=#2470 id=2470 data-nosnippet>2470</a><span class="comment">//helpers for avoiding code duplication during module instantiation
-<a href=#2471 id=2471 data-nosnippet>2471</a></span><span class="attr">#[inline(always)]
-<a href=#2472 id=2472 data-nosnippet>2472</a>#[allow(clippy::too_many_arguments)]
-<a href=#2473 id=2473 data-nosnippet>2473</a></span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>table_init(
-<a href=#2474 id=2474 data-nosnippet>2474</a>    store_modules: <span class="kw-2">&amp;</span>[ModuleInst],
-<a href=#2475 id=2475 data-nosnippet>2475</a>    store_tables: <span class="kw-2">&amp;mut </span>[TableInst],
-<a href=#2476 id=2476 data-nosnippet>2476</a>    store_elements: <span class="kw-2">&amp;</span>[ElemInst],
-<a href=#2477 id=2477 data-nosnippet>2477</a>    current_module_idx: usize,
-<a href=#2478 id=2478 data-nosnippet>2478</a>    elem_idx: usize,
-<a href=#2479 id=2479 data-nosnippet>2479</a>    table_idx: usize,
-<a href=#2480 id=2480 data-nosnippet>2480</a>    n: i32,
-<a href=#2481 id=2481 data-nosnippet>2481</a>    s: i32,
-<a href=#2482 id=2482 data-nosnippet>2482</a>    d: i32,
-<a href=#2483 id=2483 data-nosnippet>2483</a>) -&gt; <span class="prelude-ty">Result</span>&lt;(), RuntimeError&gt; {
-<a href=#2484 id=2484 data-nosnippet>2484</a>    <span class="kw">let </span>tab_len = store_tables[store_modules[current_module_idx].table_addrs[table_idx]].len();
-<a href=#2485 id=2485 data-nosnippet>2485</a>
-<a href=#2486 id=2486 data-nosnippet>2486</a>    <span class="kw">let </span>tab = <span class="kw-2">&amp;mut </span>store_tables[store_modules[current_module_idx].table_addrs[table_idx]];
-<a href=#2487 id=2487 data-nosnippet>2487</a>
-<a href=#2488 id=2488 data-nosnippet>2488</a>    <span class="comment">// TODO is this spec compliant?
-<a href=#2489 id=2489 data-nosnippet>2489</a>    </span><span class="kw">let </span>elem_len = store_modules[current_module_idx]
-<a href=#2490 id=2490 data-nosnippet>2490</a>        .elem_addrs
-<a href=#2491 id=2491 data-nosnippet>2491</a>        .get(elem_idx)
-<a href=#2492 id=2492 data-nosnippet>2492</a>        .map(|elem_addr| store_elements[<span class="kw-2">*</span>elem_addr].len())
-<a href=#2493 id=2493 data-nosnippet>2493</a>        .unwrap_or(<span class="number">0</span>);
-<a href=#2494 id=2494 data-nosnippet>2494</a>
-<a href=#2495 id=2495 data-nosnippet>2495</a>    <span class="macro">trace!</span>(
-<a href=#2496 id=2496 data-nosnippet>2496</a>        <span class="string">"Instruction: table.init '{}' '{}' [{} {} {}] -&gt; []"</span>,
-<a href=#2497 id=2497 data-nosnippet>2497</a>        elem_idx,
-<a href=#2498 id=2498 data-nosnippet>2498</a>        table_idx,
-<a href=#2499 id=2499 data-nosnippet>2499</a>        d,
-<a href=#2500 id=2500 data-nosnippet>2500</a>        s,
-<a href=#2501 id=2501 data-nosnippet>2501</a>        n
-<a href=#2502 id=2502 data-nosnippet>2502</a>    );
-<a href=#2503 id=2503 data-nosnippet>2503</a>
-<a href=#2504 id=2504 data-nosnippet>2504</a>    <span class="kw">let </span>final_src_offset = (s <span class="kw">as </span>usize)
-<a href=#2505 id=2505 data-nosnippet>2505</a>        .checked_add(n <span class="kw">as </span>usize)
-<a href=#2506 id=2506 data-nosnippet>2506</a>        .filter(|<span class="kw-2">&amp;</span>res| res &lt;= elem_len)
-<a href=#2507 id=2507 data-nosnippet>2507</a>        .ok_or(RuntimeError::TableAccessOutOfBounds)<span class="question-mark">?</span>;
-<a href=#2508 id=2508 data-nosnippet>2508</a>
-<a href=#2509 id=2509 data-nosnippet>2509</a>    (d <span class="kw">as </span>usize)
-<a href=#2510 id=2510 data-nosnippet>2510</a>        .checked_add(n <span class="kw">as </span>usize)
-<a href=#2511 id=2511 data-nosnippet>2511</a>        .filter(|<span class="kw-2">&amp;</span>res| res &lt;= tab_len)
-<a href=#2512 id=2512 data-nosnippet>2512</a>        .ok_or(RuntimeError::TableAccessOutOfBounds)<span class="question-mark">?</span>;
+<a href=#2440 id=2440 data-nosnippet>2440</a>    stack.remove_inbetween(sidetable_entry.popcnt, sidetable_entry.valcnt);
+<a href=#2441 id=2441 data-nosnippet>2441</a>
+<a href=#2442 id=2442 data-nosnippet>2442</a>    <span class="kw-2">*</span>current_stp = (<span class="kw-2">*</span>current_stp <span class="kw">as </span>isize + sidetable_entry.delta_stp) <span class="kw">as </span>usize;
+<a href=#2443 id=2443 data-nosnippet>2443</a>    wasm.pc = (wasm.pc <span class="kw">as </span>isize + sidetable_entry.delta_pc) <span class="kw">as </span>usize;
+<a href=#2444 id=2444 data-nosnippet>2444</a>
+<a href=#2445 id=2445 data-nosnippet>2445</a>    <span class="prelude-val">Ok</span>(())
+<a href=#2446 id=2446 data-nosnippet>2446</a>}
+<a href=#2447 id=2447 data-nosnippet>2447</a>
+<a href=#2448 id=2448 data-nosnippet>2448</a><span class="attr">#[inline(always)]
+<a href=#2449 id=2449 data-nosnippet>2449</a></span><span class="kw">fn </span>calculate_mem_address(memarg: <span class="kw-2">&amp;</span>MemArg, relative_address: u32) -&gt; <span class="prelude-ty">Result</span>&lt;usize, RuntimeError&gt; {
+<a href=#2450 id=2450 data-nosnippet>2450</a>    memarg
+<a href=#2451 id=2451 data-nosnippet>2451</a>        .offset
+<a href=#2452 id=2452 data-nosnippet>2452</a>        <span class="comment">// The spec states that this should be a 33 bit integer, e.g. it is not legal to wrap if the
+<a href=#2453 id=2453 data-nosnippet>2453</a>        // sum of offset and relative_address exceeds u32::MAX. To emulate this behavior, we use a
+<a href=#2454 id=2454 data-nosnippet>2454</a>        // checked addition.
+<a href=#2455 id=2455 data-nosnippet>2455</a>        // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
+<a href=#2456 id=2456 data-nosnippet>2456</a>        </span>.checked_add(relative_address)
+<a href=#2457 id=2457 data-nosnippet>2457</a>        .ok_or(RuntimeError::MemoryAccessOutOfBounds)<span class="question-mark">?
+<a href=#2458 id=2458 data-nosnippet>2458</a>        </span>.try_into()
+<a href=#2459 id=2459 data-nosnippet>2459</a>        .map_err(|<span class="kw">_</span>| RuntimeError::MemoryAccessOutOfBounds)
+<a href=#2460 id=2460 data-nosnippet>2460</a>}
+<a href=#2461 id=2461 data-nosnippet>2461</a>
+<a href=#2462 id=2462 data-nosnippet>2462</a><span class="comment">//helpers for avoiding code duplication during module instantiation
+<a href=#2463 id=2463 data-nosnippet>2463</a></span><span class="attr">#[inline(always)]
+<a href=#2464 id=2464 data-nosnippet>2464</a>#[allow(clippy::too_many_arguments)]
+<a href=#2465 id=2465 data-nosnippet>2465</a></span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>table_init(
+<a href=#2466 id=2466 data-nosnippet>2466</a>    store_modules: <span class="kw-2">&amp;</span>[ModuleInst],
+<a href=#2467 id=2467 data-nosnippet>2467</a>    store_tables: <span class="kw-2">&amp;mut </span>[TableInst],
+<a href=#2468 id=2468 data-nosnippet>2468</a>    store_elements: <span class="kw-2">&amp;</span>[ElemInst],
+<a href=#2469 id=2469 data-nosnippet>2469</a>    current_module_idx: usize,
+<a href=#2470 id=2470 data-nosnippet>2470</a>    elem_idx: usize,
+<a href=#2471 id=2471 data-nosnippet>2471</a>    table_idx: usize,
+<a href=#2472 id=2472 data-nosnippet>2472</a>    n: i32,
+<a href=#2473 id=2473 data-nosnippet>2473</a>    s: i32,
+<a href=#2474 id=2474 data-nosnippet>2474</a>    d: i32,
+<a href=#2475 id=2475 data-nosnippet>2475</a>) -&gt; <span class="prelude-ty">Result</span>&lt;(), RuntimeError&gt; {
+<a href=#2476 id=2476 data-nosnippet>2476</a>    <span class="kw">let </span>tab_len = store_tables[store_modules[current_module_idx].table_addrs[table_idx]].len();
+<a href=#2477 id=2477 data-nosnippet>2477</a>
+<a href=#2478 id=2478 data-nosnippet>2478</a>    <span class="kw">let </span>tab = <span class="kw-2">&amp;mut </span>store_tables[store_modules[current_module_idx].table_addrs[table_idx]];
+<a href=#2479 id=2479 data-nosnippet>2479</a>
+<a href=#2480 id=2480 data-nosnippet>2480</a>    <span class="comment">// TODO is this spec compliant?
+<a href=#2481 id=2481 data-nosnippet>2481</a>    </span><span class="kw">let </span>elem_len = store_modules[current_module_idx]
+<a href=#2482 id=2482 data-nosnippet>2482</a>        .elem_addrs
+<a href=#2483 id=2483 data-nosnippet>2483</a>        .get(elem_idx)
+<a href=#2484 id=2484 data-nosnippet>2484</a>        .map(|elem_addr| store_elements[<span class="kw-2">*</span>elem_addr].len())
+<a href=#2485 id=2485 data-nosnippet>2485</a>        .unwrap_or(<span class="number">0</span>);
+<a href=#2486 id=2486 data-nosnippet>2486</a>
+<a href=#2487 id=2487 data-nosnippet>2487</a>    <span class="macro">trace!</span>(
+<a href=#2488 id=2488 data-nosnippet>2488</a>        <span class="string">"Instruction: table.init '{}' '{}' [{} {} {}] -&gt; []"</span>,
+<a href=#2489 id=2489 data-nosnippet>2489</a>        elem_idx,
+<a href=#2490 id=2490 data-nosnippet>2490</a>        table_idx,
+<a href=#2491 id=2491 data-nosnippet>2491</a>        d,
+<a href=#2492 id=2492 data-nosnippet>2492</a>        s,
+<a href=#2493 id=2493 data-nosnippet>2493</a>        n
+<a href=#2494 id=2494 data-nosnippet>2494</a>    );
+<a href=#2495 id=2495 data-nosnippet>2495</a>
+<a href=#2496 id=2496 data-nosnippet>2496</a>    <span class="kw">let </span>final_src_offset = (s <span class="kw">as </span>usize)
+<a href=#2497 id=2497 data-nosnippet>2497</a>        .checked_add(n <span class="kw">as </span>usize)
+<a href=#2498 id=2498 data-nosnippet>2498</a>        .filter(|<span class="kw-2">&amp;</span>res| res &lt;= elem_len)
+<a href=#2499 id=2499 data-nosnippet>2499</a>        .ok_or(RuntimeError::TableAccessOutOfBounds)<span class="question-mark">?</span>;
+<a href=#2500 id=2500 data-nosnippet>2500</a>
+<a href=#2501 id=2501 data-nosnippet>2501</a>    (d <span class="kw">as </span>usize)
+<a href=#2502 id=2502 data-nosnippet>2502</a>        .checked_add(n <span class="kw">as </span>usize)
+<a href=#2503 id=2503 data-nosnippet>2503</a>        .filter(|<span class="kw-2">&amp;</span>res| res &lt;= tab_len)
+<a href=#2504 id=2504 data-nosnippet>2504</a>        .ok_or(RuntimeError::TableAccessOutOfBounds)<span class="question-mark">?</span>;
+<a href=#2505 id=2505 data-nosnippet>2505</a>
+<a href=#2506 id=2506 data-nosnippet>2506</a>    <span class="kw">let </span>elem = <span class="kw-2">&amp;</span>store_elements[store_modules[current_module_idx].elem_addrs[elem_idx]];
+<a href=#2507 id=2507 data-nosnippet>2507</a>
+<a href=#2508 id=2508 data-nosnippet>2508</a>    <span class="kw">let </span>dest = <span class="kw-2">&amp;mut </span>tab.elem[d <span class="kw">as </span>usize..];
+<a href=#2509 id=2509 data-nosnippet>2509</a>    <span class="kw">let </span>src = <span class="kw-2">&amp;</span>elem.references[s <span class="kw">as </span>usize..final_src_offset];
+<a href=#2510 id=2510 data-nosnippet>2510</a>    dest[..src.len()].copy_from_slice(src);
+<a href=#2511 id=2511 data-nosnippet>2511</a>    <span class="prelude-val">Ok</span>(())
+<a href=#2512 id=2512 data-nosnippet>2512</a>}
 <a href=#2513 id=2513 data-nosnippet>2513</a>
-<a href=#2514 id=2514 data-nosnippet>2514</a>    <span class="kw">let </span>elem = <span class="kw-2">&amp;</span>store_elements[store_modules[current_module_idx].elem_addrs[elem_idx]];
-<a href=#2515 id=2515 data-nosnippet>2515</a>
-<a href=#2516 id=2516 data-nosnippet>2516</a>    <span class="kw">let </span>dest = <span class="kw-2">&amp;mut </span>tab.elem[d <span class="kw">as </span>usize..];
-<a href=#2517 id=2517 data-nosnippet>2517</a>    <span class="kw">let </span>src = <span class="kw-2">&amp;</span>elem.references[s <span class="kw">as </span>usize..final_src_offset];
-<a href=#2518 id=2518 data-nosnippet>2518</a>    dest[..src.len()].copy_from_slice(src);
-<a href=#2519 id=2519 data-nosnippet>2519</a>    <span class="prelude-val">Ok</span>(())
-<a href=#2520 id=2520 data-nosnippet>2520</a>}
-<a href=#2521 id=2521 data-nosnippet>2521</a>
-<a href=#2522 id=2522 data-nosnippet>2522</a><span class="attr">#[inline(always)]
-<a href=#2523 id=2523 data-nosnippet>2523</a></span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>elem_drop(
-<a href=#2524 id=2524 data-nosnippet>2524</a>    store_modules: <span class="kw-2">&amp;</span>[ModuleInst],
-<a href=#2525 id=2525 data-nosnippet>2525</a>    store_elements: <span class="kw-2">&amp;mut </span>[ElemInst],
-<a href=#2526 id=2526 data-nosnippet>2526</a>    current_module_idx: usize,
-<a href=#2527 id=2527 data-nosnippet>2527</a>    elem_idx: usize,
-<a href=#2528 id=2528 data-nosnippet>2528</a>) -&gt; <span class="prelude-ty">Result</span>&lt;(), RuntimeError&gt; {
-<a href=#2529 id=2529 data-nosnippet>2529</a>    <span class="comment">// WARN: i'm not sure if this is okay or not
-<a href=#2530 id=2530 data-nosnippet>2530</a>    </span>store_elements[store_modules[current_module_idx].elem_addrs[elem_idx]].references = <span class="macro">vec!</span>[];
-<a href=#2531 id=2531 data-nosnippet>2531</a>    <span class="prelude-val">Ok</span>(())
-<a href=#2532 id=2532 data-nosnippet>2532</a>}
-<a href=#2533 id=2533 data-nosnippet>2533</a>
-<a href=#2534 id=2534 data-nosnippet>2534</a><span class="attr">#[inline(always)]
-<a href=#2535 id=2535 data-nosnippet>2535</a>#[allow(clippy::too_many_arguments)]
-<a href=#2536 id=2536 data-nosnippet>2536</a></span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>memory_init(
-<a href=#2537 id=2537 data-nosnippet>2537</a>    store_modules: <span class="kw-2">&amp;</span>[ModuleInst],
-<a href=#2538 id=2538 data-nosnippet>2538</a>    store_memories: <span class="kw-2">&amp;mut </span>[MemInst],
-<a href=#2539 id=2539 data-nosnippet>2539</a>    store_data: <span class="kw-2">&amp;</span>[DataInst],
-<a href=#2540 id=2540 data-nosnippet>2540</a>    current_module_idx: usize,
-<a href=#2541 id=2541 data-nosnippet>2541</a>    data_idx: usize,
-<a href=#2542 id=2542 data-nosnippet>2542</a>    mem_idx: usize,
-<a href=#2543 id=2543 data-nosnippet>2543</a>    n: i32,
-<a href=#2544 id=2544 data-nosnippet>2544</a>    s: i32,
-<a href=#2545 id=2545 data-nosnippet>2545</a>    d: i32,
-<a href=#2546 id=2546 data-nosnippet>2546</a>) -&gt; <span class="prelude-ty">Result</span>&lt;(), RuntimeError&gt; {
-<a href=#2547 id=2547 data-nosnippet>2547</a>    <span class="kw">let </span>mem = <span class="kw-2">&amp;</span>store_memories[store_modules[current_module_idx].mem_addrs[mem_idx]];
-<a href=#2548 id=2548 data-nosnippet>2548</a>
-<a href=#2549 id=2549 data-nosnippet>2549</a>    mem.mem.init(
-<a href=#2550 id=2550 data-nosnippet>2550</a>        d <span class="kw">as </span>MemIdx,
-<a href=#2551 id=2551 data-nosnippet>2551</a>        <span class="kw-2">&amp;</span>store_data[store_modules[current_module_idx].data_addrs[data_idx]].data,
-<a href=#2552 id=2552 data-nosnippet>2552</a>        s <span class="kw">as </span>MemIdx,
-<a href=#2553 id=2553 data-nosnippet>2553</a>        n <span class="kw">as </span>MemIdx,
-<a href=#2554 id=2554 data-nosnippet>2554</a>    )<span class="question-mark">?</span>;
-<a href=#2555 id=2555 data-nosnippet>2555</a>
-<a href=#2556 id=2556 data-nosnippet>2556</a>    <span class="macro">trace!</span>(<span class="string">"Instruction: memory.init"</span>);
-<a href=#2557 id=2557 data-nosnippet>2557</a>    <span class="prelude-val">Ok</span>(())
-<a href=#2558 id=2558 data-nosnippet>2558</a>}
-<a href=#2559 id=2559 data-nosnippet>2559</a>
-<a href=#2560 id=2560 data-nosnippet>2560</a><span class="attr">#[inline(always)]
-<a href=#2561 id=2561 data-nosnippet>2561</a></span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>data_drop(
-<a href=#2562 id=2562 data-nosnippet>2562</a>    store_modules: <span class="kw-2">&amp;</span>[ModuleInst],
-<a href=#2563 id=2563 data-nosnippet>2563</a>    store_data: <span class="kw-2">&amp;mut </span>[DataInst],
-<a href=#2564 id=2564 data-nosnippet>2564</a>    current_module_idx: usize,
-<a href=#2565 id=2565 data-nosnippet>2565</a>    data_idx: usize,
-<a href=#2566 id=2566 data-nosnippet>2566</a>) -&gt; <span class="prelude-ty">Result</span>&lt;(), RuntimeError&gt; {
-<a href=#2567 id=2567 data-nosnippet>2567</a>    <span class="comment">// Here is debatable
-<a href=#2568 id=2568 data-nosnippet>2568</a>    // If we were to be on par with the spec we'd have to use a DataInst struct
-<a href=#2569 id=2569 data-nosnippet>2569</a>    // But since memory.init is specifically made for Passive data segments
-<a href=#2570 id=2570 data-nosnippet>2570</a>    // I thought that using DataMode would be better because we can see if the
-<a href=#2571 id=2571 data-nosnippet>2571</a>    // data segment is passive or active
-<a href=#2572 id=2572 data-nosnippet>2572</a>
-<a href=#2573 id=2573 data-nosnippet>2573</a>    // Also, we should set data to null here (empty), which we do using an empty init vec
-<a href=#2574 id=2574 data-nosnippet>2574</a>    </span>store_data[store_modules[current_module_idx].data_addrs[data_idx]] =
-<a href=#2575 id=2575 data-nosnippet>2575</a>        DataInst { data: Vec::new() };
-<a href=#2576 id=2576 data-nosnippet>2576</a>    <span class="prelude-val">Ok</span>(())
-<a href=#2577 id=2577 data-nosnippet>2577</a>}</code></pre></div></section></main></body></html>
+<a href=#2514 id=2514 data-nosnippet>2514</a><span class="attr">#[inline(always)]
+<a href=#2515 id=2515 data-nosnippet>2515</a></span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>elem_drop(
+<a href=#2516 id=2516 data-nosnippet>2516</a>    store_modules: <span class="kw-2">&amp;</span>[ModuleInst],
+<a href=#2517 id=2517 data-nosnippet>2517</a>    store_elements: <span class="kw-2">&amp;mut </span>[ElemInst],
+<a href=#2518 id=2518 data-nosnippet>2518</a>    current_module_idx: usize,
+<a href=#2519 id=2519 data-nosnippet>2519</a>    elem_idx: usize,
+<a href=#2520 id=2520 data-nosnippet>2520</a>) -&gt; <span class="prelude-ty">Result</span>&lt;(), RuntimeError&gt; {
+<a href=#2521 id=2521 data-nosnippet>2521</a>    <span class="comment">// WARN: i'm not sure if this is okay or not
+<a href=#2522 id=2522 data-nosnippet>2522</a>    </span>store_elements[store_modules[current_module_idx].elem_addrs[elem_idx]].references = <span class="macro">vec!</span>[];
+<a href=#2523 id=2523 data-nosnippet>2523</a>    <span class="prelude-val">Ok</span>(())
+<a href=#2524 id=2524 data-nosnippet>2524</a>}
+<a href=#2525 id=2525 data-nosnippet>2525</a>
+<a href=#2526 id=2526 data-nosnippet>2526</a><span class="attr">#[inline(always)]
+<a href=#2527 id=2527 data-nosnippet>2527</a>#[allow(clippy::too_many_arguments)]
+<a href=#2528 id=2528 data-nosnippet>2528</a></span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>memory_init(
+<a href=#2529 id=2529 data-nosnippet>2529</a>    store_modules: <span class="kw-2">&amp;</span>[ModuleInst],
+<a href=#2530 id=2530 data-nosnippet>2530</a>    store_memories: <span class="kw-2">&amp;mut </span>[MemInst],
+<a href=#2531 id=2531 data-nosnippet>2531</a>    store_data: <span class="kw-2">&amp;</span>[DataInst],
+<a href=#2532 id=2532 data-nosnippet>2532</a>    current_module_idx: usize,
+<a href=#2533 id=2533 data-nosnippet>2533</a>    data_idx: usize,
+<a href=#2534 id=2534 data-nosnippet>2534</a>    mem_idx: usize,
+<a href=#2535 id=2535 data-nosnippet>2535</a>    n: i32,
+<a href=#2536 id=2536 data-nosnippet>2536</a>    s: i32,
+<a href=#2537 id=2537 data-nosnippet>2537</a>    d: i32,
+<a href=#2538 id=2538 data-nosnippet>2538</a>) -&gt; <span class="prelude-ty">Result</span>&lt;(), RuntimeError&gt; {
+<a href=#2539 id=2539 data-nosnippet>2539</a>    <span class="kw">let </span>mem = <span class="kw-2">&amp;</span>store_memories[store_modules[current_module_idx].mem_addrs[mem_idx]];
+<a href=#2540 id=2540 data-nosnippet>2540</a>
+<a href=#2541 id=2541 data-nosnippet>2541</a>    mem.mem.init(
+<a href=#2542 id=2542 data-nosnippet>2542</a>        d <span class="kw">as </span>MemIdx,
+<a href=#2543 id=2543 data-nosnippet>2543</a>        <span class="kw-2">&amp;</span>store_data[store_modules[current_module_idx].data_addrs[data_idx]].data,
+<a href=#2544 id=2544 data-nosnippet>2544</a>        s <span class="kw">as </span>MemIdx,
+<a href=#2545 id=2545 data-nosnippet>2545</a>        n <span class="kw">as </span>MemIdx,
+<a href=#2546 id=2546 data-nosnippet>2546</a>    )<span class="question-mark">?</span>;
+<a href=#2547 id=2547 data-nosnippet>2547</a>
+<a href=#2548 id=2548 data-nosnippet>2548</a>    <span class="macro">trace!</span>(<span class="string">"Instruction: memory.init"</span>);
+<a href=#2549 id=2549 data-nosnippet>2549</a>    <span class="prelude-val">Ok</span>(())
+<a href=#2550 id=2550 data-nosnippet>2550</a>}
+<a href=#2551 id=2551 data-nosnippet>2551</a>
+<a href=#2552 id=2552 data-nosnippet>2552</a><span class="attr">#[inline(always)]
+<a href=#2553 id=2553 data-nosnippet>2553</a></span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>data_drop(
+<a href=#2554 id=2554 data-nosnippet>2554</a>    store_modules: <span class="kw-2">&amp;</span>[ModuleInst],
+<a href=#2555 id=2555 data-nosnippet>2555</a>    store_data: <span class="kw-2">&amp;mut </span>[DataInst],
+<a href=#2556 id=2556 data-nosnippet>2556</a>    current_module_idx: usize,
+<a href=#2557 id=2557 data-nosnippet>2557</a>    data_idx: usize,
+<a href=#2558 id=2558 data-nosnippet>2558</a>) -&gt; <span class="prelude-ty">Result</span>&lt;(), RuntimeError&gt; {
+<a href=#2559 id=2559 data-nosnippet>2559</a>    <span class="comment">// Here is debatable
+<a href=#2560 id=2560 data-nosnippet>2560</a>    // If we were to be on par with the spec we'd have to use a DataInst struct
+<a href=#2561 id=2561 data-nosnippet>2561</a>    // But since memory.init is specifically made for Passive data segments
+<a href=#2562 id=2562 data-nosnippet>2562</a>    // I thought that using DataMode would be better because we can see if the
+<a href=#2563 id=2563 data-nosnippet>2563</a>    // data segment is passive or active
+<a href=#2564 id=2564 data-nosnippet>2564</a>
+<a href=#2565 id=2565 data-nosnippet>2565</a>    // Also, we should set data to null here (empty), which we do using an empty init vec
+<a href=#2566 id=2566 data-nosnippet>2566</a>    </span>store_data[store_modules[current_module_idx].data_addrs[data_idx]] =
+<a href=#2567 id=2567 data-nosnippet>2567</a>        DataInst { data: Vec::new() };
+<a href=#2568 id=2568 data-nosnippet>2568</a>    <span class="prelude-val">Ok</span>(())
+<a href=#2569 id=2569 data-nosnippet>2569</a>}</code></pre></div></section></main></body></html>
