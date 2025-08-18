@@ -86,7 +86,7 @@ where
     pub fn new_with_hooks(user_data: T, hook_set: H) -> Self {
         RuntimeInstance {
             hook_set,
-            store: Store::new(user_data),
+            store: Store::new(user_data, None),
         }
     }
 

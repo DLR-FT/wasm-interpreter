@@ -19,7 +19,7 @@ const SIMPLE_IMPORT_ADDON: &str = r#"
 
 #[test_log::test]
 pub fn compile_simple_import() {
-    let mut store = Store::new(());
+    let mut store = Store::new((), None);
     // let mut linker: Linker = Default::default();
 
     let wasm_bytes_addon = wat::parse_str(SIMPLE_IMPORT_ADDON).unwrap();
