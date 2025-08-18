@@ -44,7 +44,31 @@ pub(super) fn run<T, H: HookSet>(
     mut hooks: H,
     store: &mut Store<T>,
 ) -> Result<(), RuntimeError> {
-    let mut current_func_addr = func_addr;
+    let current_func_addr = func_addr;
+    let func_inst = &store.functions[current_func_addr];
+    let FuncInst::WasmFunc(wasm_func_inst) = &func_inst else {
+        unreachable!(
+            "the interpreter loop shall only be executed with native wasm functions as root call"
+        );
+    };
+    let stp = wasm_func_inst.stp;
+    let pc = wasm_func_inst.code_expr.from;
+    let result = resume(current_func_addr, pc, stp, stack, hooks, store)?;
+    if result != (usize::MAX, usize::MAX, usize::MAX) {
+        Err(RuntimeError::OutOfFuel)
+    } else {
+        Ok(())
+    }
+}
+
+pub(super) fn resume<T, H: HookSet>(
+    mut current_func_addr: usize,
+    pc: usize,
+    mut stp: usize,
+    stack: &mut Stack,
+    mut hooks: H,
+    store: &mut Store<T>,
+) -> Result<(usize, usize, usize), RuntimeError> {
     let func_inst = &store.functions[current_func_addr];
     let FuncInst::WasmFunc(wasm_func_inst) = &func_inst else {
         unreachable!(
@@ -58,14 +82,12 @@ pub(super) fn run<T, H: HookSet>(
     let wasm = &mut WasmReader::new(store.modules[current_module_idx].wasm_bytecode);
 
     let mut current_sidetable: &Sidetable = &store.modules[current_module_idx].sidetable;
-    let mut stp = wasm_func_inst.stp;
 
     // local variable for holding where the function code ends (last END instr address + 1) to avoid lookup at every END instr
     let mut current_function_end_marker =
         wasm_func_inst.code_expr.from() + wasm_func_inst.code_expr.len();
 
-    // unwrap is sound, because the validation assures that the function points to valid subslice of the WASM binary
-    wasm.move_start_to(wasm_func_inst.code_expr).unwrap();
+    wasm.pc = pc;
 
     use crate::core::reader::types::opcode::*;
     loop {
@@ -80,6 +102,14 @@ pub(super) fn run<T, H: HookSet>(
             "Executing instruction {}",
             opcode_byte_to_str(first_instr_byte)
         );
+
+        if store.fuel_enabled {
+            if store.fuel > 0 {
+                store.fuel -= 1;
+            } else {
+                return Ok((current_func_addr, wasm.pc - 1, stp));
+            }
+        }
 
         match first_instr_byte {
             NOP => {
@@ -2425,7 +2455,7 @@ pub(super) fn run<T, H: HookSet>(
             }
         }
     }
-    Ok(())
+    Ok((usize::MAX, usize::MAX, usize::MAX))
 }
 
 //helper function for avoiding code duplication at intraprocedural jumps
