@@ -4,7 +4,6 @@ use crate::core::indices::LocalIdx;
 use crate::core::reader::types::{FuncType, ValType};
 use crate::execution::assert_validated::UnwrapValidatedExt;
 use crate::execution::value::Value;
-use crate::locals::Locals;
 use crate::{unreachable_validated, RuntimeError};
 
 use super::value::Ref;
@@ -27,12 +26,19 @@ pub(crate) struct Stack {
     /// Stack frames
     ///
     /// Each time a function is called, a new frame is pushed, whenever a function returns, a frame is popped
-    frames: Vec<CallFrame>,
+    frames: Vec<Callframe>,
 }
 
 impl Stack {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    pub fn new_with_values(values: Vec<Value>) -> Self {
+        Self {
+            values,
+            ..Self::default()
+        }
     }
 
     pub(super) fn into_values(self) -> Vec<Value> {
@@ -46,7 +52,7 @@ impl Stack {
         // this interpreter invocation.
         debug_assert!(
             if !self.frames.is_empty() {
-                self.values.len() > self.current_stackframe().value_stack_base_idx
+                self.values.len() > self.current_callframe().value_stack_base_idx
             } else {
                 true
             },
@@ -64,7 +70,7 @@ impl Stack {
         // this interpreter invocation.
         debug_assert!(
             if !self.frames.is_empty() {
-                self.values.len() > self.current_stackframe().value_stack_base_idx
+                self.values.len() > self.current_callframe().value_stack_base_idx
             } else {
                 true
             },
@@ -89,7 +95,7 @@ impl Stack {
         // this interpreter invocation.
         debug_assert!(
             if !self.frames.is_empty() {
-                self.values.len() > self.current_stackframe().value_stack_base_idx
+                self.values.len() > self.current_callframe().value_stack_base_idx
             } else {
                 true
             },
@@ -139,60 +145,81 @@ impl Stack {
 
     /// Copy a local variable to the top of the value stack
     pub fn get_local(&mut self, idx: LocalIdx) -> Result<(), RuntimeError> {
-        let local_value = self.frames.last().unwrap_validated().locals.get(idx);
+        let callframe_base_idx = self.current_callframe().callframe_base_idx;
+        let local_value = self.values.get(callframe_base_idx + idx).unwrap_validated();
         self.push_value(*local_value)
     }
 
     /// Pop value from the top of the value stack, writing it to the given local
     pub fn set_local(&mut self, idx: LocalIdx) {
         debug_assert!(
-            self.values.len() > self.current_stackframe().value_stack_base_idx,
+            self.values.len() > self.current_callframe().value_stack_base_idx,
             "can not pop values past the current stackframe"
         );
 
-        let local_ty = self.current_stackframe().locals.get_ty(idx);
+        let callframe_base_idx = self.current_callframe().callframe_base_idx;
+        let local_ty = self
+            .values
+            .get(callframe_base_idx + idx)
+            .unwrap_validated()
+            .to_ty();
         let stack_value = self.pop_value(local_ty);
 
         trace!("Instruction: local.set [{stack_value:?}] -> []");
-        *self.current_stackframe_mut().locals.get_mut(idx) = stack_value;
+
+        *self
+            .values
+            .get_mut(callframe_base_idx + idx)
+            .unwrap_validated() = stack_value;
     }
 
     /// Copy value from top of the value stack to the given local
     pub fn tee_local(&mut self, idx: LocalIdx) {
-        let local_ty = self.current_stackframe().locals.get_ty(idx);
+        let callframe_base_idx = self.current_callframe().callframe_base_idx;
+
+        let local_ty = self
+            .values
+            .get(callframe_base_idx + idx)
+            .unwrap_validated()
+            .to_ty();
         let stack_value = self.peek_value(local_ty);
 
         trace!("Instruction: local.tee [{stack_value:?}] -> []");
-        *self.current_stackframe_mut().locals.get_mut(idx) = stack_value;
+
+        *self
+            .values
+            .get_mut(callframe_base_idx + idx)
+            .unwrap_validated() = stack_value;
     }
 
-    /// Get a shared reference to the current [`CallFrame`]
-    pub fn current_stackframe(&self) -> &CallFrame {
+    /// Get a shared reference to the current [`Callframe`]
+    pub fn current_callframe(&self) -> &Callframe {
         self.frames.last().unwrap_validated()
     }
 
-    /// Get a mutable reference to the current [`CallFrame`]
-    pub fn current_stackframe_mut(&mut self) -> &mut CallFrame {
+    /// Get a mutable reference to the current [`Callframe`]
+    pub fn _current_callframe_mut(&mut self) -> &mut Callframe {
         self.frames.last_mut().unwrap_validated()
     }
 
-    /// Pop a [`CallFrame`] from the call stack, returning the caller function store address, return address, and the return stp
+    /// Pop a [`Callframe`] from the call stack, returning the caller function store address, return address, and the return stp
     pub fn pop_stackframe(&mut self) -> (usize, usize, usize) {
-        let CallFrame {
+        let Callframe {
             return_func_addr,
             return_addr,
-            value_stack_base_idx,
+            callframe_base_idx,
             return_value_count,
             return_stp,
             ..
         } = self.frames.pop().unwrap_validated();
 
-        let truncation_top = self.values.len() - return_value_count;
-        let _ = self.values.drain(value_stack_base_idx..truncation_top);
+        let remove_count = self.values.len() - callframe_base_idx - return_value_count;
+
+        self.remove_inbetween(remove_count, return_value_count);
 
         debug_assert_eq!(
             self.values.len(),
-            value_stack_base_idx + return_value_count,
+            callframe_base_idx + return_value_count,
             "after a function call finished, the stack must have exactly as many values as it had before calling the function plus the number of function return values"
         );
 
@@ -201,25 +228,42 @@ impl Stack {
 
     /// Push a stackframe to the call stack
     ///
-    /// Takes the current [`Self::values`]'s length as [`CallFrame::value_stack_base_idx`].
+    /// Takes the current [`Self::values`]'s length as [`Callframe::value_stack_base_idx`].
     pub fn push_stackframe(
         &mut self,
         return_func_addr: usize,
         func_ty: &FuncType,
-        locals: Locals,
+        remaining_locals: &[ValType],
         return_addr: usize,
         return_stp: usize,
     ) -> Result<(), RuntimeError> {
         // check for call stack exhaustion
-        if self.frames.len() > MAX_CALL_STACK_SIZE {
+        if self.callframe_count() > MAX_CALL_STACK_SIZE {
             return Err(RuntimeError::StackExhaustion);
         }
 
-        self.frames.push(CallFrame {
+        debug_assert!(
+            self.values.len() >= func_ty.params.valtypes.len(),
+            "when pushing a new stackframe, at least as many values need to be on the stack as required by the new callframes's function"
+        );
+
+        // the topmost `param_count` values are transferred into/consumed by this new stackframe
+        let param_count = func_ty.params.valtypes.len();
+        let callframe_base_idx = self.values.len() - param_count;
+
+        // after the params, put the additional locals
+        for local in remaining_locals {
+            self.values.push(Value::default_from_ty(*local));
+        }
+
+        // now that the locals are all populated, the actual stack section of this callframe begins
+        let value_stack_base_idx = self.values.len();
+
+        self.frames.push(Callframe {
             return_func_addr,
-            locals,
             return_addr,
-            value_stack_base_idx: self.values.len(),
+            value_stack_base_idx,
+            callframe_base_idx,
             return_value_count: func_ty.returns.valtypes.len(),
             return_stp,
         });
@@ -260,21 +304,30 @@ impl Stack {
     }
 }
 
-/// The [WASM spec](https://webassembly.github.io/spec/core/exec/runtime.html#stack) calls this `Activations`, however it refers to the call frames of functions.
-pub(crate) struct CallFrame {
-    /// Store address of the function that called this [`CallFrame`]'s function
+/// The [WASM spec](https://webassembly.github.io/spec/core/exec/runtime.html#stack) calls this `Activations`, however it refers to the callframe's of functions.
+pub(crate) struct Callframe {
+    /// Store address of the function that called this [`Callframe`]'s function
     pub return_func_addr: usize,
-
-    /// Local variables such as parameters for this [`CallFrame`]'s function
-    pub locals: Locals,
 
     /// Value that the PC has to be set to when this function returns
     pub return_addr: usize,
 
-    /// The index to the first value on [`Stack::values`] that belongs to this [`CallFrame`]
+    /// The index to the lowermost value in [`Stack::values`] belonging to this [`Callframe`]'s
+    /// stack
+    ///
+    /// Values below this may still belong to this [`Callframe`], but they are locals. Consequently,
+    /// this is the lowest index down to which the stack may be popped in this [`Callframe`].
+    /// However, clearing up this [`Callframe`] may require further popping, down to (and
+    /// inlcuding!) the index stored in [`Self::callframe_base_idx`].
     pub value_stack_base_idx: usize,
 
-    /// Number of return values to retain on [`Stack::values`] when unwinding/popping a [`CallFrame`]
+    /// The index to the lowermost value on [`Stack::values`] that belongs to this [`Callframe`]
+    ///
+    /// Clearing this [`Callframe`] requires popping all elements on [`Stack::values`] down to (and
+    /// including!) this index.
+    pub callframe_base_idx: usize,
+
+    /// Number of return values to retain on [`Stack::values`] when unwinding/popping a [`Callframe`]
     pub return_value_count: usize,
 
     // Value that the stp has to be set to when this function returns
