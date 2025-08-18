@@ -49,11 +49,14 @@ pub struct Store<'b, T> {
     // currently, all of the exports of an instantiated module is made visible (this is outside of spec)
     pub registry: Registry,
     pub user_data: T,
+
+    // TODO put resumable api stuff here for now
+    pub maybe_fuel: Option<u32>,
 }
 
 impl<'b, T> Store<'b, T> {
     /// Creates a new empty store with some user data
-    pub fn new(user_data: T) -> Self {
+    pub fn new(user_data: T, maybe_fuel: Option<u32>) -> Self {
         Self {
             functions: Vec::default(),
             memories: Vec::default(),
@@ -64,6 +67,7 @@ impl<'b, T> Store<'b, T> {
             modules: Vec::default(),
             registry: Registry::default(),
             user_data,
+            maybe_fuel,
         }
     }
 
