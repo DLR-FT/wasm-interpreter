@@ -25,7 +25,6 @@ use alloc::vec::Vec;
 
 use super::hooks::EmptyHookSet;
 use super::interpreter_loop::{data_drop, elem_drop};
-use super::locals::Locals;
 use super::value::ExternAddr;
 use super::UnwrapValidatedExt;
 
@@ -580,10 +579,15 @@ impl<'b, T> Store<'b, T> {
             }
             FuncInst::WasmFunc(wasm_func_inst) => {
                 // Prepare a new stack with the locals for the entry function
-                let mut stack = Stack::new();
-                let locals = Locals::new(params.into_iter(), wasm_func_inst.locals.iter().cloned());
+                let mut stack = Stack::new_with_values(params);
 
-                stack.push_stackframe(usize::MAX, &func_ty, locals, usize::MAX, usize::MAX)?;
+                stack.push_stackframe(
+                    usize::MAX,
+                    &func_ty,
+                    &wasm_func_inst.locals,
+                    usize::MAX,
+                    usize::MAX,
+                )?;
 
                 // Run the interpreter
                 interpreter_loop::run(
