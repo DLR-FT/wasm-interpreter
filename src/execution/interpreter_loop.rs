@@ -39,7 +39,33 @@ pub(super) fn run<T, H: HookSet>(
     mut hooks: H,
     store: &mut Store<T>,
 ) -> Result<(), RuntimeError> {
-    let mut current_func_addr = func_addr;
+    let current_func_addr = func_addr;
+    let func_inst = &store.functions[current_func_addr];
+    let FuncInst::WasmFunc(wasm_func_inst) = &func_inst else {
+        unreachable!(
+            "the interpreter loop shall only be executed with native wasm functions as root call"
+        );
+    };
+    let stp = wasm_func_inst.stp;
+    let pc = wasm_func_inst.code_expr.from;
+    match resume(current_func_addr, pc, stp, stack, hooks, store)? {
+        // The interpreter loop returns state to resume execution. However resumability is not yet supported and thus we return a `RuntimeError` for now.
+        Some((_current_func_addr, _pc, _stp)) => Err(RuntimeError::OutOfFuel),
+        None => Ok(()),
+    }
+}
+
+/// Returns a [`Result<Option<_>, RuntimeError>`].
+/// If the `Result` is `Ok`, either a tuple of state required for resuming execution (consisting of current_func_addr, pc, stp) or `None` is returned.
+/// `None` is returned, when execution finished without running out of fuel
+pub(super) fn resume<T, H: HookSet>(
+    mut current_func_addr: usize,
+    pc: usize,
+    mut stp: usize,
+    stack: &mut Stack,
+    mut hooks: H,
+    store: &mut Store<T>,
+) -> Result<Option<(usize, usize, usize)>, RuntimeError> {
     let func_inst = &store.functions[current_func_addr];
     let FuncInst::WasmFunc(wasm_func_inst) = &func_inst else {
         unreachable!(
@@ -53,14 +79,12 @@ pub(super) fn run<T, H: HookSet>(
     let wasm = &mut WasmReader::new(store.modules[current_module_idx].wasm_bytecode);
 
     let mut current_sidetable: &Sidetable = &store.modules[current_module_idx].sidetable;
-    let mut stp = wasm_func_inst.stp;
 
     // local variable for holding where the function code ends (last END instr address + 1) to avoid lookup at every END instr
     let mut current_function_end_marker =
         wasm_func_inst.code_expr.from() + wasm_func_inst.code_expr.len();
 
-    // unwrap is sound, because the validation assures that the function points to valid subslice of the WASM binary
-    wasm.move_start_to(wasm_func_inst.code_expr).unwrap();
+    wasm.pc = pc;
 
     use crate::core::reader::types::opcode::*;
     loop {
@@ -75,6 +99,13 @@ pub(super) fn run<T, H: HookSet>(
             "Executing instruction {}",
             opcode_byte_to_str(first_instr_byte)
         );
+
+        if let Some(fuel) = &mut store.maybe_fuel {
+            let Some(remaining_fuel) = fuel.checked_sub(1) else {
+                return Ok(Some((current_func_addr, wasm.pc - 1, stp)));
+            };
+            *fuel = remaining_fuel;
+        }
 
         match first_instr_byte {
             NOP => {
@@ -2549,7 +2580,7 @@ pub(super) fn run<T, H: HookSet>(
             }
         }
     }
-    Ok(())
+    Ok(None)
 }
 
 //helper function for avoiding code duplication at intraprocedural jumps
