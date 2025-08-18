@@ -24,7 +24,6 @@ use crate::{
         },
         sidetable::Sidetable,
     },
-    locals::Locals,
     store::DataInst,
     value::{self, FuncAddr, Ref},
     value_stack::Stack,
@@ -191,15 +190,15 @@ pub(super) fn run<T, H: HookSet>(
 
                 let func_to_call_ty = store.functions[func_to_call_addr].ty();
 
-                let params = stack.pop_tail_iter(func_to_call_ty.params.valtypes.len());
                 trace!("Instruction: call [{func_to_call_addr:?}]");
 
                 match &store.functions[func_to_call_addr] {
                     FuncInst::HostFunc(host_func_to_call_inst) => {
-                        let returns = (host_func_to_call_inst.hostcode)(
-                            &mut store.user_data,
-                            params.collect(),
-                        );
+                        let params = stack
+                            .pop_tail_iter(func_to_call_ty.params.valtypes.len())
+                            .collect();
+                        let returns =
+                            (host_func_to_call_inst.hostcode)(&mut store.user_data, params);
 
                         // Verify that the return parameters match the host function parameters
                         // since we have no validation guarantees for host functions
@@ -214,13 +213,12 @@ pub(super) fn run<T, H: HookSet>(
                         }
                     }
                     FuncInst::WasmFunc(wasm_func_to_call_inst) => {
-                        let remaining_locals = wasm_func_to_call_inst.locals.iter().cloned();
-                        let locals = Locals::new(params, remaining_locals);
+                        let remaining_locals = &wasm_func_to_call_inst.locals;
 
                         stack.push_stackframe(
                             current_func_addr,
                             &func_to_call_ty,
-                            locals,
+                            remaining_locals,
                             wasm.pc,
                             stp,
                         )?;
@@ -276,15 +274,15 @@ pub(super) fn run<T, H: HookSet>(
                     return Err(RuntimeError::SignatureMismatch);
                 }
 
-                let params = stack.pop_tail_iter(func_to_call_ty.params.valtypes.len());
                 trace!("Instruction: call [{func_to_call_addr:?}]");
 
                 match &store.functions[func_to_call_addr] {
                     FuncInst::HostFunc(host_func_to_call_inst) => {
-                        let returns = (host_func_to_call_inst.hostcode)(
-                            &mut store.user_data,
-                            params.collect(),
-                        );
+                        let params = stack
+                            .pop_tail_iter(func_to_call_ty.params.valtypes.len())
+                            .collect();
+                        let returns =
+                            (host_func_to_call_inst.hostcode)(&mut store.user_data, params);
 
                         // Verify that the return parameters match the host function parameters
                         // since we have no validation guarantees for host functions
@@ -299,13 +297,12 @@ pub(super) fn run<T, H: HookSet>(
                         }
                     }
                     FuncInst::WasmFunc(wasm_func_to_call_inst) => {
-                        let remaining_locals = wasm_func_to_call_inst.locals.iter().cloned();
-                        let locals = Locals::new(params, remaining_locals);
+                        let remaining_locals = &wasm_func_to_call_inst.locals;
 
                         stack.push_stackframe(
                             current_func_addr,
                             &func_to_call_ty,
-                            locals,
+                            remaining_locals,
                             wasm.pc,
                             stp,
                         )?;
