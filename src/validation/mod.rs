@@ -116,7 +116,7 @@ fn get_imports_length(imports: &Vec<Import>) -> ImportsLength {
     imports_length
 }
 
-pub fn validate(wasm: &[u8]) -> Result<ValidationInfo> {
+pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>> {
     let mut wasm = WasmReader::new(wasm);
 
     // represents C.refs in https://webassembly.github.io/spec/core/valid/conventions.html#context

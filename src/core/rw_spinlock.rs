@@ -47,7 +47,7 @@ impl<T> RwSpinLock<T> {
     }
 
     // Get read access to the value wrapped in this [`RwSpinLock`]
-    pub fn read(&self) -> ReadLockGuard<T> {
+    pub fn read(&self) -> ReadLockGuard<'_, T> {
         // get the current state
         let mut s = self.state.load(Ordering::Relaxed); // ordering by the book
 
@@ -76,7 +76,7 @@ impl<T> RwSpinLock<T> {
     }
 
     // Get write access to the value wrapped in this [`RwSpinLock`]
-    pub fn write(&self) -> WriteLockGuard<T> {
+    pub fn write(&self) -> WriteLockGuard<'_, T> {
         let mut s = self.state.load(Ordering::Relaxed);
 
         loop {
