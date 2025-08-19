@@ -26,9 +26,6 @@ jobs:
         run: |
           TESTSUITE_SAVE=1 cargo test -- spec_tests --show-output
           cp testsuite_results.json old.json || :
-        env:
-          RUSTFLAGS: ""
-          RUSTDOCFLAGS: ""
 
       - name: Upload Base Report
         uses: actions/upload-artifact@v4
@@ -57,9 +54,6 @@ jobs:
         run: |
           TESTSUITE_SAVE=1 cargo test -- spec_tests --show-output
           cp testsuite_results.json new.json || :
-        env:
-          RUSTFLAGS: "-D warnings"
-          RUSTDOCFLAGS: "-D warnings"
 
       - name: Upload Head Report
         uses: actions/upload-artifact@v4
