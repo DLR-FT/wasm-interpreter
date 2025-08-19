@@ -75,11 +75,11 @@ impl Debug for DataMode {
     }
 }
 
-pub struct PassiveData {
+pub struct _PassiveData {
     pub init: Vec<u8>,
 }
 
-impl Debug for PassiveData {
+impl Debug for _PassiveData {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         let mut init_str = alloc::string::String::new();
 

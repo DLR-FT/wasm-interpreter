@@ -237,7 +237,7 @@ impl Stack {
     ///
     /// Note that this is providing the values in reverse order compared to popping `n` values
     /// (which would yield the element closest to the **top** of the value stack first).
-    pub fn pop_tail_iter(&mut self, n: usize) -> Drain<Value> {
+    pub fn pop_tail_iter(&mut self, n: usize) -> Drain<'_, Value> {
         let start = self.values.len() - n;
         self.values.drain(start..)
     }
