@@ -1,10 +1,10 @@
-use core::{cell::UnsafeCell, mem};
+use core::{cell::UnsafeCell, iter, mem};
 
 use alloc::vec::Vec;
 
 use crate::{
     core::{indices::MemIdx, little_endian::LittleEndianBytes},
-    rw_spinlock::RwSpinLock,
+    rw_spinlock::{ReadLockGuard, RwSpinLock},
     RuntimeError,
 };
 
@@ -380,23 +380,65 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
 
 impl<const PAGE_SIZE: usize> core::fmt::Debug for LinearMemory<PAGE_SIZE> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "LinearMemory {{ inner_data: [ ")?;
-        let lock_guard = self.inner_data.read();
-        let mut iter = lock_guard.iter();
+        /// A helper struct for formatting a [`Vec<UnsafeCell<u8>>`] which is guarded by a [`ReadLockGuard`].
+        /// This formatter is able to detect and format byte repetitions in a compact way.
+        struct RepetitionDetectingMemoryWriter<'a>(ReadLockGuard<'a, Vec<UnsafeCell<u8>>>);
+        impl core::fmt::Debug for RepetitionDetectingMemoryWriter<'_> {
+            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+                /// The number of repetitions required for successive elements to be grouped
+                // together.
+                const MIN_REPETITIONS_FOR_GROUP: usize = 8;
 
-        if let Some(first_byte_uc) = iter.next() {
-            write!(f, "{}", unsafe { *first_byte_uc.get() })?;
+                // First we create an iterator over all bytes
+                let mut bytes = self.0.iter().map(|x| {
+                    // SAFETY: The [`ReadLockGuard`] stored in `self` prevents a resize/realloc of
+                    // its data, so access to the value inside each [`UnsafeCell`] is safe.
+                    unsafe { *x.get() }
+                });
+
+                // Then we iterate over all bytes and deduplicate repetitions. This produces an
+                // iterator of pairs, consisting of the number of repetitions and the repeated byte
+                // itself. `current_group` is captured by the iterator and used as state to track
+                // the current group.
+                let mut current_group: Option<(usize, u8)> = None;
+                let deduplicated_with_count = iter::from_fn(|| {
+                    for byte in bytes.by_ref() {
+                        // If the next byte is different than the one being tracked currently...
+                        if current_group.is_some() && current_group.unwrap().1 != byte {
+                            // ...then end and emit the current group but also start a new group for
+                            // the next byte with an initial count of 1.
+                            return current_group.replace((1, byte));
+                        }
+                        // Otherwise increment the current group's counter or start a new group if
+                        // this was the first byte.
+                        current_group.get_or_insert((0, byte)).0 += 1;
+                    }
+                    // In the end when there are no more bytes to read, directly emit the last
+                    current_group.take()
+                });
+
+                // Finally we use `DebugList` to print a list of all groups, while writing out all
+                // elements from groups with less than `MIN_REPETITIONS_FOR_GROUP` elements.
+                let mut list = f.debug_list();
+                deduplicated_with_count.for_each(|(count, value)| {
+                    if count < MIN_REPETITIONS_FOR_GROUP {
+                        list.entries(iter::repeat(value).take(count));
+                    } else {
+                        list.entry(&format_args!("#{count} × {value}"));
+                    }
+                });
+                list.finish()
+            }
         }
 
-        for uc in iter {
-            // Safety argument:
-            //
-            // TODO
-            let byte = unsafe { *uc.get() };
-
-            write!(f, ", {byte}")?;
-        }
-        write!(f, " ] }}")
+        // Format the linear memory by using Rust's formatter helpers and the previously defined
+        // `RepetitionDetectingMemoryWriter`
+        f.debug_struct("LinearMemory")
+            .field(
+                "inner_data",
+                &RepetitionDetectingMemoryWriter(self.inner_data.read()),
+            )
+            .finish()
     }
 }
 
@@ -429,17 +471,41 @@ mod test {
     }
 
     #[test]
-    fn debug_print() {
+    fn debug_print_simple() {
         let lin_mem = LinearMemory::<PAGE_SIZE>::new_with_initial_pages(1);
         assert_eq!(lin_mem.pages(), 1);
 
-        let expected_length = "LinearMemory { inner_data: [  ] }".len() + PAGE_SIZE * "0, ".len();
-        let tol = 2;
-
+        let expected = format!("LinearMemory {{ inner_data: [#{PAGE_SIZE} × 0] }}");
         let debug_repr = format!("{lin_mem:?}");
-        let lower_bound = expected_length - tol;
-        let upper_bound = expected_length + tol;
-        assert!((lower_bound..upper_bound).contains(&debug_repr.len()));
+
+        assert_eq!(debug_repr, expected);
+    }
+
+    #[test]
+    fn debug_print_complex() {
+        let page_count = 2;
+        let lin_mem = LinearMemory::<PAGE_SIZE>::new_with_initial_pages(page_count);
+        assert_eq!(lin_mem.pages(), page_count);
+
+        lin_mem.store(1, 0xffu8).unwrap();
+        lin_mem.store(10, 1u8).unwrap();
+        lin_mem.store(200, 0xffu8).unwrap();
+
+        let expected = "LinearMemory { inner_data: [0, 255, #8 × 0, 1, #189 × 0, 255, #311 × 0] }";
+        let debug_repr = format!("{lin_mem:?}");
+
+        assert_eq!(debug_repr, expected);
+    }
+
+    #[test]
+    fn debug_print_empty() {
+        let lin_mem = LinearMemory::<PAGE_SIZE>::new_with_initial_pages(0);
+        assert_eq!(lin_mem.pages(), 0);
+
+        let expected = "LinearMemory { inner_data: [] }";
+        let debug_repr = format!("{lin_mem:?}");
+
+        assert_eq!(debug_repr, expected);
     }
 
     #[test]
