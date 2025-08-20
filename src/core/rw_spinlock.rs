@@ -117,6 +117,7 @@ impl<T> RwSpinLock<T> {
     }
 }
 
+// SAFETY: When the inner `T` is `Sync`, the `RwSpinlock<T>` can be `Sync` as well
 unsafe impl<T> Sync for RwSpinLock<T> where T: Send + Sync {}
 
 /// Read guard for the [`RwSpinLock`]
@@ -127,6 +128,8 @@ pub struct ReadLockGuard<'a, T> {
 impl<T> Deref for ReadLockGuard<'_, T> {
     type Target = T;
     fn deref(&self) -> &T {
+        // SAFETY: For as long as a `ReadLockGuard` exists, it can dereference to a shared reference
+        // to the inner data can be handed out
         unsafe { &*self.lock.inner.get() }
     }
 }
@@ -145,12 +148,16 @@ pub struct WriteLockGuard<'a, T> {
 impl<T> Deref for WriteLockGuard<'_, T> {
     type Target = T;
     fn deref(&self) -> &T {
+        // SAFETY: For as long as a `WriteLockGuard` exists, it can derefence to a shared reference
+        // to the inner data
         unsafe { &*self.lock.inner.get() }
     }
 }
 
 impl<T> DerefMut for WriteLockGuard<'_, T> {
     fn deref_mut(&mut self) -> &mut T {
+        // SAFETY: For as long as a `WriteLockGuard` exists, it can derefence to a mutable
+        // references to the inner data
         unsafe { &mut *self.lock.inner.get() }
     }
 }
