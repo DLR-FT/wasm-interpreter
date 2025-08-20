@@ -6,6 +6,7 @@ pub enum RuntimeError {
 
     ModuleNotFound,
     FunctionNotFound,
+    ResumableNotFound,
     StackExhaustion,
     HostFunctionSignatureMismatch,
 
@@ -22,6 +23,7 @@ impl Display for RuntimeError {
             RuntimeError::Trap(trap_error) => write!(f, "{trap_error}"),
             RuntimeError::FunctionNotFound => f.write_str("Function not found"),
             RuntimeError::ModuleNotFound => f.write_str("No such module exists"),
+            RuntimeError::ResumableNotFound => f.write_str("No such resumable exists"),
             RuntimeError::StackExhaustion => {
                 f.write_str("either the call stack or the value stack overflowed")
             }

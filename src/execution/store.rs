@@ -14,11 +14,14 @@ use crate::execution::interpreter_loop::{self, memory_init, table_init};
 use crate::execution::value::{Ref, Value};
 use crate::execution::{run_const_span, Stack};
 use crate::registry::Registry;
+use crate::resumable::{Dormitory, Resumable, ResumableRef, RunState};
+use crate::rw_spinlock::RwSpinLock;
 use crate::value::FuncAddr;
 use crate::{Limits, RefType, RuntimeError, TrapError, ValidationInfo};
 use alloc::borrow::ToOwned;
 use alloc::collections::btree_map::BTreeMap;
 use alloc::string::String;
+use alloc::sync::Arc;
 use alloc::vec;
 use alloc::vec::Vec;
 
@@ -33,7 +36,6 @@ use crate::linear_memory::LinearMemory;
 /// globals, element segments, and data segments that have been allocated during the life time of
 /// the abstract machine.
 /// <https://webassembly.github.io/spec/core/exec/runtime.html#store>
-#[derive(Debug)]
 pub struct Store<'b, T> {
     pub functions: Vec<FuncInst<T>>,
     pub memories: Vec<MemInst>,
@@ -50,13 +52,13 @@ pub struct Store<'b, T> {
     pub registry: Registry,
     pub user_data: T,
 
-    // TODO put resumable api stuff here for now
-    pub maybe_fuel: Option<u32>,
+    // data structure holding all resumable objects that belong to this store
+    pub dormitory: Arc<RwSpinLock<Dormitory>>,
 }
 
 impl<'b, T> Store<'b, T> {
     /// Creates a new empty store with some user data
-    pub fn new(user_data: T, maybe_fuel: Option<u32>) -> Self {
+    pub fn new(user_data: T) -> Self {
         Self {
             functions: Vec::default(),
             memories: Vec::default(),
@@ -66,8 +68,8 @@ impl<'b, T> Store<'b, T> {
             elements: Vec::default(),
             modules: Vec::default(),
             registry: Registry::default(),
+            dormitory: Arc::default(),
             user_data,
-            maybe_fuel,
         }
     }
 
@@ -80,6 +82,7 @@ impl<'b, T> Store<'b, T> {
         &mut self,
         name: &str,
         validation_info: &ValidationInfo<'b>,
+        maybe_fuel: Option<u32>,
     ) -> Result<(), RuntimeError> {
         // instantiation step -1: collect extern_vals, this section basically acts as a linker between modules
         // best attempt at trying to match the spec implementation in terms of errors
@@ -408,7 +411,7 @@ impl<'b, T> Store<'b, T> {
             // execute
             //   call func_ifx
             let func_addr = self.modules[current_module_idx].func_addrs[func_idx];
-            self.invoke(func_addr, Vec::new())?;
+            self.invoke(func_addr, Vec::new(), maybe_fuel)?;
         };
 
         Ok(())
@@ -535,7 +538,8 @@ impl<'b, T> Store<'b, T> {
         &mut self,
         func_addr: usize,
         params: Vec<Value>,
-    ) -> Result<Vec<Value>, RuntimeError> {
+        maybe_fuel: Option<u32>,
+    ) -> Result<RunState, RuntimeError> {
         let func_inst = self
             .functions
             .get(func_addr)
@@ -573,7 +577,7 @@ impl<'b, T> Store<'b, T> {
                     return Err(RuntimeError::HostFunctionSignatureMismatch);
                 }
 
-                Ok(returns)
+                Ok(RunState::Finished(returns))
             }
             FuncInst::WasmFunc(wasm_func_inst) => {
                 // Prepare a new stack with the locals for the entry function
@@ -587,17 +591,37 @@ impl<'b, T> Store<'b, T> {
                     usize::MAX,
                 )?;
 
+                let mut resumable = Resumable {
+                    current_func_addr: func_addr,
+                    stack,
+                    pc: wasm_func_inst.code_expr.from,
+                    stp: wasm_func_inst.stp,
+                };
                 // Run the interpreter
-                interpreter_loop::run(
+                let result = interpreter_loop::run(
                     // &mut self.modules,
-                    func_addr,
+                    &mut resumable,
                     // self.lut.as_ref().ok_or(RuntimeError::UnmetImport)?,
-                    &mut stack,
-                    EmptyHookSet,
                     self,
-                )?;
-                debug!("Successfully invoked function");
-                Ok(stack.into_values())
+                    EmptyHookSet,
+                    maybe_fuel,
+                );
+
+                match result {
+                    Ok(_) => {
+                        debug!("Successfully invoked function");
+                        Ok(RunState::Finished(resumable.stack.into_values()))
+                    }
+                    Err(RuntimeError::OutOfFuel) => {
+                        debug!("Successfully invoked function");
+                        let resumable_addr = self.dormitory.write().insert(resumable);
+                        Ok(RunState::Resumable(ResumableRef {
+                            resumable_addr,
+                            dormitory: Arc::downgrade(&self.dormitory),
+                        }))
+                    }
+                    Err(err) => Err(err),
+                }
             }
         }
     }
