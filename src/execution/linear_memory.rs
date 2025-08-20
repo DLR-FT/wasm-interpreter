@@ -382,21 +382,66 @@ impl<const PAGE_SIZE: usize> core::fmt::Debug for LinearMemory<PAGE_SIZE> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "LinearMemory {{ inner_data: [ ")?;
         let lock_guard = self.inner_data.read();
-        let mut iter = lock_guard.iter();
 
-        if let Some(first_byte_uc) = iter.next() {
-            write!(f, "{}", unsafe { *first_byte_uc.get() })?;
+        // then write all other elements with a preceding ", "
+        let mut repetition_count = 1;
+
+        // if this many or more sucessive elements have the same value, print just the number of
+        // repetitions and one time the element value
+        let repetition_threshold = 8;
+
+        for i in 1..lock_guard.len() {
+            // SAFETY: As `i` is a valid index into this `LinearMemory` while the
+            // `lock_guard` prevents a resize/realloc of its data, so its valid.
+            let prev_byte = unsafe { *lock_guard[i - 1].get() };
+
+            // SAFETY: As `i + 1` is a valid index into this `LinearMemory` while the
+            // `lock_guard` prevents a resize/realloc of its data, so its valid.
+            let byte = unsafe { *lock_guard[i].get() };
+
+            let is_last_element = i == lock_guard.len() - 1;
+            let is_repetition = prev_byte == byte;
+
+            // if this is a repetition, increment the repetition_count
+            if is_repetition {
+                repetition_count += 1;
+            }
+
+            // either the repition was broken or we are at the last element, so write the repitition
+            if !is_repetition || is_last_element {
+                // threshold crossed, just print the count and the element once
+                if repetition_count >= repetition_threshold {
+                    write!(f, "#{repetition_count} × {prev_byte}")?;
+                    repetition_count = 1;
+                }
+                // threshold not crossed, actually print the repeating element count times
+                else {
+                    for _ in 0..repetition_count - 1 {
+                        write!(f, "{prev_byte}, ")?;
+                    }
+                    write!(f, "{prev_byte}")?;
+                    repetition_count = 1;
+                }
+
+                if !is_repetition {
+                    write!(f, ", ")?;
+                } else {
+                    write!(f, " ")?;
+                }
+            }
+
+            // only if the current element is breaking a repetition then we need to write it
+            if !is_repetition && is_last_element {
+                write!(f, "{byte}")?;
+
+                if !is_last_element {
+                    write!(f, ", ")?;
+                } else {
+                    write!(f, " ")?;
+                }
+            }
         }
-
-        for uc in iter {
-            // Safety argument:
-            //
-            // TODO
-            let byte = unsafe { *uc.get() };
-
-            write!(f, ", {byte}")?;
-        }
-        write!(f, " ] }}")
+        write!(f, "] }}")
     }
 }
 
@@ -429,17 +474,42 @@ mod test {
     }
 
     #[test]
-    fn debug_print() {
+    fn debug_print_simple() {
         let lin_mem = LinearMemory::<PAGE_SIZE>::new_with_initial_pages(1);
         assert_eq!(lin_mem.pages(), 1);
 
-        let expected_length = "LinearMemory { inner_data: [  ] }".len() + PAGE_SIZE * "0, ".len();
-        let tol = 2;
-
+        let expected = format!("LinearMemory {{ inner_data: [ #{PAGE_SIZE} × 0 ] }}");
         let debug_repr = format!("{lin_mem:?}");
-        let lower_bound = expected_length - tol;
-        let upper_bound = expected_length + tol;
-        assert!((lower_bound..upper_bound).contains(&debug_repr.len()));
+
+        assert_eq!(debug_repr, expected);
+    }
+
+    #[test]
+    fn debug_print_complex() {
+        let page_count = 2;
+        let lin_mem = LinearMemory::<PAGE_SIZE>::new_with_initial_pages(page_count);
+        assert_eq!(lin_mem.pages(), page_count);
+
+        lin_mem.store(1, 0xffu8).unwrap();
+        lin_mem.store(10, 1u8).unwrap();
+        lin_mem.store(200, 0xffu8).unwrap();
+
+        let expected =
+            "LinearMemory { inner_data: [ 0, 255, #8 × 0, 1, #189 × 0, 255, #311 × 0 ] }";
+        let debug_repr = format!("{lin_mem:?}");
+
+        assert_eq!(debug_repr, expected);
+    }
+
+    #[test]
+    fn debug_print_empty() {
+        let lin_mem = LinearMemory::<PAGE_SIZE>::new_with_initial_pages(0);
+        assert_eq!(lin_mem.pages(), 0);
+
+        let expected = "LinearMemory { inner_data: [ ] }";
+        let debug_repr = format!("{lin_mem:?}");
+
+        assert_eq!(debug_repr, expected);
     }
 
     #[test]
