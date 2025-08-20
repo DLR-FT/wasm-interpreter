@@ -41,9 +41,11 @@ use super::store::Store;
 pub(super) fn run<T, H: HookSet>(
     func_addr: usize,
     stack: &mut Stack,
-    mut hooks: H,
+    hooks: H,
     store: &mut Store<T>,
-) -> Result<(), RuntimeError> {
+    fuel_enabled: bool,
+    fuel: u32,
+) -> Result<(usize, usize, usize), RuntimeError> {
     let current_func_addr = func_addr;
     let func_inst = &store.functions[current_func_addr];
     let FuncInst::WasmFunc(wasm_func_inst) = &func_inst else {
@@ -53,12 +55,16 @@ pub(super) fn run<T, H: HookSet>(
     };
     let stp = wasm_func_inst.stp;
     let pc = wasm_func_inst.code_expr.from;
-    let result = resume(current_func_addr, pc, stp, stack, hooks, store)?;
-    if result != (usize::MAX, usize::MAX, usize::MAX) {
-        Err(RuntimeError::OutOfFuel)
-    } else {
-        Ok(())
-    }
+    resume(
+        current_func_addr,
+        pc,
+        stp,
+        stack,
+        hooks,
+        store,
+        fuel_enabled,
+        fuel,
+    )
 }
 
 pub(super) fn resume<T, H: HookSet>(
@@ -68,6 +74,8 @@ pub(super) fn resume<T, H: HookSet>(
     stack: &mut Stack,
     mut hooks: H,
     store: &mut Store<T>,
+    fuel_enabled: bool,
+    mut fuel: u32,
 ) -> Result<(usize, usize, usize), RuntimeError> {
     let func_inst = &store.functions[current_func_addr];
     let FuncInst::WasmFunc(wasm_func_inst) = &func_inst else {
@@ -103,9 +111,9 @@ pub(super) fn resume<T, H: HookSet>(
             opcode_byte_to_str(first_instr_byte)
         );
 
-        if store.fuel_enabled {
-            if store.fuel > 0 {
-                store.fuel -= 1;
+        if fuel_enabled {
+            if fuel > 0 {
+                fuel -= 1;
             } else {
                 return Ok((current_func_addr, wasm.pc - 1, stp));
             }

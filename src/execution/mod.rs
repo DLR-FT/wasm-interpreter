@@ -1,4 +1,4 @@
-use crate::Error;
+use crate::{Error, RunState};
 
 use alloc::borrow::ToOwned;
 use alloc::vec::Vec;
@@ -86,7 +86,7 @@ where
     pub fn new_with_hooks(user_data: T, hook_set: H) -> Self {
         RuntimeInstance {
             hook_set,
-            store: Store::new(user_data, false, 0),
+            store: Store::new(user_data),
         }
     }
 
@@ -138,6 +138,16 @@ where
     ) -> Result<Vec<Value>, RuntimeError> {
         let FunctionRef { func_addr } = *function_ref;
         self.store.invoke(func_addr, params)
+    }
+
+    pub fn invoke_resumable<'s>(
+        &'s mut self,
+        function_ref: &FunctionRef,
+        params: Vec<Value>,
+        fuel: u32,
+    ) -> Result<RunState<'s, 'b, T>, RuntimeError> {
+        let FunctionRef { func_addr } = *function_ref;
+        self.store.invoke_resumable(func_addr, params, fuel)
     }
 
     /// Adds a host function under module namespace `module_name` with name `name`.
