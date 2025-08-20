@@ -1,3 +1,4 @@
+use crate::resumable::RunState;
 use alloc::borrow::ToOwned;
 use alloc::vec::Vec;
 
@@ -23,6 +24,7 @@ mod interpreter_loop;
 pub(crate) mod linear_memory;
 pub(crate) mod little_endian;
 pub mod registry;
+pub mod resumable;
 pub mod store;
 pub mod value;
 pub mod value_stack;
@@ -30,7 +32,6 @@ pub mod value_stack;
 /// The default module name if a [RuntimeInstance] was created using [RuntimeInstance::new].
 pub const DEFAULT_MODULE: &str = "__interpreter_default__";
 
-#[derive(Debug)]
 pub struct RuntimeInstance<'b, T = (), H = EmptyHookSet>
 where
     H: HookSet + core::fmt::Debug,
@@ -80,13 +81,13 @@ where
         module_name: &str,
         validation_info: &'_ ValidationInfo<'b>,
     ) -> Result<(), RuntimeError> {
-        self.store.add_module(module_name, validation_info)
+        self.store.add_module(module_name, validation_info, None)
     }
 
     pub fn new_with_hooks(user_data: T, hook_set: H) -> Self {
         RuntimeInstance {
             hook_set,
-            store: Store::new(user_data, None),
+            store: Store::new(user_data),
         }
     }
 
@@ -124,10 +125,8 @@ where
         params: Params,
         // store: &mut Store,
     ) -> Result<Returns, RuntimeError> {
-        let FunctionRef { func_addr } = *function_ref;
-        let return_values = self.store.invoke(func_addr, params.into_values())?;
-        let returns = Returns::try_from_values(return_values.into_iter()).unwrap_validated();
-        Ok(returns)
+        self.invoke(function_ref, params.into_values())
+            .map(|values| Returns::try_from_values(values.into_iter()).unwrap_validated())
     }
 
     /// Invokes a function with the given parameters. The return types depend on the function signature.
@@ -137,7 +136,22 @@ where
         params: Vec<Value>,
     ) -> Result<Vec<Value>, RuntimeError> {
         let FunctionRef { func_addr } = *function_ref;
-        self.store.invoke(func_addr, params)
+        self.store
+            .invoke(func_addr, params, None)
+            .map(|run_state| match run_state {
+                RunState::Finished(values) => values,
+                _ => unreachable!("non metered invoke call"),
+            })
+    }
+
+    pub fn invoke_resumable(
+        &mut self,
+        function_ref: &FunctionRef,
+        params: Vec<Value>,
+        fuel: u32,
+    ) -> Result<RunState, RuntimeError> {
+        let FunctionRef { func_addr } = *function_ref;
+        self.store.invoke(func_addr, params, Some(fuel))
     }
 
     /// Adds a host function under module namespace `module_name` with name `name`.

@@ -19,6 +19,7 @@ use crate::{
         },
         sidetable::Sidetable,
     },
+    resumable::Resumable,
     store::DataInst,
     unreachable_validated,
     value::{self, FuncAddr, Ref, F32, F64},
@@ -34,45 +35,21 @@ use super::store::Store;
 
 /// Interprets wasm native functions. Parameters and return values are passed on the stack.
 pub(super) fn run<T, H: HookSet>(
-    func_addr: usize,
-    stack: &mut Stack,
-    mut hooks: H,
+    resumable: &mut Resumable,
     store: &mut Store<T>,
+    mut hooks: H,
+    mut maybe_fuel: Option<u32>,
 ) -> Result<(), RuntimeError> {
-    let current_func_addr = func_addr;
+    let stack = &mut resumable.stack;
+    let mut current_func_addr = resumable.current_func_addr;
+    let pc = resumable.pc;
+    let mut stp = resumable.stp;
     let func_inst = &store.functions[current_func_addr];
     let FuncInst::WasmFunc(wasm_func_inst) = &func_inst else {
         unreachable!(
             "the interpreter loop shall only be executed with native wasm functions as root call"
         );
     };
-    let stp = wasm_func_inst.stp;
-    let pc = wasm_func_inst.code_expr.from;
-    match resume(current_func_addr, pc, stp, stack, hooks, store)? {
-        // The interpreter loop returns state to resume execution. However resumability is not yet supported and thus we return a `RuntimeError` for now.
-        Some((_current_func_addr, _pc, _stp)) => Err(RuntimeError::OutOfFuel),
-        None => Ok(()),
-    }
-}
-
-/// Returns a [`Result<Option<_>, RuntimeError>`].
-/// If the `Result` is `Ok`, either a tuple of state required for resuming execution (consisting of current_func_addr, pc, stp) or `None` is returned.
-/// `None` is returned, when execution finished without running out of fuel
-pub(super) fn resume<T, H: HookSet>(
-    mut current_func_addr: usize,
-    pc: usize,
-    mut stp: usize,
-    stack: &mut Stack,
-    mut hooks: H,
-    store: &mut Store<T>,
-) -> Result<Option<(usize, usize, usize)>, RuntimeError> {
-    let func_inst = &store.functions[current_func_addr];
-    let FuncInst::WasmFunc(wasm_func_inst) = &func_inst else {
-        unreachable!(
-            "the interpreter loop shall only be executed with native wasm functions as root call"
-        );
-    };
-
     let mut current_module_idx = wasm_func_inst.module_addr;
 
     // Start reading the function's instructions
@@ -100,11 +77,15 @@ pub(super) fn resume<T, H: HookSet>(
             opcode_byte_to_str(first_instr_byte)
         );
 
-        if let Some(fuel) = &mut store.maybe_fuel {
-            let Some(remaining_fuel) = fuel.checked_sub(1) else {
-                return Ok(Some((current_func_addr, wasm.pc - 1, stp)));
-            };
-            *fuel = remaining_fuel;
+        // Fuel mechanism: 1 fuel per instruction
+        if let Some(fuel) = &mut maybe_fuel {
+            *fuel = fuel.checked_sub(1).ok_or_else(|| {
+                resumable.current_func_addr = current_func_addr;
+                resumable.pc = wasm.pc - 1;
+                resumable.stp = stp;
+
+                RuntimeError::OutOfFuel
+            })?;
         }
 
         match first_instr_byte {
@@ -2580,7 +2561,7 @@ pub(super) fn resume<T, H: HookSet>(
             }
         }
     }
-    Ok(None)
+    Ok(())
 }
 
 //helper function for avoiding code duplication at intraprocedural jumps
