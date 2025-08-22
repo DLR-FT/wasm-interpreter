@@ -15,6 +15,7 @@ use crate::execution::interpreter_loop::{self, memory_init, table_init};
 use crate::execution::value::{Ref, Value};
 use crate::execution::{run_const_span, Stack};
 use crate::registry::Registry;
+use crate::resumable::{Dormitory, Resumable, ResumableRef, RunState};
 use crate::value::FuncAddr;
 use crate::{Error, Limits, RefType, RuntimeError, ValidationInfo};
 use alloc::borrow::ToOwned;
@@ -52,6 +53,9 @@ pub struct Store<'b, T> {
     // currently, all of the exports of an instantiated module is made visible (this is outside of spec)
     pub registry: Registry,
     pub user_data: T,
+
+    // data structure holding all resumable objects that belong to this store
+    pub dormitory: Dormitory,
 }
 
 impl<'b, T> Store<'b, T> {
@@ -67,6 +71,7 @@ impl<'b, T> Store<'b, T> {
             modules: Vec::default(),
             registry: Registry::default(),
             user_data,
+            dormitory: Dormitory::default(),
         }
     }
 
@@ -79,6 +84,7 @@ impl<'b, T> Store<'b, T> {
         &mut self,
         name: &str,
         validation_info: &ValidationInfo<'b>,
+        maybe_fuel: Option<u32>,
     ) -> CustomResult<()> {
         // instantiation step -1: collect extern_vals, this section basically acts as a linker between modules
         // best attempt at trying to match the spec implementation in terms of errors
@@ -410,7 +416,7 @@ impl<'b, T> Store<'b, T> {
             // execute
             //   call func_ifx
             let func_addr = self.modules[current_module_idx].func_addrs[func_idx];
-            self.invoke(func_addr, Vec::new())
+            self.invoke(func_addr, Vec::new(), maybe_fuel)
                 .map_err(Error::RuntimeError)?;
         };
 
@@ -538,7 +544,8 @@ impl<'b, T> Store<'b, T> {
         &mut self,
         func_addr: usize,
         params: Vec<Value>,
-    ) -> Result<Vec<Value>, RuntimeError> {
+        maybe_fuel: Option<u32>,
+    ) -> Result<RunState, RuntimeError> {
         let func_inst = self
             .functions
             .get(func_addr)
@@ -576,7 +583,7 @@ impl<'b, T> Store<'b, T> {
                     return Err(RuntimeError::HostFunctionSignatureMismatch);
                 }
 
-                Ok(returns)
+                Ok(RunState::Finished(returns))
             }
             FuncInst::WasmFunc(wasm_func_inst) => {
                 // Prepare a new stack with the locals for the entry function
@@ -584,141 +591,33 @@ impl<'b, T> Store<'b, T> {
                 let locals = Locals::new(params.into_iter(), wasm_func_inst.locals.iter().cloned());
 
                 stack.push_stackframe(usize::MAX, &func_ty, locals, usize::MAX, usize::MAX)?;
+
+                let resumable = Resumable {
+                    current_func_addr: func_addr,
+                    stack,
+                    pc: wasm_func_inst.code_expr.from,
+                    stp: wasm_func_inst.stp,
+                };
+                let resumable_addr = self.dormitory.insert(resumable);
 
                 // Run the interpreter
                 let result = interpreter_loop::run(
                     // &mut self.modules,
-                    func_addr,
+                    resumable_addr,
                     // self.lut.as_ref().ok_or(RuntimeError::UnmetImport)?,
-                    &mut stack,
-                    EmptyHookSet,
                     self,
-                    false,
-                    0,
-                )?;
-
-                // successful execution cannot stop midway for non-metered runs
-                assert!(result == (usize::MAX, usize::MAX, usize::MAX));
-
-                debug!("Successfully invoked function");
-                Ok(stack.into_values())
-            }
-        }
-    }
-
-    pub fn invoke_resumable<'s>(
-        &'s mut self,
-        func_addr: usize,
-        params: Vec<Value>,
-        fuel: u32,
-    ) -> Result<RunState<'s, 'b, T>, RuntimeError> {
-        let func_inst = self
-            .functions
-            .get(func_addr)
-            .ok_or(RuntimeError::FunctionNotFound)?;
-
-        let func_ty = func_inst.ty();
-
-        // Verify that the given parameters match the function parameters
-        let param_types = params.iter().map(|v| v.to_ty()).collect::<Vec<_>>();
-
-        if func_ty.params.valtypes != param_types {
-            trace!(
-                "Func param types len: {}; Given args len: {}",
-                func_ty.params.valtypes.len(),
-                param_types.len()
-            );
-            panic!("Invalid parameters for function");
-        }
-
-        match &func_inst {
-            FuncInst::HostFunc(host_func_inst) => {
-                let returns = (host_func_inst.hostcode)(&mut self.user_data, params);
-                debug!("Successfully invoked function");
-
-                // Verify that the return parameters match the host function parameters
-                // since we have no validation guarantees for host functions
-
-                let return_types = returns.iter().map(|v| v.to_ty()).collect::<Vec<_>>();
-                if func_ty.returns.valtypes != return_types {
-                    trace!(
-                        "Func param types len: {}; Given args len: {}",
-                        func_ty.params.valtypes.len(),
-                        param_types.len()
-                    );
-                    return Err(RuntimeError::HostFunctionSignatureMismatch);
-                }
-
-                return Ok(RunState::Finished(returns));
-            }
-            FuncInst::WasmFunc(wasm_func_inst) => {
-                // Prepare a new stack with the locals for the entry function
-                let mut stack = Stack::new();
-                let locals = Locals::new(params.into_iter(), wasm_func_inst.locals.iter().cloned());
-
-                stack.push_stackframe(usize::MAX, &func_ty, locals, usize::MAX, usize::MAX)?;
-
-                // Run the interpreter
-                let result @ (current_func_addr, pc, stp) = interpreter_loop::run(
-                    // &mut self.modules,
-                    func_addr,
-                    // self.lut.as_ref().ok_or(RuntimeError::UnmetImport)?,
-                    &mut stack,
                     EmptyHookSet,
-                    self,
-                    true,
-                    fuel,
+                    maybe_fuel,
                 )?;
-                if result != (usize::MAX, usize::MAX, usize::MAX) {
-                    return Ok(RunState::Resumable(Resumable {
-                        stack,
-                        store: self,
-                        pc,
-                        stp,
-                        current_func_addr,
-                    }));
+                if result != usize::MAX {
+                    return Ok(RunState::Resumable(ResumableRef(result)));
                 }
                 debug!("Successfully invoked function");
-                return Ok(RunState::Finished(stack.into_values()));
+                let Ok(values) = self.dormitory.remove(resumable_addr) else {
+                    unreachable!("execution currently always finishes in the original resumable")
+                };
+                Ok(RunState::Finished(values))
             }
-        }
-    }
-}
-pub enum RunState<'s, 'b, T> {
-    Finished(Vec<Value>),
-    Resumable(Resumable<'s, 'b, T>),
-}
-
-pub struct Resumable<'s, 'b, T> {
-    stack: Stack,
-    store: &'s mut Store<'b, T>,
-    pc: usize,
-    stp: usize,
-    current_func_addr: usize,
-}
-
-impl<'s, 'b, T> Resumable<'s, 'b, T> {
-    pub fn resume(mut self, fuel: u32) -> Result<RunState<'s, 'b, T>, RuntimeError> {
-        let (current_func_addr, pc, stp) = interpreter_loop::resume(
-            self.current_func_addr,
-            self.pc,
-            self.stp,
-            &mut self.stack,
-            EmptyHookSet,
-            &mut self.store,
-            true,
-            fuel,
-        )?;
-        if (current_func_addr, pc, stp) == (usize::MAX, usize::MAX, usize::MAX) {
-            Ok(RunState::Finished(self.stack.into_values()))
-        } else {
-            Ok(RunState::Resumable(Resumable {
-                store: self.store,
-                stack: self.stack,
-                pc: self.pc,
-                stp: self.stp,
-                current_func_addr: self.current_func_addr,
-            }))
         }
     }
 }

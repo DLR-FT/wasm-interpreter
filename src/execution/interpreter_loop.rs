@@ -38,52 +38,26 @@ use crate::execution::hooks::HookSet;
 use super::store::Store;
 
 /// Interprets wasm native functions. Parameters and return values are passed on the stack.
+/// Returns either the resumable address to resume later or `usize::MAX` that indicates a finished execution.
 pub(super) fn run<T, H: HookSet>(
-    func_addr: usize,
-    stack: &mut Stack,
-    hooks: H,
+    resumable_addr: usize,
     store: &mut Store<T>,
-    fuel_enabled: bool,
-    fuel: u32,
-) -> Result<(usize, usize, usize), RuntimeError> {
-    let current_func_addr = func_addr;
-    let func_inst = &store.functions[current_func_addr];
-    let FuncInst::WasmFunc(wasm_func_inst) = &func_inst else {
-        unreachable!(
-            "the interpreter loop shall only be executed with native wasm functions as root call"
-        );
-    };
-    let stp = wasm_func_inst.stp;
-    let pc = wasm_func_inst.code_expr.from;
-    resume(
-        current_func_addr,
-        pc,
-        stp,
-        stack,
-        hooks,
-        store,
-        fuel_enabled,
-        fuel,
-    )
-}
-
-pub(super) fn resume<T, H: HookSet>(
-    mut current_func_addr: usize,
-    pc: usize,
-    mut stp: usize,
-    stack: &mut Stack,
     mut hooks: H,
-    store: &mut Store<T>,
-    fuel_enabled: bool,
-    mut fuel: u32,
-) -> Result<(usize, usize, usize), RuntimeError> {
+    mut maybe_fuel: Option<u32>,
+) -> Result<usize, RuntimeError> {
+    // TODO fix error variant
+    let resumable = &mut store.dormitory.get_mut(resumable_addr)?;
+
+    let stack = &mut resumable.stack;
+    let mut current_func_addr = resumable.current_func_addr;
+    let pc = resumable.pc;
+    let mut stp = resumable.stp;
     let func_inst = &store.functions[current_func_addr];
     let FuncInst::WasmFunc(wasm_func_inst) = &func_inst else {
         unreachable!(
             "the interpreter loop shall only be executed with native wasm functions as root call"
         );
     };
-
     let mut current_module_idx = wasm_func_inst.module_addr;
 
     // Start reading the function's instructions
@@ -111,11 +85,15 @@ pub(super) fn resume<T, H: HookSet>(
             opcode_byte_to_str(first_instr_byte)
         );
 
-        if fuel_enabled {
-            if fuel > 0 {
-                fuel -= 1;
+        // TODO dummy fuel consumption
+        if let Some(amount) = &mut maybe_fuel {
+            if *amount > 0 {
+                *amount -= 1;
             } else {
-                return Ok((current_func_addr, wasm.pc - 1, stp));
+                resumable.current_func_addr = current_func_addr;
+                resumable.pc = wasm.pc - 1;
+                resumable.stp = stp;
+                return Ok(resumable_addr);
             }
         }
 
@@ -2463,7 +2441,7 @@ pub(super) fn resume<T, H: HookSet>(
             }
         }
     }
-    Ok((usize::MAX, usize::MAX, usize::MAX))
+    Ok(usize::MAX)
 }
 
 //helper function for avoiding code duplication at intraprocedural jumps
