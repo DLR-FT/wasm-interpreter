@@ -9,6 +9,7 @@ use crate::execution::value::Value;
 ///
 /// Note: As of now this stores the [Value]s. In the future storing the raw bytes without information
 /// about a value's type may be preferred to minimize memory usage.
+#[derive(Debug)]
 pub struct Locals {
     data: Box<[Value]>,
 }

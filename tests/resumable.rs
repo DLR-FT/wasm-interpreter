@@ -1,5 +1,5 @@
-use itertools::repeat_n;
-use wasm::{validate, RunState, RuntimeInstance, Store};
+use core::panic;
+use wasm::{resumable::RunState, validate, RuntimeInstance};
 
 #[test_log::test]
 
@@ -21,7 +21,7 @@ fn out_of_fuel() {
         RunState::Resumable(_)
     ));
 }
-
+#[test_log::test]
 fn resumable() {
     let wat = r#"
     (module
@@ -37,8 +37,11 @@ fn resumable() {
             (loop
                 global.get $global_0
                 i32.const 2
+                nop
+                nop
                 i32.mul
                 global.set $global_0
+                br 0
             )
         )
 
@@ -49,6 +52,7 @@ fn resumable() {
                 i32.const 3
                 i32.add
                 global.set $global_1
+                br 0
             )
         )
     )"#;
@@ -59,20 +63,32 @@ fn resumable() {
     let mult_global_0 = runtime_instance
         .get_function_by_name("module", "mult_global_0")
         .unwrap();
-    // let add_global_1 = runtime_instance.get_function_by_name("module", "add_global_1").unwrap();
+    let add_global_1 = runtime_instance
+        .get_function_by_name("module", "add_global_1")
+        .unwrap();
 
     let mut run_state_mult = runtime_instance
         .invoke_resumable(&mult_global_0, vec![], 0)
         .unwrap();
     // multiple resumables cause problems with borrow checker
-    // let add_state_mult = runtime_instance.invoke_resumable(&mult_global_0, vec![], 0).unwrap();
+    let mut run_state_add = runtime_instance
+        .invoke_resumable(&add_global_1, vec![], 0)
+        .unwrap();
 
-    for _ in 0..10 {
-        match run_state_mult {
-            RunState::Finished(_) => unreachable!("infinite loop can't terminate"),
-            RunState::Resumable(mut resumable) => {
-                run_state_mult = resumable.resume(5).unwrap();
+    for _ in 0..20 {
+        run_state_mult = match run_state_mult {
+            RunState::Finished(_) => panic!("should not terminate"),
+            RunState::Resumable(resumable_ref) => {
+                resumable_ref.resume(&mut runtime_instance, 2).unwrap()
             }
-        }
+        };
+        println!("Global values are {:?}", &runtime_instance.store.globals);
+        run_state_add = match run_state_add {
+            RunState::Finished(_) => panic!("should not terminate"),
+            RunState::Resumable(resumable_ref) => {
+                resumable_ref.resume(&mut runtime_instance, 2).unwrap()
+            }
+        };
+        println!("Global values are {:?}", &runtime_instance.store.globals)
     }
 }
