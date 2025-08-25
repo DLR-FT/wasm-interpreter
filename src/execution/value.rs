@@ -654,6 +654,9 @@ impl InteropValue for FuncRefForInteropValue {
     #[allow(warnings)]
     fn from_value(value: Value) -> Self {
         match value {
+            // SAFETY: The `FuncRefForInteropValue::new` constructor errors out if the argument
+            // is not a `Ref::Func`. Through validation, we do however know that `rref` **is**
+            // a `Ref::Func`.
             Value::Ref(rref) => unsafe { FuncRefForInteropValue::new(rref).unwrap_unchecked() },
             _ => unreachable_validated!(),
         }

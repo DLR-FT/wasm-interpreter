@@ -1,4 +1,4 @@
-use core::{cell::UnsafeCell, mem};
+use core::{cell::UnsafeCell, mem, ptr};
 
 use alloc::vec::Vec;
 
@@ -64,6 +64,13 @@ use crate::{
 /// in the inner data. However, this is tolerable, e.g. avoiding race conditions on the state of the
 /// linear memory can not be the task of the interpreter, but has to be fulfilled by the interpreted
 /// bytecode itself.
+///
+/// To gain some confidence in the correctness of the unsafe code in this module, run `miri`:
+///
+/// ```bash
+/// cargo miri test --test memory # quick
+/// cargo miri test # thorough
+/// ```
 // TODO if a memmap like operation is available, the linear memory implementation can be optimized brutally. Out-of-bound access can be mapped to userspace handled page-faults, e.g. the MMU takes over that responsibility of catching out of bounds. Grow can happen without copying of data, by mapping new pages consecutively after the current final page of the linear memory.
 pub struct LinearMemory<const PAGE_SIZE: usize = { crate::Limits::MEM_PAGE_SIZE as usize }> {
     inner_data: RwSpinLock<Vec<UnsafeCell<u8>>>,
@@ -122,45 +129,52 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
         index: MemIdx,
         value: T,
     ) -> Result<(), RuntimeError> {
-        let value_size = mem::size_of::<T>();
-
-        // Unless someone implementes something wrong like `impl LittleEndianBytes<3> for f64`, this
+        // Unless someone implements something wrong like `impl LittleEndianBytes<3> for f64`, this
         // check is already guaranteed at the type level. Therefore only a debug_assert.
-        debug_assert_eq!(value_size, N, "value size must match const generic N");
+        debug_assert_eq!(
+            mem::size_of::<T>(),
+            N,
+            "value size must match const generic N"
+        );
 
         let lock_guard = self.inner_data.read();
 
+        /* check destination for out of bounds access */
         // A value must fit into the linear memory
-        if value_size > lock_guard.len() {
+        if N > lock_guard.len() {
             error!("value does not fit into linear memory");
             return Err(RuntimeError::MemoryAccessOutOfBounds);
         }
 
         // The following statement must be true
-        // `index + value_size <= lock_guard.len()`
+        // `index + N <= lock_guard.len()`
         // This check verifies it, while avoiding the possible overflow. The subtraction can not
         // underflow because of the previous check.
 
-        if (index) > lock_guard.len() - value_size {
+        if (index) > lock_guard.len() - N {
             error!("value write would extend beyond the end of the linear memory");
             return Err(RuntimeError::MemoryAccessOutOfBounds);
         }
 
-        // TODO this unwrap can not fail, maybe use unwrap_unchecked?
-        let ptr = lock_guard.get(index).unwrap().get();
-        let bytes = value.to_le_bytes(); //
+        let bytes = value.to_le_bytes();
 
-        // Safety argument:
-        //
+        /* gather pointers */
+        let src_ptr = bytes.as_ptr();
+        let dst_ptr = UnsafeCell::raw_get(lock_guard.as_ptr());
+
+        /* write `value` to this `LinearMemory` */
+
+        // SAFETY:
         // - nonoverlapping is guaranteed, because `src` is a pointer to a stack allocated array,
         //   while the destination is heap allocated Vec
-        // - the first check above guarantee that `src` fits into the destination
-        // - the second check above guarantees that even with the offset in `index`, `src` does not
-        //   extend beyond the destinations last `UnsafeCell<u8>`
+        // - the first if statement in this function guarantees that `src` fits into the destination
+        // - the second if statement in this function guarantees that even with the offset
+        //   `index`, writing all of `src`'s bytes does not extend beyond the destinations last
+        //   `UnsafeCell<u8>`
         // - the use of `UnsafeCell` avoids any `&` or `&mut` to ever be created on any of the `u8`s
         //   contained in the `UnsafeCell`s, so no UB is created through the existence of unsound
         //   references
-        unsafe { ptr.copy_from_nonoverlapping(bytes.as_ref().as_ptr(), value_size) }
+        unsafe { ptr::copy_nonoverlapping(src_ptr, dst_ptr.add(index), bytes.len()) };
 
         Ok(())
     }
@@ -170,44 +184,51 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
         &self,
         index: MemIdx,
     ) -> Result<T, RuntimeError> {
-        let value_size = mem::size_of::<T>();
-
         // Unless someone implementes something wrong like `LittleEndianBytes<3> for i8`, this
         // check is already guaranteed at the type level. Therefore only a debug_assert.
-        debug_assert_eq!(value_size, N, "value size must match const generic N");
+        debug_assert_eq!(
+            mem::size_of::<T>(),
+            N,
+            "value size must match const generic N"
+        );
 
         let lock_guard = self.inner_data.read();
 
+        /* check source for out of bounds access */
         // A value must fit into the linear memory
-        if value_size > lock_guard.len() {
+        if N > lock_guard.len() {
             error!("value does not fit into linear memory");
             return Err(RuntimeError::MemoryAccessOutOfBounds);
         }
 
         // The following statement must be true
-        // `index + value_size <= lock_guard.len()`
+        // `index + N <= lock_guard.len()`
         // This check verifies it, while avoiding the possible overflow. The subtraction can not
         // underflow because of the previous assert.
 
-        if (index) > lock_guard.len() - value_size {
+        if (index) > lock_guard.len() - N {
             error!("value read would extend beyond the end of the linear_memory");
             return Err(RuntimeError::MemoryAccessOutOfBounds);
         }
 
-        let ptr = lock_guard.get(index).unwrap().get();
         let mut bytes = [0; N];
 
-        // Safety argument:
-        //
-        // - nonoverlapping is guaranteed, because `dest` is a pointer to a stack allocated array,
+        /* gather pointers */
+        let src_ptr = UnsafeCell::raw_get(lock_guard.as_ptr());
+        let dst_ptr = bytes.as_mut_ptr();
+
+        /* read `value` from this `LinearMemory` */
+        // SAFETY:
+        // - nonoverlapping is guaranteed, because `dst` is a pointer to a stack allocated array,
         //   while the source is heap allocated Vec
-        // - the first assert above guarantee that source is bigger than `dest`
-        // - the second assert above guarantees that even with the offset in `index`, `dest` does
-        //   not extend beyond the destinations last `UnsafeCell<u8>` in source
+        // - the first if statement in this function guarantees that source is bigger than `dest`
+        // - the second if statement in this function guarantees that even with the offset `index`,
+        //   reading all of `dest` bytes does not extend beyond the source's last `UnsafeCell<u8>`
         // - the use of `UnsafeCell` avoids any `&` or `&mut` to ever be created on any of the `u8`s
         //   contained in the `UnsafeCell`s, so no UB is created through the existence of unsound
         //   references
-        unsafe { ptr.copy_to_nonoverlapping(bytes.as_mut_ptr(), bytes.len()) };
+        unsafe { ptr::copy_nonoverlapping(src_ptr.add(index), dst_ptr, bytes.len()) };
+
         Ok(T::from_le_bytes(bytes))
     }
 
@@ -239,11 +260,23 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
             return Ok(());
         }
 
-        let ptr = lock_guard[index].get();
-        unsafe {
-            // Specification step 14-21.
-            ptr.write_bytes(data_byte, count);
-        }
+        /* gather pointer */
+        let dst_ptr = UnsafeCell::raw_get(lock_guard.as_ptr());
+
+        /* write the `data_byte` to this `LinearMemory` */
+
+        // SAFETY:
+        // - the first if statement of this function guarantees that count fits into this
+        //   `LinearMemory`
+        // - the second if statement of this function guarantees that even with the offset `index`,
+        //   `count` many bytes can be written to this `LinearMemory` without extending beyond it's
+        //   last `UnsafeCell<u8>`
+        // - the use of `UnsafeCell` avoids any `&` or `&mut` to ever be created on any of the `u8`s
+        //   contained in the `UnsafeCell`s, so no UB is created through the existence of unsound
+        //   references
+
+        // Specification step 14-21.
+        unsafe { dst_ptr.add(index).write_bytes(data_byte, count) };
 
         Ok(())
     }
@@ -269,19 +302,6 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
         // other is the source
         let lock_guard_other = source_mem.inner_data.read();
 
-        /* check destination for out of bounds access */
-        // Specification step 12.
-        if count > lock_guard_self.len() {
-            error!("copy count is bigger than the destination linear memory");
-            return Err(RuntimeError::MemoryAccessOutOfBounds);
-        }
-
-        // Specification step 12.
-        if destination_index > lock_guard_self.len() - count {
-            error!("copy destination extends beyond the linear memory's end");
-            return Err(RuntimeError::MemoryAccessOutOfBounds);
-        }
-
         /* check source for out of bounds access */
         // Specification step 12.
         if count > lock_guard_other.len() {
@@ -295,24 +315,56 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
             return Err(RuntimeError::MemoryAccessOutOfBounds);
         }
 
+        /* check destination for out of bounds access */
+        // Specification step 12.
+        if count > lock_guard_self.len() {
+            error!("copy count is bigger than the destination linear memory");
+            return Err(RuntimeError::MemoryAccessOutOfBounds);
+        }
+
+        // Specification step 12.
+        if destination_index > lock_guard_self.len() - count {
+            error!("copy destination extends beyond the linear memory's end");
+            return Err(RuntimeError::MemoryAccessOutOfBounds);
+        }
+
         /* check if there is anything to be done */
         // Specification step 13.
         if count == 0 {
             return Ok(());
         }
 
-        // acquire pointers
-        let destination_ptr = lock_guard_self[destination_index].get();
-        let source_ptr = lock_guard_other[source_index].get();
+        /* gather pointers */
+        let src_ptr = UnsafeCell::raw_get(lock_guard_other.as_ptr());
+        let dst_ptr = UnsafeCell::raw_get(lock_guard_self.as_ptr());
 
-        // copy the data
+        /* write from `source_mem` to `self` */
+
+        // SAFETY:
+        // - the first two if statements above guarantee that starting from `source_index`,
+        //   there are at least `count` further `UnsafeCell<u8>`s in the other `LinearMemory`
+        // - the third and fourth if statement above guarantee that starting from
+        //   `destination_index`, there are at least `count` further `UnsafeCell<u8>`s in this
+        //   `LinearMemory`
+        // - the use of `UnsafeCell` avoids any `&` or `&mut` to ever be created on any of the `u8`s
+        //   contained in the `UnsafeCell`s, so no UB is created through the existence of unsound
+        //   references
+        // - as per the other statements above, both `*_ptr` are valid, and have at least `count`
+        //   further values after them in their respective `LinearMemory`s
+        // - the use of `UnsafeCell` avoids any `&` or `&mut` to ever be created on any of the `u8`s
+        //   contained in the `UnsafeCell`s, so no UB is created through the existence of unsound
+        //   references
+
+        // Specification step 14-15.
+        // TODO investigate if it is worth to use a conditional `copy_from_nonoverlapping`
+        // if the non-overlapping can be confirmed (and the count is bigger than a certain
+        // threshold).
         unsafe {
-            // TODO investigate if it is worth to use a conditional `copy_from_nonoverlapping`
-            // if the non-overlapping can be confirmed (and the count is bigger than a certain
-            // threshold).
-
-            // Specification step 14-15.
-            destination_ptr.copy_from(source_ptr, count);
+            ptr::copy(
+                src_ptr.add(source_index),
+                dst_ptr.add(destination_index),
+                count,
+            )
         }
 
         Ok(())
@@ -364,14 +416,28 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
             return Ok(());
         }
 
-        // acquire pointers
-        let destination_ptr = lock_guard_self[destination_index].get();
-        let source_ptr = &source_data[source_index];
+        /* copy the data to this `LinearMemory` */
 
-        // copy the data
-        unsafe {
-            // Specification step 18-27.
-            destination_ptr.copy_from_nonoverlapping(source_ptr, count);
+        // Specification step 18-27.
+        for i in 0..count {
+            // SAFETY: this is sound, as the two if statements above guarantee that starting from
+            // `source_index`, there are at least `count` further `u8`s in `source_data`
+            let src_ptr = unsafe { source_data.get_unchecked(source_index + i) };
+
+            // SAFETY: this is sound, as the two if statements above guarantee that starting from
+            // `destination_index`, there are at least `count` further `UnsafeCell<u8>`s in this
+            // `LinearMemory`
+            let dst_ptr = unsafe { lock_guard_self.get_unchecked(destination_index + i) }.get();
+
+            // SAFETY:
+            // - as per the other SAFETY statements in this function, both `*_ptr` are valid, and
+            //   have at least `count` further values after them in them respectively
+            // - the use of `UnsafeCell` avoids any `&` or `&mut` to ever be created on any of the
+            //   `u8`s contained in the `UnsafeCell`s, so no UB is created through the existence of
+            //   unsound references
+            unsafe {
+                ptr::copy(src_ptr, dst_ptr, 1);
+            }
         }
 
         Ok(())
@@ -382,21 +448,66 @@ impl<const PAGE_SIZE: usize> core::fmt::Debug for LinearMemory<PAGE_SIZE> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "LinearMemory {{ inner_data: [ ")?;
         let lock_guard = self.inner_data.read();
-        let mut iter = lock_guard.iter();
 
-        if let Some(first_byte_uc) = iter.next() {
-            write!(f, "{}", unsafe { *first_byte_uc.get() })?;
+        // then write all other elements with a preceding ", "
+        let mut repetition_count = 1;
+
+        // if this many or more sucessive elements have the same value, print just the number of
+        // repetitions and one time the element value
+        let repetition_threshold = 8;
+
+        for i in 1..lock_guard.len() {
+            // SAFETY: As `i` is a valid index into this `LinearMemory` while the
+            // `lock_guard` prevents a resize/realloc of its data, so its valid.
+            let prev_byte = unsafe { *lock_guard[i - 1].get() };
+
+            // SAFETY: As `i + 1` is a valid index into this `LinearMemory` while the
+            // `lock_guard` prevents a resize/realloc of its data, so its valid.
+            let byte = unsafe { *lock_guard[i].get() };
+
+            let is_last_element = i == lock_guard.len() - 1;
+            let is_repetition = prev_byte == byte;
+
+            // if this is a repetition, increment the repetition_count
+            if is_repetition {
+                repetition_count += 1;
+            }
+
+            // either the repition was broken or we are at the last element, so write the repitition
+            if !is_repetition || is_last_element {
+                // threshold crossed, just print the count and the element once
+                if repetition_count >= repetition_threshold {
+                    write!(f, "#{repetition_count} × {prev_byte}")?;
+                    repetition_count = 1;
+                }
+                // threshold not crossed, actually print the repeating element count times
+                else {
+                    for _ in 0..repetition_count - 1 {
+                        write!(f, "{prev_byte}, ")?;
+                    }
+                    write!(f, "{prev_byte}")?;
+                    repetition_count = 1;
+                }
+
+                if !is_repetition {
+                    write!(f, ", ")?;
+                } else {
+                    write!(f, " ")?;
+                }
+            }
+
+            // only if the current element is breaking a repetition then we need to write it
+            if !is_repetition && is_last_element {
+                write!(f, "{byte}")?;
+
+                if !is_last_element {
+                    write!(f, ", ")?;
+                } else {
+                    write!(f, " ")?;
+                }
+            }
         }
-
-        for uc in iter {
-            // Safety argument:
-            //
-            // TODO
-            let byte = unsafe { *uc.get() };
-
-            write!(f, ", {byte}")?;
-        }
-        write!(f, " ] }}")
+        write!(f, "] }}")
     }
 }
 
@@ -429,17 +540,42 @@ mod test {
     }
 
     #[test]
-    fn debug_print() {
+    fn debug_print_simple() {
         let lin_mem = LinearMemory::<PAGE_SIZE>::new_with_initial_pages(1);
         assert_eq!(lin_mem.pages(), 1);
 
-        let expected_length = "LinearMemory { inner_data: [  ] }".len() + PAGE_SIZE * "0, ".len();
-        let tol = 2;
-
+        let expected = format!("LinearMemory {{ inner_data: [ #{PAGE_SIZE} × 0 ] }}");
         let debug_repr = format!("{lin_mem:?}");
-        let lower_bound = expected_length - tol;
-        let upper_bound = expected_length + tol;
-        assert!((lower_bound..upper_bound).contains(&debug_repr.len()));
+
+        assert_eq!(debug_repr, expected);
+    }
+
+    #[test]
+    fn debug_print_complex() {
+        let page_count = 2;
+        let lin_mem = LinearMemory::<PAGE_SIZE>::new_with_initial_pages(page_count);
+        assert_eq!(lin_mem.pages(), page_count);
+
+        lin_mem.store(1, 0xffu8).unwrap();
+        lin_mem.store(10, 1u8).unwrap();
+        lin_mem.store(200, 0xffu8).unwrap();
+
+        let expected =
+            "LinearMemory { inner_data: [ 0, 255, #8 × 0, 1, #189 × 0, 255, #311 × 0 ] }";
+        let debug_repr = format!("{lin_mem:?}");
+
+        assert_eq!(debug_repr, expected);
+    }
+
+    #[test]
+    fn debug_print_empty() {
+        let lin_mem = LinearMemory::<PAGE_SIZE>::new_with_initial_pages(0);
+        assert_eq!(lin_mem.pages(), 0);
+
+        let expected = "LinearMemory { inner_data: [ ] }";
+        let debug_repr = format!("{lin_mem:?}");
+
+        assert_eq!(debug_repr, expected);
     }
 
     #[test]
