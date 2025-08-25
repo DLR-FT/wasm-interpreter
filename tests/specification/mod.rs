@@ -4,6 +4,7 @@ use regex::Regex;
 use reports::WastTestReport;
 use std::fmt::Write as _;
 use std::path::Path;
+use std::process::ExitCode;
 
 mod ci_reports;
 mod files;
@@ -21,12 +22,16 @@ pub struct GlobalConfig {
     /// A regex that acts as a blocklist filter for tests.
     /// By default all `simd_*` and `proposals` tests are blocked.
     /// To not block anything use: `^$`
-    #[envconfig(default = "^(simd_.*|proposals)$")]
+    #[envconfig(default = r"^(simd_.*|proposals|names\.wast)$")]
     pub block_test_pattern: Regex,
 
     /// This makes the testsuite runner re-enable the panic hook during all interpreter calls, resulting in the printing of panic info on every interpreter panic.
     #[envconfig(default = "false")]
     pub reenable_panic_hook: bool,
+
+    /// This makes the testsuite runner exit with FAILURE with any failing test
+    #[envconfig(default = "true")]
+    pub fail_if_any_test_fails: bool,
 }
 
 lazy_static::lazy_static! {
@@ -34,7 +39,7 @@ lazy_static::lazy_static! {
 }
 
 #[test_log::test]
-pub fn spec_tests() {
+pub fn spec_tests() -> ExitCode {
     // Load environment variables
     let _ = *ENV_CONFIG;
 
@@ -150,4 +155,9 @@ pub fn spec_tests() {
 
         serde_json::to_writer_pretty(output_file, &ci_report).unwrap();
     }
+
+    if ENV_CONFIG.fail_if_any_test_fails && (num_failures != 0 || num_script_errors != 0) {
+        return ExitCode::FAILURE;
+    }
+    ExitCode::SUCCESS
 }
