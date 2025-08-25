@@ -26,6 +26,7 @@ pub enum RuntimeError {
     SignatureMismatch,
     ExpectedAValueOnTheStack,
     ModuleNotFound,
+    ResumableNotFound, // TODO refactor
     UnmetImport,
     UndefinedTableIndex,
     // "undefined element" <- as-call_indirect-last
@@ -297,6 +298,7 @@ impl Display for RuntimeError {
                 f.write_str("Expected a value on the stack, but None was found")
             }
             RuntimeError::ModuleNotFound => f.write_str("No such module exists"),
+            RuntimeError::ResumableNotFound => f.write_str("No such resumable exists"),
             RuntimeError::UnmetImport => {
                 f.write_str("There is at least one import which has no corresponding export")
             }

@@ -38,34 +38,38 @@ use crate::execution::hooks::HookSet;
 use super::store::Store;
 
 /// Interprets wasm native functions. Parameters and return values are passed on the stack.
+/// Returns either the resumable address to resume later or `usize::MAX` that indicates a finished execution.
 pub(super) fn run<T, H: HookSet>(
-    func_addr: usize,
-    stack: &mut Stack,
-    mut hooks: H,
+    resumable_addr: usize,
     store: &mut Store<T>,
-) -> Result<(), RuntimeError> {
-    let mut current_func_addr = func_addr;
+    mut hooks: H,
+    mut maybe_fuel: Option<u32>,
+) -> Result<usize, RuntimeError> {
+    // TODO fix error variant
+    let resumable = &mut store.dormitory.get_mut(resumable_addr)?;
+
+    let stack = &mut resumable.stack;
+    let mut current_func_addr = resumable.current_func_addr;
+    let pc = resumable.pc;
+    let mut stp = resumable.stp;
     let func_inst = &store.functions[current_func_addr];
     let FuncInst::WasmFunc(wasm_func_inst) = &func_inst else {
         unreachable!(
             "the interpreter loop shall only be executed with native wasm functions as root call"
         );
     };
-
     let mut current_module_idx = wasm_func_inst.module_addr;
 
     // Start reading the function's instructions
     let wasm = &mut WasmReader::new(store.modules[current_module_idx].wasm_bytecode);
 
     let mut current_sidetable: &Sidetable = &store.modules[current_module_idx].sidetable;
-    let mut stp = wasm_func_inst.stp;
 
     // local variable for holding where the function code ends (last END instr address + 1) to avoid lookup at every END instr
     let mut current_function_end_marker =
         wasm_func_inst.code_expr.from() + wasm_func_inst.code_expr.len();
 
-    // unwrap is sound, because the validation assures that the function points to valid subslice of the WASM binary
-    wasm.move_start_to(wasm_func_inst.code_expr).unwrap();
+    wasm.pc = pc;
 
     use crate::core::reader::types::opcode::*;
     loop {
@@ -80,6 +84,18 @@ pub(super) fn run<T, H: HookSet>(
             "Executing instruction {}",
             opcode_byte_to_str(first_instr_byte)
         );
+
+        // TODO dummy fuel consumption
+        if let Some(amount) = &mut maybe_fuel {
+            if *amount > 0 {
+                *amount -= 1;
+            } else {
+                resumable.current_func_addr = current_func_addr;
+                resumable.pc = wasm.pc - 1;
+                resumable.stp = stp;
+                return Ok(resumable_addr);
+            }
+        }
 
         match first_instr_byte {
             NOP => {
@@ -2425,7 +2441,7 @@ pub(super) fn run<T, H: HookSet>(
             }
         }
     }
-    Ok(())
+    Ok(usize::MAX)
 }
 
 //helper function for avoiding code duplication at intraprocedural jumps

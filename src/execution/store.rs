@@ -15,6 +15,7 @@ use crate::execution::interpreter_loop::{self, memory_init, table_init};
 use crate::execution::value::{Ref, Value};
 use crate::execution::{run_const_span, Stack};
 use crate::registry::Registry;
+use crate::resumable::{Dormitory, Resumable, ResumableRef, RunState};
 use crate::value::FuncAddr;
 use crate::{Error, Limits, RefType, RuntimeError, ValidationInfo};
 use alloc::borrow::ToOwned;
@@ -52,6 +53,9 @@ pub struct Store<'b, T> {
     // currently, all of the exports of an instantiated module is made visible (this is outside of spec)
     pub registry: Registry,
     pub user_data: T,
+
+    // data structure holding all resumable objects that belong to this store
+    pub dormitory: Dormitory,
 }
 
 impl<'b, T> Store<'b, T> {
@@ -67,6 +71,7 @@ impl<'b, T> Store<'b, T> {
             modules: Vec::default(),
             registry: Registry::default(),
             user_data,
+            dormitory: Dormitory::default(),
         }
     }
 
@@ -79,6 +84,7 @@ impl<'b, T> Store<'b, T> {
         &mut self,
         name: &str,
         validation_info: &ValidationInfo<'b>,
+        maybe_fuel: Option<u32>,
     ) -> CustomResult<()> {
         // instantiation step -1: collect extern_vals, this section basically acts as a linker between modules
         // best attempt at trying to match the spec implementation in terms of errors
@@ -410,7 +416,7 @@ impl<'b, T> Store<'b, T> {
             // execute
             //   call func_ifx
             let func_addr = self.modules[current_module_idx].func_addrs[func_idx];
-            self.invoke(func_addr, Vec::new())
+            self.invoke(func_addr, Vec::new(), maybe_fuel)
                 .map_err(Error::RuntimeError)?;
         };
 
@@ -538,7 +544,8 @@ impl<'b, T> Store<'b, T> {
         &mut self,
         func_addr: usize,
         params: Vec<Value>,
-    ) -> Result<Vec<Value>, RuntimeError> {
+        maybe_fuel: Option<u32>,
+    ) -> Result<RunState, RuntimeError> {
         let func_inst = self
             .functions
             .get(func_addr)
@@ -576,7 +583,7 @@ impl<'b, T> Store<'b, T> {
                     return Err(RuntimeError::HostFunctionSignatureMismatch);
                 }
 
-                Ok(returns)
+                Ok(RunState::Finished(returns))
             }
             FuncInst::WasmFunc(wasm_func_inst) => {
                 // Prepare a new stack with the locals for the entry function
@@ -585,17 +592,31 @@ impl<'b, T> Store<'b, T> {
 
                 stack.push_stackframe(usize::MAX, &func_ty, locals, usize::MAX, usize::MAX)?;
 
+                let resumable = Resumable {
+                    current_func_addr: func_addr,
+                    stack,
+                    pc: wasm_func_inst.code_expr.from,
+                    stp: wasm_func_inst.stp,
+                };
+                let resumable_addr = self.dormitory.insert(resumable);
+
                 // Run the interpreter
-                interpreter_loop::run(
+                let result = interpreter_loop::run(
                     // &mut self.modules,
-                    func_addr,
+                    resumable_addr,
                     // self.lut.as_ref().ok_or(RuntimeError::UnmetImport)?,
-                    &mut stack,
-                    EmptyHookSet,
                     self,
+                    EmptyHookSet,
+                    maybe_fuel,
                 )?;
+                if result != usize::MAX {
+                    return Ok(RunState::Resumable(ResumableRef(result)));
+                }
                 debug!("Successfully invoked function");
-                Ok(stack.into_values())
+                let Ok(values) = self.dormitory.remove(resumable_addr) else {
+                    unreachable!("execution currently always finishes in the original resumable")
+                };
+                Ok(RunState::Finished(values))
             }
         }
     }
