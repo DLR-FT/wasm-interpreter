@@ -84,6 +84,7 @@ fn memory_grow_test_1() {
 }
 
 #[test_log::test]
+#[cfg_attr(miri, ignore)] // test is too slow for miri
 fn memory_grow_test_2() {
     let w = r#"
     (module
@@ -107,6 +108,7 @@ fn memory_grow_test_2() {
 }
 
 #[test_log::test]
+#[cfg_attr(miri, ignore)] // test is too slow for miri
 fn memory_grow_test_3() {
     let w = r#"
     (module

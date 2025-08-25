@@ -259,6 +259,22 @@
               # cargo udeps --workspace --benches --tests
             };
 
+            # a devshell to hunt unsafe `unsafe` in the code
+            devShells.cargo-miri = pkgs.mkShell {
+              inputsFrom = [ self.checks.${system}.wasm-interpreter-msrv ];
+              nativeBuildInputs = with pkgs; [
+                ((rust-bin.selectLatestNightlyWith (toolchain: toolchain.default)).override {
+                  extensions = [
+                    "rust-analysis"
+                    "rust-src"
+                    "miri-preview"
+                  ];
+                })
+              ];
+              # Run this to find unsafe `unsafe`:
+              # cargo miri test
+            };
+
             # for `nix fmt`
             formatter = treefmtEval.config.build.wrapper;
 

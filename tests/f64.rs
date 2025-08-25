@@ -614,6 +614,7 @@ pub fn f64_nearest() {
 
 /// A simple function to test the f64.sqrt implementation
 #[test_log::test]
+#[cfg_attr(miri, ignore)] // sqrt is not supported in miri
 pub fn f64_sqrt() {
     let wat = r#"
         (module

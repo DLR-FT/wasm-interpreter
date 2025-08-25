@@ -542,6 +542,7 @@ pub fn f32_nearest() {
 
 /// A simple function to test the f32.sqrt implementation
 #[test_log::test]
+#[cfg_attr(miri, ignore)] // sqrt is not supported in miri
 pub fn f32_sqrt() {
     let wat = String::from(WAT_1_ARG_RETURN_F32).replace("{{0}}", "sqrt");
 
