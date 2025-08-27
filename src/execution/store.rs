@@ -593,34 +593,37 @@ impl<'b, T> Store<'b, T> {
 
                 stack.push_stackframe(usize::MAX, &func_ty, locals, usize::MAX, usize::MAX)?;
 
-                let resumable = Resumable {
+                let mut resumable = Resumable {
                     current_func_addr: func_addr,
                     stack,
                     pc: wasm_func_inst.code_expr.from,
                     stp: wasm_func_inst.stp,
                 };
-                let resumable_addr = self.dormitory.write().insert(resumable);
-
                 // Run the interpreter
                 let result = interpreter_loop::run(
                     // &mut self.modules,
-                    resumable_addr,
+                    &mut resumable,
                     // self.lut.as_ref().ok_or(RuntimeError::UnmetImport)?,
                     self,
                     EmptyHookSet,
                     maybe_fuel,
-                )?;
-                if result != usize::MAX {
-                    return Ok(RunState::Resumable(ResumableRef {
-                        resumable_addr: result,
-                        dormitory: Arc::downgrade(&self.dormitory),
-                    }));
+                );
+
+                match result {
+                    Ok(_) => {
+                        debug!("Successfully invoked function");
+                        Ok(RunState::Finished(resumable.stack.into_values()))
+                    }
+                    Err(RuntimeError::OutOfFuel) => {
+                        debug!("Successfully invoked function");
+                        let resumable_addr = self.dormitory.write().insert(resumable);
+                        Ok(RunState::Resumable(ResumableRef {
+                            resumable_addr,
+                            dormitory: Arc::downgrade(&self.dormitory),
+                        }))
+                    }
+                    Err(err) => Err(err),
                 }
-                debug!("Successfully invoked function");
-                let Ok(values) = self.dormitory.write().remove(resumable_addr) else {
-                    unreachable!("execution currently always finishes in the original resumable")
-                };
-                Ok(RunState::Finished(values))
             }
         }
     }

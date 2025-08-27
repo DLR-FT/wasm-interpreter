@@ -77,32 +77,28 @@ impl ResumableRef {
         runtime_instance: &mut RuntimeInstance<T>,
         fuel: u32,
     ) -> Result<RunState, RuntimeError> {
-        if let Some(dormitory) = self.dormitory.upgrade() {
-            // an Err indicates parent dormitory has no such Resumable
-            dormitory.read().get(self.resumable_addr)?;
-            // this should be the dormitory of the store
-            if !Arc::ptr_eq(&dormitory, &runtime_instance.store.dormitory) {
-                return Err(RuntimeError::ResumableNotFound);
-            }
+        let Some(dormitory) = self.dormitory.upgrade() else {
+            return Err(RuntimeError::ResumableNotFound);
+        };
+        let mut dormitory = if Arc::ptr_eq(&dormitory, &runtime_instance.store.dormitory) {
+            dormitory.write()
         } else {
             return Err(RuntimeError::ResumableNotFound);
-        }
-        // TODO fix error
+        };
+        let resumable = dormitory.get_mut(self.resumable_addr)?;
         let result = interpreter_loop::run(
-            self.resumable_addr,
+            resumable,
             &mut runtime_instance.store,
             EmptyHookSet,
             Some(fuel),
-        )?;
-        if result != usize::MAX {
-            Ok(RunState::Resumable(self))
-        } else {
-            runtime_instance
-                .store
-                .dormitory
-                .write()
+        );
+
+        match result {
+            Ok(_) => dormitory
                 .remove(self.resumable_addr)
-                .map(RunState::Finished)
+                .map(RunState::Finished),
+            Err(RuntimeError::OutOfFuel) => Ok(RunState::Resumable(self)),
+            Err(err) => Err(err),
         }
     }
 }

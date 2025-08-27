@@ -33,6 +33,7 @@ pub enum RuntimeError {
     ReachedUnreachable,
     StackExhaustion,
     HostFunctionSignatureMismatch,
+    OutOfFuel,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -314,6 +315,7 @@ impl Display for RuntimeError {
             RuntimeError::HostFunctionSignatureMismatch => {
                 f.write_str("host function call did not respect its type signature")
             }
+            RuntimeError::OutOfFuel => f.write_str("execution ran out of fuel"),
         }
     }
 }

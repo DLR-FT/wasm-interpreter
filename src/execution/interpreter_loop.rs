@@ -25,6 +25,7 @@ use crate::{
         sidetable::Sidetable,
     },
     locals::Locals,
+    resumable::Resumable,
     store::DataInst,
     value::{self, FuncAddr, Ref},
     value_stack::Stack,
@@ -40,15 +41,11 @@ use super::store::Store;
 /// Interprets wasm native functions. Parameters and return values are passed on the stack.
 /// Returns either the resumable address to resume later or `usize::MAX` that indicates a finished execution.
 pub(super) fn run<T, H: HookSet>(
-    resumable_addr: usize,
+    resumable: &mut Resumable,
     store: &mut Store<T>,
     mut hooks: H,
     mut maybe_fuel: Option<u32>,
-) -> Result<usize, RuntimeError> {
-    // TODO fix error variant
-    let mut dormitory = store.dormitory.write();
-    let resumable = dormitory.get_mut(resumable_addr)?;
-
+) -> Result<(), RuntimeError> {
     let stack = &mut resumable.stack;
     let mut current_func_addr = resumable.current_func_addr;
     let pc = resumable.pc;
@@ -94,7 +91,7 @@ pub(super) fn run<T, H: HookSet>(
                 resumable.current_func_addr = current_func_addr;
                 resumable.pc = wasm.pc - 1;
                 resumable.stp = stp;
-                return Ok(resumable_addr);
+                return Err(RuntimeError::OutOfFuel);
             }
         }
 
@@ -2442,7 +2439,7 @@ pub(super) fn run<T, H: HookSet>(
             }
         }
     }
-    Ok(usize::MAX)
+    Ok(())
 }
 
 //helper function for avoiding code duplication at intraprocedural jumps

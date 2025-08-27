@@ -95,6 +95,7 @@ pub fn to_wasm_testsuite_string(runtime_error: RuntimeError) -> Result<String, B
         RuntimeError::ResumableNotFound => not_represented,
         RuntimeError::UnmetImport => Ok("unmet import"),
         RuntimeError::HostFunctionSignatureMismatch => Ok("host function signature mismatch"),
+        RuntimeError::OutOfFuel => not_represented,
     }
     .map(|s| s.to_string())
 }
