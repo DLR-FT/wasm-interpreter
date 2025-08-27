@@ -72,7 +72,7 @@ impl<'b, T> Store<'b, T> {
             modules: Vec::default(),
             registry: Registry::default(),
             user_data,
-            dormitory: Arc::new(RwSpinLock::new(Dormitory::default())),
+            dormitory: Arc::new(RwSpinLock::new(Dormitory::new())),
         }
     }
 

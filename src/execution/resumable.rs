@@ -1,11 +1,14 @@
 use alloc::{
-    collections::btree_map::BTreeMap,
     sync::{Arc, Weak},
     vec::Vec,
 };
 
 use crate::{
-    execution::interpreter_loop, hooks::EmptyHookSet, rw_spinlock::RwSpinLock, value_stack::Stack,
+    core::slotmap::{SlotMap, SlotMapKey},
+    execution::interpreter_loop,
+    hooks::EmptyHookSet,
+    rw_spinlock::RwSpinLock,
+    value_stack::Stack,
     RuntimeError, RuntimeInstance, Value,
 };
 
@@ -16,46 +19,41 @@ pub(super) struct Resumable {
     pub stp: usize,
     pub current_func_addr: usize,
 }
-
-#[derive(Default, Debug)]
-pub struct Dormitory {
-    // TODO solve adress exhaustion problem by implementing dormitory as a slotmap
-    last_resumable_addr: usize,
-    resumables: BTreeMap<usize, Resumable>,
-}
+pub struct Dormitory(SlotMap<Resumable>);
+pub struct ResumableAddr(SlotMapKey<Resumable>);
 
 impl Dormitory {
+    pub(super) fn new() -> Dormitory {
+        Dormitory(SlotMap::new())
+    }
+
     #[allow(unused)]
-    pub(super) fn get(&self, resumable_addr: usize) -> Result<&Resumable, RuntimeError> {
-        self.resumables
-            .get(&resumable_addr)
+    pub(super) fn get(&self, resumable_addr: &ResumableAddr) -> Result<&Resumable, RuntimeError> {
+        self.0
+            .get(&resumable_addr.0)
             .ok_or(RuntimeError::ResumableNotFound)
     }
 
     pub(super) fn get_mut(
         &mut self,
-        resumable_addr: usize,
+        resumable_addr: &ResumableAddr,
     ) -> Result<&mut Resumable, RuntimeError> {
-        self.resumables
-            .get_mut(&resumable_addr)
+        self.0
+            .get_mut(&resumable_addr.0)
             .ok_or(RuntimeError::ResumableNotFound)
     }
 
-    pub(super) fn insert(&mut self, resumable: Resumable) -> usize {
-        self.last_resumable_addr += 1;
-        let None = self
-            .resumables
-            .insert(self.last_resumable_addr - 1, resumable)
-        else {
-            unreachable!("resumable addresses do not repeat")
-        };
-        self.last_resumable_addr - 1
+    pub(super) fn insert(&mut self, resumable: Resumable) -> ResumableAddr {
+        ResumableAddr(self.0.insert(resumable))
     }
 
-    pub(super) fn remove(&mut self, resumable_addr: usize) -> Result<Vec<Value>, RuntimeError> {
+    pub(super) fn remove(
+        &mut self,
+        resumable_addr: &ResumableAddr,
+    ) -> Result<Vec<Value>, RuntimeError> {
         let resumable = self
-            .resumables
-            .remove(&resumable_addr)
+            .0
+            .remove(&resumable_addr.0)
             .ok_or(RuntimeError::ResumableNotFound)?;
         Ok(resumable.stack.into_values())
     }
@@ -67,7 +65,7 @@ pub enum RunState {
 }
 
 pub struct ResumableRef {
-    pub resumable_addr: usize,
+    pub resumable_addr: ResumableAddr,
     pub dormitory: Weak<RwSpinLock<Dormitory>>,
 }
 impl ResumableRef {
@@ -85,7 +83,7 @@ impl ResumableRef {
         } else {
             return Err(RuntimeError::ResumableNotFound);
         };
-        let resumable = dormitory.get_mut(self.resumable_addr)?;
+        let resumable = dormitory.get_mut(&self.resumable_addr)?;
         let result = interpreter_loop::run(
             resumable,
             &mut runtime_instance.store,
@@ -95,7 +93,7 @@ impl ResumableRef {
 
         match result {
             Ok(_) => dormitory
-                .remove(self.resumable_addr)
+                .remove(&self.resumable_addr)
                 .map(RunState::Finished),
             Err(RuntimeError::OutOfFuel) => Ok(RunState::Resumable(self)),
             Err(err) => Err(err),
@@ -107,7 +105,7 @@ impl Drop for ResumableRef {
     fn drop(&mut self) {
         if let Some(dormitory) = self.dormitory.upgrade() {
             // an Err indicates this resumable was already dropped, which is fine
-            dormitory.write().remove(self.resumable_addr).unwrap();
+            dormitory.write().remove(&self.resumable_addr).unwrap();
         }
     }
 }
