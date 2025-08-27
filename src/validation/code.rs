@@ -569,8 +569,8 @@ fn read_instructions(
                     return Err(Error::MemoryIsNotDefined(0));
                 }
                 let memarg = MemArg::read(wasm)?;
-                if memarg.align > 4 {
-                    return Err(Error::ErroneousAlignment(memarg.align, 4));
+                if memarg.align > 2 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 2));
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.push_valtype(ValType::NumType(NumType::I32));
@@ -580,8 +580,8 @@ fn read_instructions(
                     return Err(Error::MemoryIsNotDefined(0));
                 }
                 let memarg = MemArg::read(wasm)?;
-                if memarg.align > 8 {
-                    return Err(Error::ErroneousAlignment(memarg.align, 8));
+                if memarg.align > 3 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 3));
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.push_valtype(ValType::NumType(NumType::I64));
@@ -591,8 +591,8 @@ fn read_instructions(
                     return Err(Error::MemoryIsNotDefined(0));
                 }
                 let memarg = MemArg::read(wasm)?;
-                if memarg.align > 4 {
-                    return Err(Error::ErroneousAlignment(memarg.align, 4));
+                if memarg.align > 2 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 2));
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.push_valtype(ValType::NumType(NumType::F32));
@@ -602,8 +602,8 @@ fn read_instructions(
                     return Err(Error::MemoryIsNotDefined(0));
                 }
                 let memarg = MemArg::read(wasm)?;
-                if memarg.align > 8 {
-                    return Err(Error::ErroneousAlignment(memarg.align, 8));
+                if memarg.align > 3 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 3));
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.push_valtype(ValType::NumType(NumType::F64));
@@ -613,8 +613,8 @@ fn read_instructions(
                     return Err(Error::MemoryIsNotDefined(0));
                 }
                 let memarg = MemArg::read(wasm)?;
-                if memarg.align > 1 {
-                    return Err(Error::ErroneousAlignment(memarg.align, 1));
+                if memarg.align > 0 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 0));
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.push_valtype(ValType::NumType(NumType::I32));
@@ -624,8 +624,8 @@ fn read_instructions(
                     return Err(Error::MemoryIsNotDefined(0));
                 }
                 let memarg = MemArg::read(wasm)?;
-                if memarg.align > 1 {
-                    return Err(Error::ErroneousAlignment(memarg.align, 1));
+                if memarg.align > 0 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 0));
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.push_valtype(ValType::NumType(NumType::I32));
@@ -635,8 +635,8 @@ fn read_instructions(
                     return Err(Error::MemoryIsNotDefined(0));
                 }
                 let memarg = MemArg::read(wasm)?;
-                if memarg.align > 2 {
-                    return Err(Error::ErroneousAlignment(memarg.align, 2));
+                if memarg.align > 1 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 1));
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.push_valtype(ValType::NumType(NumType::I32));
@@ -646,8 +646,8 @@ fn read_instructions(
                     return Err(Error::MemoryIsNotDefined(0));
                 }
                 let memarg = MemArg::read(wasm)?;
-                if memarg.align > 2 {
-                    return Err(Error::ErroneousAlignment(memarg.align, 2));
+                if memarg.align > 1 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 1));
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.push_valtype(ValType::NumType(NumType::I32));
@@ -657,8 +657,8 @@ fn read_instructions(
                     return Err(Error::MemoryIsNotDefined(0));
                 }
                 let memarg = MemArg::read(wasm)?;
-                if memarg.align > 1 {
-                    return Err(Error::ErroneousAlignment(memarg.align, 1));
+                if memarg.align > 0 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 0));
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.push_valtype(ValType::NumType(NumType::I64));
@@ -668,8 +668,8 @@ fn read_instructions(
                     return Err(Error::MemoryIsNotDefined(0));
                 }
                 let memarg = MemArg::read(wasm)?;
-                if memarg.align > 1 {
-                    return Err(Error::ErroneousAlignment(memarg.align, 1));
+                if memarg.align > 0 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 0));
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.push_valtype(ValType::NumType(NumType::I64));
@@ -679,8 +679,8 @@ fn read_instructions(
                     return Err(Error::MemoryIsNotDefined(0));
                 }
                 let memarg = MemArg::read(wasm)?;
-                if memarg.align > 2 {
-                    return Err(Error::ErroneousAlignment(memarg.align, 2));
+                if memarg.align > 1 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 1));
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.push_valtype(ValType::NumType(NumType::I64));
@@ -690,8 +690,8 @@ fn read_instructions(
                     return Err(Error::MemoryIsNotDefined(0));
                 }
                 let memarg = MemArg::read(wasm)?;
-                if memarg.align > 2 {
-                    return Err(Error::ErroneousAlignment(memarg.align, 2));
+                if memarg.align > 1 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 1));
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.push_valtype(ValType::NumType(NumType::I64));
@@ -701,8 +701,8 @@ fn read_instructions(
                     return Err(Error::MemoryIsNotDefined(0));
                 }
                 let memarg = MemArg::read(wasm)?;
-                if memarg.align > 4 {
-                    return Err(Error::ErroneousAlignment(memarg.align, 4));
+                if memarg.align > 2 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 2));
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.push_valtype(ValType::NumType(NumType::I64));
@@ -712,8 +712,8 @@ fn read_instructions(
                     return Err(Error::MemoryIsNotDefined(0));
                 }
                 let memarg = MemArg::read(wasm)?;
-                if memarg.align > 4 {
-                    return Err(Error::ErroneousAlignment(memarg.align, 4));
+                if memarg.align > 2 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 2));
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.push_valtype(ValType::NumType(NumType::I64));
@@ -723,8 +723,8 @@ fn read_instructions(
                     return Err(Error::MemoryIsNotDefined(0));
                 }
                 let memarg = MemArg::read(wasm)?;
-                if memarg.align > 4 {
-                    return Err(Error::ErroneousAlignment(memarg.align, 4));
+                if memarg.align > 2 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 2));
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
@@ -734,8 +734,8 @@ fn read_instructions(
                     return Err(Error::MemoryIsNotDefined(0));
                 }
                 let memarg = MemArg::read(wasm)?;
-                if memarg.align > 8 {
-                    return Err(Error::ErroneousAlignment(memarg.align, 8));
+                if memarg.align > 3 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 3));
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I64))?;
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
@@ -745,8 +745,8 @@ fn read_instructions(
                     return Err(Error::MemoryIsNotDefined(0));
                 }
                 let memarg = MemArg::read(wasm)?;
-                if memarg.align > 4 {
-                    return Err(Error::ErroneousAlignment(memarg.align, 4));
+                if memarg.align > 2 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 2));
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::F32))?;
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
@@ -756,8 +756,8 @@ fn read_instructions(
                     return Err(Error::MemoryIsNotDefined(0));
                 }
                 let memarg = MemArg::read(wasm)?;
-                if memarg.align > 8 {
-                    return Err(Error::ErroneousAlignment(memarg.align, 8));
+                if memarg.align > 3 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 3));
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::F64))?;
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
@@ -767,8 +767,8 @@ fn read_instructions(
                     return Err(Error::MemoryIsNotDefined(0));
                 }
                 let memarg = MemArg::read(wasm)?;
-                if memarg.align > 1 {
-                    return Err(Error::ErroneousAlignment(memarg.align, 1));
+                if memarg.align > 0 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 0));
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
@@ -778,13 +778,24 @@ fn read_instructions(
                     return Err(Error::MemoryIsNotDefined(0));
                 }
                 let memarg = MemArg::read(wasm)?;
-                if memarg.align > 2 {
-                    return Err(Error::ErroneousAlignment(memarg.align, 2));
+                if memarg.align > 1 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 1));
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
             }
             I64_STORE8 => {
+                if memories.is_empty() {
+                    return Err(Error::MemoryIsNotDefined(0));
+                }
+                let memarg = MemArg::read(wasm)?;
+                if memarg.align > 0 {
+                    return Err(Error::ErroneousAlignment(memarg.align, 0));
+                }
+                stack.assert_pop_val_type(ValType::NumType(NumType::I64))?;
+                stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+            }
+            I64_STORE16 => {
                 if memories.is_empty() {
                     return Err(Error::MemoryIsNotDefined(0));
                 }
@@ -795,24 +806,13 @@ fn read_instructions(
                 stack.assert_pop_val_type(ValType::NumType(NumType::I64))?;
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
             }
-            I64_STORE16 => {
+            I64_STORE32 => {
                 if memories.is_empty() {
                     return Err(Error::MemoryIsNotDefined(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 2 {
                     return Err(Error::ErroneousAlignment(memarg.align, 2));
-                }
-                stack.assert_pop_val_type(ValType::NumType(NumType::I64))?;
-                stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
-            }
-            I64_STORE32 => {
-                if memories.is_empty() {
-                    return Err(Error::MemoryIsNotDefined(0));
-                }
-                let memarg = MemArg::read(wasm)?;
-                if memarg.align > 4 {
-                    return Err(Error::ErroneousAlignment(memarg.align, 4));
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I64))?;
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
