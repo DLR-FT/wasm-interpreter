@@ -32,7 +32,6 @@ pub mod value_stack;
 /// The default module name if a [RuntimeInstance] was created using [RuntimeInstance::new].
 pub const DEFAULT_MODULE: &str = "__interpreter_default__";
 
-#[derive(Debug)]
 pub struct RuntimeInstance<'b, T = (), H = EmptyHookSet>
 where
     H: HookSet + core::fmt::Debug,

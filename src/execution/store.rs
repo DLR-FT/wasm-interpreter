@@ -16,11 +16,13 @@ use crate::execution::value::{Ref, Value};
 use crate::execution::{run_const_span, Stack};
 use crate::registry::Registry;
 use crate::resumable::{Dormitory, Resumable, ResumableRef, RunState};
+use crate::rw_spinlock::RwSpinLock;
 use crate::value::FuncAddr;
 use crate::{Error, Limits, RefType, RuntimeError, ValidationInfo};
 use alloc::borrow::ToOwned;
 use alloc::collections::btree_map::BTreeMap;
 use alloc::string::String;
+use alloc::sync::Arc;
 use alloc::vec;
 use alloc::vec::Vec;
 
@@ -37,7 +39,6 @@ use crate::linear_memory::LinearMemory;
 /// globals, element segments, and data segments that have been allocated during the life time of
 /// the abstract machine.
 /// <https://webassembly.github.io/spec/core/exec/runtime.html#store>
-#[derive(Debug)]
 pub struct Store<'b, T> {
     pub functions: Vec<FuncInst<T>>,
     pub memories: Vec<MemInst>,
@@ -55,7 +56,7 @@ pub struct Store<'b, T> {
     pub user_data: T,
 
     // data structure holding all resumable objects that belong to this store
-    pub dormitory: Dormitory,
+    pub dormitory: Arc<RwSpinLock<Dormitory>>,
 }
 
 impl<'b, T> Store<'b, T> {
@@ -71,7 +72,7 @@ impl<'b, T> Store<'b, T> {
             modules: Vec::default(),
             registry: Registry::default(),
             user_data,
-            dormitory: Dormitory::default(),
+            dormitory: Arc::new(RwSpinLock::new(Dormitory::default())),
         }
     }
 
@@ -598,7 +599,7 @@ impl<'b, T> Store<'b, T> {
                     pc: wasm_func_inst.code_expr.from,
                     stp: wasm_func_inst.stp,
                 };
-                let resumable_addr = self.dormitory.insert(resumable);
+                let resumable_addr = self.dormitory.write().insert(resumable);
 
                 // Run the interpreter
                 let result = interpreter_loop::run(
@@ -610,10 +611,13 @@ impl<'b, T> Store<'b, T> {
                     maybe_fuel,
                 )?;
                 if result != usize::MAX {
-                    return Ok(RunState::Resumable(ResumableRef(result)));
+                    return Ok(RunState::Resumable(ResumableRef {
+                        resumable_addr: result,
+                        dormitory: Arc::downgrade(&self.dormitory),
+                    }));
                 }
                 debug!("Successfully invoked function");
-                let Ok(values) = self.dormitory.remove(resumable_addr) else {
+                let Ok(values) = self.dormitory.write().remove(resumable_addr) else {
                     unreachable!("execution currently always finishes in the original resumable")
                 };
                 Ok(RunState::Finished(values))

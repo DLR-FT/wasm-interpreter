@@ -1,8 +1,12 @@
-use alloc::{collections::btree_map::BTreeMap, vec::Vec};
+use alloc::{
+    collections::btree_map::BTreeMap,
+    sync::{Arc, Weak},
+    vec::Vec,
+};
 
 use crate::{
-    execution::interpreter_loop, hooks::EmptyHookSet, value_stack::Stack, RuntimeError,
-    RuntimeInstance, Value,
+    execution::interpreter_loop, hooks::EmptyHookSet, rw_spinlock::RwSpinLock, value_stack::Stack,
+    RuntimeError, RuntimeInstance, Value,
 };
 
 #[derive(Debug)]
@@ -15,6 +19,7 @@ pub(super) struct Resumable {
 
 #[derive(Default, Debug)]
 pub struct Dormitory {
+    // TODO solve adress exhaustion problem by implementing dormitory as a slotmap
     last_resumable_addr: usize,
     resumables: BTreeMap<usize, Resumable>,
 }
@@ -61,7 +66,10 @@ pub enum RunState {
     Resumable(ResumableRef),
 }
 
-pub struct ResumableRef(pub(super) usize);
+pub struct ResumableRef {
+    pub resumable_addr: usize,
+    pub dormitory: Weak<RwSpinLock<Dormitory>>,
+}
 impl ResumableRef {
     #[allow(unused)]
     pub fn resume<T>(
@@ -69,9 +77,19 @@ impl ResumableRef {
         runtime_instance: &mut RuntimeInstance<T>,
         fuel: u32,
     ) -> Result<RunState, RuntimeError> {
+        if let Some(dormitory) = self.dormitory.upgrade() {
+            // an Err indicates parent dormitory has no such Resumable
+            dormitory.read().get(self.resumable_addr)?;
+            // this should be the dormitory of the store
+            if !Arc::ptr_eq(&dormitory, &runtime_instance.store.dormitory) {
+                return Err(RuntimeError::ResumableNotFound);
+            }
+        } else {
+            return Err(RuntimeError::ResumableNotFound);
+        }
         // TODO fix error
         let result = interpreter_loop::run(
-            self.0,
+            self.resumable_addr,
             &mut runtime_instance.store,
             EmptyHookSet,
             Some(fuel),
@@ -82,8 +100,18 @@ impl ResumableRef {
             runtime_instance
                 .store
                 .dormitory
-                .remove(self.0)
+                .write()
+                .remove(self.resumable_addr)
                 .map(RunState::Finished)
+        }
+    }
+}
+
+impl Drop for ResumableRef {
+    fn drop(&mut self) {
+        if let Some(dormitory) = self.dormitory.upgrade() {
+            // an Err indicates this resumable was already dropped, which is fine
+            dormitory.write().remove(self.resumable_addr).unwrap();
         }
     }
 }

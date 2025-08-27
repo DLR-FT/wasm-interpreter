@@ -46,7 +46,8 @@ pub(super) fn run<T, H: HookSet>(
     mut maybe_fuel: Option<u32>,
 ) -> Result<usize, RuntimeError> {
     // TODO fix error variant
-    let resumable = &mut store.dormitory.get_mut(resumable_addr)?;
+    let mut dormitory = store.dormitory.write();
+    let resumable = dormitory.get_mut(resumable_addr)?;
 
     let stack = &mut resumable.stack;
     let mut current_func_addr = resumable.current_func_addr;
