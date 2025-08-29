@@ -269,7 +269,7 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
         // - the first if statement of this function guarantees that count fits into this
         //   `LinearMemory`
         // - the second if statement of this function guarantees that even with the offset `index`,
-        //   `count` many bytes can be written to this `LinearMemory` without extending beyond it's
+        //   `count` many bytes can be written to this `LinearMemory` without extending beyond its
         //   last `UnsafeCell<u8>`
         // - the use of `UnsafeCell` avoids any `&` or `&mut` to ever be created on any of the `u8`s
         //   contained in the `UnsafeCell`s, so no UB is created through the existence of unsound
