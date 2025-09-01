@@ -243,36 +243,38 @@
               }
             );
 
-            # a simple devshell to compile with the MSRV
+            # a simple devShell to compile with the MSRV
             devShells.msrv = pkgs.mkShell {
               inputsFrom = [ self.checks.${system}.wasm-interpreter-msrv ];
             };
 
-            # a devshell to hunt (u)nused (dep)endencie(s)
-            devShells.cargo-udeps = pkgs.mkShell {
-              inputsFrom = [ self.checks.${system}.wasm-interpreter-msrv ];
-              nativeBuildInputs = with pkgs; [
-                cargo-udeps
-                rust-bin.nightly.latest.default
-              ];
-              # Run this to find udeps:
-              # cargo udeps --workspace --benches --tests
-            };
-
-            # a devshell to hunt unsafe `unsafe` in the code
-            devShells.cargo-miri = pkgs.mkShell {
+            # a devShell for nightly based commands
+            #
+            #
+            # Run this to get advanced coverage information
+            # RUST_LOG=trace cargo llvm-cov --branch --doctests --release
+            #
+            #
+            # Run this to find unsafe `unsafe`:
+            # cargo miri test
+            #
+            #
+            # Run this to find unused dependencies:
+            # cargo udeps --workspace --benches --tests
+            devShells.nightly = pkgs.mkShell {
               inputsFrom = [ self.checks.${system}.wasm-interpreter-msrv ];
               nativeBuildInputs = with pkgs; [
                 ((rust-bin.selectLatestNightlyWith (toolchain: toolchain.default)).override {
                   extensions = [
+                    "miri-preview"
                     "rust-analysis"
                     "rust-src"
-                    "miri-preview"
                   ];
                 })
+                cargo-llvm-cov
+                cargo-udeps
               ];
-              # Run this to find unsafe `unsafe`:
-              # cargo miri test
+              env = { inherit (pkgs.cargo-llvm-cov) LLVM_COV LLVM_PROFDATA; };
             };
 
             # for `nix fmt`
