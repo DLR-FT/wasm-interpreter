@@ -581,7 +581,7 @@ impl<'b, T> Store<'b, T> {
                 // Prepare a new stack with the locals for the entry function
                 let mut stack = Stack::new_with_values(params);
 
-                stack.push_callframe(
+                stack.push_call_frame(
                     usize::MAX,
                     &func_ty,
                     &wasm_func_inst.locals,
