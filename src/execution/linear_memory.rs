@@ -165,11 +165,12 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
         /* write `value` to this `LinearMemory` */
 
         // SAFETY:
-        // - nonoverlapping is guaranteed, because `src` is a pointer to a stack allocated array,
-        //   while the destination is heap allocated Vec
-        // - the first if statement in this function guarantees that `src` fits into the destination
+        // - nonoverlapping is guaranteed, because `src_ptr` is a pointer to a stack allocated
+        //   array, while `dst_ptr` points to a heap allocated `Vec`
+        // - the first if statement in this function guarantees that a `T` can fit into
+        //   `LinearMemory` behind the `dst_ptr`
         // - the second if statement in this function guarantees that even with the offset
-        //   `index`, writing all of `src`'s bytes does not extend beyond the destinations last
+        //   `index`, writing all of `src_ptr`'s bytes does not extend beyond the `dst_ptr`'s last
         //   `UnsafeCell<u8>`
         // - the use of `UnsafeCell` avoids any `&` or `&mut` to ever be created on any of the `u8`s
         //   contained in the `UnsafeCell`s, so no UB is created through the existence of unsound
@@ -219,11 +220,12 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
 
         /* read `value` from this `LinearMemory` */
         // SAFETY:
-        // - nonoverlapping is guaranteed, because `dst` is a pointer to a stack allocated array,
-        //   while the source is heap allocated Vec
-        // - the first if statement in this function guarantees that source is bigger than `dest`
+        // - nonoverlapping is guaranteed, because `dst_ptr` is a pointer to a stack allocated
+        //   array, while the source is heap allocated Vec
+        // - the first if statement in this function guarantees that a `T` can fit into the linear
+        //   memory behind the `src_ptr`
         // - the second if statement in this function guarantees that even with the offset `index`,
-        //   reading all of `dest` bytes does not extend beyond the source's last `UnsafeCell<u8>`
+        //   reading all of `T`s bytes does not extend beyond the `src_ptrs`'s last `UnsafeCell<u8>`
         // - the use of `UnsafeCell` avoids any `&` or `&mut` to ever be created on any of the `u8`s
         //   contained in the `UnsafeCell`s, so no UB is created through the existence of unsound
         //   references
