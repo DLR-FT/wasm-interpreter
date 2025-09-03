@@ -1,4 +1,4 @@
-use core::{cell::UnsafeCell, mem, ptr};
+use core::{cell::UnsafeCell, iter, mem, ptr};
 
 use alloc::vec::Vec;
 
@@ -451,53 +451,31 @@ impl<const PAGE_SIZE: usize> core::fmt::Debug for LinearMemory<PAGE_SIZE> {
         struct RepetitionDetectingMemoryWriter<'a>(ReadLockGuard<'a, Vec<UnsafeCell<u8>>>);
         impl core::fmt::Debug for RepetitionDetectingMemoryWriter<'_> {
             fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+                let mut values = self.0.iter().map(|x| {
+                    // SAFETY: The [`ReadLockGuard`] stored in `self` prevents a resize/realloc of its data,
+                    // so access to the value inside each [`UnsafeCell`] is safe.
+                    unsafe { *x.get() }
+                });
+
+                let mut current_group: Option<(usize, u8)> = None;
+                let deduplicated_with_count = iter::from_fn(|| {
+                    for value in values.by_ref() {
+                        if current_group.map(|(_n, v)| v != value).unwrap_or_default() {
+                            return current_group.replace((1, value));
+                        }
+                        current_group.get_or_insert((0, value)).0 += 1;
+                    }
+                    current_group.take()
+                });
+
                 let mut list = f.debug_list();
-
-                // allows safe access to memory
-                let read_memory = |i: usize| {
-                    assert!(i < self.0.len());
-
-                    // SAFETY: As `i` is a valid index into this `LinearMemory` while the
-                    // `lock_guard` prevents a resize/realloc of its data, so its valid.
-                    unsafe { *self.0[i].get() }
-                };
-
-                // then write all other elements with a preceding ", "
-                let mut repetition_count = 1;
-
-                // if this many or more successive elements have the same value, print just the number of
-                // repetitions and one time the element value
-                let repetition_threshold = 8;
-
-                for i in 1..self.0.len() {
-                    let prev_byte = read_memory(i - 1);
-                    let byte = read_memory(i);
-
-                    let is_last_element = i == self.0.len() - 1;
-                    let is_repetition = prev_byte == byte;
-
-                    // if this is a repetition, increment the repetition_count
-                    repetition_count += is_repetition as usize;
-
-                    // either the repetition was broken or we are at the last element, so write the repetition
-                    if !is_repetition || is_last_element {
-                        // threshold crossed, just print the count and the element once
-                        if repetition_count >= repetition_threshold {
-                            list.entry(&format_args!("#{repetition_count} × {prev_byte}"));
-                        }
-                        // threshold not crossed, actually print the repeating element count times
-                        else {
-                            list.entries(core::iter::repeat(prev_byte).take(repetition_count));
-                        }
-                        repetition_count = 1;
+                deduplicated_with_count.for_each(|(count, value)| {
+                    if count < 8 {
+                        list.entries(iter::repeat(value).take(count));
+                    } else {
+                        list.entry(&format_args!("#{count} × {value}"));
                     }
-
-                    // only if the current element is breaking a repetition then we need to write it
-                    if !is_repetition && is_last_element {
-                        list.entry(&byte);
-                    }
-                }
-
+                });
                 list.finish()
             }
         }
