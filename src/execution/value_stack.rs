@@ -23,7 +23,7 @@ pub(crate) struct Stack {
     /// WASM values on the stack, i.e. the actual data that instructions operate on
     values: Vec<Value>,
 
-    /// Stack frames
+    /// Callframes
     ///
     /// Each time a function is called, a new frame is pushed, whenever a function returns, a frame is popped
     frames: Vec<Callframe>,
@@ -46,9 +46,9 @@ impl Stack {
     }
 
     pub fn drop_value(&mut self) {
-        // If there is at least one stack frame, we shall not pop values past the current
-        // stackframe. However, there is one legitimate reason to pop when there is **no** current
-        // stackframe: after the outermost function returns, to extract the final return values of
+        // If there is at least one callframe, we shall not pop values past the current
+        // callframe. However, there is one legitimate reason to pop when there is **no** current
+        // callframe: after the outermost function returns, to extract the final return values of
         // this interpreter invocation.
         debug_assert!(
             if !self.frames.is_empty() {
@@ -56,7 +56,7 @@ impl Stack {
             } else {
                 true
             },
-            "can not pop values past the current stackframe"
+            "can not pop values past the current callframe"
         );
 
         self.values.pop().unwrap_validated();
@@ -64,9 +64,9 @@ impl Stack {
 
     /// Pop a reference of unknown type from the value stack
     pub fn pop_unknown_ref(&mut self) -> Ref {
-        // If there is at least one stack frame, we shall not pop values past the current
-        // stackframe. However, there is one legitimate reason to pop when there is **no** current
-        // stackframe: after the outermost function returns, to extract the final return values of
+        // If there is at least one callframe, we shall not pop values past the current
+        // callframe. However, there is one legitimate reason to pop when there is **no** current
+        // callframe: after the outermost function returns, to extract the final return values of
         // this interpreter invocation.
         debug_assert!(
             if !self.frames.is_empty() {
@@ -74,7 +74,7 @@ impl Stack {
             } else {
                 true
             },
-            "can not pop values past the current stackframe"
+            "can not pop values past the current callframe"
         );
 
         let popped = self.values.pop().unwrap_validated();
@@ -89,9 +89,9 @@ impl Stack {
 
     /// Pop a value of the given [ValType] from the value stack
     pub fn pop_value(&mut self, ty: ValType) -> Value {
-        // If there is at least one stack frame, we shall not pop values past the current
-        // stackframe. However, there is one legitimate reason to pop when there is **no** current
-        // stackframe: after the outermost function returns, to extract the final return values of
+        // If there is at least one callframe, we shall not pop values past the current
+        // callframe. However, there is one legitimate reason to pop when there is **no** current
+        // callframe: after the outermost function returns, to extract the final return values of
         // this interpreter invocation.
         debug_assert!(
             if !self.frames.is_empty() {
@@ -99,7 +99,7 @@ impl Stack {
             } else {
                 true
             },
-            "can not pop values past the current stackframe"
+            "can not pop values past the current callframe"
         );
 
         let popped = self.values.pop().unwrap_validated();
@@ -154,7 +154,7 @@ impl Stack {
     pub fn set_local(&mut self, idx: LocalIdx) {
         debug_assert!(
             self.values.len() > self.current_callframe().value_stack_base_idx,
-            "can not pop values past the current stackframe"
+            "can not pop values past the current callframe"
         );
 
         let callframe_base_idx = self.current_callframe().callframe_base_idx;
@@ -203,7 +203,7 @@ impl Stack {
     }
 
     /// Pop a [`Callframe`] from the call stack, returning the caller function store address, return address, and the return stp
-    pub fn pop_stackframe(&mut self) -> (usize, usize, usize) {
+    pub fn pop_callframe(&mut self) -> (usize, usize, usize) {
         let Callframe {
             return_func_addr,
             return_addr,
@@ -226,10 +226,10 @@ impl Stack {
         (return_func_addr, return_addr, return_stp)
     }
 
-    /// Push a stackframe to the call stack
+    /// Push a callframe to the call stack
     ///
     /// Takes the current [`Self::values`]'s length as [`Callframe::value_stack_base_idx`].
-    pub fn push_stackframe(
+    pub fn push_callframe(
         &mut self,
         return_func_addr: usize,
         func_ty: &FuncType,
@@ -244,10 +244,10 @@ impl Stack {
 
         debug_assert!(
             self.values.len() >= func_ty.params.valtypes.len(),
-            "when pushing a new stackframe, at least as many values need to be on the stack as required by the new callframes's function"
+            "when pushing a new callframe, at least as many values need to be on the stack as required by the new callframes's function"
         );
 
-        // the topmost `param_count` values are transferred into/consumed by this new stackframe
+        // the topmost `param_count` values are transferred into/consumed by this new callframe
         let param_count = func_ty.params.valtypes.len();
         let callframe_base_idx = self.values.len() - param_count;
 
@@ -271,7 +271,7 @@ impl Stack {
         Ok(())
     }
 
-    /// Returns how many stackframes are on the stack, in total.
+    /// Returns how many callframes are on the stack, in total.
     pub fn callframe_count(&self) -> usize {
         self.frames.len()
     }

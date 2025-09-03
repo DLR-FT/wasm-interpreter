@@ -92,16 +92,16 @@ pub(super) fn run<T, H: HookSet>(
                 }
 
                 let (maybe_return_func_addr, maybe_return_address, maybe_return_stp) =
-                    stack.pop_stackframe();
+                    stack.pop_callframe();
 
-                // We finished this entire invocation if there is no stackframe left. If there are
-                // one or more stack frames, we need to continue from where the callee was called
-                // fromn.
+                // We finished this entire invocation if there is no callframe left. If there are
+                // one or more callframes, we need to continue from where the callee was called
+                // from.
                 if stack.callframe_count() == 0 {
                     break;
                 }
 
-                trace!("end of function reached, returning to previous stack frame");
+                trace!("end of function reached, returning to previous callframe");
                 current_func_addr = maybe_return_func_addr;
                 let FuncInst::WasmFunc(current_wasm_func_inst) =
                     &store.functions[current_func_addr]
@@ -215,7 +215,7 @@ pub(super) fn run<T, H: HookSet>(
                     FuncInst::WasmFunc(wasm_func_to_call_inst) => {
                         let remaining_locals = &wasm_func_to_call_inst.locals;
 
-                        stack.push_stackframe(
+                        stack.push_callframe(
                             current_func_addr,
                             &func_to_call_ty,
                             remaining_locals,
@@ -238,7 +238,7 @@ pub(super) fn run<T, H: HookSet>(
                 trace!("Instruction: CALL");
             }
 
-            // TODO: fix push_stackframe, because the func idx that you get from the table is global func idx
+            // TODO: fix push_callframe, because the func idx that you get from the table is global func idx
             CALL_INDIRECT => {
                 let given_type_idx = wasm.read_var_u32().unwrap_validated() as TypeIdx;
                 let table_idx = wasm.read_var_u32().unwrap_validated() as TableIdx;
@@ -299,7 +299,7 @@ pub(super) fn run<T, H: HookSet>(
                     FuncInst::WasmFunc(wasm_func_to_call_inst) => {
                         let remaining_locals = &wasm_func_to_call_inst.locals;
 
-                        stack.push_stackframe(
+                        stack.push_callframe(
                             current_func_addr,
                             &func_to_call_ty,
                             remaining_locals,
