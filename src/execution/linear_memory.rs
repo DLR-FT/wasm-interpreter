@@ -4,7 +4,7 @@ use alloc::vec::Vec;
 
 use crate::{
     core::{indices::MemIdx, little_endian::LittleEndianBytes},
-    rw_spinlock::RwSpinLock,
+    rw_spinlock::{ReadLockGuard, RwSpinLock},
     RuntimeError,
 };
 
@@ -448,68 +448,66 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
 
 impl<const PAGE_SIZE: usize> core::fmt::Debug for LinearMemory<PAGE_SIZE> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "LinearMemory {{ inner_data: [ ")?;
-        let lock_guard = self.inner_data.read();
+        struct RepetitionDetectingMemoryWriter<'a>(ReadLockGuard<'a, Vec<UnsafeCell<u8>>>);
+        impl core::fmt::Debug for RepetitionDetectingMemoryWriter<'_> {
+            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+                let mut list = f.debug_list();
 
-        // then write all other elements with a preceding ", "
-        let mut repetition_count = 1;
+                // allows safe access to memory
+                let read_memory = |i: usize| {
+                    assert!(i < self.0.len());
 
-        // if this many or more sucessive elements have the same value, print just the number of
-        // repetitions and one time the element value
-        let repetition_threshold = 8;
+                    // SAFETY: As `i` is a valid index into this `LinearMemory` while the
+                    // `lock_guard` prevents a resize/realloc of its data, so its valid.
+                    unsafe { *self.0[i].get() }
+                };
 
-        for i in 1..lock_guard.len() {
-            // SAFETY: As `i` is a valid index into this `LinearMemory` while the
-            // `lock_guard` prevents a resize/realloc of its data, so its valid.
-            let prev_byte = unsafe { *lock_guard[i - 1].get() };
+                // then write all other elements with a preceding ", "
+                let mut repetition_count = 1;
 
-            // SAFETY: As `i + 1` is a valid index into this `LinearMemory` while the
-            // `lock_guard` prevents a resize/realloc of its data, so its valid.
-            let byte = unsafe { *lock_guard[i].get() };
+                // if this many or more successive elements have the same value, print just the number of
+                // repetitions and one time the element value
+                let repetition_threshold = 8;
 
-            let is_last_element = i == lock_guard.len() - 1;
-            let is_repetition = prev_byte == byte;
+                for i in 1..self.0.len() {
+                    let prev_byte = read_memory(i - 1);
+                    let byte = read_memory(i);
 
-            // if this is a repetition, increment the repetition_count
-            if is_repetition {
-                repetition_count += 1;
-            }
+                    let is_last_element = i == self.0.len() - 1;
+                    let is_repetition = prev_byte == byte;
 
-            // either the repition was broken or we are at the last element, so write the repitition
-            if !is_repetition || is_last_element {
-                // threshold crossed, just print the count and the element once
-                if repetition_count >= repetition_threshold {
-                    write!(f, "#{repetition_count} × {prev_byte}")?;
-                    repetition_count = 1;
-                }
-                // threshold not crossed, actually print the repeating element count times
-                else {
-                    for _ in 0..repetition_count - 1 {
-                        write!(f, "{prev_byte}, ")?;
+                    // if this is a repetition, increment the repetition_count
+                    repetition_count += is_repetition as usize;
+
+                    // either the repetition was broken or we are at the last element, so write the repetition
+                    if !is_repetition || is_last_element {
+                        // threshold crossed, just print the count and the element once
+                        if repetition_count >= repetition_threshold {
+                            list.entry(&format_args!("#{repetition_count} × {prev_byte}"));
+                        }
+                        // threshold not crossed, actually print the repeating element count times
+                        else {
+                            list.entries(core::iter::repeat(prev_byte).take(repetition_count));
+                        }
+                        repetition_count = 1;
                     }
-                    write!(f, "{prev_byte}")?;
-                    repetition_count = 1;
+
+                    // only if the current element is breaking a repetition then we need to write it
+                    if !is_repetition && is_last_element {
+                        list.entry(&byte);
+                    }
                 }
 
-                if !is_repetition {
-                    write!(f, ", ")?;
-                } else {
-                    write!(f, " ")?;
-                }
-            }
-
-            // only if the current element is breaking a repetition then we need to write it
-            if !is_repetition && is_last_element {
-                write!(f, "{byte}")?;
-
-                if !is_last_element {
-                    write!(f, ", ")?;
-                } else {
-                    write!(f, " ")?;
-                }
+                list.finish()
             }
         }
-        write!(f, "] }}")
+
+        f.debug_struct("LinearMemory")
+            .field(
+                "inner_data",
+                &RepetitionDetectingMemoryWriter(self.inner_data.read()),
+            )
+            .finish()
     }
 }
 
@@ -546,7 +544,7 @@ mod test {
         let lin_mem = LinearMemory::<PAGE_SIZE>::new_with_initial_pages(1);
         assert_eq!(lin_mem.pages(), 1);
 
-        let expected = format!("LinearMemory {{ inner_data: [ #{PAGE_SIZE} × 0 ] }}");
+        let expected = format!("LinearMemory {{ inner_data: [#{PAGE_SIZE} × 0] }}");
         let debug_repr = format!("{lin_mem:?}");
 
         assert_eq!(debug_repr, expected);
@@ -562,8 +560,7 @@ mod test {
         lin_mem.store(10, 1u8).unwrap();
         lin_mem.store(200, 0xffu8).unwrap();
 
-        let expected =
-            "LinearMemory { inner_data: [ 0, 255, #8 × 0, 1, #189 × 0, 255, #311 × 0 ] }";
+        let expected = "LinearMemory { inner_data: [0, 255, #8 × 0, 1, #189 × 0, 255, #311 × 0] }";
         let debug_repr = format!("{lin_mem:?}");
 
         assert_eq!(debug_repr, expected);
@@ -574,7 +571,7 @@ mod test {
         let lin_mem = LinearMemory::<PAGE_SIZE>::new_with_initial_pages(0);
         assert_eq!(lin_mem.pages(), 0);
 
-        let expected = "LinearMemory { inner_data: [ ] }";
+        let expected = "LinearMemory { inner_data: [] }";
         let debug_repr = format!("{lin_mem:?}");
 
         assert_eq!(debug_repr, expected);
