@@ -654,7 +654,7 @@ impl InteropValue for FuncRefForInteropValue {
     #[allow(warnings)]
     fn from_value(value: Value) -> Self {
         match value {
-            Value::Ref(rref) => unsafe { FuncRefForInteropValue::new(rref).unwrap_unchecked() },
+            Value::Ref(rref) => FuncRefForInteropValue::new(rref).unwrap_validated(),
             _ => unreachable_validated!(),
         }
     }
