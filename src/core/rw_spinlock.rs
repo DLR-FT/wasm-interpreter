@@ -119,6 +119,12 @@ impl<T> RwSpinLock<T> {
 
 unsafe impl<T> Sync for RwSpinLock<T> where T: Send + Sync {}
 
+impl<T: Default> Default for RwSpinLock<T> {
+    fn default() -> Self {
+        Self::new(T::default())
+    }
+}
+
 /// Read guard for the [`RwSpinLock`]
 pub struct ReadLockGuard<'a, T> {
     lock: &'a RwSpinLock<T>,
