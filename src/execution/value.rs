@@ -311,8 +311,7 @@ pub enum Value {
     I64(u64),
     F32(F32),
     F64(F64),
-    // F64,
-    // V128,
+    V128([u8; 16]),
     Ref(Ref),
 }
 
@@ -442,11 +441,9 @@ impl Value {
             ValType::NumType(NumType::I64) => Self::I64(0),
             ValType::NumType(NumType::F32) => Self::F32(F32(0.0)),
             ValType::NumType(NumType::F64) => Self::F64(F64(0.0_f64)),
+            ValType::VecType => Self::V128([0; 16]),
             ValType::RefType(RefType::ExternRef) => Self::Ref(Ref::Extern(ExternAddr::null())),
             ValType::RefType(RefType::FuncRef) => Self::Ref(Ref::Func(FuncAddr::null())),
-            other => {
-                todo!("cannot determine type for {other:?} because this value is not supported yet")
-            }
         }
     }
 
@@ -456,6 +453,7 @@ impl Value {
             Value::I64(_) => ValType::NumType(NumType::I64),
             Value::F32(_) => ValType::NumType(NumType::F32),
             Value::F64(_) => ValType::NumType(NumType::F64),
+            Value::V128(_) => ValType::VecType,
             Value::Ref(rref) => match rref {
                 Ref::Extern(_) => ValType::RefType(RefType::ExternRef),
                 Ref::Func(_) => ValType::RefType(RefType::FuncRef),
@@ -617,6 +615,21 @@ impl InteropValue for f64 {
     fn from_value(value: Value) -> Self {
         match value {
             Value::F64(f) => f64::from_le_bytes(f.0.to_le_bytes()),
+            _ => unreachable_validated!(),
+        }
+    }
+}
+
+impl InteropValue for [u8; 16] {
+    const TY: ValType = ValType::VecType;
+
+    fn into_value(self) -> Value {
+        Value::V128(self)
+    }
+
+    fn from_value(value: Value) -> Self {
+        match value {
+            Value::V128(i) => i,
             _ => unreachable_validated!(),
         }
     }
@@ -784,6 +797,7 @@ impl_value_conversion!(u64);
 impl_value_conversion!(i64);
 impl_value_conversion!(F32);
 impl_value_conversion!(F64);
+impl_value_conversion!([u8; 16]);
 
 impl From<Ref> for Value {
     fn from(value: Ref) -> Self {
