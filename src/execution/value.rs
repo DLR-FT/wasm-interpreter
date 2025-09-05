@@ -6,6 +6,7 @@ use crate::core::reader::types::{NumType, ValType};
 use crate::RefType;
 
 #[derive(Clone, Debug, Copy, PartialOrd)]
+#[repr(transparent)]
 pub struct F32(pub f32);
 
 impl Display for F32 {
@@ -152,6 +153,7 @@ impl F32 {
 }
 
 #[derive(Clone, Debug, Copy, PartialOrd)]
+#[repr(transparent)]
 pub struct F64(pub f64);
 
 impl Display for F64 {
