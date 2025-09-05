@@ -161,6 +161,25 @@ pub fn read_constant_expression(
 
                 stack.push_valtype(ValType::RefType(crate::RefType::FuncRef));
             }
+            FD_EXTENSIONS => {
+                use crate::core::reader::types::opcode::fd_extensions::*;
+
+                let Ok(second_instr) = wasm.read_var_u32() else {
+                    return Err(ValidationError::ExprMissingEnd);
+                };
+                match second_instr {
+                    V128_CONST => {
+                        for _ in 0..16 {
+                            let _data = wasm.read_u8()?;
+                        }
+                        stack.push_valtype(ValType::VecType);
+                    }
+                    0x00..=0x0B | 0x0D.. => {
+                        trace!("Encountered unknown multi-byte instruction in validation - constant expression - {first_instr_byte:x?} {second_instr}");
+                        return Err(ValidationError::InvalidInstr(first_instr_byte));
+                    }
+                }
+            }
 
             0x00..=0x0A
             | 0x0C..=0x22
@@ -168,7 +187,8 @@ pub fn read_constant_expression(
             | 0x45..=0xBF
             | 0xC0..=0xCF
             | 0xD1
-            | 0xD3..=0xFF => {
+            | 0xD3..=0xFC
+            | 0xFE..=0xFF => {
                 trace!("Encountered unknown instruction in validation - constant expression - {first_instr_byte:x?}");
                 return Err(ValidationError::InvalidInstr(first_instr_byte));
             }

@@ -71,6 +71,8 @@ pub enum ValidationError {
     UnknownGlobal,
     DuplicateExportName,
     UnsupportedMultipleMemoriesProposal,
+    InvalidImportType,
+    InvalidLaneIndex,
 }
 
 impl Display for ValidationError {
@@ -215,6 +217,9 @@ impl Display for ValidationError {
             ValidationError::UnknownTable => f.write_str("Unknown table"),
             ValidationError::DuplicateExportName => f.write_str("Duplicate export name"),
             ValidationError::UnsupportedMultipleMemoriesProposal => f.write_str("Proposal for multiple memories is not yet supported"),
+            ValidationError::InvalidImportType => f.write_str("Invalid import type"),
+            // TODO: maybe move these to LinkerError also add more info to them (the name's export, function idx, etc)
+            ValidationError::InvalidLaneIndex => f.write_str("Invalid laneidx"),
         }
     }
 }
