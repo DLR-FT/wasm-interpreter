@@ -693,7 +693,7 @@ pub fn arg_to_value(arg: WastArg) -> Value {
             WastArgCore::I64(val) => Value::I64(val as u64),
             WastArgCore::F32(val) => Value::F32(wasm::value::F32(f32::from_bits(val.bits))),
             WastArgCore::F64(val) => Value::F64(wasm::value::F64(f64::from_bits(val.bits))),
-            WastArgCore::V128(_) => todo!("`V128` value arguments"),
+            WastArgCore::V128(val) => Value::V128(val.to_le_bytes()),
             WastArgCore::RefNull(rref) => match rref {
                 wast::core::HeapType::Concrete(_) => {
                     unreachable!("Null refs don't point to any specific reference")
