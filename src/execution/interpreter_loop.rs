@@ -2550,7 +2550,7 @@ pub(super) fn run<T, H: HookSet>(
                 use crate::core::reader::types::opcode::fd_extensions::*;
                 match second_instr {
                     V128_LOAD => {
-                        let memarg = MemArg::read_unvalidated(wasm);
+                        let memarg = MemArg::read(wasm).unwrap_validated();
                         let mem_addr = store.modules[current_module_idx]
                             .mem_addrs
                             .first()
@@ -2565,7 +2565,7 @@ pub(super) fn run<T, H: HookSet>(
                         stack.push_value(data.to_le_bytes().into_value())?;
                     }
                     V128_STORE => {
-                        let memarg = MemArg::read_unvalidated(wasm);
+                        let memarg = MemArg::read(wasm).unwrap_validated();
                         let mem_addr = store.modules[current_module_idx]
                             .mem_addrs
                             .first()
@@ -2582,7 +2582,7 @@ pub(super) fn run<T, H: HookSet>(
 
                     // v128.loadNxM_sx
                     V128_LOAD8X8_S => {
-                        let memarg = MemArg::read_unvalidated(wasm);
+                        let memarg = MemArg::read(wasm).unwrap_validated();
                         let mem_addr = store.modules[current_module_idx]
                             .mem_addrs
                             .first()
@@ -2605,7 +2605,7 @@ pub(super) fn run<T, H: HookSet>(
                         stack.push_value(Value::V128(from_lanes(extended_lanes)))?;
                     }
                     V128_LOAD8X8_U => {
-                        let memarg = MemArg::read_unvalidated(wasm);
+                        let memarg = MemArg::read(wasm).unwrap_validated();
                         let mem_addr = store.modules[current_module_idx]
                             .mem_addrs
                             .first()
@@ -2628,7 +2628,7 @@ pub(super) fn run<T, H: HookSet>(
                         stack.push_value(Value::V128(from_lanes(extended_lanes)))?;
                     }
                     V128_LOAD16X4_S => {
-                        let memarg = MemArg::read_unvalidated(wasm);
+                        let memarg = MemArg::read(wasm).unwrap_validated();
                         let mem_addr = store.modules[current_module_idx]
                             .mem_addrs
                             .first()
@@ -2651,7 +2651,7 @@ pub(super) fn run<T, H: HookSet>(
                         stack.push_value(Value::V128(from_lanes(extended_lanes)))?;
                     }
                     V128_LOAD16X4_U => {
-                        let memarg = MemArg::read_unvalidated(wasm);
+                        let memarg = MemArg::read(wasm).unwrap_validated();
                         let mem_addr = store.modules[current_module_idx]
                             .mem_addrs
                             .first()
@@ -2674,7 +2674,7 @@ pub(super) fn run<T, H: HookSet>(
                         stack.push_value(Value::V128(from_lanes(extended_lanes)))?;
                     }
                     V128_LOAD32X2_S => {
-                        let memarg = MemArg::read_unvalidated(wasm);
+                        let memarg = MemArg::read(wasm).unwrap_validated();
                         let mem_addr = store.modules[current_module_idx]
                             .mem_addrs
                             .first()
@@ -2697,7 +2697,7 @@ pub(super) fn run<T, H: HookSet>(
                         stack.push_value(Value::V128(from_lanes(extended_lanes)))?;
                     }
                     V128_LOAD32X2_U => {
-                        let memarg = MemArg::read_unvalidated(wasm);
+                        let memarg = MemArg::read(wasm).unwrap_validated();
                         let mem_addr = store.modules[current_module_idx]
                             .mem_addrs
                             .first()
@@ -2722,7 +2722,7 @@ pub(super) fn run<T, H: HookSet>(
 
                     // v128.loadN_splat
                     V128_LOAD8_SPLAT => {
-                        let memarg = MemArg::read_unvalidated(wasm);
+                        let memarg = MemArg::read(wasm).unwrap_validated();
                         let mem_addr = store.modules[current_module_idx]
                             .mem_addrs
                             .first()
@@ -2736,7 +2736,7 @@ pub(super) fn run<T, H: HookSet>(
                         stack.push_value(Value::V128(from_lanes([lane; 16])))?;
                     }
                     V128_LOAD16_SPLAT => {
-                        let memarg = MemArg::read_unvalidated(wasm);
+                        let memarg = MemArg::read(wasm).unwrap_validated();
                         let mem_addr = store.modules[current_module_idx]
                             .mem_addrs
                             .first()
@@ -2750,7 +2750,7 @@ pub(super) fn run<T, H: HookSet>(
                         stack.push_value(Value::V128(from_lanes([lane; 8])))?;
                     }
                     V128_LOAD32_SPLAT => {
-                        let memarg = MemArg::read_unvalidated(wasm);
+                        let memarg = MemArg::read(wasm).unwrap_validated();
                         let mem_addr = store.modules[current_module_idx]
                             .mem_addrs
                             .first()
@@ -2764,7 +2764,7 @@ pub(super) fn run<T, H: HookSet>(
                         stack.push_value(Value::V128(from_lanes([lane; 4])))?;
                     }
                     V128_LOAD64_SPLAT => {
-                        let memarg = MemArg::read_unvalidated(wasm);
+                        let memarg = MemArg::read(wasm).unwrap_validated();
                         let mem_addr = store.modules[current_module_idx]
                             .mem_addrs
                             .first()
@@ -2780,7 +2780,7 @@ pub(super) fn run<T, H: HookSet>(
 
                     // v128.loadN_zero
                     V128_LOAD32_ZERO => {
-                        let memarg = MemArg::read_unvalidated(wasm);
+                        let memarg = MemArg::read(wasm).unwrap_validated();
                         let mem_addr = store.modules[current_module_idx]
                             .mem_addrs
                             .first()
@@ -2795,7 +2795,7 @@ pub(super) fn run<T, H: HookSet>(
                         stack.push_value(Value::V128(data.to_le_bytes()))?;
                     }
                     V128_LOAD64_ZERO => {
-                        let memarg = MemArg::read_unvalidated(wasm);
+                        let memarg = MemArg::read(wasm).unwrap_validated();
                         let mem_addr = store.modules[current_module_idx]
                             .mem_addrs
                             .first()
@@ -2815,7 +2815,7 @@ pub(super) fn run<T, H: HookSet>(
                         let data: [u8; 16] = stack.pop_value(ValType::VecType).into();
                         let relative_address =
                             stack.pop_value(ValType::NumType(NumType::I32)).into();
-                        let memarg = MemArg::read_unvalidated(wasm);
+                        let memarg = MemArg::read(wasm).unwrap_validated();
                         let mem_addr = store.modules[current_module_idx]
                             .mem_addrs
                             .first()
@@ -2833,7 +2833,7 @@ pub(super) fn run<T, H: HookSet>(
                         let data: [u8; 16] = stack.pop_value(ValType::VecType).into();
                         let relative_address =
                             stack.pop_value(ValType::NumType(NumType::I32)).into();
-                        let memarg = MemArg::read_unvalidated(wasm);
+                        let memarg = MemArg::read(wasm).unwrap_validated();
                         let mem_addr = store.modules[current_module_idx]
                             .mem_addrs
                             .first()
@@ -2850,7 +2850,7 @@ pub(super) fn run<T, H: HookSet>(
                         let data: [u8; 16] = stack.pop_value(ValType::VecType).into();
                         let relative_address =
                             stack.pop_value(ValType::NumType(NumType::I32)).into();
-                        let memarg = MemArg::read_unvalidated(wasm);
+                        let memarg = MemArg::read(wasm).unwrap_validated();
                         let mem_addr = store.modules[current_module_idx]
                             .mem_addrs
                             .first()
@@ -2867,7 +2867,7 @@ pub(super) fn run<T, H: HookSet>(
                         let data: [u8; 16] = stack.pop_value(ValType::VecType).into();
                         let relative_address =
                             stack.pop_value(ValType::NumType(NumType::I32)).into();
-                        let memarg = MemArg::read_unvalidated(wasm);
+                        let memarg = MemArg::read(wasm).unwrap_validated();
                         let mem_addr = store.modules[current_module_idx]
                             .mem_addrs
                             .first()
@@ -2886,7 +2886,7 @@ pub(super) fn run<T, H: HookSet>(
                         let data: [u8; 16] = stack.pop_value(ValType::VecType).into();
                         let relative_address =
                             stack.pop_value(ValType::NumType(NumType::I32)).into();
-                        let memarg = MemArg::read_unvalidated(wasm);
+                        let memarg = MemArg::read(wasm).unwrap_validated();
                         let mem_addr = store.modules[current_module_idx]
                             .mem_addrs
                             .first()
@@ -2903,7 +2903,7 @@ pub(super) fn run<T, H: HookSet>(
                         let data: [u8; 16] = stack.pop_value(ValType::VecType).into();
                         let relative_address =
                             stack.pop_value(ValType::NumType(NumType::I32)).into();
-                        let memarg = MemArg::read_unvalidated(wasm);
+                        let memarg = MemArg::read(wasm).unwrap_validated();
                         let mem_addr = store.modules[current_module_idx]
                             .mem_addrs
                             .first()
@@ -2920,7 +2920,7 @@ pub(super) fn run<T, H: HookSet>(
                         let data: [u8; 16] = stack.pop_value(ValType::VecType).into();
                         let relative_address =
                             stack.pop_value(ValType::NumType(NumType::I32)).into();
-                        let memarg = MemArg::read_unvalidated(wasm);
+                        let memarg = MemArg::read(wasm).unwrap_validated();
                         let mem_addr = store.modules[current_module_idx]
                             .mem_addrs
                             .first()
@@ -2937,7 +2937,7 @@ pub(super) fn run<T, H: HookSet>(
                         let data: [u8; 16] = stack.pop_value(ValType::VecType).into();
                         let relative_address =
                             stack.pop_value(ValType::NumType(NumType::I32)).into();
-                        let memarg = MemArg::read_unvalidated(wasm);
+                        let memarg = MemArg::read(wasm).unwrap_validated();
                         let mem_addr = store.modules[current_module_idx]
                             .mem_addrs
                             .first()
