@@ -21,7 +21,7 @@ use wasm::{
     value::{ExternAddr, FuncAddr, Ref, F32, F64},
     Value,
 };
-use wast::core::{AbstractHeapType, HeapType, NanPattern, WastRetCore};
+use wast::core::{AbstractHeapType, HeapType, NanPattern, V128Const, WastRetCore};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct AssertEqError {
@@ -51,9 +51,34 @@ impl AssertEqError {
                     (Value::F64(actual), WastRetCore::F64(expected)) => {
                         match_f64(actual, *expected)
                     }
-                    (_, WastRetCore::V128(_expected)) => {
-                        todo!("implement vector types")
-                    }
+                    (Value::V128(actual), WastRetCore::V128(expected)) => match expected {
+                        wast::core::V128Pattern::I8x16(expected) => {
+                            actual == V128Const::I8x16(*expected).to_le_bytes()
+                        }
+                        wast::core::V128Pattern::I16x8(expected) => {
+                            actual == V128Const::I16x8(*expected).to_le_bytes()
+                        }
+                        wast::core::V128Pattern::I32x4(expected) => {
+                            actual == V128Const::I32x4(*expected).to_le_bytes()
+                        }
+                        wast::core::V128Pattern::I64x2(expected) => {
+                            actual == V128Const::I64x2(*expected).to_le_bytes()
+                        }
+                        wast::core::V128Pattern::F32x4(expected) => {
+                            actual.chunks(4).enumerate().all(|(i, actual_lane)| {
+                                let actual_lane =
+                                    f32::from_le_bytes(actual_lane.try_into().unwrap());
+                                match_f32(F32(actual_lane), expected[i])
+                            })
+                        }
+                        wast::core::V128Pattern::F64x2(expected) => {
+                            actual.chunks(8).enumerate().all(|(i, actual_lane)| {
+                                let actual_lane =
+                                    f64::from_le_bytes(actual_lane.try_into().unwrap());
+                                match_f64(F64(actual_lane), expected[i])
+                            })
+                        }
+                    },
                     (Value::Ref(Ref::Extern(actual)), WastRetCore::RefExtern(expected)) => {
                         actual.addr == expected.map(|x| x as usize)
                     }
