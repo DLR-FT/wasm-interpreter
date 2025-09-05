@@ -26,7 +26,7 @@ use crate::{
     },
     locals::Locals,
     store::DataInst,
-    value::{self, FuncAddr, Ref},
+    value::{self, FuncAddr, InteropValue, Ref},
     value_stack::Stack,
     ElemInst, FuncInst, MemInst, ModuleInst, NumType, RefType, RuntimeError, TableInst, ValType,
     Value,
@@ -2425,10 +2425,364 @@ pub(super) fn run<T, H: HookSet>(
 
                 use crate::core::reader::types::opcode::fd_extensions::*;
                 match second_instr {
-                    V128_CONST => {
+                    V128_LOAD => {
+                        let memarg = MemArg::read_unvalidated(wasm);
+                        let mem_addr = store.modules[current_module_idx]
+                            .mem_addrs
+                            .get(0)
+                            .unwrap_validated();
+                        let memory = &store.memories[*mem_addr];
+
+                        let relative_address =
+                            stack.pop_value(ValType::NumType(NumType::I32)).into();
+                        let idx = calculate_mem_address(&memarg, relative_address)?;
+
+                        let data: u128 = memory.mem.load(idx)?;
+                        stack.push_value(data.to_le_bytes().into_value())?;
+                    }
+                    V128_STORE => {
+                        let memarg = MemArg::read_unvalidated(wasm);
+                        let mem_addr = store.modules[current_module_idx]
+                            .mem_addrs
+                            .get(0)
+                            .unwrap_validated();
+                        let memory = &store.memories[*mem_addr];
+
+                        let data: [u8; 16] = stack.pop_value(ValType::VecType).into();
+                        let relative_address =
+                            stack.pop_value(ValType::NumType(NumType::I32)).into();
+                        let idx = calculate_mem_address(&memarg, relative_address)?;
+
+                        memory.mem.store(idx, u128::from_le_bytes(data))?;
+                    }
+
+                    // v128.loadNxM_sx
+                    V128_LOAD8X8_S => {
+                        let memarg = MemArg::read_unvalidated(wasm);
+                        let mem_addr = store.modules[current_module_idx]
+                            .mem_addrs
+                            .get(0)
+                            .unwrap_validated();
+                        let memory = &store.memories[*mem_addr];
+
+                        let relative_address =
+                            stack.pop_value(ValType::NumType(NumType::I32)).into();
+                        let idx = calculate_mem_address(&memarg, relative_address)?;
+
+                        let data = memory.mem.load::<8, u64>(idx)?.to_le_bytes();
+
                         todo!()
                     }
-                    _ => unreachable!(),
+                    V128_LOAD8X8_U => todo!(),
+                    V128_LOAD16X4_S => todo!(),
+                    V128_LOAD16X4_U => todo!(),
+                    V128_LOAD32X2_S => todo!(),
+                    V128_LOAD32X2_U => todo!(),
+
+                    // v128.loadN_splat + v128.loadN_zero
+                    V128_LOAD8_SPLAT => todo!(),
+                    V128_LOAD16_SPLAT => todo!(),
+                    V128_LOAD32_SPLAT => todo!(),
+                    V128_LOAD32_ZERO => todo!(),
+                    V128_LOAD64_SPLAT => todo!(),
+                    V128_LOAD64_ZERO => todo!(),
+
+                    // v128.loadN_lane
+                    V128_LOAD8_LANE => todo!(),
+                    V128_LOAD16_LANE => todo!(),
+                    V128_LOAD32_LANE => todo!(),
+                    V128_LOAD64_LANE => todo!(),
+
+                    // v128.storeN_lane
+                    V128_STORE8_LANE => todo!(),
+                    V128_STORE16_LANE => todo!(),
+                    V128_STORE32_LANE => todo!(),
+                    V128_STORE64_LANE => todo!(),
+
+                    V128_CONST => todo!(),
+
+                    // vvunop <https://webassembly.github.io/spec/core/syntax/instructions.html#syntax-vvunop>
+                    V128_NOT => todo!(),
+
+                    // vvbinop <https://webassembly.github.io/spec/core/syntax/instructions.html#syntax-vvbinop>
+                    V128_AND => todo!(),
+                    V128_ANDNOT => todo!(),
+                    V128_OR => todo!(),
+                    V128_XOR => todo!(),
+
+                    // vvternop <https://webassembly.github.io/spec/core/syntax/instructions.html#syntax-vvternop>
+                    V128_BITSELECT => todo!(),
+
+                    // vvtestop <https://webassembly.github.io/spec/core/syntax/instructions.html#syntax-vvtestop>
+                    V128_ANY_TRUE => todo!(),
+                    I8X16_SWIZZLE => todo!(),
+                    I8X16_SHUFFLE => todo!(),
+
+                    // shape.splat
+                    I8X16_SPLAT => todo!(),
+                    I16X8_SPLAT => todo!(),
+                    I32X4_SPLAT => todo!(),
+                    I64X2_SPLAT => todo!(),
+                    F32X4_SPLAT => todo!(),
+                    F64X2_SPLAT => todo!(),
+
+                    // shape.extract_lane
+                    I8X16_EXTRACT_LANE_S => todo!(),
+                    I8X16_EXTRACT_LANE_U => todo!(),
+                    I16X8_EXTRACT_LANE_S => todo!(),
+                    I16X8_EXTRACT_LANE_U => todo!(),
+                    I32X4_EXTRACT_LANE => todo!(),
+                    I64X2_EXTRACT_LANE => todo!(),
+                    F32X4_EXTRACT_LANE => todo!(),
+                    F64X2_EXTRACT_LANE => todo!(),
+
+                    // shape.replace_lane
+                    I8X16_REPLACE_LANE => todo!(),
+                    I16X8_REPLACE_LANE => todo!(),
+                    I32X4_REPLACE_LANE => todo!(),
+                    I64X2_REPLACE_LANE => todo!(),
+                    F32X4_REPLACE_LANE => todo!(),
+                    F64X2_REPLACE_LANE => todo!(),
+
+                    // Group vunop <https://webassembly.github.io/spec/core/syntax/instructions.html#syntax-vunop>
+                    // viunop
+                    I8X16_ABS => todo!(),
+                    I16X8_ABS => todo!(),
+                    I32X4_ABS => todo!(),
+                    I64X2_ABS => todo!(),
+                    I8X16_NEG => todo!(),
+                    I16X8_NEG => todo!(),
+                    I32X4_NEG => todo!(),
+                    I64X2_NEG => todo!(),
+                    // vfunop
+                    F32X4_ABS => todo!(),
+                    F64X2_ABS => todo!(),
+                    F32X4_NEG => todo!(),
+                    F64X2_NEG => todo!(),
+                    F32X4_SQRT => todo!(),
+                    F64X2_SQRT => todo!(),
+                    F32X4_CEIL => todo!(),
+                    F64X2_CEIL => todo!(),
+                    F32X4_FLOOR => todo!(),
+                    F64X2_FLOOR => todo!(),
+                    F32X4_TRUNC => todo!(),
+                    F64X2_TRUNC => todo!(),
+                    F32X4_NEAREST => todo!(),
+                    F64X2_NEAREST => todo!(),
+                    // others
+                    I8X16_POPCNT => todo!(),
+
+                    // Group vbinop <https://webassembly.github.io/spec/core/syntax/instructions.html#syntax-vbinop>
+                    // vibinop
+                    I8X16_ADD => todo!(),
+                    I16X8_ADD => todo!(),
+                    I32X4_ADD => todo!(),
+                    I64X2_ADD => todo!(),
+                    I8X16_SUB => todo!(),
+                    I16X8_SUB => todo!(),
+                    I32X4_SUB => todo!(),
+                    I64X2_SUB => todo!(),
+                    // vfbinop
+                    F32X4_ADD => todo!(),
+                    F64X2_ADD => todo!(),
+                    F32X4_SUB => todo!(),
+                    F64X2_SUB => todo!(),
+                    F32X4_MUL => todo!(),
+                    F64X2_MUL => todo!(),
+                    F32X4_DIV => todo!(),
+                    F64X2_DIV => todo!(),
+                    F32X4_MIN => todo!(),
+                    F64X2_MIN => todo!(),
+                    F32X4_MAX => todo!(),
+                    F64X2_MAX => todo!(),
+                    F32X4_PMIN => todo!(),
+                    F64X2_PMIN => todo!(),
+                    F32X4_PMAX => todo!(),
+                    F64X2_PMAX => todo!(),
+                    // viminmaxop
+                    I8X16_MIN_S => todo!(),
+                    I16X8_MIN_S => todo!(),
+                    I32X4_MIN_S => todo!(),
+                    I8X16_MIN_U => todo!(),
+                    I16X8_MIN_U => todo!(),
+                    I32X4_MIN_U => todo!(),
+                    I8X16_MAX_S => todo!(),
+                    I16X8_MAX_S => todo!(),
+                    I32X4_MAX_S => todo!(),
+                    I8X16_MAX_U => todo!(),
+                    I16X8_MAX_U => todo!(),
+                    I32X4_MAX_U => todo!(),
+                    // visatbinop
+                    I8X16_ADD_SAT_S => todo!(),
+                    I16X8_ADD_SAT_S => todo!(),
+                    I8X16_ADD_SAT_U => todo!(),
+                    I16X8_ADD_SAT_U => todo!(),
+                    I8X16_SUB_SAT_S => todo!(),
+                    I16X8_SUB_SAT_S => todo!(),
+                    I8X16_SUB_SAT_U => todo!(),
+                    I16X8_SUB_SAT_U => todo!(),
+                    // others
+                    I16X8_MUL => todo!(),
+                    I32X4_MUL => todo!(),
+                    I64X2_MUL => todo!(),
+                    I8X16_AVGR_U => todo!(),
+                    I16X8_AVGR_U => todo!(),
+                    I16X8_Q15MULRSAT_S => todo!(),
+
+                    // Group vrelop <https://webassembly.github.io/spec/core/syntax/instructions.html#syntax-vrelop>
+                    // virelop
+                    I8X16_EQ => todo!(),
+                    I16X8_EQ => todo!(),
+                    I32X4_EQ => todo!(),
+                    I64X2_EQ => todo!(),
+                    I8X16_NE => todo!(),
+                    I16X8_NE => todo!(),
+                    I32X4_NE => todo!(),
+                    I64X2_NE => todo!(),
+                    I8X16_LT_S => todo!(),
+                    I16X8_LT_S => todo!(),
+                    I32X4_LT_S => todo!(),
+                    I64X2_LT_S => todo!(),
+                    I8X16_LT_U => todo!(),
+                    I16X8_LT_U => todo!(),
+                    I32X4_LT_U => todo!(),
+                    I8X16_GT_S => todo!(),
+                    I16X8_GT_S => todo!(),
+                    I32X4_GT_S => todo!(),
+                    I64X2_GT_S => todo!(),
+                    I8X16_GT_U => todo!(),
+                    I16X8_GT_U => todo!(),
+                    I32X4_GT_U => todo!(),
+                    I8X16_LE_S => todo!(),
+                    I16X8_LE_S => todo!(),
+                    I32X4_LE_S => todo!(),
+                    I64X2_LE_S => todo!(),
+                    I8X16_LE_U => todo!(),
+                    I16X8_LE_U => todo!(),
+                    I32X4_LE_U => todo!(),
+                    I8X16_GE_S => todo!(),
+                    I16X8_GE_S => todo!(),
+                    I32X4_GE_S => todo!(),
+                    I64X2_GE_S => todo!(),
+                    I8X16_GE_U => todo!(),
+                    I16X8_GE_U => todo!(),
+                    I32X4_GE_U => todo!(),
+                    // vfrelop
+                    F32X4_EQ => todo!(),
+                    F64X2_EQ => todo!(),
+                    F32X4_NE => todo!(),
+                    F64X2_NE => todo!(),
+                    F32X4_LT => todo!(),
+                    F64X2_LT => todo!(),
+                    F32X4_GT => todo!(),
+                    F64X2_GT => todo!(),
+                    F32X4_LE => todo!(),
+                    F64X2_LE => todo!(),
+                    F32X4_GE => todo!(),
+                    F64X2_GE => todo!(),
+
+                    // Group vishiftop
+                    I8X16_SHL => todo!(),
+                    I16X8_SHL => todo!(),
+                    I32X4_SHL => todo!(),
+                    I64X2_SHL => todo!(),
+                    I8X16_SHR_S => todo!(),
+                    I8X16_SHR_U => todo!(),
+                    I16X8_SHR_S => todo!(),
+                    I16X8_SHR_U => todo!(),
+                    I32X4_SHR_S => todo!(),
+                    I32X4_SHR_U => todo!(),
+                    I64X2_SHR_S => todo!(),
+                    I64X2_SHR_U => todo!(),
+
+                    // Group vtestop <https://webassembly.github.io/spec/core/syntax/instructions.html#syntax-vtestop>
+                    // vitestop
+                    I8X16_ALL_TRUE => todo!(),
+                    I16X8_ALL_TRUE => todo!(),
+                    I32X4_ALL_TRUE => todo!(),
+                    I64X2_ALL_TRUE => todo!(),
+
+                    // Group vcvtop <https://webassembly.github.io/spec/core/syntax/instructions.html#syntax-vcvtop>
+                    I16X8_EXTEND_HIGH_I8X16_S => todo!(),
+                    I16X8_EXTEND_HIGH_I8X16_U => todo!(),
+                    I16X8_EXTEND_LOW_I8X16_S => todo!(),
+                    I16X8_EXTEND_LOW_I8X16_U => todo!(),
+                    I32X4_EXTEND_HIGH_I16X8_S => todo!(),
+                    I32X4_EXTEND_HIGH_I16X8_U => todo!(),
+                    I32X4_EXTEND_LOW_I16X8_S => todo!(),
+                    I32X4_EXTEND_LOW_I16X8_U => todo!(),
+                    I64X2_EXTEND_HIGH_I32X4_S => todo!(),
+                    I64X2_EXTEND_HIGH_I32X4_U => todo!(),
+                    I64X2_EXTEND_LOW_I32X4_S => todo!(),
+                    I64X2_EXTEND_LOW_I32X4_U => todo!(),
+                    I32X4_TRUNC_SAT_F32X4_S => todo!(),
+                    I32X4_TRUNC_SAT_F32X4_U => todo!(),
+                    I32X4_TRUNC_SAT_F64X2_S_ZERO => todo!(),
+                    I32X4_TRUNC_SAT_F64X2_U_ZERO => todo!(),
+                    F32X4_CONVERT_I32X4_S => todo!(),
+                    F32X4_CONVERT_I32X4_U => todo!(),
+                    F64X2_CONVERT_LOW_I32X4_S => todo!(),
+                    F64X2_CONVERT_LOW_I32X4_U => todo!(),
+                    F32X4_DEMOTE_F64X2_ZERO => todo!(),
+                    F64X2_PROMOTE_LOW_F32X4 => todo!(),
+
+                    // ishape.narrow_ishape_sx
+                    I8X16_NARROW_I16X8_S => todo!(),
+                    I8X16_NARROW_I16X8_U => todo!(),
+                    I16X8_NARROW_I32X4_S => todo!(),
+                    I16X8_NARROW_I32X4_U => todo!(),
+
+                    // ishape.bitmask
+                    I8X16_BITMASK => todo!(),
+                    I16X8_BITMASK => todo!(),
+                    I32X4_BITMASK => todo!(),
+                    I64X2_BITMASK => todo!(),
+
+                    // ishape.dot_ishape_s
+                    I32X4_DOT_I16X8_S => todo!(),
+
+                    // ishape.extmul_half_ishape_sx
+                    I16X8_EXTMUL_HIGH_I8X16_S => todo!(),
+                    I16X8_EXTMUL_HIGH_I8X16_U => todo!(),
+                    I16X8_EXTMUL_LOW_I8X16_S => todo!(),
+                    I16X8_EXTMUL_LOW_I8X16_U => todo!(),
+                    I32X4_EXTMUL_HIGH_I16X8_S => todo!(),
+                    I32X4_EXTMUL_HIGH_I16X8_U => todo!(),
+                    I32X4_EXTMUL_LOW_I16X8_S => todo!(),
+                    I32X4_EXTMUL_LOW_I16X8_U => todo!(),
+                    I64X2_EXTMUL_HIGH_I32X4_S => todo!(),
+                    I64X2_EXTMUL_HIGH_I32X4_U => todo!(),
+                    I64X2_EXTMUL_LOW_I32X4_S => todo!(),
+                    I64X2_EXTMUL_LOW_I32X4_U => todo!(),
+
+                    // ishape.extadd_pairwise_ishape_sx
+                    I16X8_EXTADD_PAIRWISE_I8X16_S => todo!(),
+                    I16X8_EXTADD_PAIRWISE_I8X16_U => todo!(),
+                    I32X4_EXTADD_PAIRWISE_I16X8_S => todo!(),
+                    I32X4_EXTADD_PAIRWISE_I16X8_U => todo!(),
+
+                    // Unimplemented or invalid instructions
+                    F32X4_RELAXED_MADD
+                    | F32X4_RELAXED_MAX
+                    | F32X4_RELAXED_MIN
+                    | F32X4_RELAXED_NMADD
+                    | F64X2_RELAXED_MADD
+                    | F64X2_RELAXED_MAX
+                    | F64X2_RELAXED_MIN
+                    | F64X2_RELAXED_NMADD
+                    | I16X8_RELAXED_LANESELECT
+                    | I32X4_RELAXED_LANESELECT
+                    | I32X4_RELAXED_TRUNC_F32X4_S
+                    | I32X4_RELAXED_TRUNC_F32X4_U
+                    | I32X4_RELAXED_TRUNC_F64X2_S_ZERO
+                    | I32X4_RELAXED_TRUNC_F64X2_U_ZERO
+                    | I64X2_RELAXED_LANESELECT
+                    | I8X16_RELAXED_LANESELECT
+                    | I8X16_RELAXED_SWIZZLE
+                    | 154
+                    | 187
+                    | 194
+                    | 256.. => unreachable!(),
                 }
             }
 
