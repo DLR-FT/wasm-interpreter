@@ -162,7 +162,7 @@ pub fn read_constant_expression(
 
                 stack.push_valtype(ValType::RefType(crate::RefType::FuncRef));
             }
-            FD_EXTENSIONS =>  {
+            FD_EXTENSIONS => {
                 use crate::core::reader::types::opcode::fd_extensions::*;
 
                 let Ok(second_instr) = wasm.read_var_u32() else {
