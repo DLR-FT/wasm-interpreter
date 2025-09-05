@@ -74,6 +74,8 @@ pub enum ValidationError {
     ExprHasTrailingInstructions,
     FunctionAndCodeSectionsHaveDifferentLengths,
     DataCountAndDataSectionsLengthAreDifferent,
+    InvalidImportType,
+    InvalidLaneIndex,
 }
 
 impl Display for ValidationError {
@@ -221,6 +223,9 @@ impl Display for ValidationError {
             ValidationError::ExprHasTrailingInstructions => f.write_str("A code expression has invalid trailing instructions"),
             ValidationError::FunctionAndCodeSectionsHaveDifferentLengths => f.write_str("The function and code sections have different lengths"),
             ValidationError::DataCountAndDataSectionsLengthAreDifferent => f.write_str("The data count section specifies a different length than there are actual segments in the data section."),
+            ValidationError::InvalidImportType => f.write_str("Invalid import type"),
+            // TODO: maybe move these to LinkerError also add more info to them (the name's export, function idx, etc)
+            ValidationError::InvalidLaneIndex => f.write_str("Invalid laneidx"),
         }
     }
 }

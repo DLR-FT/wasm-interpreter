@@ -1291,16 +1291,551 @@ fn read_instructions(
                 );
 
                 use crate::core::reader::types::opcode::fd_extensions::*;
+
                 match second_instr {
+                    V128_LOAD => {
+                        if memories.is_empty() {
+                            return Err(ValidationError::MemoryIsNotDefined(0));
+                        }
+                        let memarg = MemArg::read(wasm)?;
+                        if memarg.align > 4 {
+                            return Err(ValidationError::ErroneousAlignment(memarg.align, 4))
+                        }
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                        stack.push_valtype(ValType::VecType);
+                    }
+                    V128_STORE => {
+                        if memories.is_empty() {
+                            return Err(ValidationError::MemoryIsNotDefined(0));
+                        }
+                        let memarg = MemArg::read(wasm)?;
+                        if memarg.align > 4 {
+                            return Err(ValidationError::ErroneousAlignment(memarg.align, 4));
+                        }
+                        stack.assert_pop_val_type(ValType::VecType)?;
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                    }
+
+                    // v128.loadNxM_sx
+                    V128_LOAD8X8_S | V128_LOAD8X8_U
+                    | V128_LOAD16X4_S | V128_LOAD16X4_U
+                    | V128_LOAD32X2_S | V128_LOAD32X2_U
+                    => {
+                        if memories.is_empty() {
+                            return Err(ValidationError::MemoryIsNotDefined(0));
+                        }
+                        let memarg = MemArg::read(wasm)?;
+                        if memarg.align > 3 {
+                            return Err(ValidationError::ErroneousAlignment(memarg.align, 3));
+                        }
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                        stack.push_valtype(ValType::VecType);
+                    },
+
+                    // v128.loadN_splat + v128.loadN_zero
+                    V128_LOAD8_SPLAT => {
+                        if memories.is_empty() {
+                            return Err(ValidationError::MemoryIsNotDefined(0));
+                        }
+                        let memarg = MemArg::read(wasm)?;
+                        if memarg.align > 0 {
+                            return Err(ValidationError::ErroneousAlignment(memarg.align, 0));
+                        }
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                        stack.push_valtype(ValType::VecType);
+                    }
+                    V128_LOAD16_SPLAT => {
+                        if memories.is_empty() {
+                            return Err(ValidationError::MemoryIsNotDefined(0));
+                        }
+                        let memarg = MemArg::read(wasm)?;
+                        if memarg.align > 1 {
+                            return Err(ValidationError::ErroneousAlignment(memarg.align, 1));
+                        }
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                        stack.push_valtype(ValType::VecType);
+                    }
+                    V128_LOAD32_SPLAT | V128_LOAD32_ZERO => {
+                        if memories.is_empty() {
+                            return Err(ValidationError::MemoryIsNotDefined(0));
+                        }
+                        let memarg = MemArg::read(wasm)?;
+                        if memarg.align > 2 {
+                            return Err(ValidationError::ErroneousAlignment(memarg.align, 2));
+                        }
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                        stack.push_valtype(ValType::VecType);
+                    }
+                    V128_LOAD64_SPLAT | V128_LOAD64_ZERO => {
+                        if memories.is_empty() {
+                            return Err(ValidationError::MemoryIsNotDefined(0));
+                        }
+                        let memarg = MemArg::read(wasm)?;
+                        if memarg.align > 3 {
+                            return Err(ValidationError::ErroneousAlignment(memarg.align, 3));
+                        }
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                        stack.push_valtype(ValType::VecType);
+                    }
+
+                    // v128.loadN_lane
+                    V128_LOAD8_LANE => {
+                        let memarg = MemArg::read(wasm)?;
+                        let lane_idx = wasm.read_u8()?;
+                        if lane_idx >= 16 {
+                            return Err(ValidationError::InvalidLaneIndex);
+                        }
+                        if memories.is_empty() {
+                            return Err(ValidationError::MemoryIsNotDefined(0));
+                        }
+                        if memarg.align > 0 {
+                            return Err(ValidationError::ErroneousAlignment(memarg.align, 0));
+                        }
+                        stack.assert_pop_val_type(ValType::VecType)?;
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                        stack.push_valtype(ValType::VecType);
+                    }
+                    V128_LOAD16_LANE => {
+                        let memarg = MemArg::read(wasm)?;
+                        let lane_idx = wasm.read_u8()?;
+                        if lane_idx >= 8 {
+                            return Err(ValidationError::InvalidLaneIndex);
+                        }
+                        if memories.is_empty() {
+                            return Err(ValidationError::MemoryIsNotDefined(0));
+                        }
+                        if memarg.align > 1 {
+                            return Err(ValidationError::ErroneousAlignment(memarg.align, 1));
+                        }
+                        stack.assert_pop_val_type(ValType::VecType)?;
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                        stack.push_valtype(ValType::VecType);
+                    }
+                    V128_LOAD32_LANE => {
+                        let memarg = MemArg::read(wasm)?;
+                        let lane_idx = wasm.read_u8()?;
+                        if lane_idx >= 4 {
+                            return Err(ValidationError::InvalidLaneIndex);
+                        }
+                        if memories.is_empty() {
+                            return Err(ValidationError::MemoryIsNotDefined(0));
+                        }
+                        if memarg.align > 2 {
+                            return Err(ValidationError::ErroneousAlignment(memarg.align, 2));
+                        }
+                        stack.assert_pop_val_type(ValType::VecType)?;
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                        stack.push_valtype(ValType::VecType);
+                    }
+                    V128_LOAD64_LANE => {
+                        let memarg = MemArg::read(wasm)?;
+                        let lane_idx = wasm.read_u8()?;
+                        if lane_idx >= 2 {
+                            return Err(ValidationError::InvalidLaneIndex);
+                        }
+                        if memories.is_empty() {
+                            return Err(ValidationError::MemoryIsNotDefined(0));
+                        }
+                        if memarg.align > 3 {
+                            return Err(ValidationError::ErroneousAlignment(memarg.align, 3));
+                        }
+                        stack.assert_pop_val_type(ValType::VecType)?;
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                        stack.push_valtype(ValType::VecType);
+                    }
+
+                    // v128.storeN_lane
+                    V128_STORE8_LANE => {
+                        let memarg = MemArg::read(wasm)?;
+                        let lane_idx = wasm.read_u8()?;
+                        if lane_idx >= 16 {
+                            return Err(ValidationError::InvalidLaneIndex);
+                        }
+                        if memories.is_empty() {
+                            return Err(ValidationError::MemoryIsNotDefined(0));
+                        }
+                        if memarg.align > 0 {
+                            return Err(ValidationError::ErroneousAlignment(memarg.align, 0));
+                        }
+                        stack.assert_pop_val_type(ValType::VecType)?;
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                    }
+                    V128_STORE16_LANE => {
+                        let memarg = MemArg::read(wasm)?;
+                        let lane_idx = wasm.read_u8()?;
+                        if lane_idx >= 8 {
+                            return Err(ValidationError::InvalidLaneIndex);
+                        }
+                        if memories.is_empty() {
+                            return Err(ValidationError::MemoryIsNotDefined(0));
+                        }
+                        if memarg.align > 1 {
+                            return Err(ValidationError::ErroneousAlignment(memarg.align, 1));
+                        }
+                        stack.assert_pop_val_type(ValType::VecType)?;
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                    }
+                    V128_STORE32_LANE => {
+                        let memarg = MemArg::read(wasm)?;
+                        let lane_idx = wasm.read_u8()?;
+                        if lane_idx >= 4 {
+                            return Err(ValidationError::InvalidLaneIndex);
+                        }
+                        if memories.is_empty() {
+                            return Err(ValidationError::MemoryIsNotDefined(0));
+                        }
+                        if memarg.align > 2 {
+                            return Err(ValidationError::ErroneousAlignment(memarg.align, 2));
+                        }
+                        stack.assert_pop_val_type(ValType::VecType)?;
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                    }
+                    V128_STORE64_LANE => {
+                        let memarg = MemArg::read(wasm)?;
+                        let lane_idx = wasm.read_u8()?;
+                        if lane_idx >= 2 {
+                            return Err(ValidationError::InvalidLaneIndex);
+                        }
+                        if memories.is_empty() {
+                            return Err(ValidationError::MemoryIsNotDefined(0));
+                        }
+                        if memarg.align > 3 {
+                            return Err(ValidationError::ErroneousAlignment(memarg.align, 3));
+                        }
+                        stack.assert_pop_val_type(ValType::VecType)?;
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                    }
+
                     V128_CONST => {
-                        todo!()
+                        for _ in 0..16 {
+                            let _data = wasm.read_u8()?;
+                        }
+                        stack.push_valtype(ValType::VecType);
                     }
-                    _ => {
-                        return Err(ValidationError::InvalidMultiByteInstr(
-                            first_instr_byte,
-                            second_instr,
-                        ))
+
+                    // vvunop <https://webassembly.github.io/spec/core/syntax/instructions.html#syntax-vvunop>
+                    V128_NOT => {
+                        stack.assert_pop_val_type(ValType::VecType)?;
+                        stack.push_valtype(ValType::VecType);
                     }
+
+                    // vvbinop <https://webassembly.github.io/spec/core/syntax/instructions.html#syntax-vvbinop>
+                    V128_AND | V128_ANDNOT | V128_OR | V128_XOR => {
+                        stack.assert_pop_val_type(ValType::VecType)?;
+                        stack.assert_pop_val_type(ValType::VecType)?;
+                        stack.push_valtype(ValType::VecType);
+                    }
+
+                    // vvternop <https://webassembly.github.io/spec/core/syntax/instructions.html#syntax-vvternop>
+                    V128_BITSELECT => {
+                        stack.assert_pop_val_type(ValType::VecType)?;
+                        stack.assert_pop_val_type(ValType::VecType)?;
+                        stack.assert_pop_val_type(ValType::VecType)?;
+                        stack.push_valtype(ValType::VecType);
+                    }
+
+                    // vvtestop <https://webassembly.github.io/spec/core/syntax/instructions.html#syntax-vvtestop>
+                    V128_ANY_TRUE => {
+                        stack.assert_pop_val_type(ValType::VecType)?;
+                        stack.push_valtype(ValType::NumType(NumType::I32));
+                    }
+                    I8X16_SWIZZLE => {
+                        stack.assert_pop_val_type(ValType::VecType)?;
+                        stack.assert_pop_val_type(ValType::VecType)?;
+                        stack.push_valtype(ValType::VecType);
+                    }
+                    I8X16_SHUFFLE => {
+                        for _ in 0..16 {
+                            let lane_idx = wasm.read_u8()?;
+                            if lane_idx >= 32 {
+                                return Err(ValidationError::InvalidLaneIndex);
+                            }
+                        }
+                        stack.assert_pop_val_type(ValType::VecType)?;
+                        stack.assert_pop_val_type(ValType::VecType)?;
+                        stack.push_valtype(ValType::VecType);
+                    }
+
+                    // shape.splat
+                    I8X16_SPLAT | I16X8_SPLAT | I32X4_SPLAT => {
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                        stack.push_valtype(ValType::VecType);
+                    }
+                    I64X2_SPLAT => {
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I64))?;
+                        stack.push_valtype(ValType::VecType);
+                    }
+                    F32X4_SPLAT => {
+                        stack.assert_pop_val_type(ValType::NumType(NumType::F32))?;
+                        stack.push_valtype(ValType::VecType);
+                    }
+                    F64X2_SPLAT => {
+                        stack.assert_pop_val_type(ValType::NumType(NumType::F64))?;
+                        stack.push_valtype(ValType::VecType);
+                    }
+
+                    // shape.extract_lane
+                    I8X16_EXTRACT_LANE_S | I8X16_EXTRACT_LANE_U => {
+                        let lane_idx = wasm.read_u8()?;
+                        if lane_idx >= 16 {
+                            return Err(ValidationError::InvalidLaneIndex);
+                        }
+                        stack.assert_pop_val_type(ValType::VecType)?;
+                        stack.push_valtype(ValType::NumType(NumType::I32));
+                    }
+                    I16X8_EXTRACT_LANE_S | I16X8_EXTRACT_LANE_U => {
+                        let lane_idx = wasm.read_u8()?;
+                        if lane_idx >= 8 {
+                            return Err(ValidationError::InvalidLaneIndex);
+                        }
+                        stack.assert_pop_val_type(ValType::VecType)?;
+                        stack.push_valtype(ValType::NumType(NumType::I32));
+                    }
+                    I32X4_EXTRACT_LANE => {
+                        let lane_idx = wasm.read_u8()?;
+                        if lane_idx >= 4 {
+                            return Err(ValidationError::InvalidLaneIndex);
+                        }
+                        stack.assert_pop_val_type(ValType::VecType)?;
+                        stack.push_valtype(ValType::NumType(NumType::I32));
+                    }
+                    I64X2_EXTRACT_LANE => {
+                        let lane_idx = wasm.read_u8()?;
+                        if lane_idx >= 2 {
+                            return Err(ValidationError::InvalidLaneIndex);
+                        }
+                        stack.assert_pop_val_type(ValType::VecType)?;
+                        stack.push_valtype(ValType::NumType(NumType::I64));
+                    }
+                    F32X4_EXTRACT_LANE => {
+                        let lane_idx = wasm.read_u8()?;
+                        if lane_idx >= 4 {
+                            return Err(ValidationError::InvalidLaneIndex);
+                        }
+                        stack.assert_pop_val_type(ValType::VecType)?;
+                        stack.push_valtype(ValType::NumType(NumType::F32));
+                    }
+                    F64X2_EXTRACT_LANE => {
+                        let lane_idx = wasm.read_u8()?;
+                        if lane_idx >= 2 {
+                            return Err(ValidationError::InvalidLaneIndex);
+                        }
+                        stack.assert_pop_val_type(ValType::VecType)?;
+                        stack.push_valtype(ValType::NumType(NumType::F64));
+                    }
+
+                    // shape.replace_lane
+                    I8X16_REPLACE_LANE => {
+                        let lane_idx = wasm.read_u8()?;
+                        if lane_idx >= 16 {
+                            return Err(ValidationError::InvalidLaneIndex);
+                        }
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                        stack.assert_pop_val_type(ValType::VecType)?;
+                        stack.push_valtype(ValType::VecType);
+                    }
+                    I16X8_REPLACE_LANE => {
+                        let lane_idx = wasm.read_u8()?;
+                        if lane_idx >= 8 {
+                            return Err(ValidationError::InvalidLaneIndex);
+                        }
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                        stack.assert_pop_val_type(ValType::VecType)?;
+                        stack.push_valtype(ValType::VecType);
+                    }
+                    I32X4_REPLACE_LANE => {
+                        let lane_idx = wasm.read_u8()?;
+                        if lane_idx >= 4 {
+                            return Err(ValidationError::InvalidLaneIndex);
+                        }
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                        stack.assert_pop_val_type(ValType::VecType)?;
+                        stack.push_valtype(ValType::VecType);
+                    }
+                    I64X2_REPLACE_LANE => {
+                        let lane_idx = wasm.read_u8()?;
+                        if lane_idx >= 2 {
+                            return Err(ValidationError::InvalidLaneIndex);
+                        }
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I64))?;
+                        stack.assert_pop_val_type(ValType::VecType)?;
+                        stack.push_valtype(ValType::VecType);
+                    }
+                    F32X4_REPLACE_LANE => {
+                        let lane_idx = wasm.read_u8()?;
+                        if lane_idx >= 4 {
+                            return Err(ValidationError::InvalidLaneIndex);
+                        }
+                        stack.assert_pop_val_type(ValType::NumType(NumType::F32))?;
+                        stack.assert_pop_val_type(ValType::VecType)?;
+                        stack.push_valtype(ValType::VecType);
+                    }
+                    F64X2_REPLACE_LANE => {
+                        let lane_idx = wasm.read_u8()?;
+                        if lane_idx >= 2 {
+                            return Err(ValidationError::InvalidLaneIndex);
+                        }
+                        stack.assert_pop_val_type(ValType::NumType(NumType::F64))?;
+                        stack.assert_pop_val_type(ValType::VecType)?;
+                        stack.push_valtype(ValType::VecType);
+                    }
+
+                    // Group vunop <https://webassembly.github.io/spec/core/syntax/instructions.html#syntax-vunop>
+                    // viunop
+                    I8X16_ABS | I16X8_ABS | I32X4_ABS | I64X2_ABS
+                    | I8X16_NEG | I16X8_NEG | I32X4_NEG | I64X2_NEG
+                    // vfunop
+                    | F32X4_ABS | F64X2_ABS
+                    | F32X4_NEG | F64X2_NEG
+                    | F32X4_SQRT | F64X2_SQRT
+                    | F32X4_CEIL | F64X2_CEIL
+                    | F32X4_FLOOR | F64X2_FLOOR
+                    | F32X4_TRUNC | F64X2_TRUNC
+                    | F32X4_NEAREST | F64X2_NEAREST
+                    // others
+                    | I8X16_POPCNT
+                    => {
+                        stack.assert_pop_val_type(ValType::VecType)?;
+                        stack.push_valtype(ValType::VecType);
+                    }
+
+                    // Group vbinop <https://webassembly.github.io/spec/core/syntax/instructions.html#syntax-vbinop>
+                    // vibinop
+                    I8X16_ADD | I16X8_ADD | I32X4_ADD | I64X2_ADD
+                    | I8X16_SUB | I16X8_SUB | I32X4_SUB | I64X2_SUB
+                    // vfbinop
+                    | F32X4_ADD | F64X2_ADD
+                    | F32X4_SUB | F64X2_SUB
+                    | F32X4_MUL | F64X2_MUL
+                    | F32X4_DIV | F64X2_DIV
+                    | F32X4_MIN | F64X2_MIN
+                    | F32X4_MAX | F64X2_MAX
+                    | F32X4_PMIN | F64X2_PMIN
+                    | F32X4_PMAX | F64X2_PMAX
+                    // viminmaxop
+                    | I8X16_MIN_S | I16X8_MIN_S | I32X4_MIN_S
+                    | I8X16_MIN_U | I16X8_MIN_U | I32X4_MIN_U
+                    | I8X16_MAX_S | I16X8_MAX_S | I32X4_MAX_S
+                    | I8X16_MAX_U | I16X8_MAX_U | I32X4_MAX_U
+                    // visatbinop
+                    | I8X16_ADD_SAT_S | I16X8_ADD_SAT_S
+                    | I8X16_ADD_SAT_U | I16X8_ADD_SAT_U
+                    | I8X16_SUB_SAT_S | I16X8_SUB_SAT_S
+                    | I8X16_SUB_SAT_U | I16X8_SUB_SAT_U
+                    // others
+                    | I16X8_MUL | I32X4_MUL | I64X2_MUL
+                    | I8X16_AVGR_U | I16X8_AVGR_U
+                    | I16X8_Q15MULRSAT_S
+                    => {
+                        stack.assert_pop_val_type(ValType::VecType)?;
+                        stack.assert_pop_val_type(ValType::VecType)?;
+                        stack.push_valtype(ValType::VecType);
+                    }
+
+                    // Group vrelop <https://webassembly.github.io/spec/core/syntax/instructions.html#syntax-vrelop>
+                    // virelop
+                    I8X16_EQ | I16X8_EQ | I32X4_EQ | I64X2_EQ
+                    | I8X16_NE | I16X8_NE | I32X4_NE | I64X2_NE
+                    | I8X16_LT_S | I16X8_LT_S | I32X4_LT_S | I64X2_LT_S
+                    | I8X16_LT_U | I16X8_LT_U | I32X4_LT_U | I8X16_GT_S
+                    | I16X8_GT_S | I32X4_GT_S | I64X2_GT_S
+                    | I8X16_GT_U | I16X8_GT_U | I32X4_GT_U
+                    | I8X16_LE_S | I16X8_LE_S | I32X4_LE_S | I64X2_LE_S
+                    | I8X16_LE_U | I16X8_LE_U | I32X4_LE_U
+                    | I8X16_GE_S | I16X8_GE_S | I32X4_GE_S | I64X2_GE_S
+                    | I8X16_GE_U | I16X8_GE_U | I32X4_GE_U
+                    // vfrelop
+                    | F32X4_EQ | F64X2_EQ
+                    | F32X4_NE | F64X2_NE
+                    | F32X4_LT | F64X2_LT
+                    | F32X4_GT | F64X2_GT
+                    | F32X4_LE | F64X2_LE
+                    | F32X4_GE | F64X2_GE
+                    => {
+                        stack.assert_pop_val_type(ValType::VecType)?;
+                        stack.assert_pop_val_type(ValType::VecType)?;
+                        stack.push_valtype(ValType::VecType);
+                    }
+
+                    // Group vishiftop
+                    I8X16_SHL | I16X8_SHL | I32X4_SHL | I64X2_SHL
+                    | I8X16_SHR_S | I8X16_SHR_U | I16X8_SHR_S | I16X8_SHR_U | I32X4_SHR_S | I32X4_SHR_U | I64X2_SHR_S | I64X2_SHR_U
+                     => {
+                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
+                        stack.assert_pop_val_type(ValType::VecType)?;
+                        stack.push_valtype(ValType::VecType);
+                    }
+
+                    // Group vtestop <https://webassembly.github.io/spec/core/syntax/instructions.html#syntax-vtestop>
+                    // vitestop
+                    I8X16_ALL_TRUE | I16X8_ALL_TRUE | I32X4_ALL_TRUE | I64X2_ALL_TRUE
+                    => {
+                        stack.assert_pop_val_type(ValType::VecType)?;
+                        stack.push_valtype(ValType::NumType(NumType::I32));
+                    }
+
+                    // Group vcvtop <https://webassembly.github.io/spec/core/syntax/instructions.html#syntax-vcvtop>
+                    I16X8_EXTEND_HIGH_I8X16_S | I16X8_EXTEND_HIGH_I8X16_U | I16X8_EXTEND_LOW_I8X16_S | I16X8_EXTEND_LOW_I8X16_U
+                    | I32X4_EXTEND_HIGH_I16X8_S | I32X4_EXTEND_HIGH_I16X8_U | I32X4_EXTEND_LOW_I16X8_S | I32X4_EXTEND_LOW_I16X8_U
+                    | I64X2_EXTEND_HIGH_I32X4_S | I64X2_EXTEND_HIGH_I32X4_U | I64X2_EXTEND_LOW_I32X4_S | I64X2_EXTEND_LOW_I32X4_U
+                    | I32X4_TRUNC_SAT_F32X4_S | I32X4_TRUNC_SAT_F32X4_U | I32X4_TRUNC_SAT_F64X2_S_ZERO | I32X4_TRUNC_SAT_F64X2_U_ZERO
+                    | F32X4_CONVERT_I32X4_S | F32X4_CONVERT_I32X4_U | F64X2_CONVERT_LOW_I32X4_S | F64X2_CONVERT_LOW_I32X4_U
+                    | F32X4_DEMOTE_F64X2_ZERO
+                    | F64X2_PROMOTE_LOW_F32X4
+                    => {
+                        stack.assert_pop_val_type(ValType::VecType)?;
+                        stack.push_valtype(ValType::VecType);
+                    }
+
+                    // ishape.narrow_ishape_sx
+                    | I8X16_NARROW_I16X8_S | I8X16_NARROW_I16X8_U
+                    | I16X8_NARROW_I32X4_S | I16X8_NARROW_I32X4_U
+                    => {
+                        stack.assert_pop_val_type(ValType::VecType)?;
+                        stack.assert_pop_val_type(ValType::VecType)?;
+                        stack.push_valtype(ValType::VecType);
+                    }
+
+                    // ishape.bitmask
+                    I8X16_BITMASK | I16X8_BITMASK | I32X4_BITMASK | I64X2_BITMASK
+                    => {
+                        stack.assert_pop_val_type(ValType::VecType)?;
+                        stack.push_valtype(ValType::NumType(NumType::I32));
+                    }
+
+                    // ishape.dot_ishape_s
+                    I32X4_DOT_I16X8_S => {
+                        stack.assert_pop_val_type(ValType::VecType)?;
+                        stack.assert_pop_val_type(ValType::VecType)?;
+                        stack.push_valtype(ValType::VecType);
+                    }
+
+                    // ishape.extmul_half_ishape_sx
+                    I16X8_EXTMUL_HIGH_I8X16_S | I16X8_EXTMUL_HIGH_I8X16_U | I16X8_EXTMUL_LOW_I8X16_S | I16X8_EXTMUL_LOW_I8X16_U
+                    | I32X4_EXTMUL_HIGH_I16X8_S | I32X4_EXTMUL_HIGH_I16X8_U | I32X4_EXTMUL_LOW_I16X8_S | I32X4_EXTMUL_LOW_I16X8_U
+                    | I64X2_EXTMUL_HIGH_I32X4_S | I64X2_EXTMUL_HIGH_I32X4_U | I64X2_EXTMUL_LOW_I32X4_S | I64X2_EXTMUL_LOW_I32X4_U
+                    => {
+                        stack.assert_pop_val_type(ValType::VecType)?;
+                        stack.assert_pop_val_type(ValType::VecType)?;
+                        stack.push_valtype(ValType::VecType);
+                    }
+
+                    // ishape.extadd_pairwise_ishape_sx
+                    I16X8_EXTADD_PAIRWISE_I8X16_S | I16X8_EXTADD_PAIRWISE_I8X16_U
+                    | I32X4_EXTADD_PAIRWISE_I16X8_S | I32X4_EXTADD_PAIRWISE_I16X8_U
+                    => {
+                        stack.assert_pop_val_type(ValType::VecType)?;
+                        stack.push_valtype(ValType::VecType);
+                    }
+
+                    // Unimplemented or invalid instructions
+                    F32X4_RELAXED_MADD | F32X4_RELAXED_MAX | F32X4_RELAXED_MIN | F32X4_RELAXED_NMADD
+                    | F64X2_RELAXED_MADD | F64X2_RELAXED_MAX | F64X2_RELAXED_MIN | F64X2_RELAXED_NMADD
+                    | I8X16_RELAXED_LANESELECT | I16X8_RELAXED_LANESELECT | I32X4_RELAXED_LANESELECT | I64X2_RELAXED_LANESELECT
+                    | I32X4_RELAXED_TRUNC_F32X4_S | I32X4_RELAXED_TRUNC_F32X4_U
+                    | I32X4_RELAXED_TRUNC_F64X2_S_ZERO | I32X4_RELAXED_TRUNC_F64X2_U_ZERO
+                    | I8X16_RELAXED_SWIZZLE
+                    | 154 | 187 | 194 | 256.. => return Err(ValidationError::InvalidMultiByteInstr(first_instr_byte, second_instr)),
                 }
             }
 
