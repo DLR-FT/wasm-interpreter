@@ -308,8 +308,7 @@ pub enum Value {
     I64(u64),
     F32(F32),
     F64(F64),
-    // F64,
-    // V128,
+    V128([u8; 16]),
     Ref(Ref),
 }
 
@@ -367,9 +366,7 @@ impl Value {
             ValType::NumType(NumType::F32) => Self::F32(F32(0.0)),
             ValType::NumType(NumType::F64) => Self::F64(F64(0.0_f64)),
             ValType::RefType(ref_type) => Self::Ref(Ref::Null(ref_type)),
-            other => {
-                todo!("cannot determine type for {other:?} because this value is not supported yet")
-            }
+            ValType::VecType => Self::V128([0; 16]),
         }
     }
 
@@ -382,6 +379,7 @@ impl Value {
             Value::Ref(Ref::Null(ref_type)) => ValType::RefType(*ref_type),
             Value::Ref(Ref::Func(_)) => ValType::RefType(RefType::FuncRef),
             Value::Ref(Ref::Extern(_)) => ValType::RefType(RefType::ExternRef),
+            Value::V128(_) => ValType::VecType,
         }
     }
 }
@@ -476,6 +474,22 @@ impl TryFrom<Value> for F64 {
     fn try_from(value: Value) -> Result<Self, Self::Error> {
         match value {
             Value::F64(x) => Ok(x),
+            _ => Err(()),
+        }
+    }
+}
+
+impl From<[u8; 16]> for Value {
+    fn from(value: [u8; 16]) -> Self {
+        Value::V128(value)
+    }
+}
+impl TryFrom<Value> for [u8; 16] {
+    type Error = ();
+
+    fn try_from(value: Value) -> Result<Self, Self::Error> {
+        match value {
+            Value::V128(x) => Ok(x),
             _ => Err(()),
         }
     }
