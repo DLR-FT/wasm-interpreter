@@ -4,6 +4,7 @@ use crate::{
         indices::GlobalIdx,
         reader::{span::Span, WasmReadable, WasmReader},
     },
+    unreachable_validated,
     value::{self, FuncAddr, Ref},
     value_stack::Stack,
     ModuleInst, RefType, RuntimeError, Store, Value,
@@ -86,6 +87,21 @@ pub(crate) fn run_const<T>(
                 stack.push_value(Value::Ref(Ref::Func(FuncAddr::new(Some(
                     module.func_addrs[func_idx],
                 )))))?;
+            }
+            FD_EXTENSIONS => {
+                use crate::core::reader::types::opcode::fd_extensions::*;
+
+                match wasm.read_var_u32().unwrap_validated() {
+                    V128_CONST => {
+                        let mut data = [0; 16];
+                        for byte_ref in &mut data {
+                            *byte_ref = wasm.read_u8().unwrap_validated();
+                        }
+
+                        stack.push_value(Value::V128(data))?;
+                    }
+                    0x00..=0x0B | 0x0D.. => unreachable_validated!(),
+                }
             }
             other => {
                 unreachable!("Unknown constant instruction {other:#x}, validation allowed an unimplemented instruction.");
