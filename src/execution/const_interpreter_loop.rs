@@ -87,13 +87,30 @@ pub(crate) fn run_const<T>(
                 stack.push_value(Value::Ref(Ref::Func(FuncAddr(func_addr))))?;
             }
 
+            FD_EXTENSIONS => {
+                use crate::core::reader::types::opcode::fd_extensions::*;
+
+                match wasm.read_var_u32().unwrap_validated() {
+                    V128_CONST => {
+                        let mut data = [0; 16];
+                        for byte_ref in &mut data {
+                            *byte_ref = wasm.read_u8().unwrap_validated();
+                        }
+
+                        stack.push_value(Value::V128(data))?;
+                    }
+                    0x00..=0x0B | 0x0D.. => unreachable_validated!(),
+                }
+            }
+
             0x00..=0x0A
             | 0x0C..=0x22
             | 0x24..=0x40
             | 0x45..=0xBF
             | 0xC0..=0xCF
             | 0xD1
-            | 0xD3..=0xFF => {
+            | 0xD3..=0xFC
+            | 0xFE..=0xFF => {
                 unreachable_validated!();
             }
         }
