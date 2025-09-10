@@ -17,6 +17,7 @@ use wast::core::WastRetCore;
 use wast::QuoteWat;
 use wast::WastArg;
 use wast::WastDirective;
+use wast::WastRet;
 use wast::Wat;
 
 use crate::specification::reports::*;
@@ -511,8 +512,21 @@ fn execute_assert_return(
 ) -> Result<(), WastError> {
     match exec {
         wast::WastExecute::Invoke(invoke_info) => {
-            let args: Vec<Value> = invoke_info.args.into_iter().map(arg_to_value).collect();
-            let result_vals: Vec<Value> = results.into_iter().map(result_to_value).collect();
+            let args = invoke_info
+                .args
+                .into_iter()
+                .map(arg_to_value)
+                .collect::<Vec<_>>();
+
+            let result_vals = results
+                .into_iter()
+                .map(|ret| match ret {
+                    WastRet::Core(ret_core) => ret_core,
+                    WastRet::Component(_) => {
+                        unimplemented!("wasm components are not supported")
+                    }
+                })
+                .collect::<Vec<WastRetCore>>();
 
             // spec tests tells us to use the last defined module if module name is not specified
             // TODO this ugly chunk might need to be refactored out
@@ -556,33 +570,40 @@ fn execute_assert_return(
             module,
             global,
         } => {
-            let result_vals: Vec<Value> = results.into_iter().map(result_to_value).collect();
-            let actual = catch_unwind_and_suppress_panic_handler::<Result<Value, RuntimeError>>(
-                AssertUnwindSafe(|| {
-                    let store = &mut interpreter.store;
-                    let module_inst = match module {
-                        None => store.modules.last().unwrap(),
-                        Some(id) => {
-                            let module_addr = visible_modules
-                                .get(id.name())
-                                .ok_or(RuntimeError::ModuleNotFound)?;
-                            store
-                                .modules
-                                .get(*module_addr)
-                                .ok_or(RuntimeError::ModuleNotFound)?
-                        }
-                    };
-                    let global_addr = module_inst
-                        .exports
-                        .get(global)
-                        .and_then(|value| match value {
-                            wasm::ExternVal::Global(global_addr) => Some(*global_addr),
-                            _ => None,
-                        })
-                        .ok_or(RuntimeError::FunctionNotFound)?; // TODO fix error
-                    Ok(store.globals[global_addr].value)
-                }),
-            )
+            let result_vals = results
+                .into_iter()
+                .map(|ret| match ret {
+                    WastRet::Core(ret_core) => ret_core,
+                    WastRet::Component(_) => {
+                        unimplemented!("wasm components are not supported")
+                    }
+                })
+                .collect::<Vec<WastRetCore>>();
+
+            let actual = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
+                let store = &mut interpreter.store;
+                let module_inst = match module {
+                    None => store.modules.last().unwrap(),
+                    Some(id) => {
+                        let module_addr = visible_modules
+                            .get(id.name())
+                            .ok_or(RuntimeError::ModuleNotFound)?;
+                        store
+                            .modules
+                            .get(*module_addr)
+                            .ok_or(RuntimeError::ModuleNotFound)?
+                    }
+                };
+                let global_addr = module_inst
+                    .exports
+                    .get(global)
+                    .and_then(|value| match value {
+                        wasm::ExternVal::Global(global_addr) => Some(*global_addr),
+                        _ => None,
+                    })
+                    .ok_or(RuntimeError::FunctionNotFound)?; // TODO fix error
+                Ok::<_, RuntimeError>(store.globals[global_addr].value)
+            }))
             .map_err(WastError::Panic)??;
 
             assert_eq(vec![actual], result_vals).map_err(Into::into)
@@ -695,68 +716,6 @@ pub fn arg_to_value(arg: WastArg) -> Value {
             }
         },
         WastArg::Component(_) => todo!("`Component` value arguments"),
-    }
-}
-
-fn result_to_value(result: wast::WastRet) -> Value {
-    match result {
-        wast::WastRet::Core(core_arg) => match core_arg {
-            WastRetCore::I32(val) => Value::I32(val as u32),
-            WastRetCore::I64(val) => Value::I64(val as u64),
-            WastRetCore::F32(val) => match val {
-                wast::core::NanPattern::CanonicalNan => {
-                    Value::F32(wasm::value::F32(f32::from_bits(0x7fc0_0000)))
-                }
-                wast::core::NanPattern::ArithmeticNan => {
-                    // First ArithmeticNan and Inf overlap, have a distinction (because we will revert this operation)
-                    Value::F32(wasm::value::F32(f32::from_bits(0x7f80_0001)))
-                }
-                wast::core::NanPattern::Value(val) => {
-                    Value::F32(wasm::value::F32(f32::from_bits(val.bits)))
-                }
-            },
-            WastRetCore::F64(val) => match val {
-                wast::core::NanPattern::CanonicalNan => {
-                    Value::F64(wasm::value::F64(f64::from_bits(0x7ff8_0000_0000_0000)))
-                }
-                wast::core::NanPattern::ArithmeticNan => {
-                    // First ArithmeticNan and Inf overlap, have a distinction (because we will revert this operation)
-                    Value::F64(wasm::value::F64(f64::from_bits(0x7ff0_0000_0000_0001)))
-                }
-                wast::core::NanPattern::Value(val) => {
-                    Value::F64(wasm::value::F64(f64::from_bits(val.bits)))
-                }
-            },
-            WastRetCore::RefNull(Some(rref)) => match rref {
-                wast::core::HeapType::Concrete(_) => {
-                    unreachable!("Null refs don't point to any specific reference")
-                }
-                wast::core::HeapType::Abstract { shared: _, ty } => {
-                    use wasm::value::*;
-                    use wast::core::AbstractHeapType::*;
-                    match ty {
-                        Func => Value::Ref(Ref::Null(RefType::FuncRef)),
-                        Extern => Value::Ref(Ref::Null(RefType::ExternRef)),
-                        _ => todo!("`GC` proposal"),
-                    }
-                }
-            },
-            WastRetCore::RefFunc(index) => match index {
-                None => unreachable!("Expected a non-null function reference"),
-                Some(_index) => {
-                    // use wasm::value::*;
-                    // Value::Ref(Ref::Func(FuncAddr::new(Some(index))))
-
-                    todo!("RefFunc return type")
-                }
-            },
-            WastRetCore::RefExtern(None) => unreachable!("Expected a non-null extern reference"),
-            WastRetCore::RefExtern(Some(index)) => Value::Ref(wasm::value::Ref::Extern(
-                wasm::value::ExternAddr(index as usize),
-            )),
-            other => todo!("handling of wast ret type {other:?}"),
-        },
-        wast::WastRet::Component(_) => todo!("`Component` result"),
     }
 }
 

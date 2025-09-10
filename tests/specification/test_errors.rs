@@ -18,9 +18,10 @@
 use std::error::Error;
 
 use wasm::{
-    value::{F32, F64},
-    Value,
+    value::{Ref, F32, F64},
+    RefType, Value,
 };
+use wast::core::{AbstractHeapType, HeapType, NanPattern, WastRetCore};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct AssertEqError {
@@ -28,141 +29,91 @@ pub struct AssertEqError {
     right: String,
 }
 
-pub fn assert_eq(left: Vec<Value>, right: Vec<Value>) -> Result<(), AssertEqError> {
-    if left.len() != right.len() {
+pub fn assert_eq(actual: Vec<Value>, expected: Vec<WastRetCore>) -> Result<(), AssertEqError> {
+    if actual.len() != expected.len() {
         return Err(AssertEqError {
-            left: format!("Arr<len: {}>", left.len()),
-            right: format!("Arr<len: {}>", right.len()),
+            left: format!("Arr<len: {}>", actual.len()),
+            right: format!("Arr<len: {}>", expected.len()),
         });
     }
 
-    for i in 0..left.len() {
-        let left_el = left[i];
-        let right_el = right[i];
-
-        match (left_el, right_el) {
-            (Value::F32(a), Value::F32(b)) => {
-                match_f32(a, b)?;
-                Ok(())
-            }
-            (Value::F64(a), Value::F64(b)) => {
-                match_f64(a, b)?;
-                Ok(())
-            }
-            (a, b) => {
-                if a != b {
-                    Err(AssertEqError {
-                        left: format!("{left:?}"),
-                        right: format!("{right:?}"),
-                    })
-                } else {
-                    Ok(())
+    actual
+        .into_iter()
+        .zip(expected)
+        .try_for_each(|(actual, expected)| {
+            let values_equal = match (actual, &expected) {
+                (Value::I32(actual), WastRetCore::I32(expected)) => actual == *expected as u32,
+                (Value::I64(actual), WastRetCore::I64(expected)) => actual == *expected as u64,
+                (Value::F32(actual), WastRetCore::F32(expected)) => match_f32(actual, *expected),
+                (Value::F64(actual), WastRetCore::F64(expected)) => match_f64(actual, *expected),
+                (_, WastRetCore::V128(_expected)) => {
+                    todo!("implement vector types")
                 }
-            }
-        }?;
-    }
-    Ok(())
+                (Value::Ref(Ref::Extern(actual)), WastRetCore::RefExtern(expected)) => {
+                    Some(actual.0) == expected.map(|x| x as usize)
+                }
+                (Value::Ref(Ref::Func(_actual)), WastRetCore::RefFunc(_expected)) => {
+                    todo!("implement funcref types")
+                }
+                (
+                    Value::Ref(Ref::Null(RefType::ExternRef)),
+                    WastRetCore::RefNull(Some(HeapType::Abstract {
+                        ty: AbstractHeapType::Extern,
+                        ..
+                    })),
+                ) => true,
+                (
+                    Value::Ref(Ref::Null(RefType::FuncRef)),
+                    WastRetCore::RefNull(Some(HeapType::Abstract {
+                        ty: AbstractHeapType::Func,
+                        ..
+                    })),
+                ) => true,
+                _ => false,
+            };
+
+            values_equal.then_some(()).ok_or_else(|| AssertEqError {
+                left: format!("{actual:?}"),
+                right: format!("{expected:?}"),
+            })
+        })
 }
 
-fn match_f32(actual: F32, expected: F32) -> Result<(), AssertEqError> {
-    use wast::core::NanPattern;
-
+fn match_f32(actual: F32, expected: NanPattern<wast::token::F32>) -> bool {
     let actual_bits = actual.to_bits();
 
-    let expected_nan_pattern: NanPattern<u32> = match expected.to_bits() {
-        0x7fc0_0000 => NanPattern::CanonicalNan,
-        // Inf and ArithmeticNan might overlap, and since we cast to our Value type and then back to NanPattern we need the distinction
-        0x7f80_0001 => NanPattern::ArithmeticNan,
-        val => NanPattern::Value(val),
-    };
-
-    match expected_nan_pattern {
+    match expected {
         NanPattern::CanonicalNan => {
             let canon_nan = 0x7fc0_0000;
-            if (actual_bits & 0x7fff_ffff) == canon_nan {
-                Ok(())
-            } else {
-                Err(AssertEqError {
-                    left: actual_bits.to_string(),
-                    right: canon_nan.to_string(),
-                })
-            }
+            (actual_bits & 0x7fff_ffff) == canon_nan
         }
         NanPattern::ArithmeticNan => {
             const AF32_NAN: u32 = 0x7f80_0000;
             let is_nan = actual_bits & AF32_NAN == AF32_NAN;
             const AF32_PAYLOAD_MSB: u32 = 0x0040_0000;
             let is_msb_set = actual_bits & AF32_PAYLOAD_MSB == AF32_PAYLOAD_MSB;
-            if is_nan && is_msb_set {
-                Ok(())
-            } else {
-                Err(AssertEqError {
-                    left: actual_bits.to_string(),
-                    right: AF32_NAN.to_string(),
-                })
-            }
+            is_nan && is_msb_set
         }
-        NanPattern::Value(val) => {
-            if actual_bits == val {
-                Ok(())
-            } else {
-                Err(AssertEqError {
-                    left: actual_bits.to_string(),
-                    right: val.to_string(),
-                })
-            }
-        }
+        NanPattern::Value(val) => actual_bits == val.bits,
     }
 }
 
-fn match_f64(actual: F64, expected: F64) -> Result<(), AssertEqError> {
-    use wast::core::NanPattern;
-
+fn match_f64(actual: F64, expected: NanPattern<wast::token::F64>) -> bool {
     let actual_bits = actual.to_bits();
 
-    let expected_nan_pattern: NanPattern<u64> = match expected.to_bits() {
-        0x7ff8_0000_0000_0000 => NanPattern::CanonicalNan,
-        // Inf and ArithmeticNan might overlap, and since we cast to our Value type and then back to NanPattern we need the distinction
-        0x7ff0_0000_0000_0001 => NanPattern::ArithmeticNan,
-        val => NanPattern::Value(val),
-    };
-
-    match expected_nan_pattern {
+    match expected {
         NanPattern::CanonicalNan => {
             let canon_nan = 0x7ff8_0000_0000_0000;
-            if (actual_bits & 0x7fff_ffff_ffff_ffff) == canon_nan {
-                Ok(())
-            } else {
-                Err(AssertEqError {
-                    left: actual_bits.to_string(),
-                    right: canon_nan.to_string(),
-                })
-            }
+            (actual_bits & 0x7fff_ffff_ffff_ffff) == canon_nan
         }
         NanPattern::ArithmeticNan => {
             const AF64_NAN: u64 = 0x7ff0_0000_0000_0000;
             let is_nan = actual_bits & AF64_NAN == AF64_NAN;
             const AF64_PAYLOAD_MSB: u64 = 0x0008_0000_0000_0000;
             let is_msb_set = actual_bits & AF64_PAYLOAD_MSB == AF64_PAYLOAD_MSB;
-            if is_nan && is_msb_set {
-                Ok(())
-            } else {
-                Err(AssertEqError {
-                    left: actual_bits.to_string(),
-                    right: AF64_NAN.to_string(),
-                })
-            }
+            is_nan && is_msb_set
         }
-        NanPattern::Value(val) => {
-            if actual_bits == val {
-                Ok(())
-            } else {
-                Err(AssertEqError {
-                    left: actual_bits.to_string(),
-                    right: val.to_string(),
-                })
-            }
-        }
+        NanPattern::Value(val) => actual_bits == val.bits,
     }
 }
 
