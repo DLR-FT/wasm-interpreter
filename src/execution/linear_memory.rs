@@ -1,4 +1,4 @@
-use core::{cell::UnsafeCell, iter, mem, ptr};
+use core::{cell::UnsafeCell, iter, ptr};
 
 use alloc::vec::Vec;
 
@@ -129,14 +129,6 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
         index: MemIdx,
         value: T,
     ) -> Result<(), RuntimeError> {
-        // Unless someone implements something wrong like `impl LittleEndianBytes<3> for f64`, this
-        // check is already guaranteed at the type level. Therefore only a debug_assert.
-        debug_assert_eq!(
-            mem::size_of::<T>(),
-            N,
-            "value size must match const generic N"
-        );
-
         let lock_guard = self.inner_data.read();
 
         /* check destination for out of bounds access */
@@ -185,14 +177,6 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
         &self,
         index: MemIdx,
     ) -> Result<T, RuntimeError> {
-        // Unless someone implementes something wrong like `LittleEndianBytes<3> for i8`, this
-        // check is already guaranteed at the type level. Therefore only a debug_assert.
-        debug_assert_eq!(
-            mem::size_of::<T>(),
-            N,
-            "value size must match const generic N"
-        );
-
         let lock_guard = self.inner_data.read();
 
         /* check source for out of bounds access */
@@ -372,7 +356,8 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
         Ok(())
     }
 
-    // Rationale behind having `source_index` and `count` when the callsite could also just create a subslice for `source_data`? Have all the index error checks in one place.
+    // Rationale behind having `source_index` and `count` when the callsite could also just create a
+    // subslice for `source_data`? Have all the index error checks in one place.
     //
     // <https://webassembly.github.io/spec/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-init-x>
     pub fn init(
@@ -519,6 +504,7 @@ impl<const PAGE_SIZE: usize> Default for LinearMemory<PAGE_SIZE> {
 #[cfg(test)]
 mod test {
     use alloc::format;
+    use core::mem;
 
     use super::*;
 
