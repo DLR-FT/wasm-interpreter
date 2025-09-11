@@ -114,7 +114,6 @@ pub fn read_constant_expression(
 
         use crate::core::reader::types::opcode::*;
         match first_instr_byte {
-            // Missing: ref.null, ref.func, global.get
             END => {
                 // The code here for checking the global type was moved to where the global is actually validated
                 return Ok((Span::new(start_pc, wasm.pc - start_pc), seen_func_idxs));
@@ -162,7 +161,14 @@ pub fn read_constant_expression(
 
                 stack.push_valtype(ValType::RefType(crate::RefType::FuncRef));
             }
-            _ => {
+
+            0x00..=0x0A
+            | 0x0C..=0x22
+            | 0x24..=0x40
+            | 0x45..=0xBF
+            | 0xC0..=0xCF
+            | 0xD1
+            | 0xD3..=0xFF => {
                 trace!("Encountered unknown instruction in validation - constant expression - {first_instr_byte:x?}");
                 return Err(Error::InvalidInstr(first_instr_byte));
             }
