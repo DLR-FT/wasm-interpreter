@@ -4,6 +4,7 @@ use crate::{
         indices::GlobalIdx,
         reader::{span::Span, WasmReadable, WasmReader},
     },
+    unreachable_validated,
     value::{self, FuncAddr, Ref},
     value_stack::Stack,
     ModuleInst, RefType, RuntimeError, Store, Value,
@@ -87,8 +88,15 @@ pub(crate) fn run_const<T>(
                     module.func_addrs[func_idx],
                 )))))?;
             }
-            other => {
-                unreachable!("Unknown constant instruction {other:#x}, validation allowed an unimplemented instruction.");
+
+            0x00..=0x0A
+            | 0x0C..=0x22
+            | 0x24..=0x40
+            | 0x45..=0xBF
+            | 0xC0..=0xCF
+            | 0xD1
+            | 0xD3..=0xFF => {
+                unreachable_validated!();
             }
         }
     }

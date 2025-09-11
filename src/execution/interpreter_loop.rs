@@ -2543,8 +2543,17 @@ pub(super) fn run<T, H: HookSet>(
                 trace!("Instruction i64.extend32_s [{}] -> [{}]", v, res);
             }
 
-            other => {
-                trace!("Unknown instruction {other:#x}, skipping..");
+            // Unimplemented or invalid instructions
+            0x06..=0x0A
+            | 0x12..=0x19
+            | 0x1C..=0x1F
+            | 0x25..=0x27
+            | 0xC0..=0xFA
+            | 0xFB
+            | 0xFD
+            | 0xFE
+            | 0xFF => {
+                unreachable_validated!();
             }
         }
     }
