@@ -14,6 +14,7 @@ use wast::core::WastArgCore;
 use wast::core::WastRetCore;
 use wast::QuoteWat;
 use wast::WastArg;
+use wast::WastRet;
 use wast::Wat;
 
 use crate::specification::reports::*;
@@ -547,8 +548,13 @@ fn execute_assert_return(
 
             let result_vals = results
                 .into_iter()
-                .map(result_to_value)
-                .collect::<Result<Vec<_>, _>>()?;
+                .map(|ret| match ret {
+                    WastRet::Core(ret_core) => ret_core,
+                    WastRet::Component(_) => {
+                        unimplemented!("wasm components are not supported")
+                    }
+                })
+                .collect::<Vec<WastRetCore>>();
 
             // spec tests tells us to use the last defined module if module name is not specified
             // TODO this ugly chunk might need to be refactored out
@@ -597,8 +603,14 @@ fn execute_assert_return(
         } => {
             let result_vals = results
                 .into_iter()
-                .map(result_to_value)
-                .collect::<Result<Vec<_>, _>>()?;
+                .map(|ret| match ret {
+                    WastRet::Core(ret_core) => ret_core,
+                    WastRet::Component(_) => {
+                        unimplemented!("wasm components are not supported")
+                    }
+                })
+                .collect::<Vec<WastRetCore>>();
+
             let actual = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
                 let store = &mut interpreter.store;
                 let module_inst = match module {
@@ -731,7 +743,7 @@ pub fn arg_to_value(arg: WastArg) -> Value {
             WastArgCore::I64(val) => Value::I64(val as u64),
             WastArgCore::F32(val) => Value::F32(wasm::value::F32(f32::from_bits(val.bits))),
             WastArgCore::F64(val) => Value::F64(wasm::value::F64(f64::from_bits(val.bits))),
-            WastArgCore::V128(_) => todo!("`V128` value arguments not yet implemented"),
+            WastArgCore::V128(val) => Value::V128(val.to_le_bytes()),
             WastArgCore::RefNull(rref) => match rref {
                 wast::core::HeapType::Concrete(_) => {
                     unreachable!("Null refs don't point to any specific reference")
@@ -755,76 +767,6 @@ pub fn arg_to_value(arg: WastArg) -> Value {
         },
         WastArg::Component(_) => todo!("`Component` value arguments not yet implemented"),
     }
-}
-
-fn result_to_value(result: wast::WastRet) -> Result<Value, Box<dyn Error>> {
-    let value = match result {
-        wast::WastRet::Core(core_arg) => match core_arg {
-            WastRetCore::I32(val) => Value::I32(val as u32),
-            WastRetCore::I64(val) => Value::I64(val as u64),
-            WastRetCore::F32(val) => match val {
-                wast::core::NanPattern::CanonicalNan => {
-                    Value::F32(wasm::value::F32(f32::from_bits(0x7fc0_0000)))
-                }
-                wast::core::NanPattern::ArithmeticNan => {
-                    // First ArithmeticNan and Inf overlap, have a distinction (because we will revert this operation)
-                    Value::F32(wasm::value::F32(f32::from_bits(0x7f80_0001)))
-                }
-                wast::core::NanPattern::Value(val) => {
-                    Value::F32(wasm::value::F32(f32::from_bits(val.bits)))
-                }
-            },
-            WastRetCore::F64(val) => match val {
-                wast::core::NanPattern::CanonicalNan => {
-                    Value::F64(wasm::value::F64(f64::from_bits(0x7ff8_0000_0000_0000)))
-                }
-                wast::core::NanPattern::ArithmeticNan => {
-                    // First ArithmeticNan and Inf overlap, have a distinction (because we will revert this operation)
-                    Value::F64(wasm::value::F64(f64::from_bits(0x7ff0_0000_0000_0001)))
-                }
-                wast::core::NanPattern::Value(val) => {
-                    Value::F64(wasm::value::F64(f64::from_bits(val.bits)))
-                }
-            },
-            WastRetCore::RefNull(Some(rref)) => match rref {
-                wast::core::HeapType::Concrete(_) => {
-                    unreachable!("Null refs don't point to any specific reference")
-                }
-                wast::core::HeapType::Abstract { shared: _, ty } => {
-                    use wasm::value::*;
-                    use wast::core::AbstractHeapType::*;
-                    match ty {
-                        Func => Value::Ref(Ref::Func(FuncAddr::null())),
-                        Extern => Value::Ref(Ref::Extern(ExternAddr::null())),
-                        _ => todo!("`GC` proposal not yet implemented"),
-                    }
-                }
-            },
-            WastRetCore::RefFunc(index) => match index {
-                None => unreachable!("Expected a non-null function reference"),
-                Some(_index) => {
-                    // use wasm::value::*;
-                    // Value::Ref(Ref::Func(FuncAddr::new(Some(index))))
-
-                    return Err(GenericError::new_boxed("RefFuncs not yet implemented"));
-                }
-            },
-            WastRetCore::RefExtern(None) => unreachable!("Expected a non-null extern reference"),
-            WastRetCore::RefExtern(Some(index)) => {
-                Value::Ref(wasm::value::Ref::Extern(wasm::value::ExternAddr {
-                    addr: Some(index as usize),
-                }))
-            }
-            other => {
-                return Err(Box::new(GenericError::new(&format!(
-                    "handling of wast ret type {other:?} not yet implemented"
-                ))));
-            }
-        },
-        wast::WastRet::Component(_) => todo!("`Component` result not yet implemented"),
-    };
-
-    Ok(value)
 }
 
 pub fn get_linenum(contents: &str, span: wast::token::Span) -> u32 {

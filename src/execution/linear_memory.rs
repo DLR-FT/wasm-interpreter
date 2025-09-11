@@ -128,10 +128,18 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
         // check is already guaranteed at the type level. Therefore only a debug_assert.
         debug_assert_eq!(value_size, N, "value size must match const generic N");
 
+        self.store_bytes::<N>(index, value.to_le_bytes())
+    }
+
+    pub fn store_bytes<const N: usize>(
+        &self,
+        index: MemIdx,
+        bytes: [u8; N],
+    ) -> Result<(), RuntimeError> {
         let lock_guard = self.inner_data.read();
 
         // A value must fit into the linear memory
-        if value_size > lock_guard.len() {
+        if N > lock_guard.len() {
             error!("value does not fit into linear memory");
             return Err(RuntimeError::MemoryAccessOutOfBounds);
         }
@@ -141,14 +149,13 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
         // This check verifies it, while avoiding the possible overflow. The subtraction can not
         // underflow because of the previous check.
 
-        if (index) > lock_guard.len() - value_size {
+        if index > lock_guard.len() - N {
             error!("value write would extend beyond the end of the linear memory");
             return Err(RuntimeError::MemoryAccessOutOfBounds);
         }
 
         // TODO this unwrap can not fail, maybe use unwrap_unchecked?
         let ptr = lock_guard.get(index).unwrap().get();
-        let bytes = value.to_le_bytes(); //
 
         // Safety argument:
         //
@@ -160,7 +167,7 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
         // - the use of `UnsafeCell` avoids any `&` or `&mut` to ever be created on any of the `u8`s
         //   contained in the `UnsafeCell`s, so no UB is created through the existence of unsound
         //   references
-        unsafe { ptr.copy_from_nonoverlapping(bytes.as_ref().as_ptr(), value_size) }
+        unsafe { ptr.copy_from_nonoverlapping(bytes.as_ref().as_ptr(), N) }
 
         Ok(())
     }
@@ -176,10 +183,14 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
         // check is already guaranteed at the type level. Therefore only a debug_assert.
         debug_assert_eq!(value_size, N, "value size must match const generic N");
 
+        self.load_bytes::<N>(index).map(T::from_le_bytes)
+    }
+
+    pub fn load_bytes<const N: usize>(&self, index: MemIdx) -> Result<[u8; N], RuntimeError> {
         let lock_guard = self.inner_data.read();
 
         // A value must fit into the linear memory
-        if value_size > lock_guard.len() {
+        if N > lock_guard.len() {
             error!("value does not fit into linear memory");
             return Err(RuntimeError::MemoryAccessOutOfBounds);
         }
@@ -189,7 +200,7 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
         // This check verifies it, while avoiding the possible overflow. The subtraction can not
         // underflow because of the previous assert.
 
-        if (index) > lock_guard.len() - value_size {
+        if index > lock_guard.len() - N {
             error!("value read would extend beyond the end of the linear_memory");
             return Err(RuntimeError::MemoryAccessOutOfBounds);
         }
@@ -208,7 +219,8 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
         //   contained in the `UnsafeCell`s, so no UB is created through the existence of unsound
         //   references
         unsafe { ptr.copy_to_nonoverlapping(bytes.as_mut_ptr(), bytes.len()) };
-        Ok(T::from_le_bytes(bytes))
+
+        Ok(bytes)
     }
 
     /// Implementation of the behavior described in
