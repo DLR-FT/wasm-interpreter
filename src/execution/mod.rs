@@ -13,7 +13,7 @@ use crate::execution::hooks::{EmptyHookSet, HookSet};
 use crate::execution::store::Store;
 use crate::execution::value::Value;
 use crate::value::InteropValueList;
-use crate::{Result as CustomResult, RuntimeError, ValidationInfo};
+use crate::{Result, RuntimeError, ValidationInfo};
 
 pub(crate) mod assert_validated;
 pub mod const_interpreter_loop;
@@ -53,7 +53,7 @@ impl<'b, T> RuntimeInstance<'b, T, EmptyHookSet> {
     pub fn new_with_default_module(
         user_data: T,
         validation_info: &'_ ValidationInfo<'b>,
-    ) -> CustomResult<Self> {
+    ) -> Result<Self> {
         let mut instance = Self::new_with_hooks(user_data, EmptyHookSet);
         instance.add_module(DEFAULT_MODULE, validation_info)?;
         Ok(instance)
@@ -64,7 +64,7 @@ impl<'b, T> RuntimeInstance<'b, T, EmptyHookSet> {
         module_name: &str,
         validation_info: &'_ ValidationInfo<'b>,
         // store: &mut Store,
-    ) -> CustomResult<Self> {
+    ) -> Result<Self> {
         let mut instance = Self::new_with_hooks(user_data, EmptyHookSet);
         instance.add_module(module_name, validation_info)?;
         Ok(instance)
@@ -79,7 +79,7 @@ where
         &mut self,
         module_name: &str,
         validation_info: &'_ ValidationInfo<'b>,
-    ) -> CustomResult<()> {
+    ) -> Result<()> {
         self.store.add_module(module_name, validation_info)
     }
 
@@ -94,7 +94,7 @@ where
         &self,
         module_name: &str,
         function_name: &str,
-    ) -> Result<FunctionRef, RuntimeError> {
+    ) -> core::result::Result<FunctionRef, RuntimeError> {
         FunctionRef::new_from_name(module_name, function_name, &self.store)
             .map_err(|_| RuntimeError::FunctionNotFound)
     }
@@ -103,7 +103,7 @@ where
         &self,
         module_addr: usize,
         function_idx: usize,
-    ) -> Result<FunctionRef, RuntimeError> {
+    ) -> core::result::Result<FunctionRef, RuntimeError> {
         let module_inst = self
             .store
             .modules
@@ -123,7 +123,7 @@ where
         function_ref: &FunctionRef,
         params: Params,
         // store: &mut Store,
-    ) -> Result<Returns, RuntimeError> {
+    ) -> core::result::Result<Returns, RuntimeError> {
         let FunctionRef { func_addr } = *function_ref;
         self.store
             .invoke(func_addr, params.into_values())
@@ -135,7 +135,7 @@ where
         &mut self,
         function_ref: &FunctionRef,
         params: Vec<Value>,
-    ) -> Result<Vec<Value>, RuntimeError> {
+    ) -> core::result::Result<Vec<Value>, RuntimeError> {
         let FunctionRef { func_addr } = *function_ref;
         self.store.invoke(func_addr, params)
     }
@@ -148,7 +148,7 @@ where
         module_name: &str,
         name: &str,
         host_func: fn(&mut T, Vec<Value>) -> Vec<Value>,
-    ) -> Result<FunctionRef, Error> {
+    ) -> core::result::Result<FunctionRef, Error> {
         let host_func_ty = FuncType {
             params: ResultType {
                 valtypes: Vec::from(Params::TYS),
@@ -166,7 +166,7 @@ where
         name: &str,
         host_func_ty: FuncType,
         host_func: fn(&mut T, Vec<Value>) -> Vec<Value>,
-    ) -> Result<FunctionRef, Error> {
+    ) -> core::result::Result<FunctionRef, Error> {
         let func_addr = self.store.alloc_host_func(host_func_ty, host_func);
         self.store.registry.register(
             module_name.to_owned().into(),

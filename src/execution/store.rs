@@ -1,4 +1,4 @@
-use crate::core::error::Result as CustomResult;
+use crate::core::error::Result;
 use crate::core::indices::TypeIdx;
 use crate::core::reader::span::Span;
 use crate::core::reader::types::data::{DataModeActive, DataSegment};
@@ -75,11 +75,7 @@ impl<'b, T> Store<'b, T> {
     /// this method roughly matches the suggested embedder function`module_instantiate`
     /// <https://webassembly.github.io/spec/core/appendix/embedding.html#modules>
     /// except external values for module instantiation are retrieved from `self`.
-    pub fn add_module(
-        &mut self,
-        name: &str,
-        validation_info: &ValidationInfo<'b>,
-    ) -> CustomResult<()> {
+    pub fn add_module(&mut self, name: &str, validation_info: &ValidationInfo<'b>) -> Result<()> {
         // instantiation step -1: collect extern_vals, this section basically acts as a linker between modules
         // best attempt at trying to match the spec implementation in terms of errors
         debug!("adding module with name {:?}", name);
@@ -145,7 +141,7 @@ impl<'b, T> Store<'b, T> {
 
         // instantiation: this roughly matches step 6,7,8
         // validation guarantees these will evaluate without errors.
-        let maybe_global_init_vals: Result<Vec<Value>, _> = validation_info
+        let maybe_global_init_vals: core::result::Result<Vec<Value>, _> = validation_info
             .globals
             .iter()
             .map(|global| {
@@ -538,7 +534,7 @@ impl<'b, T> Store<'b, T> {
         &mut self,
         func_addr: usize,
         params: Vec<Value>,
-    ) -> Result<Vec<Value>, RuntimeError> {
+    ) -> core::result::Result<Vec<Value>, RuntimeError> {
         let func_inst = self
             .functions
             .get(func_addr)
@@ -679,7 +675,7 @@ impl TableInst {
     }
 
     /// <https://webassembly.github.io/spec/core/exec/modules.html#growing-tables>
-    pub fn grow(&mut self, n: u32, reff: Ref) -> Result<(), RuntimeError> {
+    pub fn grow(&mut self, n: u32, reff: Ref) -> core::result::Result<(), RuntimeError> {
         // TODO refactor error, the spec Table.grow raises Table.{SizeOverflow, SizeLimit, OutOfMemory}
         let len = n
             .checked_add(self.elem.len() as u32)
@@ -725,7 +721,7 @@ impl MemInst {
     }
 
     /// <https://webassembly.github.io/spec/core/exec/modules.html#growing-memories>
-    pub fn grow(&mut self, n: u32) -> Result<(), RuntimeError> {
+    pub fn grow(&mut self, n: u32) -> core::result::Result<(), RuntimeError> {
         // TODO refactor error, the spec Table.grow raises Memory.{SizeOverflow, SizeLimit, OutOfMemory}
         let len = n + self.mem.pages() as u32;
         if len > Limits::MAX_MEM_PAGES {
@@ -791,7 +787,7 @@ impl ExternVal {
     /// taking `store` as context S.
     /// typing fails if this external value does not exist within S.
     ///<https://webassembly.github.io/spec/core/valid/modules.html#imports>
-    pub fn extern_type<T>(&self, store: &Store<T>) -> CustomResult<ExternType> {
+    pub fn extern_type<T>(&self, store: &Store<T>) -> Result<ExternType> {
         // TODO: implement proper errors
         Ok(match self {
             // TODO: fix ugly clone in function types
