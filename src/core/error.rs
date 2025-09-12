@@ -33,11 +33,6 @@ pub enum RuntimeError {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub enum Proposal {
-    MultipleMemories,
-}
-
-#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Error {
     /// The magic number at the very start of the given WASM file is invalid.
     InvalidMagic,
@@ -93,7 +88,6 @@ pub enum Error {
     TypeUnificationMismatch,
     InvalidSelectTypeVector,
     TooManyLocals(usize),
-    UnsupportedProposal(Proposal),
     Overflow,
     UnknownFunction,
     UnknownMemory,
@@ -101,6 +95,7 @@ pub enum Error {
     UnknownImport, // TODO refactor
     DuplicateExportName,
     InvalidImportType,
+    UnsupportedMultipleMemoriesProposal,
 }
 
 impl Display for Error {
@@ -241,11 +236,7 @@ impl Display for Error {
             Error::TooManyLocals(x) => {
                 f.write_fmt(format_args!("Too many locals (more than 2^32-1): {x}"))
             }
-            Error::UnsupportedProposal(proposal) => {
-                f.write_fmt(format_args!("Unsupported proposal: {proposal:?}"))
-            }
             Error::Overflow => f.write_str("Overflow"),
-
             // TODO: maybe move these to LinkerError also add more info to them (the name's export, function idx, etc)
             Error::UnknownFunction => f.write_str("Unknown function"),
             Error::UnknownMemory => f.write_str("Unknown memory"),
@@ -255,7 +246,7 @@ impl Display for Error {
             Error::InvalidImportType => f.write_str("Invalid import type"),
             // TODO: maybe move these to LinkerError also add more info to them (the name's export, function idx, etc)
             Error::UnknownImport => f.write_str("Unknown Import"),
-
+            Error::UnsupportedMultipleMemoriesProposal => f.write_str("Proposal for multiple memories is not yet supported"),
         }
     }
 }
