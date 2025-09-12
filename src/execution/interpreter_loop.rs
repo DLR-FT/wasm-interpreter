@@ -401,7 +401,7 @@ pub(super) fn run<T, H: HookSet>(
                 let val = tab
                     .elem
                     .get(i as usize)
-                    .ok_or(RuntimeError::TableAccessOutOfBounds)?;
+                    .ok_or(RuntimeError::TableOrElementAccessOutOfBounds)?;
 
                 stack.push_value((*val).into())?;
                 trace!(
@@ -424,7 +424,7 @@ pub(super) fn run<T, H: HookSet>(
 
                 tab.elem
                     .get_mut(i as usize)
-                    .ok_or(RuntimeError::TableAccessOutOfBounds)
+                    .ok_or(RuntimeError::TableOrElementAccessOutOfBounds)
                     .map(|r| *r = val)?;
                 trace!(
                     "Instruction: table.set '{}' [{} {}] -> []",
@@ -2318,23 +2318,23 @@ pub(super) fn run<T, H: HookSet>(
                         let src_res = match s.checked_add(n) {
                             Some(res) => {
                                 if res > tab_y_elem_len as u32 {
-                                    return Err(RuntimeError::TableAccessOutOfBounds);
+                                    return Err(RuntimeError::TableOrElementAccessOutOfBounds);
                                 } else {
                                     res as usize
                                 }
                             }
-                            _ => return Err(RuntimeError::TableAccessOutOfBounds),
+                            _ => return Err(RuntimeError::TableOrElementAccessOutOfBounds),
                         };
 
                         let dst_res = match d.checked_add(n) {
                             Some(res) => {
                                 if res > tab_x_elem_len as u32 {
-                                    return Err(RuntimeError::TableAccessOutOfBounds);
+                                    return Err(RuntimeError::TableOrElementAccessOutOfBounds);
                                 } else {
                                     res as usize
                                 }
                             }
-                            _ => return Err(RuntimeError::TableAccessOutOfBounds),
+                            _ => return Err(RuntimeError::TableOrElementAccessOutOfBounds),
                         };
 
                         let dst = table_x_idx;
@@ -2437,11 +2437,11 @@ pub(super) fn run<T, H: HookSet>(
 
                         let end = (dst as usize)
                             .checked_add(len as usize)
-                            .ok_or(RuntimeError::TableAccessOutOfBounds)?;
+                            .ok_or(RuntimeError::TableOrElementAccessOutOfBounds)?;
 
                         tab.elem
                             .get_mut(dst as usize..end)
-                            .ok_or(RuntimeError::TableAccessOutOfBounds)?
+                            .ok_or(RuntimeError::TableOrElementAccessOutOfBounds)?
                             .fill(val);
 
                         trace!(
@@ -2586,9 +2586,9 @@ fn calculate_mem_address(memarg: &MemArg, relative_address: u32) -> Result<usize
         // checked addition.
         // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
         .checked_add(relative_address)
-        .ok_or(RuntimeError::MemoryAccessOutOfBounds)?
+        .ok_or(RuntimeError::MemoryOrDataAccessOutOfBounds)?
         .try_into()
-        .map_err(|_| RuntimeError::MemoryAccessOutOfBounds)
+        .map_err(|_| RuntimeError::MemoryOrDataAccessOutOfBounds)
 }
 
 //helpers for avoiding code duplication during module instantiation
@@ -2629,14 +2629,14 @@ pub(super) fn table_init(
     let final_src_offset = (s as usize)
         .checked_add(n as usize)
         .filter(|&res| res <= elem.len())
-        .ok_or(RuntimeError::TableAccessOutOfBounds)?;
+        .ok_or(RuntimeError::TableOrElementAccessOutOfBounds)?;
 
     if (d as usize)
         .checked_add(n as usize)
         .filter(|&res| res <= tab.len())
         .is_none()
     {
-        return Err(RuntimeError::TableAccessOutOfBounds);
+        return Err(RuntimeError::TableOrElementAccessOutOfBounds);
     }
 
     let dest = &mut tab.elem[d as usize..];
