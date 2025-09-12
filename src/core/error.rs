@@ -33,7 +33,7 @@ pub enum RuntimeError {
     SignatureMismatch,
     IndirectCallNullFuncRef,
     ModuleNotFound,
-    UndefinedTableIndex,
+    TableAccessOutOfBounds,
     // "undefined element" <- as-call_indirect-last
     ReachedUnreachable,
     StackExhaustion,
@@ -278,7 +278,7 @@ impl Display for RuntimeError {
                 f.write_str("Indirect call targeted null reference")
             }
             RuntimeError::ModuleNotFound => f.write_str("No such module exists"),
-            RuntimeError::UndefinedTableIndex => {
+            RuntimeError::TableAccessOutOfBounds => {
                 f.write_str("Indirect call: table index out of bounds")
             }
             RuntimeError::ReachedUnreachable => {

@@ -85,7 +85,7 @@ pub fn to_wasm_testsuite_string(runtime_error: RuntimeError) -> Result<String, B
         RuntimeError::TableOrElementAccessOutOfBounds => Ok("out of bounds table access"),
         RuntimeError::UninitializedElement => Ok("uninitialized element"),
         RuntimeError::SignatureMismatch => Ok("indirect call type mismatch"),
-        RuntimeError::UndefinedTableIndex => Ok("undefined element"),
+        RuntimeError::TableAccessOutOfBounds => Ok("undefined element"),
         RuntimeError::ModuleNotFound => Ok("module not found"),
         RuntimeError::HostFunctionSignatureMismatch => Ok("host function signature mismatch"),
         RuntimeError::IndirectCallNullFuncRef => not_represented,
