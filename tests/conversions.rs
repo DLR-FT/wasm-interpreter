@@ -18,7 +18,7 @@
 use core::{f32, f64};
 
 use hexf::{hexf32, hexf64};
-use wasm::{validate, RuntimeError, RuntimeInstance};
+use wasm::{validate, RuntimeError, RuntimeInstance, TrapError};
 
 const WAT: &str = r#"
       (module
@@ -296,7 +296,7 @@ pub fn i32_trunc_f32_s() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::UnrepresentableResult,
+        RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
             .invoke_typed::<f32, i32>(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -306,7 +306,7 @@ pub fn i32_trunc_f32_s() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::UnrepresentableResult,
+        RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
             .invoke_typed::<f32, i32>(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -316,7 +316,7 @@ pub fn i32_trunc_f32_s() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::UnrepresentableResult,
+        RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
             .invoke_typed::<f32, i32>(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -326,7 +326,7 @@ pub fn i32_trunc_f32_s() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::UnrepresentableResult,
+        RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
             .invoke_typed::<f32, i32>(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -336,14 +336,14 @@ pub fn i32_trunc_f32_s() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::BadConversionToInteger,
+        RuntimeError::Trap(TrapError::BadConversionToInteger),
         instance
             .invoke_typed::<f32, i32>(&instance.get_function_by_index(0, 0).unwrap(), f32::NAN)
             .err()
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::BadConversionToInteger,
+        RuntimeError::Trap(TrapError::BadConversionToInteger),
         instance
             .invoke_typed::<f32, i32>(&instance.get_function_by_index(0, 0).unwrap(), -f32::NAN)
             .err()
@@ -463,7 +463,7 @@ pub fn i32_trunc_f32_u() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::UnrepresentableResult,
+        RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
             .invoke_typed::<f32, i32>(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -473,14 +473,14 @@ pub fn i32_trunc_f32_u() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::UnrepresentableResult,
+        RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
             .invoke_typed::<f32, i32>(&instance.get_function_by_index(0, 0).unwrap(), -1.0)
             .err()
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::UnrepresentableResult,
+        RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
             .invoke_typed::<f32, i32>(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -490,7 +490,7 @@ pub fn i32_trunc_f32_u() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::UnrepresentableResult,
+        RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
             .invoke_typed::<f32, i32>(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -500,14 +500,14 @@ pub fn i32_trunc_f32_u() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::BadConversionToInteger,
+        RuntimeError::Trap(TrapError::BadConversionToInteger),
         instance
             .invoke_typed::<f32, i32>(&instance.get_function_by_index(0, 0).unwrap(), f32::NAN)
             .err()
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::BadConversionToInteger,
+        RuntimeError::Trap(TrapError::BadConversionToInteger),
         instance
             .invoke_typed::<f32, i32>(&instance.get_function_by_index(0, 0).unwrap(), -f32::NAN)
             .err()
@@ -668,14 +668,14 @@ pub fn i32_trunc_f64_s() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::UnrepresentableResult,
+        RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
             .invoke_typed::<f64, i32>(&instance.get_function_by_index(0, 0).unwrap(), 2147483648.0)
             .err()
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::UnrepresentableResult,
+        RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
             .invoke_typed::<f64, i32>(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -685,7 +685,7 @@ pub fn i32_trunc_f64_s() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::UnrepresentableResult,
+        RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
             .invoke_typed::<f64, i32>(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -695,7 +695,7 @@ pub fn i32_trunc_f64_s() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::UnrepresentableResult,
+        RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
             .invoke_typed::<f64, i32>(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -705,14 +705,14 @@ pub fn i32_trunc_f64_s() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::BadConversionToInteger,
+        RuntimeError::Trap(TrapError::BadConversionToInteger),
         instance
             .invoke_typed::<f64, i32>(&instance.get_function_by_index(0, 0).unwrap(), f64::NAN)
             .err()
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::BadConversionToInteger,
+        RuntimeError::Trap(TrapError::BadConversionToInteger),
         instance
             .invoke_typed::<f64, i32>(&instance.get_function_by_index(0, 0).unwrap(), -f64::NAN)
             .err()
@@ -853,35 +853,35 @@ pub fn i32_trunc_f64_u() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::UnrepresentableResult,
+        RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
             .invoke_typed::<f64, i32>(&instance.get_function_by_index(0, 0).unwrap(), 4294967296.0)
             .err()
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::UnrepresentableResult,
+        RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
             .invoke_typed::<f64, i32>(&instance.get_function_by_index(0, 0).unwrap(), -1.0)
             .err()
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::UnrepresentableResult,
+        RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
             .invoke_typed::<f64, i32>(&instance.get_function_by_index(0, 0).unwrap(), 1e16)
             .err()
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::UnrepresentableResult,
+        RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
             .invoke_typed::<f64, i32>(&instance.get_function_by_index(0, 0).unwrap(), 1e30)
             .err()
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::UnrepresentableResult,
+        RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
             .invoke_typed::<f64, i32>(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -891,7 +891,7 @@ pub fn i32_trunc_f64_u() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::UnrepresentableResult,
+        RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
             .invoke_typed::<f64, i32>(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -901,7 +901,7 @@ pub fn i32_trunc_f64_u() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::UnrepresentableResult,
+        RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
             .invoke_typed::<f64, i32>(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -911,14 +911,14 @@ pub fn i32_trunc_f64_u() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::BadConversionToInteger,
+        RuntimeError::Trap(TrapError::BadConversionToInteger),
         instance
             .invoke_typed::<f64, i32>(&instance.get_function_by_index(0, 0).unwrap(), f64::NAN)
             .err()
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::BadConversionToInteger,
+        RuntimeError::Trap(TrapError::BadConversionToInteger),
         instance
             .invoke_typed::<f64, i32>(&instance.get_function_by_index(0, 0).unwrap(), -f64::NAN)
             .err()
@@ -1205,7 +1205,7 @@ pub fn i64_trunc_f32_s() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::UnrepresentableResult,
+        RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
             .invoke_typed::<f32, i64>(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -1215,7 +1215,7 @@ pub fn i64_trunc_f32_s() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::UnrepresentableResult,
+        RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
             .invoke_typed::<f32, i64>(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -1225,7 +1225,7 @@ pub fn i64_trunc_f32_s() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::UnrepresentableResult,
+        RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
             .invoke_typed::<f32, i64>(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -1235,7 +1235,7 @@ pub fn i64_trunc_f32_s() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::UnrepresentableResult,
+        RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
             .invoke_typed::<f32, i64>(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -1245,14 +1245,14 @@ pub fn i64_trunc_f32_s() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::BadConversionToInteger,
+        RuntimeError::Trap(TrapError::BadConversionToInteger),
         instance
             .invoke_typed::<f32, i64>(&instance.get_function_by_index(0, 0).unwrap(), f32::NAN)
             .err()
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::BadConversionToInteger,
+        RuntimeError::Trap(TrapError::BadConversionToInteger),
         instance
             .invoke_typed::<f32, i64>(&instance.get_function_by_index(0, 0).unwrap(), -f32::NAN)
             .err()
@@ -1360,7 +1360,7 @@ pub fn i64_trunc_f32_u() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::UnrepresentableResult,
+        RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
             .invoke_typed::<f32, i64>(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -1370,14 +1370,14 @@ pub fn i64_trunc_f32_u() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::UnrepresentableResult,
+        RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
             .invoke_typed::<f32, i64>(&instance.get_function_by_index(0, 0).unwrap(), -1.0_f32)
             .err()
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::UnrepresentableResult,
+        RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
             .invoke_typed::<f32, i64>(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -1387,7 +1387,7 @@ pub fn i64_trunc_f32_u() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::UnrepresentableResult,
+        RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
             .invoke_typed::<f32, i64>(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -1397,14 +1397,14 @@ pub fn i64_trunc_f32_u() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::BadConversionToInteger,
+        RuntimeError::Trap(TrapError::BadConversionToInteger),
         instance
             .invoke_typed::<f32, i64>(&instance.get_function_by_index(0, 0).unwrap(), f32::NAN)
             .err()
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::BadConversionToInteger,
+        RuntimeError::Trap(TrapError::BadConversionToInteger),
         instance
             .invoke_typed::<f32, i64>(&instance.get_function_by_index(0, 0).unwrap(), -f32::NAN)
             .err()
@@ -1565,7 +1565,7 @@ pub fn i64_trunc_f64_s() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::UnrepresentableResult,
+        RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
             .invoke_typed::<f64, i64>(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -1575,7 +1575,7 @@ pub fn i64_trunc_f64_s() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::UnrepresentableResult,
+        RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
             .invoke_typed::<f64, i64>(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -1585,7 +1585,7 @@ pub fn i64_trunc_f64_s() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::UnrepresentableResult,
+        RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
             .invoke_typed::<f64, i64>(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -1595,7 +1595,7 @@ pub fn i64_trunc_f64_s() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::UnrepresentableResult,
+        RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
             .invoke_typed::<f64, i64>(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -1605,14 +1605,14 @@ pub fn i64_trunc_f64_s() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::BadConversionToInteger,
+        RuntimeError::Trap(TrapError::BadConversionToInteger),
         instance
             .invoke_typed::<f64, i64>(&instance.get_function_by_index(0, 0).unwrap(), f64::NAN)
             .err()
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::BadConversionToInteger,
+        RuntimeError::Trap(TrapError::BadConversionToInteger),
         instance
             .invoke_typed::<f64, i64>(&instance.get_function_by_index(0, 0).unwrap(), -f64::NAN)
             .err()
@@ -1750,7 +1750,7 @@ pub fn i64_trunc_f64_u() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::UnrepresentableResult,
+        RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
             .invoke_typed::<f64, i64>(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -1760,14 +1760,14 @@ pub fn i64_trunc_f64_u() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::UnrepresentableResult,
+        RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
             .invoke_typed::<f64, i64>(&instance.get_function_by_index(0, 0).unwrap(), -1_f64)
             .err()
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::UnrepresentableResult,
+        RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
             .invoke_typed::<f64, i64>(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -1777,7 +1777,7 @@ pub fn i64_trunc_f64_u() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::UnrepresentableResult,
+        RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
             .invoke_typed::<f64, i64>(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -1787,14 +1787,14 @@ pub fn i64_trunc_f64_u() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::BadConversionToInteger,
+        RuntimeError::Trap(TrapError::BadConversionToInteger),
         instance
             .invoke_typed::<f64, i64>(&instance.get_function_by_index(0, 0).unwrap(), f64::NAN)
             .err()
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::BadConversionToInteger,
+        RuntimeError::Trap(TrapError::BadConversionToInteger),
         instance
             .invoke_typed::<f64, i64>(&instance.get_function_by_index(0, 0).unwrap(), -f64::NAN)
             .err()

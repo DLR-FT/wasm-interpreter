@@ -13,9 +13,17 @@ use super::indices::{DataIdx, ElemIdx, FuncIdx, MemIdx, TableIdx, TypeIdx};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum RuntimeError {
+    Trap(TrapError),
+    ModuleNotFound,
+    FunctionNotFound,
+    StackExhaustion,
+    HostFunctionSignatureMismatch,
+}
+
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub enum TrapError {
     DivideBy0,
     UnrepresentableResult,
-    FunctionNotFound,
     // https://github.com/wasmi-labs/wasmi/blob/37d1449524a322817c55026eb21eb97dd693b9ce/crates/core/src/trap.rs#L265C5-L265C27
     BadConversionToInteger,
 
@@ -32,12 +40,8 @@ pub enum RuntimeError {
     UninitializedElement,
     SignatureMismatch,
     IndirectCallNullFuncRef,
-    ModuleNotFound,
     TableAccessOutOfBounds,
-    // "undefined element" <- as-call_indirect-last
     ReachedUnreachable,
-    StackExhaustion,
-    HostFunctionSignatureMismatch,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -259,31 +263,39 @@ impl Display for Error {
     }
 }
 
+impl Display for TrapError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        match self {
+            TrapError::DivideBy0 => f.write_str("Divide by zero is not permitted"),
+            TrapError::UnrepresentableResult => f.write_str("Result is unrepresentable"),
+            TrapError::BadConversionToInteger => f.write_str("Bad conversion to integer"),
+            TrapError::MemoryOrDataAccessOutOfBounds => {
+                f.write_str("Memory or data access out of bounds")
+            }
+            TrapError::TableOrElementAccessOutOfBounds => {
+                f.write_str("Table or element access out of bounds")
+            }
+            TrapError::UninitializedElement => f.write_str("Uninitialized element"),
+            TrapError::SignatureMismatch => f.write_str("Indirect call signature mismatch"),
+            TrapError::IndirectCallNullFuncRef => {
+                f.write_str("Indirect call targeted null reference")
+            }
+            TrapError::TableAccessOutOfBounds => {
+                f.write_str("Indirect call: table index out of bounds")
+            }
+            TrapError::ReachedUnreachable => {
+                f.write_str("an unreachable statement was reached, triggered a trap")
+            }
+        }
+    }
+}
+
 impl Display for RuntimeError {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         match self {
-            RuntimeError::DivideBy0 => f.write_str("Divide by zero is not permitted"),
-            RuntimeError::UnrepresentableResult => f.write_str("Result is unrepresentable"),
+            RuntimeError::Trap(trap_error) => write!(f, "{trap_error}"),
             RuntimeError::FunctionNotFound => f.write_str("Function not found"),
-            RuntimeError::BadConversionToInteger => f.write_str("Bad conversion to integer"),
-            RuntimeError::MemoryOrDataAccessOutOfBounds => {
-                f.write_str("Memory or data access out of bounds")
-            }
-            RuntimeError::TableOrElementAccessOutOfBounds => {
-                f.write_str("Table or element access out of bounds")
-            }
-            RuntimeError::UninitializedElement => f.write_str("Uninitialized element"),
-            RuntimeError::SignatureMismatch => f.write_str("Indirect call signature mismatch"),
-            RuntimeError::IndirectCallNullFuncRef => {
-                f.write_str("Indirect call targeted null reference")
-            }
             RuntimeError::ModuleNotFound => f.write_str("No such module exists"),
-            RuntimeError::TableAccessOutOfBounds => {
-                f.write_str("Indirect call: table index out of bounds")
-            }
-            RuntimeError::ReachedUnreachable => {
-                f.write_str("an unreachable statement was reached, triggered a trap")
-            }
             RuntimeError::StackExhaustion => {
                 f.write_str("either the call stack or the value stack overflowed")
             }
@@ -299,5 +311,11 @@ pub type Result<T> = core::result::Result<T, Error>;
 impl From<RuntimeError> for Error {
     fn from(value: RuntimeError) -> Self {
         Self::RuntimeError(value)
+    }
+}
+
+impl From<TrapError> for RuntimeError {
+    fn from(value: TrapError) -> Self {
+        Self::Trap(value)
     }
 }

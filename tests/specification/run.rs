@@ -8,6 +8,7 @@ use itertools::enumerate;
 use log::debug;
 use wasm::function_ref::FunctionRef;
 use wasm::RuntimeError;
+use wasm::TrapError;
 use wasm::Value;
 use wasm::{validate, RuntimeInstance};
 use wast::core::WastArgCore;
@@ -75,20 +76,26 @@ pub fn to_wasm_testsuite_string(runtime_error: RuntimeError) -> Result<String, B
     ));
 
     match runtime_error {
-        RuntimeError::DivideBy0 => Ok("integer divide by zero"),
-        RuntimeError::UnrepresentableResult => Ok("integer overflow"),
+        RuntimeError::Trap(TrapError::DivideBy0) => Ok("integer divide by zero"),
+        RuntimeError::Trap(TrapError::UnrepresentableResult) => Ok("integer overflow"),
+        RuntimeError::Trap(TrapError::BadConversionToInteger) => {
+            Ok("invalid conversion to integer")
+        }
+        RuntimeError::Trap(TrapError::ReachedUnreachable) => Ok("unreachable"),
+        RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds) => {
+            Ok("out of bounds memory access")
+        }
+        RuntimeError::Trap(TrapError::TableOrElementAccessOutOfBounds) => {
+            Ok("out of bounds table access")
+        }
+        RuntimeError::Trap(TrapError::UninitializedElement) => Ok("uninitialized element"),
+        RuntimeError::Trap(TrapError::SignatureMismatch) => Ok("indirect call type mismatch"),
+        RuntimeError::Trap(TrapError::TableAccessOutOfBounds) => Ok("undefined element"),
+        RuntimeError::Trap(TrapError::IndirectCallNullFuncRef) => not_represented,
         RuntimeError::FunctionNotFound => not_represented,
         RuntimeError::StackExhaustion => Ok("call stack exhausted"),
-        RuntimeError::BadConversionToInteger => Ok("invalid conversion to integer"),
-        RuntimeError::ReachedUnreachable => Ok("unreachable"),
-        RuntimeError::MemoryOrDataAccessOutOfBounds => Ok("out of bounds memory access"),
-        RuntimeError::TableOrElementAccessOutOfBounds => Ok("out of bounds table access"),
-        RuntimeError::UninitializedElement => Ok("uninitialized element"),
-        RuntimeError::SignatureMismatch => Ok("indirect call type mismatch"),
-        RuntimeError::TableAccessOutOfBounds => Ok("undefined element"),
         RuntimeError::ModuleNotFound => Ok("module not found"),
         RuntimeError::HostFunctionSignatureMismatch => Ok("host function signature mismatch"),
-        RuntimeError::IndirectCallNullFuncRef => not_represented,
     }
     .map(|s| s.to_string())
 }

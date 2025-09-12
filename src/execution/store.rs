@@ -1,4 +1,4 @@
-use crate::core::error::Result;
+use crate::core::error::{Result, TrapError};
 use crate::core::indices::TypeIdx;
 use crate::core::reader::span::Span;
 use crate::core::reader::types::data::{DataModeActive, DataSegment};
@@ -683,13 +683,13 @@ impl TableInst {
         // TODO refactor error, the spec Table.grow raises Table.{SizeOverflow, SizeLimit, OutOfMemory}
         let len = n
             .checked_add(self.elem.len() as u32)
-            .ok_or(RuntimeError::TableOrElementAccessOutOfBounds)?;
+            .ok_or(TrapError::TableOrElementAccessOutOfBounds)?;
 
         // roughly matches step 4,5,6
         // checks limits_prime.valid() for limits_prime := { min: len, max: self.ty.lim.max }
         // https://webassembly.github.io/spec/core/valid/types.html#limits
         if self.ty.lim.max.map(|max| len > max).unwrap_or(false) {
-            return Err(RuntimeError::TableOrElementAccessOutOfBounds);
+            return Err(TrapError::TableOrElementAccessOutOfBounds.into());
         }
         let limits_prime = Limits {
             min: len,
@@ -729,14 +729,14 @@ impl MemInst {
         // TODO refactor error, the spec Table.grow raises Memory.{SizeOverflow, SizeLimit, OutOfMemory}
         let len = n + self.mem.pages() as u32;
         if len > Limits::MAX_MEM_PAGES {
-            return Err(RuntimeError::MemoryOrDataAccessOutOfBounds);
+            return Err(TrapError::MemoryOrDataAccessOutOfBounds.into());
         }
 
         // roughly matches step 4,5,6
         // checks limits_prime.valid() for limits_prime := { min: len, max: self.ty.lim.max }
         // https://webassembly.github.io/spec/core/valid/types.html#limits
         if self.ty.limits.max.map(|max| len > max).unwrap_or(false) {
-            return Err(RuntimeError::MemoryOrDataAccessOutOfBounds);
+            return Err(TrapError::MemoryOrDataAccessOutOfBounds.into());
         }
         let limits_prime = Limits {
             min: len,
