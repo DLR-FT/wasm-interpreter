@@ -247,7 +247,7 @@ fn memory_init_test_8() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
-    assert_error!(i, get_func!(i, "test"), (), Result<(), RuntimeError>, (), (), RuntimeError::MemoryAccessOutOfBounds);
+    assert_error!(i, get_func!(i, "test"), (), Result<(), RuntimeError>, (), (), RuntimeError::MemoryOrDataAccessOutOfBounds);
 }
 
 #[test_log::test]
@@ -263,7 +263,7 @@ fn memory_init_test_9() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
-    assert_error!(i, get_func!(i, "test"), (), Result<(), RuntimeError>, (), (), RuntimeError::MemoryAccessOutOfBounds);
+    assert_error!(i, get_func!(i, "test"), (), Result<(), RuntimeError>, (), (), RuntimeError::MemoryOrDataAccessOutOfBounds);
 }
 
 #[test_log::test]
@@ -325,5 +325,5 @@ fn memory_init_test_13() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
-    assert_error!(i, get_func!(i, "test"), (), Result<(), RuntimeError>, (), (), RuntimeError::MemoryAccessOutOfBounds);
+    assert_error!(i, get_func!(i, "test"), (), Result<(), RuntimeError>, (), (), RuntimeError::MemoryOrDataAccessOutOfBounds);
 }

@@ -70,13 +70,13 @@ fn table_grow_test() {
         )
         .err()
         .unwrap()
-            == RuntimeError::TableAccessOutOfBounds
+            == RuntimeError::TableOrElementAccessOutOfBounds
     );
     assert!(
         i.invoke_typed::<i32, FuncRefForInteropValue>(get, 0)
             .err()
             .unwrap()
-            == RuntimeError::TableAccessOutOfBounds
+            == RuntimeError::TableOrElementAccessOutOfBounds
     );
 
     assert!(
@@ -120,13 +120,13 @@ fn table_grow_test() {
         )
         .err()
         .unwrap()
-            == RuntimeError::TableAccessOutOfBounds
+            == RuntimeError::TableOrElementAccessOutOfBounds
     );
     assert!(
         i.invoke_typed::<i32, FuncRefForInteropValue>(get, 1)
             .err()
             .unwrap()
-            == RuntimeError::TableAccessOutOfBounds
+            == RuntimeError::TableOrElementAccessOutOfBounds
     );
 
     assert!(
@@ -194,13 +194,13 @@ fn table_grow_test() {
         )
         .err()
         .unwrap()
-            == RuntimeError::TableAccessOutOfBounds
+            == RuntimeError::TableOrElementAccessOutOfBounds
     );
     assert!(
         i.invoke_typed::<i32, FuncRefForInteropValue>(get, 5)
             .err()
             .unwrap()
-            == RuntimeError::TableAccessOutOfBounds
+            == RuntimeError::TableOrElementAccessOutOfBounds
     );
 }
 

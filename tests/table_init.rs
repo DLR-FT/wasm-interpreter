@@ -697,7 +697,8 @@ fn table_init_11_test() {
     let test = get_func!(i, "test");
 
     assert!(
-        i.invoke_typed::<(), ()>(test, ()).err().unwrap() == RuntimeError::TableAccessOutOfBounds
+        i.invoke_typed::<(), ()>(test, ()).err().unwrap()
+            == RuntimeError::TableOrElementAccessOutOfBounds
     );
 }
 
@@ -810,7 +811,8 @@ fn table_init_14_test() {
     let test = get_func!(i, "test");
 
     assert!(
-        i.invoke_typed::<(), ()>(test, ()).err().unwrap() == RuntimeError::TableAccessOutOfBounds
+        i.invoke_typed::<(), ()>(test, ()).err().unwrap()
+            == RuntimeError::TableOrElementAccessOutOfBounds
     );
 }
 
@@ -849,7 +851,8 @@ fn table_init_15_test() {
     let test = get_func!(i, "test");
 
     assert!(
-        i.invoke_typed::<(), ()>(test, ()).err().unwrap() == RuntimeError::TableAccessOutOfBounds
+        i.invoke_typed::<(), ()>(test, ()).err().unwrap()
+            == RuntimeError::TableOrElementAccessOutOfBounds
     );
 }
 
@@ -888,7 +891,8 @@ fn table_init_16_test() {
     let test = get_func!(i, "test");
 
     assert!(
-        i.invoke_typed::<(), ()>(test, ()).err().unwrap() == RuntimeError::TableAccessOutOfBounds
+        i.invoke_typed::<(), ()>(test, ()).err().unwrap()
+            == RuntimeError::TableOrElementAccessOutOfBounds
     );
 }
 
@@ -927,7 +931,8 @@ fn table_init_17_test() {
     let test = get_func!(i, "test");
 
     assert!(
-        i.invoke_typed::<(), ()>(test, ()).err().unwrap() == RuntimeError::TableAccessOutOfBounds
+        i.invoke_typed::<(), ()>(test, ()).err().unwrap()
+            == RuntimeError::TableOrElementAccessOutOfBounds
     );
 }
 
@@ -1003,7 +1008,8 @@ fn table_init_19_test() {
     let test = get_func!(i, "test");
 
     assert!(
-        i.invoke_typed::<(), ()>(test, ()).err().unwrap() == RuntimeError::TableAccessOutOfBounds
+        i.invoke_typed::<(), ()>(test, ()).err().unwrap()
+            == RuntimeError::TableOrElementAccessOutOfBounds
     );
 }
 
@@ -1079,7 +1085,8 @@ fn table_init_21_test() {
     let test = get_func!(i, "test");
 
     assert!(
-        i.invoke_typed::<(), ()>(test, ()).err().unwrap() == RuntimeError::TableAccessOutOfBounds
+        i.invoke_typed::<(), ()>(test, ()).err().unwrap()
+            == RuntimeError::TableOrElementAccessOutOfBounds
     );
 }
 
@@ -1155,7 +1162,8 @@ fn table_init_23_test() {
     let test = get_func!(i, "test");
 
     assert!(
-        i.invoke_typed::<(), ()>(test, ()).err().unwrap() == RuntimeError::TableAccessOutOfBounds
+        i.invoke_typed::<(), ()>(test, ()).err().unwrap()
+            == RuntimeError::TableOrElementAccessOutOfBounds
     );
 }
 
@@ -1194,7 +1202,8 @@ fn table_init_24_test() {
     let test = get_func!(i, "test");
 
     assert!(
-        i.invoke_typed::<(), ()>(test, ()).err().unwrap() == RuntimeError::TableAccessOutOfBounds
+        i.invoke_typed::<(), ()>(test, ()).err().unwrap()
+            == RuntimeError::TableOrElementAccessOutOfBounds
     );
 }
 
@@ -1270,7 +1279,8 @@ fn table_init_26_test() {
     let test = get_func!(i, "test");
 
     assert!(
-        i.invoke_typed::<(), ()>(test, ()).err().unwrap() == RuntimeError::TableAccessOutOfBounds
+        i.invoke_typed::<(), ()>(test, ()).err().unwrap()
+            == RuntimeError::TableOrElementAccessOutOfBounds
     );
 }
 
@@ -1346,7 +1356,8 @@ fn table_init_28_test() {
     let test = get_func!(i, "test");
 
     assert!(
-        i.invoke_typed::<(), ()>(test, ()).err().unwrap() == RuntimeError::TableAccessOutOfBounds
+        i.invoke_typed::<(), ()>(test, ()).err().unwrap()
+            == RuntimeError::TableOrElementAccessOutOfBounds
     );
 }
 
@@ -1422,7 +1433,8 @@ fn table_init_30_test() {
     let test = get_func!(i, "test");
 
     assert!(
-        i.invoke_typed::<(), ()>(test, ()).err().unwrap() == RuntimeError::TableAccessOutOfBounds
+        i.invoke_typed::<(), ()>(test, ()).err().unwrap()
+            == RuntimeError::TableOrElementAccessOutOfBounds
     );
 }
 
@@ -2603,7 +2615,7 @@ fn table_init_94_test() {
         inst.invoke_typed::<(i32, i32), ()>(run, (24, 16))
             .err()
             .unwrap()
-            == RuntimeError::TableAccessOutOfBounds
+            == RuntimeError::TableOrElementAccessOutOfBounds
     );
     for i in 0..32 {
         assert!(
@@ -2656,7 +2668,7 @@ fn table_init_95_test() {
         inst.invoke_typed::<(i32, i32), ()>(run, (25, 16))
             .err()
             .unwrap()
-            == RuntimeError::TableAccessOutOfBounds
+            == RuntimeError::TableOrElementAccessOutOfBounds
     );
     for i in 0..32 {
         assert!(
@@ -2709,7 +2721,7 @@ fn table_init_96_test() {
         inst.invoke_typed::<(i32, i32), ()>(run, (96, 32))
             .err()
             .unwrap()
-            == RuntimeError::TableAccessOutOfBounds
+            == RuntimeError::TableOrElementAccessOutOfBounds
     );
     for i in 0..160 {
         assert!(
@@ -2762,7 +2774,7 @@ fn table_init_97_test() {
         inst.invoke_typed::<(i32, i32), ()>(run, (97, 31))
             .err()
             .unwrap()
-            == RuntimeError::TableAccessOutOfBounds
+            == RuntimeError::TableOrElementAccessOutOfBounds
     );
     for i in 0..160 {
         assert!(
@@ -2815,7 +2827,7 @@ fn table_init_98_test() {
         inst.invoke_typed::<(i32, u32), ()>(run, (48, 4294967280_u32))
             .err()
             .unwrap()
-            == RuntimeError::TableAccessOutOfBounds
+            == RuntimeError::TableOrElementAccessOutOfBounds
     );
     for i in 0..64 {
         assert!(
@@ -2868,7 +2880,7 @@ fn table_init_99_test() {
         inst.invoke_typed::<(i32, i32), ()>(run, (0, 4294967292_u32 as i32))
             .err()
             .unwrap()
-            == RuntimeError::TableAccessOutOfBounds
+            == RuntimeError::TableOrElementAccessOutOfBounds
     );
     for i in 0..16 {
         assert!(
