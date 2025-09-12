@@ -266,7 +266,7 @@ fn table_fill_test() {
         )
         .err()
         .unwrap()
-            == RuntimeError::TableAccessOutOfBounds
+            == RuntimeError::TableOrElementAccessOutOfBounds
     );
 
     assert!(i
@@ -297,7 +297,7 @@ fn table_fill_test() {
         )
         .err()
         .unwrap()
-            == RuntimeError::TableAccessOutOfBounds
+            == RuntimeError::TableOrElementAccessOutOfBounds
     );
 
     assert!(
@@ -311,6 +311,6 @@ fn table_fill_test() {
         )
         .err()
         .unwrap()
-            == RuntimeError::TableAccessOutOfBounds
+            == RuntimeError::TableOrElementAccessOutOfBounds
     );
 }
