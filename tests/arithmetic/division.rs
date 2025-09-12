@@ -1,4 +1,4 @@
-use wasm::{validate, RuntimeInstance};
+use wasm::{validate, RuntimeInstance, TrapError};
 use wasm::{RuntimeError, DEFAULT_MODULE};
 
 const WAT_SIGNED_DIVISION_TEMPLATE: &str = r#"
@@ -162,7 +162,10 @@ pub fn i32_division_signed_panic_dividend_0() {
         (222, 0),
     );
 
-    assert_eq!(result.unwrap_err(), RuntimeError::DivideBy0);
+    assert_eq!(
+        result.unwrap_err(),
+        RuntimeError::Trap(TrapError::DivideBy0)
+    );
 }
 
 /// A simple function to test i32 signed division's RuntimeError when we are dividing the i32 minimum by -1 (which gives an unrepresentable result - overflow)
@@ -184,7 +187,10 @@ pub fn i32_division_signed_panic_result_unrepresentable() {
         (i32::MIN, -1),
     );
 
-    assert_eq!(result.unwrap_err(), RuntimeError::UnrepresentableResult);
+    assert_eq!(
+        result.unwrap_err(),
+        RuntimeError::Trap(TrapError::UnrepresentableResult)
+    );
 }
 
 /// A simple function to test i32 unsigned division
@@ -309,7 +315,10 @@ pub fn i32_division_unsigned_panic_dividend_0() {
         (222, 0),
     );
 
-    assert_eq!(result.unwrap_err(), RuntimeError::DivideBy0);
+    assert_eq!(
+        result.unwrap_err(),
+        RuntimeError::Trap(TrapError::DivideBy0)
+    );
 }
 
 /// A simple function to test signed i64 division
