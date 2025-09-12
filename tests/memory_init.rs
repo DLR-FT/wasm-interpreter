@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 */
-use wasm::{validate, RuntimeError, RuntimeInstance};
+use wasm::{validate, RuntimeError, RuntimeInstance, TrapError};
 use wasm::{Error as GeneralError, DEFAULT_MODULE};
 
 macro_rules! get_func {
@@ -247,7 +247,7 @@ fn memory_init_test_8() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
-    assert_error!(i, get_func!(i, "test"), (), Result<(), RuntimeError>, (), (), RuntimeError::MemoryOrDataAccessOutOfBounds);
+    assert_error!(i, get_func!(i, "test"), (), Result<(), RuntimeError>, (), (), RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds));
 }
 
 #[test_log::test]
@@ -263,7 +263,7 @@ fn memory_init_test_9() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
-    assert_error!(i, get_func!(i, "test"), (), Result<(), RuntimeError>, (), (), RuntimeError::MemoryOrDataAccessOutOfBounds);
+    assert_error!(i, get_func!(i, "test"), (), Result<(), RuntimeError>, (), (), RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds));
 }
 
 #[test_log::test]
@@ -325,5 +325,5 @@ fn memory_init_test_13() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
-    assert_error!(i, get_func!(i, "test"), (), Result<(), RuntimeError>, (), (), RuntimeError::MemoryOrDataAccessOutOfBounds);
+    assert_error!(i, get_func!(i, "test"), (), Result<(), RuntimeError>, (), (), RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds));
 }

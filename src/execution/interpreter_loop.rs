@@ -16,6 +16,7 @@ use core::iter::zip;
 use crate::{
     assert_validated::UnwrapValidatedExt,
     core::{
+        error::TrapError,
         indices::{DataIdx, FuncIdx, GlobalIdx, LabelIdx, LocalIdx, MemIdx, TableIdx, TypeIdx},
         reader::{
             types::{memarg::MemArg, BlockType},
@@ -260,11 +261,11 @@ pub(super) fn run<T, H: HookSet>(
                 let r = tab
                     .elem
                     .get(i as usize)
-                    .ok_or(RuntimeError::TableAccessOutOfBounds)
+                    .ok_or(TrapError::TableAccessOutOfBounds)
                     .and_then(|r| {
                         if r.is_null() {
                             trace!("table_idx ({table_idx}) --- element index in table ({i})");
-                            Err(RuntimeError::UninitializedElement)
+                            Err(TrapError::UninitializedElement)
                         } else {
                             Ok(r)
                         }
@@ -273,14 +274,14 @@ pub(super) fn run<T, H: HookSet>(
                 let func_to_call_addr = match *r {
                     Ref::Func(FuncAddr { addr: Some(addr) }) => addr,
                     Ref::Func(FuncAddr { addr: None }) => {
-                        return Err(RuntimeError::IndirectCallNullFuncRef)
+                        return Err(TrapError::IndirectCallNullFuncRef.into())
                     }
                     Ref::Extern(_) => unreachable_validated!(),
                 };
 
                 let func_to_call_ty = store.functions[func_to_call_addr].ty();
                 if *func_ty != func_to_call_ty {
-                    return Err(RuntimeError::SignatureMismatch);
+                    return Err(TrapError::SignatureMismatch.into());
                 }
 
                 let params = stack.pop_tail_iter(func_to_call_ty.params.valtypes.len());
@@ -404,7 +405,7 @@ pub(super) fn run<T, H: HookSet>(
                 let val = tab
                     .elem
                     .get(i as usize)
-                    .ok_or(RuntimeError::TableOrElementAccessOutOfBounds)?;
+                    .ok_or(TrapError::TableOrElementAccessOutOfBounds)?;
 
                 stack.push_value((*val).into())?;
                 trace!(
@@ -427,7 +428,7 @@ pub(super) fn run<T, H: HookSet>(
 
                 tab.elem
                     .get_mut(i as usize)
-                    .ok_or(RuntimeError::TableOrElementAccessOutOfBounds)
+                    .ok_or(TrapError::TableOrElementAccessOutOfBounds)
                     .map(|r| *r = val)?;
                 trace!(
                     "Instruction: table.set '{}' [{} {}] -> []",
@@ -437,7 +438,7 @@ pub(super) fn run<T, H: HookSet>(
                 )
             }
             UNREACHABLE => {
-                return Err(RuntimeError::ReachedUnreachable);
+                return Err(TrapError::ReachedUnreachable.into());
             }
             I32_LOAD => {
                 let memarg = MemArg::read_unvalidated(wasm);
@@ -1256,10 +1257,10 @@ pub(super) fn run<T, H: HookSet>(
                 let divisor: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
                 if dividend == 0 {
-                    return Err(RuntimeError::DivideBy0);
+                    return Err(TrapError::DivideBy0.into());
                 }
                 if divisor == i32::MIN && dividend == -1 {
-                    return Err(RuntimeError::UnrepresentableResult);
+                    return Err(TrapError::UnrepresentableResult.into());
                 }
 
                 let res = divisor / dividend;
@@ -1275,7 +1276,7 @@ pub(super) fn run<T, H: HookSet>(
                 let divisor = divisor as u32;
 
                 if dividend == 0 {
-                    return Err(RuntimeError::DivideBy0);
+                    return Err(TrapError::DivideBy0.into());
                 }
 
                 let res = (divisor / dividend) as i32;
@@ -1288,7 +1289,7 @@ pub(super) fn run<T, H: HookSet>(
                 let divisor: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
                 if dividend == 0 {
-                    return Err(RuntimeError::DivideBy0);
+                    return Err(TrapError::DivideBy0.into());
                 }
 
                 let res = divisor.checked_rem(dividend);
@@ -1347,10 +1348,10 @@ pub(super) fn run<T, H: HookSet>(
                 let divisor: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
 
                 if dividend == 0 {
-                    return Err(RuntimeError::DivideBy0);
+                    return Err(TrapError::DivideBy0.into());
                 }
                 if divisor == i64::MIN && dividend == -1 {
-                    return Err(RuntimeError::UnrepresentableResult);
+                    return Err(TrapError::UnrepresentableResult.into());
                 }
 
                 let res = divisor / dividend;
@@ -1366,7 +1367,7 @@ pub(super) fn run<T, H: HookSet>(
                 let divisor = divisor as u64;
 
                 if dividend == 0 {
-                    return Err(RuntimeError::DivideBy0);
+                    return Err(TrapError::DivideBy0.into());
                 }
 
                 let res = (divisor / dividend) as i64;
@@ -1379,7 +1380,7 @@ pub(super) fn run<T, H: HookSet>(
                 let divisor: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
 
                 if dividend == 0 {
-                    return Err(RuntimeError::DivideBy0);
+                    return Err(TrapError::DivideBy0.into());
                 }
 
                 let res = divisor.checked_rem(dividend);
@@ -1396,7 +1397,7 @@ pub(super) fn run<T, H: HookSet>(
                 let divisor = divisor as u64;
 
                 if dividend == 0 {
-                    return Err(RuntimeError::DivideBy0);
+                    return Err(TrapError::DivideBy0.into());
                 }
 
                 let res = (divisor % dividend) as i64;
@@ -1484,7 +1485,7 @@ pub(super) fn run<T, H: HookSet>(
                 let divisor = divisor as u32;
 
                 if dividend == 0 {
-                    return Err(RuntimeError::DivideBy0);
+                    return Err(TrapError::DivideBy0.into());
                 }
 
                 let res = divisor.checked_rem(dividend);
@@ -1783,13 +1784,13 @@ pub(super) fn run<T, H: HookSet>(
             I32_TRUNC_F32_S => {
                 let v: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
                 if v.is_infinity() {
-                    return Err(RuntimeError::UnrepresentableResult);
+                    return Err(TrapError::UnrepresentableResult.into());
                 }
                 if v.is_nan() {
-                    return Err(RuntimeError::BadConversionToInteger);
+                    return Err(TrapError::BadConversionToInteger.into());
                 }
                 if v >= value::F32(2147483648.0) || v <= value::F32(-2147483904.0) {
-                    return Err(RuntimeError::UnrepresentableResult);
+                    return Err(TrapError::UnrepresentableResult.into());
                 }
 
                 let res: i32 = v.as_i32();
@@ -1800,13 +1801,13 @@ pub(super) fn run<T, H: HookSet>(
             I32_TRUNC_F32_U => {
                 let v: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
                 if v.is_infinity() {
-                    return Err(RuntimeError::UnrepresentableResult);
+                    return Err(TrapError::UnrepresentableResult.into());
                 }
                 if v.is_nan() {
-                    return Err(RuntimeError::BadConversionToInteger);
+                    return Err(TrapError::BadConversionToInteger.into());
                 }
                 if v >= value::F32(4294967296.0) || v <= value::F32(-1.0) {
-                    return Err(RuntimeError::UnrepresentableResult);
+                    return Err(TrapError::UnrepresentableResult.into());
                 }
 
                 let res: i32 = v.as_u32() as i32;
@@ -1818,13 +1819,13 @@ pub(super) fn run<T, H: HookSet>(
             I32_TRUNC_F64_S => {
                 let v: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
                 if v.is_infinity() {
-                    return Err(RuntimeError::UnrepresentableResult);
+                    return Err(TrapError::UnrepresentableResult.into());
                 }
                 if v.is_nan() {
-                    return Err(RuntimeError::BadConversionToInteger);
+                    return Err(TrapError::BadConversionToInteger.into());
                 }
                 if v >= value::F64(2147483648.0) || v <= value::F64(-2147483649.0) {
-                    return Err(RuntimeError::UnrepresentableResult);
+                    return Err(TrapError::UnrepresentableResult.into());
                 }
 
                 let res: i32 = v.as_i32();
@@ -1835,13 +1836,13 @@ pub(super) fn run<T, H: HookSet>(
             I32_TRUNC_F64_U => {
                 let v: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
                 if v.is_infinity() {
-                    return Err(RuntimeError::UnrepresentableResult);
+                    return Err(TrapError::UnrepresentableResult.into());
                 }
                 if v.is_nan() {
-                    return Err(RuntimeError::BadConversionToInteger);
+                    return Err(TrapError::BadConversionToInteger.into());
                 }
                 if v >= value::F64(4294967296.0) || v <= value::F64(-1.0) {
-                    return Err(RuntimeError::UnrepresentableResult);
+                    return Err(TrapError::UnrepresentableResult.into());
                 }
 
                 let res: i32 = v.as_u32() as i32;
@@ -1871,14 +1872,14 @@ pub(super) fn run<T, H: HookSet>(
             I64_TRUNC_F32_S => {
                 let v: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
                 if v.is_infinity() {
-                    return Err(RuntimeError::UnrepresentableResult);
+                    return Err(TrapError::UnrepresentableResult.into());
                 }
                 if v.is_nan() {
-                    return Err(RuntimeError::BadConversionToInteger);
+                    return Err(TrapError::BadConversionToInteger.into());
                 }
                 if v >= value::F32(9223372036854775808.0) || v <= value::F32(-9223373136366403584.0)
                 {
-                    return Err(RuntimeError::UnrepresentableResult);
+                    return Err(TrapError::UnrepresentableResult.into());
                 }
 
                 let res: i64 = v.as_i64();
@@ -1889,13 +1890,13 @@ pub(super) fn run<T, H: HookSet>(
             I64_TRUNC_F32_U => {
                 let v: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
                 if v.is_infinity() {
-                    return Err(RuntimeError::UnrepresentableResult);
+                    return Err(TrapError::UnrepresentableResult.into());
                 }
                 if v.is_nan() {
-                    return Err(RuntimeError::BadConversionToInteger);
+                    return Err(TrapError::BadConversionToInteger.into());
                 }
                 if v >= value::F32(18446744073709551616.0) || v <= value::F32(-1.0) {
-                    return Err(RuntimeError::UnrepresentableResult);
+                    return Err(TrapError::UnrepresentableResult.into());
                 }
 
                 let res: i64 = v.as_u64() as i64;
@@ -1907,14 +1908,14 @@ pub(super) fn run<T, H: HookSet>(
             I64_TRUNC_F64_S => {
                 let v: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
                 if v.is_infinity() {
-                    return Err(RuntimeError::UnrepresentableResult);
+                    return Err(TrapError::UnrepresentableResult.into());
                 }
                 if v.is_nan() {
-                    return Err(RuntimeError::BadConversionToInteger);
+                    return Err(TrapError::BadConversionToInteger.into());
                 }
                 if v >= value::F64(9223372036854775808.0) || v <= value::F64(-9223372036854777856.0)
                 {
-                    return Err(RuntimeError::UnrepresentableResult);
+                    return Err(TrapError::UnrepresentableResult.into());
                 }
 
                 let res: i64 = v.as_i64();
@@ -1925,13 +1926,13 @@ pub(super) fn run<T, H: HookSet>(
             I64_TRUNC_F64_U => {
                 let v: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
                 if v.is_infinity() {
-                    return Err(RuntimeError::UnrepresentableResult);
+                    return Err(TrapError::UnrepresentableResult.into());
                 }
                 if v.is_nan() {
-                    return Err(RuntimeError::BadConversionToInteger);
+                    return Err(TrapError::BadConversionToInteger.into());
                 }
                 if v >= value::F64(18446744073709551616.0) || v <= value::F64(-1.0) {
-                    return Err(RuntimeError::UnrepresentableResult);
+                    return Err(TrapError::UnrepresentableResult.into());
                 }
 
                 let res: i64 = v.as_u64() as i64;
@@ -2341,23 +2342,23 @@ pub(super) fn run<T, H: HookSet>(
                         let src_res = match s.checked_add(n) {
                             Some(res) => {
                                 if res > tab_y_elem_len as u32 {
-                                    return Err(RuntimeError::TableOrElementAccessOutOfBounds);
+                                    return Err(TrapError::TableOrElementAccessOutOfBounds.into());
                                 } else {
                                     res as usize
                                 }
                             }
-                            _ => return Err(RuntimeError::TableOrElementAccessOutOfBounds),
+                            _ => return Err(TrapError::TableOrElementAccessOutOfBounds.into()),
                         };
 
                         let dst_res = match d.checked_add(n) {
                             Some(res) => {
                                 if res > tab_x_elem_len as u32 {
-                                    return Err(RuntimeError::TableOrElementAccessOutOfBounds);
+                                    return Err(TrapError::TableOrElementAccessOutOfBounds.into());
                                 } else {
                                     res as usize
                                 }
                             }
-                            _ => return Err(RuntimeError::TableOrElementAccessOutOfBounds),
+                            _ => return Err(TrapError::TableOrElementAccessOutOfBounds.into()),
                         };
 
                         let dst = table_x_idx;
@@ -2460,11 +2461,11 @@ pub(super) fn run<T, H: HookSet>(
 
                         let end = (dst as usize)
                             .checked_add(len as usize)
-                            .ok_or(RuntimeError::TableOrElementAccessOutOfBounds)?;
+                            .ok_or(TrapError::TableOrElementAccessOutOfBounds)?;
 
                         tab.elem
                             .get_mut(dst as usize..end)
-                            .ok_or(RuntimeError::TableOrElementAccessOutOfBounds)?
+                            .ok_or(TrapError::TableOrElementAccessOutOfBounds)?
                             .fill(val);
 
                         trace!(
@@ -2609,9 +2610,9 @@ fn calculate_mem_address(memarg: &MemArg, relative_address: u32) -> Result<usize
         // checked addition.
         // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
         .checked_add(relative_address)
-        .ok_or(RuntimeError::MemoryOrDataAccessOutOfBounds)?
+        .ok_or(TrapError::MemoryOrDataAccessOutOfBounds)?
         .try_into()
-        .map_err(|_| RuntimeError::MemoryOrDataAccessOutOfBounds)
+        .map_err(|_| TrapError::MemoryOrDataAccessOutOfBounds.into())
 }
 
 //helpers for avoiding code duplication during module instantiation
@@ -2652,14 +2653,14 @@ pub(super) fn table_init(
     let final_src_offset = (s as usize)
         .checked_add(n as usize)
         .filter(|&res| res <= elem.len())
-        .ok_or(RuntimeError::TableOrElementAccessOutOfBounds)?;
+        .ok_or(TrapError::TableOrElementAccessOutOfBounds)?;
 
     if (d as usize)
         .checked_add(n as usize)
         .filter(|&res| res <= tab.len())
         .is_none()
     {
-        return Err(RuntimeError::TableOrElementAccessOutOfBounds);
+        return Err(TrapError::TableOrElementAccessOutOfBounds.into());
     }
 
     let dest = &mut tab.elem[d as usize..];
