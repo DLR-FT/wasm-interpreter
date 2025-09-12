@@ -2,7 +2,7 @@ use alloc::borrow::ToOwned;
 use alloc::vec::Vec;
 
 use crate::execution::{hooks::HookSet, value::InteropValueList, RuntimeInstance};
-use crate::{Error, ExternVal, Result as CustomResult, RuntimeError, Store, Value};
+use crate::{Error, ExternVal, Result, RuntimeError, Store, Value};
 
 pub struct FunctionRef {
     pub func_addr: usize,
@@ -13,7 +13,7 @@ impl FunctionRef {
         module_name: &str,
         function_name: &str,
         store: &Store<T>,
-    ) -> CustomResult<Self> {
+    ) -> Result<Self> {
         // https://webassembly.github.io/spec/core/appendix/embedding.html#module-instances
         // inspired by instance_export
         let extern_val = store
@@ -40,7 +40,7 @@ impl FunctionRef {
         runtime: &mut RuntimeInstance<H>,
         params: Param,
         // store: &mut Store,
-    ) -> Result<Returns, RuntimeError> {
+    ) -> core::result::Result<Returns, RuntimeError> {
         runtime.invoke_typed(self, params /* , store */)
     }
 
@@ -49,7 +49,7 @@ impl FunctionRef {
         runtime: &mut RuntimeInstance<T, H>,
         params: Vec<Value>,
         // store: &mut Store,
-    ) -> Result<Vec<Value>, RuntimeError> {
+    ) -> core::result::Result<Vec<Value>, RuntimeError> {
         runtime.invoke(self, params)
     }
 }
