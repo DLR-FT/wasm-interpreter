@@ -18,9 +18,17 @@ pub enum RuntimeError {
     FunctionNotFound,
     // https://github.com/wasmi-labs/wasmi/blob/37d1449524a322817c55026eb21eb97dd693b9ce/crates/core/src/trap.rs#L265C5-L265C27
     BadConversionToInteger,
-    MemoryAccessOutOfBounds,
-    TableAccessOutOfBounds,
-    ElementAccessOutOfBounds,
+
+    /// An access to a memory or data was out of bounds.
+    ///
+    /// Note: As of now, there is no way to distinguish between both of these. The reference
+    /// interpreter and Wast testsuite messages call this error "memory access out of bounds".
+    MemoryOrDataAccessOutOfBounds,
+    /// An access to a table or an element was out of bounds.
+    ///
+    /// Note: As of now, there is no way to distinguish between both of these. The reference
+    /// interpreter and Wast testsuite messages call this error "table access out of bounds".
+    TableOrElementAccessOutOfBounds,
     UninitializedElement,
     SignatureMismatch,
     IndirectCallNullFuncRef,
@@ -258,9 +266,12 @@ impl Display for RuntimeError {
             RuntimeError::UnrepresentableResult => f.write_str("Result is unrepresentable"),
             RuntimeError::FunctionNotFound => f.write_str("Function not found"),
             RuntimeError::BadConversionToInteger => f.write_str("Bad conversion to integer"),
-            RuntimeError::MemoryAccessOutOfBounds => f.write_str("Memory access out of bounds"),
-            RuntimeError::TableAccessOutOfBounds => f.write_str("Table access out of bounds"),
-            RuntimeError::ElementAccessOutOfBounds => f.write_str("Element access out of bounds"),
+            RuntimeError::MemoryOrDataAccessOutOfBounds => {
+                f.write_str("Memory or data access out of bounds")
+            }
+            RuntimeError::TableOrElementAccessOutOfBounds => {
+                f.write_str("Table or element access out of bounds")
+            }
             RuntimeError::UninitializedElement => f.write_str("Uninitialized element"),
             RuntimeError::SignatureMismatch => f.write_str("Indirect call signature mismatch"),
             RuntimeError::IndirectCallNullFuncRef => {

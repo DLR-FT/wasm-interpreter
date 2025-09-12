@@ -72,15 +72,15 @@ fn memory_trap_1() {
 
     assert_result!(i, store, (-4, 42), ());
     assert_result!(i, load, -4, 42);
-    assert_error!(i, store, (-3, 0x12345678), Result<(), RuntimeError>, (i32, i32), (), RuntimeError::MemoryAccessOutOfBounds);
-    assert_error!(i, load, -3, Result<i32, RuntimeError>, i32, i32, RuntimeError::MemoryAccessOutOfBounds);
-    assert_error!(i, store, (-2, 13), Result<(), RuntimeError>, (i32, i32), (), RuntimeError::MemoryAccessOutOfBounds);
-    assert_error!(i, load, -2, Result<i32, RuntimeError>, i32, i32, RuntimeError::MemoryAccessOutOfBounds);
-    assert_error!(i, store, (-1, 13), Result<(), RuntimeError>, (i32, i32), (), RuntimeError::MemoryAccessOutOfBounds);
-    assert_error!(i, load, -1, Result<i32, RuntimeError>, i32, i32, RuntimeError::MemoryAccessOutOfBounds);
-    assert_error!(i, store, (0, 13), Result<(), RuntimeError>, (i32, i32), (), RuntimeError::MemoryAccessOutOfBounds);
-    assert_error!(i, load, 0, Result<i32, RuntimeError>, i32, i32, RuntimeError::MemoryAccessOutOfBounds);
-    assert_error!(i, store, (0x80000000_u32 as i32, 13), Result<(), RuntimeError>, (i32, i32), (), RuntimeError::MemoryAccessOutOfBounds);
-    assert_error!(i, load, 0x80000000_u32 as i32, Result<i32, RuntimeError>, i32, i32, RuntimeError::MemoryAccessOutOfBounds);
+    assert_error!(i, store, (-3, 0x12345678), Result<(), RuntimeError>, (i32, i32), (), RuntimeError::MemoryOrDataAccessOutOfBounds);
+    assert_error!(i, load, -3, Result<i32, RuntimeError>, i32, i32, RuntimeError::MemoryOrDataAccessOutOfBounds);
+    assert_error!(i, store, (-2, 13), Result<(), RuntimeError>, (i32, i32), (), RuntimeError::MemoryOrDataAccessOutOfBounds);
+    assert_error!(i, load, -2, Result<i32, RuntimeError>, i32, i32, RuntimeError::MemoryOrDataAccessOutOfBounds);
+    assert_error!(i, store, (-1, 13), Result<(), RuntimeError>, (i32, i32), (), RuntimeError::MemoryOrDataAccessOutOfBounds);
+    assert_error!(i, load, -1, Result<i32, RuntimeError>, i32, i32, RuntimeError::MemoryOrDataAccessOutOfBounds);
+    assert_error!(i, store, (0, 13), Result<(), RuntimeError>, (i32, i32), (), RuntimeError::MemoryOrDataAccessOutOfBounds);
+    assert_error!(i, load, 0, Result<i32, RuntimeError>, i32, i32, RuntimeError::MemoryOrDataAccessOutOfBounds);
+    assert_error!(i, store, (0x80000000_u32 as i32, 13), Result<(), RuntimeError>, (i32, i32), (), RuntimeError::MemoryOrDataAccessOutOfBounds);
+    assert_error!(i, load, 0x80000000_u32 as i32, Result<i32, RuntimeError>, i32, i32, RuntimeError::MemoryOrDataAccessOutOfBounds);
     assert_result!(i, get_func!(i, "memory.grow"), 0x10001, -1);
 }
