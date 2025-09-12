@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 */
-use wasm::{validate, RuntimeError, RuntimeInstance, DEFAULT_MODULE};
+use wasm::{validate, RuntimeError, RuntimeInstance, TrapError, DEFAULT_MODULE};
 
 macro_rules! get_func {
     ($instance:ident, $func_name:expr) => {
@@ -62,17 +62,17 @@ fn memory_grow_test_1() {
 
     // let x = i.invoke_typed(function_ref, params)
     assert_result!(i, get_func!(i, "size"), (), 0);
-    assert_error!(i, get_func!(i, "store_at_zero"), (), Result<(), RuntimeError>, (), (), RuntimeError::MemoryOrDataAccessOutOfBounds);
-    assert_error!(i, get_func!(i, "load_at_zero"), (), Result<i32, RuntimeError>, (), i32, RuntimeError::MemoryOrDataAccessOutOfBounds);
-    assert_error!(i, get_func!(i, "store_at_page_size"), (), Result<(), RuntimeError>, (), (), RuntimeError::MemoryOrDataAccessOutOfBounds);
-    assert_error!(i, get_func!(i, "load_at_page_size"), (), Result<i32, RuntimeError>, (), i32, RuntimeError::MemoryOrDataAccessOutOfBounds);
+    assert_error!(i, get_func!(i, "store_at_zero"), (), Result<(), RuntimeError>, (), (), RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds));
+    assert_error!(i, get_func!(i, "load_at_zero"), (), Result<i32, RuntimeError>, (), i32, RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds));
+    assert_error!(i, get_func!(i, "store_at_page_size"), (), Result<(), RuntimeError>, (), (), RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds));
+    assert_error!(i, get_func!(i, "load_at_page_size"), (), Result<i32, RuntimeError>, (), i32, RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds));
     assert_result!(i, get_func!(i, "grow"), 1, 0);
     assert_result!(i, get_func!(i, "size"), (), 1);
     assert_result!(i, get_func!(i, "load_at_zero"), (), 0);
     assert_result!(i, get_func!(i, "store_at_zero"), (), ());
     assert_result!(i, get_func!(i, "load_at_zero"), (), 2);
-    assert_error!(i, get_func!(i, "store_at_page_size"), (), Result<(), RuntimeError>, (), (), RuntimeError::MemoryOrDataAccessOutOfBounds);
-    assert_error!(i, get_func!(i, "load_at_page_size"), (), Result<i32, RuntimeError>, (), i32, RuntimeError::MemoryOrDataAccessOutOfBounds);
+    assert_error!(i, get_func!(i, "store_at_page_size"), (), Result<(), RuntimeError>, (), (), RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds));
+    assert_error!(i, get_func!(i, "load_at_page_size"), (), Result<i32, RuntimeError>, (), i32, RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds));
     assert_result!(i, get_func!(i, "grow"), 4, 1);
     assert_result!(i, get_func!(i, "size"), (), 5);
     assert_result!(i, get_func!(i, "load_at_zero"), (), 2);

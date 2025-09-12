@@ -3,7 +3,7 @@ use core::{cell::UnsafeCell, mem};
 use alloc::vec::Vec;
 
 use crate::{
-    core::{indices::MemIdx, little_endian::LittleEndianBytes},
+    core::{error::TrapError, indices::MemIdx, little_endian::LittleEndianBytes},
     rw_spinlock::RwSpinLock,
     RuntimeError,
 };
@@ -133,7 +133,7 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
         // A value must fit into the linear memory
         if value_size > lock_guard.len() {
             error!("value does not fit into linear memory");
-            return Err(RuntimeError::MemoryOrDataAccessOutOfBounds);
+            return Err(TrapError::MemoryOrDataAccessOutOfBounds.into());
         }
 
         // The following statement must be true
@@ -143,7 +143,7 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
 
         if (index) > lock_guard.len() - value_size {
             error!("value write would extend beyond the end of the linear memory");
-            return Err(RuntimeError::MemoryOrDataAccessOutOfBounds);
+            return Err(TrapError::MemoryOrDataAccessOutOfBounds.into());
         }
 
         // TODO this unwrap can not fail, maybe use unwrap_unchecked?
@@ -181,7 +181,7 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
         // A value must fit into the linear memory
         if value_size > lock_guard.len() {
             error!("value does not fit into linear memory");
-            return Err(RuntimeError::MemoryOrDataAccessOutOfBounds);
+            return Err(TrapError::MemoryOrDataAccessOutOfBounds.into());
         }
 
         // The following statement must be true
@@ -191,7 +191,7 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
 
         if (index) > lock_guard.len() - value_size {
             error!("value read would extend beyond the end of the linear_memory");
-            return Err(RuntimeError::MemoryOrDataAccessOutOfBounds);
+            return Err(TrapError::MemoryOrDataAccessOutOfBounds.into());
         }
 
         let ptr = lock_guard.get(index).unwrap().get();
@@ -224,13 +224,13 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
         // Specification step 12.
         if count > lock_guard.len() {
             error!("fill count is bigger than the linear memory");
-            return Err(RuntimeError::MemoryOrDataAccessOutOfBounds);
+            return Err(TrapError::MemoryOrDataAccessOutOfBounds.into());
         }
 
         // Specification step 12.
         if index > lock_guard.len() - count {
             error!("fill extends beyond the linear memory's end");
-            return Err(RuntimeError::MemoryOrDataAccessOutOfBounds);
+            return Err(TrapError::MemoryOrDataAccessOutOfBounds.into());
         }
 
         /* check if there is anything to be done */
@@ -273,26 +273,26 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
         // Specification step 12.
         if count > lock_guard_self.len() {
             error!("copy count is bigger than the destination linear memory");
-            return Err(RuntimeError::MemoryOrDataAccessOutOfBounds);
+            return Err(TrapError::MemoryOrDataAccessOutOfBounds.into());
         }
 
         // Specification step 12.
         if destination_index > lock_guard_self.len() - count {
             error!("copy destination extends beyond the linear memory's end");
-            return Err(RuntimeError::MemoryOrDataAccessOutOfBounds);
+            return Err(TrapError::MemoryOrDataAccessOutOfBounds.into());
         }
 
         /* check source for out of bounds access */
         // Specification step 12.
         if count > lock_guard_other.len() {
             error!("copy count is bigger than the source linear memory");
-            return Err(RuntimeError::MemoryOrDataAccessOutOfBounds);
+            return Err(TrapError::MemoryOrDataAccessOutOfBounds.into());
         }
 
         // Specification step 12.
         if source_index > lock_guard_other.len() - count {
             error!("copy source extends beyond the linear memory's end");
-            return Err(RuntimeError::MemoryOrDataAccessOutOfBounds);
+            return Err(TrapError::MemoryOrDataAccessOutOfBounds.into());
         }
 
         /* check if there is anything to be done */
@@ -336,26 +336,26 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
         // Specification step 16.
         if count > data_len {
             error!("init count is bigger than the data instance");
-            return Err(RuntimeError::MemoryOrDataAccessOutOfBounds);
+            return Err(TrapError::MemoryOrDataAccessOutOfBounds.into());
         }
 
         // Specification step 16.
         if source_index > data_len - count {
             error!("init source extends beyond the data instance's end");
-            return Err(RuntimeError::MemoryOrDataAccessOutOfBounds);
+            return Err(TrapError::MemoryOrDataAccessOutOfBounds.into());
         }
 
         /* check destination for out of bounds access */
         // Specification step 16.
         if count > lock_guard_self.len() {
             error!("init count is bigger than the linear memory");
-            return Err(RuntimeError::MemoryOrDataAccessOutOfBounds);
+            return Err(TrapError::MemoryOrDataAccessOutOfBounds.into());
         }
 
         // Specification step 16.
         if destination_index > lock_guard_self.len() - count {
             error!("init extends beyond the linear memory's end");
-            return Err(RuntimeError::MemoryOrDataAccessOutOfBounds);
+            return Err(TrapError::MemoryOrDataAccessOutOfBounds.into());
         }
 
         /* check if there is anything to be done */
@@ -520,7 +520,7 @@ mod test {
 
     #[test]
     #[should_panic(
-        expected = "called `Result::unwrap()` on an `Err` value: MemoryOrDataAccessOutOfBounds"
+        expected = "called `Result::unwrap()` on an `Err` value: Trap(MemoryOrDataAccessOutOfBounds)"
     )]
     fn store_out_of_range_u128_max() {
         let x: u128 = u128::MAX;
@@ -534,7 +534,7 @@ mod test {
 
     #[test]
     #[should_panic(
-        expected = "called `Result::unwrap()` on an `Err` value: MemoryOrDataAccessOutOfBounds"
+        expected = "called `Result::unwrap()` on an `Err` value: Trap(MemoryOrDataAccessOutOfBounds)"
     )]
     fn store_empty_lineaer_memory_u8() {
         let x: u8 = u8::MAX;
@@ -548,7 +548,7 @@ mod test {
 
     #[test]
     #[should_panic(
-        expected = "called `Result::unwrap()` on an `Err` value: MemoryOrDataAccessOutOfBounds"
+        expected = "called `Result::unwrap()` on an `Err` value: Trap(MemoryOrDataAccessOutOfBounds)"
     )]
     fn load_out_of_range_u128_max() {
         let pages = 1;
@@ -561,7 +561,7 @@ mod test {
 
     #[test]
     #[should_panic(
-        expected = "called `Result::unwrap()` on an `Err` value: MemoryOrDataAccessOutOfBounds"
+        expected = "called `Result::unwrap()` on an `Err` value: Trap(MemoryOrDataAccessOutOfBounds)"
     )]
     fn load_empty_lineaer_memory_u8() {
         let pages = 0;
