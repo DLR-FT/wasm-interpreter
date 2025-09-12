@@ -820,9 +820,7 @@ fn read_instructions(
             MEMORY_SIZE => {
                 let mem_idx = wasm.read_u8()? as MemIdx;
                 if mem_idx != 0 {
-                    return Err(Error::UnsupportedProposal(
-                        crate::core::error::Proposal::MultipleMemories,
-                    ));
+                    return Err(Error::UnsupportedMultipleMemoriesProposal);
                 }
                 if memories.len() <= mem_idx {
                     return Err(Error::MemoryIsNotDefined(mem_idx));
@@ -832,9 +830,7 @@ fn read_instructions(
             MEMORY_GROW => {
                 let mem_idx = wasm.read_u8()? as MemIdx;
                 if mem_idx != 0 {
-                    return Err(Error::UnsupportedProposal(
-                        crate::core::error::Proposal::MultipleMemories,
-                    ));
+                    return Err(Error::UnsupportedMultipleMemoriesProposal);
                 }
                 if memories.len() <= mem_idx {
                     return Err(Error::MemoryIsNotDefined(mem_idx));
@@ -1104,9 +1100,7 @@ fn read_instructions(
                         let data_idx = wasm.read_var_u32()? as DataIdx;
                         let mem_idx = wasm.read_u8()? as MemIdx;
                         if mem_idx != 0 {
-                            return Err(Error::UnsupportedProposal(
-                                crate::core::error::Proposal::MultipleMemories,
-                            ));
+                            return Err(Error::UnsupportedMultipleMemoriesProposal);
                         }
                         if memories.len() <= mem_idx {
                             return Err(Error::MemoryIsNotDefined(mem_idx));
@@ -1133,9 +1127,7 @@ fn read_instructions(
                     MEMORY_COPY => {
                         let (dst, src) = (wasm.read_u8()? as usize, wasm.read_u8()? as usize);
                         if dst != 0 || src != 0 {
-                            return Err(Error::UnsupportedProposal(
-                                crate::core::error::Proposal::MultipleMemories,
-                            ));
+                            return Err(Error::UnsupportedMultipleMemoriesProposal);
                         }
                         if memories.is_empty() {
                             return Err(Error::MemoryIsNotDefined(0));
@@ -1147,9 +1139,7 @@ fn read_instructions(
                     MEMORY_FILL => {
                         let mem_idx = wasm.read_u8()? as MemIdx;
                         if mem_idx != 0 {
-                            return Err(Error::UnsupportedProposal(
-                                crate::core::error::Proposal::MultipleMemories,
-                            ));
+                            return Err(Error::UnsupportedMultipleMemoriesProposal);
                         }
                         if memories.len() <= mem_idx {
                             return Err(Error::MemoryIsNotDefined(mem_idx));
