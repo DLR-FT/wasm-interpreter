@@ -258,7 +258,7 @@ pub(super) fn run<T, H: HookSet>(
                 let r = tab
                     .elem
                     .get(i as usize)
-                    .ok_or(RuntimeError::UndefinedTableIndex)
+                    .ok_or(RuntimeError::TableAccessOutOfBounds)
                     .and_then(|r| {
                         if r.is_null() {
                             trace!("table_idx ({table_idx}) --- element index in table ({i})");
