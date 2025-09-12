@@ -1,5 +1,4 @@
-use alloc::format;
-use alloc::string::{String, ToString};
+use alloc::string::String;
 
 use crate::core::indices::GlobalIdx;
 use crate::validation_stack::ValidationStackEntry;
@@ -25,9 +24,7 @@ pub enum RuntimeError {
     UninitializedElement,
     SignatureMismatch,
     IndirectCallNullFuncRef,
-    ExpectedAValueOnTheStack,
     ModuleNotFound,
-    UnmetImport,
     UndefinedTableIndex,
     // "undefined element" <- as-call_indirect-last
     ReachedUnreachable,
@@ -37,22 +34,7 @@ pub enum RuntimeError {
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Proposal {
-    Memory64,
     MultipleMemories,
-    Threads,
-}
-
-#[derive(Debug, PartialEq, Eq, Clone)]
-pub enum StoreInstantiationError {
-    ActiveDataWriteOutOfBounds,
-    I64ValueOutOfReach(String),
-    MissingValueOnTheStack,
-    TooManyMemories(usize),
-}
-
-#[derive(Debug, PartialEq, Eq, Clone)]
-pub enum LinkerError {
-    UnmetImport,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -107,14 +89,12 @@ pub enum Error {
     FunctionIsNotDefined(FuncIdx),
     ReferencingAnUnreferencedFunction(FuncIdx),
     FunctionTypeIsNotDefined(TypeIdx),
-    StoreInstantiationError(StoreInstantiationError),
     OnlyFuncRefIsAllowed,
     TypeUnificationMismatch,
     InvalidSelectTypeVector,
     TooManyLocals(usize),
     UnsupportedProposal(Proposal),
     Overflow,
-    LinkerError(LinkerError),
     UnknownFunction,
     UnknownMemory,
     UnknownGlobal,
@@ -251,7 +231,6 @@ impl Display for Error {
             Error::FunctionTypeIsNotDefined(func_ty_idx) => f.write_fmt(format_args!(
                 "C.fn_types[{func_ty_idx}] is NOT defined when it should be"
             )),
-            Error::StoreInstantiationError(err) => err.fmt(f),
             Error::OnlyFuncRefIsAllowed => f.write_str("Only FuncRef is allowed"),
             Error::TypeUnificationMismatch => {
                 f.write_str("cannot unify types")
@@ -266,7 +245,6 @@ impl Display for Error {
                 f.write_fmt(format_args!("Unsupported proposal: {proposal:?}"))
             }
             Error::Overflow => f.write_str("Overflow"),
-            Error::LinkerError(err) => err.fmt(f),
 
             // TODO: maybe move these to LinkerError also add more info to them (the name's export, function idx, etc)
             Error::UnknownFunction => f.write_str("Unknown function"),
@@ -297,13 +275,7 @@ impl Display for RuntimeError {
             RuntimeError::IndirectCallNullFuncRef => {
                 f.write_str("Indirect call targeted null reference")
             }
-            RuntimeError::ExpectedAValueOnTheStack => {
-                f.write_str("Expected a value on the stack, but None was found")
-            }
             RuntimeError::ModuleNotFound => f.write_str("No such module exists"),
-            RuntimeError::UnmetImport => {
-                f.write_str("There is at least one import which has no corresponding export")
-            }
             RuntimeError::UndefinedTableIndex => {
                 f.write_str("Indirect call: table index out of bounds")
             }
@@ -320,46 +292,10 @@ impl Display for RuntimeError {
     }
 }
 
-impl Display for StoreInstantiationError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-        use StoreInstantiationError::*;
-        match self {
-            ActiveDataWriteOutOfBounds => {
-                f.write_str("Active data writing in memory is out of bounds")
-            }
-            I64ValueOutOfReach(s) => f.write_fmt(format_args!(
-                "I64 value {}is out of reach",
-                if !s.is_empty() {
-                    format!("for {s} ")
-                } else {
-                    "".to_string()
-                }
-            )),
-            MissingValueOnTheStack => f.write_str(""),
-            TooManyMemories(x) => f.write_fmt(format_args!("Too many memories (overflow): {x}")),
-        }
-    }
-}
-
-impl Display for LinkerError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-        use LinkerError::*;
-        match self {
-            UnmetImport => f.write_str("Unmet import"),
-        }
-    }
-}
-
 pub type Result<T> = core::result::Result<T, Error>;
 
 impl From<RuntimeError> for Error {
     fn from(value: RuntimeError) -> Self {
         Self::RuntimeError(value)
-    }
-}
-
-impl From<StoreInstantiationError> for Error {
-    fn from(value: StoreInstantiationError) -> Self {
-        Self::StoreInstantiationError(value)
     }
 }

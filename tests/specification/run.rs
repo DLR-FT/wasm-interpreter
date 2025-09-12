@@ -86,10 +86,8 @@ pub fn to_wasm_testsuite_string(runtime_error: RuntimeError) -> Result<String, B
         RuntimeError::ElementAccessOutOfBounds => not_represented,
         RuntimeError::UninitializedElement => Ok("uninitialized element"),
         RuntimeError::SignatureMismatch => Ok("indirect call type mismatch"),
-        RuntimeError::ExpectedAValueOnTheStack => not_represented,
         RuntimeError::UndefinedTableIndex => Ok("undefined element"),
         RuntimeError::ModuleNotFound => Ok("module not found"),
-        RuntimeError::UnmetImport => Ok("unmet import"),
         RuntimeError::HostFunctionSignatureMismatch => Ok("host function signature mismatch"),
         RuntimeError::IndirectCallNullFuncRef => not_represented,
     }
