@@ -14,7 +14,7 @@ use crate::core::reader::types::{BlockType, FuncType, MemType, NumType, TableTyp
 use crate::core::reader::{WasmReadable, WasmReader};
 use crate::core::sidetable::{Sidetable, SidetableEntry};
 use crate::validation_stack::{LabelInfo, ValidationStack};
-use crate::{Error, RefType, Result};
+use crate::{Error, RefType};
 
 #[allow(clippy::too_many_arguments)]
 pub fn validate_code_section(
@@ -30,7 +30,7 @@ pub fn validate_code_section(
     elements: &[ElemType],
     validation_context_refs: &BTreeSet<FuncIdx>,
     sidetable: &mut Sidetable,
-) -> Result<Vec<(Span, usize)>> {
+) -> Result<Vec<(Span, usize)>, Error> {
     assert_eq!(section_header.ty, SectionTy::Code);
     let code_block_spans_stps = wasm.read_vec_enumerated(|wasm, idx| {
         // We need to offset the index by the number of functions that were
@@ -85,7 +85,7 @@ pub fn validate_code_section(
     Ok(code_block_spans_stps)
 }
 
-pub fn read_declared_locals(wasm: &mut WasmReader) -> Result<Vec<ValType>> {
+pub fn read_declared_locals(wasm: &mut WasmReader) -> Result<Vec<ValType>, Error> {
     let locals = wasm.read_vec(|wasm| {
         let n = wasm.read_var_u32()? as usize;
         let valtype = ValType::read(wasm)?;
@@ -168,7 +168,7 @@ fn validate_intrablock_jump_and_generate_sidetable_entry(
     stack: &mut ValidationStack,
     sidetable: &mut Sidetable,
     unify_to_expected_types: bool,
-) -> Result<()> {
+) -> Result<(), Error> {
     let ctrl_stack_len = stack.ctrl_stack.len();
 
     stack.assert_val_types_of_label_jump_types_on_top(label_idx, unify_to_expected_types)?;
@@ -205,7 +205,7 @@ fn read_instructions(
     tables: &[TableType],
     elements: &[ElemType],
     validation_context_refs: &BTreeSet<FuncIdx>,
-) -> Result<()> {
+) -> Result<(), Error> {
     loop {
         let Ok(first_instr_byte) = wasm.read_u8() else {
             // TODO only do this if EOF

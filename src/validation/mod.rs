@@ -12,7 +12,7 @@ use crate::core::reader::types::import::{Import, ImportDesc};
 use crate::core::reader::types::{FuncType, MemType, ResultType, TableType};
 use crate::core::reader::{WasmReadable, WasmReader};
 use crate::core::sidetable::Sidetable;
-use crate::{Error, ExportDesc, Result};
+use crate::{Error, ExportDesc};
 
 pub(crate) mod code;
 pub(crate) mod data;
@@ -53,7 +53,7 @@ pub struct ValidationInfo<'bytecode> {
     // pub(crate) exports_length: Exported,
 }
 
-fn validate_exports(validation_info: &ValidationInfo) -> Result<()> {
+fn validate_exports(validation_info: &ValidationInfo) -> Result<(), Error> {
     let mut found_export_names: btree_set::BTreeSet<&str> = btree_set::BTreeSet::new();
     use crate::core::reader::types::export::ExportDesc::*;
     for export in &validation_info.exports {
@@ -116,7 +116,7 @@ fn get_imports_length(imports: &Vec<Import>) -> ImportsLength {
     imports_length
 }
 
-pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>> {
+pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, Error> {
     let mut wasm = WasmReader::new(wasm);
 
     // represents C.refs in https://webassembly.github.io/spec/core/valid/conventions.html#context
@@ -431,7 +431,10 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>> {
     Ok(validation_info)
 }
 
-fn read_next_header(wasm: &mut WasmReader, header: &mut Option<SectionHeader>) -> Result<()> {
+fn read_next_header(
+    wasm: &mut WasmReader,
+    header: &mut Option<SectionHeader>,
+) -> Result<(), Error> {
     if header.is_none() && !wasm.remaining_bytes().is_empty() {
         *header = Some(SectionHeader::read(wasm)?);
     }
@@ -439,12 +442,12 @@ fn read_next_header(wasm: &mut WasmReader, header: &mut Option<SectionHeader>) -
 }
 
 #[inline(always)]
-fn handle_section<T, F: FnOnce(&mut WasmReader, SectionHeader) -> Result<T>>(
+fn handle_section<T, F: FnOnce(&mut WasmReader, SectionHeader) -> Result<T, Error>>(
     wasm: &mut WasmReader,
     header: &mut Option<SectionHeader>,
     section_ty: SectionTy,
     handler: F,
-) -> Result<Option<T>> {
+) -> Result<Option<T>, Error> {
     match &header {
         Some(SectionHeader { ty, .. }) if *ty == section_ty => {
             let h = header.take().unwrap();

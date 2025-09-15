@@ -25,11 +25,11 @@ use alloc::vec::Vec;
 use core::mem;
 
 use crate::core::reader::WasmReader;
-use crate::{Error, Result};
+use crate::Error;
 
 impl WasmReader<'_> {
     /// Note: If `Err`, the [WasmReader] object is no longer guaranteed to be in a valid state
-    pub fn read_u8(&mut self) -> Result<u8> {
+    pub fn read_u8(&mut self) -> Result<u8, Error> {
         match self.peek_u8() {
             Err(e) => Err(e),
             Ok(byte) => {
@@ -44,7 +44,7 @@ impl WasmReader<'_> {
     /// Parses a variable-length `u64` (can be casted to a smaller uint if the result fits)
     /// Taken from <https://github.com/bytecodealliance/wasm-tools>
     #[allow(unused)]
-    pub fn read_var_u64(&mut self) -> Result<u64> {
+    pub fn read_var_u64(&mut self) -> Result<u64, Error> {
         let mut result = 0;
         let mut shift = 0;
 
@@ -73,7 +73,7 @@ impl WasmReader<'_> {
 
     /// Parses a variable-length `u32` as specified by [LEB128](https://en.wikipedia.org/wiki/LEB128#Unsigned_LEB128).
     /// Note: If `Err`, the [WasmReader] object is no longer guaranteed to be in a valid state
-    pub fn read_var_u32(&mut self) -> Result<u32> {
+    pub fn read_var_u32(&mut self) -> Result<u32, Error> {
         let mut result: u32 = 0;
         let mut shift = 0;
 
@@ -95,14 +95,14 @@ impl WasmReader<'_> {
         }
     }
 
-    pub fn read_var_f64(&mut self) -> Result<u64> {
+    pub fn read_var_f64(&mut self) -> Result<u64, Error> {
         let bytes = self.strip_bytes::<8>().map_err(|_| Error::Eof)?;
         let word = u64::from_le_bytes(bytes);
         Ok(word)
     }
 
     /// Adapted from <https://github.com/bytecodealliance/wasm-tools>
-    pub fn read_var_i32(&mut self) -> Result<i32> {
+    pub fn read_var_i32(&mut self) -> Result<i32, Error> {
         let mut result: i32 = 0;
         let mut shift: u32 = 0;
 
@@ -138,7 +138,7 @@ impl WasmReader<'_> {
         Ok((result << ashift) >> ashift)
     }
 
-    pub fn read_var_i33(&mut self) -> Result<i64> {
+    pub fn read_var_i33(&mut self) -> Result<i64, Error> {
         let mut result: i64 = 0;
         let mut shift: u32 = 0;
 
@@ -171,7 +171,7 @@ impl WasmReader<'_> {
         Ok((result << ashift) >> ashift)
     }
 
-    pub fn read_var_f32(&mut self) -> Result<u32> {
+    pub fn read_var_f32(&mut self) -> Result<u32, Error> {
         if self.full_wasm_binary.len() - self.pc < 4 {
             return Err(Error::Eof);
         }
@@ -187,7 +187,7 @@ impl WasmReader<'_> {
         Ok(word)
     }
 
-    pub fn read_var_i64(&mut self) -> Result<i64> {
+    pub fn read_var_i64(&mut self) -> Result<i64, Error> {
         let mut result: i64 = 0;
         let mut shift: u32 = 0;
 
@@ -224,7 +224,7 @@ impl WasmReader<'_> {
     }
 
     /// Note: If `Err`, the [WasmReader] object is no longer guaranteed to be in a valid state
-    pub fn read_name(&mut self) -> Result<&str> {
+    pub fn read_name(&mut self) -> Result<&str, Error> {
         let len = self.read_var_u32()? as usize;
 
         if len > self.full_wasm_binary.len() - self.pc {
@@ -237,9 +237,9 @@ impl WasmReader<'_> {
         core::str::from_utf8(utf8_str).map_err(Error::MalformedUtf8String)
     }
 
-    pub fn read_vec_enumerated<T, F>(&mut self, mut read_element: F) -> Result<Vec<T>>
+    pub fn read_vec_enumerated<T, F>(&mut self, mut read_element: F) -> Result<Vec<T>, Error>
     where
-        F: FnMut(&mut WasmReader, usize) -> Result<T>,
+        F: FnMut(&mut WasmReader, usize) -> Result<T, Error>,
     {
         let mut idx = 0;
         self.read_vec(|wasm| {
@@ -250,9 +250,9 @@ impl WasmReader<'_> {
     }
 
     /// Note: If `Err`, the [WasmReader] object is no longer guaranteed to be in a valid state
-    pub fn read_vec<T, F>(&mut self, mut read_element: F) -> Result<Vec<T>>
+    pub fn read_vec<T, F>(&mut self, mut read_element: F) -> Result<Vec<T>, Error>
     where
-        F: FnMut(&mut WasmReader) -> Result<T>,
+        F: FnMut(&mut WasmReader) -> Result<T, Error>,
     {
         let len = self.read_var_u32()?;
         (0..len).map(|_| read_element(self)).collect()
