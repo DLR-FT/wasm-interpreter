@@ -1,7 +1,7 @@
 use crate::core::reader::span::Span;
 use crate::core::reader::types::ValType;
 use crate::core::reader::{WasmReadable, WasmReader};
-use crate::{Error, Result};
+use crate::Error;
 
 #[derive(Debug, Copy, Clone)]
 pub struct Global {
@@ -17,7 +17,7 @@ pub struct GlobalType {
 }
 
 impl WasmReadable for GlobalType {
-    fn read(wasm: &mut WasmReader) -> Result<Self> {
+    fn read(wasm: &mut WasmReader) -> Result<Self, Error> {
         let ty = ValType::read(wasm)?;
         let is_mut = match wasm.read_u8()? {
             0x00 => false,

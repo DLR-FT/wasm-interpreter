@@ -1,6 +1,6 @@
 use crate::core::reader::span::Span;
 use crate::core::reader::{WasmReadable, WasmReader};
-use crate::{Error, Result};
+use crate::Error;
 
 #[derive(Copy, Clone, Debug, Hash, PartialEq, Eq)]
 pub enum SectionTy {
@@ -20,7 +20,7 @@ pub enum SectionTy {
 }
 
 impl WasmReadable for SectionTy {
-    fn read(wasm: &mut WasmReader) -> Result<Self> {
+    fn read(wasm: &mut WasmReader) -> Result<Self, Error> {
         use SectionTy::*;
         let ty = match wasm.read_u8()? {
             0 => Custom,
@@ -50,7 +50,7 @@ pub(crate) struct SectionHeader {
 }
 
 impl WasmReadable for SectionHeader {
-    fn read(wasm: &mut WasmReader) -> Result<Self> {
+    fn read(wasm: &mut WasmReader) -> Result<Self, Error> {
         let ty = SectionTy::read(wasm)?;
         let size: u32 = wasm.read_var_u32()?;
         let contents_span = wasm.make_span(size as usize)?;

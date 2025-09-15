@@ -1,6 +1,5 @@
 use core::iter;
 
-use super::Result;
 use alloc::vec;
 use alloc::vec::Vec;
 
@@ -62,7 +61,7 @@ impl ValidationStack {
 
     /// Similar to [`ValidationStack::pop_valtype`], because it pops a value from the stack,
     /// but more public and doesn't actually return the popped value.
-    pub(super) fn drop_val(&mut self) -> Result<()> {
+    pub(super) fn drop_val(&mut self) -> Result<(), Error> {
         self.pop_valtype().map_err(|_| Error::ExpectedAnOperand)?;
         Ok(())
     }
@@ -73,7 +72,7 @@ impl ValidationStack {
     ///
     /// Returns `Ok(())` if called during validation of a control block. `Returns Err(Error::ValidationCtrlStackEmpty)` if no control block context is found
     /// in the control block stack.
-    pub(super) fn make_unspecified(&mut self) -> Result<()> {
+    pub(super) fn make_unspecified(&mut self) -> Result<(), Error> {
         let last_ctrl_stack_entry = self
             .ctrl_stack
             .last_mut()
@@ -91,7 +90,7 @@ impl ValidationStack {
     ///   at least one element pushed after the current control block is entered. May also return `Ok(ValidationStackEntry::Bottom)`
     ///   if `make_unspecified` is called within the current control block.
     /// - Returns `Err(_)` otherwise.
-    fn pop_valtype(&mut self) -> Result<ValidationStackEntry> {
+    fn pop_valtype(&mut self) -> Result<ValidationStackEntry, Error> {
         // TODO unwrapping might not be the best option
         // TODO ugly
         // TODO return type should be Result<()> maybe?
@@ -114,7 +113,7 @@ impl ValidationStack {
     /// # Returns
     ///
     /// - Returns `Ok(())` if `Valtype::RefType(expected_ty)` unifies to the item returned by `pop_valtype` operation and `Err(_)` otherwise.
-    pub fn assert_pop_ref_type(&mut self, expected_ty: Option<RefType>) -> Result<()> {
+    pub fn assert_pop_ref_type(&mut self, expected_ty: Option<RefType>) -> Result<(), Error> {
         match self.pop_valtype()? {
             ValidationStackEntry::Val(ValType::RefType(ref_type)) => {
                 expected_ty.map_or(Ok(()), |ty| {
@@ -133,7 +132,7 @@ impl ValidationStack {
     /// # Returns
     ///
     /// - Returns `Ok(())` if expected_ty unifies to the item returned by `pop_valtype` operation and `Err(_)` otherwise.
-    pub fn assert_pop_val_type(&mut self, expected_ty: ValType) -> Result<()> {
+    pub fn assert_pop_val_type(&mut self, expected_ty: ValType) -> Result<(), Error> {
         match self.pop_valtype()? {
             ValidationStackEntry::Val(ty) => (ty == expected_ty)
                 .then_some(())
@@ -149,7 +148,7 @@ impl ValidationStack {
         ctrl_stack: &[CtrlStackEntry],
         expected_val_types: &[ValType],
         unify_to_expected_types: bool,
-    ) -> Result<()> {
+    ) -> Result<(), Error> {
         let last_ctrl_stack_entry = ctrl_stack.last().ok_or(Error::ValidationCtrlStackEmpty)?;
         let stack_len = stack.len();
 
@@ -204,7 +203,7 @@ impl ValidationStack {
         ctrl_stack: &[CtrlStackEntry],
         expected_val_types: &[ValType],
         unify_to_expected_types: bool,
-    ) -> Result<()> {
+    ) -> Result<(), Error> {
         ValidationStack::assert_val_types_on_top_with_custom_stacks(
             stack,
             ctrl_stack,
@@ -234,7 +233,7 @@ impl ValidationStack {
         &mut self,
         expected_val_types: &[ValType],
         unify_to_expected_types: bool,
-    ) -> Result<()> {
+    ) -> Result<(), Error> {
         ValidationStack::assert_val_types_on_top_with_custom_stacks(
             &mut self.stack,
             &self.ctrl_stack,
@@ -256,7 +255,7 @@ impl ValidationStack {
         &mut self,
         expected_val_types: &[ValType],
         unify_to_expected_types: bool,
-    ) -> Result<()> {
+    ) -> Result<(), Error> {
         ValidationStack::assert_val_types_with_custom_stacks(
             &mut self.stack,
             &self.ctrl_stack,
@@ -278,7 +277,7 @@ impl ValidationStack {
         &mut self,
         label_idx: usize,
         unify_to_expected_types: bool,
-    ) -> Result<()> {
+    ) -> Result<(), Error> {
         let label_types = self
             .ctrl_stack
             .get(self.ctrl_stack.len() - label_idx - 1)
@@ -305,7 +304,7 @@ impl ValidationStack {
         label_info: LabelInfo,
         block_ty: FuncType,
         unify_to_expected_types: bool,
-    ) -> Result<()> {
+    ) -> Result<(), Error> {
         self.assert_val_types_on_top(&block_ty.params.valtypes, unify_to_expected_types)?;
         let height = self.stack.len() - block_ty.params.valtypes.len();
         self.ctrl_stack.push(CtrlStackEntry {
@@ -328,7 +327,7 @@ impl ValidationStack {
     pub fn assert_pop_ctrl(
         &mut self,
         unify_to_expected_types: bool,
-    ) -> Result<(LabelInfo, FuncType)> {
+    ) -> Result<(LabelInfo, FuncType), Error> {
         let return_types = &self
             .ctrl_stack
             .last()
@@ -352,7 +351,7 @@ impl ValidationStack {
     }
 
     /// Validate the `SELECT` instruction within the current control block. Returns OK(()) on success, Err(_) otherwise.
-    pub fn validate_polymorphic_select(&mut self) -> Result<()> {
+    pub fn validate_polymorphic_select(&mut self) -> Result<(), Error> {
         //SELECT instruction has the type signature
         //[t t i32] -> [t] where t unifies to a NumType(_) or VecType
 

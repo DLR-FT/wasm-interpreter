@@ -6,7 +6,7 @@ use crate::core::reader::types::TableType;
 use crate::core::reader::{WasmReadable, WasmReader};
 use crate::read_constant_expression::read_constant_expression;
 use crate::validation_stack::ValidationStack;
-use crate::{Error, NumType, Result, ValType};
+use crate::{Error, NumType, ValType};
 
 use alloc::collections::btree_set::BTreeSet;
 use alloc::vec::Vec;
@@ -55,7 +55,7 @@ impl ElemType {
         validation_context_refs: &mut BTreeSet<FuncIdx>,
         tables: &[TableType],
         imported_global_types: &[GlobalType],
-    ) -> Result<Vec<Self>> {
+    ) -> Result<Vec<Self>, Error> {
         wasm.read_vec(|wasm| {
             let prop = wasm.read_var_u32()?;
 
@@ -299,7 +299,7 @@ fn parse_validate_active_segment_offset_expr(
     imported_global_types: &[GlobalType],
     num_funcs: usize,
     validation_context_refs: &mut BTreeSet<FuncIdx>,
-) -> Result<Span> {
+) -> Result<Span, Error> {
     let mut valid_stack = ValidationStack::new();
     let (span, seen_func_refs) =
         read_constant_expression(wasm, &mut valid_stack, imported_global_types, num_funcs)?;
@@ -320,7 +320,7 @@ fn parse_validate_shortened_initializer_list(
     wasm: &mut WasmReader,
     num_funcs: usize,
     validation_context_refs: &mut BTreeSet<FuncIdx>,
-) -> Result<ElemItems> {
+) -> Result<ElemItems, Error> {
     wasm.read_vec(|w| {
         let func_idx = w.read_var_u32()?;
         if num_funcs <= func_idx as usize {
@@ -347,7 +347,7 @@ fn parse_validate_generic_initializer_list(
     imported_global_types: &[GlobalType],
     num_funcs: usize,
     validation_context_refs: &mut BTreeSet<FuncIdx>,
-) -> Result<ElemItems> {
+) -> Result<ElemItems, Error> {
     wasm.read_vec(|w| {
         let mut valid_stack = ValidationStack::new();
         let (span, seen_func_refs) =
@@ -362,7 +362,7 @@ fn parse_validate_generic_initializer_list(
 /// Parse an elemkind: <https://webassembly.github.io/spec/core/binary/modules.html#element-section>
 /// # Returns
 /// - `Ok(elemkind)` if parsing is successful, Err(_) otherwise
-fn parse_elemkind(wasm: &mut WasmReader) -> Result<u8> {
+fn parse_elemkind(wasm: &mut WasmReader) -> Result<u8, Error> {
     let et = wasm.read_u8()?;
     if et != 0x00 {
         Err(Error::OnlyFuncRefIsAllowed)

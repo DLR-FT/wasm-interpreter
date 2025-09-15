@@ -1,6 +1,9 @@
 use core::fmt::Debug;
 
-use crate::core::reader::{WasmReadable, WasmReader};
+use crate::{
+    core::reader::{WasmReadable, WasmReader},
+    Error,
+};
 
 #[derive(Debug)]
 pub struct MemArg {
@@ -9,7 +12,7 @@ pub struct MemArg {
 }
 
 impl WasmReadable for MemArg {
-    fn read(wasm: &mut WasmReader) -> crate::Result<Self> {
+    fn read(wasm: &mut WasmReader) -> Result<Self, Error> {
         let align = wasm.read_var_u32()?;
         let offset = wasm.read_var_u32()?;
         Ok(Self { offset, align })

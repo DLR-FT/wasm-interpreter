@@ -14,7 +14,7 @@ use crate::{
     },
     read_constant_expression::read_constant_expression,
     validation_stack::ValidationStack,
-    Result,
+    Error,
 };
 
 /// Validate the data section.
@@ -24,7 +24,7 @@ pub(super) fn validate_data_section(
     imported_global_types: &[GlobalType],
     no_of_total_memories: usize,
     num_funcs: usize,
-) -> Result<Vec<DataSegment>> {
+) -> Result<Vec<DataSegment>, Error> {
     assert_eq!(section_header.ty, SectionTy::Data);
 
     wasm.read_vec(|wasm| {

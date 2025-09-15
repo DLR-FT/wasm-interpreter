@@ -4,7 +4,7 @@ use crate::core::indices::{FuncIdx, GlobalIdx};
 use crate::core::reader::span::Span;
 use crate::core::reader::types::global::GlobalType;
 use crate::core::reader::{WasmReadable, WasmReader};
-use crate::{Error, NumType, RefType, Result, ValType};
+use crate::{Error, NumType, RefType, ValType};
 
 use super::validation_stack::ValidationStack;
 
@@ -94,7 +94,7 @@ pub fn read_constant_expression(
     //   for validating certain definitions is that they can only access functions and imported globals and nothing else.
     globals_ty: &[GlobalType],
     num_funcs: usize,
-) -> Result<(Span, Vec<FuncIdx>)> {
+) -> Result<(Span, Vec<FuncIdx>), Error> {
     let start_pc = wasm.pc;
     let mut seen_func_idxs: Vec<FuncIdx> = Vec::new();
 

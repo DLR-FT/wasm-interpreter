@@ -1,5 +1,5 @@
 use crate::core::reader::span::Span;
-use crate::{Error, Result};
+use crate::Error;
 
 pub mod section_header;
 pub mod types;
@@ -46,7 +46,7 @@ impl<'a> WasmReader<'a> {
     /// This allows setting the [`pc`](WasmReader::pc) to one byte *past* the end of
     /// [full_wasm_binary](WasmReader::full_wasm_binary), **if** the [Span]'s length is 0. For
     /// further information, refer to the [field documentation of `pc`](WasmReader::pc).
-    pub fn move_start_to(&mut self, span: Span) -> Result<()> {
+    pub fn move_start_to(&mut self, span: Span) -> Result<(), Error> {
         if span.from + span.len > self.full_wasm_binary.len() {
             return Err(Error::Eof);
         }
@@ -65,7 +65,7 @@ impl<'a> WasmReader<'a> {
     ///
     /// Verifies the span to fit the WASM binary, i.e. using this span to index the WASM binary will
     /// not yield an error.
-    pub fn make_span(&self, len: usize) -> Result<Span> {
+    pub fn make_span(&self, len: usize) -> Result<Span, Error> {
         if self.pc + len > self.full_wasm_binary.len() {
             return Err(Error::Eof);
         }
@@ -82,7 +82,7 @@ impl<'a> WasmReader<'a> {
     /// [full_wasm_binary](WasmReader::full_wasm_binary), **if** `N` equals the remaining bytes
     /// slice's length. For further information, refer to the [field documentation of `pc`]
     /// (WasmReader::pc).
-    pub fn strip_bytes<const N: usize>(&mut self) -> Result<[u8; N]> {
+    pub fn strip_bytes<const N: usize>(&mut self) -> Result<[u8; N], Error> {
         if N > self.full_wasm_binary.len() - self.pc {
             return Err(Error::Eof);
         }
@@ -96,7 +96,7 @@ impl<'a> WasmReader<'a> {
     /// Read the current byte without advancing the [`pc`](Self::pc)
     ///
     /// May yield an error if the [`pc`](Self::pc) advanced past the end of the WASM binary slice
-    pub fn peek_u8(&self) -> Result<u8> {
+    pub fn peek_u8(&self) -> Result<u8, Error> {
         self.full_wasm_binary
             .get(self.pc)
             .copied()
@@ -114,8 +114,8 @@ impl<'a> WasmReader<'a> {
     /// [move_start_to](Self::move_start_to) is called.
     pub fn measure_num_read_bytes<T>(
         &mut self,
-        f: impl FnOnce(&mut WasmReader) -> Result<T>,
-    ) -> Result<(T, usize)> {
+        f: impl FnOnce(&mut WasmReader) -> Result<T, Error>,
+    ) -> Result<(T, usize), Error> {
         let before = self.pc;
         let ret = f(self)?;
 
@@ -138,7 +138,7 @@ impl<'a> WasmReader<'a> {
     /// further than that, instead an error is returned. For further information, refer to the
     /// [field documentation of `pc`] (WasmReader::pc).
     #[allow(dead_code)]
-    pub fn skip(&mut self, num_bytes: usize) -> Result<()> {
+    pub fn skip(&mut self, num_bytes: usize) -> Result<(), Error> {
         if num_bytes > self.full_wasm_binary.len() - self.pc {
             return Err(Error::Eof);
         }
@@ -158,8 +158,8 @@ impl<'a> WasmReader<'a> {
     #[allow(dead_code)]
     pub fn handle_transaction<T, E>(
         &mut self,
-        f: impl FnOnce(&mut WasmReader<'a>) -> core::result::Result<T, E>,
-    ) -> core::result::Result<T, E> {
+        f: impl FnOnce(&mut WasmReader<'a>) -> Result<T, E>,
+    ) -> Result<T, E> {
         let original = self.clone();
         f(self).inspect_err(|_| {
             *self = original;
@@ -173,7 +173,7 @@ pub trait WasmReadable: Sized {
     /// Note that if this function returns `Err(_)`, the [`WasmReader`] may still have been advanced,
     /// which may lead to unexpected behaviour.
     /// To avoid this consider using the [`WasmReader::handle_transaction`] method to wrap this function call.
-    fn read(wasm: &mut WasmReader) -> Result<Self>;
+    fn read(wasm: &mut WasmReader) -> Result<Self, Error>;
 }
 
 pub mod span {
@@ -353,7 +353,7 @@ mod test {
             Ok([0x1, 0x2]),
         );
 
-        let transaction_result: Result<()> = reader.handle_transaction(|reader| {
+        let transaction_result: Result<(), Error> = reader.handle_transaction(|reader| {
             assert_eq!(reader.strip_bytes::<2>(), Ok([0x3, 0x4]));
 
             // The exact error type does not matter
