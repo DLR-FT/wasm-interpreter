@@ -17,6 +17,8 @@ pub enum WastError {
     #[error("{0}")]
     WasmError(wasm::Error),
     #[error("{0}")]
+    WasmRuntimeError(wasm::RuntimeError),
+    #[error("{0}")]
     AssertEqualFailed(#[from] AssertEqError),
     #[error("Module validated and instantiated successfully, when it shouldn't have")]
     AssertInvalidButValid,
@@ -49,6 +51,12 @@ pub enum WastError {
 impl From<wasm::Error> for WastError {
     fn from(value: wasm::Error) -> Self {
         Self::WasmError(value)
+    }
+}
+
+impl From<wasm::RuntimeError> for WastError {
+    fn from(value: wasm::RuntimeError) -> Self {
+        Self::WasmRuntimeError(value)
     }
 }
 

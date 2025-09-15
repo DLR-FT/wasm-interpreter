@@ -4,11 +4,7 @@
 //! # Note to Developer:
 //!
 //! 1. There must be only imports and one `impl` with one function (`run`) in it.
-//! 2. This module must not use the [`Error`](crate::core::error::Error) enum.
-//! 3. Instead, only the [`RuntimeError`] enum shall be used
-//!    - **not** to be confused with the [`Error`](crate::core::error::Error) enum's
-//!      [`Error::RuntimeError`](crate::Error::RuntimeError) variant, which as per 2., we don not
-//!      want
+//! 2. This module must only use [`RuntimeError`] and never [`Error`](crate::core::error::Error).
 
 use alloc::vec::Vec;
 use core::iter::zip;

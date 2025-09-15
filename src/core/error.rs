@@ -14,10 +14,16 @@ use super::indices::{DataIdx, ElemIdx, FuncIdx, MemIdx, TableIdx, TypeIdx};
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum RuntimeError {
     Trap(TrapError),
+
     ModuleNotFound,
     FunctionNotFound,
     StackExhaustion,
     HostFunctionSignatureMismatch,
+
+    // Are all of these instantiation variants? Add a new `InstantiationError` enum?
+    InvalidImportType,
+    UnknownImport,
+    MoreThanOneMemory,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -72,12 +78,10 @@ pub enum Error {
     ExpectedAnOperand,
     InvalidLimitsType(u8),
     InvalidMutType(u8),
-    MoreThanOneMemory,
     InvalidLimit,
     MemSizeTooBig,
     InvalidGlobalIdx(GlobalIdx),
     GlobalIsConst,
-    RuntimeError(RuntimeError),
     MemoryIsNotDefined(MemIdx),
     //           mem.align, wanted alignment
     ErroneousAlignment(u32, u32),
@@ -104,9 +108,7 @@ pub enum Error {
     UnknownFunction,
     UnknownMemory,
     UnknownGlobal,
-    UnknownImport, // TODO refactor
     DuplicateExportName,
-    InvalidImportType,
     UnsupportedMultipleMemoriesProposal,
 }
 
@@ -179,16 +181,12 @@ impl Display for Error {
             Error::InvalidMutType(byte) => f.write_fmt(format_args!(
                 "An invalid mut/const byte was found: {byte:#x?}"
             )),
-            Error::MoreThanOneMemory => {
-                f.write_str("As of not only one memory is allowed per module.")
-            }
             Error::InvalidLimit => f.write_str("Size minimum must not be greater than maximum"),
             Error::MemSizeTooBig => f.write_str("Memory size must be at most 65536 pages (4GiB)"),
             Error::InvalidGlobalIdx(idx) => f.write_fmt(format_args!(
                 "An invalid global index `{idx}` was specified"
             )),
             Error::GlobalIsConst => f.write_str("A const global cannot be written to"),
-            Error::RuntimeError(err) => err.fmt(f),
             Error::ExpectedAnOperand => f.write_str("Expected a ValType"), // Error => f.write_str("Expected an operand (ValType) on the stack")
             Error::MemoryIsNotDefined(memidx) => f.write_fmt(format_args!(
                 "C.mems[{memidx}] is NOT defined when it should be"
@@ -255,9 +253,6 @@ impl Display for Error {
             Error::UnknownGlobal => f.write_str("Unknown global"),
             Error::UnknownTable => f.write_str("Unknown table"),
             Error::DuplicateExportName => f.write_str("Duplicate export name"),
-            Error::InvalidImportType => f.write_str("Invalid import type"),
-            // TODO: maybe move these to LinkerError also add more info to them (the name's export, function idx, etc)
-            Error::UnknownImport => f.write_str("Unknown Import"),
             Error::UnsupportedMultipleMemoriesProposal => f.write_str("Proposal for multiple memories is not yet supported"),
         }
     }
@@ -302,13 +297,13 @@ impl Display for RuntimeError {
             RuntimeError::HostFunctionSignatureMismatch => {
                 f.write_str("host function call did not respect its type signature")
             }
+            RuntimeError::InvalidImportType => f.write_str("Invalid import type"),
+            // TODO: maybe move these to LinkerError also add more info to them (the name's export, function idx, etc)
+            RuntimeError::UnknownImport => f.write_str("Unknown Import"),
+            RuntimeError::MoreThanOneMemory => {
+                f.write_str("As of not only one memory is allowed per module.")
+            }
         }
-    }
-}
-
-impl From<RuntimeError> for Error {
-    fn from(value: RuntimeError) -> Self {
-        Self::RuntimeError(value)
     }
 }
 

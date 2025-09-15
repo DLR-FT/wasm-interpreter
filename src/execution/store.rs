@@ -16,7 +16,7 @@ use crate::execution::value::{Ref, Value};
 use crate::execution::{run_const_span, Stack};
 use crate::registry::Registry;
 use crate::value::FuncAddr;
-use crate::{Error, Limits, RefType, RuntimeError, ValidationInfo};
+use crate::{Limits, RefType, RuntimeError, ValidationInfo};
 use alloc::borrow::ToOwned;
 use alloc::collections::btree_map::BTreeMap;
 use alloc::string::String;
@@ -78,7 +78,7 @@ impl<'b, T> Store<'b, T> {
         &mut self,
         name: &str,
         validation_info: &ValidationInfo<'b>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), RuntimeError> {
         // instantiation step -1: collect extern_vals, this section basically acts as a linker between modules
         // best attempt at trying to match the spec implementation in terms of errors
         debug!("adding module with name {:?}", name);
@@ -106,7 +106,7 @@ impl<'b, T> Store<'b, T> {
                 .extern_type(self)
                 .is_subtype_of(&import_extern_type)
             {
-                return Err(Error::InvalidImportType);
+                return Err(RuntimeError::InvalidImportType);
             }
             trace!("import and export matches. Adding to externvals");
             extern_vals.push(export_extern_val_candidate)
@@ -336,18 +336,15 @@ impl<'b, T> Store<'b, T> {
                         n,
                         s,
                         d,
-                    )
-                    .map_err(Error::RuntimeError)?;
-                    elem_drop(&self.modules, &mut self.elements, current_module_idx, i)
-                        .map_err(Error::RuntimeError)?;
+                    )?;
+                    elem_drop(&self.modules, &mut self.elements, current_module_idx, i)?;
                 }
                 ElemMode::Declarative => {
                     // instantiation step 15:
                     // TODO (for now, we are doing hopefully what is equivalent to it)
                     // execute:
                     //   elem.drop i
-                    elem_drop(&self.modules, &mut self.elements, current_module_idx, i)
-                        .map_err(Error::RuntimeError)?;
+                    elem_drop(&self.modules, &mut self.elements, current_module_idx, i)?;
                 }
                 ElemMode::Passive => (),
             }
@@ -365,7 +362,7 @@ impl<'b, T> Store<'b, T> {
                     // assert: mem_idx is 0
                     if *memory_idx != 0 {
                         // TODO fix error
-                        return Err(Error::MoreThanOneMemory);
+                        return Err(RuntimeError::MoreThanOneMemory);
                     }
 
                     // TODO (for now, we are doing hopefully what is equivalent to it)
@@ -394,10 +391,8 @@ impl<'b, T> Store<'b, T> {
                         n,
                         s,
                         d,
-                    )
-                    .map_err(Error::RuntimeError)?;
-                    data_drop(&self.modules, &mut self.data, current_module_idx, i)
-                        .map_err(Error::RuntimeError)?;
+                    )?;
+                    data_drop(&self.modules, &mut self.data, current_module_idx, i)?;
                 }
                 crate::core::reader::types::data::DataMode::Passive => (),
             }
@@ -409,8 +404,7 @@ impl<'b, T> Store<'b, T> {
             // execute
             //   call func_ifx
             let func_addr = self.modules[current_module_idx].func_addrs[func_idx];
-            self.invoke(func_addr, Vec::new())
-                .map_err(Error::RuntimeError)?;
+            self.invoke(func_addr, Vec::new())?;
         };
 
         Ok(())
