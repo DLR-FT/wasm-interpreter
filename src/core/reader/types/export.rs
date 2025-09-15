@@ -3,7 +3,7 @@ use alloc::string::String;
 
 use crate::core::indices::{FuncIdx, GlobalIdx, MemIdx, TableIdx};
 use crate::core::reader::{WasmReadable, WasmReader};
-use crate::{Error, Result, ValidationInfo};
+use crate::{Error, ValidationInfo};
 
 use super::ExternType;
 
@@ -21,13 +21,13 @@ impl Export {
     /// may fail if the external type is not possible to infer with C
     /// <https://webassembly.github.io/spec/core/valid/modules.html#exports>
     #[allow(unused)]
-    pub fn extern_type(&self, validation_info: &ValidationInfo) -> Result<ExternType> {
+    pub fn extern_type(&self, validation_info: &ValidationInfo) -> Result<ExternType, Error> {
         self.desc.extern_type(validation_info)
     }
 }
 
 impl WasmReadable for Export {
-    fn read(wasm: &mut WasmReader) -> Result<Self> {
+    fn read(wasm: &mut WasmReader) -> Result<Self, Error> {
         let name = wasm.read_name()?.to_owned();
         let desc = ExportDesc::read(wasm)?;
         Ok(Export { name, desc })
@@ -53,7 +53,7 @@ impl ExportDesc {
     /// taking `validation_info` as validation context C
     /// may fail if the external type is not possible to infer with C
     /// <https://webassembly.github.io/spec/core/valid/modules.html#exports>
-    pub fn extern_type(&self, validation_info: &ValidationInfo) -> Result<ExternType> {
+    pub fn extern_type(&self, validation_info: &ValidationInfo) -> Result<ExternType, Error> {
         Ok(match self {
             ExportDesc::FuncIdx(func_idx) => {
                 let type_idx = validation_info
@@ -120,7 +120,7 @@ impl ExportDesc {
 }
 
 impl WasmReadable for ExportDesc {
-    fn read(wasm: &mut WasmReader) -> Result<Self> {
+    fn read(wasm: &mut WasmReader) -> Result<Self, Error> {
         let desc_id = wasm.read_u8()?;
         let desc_idx = wasm.read_var_u32()? as usize;
 

@@ -3,7 +3,7 @@ use alloc::string::String;
 
 use crate::core::indices::TypeIdx;
 use crate::core::reader::{WasmReadable, WasmReader};
-use crate::{Error, Result, ValidationInfo};
+use crate::{Error, ValidationInfo};
 
 use super::global::GlobalType;
 use super::{ExternType, MemType, TableType};
@@ -19,7 +19,7 @@ pub struct Import {
 }
 
 impl WasmReadable for Import {
-    fn read(wasm: &mut WasmReader) -> Result<Self> {
+    fn read(wasm: &mut WasmReader) -> Result<Self, Error> {
         let module_name = wasm.read_name()?.to_owned();
         let name = wasm.read_name()?.to_owned();
         let desc = ImportDesc::read(wasm)?;
@@ -41,7 +41,7 @@ pub enum ImportDesc {
 }
 
 impl WasmReadable for ImportDesc {
-    fn read(wasm: &mut WasmReader) -> Result<Self> {
+    fn read(wasm: &mut WasmReader) -> Result<Self, Error> {
         let desc = match wasm.read_u8()? {
             0x00 => Self::Func(wasm.read_var_u32()? as TypeIdx),
             // https://webassembly.github.io/spec/core/binary/types.html#table-types
