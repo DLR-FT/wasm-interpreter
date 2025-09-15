@@ -257,7 +257,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, Error> {
         temp
     };
     if all_memories.len() > 1 {
-        return Err(Error::MoreThanOneMemory);
+        return Err(Error::UnsupportedMultipleMemoriesProposal);
     }
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}

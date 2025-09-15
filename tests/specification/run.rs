@@ -243,9 +243,7 @@ pub fn run_spec_test(filepath: &str) -> Result<AssertReport, ScriptError> {
             } => {
                 let result = execute(&arena, &visible_modules, interpreter, exec);
                 match result {
-                    Err(WastError::WasmError(wasm::Error::RuntimeError(
-                        wasm::RuntimeError::Trap(trap_error),
-                    ))) => {
+                    Err(WastError::WasmRuntimeError(RuntimeError::Trap(trap_error))) => {
                         let actual_matches_expected =
                             error_to_wasm_testsuite_string(&RuntimeError::Trap(trap_error.clone()))
                                 .is_ok_and(|actual| {
@@ -347,10 +345,10 @@ pub fn run_spec_test(filepath: &str) -> Result<AssertReport, ScriptError> {
 
                 match validate_instantiate(interpreter, bytes) {
                     // module shouldn't have instantiated
-                    Err(WastError::WasmError(
-                        wasm::Error::RuntimeError(RuntimeError::ModuleNotFound)
-                        | wasm::Error::UnknownImport
-                        | wasm::Error::InvalidImportType,
+                    Err(WastError::WasmRuntimeError(
+                        RuntimeError::ModuleNotFound
+                        | RuntimeError::UnknownImport
+                        | RuntimeError::InvalidImportType,
                     )) => {
                         asserts.push_success(line_number, cmd.to_owned());
                     }
@@ -374,7 +372,7 @@ pub fn run_spec_test(filepath: &str) -> Result<AssertReport, ScriptError> {
                 );
 
                 match execution_result {
-                    Err(WastError::WasmError(wasm::Error::RuntimeError(runtime_error))) => {
+                    Err(WastError::WasmRuntimeError(runtime_error)) => {
                         match error_to_wasm_testsuite_string(&runtime_error) {
                             Ok(actual) if actual.contains(message) => {
                                 asserts.push_success(
@@ -461,7 +459,7 @@ pub fn run_spec_test(filepath: &str) -> Result<AssertReport, ScriptError> {
                     .map_err(|runtime_error| {
                         ScriptError::new(
                             filepath,
-                            WastError::WasmError(wasm::Error::RuntimeError(runtime_error)),
+                            runtime_error.into(),
                             "invoke directive failed to find function",
                             get_linenum(&contents, invoke.span),
                             get_command(&contents, invoke.span),
@@ -483,7 +481,7 @@ pub fn run_spec_test(filepath: &str) -> Result<AssertReport, ScriptError> {
                 .map_err(|runtime_error| {
                     ScriptError::new(
                         filepath,
-                        WastError::WasmError(wasm::Error::RuntimeError(runtime_error)),
+                        runtime_error.into(),
                         "invoke returned error or panicked",
                         get_linenum(&contents, invoke.span),
                         get_command(&contents, invoke.span),
@@ -538,14 +536,12 @@ fn execute_assert_return(
                     })
                     .ok_or(RuntimeError::FunctionNotFound)
             }))
-            .map_err(WastError::Panic)?
-            .map_err(wasm::Error::RuntimeError)?;
+            .map_err(WastError::Panic)??;
 
             let actual = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
                 interpreter.invoke(&func, args)
             }))
-            .map_err(WastError::Panic)?
-            .map_err(wasm::Error::RuntimeError)?;
+            .map_err(WastError::Panic)??;
 
             assert_eq(actual, result_vals).map_err(Into::into)
         }
@@ -581,8 +577,7 @@ fn execute_assert_return(
                     Ok(store.globals[global_addr].value)
                 }),
             )
-            .map_err(WastError::Panic)?
-            .map_err(wasm::Error::RuntimeError)?;
+            .map_err(WastError::Panic)??;
 
             assert_eq(vec![actual], result_vals).map_err(Into::into)
         }
@@ -632,14 +627,12 @@ fn execute<'a>(
                     })
                     .ok_or(RuntimeError::FunctionNotFound)
             }))
-            .map_err(WastError::Panic)?
-            .map_err(wasm::Error::RuntimeError)?;
+            .map_err(WastError::Panic)??;
 
             catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
                 interpreter.invoke(&func, args)
             }))
-            .map_err(WastError::Panic)?
-            .map_err(wasm::Error::RuntimeError)?;
+            .map_err(WastError::Panic)??;
 
             Ok(())
         }
