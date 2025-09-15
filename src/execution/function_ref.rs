@@ -2,7 +2,7 @@ use alloc::borrow::ToOwned;
 use alloc::vec::Vec;
 
 use crate::execution::{hooks::HookSet, value::InteropValueList, RuntimeInstance};
-use crate::{Error, ExternVal, RuntimeError, Store, Value};
+use crate::{ExternVal, RuntimeError, Store, Value};
 
 pub struct FunctionRef {
     pub func_addr: usize,
@@ -13,7 +13,7 @@ impl FunctionRef {
         module_name: &str,
         function_name: &str,
         store: &Store<T>,
-    ) -> Result<Self, Error> {
+    ) -> Result<Self, RuntimeError> {
         // https://webassembly.github.io/spec/core/appendix/embedding.html#module-instances
         // inspired by instance_export
         let extern_val = store
@@ -22,12 +22,12 @@ impl FunctionRef {
                 module_name.to_owned().into(),
                 function_name.to_owned().into(),
             )
-            .map_err(|_| Error::RuntimeError(RuntimeError::FunctionNotFound))?;
+            .map_err(|_| RuntimeError::FunctionNotFound)?;
         match extern_val {
             ExternVal::Func(func_addr) => Ok(Self {
                 func_addr: *func_addr,
             }),
-            _ => Err(Error::RuntimeError(RuntimeError::FunctionNotFound)),
+            _ => Err(RuntimeError::FunctionNotFound),
         }
     }
 

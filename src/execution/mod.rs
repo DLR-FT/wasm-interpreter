@@ -1,5 +1,3 @@
-use crate::Error;
-
 use alloc::borrow::ToOwned;
 use alloc::vec::Vec;
 
@@ -52,7 +50,7 @@ impl<'b, T> RuntimeInstance<'b, T, EmptyHookSet> {
     pub fn new_with_default_module(
         user_data: T,
         validation_info: &'_ ValidationInfo<'b>,
-    ) -> Result<Self, Error> {
+    ) -> Result<Self, RuntimeError> {
         let mut instance = Self::new_with_hooks(user_data, EmptyHookSet);
         instance.add_module(DEFAULT_MODULE, validation_info)?;
         Ok(instance)
@@ -63,7 +61,7 @@ impl<'b, T> RuntimeInstance<'b, T, EmptyHookSet> {
         module_name: &str,
         validation_info: &'_ ValidationInfo<'b>,
         // store: &mut Store,
-    ) -> Result<Self, Error> {
+    ) -> Result<Self, RuntimeError> {
         let mut instance = Self::new_with_hooks(user_data, EmptyHookSet);
         instance.add_module(module_name, validation_info)?;
         Ok(instance)
@@ -78,7 +76,7 @@ where
         &mut self,
         module_name: &str,
         validation_info: &'_ ValidationInfo<'b>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), RuntimeError> {
         self.store.add_module(module_name, validation_info)
     }
 
@@ -147,7 +145,7 @@ where
         module_name: &str,
         name: &str,
         host_func: fn(&mut T, Vec<Value>) -> Vec<Value>,
-    ) -> Result<FunctionRef, Error> {
+    ) -> Result<FunctionRef, RuntimeError> {
         let host_func_ty = FuncType {
             params: ResultType {
                 valtypes: Vec::from(Params::TYS),
@@ -165,7 +163,7 @@ where
         name: &str,
         host_func_ty: FuncType,
         host_func: fn(&mut T, Vec<Value>) -> Vec<Value>,
-    ) -> Result<FunctionRef, Error> {
+    ) -> Result<FunctionRef, RuntimeError> {
         let func_addr = self.store.alloc_host_func(host_func_ty, host_func);
         self.store.registry.register(
             module_name.to_owned().into(),
