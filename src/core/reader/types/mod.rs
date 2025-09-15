@@ -9,8 +9,8 @@ use global::GlobalType;
 use crate::core::reader::{WasmReadable, WasmReader};
 use crate::execution::assert_validated::UnwrapValidatedExt;
 use crate::value::{ExternAddr, FuncAddr, Ref};
+use crate::Error;
 use crate::Result;
-use crate::{unreachable_validated, Error};
 
 pub mod data;
 pub mod element;
@@ -45,17 +45,6 @@ impl WasmReadable for NumType {
 
         Ok(ty)
     }
-
-    fn read_unvalidated(wasm: &mut WasmReader) -> Self {
-        use NumType::*;
-        match wasm.read_u8().unwrap_validated() {
-            0x7F => I32,
-            0x7E => I64,
-            0x7D => F32,
-            0x7C => F64,
-            _ => unreachable_validated!(),
-        }
-    }
 }
 
 /// <https://webassembly.github.io/spec/core/binary/types.html#vector-types>
@@ -69,14 +58,6 @@ impl WasmReadable for VecType {
         let _ = wasm.read_u8();
 
         Ok(VecType)
-    }
-
-    fn read_unvalidated(wasm: &mut WasmReader) -> Self {
-        let 0x7B = wasm.read_u8().unwrap_validated() else {
-            unreachable_validated!()
-        };
-
-        VecType
     }
 }
 
@@ -120,14 +101,6 @@ impl WasmReadable for RefType {
 
         Ok(ty)
     }
-
-    fn read_unvalidated(wasm: &mut WasmReader) -> Self {
-        match wasm.read_u8().unwrap_validated() {
-            0x70 => RefType::FuncRef,
-            0x6F => RefType::ExternRef,
-            _ => unreachable_validated!(),
-        }
-    }
 }
 
 /// <https://webassembly.github.io/spec/core/binary/types.html#reference-types>
@@ -165,20 +138,6 @@ impl WasmReadable for ValType {
 
         Err(Error::InvalidValType)
     }
-
-    fn read_unvalidated(wasm: &mut WasmReader) -> Self {
-        if let Ok(numtype) = NumType::read(wasm).map(ValType::NumType) {
-            return numtype;
-        };
-        if let Ok(vectype) = VecType::read(wasm).map(|_ty| ValType::VecType) {
-            return vectype;
-        };
-        if let Ok(reftype) = RefType::read(wasm).map(ValType::RefType) {
-            return reftype;
-        }
-
-        unreachable!()
-    }
 }
 
 /// <https://webassembly.github.io/spec/core/binary/types.html#value-types>
@@ -192,14 +151,6 @@ impl WasmReadable for ResultType {
         let valtypes = wasm.read_vec(ValType::read)?;
 
         Ok(ResultType { valtypes })
-    }
-
-    fn read_unvalidated(wasm: &mut WasmReader) -> Self {
-        let valtypes = wasm
-            .read_vec(|wasm| Ok(ValType::read_unvalidated(wasm)))
-            .unwrap_validated();
-
-        ResultType { valtypes }
     }
 }
 
@@ -220,17 +171,6 @@ impl WasmReadable for FuncType {
         let returns = ResultType::read(wasm)?;
 
         Ok(FuncType { params, returns })
-    }
-
-    fn read_unvalidated(wasm: &mut WasmReader) -> Self {
-        let 0x60 = wasm.read_u8().unwrap_validated() else {
-            unreachable_validated!()
-        };
-
-        let params = ResultType::read_unvalidated(wasm);
-        let returns = ResultType::read_unvalidated(wasm);
-
-        FuncType { params, returns }
     }
 }
 
@@ -256,26 +196,6 @@ impl WasmReadable for BlockType {
             wasm.read_var_i33()
                 .and_then(|idx| idx.try_into().map_err(|_| Error::InvalidFuncTypeIdx))
                 .map(BlockType::Type)
-        }
-    }
-
-    fn read_unvalidated(wasm: &mut WasmReader) -> Self {
-        if wasm.peek_u8().unwrap_validated() as i8 == 0x40 {
-            // Empty block type
-            let _ = wasm.read_u8();
-
-            BlockType::Empty
-        } else if let Ok(val_ty) = wasm.handle_transaction(|wasm| ValType::read(wasm)) {
-            // No parameters and given valtype as the result
-            BlockType::Returns(val_ty)
-        } else {
-            // An index to a function type
-            BlockType::Type(
-                wasm.read_var_i33()
-                    .unwrap_validated()
-                    .try_into()
-                    .unwrap_validated(),
-            )
         }
     }
 }
@@ -385,24 +305,6 @@ impl WasmReadable for Limits {
 
         Ok(limits)
     }
-
-    fn read_unvalidated(wasm: &mut WasmReader) -> Self {
-        match wasm.read_u8().unwrap_validated() {
-            0x00 => {
-                let min = wasm.read_var_u32().unwrap_validated();
-                Self { min, max: None }
-            }
-            0x01 => {
-                let min = wasm.read_var_u32().unwrap_validated();
-                let max = wasm.read_var_u32().unwrap_validated();
-                Self {
-                    min,
-                    max: Some(max),
-                }
-            }
-            _ => unreachable_validated!(),
-        }
-    }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -422,15 +324,6 @@ impl WasmReadable for TableType {
         let table_type = Self { et, lim };
         trace!("Table: {:?}", table_type);
         Ok(Self { et, lim })
-    }
-
-    fn read_unvalidated(wasm: &mut WasmReader) -> Self {
-        let et = RefType::read_unvalidated(wasm);
-        let mut lim = Limits::read_unvalidated(wasm);
-        if lim.max.is_none() {
-            lim.max = Some(u32::MAX)
-        };
-        Self { et, lim }
     }
 }
 
@@ -455,12 +348,6 @@ impl WasmReadable for MemType {
             }
         }
         Ok(Self { limits: limit })
-    }
-
-    fn read_unvalidated(wasm: &mut WasmReader) -> Self {
-        Self {
-            limits: Limits::read_unvalidated(wasm),
-        }
     }
 }
 
