@@ -174,16 +174,6 @@ pub trait WasmReadable: Sized {
     /// which may lead to unexpected behaviour.
     /// To avoid this consider using the [`WasmReader::handle_transaction`] method to wrap this function call.
     fn read(wasm: &mut WasmReader) -> Result<Self>;
-
-    /// Like [`read`](WasmReadable::read), but may panic
-    ///
-    /// Allows to read a [`Self`], directly returning it, instead of a [`Result`].
-    /// Useful, when prior validation already assures that a [`Self`] can be read.
-    ///
-    /// # Panics
-    ///
-    /// Panics if reading a [`Self`] fails.
-    fn read_unvalidated(wasm: &mut WasmReader) -> Self;
 }
 
 pub mod span {

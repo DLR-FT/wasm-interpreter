@@ -172,7 +172,7 @@ pub(super) fn run<T, H: HookSet>(
                 do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable)?;
             }
             BLOCK | LOOP => {
-                BlockType::read_unvalidated(wasm);
+                BlockType::read(wasm).unwrap_validated();
             }
             RETURN => {
                 //same as BR, except no need to skip n of BR n
@@ -438,7 +438,7 @@ pub(super) fn run<T, H: HookSet>(
                 return Err(TrapError::ReachedUnreachable.into());
             }
             I32_LOAD => {
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg = MemArg::read(wasm).unwrap_validated();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
                 let mem_addr = *store.modules[current_module_idx]
@@ -454,7 +454,7 @@ pub(super) fn run<T, H: HookSet>(
                 trace!("Instruction: i32.load [{relative_address}] -> [{data}]");
             }
             I64_LOAD => {
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg = MemArg::read(wasm).unwrap_validated();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
                 let mem_addr = *store.modules[current_module_idx]
@@ -470,7 +470,7 @@ pub(super) fn run<T, H: HookSet>(
                 trace!("Instruction: i64.load [{relative_address}] -> [{data}]");
             }
             F32_LOAD => {
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg = MemArg::read(wasm).unwrap_validated();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
                 let mem_addr = *store.modules[current_module_idx]
@@ -486,7 +486,7 @@ pub(super) fn run<T, H: HookSet>(
                 trace!("Instruction: f32.load [{relative_address}] -> [{data}]");
             }
             F64_LOAD => {
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg = MemArg::read(wasm).unwrap_validated();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
                 let mem_addr = *store.modules[current_module_idx]
@@ -502,7 +502,7 @@ pub(super) fn run<T, H: HookSet>(
                 trace!("Instruction: f64.load [{relative_address}] -> [{data}]");
             }
             I32_LOAD8_S => {
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg = MemArg::read(wasm).unwrap_validated();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
                 let mem_addr = *store.modules[current_module_idx]
@@ -518,7 +518,7 @@ pub(super) fn run<T, H: HookSet>(
                 trace!("Instruction: i32.load8_s [{relative_address}] -> [{data}]");
             }
             I32_LOAD8_U => {
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg = MemArg::read(wasm).unwrap_validated();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
                 let mem_addr = *store.modules[current_module_idx]
@@ -534,7 +534,7 @@ pub(super) fn run<T, H: HookSet>(
                 trace!("Instruction: i32.load8_u [{relative_address}] -> [{data}]");
             }
             I32_LOAD16_S => {
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg = MemArg::read(wasm).unwrap_validated();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
                 let mem_addr = *store.modules[current_module_idx]
@@ -550,7 +550,7 @@ pub(super) fn run<T, H: HookSet>(
                 trace!("Instruction: i32.load16_s [{relative_address}] -> [{data}]");
             }
             I32_LOAD16_U => {
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg = MemArg::read(wasm).unwrap_validated();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
                 let mem_addr = *store.modules[current_module_idx]
@@ -566,7 +566,7 @@ pub(super) fn run<T, H: HookSet>(
                 trace!("Instruction: i32.load16_u [{relative_address}] -> [{data}]");
             }
             I64_LOAD8_S => {
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg = MemArg::read(wasm).unwrap_validated();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
                 let mem_addr = *store.modules[current_module_idx]
@@ -582,7 +582,7 @@ pub(super) fn run<T, H: HookSet>(
                 trace!("Instruction: i64.load8_s [{relative_address}] -> [{data}]");
             }
             I64_LOAD8_U => {
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg = MemArg::read(wasm).unwrap_validated();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
                 let mem_addr = *store.modules[current_module_idx]
@@ -598,7 +598,7 @@ pub(super) fn run<T, H: HookSet>(
                 trace!("Instruction: i64.load8_u [{relative_address}] -> [{data}]");
             }
             I64_LOAD16_S => {
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg = MemArg::read(wasm).unwrap_validated();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
                 let mem_addr = *store.modules[current_module_idx]
@@ -614,7 +614,7 @@ pub(super) fn run<T, H: HookSet>(
                 trace!("Instruction: i64.load16_s [{relative_address}] -> [{data}]");
             }
             I64_LOAD16_U => {
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg = MemArg::read(wasm).unwrap_validated();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
                 let mem_addr = *store.modules[current_module_idx]
@@ -630,7 +630,7 @@ pub(super) fn run<T, H: HookSet>(
                 trace!("Instruction: i64.load16_u [{relative_address}] -> [{data}]");
             }
             I64_LOAD32_S => {
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg = MemArg::read(wasm).unwrap_validated();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
                 let mem_addr = *store.modules[current_module_idx]
@@ -646,7 +646,7 @@ pub(super) fn run<T, H: HookSet>(
                 trace!("Instruction: i64.load32_s [{relative_address}] -> [{data}]");
             }
             I64_LOAD32_U => {
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg = MemArg::read(wasm).unwrap_validated();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
                 let mem_addr = *store.modules[current_module_idx]
@@ -662,7 +662,7 @@ pub(super) fn run<T, H: HookSet>(
                 trace!("Instruction: i64.load32_u [{relative_address}] -> [{data}]");
             }
             I32_STORE => {
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg = MemArg::read(wasm).unwrap_validated();
 
                 let data_to_store: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -679,7 +679,7 @@ pub(super) fn run<T, H: HookSet>(
                 trace!("Instruction: i32.store [{relative_address} {data_to_store}] -> []");
             }
             I64_STORE => {
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg = MemArg::read(wasm).unwrap_validated();
 
                 let data_to_store: u64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -696,7 +696,7 @@ pub(super) fn run<T, H: HookSet>(
                 trace!("Instruction: i64.store [{relative_address} {data_to_store}] -> []");
             }
             F32_STORE => {
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg = MemArg::read(wasm).unwrap_validated();
 
                 let data_to_store: f32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -713,7 +713,7 @@ pub(super) fn run<T, H: HookSet>(
                 trace!("Instruction: f32.store [{relative_address} {data_to_store}] -> []");
             }
             F64_STORE => {
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg = MemArg::read(wasm).unwrap_validated();
 
                 let data_to_store: f64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -730,7 +730,7 @@ pub(super) fn run<T, H: HookSet>(
                 trace!("Instruction: f64.store [{relative_address} {data_to_store}] -> []");
             }
             I32_STORE8 => {
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg = MemArg::read(wasm).unwrap_validated();
 
                 let data_to_store: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -749,7 +749,7 @@ pub(super) fn run<T, H: HookSet>(
                 trace!("Instruction: i32.store8 [{relative_address} {wrapped_data}] -> []");
             }
             I32_STORE16 => {
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg = MemArg::read(wasm).unwrap_validated();
 
                 let data_to_store: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -768,7 +768,7 @@ pub(super) fn run<T, H: HookSet>(
                 trace!("Instruction: i32.store16 [{relative_address} {data_to_store}] -> []");
             }
             I64_STORE8 => {
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg = MemArg::read(wasm).unwrap_validated();
 
                 let data_to_store: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -787,7 +787,7 @@ pub(super) fn run<T, H: HookSet>(
                 trace!("Instruction: i64.store8 [{relative_address} {data_to_store}] -> []");
             }
             I64_STORE16 => {
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg = MemArg::read(wasm).unwrap_validated();
 
                 let data_to_store: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -806,7 +806,7 @@ pub(super) fn run<T, H: HookSet>(
                 trace!("Instruction: i64.store16 [{relative_address} {data_to_store}] -> []");
             }
             I64_STORE32 => {
-                let memarg = MemArg::read_unvalidated(wasm);
+                let memarg = MemArg::read(wasm).unwrap_validated();
 
                 let data_to_store: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
@@ -2016,7 +2016,7 @@ pub(super) fn run<T, H: HookSet>(
                 stack.push_value(res.into())?;
             }
             REF_NULL => {
-                let reftype = RefType::read_unvalidated(wasm);
+                let reftype = RefType::read(wasm).unwrap_validated();
 
                 stack.push_value(Value::Ref(reftype.to_null_ref()))?;
                 trace!("Instruction: ref.null '{:?}' -> [{:?}]", reftype, reftype);

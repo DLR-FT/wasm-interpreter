@@ -3,8 +3,7 @@ use alloc::string::String;
 
 use crate::core::indices::{FuncIdx, GlobalIdx, MemIdx, TableIdx};
 use crate::core::reader::{WasmReadable, WasmReader};
-use crate::execution::assert_validated::UnwrapValidatedExt;
-use crate::{unreachable_validated, Error, Result, ValidationInfo};
+use crate::{Error, Result, ValidationInfo};
 
 use super::ExternType;
 
@@ -32,12 +31,6 @@ impl WasmReadable for Export {
         let name = wasm.read_name()?.to_owned();
         let desc = ExportDesc::read(wasm)?;
         Ok(Export { name, desc })
-    }
-
-    fn read_unvalidated(wasm: &mut WasmReader) -> Self {
-        let name = wasm.read_name().unwrap_validated().to_owned();
-        let desc = ExportDesc::read_unvalidated(wasm);
-        Export { name, desc }
     }
 }
 
@@ -139,18 +132,5 @@ impl WasmReadable for ExportDesc {
             other => return Err(Error::InvalidExportDesc(other)),
         };
         Ok(desc)
-    }
-
-    fn read_unvalidated(wasm: &mut WasmReader) -> Self {
-        let desc_id = wasm.read_u8().unwrap_validated();
-        let desc_idx = wasm.read_var_u32().unwrap_validated() as usize;
-
-        match desc_id {
-            0x00 => ExportDesc::FuncIdx(desc_idx),
-            0x01 => ExportDesc::TableIdx(desc_idx),
-            0x02 => ExportDesc::MemIdx(desc_idx),
-            0x03 => ExportDesc::GlobalIdx(desc_idx),
-            _other => unreachable_validated!(),
-        }
     }
 }

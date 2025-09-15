@@ -3,8 +3,7 @@ use alloc::string::String;
 
 use crate::core::indices::TypeIdx;
 use crate::core::reader::{WasmReadable, WasmReader};
-use crate::execution::assert_validated::UnwrapValidatedExt;
-use crate::{unreachable_validated, Error, Result, ValidationInfo};
+use crate::{Error, Result, ValidationInfo};
 
 use super::global::GlobalType;
 use super::{ExternType, MemType, TableType};
@@ -31,18 +30,6 @@ impl WasmReadable for Import {
             desc,
         })
     }
-
-    fn read_unvalidated(wasm: &mut WasmReader) -> Self {
-        let module_name = wasm.read_name().unwrap_validated().to_owned();
-        let name = wasm.read_name().unwrap_validated().to_owned();
-        let desc = ImportDesc::read_unvalidated(wasm);
-
-        Self {
-            module_name,
-            name,
-            desc,
-        }
-    }
 }
 
 #[derive(Debug, Clone)]
@@ -65,16 +52,6 @@ impl WasmReadable for ImportDesc {
         };
 
         Ok(desc)
-    }
-
-    fn read_unvalidated(wasm: &mut WasmReader) -> Self {
-        match wasm.read_u8().unwrap_validated() {
-            0x00 => Self::Func(wasm.read_var_u32().unwrap_validated() as TypeIdx),
-            0x01 => Self::Table(TableType::read_unvalidated(wasm)),
-            0x02 => todo!("read MemType"),
-            0x03 => todo!("read GlobalType"),
-            _ => unreachable_validated!(),
-        }
     }
 }
 

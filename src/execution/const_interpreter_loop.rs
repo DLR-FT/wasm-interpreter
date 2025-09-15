@@ -75,7 +75,7 @@ pub(crate) fn run_const<T>(
                 stack.push_value(constant.into())?;
             }
             REF_NULL => {
-                let reftype = RefType::read_unvalidated(wasm);
+                let reftype = RefType::read(wasm).unwrap_validated();
 
                 stack.push_value(Value::Ref(reftype.to_null_ref()))?;
                 trace!("Instruction: ref.null '{:?}' -> [{:?}]", reftype, reftype);
