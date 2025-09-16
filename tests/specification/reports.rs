@@ -1,40 +1,16 @@
 use std::error::Error;
 
-pub struct WastSuccess {
+pub struct AssertOutcome {
     pub line_number: u32,
     pub command: String,
+    pub maybe_error: Option<Box<dyn Error + 'static>>,
 }
 
-impl WastSuccess {
-    pub fn new(line_number: u32, command: &str) -> Self {
-        Self {
-            line_number,
-            command: command.to_string(),
-        }
-    }
-}
-
-pub struct WastError {
-    pub inner: Box<dyn Error>,
-    pub line_number: u32,
-    pub command: String,
-}
-
-impl WastError {
-    pub fn new(error: Box<dyn Error>, line_number: u32, command: &str) -> Self {
-        Self {
-            inner: error,
-            line_number,
-            command: command.to_string(),
-        }
-    }
-}
-
-/// Wast script executed successfuly. The results of asserts (pass/fail) are
+/// Wast script executed successfully. The outcomes of asserts (pass/fail) are
 /// stored here.
 pub struct AssertReport {
     pub filename: String,
-    pub results: Vec<Result<WastSuccess, WastError>>,
+    pub results: Vec<AssertOutcome>,
 }
 
 impl AssertReport {
@@ -45,16 +21,29 @@ impl AssertReport {
         }
     }
 
-    pub fn push_success(&mut self, success: WastSuccess) {
-        self.results.push(Ok(success));
+    pub fn push_success(&mut self, line_number: u32, command: String) {
+        self.results.push(AssertOutcome {
+            line_number,
+            command,
+            maybe_error: None,
+        });
     }
 
-    pub fn push_error(&mut self, error: WastError) {
-        self.results.push(Err(error));
+    pub fn push_error(
+        &mut self,
+        line_number: u32,
+        command: String,
+        error: Box<dyn Error + 'static>,
+    ) {
+        self.results.push(AssertOutcome {
+            line_number,
+            command,
+            maybe_error: Some(error),
+        });
     }
 
     pub fn has_errors(&self) -> bool {
-        self.results.iter().any(|r| r.is_err())
+        self.results.iter().any(|r| r.maybe_error.is_some())
     }
 
     pub fn total_asserts(&self) -> u32 {
@@ -62,7 +51,10 @@ impl AssertReport {
     }
 
     pub fn passed_asserts(&self) -> u32 {
-        self.results.iter().filter(|el| el.is_ok()).count() as u32
+        self.results
+            .iter()
+            .filter(|el| el.maybe_error.is_some())
+            .count() as u32
     }
 
     pub fn failed_asserts(&self) -> u32 {
@@ -81,27 +73,27 @@ impl AssertReport {
 impl std::fmt::Display for AssertReport {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for elem in &self.results {
-            match elem {
-                Ok(success) => {
+            match &elem.maybe_error {
+                None => {
                     writeln!(
                         f,
                         "✅ {}:{} -> {}",
                         self.filename,
-                        if success.line_number == u32::MAX {
+                        if elem.line_number == u32::MAX {
                             "?".to_string()
                         } else {
-                            success.line_number.to_string()
+                            elem.line_number.to_string()
                         },
-                        success.command
+                        elem.command
                     )?;
                 }
-                Err(error) => {
+                Some(error) => {
                     writeln!(
                         f,
                         "❌ {}:{} -> {}",
-                        self.filename, error.line_number, error.command
+                        self.filename, elem.line_number, elem.command
                     )?;
-                    writeln!(f, "    Error: {}", error.inner)?;
+                    writeln!(f, "    Error: {error}")?;
                 }
             }
         }
