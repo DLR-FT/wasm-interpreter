@@ -100,20 +100,6 @@ pub fn to_wasm_testsuite_string(runtime_error: RuntimeError) -> Result<String, B
     .map(|s| s.to_string())
 }
 
-/// Attempt to unwrap the result of an expression. If the expression is an `Err`, then `return` the
-/// error.
-///
-/// # Motivation
-/// The `Try` trait is not yet stable, so we define our own macro to simulate the `Result` type.
-macro_rules! try_to {
-    ($e:expr) => {
-        match $e {
-            Ok(val) => val,
-            Err(err) => return err,
-        }
-    };
-}
-
 /// Clear the bytes and runtime instance before calling this function
 fn encode(modulee: &mut wast::QuoteWat) -> Result<Vec<u8>, Box<dyn Error>> {
     match &modulee {
@@ -148,37 +134,30 @@ fn validate_instantiate<'a, 'b: 'a>(
     Ok(())
 }
 
-pub fn run_spec_test(filepath: &str) -> WastTestReport {
+/// If returns `Some`:
+/// The script ran successfully, having directives run successfuly (though
+/// not necessarily meaning all asserts pass!)
+/// else when returning `None`:
+/// The script could not run successfully, a non-assert directive failed in
+/// such a way the script cannot continue running.
+pub fn run_spec_test(filepath: &str) -> Result<AssertReport, ScriptError> {
     // -=-= Initialization =-=-
     let arena = bumpalo::Bump::new();
     debug!("{}", filepath);
 
     let mut visible_modules = HashMap::new();
 
-    let contents =
-        try_to!(
-            std::fs::read_to_string(filepath).map_err(|err| ScriptError::new_lineless(
-                filepath,
-                Box::new(err),
-                "failed to open wast file",
-            )
-            .compile_report())
-        );
+    let contents = std::fs::read_to_string(filepath).map_err(|err| {
+        ScriptError::new_lineless(filepath, Box::new(err), "failed to open wast file")
+    })?;
 
-    let buf = try_to!(wast::parser::ParseBuffer::new(&contents).map_err(|err| {
+    let buf = wast::parser::ParseBuffer::new(&contents).map_err(|err| {
         ScriptError::new_lineless(filepath, Box::new(err), "failed to create wast buffer")
-            .compile_report()
-    }));
+    })?;
 
-    let wast =
-        try_to!(
-            wast::parser::parse::<wast::Wast>(&buf).map_err(|err| ScriptError::new_lineless(
-                filepath,
-                Box::new(err),
-                "failed to parse wast file"
-            )
-            .compile_report())
-        );
+    let wast = wast::parser::parse::<wast::Wast>(&buf).map_err(|err| {
+        ScriptError::new_lineless(filepath, Box::new(err), "failed to parse wast file")
+    })?;
 
     // -=-= Testing & Compilation =-=-
     let mut asserts = AssertReport::new(filepath);
@@ -204,7 +183,7 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
             wast::WastDirective::Wat(mut quoted) => {
                 // If we fail to compile or to validate the main module, then we should treat this
                 // as a fatal (compilation) error.
-                let wasm_bytes = try_to!(encode(&mut quoted).map_err(|err| {
+                let wasm_bytes = encode(&mut quoted).map_err(|err| {
                     ScriptError::new(
                         filepath,
                         err,
@@ -212,8 +191,7 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                         get_linenum(&contents, quoted.span()),
                         get_command(&contents, quoted.span()),
                     )
-                    .compile_report()
-                }));
+                })?;
 
                 // retain information of the id of the current wast
                 match quoted {
@@ -233,18 +211,15 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                 // lifetime of the outermost scope in the current function
                 let wasm_bytes = arena.alloc_slice_clone(&wasm_bytes) as &[u8];
 
-                try_to!(
-                    validate_instantiate(interpreter, wasm_bytes).map_err(|err| {
-                        ScriptError::new(
-                            filepath,
-                            err,
-                            "Module directive (WAT) failed in validation or instantiation.",
-                            get_linenum(&contents, quoted.span()),
-                            get_command(&contents, quoted.span()),
-                        )
-                        .compile_report()
-                    })
-                );
+                validate_instantiate(interpreter, wasm_bytes).map_err(|err| {
+                    ScriptError::new(
+                        filepath,
+                        err,
+                        "Module directive (WAT) failed in validation or instantiation.",
+                        get_linenum(&contents, quoted.span()),
+                        get_command(&contents, quoted.span()),
+                    )
+                })?
             }
             wast::WastDirective::AssertReturn {
                 span,
@@ -482,21 +457,19 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                                 get_linenum(&contents, invoke.span),
                                 get_command(&contents, invoke.span),
                             )
-                            .compile_report()
                         })
                     });
 
                 let function_ref = match function_ref_attempt {
-                    Ok(original_result) => try_to!(original_result),
+                    Ok(original_result) => original_result?,
                     Err(panic) => {
-                        return ScriptError::new(
+                        return Err(ScriptError::new(
                             filepath,
                             PanicError::from_panic_boxed(panic),
                             "main module validation panicked",
                             get_linenum(&contents, invoke.span),
                             get_command(&contents, invoke.span),
-                        )
-                        .compile_report();
+                        ));
                     }
                 };
 
@@ -511,14 +484,15 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
                         })
                     });
 
-                try_to!(err_or_panic.map_err(|inner| ScriptError::new(
-                    filepath,
-                    inner,
-                    "Invoke returned error or panicked",
-                    get_linenum(&contents, invoke.span),
-                    get_command(&contents, invoke.span)
-                )
-                .compile_report()));
+                err_or_panic.map_err(|inner| {
+                    ScriptError::new(
+                        filepath,
+                        inner,
+                        "Invoke returned error or panicked",
+                        get_linenum(&contents, invoke.span),
+                        get_command(&contents, invoke.span),
+                    )
+                })?;
             }
             wast::WastDirective::Thread(thread) => {
                 asserts.push_error(WastError::new(
@@ -530,7 +504,7 @@ pub fn run_spec_test(filepath: &str) -> WastTestReport {
         }
     }
 
-    asserts.compile_report()
+    Ok(asserts)
 }
 
 fn execute_assert_return(

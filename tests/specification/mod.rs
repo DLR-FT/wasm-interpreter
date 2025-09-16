@@ -1,7 +1,7 @@
 use ci_reports::CIFullReport;
 use envconfig::Envconfig;
 use regex::Regex;
-use reports::WastTestReport;
+use reports::{AssertReport, ScriptError};
 use std::fmt::Write as _;
 use std::path::Path;
 use std::process::ExitCode;
@@ -67,19 +67,19 @@ pub fn spec_tests() -> ExitCode {
     // Used for padding of filenames with spaces later
     let mut longest_filename_len: usize = 0;
 
-    let reports: Vec<WastTestReport> = paths
+    let reports: Vec<Result<AssertReport, ScriptError>> = paths
         .into_iter()
         .map(|path| run::run_spec_test(path.to_str().unwrap()))
         .inspect(|report| {
             match report {
-                reports::WastTestReport::Asserts(assert_report) => {
+                Ok(assert_report) => {
                     longest_filename_len = longest_filename_len.max(assert_report.filename.len());
 
                     if assert_report.has_errors() {
                         num_failures += 1;
                     }
                 }
-                reports::WastTestReport::ScriptError(_) => {
+                Err(_) => {
                     num_script_errors += 1;
                 }
             };
@@ -94,10 +94,7 @@ pub fn spec_tests() -> ExitCode {
     let mut total_mini_tests = 0;
     let mut assert_reports: Vec<&reports::AssertReport> = reports
         .iter()
-        .filter_map(|r| match r {
-            WastTestReport::Asserts(asserts) => Some(asserts),
-            WastTestReport::ScriptError(_) => None,
-        })
+        .filter_map(|r| r.as_ref().ok())
         .inspect(|assert_report| {
             successful_mini_tests += assert_report.passed_asserts();
             total_mini_tests += assert_report.total_asserts();

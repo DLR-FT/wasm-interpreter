@@ -53,10 +53,6 @@ impl AssertReport {
         self.results.push(Err(error));
     }
 
-    pub fn compile_report(self) -> WastTestReport {
-        WastTestReport::Asserts(self)
-    }
-
     pub fn has_errors(&self) -> bool {
         self.results.iter().any(|r| r.is_err())
     }
@@ -152,17 +148,4 @@ impl ScriptError {
             command: None,
         }
     }
-
-    pub fn compile_report(self) -> WastTestReport {
-        WastTestReport::ScriptError(self)
-    }
-}
-
-pub enum WastTestReport {
-    /// The script ran successfully, having directives run successfuly (though
-    /// not necessarily meaning all asserts pass!)
-    Asserts(AssertReport),
-    /// The script could not run successfully, a non-assert directive failed in
-    /// such a way the script cannot continue running.
-    ScriptError(ScriptError),
 }

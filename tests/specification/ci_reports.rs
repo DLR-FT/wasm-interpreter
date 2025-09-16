@@ -1,4 +1,4 @@
-use super::reports::{WastError, WastSuccess, WastTestReport};
+use super::reports::{AssertReport, ScriptError, WastError, WastSuccess};
 
 #[derive(serde::Serialize)]
 pub struct CIFullReport {
@@ -6,7 +6,7 @@ pub struct CIFullReport {
 }
 
 impl CIFullReport {
-    pub fn new(report: &[WastTestReport]) -> Self {
+    pub fn new(report: &[Result<AssertReport, ScriptError>]) -> Self {
         Self {
             entries: report.iter().map(CIReportHeader::new).collect(),
         }
@@ -19,10 +19,10 @@ pub struct CIReportHeader {
     pub data: CIReportData,
 }
 impl CIReportHeader {
-    fn new(report: &WastTestReport) -> Self {
+    fn new(report: &Result<AssertReport, ScriptError>) -> Self {
         let filepath = match report {
-            WastTestReport::Asserts(assert_report) => assert_report.filename.clone(),
-            WastTestReport::ScriptError(script_error) => script_error.filename.clone(),
+            Ok(assert_report) => assert_report.filename.clone(),
+            Err(script_error) => script_error.filename.clone(),
         };
 
         Self {
@@ -45,12 +45,12 @@ pub enum CIReportData {
     },
 }
 impl CIReportData {
-    fn new(report: &WastTestReport) -> Self {
+    fn new(report: &Result<AssertReport, ScriptError>) -> Self {
         match report {
-            WastTestReport::Asserts(assert_report) => Self::Assert {
+            Ok(assert_report) => Self::Assert {
                 results: assert_report.results.iter().map(CIAssert::new).collect(),
             },
-            WastTestReport::ScriptError(script_error) => Self::ScriptError {
+            Err(script_error) => Self::ScriptError {
                 error: script_error.error.to_string(),
                 context: script_error.context.clone(),
                 line_number: script_error.line_number,
