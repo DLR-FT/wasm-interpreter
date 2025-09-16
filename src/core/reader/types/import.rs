@@ -45,17 +45,6 @@ impl WasmReadable for Import {
     }
 }
 
-impl Import {
-    /// returns the external type of `self` according to typing relation,
-    /// taking `validation_info` as validation context C
-    /// may fail only with function imports when C does not inhabit the function type
-    ///<https://webassembly.github.io/spec/core/valid/modules.html#imports>
-    #[allow(unused)]
-    pub fn extern_type(&self, validation_info: &ValidationInfo) -> Result<ExternType> {
-        self.desc.extern_type(validation_info)
-    }
-}
-
 #[derive(Debug, Clone)]
 pub enum ImportDesc {
     Func(TypeIdx),
@@ -92,10 +81,11 @@ impl WasmReadable for ImportDesc {
 impl ImportDesc {
     /// returns the external type of `self` according to typing relation,
     /// taking `validation_info` as validation context C
-    /// may fail only with function imports when C does not inhabit the function type
+    ///
+    /// Note: This method may panic if self does not come from the given [`ValidationInfo`].
     ///<https://webassembly.github.io/spec/core/valid/modules.html#imports>
-    pub fn extern_type(&self, validation_info: &ValidationInfo) -> Result<ExternType> {
-        Ok(match self {
+    pub fn extern_type(&self, validation_info: &ValidationInfo) -> ExternType {
+        match self {
             ImportDesc::Func(type_idx) => {
                 // unlike ExportDescs, these directly refer to the types section
                 // since a corresponding function entry in function section or body
@@ -103,13 +93,13 @@ impl ImportDesc {
                 let func_type = validation_info
                     .types
                     .get(*type_idx)
-                    .ok_or(Error::InvalidFuncType)?;
+                    .expect("type index of import descs to always be valid if the validation info is correct");
                 // TODO ugly clone that should disappear when types are directly parsed from bytecode instead of vector copies
                 ExternType::Func(func_type.clone())
             }
             ImportDesc::Table(ty) => ExternType::Table(*ty),
             ImportDesc::Mem(ty) => ExternType::Mem(*ty),
             ImportDesc::Global(ty) => ExternType::Global(*ty),
-        })
+        }
     }
 }
