@@ -139,15 +139,15 @@ pub fn run_spec_test(filepath: &str) -> Result<AssertReport, ScriptError> {
     let mut visible_modules = HashMap::new();
 
     let contents = std::fs::read_to_string(filepath).map_err(|err| {
-        ScriptError::new_lineless(filepath, Box::new(err), "failed to open wast file")
+        ScriptError::new_lineless(filepath, err.into(), "failed to open wast file")
     })?;
 
     let buf = wast::parser::ParseBuffer::new(&contents).map_err(|err| {
-        ScriptError::new_lineless(filepath, Box::new(err), "failed to create wast buffer")
+        ScriptError::new_lineless(filepath, err.into(), "failed to create wast buffer")
     })?;
 
     let wast = wast::parser::parse::<wast::Wast>(&buf).map_err(|err| {
-        ScriptError::new_lineless(filepath, Box::new(err), "failed to parse wast file")
+        ScriptError::new_lineless(filepath, err.into(), "failed to parse wast file")
     })?;
 
     // -=-= Testing & Compilation =-=-
@@ -177,7 +177,7 @@ pub fn run_spec_test(filepath: &str) -> Result<AssertReport, ScriptError> {
                 let wasm_bytes = encode(&mut quoted).map_err(|err| {
                     ScriptError::new(
                         filepath,
-                        Box::new(err),
+                        err,
                         "Module directive (WAT) failed in encoding step.",
                         get_linenum(&contents, quoted.span()),
                         get_command(&contents, quoted.span()),
@@ -205,7 +205,7 @@ pub fn run_spec_test(filepath: &str) -> Result<AssertReport, ScriptError> {
                 validate_instantiate(interpreter, wasm_bytes).map_err(|err| {
                     ScriptError::new(
                         filepath,
-                        Box::new(err),
+                        err,
                         "Module directive (WAT) failed in validation or instantiation.",
                         get_linenum(&contents, quoted.span()),
                         get_command(&contents, quoted.span()),
@@ -452,7 +452,7 @@ pub fn run_spec_test(filepath: &str) -> Result<AssertReport, ScriptError> {
                     .map_err(|panic_error| {
                         ScriptError::new(
                             filepath,
-                            Box::new(WastError::Panic(panic_error)),
+                            WastError::Panic(panic_error),
                             "main module validation panicked",
                             get_linenum(&contents, invoke.span),
                             get_command(&contents, invoke.span),
@@ -461,9 +461,7 @@ pub fn run_spec_test(filepath: &str) -> Result<AssertReport, ScriptError> {
                     .map_err(|runtime_error| {
                         ScriptError::new(
                             filepath,
-                            Box::new(WastError::WasmError(wasm::Error::RuntimeError(
-                                runtime_error,
-                            ))),
+                            WastError::WasmError(wasm::Error::RuntimeError(runtime_error)),
                             "invoke directive failed to find function",
                             get_linenum(&contents, invoke.span),
                             get_command(&contents, invoke.span),
@@ -476,7 +474,7 @@ pub fn run_spec_test(filepath: &str) -> Result<AssertReport, ScriptError> {
                 .map_err(|panic_error| {
                     ScriptError::new(
                         filepath,
-                        Box::new(WastError::Panic(panic_error)),
+                        WastError::Panic(panic_error),
                         "invocation of function panicked",
                         get_linenum(&contents, invoke.span),
                         get_command(&contents, invoke.span),
@@ -485,9 +483,7 @@ pub fn run_spec_test(filepath: &str) -> Result<AssertReport, ScriptError> {
                 .map_err(|runtime_error| {
                     ScriptError::new(
                         filepath,
-                        Box::new(WastError::WasmError(wasm::Error::RuntimeError(
-                            runtime_error,
-                        ))),
+                        WastError::WasmError(wasm::Error::RuntimeError(runtime_error)),
                         "invoke returned error or panicked",
                         get_linenum(&contents, invoke.span),
                         get_command(&contents, invoke.span),

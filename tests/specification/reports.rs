@@ -1,4 +1,4 @@
-use std::{any::Any, error::Error};
+use std::any::Any;
 
 use wasm::{RuntimeError, TrapError};
 
@@ -42,6 +42,8 @@ pub enum WastError {
     Wast(#[from] wast::Error),
     #[error("Runtime error not represented in WAST")]
     UnrepresentedRuntimeError,
+    #[error("{0}")]
+    Io(#[from] std::io::Error),
 }
 
 impl From<wasm::Error> for WastError {
@@ -145,7 +147,8 @@ impl std::fmt::Display for AssertReport {
 /// fails, a ScriptError will be raised.
 pub struct ScriptError {
     pub filename: String,
-    pub error: Box<dyn Error>,
+    /// Boxed because of struct size
+    pub error: Box<WastError>,
     pub context: String,
     #[allow(unused)]
     pub line_number: Option<u32>,
@@ -156,24 +159,24 @@ pub struct ScriptError {
 impl ScriptError {
     pub fn new(
         filename: &str,
-        error: Box<dyn Error>,
+        error: WastError,
         context: &str,
         line_number: u32,
         command: &str,
     ) -> Self {
         Self {
             filename: filename.to_string(),
-            error,
+            error: Box::new(error),
             context: context.to_string(),
             line_number: Some(line_number),
             command: Some(command.to_string()),
         }
     }
 
-    pub fn new_lineless(filename: &str, error: Box<dyn Error>, context: &str) -> Self {
+    pub fn new_lineless(filename: &str, error: WastError, context: &str) -> Self {
         Self {
             filename: filename.to_string(),
-            error,
+            error: Box::new(error),
             context: context.to_string(),
             line_number: None,
             command: None,
