@@ -147,7 +147,7 @@ pub fn spec_tests() -> ExitCode {
 
     // Optional: We need to save the result to a file for CI Regression Analysis
     if std::option_env!("TESTSUITE_SAVE").is_some() {
-        let ci_report = CIFullReport::new(&reports);
+        let ci_report = CIFullReport::new(reports);
         let output_file = std::fs::File::create("./testsuite_results.json").unwrap();
 
         serde_json::to_writer_pretty(output_file, &ci_report).unwrap();
