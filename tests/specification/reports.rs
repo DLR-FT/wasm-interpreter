@@ -1,9 +1,53 @@
-use std::error::Error;
+use std::{any::Any, error::Error};
+
+use wasm::{RuntimeError, TrapError};
+
+use super::test_errors::AssertEqError;
 
 pub struct AssertOutcome {
     pub line_number: u32,
     pub command: String,
-    pub maybe_error: Option<Box<dyn Error + 'static>>,
+    pub maybe_error: Option<WastError>,
+}
+
+#[derive(thiserror::Error, Debug)]
+pub enum WastError {
+    #[error("Panic: {}", .0.downcast_ref::<&str>().unwrap_or(&"Unknown panic"))]
+    Panic(Box<dyn Any + Send + 'static>),
+    #[error("{0}")]
+    WasmError(wasm::Error),
+    #[error("{0}")]
+    AssertEqualFailed(#[from] AssertEqError),
+    #[error("Module validated and instantiated successfully, when it shouldn't have")]
+    AssertInvalidButValid,
+    #[error("Module linked successfully, when it shouldn't have")]
+    AssertUnlinkableButLinked,
+    #[error("'assert_exhaustion': Expected '{expected}' - Actual: '{}'", actual.as_ref()
+        .map(|actual| format!("{actual}"))
+        .unwrap_or_else(|| "---".to_owned())
+    )]
+    AssertExhaustionButDidNotExhaust {
+        expected: String,
+        actual: Option<RuntimeError>,
+    },
+    #[error("'assert_trap': Expected '{expected}' - Actual: '{}'", actual.as_ref()
+        .map(|actual| format!("{actual}"))
+        .unwrap_or_else(|| "---".to_owned())
+    )]
+    AssertTrapButTrapWasIncorrect {
+        expected: String,
+        actual: Option<TrapError>,
+    },
+    #[error("{0}")]
+    Wast(#[from] wast::Error),
+    #[error("Runtime error not represented in WAST")]
+    UnrepresentedRuntimeError,
+}
+
+impl From<wasm::Error> for WastError {
+    fn from(value: wasm::Error) -> Self {
+        Self::WasmError(value)
+    }
 }
 
 /// Wast script executed successfully. The outcomes of asserts (pass/fail) are
@@ -29,12 +73,7 @@ impl AssertReport {
         });
     }
 
-    pub fn push_error(
-        &mut self,
-        line_number: u32,
-        command: String,
-        error: Box<dyn Error + 'static>,
-    ) {
+    pub fn push_error(&mut self, line_number: u32, command: String, error: WastError) {
         self.results.push(AssertOutcome {
             line_number,
             command,
