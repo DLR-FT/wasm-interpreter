@@ -1,4 +1,4 @@
-use super::reports::{AssertReport, ScriptError, WastError, WastSuccess};
+use super::reports::{AssertOutcome, AssertReport, ScriptError};
 
 #[derive(serde::Serialize)]
 pub struct CIFullReport {
@@ -6,9 +6,9 @@ pub struct CIFullReport {
 }
 
 impl CIFullReport {
-    pub fn new(report: &[Result<AssertReport, ScriptError>]) -> Self {
+    pub fn new(report: Vec<Result<AssertReport, ScriptError>>) -> Self {
         Self {
-            entries: report.iter().map(CIReportHeader::new).collect(),
+            entries: report.into_iter().map(CIReportHeader::new).collect(),
         }
     }
 }
@@ -19,8 +19,8 @@ pub struct CIReportHeader {
     pub data: CIReportData,
 }
 impl CIReportHeader {
-    fn new(report: &Result<AssertReport, ScriptError>) -> Self {
-        let filepath = match report {
+    fn new(report: Result<AssertReport, ScriptError>) -> Self {
+        let filepath = match &report {
             Ok(assert_report) => assert_report.filename.clone(),
             Err(script_error) => script_error.filename.clone(),
         };
@@ -45,10 +45,14 @@ pub enum CIReportData {
     },
 }
 impl CIReportData {
-    fn new(report: &Result<AssertReport, ScriptError>) -> Self {
+    fn new(report: Result<AssertReport, ScriptError>) -> Self {
         match report {
             Ok(assert_report) => Self::Assert {
-                results: assert_report.results.iter().map(CIAssert::new).collect(),
+                results: assert_report
+                    .results
+                    .into_iter()
+                    .map(CIAssert::new)
+                    .collect(),
             },
             Err(script_error) => Self::ScriptError {
                 error: script_error.error.to_string(),
@@ -67,18 +71,11 @@ pub struct CIAssert {
     pub command: String,
 }
 impl CIAssert {
-    fn new(res: &Result<WastSuccess, WastError>) -> Self {
-        match res {
-            Ok(success) => Self {
-                error: None,
-                line_number: success.line_number,
-                command: success.command.clone(),
-            },
-            Err(err) => Self {
-                error: Some(err.inner.to_string()),
-                line_number: err.line_number,
-                command: err.command.clone(),
-            },
+    fn new(assert_outcome: AssertOutcome) -> Self {
+        Self {
+            line_number: assert_outcome.line_number,
+            command: assert_outcome.command,
+            error: assert_outcome.maybe_error.map(|err| err.to_string()),
         }
     }
 }

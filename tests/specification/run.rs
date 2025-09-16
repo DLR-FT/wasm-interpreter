@@ -231,17 +231,17 @@ pub fn run_spec_test(filepath: &str) -> Result<AssertReport, ScriptError> {
 
                 match err_or_panic {
                     Ok(()) => {
-                        asserts.push_success(WastSuccess::new(
+                        asserts.push_success(
                             get_linenum(&contents, span),
-                            get_command(&contents, span),
-                        ));
+                            get_command(&contents, span).to_owned(),
+                        );
                     }
                     Err(inner) => {
-                        asserts.push_error(WastError::new(
-                            inner,
+                        asserts.push_error(
                             get_linenum(&contents, span),
-                            get_command(&contents, span),
-                        ));
+                            get_command(&contents, span).to_owned(),
+                            inner,
+                        );
                     }
                 }
             }
@@ -268,17 +268,17 @@ pub fn run_spec_test(filepath: &str) -> Result<AssertReport, ScriptError> {
 
                 match err_or_panic {
                     Ok(_) => {
-                        asserts.push_success(WastSuccess::new(
+                        asserts.push_success(
                             get_linenum(&contents, span),
-                            get_command(&contents, span),
-                        ));
+                            get_command(&contents, span).to_owned(),
+                        );
                     }
                     Err(inner) => {
-                        asserts.push_error(WastError::new(
-                            inner,
+                        asserts.push_error(
                             get_linenum(&contents, span),
-                            get_command(&contents, span),
-                        ));
+                            get_command(&contents, span).to_owned(),
+                            inner,
+                        );
                     }
                 }
             }
@@ -303,8 +303,8 @@ pub fn run_spec_test(filepath: &str) -> Result<AssertReport, ScriptError> {
                     let bytes = arena.alloc_slice_clone(&bytes);
                     validate_instantiate(interpreter, bytes)
                 }) {
-                    Err(_) => asserts.push_success(WastSuccess::new(line_number, cmd)),
-                    Ok(_) => asserts.push_error(WastError::new(error, line_number, cmd)),
+                    Err(_) => asserts.push_success(line_number, cmd.to_owned()),
+                    Ok(_) => asserts.push_error(line_number, cmd.to_owned(), error),
                 };
             }
 
@@ -345,18 +345,18 @@ pub fn run_spec_test(filepath: &str) -> Result<AssertReport, ScriptError> {
 
                 match validate_instantiate(interpreter, bytes) {
                     // module shouldn't have instantiated
-                    Ok(_) => asserts.push_error(WastError::new(error, line_number, cmd)),
+                    Ok(_) => asserts.push_error(line_number, cmd.to_owned(), error),
                     Err(err) => match err.downcast_ref::<WasmInterpreterError>() {
                         Some(WasmInterpreterError(wasm::Error::UnknownImport))
                         | Some(WasmInterpreterError(wasm::Error::RuntimeError(
                             RuntimeError::ModuleNotFound,
                         )))
                         | Some(WasmInterpreterError(wasm::Error::InvalidImportType)) => {
-                            asserts.push_success(WastSuccess::new(line_number, cmd));
+                            asserts.push_success(line_number, cmd.to_owned());
                         }
                         // module failed to instantiate due to a reason not related to linking
                         _ => {
-                            asserts.push_error(WastError::new(err, line_number, cmd));
+                            asserts.push_error(line_number, cmd.to_owned(), err);
                         }
                     },
                 }
@@ -386,33 +386,33 @@ pub fn run_spec_test(filepath: &str) -> Result<AssertReport, ScriptError> {
 
                 match err_or_panic {
                     Ok(_) => {
-                        asserts.push_success(WastSuccess::new(
+                        asserts.push_success(
                             get_linenum(&contents, span),
-                            get_command(&contents, span),
-                        ));
+                            get_command(&contents, span).to_owned(),
+                        );
                     }
                     Err(inner) => {
-                        asserts.push_error(WastError::new(
-                            inner,
+                        asserts.push_error(
                             get_linenum(&contents, span),
-                            get_command(&contents, span),
-                        ));
+                            get_command(&contents, span).to_owned(),
+                            inner,
+                        );
                     }
                 }
             }
             wast::WastDirective::AssertException { span, exec: _ } => {
-                asserts.push_error(WastError::new(
-                    GenericError::new_boxed("Assert directive not yet implemented"),
+                asserts.push_error(
                     get_linenum(&contents, span),
-                    get_command(&contents, span),
-                ));
+                    get_command(&contents, span).to_owned(),
+                    GenericError::new_boxed("Assert directive not yet implemented"),
+                );
             }
             wast::WastDirective::Wait { span, thread: _ } => {
-                asserts.push_error(WastError::new(
-                    GenericError::new_boxed("Wait directive not yet implemented"),
+                asserts.push_error(
                     get_linenum(&contents, span),
-                    get_command(&contents, span),
-                ));
+                    get_command(&contents, span).to_owned(),
+                    GenericError::new_boxed("Wait directive not yet implemented"),
+                );
             }
             wast::WastDirective::Invoke(invoke) => {
                 let args = invoke
@@ -495,11 +495,11 @@ pub fn run_spec_test(filepath: &str) -> Result<AssertReport, ScriptError> {
                 })?;
             }
             wast::WastDirective::Thread(thread) => {
-                asserts.push_error(WastError::new(
-                    GenericError::new_boxed("Thread directive not yet implemented"),
+                asserts.push_error(
                     get_linenum(&contents, thread.span),
-                    get_command(&contents, thread.span),
-                ));
+                    get_command(&contents, thread.span).to_owned(),
+                    GenericError::new_boxed("Thread directive not yet implemented"),
+                );
             }
         }
     }
