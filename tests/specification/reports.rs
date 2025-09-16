@@ -166,35 +166,3 @@ pub enum WastTestReport {
     /// such a way the script cannot continue running.
     ScriptError(ScriptError),
 }
-
-impl std::fmt::Display for WastTestReport {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            WastTestReport::ScriptError(error) => {
-                writeln!(f, "------ {} ------", error.filename)?;
-                writeln!(f, "⚠ Compilation Failed ⚠")?;
-                writeln!(f, "Context: {}", error.context)?;
-                writeln!(f, "Error: {}", error.error)?;
-                writeln!(f, "~~~~~~~~~~~~~~~~")?;
-                writeln!(f)?;
-            }
-            WastTestReport::Asserts(assert_report) => {
-                writeln!(f, "------ {} ------", assert_report.filename)?;
-                writeln!(f, "{assert_report}")?;
-                let passed_asserts = assert_report.results.iter().filter(|r| r.is_ok()).count();
-                let failed_asserts = assert_report.results.iter().filter(|r| r.is_err()).count();
-                let total_asserts = assert_report.results.len();
-
-                writeln!(f)?;
-                writeln!(
-                    f,
-                    "Execution finished. Passed: {passed_asserts}, Failed: {failed_asserts}, Total: {total_asserts}"
-                )?;
-                writeln!(f, "~~~~~~~~~~~~~~~~")?;
-                writeln!(f)?;
-            }
-        }
-
-        Ok(())
-    }
-}
