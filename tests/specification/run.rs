@@ -563,8 +563,7 @@ fn execute_assert_return(
             .map_err(PanicError::from_panic_boxed)?
             .map_err(|err| WasmInterpreterError::new_boxed(wasm::Error::RuntimeError(err)))?;
 
-            AssertEqError::assert_eq(actual, result_vals)?;
-            Ok(())
+            assert_eq(actual, result_vals).map_err(Into::into)
         }
         wast::WastExecute::Get {
             span: _,
@@ -601,8 +600,8 @@ fn execute_assert_return(
             }))
             .map_err(PanicError::from_panic_boxed)?
             .map_err(|err| WasmInterpreterError::new_boxed(wasm::Error::RuntimeError(err)))?;
-            AssertEqError::assert_eq(vec![actual], result_vals)?;
-            Ok(())
+
+            assert_eq(vec![actual], result_vals).map_err(Into::into)
         }
         wast::WastExecute::Wat(_) => Err(GenericError::new_boxed(
             "`wat` directive inside `assert_return` not yet implemented",
