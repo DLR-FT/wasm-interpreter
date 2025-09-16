@@ -96,14 +96,14 @@ impl<'b, T> Store<'b, T> {
                 import_name,
                 import_desc
             );
-            let import_extern_type = import_desc.extern_type(validation_info)?;
+            let import_extern_type = import_desc.extern_type(validation_info);
             let export_extern_val_candidate = *self.registry.lookup(
                 exporting_module_name.clone().into(),
                 import_name.clone().into(),
             )?;
             trace!("export candidate found: {:?}", export_extern_val_candidate);
             if !export_extern_val_candidate
-                .extern_type(self)?
+                .extern_type(self)
                 .is_subtype_of(&import_extern_type)
             {
                 return Err(Error::InvalidImportType);
@@ -793,41 +793,41 @@ pub enum ExternVal {
 impl ExternVal {
     /// returns the external type of `self` according to typing relation,
     /// taking `store` as context S.
-    /// typing fails if this external value does not exist within S.
+    ///
+    /// Note: This method may panic if self does not come from the given [`Store`].
     ///<https://webassembly.github.io/spec/core/valid/modules.html#imports>
-    pub fn extern_type<T>(&self, store: &Store<T>) -> CustomResult<ExternType> {
-        // TODO: implement proper errors
-        Ok(match self {
+    pub fn extern_type<T>(&self, store: &Store<T>) -> ExternType {
+        match self {
             // TODO: fix ugly clone in function types
             ExternVal::Func(func_addr) => ExternType::Func(
                 store
                     .functions
                     .get(*func_addr)
-                    .ok_or(Error::InvalidImportType)?
+                    .expect("the correct store to be used")
                     .ty(),
             ),
             ExternVal::Table(table_addr) => ExternType::Table(
                 store
                     .tables
                     .get(*table_addr)
-                    .ok_or(Error::InvalidImportType)?
+                    .expect("the correct store to be used")
                     .ty,
             ),
             ExternVal::Mem(mem_addr) => ExternType::Mem(
                 store
                     .memories
                     .get(*mem_addr)
-                    .ok_or(Error::InvalidImportType)?
+                    .expect("the correct store to be used")
                     .ty,
             ),
             ExternVal::Global(global_addr) => ExternType::Global(
                 store
                     .globals
                     .get(*global_addr)
-                    .ok_or(Error::InvalidImportType)?
+                    .expect("the correct store to be used")
                     .ty,
             ),
-        })
+        }
     }
 }
 
