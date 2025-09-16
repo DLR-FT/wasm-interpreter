@@ -28,42 +28,40 @@ pub struct AssertEqError {
     right: String,
 }
 
-impl AssertEqError {
-    pub fn assert_eq(left: Vec<Value>, right: Vec<Value>) -> Result<(), Self> {
-        if left.len() != right.len() {
-            return Err(AssertEqError {
-                left: format!("Arr<len: {}>", left.len()),
-                right: format!("Arr<len: {}>", right.len()),
-            });
-        }
-
-        for i in 0..left.len() {
-            let left_el = left[i];
-            let right_el = right[i];
-
-            match (left_el, right_el) {
-                (Value::F32(a), Value::F32(b)) => {
-                    match_f32(a, b)?;
-                    Ok(())
-                }
-                (Value::F64(a), Value::F64(b)) => {
-                    match_f64(a, b)?;
-                    Ok(())
-                }
-                (a, b) => {
-                    if a != b {
-                        Err(AssertEqError {
-                            left: format!("{left:?}"),
-                            right: format!("{right:?}"),
-                        })
-                    } else {
-                        Ok(())
-                    }
-                }
-            }?;
-        }
-        Ok(())
+pub fn assert_eq(left: Vec<Value>, right: Vec<Value>) -> Result<(), AssertEqError> {
+    if left.len() != right.len() {
+        return Err(AssertEqError {
+            left: format!("Arr<len: {}>", left.len()),
+            right: format!("Arr<len: {}>", right.len()),
+        });
     }
+
+    for i in 0..left.len() {
+        let left_el = left[i];
+        let right_el = right[i];
+
+        match (left_el, right_el) {
+            (Value::F32(a), Value::F32(b)) => {
+                match_f32(a, b)?;
+                Ok(())
+            }
+            (Value::F64(a), Value::F64(b)) => {
+                match_f64(a, b)?;
+                Ok(())
+            }
+            (a, b) => {
+                if a != b {
+                    Err(AssertEqError {
+                        left: format!("{left:?}"),
+                        right: format!("{right:?}"),
+                    })
+                } else {
+                    Ok(())
+                }
+            }
+        }?;
+    }
+    Ok(())
 }
 
 fn match_f32(actual: F32, expected: F32) -> Result<(), AssertEqError> {
