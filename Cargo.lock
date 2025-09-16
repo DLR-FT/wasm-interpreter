@@ -1446,6 +1446,7 @@ dependencies = [
  "serde",
  "serde_json",
  "test-log",
+ "thiserror 2.0.12",
  "wast 212.0.0",
  "wat",
 ]
