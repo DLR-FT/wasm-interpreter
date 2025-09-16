@@ -75,22 +75,6 @@ impl AssertReport {
         }
     }
 
-    pub fn push_success(&mut self, line_number: u32, command: String) {
-        self.results.push(AssertOutcome {
-            line_number,
-            command,
-            maybe_error: None,
-        });
-    }
-
-    pub fn push_error(&mut self, line_number: u32, command: String, error: WastError) {
-        self.results.push(AssertOutcome {
-            line_number,
-            command,
-            maybe_error: Some(error),
-        });
-    }
-
     pub fn has_errors(&self) -> bool {
         self.results.iter().any(|r| r.maybe_error.is_some())
     }
