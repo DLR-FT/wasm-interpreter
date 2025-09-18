@@ -14,14 +14,12 @@ use crate::execution::interpreter_loop::{self, memory_init, table_init};
 use crate::execution::value::{Ref, Value};
 use crate::execution::{run_const_span, Stack};
 use crate::registry::Registry;
-use crate::resumable::{Dormitory, Resumable, ResumableRef, RunState};
-use crate::rw_spinlock::RwSpinLock;
+use crate::resumable::{Dormitory, Resumable, RunState};
 use crate::value::FuncAddr;
 use crate::{Limits, RefType, RuntimeError, TrapError, ValidationInfo};
 use alloc::borrow::ToOwned;
 use alloc::collections::btree_map::BTreeMap;
 use alloc::string::String;
-use alloc::sync::Arc;
 use alloc::vec;
 use alloc::vec::Vec;
 
@@ -53,7 +51,7 @@ pub struct Store<'b, T> {
     pub user_data: T,
 
     // data structure holding all resumable objects that belong to this store
-    pub dormitory: Arc<RwSpinLock<Dormitory>>,
+    pub dormitory: Dormitory,
 }
 
 impl<'b, T> Store<'b, T> {
@@ -68,7 +66,7 @@ impl<'b, T> Store<'b, T> {
             elements: Vec::default(),
             modules: Vec::default(),
             registry: Registry::default(),
-            dormitory: Arc::default(),
+            dormitory: Dormitory::default(),
             user_data,
         }
     }
@@ -597,6 +595,7 @@ impl<'b, T> Store<'b, T> {
                     pc: wasm_func_inst.code_expr.from,
                     stp: wasm_func_inst.stp,
                 };
+
                 // Run the interpreter
                 let result = interpreter_loop::run(
                     // &mut self.modules,
@@ -608,17 +607,13 @@ impl<'b, T> Store<'b, T> {
                 );
 
                 match result {
-                    Ok(_) => {
+                    Ok(()) => {
                         debug!("Successfully invoked function");
                         Ok(RunState::Finished(resumable.stack.into_values()))
                     }
                     Err(RuntimeError::OutOfFuel) => {
-                        debug!("Successfully invoked function");
-                        let resumable_addr = self.dormitory.write().insert(resumable);
-                        Ok(RunState::Resumable(ResumableRef {
-                            resumable_addr,
-                            dormitory: Arc::downgrade(&self.dormitory),
-                        }))
+                        debug!("Successfully invoked function, but ran out of fuel");
+                        Ok(RunState::Resumable(self.dormitory.insert(resumable)))
                     }
                     Err(err) => Err(err),
                 }
