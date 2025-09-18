@@ -1,3 +1,5 @@
+use core::mem;
+
 use alloc::{
     sync::{Arc, Weak},
     vec::Vec,
@@ -9,84 +11,69 @@ use crate::{
     hooks::EmptyHookSet,
     rw_spinlock::RwSpinLock,
     value_stack::Stack,
-    RuntimeError, RuntimeInstance, Value,
+    RuntimeError, Value,
 };
 
+use super::RuntimeInstance;
+
 #[derive(Debug)]
-pub(super) struct Resumable {
-    pub stack: Stack,
-    pub pc: usize,
-    pub stp: usize,
-    pub current_func_addr: usize,
+pub struct Resumable {
+    pub(crate) stack: Stack,
+    pub(crate) pc: usize,
+    pub(crate) stp: usize,
+    pub(crate) current_func_addr: usize,
 }
 
 #[derive(Default)]
-pub struct Dormitory(SlotMap<Resumable>);
-pub struct ResumableAddr(SlotMapKey<Resumable>);
+pub struct Dormitory(Arc<RwSpinLock<SlotMap<Resumable>>>);
 
 impl Dormitory {
     #[allow(unused)]
-    pub(super) fn new() -> Dormitory {
+    pub fn new() -> Self {
         Self::default()
     }
 
-    #[allow(unused)]
-    pub(super) fn get(&self, resumable_addr: &ResumableAddr) -> Result<&Resumable, RuntimeError> {
-        self.0
-            .get(&resumable_addr.0)
-            .ok_or(RuntimeError::ResumableNotFound)
-    }
+    pub fn insert(&self, resumable: Resumable) -> ResumableRef {
+        let key = self.0.write().insert(resumable);
 
-    pub(super) fn get_mut(
-        &mut self,
-        resumable_addr: &ResumableAddr,
-    ) -> Result<&mut Resumable, RuntimeError> {
-        self.0
-            .get_mut(&resumable_addr.0)
-            .ok_or(RuntimeError::ResumableNotFound)
+        ResumableRef {
+            dormitory: Arc::downgrade(&self.0),
+            key,
+        }
     }
-
-    pub(super) fn insert(&mut self, resumable: Resumable) -> ResumableAddr {
-        ResumableAddr(self.0.insert(resumable))
-    }
-
-    pub(super) fn remove(
-        &mut self,
-        resumable_addr: &ResumableAddr,
-    ) -> Result<Vec<Value>, RuntimeError> {
-        let resumable = self
-            .0
-            .remove(&resumable_addr.0)
-            .ok_or(RuntimeError::ResumableNotFound)?;
-        Ok(resumable.stack.into_values())
-    }
-}
-
-pub enum RunState {
-    Finished(Vec<Value>),
-    Resumable(ResumableRef),
 }
 
 pub struct ResumableRef {
-    pub resumable_addr: ResumableAddr,
-    pub dormitory: Weak<RwSpinLock<Dormitory>>,
+    dormitory: Weak<RwSpinLock<SlotMap<Resumable>>>,
+    key: SlotMapKey<Resumable>,
 }
+
 impl ResumableRef {
-    #[allow(unused)]
     pub fn resume<T>(
-        self,
+        mut self,
         runtime_instance: &mut RuntimeInstance<T>,
         fuel: u32,
     ) -> Result<RunState, RuntimeError> {
+        // Resuming requires `self`'s dormitory to still be alive
         let Some(dormitory) = self.dormitory.upgrade() else {
             return Err(RuntimeError::ResumableNotFound);
         };
-        let mut dormitory = if Arc::ptr_eq(&dormitory, &runtime_instance.store.dormitory) {
-            dormitory.write()
-        } else {
+
+        // Check the given `RuntimeInstance` is the same one used to create `self`
+        if !Arc::ptr_eq(&dormitory, &runtime_instance.store.dormitory.0) {
             return Err(RuntimeError::ResumableNotFound);
-        };
-        let resumable = dormitory.get_mut(&self.resumable_addr)?;
+        }
+
+        // Obtain a write lock to the `Dormitory`
+        let mut dormitory = dormitory.write();
+
+        // TODO We might want to remove the `Resumable` here already and later reinsert it.
+        // This would prevent holding the lock across the interpreter loop.
+        let resumable = dormitory
+            .get_mut(&self.key)
+            .expect("the key to always be valid as self was not dropped yet");
+
+        // Resume execution
         let result = interpreter_loop::run(
             resumable,
             &mut runtime_instance.store,
@@ -95,9 +82,16 @@ impl ResumableRef {
         );
 
         match result {
-            Ok(_) => dormitory
-                .remove(&self.resumable_addr)
-                .map(RunState::Finished),
+            Ok(()) => {
+                let resumable = dormitory.remove(&self.key)
+                    .expect("that the resumable could not have been removed already, because then this self could not exist");
+
+                // Take the `Weak` pointing to the dormitory out of `self` and replace it with a default `Weak`.
+                // This causes the `Drop` impl of `self` to directly quit preventing it from unnecessarily locking the dormitory.
+                let _dormitory = mem::take(&mut self.dormitory);
+
+                Ok(RunState::Finished(resumable.stack.into_values()))
+            }
             Err(RuntimeError::OutOfFuel) => Ok(RunState::Resumable(self)),
             Err(err) => Err(err),
         }
@@ -106,9 +100,17 @@ impl ResumableRef {
 
 impl Drop for ResumableRef {
     fn drop(&mut self) {
-        if let Some(dormitory) = self.dormitory.upgrade() {
-            // an Err indicates this resumable was already dropped, which is fine
-            dormitory.write().remove(&self.resumable_addr).unwrap();
-        }
+        let Some(dormitory) = self.dormitory.upgrade() else {
+            // Either the dormitory was already dropped or `self` was used to finish execution.
+            return;
+        };
+
+        dormitory.write().remove(&self.key)
+            .expect("that the resumable could not have been removed already, because then this self could not exist or the dormitory weak pointer would have been None");
     }
+}
+
+pub enum RunState {
+    Finished(Vec<Value>),
+    Resumable(ResumableRef),
 }
