@@ -25,6 +25,7 @@ use crate::{
         sidetable::Sidetable,
     },
     store::DataInst,
+    unreachable_validated,
     value::{self, FuncAddr, Ref},
     value_stack::Stack,
     ElemInst, FuncInst, MemInst, ModuleInst, NumType, RefType, RuntimeError, TableInst, ValType,
@@ -265,8 +266,11 @@ pub(super) fn run<T, H: HookSet>(
                     })?;
 
                 let func_to_call_addr = match *r {
-                    Ref::Func(func_addr) => func_addr.addr.unwrap_validated(),
-                    Ref::Extern(_) => unreachable!(),
+                    Ref::Func(FuncAddr { addr: Some(addr) }) => addr,
+                    Ref::Func(FuncAddr { addr: None }) => {
+                        return Err(RuntimeError::IndirectCallNullFuncRef)
+                    }
+                    Ref::Extern(_) => unreachable_validated!(),
                 };
 
                 let func_to_call_ty = store.functions[func_to_call_addr].ty();
