@@ -1987,7 +1987,7 @@ pub(super) fn run<T, H: HookSet>(
             }
             F64_PROMOTE_F32 => {
                 let v: value::F32 = stack.pop_value().try_into().unwrap_validated();
-                let res: value::F64 = v.as_f32();
+                let res: value::F64 = v.as_f64();
 
                 trace!("Instruction: f64.promote_f32 [{v:.7}] -> [{res:.17}]");
                 stack.push_value(res.into())?;

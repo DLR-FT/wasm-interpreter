@@ -140,7 +140,7 @@ impl F32 {
     pub fn as_u64(&self) -> u64 {
         self.0 as u64
     }
-    pub fn as_f32(&self) -> F64 {
+    pub fn as_f64(&self) -> F64 {
         F64(self.0 as f64)
     }
     pub fn reinterpret_as_i32(&self) -> i32 {
