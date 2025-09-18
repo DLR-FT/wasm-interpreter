@@ -24,6 +24,7 @@ pub enum RuntimeError {
     ElementAccessOutOfBounds,
     UninitializedElement,
     SignatureMismatch,
+    IndirectCallNullFuncRef,
     ExpectedAValueOnTheStack,
     ModuleNotFound,
     UnmetImport,
@@ -293,6 +294,9 @@ impl Display for RuntimeError {
             RuntimeError::ElementAccessOutOfBounds => f.write_str("Element access out of bounds"),
             RuntimeError::UninitializedElement => f.write_str("Uninitialized element"),
             RuntimeError::SignatureMismatch => f.write_str("Indirect call signature mismatch"),
+            RuntimeError::IndirectCallNullFuncRef => {
+                f.write_str("Indirect call targeted null reference")
+            }
             RuntimeError::ExpectedAValueOnTheStack => {
                 f.write_str("Expected a value on the stack, but None was found")
             }

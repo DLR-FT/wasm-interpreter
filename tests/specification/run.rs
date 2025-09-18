@@ -81,19 +81,17 @@ pub fn to_wasm_testsuite_string(runtime_error: RuntimeError) -> Result<String, B
         RuntimeError::StackExhaustion => Ok("call stack exhausted"),
         RuntimeError::BadConversionToInteger => Ok("invalid conversion to integer"),
         RuntimeError::ReachedUnreachable => Ok("unreachable"),
-
         RuntimeError::MemoryAccessOutOfBounds => Ok("out of bounds memory access"),
         RuntimeError::TableAccessOutOfBounds => Ok("out of bounds table access"),
         RuntimeError::ElementAccessOutOfBounds => not_represented,
-
         RuntimeError::UninitializedElement => Ok("uninitialized element"),
         RuntimeError::SignatureMismatch => Ok("indirect call type mismatch"),
         RuntimeError::ExpectedAValueOnTheStack => not_represented,
-
         RuntimeError::UndefinedTableIndex => Ok("undefined element"),
         RuntimeError::ModuleNotFound => Ok("module not found"),
         RuntimeError::UnmetImport => Ok("unmet import"),
         RuntimeError::HostFunctionSignatureMismatch => Ok("host function signature mismatch"),
+        RuntimeError::IndirectCallNullFuncRef => not_represented,
     }
     .map(|s| s.to_string())
 }
