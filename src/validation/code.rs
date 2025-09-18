@@ -1277,7 +1277,19 @@ fn read_instructions(
 
                 stack.push_valtype(ValType::NumType(NumType::I64));
             }
-            _ => return Err(Error::InvalidInstr(first_instr_byte)),
+
+            // Unimplemented or invalid instructions
+            0x06..=0x0A
+            | 0x12..=0x19
+            | 0x1C..=0x1F
+            | 0x25..=0x27
+            | 0xC0..=0xFA
+            | 0xFB
+            | 0xFD
+            | 0xFE
+            | 0xFF => {
+                return Err(Error::InvalidInstr(first_instr_byte));
+            }
         }
     }
 }
