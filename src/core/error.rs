@@ -26,7 +26,7 @@ pub enum RuntimeError {
     SignatureMismatch,
     ExpectedAValueOnTheStack,
     ModuleNotFound,
-    ResumableNotFound, // TODO refactor
+    ResumableNotFound,
     UnmetImport,
     UndefinedTableIndex,
     // "undefined element" <- as-call_indirect-last
