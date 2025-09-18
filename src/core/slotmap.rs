@@ -1,4 +1,4 @@
-use core::marker::PhantomData;
+use core::{marker::PhantomData, mem};
 
 use alloc::vec::Vec;
 
@@ -40,7 +40,7 @@ impl<T> SlotMap<T> {
         match self.last_unoccupied {
             Some(last_unoccupied) => {
                 let slot = &mut self.slots[last_unoccupied];
-                let SlotContent::<T>::Unoccupied { prev_unoccupied } = slot.content else {
+                let SlotContent::Unoccupied { prev_unoccupied } = slot.content else {
                     unreachable!("last unoccupied slot in slotmap must be unoccupied")
                 };
                 self.last_unoccupied = prev_unoccupied;
@@ -48,7 +48,7 @@ impl<T> SlotMap<T> {
                 // ASSUMPTION: slot.generation can never overflow.
                 slot.generation = slot.generation.checked_add(1).unwrap();
                 slot.content = SlotContent::Occupied { item };
-                SlotMapKey::<T> {
+                SlotMapKey {
                     index: last_unoccupied,
                     generation: slot.generation,
                     phantom: PhantomData,
@@ -61,7 +61,7 @@ impl<T> SlotMap<T> {
                     generation,
                     content: SlotContent::Occupied { item },
                 });
-                SlotMapKey::<T> {
+                SlotMapKey {
                     index,
                     generation,
                     phantom: PhantomData,
@@ -77,8 +77,8 @@ impl<T> SlotMap<T> {
             return None;
         }
         match &slot.content {
-            SlotContent::<T>::Unoccupied { .. } => None,
-            SlotContent::<T>::Occupied { item } => Some(item),
+            SlotContent::Occupied { item } => Some(item),
+            SlotContent::Unoccupied { .. } => None,
         }
     }
 
@@ -88,30 +88,31 @@ impl<T> SlotMap<T> {
             return None;
         }
         match &mut slot.content {
-            SlotContent::<T>::Unoccupied { .. } => None,
-            SlotContent::<T>::Occupied { item } => Some(item),
+            SlotContent::Occupied { item } => Some(item),
+            SlotContent::Unoccupied { .. } => None,
         }
     }
 
     pub fn remove(&mut self, key: &SlotMapKey<T>) -> Option<T> {
-        let slot = self.slots.get(key.index)?;
+        let slot = self.slots.get_mut(key.index)?;
         if slot.generation != key.generation
             || matches!(slot.content, SlotContent::Unoccupied { .. })
         {
             return None;
         }
+
         let new_slot = Slot {
             generation: slot.generation,
             content: SlotContent::Unoccupied {
                 prev_unoccupied: self.last_unoccupied,
             },
         };
-        self.last_unoccupied = Some(key.index);
-        self.slots.push(new_slot);
-        let slot = self.slots.swap_remove(key.index);
-        let SlotContent::Occupied { item } = slot.content else {
+        let previous_slot = mem::replace(slot, new_slot);
+
+        let SlotContent::Occupied { item } = previous_slot.content else {
             unreachable!("slot was full")
         };
+
         Some(item)
     }
 }
