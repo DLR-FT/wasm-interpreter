@@ -120,6 +120,7 @@ pub enum Error {
     UnknownImport, // TODO refactor
     DuplicateExportName,
     InvalidImportType,
+    InvalidLaneIndex,
 }
 
 impl Display for Error {
@@ -276,7 +277,7 @@ impl Display for Error {
             Error::InvalidImportType => f.write_str("Invalid import type"),
             // TODO: maybe move these to LinkerError also add more info to them (the name's export, function idx, etc)
             Error::UnknownImport => f.write_str("Unknown Import"),
-
+            Error::InvalidLaneIndex => f.write_str("Invalid laneidx"),
         }
     }
 }
