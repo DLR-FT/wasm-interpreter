@@ -1,4 +1,3 @@
-use crate::core::error::TrapError;
 use crate::core::indices::TypeIdx;
 use crate::core::reader::span::Span;
 use crate::core::reader::types::data::{DataModeActive, DataSegment};
@@ -16,7 +15,7 @@ use crate::execution::value::{Ref, Value};
 use crate::execution::{run_const_span, Stack};
 use crate::registry::Registry;
 use crate::value::FuncAddr;
-use crate::{Limits, RefType, RuntimeError, ValidationInfo};
+use crate::{Limits, RefType, RuntimeError, TrapError, ValidationInfo};
 use alloc::borrow::ToOwned;
 use alloc::collections::btree_map::BTreeMap;
 use alloc::string::String;
