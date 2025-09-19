@@ -395,9 +395,11 @@ macro_rules! impl_value_conversion {
                 x.into_value()
             }
         }
-        impl From<Value> for $ty {
-            fn from(value: Value) -> Self {
-                <$ty>::from_value(value)
+        impl TryFrom<Value> for $ty {
+            type Error = ();
+
+            fn try_from(value: Value) -> Result<Self, Self::Error> {
+                Ok(<$ty>::from_value(value))
             }
         }
     };
@@ -416,11 +418,13 @@ impl From<Ref> for Value {
     }
 }
 
-impl From<Value> for Ref {
-    fn from(value: Value) -> Self {
+impl TryFrom<Value> for Ref {
+    type Error = ();
+
+    fn try_from(value: Value) -> Result<Self, ()> {
         match value {
-            Value::Ref(rref) => rref,
-            _ => unreachable!(),
+            Value::Ref(rref) => Ok(rref),
+            _ => Err(()),
         }
     }
 }

@@ -123,7 +123,10 @@ pub(super) fn run<T, H: HookSet>(
             IF => {
                 wasm.read_var_u32().unwrap_validated();
 
-                let test_val: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let test_val: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
 
                 if test_val != 0 {
                     stp += 1;
@@ -138,7 +141,10 @@ pub(super) fn run<T, H: HookSet>(
             BR_IF => {
                 wasm.read_var_u32().unwrap_validated();
 
-                let test_val: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let test_val: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
 
                 if test_val != 0 {
                     do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable)?;
@@ -154,7 +160,10 @@ pub(super) fn run<T, H: HookSet>(
                 wasm.read_var_u32().unwrap_validated();
 
                 // TODO is this correct?
-                let case_val_i32: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let case_val_i32: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
                 let case_val = case_val_i32 as usize;
 
                 if case_val >= label_vec.len() {
@@ -249,7 +258,10 @@ pub(super) fn run<T, H: HookSet>(
                     .get(given_type_idx)
                     .unwrap_validated();
 
-                let i: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let i: u32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
 
                 let r = tab
                     .elem
@@ -329,7 +341,10 @@ pub(super) fn run<T, H: HookSet>(
                 trace!("Instruction: DROP");
             }
             SELECT => {
-                let test_val: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let test_val: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
                 let val2 = stack.pop_value_with_unknown_type();
                 let val1 = stack.pop_value_with_unknown_type();
                 if test_val != 0 {
@@ -341,7 +356,10 @@ pub(super) fn run<T, H: HookSet>(
             }
             SELECT_T => {
                 let type_vec = wasm.read_vec(ValType::read).unwrap_validated();
-                let test_val: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let test_val: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
                 let val2 = stack.pop_value(type_vec[0]);
                 let val1 = stack.pop_value(type_vec[0]);
                 if test_val != 0 {
@@ -382,7 +400,10 @@ pub(super) fn run<T, H: HookSet>(
                 let table_idx = wasm.read_var_u32().unwrap_validated() as TableIdx;
                 let tab = &store.tables[store.modules[current_module_idx].table_addrs[table_idx]];
 
-                let i: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let i: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
 
                 let val = tab
                     .elem
@@ -403,8 +424,14 @@ pub(super) fn run<T, H: HookSet>(
                 let tab =
                     &mut store.tables[store.modules[current_module_idx].table_addrs[table_idx]];
 
-                let val: Ref = stack.pop_value(ValType::RefType(tab.ty.et)).into();
-                let i: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let val: Ref = stack
+                    .pop_value(ValType::RefType(tab.ty.et))
+                    .try_into()
+                    .unwrap_validated();
+                let i: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
 
                 tab.elem
                     .get_mut(i as usize)
@@ -422,7 +449,10 @@ pub(super) fn run<T, H: HookSet>(
             }
             I32_LOAD => {
                 let memarg = MemArg::read_unvalidated(wasm);
-                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let relative_address: u32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
 
                 let mem_inst = &store.memories[store.modules[current_module_idx].mem_addrs[0]];
 
@@ -434,7 +464,10 @@ pub(super) fn run<T, H: HookSet>(
             }
             I64_LOAD => {
                 let memarg = MemArg::read_unvalidated(wasm);
-                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let relative_address: u32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
 
                 let mem = &store.memories[store.modules[current_module_idx].mem_addrs[0]]; // there is only one memory allowed as of now
 
@@ -446,7 +479,10 @@ pub(super) fn run<T, H: HookSet>(
             }
             F32_LOAD => {
                 let memarg = MemArg::read_unvalidated(wasm);
-                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let relative_address: u32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
 
                 let mem = &store.memories[store.modules[current_module_idx].mem_addrs[0]]; // there is only one memory allowed as of now
 
@@ -458,7 +494,10 @@ pub(super) fn run<T, H: HookSet>(
             }
             F64_LOAD => {
                 let memarg = MemArg::read_unvalidated(wasm);
-                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let relative_address: u32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
 
                 let mem = &store.memories[store.modules[current_module_idx].mem_addrs[0]]; // there is only one memory allowed as of now
 
@@ -470,7 +509,10 @@ pub(super) fn run<T, H: HookSet>(
             }
             I32_LOAD8_S => {
                 let memarg = MemArg::read_unvalidated(wasm);
-                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let relative_address: u32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
 
                 let mem = &store.memories[store.modules[current_module_idx].mem_addrs[0]]; // there is only one memory allowed as of now
 
@@ -482,7 +524,10 @@ pub(super) fn run<T, H: HookSet>(
             }
             I32_LOAD8_U => {
                 let memarg = MemArg::read_unvalidated(wasm);
-                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let relative_address: u32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
 
                 let mem = &store.memories[store.modules[current_module_idx].mem_addrs[0]]; // there is only one memory allowed as of now
 
@@ -494,7 +539,10 @@ pub(super) fn run<T, H: HookSet>(
             }
             I32_LOAD16_S => {
                 let memarg = MemArg::read_unvalidated(wasm);
-                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let relative_address: u32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
 
                 let mem = &store.memories[store.modules[current_module_idx].mem_addrs[0]]; // there is only one memory allowed as of now
 
@@ -506,7 +554,10 @@ pub(super) fn run<T, H: HookSet>(
             }
             I32_LOAD16_U => {
                 let memarg = MemArg::read_unvalidated(wasm);
-                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let relative_address: u32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
 
                 let mem = &store.memories[store.modules[current_module_idx].mem_addrs[0]]; // there is only one memory allowed as of now
 
@@ -518,7 +569,10 @@ pub(super) fn run<T, H: HookSet>(
             }
             I64_LOAD8_S => {
                 let memarg = MemArg::read_unvalidated(wasm);
-                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let relative_address: u32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
 
                 let mem = &store.memories[store.modules[current_module_idx].mem_addrs[0]]; // there is only one memory allowed as of now
 
@@ -530,7 +584,10 @@ pub(super) fn run<T, H: HookSet>(
             }
             I64_LOAD8_U => {
                 let memarg = MemArg::read_unvalidated(wasm);
-                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let relative_address: u32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
 
                 let mem = &store.memories[store.modules[current_module_idx].mem_addrs[0]]; // there is only one memory allowed as of now
 
@@ -542,7 +599,10 @@ pub(super) fn run<T, H: HookSet>(
             }
             I64_LOAD16_S => {
                 let memarg = MemArg::read_unvalidated(wasm);
-                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let relative_address: u32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
 
                 let mem = &store.memories[store.modules[current_module_idx].mem_addrs[0]]; // there is only one memory allowed as of now
 
@@ -554,7 +614,10 @@ pub(super) fn run<T, H: HookSet>(
             }
             I64_LOAD16_U => {
                 let memarg = MemArg::read_unvalidated(wasm);
-                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let relative_address: u32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
 
                 let mem = &store.memories[store.modules[current_module_idx].mem_addrs[0]]; // there is only one memory allowed as of now
 
@@ -566,7 +629,10 @@ pub(super) fn run<T, H: HookSet>(
             }
             I64_LOAD32_S => {
                 let memarg = MemArg::read_unvalidated(wasm);
-                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let relative_address: u32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
 
                 let mem = &store.memories[store.modules[current_module_idx].mem_addrs[0]]; // there is only one memory allowed as of now
 
@@ -578,7 +644,10 @@ pub(super) fn run<T, H: HookSet>(
             }
             I64_LOAD32_U => {
                 let memarg = MemArg::read_unvalidated(wasm);
-                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let relative_address: u32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
 
                 let mem = &store.memories[store.modules[current_module_idx].mem_addrs[0]]; // there is only one memory allowed as of now
 
@@ -591,8 +660,14 @@ pub(super) fn run<T, H: HookSet>(
             I32_STORE => {
                 let memarg = MemArg::read_unvalidated(wasm);
 
-                let data_to_store: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let data_to_store: u32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
+                let relative_address: u32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
 
                 let mem = &mut store.memories[store.modules[current_module_idx].mem_addrs[0]]; // there is only one memory allowed as of now
 
@@ -604,8 +679,14 @@ pub(super) fn run<T, H: HookSet>(
             I64_STORE => {
                 let memarg = MemArg::read_unvalidated(wasm);
 
-                let data_to_store: u64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let data_to_store: u64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
+                let relative_address: u32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
 
                 let mem = &mut store.memories[store.modules[current_module_idx].mem_addrs[0]]; // there is only one memory allowed as of now
 
@@ -617,8 +698,14 @@ pub(super) fn run<T, H: HookSet>(
             F32_STORE => {
                 let memarg = MemArg::read_unvalidated(wasm);
 
-                let data_to_store: F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
-                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let data_to_store: F32 = stack
+                    .pop_value(ValType::NumType(NumType::F32))
+                    .try_into()
+                    .unwrap_validated();
+                let relative_address: u32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
 
                 let mem = &mut store.memories[store.modules[current_module_idx].mem_addrs[0]]; // there is only one memory allowed as of now
 
@@ -630,8 +717,14 @@ pub(super) fn run<T, H: HookSet>(
             F64_STORE => {
                 let memarg = MemArg::read_unvalidated(wasm);
 
-                let data_to_store: F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
-                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let data_to_store: F64 = stack
+                    .pop_value(ValType::NumType(NumType::F64))
+                    .try_into()
+                    .unwrap_validated();
+                let relative_address: u32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
 
                 let mem = &mut store.memories[store.modules[current_module_idx].mem_addrs[0]]; // there is only one memory allowed as of now
 
@@ -643,8 +736,14 @@ pub(super) fn run<T, H: HookSet>(
             I32_STORE8 => {
                 let memarg = MemArg::read_unvalidated(wasm);
 
-                let data_to_store: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let data_to_store: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
+                let relative_address: u32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
 
                 let wrapped_data = data_to_store as i8;
 
@@ -658,8 +757,14 @@ pub(super) fn run<T, H: HookSet>(
             I32_STORE16 => {
                 let memarg = MemArg::read_unvalidated(wasm);
 
-                let data_to_store: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let data_to_store: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
+                let relative_address: u32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
 
                 let wrapped_data = data_to_store as i16;
 
@@ -673,8 +778,14 @@ pub(super) fn run<T, H: HookSet>(
             I64_STORE8 => {
                 let memarg = MemArg::read_unvalidated(wasm);
 
-                let data_to_store: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let data_to_store: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
+                let relative_address: u32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
 
                 let wrapped_data = data_to_store as i8;
 
@@ -688,8 +799,14 @@ pub(super) fn run<T, H: HookSet>(
             I64_STORE16 => {
                 let memarg = MemArg::read_unvalidated(wasm);
 
-                let data_to_store: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let data_to_store: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
+                let relative_address: u32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
 
                 let wrapped_data = data_to_store as i16;
 
@@ -703,8 +820,14 @@ pub(super) fn run<T, H: HookSet>(
             I64_STORE32 => {
                 let memarg = MemArg::read_unvalidated(wasm);
 
-                let data_to_store: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-                let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let data_to_store: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
+                let relative_address: u32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
 
                 let wrapped_data = data_to_store as i32;
 
@@ -727,7 +850,10 @@ pub(super) fn run<T, H: HookSet>(
                 let mem = &mut store.memories[store.modules[current_module_idx].mem_addrs[mem_idx]];
                 let sz: u32 = mem.size() as u32;
 
-                let n: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let n: u32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
 
                 // TODO this instruction is non-deterministic w.r.t. spec, and can fail if the embedder wills it.
                 // for now we execute it always according to the following match expr.
@@ -750,7 +876,10 @@ pub(super) fn run<T, H: HookSet>(
                 stack.push_value(constant.into())?;
             }
             I32_EQZ => {
-                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v1: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
 
                 let res = if v1 == 0 { 1 } else { 0 };
 
@@ -758,8 +887,14 @@ pub(super) fn run<T, H: HookSet>(
                 stack.push_value(res.into())?;
             }
             I32_EQ => {
-                let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v2: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
+                let v1: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
 
                 let res = if v1 == v2 { 1 } else { 0 };
 
@@ -767,8 +902,14 @@ pub(super) fn run<T, H: HookSet>(
                 stack.push_value(res.into())?;
             }
             I32_NE => {
-                let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v2: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
+                let v1: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
 
                 let res = if v1 != v2 { 1 } else { 0 };
 
@@ -776,8 +917,14 @@ pub(super) fn run<T, H: HookSet>(
                 stack.push_value(res.into())?;
             }
             I32_LT_S => {
-                let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v2: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
+                let v1: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
 
                 let res = if v1 < v2 { 1 } else { 0 };
 
@@ -786,8 +933,14 @@ pub(super) fn run<T, H: HookSet>(
             }
 
             I32_LT_U => {
-                let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v2: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
+                let v1: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
 
                 let res = if (v1 as u32) < (v2 as u32) { 1 } else { 0 };
 
@@ -795,8 +948,14 @@ pub(super) fn run<T, H: HookSet>(
                 stack.push_value(res.into())?;
             }
             I32_GT_S => {
-                let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v2: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
+                let v1: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
 
                 let res = if v1 > v2 { 1 } else { 0 };
 
@@ -804,8 +963,14 @@ pub(super) fn run<T, H: HookSet>(
                 stack.push_value(res.into())?;
             }
             I32_GT_U => {
-                let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v2: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
+                let v1: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
 
                 let res = if (v1 as u32) > (v2 as u32) { 1 } else { 0 };
 
@@ -813,8 +978,14 @@ pub(super) fn run<T, H: HookSet>(
                 stack.push_value(res.into())?;
             }
             I32_LE_S => {
-                let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v2: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
+                let v1: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
 
                 let res = if v1 <= v2 { 1 } else { 0 };
 
@@ -822,8 +993,14 @@ pub(super) fn run<T, H: HookSet>(
                 stack.push_value(res.into())?;
             }
             I32_LE_U => {
-                let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v2: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
+                let v1: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
 
                 let res = if (v1 as u32) <= (v2 as u32) { 1 } else { 0 };
 
@@ -831,8 +1008,14 @@ pub(super) fn run<T, H: HookSet>(
                 stack.push_value(res.into())?;
             }
             I32_GE_S => {
-                let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v2: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
+                let v1: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
 
                 let res = if v1 >= v2 { 1 } else { 0 };
 
@@ -840,8 +1023,14 @@ pub(super) fn run<T, H: HookSet>(
                 stack.push_value(res.into())?;
             }
             I32_GE_U => {
-                let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v2: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
+                let v1: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
 
                 let res = if (v1 as u32) >= (v2 as u32) { 1 } else { 0 };
 
@@ -849,7 +1038,10 @@ pub(super) fn run<T, H: HookSet>(
                 stack.push_value(res.into())?;
             }
             I64_EQZ => {
-                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v1: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
 
                 let res = if v1 == 0 { 1 } else { 0 };
 
@@ -857,8 +1049,14 @@ pub(super) fn run<T, H: HookSet>(
                 stack.push_value(res.into())?;
             }
             I64_EQ => {
-                let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v2: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
+                let v1: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
 
                 let res = if v1 == v2 { 1 } else { 0 };
 
@@ -866,8 +1064,14 @@ pub(super) fn run<T, H: HookSet>(
                 stack.push_value(res.into())?;
             }
             I64_NE => {
-                let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v2: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
+                let v1: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
 
                 let res = if v1 != v2 { 1 } else { 0 };
 
@@ -875,8 +1079,14 @@ pub(super) fn run<T, H: HookSet>(
                 stack.push_value(res.into())?;
             }
             I64_LT_S => {
-                let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v2: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
+                let v1: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
 
                 let res = if v1 < v2 { 1 } else { 0 };
 
@@ -885,8 +1095,14 @@ pub(super) fn run<T, H: HookSet>(
             }
 
             I64_LT_U => {
-                let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v2: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
+                let v1: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
 
                 let res = if (v1 as u64) < (v2 as u64) { 1 } else { 0 };
 
@@ -894,8 +1110,14 @@ pub(super) fn run<T, H: HookSet>(
                 stack.push_value(res.into())?;
             }
             I64_GT_S => {
-                let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v2: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
+                let v1: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
 
                 let res = if v1 > v2 { 1 } else { 0 };
 
@@ -903,8 +1125,14 @@ pub(super) fn run<T, H: HookSet>(
                 stack.push_value(res.into())?;
             }
             I64_GT_U => {
-                let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v2: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
+                let v1: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
 
                 let res = if (v1 as u64) > (v2 as u64) { 1 } else { 0 };
 
@@ -912,8 +1140,14 @@ pub(super) fn run<T, H: HookSet>(
                 stack.push_value(res.into())?;
             }
             I64_LE_S => {
-                let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v2: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
+                let v1: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
 
                 let res = if v1 <= v2 { 1 } else { 0 };
 
@@ -921,8 +1155,14 @@ pub(super) fn run<T, H: HookSet>(
                 stack.push_value(res.into())?;
             }
             I64_LE_U => {
-                let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v2: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
+                let v1: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
 
                 let res = if (v1 as u64) <= (v2 as u64) { 1 } else { 0 };
 
@@ -930,8 +1170,14 @@ pub(super) fn run<T, H: HookSet>(
                 stack.push_value(res.into())?;
             }
             I64_GE_S => {
-                let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v2: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
+                let v1: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
 
                 let res = if v1 >= v2 { 1 } else { 0 };
 
@@ -939,8 +1185,14 @@ pub(super) fn run<T, H: HookSet>(
                 stack.push_value(res.into())?;
             }
             I64_GE_U => {
-                let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v2: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
+                let v1: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
 
                 let res = if (v1 as u64) >= (v2 as u64) { 1 } else { 0 };
 
@@ -948,8 +1200,14 @@ pub(super) fn run<T, H: HookSet>(
                 stack.push_value(res.into())?;
             }
             F32_EQ => {
-                let v2: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
-                let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let v2: value::F32 = stack
+                    .pop_value(ValType::NumType(NumType::F32))
+                    .try_into()
+                    .unwrap_validated();
+                let v1: value::F32 = stack
+                    .pop_value(ValType::NumType(NumType::F32))
+                    .try_into()
+                    .unwrap_validated();
 
                 let res = if v1 == v2 { 1 } else { 0 };
 
@@ -957,8 +1215,14 @@ pub(super) fn run<T, H: HookSet>(
                 stack.push_value(res.into())?;
             }
             F32_NE => {
-                let v2: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
-                let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let v2: value::F32 = stack
+                    .pop_value(ValType::NumType(NumType::F32))
+                    .try_into()
+                    .unwrap_validated();
+                let v1: value::F32 = stack
+                    .pop_value(ValType::NumType(NumType::F32))
+                    .try_into()
+                    .unwrap_validated();
 
                 let res = if v1 != v2 { 1 } else { 0 };
 
@@ -966,8 +1230,14 @@ pub(super) fn run<T, H: HookSet>(
                 stack.push_value(res.into())?;
             }
             F32_LT => {
-                let v2: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
-                let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let v2: value::F32 = stack
+                    .pop_value(ValType::NumType(NumType::F32))
+                    .try_into()
+                    .unwrap_validated();
+                let v1: value::F32 = stack
+                    .pop_value(ValType::NumType(NumType::F32))
+                    .try_into()
+                    .unwrap_validated();
 
                 let res = if v1 < v2 { 1 } else { 0 };
 
@@ -975,8 +1245,14 @@ pub(super) fn run<T, H: HookSet>(
                 stack.push_value(res.into())?;
             }
             F32_GT => {
-                let v2: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
-                let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let v2: value::F32 = stack
+                    .pop_value(ValType::NumType(NumType::F32))
+                    .try_into()
+                    .unwrap_validated();
+                let v1: value::F32 = stack
+                    .pop_value(ValType::NumType(NumType::F32))
+                    .try_into()
+                    .unwrap_validated();
 
                 let res = if v1 > v2 { 1 } else { 0 };
 
@@ -984,8 +1260,14 @@ pub(super) fn run<T, H: HookSet>(
                 stack.push_value(res.into())?;
             }
             F32_LE => {
-                let v2: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
-                let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let v2: value::F32 = stack
+                    .pop_value(ValType::NumType(NumType::F32))
+                    .try_into()
+                    .unwrap_validated();
+                let v1: value::F32 = stack
+                    .pop_value(ValType::NumType(NumType::F32))
+                    .try_into()
+                    .unwrap_validated();
 
                 let res = if v1 <= v2 { 1 } else { 0 };
 
@@ -993,8 +1275,14 @@ pub(super) fn run<T, H: HookSet>(
                 stack.push_value(res.into())?;
             }
             F32_GE => {
-                let v2: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
-                let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let v2: value::F32 = stack
+                    .pop_value(ValType::NumType(NumType::F32))
+                    .try_into()
+                    .unwrap_validated();
+                let v1: value::F32 = stack
+                    .pop_value(ValType::NumType(NumType::F32))
+                    .try_into()
+                    .unwrap_validated();
 
                 let res = if v1 >= v2 { 1 } else { 0 };
 
@@ -1003,8 +1291,14 @@ pub(super) fn run<T, H: HookSet>(
             }
 
             F64_EQ => {
-                let v2: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
-                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v2: value::F64 = stack
+                    .pop_value(ValType::NumType(NumType::F64))
+                    .try_into()
+                    .unwrap_validated();
+                let v1: value::F64 = stack
+                    .pop_value(ValType::NumType(NumType::F64))
+                    .try_into()
+                    .unwrap_validated();
 
                 let res = if v1 == v2 { 1 } else { 0 };
 
@@ -1012,8 +1306,14 @@ pub(super) fn run<T, H: HookSet>(
                 stack.push_value(res.into())?;
             }
             F64_NE => {
-                let v2: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
-                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v2: value::F64 = stack
+                    .pop_value(ValType::NumType(NumType::F64))
+                    .try_into()
+                    .unwrap_validated();
+                let v1: value::F64 = stack
+                    .pop_value(ValType::NumType(NumType::F64))
+                    .try_into()
+                    .unwrap_validated();
 
                 let res = if v1 != v2 { 1 } else { 0 };
 
@@ -1021,8 +1321,14 @@ pub(super) fn run<T, H: HookSet>(
                 stack.push_value(res.into())?;
             }
             F64_LT => {
-                let v2: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
-                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v2: value::F64 = stack
+                    .pop_value(ValType::NumType(NumType::F64))
+                    .try_into()
+                    .unwrap_validated();
+                let v1: value::F64 = stack
+                    .pop_value(ValType::NumType(NumType::F64))
+                    .try_into()
+                    .unwrap_validated();
 
                 let res = if v1 < v2 { 1 } else { 0 };
 
@@ -1030,8 +1336,14 @@ pub(super) fn run<T, H: HookSet>(
                 stack.push_value(res.into())?;
             }
             F64_GT => {
-                let v2: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
-                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v2: value::F64 = stack
+                    .pop_value(ValType::NumType(NumType::F64))
+                    .try_into()
+                    .unwrap_validated();
+                let v1: value::F64 = stack
+                    .pop_value(ValType::NumType(NumType::F64))
+                    .try_into()
+                    .unwrap_validated();
 
                 let res = if v1 > v2 { 1 } else { 0 };
 
@@ -1039,8 +1351,14 @@ pub(super) fn run<T, H: HookSet>(
                 stack.push_value(res.into())?;
             }
             F64_LE => {
-                let v2: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
-                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v2: value::F64 = stack
+                    .pop_value(ValType::NumType(NumType::F64))
+                    .try_into()
+                    .unwrap_validated();
+                let v1: value::F64 = stack
+                    .pop_value(ValType::NumType(NumType::F64))
+                    .try_into()
+                    .unwrap_validated();
 
                 let res = if v1 <= v2 { 1 } else { 0 };
 
@@ -1048,8 +1366,14 @@ pub(super) fn run<T, H: HookSet>(
                 stack.push_value(res.into())?;
             }
             F64_GE => {
-                let v2: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
-                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v2: value::F64 = stack
+                    .pop_value(ValType::NumType(NumType::F64))
+                    .try_into()
+                    .unwrap_validated();
+                let v1: value::F64 = stack
+                    .pop_value(ValType::NumType(NumType::F64))
+                    .try_into()
+                    .unwrap_validated();
 
                 let res = if v1 >= v2 { 1 } else { 0 };
 
@@ -1058,21 +1382,30 @@ pub(super) fn run<T, H: HookSet>(
             }
 
             I32_CLZ => {
-                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v1: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
                 let res = v1.leading_zeros() as i32;
 
                 trace!("Instruction: i32.clz [{v1}] -> [{res}]");
                 stack.push_value(res.into())?;
             }
             I32_CTZ => {
-                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v1: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
                 let res = v1.trailing_zeros() as i32;
 
                 trace!("Instruction: i32.ctz [{v1}] -> [{res}]");
                 stack.push_value(res.into())?;
             }
             I32_POPCNT => {
-                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v1: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
                 let res = v1.count_ones() as i32;
 
                 trace!("Instruction: i32.popcnt [{v1}] -> [{res}]");
@@ -1089,32 +1422,56 @@ pub(super) fn run<T, H: HookSet>(
                 stack.push_value(constant.into())?;
             }
             I32_ADD => {
-                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v1: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
+                let v2: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
                 let res = v1.wrapping_add(v2);
 
                 trace!("Instruction: i32.add [{v1} {v2}] -> [{res}]");
                 stack.push_value(res.into())?;
             }
             I32_SUB => {
-                let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v2: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
+                let v1: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
                 let res = v1.wrapping_sub(v2);
 
                 trace!("Instruction: i32.sub [{v1} {v2}] -> [{res}]");
                 stack.push_value(res.into())?;
             }
             I32_MUL => {
-                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v1: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
+                let v2: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
                 let res = v1.wrapping_mul(v2);
 
                 trace!("Instruction: i32.mul [{v1} {v2}] -> [{res}]");
                 stack.push_value(res.into())?;
             }
             I32_DIV_S => {
-                let dividend: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                let divisor: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let dividend: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
+                let divisor: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
 
                 if dividend == 0 {
                     return Err(RuntimeError::DivideBy0);
@@ -1129,8 +1486,14 @@ pub(super) fn run<T, H: HookSet>(
                 stack.push_value(res.into())?;
             }
             I32_DIV_U => {
-                let dividend: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                let divisor: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let dividend: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
+                let divisor: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
 
                 let dividend = dividend as u32;
                 let divisor = divisor as u32;
@@ -1145,8 +1508,14 @@ pub(super) fn run<T, H: HookSet>(
                 stack.push_value(res.into())?;
             }
             I32_REM_S => {
-                let dividend: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                let divisor: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let dividend: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
+                let divisor: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
 
                 if dividend == 0 {
                     return Err(RuntimeError::DivideBy0);
@@ -1159,53 +1528,86 @@ pub(super) fn run<T, H: HookSet>(
                 stack.push_value(res.into())?;
             }
             I64_CLZ => {
-                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v1: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
                 let res = v1.leading_zeros() as i64;
 
                 trace!("Instruction: i64.clz [{v1}] -> [{res}]");
                 stack.push_value(res.into())?;
             }
             I64_CTZ => {
-                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v1: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
                 let res = v1.trailing_zeros() as i64;
 
                 trace!("Instruction: i64.ctz [{v1}] -> [{res}]");
                 stack.push_value(res.into())?;
             }
             I64_POPCNT => {
-                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v1: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
                 let res = v1.count_ones() as i64;
 
                 trace!("Instruction: i64.popcnt [{v1}] -> [{res}]");
                 stack.push_value(res.into())?;
             }
             I64_ADD => {
-                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-                let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v1: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
+                let v2: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
                 let res = v1.wrapping_add(v2);
 
                 trace!("Instruction: i64.add [{v1} {v2}] -> [{res}]");
                 stack.push_value(res.into())?;
             }
             I64_SUB => {
-                let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v2: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
+                let v1: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
                 let res = v1.wrapping_sub(v2);
 
                 trace!("Instruction: i64.sub [{v1} {v2}] -> [{res}]");
                 stack.push_value(res.into())?;
             }
             I64_MUL => {
-                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-                let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v1: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
+                let v2: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
                 let res = v1.wrapping_mul(v2);
 
                 trace!("Instruction: i64.mul [{v1} {v2}] -> [{res}]");
                 stack.push_value(res.into())?;
             }
             I64_DIV_S => {
-                let dividend: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-                let divisor: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let dividend: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
+                let divisor: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
 
                 if dividend == 0 {
                     return Err(RuntimeError::DivideBy0);
@@ -1220,8 +1622,14 @@ pub(super) fn run<T, H: HookSet>(
                 stack.push_value(res.into())?;
             }
             I64_DIV_U => {
-                let dividend: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-                let divisor: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let dividend: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
+                let divisor: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
 
                 let dividend = dividend as u64;
                 let divisor = divisor as u64;
@@ -1236,8 +1644,14 @@ pub(super) fn run<T, H: HookSet>(
                 stack.push_value(res.into())?;
             }
             I64_REM_S => {
-                let dividend: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-                let divisor: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let dividend: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
+                let divisor: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
 
                 if dividend == 0 {
                     return Err(RuntimeError::DivideBy0);
@@ -1250,8 +1664,14 @@ pub(super) fn run<T, H: HookSet>(
                 stack.push_value(res.into())?;
             }
             I64_REM_U => {
-                let dividend: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-                let divisor: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let dividend: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
+                let divisor: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
 
                 let dividend = dividend as u64;
                 let divisor = divisor as u64;
@@ -1266,8 +1686,14 @@ pub(super) fn run<T, H: HookSet>(
                 stack.push_value(res.into())?;
             }
             I64_AND => {
-                let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v2: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
+                let v1: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
 
                 let res = v1 & v2;
 
@@ -1275,8 +1701,14 @@ pub(super) fn run<T, H: HookSet>(
                 stack.push_value(res.into())?;
             }
             I64_OR => {
-                let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v2: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
+                let v1: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
 
                 let res = v1 | v2;
 
@@ -1284,8 +1716,14 @@ pub(super) fn run<T, H: HookSet>(
                 stack.push_value(res.into())?;
             }
             I64_XOR => {
-                let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v2: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
+                let v1: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
 
                 let res = v1 ^ v2;
 
@@ -1293,8 +1731,14 @@ pub(super) fn run<T, H: HookSet>(
                 stack.push_value(res.into())?;
             }
             I64_SHL => {
-                let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v2: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
+                let v1: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
 
                 let res = v1.wrapping_shl((v2 & 63) as u32);
 
@@ -1302,8 +1746,14 @@ pub(super) fn run<T, H: HookSet>(
                 stack.push_value(res.into())?;
             }
             I64_SHR_S => {
-                let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v2: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
+                let v1: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
 
                 let res = v1.wrapping_shr((v2 & 63) as u32);
 
@@ -1311,8 +1761,14 @@ pub(super) fn run<T, H: HookSet>(
                 stack.push_value(res.into())?;
             }
             I64_SHR_U => {
-                let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v2: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
+                let v1: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
 
                 let res = (v1 as u64).wrapping_shr((v2 & 63) as u32);
 
@@ -1320,8 +1776,14 @@ pub(super) fn run<T, H: HookSet>(
                 stack.push_value(res.into())?;
             }
             I64_ROTL => {
-                let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v2: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
+                let v1: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
 
                 let res = v1.rotate_left((v2 & 63) as u32);
 
@@ -1329,8 +1791,14 @@ pub(super) fn run<T, H: HookSet>(
                 stack.push_value(res.into())?;
             }
             I64_ROTR => {
-                let v2: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
-                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v2: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
+                let v1: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
 
                 let res = v1.rotate_right((v2 & 63) as u32);
 
@@ -1338,8 +1806,14 @@ pub(super) fn run<T, H: HookSet>(
                 stack.push_value(res.into())?;
             }
             I32_REM_U => {
-                let dividend: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                let divisor: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let dividend: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
+                let divisor: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
 
                 let dividend = dividend as u32;
                 let divisor = divisor as u32;
@@ -1355,40 +1829,70 @@ pub(super) fn run<T, H: HookSet>(
                 stack.push_value(res.into())?;
             }
             I32_AND => {
-                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v1: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
+                let v2: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
                 let res = v1 & v2;
 
                 trace!("Instruction: i32.and [{v1} {v2}] -> [{res}]");
                 stack.push_value(res.into())?;
             }
             I32_OR => {
-                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v1: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
+                let v2: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
                 let res = v1 | v2;
 
                 trace!("Instruction: i32.or [{v1} {v2}] -> [{res}]");
                 stack.push_value(res.into())?;
             }
             I32_XOR => {
-                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v1: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
+                let v2: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
                 let res = v1 ^ v2;
 
                 trace!("Instruction: i32.xor [{v1} {v2}] -> [{res}]");
                 stack.push_value(res.into())?;
             }
             I32_SHL => {
-                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v1: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
+                let v2: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
                 let res = v2.wrapping_shl(v1 as u32);
 
                 trace!("Instruction: i32.shl [{v2} {v1}] -> [{res}]");
                 stack.push_value(res.into())?;
             }
             I32_SHR_S => {
-                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v1: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
+                let v2: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
 
                 let res = v2.wrapping_shr(v1 as u32);
 
@@ -1396,8 +1900,14 @@ pub(super) fn run<T, H: HookSet>(
                 stack.push_value(res.into())?;
             }
             I32_SHR_U => {
-                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v1: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
+                let v2: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
 
                 let res = (v2 as u32).wrapping_shr(v1 as u32) as i32;
 
@@ -1405,8 +1915,14 @@ pub(super) fn run<T, H: HookSet>(
                 stack.push_value(res.into())?;
             }
             I32_ROTL => {
-                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v1: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
+                let v2: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
 
                 let res = v2.rotate_left(v1 as u32);
 
@@ -1414,8 +1930,14 @@ pub(super) fn run<T, H: HookSet>(
                 stack.push_value(res.into())?;
             }
             I32_ROTR => {
-                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                let v2: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v1: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
+                let v2: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
 
                 let res = v2.rotate_right(v1 as u32);
 
@@ -1424,105 +1946,168 @@ pub(super) fn run<T, H: HookSet>(
             }
 
             F32_ABS => {
-                let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let v1: value::F32 = stack
+                    .pop_value(ValType::NumType(NumType::F32))
+                    .try_into()
+                    .unwrap_validated();
                 let res: value::F32 = v1.abs();
 
                 trace!("Instruction: f32.abs [{v1}] -> [{res}]");
                 stack.push_value(res.into())?;
             }
             F32_NEG => {
-                let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let v1: value::F32 = stack
+                    .pop_value(ValType::NumType(NumType::F32))
+                    .try_into()
+                    .unwrap_validated();
                 let res: value::F32 = v1.neg();
 
                 trace!("Instruction: f32.neg [{v1}] -> [{res}]");
                 stack.push_value(res.into())?;
             }
             F32_CEIL => {
-                let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let v1: value::F32 = stack
+                    .pop_value(ValType::NumType(NumType::F32))
+                    .try_into()
+                    .unwrap_validated();
                 let res: value::F32 = v1.ceil();
 
                 trace!("Instruction: f32.ceil [{v1}] -> [{res}]");
                 stack.push_value(res.into())?;
             }
             F32_FLOOR => {
-                let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let v1: value::F32 = stack
+                    .pop_value(ValType::NumType(NumType::F32))
+                    .try_into()
+                    .unwrap_validated();
                 let res: value::F32 = v1.floor();
 
                 trace!("Instruction: f32.floor [{v1}] -> [{res}]");
                 stack.push_value(res.into())?;
             }
             F32_TRUNC => {
-                let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let v1: value::F32 = stack
+                    .pop_value(ValType::NumType(NumType::F32))
+                    .try_into()
+                    .unwrap_validated();
                 let res: value::F32 = v1.trunc();
 
                 trace!("Instruction: f32.trunc [{v1}] -> [{res}]");
                 stack.push_value(res.into())?;
             }
             F32_NEAREST => {
-                let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let v1: value::F32 = stack
+                    .pop_value(ValType::NumType(NumType::F32))
+                    .try_into()
+                    .unwrap_validated();
                 let res: value::F32 = v1.nearest();
 
                 trace!("Instruction: f32.nearest [{v1}] -> [{res}]");
                 stack.push_value(res.into())?;
             }
             F32_SQRT => {
-                let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let v1: value::F32 = stack
+                    .pop_value(ValType::NumType(NumType::F32))
+                    .try_into()
+                    .unwrap_validated();
                 let res: value::F32 = v1.sqrt();
 
                 trace!("Instruction: f32.sqrt [{v1}] -> [{res}]");
                 stack.push_value(res.into())?;
             }
             F32_ADD => {
-                let v2: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
-                let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let v2: value::F32 = stack
+                    .pop_value(ValType::NumType(NumType::F32))
+                    .try_into()
+                    .unwrap_validated();
+                let v1: value::F32 = stack
+                    .pop_value(ValType::NumType(NumType::F32))
+                    .try_into()
+                    .unwrap_validated();
                 let res: value::F32 = v1 + v2;
 
                 trace!("Instruction: f32.add [{v1} {v2}] -> [{res}]");
                 stack.push_value(res.into())?;
             }
             F32_SUB => {
-                let v2: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
-                let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let v2: value::F32 = stack
+                    .pop_value(ValType::NumType(NumType::F32))
+                    .try_into()
+                    .unwrap_validated();
+                let v1: value::F32 = stack
+                    .pop_value(ValType::NumType(NumType::F32))
+                    .try_into()
+                    .unwrap_validated();
                 let res: value::F32 = v1 - v2;
 
                 trace!("Instruction: f32.sub [{v1} {v2}] -> [{res}]");
                 stack.push_value(res.into())?;
             }
             F32_MUL => {
-                let v2: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
-                let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let v2: value::F32 = stack
+                    .pop_value(ValType::NumType(NumType::F32))
+                    .try_into()
+                    .unwrap_validated();
+                let v1: value::F32 = stack
+                    .pop_value(ValType::NumType(NumType::F32))
+                    .try_into()
+                    .unwrap_validated();
                 let res: value::F32 = v1 * v2;
 
                 trace!("Instruction: f32.mul [{v1} {v2}] -> [{res}]");
                 stack.push_value(res.into())?;
             }
             F32_DIV => {
-                let v2: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
-                let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let v2: value::F32 = stack
+                    .pop_value(ValType::NumType(NumType::F32))
+                    .try_into()
+                    .unwrap_validated();
+                let v1: value::F32 = stack
+                    .pop_value(ValType::NumType(NumType::F32))
+                    .try_into()
+                    .unwrap_validated();
                 let res: value::F32 = v1 / v2;
 
                 trace!("Instruction: f32.div [{v1} {v2}] -> [{res}]");
                 stack.push_value(res.into())?;
             }
             F32_MIN => {
-                let v2: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
-                let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let v2: value::F32 = stack
+                    .pop_value(ValType::NumType(NumType::F32))
+                    .try_into()
+                    .unwrap_validated();
+                let v1: value::F32 = stack
+                    .pop_value(ValType::NumType(NumType::F32))
+                    .try_into()
+                    .unwrap_validated();
                 let res: value::F32 = v1.min(v2);
 
                 trace!("Instruction: f32.min [{v1} {v2}] -> [{res}]");
                 stack.push_value(res.into())?;
             }
             F32_MAX => {
-                let v2: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
-                let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let v2: value::F32 = stack
+                    .pop_value(ValType::NumType(NumType::F32))
+                    .try_into()
+                    .unwrap_validated();
+                let v1: value::F32 = stack
+                    .pop_value(ValType::NumType(NumType::F32))
+                    .try_into()
+                    .unwrap_validated();
                 let res: value::F32 = v1.max(v2);
 
                 trace!("Instruction: f32.max [{v1} {v2}] -> [{res}]");
                 stack.push_value(res.into())?;
             }
             F32_COPYSIGN => {
-                let v2: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
-                let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let v2: value::F32 = stack
+                    .pop_value(ValType::NumType(NumType::F32))
+                    .try_into()
+                    .unwrap_validated();
+                let v1: value::F32 = stack
+                    .pop_value(ValType::NumType(NumType::F32))
+                    .try_into()
+                    .unwrap_validated();
                 let res: value::F32 = v1.copysign(v2);
 
                 trace!("Instruction: f32.copysign [{v1} {v2}] -> [{res}]");
@@ -1530,119 +2115,188 @@ pub(super) fn run<T, H: HookSet>(
             }
 
             F64_ABS => {
-                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v1: value::F64 = stack
+                    .pop_value(ValType::NumType(NumType::F64))
+                    .try_into()
+                    .unwrap_validated();
                 let res: value::F64 = v1.abs();
 
                 trace!("Instruction: f64.abs [{v1}] -> [{res}]");
                 stack.push_value(res.into())?;
             }
             F64_NEG => {
-                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v1: value::F64 = stack
+                    .pop_value(ValType::NumType(NumType::F64))
+                    .try_into()
+                    .unwrap_validated();
                 let res: value::F64 = v1.neg();
 
                 trace!("Instruction: f64.neg [{v1}] -> [{res}]");
                 stack.push_value(res.into())?;
             }
             F64_CEIL => {
-                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v1: value::F64 = stack
+                    .pop_value(ValType::NumType(NumType::F64))
+                    .try_into()
+                    .unwrap_validated();
                 let res: value::F64 = v1.ceil();
 
                 trace!("Instruction: f64.ceil [{v1}] -> [{res}]");
                 stack.push_value(res.into())?;
             }
             F64_FLOOR => {
-                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v1: value::F64 = stack
+                    .pop_value(ValType::NumType(NumType::F64))
+                    .try_into()
+                    .unwrap_validated();
                 let res: value::F64 = v1.floor();
 
                 trace!("Instruction: f64.floor [{v1}] -> [{res}]");
                 stack.push_value(res.into())?;
             }
             F64_TRUNC => {
-                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v1: value::F64 = stack
+                    .pop_value(ValType::NumType(NumType::F64))
+                    .try_into()
+                    .unwrap_validated();
                 let res: value::F64 = v1.trunc();
 
                 trace!("Instruction: f64.trunc [{v1}] -> [{res}]");
                 stack.push_value(res.into())?;
             }
             F64_NEAREST => {
-                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v1: value::F64 = stack
+                    .pop_value(ValType::NumType(NumType::F64))
+                    .try_into()
+                    .unwrap_validated();
                 let res: value::F64 = v1.nearest();
 
                 trace!("Instruction: f64.nearest [{v1}] -> [{res}]");
                 stack.push_value(res.into())?;
             }
             F64_SQRT => {
-                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v1: value::F64 = stack
+                    .pop_value(ValType::NumType(NumType::F64))
+                    .try_into()
+                    .unwrap_validated();
                 let res: value::F64 = v1.sqrt();
 
                 trace!("Instruction: f64.sqrt [{v1}] -> [{res}]");
                 stack.push_value(res.into())?;
             }
             F64_ADD => {
-                let v2: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
-                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v2: value::F64 = stack
+                    .pop_value(ValType::NumType(NumType::F64))
+                    .try_into()
+                    .unwrap_validated();
+                let v1: value::F64 = stack
+                    .pop_value(ValType::NumType(NumType::F64))
+                    .try_into()
+                    .unwrap_validated();
                 let res: value::F64 = v1 + v2;
 
                 trace!("Instruction: f64.add [{v1} {v2}] -> [{res}]");
                 stack.push_value(res.into())?;
             }
             F64_SUB => {
-                let v2: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
-                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v2: value::F64 = stack
+                    .pop_value(ValType::NumType(NumType::F64))
+                    .try_into()
+                    .unwrap_validated();
+                let v1: value::F64 = stack
+                    .pop_value(ValType::NumType(NumType::F64))
+                    .try_into()
+                    .unwrap_validated();
                 let res: value::F64 = v1 - v2;
 
                 trace!("Instruction: f64.sub [{v1} {v2}] -> [{res}]");
                 stack.push_value(res.into())?;
             }
             F64_MUL => {
-                let v2: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
-                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v2: value::F64 = stack
+                    .pop_value(ValType::NumType(NumType::F64))
+                    .try_into()
+                    .unwrap_validated();
+                let v1: value::F64 = stack
+                    .pop_value(ValType::NumType(NumType::F64))
+                    .try_into()
+                    .unwrap_validated();
                 let res: value::F64 = v1 * v2;
 
                 trace!("Instruction: f64.mul [{v1} {v2}] -> [{res}]");
                 stack.push_value(res.into())?;
             }
             F64_DIV => {
-                let v2: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
-                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v2: value::F64 = stack
+                    .pop_value(ValType::NumType(NumType::F64))
+                    .try_into()
+                    .unwrap_validated();
+                let v1: value::F64 = stack
+                    .pop_value(ValType::NumType(NumType::F64))
+                    .try_into()
+                    .unwrap_validated();
                 let res: value::F64 = v1 / v2;
 
                 trace!("Instruction: f64.div [{v1} {v2}] -> [{res}]");
                 stack.push_value(res.into())?;
             }
             F64_MIN => {
-                let v2: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
-                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v2: value::F64 = stack
+                    .pop_value(ValType::NumType(NumType::F64))
+                    .try_into()
+                    .unwrap_validated();
+                let v1: value::F64 = stack
+                    .pop_value(ValType::NumType(NumType::F64))
+                    .try_into()
+                    .unwrap_validated();
                 let res: value::F64 = v1.min(v2);
 
                 trace!("Instruction: f64.min [{v1} {v2}] -> [{res}]");
                 stack.push_value(res.into())?;
             }
             F64_MAX => {
-                let v2: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
-                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v2: value::F64 = stack
+                    .pop_value(ValType::NumType(NumType::F64))
+                    .try_into()
+                    .unwrap_validated();
+                let v1: value::F64 = stack
+                    .pop_value(ValType::NumType(NumType::F64))
+                    .try_into()
+                    .unwrap_validated();
                 let res: value::F64 = v1.max(v2);
 
                 trace!("Instruction: f64.max [{v1} {v2}] -> [{res}]");
                 stack.push_value(res.into())?;
             }
             F64_COPYSIGN => {
-                let v2: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
-                let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v2: value::F64 = stack
+                    .pop_value(ValType::NumType(NumType::F64))
+                    .try_into()
+                    .unwrap_validated();
+                let v1: value::F64 = stack
+                    .pop_value(ValType::NumType(NumType::F64))
+                    .try_into()
+                    .unwrap_validated();
                 let res: value::F64 = v1.copysign(v2);
 
                 trace!("Instruction: f64.copysign [{v1} {v2}] -> [{res}]");
                 stack.push_value(res.into())?;
             }
             I32_WRAP_I64 => {
-                let v: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
                 let res: i32 = v as i32;
 
                 trace!("Instruction: i32.wrap_i64 [{v}] -> [{res}]");
                 stack.push_value(res.into())?;
             }
             I32_TRUNC_F32_S => {
-                let v: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let v: value::F32 = stack
+                    .pop_value(ValType::NumType(NumType::F32))
+                    .try_into()
+                    .unwrap_validated();
                 if v.is_infinity() {
                     return Err(RuntimeError::UnrepresentableResult);
                 }
@@ -1659,7 +2313,10 @@ pub(super) fn run<T, H: HookSet>(
                 stack.push_value(res.into())?;
             }
             I32_TRUNC_F32_U => {
-                let v: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let v: value::F32 = stack
+                    .pop_value(ValType::NumType(NumType::F32))
+                    .try_into()
+                    .unwrap_validated();
                 if v.is_infinity() {
                     return Err(RuntimeError::UnrepresentableResult);
                 }
@@ -1677,7 +2334,10 @@ pub(super) fn run<T, H: HookSet>(
             }
 
             I32_TRUNC_F64_S => {
-                let v: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v: value::F64 = stack
+                    .pop_value(ValType::NumType(NumType::F64))
+                    .try_into()
+                    .unwrap_validated();
                 if v.is_infinity() {
                     return Err(RuntimeError::UnrepresentableResult);
                 }
@@ -1694,7 +2354,10 @@ pub(super) fn run<T, H: HookSet>(
                 stack.push_value(res.into())?;
             }
             I32_TRUNC_F64_U => {
-                let v: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v: value::F64 = stack
+                    .pop_value(ValType::NumType(NumType::F64))
+                    .try_into()
+                    .unwrap_validated();
                 if v.is_infinity() {
                     return Err(RuntimeError::UnrepresentableResult);
                 }
@@ -1712,7 +2375,10 @@ pub(super) fn run<T, H: HookSet>(
             }
 
             I64_EXTEND_I32_S => {
-                let v: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
 
                 let res: i64 = v as i64;
 
@@ -1721,7 +2387,10 @@ pub(super) fn run<T, H: HookSet>(
             }
 
             I64_EXTEND_I32_U => {
-                let v: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
 
                 let res: i64 = v as u32 as i64;
 
@@ -1730,7 +2399,10 @@ pub(super) fn run<T, H: HookSet>(
             }
 
             I64_TRUNC_F32_S => {
-                let v: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let v: value::F32 = stack
+                    .pop_value(ValType::NumType(NumType::F32))
+                    .try_into()
+                    .unwrap_validated();
                 if v.is_infinity() {
                     return Err(RuntimeError::UnrepresentableResult);
                 }
@@ -1748,7 +2420,10 @@ pub(super) fn run<T, H: HookSet>(
                 stack.push_value(res.into())?;
             }
             I64_TRUNC_F32_U => {
-                let v: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let v: value::F32 = stack
+                    .pop_value(ValType::NumType(NumType::F32))
+                    .try_into()
+                    .unwrap_validated();
                 if v.is_infinity() {
                     return Err(RuntimeError::UnrepresentableResult);
                 }
@@ -1766,7 +2441,10 @@ pub(super) fn run<T, H: HookSet>(
             }
 
             I64_TRUNC_F64_S => {
-                let v: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v: value::F64 = stack
+                    .pop_value(ValType::NumType(NumType::F64))
+                    .try_into()
+                    .unwrap_validated();
                 if v.is_infinity() {
                     return Err(RuntimeError::UnrepresentableResult);
                 }
@@ -1784,7 +2462,10 @@ pub(super) fn run<T, H: HookSet>(
                 stack.push_value(res.into())?;
             }
             I64_TRUNC_F64_U => {
-                let v: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v: value::F64 = stack
+                    .pop_value(ValType::NumType(NumType::F64))
+                    .try_into()
+                    .unwrap_validated();
                 if v.is_infinity() {
                     return Err(RuntimeError::UnrepresentableResult);
                 }
@@ -1801,98 +2482,140 @@ pub(super) fn run<T, H: HookSet>(
                 stack.push_value(res.into())?;
             }
             F32_CONVERT_I32_S => {
-                let v: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
                 let res: value::F32 = value::F32(v as f32);
 
                 trace!("Instruction: f32.convert_i32_s [{v}] -> [{res}]");
                 stack.push_value(res.into())?;
             }
             F32_CONVERT_I32_U => {
-                let v: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
                 let res: value::F32 = value::F32(v as u32 as f32);
 
                 trace!("Instruction: f32.convert_i32_u [{v}] -> [{res}]");
                 stack.push_value(res.into())?;
             }
             F32_CONVERT_I64_S => {
-                let v: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
                 let res: value::F32 = value::F32(v as f32);
 
                 trace!("Instruction: f32.convert_i64_s [{v}] -> [{res}]");
                 stack.push_value(res.into())?;
             }
             F32_CONVERT_I64_U => {
-                let v: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
                 let res: value::F32 = value::F32(v as u64 as f32);
 
                 trace!("Instruction: f32.convert_i64_u [{v}] -> [{res}]");
                 stack.push_value(res.into())?;
             }
             F32_DEMOTE_F64 => {
-                let v: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v: value::F64 = stack
+                    .pop_value(ValType::NumType(NumType::F64))
+                    .try_into()
+                    .unwrap_validated();
                 let res: value::F32 = v.as_f32();
 
                 trace!("Instruction: f32.demote_f64 [{v:.17}] -> [{res:.7}]");
                 stack.push_value(res.into())?;
             }
             F64_CONVERT_I32_S => {
-                let v: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
                 let res: value::F64 = value::F64(v as f64);
 
                 trace!("Instruction: f64.convert_i32_s [{v}] -> [{res:.17}]");
                 stack.push_value(res.into())?;
             }
             F64_CONVERT_I32_U => {
-                let v: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
                 let res: value::F64 = value::F64(v as u32 as f64);
 
                 trace!("Instruction: f64.convert_i32_u [{v}] -> [{res:.17}]");
                 stack.push_value(res.into())?;
             }
             F64_CONVERT_I64_S => {
-                let v: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
                 let res: value::F64 = value::F64(v as f64);
 
                 trace!("Instruction: f64.convert_i64_s [{v}] -> [{res:.17}]");
                 stack.push_value(res.into())?;
             }
             F64_CONVERT_I64_U => {
-                let v: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
                 let res: value::F64 = value::F64(v as u64 as f64);
 
                 trace!("Instruction: f64.convert_i64_u [{v}] -> [{res:.17}]");
                 stack.push_value(res.into())?;
             }
             F64_PROMOTE_F32 => {
-                let v: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let v: value::F32 = stack
+                    .pop_value(ValType::NumType(NumType::F32))
+                    .try_into()
+                    .unwrap_validated();
                 let res: value::F64 = v.as_f32();
 
                 trace!("Instruction: f64.promote_f32 [{v:.7}] -> [{res:.17}]");
                 stack.push_value(res.into())?;
             }
             I32_REINTERPRET_F32 => {
-                let v: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let v: value::F32 = stack
+                    .pop_value(ValType::NumType(NumType::F32))
+                    .try_into()
+                    .unwrap_validated();
                 let res: i32 = v.reinterpret_as_i32();
 
                 trace!("Instruction: i32.reinterpret_f32 [{v:.7}] -> [{res}]");
                 stack.push_value(res.into())?;
             }
             I64_REINTERPRET_F64 => {
-                let v: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let v: value::F64 = stack
+                    .pop_value(ValType::NumType(NumType::F64))
+                    .try_into()
+                    .unwrap_validated();
                 let res: i64 = v.reinterpret_as_i64();
 
                 trace!("Instruction: i64.reinterpret_f64 [{v:.17}] -> [{res}]");
                 stack.push_value(res.into())?;
             }
             F32_REINTERPRET_I32 => {
-                let v1: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let v1: i32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
                 let res: value::F32 = value::F32::from_bits(v1 as u32);
 
                 trace!("Instruction: f32.reinterpret_i32 [{v1}] -> [{res:.7}]");
                 stack.push_value(res.into())?;
             }
             F64_REINTERPRET_I64 => {
-                let v1: i64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let v1: i64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
                 let res: value::F64 = value::F64::from_bits(v1 as u64);
 
                 trace!("Instruction: f64.reinterpret_i64 [{v1}] -> [{res:.17}]");
@@ -1928,7 +2651,10 @@ pub(super) fn run<T, H: HookSet>(
                 use crate::core::reader::types::opcode::fc_extensions::*;
                 match second_instr {
                     I32_TRUNC_SAT_F32_S => {
-                        let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                        let v1: value::F32 = stack
+                            .pop_value(ValType::NumType(NumType::F32))
+                            .try_into()
+                            .unwrap_validated();
                         let res = {
                             if v1.is_nan() {
                                 0
@@ -1945,7 +2671,10 @@ pub(super) fn run<T, H: HookSet>(
                         stack.push_value(res.into())?;
                     }
                     I32_TRUNC_SAT_F32_U => {
-                        let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                        let v1: value::F32 = stack
+                            .pop_value(ValType::NumType(NumType::F32))
+                            .try_into()
+                            .unwrap_validated();
                         let res = {
                             if v1.is_nan() || v1.is_negative_infinity() {
                                 0
@@ -1960,7 +2689,10 @@ pub(super) fn run<T, H: HookSet>(
                         stack.push_value(res.into())?;
                     }
                     I32_TRUNC_SAT_F64_S => {
-                        let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                        let v1: value::F64 = stack
+                            .pop_value(ValType::NumType(NumType::F64))
+                            .try_into()
+                            .unwrap_validated();
                         let res = {
                             if v1.is_nan() {
                                 0
@@ -1977,7 +2709,10 @@ pub(super) fn run<T, H: HookSet>(
                         stack.push_value(res.into())?;
                     }
                     I32_TRUNC_SAT_F64_U => {
-                        let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                        let v1: value::F64 = stack
+                            .pop_value(ValType::NumType(NumType::F64))
+                            .try_into()
+                            .unwrap_validated();
                         let res = {
                             if v1.is_nan() || v1.is_negative_infinity() {
                                 0
@@ -1992,7 +2727,10 @@ pub(super) fn run<T, H: HookSet>(
                         stack.push_value(res.into())?;
                     }
                     I64_TRUNC_SAT_F32_S => {
-                        let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                        let v1: value::F32 = stack
+                            .pop_value(ValType::NumType(NumType::F32))
+                            .try_into()
+                            .unwrap_validated();
                         let res = {
                             if v1.is_nan() {
                                 0
@@ -2009,7 +2747,10 @@ pub(super) fn run<T, H: HookSet>(
                         stack.push_value(res.into())?;
                     }
                     I64_TRUNC_SAT_F32_U => {
-                        let v1: value::F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                        let v1: value::F32 = stack
+                            .pop_value(ValType::NumType(NumType::F32))
+                            .try_into()
+                            .unwrap_validated();
                         let res = {
                             if v1.is_nan() || v1.is_negative_infinity() {
                                 0
@@ -2024,7 +2765,10 @@ pub(super) fn run<T, H: HookSet>(
                         stack.push_value(res.into())?;
                     }
                     I64_TRUNC_SAT_F64_S => {
-                        let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                        let v1: value::F64 = stack
+                            .pop_value(ValType::NumType(NumType::F64))
+                            .try_into()
+                            .unwrap_validated();
                         let res = {
                             if v1.is_nan() {
                                 0
@@ -2041,7 +2785,10 @@ pub(super) fn run<T, H: HookSet>(
                         stack.push_value(res.into())?;
                     }
                     I64_TRUNC_SAT_F64_U => {
-                        let v1: value::F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                        let v1: value::F64 = stack
+                            .pop_value(ValType::NumType(NumType::F64))
+                            .try_into()
+                            .unwrap_validated();
                         let res = {
                             if v1.is_nan() || v1.is_negative_infinity() {
                                 0
@@ -2065,9 +2812,18 @@ pub(super) fn run<T, H: HookSet>(
                         let data_idx = wasm.read_var_u32().unwrap_validated() as DataIdx;
                         let mem_idx = wasm.read_u8().unwrap_validated() as usize;
 
-                        let n: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                        let s: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                        let d: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                        let n: i32 = stack
+                            .pop_value(ValType::NumType(NumType::I32))
+                            .try_into()
+                            .unwrap_validated();
+                        let s: i32 = stack
+                            .pop_value(ValType::NumType(NumType::I32))
+                            .try_into()
+                            .unwrap_validated();
+                        let d: i32 = stack
+                            .pop_value(ValType::NumType(NumType::I32))
+                            .try_into()
+                            .unwrap_validated();
 
                         memory_init(
                             &store.modules,
@@ -2100,9 +2856,18 @@ pub(super) fn run<T, H: HookSet>(
                             wasm.read_u8().unwrap_validated() as usize,
                             wasm.read_u8().unwrap_validated() as usize,
                         );
-                        let n: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                        let s: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                        let d: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                        let n: i32 = stack
+                            .pop_value(ValType::NumType(NumType::I32))
+                            .try_into()
+                            .unwrap_validated();
+                        let s: i32 = stack
+                            .pop_value(ValType::NumType(NumType::I32))
+                            .try_into()
+                            .unwrap_validated();
+                        let d: i32 = stack
+                            .pop_value(ValType::NumType(NumType::I32))
+                            .try_into()
+                            .unwrap_validated();
 
                         let src_mem =
                             &store.memories[store.modules[current_module_idx].mem_addrs[src_idx]];
@@ -2123,14 +2888,23 @@ pub(super) fn run<T, H: HookSet>(
                         let mem_idx = wasm.read_u8().unwrap_validated() as usize;
                         let mem = &mut store.memories
                             [store.modules[current_module_idx].mem_addrs[mem_idx]];
-                        let n: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
-                        let val: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                        let n: i32 = stack
+                            .pop_value(ValType::NumType(NumType::I32))
+                            .try_into()
+                            .unwrap_validated();
+                        let val: i32 = stack
+                            .pop_value(ValType::NumType(NumType::I32))
+                            .try_into()
+                            .unwrap_validated();
 
                         if !(0..=255).contains(&val) {
                             warn!("Value for memory.fill does not fit in a byte ({val})");
                         }
 
-                        let d: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                        let d: i32 = stack
+                            .pop_value(ValType::NumType(NumType::I32))
+                            .try_into()
+                            .unwrap_validated();
 
                         mem.mem.fill(d as usize, val as u8, n as usize)?;
 
@@ -2144,9 +2918,18 @@ pub(super) fn run<T, H: HookSet>(
                         let elem_idx = wasm.read_var_u32().unwrap_validated() as usize;
                         let table_idx = wasm.read_var_u32().unwrap_validated() as usize;
 
-                        let n: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into(); // size
-                        let s: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into(); // offset
-                        let d: i32 = stack.pop_value(ValType::NumType(NumType::I32)).into(); // dst
+                        let n: i32 = stack
+                            .pop_value(ValType::NumType(NumType::I32))
+                            .try_into()
+                            .unwrap_validated(); // size
+                        let s: i32 = stack
+                            .pop_value(ValType::NumType(NumType::I32))
+                            .try_into()
+                            .unwrap_validated(); // offset
+                        let d: i32 = stack
+                            .pop_value(ValType::NumType(NumType::I32))
+                            .try_into()
+                            .unwrap_validated(); // dst
 
                         table_init(
                             &store.modules,
@@ -2184,9 +2967,18 @@ pub(super) fn run<T, H: HookSet>(
                             .elem
                             .len();
 
-                        let n: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into(); // size
-                        let s: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into(); // source
-                        let d: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into(); // destination
+                        let n: u32 = stack
+                            .pop_value(ValType::NumType(NumType::I32))
+                            .try_into()
+                            .unwrap_validated(); // size
+                        let s: u32 = stack
+                            .pop_value(ValType::NumType(NumType::I32))
+                            .try_into()
+                            .unwrap_validated(); // source
+                        let d: u32 = stack
+                            .pop_value(ValType::NumType(NumType::I32))
+                            .try_into()
+                            .unwrap_validated(); // destination
 
                         let src_res = match s.checked_add(n) {
                             Some(res) => {
@@ -2255,7 +3047,10 @@ pub(super) fn run<T, H: HookSet>(
 
                         let sz = tab.elem.len() as u32;
 
-                        let n: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                        let n: u32 = stack
+                            .pop_value(ValType::NumType(NumType::I32))
+                            .try_into()
+                            .unwrap_validated();
                         let val = stack.pop_unknown_ref();
 
                         // TODO this instruction is non-deterministic w.r.t. spec, and can fail if the embedder wills it.
@@ -2287,9 +3082,18 @@ pub(super) fn run<T, H: HookSet>(
                             [store.modules[current_module_idx].table_addrs[table_idx]];
                         let ty = tab.ty.et;
 
-                        let n: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into(); // len
-                        let val: Ref = stack.pop_value(ValType::RefType(ty)).into();
-                        let i: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into(); // dst
+                        let n: u32 = stack
+                            .pop_value(ValType::NumType(NumType::I32))
+                            .try_into()
+                            .unwrap_validated(); // len
+                        let val: Ref = stack
+                            .pop_value(ValType::RefType(ty))
+                            .try_into()
+                            .unwrap_validated();
+                        let i: u32 = stack
+                            .pop_value(ValType::NumType(NumType::I32))
+                            .try_into()
+                            .unwrap_validated(); // dst
 
                         let end = (i as usize)
                             .checked_add(n as usize)
@@ -2313,7 +3117,10 @@ pub(super) fn run<T, H: HookSet>(
             }
 
             I32_EXTEND8_S => {
-                let mut v: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let mut v: u32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
 
                 if v | 0xFF != 0xFF {
                     trace!("Number v ({}) not contained in 8 bits, truncating", v);
@@ -2327,7 +3134,10 @@ pub(super) fn run<T, H: HookSet>(
                 trace!("Instruction i32.extend8_s [{}] -> [{}]", v, res);
             }
             I32_EXTEND16_S => {
-                let mut v: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
+                let mut v: u32 = stack
+                    .pop_value(ValType::NumType(NumType::I32))
+                    .try_into()
+                    .unwrap_validated();
 
                 if v | 0xFFFF != 0xFFFF {
                     trace!("Number v ({}) not contained in 16 bits, truncating", v);
@@ -2345,7 +3155,10 @@ pub(super) fn run<T, H: HookSet>(
                 trace!("Instruction i32.extend16_s [{}] -> [{}]", v, res);
             }
             I64_EXTEND8_S => {
-                let mut v: u64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let mut v: u64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
 
                 if v | 0xFF != 0xFF {
                     trace!("Number v ({}) not contained in 8 bits, truncating", v);
@@ -2363,7 +3176,10 @@ pub(super) fn run<T, H: HookSet>(
                 trace!("Instruction i64.extend8_s [{}] -> [{}]", v, res);
             }
             I64_EXTEND16_S => {
-                let mut v: u64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let mut v: u64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
 
                 if v | 0xFFFF != 0xFFFF {
                     trace!("Number v ({}) not contained in 16 bits, truncating", v);
@@ -2381,7 +3197,10 @@ pub(super) fn run<T, H: HookSet>(
                 trace!("Instruction i64.extend16_s [{}] -> [{}]", v, res);
             }
             I64_EXTEND32_S => {
-                let mut v: u64 = stack.pop_value(ValType::NumType(NumType::I64)).into();
+                let mut v: u64 = stack
+                    .pop_value(ValType::NumType(NumType::I64))
+                    .try_into()
+                    .unwrap_validated();
 
                 if v | 0xFFFF_FFFF != 0xFFFF_FFFF {
                     trace!("Number v ({}) not contained in 32 bits, truncating", v);
