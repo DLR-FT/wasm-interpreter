@@ -3,7 +3,7 @@ use alloc::string::String;
 
 use crate::core::indices::{FuncIdx, GlobalIdx, MemIdx, TableIdx};
 use crate::core::reader::{WasmReadable, WasmReader};
-use crate::{Error, ValidationInfo};
+use crate::{ValidationError, ValidationInfo};
 
 use super::ExternType;
 
@@ -21,13 +21,16 @@ impl Export {
     /// may fail if the external type is not possible to infer with C
     /// <https://webassembly.github.io/spec/core/valid/modules.html#exports>
     #[allow(unused)]
-    pub fn extern_type(&self, validation_info: &ValidationInfo) -> Result<ExternType, Error> {
+    pub fn extern_type(
+        &self,
+        validation_info: &ValidationInfo,
+    ) -> Result<ExternType, ValidationError> {
         self.desc.extern_type(validation_info)
     }
 }
 
 impl WasmReadable for Export {
-    fn read(wasm: &mut WasmReader) -> Result<Self, Error> {
+    fn read(wasm: &mut WasmReader) -> Result<Self, ValidationError> {
         let name = wasm.read_name()?.to_owned();
         let desc = ExportDesc::read(wasm)?;
         Ok(Export { name, desc })
@@ -53,17 +56,20 @@ impl ExportDesc {
     /// taking `validation_info` as validation context C
     /// may fail if the external type is not possible to infer with C
     /// <https://webassembly.github.io/spec/core/valid/modules.html#exports>
-    pub fn extern_type(&self, validation_info: &ValidationInfo) -> Result<ExternType, Error> {
+    pub fn extern_type(
+        &self,
+        validation_info: &ValidationInfo,
+    ) -> Result<ExternType, ValidationError> {
         Ok(match self {
             ExportDesc::FuncIdx(func_idx) => {
                 let type_idx = validation_info
                     .functions
                     .get(*func_idx)
-                    .ok_or(Error::InvalidFuncTypeIdx)?;
+                    .ok_or(ValidationError::InvalidFuncTypeIdx)?;
                 let func_type = validation_info
                     .types
                     .get(*type_idx)
-                    .ok_or(Error::InvalidFuncType)?;
+                    .ok_or(ValidationError::InvalidFuncType)?;
                 // TODO ugly clone that should disappear when types are directly parsed from bytecode instead of vector copies
                 ExternType::Func(func_type.clone())
             }
@@ -72,19 +78,19 @@ impl ExportDesc {
                 *validation_info
                     .tables
                     .get(*table_idx)
-                    .ok_or(Error::InvalidLocalIdx)?,
+                    .ok_or(ValidationError::InvalidLocalIdx)?,
             ),
             ExportDesc::MemIdx(mem_idx) => ExternType::Mem(
                 *validation_info
                     .memories
                     .get(*mem_idx)
-                    .ok_or(Error::InvalidLocalIdx)?,
+                    .ok_or(ValidationError::InvalidLocalIdx)?,
             ),
             ExportDesc::GlobalIdx(global_idx) => ExternType::Global(
                 validation_info
                     .globals
                     .get(*global_idx)
-                    .ok_or(Error::InvalidGlobalIdx(*global_idx))?
+                    .ok_or(ValidationError::InvalidGlobalIdx(*global_idx))?
                     .ty,
             ),
         })
@@ -120,7 +126,7 @@ impl ExportDesc {
 }
 
 impl WasmReadable for ExportDesc {
-    fn read(wasm: &mut WasmReader) -> Result<Self, Error> {
+    fn read(wasm: &mut WasmReader) -> Result<Self, ValidationError> {
         let desc_id = wasm.read_u8()?;
         let desc_idx = wasm.read_var_u32()? as usize;
 
@@ -129,7 +135,7 @@ impl WasmReadable for ExportDesc {
             0x01 => ExportDesc::TableIdx(desc_idx),
             0x02 => ExportDesc::MemIdx(desc_idx),
             0x03 => ExportDesc::GlobalIdx(desc_idx),
-            other => return Err(Error::InvalidExportDesc(other)),
+            other => return Err(ValidationError::InvalidExportDesc(other)),
         };
         Ok(desc)
     }

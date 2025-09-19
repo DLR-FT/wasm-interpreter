@@ -25,11 +25,11 @@ use alloc::vec::Vec;
 use core::mem;
 
 use crate::core::reader::WasmReader;
-use crate::Error;
+use crate::ValidationError;
 
 impl WasmReader<'_> {
     /// Note: If `Err`, the [WasmReader] object is no longer guaranteed to be in a valid state
-    pub fn read_u8(&mut self) -> Result<u8, Error> {
+    pub fn read_u8(&mut self) -> Result<u8, ValidationError> {
         match self.peek_u8() {
             Err(e) => Err(e),
             Ok(byte) => {
@@ -44,7 +44,7 @@ impl WasmReader<'_> {
     /// Parses a variable-length `u64` (can be casted to a smaller uint if the result fits)
     /// Taken from <https://github.com/bytecodealliance/wasm-tools>
     #[allow(unused)]
-    pub fn read_var_u64(&mut self) -> Result<u64, Error> {
+    pub fn read_var_u64(&mut self) -> Result<u64, ValidationError> {
         let mut result = 0;
         let mut shift = 0;
 
@@ -57,7 +57,7 @@ impl WasmReader<'_> {
                 while byte & Self::CONTINUATION_BIT != 0 {
                     byte = self.read_u8()?;
                 }
-                return Err(Error::Overflow);
+                return Err(ValidationError::Overflow);
             }
 
             let low_bits = (byte & !Self::CONTINUATION_BIT) as u64;
@@ -73,7 +73,7 @@ impl WasmReader<'_> {
 
     /// Parses a variable-length `u32` as specified by [LEB128](https://en.wikipedia.org/wiki/LEB128#Unsigned_LEB128).
     /// Note: If `Err`, the [WasmReader] object is no longer guaranteed to be in a valid state
-    pub fn read_var_u32(&mut self) -> Result<u32, Error> {
+    pub fn read_var_u32(&mut self) -> Result<u32, ValidationError> {
         let mut result: u32 = 0;
         let mut shift = 0;
 
@@ -84,7 +84,7 @@ impl WasmReader<'_> {
             // shift >= 28 checks we're at the 5th bit or larger
             // byte >> 32-28 checks whether (this byte lost bits when shifted) or (the continuation bit is set)
             if shift >= 28 && byte >> (32 - shift) != 0 {
-                return Err(Error::Overflow);
+                return Err(ValidationError::Overflow);
             }
 
             if byte & Self::CONTINUATION_BIT == 0 {
@@ -95,14 +95,14 @@ impl WasmReader<'_> {
         }
     }
 
-    pub fn read_var_f64(&mut self) -> Result<u64, Error> {
-        let bytes = self.strip_bytes::<8>().map_err(|_| Error::Eof)?;
+    pub fn read_var_f64(&mut self) -> Result<u64, ValidationError> {
+        let bytes = self.strip_bytes::<8>().map_err(|_| ValidationError::Eof)?;
         let word = u64::from_le_bytes(bytes);
         Ok(word)
     }
 
     /// Adapted from <https://github.com/bytecodealliance/wasm-tools>
-    pub fn read_var_i32(&mut self) -> Result<i32, Error> {
+    pub fn read_var_i32(&mut self) -> Result<i32, ValidationError> {
         let mut result: i32 = 0;
         let mut shift: u32 = 0;
 
@@ -119,7 +119,7 @@ impl WasmReader<'_> {
                 // therefore ashifted_unused_bits should be -1 or 0
                 if there_are_more_bytes || (ashifted_unused_bits != 0 && ashifted_unused_bits != -1)
                 {
-                    return Err(Error::Overflow);
+                    return Err(ValidationError::Overflow);
                 } else {
                     // no need to ashift unfilled bits, all 32 bits are filled
                     return Ok(result);
@@ -138,7 +138,7 @@ impl WasmReader<'_> {
         Ok((result << ashift) >> ashift)
     }
 
-    pub fn read_var_i33(&mut self) -> Result<i64, Error> {
+    pub fn read_var_i33(&mut self) -> Result<i64, ValidationError> {
         let mut result: i64 = 0;
         let mut shift: u32 = 0;
 
@@ -155,7 +155,7 @@ impl WasmReader<'_> {
                 // therefore ashifted_unused_bits should be -1 or 0
                 if there_are_more_bytes || (ashifted_unused_bits != 0 && ashifted_unused_bits != -1)
                 {
-                    return Err(Error::Overflow);
+                    return Err(ValidationError::Overflow);
                 }
             }
 
@@ -171,9 +171,9 @@ impl WasmReader<'_> {
         Ok((result << ashift) >> ashift)
     }
 
-    pub fn read_var_f32(&mut self) -> Result<u32, Error> {
+    pub fn read_var_f32(&mut self) -> Result<u32, ValidationError> {
         if self.full_wasm_binary.len() - self.pc < 4 {
-            return Err(Error::Eof);
+            return Err(ValidationError::Eof);
         }
 
         let word = u32::from_le_bytes(
@@ -187,7 +187,7 @@ impl WasmReader<'_> {
         Ok(word)
     }
 
-    pub fn read_var_i64(&mut self) -> Result<i64, Error> {
+    pub fn read_var_i64(&mut self) -> Result<i64, ValidationError> {
         let mut result: i64 = 0;
         let mut shift: u32 = 0;
 
@@ -204,7 +204,7 @@ impl WasmReader<'_> {
                 // therefore ashifted_unused_bits should be -1 or 0
                 if there_are_more_bytes || (ashifted_unused_bits != 0 && ashifted_unused_bits != -1)
                 {
-                    return Err(Error::Overflow);
+                    return Err(ValidationError::Overflow);
                 } else {
                     // no need to ashift unfilled bits, all 64 bits are filled
                     return Ok(result);
@@ -224,22 +224,25 @@ impl WasmReader<'_> {
     }
 
     /// Note: If `Err`, the [WasmReader] object is no longer guaranteed to be in a valid state
-    pub fn read_name(&mut self) -> Result<&str, Error> {
+    pub fn read_name(&mut self) -> Result<&str, ValidationError> {
         let len = self.read_var_u32()? as usize;
 
         if len > self.full_wasm_binary.len() - self.pc {
-            return Err(Error::Eof);
+            return Err(ValidationError::Eof);
         }
 
         let utf8_str = &self.full_wasm_binary[self.pc..(self.pc + len)]; // Cannot panic because check is done above
         self.pc += len;
 
-        core::str::from_utf8(utf8_str).map_err(Error::MalformedUtf8String)
+        core::str::from_utf8(utf8_str).map_err(ValidationError::MalformedUtf8String)
     }
 
-    pub fn read_vec_enumerated<T, F>(&mut self, mut read_element: F) -> Result<Vec<T>, Error>
+    pub fn read_vec_enumerated<T, F>(
+        &mut self,
+        mut read_element: F,
+    ) -> Result<Vec<T>, ValidationError>
     where
-        F: FnMut(&mut WasmReader, usize) -> Result<T, Error>,
+        F: FnMut(&mut WasmReader, usize) -> Result<T, ValidationError>,
     {
         let mut idx = 0;
         self.read_vec(|wasm| {
@@ -250,9 +253,9 @@ impl WasmReader<'_> {
     }
 
     /// Note: If `Err`, the [WasmReader] object is no longer guaranteed to be in a valid state
-    pub fn read_vec<T, F>(&mut self, mut read_element: F) -> Result<Vec<T>, Error>
+    pub fn read_vec<T, F>(&mut self, mut read_element: F) -> Result<Vec<T>, ValidationError>
     where
-        F: FnMut(&mut WasmReader) -> Result<T, Error>,
+        F: FnMut(&mut WasmReader) -> Result<T, ValidationError>,
     {
         let len = self.read_var_u32()?;
         (0..len).map(|_| read_element(self)).collect()

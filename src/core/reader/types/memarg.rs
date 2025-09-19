@@ -2,7 +2,7 @@ use core::fmt::Debug;
 
 use crate::{
     core::reader::{WasmReadable, WasmReader},
-    Error,
+    ValidationError,
 };
 
 #[derive(Debug)]
@@ -12,7 +12,7 @@ pub struct MemArg {
 }
 
 impl WasmReadable for MemArg {
-    fn read(wasm: &mut WasmReader) -> Result<Self, Error> {
+    fn read(wasm: &mut WasmReader) -> Result<Self, ValidationError> {
         let align = wasm.read_var_u32()?;
         let offset = wasm.read_var_u32()?;
         Ok(Self { offset, align })

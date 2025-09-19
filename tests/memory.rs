@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 */
-use wasm::{validate, Error, RuntimeInstance, DEFAULT_MODULE};
+use wasm::{validate, RuntimeInstance, ValidationError, DEFAULT_MODULE};
 
 #[test_log::test]
 fn memory_basic() {
@@ -52,7 +52,10 @@ fn memory_min_greater_than_max() {
     w.iter().for_each(|wat| {
         let wasm_bytes = wat::parse_str(wat).unwrap();
         let validation_info = validate(&wasm_bytes);
-        assert_eq!(validation_info.err().unwrap(), Error::InvalidLimit);
+        assert_eq!(
+            validation_info.err().unwrap(),
+            ValidationError::InvalidLimit
+        );
     });
 }
 
@@ -74,7 +77,10 @@ fn memory_size_must_be_at_most_4gib() {
     w.iter().for_each(|wat| {
         let wasm_bytes = wat::parse_str(wat).unwrap();
         let validation_info = validate(&wasm_bytes);
-        assert_eq!(validation_info.err().unwrap(), Error::MemSizeTooBig);
+        assert_eq!(
+            validation_info.err().unwrap(),
+            ValidationError::MemSizeTooBig
+        );
     });
 }
 

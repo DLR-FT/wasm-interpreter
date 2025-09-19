@@ -15,7 +15,7 @@ pub enum WastError {
     #[error("Panic: {}", .0.downcast_ref::<&str>().unwrap_or(&"Unknown panic"))]
     Panic(Box<dyn Any + Send + 'static>),
     #[error("{0}")]
-    WasmError(wasm::Error),
+    WasmError(wasm::ValidationError),
     #[error("{0}")]
     WasmRuntimeError(wasm::RuntimeError),
     #[error("{0}")]
@@ -48,8 +48,8 @@ pub enum WastError {
     Io(#[from] std::io::Error),
 }
 
-impl From<wasm::Error> for WastError {
-    fn from(value: wasm::Error) -> Self {
+impl From<wasm::ValidationError> for WastError {
+    fn from(value: wasm::ValidationError) -> Self {
         Self::WasmError(value)
     }
 }

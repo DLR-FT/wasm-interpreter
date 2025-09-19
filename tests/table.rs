@@ -15,7 +15,7 @@
 # limitations under the License.
 */
 use wasm::value::{FuncRefForInteropValue, Ref};
-use wasm::Error as GeneralError;
+use wasm::ValidationError as GeneralError;
 use wasm::{validate, RuntimeInstance, DEFAULT_MODULE};
 
 macro_rules! get_func {

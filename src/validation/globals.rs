@@ -7,7 +7,7 @@ use crate::core::reader::types::global::{Global, GlobalType};
 use crate::core::reader::{WasmReadable, WasmReader};
 use crate::read_constant_expression::read_constant_expression;
 use crate::validation_stack::ValidationStack;
-use crate::Error;
+use crate::ValidationError;
 
 /// Validate the global section.
 ///
@@ -21,7 +21,7 @@ pub(super) fn validate_global_section(
     imported_global_types: &[GlobalType],
     validation_context_refs: &mut BTreeSet<FuncIdx>,
     num_funcs: usize,
-) -> Result<Vec<Global>, Error> {
+) -> Result<Vec<Global>, ValidationError> {
     assert_eq!(section_header.ty, SectionTy::Global);
 
     wasm.read_vec(|wasm| {

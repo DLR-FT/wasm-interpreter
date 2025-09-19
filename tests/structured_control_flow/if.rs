@@ -210,7 +210,7 @@ fn if_without_else_type_check2() {
     .unwrap();
     assert_eq!(
         validate(&wasm_bytes).err().unwrap(),
-        wasm::Error::IfWithoutMatchingElse
+        wasm::ValidationError::IfWithoutMatchingElse
     );
 }
 
