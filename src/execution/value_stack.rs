@@ -88,7 +88,7 @@ impl Stack {
     }
 
     /// Pop a value of the given [ValType] from the value stack
-    pub fn pop_value(&mut self, ty: ValType) -> Value {
+    pub fn pop_value(&mut self) -> Value {
         // If there is at least one call frame, we shall not pop values past the current
         // call frame. However, there is one legitimate reason to pop when there is **no** current
         // call frame: after the outermost function returns, to extract the final return values of
@@ -102,12 +102,7 @@ impl Stack {
             "can not pop values past the current call frame"
         );
 
-        let popped = self.values.pop().unwrap_validated();
-        if popped.to_ty() == ty {
-            popped
-        } else {
-            unreachable_validated!()
-        }
+        self.values.pop().unwrap_validated()
     }
 
     //unfortunately required for polymorphic select
@@ -161,12 +156,7 @@ impl Stack {
         );
 
         let call_frame_base_idx = self.current_call_frame().call_frame_base_idx;
-        let local_ty = self
-            .values
-            .get(call_frame_base_idx + idx)
-            .unwrap_validated()
-            .to_ty();
-        let stack_value = self.pop_value(local_ty);
+        let stack_value = self.pop_value();
 
         trace!("Instruction: local.set [{stack_value:?}] -> []");
 
