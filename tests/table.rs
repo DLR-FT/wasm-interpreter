@@ -1,3 +1,4 @@
+use wasm::interop::RefFunc;
 /*
 # This file incorporates code from the WebAssembly testsuite, originally
 # available at https://github.com/WebAssembly/testsuite.
@@ -14,7 +15,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 */
-use wasm::value::FuncAddr;
 use wasm::ValidationError as GeneralError;
 use wasm::{validate, RuntimeInstance, DEFAULT_MODULE};
 
@@ -167,31 +167,25 @@ fn table_get_set_test() {
 
     // assert the function at index 1 is a FuncRef and is NOT null
     {
-        let funcref = i
-            .invoke_typed::<i32, Option<FuncAddr>>(get_funcref, 1)
-            .unwrap();
+        let funcref = i.invoke_typed::<i32, RefFunc>(get_funcref, 1).unwrap();
 
-        assert!(funcref.is_some());
+        assert!(funcref.0.is_some());
     }
 
     // assert the function at index 2 is a FuncRef and is null
     {
-        let funcref = i
-            .invoke_typed::<i32, Option<FuncAddr>>(get_funcref, 2)
-            .unwrap();
+        let funcref = i.invoke_typed::<i32, RefFunc>(get_funcref, 2).unwrap();
 
-        assert!(funcref.is_none());
+        assert!(funcref.0.is_none());
     }
 
     // set the function at index 2 the same as the one at index 1
     i.invoke_typed::<(), ()>(init, ()).unwrap();
     // assert the function at index 2 is a FuncRef and is NOT null
     {
-        let funcref = i
-            .invoke_typed::<i32, Option<FuncAddr>>(get_funcref, 2)
-            .unwrap();
+        let funcref = i.invoke_typed::<i32, RefFunc>(get_funcref, 2).unwrap();
 
-        assert!(funcref.is_some());
+        assert!(funcref.0.is_some());
     }
 }
 

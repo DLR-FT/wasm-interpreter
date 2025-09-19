@@ -1,3 +1,4 @@
+use wasm::interop::RefFunc;
 /*
 # This file incorporates code from the WebAssembly testsuite, originally
 # available at https://github.com/WebAssembly/testsuite.
@@ -54,189 +55,111 @@ fn table_fill_test() {
     let fill = get_func!(i, "fill");
     let fill_abbrev = get_func!(i, "fill-abbrev");
 
-    assert!(i
-        .invoke_typed::<i32, Option<FuncAddr>>(get, 1)
-        .unwrap()
-        .is_none());
-    assert!(i
-        .invoke_typed::<i32, Option<FuncAddr>>(get, 2)
-        .unwrap()
-        .is_none());
-    assert!(i
-        .invoke_typed::<i32, Option<FuncAddr>>(get, 3)
-        .unwrap()
-        .is_none());
-    assert!(i
-        .invoke_typed::<i32, Option<FuncAddr>>(get, 4)
-        .unwrap()
-        .is_none());
-    assert!(i
-        .invoke_typed::<i32, Option<FuncAddr>>(get, 5)
-        .unwrap()
-        .is_none());
+    assert!(i.invoke_typed::<i32, RefFunc>(get, 1).unwrap().0.is_none());
+    assert!(i.invoke_typed::<i32, RefFunc>(get, 2).unwrap().0.is_none());
+    assert!(i.invoke_typed::<i32, RefFunc>(get, 3).unwrap().0.is_none());
+    assert!(i.invoke_typed::<i32, RefFunc>(get, 4).unwrap().0.is_none());
+    assert!(i.invoke_typed::<i32, RefFunc>(get, 5).unwrap().0.is_none());
 
-    i.invoke_typed::<(i32, Option<FuncAddr>, i32), ()>(fill, (2, Some(FuncAddr(1)), 3))
+    i.invoke_typed::<(i32, RefFunc, i32), ()>(fill, (2, RefFunc(Some(FuncAddr(1))), 3))
         .unwrap();
 
-    assert!(i
-        .invoke_typed::<i32, Option<FuncAddr>>(get, 1)
-        .unwrap()
-        .is_none());
+    assert!(i.invoke_typed::<i32, RefFunc>(get, 1).unwrap().0.is_none());
     assert_eq!(
-        i.invoke_typed::<i32, Option<FuncAddr>>(get, 2)
-            .unwrap()
-            .unwrap()
-            .0,
+        i.invoke_typed::<i32, RefFunc>(get, 2).unwrap().0.unwrap().0,
         1
     );
     assert_eq!(
-        i.invoke_typed::<i32, Option<FuncAddr>>(get, 3)
-            .unwrap()
-            .unwrap()
-            .0,
+        i.invoke_typed::<i32, RefFunc>(get, 3).unwrap().0.unwrap().0,
         1
     );
     assert_eq!(
-        i.invoke_typed::<i32, Option<FuncAddr>>(get, 4)
-            .unwrap()
-            .unwrap()
-            .0,
+        i.invoke_typed::<i32, RefFunc>(get, 4).unwrap().0.unwrap().0,
         1
     );
-    assert!(i
-        .invoke_typed::<i32, Option<FuncAddr>>(get, 5)
-        .unwrap()
-        .is_none());
+    assert!(i.invoke_typed::<i32, RefFunc>(get, 5).unwrap().0.is_none());
 
-    i.invoke_typed::<(i32, Option<FuncAddr>, i32), ()>(fill, (4, Some(FuncAddr(2)), 2))
+    i.invoke_typed::<(i32, RefFunc, i32), ()>(fill, (4, RefFunc(Some(FuncAddr(2))), 2))
         .unwrap();
 
     assert_eq!(
-        i.invoke_typed::<i32, Option<FuncAddr>>(get, 3)
-            .unwrap()
-            .unwrap()
-            .0,
+        i.invoke_typed::<i32, RefFunc>(get, 3).unwrap().0.unwrap().0,
         1
     );
     assert_eq!(
-        i.invoke_typed::<i32, Option<FuncAddr>>(get, 4)
-            .unwrap()
-            .unwrap()
-            .0,
+        i.invoke_typed::<i32, RefFunc>(get, 4).unwrap().0.unwrap().0,
         2
     );
     assert_eq!(
-        i.invoke_typed::<i32, Option<FuncAddr>>(get, 5)
-            .unwrap()
-            .unwrap()
-            .0,
+        i.invoke_typed::<i32, RefFunc>(get, 5).unwrap().0.unwrap().0,
         2
     );
-    assert!(i
-        .invoke_typed::<i32, Option<FuncAddr>>(get, 6)
-        .unwrap()
-        .is_none());
+    assert!(i.invoke_typed::<i32, RefFunc>(get, 6).unwrap().0.is_none());
 
-    i.invoke_typed::<(i32, Option<FuncAddr>, i32), ()>(fill, (4, Some(FuncAddr(3)), 0))
+    i.invoke_typed::<(i32, RefFunc, i32), ()>(fill, (4, RefFunc(Some(FuncAddr(3))), 0))
         .unwrap();
 
     assert_eq!(
-        i.invoke_typed::<i32, Option<FuncAddr>>(get, 3)
-            .unwrap()
-            .unwrap()
-            .0,
+        i.invoke_typed::<i32, RefFunc>(get, 3).unwrap().0.unwrap().0,
         1
     );
     assert_eq!(
-        i.invoke_typed::<i32, Option<FuncAddr>>(get, 4)
-            .unwrap()
-            .unwrap()
-            .0,
+        i.invoke_typed::<i32, RefFunc>(get, 4).unwrap().0.unwrap().0,
         2
     );
     assert_eq!(
-        i.invoke_typed::<i32, Option<FuncAddr>>(get, 5)
-            .unwrap()
-            .unwrap()
-            .0,
+        i.invoke_typed::<i32, RefFunc>(get, 5).unwrap().0.unwrap().0,
         2
     );
 
-    i.invoke_typed::<(i32, Option<FuncAddr>, i32), ()>(fill, (8, Some(FuncAddr(4)), 2))
+    i.invoke_typed::<(i32, RefFunc, i32), ()>(fill, (8, RefFunc(Some(FuncAddr(4))), 2))
         .unwrap();
 
-    assert!(i
-        .invoke_typed::<i32, Option<FuncAddr>>(get, 7)
-        .unwrap()
-        .is_none());
+    assert!(i.invoke_typed::<i32, RefFunc>(get, 7).unwrap().0.is_none());
     assert_eq!(
-        i.invoke_typed::<i32, Option<FuncAddr>>(get, 8)
-            .unwrap()
-            .unwrap()
-            .0,
+        i.invoke_typed::<i32, RefFunc>(get, 8).unwrap().0.unwrap().0,
         4
     );
     assert_eq!(
-        i.invoke_typed::<i32, Option<FuncAddr>>(get, 9)
-            .unwrap()
-            .unwrap()
-            .0,
+        i.invoke_typed::<i32, RefFunc>(get, 9).unwrap().0.unwrap().0,
         4
     );
 
-    i.invoke_typed::<(i32, Option<FuncAddr>, i32), ()>(fill_abbrev, (9, None, 1))
+    i.invoke_typed::<(i32, RefFunc, i32), ()>(fill_abbrev, (9, RefFunc(None), 1))
         .unwrap();
     assert_eq!(
-        i.invoke_typed::<i32, Option<FuncAddr>>(get, 8)
-            .unwrap()
-            .unwrap()
-            .0,
+        i.invoke_typed::<i32, RefFunc>(get, 8).unwrap().0.unwrap().0,
         4
     );
-    assert!(i
-        .invoke_typed::<i32, Option<FuncAddr>>(get, 9)
-        .unwrap()
-        .is_none());
+    assert!(i.invoke_typed::<i32, RefFunc>(get, 9).unwrap().0.is_none());
 
-    i.invoke_typed::<(i32, Option<FuncAddr>, i32), ()>(fill, (10, Some(FuncAddr(5)), 0))
+    i.invoke_typed::<(i32, RefFunc, i32), ()>(fill, (10, RefFunc(Some(FuncAddr(5))), 0))
         .unwrap();
-    assert!(i
-        .invoke_typed::<i32, Option<FuncAddr>>(get, 9)
-        .unwrap()
-        .is_none());
+    assert!(i.invoke_typed::<i32, RefFunc>(get, 9).unwrap().0.is_none());
 
     assert!(
-        i.invoke_typed::<(i32, Option<FuncAddr>, i32), ()>(fill, (8, Some(FuncAddr(6)), 3))
+        i.invoke_typed::<(i32, RefFunc, i32), ()>(fill, (8, RefFunc(Some(FuncAddr(6))), 3))
             .err()
             .unwrap()
             == RuntimeError::Trap(TrapError::TableOrElementAccessOutOfBounds)
     );
 
-    assert!(i
-        .invoke_typed::<i32, Option<FuncAddr>>(get, 7)
-        .unwrap()
-        .is_none());
+    assert!(i.invoke_typed::<i32, RefFunc>(get, 7).unwrap().0.is_none());
     assert_eq!(
-        i.invoke_typed::<i32, Option<FuncAddr>>(get, 8)
-            .unwrap()
-            .unwrap()
-            .0,
+        i.invoke_typed::<i32, RefFunc>(get, 8).unwrap().0.unwrap().0,
         4
     );
-    assert!(i
-        .invoke_typed::<i32, Option<FuncAddr>>(get, 9)
-        .unwrap()
-        .is_none());
+    assert!(i.invoke_typed::<i32, RefFunc>(get, 9).unwrap().0.is_none());
 
     assert!(
-        i.invoke_typed::<(i32, Option<FuncAddr>, i32), ()>(fill, (11, None, 0))
+        i.invoke_typed::<(i32, RefFunc, i32), ()>(fill, (11, RefFunc(None), 0))
             .err()
             .unwrap()
             == RuntimeError::Trap(TrapError::TableOrElementAccessOutOfBounds)
     );
 
     assert!(
-        i.invoke_typed::<(i32, Option<FuncAddr>, i32), ()>(fill, (11, None, 10))
+        i.invoke_typed::<(i32, RefFunc, i32), ()>(fill, (11, RefFunc(None), 10))
             .err()
             .unwrap()
             == RuntimeError::Trap(TrapError::TableOrElementAccessOutOfBounds)

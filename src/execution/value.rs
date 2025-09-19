@@ -3,7 +3,6 @@ use core::ops::{Add, Div, Mul, Sub};
 use core::{f32, f64};
 
 use crate::core::reader::types::{NumType, ValType};
-use crate::execution::interop::InteropValue;
 use crate::RefType;
 
 #[derive(Clone, Debug, Copy, PartialOrd)]
@@ -387,30 +386,100 @@ impl Value {
     }
 }
 
-/// Stupid From and Into implementations, because Rust's orphan rules won't let me define a generic impl:
-macro_rules! impl_value_conversion {
-    ($ty:ty) => {
-        impl From<$ty> for Value {
-            fn from(x: $ty) -> Self {
-                x.into_value()
-            }
-        }
-        impl TryFrom<Value> for $ty {
-            type Error = ();
+impl From<u32> for Value {
+    fn from(x: u32) -> Self {
+        Value::I32(x)
+    }
+}
+impl TryFrom<Value> for u32 {
+    type Error = ();
 
-            fn try_from(value: Value) -> Result<Self, Self::Error> {
-                Ok(<$ty>::from_value(value))
-            }
+    fn try_from(value: Value) -> Result<Self, Self::Error> {
+        match value {
+            Value::I32(x) => Ok(x),
+            _ => Err(()),
         }
-    };
+    }
 }
 
-impl_value_conversion!(u32);
-impl_value_conversion!(i32);
-impl_value_conversion!(u64);
-impl_value_conversion!(i64);
-impl_value_conversion!(F32);
-impl_value_conversion!(F64);
+impl From<i32> for Value {
+    fn from(x: i32) -> Self {
+        Value::I32(x as u32)
+    }
+}
+impl TryFrom<Value> for i32 {
+    type Error = ();
+
+    fn try_from(value: Value) -> Result<Self, Self::Error> {
+        match value {
+            Value::I32(x) => Ok(x as i32),
+            _ => Err(()),
+        }
+    }
+}
+
+impl From<u64> for Value {
+    fn from(x: u64) -> Self {
+        Value::I64(x)
+    }
+}
+impl TryFrom<Value> for u64 {
+    type Error = ();
+
+    fn try_from(value: Value) -> Result<Self, Self::Error> {
+        match value {
+            Value::I64(x) => Ok(x),
+            _ => Err(()),
+        }
+    }
+}
+impl From<i64> for Value {
+    fn from(x: i64) -> Self {
+        Value::I64(x as u64)
+    }
+}
+impl TryFrom<Value> for i64 {
+    type Error = ();
+
+    fn try_from(value: Value) -> Result<Self, Self::Error> {
+        match value {
+            Value::I64(x) => Ok(x as i64),
+            _ => Err(()),
+        }
+    }
+}
+
+impl From<F32> for Value {
+    fn from(x: F32) -> Self {
+        Value::F32(x)
+    }
+}
+impl TryFrom<Value> for F32 {
+    type Error = ();
+
+    fn try_from(value: Value) -> Result<Self, Self::Error> {
+        match value {
+            Value::F32(x) => Ok(x),
+            _ => Err(()),
+        }
+    }
+}
+
+impl From<F64> for Value {
+    fn from(x: F64) -> Self {
+        Value::F64(x)
+    }
+}
+impl TryFrom<Value> for F64 {
+    type Error = ();
+
+    fn try_from(value: Value) -> Result<Self, Self::Error> {
+        match value {
+            Value::F64(x) => Ok(x),
+            _ => Err(()),
+        }
+    }
+}
 
 impl From<Ref> for Value {
     fn from(value: Ref) -> Self {
