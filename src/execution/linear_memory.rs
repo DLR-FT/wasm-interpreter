@@ -3,7 +3,8 @@ use core::{cell::UnsafeCell, iter, ptr};
 use alloc::vec::Vec;
 
 use crate::{
-    core::{indices::MemIdx, little_endian::LittleEndianBytes},
+    core::indices::MemIdx,
+    execution::little_endian::LittleEndianBytes,
     rw_spinlock::{ReadLockGuard, RwSpinLock},
     RuntimeError, TrapError,
 };
