@@ -20,6 +20,7 @@ pub mod function_ref;
 pub mod hooks;
 mod interpreter_loop;
 pub(crate) mod linear_memory;
+pub(crate) mod little_endian;
 pub mod registry;
 pub mod store;
 pub mod value;
