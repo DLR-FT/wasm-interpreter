@@ -103,8 +103,8 @@ pub fn host_func_call_within_start_func() {
 }
 
 fn fancy_add_mult(_: &mut (), values: Vec<Value>) -> Vec<Value> {
-    let x: u32 = values[0].into();
-    let y: f64 = values[1].into();
+    let x: u32 = values[0].try_into().unwrap();
+    let y: f64 = values[1].try_into().unwrap();
 
     println!("multiplying, adding, casting, swapping as host function");
 
@@ -262,7 +262,7 @@ pub fn host_func_runtime_error() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     fn mult3(_: &mut (), values: Vec<Value>) -> Vec<Value> {
-        let val: i32 = values[0].into();
+        let val: i32 = values[0].try_into().unwrap();
         println!("careless host function making type errors...");
         Vec::from([Value::I64((val * 3) as u64)])
     }

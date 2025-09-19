@@ -177,8 +177,9 @@ impl<'b, T> Store<'b, T> {
                     for expr in exprs {
                         new_list.push(
                             run_const_span(validation_info.wasm, expr, &module_inst, self)?
-                                .unwrap_validated()
-                                .into(),
+                                .unwrap_validated() // there is a return value
+                                .try_into()
+                                .unwrap_validated(), // return value has the correct type
                         )
                     }
                 }
@@ -318,8 +319,10 @@ impl<'b, T> Store<'b, T> {
                         &self.modules[current_module_idx],
                         self,
                     )?
-                    .unwrap_validated()
-                    .into();
+                    .unwrap_validated() // there is a return value
+                    .try_into()
+                    .unwrap_validated(); // return value has correct type
+
                     let s = 0;
                     table_init(
                         &self.modules,
@@ -373,8 +376,10 @@ impl<'b, T> Store<'b, T> {
                         &self.modules[current_module_idx],
                         self,
                     )?
-                    .unwrap_validated()
-                    .into();
+                    .unwrap_validated() // there is a return value
+                    .try_into()
+                    .unwrap_validated(); // return value has the correct type
+
                     let s = 0;
                     memory_init(
                         &self.modules,
