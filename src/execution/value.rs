@@ -661,32 +661,6 @@ impl<A: InteropValue, B: InteropValue, C: InteropValue> InteropValueList for (A,
     }
 }
 
-// TODO: don't let this like this, use a macro
-impl From<f32> for Value {
-    fn from(x: f32) -> Self {
-        F32(x).into_value()
-    }
-}
-
-impl From<Value> for f32 {
-    fn from(value: Value) -> Self {
-        F32::from(value).0
-    }
-}
-
-// TODO: don't let this like this, use a macro
-impl From<f64> for Value {
-    fn from(x: f64) -> Self {
-        F64(x).into_value()
-    }
-}
-
-impl From<Value> for f64 {
-    fn from(value: Value) -> Self {
-        F64::from(value).0
-    }
-}
-
 /// Stupid From and Into implementations, because Rust's orphan rules won't let me define a generic impl:
 macro_rules! impl_value_conversion {
     ($ty:ty) => {

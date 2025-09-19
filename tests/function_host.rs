@@ -104,11 +104,11 @@ pub fn host_func_call_within_start_func() {
 
 fn fancy_add_mult(_: &mut (), values: Vec<Value>) -> Vec<Value> {
     let x: u32 = values[0].into();
-    let y: f64 = values[1].into();
+    let y: F64 = values[1].into();
 
     println!("multiplying, adding, casting, swapping as host function");
 
-    Vec::from([Value::F64(F64((x as f64) * y)), Value::I32(x + (y as u32))])
+    Vec::from([Value::F64(F64(x as f64) * y), Value::I32(x + y.as_u32())])
 }
 
 const SIMPLE_MULTIVARIATE_MODULE_EXAMPLE: &str = r#"(module
