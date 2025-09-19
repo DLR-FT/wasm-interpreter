@@ -77,16 +77,14 @@ pub(crate) fn run_const<T>(
             REF_NULL => {
                 let reftype = RefType::read(wasm).unwrap_validated();
 
-                stack.push_value(Value::Ref(reftype.to_null_ref()))?;
+                stack.push_value(Value::Ref(Ref::Null(reftype)))?;
                 trace!("Instruction: ref.null '{:?}' -> [{:?}]", reftype, reftype);
             }
             REF_FUNC => {
                 // we already checked for the func_idx to be in bounds during validation
                 let func_idx = wasm.read_var_u32().unwrap_validated() as usize;
-                // TODO replace double indirection
-                stack.push_value(Value::Ref(Ref::Func(FuncAddr::new(Some(
-                    module.func_addrs[func_idx],
-                )))))?;
+                let func_addr = *module.func_addrs.get(func_idx).unwrap_validated();
+                stack.push_value(Value::Ref(Ref::Func(FuncAddr(func_addr))))?;
             }
 
             0x00..=0x0A

@@ -24,7 +24,6 @@ use alloc::vec::Vec;
 
 use super::hooks::EmptyHookSet;
 use super::interpreter_loop::{data_drop, elem_drop};
-use super::value::ExternAddr;
 use super::UnwrapValidatedExt;
 
 use crate::linear_memory::LinearMemory;
@@ -166,9 +165,12 @@ impl<'b, T> Store<'b, T> {
                 // validation guarantees corresponding func_idx's existence
                 ElemItems::RefFuncs(ref_funcs) => {
                     for func_idx in ref_funcs {
-                        new_list.push(Ref::Func(FuncAddr {
-                            addr: Some(module_inst.func_addrs[*func_idx as usize]),
-                        }))
+                        let func_addr = *module_inst
+                            .func_addrs
+                            .get(*func_idx as usize)
+                            .unwrap_validated();
+
+                        new_list.push(Ref::Func(FuncAddr(func_addr)));
                     }
                 }
                 ElemItems::Exprs(_, exprs) => {
@@ -202,13 +204,7 @@ impl<'b, T> Store<'b, T> {
         let table_addrs: Vec<usize> = module
             .tables
             .iter()
-            .map(|table_type| {
-                let null_ref = match table_type.et {
-                    RefType::FuncRef => Ref::Func(FuncAddr { addr: None }),
-                    RefType::ExternRef => Ref::Extern(ExternAddr { addr: None }),
-                };
-                self.alloc_table(*table_type, null_ref)
-            })
+            .map(|table_type| self.alloc_table(*table_type, Ref::Null(table_type.et)))
             .collect();
         let mem_addrs: Vec<usize> = module
             .memories
@@ -671,7 +667,7 @@ impl TableInst {
     pub fn new(ty: TableType) -> Self {
         Self {
             ty,
-            elem: vec![Ref::default_from_ref_type(ty.et); ty.lim.min as usize],
+            elem: vec![Ref::Null(ty.et); ty.lim.min as usize],
         }
     }
 

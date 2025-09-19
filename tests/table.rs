@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 */
-use wasm::value::{FuncRefForInteropValue, Ref};
+use wasm::value::FuncAddr;
 use wasm::ValidationError as GeneralError;
 use wasm::{validate, RuntimeInstance, DEFAULT_MODULE};
 
@@ -132,11 +132,10 @@ fn table_elem_test() {
         .iter()
         .enumerate()
         .for_each(|(i, rref)| match *rref {
-            wasm::value::Ref::Extern(_) => panic!(),
             wasm::value::Ref::Func(func_addr) => {
-                assert!(func_addr.addr.is_some());
-                assert!(wanted[i] == func_addr.addr.unwrap())
+                assert!(wanted[i] == func_addr.0)
             }
+            _ => panic!(),
         });
     // assert!(instance.store.tables)
 }
@@ -169,33 +168,19 @@ fn table_get_set_test() {
     // assert the function at index 1 is a FuncRef and is NOT null
     {
         let funcref = i
-            .invoke_typed::<i32, FuncRefForInteropValue>(get_funcref, 1)
+            .invoke_typed::<i32, Option<FuncAddr>>(get_funcref, 1)
             .unwrap();
 
-        let rref = funcref.get_ref();
-
-        match rref {
-            Ref::Func(funcaddr) => {
-                assert!(!funcaddr.is_null())
-            }
-            _ => panic!("Expected a FuncRef"),
-        }
+        assert!(funcref.is_some());
     }
 
     // assert the function at index 2 is a FuncRef and is null
     {
         let funcref = i
-            .invoke_typed::<i32, FuncRefForInteropValue>(get_funcref, 2)
+            .invoke_typed::<i32, Option<FuncAddr>>(get_funcref, 2)
             .unwrap();
 
-        let rref = funcref.get_ref();
-
-        match rref {
-            Ref::Func(funcaddr) => {
-                assert!(funcaddr.is_null())
-            }
-            _ => panic!("Expected a FuncRef"),
-        }
+        assert!(funcref.is_none());
     }
 
     // set the function at index 2 the same as the one at index 1
@@ -203,17 +188,10 @@ fn table_get_set_test() {
     // assert the function at index 2 is a FuncRef and is NOT null
     {
         let funcref = i
-            .invoke_typed::<i32, FuncRefForInteropValue>(get_funcref, 2)
+            .invoke_typed::<i32, Option<FuncAddr>>(get_funcref, 2)
             .unwrap();
 
-        let rref = funcref.get_ref();
-
-        match rref {
-            Ref::Func(funcaddr) => {
-                assert!(!funcaddr.is_null())
-            }
-            _ => panic!("Expected a FuncRef"),
-        }
+        assert!(funcref.is_some());
     }
 }
 
