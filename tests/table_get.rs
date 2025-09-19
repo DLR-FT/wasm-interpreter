@@ -15,7 +15,10 @@
 # limitations under the License.
 */
 
-use wasm::{validate, value::FuncAddr, RuntimeError, RuntimeInstance, TrapError, DEFAULT_MODULE};
+use wasm::{
+    interop::RefFunc, validate, value::FuncAddr, RuntimeError, RuntimeInstance, TrapError,
+    DEFAULT_MODULE,
+};
 
 macro_rules! get_func {
     ($instance:ident, $func_name:expr) => {
@@ -73,12 +76,12 @@ fn table_funcref_test() {
     let get_funcref_2 = get_func!(i, "get-funcref-2");
     let is_null_funcref = get_func!(i, "is_null-funcref");
 
-    i.invoke_typed::<Option<FuncAddr>, ()>(init, Some(FuncAddr(1)))
+    i.invoke_typed::<RefFunc, ()>(init, RefFunc(Some(FuncAddr(1))))
         .unwrap();
 
-    assert_result!(i, get_funcref, 0, None::<FuncAddr>);
-    assert_result!(i, get_funcref, 1, Some(FuncAddr(1)));
-    assert_result!(i, get_funcref_2, 0, None::<FuncAddr>);
+    assert_result!(i, get_funcref, 0, RefFunc(None));
+    assert_result!(i, get_funcref, 1, RefFunc(Some(FuncAddr(1))));
+    assert_result!(i, get_funcref_2, 0, RefFunc(None));
     assert_result!(i, is_null_funcref, 1, 0);
     assert_result!(i, is_null_funcref, 2, 0);
 
@@ -86,36 +89,36 @@ fn table_funcref_test() {
         i,
         get_funcref,
         2,
-        Result<Option<FuncAddr>, RuntimeError>,
+        Result<RefFunc, RuntimeError>,
         i32,
-        Option<FuncAddr>,
+        RefFunc,
         RuntimeError::Trap(TrapError::TableOrElementAccessOutOfBounds)
     );
     assert_error!(
         i,
         get_funcref_2,
         3,
-        Result<Option<FuncAddr>, RuntimeError>,
+        Result<RefFunc, RuntimeError>,
         i32,
-        Option<FuncAddr>,
+        RefFunc,
         RuntimeError::Trap(TrapError::TableOrElementAccessOutOfBounds)
     );
     assert_error!(
         i,
         get_funcref,
         -1,
-        Result<Option<FuncAddr>, RuntimeError>,
+        Result<RefFunc, RuntimeError>,
         i32,
-        Option<FuncAddr>,
+        RefFunc,
         RuntimeError::Trap(TrapError::TableOrElementAccessOutOfBounds)
     );
     assert_error!(
         i,
         get_funcref_2,
         -1,
-        Result<Option<FuncAddr>, RuntimeError>,
+        Result<RefFunc, RuntimeError>,
         i32,
-        Option<FuncAddr>,
+        RefFunc,
         RuntimeError::Trap(TrapError::TableOrElementAccessOutOfBounds)
     );
 }

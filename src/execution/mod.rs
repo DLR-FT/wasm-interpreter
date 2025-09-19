@@ -125,9 +125,9 @@ where
         // store: &mut Store,
     ) -> Result<Returns, RuntimeError> {
         let FunctionRef { func_addr } = *function_ref;
-        self.store
-            .invoke(func_addr, params.into_values())
-            .map(|values| Returns::from_values(values.into_iter()))
+        let return_values = self.store.invoke(func_addr, params.into_values())?;
+        let returns = Returns::try_from_values(return_values.into_iter()).unwrap_validated();
+        Ok(returns)
     }
 
     /// Invokes a function with the given parameters. The return types depend on the function signature.
@@ -205,7 +205,8 @@ pub fn host_function_wrapper<Params: InteropValueList, Results: InteropValueList
     params: Vec<Value>,
     f: impl FnOnce(Params) -> Results,
 ) -> Vec<Value> {
-    let params = Params::from_values(params.into_iter());
+    let params =
+        Params::try_from_values(params.into_iter()).expect("Params match the actual parameters");
     let results = f(params);
     results.into_values()
 }
