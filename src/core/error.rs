@@ -12,45 +12,6 @@ use crate::core::reader::types::ValType;
 use super::indices::{DataIdx, ElemIdx, FuncIdx, MemIdx, TableIdx, TypeIdx};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub enum RuntimeError {
-    Trap(TrapError),
-
-    ModuleNotFound,
-    FunctionNotFound,
-    StackExhaustion,
-    HostFunctionSignatureMismatch,
-
-    // Are all of these instantiation variants? Add a new `InstantiationError` enum?
-    InvalidImportType,
-    UnknownImport,
-    MoreThanOneMemory,
-}
-
-#[derive(Debug, PartialEq, Eq, Clone)]
-pub enum TrapError {
-    DivideBy0,
-    UnrepresentableResult,
-    // https://github.com/wasmi-labs/wasmi/blob/37d1449524a322817c55026eb21eb97dd693b9ce/crates/core/src/trap.rs#L265C5-L265C27
-    BadConversionToInteger,
-
-    /// An access to a memory or data was out of bounds.
-    ///
-    /// Note: As of now, there is no way to distinguish between both of these. The reference
-    /// interpreter and Wast testsuite messages call this error "memory access out of bounds".
-    MemoryOrDataAccessOutOfBounds,
-    /// An access to a table or an element was out of bounds.
-    ///
-    /// Note: As of now, there is no way to distinguish between both of these. The reference
-    /// interpreter and Wast testsuite messages call this error "table access out of bounds".
-    TableOrElementAccessOutOfBounds,
-    UninitializedElement,
-    SignatureMismatch,
-    IndirectCallNullFuncRef,
-    TableAccessOutOfBounds,
-    ReachedUnreachable,
-}
-
-#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum ValidationError {
     /// The magic number at the very start of the given WASM file is invalid.
     InvalidMagic,
@@ -255,83 +216,5 @@ impl Display for ValidationError {
             ValidationError::DuplicateExportName => f.write_str("Duplicate export name"),
             ValidationError::UnsupportedMultipleMemoriesProposal => f.write_str("Proposal for multiple memories is not yet supported"),
         }
-    }
-}
-
-impl Display for TrapError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-        match self {
-            TrapError::DivideBy0 => f.write_str("Divide by zero is not permitted"),
-            TrapError::UnrepresentableResult => f.write_str("Result is unrepresentable"),
-            TrapError::BadConversionToInteger => f.write_str("Bad conversion to integer"),
-            TrapError::MemoryOrDataAccessOutOfBounds => {
-                f.write_str("Memory or data access out of bounds")
-            }
-            TrapError::TableOrElementAccessOutOfBounds => {
-                f.write_str("Table or element access out of bounds")
-            }
-            TrapError::UninitializedElement => f.write_str("Uninitialized element"),
-            TrapError::SignatureMismatch => f.write_str("Indirect call signature mismatch"),
-            TrapError::IndirectCallNullFuncRef => {
-                f.write_str("Indirect call targeted null reference")
-            }
-            TrapError::TableAccessOutOfBounds => {
-                f.write_str("Indirect call: table index out of bounds")
-            }
-            TrapError::ReachedUnreachable => {
-                f.write_str("an unreachable statement was reached, triggered a trap")
-            }
-        }
-    }
-}
-
-impl Display for RuntimeError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-        match self {
-            RuntimeError::Trap(trap_error) => write!(f, "{trap_error}"),
-            RuntimeError::FunctionNotFound => f.write_str("Function not found"),
-            RuntimeError::ModuleNotFound => f.write_str("No such module exists"),
-            RuntimeError::StackExhaustion => {
-                f.write_str("either the call stack or the value stack overflowed")
-            }
-            RuntimeError::HostFunctionSignatureMismatch => {
-                f.write_str("host function call did not respect its type signature")
-            }
-            RuntimeError::InvalidImportType => f.write_str("Invalid import type"),
-            // TODO: maybe move these to LinkerError also add more info to them (the name's export, function idx, etc)
-            RuntimeError::UnknownImport => f.write_str("Unknown Import"),
-            RuntimeError::MoreThanOneMemory => {
-                f.write_str("As of not only one memory is allowed per module.")
-            }
-        }
-    }
-}
-
-impl From<TrapError> for RuntimeError {
-    fn from(value: TrapError) -> Self {
-        Self::Trap(value)
-    }
-}
-
-/// A definition for a [`Result`] using the optional [`Error`] type.
-pub type Result<T> = core::result::Result<T, Error>;
-
-/// An opt-in error type useful for merging all error types of this crate into a single type.
-///
-/// Note: This crate does not use this type in any public interfaces, making it optional for downstream users.
-pub enum Error {
-    Validation(ValidationError),
-    RuntimeError(RuntimeError),
-}
-
-impl From<ValidationError> for Error {
-    fn from(value: ValidationError) -> Self {
-        Self::Validation(value)
-    }
-}
-
-impl From<RuntimeError> for Error {
-    fn from(value: RuntimeError) -> Self {
-        Self::RuntimeError(value)
     }
 }

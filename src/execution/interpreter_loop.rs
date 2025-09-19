@@ -12,7 +12,6 @@ use core::iter::zip;
 use crate::{
     assert_validated::UnwrapValidatedExt,
     core::{
-        error::TrapError,
         indices::{DataIdx, FuncIdx, GlobalIdx, LabelIdx, LocalIdx, MemIdx, TableIdx, TypeIdx},
         reader::{
             types::{memarg::MemArg, BlockType},
@@ -24,8 +23,8 @@ use crate::{
     unreachable_validated,
     value::{self, FuncAddr, Ref},
     value_stack::Stack,
-    ElemInst, FuncInst, MemInst, ModuleInst, NumType, RefType, RuntimeError, TableInst, ValType,
-    Value,
+    ElemInst, FuncInst, MemInst, ModuleInst, NumType, RefType, RuntimeError, TableInst, TrapError,
+    ValType, Value,
 };
 
 #[cfg(feature = "hooks")]

@@ -3,9 +3,9 @@ use core::{cell::UnsafeCell, mem};
 use alloc::vec::Vec;
 
 use crate::{
-    core::{error::TrapError, indices::MemIdx, little_endian::LittleEndianBytes},
+    core::{indices::MemIdx, little_endian::LittleEndianBytes},
     rw_spinlock::RwSpinLock,
-    RuntimeError,
+    RuntimeError, TrapError,
 };
 
 /// Implementation of the linear memory suitable for concurrent access

@@ -15,6 +15,7 @@ use crate::{RuntimeError, ValidationInfo};
 
 pub(crate) mod assert_validated;
 pub mod const_interpreter_loop;
+pub mod error;
 pub mod function_ref;
 pub mod hooks;
 mod interpreter_loop;
