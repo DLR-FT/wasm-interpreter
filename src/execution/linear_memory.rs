@@ -504,8 +504,12 @@ impl<const PAGE_SIZE: usize> Default for LinearMemory<PAGE_SIZE> {
 
 #[cfg(test)]
 mod test {
+    use core::f64;
+
     use alloc::format;
     use core::mem;
+
+    use crate::value::{F32, F64};
 
     use super::*;
 
@@ -584,8 +588,8 @@ mod test {
 
     #[test]
     fn roundtrip_normal_range_f32_13() {
-        let x: f32 = 13.0;
-        let highest_legal_offset = PAGE_SIZE - mem::size_of::<f32>();
+        let x = F32(13.0);
+        let highest_legal_offset = PAGE_SIZE - mem::size_of::<F32>();
         for offset in 0..MemIdx::try_from(highest_legal_offset).unwrap() {
             let lin_mem = LinearMemory::<PAGE_SIZE>::new_with_initial_pages(PAGES);
 
@@ -593,7 +597,7 @@ mod test {
 
             assert_eq!(
                 lin_mem
-                    .load::<{ core::mem::size_of::<f32>() }, f32>(offset)
+                    .load::<{ core::mem::size_of::<F32>() }, F32>(offset)
                     .unwrap(),
                 x,
                 "load store roundtrip for {x:?} failed!"
@@ -603,8 +607,8 @@ mod test {
 
     #[test]
     fn roundtrip_normal_range_f64_min() {
-        let x: f64 = f64::MIN;
-        let highest_legal_offset = PAGE_SIZE - mem::size_of::<f64>();
+        let x = F64(f64::MIN);
+        let highest_legal_offset = PAGE_SIZE - mem::size_of::<F64>();
         for offset in 0..MemIdx::try_from(highest_legal_offset).unwrap() {
             let lin_mem = LinearMemory::<PAGE_SIZE>::new_with_initial_pages(PAGES);
 
@@ -612,7 +616,7 @@ mod test {
 
             assert_eq!(
                 lin_mem
-                    .load::<{ core::mem::size_of::<f64>() }, f64>(offset)
+                    .load::<{ core::mem::size_of::<F64>() }, F64>(offset)
                     .unwrap(),
                 x,
                 "load store roundtrip for {x:?} failed!"
@@ -622,7 +626,7 @@ mod test {
 
     #[test]
     fn roundtrip_normal_range_f64_nan() {
-        let x: f64 = f64::NAN;
+        let x = F64(f64::NAN);
         let highest_legal_offset = PAGE_SIZE - mem::size_of::<f64>();
         for offset in 0..MemIdx::try_from(highest_legal_offset).unwrap() {
             let lin_mem = LinearMemory::<PAGE_SIZE>::new_with_initial_pages(PAGES);
@@ -631,7 +635,7 @@ mod test {
 
             assert!(
                 lin_mem
-                    .load::<{ core::mem::size_of::<f64>() }, f64>(offset)
+                    .load::<{ core::mem::size_of::<F64>() }, F64>(offset)
                     .unwrap()
                     .is_nan(),
                 "load store roundtrip for {x:?} failed!"

@@ -21,7 +21,7 @@ use crate::{
     },
     store::DataInst,
     unreachable_validated,
-    value::{self, FuncAddr, Ref},
+    value::{self, FuncAddr, Ref, F32, F64},
     value_stack::Stack,
     ElemInst, FuncInst, MemInst, ModuleInst, NumType, RefType, RuntimeError, TableInst, TrapError,
     ValType, Value,
@@ -477,7 +477,7 @@ pub(super) fn run<T, H: HookSet>(
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data = mem.mem.load(idx)?;
 
-                stack.push_value(Value::F32(value::F32(data)))?;
+                stack.push_value(Value::F32(data))?;
                 trace!("Instruction: f32.load [{relative_address}] -> [{data}]");
             }
             F64_LOAD => {
@@ -493,7 +493,7 @@ pub(super) fn run<T, H: HookSet>(
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data = mem.mem.load(idx)?;
 
-                stack.push_value(Value::F64(value::F64(data)))?;
+                stack.push_value(Value::F64(data))?;
                 trace!("Instruction: f64.load [{relative_address}] -> [{data}]");
             }
             I32_LOAD8_S => {
@@ -693,7 +693,7 @@ pub(super) fn run<T, H: HookSet>(
             F32_STORE => {
                 let memarg = MemArg::read(wasm).unwrap_validated();
 
-                let data_to_store: f32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
+                let data_to_store: F32 = stack.pop_value(ValType::NumType(NumType::F32)).into();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
                 let mem_addr = *store.modules[current_module_idx]
@@ -710,7 +710,7 @@ pub(super) fn run<T, H: HookSet>(
             F64_STORE => {
                 let memarg = MemArg::read(wasm).unwrap_validated();
 
-                let data_to_store: f64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
+                let data_to_store: F64 = stack.pop_value(ValType::NumType(NumType::F64)).into();
                 let relative_address: u32 = stack.pop_value(ValType::NumType(NumType::I32)).into();
 
                 let mem_addr = *store.modules[current_module_idx]
@@ -857,7 +857,7 @@ pub(super) fn run<T, H: HookSet>(
                 stack.push_value(constant.into())?;
             }
             F32_CONST => {
-                let constant = f32::from_bits(wasm.read_var_f32().unwrap_validated());
+                let constant = F32::from_bits(wasm.read_var_f32().unwrap_validated());
                 trace!("Instruction: f32.const [] -> [{constant:.7}]");
                 stack.push_value(constant.into())?;
             }
@@ -1196,7 +1196,7 @@ pub(super) fn run<T, H: HookSet>(
                 stack.push_value(constant.into())?;
             }
             F64_CONST => {
-                let constant = f64::from_bits(wasm.read_var_f64().unwrap_validated());
+                let constant = F64::from_bits(wasm.read_var_f64().unwrap_validated());
                 trace!("Instruction: f64.const [] -> [{constant}]");
                 stack.push_value(constant.into())?;
             }
