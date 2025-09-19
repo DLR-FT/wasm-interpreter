@@ -1,7 +1,7 @@
 use alloc::borrow::ToOwned;
 use alloc::vec::Vec;
 
-use crate::execution::{hooks::HookSet, value::InteropValueList, RuntimeInstance};
+use crate::execution::{hooks::HookSet, interop::InteropValueList, RuntimeInstance};
 use crate::{ExternVal, RuntimeError, Store, Value};
 
 pub struct FunctionRef {
