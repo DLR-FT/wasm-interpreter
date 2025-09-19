@@ -76,9 +76,9 @@ fn table_funcref_test() {
     i.invoke_typed::<Option<FuncAddr>, ()>(init, Some(FuncAddr(1)))
         .unwrap();
 
-    assert_result!(i, get_funcref, 0, None);
+    assert_result!(i, get_funcref, 0, None::<FuncAddr>);
     assert_result!(i, get_funcref, 1, Some(FuncAddr(1)));
-    assert_result!(i, get_funcref_2, 0, None);
+    assert_result!(i, get_funcref_2, 0, None::<FuncAddr>);
     assert_result!(i, is_null_funcref, 1, 0);
     assert_result!(i, is_null_funcref, 2, 0);
 
