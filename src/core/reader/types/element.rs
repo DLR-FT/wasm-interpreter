@@ -6,7 +6,7 @@ use crate::core::reader::types::TableType;
 use crate::core::reader::{WasmReadable, WasmReader};
 use crate::read_constant_expression::read_constant_expression;
 use crate::validation_stack::ValidationStack;
-use crate::{Error, NumType, ValType};
+use crate::{NumType, ValType, ValidationError};
 
 use alloc::collections::btree_set::BTreeSet;
 use alloc::vec::Vec;
@@ -55,7 +55,7 @@ impl ElemType {
         validation_context_refs: &mut BTreeSet<FuncIdx>,
         tables: &[TableType],
         imported_global_types: &[GlobalType],
-    ) -> Result<Vec<Self>, Error> {
+    ) -> Result<Vec<Self>, ValidationError> {
         wasm.read_vec(|wasm| {
             let prop = wasm.read_var_u32()?;
 
@@ -213,7 +213,7 @@ impl ElemType {
                 }
                 8.. => {
                     // TODO fix error
-                    return Err(Error::InvalidVersion);
+                    return Err(ValidationError::InvalidVersion);
                 }
             };
 
@@ -230,9 +230,12 @@ impl ElemType {
                 }) => {
                     // start validating elemmode of form active {table x, offset expr}
                     // 1-2. C.tables[x] must be defined with type: limits t
-                    let table_type = tables.get(x as usize).ok_or(Error::UnknownTable)?.et;
+                    let table_type = tables
+                        .get(x as usize)
+                        .ok_or(ValidationError::UnknownTable)?
+                        .et;
                     if table_type != t {
-                        return Err(Error::UnknownTable);
+                        return Err(ValidationError::UnknownTable);
                     }
                     // 3-4. _expr must be valid with type I32 and be const: already checked during the parse of initializer expressions above.
                     // Then elemmode is valid with type t.
@@ -299,7 +302,7 @@ fn parse_validate_active_segment_offset_expr(
     imported_global_types: &[GlobalType],
     num_funcs: usize,
     validation_context_refs: &mut BTreeSet<FuncIdx>,
-) -> Result<Span, Error> {
+) -> Result<Span, ValidationError> {
     let mut valid_stack = ValidationStack::new();
     let (span, seen_func_refs) =
         read_constant_expression(wasm, &mut valid_stack, imported_global_types, num_funcs)?;
@@ -320,12 +323,12 @@ fn parse_validate_shortened_initializer_list(
     wasm: &mut WasmReader,
     num_funcs: usize,
     validation_context_refs: &mut BTreeSet<FuncIdx>,
-) -> Result<ElemItems, Error> {
+) -> Result<ElemItems, ValidationError> {
     wasm.read_vec(|w| {
         let func_idx = w.read_var_u32()?;
         if num_funcs <= func_idx as usize {
             // TODO fix error
-            return Err(Error::InvalidLocalIdx);
+            return Err(ValidationError::InvalidLocalIdx);
         }
         validation_context_refs.insert(func_idx as FuncIdx);
         Ok(func_idx)
@@ -347,7 +350,7 @@ fn parse_validate_generic_initializer_list(
     imported_global_types: &[GlobalType],
     num_funcs: usize,
     validation_context_refs: &mut BTreeSet<FuncIdx>,
-) -> Result<ElemItems, Error> {
+) -> Result<ElemItems, ValidationError> {
     wasm.read_vec(|w| {
         let mut valid_stack = ValidationStack::new();
         let (span, seen_func_refs) =
@@ -362,10 +365,10 @@ fn parse_validate_generic_initializer_list(
 /// Parse an elemkind: <https://webassembly.github.io/spec/core/binary/modules.html#element-section>
 /// # Returns
 /// - `Ok(elemkind)` if parsing is successful, Err(_) otherwise
-fn parse_elemkind(wasm: &mut WasmReader) -> Result<u8, Error> {
+fn parse_elemkind(wasm: &mut WasmReader) -> Result<u8, ValidationError> {
     let et = wasm.read_u8()?;
     if et != 0x00 {
-        Err(Error::OnlyFuncRefIsAllowed)
+        Err(ValidationError::OnlyFuncRefIsAllowed)
     } else {
         Ok(et)
     }

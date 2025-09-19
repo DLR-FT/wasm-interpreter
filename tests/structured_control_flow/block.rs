@@ -409,7 +409,7 @@ fn br_table_label_typecheck1() {
 
     assert_eq!(
         validate(&wasm_bytes).err().unwrap(),
-        wasm::Error::InvalidLabelIdx(0)
+        wasm::ValidationError::InvalidLabelIdx(0)
     );
 }
 
