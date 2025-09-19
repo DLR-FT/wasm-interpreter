@@ -4,7 +4,7 @@
 //! # Note to Developer:
 //!
 //! 1. There must be only imports and one `impl` with one function (`run`) in it.
-//! 2. This module must only use [`RuntimeError`] and never [`Error`](crate::core::error::Error).
+//! 2. This module must only use [`RuntimeError`] and never [`Error`](crate::core::error::ValidationError).
 
 use alloc::vec::Vec;
 use core::iter::zip;
@@ -12,7 +12,6 @@ use core::iter::zip;
 use crate::{
     assert_validated::UnwrapValidatedExt,
     core::{
-        error::TrapError,
         indices::{DataIdx, FuncIdx, GlobalIdx, LabelIdx, LocalIdx, MemIdx, TableIdx, TypeIdx},
         reader::{
             types::{memarg::MemArg, BlockType},
@@ -24,8 +23,8 @@ use crate::{
     unreachable_validated,
     value::{self, FuncAddr, Ref},
     value_stack::Stack,
-    ElemInst, FuncInst, MemInst, ModuleInst, NumType, RefType, RuntimeError, TableInst, ValType,
-    Value,
+    ElemInst, FuncInst, MemInst, ModuleInst, NumType, RefType, RuntimeError, TableInst, TrapError,
+    ValType, Value,
 };
 
 #[cfg(feature = "hooks")]
