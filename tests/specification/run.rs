@@ -7,6 +7,7 @@ use bumpalo::Bump;
 use itertools::enumerate;
 use log::debug;
 use wasm::function_ref::FunctionRef;
+use wasm::RefType;
 use wasm::RuntimeError;
 use wasm::TrapError;
 use wasm::Value;
@@ -666,14 +667,14 @@ pub fn arg_to_value(arg: WastArg) -> Value {
                     use wasm::value::*;
                     use wast::core::AbstractHeapType::*;
                     match ty {
-                        Func => Value::Ref(Ref::Func(FuncAddr::null())),
-                        Extern => Value::Ref(Ref::Extern(ExternAddr::null())),
+                        Func => Value::Ref(Ref::Null(RefType::FuncRef)),
+                        Extern => Value::Ref(Ref::Null(RefType::ExternRef)),
                         _ => todo!("`GC` proposal"),
                     }
                 }
             },
             WastArgCore::RefExtern(index) => wasm::value::Value::Ref(wasm::value::Ref::Extern(
-                wasm::value::ExternAddr::new(Some(index as usize)),
+                wasm::value::ExternAddr(index as usize),
             )),
             WastArgCore::RefHost(_) => {
                 todo!("`RefHost` value arguments")
@@ -720,8 +721,8 @@ fn result_to_value(result: wast::WastRet) -> Value {
                     use wasm::value::*;
                     use wast::core::AbstractHeapType::*;
                     match ty {
-                        Func => Value::Ref(Ref::Func(FuncAddr::null())),
-                        Extern => Value::Ref(Ref::Extern(ExternAddr::null())),
+                        Func => Value::Ref(Ref::Null(RefType::FuncRef)),
+                        Extern => Value::Ref(Ref::Null(RefType::ExternRef)),
                         _ => todo!("`GC` proposal"),
                     }
                 }
@@ -736,11 +737,9 @@ fn result_to_value(result: wast::WastRet) -> Value {
                 }
             },
             WastRetCore::RefExtern(None) => unreachable!("Expected a non-null extern reference"),
-            WastRetCore::RefExtern(Some(index)) => {
-                Value::Ref(wasm::value::Ref::Extern(wasm::value::ExternAddr {
-                    addr: Some(index as usize),
-                }))
-            }
+            WastRetCore::RefExtern(Some(index)) => Value::Ref(wasm::value::Ref::Extern(
+                wasm::value::ExternAddr(index as usize),
+            )),
             other => todo!("handling of wast ret type {other:?}"),
         },
         wast::WastRet::Component(_) => todo!("`Component` result"),

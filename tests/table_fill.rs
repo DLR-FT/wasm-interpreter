@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 */
-use wasm::value::{FuncAddr, FuncRefForInteropValue, Ref};
+use wasm::value::FuncAddr;
 use wasm::{validate, RuntimeError, RuntimeInstance, TrapError, DEFAULT_MODULE};
 
 macro_rules! get_func {
@@ -22,15 +22,6 @@ macro_rules! get_func {
         &$instance
             .get_function_by_name(DEFAULT_MODULE, $func_name)
             .unwrap()
-    };
-}
-
-macro_rules! is_specific_func {
-    ($self:expr, $func_id:expr) => {
-        match $self {
-            Ref::Func(func_addr) => func_addr.addr == Some($func_id as usize),
-            _ => unimplemented!(),
-        }
     };
 }
 
@@ -64,253 +55,190 @@ fn table_fill_test() {
     let fill_abbrev = get_func!(i, "fill-abbrev");
 
     assert!(i
-        .invoke_typed::<i32, FuncRefForInteropValue>(get, 1)
+        .invoke_typed::<i32, Option<FuncAddr>>(get, 1)
         .unwrap()
-        .get_ref()
-        .is_null());
+        .is_none());
     assert!(i
-        .invoke_typed::<i32, FuncRefForInteropValue>(get, 2)
+        .invoke_typed::<i32, Option<FuncAddr>>(get, 2)
         .unwrap()
-        .get_ref()
-        .is_null());
+        .is_none());
     assert!(i
-        .invoke_typed::<i32, FuncRefForInteropValue>(get, 3)
+        .invoke_typed::<i32, Option<FuncAddr>>(get, 3)
         .unwrap()
-        .get_ref()
-        .is_null());
+        .is_none());
     assert!(i
-        .invoke_typed::<i32, FuncRefForInteropValue>(get, 4)
+        .invoke_typed::<i32, Option<FuncAddr>>(get, 4)
         .unwrap()
-        .get_ref()
-        .is_null());
+        .is_none());
     assert!(i
-        .invoke_typed::<i32, FuncRefForInteropValue>(get, 5)
+        .invoke_typed::<i32, Option<FuncAddr>>(get, 5)
         .unwrap()
-        .get_ref()
-        .is_null());
+        .is_none());
 
-    i.invoke_typed::<(i32, FuncRefForInteropValue, i32), ()>(
-        fill,
-        (
-            2,
-            FuncRefForInteropValue::new(Ref::Func(FuncAddr::new(Some(1)))).unwrap(),
-            3,
-        ),
-    )
-    .unwrap();
+    i.invoke_typed::<(i32, Option<FuncAddr>, i32), ()>(fill, (2, Some(FuncAddr(1)), 3))
+        .unwrap();
 
     assert!(i
-        .invoke_typed::<i32, FuncRefForInteropValue>(get, 1)
+        .invoke_typed::<i32, Option<FuncAddr>>(get, 1)
         .unwrap()
-        .get_ref()
-        .is_null());
-    assert!(is_specific_func!(
-        i.invoke_typed::<i32, FuncRefForInteropValue>(get, 2)
+        .is_none());
+    assert_eq!(
+        i.invoke_typed::<i32, Option<FuncAddr>>(get, 2)
             .unwrap()
-            .get_ref(),
-        1
-    ));
-    assert!(is_specific_func!(
-        i.invoke_typed::<i32, FuncRefForInteropValue>(get, 3)
             .unwrap()
-            .get_ref(),
+            .0,
         1
-    ));
-    assert!(is_specific_func!(
-        i.invoke_typed::<i32, FuncRefForInteropValue>(get, 4)
+    );
+    assert_eq!(
+        i.invoke_typed::<i32, Option<FuncAddr>>(get, 3)
             .unwrap()
-            .get_ref(),
+            .unwrap()
+            .0,
         1
-    ));
+    );
+    assert_eq!(
+        i.invoke_typed::<i32, Option<FuncAddr>>(get, 4)
+            .unwrap()
+            .unwrap()
+            .0,
+        1
+    );
     assert!(i
-        .invoke_typed::<i32, FuncRefForInteropValue>(get, 5)
+        .invoke_typed::<i32, Option<FuncAddr>>(get, 5)
         .unwrap()
-        .get_ref()
-        .is_null());
+        .is_none());
 
-    i.invoke_typed::<(i32, FuncRefForInteropValue, i32), ()>(
-        fill,
-        (
-            4,
-            FuncRefForInteropValue::new(Ref::Func(FuncAddr::new(Some(2)))).unwrap(),
-            2,
-        ),
-    )
-    .unwrap();
+    i.invoke_typed::<(i32, Option<FuncAddr>, i32), ()>(fill, (4, Some(FuncAddr(2)), 2))
+        .unwrap();
 
-    assert!(is_specific_func!(
-        i.invoke_typed::<i32, FuncRefForInteropValue>(get, 3)
+    assert_eq!(
+        i.invoke_typed::<i32, Option<FuncAddr>>(get, 3)
             .unwrap()
-            .get_ref(),
+            .unwrap()
+            .0,
         1
-    ));
-    assert!(is_specific_func!(
-        i.invoke_typed::<i32, FuncRefForInteropValue>(get, 4)
+    );
+    assert_eq!(
+        i.invoke_typed::<i32, Option<FuncAddr>>(get, 4)
             .unwrap()
-            .get_ref(),
+            .unwrap()
+            .0,
         2
-    ));
-    assert!(is_specific_func!(
-        i.invoke_typed::<i32, FuncRefForInteropValue>(get, 5)
+    );
+    assert_eq!(
+        i.invoke_typed::<i32, Option<FuncAddr>>(get, 5)
             .unwrap()
-            .get_ref(),
+            .unwrap()
+            .0,
         2
-    ));
+    );
     assert!(i
-        .invoke_typed::<i32, FuncRefForInteropValue>(get, 6)
+        .invoke_typed::<i32, Option<FuncAddr>>(get, 6)
         .unwrap()
-        .get_ref()
-        .is_null());
+        .is_none());
 
-    i.invoke_typed::<(i32, FuncRefForInteropValue, i32), ()>(
-        fill,
-        (
-            4,
-            FuncRefForInteropValue::new(Ref::Func(FuncAddr::new(Some(3)))).unwrap(),
-            0,
-        ),
-    )
-    .unwrap();
+    i.invoke_typed::<(i32, Option<FuncAddr>, i32), ()>(fill, (4, Some(FuncAddr(3)), 0))
+        .unwrap();
 
-    assert!(is_specific_func!(
-        i.invoke_typed::<i32, FuncRefForInteropValue>(get, 3)
+    assert_eq!(
+        i.invoke_typed::<i32, Option<FuncAddr>>(get, 3)
             .unwrap()
-            .get_ref(),
+            .unwrap()
+            .0,
         1
-    ));
-    assert!(is_specific_func!(
-        i.invoke_typed::<i32, FuncRefForInteropValue>(get, 4)
+    );
+    assert_eq!(
+        i.invoke_typed::<i32, Option<FuncAddr>>(get, 4)
             .unwrap()
-            .get_ref(),
-        2
-    ));
-    assert!(is_specific_func!(
-        i.invoke_typed::<i32, FuncRefForInteropValue>(get, 5)
             .unwrap()
-            .get_ref(),
+            .0,
         2
-    ));
+    );
+    assert_eq!(
+        i.invoke_typed::<i32, Option<FuncAddr>>(get, 5)
+            .unwrap()
+            .unwrap()
+            .0,
+        2
+    );
 
-    i.invoke_typed::<(i32, FuncRefForInteropValue, i32), ()>(
-        fill,
-        (
-            8,
-            FuncRefForInteropValue::new(Ref::Func(FuncAddr::new(Some(4)))).unwrap(),
-            2,
-        ),
-    )
-    .unwrap();
+    i.invoke_typed::<(i32, Option<FuncAddr>, i32), ()>(fill, (8, Some(FuncAddr(4)), 2))
+        .unwrap();
 
     assert!(i
-        .invoke_typed::<i32, FuncRefForInteropValue>(get, 7)
+        .invoke_typed::<i32, Option<FuncAddr>>(get, 7)
         .unwrap()
-        .get_ref()
-        .is_null());
-    assert!(is_specific_func!(
-        i.invoke_typed::<i32, FuncRefForInteropValue>(get, 8)
+        .is_none());
+    assert_eq!(
+        i.invoke_typed::<i32, Option<FuncAddr>>(get, 8)
             .unwrap()
-            .get_ref(),
+            .unwrap()
+            .0,
         4
-    ));
-    assert!(is_specific_func!(
-        i.invoke_typed::<i32, FuncRefForInteropValue>(get, 9)
+    );
+    assert_eq!(
+        i.invoke_typed::<i32, Option<FuncAddr>>(get, 9)
             .unwrap()
-            .get_ref(),
-        4
-    ));
-
-    i.invoke_typed::<(i32, FuncRefForInteropValue, i32), ()>(
-        fill_abbrev,
-        (
-            9,
-            FuncRefForInteropValue::new(Ref::Func(FuncAddr::null())).unwrap(),
-            1,
-        ),
-    )
-    .unwrap();
-    assert!(is_specific_func!(
-        i.invoke_typed::<i32, FuncRefForInteropValue>(get, 8)
             .unwrap()
-            .get_ref(),
+            .0,
         4
-    ));
-    assert!(i
-        .invoke_typed::<i32, FuncRefForInteropValue>(get, 9)
-        .unwrap()
-        .get_ref()
-        .is_null());
+    );
 
-    i.invoke_typed::<(i32, FuncRefForInteropValue, i32), ()>(
-        fill,
-        (
-            10,
-            FuncRefForInteropValue::new(Ref::Func(FuncAddr::new(Some(5)))).unwrap(),
-            0,
-        ),
-    )
-    .unwrap();
+    i.invoke_typed::<(i32, Option<FuncAddr>, i32), ()>(fill_abbrev, (9, None, 1))
+        .unwrap();
+    assert_eq!(
+        i.invoke_typed::<i32, Option<FuncAddr>>(get, 8)
+            .unwrap()
+            .unwrap()
+            .0,
+        4
+    );
     assert!(i
-        .invoke_typed::<i32, FuncRefForInteropValue>(get, 9)
+        .invoke_typed::<i32, Option<FuncAddr>>(get, 9)
         .unwrap()
-        .get_ref()
-        .is_null());
+        .is_none());
+
+    i.invoke_typed::<(i32, Option<FuncAddr>, i32), ()>(fill, (10, Some(FuncAddr(5)), 0))
+        .unwrap();
+    assert!(i
+        .invoke_typed::<i32, Option<FuncAddr>>(get, 9)
+        .unwrap()
+        .is_none());
 
     assert!(
-        i.invoke_typed::<(i32, FuncRefForInteropValue, i32), ()>(
-            fill,
-            (
-                8,
-                FuncRefForInteropValue::new(Ref::Func(FuncAddr::new(Some(6)))).unwrap(),
-                3
-            )
-        )
-        .err()
-        .unwrap()
+        i.invoke_typed::<(i32, Option<FuncAddr>, i32), ()>(fill, (8, Some(FuncAddr(6)), 3))
+            .err()
+            .unwrap()
             == RuntimeError::Trap(TrapError::TableOrElementAccessOutOfBounds)
     );
 
     assert!(i
-        .invoke_typed::<i32, FuncRefForInteropValue>(get, 7)
+        .invoke_typed::<i32, Option<FuncAddr>>(get, 7)
         .unwrap()
-        .get_ref()
-        .is_null());
-    assert!(is_specific_func!(
-        i.invoke_typed::<i32, FuncRefForInteropValue>(get, 8)
+        .is_none());
+    assert_eq!(
+        i.invoke_typed::<i32, Option<FuncAddr>>(get, 8)
             .unwrap()
-            .get_ref(),
+            .unwrap()
+            .0,
         4
-    ));
+    );
     assert!(i
-        .invoke_typed::<i32, FuncRefForInteropValue>(get, 9)
+        .invoke_typed::<i32, Option<FuncAddr>>(get, 9)
         .unwrap()
-        .get_ref()
-        .is_null());
+        .is_none());
 
     assert!(
-        i.invoke_typed::<(i32, FuncRefForInteropValue, i32), ()>(
-            fill,
-            (
-                11,
-                FuncRefForInteropValue::new(Ref::Func(FuncAddr::null())).unwrap(),
-                0
-            )
-        )
-        .err()
-        .unwrap()
+        i.invoke_typed::<(i32, Option<FuncAddr>, i32), ()>(fill, (11, None, 0))
+            .err()
+            .unwrap()
             == RuntimeError::Trap(TrapError::TableOrElementAccessOutOfBounds)
     );
 
     assert!(
-        i.invoke_typed::<(i32, FuncRefForInteropValue, i32), ()>(
-            fill,
-            (
-                11,
-                FuncRefForInteropValue::new(Ref::Func(FuncAddr::null())).unwrap(),
-                10
-            )
-        )
-        .err()
-        .unwrap()
+        i.invoke_typed::<(i32, Option<FuncAddr>, i32), ()>(fill, (11, None, 10))
+            .err()
+            .unwrap()
             == RuntimeError::Trap(TrapError::TableOrElementAccessOutOfBounds)
     );
 }

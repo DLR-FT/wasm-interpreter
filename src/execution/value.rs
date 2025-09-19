@@ -6,7 +6,7 @@ use core::{f32, f64};
 
 use crate::core::reader::types::{NumType, ValType};
 use crate::execution::assert_validated::UnwrapValidatedExt;
-use crate::{unreachable_validated, RefType, ValidationError};
+use crate::{unreachable_validated, RefType};
 
 #[derive(Clone, Debug, Copy, PartialOrd)]
 pub struct F32(pub f32);
@@ -316,33 +316,11 @@ pub enum Value {
     Ref(Ref),
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Ref {
+    Null(RefType),
     Func(FuncAddr),
     Extern(ExternAddr),
-}
-
-impl Ref {
-    pub fn default_from_ref_type(rref: RefType) -> Self {
-        match rref {
-            RefType::ExternRef => Self::Extern(ExternAddr::default()),
-            RefType::FuncRef => Self::Func(FuncAddr::default()),
-        }
-    }
-
-    pub fn is_null(&self) -> bool {
-        match self {
-            Self::Extern(extern_addr) => extern_addr.addr.is_none(),
-            Self::Func(func_addr) => func_addr.addr.is_none(),
-        }
-    }
-
-    pub fn is_specific_func(&self, func_id: u32) -> bool {
-        match self {
-            Self::Func(func_addr) => func_addr.addr == Some(func_id as usize),
-            _ => unreachable!(),
-        }
-    }
 }
 
 impl Display for Ref {
@@ -350,6 +328,7 @@ impl Display for Ref {
         match self {
             Ref::Func(func_addr) => write!(f, "FuncRef({func_addr:?})"),
             Ref::Extern(extern_addr) => write!(f, "ExternRef({extern_addr:?})"),
+            Ref::Null(ty) => write!(f, "Null({ty:?})"),
         }
     }
 }
@@ -363,40 +342,8 @@ impl Display for Ref {
 /// [`FuncAddr`] provides a unified representation for both types. Internally,
 /// the address corresponds to an index in a combined function namespace,
 /// typically represented as a vector.
-#[derive(Clone, Copy, PartialEq)]
-pub struct FuncAddr {
-    pub addr: Option<usize>,
-}
-
-impl Debug for FuncAddr {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        match self.addr.is_none() {
-            false => write!(f, "FuncAddr {{\n\taddr: {}\n}}", self.addr.unwrap()),
-            true => write!(f, "FuncAddr {{ NULL }}"),
-        }
-    }
-}
-
-impl FuncAddr {
-    pub fn new(addr: Option<usize>) -> Self {
-        match addr {
-            None => Self::null(),
-            Some(u) => Self { addr: Some(u) },
-        }
-    }
-    pub fn null() -> Self {
-        Self { addr: None }
-    }
-    pub fn is_null(&self) -> bool {
-        self.addr.is_none()
-    }
-}
-
-impl Default for FuncAddr {
-    fn default() -> Self {
-        Self::null()
-    }
-}
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct FuncAddr(pub usize);
 
 /// Represents the address of an external reference in the interpreter.
 ///
@@ -406,28 +353,8 @@ impl Default for FuncAddr {
 ///
 /// Internally, [`ExternAddr`] corresponds to an index in a linear vector,
 /// enabling dynamic storage and retrieval of external values.
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct ExternAddr {
-    pub addr: Option<usize>,
-}
-
-impl ExternAddr {
-    pub fn new(addr: Option<usize>) -> Self {
-        match addr {
-            None => Self::null(),
-            Some(u) => Self { addr: Some(u) },
-        }
-    }
-    pub fn null() -> Self {
-        Self { addr: None }
-    }
-}
-
-impl Default for ExternAddr {
-    fn default() -> Self {
-        Self::null()
-    }
-}
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ExternAddr(pub usize);
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum RefValueTy {
@@ -442,8 +369,7 @@ impl Value {
             ValType::NumType(NumType::I64) => Self::I64(0),
             ValType::NumType(NumType::F32) => Self::F32(F32(0.0)),
             ValType::NumType(NumType::F64) => Self::F64(F64(0.0_f64)),
-            ValType::RefType(RefType::ExternRef) => Self::Ref(Ref::Extern(ExternAddr::null())),
-            ValType::RefType(RefType::FuncRef) => Self::Ref(Ref::Func(FuncAddr::null())),
+            ValType::RefType(ref_type) => Self::Ref(Ref::Null(ref_type)),
             other => {
                 todo!("cannot determine type for {other:?} because this value is not supported yet")
             }
@@ -456,10 +382,9 @@ impl Value {
             Value::I64(_) => ValType::NumType(NumType::I64),
             Value::F32(_) => ValType::NumType(NumType::F32),
             Value::F64(_) => ValType::NumType(NumType::F64),
-            Value::Ref(rref) => match rref {
-                Ref::Extern(_) => ValType::RefType(RefType::ExternRef),
-                Ref::Func(_) => ValType::RefType(RefType::FuncRef),
-            },
+            Value::Ref(Ref::Null(ref_type)) => ValType::RefType(*ref_type),
+            Value::Ref(Ref::Func(_)) => ValType::RefType(RefType::FuncRef),
+            Value::Ref(Ref::Extern(_)) => ValType::RefType(RefType::ExternRef),
         }
     }
 }
@@ -622,39 +547,20 @@ impl InteropValue for f64 {
     }
 }
 
-#[derive(PartialEq, Debug, Copy, Clone)]
-pub struct FuncRefForInteropValue {
-    rref: Ref,
-}
-
-impl FuncRefForInteropValue {
-    pub fn new(rref: Ref) -> Result<Self, ValidationError> {
-        match rref {
-            Ref::Extern(_) => Err(ValidationError::WrongRefTypeForInteropValue(
-                RefType::ExternRef,
-                RefType::FuncRef,
-            )),
-            Ref::Func(_) => Ok(Self { rref }),
-        }
-    }
-
-    pub fn get_ref(&self) -> Ref {
-        self.rref
-    }
-}
-
-impl InteropValue for FuncRefForInteropValue {
+impl InteropValue for Option<FuncAddr> {
     const TY: ValType = ValType::RefType(RefType::FuncRef);
 
     #[allow(warnings)]
     fn into_value(self) -> Value {
-        Value::Ref(self.rref)
+        let rref = self.map(Ref::Func).unwrap_or(Ref::Null(RefType::FuncRef));
+        Value::Ref(rref)
     }
 
     #[allow(warnings)]
     fn from_value(value: Value) -> Self {
         match value {
-            Value::Ref(rref) => FuncRefForInteropValue::new(rref).unwrap_validated(),
+            Value::Ref(Ref::Null(RefType::FuncRef)) => None,
+            Value::Ref(Ref::Func(func_addr)) => Some(func_addr),
             _ => unreachable_validated!(),
         }
     }

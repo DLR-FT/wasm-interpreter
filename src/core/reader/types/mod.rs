@@ -8,7 +8,6 @@ use global::GlobalType;
 
 use crate::core::reader::{WasmReadable, WasmReader};
 use crate::execution::assert_validated::UnwrapValidatedExt;
-use crate::value::{ExternAddr, FuncAddr, Ref};
 use crate::ValidationError;
 
 pub mod data;
@@ -65,18 +64,6 @@ impl WasmReadable for VecType {
 pub enum RefType {
     FuncRef,
     ExternRef,
-}
-
-impl RefType {
-    /// TODO: we have to make sure they are NOT null Refs, but still, they are
-    /// not valid ones as we cast them from RefTypes which don't hold addresses
-    /// per-se
-    pub fn to_null_ref(&self) -> Ref {
-        match self {
-            RefType::ExternRef => Ref::Extern(ExternAddr::null()),
-            RefType::FuncRef => Ref::Func(FuncAddr::null()),
-        }
-    }
 }
 
 impl RefType {
