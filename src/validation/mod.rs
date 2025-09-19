@@ -12,7 +12,7 @@ use crate::core::reader::types::import::{Import, ImportDesc};
 use crate::core::reader::types::{FuncType, MemType, ResultType, TableType};
 use crate::core::reader::{WasmReadable, WasmReader};
 use crate::core::sidetable::Sidetable;
-use crate::{Error, ExportDesc};
+use crate::{ExportDesc, ValidationError};
 
 pub(crate) mod code;
 pub(crate) mod data;
@@ -53,12 +53,12 @@ pub struct ValidationInfo<'bytecode> {
     // pub(crate) exports_length: Exported,
 }
 
-fn validate_exports(validation_info: &ValidationInfo) -> Result<(), Error> {
+fn validate_exports(validation_info: &ValidationInfo) -> Result<(), ValidationError> {
     let mut found_export_names: btree_set::BTreeSet<&str> = btree_set::BTreeSet::new();
     use crate::core::reader::types::export::ExportDesc::*;
     for export in &validation_info.exports {
         if found_export_names.contains(export.name.as_str()) {
-            return Err(Error::DuplicateExportName);
+            return Err(ValidationError::DuplicateExportName);
         }
         found_export_names.insert(export.name.as_str());
         match export.desc {
@@ -67,28 +67,28 @@ fn validate_exports(validation_info: &ValidationInfo) -> Result<(), Error> {
                     + validation_info.imports_length.imported_functions
                     <= func_idx
                 {
-                    return Err(Error::UnknownFunction);
+                    return Err(ValidationError::UnknownFunction);
                 }
             }
             TableIdx(table_idx) => {
                 if validation_info.tables.len() + validation_info.imports_length.imported_tables
                     <= table_idx
                 {
-                    return Err(Error::UnknownTable);
+                    return Err(ValidationError::UnknownTable);
                 }
             }
             MemIdx(mem_idx) => {
                 if validation_info.memories.len() + validation_info.imports_length.imported_memories
                     <= mem_idx
                 {
-                    return Err(Error::UnknownMemory);
+                    return Err(ValidationError::UnknownMemory);
                 }
             }
             GlobalIdx(global_idx) => {
                 if validation_info.globals.len() + validation_info.imports_length.imported_globals
                     <= global_idx
                 {
-                    return Err(Error::UnknownGlobal);
+                    return Err(ValidationError::UnknownGlobal);
                 }
             }
         }
@@ -116,7 +116,7 @@ fn get_imports_length(imports: &Vec<Import>) -> ImportsLength {
     imports_length
 }
 
-pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, Error> {
+pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
     let mut wasm = WasmReader::new(wasm);
 
     // represents C.refs in https://webassembly.github.io/spec/core/valid/conventions.html#context
@@ -134,12 +134,12 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, Error> {
 
     trace!("Validating magic value");
     let [0x00, 0x61, 0x73, 0x6d] = wasm.strip_bytes::<4>()? else {
-        return Err(Error::InvalidMagic);
+        return Err(ValidationError::InvalidMagic);
     };
 
     trace!("Validating version number");
     let [0x01, 0x00, 0x00, 0x00] = wasm.strip_bytes::<4>()? else {
-        return Err(Error::InvalidVersion);
+        return Err(ValidationError::InvalidVersion);
     };
     debug!("Header ok");
 
@@ -161,7 +161,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, Error> {
                 .checked_add(h.contents.len())
                 .and_then(|res| res.checked_sub(wasm.pc))
             {
-                None => Err(Error::InvalidSection(
+                None => Err(ValidationError::InvalidSection(
                     SectionTy::Custom,
                     "Remaining bytes less than 0 after reading name!".to_string(),
                 )),
@@ -257,7 +257,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, Error> {
         temp
     };
     if all_memories.len() > 1 {
-        return Err(Error::UnsupportedMultipleMemoriesProposal);
+        return Err(ValidationError::UnsupportedMultipleMemoriesProposal);
     }
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
@@ -322,7 +322,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, Error> {
             })
         {
             // TODO fix error type
-            Err(Error::InvalidFuncType)
+            Err(ValidationError::InvalidFuncType)
         } else {
             Ok(idx)
         }
@@ -406,7 +406,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, Error> {
 
     // All sections should have been handled
     if let Some(header) = header {
-        return Err(Error::SectionOutOfOrder(header.ty));
+        return Err(ValidationError::SectionOutOfOrder(header.ty));
     }
 
     debug!("Validation was successful");
@@ -434,7 +434,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, Error> {
 fn read_next_header(
     wasm: &mut WasmReader,
     header: &mut Option<SectionHeader>,
-) -> Result<(), Error> {
+) -> Result<(), ValidationError> {
     if header.is_none() && !wasm.remaining_bytes().is_empty() {
         *header = Some(SectionHeader::read(wasm)?);
     }
@@ -442,12 +442,12 @@ fn read_next_header(
 }
 
 #[inline(always)]
-fn handle_section<T, F: FnOnce(&mut WasmReader, SectionHeader) -> Result<T, Error>>(
+fn handle_section<T, F: FnOnce(&mut WasmReader, SectionHeader) -> Result<T, ValidationError>>(
     wasm: &mut WasmReader,
     header: &mut Option<SectionHeader>,
     section_ty: SectionTy,
     handler: F,
-) -> Result<Option<T>, Error> {
+) -> Result<Option<T>, ValidationError> {
     match &header {
         Some(SectionHeader { ty, .. }) if *ty == section_ty => {
             let h = header.take().unwrap();

@@ -6,7 +6,7 @@ use core::{f32, f64};
 
 use crate::core::reader::types::{NumType, ValType};
 use crate::execution::assert_validated::UnwrapValidatedExt;
-use crate::{unreachable_validated, Error, RefType};
+use crate::{unreachable_validated, RefType, ValidationError};
 
 #[derive(Clone, Debug, Copy, PartialOrd)]
 pub struct F32(pub f32);
@@ -628,9 +628,9 @@ pub struct FuncRefForInteropValue {
 }
 
 impl FuncRefForInteropValue {
-    pub fn new(rref: Ref) -> Result<Self, Error> {
+    pub fn new(rref: Ref) -> Result<Self, ValidationError> {
         match rref {
-            Ref::Extern(_) => Err(Error::WrongRefTypeForInteropValue(
+            Ref::Extern(_) => Err(ValidationError::WrongRefTypeForInteropValue(
                 RefType::ExternRef,
                 RefType::FuncRef,
             )),

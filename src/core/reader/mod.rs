@@ -1,5 +1,5 @@
 use crate::core::reader::span::Span;
-use crate::Error;
+use crate::ValidationError;
 
 pub mod section_header;
 pub mod types;
@@ -46,9 +46,9 @@ impl<'a> WasmReader<'a> {
     /// This allows setting the [`pc`](WasmReader::pc) to one byte *past* the end of
     /// [full_wasm_binary](WasmReader::full_wasm_binary), **if** the [Span]'s length is 0. For
     /// further information, refer to the [field documentation of `pc`](WasmReader::pc).
-    pub fn move_start_to(&mut self, span: Span) -> Result<(), Error> {
+    pub fn move_start_to(&mut self, span: Span) -> Result<(), ValidationError> {
         if span.from + span.len > self.full_wasm_binary.len() {
-            return Err(Error::Eof);
+            return Err(ValidationError::Eof);
         }
 
         self.pc = span.from;
@@ -65,9 +65,9 @@ impl<'a> WasmReader<'a> {
     ///
     /// Verifies the span to fit the WASM binary, i.e. using this span to index the WASM binary will
     /// not yield an error.
-    pub fn make_span(&self, len: usize) -> Result<Span, Error> {
+    pub fn make_span(&self, len: usize) -> Result<Span, ValidationError> {
         if self.pc + len > self.full_wasm_binary.len() {
-            return Err(Error::Eof);
+            return Err(ValidationError::Eof);
         }
         Ok(Span::new(self.pc, len))
     }
@@ -82,9 +82,9 @@ impl<'a> WasmReader<'a> {
     /// [full_wasm_binary](WasmReader::full_wasm_binary), **if** `N` equals the remaining bytes
     /// slice's length. For further information, refer to the [field documentation of `pc`]
     /// (WasmReader::pc).
-    pub fn strip_bytes<const N: usize>(&mut self) -> Result<[u8; N], Error> {
+    pub fn strip_bytes<const N: usize>(&mut self) -> Result<[u8; N], ValidationError> {
         if N > self.full_wasm_binary.len() - self.pc {
-            return Err(Error::Eof);
+            return Err(ValidationError::Eof);
         }
 
         let bytes = &self.full_wasm_binary[self.pc..(self.pc + N)];
@@ -96,11 +96,11 @@ impl<'a> WasmReader<'a> {
     /// Read the current byte without advancing the [`pc`](Self::pc)
     ///
     /// May yield an error if the [`pc`](Self::pc) advanced past the end of the WASM binary slice
-    pub fn peek_u8(&self) -> Result<u8, Error> {
+    pub fn peek_u8(&self) -> Result<u8, ValidationError> {
         self.full_wasm_binary
             .get(self.pc)
             .copied()
-            .ok_or(Error::Eof)
+            .ok_or(ValidationError::Eof)
     }
 
     /// Call a closure that may mutate the [WasmReader]
@@ -114,8 +114,8 @@ impl<'a> WasmReader<'a> {
     /// [move_start_to](Self::move_start_to) is called.
     pub fn measure_num_read_bytes<T>(
         &mut self,
-        f: impl FnOnce(&mut WasmReader) -> Result<T, Error>,
-    ) -> Result<(T, usize), Error> {
+        f: impl FnOnce(&mut WasmReader) -> Result<T, ValidationError>,
+    ) -> Result<(T, usize), ValidationError> {
         let before = self.pc;
         let ret = f(self)?;
 
@@ -138,9 +138,9 @@ impl<'a> WasmReader<'a> {
     /// further than that, instead an error is returned. For further information, refer to the
     /// [field documentation of `pc`] (WasmReader::pc).
     #[allow(dead_code)]
-    pub fn skip(&mut self, num_bytes: usize) -> Result<(), Error> {
+    pub fn skip(&mut self, num_bytes: usize) -> Result<(), ValidationError> {
         if num_bytes > self.full_wasm_binary.len() - self.pc {
-            return Err(Error::Eof);
+            return Err(ValidationError::Eof);
         }
         self.pc += num_bytes;
         Ok(())
@@ -173,7 +173,7 @@ pub trait WasmReadable: Sized {
     /// Note that if this function returns `Err(_)`, the [`WasmReader`] may still have been advanced,
     /// which may lead to unexpected behaviour.
     /// To avoid this consider using the [`WasmReader::handle_transaction`] method to wrap this function call.
-    fn read(wasm: &mut WasmReader) -> Result<Self, Error>;
+    fn read(wasm: &mut WasmReader) -> Result<Self, ValidationError>;
 }
 
 pub mod span {
@@ -255,7 +255,7 @@ mod test {
         let mut wasm_reader = WasmReader::new(&my_bytes);
 
         let span = Span::new(my_bytes.len(), 1);
-        assert_eq!(wasm_reader.move_start_to(span), Err(Error::Eof));
+        assert_eq!(wasm_reader.move_start_to(span), Err(ValidationError::Eof));
     }
 
     #[test]
@@ -264,7 +264,7 @@ mod test {
         let mut wasm_reader = WasmReader::new(&my_bytes);
 
         let span = Span::new(0, my_bytes.len() + 1);
-        assert_eq!(wasm_reader.move_start_to(span), Err(Error::Eof));
+        assert_eq!(wasm_reader.move_start_to(span), Err(ValidationError::Eof));
     }
 
     #[test]
@@ -321,7 +321,7 @@ mod test {
         assert_eq!(wasm_reader.remaining_bytes(), my_bytes);
         wasm_reader.skip(2).unwrap();
         let stripped_bytes = wasm_reader.strip_bytes::<4>();
-        assert_eq!(stripped_bytes, Err(Error::Eof));
+        assert_eq!(stripped_bytes, Err(ValidationError::Eof));
     }
 
     #[test]
@@ -340,7 +340,7 @@ mod test {
         let my_bytes = vec![0x11, 0x12, 0x13, 0x14, 0x15];
         let mut wasm_reader = WasmReader::new(&my_bytes);
         assert_eq!(wasm_reader.remaining_bytes(), my_bytes);
-        assert_eq!(wasm_reader.skip(6), Err(Error::Eof));
+        assert_eq!(wasm_reader.skip(6), Err(ValidationError::Eof));
     }
 
     #[test]
@@ -353,13 +353,13 @@ mod test {
             Ok([0x1, 0x2]),
         );
 
-        let transaction_result: Result<(), Error> = reader.handle_transaction(|reader| {
+        let transaction_result: Result<(), ValidationError> = reader.handle_transaction(|reader| {
             assert_eq!(reader.strip_bytes::<2>(), Ok([0x3, 0x4]));
 
             // The exact error type does not matter
-            Err(Error::InvalidMagic)
+            Err(ValidationError::InvalidMagic)
         });
-        assert_eq!(transaction_result, Err(Error::InvalidMagic));
+        assert_eq!(transaction_result, Err(ValidationError::InvalidMagic));
 
         assert_eq!(reader.strip_bytes::<3>(), Ok([0x3, 0x4, 0x5]));
     }
@@ -373,7 +373,7 @@ mod test {
 
         assert_eq!(
             reader.handle_transaction(ValType::read),
-            Err(Error::InvalidValType)
+            Err(ValidationError::InvalidValType)
         );
     }
 }

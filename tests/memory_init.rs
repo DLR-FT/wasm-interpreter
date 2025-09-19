@@ -15,7 +15,7 @@
 # limitations under the License.
 */
 use wasm::{validate, RuntimeError, RuntimeInstance, TrapError};
-use wasm::{Error as GeneralError, DEFAULT_MODULE};
+use wasm::{ValidationError as GeneralError, DEFAULT_MODULE};
 
 macro_rules! get_func {
     ($instance:ident, $func_name:expr) => {

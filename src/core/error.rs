@@ -51,7 +51,7 @@ pub enum TrapError {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub enum Error {
+pub enum ValidationError {
     /// The magic number at the very start of the given WASM file is invalid.
     InvalidMagic,
     InvalidVersion,
@@ -112,148 +112,148 @@ pub enum Error {
     UnsupportedMultipleMemoriesProposal,
 }
 
-impl Display for Error {
+impl Display for ValidationError {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         match self {
-            Error::InvalidMagic => {
+            ValidationError::InvalidMagic => {
                 f.write_str("The magic number at the very start of the given WASM file is invalid.")
             }
-            Error::InvalidVersion => f.write_str("The version in the WASM file header is invalid"),
-            Error::MalformedUtf8String(err) => f.write_fmt(format_args!(
+            ValidationError::InvalidVersion => f.write_str("The version in the WASM file header is invalid"),
+            ValidationError::MalformedUtf8String(err) => f.write_fmt(format_args!(
                 "A name could not be parsed as it was invalid UTF8: {err}"
             )),
-            Error::Eof => f.write_str(
+            ValidationError::Eof => f.write_str(
                 "A value was expected in the WASM binary but the end of file was reached instead",
             ),
-            Error::InvalidSection(section, reason) => f.write_fmt(format_args!(
+            ValidationError::InvalidSection(section, reason) => f.write_fmt(format_args!(
                 "Section '{section:?}' invalid! Reason: {reason}"
             )),
-            Error::InvalidSectionType(ty) => f.write_fmt(format_args!(
+            ValidationError::InvalidSectionType(ty) => f.write_fmt(format_args!(
                 "An invalid section type id was found in a section header: {ty}"
             )),
-            Error::SectionOutOfOrder(ty) => {
+            ValidationError::SectionOutOfOrder(ty) => {
                 f.write_fmt(format_args!("The section {ty:?} is out of order"))
             }
-            Error::InvalidNumType => {
+            ValidationError::InvalidNumType => {
                 f.write_str("An invalid byte was read where a numtype was expected")
             }
-            Error::InvalidVecType => {
+            ValidationError::InvalidVecType => {
                 f.write_str("An invalid byte was read where a vectype was expected")
             }
-            Error::InvalidFuncType => {
+            ValidationError::InvalidFuncType => {
                 f.write_str("An invalid byte was read where a functype was expected")
             }
-            Error::InvalidFuncTypeIdx => {
+            ValidationError::InvalidFuncTypeIdx => {
                 f.write_str("An invalid index to the fuctypes table was read")
             }
-            Error::InvalidRefType => {
+            ValidationError::InvalidRefType => {
                 f.write_str("An invalid byte was read where a reftype was expected")
             }
-            Error::InvalidValType => {
+            ValidationError::InvalidValType => {
                 f.write_str("An invalid byte was read where a valtype was expected")
             }
-            Error::InvalidExportDesc(byte) => f.write_fmt(format_args!(
+            ValidationError::InvalidExportDesc(byte) => f.write_fmt(format_args!(
                 "An invalid byte `{byte:#x?}` was read where an exportdesc was expected"
             )),
-            Error::InvalidImportDesc(byte) => f.write_fmt(format_args!(
+            ValidationError::InvalidImportDesc(byte) => f.write_fmt(format_args!(
                 "An invalid byte `{byte:#x?}` was read where an importdesc was expected"
             )),
-            Error::ExprMissingEnd => f.write_str("An expr is missing an end byte"),
-            Error::InvalidInstr(byte) => f.write_fmt(format_args!(
+            ValidationError::ExprMissingEnd => f.write_str("An expr is missing an end byte"),
+            ValidationError::InvalidInstr(byte) => f.write_fmt(format_args!(
                 "An invalid instruction opcode was found: `{byte:#x?}`"
             )),
-            Error::InvalidMultiByteInstr(byte1, byte2) => f.write_fmt(format_args!(
+            ValidationError::InvalidMultiByteInstr(byte1, byte2) => f.write_fmt(format_args!(
                 "An invalid multi-byte instruction opcode was found: `{byte1:#x?} {byte2:#x?}`"
             )),
-            Error::EndInvalidValueStack => f.write_str(
+            ValidationError::EndInvalidValueStack => f.write_str(
                 "Different value stack types were expected at the end of a block/function.",
             ),
-            Error::InvalidLocalIdx => f.write_str("An invalid localidx was used"),
-            Error::InvalidValidationStackValType(ty) => f.write_fmt(format_args!(
+            ValidationError::InvalidLocalIdx => f.write_str("An invalid localidx was used"),
+            ValidationError::InvalidValidationStackValType(ty) => f.write_fmt(format_args!(
                 "An unexpected type was found on the stack when trying to pop another: `{ty:?}`"
             )),
-            Error::InvalidValidationStackType(ty) => f.write_fmt(format_args!(
+            ValidationError::InvalidValidationStackType(ty) => f.write_fmt(format_args!(
                 "An unexpected type was found on the stack: `{ty:?}`"
             )),
-            Error::InvalidLimitsType(ty) => {
+            ValidationError::InvalidLimitsType(ty) => {
                 f.write_fmt(format_args!("An invalid limits type was found: {ty:#x?}"))
             }
-            Error::InvalidMutType(byte) => f.write_fmt(format_args!(
+            ValidationError::InvalidMutType(byte) => f.write_fmt(format_args!(
                 "An invalid mut/const byte was found: {byte:#x?}"
             )),
-            Error::InvalidLimit => f.write_str("Size minimum must not be greater than maximum"),
-            Error::MemSizeTooBig => f.write_str("Memory size must be at most 65536 pages (4GiB)"),
-            Error::InvalidGlobalIdx(idx) => f.write_fmt(format_args!(
+            ValidationError::InvalidLimit => f.write_str("Size minimum must not be greater than maximum"),
+            ValidationError::MemSizeTooBig => f.write_str("Memory size must be at most 65536 pages (4GiB)"),
+            ValidationError::InvalidGlobalIdx(idx) => f.write_fmt(format_args!(
                 "An invalid global index `{idx}` was specified"
             )),
-            Error::GlobalIsConst => f.write_str("A const global cannot be written to"),
-            Error::ExpectedAnOperand => f.write_str("Expected a ValType"), // Error => f.write_str("Expected an operand (ValType) on the stack")
-            Error::MemoryIsNotDefined(memidx) => f.write_fmt(format_args!(
+            ValidationError::GlobalIsConst => f.write_str("A const global cannot be written to"),
+            ValidationError::ExpectedAnOperand => f.write_str("Expected a ValType"), // Error => f.write_str("Expected an operand (ValType) on the stack")
+            ValidationError::MemoryIsNotDefined(memidx) => f.write_fmt(format_args!(
                 "C.mems[{memidx}] is NOT defined when it should be"
             )),
-            Error::ErroneousAlignment(mem_align, minimum_wanted_alignment) => {
+            ValidationError::ErroneousAlignment(mem_align, minimum_wanted_alignment) => {
                 f.write_fmt(format_args!(
                     "Alignment ({mem_align}) is not less or equal to {minimum_wanted_alignment}"
                 ))
             }
-            Error::NoDataSegments => f.write_str("Data Count is None"),
-            Error::DataSegmentNotFound(data_idx) => {
+            ValidationError::NoDataSegments => f.write_str("Data Count is None"),
+            ValidationError::DataSegmentNotFound(data_idx) => {
                 f.write_fmt(format_args!("Data Segment {data_idx} not found"))
             }
-            Error::InvalidLabelIdx(label_idx) => {
+            ValidationError::InvalidLabelIdx(label_idx) => {
                 f.write_fmt(format_args!("invalid label index {label_idx}"))
             }
-            Error::ValidationCtrlStackEmpty => {
+            ValidationError::ValidationCtrlStackEmpty => {
                 f.write_str("cannot retrieve last ctrl block, validation ctrl stack is empty")
             }
-            Error::ElseWithoutMatchingIf => {
+            ValidationError::ElseWithoutMatchingIf => {
                 f.write_str("read 'else' without a previous matching 'if' instruction")
             }
-            Error::IfWithoutMatchingElse => {
+            ValidationError::IfWithoutMatchingElse => {
                 f.write_str("read 'end' without matching 'else' instruction to 'if' instruction")
             }
-            Error::TableIsNotDefined(table_idx) => f.write_fmt(format_args!(
+            ValidationError::TableIsNotDefined(table_idx) => f.write_fmt(format_args!(
                 "C.tables[{table_idx}] is NOT defined when it should be"
             )),
-            Error::ElementIsNotDefined(elem_idx) => f.write_fmt(format_args!(
+            ValidationError::ElementIsNotDefined(elem_idx) => f.write_fmt(format_args!(
                 "C.elems[{elem_idx}] is NOT defined when it should be"
             )),
-            Error::DifferentRefTypes(rref1, rref2) => f.write_fmt(format_args!(
+            ValidationError::DifferentRefTypes(rref1, rref2) => f.write_fmt(format_args!(
                 "RefType {rref1:?} is NOT equal to RefType {rref2:?}"
             )),
-            Error::ExpectedARefType(found_valtype) => f.write_fmt(format_args!(
+            ValidationError::ExpectedARefType(found_valtype) => f.write_fmt(format_args!(
                 "Expected a RefType, found a {found_valtype:?} instead"
             )),
-            Error::WrongRefTypeForInteropValue(ref_given, ref_wanted) => f.write_fmt(format_args!(
+            ValidationError::WrongRefTypeForInteropValue(ref_given, ref_wanted) => f.write_fmt(format_args!(
                 "Wrong RefType for InteropValue: Given {ref_given:?} - Needed {ref_wanted:?}"
             )),
-            Error::FunctionIsNotDefined(func_idx) => f.write_fmt(format_args!(
+            ValidationError::FunctionIsNotDefined(func_idx) => f.write_fmt(format_args!(
                 "C.functions[{func_idx}] is NOT defined when it should be"
             )),
-            Error::ReferencingAnUnreferencedFunction(func_idx) => f.write_fmt(format_args!(
+            ValidationError::ReferencingAnUnreferencedFunction(func_idx) => f.write_fmt(format_args!(
                 "Referenced a function ({func_idx}) that was not referenced in validation"
             )),
-            Error::FunctionTypeIsNotDefined(func_ty_idx) => f.write_fmt(format_args!(
+            ValidationError::FunctionTypeIsNotDefined(func_ty_idx) => f.write_fmt(format_args!(
                 "C.fn_types[{func_ty_idx}] is NOT defined when it should be"
             )),
-            Error::OnlyFuncRefIsAllowed => f.write_str("Only FuncRef is allowed"),
-            Error::TypeUnificationMismatch => {
+            ValidationError::OnlyFuncRefIsAllowed => f.write_str("Only FuncRef is allowed"),
+            ValidationError::TypeUnificationMismatch => {
                 f.write_str("cannot unify types")
             }
-            Error::InvalidSelectTypeVector => {
+            ValidationError::InvalidSelectTypeVector => {
                 f.write_str("SELECT T* (0x1C) instruction must have exactly one type in the subsequent type vector")
             }
-            Error::TooManyLocals(x) => {
+            ValidationError::TooManyLocals(x) => {
                 f.write_fmt(format_args!("Too many locals (more than 2^32-1): {x}"))
             }
-            Error::Overflow => f.write_str("Overflow"),
+            ValidationError::Overflow => f.write_str("Overflow"),
             // TODO: maybe move these to LinkerError also add more info to them (the name's export, function idx, etc)
-            Error::UnknownFunction => f.write_str("Unknown function"),
-            Error::UnknownMemory => f.write_str("Unknown memory"),
-            Error::UnknownGlobal => f.write_str("Unknown global"),
-            Error::UnknownTable => f.write_str("Unknown table"),
-            Error::DuplicateExportName => f.write_str("Duplicate export name"),
-            Error::UnsupportedMultipleMemoriesProposal => f.write_str("Proposal for multiple memories is not yet supported"),
+            ValidationError::UnknownFunction => f.write_str("Unknown function"),
+            ValidationError::UnknownMemory => f.write_str("Unknown memory"),
+            ValidationError::UnknownGlobal => f.write_str("Unknown global"),
+            ValidationError::UnknownTable => f.write_str("Unknown table"),
+            ValidationError::DuplicateExportName => f.write_str("Duplicate export name"),
+            ValidationError::UnsupportedMultipleMemoriesProposal => f.write_str("Proposal for multiple memories is not yet supported"),
         }
     }
 }

@@ -14,7 +14,7 @@ use crate::{
     },
     read_constant_expression::read_constant_expression,
     validation_stack::ValidationStack,
-    Error,
+    ValidationError,
 };
 
 /// Validate the data section.
@@ -24,7 +24,7 @@ pub(super) fn validate_data_section(
     imported_global_types: &[GlobalType],
     no_of_total_memories: usize,
     num_funcs: usize,
-) -> Result<Vec<DataSegment>, Error> {
+) -> Result<Vec<DataSegment>, ValidationError> {
     assert_eq!(section_header.ty, SectionTy::Data);
 
     wasm.read_vec(|wasm| {
@@ -70,7 +70,7 @@ pub(super) fn validate_data_section(
                 trace!("Data section: active {{ memory x, offset e }}");
                 let mem_idx = wasm.read_var_u32()? as MemIdx;
                 if mem_idx >= no_of_total_memories {
-                    return Err(crate::Error::UnknownMemory);
+                    return Err(crate::ValidationError::UnknownMemory);
                 }
                 assert!(
                     mem_idx == 0,
