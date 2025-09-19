@@ -566,6 +566,25 @@ impl InteropValue for Option<FuncAddr> {
     }
 }
 
+impl InteropValue for Option<ExternAddr> {
+    const TY: ValType = ValType::RefType(RefType::ExternRef);
+
+    fn into_value(self) -> Value {
+        let rref = self
+            .map(Ref::Extern)
+            .unwrap_or(Ref::Null(RefType::ExternRef));
+        Value::Ref(rref)
+    }
+
+    fn from_value(value: Value) -> Self {
+        match value {
+            Value::Ref(Ref::Null(RefType::ExternRef)) => None,
+            Value::Ref(Ref::Extern(extern_addr)) => Some(extern_addr),
+            _ => unreachable_validated!(),
+        }
+    }
+}
+
 impl InteropValueList for () {
     const TYS: &'static [ValType] = &[];
 
