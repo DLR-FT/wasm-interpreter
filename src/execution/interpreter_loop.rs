@@ -256,7 +256,7 @@ pub(super) fn run<T, H: HookSet>(
                     .get(i as usize)
                     .ok_or(RuntimeError::UndefinedTableIndex)
                     .and_then(|r| {
-                        if r.is_null() {
+                        if matches!(r, Ref::Null(_)) {
                             trace!("table_idx ({table_idx}) --- element index in table ({i})");
                             Err(RuntimeError::UninitializedElement)
                         } else {
@@ -265,7 +265,10 @@ pub(super) fn run<T, H: HookSet>(
                     })?;
 
                 let func_to_call_addr = match *r {
-                    Ref::Func(func_addr) => func_addr.addr.unwrap_validated(),
+                    Ref::Null(_) => unimplemented!(
+                        "fixed by https://github.com/DLR-FT/wasm-interpreter/pull/249"
+                    ),
+                    Ref::Func(func_addr) => func_addr.0,
                     Ref::Extern(_) => unreachable!(),
                 };
 
@@ -1898,15 +1901,12 @@ pub(super) fn run<T, H: HookSet>(
             REF_NULL => {
                 let reftype = RefType::read_unvalidated(wasm);
 
-                stack.push_value(Value::Ref(reftype.to_null_ref()))?;
+                stack.push_value(Value::Ref(Ref::Null(reftype)))?;
                 trace!("Instruction: ref.null '{:?}' -> [{:?}]", reftype, reftype);
             }
             REF_IS_NULL => {
                 let rref = stack.pop_unknown_ref();
-                let is_null = match rref {
-                    Ref::Extern(rref) => rref.addr.is_none(),
-                    Ref::Func(rref) => rref.addr.is_none(),
-                };
+                let is_null = matches!(rref, Ref::Null(_));
 
                 let res = if is_null { 1 } else { 0 };
                 trace!("Instruction: ref.is_null [{}] -> [{}]", rref, res);
@@ -1915,9 +1915,11 @@ pub(super) fn run<T, H: HookSet>(
             // https://webassembly.github.io/spec/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-ref-mathsf-ref-func-x
             REF_FUNC => {
                 let func_idx = wasm.read_var_u32().unwrap_validated() as FuncIdx;
-                stack.push_value(Value::Ref(Ref::Func(FuncAddr::new(Some(
-                    store.modules[current_module_idx].func_addrs[func_idx],
-                )))))?;
+                let func_addr = *store.modules[current_module_idx]
+                    .func_addrs
+                    .get(func_idx)
+                    .unwrap_validated();
+                stack.push_value(Value::Ref(Ref::Func(FuncAddr(func_addr))))?;
             }
             FC_EXTENSIONS => {
                 // Should we call instruction hook here as well? Multibyte instruction

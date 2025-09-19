@@ -7,6 +7,7 @@ use std::panic::UnwindSafe;
 use itertools::enumerate;
 use log::debug;
 use wasm::function_ref::FunctionRef;
+use wasm::RefType;
 use wasm::RuntimeError;
 use wasm::Value;
 use wasm::{validate, RuntimeInstance};
@@ -740,14 +741,14 @@ pub fn arg_to_value(arg: WastArg) -> Value {
                     use wasm::value::*;
                     use wast::core::AbstractHeapType::*;
                     match ty {
-                        Func => Value::Ref(Ref::Func(FuncAddr::null())),
-                        Extern => Value::Ref(Ref::Extern(ExternAddr::null())),
+                        Func => Value::Ref(Ref::Null(RefType::FuncRef)),
+                        Extern => Value::Ref(Ref::Null(RefType::ExternRef)),
                         _ => todo!("`GC` proposal not yet implemented"),
                     }
                 }
             },
             WastArgCore::RefExtern(index) => wasm::value::Value::Ref(wasm::value::Ref::Extern(
-                wasm::value::ExternAddr::new(Some(index as usize)),
+                wasm::value::ExternAddr(index as usize),
             )),
             WastArgCore::RefHost(_) => {
                 todo!("`RefHost` value arguments not yet implemented")
@@ -794,8 +795,8 @@ fn result_to_value(result: wast::WastRet) -> Result<Value, Box<dyn Error>> {
                     use wasm::value::*;
                     use wast::core::AbstractHeapType::*;
                     match ty {
-                        Func => Value::Ref(Ref::Func(FuncAddr::null())),
-                        Extern => Value::Ref(Ref::Extern(ExternAddr::null())),
+                        Func => Value::Ref(Ref::Null(RefType::FuncRef)),
+                        Extern => Value::Ref(Ref::Null(RefType::ExternRef)),
                         _ => todo!("`GC` proposal not yet implemented"),
                     }
                 }
@@ -810,11 +811,9 @@ fn result_to_value(result: wast::WastRet) -> Result<Value, Box<dyn Error>> {
                 }
             },
             WastRetCore::RefExtern(None) => unreachable!("Expected a non-null extern reference"),
-            WastRetCore::RefExtern(Some(index)) => {
-                Value::Ref(wasm::value::Ref::Extern(wasm::value::ExternAddr {
-                    addr: Some(index as usize),
-                }))
-            }
+            WastRetCore::RefExtern(Some(index)) => Value::Ref(wasm::value::Ref::Extern(
+                wasm::value::ExternAddr(index as usize),
+            )),
             other => {
                 return Err(Box::new(GenericError::new(&format!(
                     "handling of wast ret type {other:?} not yet implemented"

@@ -76,16 +76,15 @@ pub(crate) fn run_const<T>(
             REF_NULL => {
                 let reftype = RefType::read_unvalidated(wasm);
 
-                stack.push_value(Value::Ref(reftype.to_null_ref()))?;
+                stack.push_value(Value::Ref(Ref::Null(reftype)))?;
                 trace!("Instruction: ref.null '{:?}' -> [{:?}]", reftype, reftype);
             }
             REF_FUNC => {
                 // we already checked for the func_idx to be in bounds during validation
                 let func_idx = wasm.read_var_u32().unwrap_validated() as usize;
+                let func_addr = *module.func_addrs.get(func_idx).unwrap_validated();
                 // TODO replace double indirection
-                stack.push_value(Value::Ref(Ref::Func(FuncAddr::new(Some(
-                    module.func_addrs[func_idx],
-                )))))?;
+                stack.push_value(Value::Ref(Ref::Func(FuncAddr(func_addr))))?;
             }
             other => {
                 unreachable!("Unknown constant instruction {other:#x}, validation allowed an unimplemented instruction.");
