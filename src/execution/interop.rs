@@ -283,9 +283,11 @@ impl From<f32> for Value {
     }
 }
 
-impl From<Value> for f32 {
-    fn from(value: Value) -> Self {
-        F32::from(value).0
+impl TryFrom<Value> for f32 {
+    type Error = ();
+
+    fn try_from(value: Value) -> Result<Self, Self::Error> {
+        F32::try_from(value).map(|value| value.0)
     }
 }
 
@@ -295,8 +297,10 @@ impl From<f64> for Value {
     }
 }
 
-impl From<Value> for f64 {
-    fn from(value: Value) -> Self {
-        F64::from(value).0
+impl TryFrom<Value> for f64 {
+    type Error = ();
+
+    fn try_from(value: Value) -> Result<Self, Self::Error> {
+        F64::try_from(value).map(|value| value.0)
     }
 }
