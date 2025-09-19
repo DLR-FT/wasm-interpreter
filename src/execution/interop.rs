@@ -1,6 +1,16 @@
+//! This module provides types, traits and impls to convert between
+//! Rust types and the Wasm [`Value`] type. Internally this module is
+//! not used, except for the top-level entry points for invocation.
+//!
+//! The main trait is [`InteropValue`]. It is implemented for all Rust
+//! types which can be converted into and from a [`Value`] through the
+//! [`From`] and [`TryFrom`] traits, respectively.
+//!
+//! Then, the [`InteropValueList`] trait is a layer on top, allowing
+//! the same conversions but instead for tuples/lists containing
+//! multiple values.
+
 use crate::{
-    assert_validated::UnwrapValidatedExt,
-    unreachable_validated,
     value::{ExternAddr, FuncAddr, Ref, F32, F64},
     NumType, RefType, ValType, Value,
 };
@@ -9,270 +19,235 @@ use alloc::{fmt::Debug, vec, vec::Vec};
 
 /// An [InteropValue] is a Rust types that can be converted into a WASM [Value].
 /// This trait is intended to simplify translation between Rust values and WASM values and thus is not used internally.
-pub trait InteropValue: Copy + Debug + PartialEq {
-    // Sadly we cannot use `SIZE` to return fixed-sized arrays because this is still unstable.
-    // See feature(generic_const_exprs)
+pub trait InteropValue
+where
+    Self: Copy + Debug + PartialEq + TryFrom<Value, Error = ()>,
+    Value: From<Self>,
+{
     const TY: ValType;
-    #[allow(warnings)]
-    fn into_value(self) -> Value;
-    #[allow(warnings)]
-    fn from_value(value: Value) -> Self;
-}
-
-/// An [InteropValueList] is an iterable list of [InteropValue]s (i.e. Rust types that can be converted into WASM [Value]s).
-pub trait InteropValueList {
-    const TYS: &'static [ValType];
-    #[allow(warnings)]
-    fn into_values(self) -> Vec<Value>;
-    #[allow(warnings)]
-    fn from_values(values: impl Iterator<Item = Value>) -> Self;
 }
 
 impl InteropValue for u32 {
     const TY: ValType = ValType::NumType(NumType::I32);
-    #[allow(warnings)]
-    fn into_value(self) -> Value {
-        Value::I32(self)
-    }
-
-    #[allow(warnings)]
-    fn from_value(value: Value) -> Self {
-        match value {
-            Value::I32(i) => i,
-            _ => unreachable_validated!(),
-        }
-    }
 }
 
 impl InteropValue for i32 {
     const TY: ValType = ValType::NumType(NumType::I32);
-
-    #[allow(warnings)]
-    fn into_value(self) -> Value {
-        Value::I32(u32::from_le_bytes(self.to_le_bytes()))
-    }
-
-    #[allow(warnings)]
-    fn from_value(value: Value) -> Self {
-        match value {
-            Value::I32(i) => i32::from_le_bytes(i.to_le_bytes()),
-            _ => unreachable_validated!(),
-        }
-    }
 }
 
 impl InteropValue for u64 {
     const TY: ValType = ValType::NumType(NumType::I64);
-
-    #[allow(warnings)]
-    fn into_value(self) -> Value {
-        Value::I64(self)
-    }
-
-    #[allow(warnings)]
-    fn from_value(value: Value) -> Self {
-        match value {
-            Value::I64(i) => i,
-            _ => unreachable_validated!(),
-        }
-    }
 }
 
 impl InteropValue for i64 {
     const TY: ValType = ValType::NumType(NumType::I64);
-
-    #[allow(warnings)]
-    fn into_value(self) -> Value {
-        Value::I64(u64::from_le_bytes(self.to_le_bytes()))
-    }
-
-    #[allow(warnings)]
-    fn from_value(value: Value) -> Self {
-        match value {
-            Value::I64(i) => i64::from_le_bytes(i.to_le_bytes()),
-            _ => unreachable_validated!(),
-        }
-    }
-}
-
-impl InteropValue for F32 {
-    const TY: ValType = ValType::NumType(NumType::F32);
-
-    #[allow(warnings)]
-    fn into_value(self) -> Value {
-        Value::F32(F32(f32::from_le_bytes(self.0.to_le_bytes())))
-    }
-
-    #[allow(warnings)]
-    fn from_value(value: Value) -> Self {
-        match value {
-            Value::F32(f) => F32(f32::from_le_bytes(f.0.to_le_bytes())),
-            _ => unreachable_validated!(),
-        }
-    }
 }
 
 impl InteropValue for f32 {
     const TY: ValType = ValType::NumType(NumType::F32);
-
-    #[allow(warnings)]
-    fn into_value(self) -> Value {
-        Value::F32(F32(f32::from_le_bytes(self.to_le_bytes())))
-    }
-
-    #[allow(warnings)]
-    fn from_value(value: Value) -> Self {
-        match value {
-            Value::F32(f) => f32::from_le_bytes(f.0.to_le_bytes()),
-            _ => unreachable_validated!(),
-        }
-    }
-}
-
-impl InteropValue for F64 {
-    const TY: ValType = ValType::NumType(NumType::F64);
-
-    #[allow(warnings)]
-    fn into_value(self) -> Value {
-        Value::F64(F64(f64::from_le_bytes(self.0.to_le_bytes())))
-    }
-
-    #[allow(warnings)]
-    fn from_value(value: Value) -> Self {
-        match value {
-            Value::F64(f) => F64(f64::from_le_bytes(f.0.to_le_bytes())),
-            _ => unreachable_validated!(),
-        }
-    }
 }
 
 impl InteropValue for f64 {
     const TY: ValType = ValType::NumType(NumType::F64);
-
-    #[allow(warnings)]
-    fn into_value(self) -> Value {
-        Value::F64(F64(f64::from_le_bytes(self.to_le_bytes())))
-    }
-
-    #[allow(warnings)]
-    fn from_value(value: Value) -> Self {
-        match value {
-            Value::F64(f) => f64::from_le_bytes(f.0.to_le_bytes()),
-            _ => unreachable_validated!(),
-        }
-    }
 }
 
-impl InteropValue for Option<FuncAddr> {
+impl InteropValue for RefFunc {
     const TY: ValType = ValType::RefType(RefType::FuncRef);
+}
 
-    #[allow(warnings)]
-    fn into_value(self) -> Value {
-        let rref = self.map(Ref::Func).unwrap_or(Ref::Null(RefType::FuncRef));
-        Value::Ref(rref)
+impl InteropValue for RefExtern {
+    const TY: ValType = ValType::RefType(RefType::ExternRef);
+}
+
+impl From<f32> for Value {
+    fn from(value: f32) -> Self {
+        F32(value).into()
     }
+}
 
-    #[allow(warnings)]
-    fn from_value(value: Value) -> Self {
-        match value {
-            Value::Ref(Ref::Null(RefType::FuncRef)) => None,
-            Value::Ref(Ref::Func(func_addr)) => Some(func_addr),
-            _ => unreachable_validated!(),
+impl TryFrom<Value> for f32 {
+    type Error = ();
+
+    fn try_from(value: Value) -> Result<Self, Self::Error> {
+        F32::try_from(value).map(|f| f.0)
+    }
+}
+
+impl From<f64> for Value {
+    fn from(value: f64) -> Self {
+        F64(value).into()
+    }
+}
+
+impl TryFrom<Value> for f64 {
+    type Error = ();
+
+    fn try_from(value: Value) -> Result<Self, Self::Error> {
+        F64::try_from(value).map(|f| f.0)
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub struct RefFunc(pub Option<FuncAddr>);
+
+impl From<RefFunc> for Value {
+    fn from(value: RefFunc) -> Self {
+        match value.0 {
+            Some(func_addr) => Ref::Func(func_addr),
+            None => Ref::Null(RefType::FuncRef),
+        }
+        .into()
+    }
+}
+
+impl TryFrom<Value> for RefFunc {
+    type Error = ();
+
+    fn try_from(value: Value) -> Result<Self, Self::Error> {
+        match Ref::try_from(value)? {
+            Ref::Func(func_addr) => Ok(Self(Some(func_addr))),
+            Ref::Null(RefType::FuncRef) => Ok(Self(None)),
+            _ => Err(()),
         }
     }
 }
 
-impl InteropValue for Option<ExternAddr> {
-    const TY: ValType = ValType::RefType(RefType::ExternRef);
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub struct RefExtern(pub Option<ExternAddr>);
 
-    fn into_value(self) -> Value {
-        let rref = self
-            .map(Ref::Extern)
-            .unwrap_or(Ref::Null(RefType::ExternRef));
-        Value::Ref(rref)
+impl From<RefExtern> for Value {
+    fn from(value: RefExtern) -> Self {
+        match value.0 {
+            Some(extern_addr) => Ref::Extern(extern_addr),
+            None => Ref::Null(RefType::ExternRef),
+        }
+        .into()
     }
+}
 
-    fn from_value(value: Value) -> Self {
-        match value {
-            Value::Ref(Ref::Null(RefType::ExternRef)) => None,
-            Value::Ref(Ref::Extern(extern_addr)) => Some(extern_addr),
-            _ => unreachable_validated!(),
+impl TryFrom<Value> for RefExtern {
+    type Error = ();
+
+    fn try_from(value: Value) -> Result<Self, Self::Error> {
+        match Ref::try_from(value)? {
+            Ref::Extern(extern_addr) => Ok(Self(Some(extern_addr))),
+            Ref::Null(RefType::ExternRef) => Ok(Self(None)),
+            _ => Err(()),
         }
     }
+}
+
+/// An [InteropValueList] is an iterable list of [InteropValue]s (i.e. Rust types that can be converted into WASM [Value]s).
+pub trait InteropValueList: Debug + Copy {
+    const TYS: &'static [ValType];
+
+    fn into_values(self) -> Vec<Value>;
+
+    fn try_from_values(values: impl ExactSizeIterator<Item = Value>) -> Result<Self, ()>;
 }
 
 impl InteropValueList for () {
     const TYS: &'static [ValType] = &[];
 
-    #[allow(warnings)]
     fn into_values(self) -> Vec<Value> {
         Vec::new()
     }
 
-    #[allow(warnings)]
-    fn from_values(_values: impl Iterator<Item = Value>) -> Self {}
+    fn try_from_values(values: impl ExactSizeIterator<Item = Value>) -> Result<Self, ()> {
+        if values.len() != 0 {
+            return Err(());
+        }
+
+        Ok(())
+    }
 }
 
-impl<A: InteropValue> InteropValueList for A {
+impl<A> InteropValueList for A
+where
+    A: InteropValue,
+    Value: From<A>,
+{
     const TYS: &'static [ValType] = &[A::TY];
 
-    #[allow(warnings)]
     fn into_values(self) -> Vec<Value> {
-        vec![self.into_value()]
+        vec![self.into()]
     }
 
-    #[allow(warnings)]
-    fn from_values(mut values: impl Iterator<Item = Value>) -> Self {
-        A::from_value(values.next().unwrap_validated())
+    fn try_from_values(mut values: impl ExactSizeIterator<Item = Value>) -> Result<Self, ()> {
+        if values.len() != Self::TYS.len() {
+            return Err(());
+        }
+
+        A::try_from(values.next().unwrap())
     }
 }
 
-impl<A: InteropValue> InteropValueList for (A,) {
+impl<A> InteropValueList for (A,)
+where
+    A: InteropValue,
+    Value: From<A>,
+{
     const TYS: &'static [ValType] = &[A::TY];
-    #[allow(warnings)]
+
     fn into_values(self) -> Vec<Value> {
-        vec![self.0.into_value()]
+        vec![self.0.into()]
     }
 
-    #[allow(warnings)]
-    fn from_values(mut values: impl Iterator<Item = Value>) -> Self {
-        (A::from_value(values.next().unwrap_validated()),)
+    fn try_from_values(mut values: impl ExactSizeIterator<Item = Value>) -> Result<Self, ()> {
+        if values.len() != Self::TYS.len() {
+            return Err(());
+        }
+
+        Ok((A::try_from(values.next().unwrap())?,))
     }
 }
 
-impl<A: InteropValue, B: InteropValue> InteropValueList for (A, B) {
+impl<A, B> InteropValueList for (A, B)
+where
+    A: InteropValue,
+    B: InteropValue,
+    Value: From<A> + From<B>,
+{
     const TYS: &'static [ValType] = &[A::TY, B::TY];
-    #[allow(warnings)]
+
     fn into_values(self) -> Vec<Value> {
-        vec![self.0.into_value(), self.1.into_value()]
+        vec![self.0.into(), self.1.into()]
     }
 
-    #[allow(warnings)]
-    fn from_values(mut values: impl Iterator<Item = Value>) -> Self {
-        (
-            A::from_value(values.next().unwrap_validated()),
-            B::from_value(values.next().unwrap_validated()),
-        )
+    fn try_from_values(mut values: impl ExactSizeIterator<Item = Value>) -> Result<Self, ()> {
+        if values.len() != Self::TYS.len() {
+            return Err(());
+        }
+
+        Ok((
+            A::try_from(values.next().unwrap())?,
+            B::try_from(values.next().unwrap())?,
+        ))
     }
 }
 
-impl<A: InteropValue, B: InteropValue, C: InteropValue> InteropValueList for (A, B, C) {
+impl<A, B, C> InteropValueList for (A, B, C)
+where
+    A: InteropValue,
+    B: InteropValue,
+    C: InteropValue,
+    Value: From<A> + From<B> + From<C>,
+{
     const TYS: &'static [ValType] = &[A::TY, B::TY, C::TY];
-    #[allow(warnings)]
+
     fn into_values(self) -> Vec<Value> {
-        vec![
-            self.0.into_value(),
-            self.1.into_value(),
-            self.2.into_value(),
-        ]
+        vec![self.0.into(), self.1.into(), self.2.into()]
     }
 
-    #[allow(warnings)]
-    fn from_values(mut values: impl Iterator<Item = Value>) -> Self {
-        (
-            A::from_value(values.next().unwrap_validated()),
-            B::from_value(values.next().unwrap_validated()),
-            C::from_value(values.next().unwrap_validated()),
-        )
+    fn try_from_values(mut values: impl ExactSizeIterator<Item = Value>) -> Result<Self, ()> {
+        if values.len() != Self::TYS.len() {
+            return Err(());
+        }
+
+        Ok((
+            A::try_from(values.next().unwrap())?,
+            B::try_from(values.next().unwrap())?,
+            C::try_from(values.next().unwrap())?,
+        ))
     }
 }
