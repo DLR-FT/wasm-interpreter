@@ -10,7 +10,7 @@ use crate::execution::assert_validated::UnwrapValidatedExt;
 use crate::execution::hooks::{EmptyHookSet, HookSet};
 use crate::execution::store::Store;
 use crate::execution::value::Value;
-use crate::value::InteropValueList;
+use crate::interop::InteropValueList;
 use crate::{RuntimeError, ValidationInfo};
 
 pub(crate) mod assert_validated;
@@ -18,6 +18,7 @@ pub mod const_interpreter_loop;
 pub mod error;
 pub mod function_ref;
 pub mod hooks;
+pub mod interop;
 mod interpreter_loop;
 pub(crate) mod linear_memory;
 pub(crate) mod little_endian;

@@ -23,8 +23,8 @@ use crate::{
     unreachable_validated,
     value::{self, FuncAddr, Ref, F32, F64},
     value_stack::Stack,
-    ElemInst, FuncInst, MemInst, ModuleInst, RefType, RuntimeError, TableInst, TrapError,
-    ValType, Value,
+    ElemInst, FuncInst, MemInst, ModuleInst, RefType, RuntimeError, TableInst, TrapError, ValType,
+    Value,
 };
 
 #[cfg(feature = "hooks")]
