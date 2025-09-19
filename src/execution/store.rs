@@ -1,4 +1,3 @@
-use crate::core::error::Result as CustomResult;
 use crate::core::indices::TypeIdx;
 use crate::core::reader::span::Span;
 use crate::core::reader::types::data::{DataModeActive, DataSegment};
@@ -16,7 +15,7 @@ use crate::execution::value::{Ref, Value};
 use crate::execution::{run_const_span, Stack};
 use crate::registry::Registry;
 use crate::value::FuncAddr;
-use crate::{Error, Limits, RefType, RuntimeError, ValidationInfo};
+use crate::{Limits, RefType, RuntimeError, TrapError, ValidationInfo};
 use alloc::borrow::ToOwned;
 use alloc::collections::btree_map::BTreeMap;
 use alloc::string::String;
@@ -78,7 +77,7 @@ impl<'b, T> Store<'b, T> {
         &mut self,
         name: &str,
         validation_info: &ValidationInfo<'b>,
-    ) -> CustomResult<()> {
+    ) -> Result<(), RuntimeError> {
         // instantiation step -1: collect extern_vals, this section basically acts as a linker between modules
         // best attempt at trying to match the spec implementation in terms of errors
         debug!("adding module with name {:?}", name);
@@ -96,17 +95,17 @@ impl<'b, T> Store<'b, T> {
                 import_name,
                 import_desc
             );
-            let import_extern_type = import_desc.extern_type(validation_info)?;
+            let import_extern_type = import_desc.extern_type(validation_info);
             let export_extern_val_candidate = *self.registry.lookup(
                 exporting_module_name.clone().into(),
                 import_name.clone().into(),
             )?;
             trace!("export candidate found: {:?}", export_extern_val_candidate);
             if !export_extern_val_candidate
-                .extern_type(self)?
+                .extern_type(self)
                 .is_subtype_of(&import_extern_type)
             {
-                return Err(Error::InvalidImportType);
+                return Err(RuntimeError::InvalidImportType);
             }
             trace!("import and export matches. Adding to externvals");
             extern_vals.push(export_extern_val_candidate)
@@ -336,18 +335,15 @@ impl<'b, T> Store<'b, T> {
                         n,
                         s,
                         d,
-                    )
-                    .map_err(Error::RuntimeError)?;
-                    elem_drop(&self.modules, &mut self.elements, current_module_idx, i)
-                        .map_err(Error::RuntimeError)?;
+                    )?;
+                    elem_drop(&self.modules, &mut self.elements, current_module_idx, i)?;
                 }
                 ElemMode::Declarative => {
                     // instantiation step 15:
                     // TODO (for now, we are doing hopefully what is equivalent to it)
                     // execute:
                     //   elem.drop i
-                    elem_drop(&self.modules, &mut self.elements, current_module_idx, i)
-                        .map_err(Error::RuntimeError)?;
+                    elem_drop(&self.modules, &mut self.elements, current_module_idx, i)?;
                 }
                 ElemMode::Passive => (),
             }
@@ -365,7 +361,7 @@ impl<'b, T> Store<'b, T> {
                     // assert: mem_idx is 0
                     if *memory_idx != 0 {
                         // TODO fix error
-                        return Err(Error::MoreThanOneMemory);
+                        return Err(RuntimeError::MoreThanOneMemory);
                     }
 
                     // TODO (for now, we are doing hopefully what is equivalent to it)
@@ -394,10 +390,8 @@ impl<'b, T> Store<'b, T> {
                         n,
                         s,
                         d,
-                    )
-                    .map_err(Error::RuntimeError)?;
-                    data_drop(&self.modules, &mut self.data, current_module_idx, i)
-                        .map_err(Error::RuntimeError)?;
+                    )?;
+                    data_drop(&self.modules, &mut self.data, current_module_idx, i)?;
                 }
                 crate::core::reader::types::data::DataMode::Passive => (),
             }
@@ -409,8 +403,7 @@ impl<'b, T> Store<'b, T> {
             // execute
             //   call func_ifx
             let func_addr = self.modules[current_module_idx].func_addrs[func_idx];
-            self.invoke(func_addr, Vec::new())
-                .map_err(Error::RuntimeError)?;
+            self.invoke(func_addr, Vec::new())?;
         };
 
         Ok(())
@@ -687,13 +680,13 @@ impl TableInst {
         // TODO refactor error, the spec Table.grow raises Table.{SizeOverflow, SizeLimit, OutOfMemory}
         let len = n
             .checked_add(self.elem.len() as u32)
-            .ok_or(RuntimeError::TableAccessOutOfBounds)?;
+            .ok_or(TrapError::TableOrElementAccessOutOfBounds)?;
 
         // roughly matches step 4,5,6
         // checks limits_prime.valid() for limits_prime := { min: len, max: self.ty.lim.max }
         // https://webassembly.github.io/spec/core/valid/types.html#limits
         if self.ty.lim.max.map(|max| len > max).unwrap_or(false) {
-            return Err(RuntimeError::TableAccessOutOfBounds);
+            return Err(TrapError::TableOrElementAccessOutOfBounds.into());
         }
         let limits_prime = Limits {
             min: len,
@@ -733,14 +726,14 @@ impl MemInst {
         // TODO refactor error, the spec Table.grow raises Memory.{SizeOverflow, SizeLimit, OutOfMemory}
         let len = n + self.mem.pages() as u32;
         if len > Limits::MAX_MEM_PAGES {
-            return Err(RuntimeError::MemoryAccessOutOfBounds);
+            return Err(TrapError::MemoryOrDataAccessOutOfBounds.into());
         }
 
         // roughly matches step 4,5,6
         // checks limits_prime.valid() for limits_prime := { min: len, max: self.ty.lim.max }
         // https://webassembly.github.io/spec/core/valid/types.html#limits
         if self.ty.limits.max.map(|max| len > max).unwrap_or(false) {
-            return Err(RuntimeError::MemoryAccessOutOfBounds);
+            return Err(TrapError::MemoryOrDataAccessOutOfBounds.into());
         }
         let limits_prime = Limits {
             min: len,
@@ -793,41 +786,41 @@ pub enum ExternVal {
 impl ExternVal {
     /// returns the external type of `self` according to typing relation,
     /// taking `store` as context S.
-    /// typing fails if this external value does not exist within S.
+    ///
+    /// Note: This method may panic if self does not come from the given [`Store`].
     ///<https://webassembly.github.io/spec/core/valid/modules.html#imports>
-    pub fn extern_type<T>(&self, store: &Store<T>) -> CustomResult<ExternType> {
-        // TODO: implement proper errors
-        Ok(match self {
+    pub fn extern_type<T>(&self, store: &Store<T>) -> ExternType {
+        match self {
             // TODO: fix ugly clone in function types
             ExternVal::Func(func_addr) => ExternType::Func(
                 store
                     .functions
                     .get(*func_addr)
-                    .ok_or(Error::InvalidImportType)?
+                    .expect("the correct store to be used")
                     .ty(),
             ),
             ExternVal::Table(table_addr) => ExternType::Table(
                 store
                     .tables
                     .get(*table_addr)
-                    .ok_or(Error::InvalidImportType)?
+                    .expect("the correct store to be used")
                     .ty,
             ),
             ExternVal::Mem(mem_addr) => ExternType::Mem(
                 store
                     .memories
                     .get(*mem_addr)
-                    .ok_or(Error::InvalidImportType)?
+                    .expect("the correct store to be used")
                     .ty,
             ),
             ExternVal::Global(global_addr) => ExternType::Global(
                 store
                     .globals
                     .get(*global_addr)
-                    .ok_or(Error::InvalidImportType)?
+                    .expect("the correct store to be used")
                     .ty,
             ),
-        })
+        }
     }
 }
 

@@ -15,7 +15,7 @@
 # limitations under the License.
 */
 
-use wasm::{validate, Error, RuntimeError, RuntimeInstance, DEFAULT_MODULE};
+use wasm::{validate, RuntimeError, RuntimeInstance, TrapError, ValidationError, DEFAULT_MODULE};
 
 macro_rules! get_func {
     ($instance:ident, $func_name:expr) => {
@@ -66,24 +66,28 @@ fn table_init_1_test() {
     i.invoke_typed::<(), ()>(test, ()).unwrap();
 
     assert!(
-        i.invoke_typed::<i32, i32>(check, 0).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 0).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert!(
-        i.invoke_typed::<i32, i32>(check, 1).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 1).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert_eq!(3, i.invoke_typed(check, 2).unwrap());
     assert_eq!(1, i.invoke_typed(check, 3).unwrap());
     assert_eq!(4, i.invoke_typed(check, 4).unwrap());
     assert_eq!(1, i.invoke_typed(check, 5).unwrap());
     assert!(
-        i.invoke_typed::<i32, i32>(check, 6).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 6).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert_eq!(2, i.invoke_typed(check, 7).unwrap());
     assert_eq!(7, i.invoke_typed(check, 8).unwrap());
     assert_eq!(1, i.invoke_typed(check, 9).unwrap());
     assert_eq!(8, i.invoke_typed(check, 10).unwrap());
     assert!(
-        i.invoke_typed::<i32, i32>(check, 11).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 11).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert_eq!(7, i.invoke_typed(check, 12).unwrap());
     assert_eq!(5, i.invoke_typed(check, 13).unwrap());
@@ -91,43 +95,56 @@ fn table_init_1_test() {
     assert_eq!(3, i.invoke_typed(check, 15).unwrap());
     assert_eq!(6, i.invoke_typed(check, 16).unwrap());
     assert!(
-        i.invoke_typed::<i32, i32>(check, 17).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 17).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert!(
-        i.invoke_typed::<i32, i32>(check, 18).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 18).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert!(
-        i.invoke_typed::<i32, i32>(check, 19).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 19).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert!(
-        i.invoke_typed::<i32, i32>(check, 20).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 20).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert!(
-        i.invoke_typed::<i32, i32>(check, 21).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 21).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert!(
-        i.invoke_typed::<i32, i32>(check, 22).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 22).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert!(
-        i.invoke_typed::<i32, i32>(check, 23).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 23).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert!(
-        i.invoke_typed::<i32, i32>(check, 24).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 24).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert!(
-        i.invoke_typed::<i32, i32>(check, 25).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 25).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert!(
-        i.invoke_typed::<i32, i32>(check, 26).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 26).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert!(
-        i.invoke_typed::<i32, i32>(check, 27).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 27).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert!(
-        i.invoke_typed::<i32, i32>(check, 28).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 28).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert!(
-        i.invoke_typed::<i32, i32>(check, 29).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 29).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
 }
 
@@ -176,32 +193,40 @@ fn table_init_2_test() {
     i.invoke_typed::<(), ()>(test, ()).unwrap();
 
     assert!(
-        i.invoke_typed::<i32, i32>(check, 0).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 0).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert!(
-        i.invoke_typed::<i32, i32>(check, 1).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 1).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert_eq!(3, i.invoke_typed(check, 2).unwrap());
     assert_eq!(1, i.invoke_typed(check, 3).unwrap());
     assert_eq!(4, i.invoke_typed(check, 4).unwrap());
     assert_eq!(1, i.invoke_typed(check, 5).unwrap());
     assert!(
-        i.invoke_typed::<i32, i32>(check, 6).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 6).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert!(
-        i.invoke_typed::<i32, i32>(check, 7).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 7).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert!(
-        i.invoke_typed::<i32, i32>(check, 8).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 8).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert!(
-        i.invoke_typed::<i32, i32>(check, 9).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 9).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert!(
-        i.invoke_typed::<i32, i32>(check, 10).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 10).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert!(
-        i.invoke_typed::<i32, i32>(check, 11).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 11).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert_eq!(7, i.invoke_typed(check, 12).unwrap());
     assert_eq!(5, i.invoke_typed(check, 13).unwrap());
@@ -210,40 +235,52 @@ fn table_init_2_test() {
     assert_eq!(2, i.invoke_typed(check, 16).unwrap());
     assert_eq!(7, i.invoke_typed(check, 17).unwrap());
     assert!(
-        i.invoke_typed::<i32, i32>(check, 18).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 18).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert!(
-        i.invoke_typed::<i32, i32>(check, 19).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 19).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert!(
-        i.invoke_typed::<i32, i32>(check, 20).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 20).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert!(
-        i.invoke_typed::<i32, i32>(check, 21).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 21).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert!(
-        i.invoke_typed::<i32, i32>(check, 22).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 22).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert!(
-        i.invoke_typed::<i32, i32>(check, 23).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 23).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert!(
-        i.invoke_typed::<i32, i32>(check, 24).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 24).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert!(
-        i.invoke_typed::<i32, i32>(check, 25).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 25).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert!(
-        i.invoke_typed::<i32, i32>(check, 26).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 26).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert!(
-        i.invoke_typed::<i32, i32>(check, 27).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 27).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert!(
-        i.invoke_typed::<i32, i32>(check, 28).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 28).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert!(
-        i.invoke_typed::<i32, i32>(check, 29).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 29).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
 }
 
@@ -296,60 +333,73 @@ fn table_init_3_test() {
     i.invoke_typed::<(), ()>(test, ()).unwrap();
 
     assert!(
-        i.invoke_typed::<i32, i32>(check, 0).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 0).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert!(
-        i.invoke_typed::<i32, i32>(check, 1).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 1).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert_eq!(3, i.invoke_typed(check, 2).unwrap());
     assert_eq!(1, i.invoke_typed(check, 3).unwrap());
     assert_eq!(4, i.invoke_typed(check, 4).unwrap());
     assert_eq!(1, i.invoke_typed(check, 5).unwrap());
     assert!(
-        i.invoke_typed::<i32, i32>(check, 6).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 6).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert_eq!(2, i.invoke_typed(check, 7).unwrap());
     assert_eq!(7, i.invoke_typed(check, 8).unwrap());
     assert_eq!(1, i.invoke_typed(check, 9).unwrap());
     assert_eq!(8, i.invoke_typed(check, 10).unwrap());
     assert!(
-        i.invoke_typed::<i32, i32>(check, 11).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 11).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert_eq!(7, i.invoke_typed(check, 12).unwrap());
     assert!(
-        i.invoke_typed::<i32, i32>(check, 13).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 13).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert_eq!(7, i.invoke_typed(check, 14).unwrap());
     assert_eq!(5, i.invoke_typed(check, 15).unwrap());
     assert_eq!(2, i.invoke_typed(check, 16).unwrap());
     assert_eq!(7, i.invoke_typed(check, 17).unwrap());
     assert!(
-        i.invoke_typed::<i32, i32>(check, 18).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 18).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert_eq!(9, i.invoke_typed(check, 19).unwrap());
     assert!(
-        i.invoke_typed::<i32, i32>(check, 20).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 20).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert_eq!(7, i.invoke_typed(check, 21).unwrap());
     assert!(
-        i.invoke_typed::<i32, i32>(check, 22).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 22).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert_eq!(8, i.invoke_typed(check, 23).unwrap());
     assert_eq!(8, i.invoke_typed(check, 24).unwrap());
     assert!(
-        i.invoke_typed::<i32, i32>(check, 25).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 25).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert!(
-        i.invoke_typed::<i32, i32>(check, 26).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 26).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert!(
-        i.invoke_typed::<i32, i32>(check, 27).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 27).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert!(
-        i.invoke_typed::<i32, i32>(check, 28).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 28).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert!(
-        i.invoke_typed::<i32, i32>(check, 29).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 29).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
 }
 
@@ -396,32 +446,40 @@ fn table_init_4_test() {
     // println!("{:#?}", i.modules[0].store.tables[1]);
 
     assert!(
-        i.invoke_typed::<i32, i32>(check, 0).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 0).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert!(
-        i.invoke_typed::<i32, i32>(check, 1).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 1).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert_eq!(3, i.invoke_typed(check, 2).unwrap());
     assert_eq!(1, i.invoke_typed(check, 3).unwrap());
     assert_eq!(4, i.invoke_typed(check, 4).unwrap());
     assert_eq!(1, i.invoke_typed(check, 5).unwrap());
     assert!(
-        i.invoke_typed::<i32, i32>(check, 6).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 6).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert!(
-        i.invoke_typed::<i32, i32>(check, 7).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 7).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert!(
-        i.invoke_typed::<i32, i32>(check, 8).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 8).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert!(
-        i.invoke_typed::<i32, i32>(check, 9).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 9).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert!(
-        i.invoke_typed::<i32, i32>(check, 10).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 10).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert!(
-        i.invoke_typed::<i32, i32>(check, 11).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 11).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert_eq!(7, i.invoke_typed(check, 12).unwrap());
     assert_eq!(5, i.invoke_typed(check, 13).unwrap());
@@ -430,40 +488,52 @@ fn table_init_4_test() {
     assert_eq!(2, i.invoke_typed(check, 16).unwrap());
     assert_eq!(7, i.invoke_typed(check, 17).unwrap());
     assert!(
-        i.invoke_typed::<i32, i32>(check, 18).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 18).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert!(
-        i.invoke_typed::<i32, i32>(check, 19).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 19).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert!(
-        i.invoke_typed::<i32, i32>(check, 20).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 20).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert!(
-        i.invoke_typed::<i32, i32>(check, 21).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 21).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert!(
-        i.invoke_typed::<i32, i32>(check, 22).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 22).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert!(
-        i.invoke_typed::<i32, i32>(check, 23).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 23).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert!(
-        i.invoke_typed::<i32, i32>(check, 24).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 24).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert!(
-        i.invoke_typed::<i32, i32>(check, 25).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 25).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert!(
-        i.invoke_typed::<i32, i32>(check, 26).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 26).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert!(
-        i.invoke_typed::<i32, i32>(check, 27).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 27).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert!(
-        i.invoke_typed::<i32, i32>(check, 28).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 28).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert!(
-        i.invoke_typed::<i32, i32>(check, 29).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 29).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
 }
 
@@ -516,60 +586,73 @@ fn table_init_5_test() {
     i.invoke_typed::<(), ()>(test, ()).unwrap();
 
     assert!(
-        i.invoke_typed::<i32, i32>(check, 0).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 0).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert!(
-        i.invoke_typed::<i32, i32>(check, 1).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 1).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert_eq!(3, i.invoke_typed(check, 2).unwrap());
     assert_eq!(1, i.invoke_typed(check, 3).unwrap());
     assert_eq!(4, i.invoke_typed(check, 4).unwrap());
     assert_eq!(1, i.invoke_typed(check, 5).unwrap());
     assert!(
-        i.invoke_typed::<i32, i32>(check, 6).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 6).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert_eq!(2, i.invoke_typed(check, 7).unwrap());
     assert_eq!(7, i.invoke_typed(check, 8).unwrap());
     assert_eq!(1, i.invoke_typed(check, 9).unwrap());
     assert_eq!(8, i.invoke_typed(check, 10).unwrap());
     assert!(
-        i.invoke_typed::<i32, i32>(check, 11).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 11).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert_eq!(7, i.invoke_typed(check, 12).unwrap());
     assert!(
-        i.invoke_typed::<i32, i32>(check, 13).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 13).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert_eq!(7, i.invoke_typed(check, 14).unwrap());
     assert_eq!(5, i.invoke_typed(check, 15).unwrap());
     assert_eq!(2, i.invoke_typed(check, 16).unwrap());
     assert_eq!(7, i.invoke_typed(check, 17).unwrap());
     assert!(
-        i.invoke_typed::<i32, i32>(check, 18).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 18).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert_eq!(9, i.invoke_typed(check, 19).unwrap());
     assert!(
-        i.invoke_typed::<i32, i32>(check, 20).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 20).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert_eq!(7, i.invoke_typed(check, 21).unwrap());
     assert!(
-        i.invoke_typed::<i32, i32>(check, 22).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 22).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert_eq!(8, i.invoke_typed(check, 23).unwrap());
     assert_eq!(8, i.invoke_typed(check, 24).unwrap());
     assert!(
-        i.invoke_typed::<i32, i32>(check, 25).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 25).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert!(
-        i.invoke_typed::<i32, i32>(check, 26).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 26).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert!(
-        i.invoke_typed::<i32, i32>(check, 27).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 27).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert!(
-        i.invoke_typed::<i32, i32>(check, 28).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 28).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
     assert!(
-        i.invoke_typed::<i32, i32>(check, 29).err().unwrap() == RuntimeError::UninitializedElement
+        i.invoke_typed::<i32, i32>(check, 29).err().unwrap()
+            == RuntimeError::Trap(TrapError::UninitializedElement)
     );
 }
 
@@ -582,7 +665,7 @@ fn table_init_6_test() {
         "#;
 
     let wasm_bytes = wat::parse_str(w).unwrap();
-    assert!(validate(&wasm_bytes).err().unwrap() == Error::ElementIsNotDefined(0));
+    assert!(validate(&wasm_bytes).err().unwrap() == ValidationError::ElementIsNotDefined(0));
 }
 
 #[test_log::test]
@@ -594,7 +677,7 @@ fn table_init_7_test() {
         "#;
 
     let wasm_bytes = wat::parse_str(w).unwrap();
-    assert!(validate(&wasm_bytes).err().unwrap() == Error::TableIsNotDefined(0));
+    assert!(validate(&wasm_bytes).err().unwrap() == ValidationError::TableIsNotDefined(0));
 }
 
 #[test_log::test]
@@ -608,7 +691,7 @@ fn table_init_8_test() {
         "#;
 
     let wasm_bytes = wat::parse_str(w).unwrap();
-    assert!(validate(&wasm_bytes).err().unwrap() == Error::ElementIsNotDefined(4));
+    assert!(validate(&wasm_bytes).err().unwrap() == ValidationError::ElementIsNotDefined(4));
 }
 
 #[test_log::test]
@@ -622,7 +705,7 @@ fn table_init_9_test() {
         "#;
 
     let wasm_bytes = wat::parse_str(w).unwrap();
-    assert!(validate(&wasm_bytes).err().unwrap() == Error::TableIsNotDefined(0));
+    assert!(validate(&wasm_bytes).err().unwrap() == ValidationError::TableIsNotDefined(0));
 }
 
 #[test_log::test]
@@ -697,7 +780,8 @@ fn table_init_11_test() {
     let test = get_func!(i, "test");
 
     assert!(
-        i.invoke_typed::<(), ()>(test, ()).err().unwrap() == RuntimeError::TableAccessOutOfBounds
+        i.invoke_typed::<(), ()>(test, ()).err().unwrap()
+            == RuntimeError::Trap(TrapError::TableOrElementAccessOutOfBounds)
     );
 }
 
@@ -810,7 +894,8 @@ fn table_init_14_test() {
     let test = get_func!(i, "test");
 
     assert!(
-        i.invoke_typed::<(), ()>(test, ()).err().unwrap() == RuntimeError::TableAccessOutOfBounds
+        i.invoke_typed::<(), ()>(test, ()).err().unwrap()
+            == RuntimeError::Trap(TrapError::TableOrElementAccessOutOfBounds)
     );
 }
 
@@ -849,7 +934,8 @@ fn table_init_15_test() {
     let test = get_func!(i, "test");
 
     assert!(
-        i.invoke_typed::<(), ()>(test, ()).err().unwrap() == RuntimeError::TableAccessOutOfBounds
+        i.invoke_typed::<(), ()>(test, ()).err().unwrap()
+            == RuntimeError::Trap(TrapError::TableOrElementAccessOutOfBounds)
     );
 }
 
@@ -888,7 +974,8 @@ fn table_init_16_test() {
     let test = get_func!(i, "test");
 
     assert!(
-        i.invoke_typed::<(), ()>(test, ()).err().unwrap() == RuntimeError::TableAccessOutOfBounds
+        i.invoke_typed::<(), ()>(test, ()).err().unwrap()
+            == RuntimeError::Trap(TrapError::TableOrElementAccessOutOfBounds)
     );
 }
 
@@ -927,7 +1014,8 @@ fn table_init_17_test() {
     let test = get_func!(i, "test");
 
     assert!(
-        i.invoke_typed::<(), ()>(test, ()).err().unwrap() == RuntimeError::TableAccessOutOfBounds
+        i.invoke_typed::<(), ()>(test, ()).err().unwrap()
+            == RuntimeError::Trap(TrapError::TableOrElementAccessOutOfBounds)
     );
 }
 
@@ -1003,7 +1091,8 @@ fn table_init_19_test() {
     let test = get_func!(i, "test");
 
     assert!(
-        i.invoke_typed::<(), ()>(test, ()).err().unwrap() == RuntimeError::TableAccessOutOfBounds
+        i.invoke_typed::<(), ()>(test, ()).err().unwrap()
+            == RuntimeError::Trap(TrapError::TableOrElementAccessOutOfBounds)
     );
 }
 
@@ -1079,7 +1168,8 @@ fn table_init_21_test() {
     let test = get_func!(i, "test");
 
     assert!(
-        i.invoke_typed::<(), ()>(test, ()).err().unwrap() == RuntimeError::TableAccessOutOfBounds
+        i.invoke_typed::<(), ()>(test, ()).err().unwrap()
+            == RuntimeError::Trap(TrapError::TableOrElementAccessOutOfBounds)
     );
 }
 
@@ -1155,7 +1245,8 @@ fn table_init_23_test() {
     let test = get_func!(i, "test");
 
     assert!(
-        i.invoke_typed::<(), ()>(test, ()).err().unwrap() == RuntimeError::TableAccessOutOfBounds
+        i.invoke_typed::<(), ()>(test, ()).err().unwrap()
+            == RuntimeError::Trap(TrapError::TableOrElementAccessOutOfBounds)
     );
 }
 
@@ -1194,7 +1285,8 @@ fn table_init_24_test() {
     let test = get_func!(i, "test");
 
     assert!(
-        i.invoke_typed::<(), ()>(test, ()).err().unwrap() == RuntimeError::TableAccessOutOfBounds
+        i.invoke_typed::<(), ()>(test, ()).err().unwrap()
+            == RuntimeError::Trap(TrapError::TableOrElementAccessOutOfBounds)
     );
 }
 
@@ -1270,7 +1362,8 @@ fn table_init_26_test() {
     let test = get_func!(i, "test");
 
     assert!(
-        i.invoke_typed::<(), ()>(test, ()).err().unwrap() == RuntimeError::TableAccessOutOfBounds
+        i.invoke_typed::<(), ()>(test, ()).err().unwrap()
+            == RuntimeError::Trap(TrapError::TableOrElementAccessOutOfBounds)
     );
 }
 
@@ -1346,7 +1439,8 @@ fn table_init_28_test() {
     let test = get_func!(i, "test");
 
     assert!(
-        i.invoke_typed::<(), ()>(test, ()).err().unwrap() == RuntimeError::TableAccessOutOfBounds
+        i.invoke_typed::<(), ()>(test, ()).err().unwrap()
+            == RuntimeError::Trap(TrapError::TableOrElementAccessOutOfBounds)
     );
 }
 
@@ -1422,7 +1516,8 @@ fn table_init_30_test() {
     let test = get_func!(i, "test");
 
     assert!(
-        i.invoke_typed::<(), ()>(test, ()).err().unwrap() == RuntimeError::TableAccessOutOfBounds
+        i.invoke_typed::<(), ()>(test, ()).err().unwrap()
+            == RuntimeError::Trap(TrapError::TableOrElementAccessOutOfBounds)
     );
 }
 
@@ -1440,7 +1535,7 @@ fn table_init_31_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -1458,7 +1553,7 @@ fn table_init_32_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -1476,7 +1571,7 @@ fn table_init_33_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -1494,7 +1589,7 @@ fn table_init_34_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -1512,7 +1607,7 @@ fn table_init_35_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -1530,7 +1625,7 @@ fn table_init_36_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -1548,7 +1643,7 @@ fn table_init_37_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -1566,7 +1661,7 @@ fn table_init_38_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -1584,7 +1679,7 @@ fn table_init_39_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -1602,7 +1697,7 @@ fn table_init_40_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -1620,7 +1715,7 @@ fn table_init_41_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -1638,7 +1733,7 @@ fn table_init_42_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -1656,7 +1751,7 @@ fn table_init_43_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -1674,7 +1769,7 @@ fn table_init_44_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -1692,7 +1787,7 @@ fn table_init_45_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -1710,7 +1805,7 @@ fn table_init_46_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -1728,7 +1823,7 @@ fn table_init_47_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -1746,7 +1841,7 @@ fn table_init_48_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -1764,7 +1859,7 @@ fn table_init_49_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -1782,7 +1877,7 @@ fn table_init_50_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -1800,7 +1895,7 @@ fn table_init_51_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -1818,7 +1913,7 @@ fn table_init_52_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -1836,7 +1931,7 @@ fn table_init_53_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -1854,7 +1949,7 @@ fn table_init_54_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -1872,7 +1967,7 @@ fn table_init_55_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -1890,7 +1985,7 @@ fn table_init_56_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -1908,7 +2003,7 @@ fn table_init_57_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -1926,7 +2021,7 @@ fn table_init_58_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -1944,7 +2039,7 @@ fn table_init_59_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -1962,7 +2057,7 @@ fn table_init_60_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -1980,7 +2075,7 @@ fn table_init_61_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -1998,7 +2093,7 @@ fn table_init_62_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -2016,7 +2111,7 @@ fn table_init_63_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -2034,7 +2129,7 @@ fn table_init_64_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -2052,7 +2147,7 @@ fn table_init_65_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -2070,7 +2165,7 @@ fn table_init_66_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -2088,7 +2183,7 @@ fn table_init_67_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -2106,7 +2201,7 @@ fn table_init_68_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -2124,7 +2219,7 @@ fn table_init_69_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -2142,7 +2237,7 @@ fn table_init_70_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -2160,7 +2255,7 @@ fn table_init_71_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -2178,7 +2273,7 @@ fn table_init_72_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -2196,7 +2291,7 @@ fn table_init_73_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -2214,7 +2309,7 @@ fn table_init_74_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -2232,7 +2327,7 @@ fn table_init_75_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -2250,7 +2345,7 @@ fn table_init_76_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -2268,7 +2363,7 @@ fn table_init_77_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -2286,7 +2381,7 @@ fn table_init_78_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -2304,7 +2399,7 @@ fn table_init_79_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -2322,7 +2417,7 @@ fn table_init_80_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -2340,7 +2435,7 @@ fn table_init_81_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -2358,7 +2453,7 @@ fn table_init_82_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -2376,7 +2471,7 @@ fn table_init_83_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -2394,7 +2489,7 @@ fn table_init_84_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -2412,7 +2507,7 @@ fn table_init_85_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -2430,7 +2525,7 @@ fn table_init_86_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -2448,7 +2543,7 @@ fn table_init_87_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -2466,7 +2561,7 @@ fn table_init_88_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -2484,7 +2579,7 @@ fn table_init_89_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -2502,7 +2597,7 @@ fn table_init_90_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -2520,7 +2615,7 @@ fn table_init_91_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -2538,7 +2633,7 @@ fn table_init_92_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -2556,7 +2651,7 @@ fn table_init_93_test() {
     let wasm_bytes = wat::parse_str(w).unwrap();
     assert!(matches!(
         validate(&wasm_bytes).err().unwrap(),
-        Error::InvalidValidationStackValType(_)
+        ValidationError::InvalidValidationStackValType(_)
     ));
 }
 
@@ -2603,12 +2698,12 @@ fn table_init_94_test() {
         inst.invoke_typed::<(i32, i32), ()>(run, (24, 16))
             .err()
             .unwrap()
-            == RuntimeError::TableAccessOutOfBounds
+            == RuntimeError::Trap(TrapError::TableOrElementAccessOutOfBounds)
     );
     for i in 0..32 {
         assert!(
             inst.invoke_typed::<i32, i32>(test, i).err().unwrap()
-                == RuntimeError::UninitializedElement
+                == RuntimeError::Trap(TrapError::UninitializedElement)
         );
     }
 }
@@ -2656,12 +2751,12 @@ fn table_init_95_test() {
         inst.invoke_typed::<(i32, i32), ()>(run, (25, 16))
             .err()
             .unwrap()
-            == RuntimeError::TableAccessOutOfBounds
+            == RuntimeError::Trap(TrapError::TableOrElementAccessOutOfBounds)
     );
     for i in 0..32 {
         assert!(
             inst.invoke_typed::<i32, i32>(test, i).err().unwrap()
-                == RuntimeError::UninitializedElement
+                == RuntimeError::Trap(TrapError::UninitializedElement)
         );
     }
 }
@@ -2709,12 +2804,12 @@ fn table_init_96_test() {
         inst.invoke_typed::<(i32, i32), ()>(run, (96, 32))
             .err()
             .unwrap()
-            == RuntimeError::TableAccessOutOfBounds
+            == RuntimeError::Trap(TrapError::TableOrElementAccessOutOfBounds)
     );
     for i in 0..160 {
         assert!(
             inst.invoke_typed::<i32, i32>(test, i).err().unwrap()
-                == RuntimeError::UninitializedElement
+                == RuntimeError::Trap(TrapError::UninitializedElement)
         );
     }
 }
@@ -2762,12 +2857,12 @@ fn table_init_97_test() {
         inst.invoke_typed::<(i32, i32), ()>(run, (97, 31))
             .err()
             .unwrap()
-            == RuntimeError::TableAccessOutOfBounds
+            == RuntimeError::Trap(TrapError::TableOrElementAccessOutOfBounds)
     );
     for i in 0..160 {
         assert!(
             inst.invoke_typed::<i32, i32>(test, i).err().unwrap()
-                == RuntimeError::UninitializedElement
+                == RuntimeError::Trap(TrapError::UninitializedElement)
         );
     }
 }
@@ -2815,12 +2910,12 @@ fn table_init_98_test() {
         inst.invoke_typed::<(i32, u32), ()>(run, (48, 4294967280_u32))
             .err()
             .unwrap()
-            == RuntimeError::TableAccessOutOfBounds
+            == RuntimeError::Trap(TrapError::TableOrElementAccessOutOfBounds)
     );
     for i in 0..64 {
         assert!(
             inst.invoke_typed::<i32, i32>(test, i).err().unwrap()
-                == RuntimeError::UninitializedElement
+                == RuntimeError::Trap(TrapError::UninitializedElement)
         );
     }
 }
@@ -2868,12 +2963,12 @@ fn table_init_99_test() {
         inst.invoke_typed::<(i32, i32), ()>(run, (0, 4294967292_u32 as i32))
             .err()
             .unwrap()
-            == RuntimeError::TableAccessOutOfBounds
+            == RuntimeError::Trap(TrapError::TableOrElementAccessOutOfBounds)
     );
     for i in 0..16 {
         assert!(
             inst.invoke_typed::<i32, i32>(test, i).err().unwrap()
-                == RuntimeError::UninitializedElement
+                == RuntimeError::Trap(TrapError::UninitializedElement)
         );
     }
 }

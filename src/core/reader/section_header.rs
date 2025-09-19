@@ -1,7 +1,6 @@
 use crate::core::reader::span::Span;
 use crate::core::reader::{WasmReadable, WasmReader};
-use crate::execution::assert_validated::UnwrapValidatedExt;
-use crate::{unreachable_validated, Error, Result};
+use crate::ValidationError;
 
 #[derive(Copy, Clone, Debug, Hash, PartialEq, Eq)]
 pub enum SectionTy {
@@ -21,7 +20,7 @@ pub enum SectionTy {
 }
 
 impl WasmReadable for SectionTy {
-    fn read(wasm: &mut WasmReader) -> Result<Self> {
+    fn read(wasm: &mut WasmReader) -> Result<Self, ValidationError> {
         use SectionTy::*;
         let ty = match wasm.read_u8()? {
             0 => Custom,
@@ -37,30 +36,10 @@ impl WasmReadable for SectionTy {
             10 => Code,
             11 => Data,
             12 => DataCount,
-            other => return Err(Error::InvalidSectionType(other)),
+            other => return Err(ValidationError::InvalidSectionType(other)),
         };
 
         Ok(ty)
-    }
-
-    fn read_unvalidated(wasm: &mut WasmReader) -> Self {
-        use SectionTy::*;
-        match wasm.read_u8().unwrap_validated() {
-            0 => Custom,
-            1 => Type,
-            2 => Import,
-            3 => Function,
-            4 => Table,
-            5 => Memory,
-            6 => Global,
-            7 => Export,
-            8 => Start,
-            9 => Element,
-            10 => Code,
-            11 => Data,
-            12 => DataCount,
-            _ => unreachable_validated!(),
-        }
     }
 }
 
@@ -71,7 +50,7 @@ pub(crate) struct SectionHeader {
 }
 
 impl WasmReadable for SectionHeader {
-    fn read(wasm: &mut WasmReader) -> Result<Self> {
+    fn read(wasm: &mut WasmReader) -> Result<Self, ValidationError> {
         let ty = SectionTy::read(wasm)?;
         let size: u32 = wasm.read_var_u32()?;
         let contents_span = wasm.make_span(size as usize)?;
@@ -80,18 +59,5 @@ impl WasmReadable for SectionHeader {
             ty,
             contents: contents_span,
         })
-    }
-
-    fn read_unvalidated(wasm: &mut WasmReader) -> Self {
-        let ty = SectionTy::read_unvalidated(wasm);
-        let size: u32 = wasm.read_var_u32().unwrap_validated();
-        let contents_span = wasm
-            .make_span(size as usize)
-            .expect("TODO remove this expect");
-
-        SectionHeader {
-            ty,
-            contents: contents_span,
-        }
     }
 }

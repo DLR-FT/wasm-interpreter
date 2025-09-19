@@ -1,8 +1,7 @@
 use crate::core::reader::span::Span;
 use crate::core::reader::types::ValType;
 use crate::core::reader::{WasmReadable, WasmReader};
-use crate::execution::assert_validated::UnwrapValidatedExt;
-use crate::{unreachable_validated, Error, Result};
+use crate::ValidationError;
 
 #[derive(Debug, Copy, Clone)]
 pub struct Global {
@@ -18,24 +17,13 @@ pub struct GlobalType {
 }
 
 impl WasmReadable for GlobalType {
-    fn read(wasm: &mut WasmReader) -> Result<Self> {
+    fn read(wasm: &mut WasmReader) -> Result<Self, ValidationError> {
         let ty = ValType::read(wasm)?;
         let is_mut = match wasm.read_u8()? {
             0x00 => false,
             0x01 => true,
-            other => return Err(Error::InvalidMutType(other)),
+            other => return Err(ValidationError::InvalidMutType(other)),
         };
         Ok(Self { ty, is_mut })
-    }
-
-    fn read_unvalidated(wasm: &mut WasmReader) -> Self {
-        let ty = ValType::read_unvalidated(wasm);
-        let is_mut = match wasm.read_u8().unwrap_validated() {
-            0x00 => false,
-            0x01 => true,
-            _ => unreachable_validated!(),
-        };
-
-        Self { ty, is_mut }
     }
 }

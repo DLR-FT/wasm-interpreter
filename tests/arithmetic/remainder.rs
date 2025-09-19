@@ -1,5 +1,5 @@
 use wasm::{validate, RuntimeInstance};
-use wasm::{RuntimeError, DEFAULT_MODULE};
+use wasm::{RuntimeError, TrapError, DEFAULT_MODULE};
 const REM_S_WAT: &str = r#"
     (module
         (func (export "rem_s") (param $divisor {{TYPE}}) (param $dividend {{TYPE}}) (result {{TYPE}})
@@ -115,7 +115,10 @@ pub fn i64_remainder_signed_panic_dividend_0() {
         (222_i64, 0_i64),
     );
 
-    assert_eq!(result.unwrap_err(), RuntimeError::DivideBy0);
+    assert_eq!(
+        result.unwrap_err(),
+        RuntimeError::Trap(TrapError::DivideBy0)
+    );
 }
 
 /// A simple function to test i64 unsigned remainder
@@ -250,7 +253,10 @@ pub fn i64_remainder_unsigned_panic_dividend_0() {
     let result = instance
         .invoke_typed::<(i64, i64), i64>(&instance.get_function_by_index(0, 0).unwrap(), (222, 0));
 
-    assert_eq!(result.unwrap_err(), RuntimeError::DivideBy0);
+    assert_eq!(
+        result.unwrap_err(),
+        RuntimeError::Trap(TrapError::DivideBy0)
+    );
 }
 
 /// A simple function to test signed remainder
@@ -368,7 +374,10 @@ pub fn remainder_signed_panic_dividend_0() {
         (222, 0),
     );
 
-    assert_eq!(result.unwrap_err(), RuntimeError::DivideBy0);
+    assert_eq!(
+        result.unwrap_err(),
+        RuntimeError::Trap(TrapError::DivideBy0)
+    );
 }
 
 /// A simple function to test unsigned remainder
@@ -544,5 +553,8 @@ pub fn i32_remainder_unsigned_panic_dividend_0() {
         (222, 0),
     );
 
-    assert_eq!(result.unwrap_err(), RuntimeError::DivideBy0);
+    assert_eq!(
+        result.unwrap_err(),
+        RuntimeError::Trap(TrapError::DivideBy0)
+    );
 }

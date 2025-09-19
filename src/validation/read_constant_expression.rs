@@ -4,7 +4,7 @@ use crate::core::indices::{FuncIdx, GlobalIdx};
 use crate::core::reader::span::Span;
 use crate::core::reader::types::global::GlobalType;
 use crate::core::reader::{WasmReadable, WasmReader};
-use crate::{Error, NumType, RefType, Result, ValType};
+use crate::{NumType, RefType, ValType, ValidationError};
 
 use super::validation_stack::ValidationStack;
 
@@ -94,13 +94,13 @@ pub fn read_constant_expression(
     //   for validating certain definitions is that they can only access functions and imported globals and nothing else.
     globals_ty: &[GlobalType],
     num_funcs: usize,
-) -> Result<(Span, Vec<FuncIdx>)> {
+) -> Result<(Span, Vec<FuncIdx>), ValidationError> {
     let start_pc = wasm.pc;
     let mut seen_func_idxs: Vec<FuncIdx> = Vec::new();
 
     loop {
         let Ok(first_instr_byte) = wasm.read_u8() else {
-            return Err(Error::ExprMissingEnd);
+            return Err(ValidationError::ExprMissingEnd);
         };
 
         #[cfg(not(debug_assertions))]
@@ -114,7 +114,6 @@ pub fn read_constant_expression(
 
         use crate::core::reader::types::opcode::*;
         match first_instr_byte {
-            // Missing: ref.null, ref.func, global.get
             END => {
                 // The code here for checking the global type was moved to where the global is actually validated
                 return Ok((Span::new(start_pc, wasm.pc - start_pc), seen_func_idxs));
@@ -124,7 +123,7 @@ pub fn read_constant_expression(
                 trace!("{:?}", globals_ty);
                 let global = globals_ty
                     .get(global_idx)
-                    .ok_or(Error::InvalidGlobalIdx(global_idx))?;
+                    .ok_or(ValidationError::InvalidGlobalIdx(global_idx))?;
 
                 trace!("{:?}", global.ty);
                 stack.push_valtype(global.ty);
@@ -153,7 +152,7 @@ pub fn read_constant_expression(
 
                 // checking for existence suffices for checking whether this function has a valid type.
                 if num_funcs <= func_idx {
-                    return Err(Error::FunctionIsNotDefined(func_idx));
+                    return Err(ValidationError::FunctionIsNotDefined(func_idx));
                 }
 
                 // This func_idx is automatically in C.refs. No need to check.
@@ -162,9 +161,16 @@ pub fn read_constant_expression(
 
                 stack.push_valtype(ValType::RefType(crate::RefType::FuncRef));
             }
-            _ => {
+
+            0x00..=0x0A
+            | 0x0C..=0x22
+            | 0x24..=0x40
+            | 0x45..=0xBF
+            | 0xC0..=0xCF
+            | 0xD1
+            | 0xD3..=0xFF => {
                 trace!("Encountered unknown instruction in validation - constant expression - {first_instr_byte:x?}");
-                return Err(Error::InvalidInstr(first_instr_byte));
+                return Err(ValidationError::InvalidInstr(first_instr_byte));
             }
         }
     }

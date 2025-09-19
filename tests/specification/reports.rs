@@ -1,40 +1,70 @@
-use std::error::Error;
+use std::any::Any;
 
-pub struct WastSuccess {
+use wasm::{RuntimeError, TrapError};
+
+use super::test_errors::AssertEqError;
+
+pub struct AssertOutcome {
     pub line_number: u32,
     pub command: String,
+    pub maybe_error: Option<WastError>,
 }
 
-impl WastSuccess {
-    pub fn new(line_number: u32, command: &str) -> Self {
-        Self {
-            line_number,
-            command: command.to_string(),
-        }
+#[derive(thiserror::Error, Debug)]
+pub enum WastError {
+    #[error("Panic: {}", .0.downcast_ref::<&str>().unwrap_or(&"Unknown panic"))]
+    Panic(Box<dyn Any + Send + 'static>),
+    #[error("{0}")]
+    WasmError(wasm::ValidationError),
+    #[error("{0}")]
+    WasmRuntimeError(wasm::RuntimeError),
+    #[error("{0}")]
+    AssertEqualFailed(#[from] AssertEqError),
+    #[error("Module validated and instantiated successfully, when it shouldn't have")]
+    AssertInvalidButValid,
+    #[error("Module linked successfully, when it shouldn't have")]
+    AssertUnlinkableButLinked,
+    #[error("'assert_exhaustion': Expected '{expected}' - Actual: '{}'", actual.as_ref()
+        .map(|actual| format!("{actual}"))
+        .unwrap_or_else(|| "---".to_owned())
+    )]
+    AssertExhaustionButDidNotExhaust {
+        expected: String,
+        actual: Option<RuntimeError>,
+    },
+    #[error("'assert_trap': Expected '{expected}' - Actual: '{}'", actual.as_ref()
+        .map(|actual| format!("{actual}"))
+        .unwrap_or_else(|| "---".to_owned())
+    )]
+    AssertTrapButTrapWasIncorrect {
+        expected: String,
+        actual: Option<TrapError>,
+    },
+    #[error("{0}")]
+    Wast(#[from] wast::Error),
+    #[error("Runtime error not represented in WAST")]
+    UnrepresentedRuntimeError,
+    #[error("{0}")]
+    Io(#[from] std::io::Error),
+}
+
+impl From<wasm::ValidationError> for WastError {
+    fn from(value: wasm::ValidationError) -> Self {
+        Self::WasmError(value)
     }
 }
 
-pub struct WastError {
-    pub inner: Box<dyn Error>,
-    pub line_number: u32,
-    pub command: String,
-}
-
-impl WastError {
-    pub fn new(error: Box<dyn Error>, line_number: u32, command: &str) -> Self {
-        Self {
-            inner: error,
-            line_number,
-            command: command.to_string(),
-        }
+impl From<wasm::RuntimeError> for WastError {
+    fn from(value: wasm::RuntimeError) -> Self {
+        Self::WasmRuntimeError(value)
     }
 }
 
-/// Wast script executed successfuly. The results of asserts (pass/fail) are
+/// Wast script executed successfully. The outcomes of asserts (pass/fail) are
 /// stored here.
 pub struct AssertReport {
     pub filename: String,
-    pub results: Vec<Result<WastSuccess, WastError>>,
+    pub results: Vec<AssertOutcome>,
 }
 
 impl AssertReport {
@@ -45,20 +75,8 @@ impl AssertReport {
         }
     }
 
-    pub fn push_success(&mut self, success: WastSuccess) {
-        self.results.push(Ok(success));
-    }
-
-    pub fn push_error(&mut self, error: WastError) {
-        self.results.push(Err(error));
-    }
-
-    pub fn compile_report(self) -> WastTestReport {
-        WastTestReport::Asserts(self)
-    }
-
     pub fn has_errors(&self) -> bool {
-        self.results.iter().any(|r| r.is_err())
+        self.results.iter().any(|r| r.maybe_error.is_some())
     }
 
     pub fn total_asserts(&self) -> u32 {
@@ -66,7 +84,10 @@ impl AssertReport {
     }
 
     pub fn passed_asserts(&self) -> u32 {
-        self.results.iter().filter(|el| el.is_ok()).count() as u32
+        self.results
+            .iter()
+            .filter(|el| el.maybe_error.is_some())
+            .count() as u32
     }
 
     pub fn failed_asserts(&self) -> u32 {
@@ -85,27 +106,27 @@ impl AssertReport {
 impl std::fmt::Display for AssertReport {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for elem in &self.results {
-            match elem {
-                Ok(success) => {
+            match &elem.maybe_error {
+                None => {
                     writeln!(
                         f,
                         "✅ {}:{} -> {}",
                         self.filename,
-                        if success.line_number == u32::MAX {
+                        if elem.line_number == u32::MAX {
                             "?".to_string()
                         } else {
-                            success.line_number.to_string()
+                            elem.line_number.to_string()
                         },
-                        success.command
+                        elem.command
                     )?;
                 }
-                Err(error) => {
+                Some(error) => {
                     writeln!(
                         f,
                         "❌ {}:{} -> {}",
-                        self.filename, error.line_number, error.command
+                        self.filename, elem.line_number, elem.command
                     )?;
-                    writeln!(f, "    Error: {}", error.inner)?;
+                    writeln!(f, "    Error: {error}")?;
                 }
             }
         }
@@ -118,7 +139,8 @@ impl std::fmt::Display for AssertReport {
 /// fails, a ScriptError will be raised.
 pub struct ScriptError {
     pub filename: String,
-    pub error: Box<dyn Error>,
+    /// Boxed because of struct size
+    pub error: Box<WastError>,
     pub context: String,
     #[allow(unused)]
     pub line_number: Option<u32>,
@@ -129,72 +151,27 @@ pub struct ScriptError {
 impl ScriptError {
     pub fn new(
         filename: &str,
-        error: Box<dyn Error>,
+        error: WastError,
         context: &str,
         line_number: u32,
         command: &str,
     ) -> Self {
         Self {
             filename: filename.to_string(),
-            error,
+            error: Box::new(error),
             context: context.to_string(),
             line_number: Some(line_number),
             command: Some(command.to_string()),
         }
     }
 
-    pub fn new_lineless(filename: &str, error: Box<dyn Error>, context: &str) -> Self {
+    pub fn new_lineless(filename: &str, error: WastError, context: &str) -> Self {
         Self {
             filename: filename.to_string(),
-            error,
+            error: Box::new(error),
             context: context.to_string(),
             line_number: None,
             command: None,
         }
-    }
-
-    pub fn compile_report(self) -> WastTestReport {
-        WastTestReport::ScriptError(self)
-    }
-}
-
-pub enum WastTestReport {
-    /// The script ran successfully, having directives run successfuly (though
-    /// not necessarily meaning all asserts pass!)
-    Asserts(AssertReport),
-    /// The script could not run successfully, a non-assert directive failed in
-    /// such a way the script cannot continue running.
-    ScriptError(ScriptError),
-}
-
-impl std::fmt::Display for WastTestReport {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            WastTestReport::ScriptError(error) => {
-                writeln!(f, "------ {} ------", error.filename)?;
-                writeln!(f, "⚠ Compilation Failed ⚠")?;
-                writeln!(f, "Context: {}", error.context)?;
-                writeln!(f, "Error: {}", error.error)?;
-                writeln!(f, "~~~~~~~~~~~~~~~~")?;
-                writeln!(f)?;
-            }
-            WastTestReport::Asserts(assert_report) => {
-                writeln!(f, "------ {} ------", assert_report.filename)?;
-                writeln!(f, "{assert_report}")?;
-                let passed_asserts = assert_report.results.iter().filter(|r| r.is_ok()).count();
-                let failed_asserts = assert_report.results.iter().filter(|r| r.is_err()).count();
-                let total_asserts = assert_report.results.len();
-
-                writeln!(f)?;
-                writeln!(
-                    f,
-                    "Execution finished. Passed: {passed_asserts}, Failed: {failed_asserts}, Total: {total_asserts}"
-                )?;
-                writeln!(f, "~~~~~~~~~~~~~~~~")?;
-                writeln!(f)?;
-            }
-        }
-
-        Ok(())
     }
 }

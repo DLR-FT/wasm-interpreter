@@ -97,7 +97,7 @@ fn recursion_valid() {
 
 #[test_log::test]
 fn recursion_busted_stack() {
-    use wasm::{validate, Error};
+    use wasm::{validate, ValidationError};
 
     let wat = r#"
     (module
@@ -119,7 +119,10 @@ fn recursion_busted_stack() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     assert!(
-        matches!(validate(&wasm_bytes), Err(Error::EndInvalidValueStack)),
+        matches!(
+            validate(&wasm_bytes),
+            Err(ValidationError::EndInvalidValueStack)
+        ),
         "validation incorrectly passed"
     );
 }
