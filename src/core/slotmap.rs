@@ -14,7 +14,7 @@ struct Slot<T> {
 
 /// A contigious data structure that never shrinks, but keeps track of lazily deleted elements so that when a new item is inserted, the lazily deleted place is reused.
 /// Insertion, removal, and update are all of O(1) time complexity. Inserted elements can be (mutably) accessed or removed with the key returned when they were inserted.
-/// Note: might panic in case of more than `u64::MAX` insert calls during runtime.
+/// Note: might make a slot permanently unusable per `u64::MAX` insert calls during runtime.
 pub struct SlotMap<T> {
     slots: Vec<Slot<T>>,
     last_unoccupied: Option<usize>,
@@ -45,8 +45,6 @@ impl<T> SlotMap<T> {
                 };
                 self.last_unoccupied = prev_unoccupied;
 
-                // ASSUMPTION: slot.generation can never overflow.
-                slot.generation = slot.generation.checked_add(1).unwrap();
                 slot.content = SlotContent::Occupied { item };
                 SlotMapKey {
                     index: last_unoccupied,
@@ -101,11 +99,21 @@ impl<T> SlotMap<T> {
             return None;
         }
 
-        let new_slot = Slot {
-            generation: slot.generation,
-            content: SlotContent::Unoccupied {
-                prev_unoccupied: self.last_unoccupied,
-            },
+        let new_slot = if let Some(generation) = slot.generation.checked_add(1) {
+            let prev_unoccupied = self.last_unoccupied;
+            self.last_unoccupied = Some(key.index);
+            Slot {
+                generation,
+                content: SlotContent::Unoccupied { prev_unoccupied },
+            }
+        } else {
+            // no self.last_unoccupied update here, permanently make slot unusable if its generation overflows.
+            Slot {
+                generation: 0,
+                content: SlotContent::Unoccupied {
+                    prev_unoccupied: None,
+                },
+            }
         };
         let previous_slot = mem::replace(slot, new_slot);
 
