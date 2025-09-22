@@ -477,13 +477,13 @@ fn run_directive<'a>(
             Ok(None)
         }
         wast::WastDirective::Thread(_) => {
-            todo!("`thread` directive");
+            unimplemented!("`thread` directive does not exist anymore");
         }
         wast::WastDirective::AssertException { .. } => {
-            todo!("`assert_exception` directive")
+            unimplemented!("`assert_exception` directive is required only by tests for certain proposals which are not yet supported")
         }
         wast::WastDirective::Wait { .. } => {
-            todo!("`wait` directive");
+            unimplemented!("`wait` directive does not exist anymore");
         }
     }
 }
