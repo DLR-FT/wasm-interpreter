@@ -1277,7 +1277,19 @@
 <a href=#1277 id=1277 data-nosnippet>1277</a>
 <a href=#1278 id=1278 data-nosnippet>1278</a>                stack.push_valtype(ValType::NumType(NumType::I64));
 <a href=#1279 id=1279 data-nosnippet>1279</a>            }
-<a href=#1280 id=1280 data-nosnippet>1280</a>            <span class="kw">_ </span>=&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(Error::InvalidInstr(first_instr_byte)),
-<a href=#1281 id=1281 data-nosnippet>1281</a>        }
-<a href=#1282 id=1282 data-nosnippet>1282</a>    }
-<a href=#1283 id=1283 data-nosnippet>1283</a>}</code></pre></div></section></main></body></html>
+<a href=#1280 id=1280 data-nosnippet>1280</a>
+<a href=#1281 id=1281 data-nosnippet>1281</a>            <span class="comment">// Unimplemented or invalid instructions
+<a href=#1282 id=1282 data-nosnippet>1282</a>            </span><span class="number">0x06</span>..=<span class="number">0x0A
+<a href=#1283 id=1283 data-nosnippet>1283</a>            </span>| <span class="number">0x12</span>..=<span class="number">0x19
+<a href=#1284 id=1284 data-nosnippet>1284</a>            </span>| <span class="number">0x1C</span>..=<span class="number">0x1F
+<a href=#1285 id=1285 data-nosnippet>1285</a>            </span>| <span class="number">0x25</span>..=<span class="number">0x27
+<a href=#1286 id=1286 data-nosnippet>1286</a>            </span>| <span class="number">0xC0</span>..=<span class="number">0xFA
+<a href=#1287 id=1287 data-nosnippet>1287</a>            </span>| <span class="number">0xFB
+<a href=#1288 id=1288 data-nosnippet>1288</a>            </span>| <span class="number">0xFD
+<a href=#1289 id=1289 data-nosnippet>1289</a>            </span>| <span class="number">0xFE
+<a href=#1290 id=1290 data-nosnippet>1290</a>            </span>| <span class="number">0xFF </span>=&gt; {
+<a href=#1291 id=1291 data-nosnippet>1291</a>                <span class="kw">return </span><span class="prelude-val">Err</span>(Error::InvalidInstr(first_instr_byte));
+<a href=#1292 id=1292 data-nosnippet>1292</a>            }
+<a href=#1293 id=1293 data-nosnippet>1293</a>        }
+<a href=#1294 id=1294 data-nosnippet>1294</a>    }
+<a href=#1295 id=1295 data-nosnippet>1295</a>}</code></pre></div></section></main></body></html>
