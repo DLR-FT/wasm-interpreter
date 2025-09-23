@@ -14,7 +14,7 @@
 <a href=#14 id=14 data-nosnippet>14</a>    },
 <a href=#15 id=15 data-nosnippet>15</a>    read_constant_expression::read_constant_expression,
 <a href=#16 id=16 data-nosnippet>16</a>    validation_stack::ValidationStack,
-<a href=#17 id=17 data-nosnippet>17</a>    <span class="prelude-ty">Result</span>,
+<a href=#17 id=17 data-nosnippet>17</a>    ValidationError,
 <a href=#18 id=18 data-nosnippet>18</a>};
 <a href=#19 id=19 data-nosnippet>19</a>
 <a href=#20 id=20 data-nosnippet>20</a><span class="doccomment">/// Validate the data section.
@@ -24,7 +24,7 @@
 <a href=#24 id=24 data-nosnippet>24</a>    imported_global_types: <span class="kw-2">&amp;</span>[GlobalType],
 <a href=#25 id=25 data-nosnippet>25</a>    no_of_total_memories: usize,
 <a href=#26 id=26 data-nosnippet>26</a>    num_funcs: usize,
-<a href=#27 id=27 data-nosnippet>27</a>) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;DataSegment&gt;&gt; {
+<a href=#27 id=27 data-nosnippet>27</a>) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;DataSegment&gt;, ValidationError&gt; {
 <a href=#28 id=28 data-nosnippet>28</a>    <span class="macro">assert_eq!</span>(section_header.ty, SectionTy::Data);
 <a href=#29 id=29 data-nosnippet>29</a>
 <a href=#30 id=30 data-nosnippet>30</a>    wasm.read_vec(|wasm| {
@@ -70,7 +70,7 @@
 <a href=#70 id=70 data-nosnippet>70</a>                <span class="macro">trace!</span>(<span class="string">"Data section: active {{ memory x, offset e }}"</span>);
 <a href=#71 id=71 data-nosnippet>71</a>                <span class="kw">let </span>mem_idx = wasm.read_var_u32()<span class="question-mark">? </span><span class="kw">as </span>MemIdx;
 <a href=#72 id=72 data-nosnippet>72</a>                <span class="kw">if </span>mem_idx &gt;= no_of_total_memories {
-<a href=#73 id=73 data-nosnippet>73</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="kw">crate</span>::Error::UnknownMemory);
+<a href=#73 id=73 data-nosnippet>73</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="kw">crate</span>::ValidationError::UnknownMemory);
 <a href=#74 id=74 data-nosnippet>74</a>                }
 <a href=#75 id=75 data-nosnippet>75</a>                <span class="macro">assert!</span>(
 <a href=#76 id=76 data-nosnippet>76</a>                    mem_idx == <span class="number">0</span>,

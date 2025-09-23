@@ -6,7 +6,7 @@
 <a href=#6 id=6 data-nosnippet>6</a>
 <a href=#7 id=7 data-nosnippet>7</a><span class="kw">use </span><span class="kw">crate</span>::core::reader::types::{NumType, ValType};
 <a href=#8 id=8 data-nosnippet>8</a><span class="kw">use </span><span class="kw">crate</span>::execution::assert_validated::UnwrapValidatedExt;
-<a href=#9 id=9 data-nosnippet>9</a><span class="kw">use crate</span>::{unreachable_validated, Error, RefType, <span class="prelude-ty">Result</span>};
+<a href=#9 id=9 data-nosnippet>9</a><span class="kw">use crate</span>::{unreachable_validated, RefType, ValidationError};
 <a href=#10 id=10 data-nosnippet>10</a>
 <a href=#11 id=11 data-nosnippet>11</a><span class="attr">#[derive(Clone, Debug, Copy, PartialOrd)]
 <a href=#12 id=12 data-nosnippet>12</a></span><span class="kw">pub struct </span>F32(<span class="kw">pub </span>f32);
@@ -628,9 +628,9 @@
 <a href=#628 id=628 data-nosnippet>628</a>}
 <a href=#629 id=629 data-nosnippet>629</a>
 <a href=#630 id=630 data-nosnippet>630</a><span class="kw">impl </span>FuncRefForInteropValue {
-<a href=#631 id=631 data-nosnippet>631</a>    <span class="kw">pub fn </span>new(rref: Ref) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
+<a href=#631 id=631 data-nosnippet>631</a>    <span class="kw">pub fn </span>new(rref: Ref) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, ValidationError&gt; {
 <a href=#632 id=632 data-nosnippet>632</a>        <span class="kw">match </span>rref {
-<a href=#633 id=633 data-nosnippet>633</a>            Ref::Extern(<span class="kw">_</span>) =&gt; <span class="prelude-val">Err</span>(Error::WrongRefTypeForInteropValue(
+<a href=#633 id=633 data-nosnippet>633</a>            Ref::Extern(<span class="kw">_</span>) =&gt; <span class="prelude-val">Err</span>(ValidationError::WrongRefTypeForInteropValue(
 <a href=#634 id=634 data-nosnippet>634</a>                RefType::ExternRef,
 <a href=#635 id=635 data-nosnippet>635</a>                RefType::FuncRef,
 <a href=#636 id=636 data-nosnippet>636</a>            )),

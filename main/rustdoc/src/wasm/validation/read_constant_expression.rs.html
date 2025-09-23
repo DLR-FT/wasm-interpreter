@@ -4,7 +4,7 @@
 <a href=#4 id=4 data-nosnippet>4</a><span class="kw">use </span><span class="kw">crate</span>::core::reader::span::Span;
 <a href=#5 id=5 data-nosnippet>5</a><span class="kw">use </span><span class="kw">crate</span>::core::reader::types::global::GlobalType;
 <a href=#6 id=6 data-nosnippet>6</a><span class="kw">use </span><span class="kw">crate</span>::core::reader::{WasmReadable, WasmReader};
-<a href=#7 id=7 data-nosnippet>7</a><span class="kw">use crate</span>::{Error, NumType, RefType, <span class="prelude-ty">Result</span>, ValType};
+<a href=#7 id=7 data-nosnippet>7</a><span class="kw">use crate</span>::{NumType, RefType, ValType, ValidationError};
 <a href=#8 id=8 data-nosnippet>8</a>
 <a href=#9 id=9 data-nosnippet>9</a><span class="kw">use </span><span class="kw">super</span>::validation_stack::ValidationStack;
 <a href=#10 id=10 data-nosnippet>10</a>
@@ -94,13 +94,13 @@
 <a href=#94 id=94 data-nosnippet>94</a>    //   for validating certain definitions is that they can only access functions and imported globals and nothing else.
 <a href=#95 id=95 data-nosnippet>95</a>    </span>globals_ty: <span class="kw-2">&amp;</span>[GlobalType],
 <a href=#96 id=96 data-nosnippet>96</a>    num_funcs: usize,
-<a href=#97 id=97 data-nosnippet>97</a>) -&gt; <span class="prelude-ty">Result</span>&lt;(Span, Vec&lt;FuncIdx&gt;)&gt; {
+<a href=#97 id=97 data-nosnippet>97</a>) -&gt; <span class="prelude-ty">Result</span>&lt;(Span, Vec&lt;FuncIdx&gt;), ValidationError&gt; {
 <a href=#98 id=98 data-nosnippet>98</a>    <span class="kw">let </span>start_pc = wasm.pc;
 <a href=#99 id=99 data-nosnippet>99</a>    <span class="kw">let </span><span class="kw-2">mut </span>seen_func_idxs: Vec&lt;FuncIdx&gt; = Vec::new();
 <a href=#100 id=100 data-nosnippet>100</a>
 <a href=#101 id=101 data-nosnippet>101</a>    <span class="kw">loop </span>{
 <a href=#102 id=102 data-nosnippet>102</a>        <span class="kw">let </span><span class="prelude-val">Ok</span>(first_instr_byte) = wasm.read_u8() <span class="kw">else </span>{
-<a href=#103 id=103 data-nosnippet>103</a>            <span class="kw">return </span><span class="prelude-val">Err</span>(Error::ExprMissingEnd);
+<a href=#103 id=103 data-nosnippet>103</a>            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::ExprMissingEnd);
 <a href=#104 id=104 data-nosnippet>104</a>        };
 <a href=#105 id=105 data-nosnippet>105</a>
 <a href=#106 id=106 data-nosnippet>106</a>        <span class="attr">#[cfg(not(debug_assertions))]
@@ -123,7 +123,7 @@
 <a href=#123 id=123 data-nosnippet>123</a>                <span class="macro">trace!</span>(<span class="string">"{:?}"</span>, globals_ty);
 <a href=#124 id=124 data-nosnippet>124</a>                <span class="kw">let </span>global = globals_ty
 <a href=#125 id=125 data-nosnippet>125</a>                    .get(global_idx)
-<a href=#126 id=126 data-nosnippet>126</a>                    .ok_or(Error::InvalidGlobalIdx(global_idx))<span class="question-mark">?</span>;
+<a href=#126 id=126 data-nosnippet>126</a>                    .ok_or(ValidationError::InvalidGlobalIdx(global_idx))<span class="question-mark">?</span>;
 <a href=#127 id=127 data-nosnippet>127</a>
 <a href=#128 id=128 data-nosnippet>128</a>                <span class="macro">trace!</span>(<span class="string">"{:?}"</span>, global.ty);
 <a href=#129 id=129 data-nosnippet>129</a>                stack.push_valtype(global.ty);
@@ -152,7 +152,7 @@
 <a href=#152 id=152 data-nosnippet>152</a>
 <a href=#153 id=153 data-nosnippet>153</a>                <span class="comment">// checking for existence suffices for checking whether this function has a valid type.
 <a href=#154 id=154 data-nosnippet>154</a>                </span><span class="kw">if </span>num_funcs &lt;= func_idx {
-<a href=#155 id=155 data-nosnippet>155</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(Error::FunctionIsNotDefined(func_idx));
+<a href=#155 id=155 data-nosnippet>155</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::FunctionIsNotDefined(func_idx));
 <a href=#156 id=156 data-nosnippet>156</a>                }
 <a href=#157 id=157 data-nosnippet>157</a>
 <a href=#158 id=158 data-nosnippet>158</a>                <span class="comment">// This func_idx is automatically in C.refs. No need to check.
@@ -170,7 +170,7 @@
 <a href=#170 id=170 data-nosnippet>170</a>            </span>| <span class="number">0xD1
 <a href=#171 id=171 data-nosnippet>171</a>            </span>| <span class="number">0xD3</span>..=<span class="number">0xFF </span>=&gt; {
 <a href=#172 id=172 data-nosnippet>172</a>                <span class="macro">trace!</span>(<span class="string">"Encountered unknown instruction in validation - constant expression - {first_instr_byte:x?}"</span>);
-<a href=#173 id=173 data-nosnippet>173</a>                <span class="kw">return </span><span class="prelude-val">Err</span>(Error::InvalidInstr(first_instr_byte));
+<a href=#173 id=173 data-nosnippet>173</a>                <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidInstr(first_instr_byte));
 <a href=#174 id=174 data-nosnippet>174</a>            }
 <a href=#175 id=175 data-nosnippet>175</a>        }
 <a href=#176 id=176 data-nosnippet>176</a>    }

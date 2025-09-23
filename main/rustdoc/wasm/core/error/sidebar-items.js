@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["Error","LinkerError","Proposal","RuntimeError","StoreInstantiationError"],"type":["Result"]};
+window.SIDEBAR_ITEMS = {"enum":["ValidationError"]};
