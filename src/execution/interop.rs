@@ -251,3 +251,270 @@ where
         ))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::value::{ExternAddr, FuncAddr, Value};
+    use alloc::vec::Vec;
+
+    use super::{InteropValueList, RefExtern, RefFunc};
+
+    #[test]
+    fn roundtrip_single_u32() {
+        const RUST_VALUE: u32 = 5;
+        let wasm_value: Value = RUST_VALUE.into();
+        assert_eq!(wasm_value.try_into(), Ok::<u32, ()>(RUST_VALUE));
+        assert_eq!(wasm_value.try_into(), Ok::<i32, ()>(RUST_VALUE as i32));
+        assert_eq!(wasm_value.try_into(), Err::<u64, ()>(()));
+        assert_eq!(wasm_value.try_into(), Err::<i64, ()>(()));
+        assert_eq!(wasm_value.try_into(), Err::<f32, ()>(()));
+        assert_eq!(wasm_value.try_into(), Err::<f64, ()>(()));
+        assert_eq!(wasm_value.try_into(), Err::<RefFunc, ()>(()));
+        assert_eq!(wasm_value.try_into(), Err::<RefExtern, ()>(()));
+    }
+
+    #[test]
+    fn roundtrip_single_i32() {
+        const RUST_VALUE: i32 = 5;
+        let wasm_value: Value = RUST_VALUE.into();
+        assert_eq!(wasm_value.try_into(), Ok::<u32, ()>(RUST_VALUE as u32));
+        assert_eq!(wasm_value.try_into(), Ok::<i32, ()>(RUST_VALUE));
+        assert_eq!(wasm_value.try_into(), Err::<u64, ()>(()));
+        assert_eq!(wasm_value.try_into(), Err::<i64, ()>(()));
+        assert_eq!(wasm_value.try_into(), Err::<f32, ()>(()));
+        assert_eq!(wasm_value.try_into(), Err::<f64, ()>(()));
+        assert_eq!(wasm_value.try_into(), Err::<RefFunc, ()>(()));
+        assert_eq!(wasm_value.try_into(), Err::<RefExtern, ()>(()));
+    }
+
+    #[test]
+    fn roundtrip_single_u64() {
+        const RUST_VALUE: u64 = 5;
+        let wasm_value: Value = RUST_VALUE.into();
+        assert_eq!(wasm_value.try_into(), Err::<u32, ()>(()));
+        assert_eq!(wasm_value.try_into(), Err::<i32, ()>(()));
+        assert_eq!(wasm_value.try_into(), Ok::<u64, ()>(RUST_VALUE));
+        assert_eq!(wasm_value.try_into(), Ok::<i64, ()>(RUST_VALUE as i64));
+        assert_eq!(wasm_value.try_into(), Err::<f32, ()>(()));
+        assert_eq!(wasm_value.try_into(), Err::<f64, ()>(()));
+        assert_eq!(wasm_value.try_into(), Err::<RefFunc, ()>(()));
+        assert_eq!(wasm_value.try_into(), Err::<RefExtern, ()>(()));
+    }
+
+    #[test]
+    fn roundtrip_single_i64() {
+        const RUST_VALUE: i64 = 5;
+        let wasm_value: Value = RUST_VALUE.into();
+        assert_eq!(wasm_value.try_into(), Err::<u32, ()>(()));
+        assert_eq!(wasm_value.try_into(), Err::<i32, ()>(()));
+        assert_eq!(wasm_value.try_into(), Ok::<u64, ()>(RUST_VALUE as u64));
+        assert_eq!(wasm_value.try_into(), Ok::<i64, ()>(RUST_VALUE));
+        assert_eq!(wasm_value.try_into(), Err::<f32, ()>(()));
+        assert_eq!(wasm_value.try_into(), Err::<f64, ()>(()));
+        assert_eq!(wasm_value.try_into(), Err::<RefFunc, ()>(()));
+        assert_eq!(wasm_value.try_into(), Err::<RefExtern, ()>(()));
+    }
+
+    #[test]
+    fn roundtrip_single_f32() {
+        const RUST_VALUE: f32 = 123.12;
+        let wasm_value: Value = RUST_VALUE.into();
+        assert_eq!(wasm_value.try_into(), Err::<u32, ()>(()));
+        assert_eq!(wasm_value.try_into(), Err::<i32, ()>(()));
+        assert_eq!(wasm_value.try_into(), Err::<u64, ()>(()));
+        assert_eq!(wasm_value.try_into(), Err::<i64, ()>(()));
+        assert_eq!(wasm_value.try_into(), Ok::<f32, ()>(RUST_VALUE));
+        assert_eq!(wasm_value.try_into(), Err::<f64, ()>(()));
+        assert_eq!(wasm_value.try_into(), Err::<RefFunc, ()>(()));
+        assert_eq!(wasm_value.try_into(), Err::<RefExtern, ()>(()));
+    }
+
+    #[test]
+    fn roundtrip_single_f64() {
+        const RUST_VALUE: f64 = 123.12;
+        let wasm_value: Value = RUST_VALUE.into();
+        assert_eq!(wasm_value.try_into(), Err::<u32, ()>(()));
+        assert_eq!(wasm_value.try_into(), Err::<i32, ()>(()));
+        assert_eq!(wasm_value.try_into(), Err::<u64, ()>(()));
+        assert_eq!(wasm_value.try_into(), Err::<i64, ()>(()));
+        assert_eq!(wasm_value.try_into(), Err::<f32, ()>(()));
+        assert_eq!(wasm_value.try_into(), Ok::<f64, ()>(RUST_VALUE));
+        assert_eq!(wasm_value.try_into(), Err::<RefFunc, ()>(()));
+        assert_eq!(wasm_value.try_into(), Err::<RefExtern, ()>(()));
+    }
+
+    #[test]
+    fn roundtrip_single_ref_func() {
+        const RUST_VALUE: RefFunc = RefFunc(Some(FuncAddr(57)));
+        let wasm_value: Value = RUST_VALUE.into();
+        assert_eq!(wasm_value.try_into(), Err::<u32, ()>(()));
+        assert_eq!(wasm_value.try_into(), Err::<i32, ()>(()));
+        assert_eq!(wasm_value.try_into(), Err::<u64, ()>(()));
+        assert_eq!(wasm_value.try_into(), Err::<i64, ()>(()));
+        assert_eq!(wasm_value.try_into(), Err::<f32, ()>(()));
+        assert_eq!(wasm_value.try_into(), Err::<f64, ()>(()));
+        assert_eq!(wasm_value.try_into(), Ok::<RefFunc, ()>(RUST_VALUE));
+        assert_eq!(wasm_value.try_into(), Err::<RefExtern, ()>(()));
+    }
+
+    #[test]
+    fn roundtrip_single_ref_extern() {
+        const RUST_VALUE: RefExtern = RefExtern(Some(ExternAddr(51)));
+        let wasm_value: Value = RUST_VALUE.into();
+        assert_eq!(wasm_value.try_into(), Err::<u32, ()>(()));
+        assert_eq!(wasm_value.try_into(), Err::<i32, ()>(()));
+        assert_eq!(wasm_value.try_into(), Err::<u64, ()>(()));
+        assert_eq!(wasm_value.try_into(), Err::<i64, ()>(()));
+        assert_eq!(wasm_value.try_into(), Err::<f32, ()>(()));
+        assert_eq!(wasm_value.try_into(), Err::<f64, ()>(()));
+        assert_eq!(wasm_value.try_into(), Err::<RefFunc, ()>(()));
+        assert_eq!(wasm_value.try_into(), Ok::<RefExtern, ()>(RUST_VALUE));
+    }
+
+    #[test]
+    fn roundtrip_single_ref_func_null() {
+        const RUST_VALUE: RefFunc = RefFunc(None);
+        let wasm_value: Value = RUST_VALUE.into();
+        assert_eq!(wasm_value.try_into(), Err::<u32, ()>(()));
+        assert_eq!(wasm_value.try_into(), Err::<i32, ()>(()));
+        assert_eq!(wasm_value.try_into(), Err::<u64, ()>(()));
+        assert_eq!(wasm_value.try_into(), Err::<i64, ()>(()));
+        assert_eq!(wasm_value.try_into(), Err::<f32, ()>(()));
+        assert_eq!(wasm_value.try_into(), Err::<f64, ()>(()));
+        assert_eq!(wasm_value.try_into(), Ok::<RefFunc, ()>(RUST_VALUE));
+        assert_eq!(wasm_value.try_into(), Err::<RefExtern, ()>(()));
+    }
+
+    #[test]
+    fn roundtrip_single_ref_extern_null() {
+        const RUST_VALUE: RefExtern = RefExtern(None);
+        let wasm_value: Value = RUST_VALUE.into();
+        assert_eq!(wasm_value.try_into(), Err::<u32, ()>(()));
+        assert_eq!(wasm_value.try_into(), Err::<i32, ()>(()));
+        assert_eq!(wasm_value.try_into(), Err::<u64, ()>(()));
+        assert_eq!(wasm_value.try_into(), Err::<i64, ()>(()));
+        assert_eq!(wasm_value.try_into(), Err::<f32, ()>(()));
+        assert_eq!(wasm_value.try_into(), Err::<f64, ()>(()));
+        assert_eq!(wasm_value.try_into(), Err::<RefFunc, ()>(()));
+        assert_eq!(wasm_value.try_into(), Ok::<RefExtern, ()>(RUST_VALUE));
+    }
+
+    #[test]
+    fn roundtrip_list0() {
+        const RUST_VALUES: () = ();
+        let wasm_values: Vec<Value> = RUST_VALUES.into_values();
+        let roundtrip_rust_values = InteropValueList::try_from_values(wasm_values.into_iter());
+        assert_eq!(roundtrip_rust_values, Ok(RUST_VALUES));
+    }
+
+    #[test]
+    fn roundtrip_list1_single() {
+        const RUST_VALUES: u32 = 5;
+        let wasm_values: Vec<Value> = RUST_VALUES.into_values();
+        let roundtrip_rust_values = InteropValueList::try_from_values(wasm_values.into_iter());
+        assert_eq!(roundtrip_rust_values, Ok(RUST_VALUES));
+    }
+
+    #[test]
+    fn roundtrip_list1() {
+        const RUST_VALUES: (u32,) = (5,);
+        let wasm_values: Vec<Value> = RUST_VALUES.into_values();
+        let roundtrip_rust_values = InteropValueList::try_from_values(wasm_values.into_iter());
+        assert_eq!(roundtrip_rust_values, Ok(RUST_VALUES));
+    }
+
+    #[test]
+    fn roundtrip_list2() {
+        const RUST_VALUES: (f32, RefFunc) = (3.0, RefFunc(Some(FuncAddr(7))));
+        let wasm_values: Vec<Value> = RUST_VALUES.into_values();
+        let roundtrip_rust_values = InteropValueList::try_from_values(wasm_values.into_iter());
+        assert_eq!(roundtrip_rust_values, Ok(RUST_VALUES));
+    }
+
+    #[test]
+    fn roundtrip_list3() {
+        const RUST_VALUES: (RefExtern, u64, i32) =
+            (RefExtern(Some(ExternAddr(123))), 8472846, -61864);
+        let wasm_values: Vec<Value> = RUST_VALUES.into_values();
+        let roundtrip_rust_values = InteropValueList::try_from_values(wasm_values.into_iter());
+        assert_eq!(roundtrip_rust_values, Ok(RUST_VALUES))
+    }
+
+    #[test]
+    fn list_incorrect_lengths() {
+        let wasm_values0: Vec<Value> = ().into_values();
+        let wasm_values1_single: Vec<Value> = 5u32.into_values();
+        let wasm_values1: Vec<Value> = (5u32,).into_values();
+        let wasm_values2: Vec<Value> = (5u32, 5u32).into_values();
+        let wasm_values3: Vec<Value> = (5u32, 5u32, 5u32).into_values();
+
+        assert_eq!(
+            InteropValueList::try_from_values(wasm_values0.clone().into_iter()),
+            Err::<u32, ()>(())
+        );
+        assert_eq!(
+            InteropValueList::try_from_values(wasm_values0.clone().into_iter()),
+            Err::<(u32,), ()>(())
+        );
+        assert_eq!(
+            InteropValueList::try_from_values(wasm_values0.clone().into_iter()),
+            Err::<(u32, u32), ()>(())
+        );
+        assert_eq!(
+            InteropValueList::try_from_values(wasm_values0.clone().into_iter()),
+            Err::<(u32, u32, u32), ()>(())
+        );
+
+        assert_eq!(
+            InteropValueList::try_from_values(wasm_values1_single.clone().into_iter()),
+            Err::<(), ()>(())
+        );
+        assert_eq!(
+            InteropValueList::try_from_values(wasm_values1_single.clone().into_iter()),
+            Err::<(u32, u32), ()>(())
+        );
+        assert_eq!(
+            InteropValueList::try_from_values(wasm_values1_single.clone().into_iter()),
+            Err::<(u32, u32, u32), ()>(())
+        );
+
+        assert_eq!(
+            InteropValueList::try_from_values(wasm_values1.clone().into_iter()),
+            Err::<(), ()>(())
+        );
+        assert_eq!(
+            InteropValueList::try_from_values(wasm_values1.clone().into_iter()),
+            Err::<(u32, u32), ()>(())
+        );
+        assert_eq!(
+            InteropValueList::try_from_values(wasm_values1.clone().into_iter()),
+            Err::<(u32, u32, u32), ()>(())
+        );
+
+        assert_eq!(
+            InteropValueList::try_from_values(wasm_values2.clone().into_iter()),
+            Err::<(), ()>(())
+        );
+        assert_eq!(
+            InteropValueList::try_from_values(wasm_values2.clone().into_iter()),
+            Err::<(u32,), ()>(())
+        );
+        assert_eq!(
+            InteropValueList::try_from_values(wasm_values2.clone().into_iter()),
+            Err::<(u32, u32, u32), ()>(())
+        );
+
+        assert_eq!(
+            InteropValueList::try_from_values(wasm_values3.clone().into_iter()),
+            Err::<(), ()>(())
+        );
+        assert_eq!(
+            InteropValueList::try_from_values(wasm_values3.clone().into_iter()),
+            Err::<(u32,), ()>(())
+        );
+        assert_eq!(
+            InteropValueList::try_from_values(wasm_values3.clone().into_iter()),
+            Err::<(u32, u32), ()>(())
+        );
+    }
+}
