@@ -1,3 +1,4 @@
+use log::info;
 use wasm::{
     host_function_wrapper, validate,
     value::{F32, F64},
@@ -5,7 +6,7 @@ use wasm::{
 };
 
 fn hello(_: &mut (), _values: Vec<Value>) -> Vec<Value> {
-    println!("Host function says hello from wasm!");
+    info!("Host function says hello from wasm!");
     Vec::new()
 }
 
@@ -22,7 +23,7 @@ pub fn host_func_call_within_module() {
 )"#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
     fn hello(_: &mut (), _values: Vec<Value>) -> Vec<Value> {
-        println!("Host function says hello from wasm!");
+        info!("Host function says hello from wasm!");
         Vec::new()
     }
 
@@ -106,7 +107,7 @@ fn fancy_add_mult(_: &mut (), values: Vec<Value>) -> Vec<Value> {
     let x: u32 = values[0].try_into().unwrap();
     let y: f64 = values[1].try_into().unwrap();
 
-    println!("multiplying, adding, casting, swapping as host function");
+    info!("multiplying, adding, casting, swapping as host function");
 
     Vec::from([Value::F64(F64((x as f64) * y)), Value::I32(x + (y as u32))])
 }
@@ -216,11 +217,11 @@ pub fn weird_multi_typed_host_func() {
     fn weird_add_mult(_: &mut (), values: Vec<Value>) -> Vec<Value> {
         Vec::from([match values[0] {
             Value::I32(val) => {
-                println!("host function saw I32");
+                info!("host function saw I32");
                 Value::F64(F64((val * 5) as f64))
             }
             Value::F32(F32(val)) => {
-                println!("host function saw F32");
+                info!("host function saw F32");
                 Value::I64((val + 3.0) as u64)
             }
             _ => panic!("no other types admitted"),
@@ -263,7 +264,7 @@ pub fn host_func_runtime_error() {
 
     fn mult3(_: &mut (), values: Vec<Value>) -> Vec<Value> {
         let val: i32 = values[0].try_into().unwrap();
-        println!("careless host function making type errors...");
+        info!("careless host function making type errors...");
         Vec::from([Value::I64((val * 3) as u64)])
     }
 

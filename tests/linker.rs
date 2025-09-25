@@ -1,3 +1,4 @@
+use log::info;
 use wasm::{resumable::RunState, validate, ExternVal, Store};
 
 const SIMPLE_IMPORT_BASE: &str = r#"
@@ -51,7 +52,7 @@ pub fn compile_simple_import() {
         panic!("this entity is not a function")
     };
 
-    println!(
+    info!(
         "{:#?}",
         store
             .invoke(func_addr, Vec::new(), None)
