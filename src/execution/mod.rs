@@ -6,6 +6,7 @@ use alloc::vec::Vec;
 use const_interpreter_loop::run_const_span;
 use function_ref::FunctionRef;
 use store::ExternVal;
+use store::HaltExecutionError;
 use value_stack::Stack;
 
 use crate::core::reader::types::{FuncType, ResultType};
@@ -184,7 +185,7 @@ impl<'b, T: Config> RuntimeInstance<'b, T> {
         &mut self,
         module_name: &str,
         name: &str,
-        host_func: fn(&mut T, Vec<Value>) -> Vec<Value>,
+        host_func: fn(&mut T, Vec<Value>) -> Result<Vec<Value>, HaltExecutionError>,
     ) -> Result<FunctionRef, RuntimeError> {
         let host_func_ty = FuncType {
             params: ResultType {
@@ -202,7 +203,7 @@ impl<'b, T: Config> RuntimeInstance<'b, T> {
         module_name: &str,
         name: &str,
         host_func_ty: FuncType,
-        host_func: fn(&mut T, Vec<Value>) -> Vec<Value>,
+        host_func: fn(&mut T, Vec<Value>) -> Result<Vec<Value>, HaltExecutionError>,
     ) -> Result<FunctionRef, RuntimeError> {
         let func_addr = self.store.alloc_host_func(host_func_ty, host_func);
         self.store.registry.register(
@@ -255,24 +256,23 @@ impl<'b, T: Config> RuntimeInstance<'b, T> {
 /// `user_data` into the passed closure.
 /// # Example
 /// ```
-/// use wasm::{validate, RuntimeInstance, host_function_wrapper, Value};
-/// fn my_wrapped_host_func(user_data: &mut (), params: Vec<Value>) -> Vec<Value> {
-///     host_function_wrapper(params, |(x, y): (u32, i32)| -> u32 {
+/// use wasm::{validate, RuntimeInstance, host_function_wrapper, Value, HaltExecutionError};
+/// fn my_wrapped_host_func(user_data: &mut (), params: Vec<Value>) -> Result<Vec<Value>, HaltExecutionError> {
+///     host_function_wrapper(params, |(x, y): (u32, i32)| -> Result<u32, HaltExecutionError> {
 ///         let _user_data = user_data;
-///         x + (y as u32)
-///  })
+///         Ok(x + (y as u32))
+///     })
 /// }
 /// fn main() {
 ///     let mut instance = RuntimeInstance::new(());
-///     let foo_bar = instance.add_host_function_typed::<(u32,i32),u32>("foo", "bar", my_wrapped_host_func).unwrap();
+///     let foo_bar = instance.add_host_function_typed::<(u32,i32), u32>("foo", "bar", my_wrapped_host_func).unwrap();
 /// }
 /// ```
 pub fn host_function_wrapper<Params: InteropValueList, Results: InteropValueList>(
     params: Vec<Value>,
-    f: impl FnOnce(Params) -> Results,
-) -> Vec<Value> {
+    f: impl FnOnce(Params) -> Result<Results, HaltExecutionError>,
+) -> Result<Vec<Value>, HaltExecutionError> {
     let params =
         Params::try_from_values(params.into_iter()).expect("Params match the actual parameters");
-    let results = f(params);
-    results.into_values()
+    f(params).map(Results::into_values)
 }

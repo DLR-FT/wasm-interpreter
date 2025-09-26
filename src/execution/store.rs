@@ -465,7 +465,7 @@ impl<'b, T: Config> Store<'b, T> {
     pub(super) fn alloc_host_func(
         &mut self,
         func_type: FuncType,
-        host_func: fn(&mut T, Vec<Value>) -> Vec<Value>,
+        host_func: fn(&mut T, Vec<Value>) -> Result<Vec<Value>, HaltExecutionError>,
     ) -> usize {
         let func_inst = FuncInst::HostFunc(HostFuncInst {
             function_type: func_type,
@@ -651,6 +651,10 @@ impl<'b, T: Config> Store<'b, T> {
                         let returns = (host_func_inst.hostcode)(&mut self.user_data, params);
                         debug!("Successfully invoked function");
 
+                        let returns = returns.map_err(|HaltExecutionError| {
+                            RuntimeError::HostFunctionHaltedExecution
+                        })?;
+
                         // Verify that the return parameters match the host function parameters
                         // since we have no validation guarantees for host functions
 
@@ -792,6 +796,9 @@ impl<'b, T: Config> Store<'b, T> {
     }
 }
 
+/// A marker error for host functions to return, in case they want execution to be halted.
+pub struct HaltExecutionError;
+
 #[derive(Debug)]
 // TODO does not match the spec FuncInst
 pub enum FuncInst<T> {
@@ -816,7 +823,7 @@ pub struct WasmFuncInst {
 #[derive(Debug)]
 pub struct HostFuncInst<T> {
     pub function_type: FuncType,
-    pub hostcode: fn(&mut T, Vec<Value>) -> Vec<Value>,
+    pub hostcode: fn(&mut T, Vec<Value>) -> Result<Vec<Value>, HaltExecutionError>,
 }
 
 impl<T> FuncInst<T> {
