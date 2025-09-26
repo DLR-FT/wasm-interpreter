@@ -62,7 +62,7 @@ impl Stack {
     }
 
     /// Returns a cloned copy of the top value on the stack, or `None` if the stack is empty
-    pub fn peek_unknown_value(&self) -> Option<Value> {
+    pub fn peek_value(&self) -> Option<Value> {
         self.values.last().copied()
     }
 

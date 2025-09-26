@@ -114,5 +114,5 @@ pub(crate) fn run_const_span<T>(
     let mut stack = Stack::new();
     run_const(&mut wasm, &mut stack, module, store)?;
 
-    Ok(stack.peek_unknown_value())
+    Ok(stack.peek_value())
 }
