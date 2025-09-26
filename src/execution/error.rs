@@ -9,6 +9,8 @@ pub enum RuntimeError {
     ResumableNotFound,
     StackExhaustion,
     HostFunctionSignatureMismatch,
+    /// A host function returned the [`HaltExecutionError`](crate::HaltExecutionError), which caused execution to be halted.
+    HostFunctionHaltedExecution,
 
     // Are all of these instantiation variants? Add a new `InstantiationError` enum?
     InvalidImportType,
@@ -28,6 +30,9 @@ impl Display for RuntimeError {
             }
             RuntimeError::HostFunctionSignatureMismatch => {
                 f.write_str("host function call did not respect its type signature")
+            }
+            RuntimeError::HostFunctionHaltedExecution => {
+                f.write_str("A host function requested execution to be halted.")
             }
             RuntimeError::InvalidImportType => f.write_str("Invalid import type"),
             // TODO: maybe move these to LinkerError also add more info to them (the name's export, function idx, etc)
