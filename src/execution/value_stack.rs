@@ -4,7 +4,7 @@ use crate::core::indices::LocalIdx;
 use crate::core::reader::types::{FuncType, ValType};
 use crate::execution::assert_validated::UnwrapValidatedExt;
 use crate::execution::value::Value;
-use crate::{unreachable_validated, RuntimeError};
+use crate::RuntimeError;
 
 // TODO make these configurable
 const MAX_VALUE_STACK_SIZE: usize = 0xf0000; // 64 Kibi-Values
@@ -61,16 +61,6 @@ impl Stack {
         self.values.pop().unwrap_validated()
     }
 
-    /// Copy a value of the given [ValType] from the value stack without removing it
-    pub fn peek_value(&self, ty: ValType) -> Value {
-        let value = self.values.last().unwrap_validated();
-        if value.to_ty() == ty {
-            *value
-        } else {
-            unreachable_validated!()
-        }
-    }
-
     /// Returns a cloned copy of the top value on the stack, or `None` if the stack is empty
     pub fn peek_unknown_value(&self) -> Option<Value> {
         self.values.last().copied()
@@ -121,12 +111,7 @@ impl Stack {
     pub fn tee_local(&mut self, idx: LocalIdx) {
         let call_frame_base_idx = self.current_call_frame().call_frame_base_idx;
 
-        let local_ty = self
-            .values
-            .get(call_frame_base_idx + idx)
-            .unwrap_validated()
-            .to_ty();
-        let stack_value = self.peek_value(local_ty);
+        let stack_value = self.values.last().unwrap_validated().clone();
 
         trace!("Instruction: local.tee [{stack_value:?}] -> []");
 
