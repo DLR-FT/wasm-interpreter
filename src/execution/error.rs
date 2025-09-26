@@ -1,6 +1,6 @@
 use core::fmt::{Display, Formatter};
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum RuntimeError {
     Trap(TrapError),
 
