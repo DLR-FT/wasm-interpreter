@@ -1,3 +1,5 @@
+use core::convert::Infallible;
+
 use crate::core::indices::TypeIdx;
 use crate::core::reader::span::Span;
 use crate::core::reader::types::data::{DataModeActive, DataSegment};
@@ -460,7 +462,7 @@ impl<'b, T> Store<'b, T> {
     pub(super) fn alloc_host_func(
         &mut self,
         func_type: FuncType,
-        host_func: fn(&mut T, Vec<Value>) -> Vec<Value>,
+        host_func: fn(&mut T, Vec<Value>) -> Result<Vec<Value>, Infallible>,
     ) -> usize {
         let func_inst = FuncInst::HostFunc(HostFuncInst {
             function_type: func_type,
@@ -562,6 +564,11 @@ impl<'b, T> Store<'b, T> {
                 let returns = (host_func_inst.hostcode)(&mut self.user_data, params);
                 debug!("Successfully invoked function");
 
+                let returns = match returns {
+                    Ok(returns) => returns,
+                    Err(infallible) => match infallible {},
+                };
+
                 // Verify that the return parameters match the host function parameters
                 // since we have no validation guarantees for host functions
 
@@ -646,7 +653,7 @@ pub struct WasmFuncInst {
 #[derive(Debug)]
 pub struct HostFuncInst<T> {
     pub function_type: FuncType,
-    pub hostcode: fn(&mut T, Vec<Value>) -> Vec<Value>,
+    pub hostcode: fn(&mut T, Vec<Value>) -> Result<Vec<Value>, Infallible>,
 }
 
 impl<T> FuncInst<T> {
