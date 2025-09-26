@@ -27,7 +27,7 @@ use crate::{
         sidetable::Sidetable,
     },
     resumable::Resumable,
-    store::DataInst,
+    store::{DataInst, HaltExecutionError},
     unreachable_validated,
     value::{self, FuncAddr, Ref, F32, F64},
     value_stack::Stack,
@@ -217,6 +217,10 @@ pub(super) fn run<T: Config>(
                         let returns =
                             (host_func_to_call_inst.hostcode)(&mut store.user_data, params);
 
+                        let returns = returns.map_err(|HaltExecutionError| {
+                            RuntimeError::HostFunctionHaltedExecution
+                        })?;
+
                         // Verify that the return parameters match the host function parameters
                         // since we have no validation guarantees for host functions
                         if returns.len() != func_to_call_ty.returns.valtypes.len() {
@@ -305,6 +309,10 @@ pub(super) fn run<T: Config>(
                             .collect();
                         let returns =
                             (host_func_to_call_inst.hostcode)(&mut store.user_data, params);
+
+                        let returns = returns.map_err(|HaltExecutionError| {
+                            RuntimeError::HostFunctionHaltedExecution
+                        })?;
 
                         // Verify that the return parameters match the host function parameters
                         // since we have no validation guarantees for host functions

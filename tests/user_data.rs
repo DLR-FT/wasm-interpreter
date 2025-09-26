@@ -1,6 +1,6 @@
 use std::sync::mpsc::Sender;
 
-use wasm::{config::Config, RuntimeInstance, Value};
+use wasm::{config::Config, HaltExecutionError, RuntimeInstance, Value};
 
 #[test_log::test]
 fn counter() {
@@ -8,10 +8,13 @@ fn counter() {
     struct MyCounter(pub u32);
     impl Config for MyCounter {}
 
-    fn add_one(user_data: &mut MyCounter, _params: Vec<Value>) -> Vec<Value> {
+    fn add_one(
+        user_data: &mut MyCounter,
+        _params: Vec<Value>,
+    ) -> Result<Vec<Value>, HaltExecutionError> {
         user_data.0 += 1;
 
-        Vec::new()
+        Ok(Vec::new())
     }
 
     let mut instance = RuntimeInstance::new(MyCounter(0));
@@ -38,13 +41,16 @@ fn channels() {
     let (tx, rx) = std::sync::mpsc::channel::<String>();
 
     std::thread::spawn(|| {
-        fn send_message(user_data: &mut MySender, _params: Vec<Value>) -> Vec<Value> {
+        fn send_message(
+            user_data: &mut MySender,
+            _params: Vec<Value>,
+        ) -> Result<Vec<Value>, HaltExecutionError> {
             user_data
                 .0
                 .send("Hello from host function!".to_owned())
                 .unwrap();
 
-            Vec::new()
+            Ok(Vec::new())
         }
 
         let mut instance = RuntimeInstance::new(MySender(tx));
