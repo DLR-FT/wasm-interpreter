@@ -335,13 +335,13 @@ pub(super) fn run<T, H: HookSet>(
                 trace!("Instruction: CALL_INDIRECT");
             }
             DROP => {
-                stack.drop_value();
+                stack.pop_value();
                 trace!("Instruction: DROP");
             }
             SELECT => {
                 let test_val: i32 = stack.pop_value().try_into().unwrap_validated();
-                let val2 = stack.pop_value_with_unknown_type();
-                let val1 = stack.pop_value_with_unknown_type();
+                let val2 = stack.pop_value();
+                let val1 = stack.pop_value();
                 if test_val != 0 {
                     stack.push_value(val1)?;
                 } else {
@@ -2027,7 +2027,7 @@ pub(super) fn run<T, H: HookSet>(
                 trace!("Instruction: ref.null '{:?}' -> [{:?}]", reftype, reftype);
             }
             REF_IS_NULL => {
-                let rref = stack.pop_unknown_ref();
+                let rref: Ref = stack.pop_value().try_into().unwrap_validated();
                 let is_null = matches!(rref, Ref::Null(_));
 
                 let res = if is_null { 1 } else { 0 };
@@ -2399,7 +2399,7 @@ pub(super) fn run<T, H: HookSet>(
                         let sz = tab.elem.len() as u32;
 
                         let n: u32 = stack.pop_value().try_into().unwrap_validated();
-                        let val = stack.pop_unknown_ref();
+                        let val: Ref = stack.pop_value().try_into().unwrap_validated();
 
                         // TODO this instruction is non-deterministic w.r.t. spec, and can fail if the embedder wills it.
                         // for now we execute it always according to the following match expr.

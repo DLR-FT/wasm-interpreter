@@ -6,8 +6,6 @@ use crate::execution::assert_validated::UnwrapValidatedExt;
 use crate::execution::value::Value;
 use crate::{unreachable_validated, RuntimeError};
 
-use super::value::Ref;
-
 // TODO make these configurable
 const MAX_VALUE_STACK_SIZE: usize = 0xf0000; // 64 Kibi-Values
 const MAX_CALL_STACK_SIZE: usize = 0x1000; // 4 Kibi-Functions
@@ -45,48 +43,6 @@ impl Stack {
         self.values
     }
 
-    pub fn drop_value(&mut self) {
-        // If there is at least one call frame, we shall not pop values past the current
-        // call frame. However, there is one legitimate reason to pop when there is **no** current
-        // call frame: after the outermost function returns, to extract the final return values of
-        // this interpreter invocation.
-        debug_assert!(
-            if !self.frames.is_empty() {
-                self.values.len() > self.current_call_frame().value_stack_base_idx
-            } else {
-                true
-            },
-            "can not pop values past the current call frame"
-        );
-
-        self.values.pop().unwrap_validated();
-    }
-
-    /// Pop a reference of unknown type from the value stack
-    pub fn pop_unknown_ref(&mut self) -> Ref {
-        // If there is at least one call frame, we shall not pop values past the current
-        // call frame. However, there is one legitimate reason to pop when there is **no** current
-        // call frame: after the outermost function returns, to extract the final return values of
-        // this interpreter invocation.
-        debug_assert!(
-            if !self.frames.is_empty() {
-                self.values.len() > self.current_call_frame().value_stack_base_idx
-            } else {
-                true
-            },
-            "can not pop values past the current call frame"
-        );
-
-        let popped = self.values.pop().unwrap_validated();
-        match popped.to_ty() {
-            ValType::RefType(_) => match popped {
-                Value::Ref(rref) => rref,
-                _ => unreachable!(),
-            },
-            _ => unreachable_validated!(),
-        }
-    }
-
     /// Pop a value of the given [ValType] from the value stack
     pub fn pop_value(&mut self) -> Value {
         // If there is at least one call frame, we shall not pop values past the current
@@ -102,11 +58,6 @@ impl Stack {
             "can not pop values past the current call frame"
         );
 
-        self.values.pop().unwrap_validated()
-    }
-
-    //unfortunately required for polymorphic select
-    pub fn pop_value_with_unknown_type(&mut self) -> Value {
         self.values.pop().unwrap_validated()
     }
 
