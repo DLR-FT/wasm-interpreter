@@ -77,44 +77,42 @@
 <a href=#77 id=77 data-nosnippet>77</a>            REF_NULL =&gt; {
 <a href=#78 id=78 data-nosnippet>78</a>                <span class="kw">let </span>reftype = RefType::read(wasm).unwrap_validated();
 <a href=#79 id=79 data-nosnippet>79</a>
-<a href=#80 id=80 data-nosnippet>80</a>                stack.push_value(Value::Ref(reftype.to_null_ref()))<span class="question-mark">?</span>;
+<a href=#80 id=80 data-nosnippet>80</a>                stack.push_value(Value::Ref(Ref::Null(reftype)))<span class="question-mark">?</span>;
 <a href=#81 id=81 data-nosnippet>81</a>                <span class="macro">trace!</span>(<span class="string">"Instruction: ref.null '{:?}' -&gt; [{:?}]"</span>, reftype, reftype);
 <a href=#82 id=82 data-nosnippet>82</a>            }
 <a href=#83 id=83 data-nosnippet>83</a>            REF_FUNC =&gt; {
 <a href=#84 id=84 data-nosnippet>84</a>                <span class="comment">// we already checked for the func_idx to be in bounds during validation
 <a href=#85 id=85 data-nosnippet>85</a>                </span><span class="kw">let </span>func_idx = wasm.read_var_u32().unwrap_validated() <span class="kw">as </span>usize;
-<a href=#86 id=86 data-nosnippet>86</a>                <span class="comment">// TODO replace double indirection
-<a href=#87 id=87 data-nosnippet>87</a>                </span>stack.push_value(Value::Ref(Ref::Func(FuncAddr::new(<span class="prelude-val">Some</span>(
-<a href=#88 id=88 data-nosnippet>88</a>                    module.func_addrs[func_idx],
-<a href=#89 id=89 data-nosnippet>89</a>                )))))<span class="question-mark">?</span>;
-<a href=#90 id=90 data-nosnippet>90</a>            }
-<a href=#91 id=91 data-nosnippet>91</a>
-<a href=#92 id=92 data-nosnippet>92</a>            <span class="number">0x00</span>..=<span class="number">0x0A
-<a href=#93 id=93 data-nosnippet>93</a>            </span>| <span class="number">0x0C</span>..=<span class="number">0x22
-<a href=#94 id=94 data-nosnippet>94</a>            </span>| <span class="number">0x24</span>..=<span class="number">0x40
-<a href=#95 id=95 data-nosnippet>95</a>            </span>| <span class="number">0x45</span>..=<span class="number">0xBF
-<a href=#96 id=96 data-nosnippet>96</a>            </span>| <span class="number">0xC0</span>..=<span class="number">0xCF
-<a href=#97 id=97 data-nosnippet>97</a>            </span>| <span class="number">0xD1
-<a href=#98 id=98 data-nosnippet>98</a>            </span>| <span class="number">0xD3</span>..=<span class="number">0xFF </span>=&gt; {
-<a href=#99 id=99 data-nosnippet>99</a>                <span class="macro">unreachable_validated!</span>();
-<a href=#100 id=100 data-nosnippet>100</a>            }
-<a href=#101 id=101 data-nosnippet>101</a>        }
-<a href=#102 id=102 data-nosnippet>102</a>    }
-<a href=#103 id=103 data-nosnippet>103</a>    <span class="prelude-val">Ok</span>(())
-<a href=#104 id=104 data-nosnippet>104</a>}
-<a href=#105 id=105 data-nosnippet>105</a>
-<a href=#106 id=106 data-nosnippet>106</a><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>run_const_span&lt;T&gt;(
-<a href=#107 id=107 data-nosnippet>107</a>    wasm: <span class="kw-2">&amp;</span>[u8],
-<a href=#108 id=108 data-nosnippet>108</a>    span: <span class="kw-2">&amp;</span>Span,
-<a href=#109 id=109 data-nosnippet>109</a>    module: <span class="kw-2">&amp;</span>ModuleInst,
-<a href=#110 id=110 data-nosnippet>110</a>    store: <span class="kw-2">&amp;</span>Store&lt;T&gt;,
-<a href=#111 id=111 data-nosnippet>111</a>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Value&gt;, RuntimeError&gt; {
-<a href=#112 id=112 data-nosnippet>112</a>    <span class="kw">let </span><span class="kw-2">mut </span>wasm = WasmReader::new(wasm);
+<a href=#86 id=86 data-nosnippet>86</a>                <span class="kw">let </span>func_addr = <span class="kw-2">*</span>module.func_addrs.get(func_idx).unwrap_validated();
+<a href=#87 id=87 data-nosnippet>87</a>                stack.push_value(Value::Ref(Ref::Func(FuncAddr(func_addr))))<span class="question-mark">?</span>;
+<a href=#88 id=88 data-nosnippet>88</a>            }
+<a href=#89 id=89 data-nosnippet>89</a>
+<a href=#90 id=90 data-nosnippet>90</a>            <span class="number">0x00</span>..=<span class="number">0x0A
+<a href=#91 id=91 data-nosnippet>91</a>            </span>| <span class="number">0x0C</span>..=<span class="number">0x22
+<a href=#92 id=92 data-nosnippet>92</a>            </span>| <span class="number">0x24</span>..=<span class="number">0x40
+<a href=#93 id=93 data-nosnippet>93</a>            </span>| <span class="number">0x45</span>..=<span class="number">0xBF
+<a href=#94 id=94 data-nosnippet>94</a>            </span>| <span class="number">0xC0</span>..=<span class="number">0xCF
+<a href=#95 id=95 data-nosnippet>95</a>            </span>| <span class="number">0xD1
+<a href=#96 id=96 data-nosnippet>96</a>            </span>| <span class="number">0xD3</span>..=<span class="number">0xFF </span>=&gt; {
+<a href=#97 id=97 data-nosnippet>97</a>                <span class="macro">unreachable_validated!</span>();
+<a href=#98 id=98 data-nosnippet>98</a>            }
+<a href=#99 id=99 data-nosnippet>99</a>        }
+<a href=#100 id=100 data-nosnippet>100</a>    }
+<a href=#101 id=101 data-nosnippet>101</a>    <span class="prelude-val">Ok</span>(())
+<a href=#102 id=102 data-nosnippet>102</a>}
+<a href=#103 id=103 data-nosnippet>103</a>
+<a href=#104 id=104 data-nosnippet>104</a><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>run_const_span&lt;T&gt;(
+<a href=#105 id=105 data-nosnippet>105</a>    wasm: <span class="kw-2">&amp;</span>[u8],
+<a href=#106 id=106 data-nosnippet>106</a>    span: <span class="kw-2">&amp;</span>Span,
+<a href=#107 id=107 data-nosnippet>107</a>    module: <span class="kw-2">&amp;</span>ModuleInst,
+<a href=#108 id=108 data-nosnippet>108</a>    store: <span class="kw-2">&amp;</span>Store&lt;T&gt;,
+<a href=#109 id=109 data-nosnippet>109</a>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Value&gt;, RuntimeError&gt; {
+<a href=#110 id=110 data-nosnippet>110</a>    <span class="kw">let </span><span class="kw-2">mut </span>wasm = WasmReader::new(wasm);
+<a href=#111 id=111 data-nosnippet>111</a>
+<a href=#112 id=112 data-nosnippet>112</a>    wasm.move_start_to(<span class="kw-2">*</span>span).unwrap_validated();
 <a href=#113 id=113 data-nosnippet>113</a>
-<a href=#114 id=114 data-nosnippet>114</a>    wasm.move_start_to(<span class="kw-2">*</span>span).unwrap_validated();
-<a href=#115 id=115 data-nosnippet>115</a>
-<a href=#116 id=116 data-nosnippet>116</a>    <span class="kw">let </span><span class="kw-2">mut </span>stack = Stack::new();
-<a href=#117 id=117 data-nosnippet>117</a>    run_const(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>stack, module, store)<span class="question-mark">?</span>;
-<a href=#118 id=118 data-nosnippet>118</a>
-<a href=#119 id=119 data-nosnippet>119</a>    <span class="prelude-val">Ok</span>(stack.peek_unknown_value())
-<a href=#120 id=120 data-nosnippet>120</a>}</code></pre></div></section></main></body></html>
+<a href=#114 id=114 data-nosnippet>114</a>    <span class="kw">let </span><span class="kw-2">mut </span>stack = Stack::new();
+<a href=#115 id=115 data-nosnippet>115</a>    run_const(<span class="kw-2">&amp;mut </span>wasm, <span class="kw-2">&amp;mut </span>stack, module, store)<span class="question-mark">?</span>;
+<a href=#116 id=116 data-nosnippet>116</a>
+<a href=#117 id=117 data-nosnippet>117</a>    <span class="prelude-val">Ok</span>(stack.peek_unknown_value())
+<a href=#118 id=118 data-nosnippet>118</a>}</code></pre></div></section></main></body></html>
