@@ -1,7 +1,10 @@
+use core::convert::Infallible;
+
 use alloc::borrow::ToOwned;
 use alloc::vec::Vec;
 
 use const_interpreter_loop::run_const_span;
+use error::RuntimeOrHostError;
 use function_ref::FunctionRef;
 use value_stack::Stack;
 
@@ -31,12 +34,13 @@ pub mod value_stack;
 pub const DEFAULT_MODULE: &str = "__interpreter_default__";
 
 #[derive(Debug)]
-pub struct RuntimeInstance<'b, T = (), H = EmptyHookSet>
+pub struct RuntimeInstance<'b, T = (), H = EmptyHookSet, HostError = Infallible>
 where
     H: HookSet + core::fmt::Debug,
+    HostError: core::fmt::Debug,
 {
     pub hook_set: H,
-    pub store: Store<'b, T>,
+    pub store: Store<'b, T, HostError>,
 }
 
 impl<T: Default> Default for RuntimeInstance<'_, T, EmptyHookSet> {
@@ -45,7 +49,7 @@ impl<T: Default> Default for RuntimeInstance<'_, T, EmptyHookSet> {
     }
 }
 
-impl<'b, T> RuntimeInstance<'b, T, EmptyHookSet> {
+impl<'b, T, HostError: core::fmt::Debug> RuntimeInstance<'b, T, EmptyHookSet, HostError> {
     pub fn new(user_data: T) -> Self {
         Self::new_with_hooks(user_data, EmptyHookSet)
     }
@@ -53,7 +57,7 @@ impl<'b, T> RuntimeInstance<'b, T, EmptyHookSet> {
     pub fn new_with_default_module(
         user_data: T,
         validation_info: &'_ ValidationInfo<'b>,
-    ) -> Result<Self, RuntimeError> {
+    ) -> Result<Self, RuntimeOrHostError<HostError>> {
         let mut instance = Self::new_with_hooks(user_data, EmptyHookSet);
         instance.add_module(DEFAULT_MODULE, validation_info)?;
         Ok(instance)
@@ -64,22 +68,23 @@ impl<'b, T> RuntimeInstance<'b, T, EmptyHookSet> {
         module_name: &str,
         validation_info: &'_ ValidationInfo<'b>,
         // store: &mut Store,
-    ) -> Result<Self, RuntimeError> {
+    ) -> Result<Self, RuntimeOrHostError<HostError>> {
         let mut instance = Self::new_with_hooks(user_data, EmptyHookSet);
         instance.add_module(module_name, validation_info)?;
         Ok(instance)
     }
 }
 
-impl<'b, T, H> RuntimeInstance<'b, T, H>
+impl<'b, T, H, HostError> RuntimeInstance<'b, T, H, HostError>
 where
     H: HookSet + core::fmt::Debug,
+    HostError: core::fmt::Debug,
 {
     pub fn add_module(
         &mut self,
         module_name: &str,
         validation_info: &'_ ValidationInfo<'b>,
-    ) -> Result<(), RuntimeError> {
+    ) -> Result<(), RuntimeOrHostError<HostError>> {
         self.store.add_module(module_name, validation_info)
     }
 
@@ -123,7 +128,7 @@ where
         function_ref: &FunctionRef,
         params: Params,
         // store: &mut Store,
-    ) -> Result<Returns, RuntimeError> {
+    ) -> Result<Returns, RuntimeOrHostError<HostError>> {
         let FunctionRef { func_addr } = *function_ref;
         let return_values = self.store.invoke(func_addr, params.into_values())?;
         let returns = Returns::try_from_values(return_values.into_iter()).unwrap_validated();
@@ -135,7 +140,7 @@ where
         &mut self,
         function_ref: &FunctionRef,
         params: Vec<Value>,
-    ) -> Result<Vec<Value>, RuntimeError> {
+    ) -> Result<Vec<Value>, RuntimeOrHostError<HostError>> {
         let FunctionRef { func_addr } = *function_ref;
         self.store.invoke(func_addr, params)
     }
@@ -147,7 +152,7 @@ where
         &mut self,
         module_name: &str,
         name: &str,
-        host_func: fn(&mut T, Vec<Value>) -> Vec<Value>,
+        host_func: fn(&mut T, Vec<Value>) -> Result<Vec<Value>, HostError>,
     ) -> Result<FunctionRef, RuntimeError> {
         let host_func_ty = FuncType {
             params: ResultType {
@@ -165,7 +170,7 @@ where
         module_name: &str,
         name: &str,
         host_func_ty: FuncType,
-        host_func: fn(&mut T, Vec<Value>) -> Vec<Value>,
+        host_func: fn(&mut T, Vec<Value>) -> Result<Vec<Value>, HostError>,
     ) -> Result<FunctionRef, RuntimeError> {
         let func_addr = self.store.alloc_host_func(host_func_ty, host_func);
         self.store.registry.register(
@@ -189,12 +194,13 @@ where
 /// type conversion. For user data, simply move the mutable reference into the passed closure.
 /// # Example
 /// ```
+/// use core::convert::Infallible;
 /// use wasm::{validate, RuntimeInstance, host_function_wrapper, Value};
-/// fn my_wrapped_host_func(user_data: &mut (), params: Vec<Value>) -> Vec<Value> {
-///     host_function_wrapper(params, |(x, y): (u32, i32)| -> u32 {
+/// fn my_wrapped_host_func(user_data: &mut (), params: Vec<Value>) -> Result<Vec<Value>, Infallible> {
+///     host_function_wrapper(params, |(x, y): (u32, i32)| -> Result<u32, Infallible> {
 ///         let _user_data = user_data;
-///         x + (y as u32)
-///  })
+///         Ok(x + (y as u32))
+///     })
 /// }
 /// fn main() {
 ///     let mut instance = RuntimeInstance::new(());
@@ -203,10 +209,9 @@ where
 /// ```
 pub fn host_function_wrapper<Params: InteropValueList, Results: InteropValueList>(
     params: Vec<Value>,
-    f: impl FnOnce(Params) -> Results,
-) -> Vec<Value> {
+    f: impl FnOnce(Params) -> Result<Results, Infallible>,
+) -> Result<Vec<Value>, Infallible> {
     let params =
         Params::try_from_values(params.into_iter()).expect("Params match the actual parameters");
-    let results = f(params);
-    results.into_values()
+    f(params).map(Results::into_values)
 }

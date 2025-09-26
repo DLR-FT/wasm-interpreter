@@ -7,6 +7,7 @@
 //! 2. This module must only use [`RuntimeError`] and never [`Error`](crate::core::error::ValidationError).
 
 use alloc::vec::Vec;
+use core::fmt::Debug;
 use core::iter::zip;
 
 use crate::{
@@ -30,15 +31,15 @@ use crate::{
 #[cfg(feature = "hooks")]
 use crate::execution::hooks::HookSet;
 
-use super::store::Store;
+use super::{error::RuntimeOrHostError, store::Store};
 
 /// Interprets wasm native functions. Parameters and return values are passed on the stack.
-pub(super) fn run<T, H: HookSet>(
+pub(super) fn run<T, H: HookSet, HostError: Debug>(
     func_addr: usize,
     stack: &mut Stack,
     mut hooks: H,
-    store: &mut Store<T>,
-) -> Result<(), RuntimeError> {
+    store: &mut Store<T, HostError>,
+) -> Result<(), RuntimeOrHostError<HostError>> {
     let mut current_func_addr = func_addr;
     let func_inst = &store.functions[current_func_addr];
     let FuncInst::WasmFunc(wasm_func_inst) = &func_inst else {
@@ -194,16 +195,17 @@ pub(super) fn run<T, H: HookSet>(
                             .pop_tail_iter(func_to_call_ty.params.valtypes.len())
                             .collect();
                         let returns =
-                            (host_func_to_call_inst.hostcode)(&mut store.user_data, params);
+                            (host_func_to_call_inst.hostcode)(&mut store.user_data, params)
+                                .map_err(RuntimeOrHostError::Host)?;
 
                         // Verify that the return parameters match the host function parameters
                         // since we have no validation guarantees for host functions
                         if returns.len() != func_to_call_ty.returns.valtypes.len() {
-                            return Err(RuntimeError::HostFunctionSignatureMismatch);
+                            return Err(RuntimeError::HostFunctionSignatureMismatch.into());
                         }
                         for (value, ty) in zip(returns, func_to_call_ty.returns.valtypes) {
                             if value.to_ty() != ty {
-                                return Err(RuntimeError::HostFunctionSignatureMismatch);
+                                return Err(RuntimeError::HostFunctionSignatureMismatch.into());
                             }
                             stack.push_value(value)?;
                         }
@@ -283,16 +285,17 @@ pub(super) fn run<T, H: HookSet>(
                             .pop_tail_iter(func_to_call_ty.params.valtypes.len())
                             .collect();
                         let returns =
-                            (host_func_to_call_inst.hostcode)(&mut store.user_data, params);
+                            (host_func_to_call_inst.hostcode)(&mut store.user_data, params)
+                                .map_err(RuntimeOrHostError::Host)?;
 
                         // Verify that the return parameters match the host function parameters
                         // since we have no validation guarantees for host functions
                         if returns.len() != func_to_call_ty.returns.valtypes.len() {
-                            return Err(RuntimeError::HostFunctionSignatureMismatch);
+                            return Err(RuntimeError::HostFunctionSignatureMismatch.into());
                         }
                         for (value, ty) in zip(returns, func_to_call_ty.returns.valtypes) {
                             if value.to_ty() != ty {
-                                return Err(RuntimeError::HostFunctionSignatureMismatch);
+                                return Err(RuntimeError::HostFunctionSignatureMismatch.into());
                             }
                             stack.push_value(value)?;
                         }
