@@ -71,6 +71,7 @@ pub enum ValidationError {
     UnknownGlobal,
     DuplicateExportName,
     UnsupportedMultipleMemoriesProposal,
+    ExprHasTrailingInstructions,
 }
 
 impl Display for ValidationError {
@@ -215,6 +216,7 @@ impl Display for ValidationError {
             ValidationError::UnknownTable => f.write_str("Unknown table"),
             ValidationError::DuplicateExportName => f.write_str("Duplicate export name"),
             ValidationError::UnsupportedMultipleMemoriesProposal => f.write_str("Proposal for multiple memories is not yet supported"),
+            ValidationError::ExprHasTrailingInstructions => f.write_str("A code expression has invalid trailing instructions"),
         }
     }
 }

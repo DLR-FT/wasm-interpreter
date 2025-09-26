@@ -69,9 +69,7 @@ pub fn validate_code_section(
 
         // Check if there were unread trailing instructions after the last END
         if previous_pc + func_size as usize != wasm.pc {
-            todo!(
-                "throw error because there are trailing unreachable instructions in the code block"
-            )
+            return Err(ValidationError::ExprHasTrailingInstructions);
         }
 
         Ok((func_block, stp))

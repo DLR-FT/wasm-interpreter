@@ -312,10 +312,24 @@ fn run_directive<'a>(
                 validate_instantiate(interpreter, bytes)
             });
 
+            let maybe_assert_error = match result {
+                Ok(()) => Some(WastError::AssertInvalidButValid),
+                Err(panic_err @ WastError::Panic(_)) => {
+                    return Err(ScriptError::new(
+                        filepath,
+                        panic_err,
+                        "Module directive (WAT) failed in validation or instantiation.",
+                        line_number,
+                        cmd,
+                    ))
+                }
+                Err(_other) => None,
+            };
+
             Ok(Some(AssertOutcome {
                 line_number,
                 command: cmd.to_owned(),
-                maybe_error: result.is_ok().then_some(WastError::AssertInvalidButValid),
+                maybe_error: maybe_assert_error,
             }))
         }
 
