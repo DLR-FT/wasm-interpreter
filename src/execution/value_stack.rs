@@ -79,46 +79,20 @@ impl Stack {
         Ok(())
     }
 
-    /// Copy a local variable to the top of the value stack
-    pub fn get_local(&mut self, idx: LocalIdx) -> Result<(), RuntimeError> {
+    /// Returns a shared reference to a specific local by its index in the current call frame.
+    pub fn get_local(&self, idx: LocalIdx) -> &Value {
         let call_frame_base_idx = self.current_call_frame().call_frame_base_idx;
-        let local_value = self
-            .values
+        self.values
             .get(call_frame_base_idx + idx)
-            .unwrap_validated();
-        self.push_value(*local_value)
+            .unwrap_validated()
     }
 
-    /// Pop value from the top of the value stack, writing it to the given local
-    pub fn set_local(&mut self, idx: LocalIdx) {
-        debug_assert!(
-            self.values.len() > self.current_call_frame().value_stack_base_idx,
-            "can not pop values past the current call frame"
-        );
-
+    /// Returns a mutable reference to a specific local by its index in the current call frame.
+    pub fn get_local_mut(&mut self, idx: LocalIdx) -> &mut Value {
         let call_frame_base_idx = self.current_call_frame().call_frame_base_idx;
-        let stack_value = self.pop_value();
-
-        trace!("Instruction: local.set [{stack_value:?}] -> []");
-
-        *self
-            .values
+        self.values
             .get_mut(call_frame_base_idx + idx)
-            .unwrap_validated() = stack_value;
-    }
-
-    /// Copy value from top of the value stack to the given local
-    pub fn tee_local(&mut self, idx: LocalIdx) {
-        let call_frame_base_idx = self.current_call_frame().call_frame_base_idx;
-
-        let stack_value = self.values.last().unwrap_validated().clone();
-
-        trace!("Instruction: local.tee [{stack_value:?}] -> []");
-
-        *self
-            .values
-            .get_mut(call_frame_base_idx + idx)
-            .unwrap_validated() = stack_value;
+            .unwrap_validated()
     }
 
     /// Get a shared reference to the current [`CallFrame`]
