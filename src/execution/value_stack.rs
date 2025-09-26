@@ -113,7 +113,7 @@ impl Stack {
 
         let remove_count = self.values.len() - call_frame_base_idx - return_value_count;
 
-        self.remove_inbetween(remove_count, return_value_count);
+        self.remove_in_between(remove_count, return_value_count);
 
         debug_assert_eq!(
             self.values.len(),
@@ -194,7 +194,7 @@ impl Stack {
     /// - after the operation, [`Stack`] will contain `remove_count` fewer elements
     /// - `keep_count` topmost elements will be identical before and after the operation
     /// - all elements below the `remove_count + keep_count` topmost stack entry remain
-    pub fn remove_inbetween(&mut self, remove_count: usize, keep_count: usize) {
+    pub fn remove_in_between(&mut self, remove_count: usize, keep_count: usize) {
         let len = self.values.len();
         self.values
             .copy_within(len - keep_count.., len - keep_count - remove_count);
