@@ -224,3 +224,5 @@ impl Display for ValidationError {
         }
     }
 }
+
+impl core::error::Error for ValidationError {}
