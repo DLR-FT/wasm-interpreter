@@ -2584,7 +2584,7 @@ fn do_sidetable_control_transfer(
 ) -> Result<(), RuntimeError> {
     let sidetable_entry = &current_sidetable[*current_stp];
 
-    stack.remove_inbetween(sidetable_entry.popcnt, sidetable_entry.valcnt);
+    stack.remove_in_between(sidetable_entry.popcnt, sidetable_entry.valcnt);
 
     *current_stp = (*current_stp as isize + sidetable_entry.delta_stp) as usize;
     wasm.pc = (wasm.pc as isize + sidetable_entry.delta_pc) as usize;
