@@ -43,7 +43,7 @@ impl Stack {
         self.values
     }
 
-    /// Pop a value of the given [ValType] from the value stack
+    /// Pop a value from the value stack
     pub fn pop_value(&mut self) -> Value {
         // If there is at least one call frame, we shall not pop values past the current
         // call frame. However, there is one legitimate reason to pop when there is **no** current
