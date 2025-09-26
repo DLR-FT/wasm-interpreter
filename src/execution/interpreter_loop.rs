@@ -363,11 +363,22 @@ pub(super) fn run<T, H: HookSet>(
             }
             LOCAL_GET => {
                 let local_idx = wasm.read_var_u32().unwrap_validated() as LocalIdx;
-                stack.get_local(local_idx)?;
+                let value = *stack.get_local(local_idx);
+                stack.push_value(value)?;
                 trace!("Instruction: local.get {} [] -> [t]", local_idx);
             }
-            LOCAL_SET => stack.set_local(wasm.read_var_u32().unwrap_validated() as LocalIdx),
-            LOCAL_TEE => stack.tee_local(wasm.read_var_u32().unwrap_validated() as LocalIdx),
+            LOCAL_SET => {
+                let local_idx = wasm.read_var_u32().unwrap_validated() as LocalIdx;
+                let value = stack.pop_value();
+                *stack.get_local_mut(local_idx) = value;
+                trace!("Instruction: local.set {} [t] -> []", local_idx);
+            }
+            LOCAL_TEE => {
+                let local_idx = wasm.read_var_u32().unwrap_validated() as LocalIdx;
+                let value = stack.peek_value().unwrap_validated();
+                *stack.get_local_mut(local_idx) = value;
+                trace!("Instruction: local.tee {} [t] -> [t]", local_idx);
+            }
             GLOBAL_GET => {
                 let global_idx = wasm.read_var_u32().unwrap_validated() as GlobalIdx;
                 let global_addr = *store.modules[current_module_idx]
