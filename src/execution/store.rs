@@ -1,4 +1,4 @@
-use core::convert::Infallible;
+use core::fmt::Debug;
 
 use crate::core::indices::TypeIdx;
 use crate::core::reader::span::Span;
@@ -12,6 +12,7 @@ use crate::core::reader::types::{
 };
 use crate::core::reader::WasmReader;
 use crate::core::sidetable::Sidetable;
+use crate::error::RuntimeOrHostError;
 use crate::execution::interpreter_loop::{self, memory_init, table_init};
 use crate::execution::value::{Ref, Value};
 use crate::execution::{run_const_span, Stack};
@@ -36,8 +37,8 @@ use crate::linear_memory::LinearMemory;
 /// the abstract machine.
 /// <https://webassembly.github.io/spec/core/exec/runtime.html#store>
 #[derive(Debug)]
-pub struct Store<'b, T> {
-    pub functions: Vec<FuncInst<T>>,
+pub struct Store<'b, T, HostError: Debug> {
+    pub functions: Vec<FuncInst<T, HostError>>,
     pub memories: Vec<MemInst>,
     pub globals: Vec<GlobalInst>,
     pub data: Vec<DataInst>,
@@ -53,7 +54,7 @@ pub struct Store<'b, T> {
     pub user_data: T,
 }
 
-impl<'b, T> Store<'b, T> {
+impl<'b, T, HostError: Debug> Store<'b, T, HostError> {
     /// Creates a new empty store with some user data
     pub fn new(user_data: T) -> Self {
         Self {
@@ -78,7 +79,7 @@ impl<'b, T> Store<'b, T> {
         &mut self,
         name: &str,
         validation_info: &ValidationInfo<'b>,
-    ) -> Result<(), RuntimeError> {
+    ) -> Result<(), RuntimeOrHostError<HostError>> {
         // instantiation step -1: collect extern_vals, this section basically acts as a linker between modules
         // best attempt at trying to match the spec implementation in terms of errors
         debug!("adding module with name {:?}", name);
@@ -106,7 +107,7 @@ impl<'b, T> Store<'b, T> {
                 .extern_type(self)
                 .is_subtype_of(&import_extern_type)
             {
-                return Err(RuntimeError::InvalidImportType);
+                return Err(RuntimeError::InvalidImportType.into());
             }
             trace!("import and export matches. Adding to externvals");
             extern_vals.push(export_extern_val_candidate)
@@ -362,7 +363,7 @@ impl<'b, T> Store<'b, T> {
                     // assert: mem_idx is 0
                     if *memory_idx != 0 {
                         // TODO fix error
-                        return Err(RuntimeError::MoreThanOneMemory);
+                        return Err(RuntimeError::MoreThanOneMemory.into());
                     }
 
                     // TODO (for now, we are doing hopefully what is equivalent to it)
@@ -457,7 +458,7 @@ impl<'b, T> Store<'b, T> {
     pub(super) fn alloc_host_func(
         &mut self,
         func_type: FuncType,
-        host_func: fn(&mut T, Vec<Value>) -> Result<Vec<Value>, Infallible>,
+        host_func: fn(&mut T, Vec<Value>) -> Result<Vec<Value>, HostError>,
     ) -> usize {
         let func_inst = FuncInst::HostFunc(HostFuncInst {
             function_type: func_type,
@@ -533,7 +534,7 @@ impl<'b, T> Store<'b, T> {
         &mut self,
         func_addr: usize,
         params: Vec<Value>,
-    ) -> Result<Vec<Value>, RuntimeError> {
+    ) -> Result<Vec<Value>, RuntimeOrHostError<HostError>> {
         let func_inst = self
             .functions
             .get(func_addr)
@@ -555,13 +556,9 @@ impl<'b, T> Store<'b, T> {
 
         match &func_inst {
             FuncInst::HostFunc(host_func_inst) => {
-                let returns = (host_func_inst.hostcode)(&mut self.user_data, params);
+                let returns = (host_func_inst.hostcode)(&mut self.user_data, params)
+                    .map_err(RuntimeOrHostError::Host)?;
                 debug!("Successfully invoked function");
-
-                let returns = match returns {
-                    Ok(returns) => returns,
-                    Err(infallible) => match infallible {},
-                };
 
                 // Verify that the return parameters match the host function parameters
                 // since we have no validation guarantees for host functions
@@ -573,7 +570,7 @@ impl<'b, T> Store<'b, T> {
                         func_ty.params.valtypes.len(),
                         param_types.len()
                     );
-                    return Err(RuntimeError::HostFunctionSignatureMismatch);
+                    return Err(RuntimeError::HostFunctionSignatureMismatch.into());
                 }
 
                 Ok(returns)
@@ -608,9 +605,9 @@ impl<'b, T> Store<'b, T> {
 
 #[derive(Debug)]
 // TODO does not match the spec FuncInst
-pub enum FuncInst<T> {
+pub enum FuncInst<T, HostError: Debug> {
     WasmFunc(WasmFuncInst),
-    HostFunc(HostFuncInst<T>),
+    HostFunc(HostFuncInst<T, HostError>),
 }
 
 #[derive(Debug)]
@@ -628,12 +625,12 @@ pub struct WasmFuncInst {
 }
 
 #[derive(Debug)]
-pub struct HostFuncInst<T> {
+pub struct HostFuncInst<T, HostError: Debug> {
     pub function_type: FuncType,
-    pub hostcode: fn(&mut T, Vec<Value>) -> Result<Vec<Value>, Infallible>,
+    pub hostcode: fn(&mut T, Vec<Value>) -> Result<Vec<Value>, HostError>,
 }
 
-impl<T> FuncInst<T> {
+impl<T, HostError: Debug> FuncInst<T, HostError> {
     pub fn ty(&self) -> FuncType {
         match self {
             FuncInst::WasmFunc(wasm_func_inst) => wasm_func_inst.function_type.clone(),
@@ -797,7 +794,7 @@ impl ExternVal {
     ///
     /// Note: This method may panic if self does not come from the given [`Store`].
     ///<https://webassembly.github.io/spec/core/valid/modules.html#imports>
-    pub fn extern_type<T>(&self, store: &Store<T>) -> ExternType {
+    pub fn extern_type<T, HostError: Debug>(&self, store: &Store<T, HostError>) -> ExternType {
         match self {
             // TODO: fix ugly clone in function types
             ExternVal::Func(func_addr) => ExternType::Func(

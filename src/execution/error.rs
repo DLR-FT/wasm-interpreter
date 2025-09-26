@@ -1,6 +1,49 @@
-use core::fmt::{Display, Formatter};
+use core::fmt::{self, Display, Formatter};
 
-#[derive(Debug, PartialEq, Eq)]
+pub enum RuntimeOrHostError<HostError> {
+    Runtime(RuntimeError),
+    Host(HostError),
+}
+
+impl<HostError: fmt::Debug> fmt::Debug for RuntimeOrHostError<HostError> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Runtime(runtime_error) => f.debug_tuple("Runtime").field(runtime_error).finish(),
+            Self::Host(host_error) => f.debug_tuple("Host").field(host_error).finish(),
+        }
+    }
+}
+
+impl<HostError: fmt::Display> fmt::Display for RuntimeOrHostError<HostError> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            RuntimeOrHostError::Runtime(runtime_error) => {
+                write!(f, "Runtime error: {runtime_error}")
+            }
+            RuntimeOrHostError::Host(host_error) => write!(f, "Host error: {host_error}"),
+        }
+    }
+}
+
+impl<HostError: core::error::Error + 'static> core::error::Error for RuntimeOrHostError<HostError> {
+    fn source(&self) -> Option<&(dyn core::error::Error + 'static)> {
+        match self {
+            RuntimeOrHostError::Runtime(runtime_error) => Some(runtime_error),
+            RuntimeOrHostError::Host(host_error) => Some(host_error),
+        }
+    }
+}
+
+impl<HostError: Clone> Clone for RuntimeOrHostError<HostError> {
+    fn clone(&self) -> Self {
+        match self {
+            Self::Runtime(runtime_error) => Self::Runtime(runtime_error.clone()),
+            Self::Host(host_error) => Self::Host(host_error.clone()),
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum RuntimeError {
     Trap(TrapError),
 
@@ -43,6 +86,12 @@ impl core::error::Error for RuntimeError {
             RuntimeError::Trap(trap_err) => Some(trap_err),
             _ => None,
         }
+    }
+}
+
+impl<HostError> From<RuntimeError> for RuntimeOrHostError<HostError> {
+    fn from(value: RuntimeError) -> Self {
+        Self::Runtime(value)
     }
 }
 
@@ -102,5 +151,11 @@ impl core::error::Error for TrapError {}
 impl From<TrapError> for RuntimeError {
     fn from(value: TrapError) -> Self {
         Self::Trap(value)
+    }
+}
+
+impl<HostError> From<TrapError> for RuntimeOrHostError<HostError> {
+    fn from(value: TrapError) -> Self {
+        Self::Runtime(RuntimeError::Trap(value))
     }
 }
