@@ -34,6 +34,11 @@ pub(super) fn validate_data_section(
             0 => {
                 // active { memory 0, offset e }
                 trace!("Data section: active {{ memory 0, offset e }}");
+
+                if no_of_total_memories == 0 {
+                    return Err(ValidationError::UnknownMemory);
+                }
+
                 let mut valid_stack = ValidationStack::new();
                 let (offset, _) = {
                     read_constant_expression(
