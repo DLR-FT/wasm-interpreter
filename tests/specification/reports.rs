@@ -86,7 +86,7 @@ impl AssertReport {
     pub fn passed_asserts(&self) -> u32 {
         self.results
             .iter()
-            .filter(|el| el.maybe_error.is_some())
+            .filter(|el| el.maybe_error.is_none())
             .count() as u32
     }
 
