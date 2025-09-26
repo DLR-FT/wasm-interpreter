@@ -109,6 +109,8 @@ impl Display for RuntimeError {
     }
 }
 
+impl core::error::Error for RuntimeError {}
+
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum TrapError {
     DivideBy0,
@@ -159,6 +161,8 @@ impl Display for TrapError {
         }
     }
 }
+
+impl core::error::Error for TrapError {}
 
 impl From<TrapError> for RuntimeError {
     fn from(value: TrapError) -> Self {

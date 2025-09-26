@@ -155,6 +155,8 @@ pub enum ValidationError {
     InvalidElementMode(u32),
 }
 
+impl core::error::Error for ValidationError {}
+
 impl Display for ValidationError {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         match self {
