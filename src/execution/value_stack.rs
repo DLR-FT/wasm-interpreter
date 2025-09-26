@@ -18,7 +18,7 @@ const MAX_CALL_STACK_SIZE: usize = 0x1000; // 4 Kibi-Functions
 /// 3. Activations
 ///
 /// See <https://webassembly.github.io/spec/core/exec/runtime.html#stack>
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub(crate) struct Stack {
     /// WASM values on the stack, i.e. the actual data that instructions operate on
     values: Vec<Value>,
@@ -298,6 +298,7 @@ impl Stack {
 }
 
 /// The [WASM spec](https://webassembly.github.io/spec/core/exec/runtime.html#stack) calls this `Activations`, however it refers to the call frames of functions.
+#[derive(Debug)]
 pub(crate) struct CallFrame {
     /// Store address of the function that called this [`CallFrame`]'s function
     pub return_func_addr: usize,

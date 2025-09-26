@@ -1,3 +1,4 @@
+use log::info;
 /*
 # This file incorporates code from the WebAssembly testsuite, originally
 # available at https://github.com/WebAssembly/testsuite.
@@ -154,12 +155,13 @@ fn memory_size_5() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let mut i = 0;
+    let mut info_str = String::new();
     for byte in wasm_bytes.iter() {
-        print!("{byte:#04X} ");
+        info_str.push_str(&format!("{byte:#04X} "));
         i += 1;
         if i % 8 == 0 {
             i = 0;
-            println!();
+            info!("{info_str}");
         }
     }
     let validation_info = validate(&wasm_bytes);
@@ -180,12 +182,13 @@ fn memory_size_6() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let mut i = 0;
+    let mut info_str = String::new();
     for byte in wasm_bytes.iter() {
-        print!("{byte:#04X} ");
+        info_str.push_str(&format!("{byte:#04X} "));
         i += 1;
         if i % 8 == 0 {
             i = 0;
-            println!();
+            info!("{info_str}");
         }
     }
     let validation_info = validate(&wasm_bytes);

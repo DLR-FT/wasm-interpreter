@@ -120,6 +120,12 @@ impl<T> RwSpinLock<T> {
 // SAFETY: When the inner `T` is `Sync`, the `RwSpinlock<T>` can be `Sync` as well
 unsafe impl<T> Sync for RwSpinLock<T> where T: Send + Sync {}
 
+impl<T: Default> Default for RwSpinLock<T> {
+    fn default() -> Self {
+        Self::new(T::default())
+    }
+}
+
 /// Read guard for the [`RwSpinLock`]
 pub struct ReadLockGuard<'a, T> {
     lock: &'a RwSpinLock<T>,
