@@ -196,6 +196,11 @@ pub(super) fn run<T, H: HookSet>(
                         let returns =
                             (host_func_to_call_inst.hostcode)(&mut store.user_data, params);
 
+                        let returns = match returns {
+                            Ok(returns) => returns,
+                            Err(infallible) => match infallible {},
+                        };
+
                         // Verify that the return parameters match the host function parameters
                         // since we have no validation guarantees for host functions
                         if returns.len() != func_to_call_ty.returns.valtypes.len() {
@@ -284,6 +289,11 @@ pub(super) fn run<T, H: HookSet>(
                             .collect();
                         let returns =
                             (host_func_to_call_inst.hostcode)(&mut store.user_data, params);
+
+                        let returns = match returns {
+                            Ok(returns) => returns,
+                            Err(infallible) => match infallible {},
+                        };
 
                         // Verify that the return parameters match the host function parameters
                         // since we have no validation guarantees for host functions

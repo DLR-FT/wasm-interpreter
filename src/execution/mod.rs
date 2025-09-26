@@ -1,3 +1,5 @@
+use core::convert::Infallible;
+
 use alloc::borrow::ToOwned;
 use alloc::vec::Vec;
 
@@ -147,7 +149,7 @@ where
         &mut self,
         module_name: &str,
         name: &str,
-        host_func: fn(&mut T, Vec<Value>) -> Vec<Value>,
+        host_func: fn(&mut T, Vec<Value>) -> Result<Vec<Value>, Infallible>,
     ) -> Result<FunctionRef, RuntimeError> {
         let host_func_ty = FuncType {
             params: ResultType {
@@ -165,7 +167,7 @@ where
         module_name: &str,
         name: &str,
         host_func_ty: FuncType,
-        host_func: fn(&mut T, Vec<Value>) -> Vec<Value>,
+        host_func: fn(&mut T, Vec<Value>) -> Result<Vec<Value>, Infallible>,
     ) -> Result<FunctionRef, RuntimeError> {
         let func_addr = self.store.alloc_host_func(host_func_ty, host_func);
         self.store.registry.register(
@@ -189,12 +191,13 @@ where
 /// type conversion. For user data, simply move the mutable reference into the passed closure.
 /// # Example
 /// ```
+/// use core::convert::Infallible;
 /// use wasm::{validate, RuntimeInstance, host_function_wrapper, Value};
-/// fn my_wrapped_host_func(user_data: &mut (), params: Vec<Value>) -> Vec<Value> {
-///     host_function_wrapper(params, |(x, y): (u32, i32)| -> u32 {
+/// fn my_wrapped_host_func(user_data: &mut (), params: Vec<Value>) -> Result<Vec<Value>, Infallible> {
+///     host_function_wrapper(params, |(x, y): (u32, i32)| -> Result<u32, Infallible> {
 ///         let _user_data = user_data;
-///         x + (y as u32)
-///  })
+///         Ok(x + (y as u32))
+///     })
 /// }
 /// fn main() {
 ///     let mut instance = RuntimeInstance::new(());
@@ -203,10 +206,9 @@ where
 /// ```
 pub fn host_function_wrapper<Params: InteropValueList, Results: InteropValueList>(
     params: Vec<Value>,
-    f: impl FnOnce(Params) -> Results,
-) -> Vec<Value> {
+    f: impl FnOnce(Params) -> Result<Results, Infallible>,
+) -> Result<Vec<Value>, Infallible> {
     let params =
         Params::try_from_values(params.into_iter()).expect("Params match the actual parameters");
-    let results = f(params);
-    results.into_values()
+    f(params).map(Results::into_values)
 }
