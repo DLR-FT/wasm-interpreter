@@ -100,11 +100,6 @@ impl Stack {
         self.frames.last().unwrap_validated()
     }
 
-    /// Get a mutable reference to the current [`CallFrame`]
-    pub fn _current_call_frame_mut(&mut self) -> &mut CallFrame {
-        self.frames.last_mut().unwrap_validated()
-    }
-
     /// Pop a [`CallFrame`] from the call stack, returning the caller function store address, return address, and the return stp
     pub fn pop_call_frame(&mut self) -> (usize, usize, usize) {
         let CallFrame {
