@@ -32,12 +32,13 @@ impl FunctionRef {
     }
 
     pub fn invoke_typed<
+        T,
         H: HookSet + core::fmt::Debug,
         Param: InteropValueList,
         Returns: InteropValueList,
     >(
         &self,
-        runtime: &mut RuntimeInstance<H>,
+        runtime: &mut RuntimeInstance<T, H>,
         params: Param,
         // store: &mut Store,
     ) -> Result<Returns, RuntimeError> {
