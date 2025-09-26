@@ -4,9 +4,7 @@ use crate::core::indices::LocalIdx;
 use crate::core::reader::types::{FuncType, ValType};
 use crate::execution::assert_validated::UnwrapValidatedExt;
 use crate::execution::value::Value;
-use crate::{unreachable_validated, RuntimeError};
-
-use super::value::Ref;
+use crate::RuntimeError;
 
 // TODO make these configurable
 const MAX_VALUE_STACK_SIZE: usize = 0xf0000; // 64 Kibi-Values
@@ -45,49 +43,7 @@ impl Stack {
         self.values
     }
 
-    pub fn drop_value(&mut self) {
-        // If there is at least one call frame, we shall not pop values past the current
-        // call frame. However, there is one legitimate reason to pop when there is **no** current
-        // call frame: after the outermost function returns, to extract the final return values of
-        // this interpreter invocation.
-        debug_assert!(
-            if !self.frames.is_empty() {
-                self.values.len() > self.current_call_frame().value_stack_base_idx
-            } else {
-                true
-            },
-            "can not pop values past the current call frame"
-        );
-
-        self.values.pop().unwrap_validated();
-    }
-
-    /// Pop a reference of unknown type from the value stack
-    pub fn pop_unknown_ref(&mut self) -> Ref {
-        // If there is at least one call frame, we shall not pop values past the current
-        // call frame. However, there is one legitimate reason to pop when there is **no** current
-        // call frame: after the outermost function returns, to extract the final return values of
-        // this interpreter invocation.
-        debug_assert!(
-            if !self.frames.is_empty() {
-                self.values.len() > self.current_call_frame().value_stack_base_idx
-            } else {
-                true
-            },
-            "can not pop values past the current call frame"
-        );
-
-        let popped = self.values.pop().unwrap_validated();
-        match popped.to_ty() {
-            ValType::RefType(_) => match popped {
-                Value::Ref(rref) => rref,
-                _ => unreachable!(),
-            },
-            _ => unreachable_validated!(),
-        }
-    }
-
-    /// Pop a value of the given [ValType] from the value stack
+    /// Pop a value from the value stack
     pub fn pop_value(&mut self) -> Value {
         // If there is at least one call frame, we shall not pop values past the current
         // call frame. However, there is one legitimate reason to pop when there is **no** current
@@ -105,23 +61,8 @@ impl Stack {
         self.values.pop().unwrap_validated()
     }
 
-    //unfortunately required for polymorphic select
-    pub fn pop_value_with_unknown_type(&mut self) -> Value {
-        self.values.pop().unwrap_validated()
-    }
-
-    /// Copy a value of the given [ValType] from the value stack without removing it
-    pub fn peek_value(&self, ty: ValType) -> Value {
-        let value = self.values.last().unwrap_validated();
-        if value.to_ty() == ty {
-            *value
-        } else {
-            unreachable_validated!()
-        }
-    }
-
     /// Returns a cloned copy of the top value on the stack, or `None` if the stack is empty
-    pub fn peek_unknown_value(&self) -> Option<Value> {
+    pub fn peek_value(&self) -> Option<Value> {
         self.values.last().copied()
     }
 
@@ -138,61 +79,25 @@ impl Stack {
         Ok(())
     }
 
-    /// Copy a local variable to the top of the value stack
-    pub fn get_local(&mut self, idx: LocalIdx) -> Result<(), RuntimeError> {
+    /// Returns a shared reference to a specific local by its index in the current call frame.
+    pub fn get_local(&self, idx: LocalIdx) -> &Value {
         let call_frame_base_idx = self.current_call_frame().call_frame_base_idx;
-        let local_value = self
-            .values
-            .get(call_frame_base_idx + idx)
-            .unwrap_validated();
-        self.push_value(*local_value)
-    }
-
-    /// Pop value from the top of the value stack, writing it to the given local
-    pub fn set_local(&mut self, idx: LocalIdx) {
-        debug_assert!(
-            self.values.len() > self.current_call_frame().value_stack_base_idx,
-            "can not pop values past the current call frame"
-        );
-
-        let call_frame_base_idx = self.current_call_frame().call_frame_base_idx;
-        let stack_value = self.pop_value();
-
-        trace!("Instruction: local.set [{stack_value:?}] -> []");
-
-        *self
-            .values
-            .get_mut(call_frame_base_idx + idx)
-            .unwrap_validated() = stack_value;
-    }
-
-    /// Copy value from top of the value stack to the given local
-    pub fn tee_local(&mut self, idx: LocalIdx) {
-        let call_frame_base_idx = self.current_call_frame().call_frame_base_idx;
-
-        let local_ty = self
-            .values
+        self.values
             .get(call_frame_base_idx + idx)
             .unwrap_validated()
-            .to_ty();
-        let stack_value = self.peek_value(local_ty);
+    }
 
-        trace!("Instruction: local.tee [{stack_value:?}] -> []");
-
-        *self
-            .values
+    /// Returns a mutable reference to a specific local by its index in the current call frame.
+    pub fn get_local_mut(&mut self, idx: LocalIdx) -> &mut Value {
+        let call_frame_base_idx = self.current_call_frame().call_frame_base_idx;
+        self.values
             .get_mut(call_frame_base_idx + idx)
-            .unwrap_validated() = stack_value;
+            .unwrap_validated()
     }
 
     /// Get a shared reference to the current [`CallFrame`]
     pub fn current_call_frame(&self) -> &CallFrame {
         self.frames.last().unwrap_validated()
-    }
-
-    /// Get a mutable reference to the current [`CallFrame`]
-    pub fn _current_call_frame_mut(&mut self) -> &mut CallFrame {
-        self.frames.last_mut().unwrap_validated()
     }
 
     /// Pop a [`CallFrame`] from the call stack, returning the caller function store address, return address, and the return stp
@@ -208,7 +113,7 @@ impl Stack {
 
         let remove_count = self.values.len() - call_frame_base_idx - return_value_count;
 
-        self.remove_inbetween(remove_count, return_value_count);
+        self.remove_in_between(remove_count, return_value_count);
 
         debug_assert_eq!(
             self.values.len(),
@@ -289,7 +194,7 @@ impl Stack {
     /// - after the operation, [`Stack`] will contain `remove_count` fewer elements
     /// - `keep_count` topmost elements will be identical before and after the operation
     /// - all elements below the `remove_count + keep_count` topmost stack entry remain
-    pub fn remove_inbetween(&mut self, remove_count: usize, keep_count: usize) {
+    pub fn remove_in_between(&mut self, remove_count: usize, keep_count: usize) {
         let len = self.values.len();
         self.values
             .copy_within(len - keep_count.., len - keep_count - remove_count);

@@ -323,13 +323,13 @@ pub(super) fn run<T, H: HookSet>(
                 trace!("Instruction: CALL_INDIRECT");
             }
             DROP => {
-                stack.drop_value();
+                stack.pop_value();
                 trace!("Instruction: DROP");
             }
             SELECT => {
                 let test_val: i32 = stack.pop_value().try_into().unwrap_validated();
-                let val2 = stack.pop_value_with_unknown_type();
-                let val1 = stack.pop_value_with_unknown_type();
+                let val2 = stack.pop_value();
+                let val1 = stack.pop_value();
                 if test_val != 0 {
                     stack.push_value(val1)?;
                 } else {
@@ -351,11 +351,22 @@ pub(super) fn run<T, H: HookSet>(
             }
             LOCAL_GET => {
                 let local_idx = wasm.read_var_u32().unwrap_validated() as LocalIdx;
-                stack.get_local(local_idx)?;
+                let value = *stack.get_local(local_idx);
+                stack.push_value(value)?;
                 trace!("Instruction: local.get {} [] -> [t]", local_idx);
             }
-            LOCAL_SET => stack.set_local(wasm.read_var_u32().unwrap_validated() as LocalIdx),
-            LOCAL_TEE => stack.tee_local(wasm.read_var_u32().unwrap_validated() as LocalIdx),
+            LOCAL_SET => {
+                let local_idx = wasm.read_var_u32().unwrap_validated() as LocalIdx;
+                let value = stack.pop_value();
+                *stack.get_local_mut(local_idx) = value;
+                trace!("Instruction: local.set {} [t] -> []", local_idx);
+            }
+            LOCAL_TEE => {
+                let local_idx = wasm.read_var_u32().unwrap_validated() as LocalIdx;
+                let value = stack.peek_value().unwrap_validated();
+                *stack.get_local_mut(local_idx) = value;
+                trace!("Instruction: local.tee {} [t] -> [t]", local_idx);
+            }
             GLOBAL_GET => {
                 let global_idx = wasm.read_var_u32().unwrap_validated() as GlobalIdx;
                 let global_addr = *store.modules[current_module_idx]
@@ -2015,7 +2026,7 @@ pub(super) fn run<T, H: HookSet>(
                 trace!("Instruction: ref.null '{:?}' -> [{:?}]", reftype, reftype);
             }
             REF_IS_NULL => {
-                let rref = stack.pop_unknown_ref();
+                let rref: Ref = stack.pop_value().try_into().unwrap_validated();
                 let is_null = matches!(rref, Ref::Null(_));
 
                 let res = if is_null { 1 } else { 0 };
@@ -2387,7 +2398,7 @@ pub(super) fn run<T, H: HookSet>(
                         let sz = tab.elem.len() as u32;
 
                         let n: u32 = stack.pop_value().try_into().unwrap_validated();
-                        let val = stack.pop_unknown_ref();
+                        let val: Ref = stack.pop_value().try_into().unwrap_validated();
 
                         // TODO this instruction is non-deterministic w.r.t. spec, and can fail if the embedder wills it.
                         // for now we execute it always according to the following match expr.
@@ -2561,7 +2572,7 @@ fn do_sidetable_control_transfer(
 ) -> Result<(), RuntimeError> {
     let sidetable_entry = &current_sidetable[*current_stp];
 
-    stack.remove_inbetween(sidetable_entry.popcnt, sidetable_entry.valcnt);
+    stack.remove_in_between(sidetable_entry.popcnt, sidetable_entry.valcnt);
 
     *current_stp = (*current_stp as isize + sidetable_entry.delta_stp) as usize;
     wasm.pc = (wasm.pc as isize + sidetable_entry.delta_pc) as usize;
