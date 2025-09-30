@@ -308,10 +308,13 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
     let start = handle_section(&mut wasm, &mut header, SectionTy::Start, |wasm, _| {
-        let idx = wasm.read_var_u32().map(|idx| idx as FuncIdx)?;
+        let func_idx = wasm.read_var_u32().map(|idx| idx as FuncIdx)?;
         // start function signature must be [] -> []
         // https://webassembly.github.io/spec/core/valid/modules.html#start-function
-        if types[all_functions[idx]]
+        let type_idx = *all_functions
+            .get(func_idx)
+            .ok_or(ValidationError::FunctionIsNotDefined(func_idx))?;
+        if types[type_idx]
             != (FuncType {
                 params: ResultType {
                     valtypes: Vec::new(),
@@ -324,7 +327,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
             // TODO fix error type
             Err(ValidationError::InvalidFuncType)
         } else {
-            Ok(idx)
+            Ok(func_idx)
         }
     })?;
 
