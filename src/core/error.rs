@@ -60,7 +60,7 @@ pub enum ValidationError {
     WrongRefTypeForInteropValue(RefType, RefType),
     FunctionIsNotDefined(FuncIdx),
     ReferencingAnUnreferencedFunction(FuncIdx),
-    FunctionTypeIsNotDefined(TypeIdx),
+    InvalidTypeIdx(TypeIdx),
     OnlyFuncRefIsAllowed,
     TypeUnificationMismatch,
     InvalidSelectTypeVector,
@@ -195,7 +195,7 @@ impl Display for ValidationError {
             ValidationError::ReferencingAnUnreferencedFunction(func_idx) => f.write_fmt(format_args!(
                 "Referenced a function ({func_idx}) that was not referenced in validation"
             )),
-            ValidationError::FunctionTypeIsNotDefined(func_ty_idx) => f.write_fmt(format_args!(
+            ValidationError::InvalidTypeIdx(func_ty_idx) => f.write_fmt(format_args!(
                 "C.fn_types[{func_ty_idx}] is NOT defined when it should be"
             )),
             ValidationError::OnlyFuncRefIsAllowed => f.write_str("Only FuncRef is allowed"),
