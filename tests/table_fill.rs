@@ -1,3 +1,6 @@
+use std::convert::Infallible;
+
+use wasm::hooks::EmptyHookSet;
 use wasm::interop::RefFunc;
 /*
 # This file incorporates code from the WebAssembly testsuite, originally
@@ -48,8 +51,11 @@ fn table_fill_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut i = RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+        (),
+        &validation_info,
+    )
+    .expect("instantiation failed");
 
     let get = get_func!(i, "get");
     let fill = get_func!(i, "fill");
@@ -141,7 +147,7 @@ fn table_fill_test() {
         i.invoke_typed::<(i32, RefFunc, i32), ()>(fill, (8, RefFunc(Some(FuncAddr(6))), 3))
             .err()
             .unwrap()
-            == RuntimeError::Trap(TrapError::TableOrElementAccessOutOfBounds)
+            == RuntimeError::Trap(TrapError::TableOrElementAccessOutOfBounds).into()
     );
 
     assert!(i.invoke_typed::<i32, RefFunc>(get, 7).unwrap().0.is_none());
@@ -155,13 +161,13 @@ fn table_fill_test() {
         i.invoke_typed::<(i32, RefFunc, i32), ()>(fill, (11, RefFunc(None), 0))
             .err()
             .unwrap()
-            == RuntimeError::Trap(TrapError::TableOrElementAccessOutOfBounds)
+            == RuntimeError::Trap(TrapError::TableOrElementAccessOutOfBounds).into()
     );
 
     assert!(
         i.invoke_typed::<(i32, RefFunc, i32), ()>(fill, (11, RefFunc(None), 10))
             .err()
             .unwrap()
-            == RuntimeError::Trap(TrapError::TableOrElementAccessOutOfBounds)
+            == RuntimeError::Trap(TrapError::TableOrElementAccessOutOfBounds).into()
     );
 }

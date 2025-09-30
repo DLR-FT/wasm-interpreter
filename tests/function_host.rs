@@ -2,6 +2,7 @@ use log::info;
 use std::convert::Infallible;
 
 use wasm::{
+    error::RuntimeOrHostError,
     host_function_wrapper, validate,
     value::{F32, F64},
     RuntimeError, RuntimeInstance, Value,
@@ -290,5 +291,10 @@ pub fn host_func_runtime_error() {
         .get_function_by_name("importing_mod", "mult3_caller")
         .expect("wasm function could not be found");
     let result = runtime_instance.invoke_typed::<(), (f64, i64)>(&function_ref, ());
-    assert_eq!(Err(RuntimeError::HostFunctionSignatureMismatch), result);
+    assert_eq!(
+        Err(RuntimeOrHostError::Runtime(
+            RuntimeError::HostFunctionSignatureMismatch
+        )),
+        result
+    );
 }

@@ -1,3 +1,7 @@
+use std::convert::Infallible;
+
+use wasm::hooks::EmptyHookSet;
+
 /// A simple function to add two numbers and return the result, using [invoke_dynamic](wasm::RuntimeInstance::invoke_dynamic)
 /// instead of [invoke_named](wasm::RuntimeInstance::invoke_named).
 #[test_log::test]
@@ -15,7 +19,11 @@ fn dynamic_add() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     let func = instance.get_function_by_index(0, 0).unwrap();

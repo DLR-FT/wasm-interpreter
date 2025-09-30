@@ -1,4 +1,6 @@
-use wasm::{validate, RuntimeInstance};
+use std::convert::Infallible;
+
+use wasm::{hooks::EmptyHookSet, validate, RuntimeInstance};
 
 const _UNMET_IMPORTS: &str = r#"
 (module
@@ -83,7 +85,8 @@ pub fn compile_simple_import() {
     let wasm_bytes = wat::parse_str(SIMPLE_IMPORT_ADDON).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut instance =
-        RuntimeInstance::new_named((), "env", &validation_info).expect("instantiation failed");
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_named((), "env", &validation_info)
+            .expect("instantiation failed");
 
     let wasm_bytes = wat::parse_str(SIMPLE_IMPORT_BASE).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
@@ -101,7 +104,8 @@ pub fn run_simple_import() {
     let wasm_bytes = wat::parse_str(SIMPLE_IMPORT_ADDON).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut instance =
-        RuntimeInstance::new_named((), "env", &validation_info).expect("instantiation failed");
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_named((), "env", &validation_info)
+            .expect("instantiation failed");
 
     let wasm_bytes = wat::parse_str(SIMPLE_IMPORT_BASE).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
@@ -122,7 +126,8 @@ pub fn run_call_indirect() {
     let wasm_bytes = wat::parse_str(SIMPLE_IMPORT_ADDON).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut instance =
-        RuntimeInstance::new_named((), "env", &validation_info).expect("instantiation failed");
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_named((), "env", &validation_info)
+            .expect("instantiation failed");
 
     let wasm_bytes = wat::parse_str(CALL_INDIRECT_BASE).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");

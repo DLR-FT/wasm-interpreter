@@ -1,7 +1,9 @@
 //! The WASM program stores 42 into linear memory upon instantiation through a start function.
 //! Then it reads the same value and checks its value.
 
-use wasm::DEFAULT_MODULE;
+use std::convert::Infallible;
+
+use wasm::{hooks::EmptyHookSet, DEFAULT_MODULE};
 #[test_log::test]
 fn start_function() {
     use wasm::{validate, RuntimeInstance};
@@ -25,7 +27,11 @@ fn start_function() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(

@@ -17,7 +17,9 @@
 
 // use core::slice::SlicePattern;
 
-use wasm::{validate, RuntimeInstance, DEFAULT_MODULE};
+use std::convert::Infallible;
+
+use wasm::{hooks::EmptyHookSet, validate, RuntimeInstance, DEFAULT_MODULE};
 
 macro_rules! get_func {
     ($instance:ident, $func_name:expr) => {
@@ -39,8 +41,11 @@ fn memory_fill() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut i = RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+        (),
+        &validation_info,
+    )
+    .expect("instantiation failed");
 
     let fill = get_func!(i, "fill");
     i.invoke_typed::<(), ()>(fill, ()).unwrap();

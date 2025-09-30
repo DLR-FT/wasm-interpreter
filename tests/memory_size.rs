@@ -1,4 +1,6 @@
 use log::info;
+use std::convert::Infallible;
+
 /*
 # This file incorporates code from the WebAssembly testsuite, originally
 # available at https://github.com/WebAssembly/testsuite.
@@ -15,7 +17,7 @@ use log::info;
 # See the License for the specific language governing permissions and
 # limitations under the License.
 */
-use wasm::{validate, RuntimeInstance, DEFAULT_MODULE};
+use wasm::{hooks::EmptyHookSet, validate, RuntimeInstance, DEFAULT_MODULE};
 
 macro_rules! get_func {
     ($instance:ident, $func_name:expr) => {
@@ -42,8 +44,11 @@ fn memory_size_1() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut i = RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+        (),
+        &validation_info,
+    )
+    .expect("instantiation failed");
 
     let size = get_func!(i, "size");
     let grow = get_func!(i, "grow");
@@ -68,8 +73,11 @@ fn memory_size_2() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut i = RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+        (),
+        &validation_info,
+    )
+    .expect("instantiation failed");
 
     let size = get_func!(i, "size");
     let grow = get_func!(i, "grow");
@@ -94,8 +102,11 @@ fn memory_size_3() {
 "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut i = RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+        (),
+        &validation_info,
+    )
+    .expect("instantiation failed");
 
     let size = get_func!(i, "size");
     let grow = get_func!(i, "grow");
@@ -124,8 +135,11 @@ fn memory_size_4() {
 "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut i = RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+        (),
+        &validation_info,
+    )
+    .expect("instantiation failed");
 
     let size = get_func!(i, "size");
     let grow = get_func!(i, "grow");

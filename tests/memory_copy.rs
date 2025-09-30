@@ -1,3 +1,5 @@
+use std::convert::Infallible;
+
 /*
 # This file incorporates code from the WebAssembly testsuite, originally
 # available at https://github.com/WebAssembly/testsuite.
@@ -14,7 +16,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 */
-use wasm::{validate, RuntimeError, RuntimeInstance, TrapError, DEFAULT_MODULE};
+use wasm::{
+    hooks::EmptyHookSet, validate, RuntimeError, RuntimeInstance, TrapError, DEFAULT_MODULE,
+};
 
 macro_rules! get_func {
     ($instance:ident, $func_name:expr) => {
@@ -46,8 +50,11 @@ fn memory_copy_test_1() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut i = RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+        (),
+        &validation_info,
+    )
+    .expect("instantiation failed");
 
     let test = get_func!(i, "test");
     i.invoke_typed::<(), ()>(test, ()).unwrap();
@@ -78,8 +85,11 @@ fn memory_copy_test_2() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut i = RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+        (),
+        &validation_info,
+    )
+    .expect("instantiation failed");
 
     let test = get_func!(i, "test");
     i.invoke_typed::<(), ()>(test, ()).unwrap();
@@ -110,8 +120,11 @@ fn memory_copy_test_3() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut i = RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+        (),
+        &validation_info,
+    )
+    .expect("instantiation failed");
 
     let test = get_func!(i, "test");
     i.invoke_typed::<(), ()>(test, ()).unwrap();
@@ -146,8 +159,11 @@ fn memory_copy_test_4() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut i = RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+        (),
+        &validation_info,
+    )
+    .expect("instantiation failed");
 
     let test = get_func!(i, "test");
     i.invoke_typed::<(), ()>(test, ()).unwrap();
@@ -182,8 +198,11 @@ fn memory_copy_test_5() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut i = RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+        (),
+        &validation_info,
+    )
+    .expect("instantiation failed");
 
     let test = get_func!(i, "test");
     i.invoke_typed::<(), ()>(test, ()).unwrap();
@@ -217,13 +236,18 @@ fn memory_copy_test_6() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut i = RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+        (),
+        &validation_info,
+    )
+    .expect("instantiation failed");
 
     let run = get_func!(i, "run");
     let err = i.invoke_typed::<(i32, i32, i32), ()>(run, (65516, 0, 40));
     if err.is_err() {
-        assert!(err.unwrap_err() == RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds));
+        assert!(
+            err.unwrap_err() == RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds).into()
+        );
     }
 
     let load8_u = get_func!(i, "load8_u");
@@ -290,13 +314,18 @@ fn memory_copy_test_7() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut i = RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+        (),
+        &validation_info,
+    )
+    .expect("instantiation failed");
 
     let run = get_func!(i, "run");
     let err = i.invoke_typed::<(i32, i32, i32), ()>(run, (65515, 0, 39));
     if err.is_err() {
-        assert!(err.unwrap_err() == RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds));
+        assert!(
+            err.unwrap_err() == RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds).into()
+        );
     }
 
     let load8_u = get_func!(i, "load8_u");
@@ -363,13 +392,18 @@ fn memory_copy_test_8() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut i = RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+        (),
+        &validation_info,
+    )
+    .expect("instantiation failed");
 
     let run = get_func!(i, "run");
     let err = i.invoke_typed::<(i32, i32, i32), ()>(run, (65515, 0, 39));
     if err.is_err() {
-        assert!(err.unwrap_err() == RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds));
+        assert!(
+            err.unwrap_err() == RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds).into()
+        );
     }
 
     let load8_u = get_func!(i, "load8_u");
@@ -436,13 +470,18 @@ fn memory_copy_test_9() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut i = RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+        (),
+        &validation_info,
+    )
+    .expect("instantiation failed");
 
     let run = get_func!(i, "run");
     let err = i.invoke_typed::<(i32, i32, i32), ()>(run, (0, 65516, 40));
     if err.is_err() {
-        assert!(err.unwrap_err() == RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds));
+        assert!(
+            err.unwrap_err() == RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds).into()
+        );
     }
 
     let load8_u = get_func!(i, "load8_u");
@@ -510,13 +549,18 @@ fn memory_copy_test_10() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut i = RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+        (),
+        &validation_info,
+    )
+    .expect("instantiation failed");
 
     let run = get_func!(i, "run");
     let err = i.invoke_typed::<(i32, i32, i32), ()>(run, (0, 65515, 39));
     if err.is_err() {
-        assert!(err.unwrap_err() == RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds));
+        assert!(
+            err.unwrap_err() == RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds).into()
+        );
     }
 
     let load8_u = get_func!(i, "load8_u");
@@ -584,13 +628,18 @@ fn memory_copy_test_11() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut i = RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+        (),
+        &validation_info,
+    )
+    .expect("instantiation failed");
 
     let run = get_func!(i, "run");
     let err = i.invoke_typed::<(i32, i32, i32), ()>(run, (65516, 65486, 40));
     if err.is_err() {
-        assert!(err.unwrap_err() == RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds));
+        assert!(
+            err.unwrap_err() == RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds).into()
+        );
     }
 
     let load8_u = get_func!(i, "load8_u");
@@ -658,13 +707,18 @@ fn memory_copy_test_12() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut i = RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+        (),
+        &validation_info,
+    )
+    .expect("instantiation failed");
 
     let run = get_func!(i, "run");
     let err = i.invoke_typed::<(i32, i32, i32), ()>(run, (65486, 65516, 40));
     if err.is_err() {
-        assert!(err.unwrap_err() == RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds));
+        assert!(
+            err.unwrap_err() == RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds).into()
+        );
     }
 
     let load8_u = get_func!(i, "load8_u");
@@ -732,13 +786,18 @@ fn memory_copy_test_13() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut i = RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+        (),
+        &validation_info,
+    )
+    .expect("instantiation failed");
 
     let run = get_func!(i, "run");
     let err = i.invoke_typed::<(i32, i32, i32), ()>(run, (65516, 65506, 40));
     if err.is_err() {
-        assert!(err.unwrap_err() == RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds));
+        assert!(
+            err.unwrap_err() == RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds).into()
+        );
     }
 
     let load8_u = get_func!(i, "load8_u");
@@ -806,13 +865,18 @@ fn memory_copy_test_14() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut i = RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+        (),
+        &validation_info,
+    )
+    .expect("instantiation failed");
 
     let run = get_func!(i, "run");
     let err = i.invoke_typed::<(i32, i32, i32), ()>(run, (65506, 65516, 40));
     if err.is_err() {
-        assert!(err.unwrap_err() == RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds));
+        assert!(
+            err.unwrap_err() == RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds).into()
+        );
     }
 
     let load8_u = get_func!(i, "load8_u");
@@ -880,13 +944,18 @@ fn memory_copy_test_15() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut i = RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+        (),
+        &validation_info,
+    )
+    .expect("instantiation failed");
 
     let run = get_func!(i, "run");
     let err = i.invoke_typed::<(i32, i32, i32), ()>(run, (65516, 65516, 40));
     if err.is_err() {
-        assert!(err.unwrap_err() == RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds));
+        assert!(
+            err.unwrap_err() == RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds).into()
+        );
     }
 
     let load8_u = get_func!(i, "load8_u");
@@ -954,13 +1023,18 @@ fn memory_copy_test_16() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut i = RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+        (),
+        &validation_info,
+    )
+    .expect("instantiation failed");
 
     let run = get_func!(i, "run");
     let err = i.invoke_typed::<(i32, i32, i32), ()>(run, (0, 65516, 4294963200_u32 as i32));
     if err.is_err() {
-        assert!(err.unwrap_err() == RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds));
+        assert!(
+            err.unwrap_err() == RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds).into()
+        );
     }
 
     let load8_u = get_func!(i, "load8_u");
@@ -1028,13 +1102,18 @@ fn memory_copy_test_17() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut i = RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+        (),
+        &validation_info,
+    )
+    .expect("instantiation failed");
 
     let run = get_func!(i, "run");
     let err = i.invoke_typed::<(i32, i32, i32), ()>(run, (65516, 61440, 4294967040_u32 as i32));
     if err.is_err() {
-        assert!(err.unwrap_err() == RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds));
+        assert!(
+            err.unwrap_err() == RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds).into()
+        );
     }
 
     let load8_u = get_func!(i, "load8_u");

@@ -403,7 +403,7 @@ mod tests {
         assert_eq!(wasm_value.try_into(), err::<i64>());
         assert_eq!(wasm_value.try_into(), err::<f32>());
         assert_eq!(wasm_value.try_into(), err::<f64>());
-        assert_eq!(wasm_value.try_into(), ok::<RefFunc>(RUST_VALUE));
+        assert_eq!(wasm_value.try_into(), ok(RUST_VALUE));
         assert_eq!(wasm_value.try_into(), err::<RefExtern>());
     }
 
@@ -418,7 +418,7 @@ mod tests {
         assert_eq!(wasm_value.try_into(), err::<f32>());
         assert_eq!(wasm_value.try_into(), err::<f64>());
         assert_eq!(wasm_value.try_into(), err::<RefFunc>());
-        assert_eq!(wasm_value.try_into(), ok::<RefExtern>(RUST_VALUE));
+        assert_eq!(wasm_value.try_into(), ok(RUST_VALUE));
     }
 
     #[test]
@@ -426,7 +426,7 @@ mod tests {
         const RUST_VALUES: () = ();
         let wasm_values: Vec<Value> = RUST_VALUES.into_values();
         let roundtrip_rust_values = InteropValueList::try_from_values(wasm_values.into_iter());
-        assert_eq!(roundtrip_rust_values, Ok(RUST_VALUES));
+        assert_eq!(roundtrip_rust_values, ok(RUST_VALUES));
     }
 
     #[test]
@@ -434,7 +434,7 @@ mod tests {
         const RUST_VALUES: u32 = 5;
         let wasm_values: Vec<Value> = RUST_VALUES.into_values();
         let roundtrip_rust_values = InteropValueList::try_from_values(wasm_values.into_iter());
-        assert_eq!(roundtrip_rust_values, Ok(RUST_VALUES));
+        assert_eq!(roundtrip_rust_values, ok(RUST_VALUES));
     }
 
     #[test]
@@ -442,7 +442,7 @@ mod tests {
         const RUST_VALUES: (u32,) = (5,);
         let wasm_values: Vec<Value> = RUST_VALUES.into_values();
         let roundtrip_rust_values = InteropValueList::try_from_values(wasm_values.into_iter());
-        assert_eq!(roundtrip_rust_values, Ok(RUST_VALUES));
+        assert_eq!(roundtrip_rust_values, ok(RUST_VALUES));
     }
 
     #[test]
@@ -450,7 +450,7 @@ mod tests {
         const RUST_VALUES: (f32, RefFunc) = (3.0, RefFunc(Some(FuncAddr(7))));
         let wasm_values: Vec<Value> = RUST_VALUES.into_values();
         let roundtrip_rust_values = InteropValueList::try_from_values(wasm_values.into_iter());
-        assert_eq!(roundtrip_rust_values, Ok(RUST_VALUES));
+        assert_eq!(roundtrip_rust_values, ok(RUST_VALUES));
     }
 
     #[test]
@@ -459,7 +459,7 @@ mod tests {
             (RefExtern(Some(ExternAddr(123))), 8472846, -61864);
         let wasm_values: Vec<Value> = RUST_VALUES.into_values();
         let roundtrip_rust_values = InteropValueList::try_from_values(wasm_values.into_iter());
-        assert_eq!(roundtrip_rust_values, Ok(RUST_VALUES))
+        assert_eq!(roundtrip_rust_values, ok(RUST_VALUES))
     }
 
     #[test]

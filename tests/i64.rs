@@ -1,3 +1,5 @@
+use std::convert::Infallible;
+
 /*
 # This file incorporates code from the WebAssembly testsuite, originally
 # available at https://github.com/WebAssembly/testsuite.
@@ -14,7 +16,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 */
-use wasm::{validate, RuntimeInstance};
+use wasm::{hooks::EmptyHookSet, validate, RuntimeInstance};
 
 const WAT: &str = r#"
       (module
@@ -41,7 +43,11 @@ pub fn i64_eqz_panic() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -68,7 +74,11 @@ pub fn i64_eqz() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -129,7 +139,11 @@ pub fn i64_eq_panic_first_arg() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -157,7 +171,11 @@ pub fn i64_eq_panic_second_arg() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -174,7 +192,11 @@ pub fn i64_eq() {
     let wat = String::from(WAT).replace("{{0}}", "eq");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -311,7 +333,11 @@ pub fn i64_ne() {
     let wat = String::from(WAT).replace("{{0}}", "ne");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -448,7 +474,11 @@ pub fn i64_lt_s() {
     let wat = String::from(WAT).replace("{{0}}", "lt_s");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -585,7 +615,11 @@ pub fn i64_lt_u() {
     let wat = String::from(WAT).replace("{{0}}", "lt_u");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -722,7 +756,11 @@ pub fn i64_gt_s() {
     let wat = String::from(WAT).replace("{{0}}", "gt_s");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -859,7 +897,11 @@ pub fn i64_gt_u() {
     let wat = String::from(WAT).replace("{{0}}", "gt_u");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -996,7 +1038,11 @@ pub fn i64_le_s() {
     let wat = String::from(WAT).replace("{{0}}", "le_s");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -1134,7 +1180,11 @@ pub fn i64_le_u() {
     let wat = String::from(WAT).replace("{{0}}", "le_u");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -1271,7 +1321,11 @@ pub fn i64_ge_s() {
     let wat = String::from(WAT).replace("{{0}}", "ge_s");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -1408,7 +1462,11 @@ pub fn i64_ge_u() {
     let wat = String::from(WAT).replace("{{0}}", "ge_u");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(

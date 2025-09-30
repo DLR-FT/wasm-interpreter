@@ -1,3 +1,6 @@
+use std::convert::Infallible;
+
+use wasm::hooks::EmptyHookSet;
 use wasm::{validate, RuntimeInstance, TrapError};
 use wasm::{RuntimeError, DEFAULT_MODULE};
 
@@ -28,7 +31,11 @@ pub fn i32_division_signed_simple() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -152,7 +159,11 @@ pub fn i32_division_signed_panic_dividend_0() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     let result = instance.invoke_typed::<(i32, i32), i32>(
@@ -164,7 +175,7 @@ pub fn i32_division_signed_panic_dividend_0() {
 
     assert_eq!(
         result.unwrap_err(),
-        RuntimeError::Trap(TrapError::DivideBy0)
+        RuntimeError::Trap(TrapError::DivideBy0).into()
     );
 }
 
@@ -177,7 +188,11 @@ pub fn i32_division_signed_panic_result_unrepresentable() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     let result = instance.invoke_typed::<(i32, i32), i32>(
@@ -189,7 +204,7 @@ pub fn i32_division_signed_panic_result_unrepresentable() {
 
     assert_eq!(
         result.unwrap_err(),
-        RuntimeError::Trap(TrapError::UnrepresentableResult)
+        RuntimeError::Trap(TrapError::UnrepresentableResult).into()
     );
 }
 
@@ -202,7 +217,11 @@ pub fn i32_division_unsigned_simple() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -305,7 +324,11 @@ pub fn i32_division_unsigned_panic_dividend_0() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     let result = instance.invoke_typed::<(i32, i32), i32>(
@@ -317,7 +340,7 @@ pub fn i32_division_unsigned_panic_dividend_0() {
 
     assert_eq!(
         result.unwrap_err(),
-        RuntimeError::Trap(TrapError::DivideBy0)
+        RuntimeError::Trap(TrapError::DivideBy0).into()
     );
 }
 
@@ -330,7 +353,11 @@ pub fn i64_division_signed_simple() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(

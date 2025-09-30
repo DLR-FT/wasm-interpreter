@@ -1,3 +1,5 @@
+use std::convert::Infallible;
+
 /*
 # This file incorporates code from the WebAssembly testsuite, originally
 # available at https://github.com/WebAssembly/testsuite.
@@ -14,7 +16,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 */
-use wasm::{validate, RuntimeError, RuntimeInstance, TrapError, DEFAULT_MODULE};
+use wasm::{
+    error::RuntimeOrHostError, hooks::EmptyHookSet, validate, RuntimeError, RuntimeInstance,
+    TrapError, DEFAULT_MODULE,
+};
 
 macro_rules! get_func {
     ($instance:ident, $func_name:expr) => {
@@ -64,23 +69,26 @@ fn memory_trap_1() {
 "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut i = RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+        (),
+        &validation_info,
+    )
+    .expect("instantiation failed");
 
     let store = get_func!(i, "store");
     let load = get_func!(i, "load");
 
     assert_result!(i, store, (-4, 42), ());
     assert_result!(i, load, -4, 42);
-    assert_error!(i, store, (-3, 0x12345678), Result<(), RuntimeError>, (i32, i32), (), RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds));
-    assert_error!(i, load, -3, Result<i32, RuntimeError>, i32, i32, RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds));
-    assert_error!(i, store, (-2, 13), Result<(), RuntimeError>, (i32, i32), (), RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds));
-    assert_error!(i, load, -2, Result<i32, RuntimeError>, i32, i32, RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds));
-    assert_error!(i, store, (-1, 13), Result<(), RuntimeError>, (i32, i32), (), RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds));
-    assert_error!(i, load, -1, Result<i32, RuntimeError>, i32, i32, RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds));
-    assert_error!(i, store, (0, 13), Result<(), RuntimeError>, (i32, i32), (), RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds));
-    assert_error!(i, load, 0, Result<i32, RuntimeError>, i32, i32, RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds));
-    assert_error!(i, store, (0x80000000_u32 as i32, 13), Result<(), RuntimeError>, (i32, i32), (), RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds));
-    assert_error!(i, load, 0x80000000_u32 as i32, Result<i32, RuntimeError>, i32, i32, RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds));
+    assert_error!(i, store, (-3, 0x12345678), Result<(), RuntimeOrHostError<Infallible>>, (i32, i32), (), RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds).into());
+    assert_error!(i, load, -3, Result<i32, RuntimeOrHostError<Infallible>>, i32, i32, RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds).into());
+    assert_error!(i, store, (-2, 13), Result<(), RuntimeOrHostError<Infallible>>, (i32, i32), (), RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds).into());
+    assert_error!(i, load, -2, Result<i32, RuntimeOrHostError<Infallible>>, i32, i32, RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds).into());
+    assert_error!(i, store, (-1, 13), Result<(), RuntimeOrHostError<Infallible>>, (i32, i32), (), RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds).into());
+    assert_error!(i, load, -1, Result<i32, RuntimeOrHostError<Infallible>>, i32, i32, RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds).into());
+    assert_error!(i, store, (0, 13), Result<(), RuntimeOrHostError<Infallible>>, (i32, i32), (), RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds).into());
+    assert_error!(i, load, 0, Result<i32, RuntimeOrHostError<Infallible>>, i32, i32, RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds).into());
+    assert_error!(i, store, (0x80000000_u32 as i32, 13), Result<(), RuntimeOrHostError<Infallible>>, (i32, i32), (), RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds).into());
+    assert_error!(i, load, 0x80000000_u32 as i32, Result<i32, RuntimeOrHostError<Infallible>>, i32, i32, RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds).into());
     assert_result!(i, get_func!(i, "memory.grow"), 0x10001, -1);
 }
