@@ -386,18 +386,30 @@ impl Value {
     }
 }
 
+/// An error used in all [`TryFrom<Value>`] implementations for Rust types ([`i32`], [`F32`], [`Ref`], ...)
+#[derive(Debug, PartialEq, Eq)]
+pub struct ValueTypeMismatchError;
+
+impl Display for ValueTypeMismatchError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.write_str("failed to convert Value to a Rust value because the types did not match")
+    }
+}
+
+impl core::error::Error for ValueTypeMismatchError {}
+
 impl From<u32> for Value {
     fn from(x: u32) -> Self {
         Value::I32(x)
     }
 }
 impl TryFrom<Value> for u32 {
-    type Error = ();
+    type Error = ValueTypeMismatchError;
 
     fn try_from(value: Value) -> Result<Self, Self::Error> {
         match value {
             Value::I32(x) => Ok(x),
-            _ => Err(()),
+            _ => Err(ValueTypeMismatchError),
         }
     }
 }
@@ -408,12 +420,12 @@ impl From<i32> for Value {
     }
 }
 impl TryFrom<Value> for i32 {
-    type Error = ();
+    type Error = ValueTypeMismatchError;
 
     fn try_from(value: Value) -> Result<Self, Self::Error> {
         match value {
             Value::I32(x) => Ok(x as i32),
-            _ => Err(()),
+            _ => Err(ValueTypeMismatchError),
         }
     }
 }
@@ -424,12 +436,12 @@ impl From<u64> for Value {
     }
 }
 impl TryFrom<Value> for u64 {
-    type Error = ();
+    type Error = ValueTypeMismatchError;
 
     fn try_from(value: Value) -> Result<Self, Self::Error> {
         match value {
             Value::I64(x) => Ok(x),
-            _ => Err(()),
+            _ => Err(ValueTypeMismatchError),
         }
     }
 }
@@ -439,12 +451,12 @@ impl From<i64> for Value {
     }
 }
 impl TryFrom<Value> for i64 {
-    type Error = ();
+    type Error = ValueTypeMismatchError;
 
     fn try_from(value: Value) -> Result<Self, Self::Error> {
         match value {
             Value::I64(x) => Ok(x as i64),
-            _ => Err(()),
+            _ => Err(ValueTypeMismatchError),
         }
     }
 }
@@ -455,12 +467,12 @@ impl From<F32> for Value {
     }
 }
 impl TryFrom<Value> for F32 {
-    type Error = ();
+    type Error = ValueTypeMismatchError;
 
     fn try_from(value: Value) -> Result<Self, Self::Error> {
         match value {
             Value::F32(x) => Ok(x),
-            _ => Err(()),
+            _ => Err(ValueTypeMismatchError),
         }
     }
 }
@@ -471,12 +483,12 @@ impl From<F64> for Value {
     }
 }
 impl TryFrom<Value> for F64 {
-    type Error = ();
+    type Error = ValueTypeMismatchError;
 
     fn try_from(value: Value) -> Result<Self, Self::Error> {
         match value {
             Value::F64(x) => Ok(x),
-            _ => Err(()),
+            _ => Err(ValueTypeMismatchError),
         }
     }
 }
@@ -488,12 +500,12 @@ impl From<Ref> for Value {
 }
 
 impl TryFrom<Value> for Ref {
-    type Error = ();
+    type Error = ValueTypeMismatchError;
 
-    fn try_from(value: Value) -> Result<Self, ()> {
+    fn try_from(value: Value) -> Result<Self, Self::Error> {
         match value {
             Value::Ref(rref) => Ok(rref),
-            _ => Err(()),
+            _ => Err(ValueTypeMismatchError),
         }
     }
 }
