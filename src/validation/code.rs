@@ -424,8 +424,11 @@ fn read_instructions(
             }
             // call [t1*] -> [t2*]
             CALL => {
-                let func_to_call_idx = wasm.read_var_u32()? as FuncIdx;
-                let func_ty = &fn_types[type_idx_of_fn[func_to_call_idx]];
+                let func_idx = wasm.read_var_u32()? as FuncIdx;
+                let type_idx = *type_idx_of_fn
+                    .get(func_idx)
+                    .ok_or(ValidationError::FunctionIsNotDefined(func_idx))?;
+                let func_ty = &fn_types[type_idx];
 
                 for typ in func_ty.params.valtypes.iter().rev() {
                     stack.assert_pop_val_type(*typ)?;
@@ -440,11 +443,9 @@ fn read_instructions(
 
                 let table_idx = wasm.read_var_u32()? as TableIdx;
 
-                if tables.len() <= table_idx {
-                    return Err(ValidationError::TableIsNotDefined(table_idx));
-                }
-
-                let tab = &tables[table_idx];
+                let tab = tables
+                    .get(table_idx)
+                    .ok_or(ValidationError::TableIsNotDefined(table_idx))?;
 
                 if tab.et != RefType::FuncRef {
                     return Err(ValidationError::WrongRefTypeForInteropValue(
@@ -453,11 +454,9 @@ fn read_instructions(
                     ));
                 }
 
-                if type_idx >= fn_types.len() {
-                    return Err(ValidationError::InvalidTypeIdx(type_idx));
-                }
-
-                let func_ty = &fn_types[type_idx];
+                let func_ty = fn_types
+                    .get(type_idx)
+                    .ok_or(ValidationError::InvalidTypeIdx(type_idx))?;
 
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
 
