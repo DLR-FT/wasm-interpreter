@@ -72,6 +72,8 @@ pub enum ValidationError {
     DuplicateExportName,
     UnsupportedMultipleMemoriesProposal,
     ExprHasTrailingInstructions,
+    FunctionAndCodeSectionsHaveDifferentLengths,
+    DataCountAndDataSectionsLengthAreDifferent,
 }
 
 impl Display for ValidationError {
@@ -217,6 +219,8 @@ impl Display for ValidationError {
             ValidationError::DuplicateExportName => f.write_str("Duplicate export name"),
             ValidationError::UnsupportedMultipleMemoriesProposal => f.write_str("Proposal for multiple memories is not yet supported"),
             ValidationError::ExprHasTrailingInstructions => f.write_str("A code expression has invalid trailing instructions"),
+            ValidationError::FunctionAndCodeSectionsHaveDifferentLengths => f.write_str("The function and code sections have different lengths"),
+            ValidationError::DataCountAndDataSectionsLengthAreDifferent => f.write_str("The data count section specifies a different length than there are actual segments in the data section."),
         }
     }
 }

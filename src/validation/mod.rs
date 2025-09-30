@@ -401,11 +401,9 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
     })?
     .unwrap_or_default();
 
-    assert_eq!(
-        func_blocks_stps.len(),
-        local_functions.len(),
-        "these should be equal"
-    ); // TODO check if this is in the spec
+    if func_blocks_stps.len() != local_functions.len() {
+        return Err(ValidationError::FunctionAndCodeSectionsHaveDifferentLengths);
+    }
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
@@ -422,8 +420,10 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
     .unwrap_or_default();
 
     // https://webassembly.github.io/spec/core/binary/modules.html#data-count-section
-    if data_count.is_some() {
-        assert_eq!(data_count.unwrap() as usize, data_section.len());
+    if let (Some(data_count), data_len) = (data_count, data_section.len()) {
+        if data_count as usize != data_len {
+            return Err(ValidationError::DataCountAndDataSectionsLengthAreDifferent);
+        }
     }
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}

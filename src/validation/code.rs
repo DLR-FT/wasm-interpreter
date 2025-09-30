@@ -36,7 +36,9 @@ pub fn validate_code_section(
         // We need to offset the index by the number of functions that were
         // imported. Imported functions always live at the start of the index
         // space.
-        let ty_idx = type_idx_of_fn[idx + num_imported_funcs];
+        let ty_idx = *type_idx_of_fn
+            .get(idx + num_imported_funcs)
+            .ok_or(ValidationError::FunctionAndCodeSectionsHaveDifferentLengths)?;
         let func_ty = fn_types[ty_idx].clone();
 
         let func_size = wasm.read_var_u32()?;
