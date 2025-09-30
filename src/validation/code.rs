@@ -454,7 +454,7 @@ fn read_instructions(
                 }
 
                 if type_idx >= fn_types.len() {
-                    return Err(ValidationError::FunctionTypeIsNotDefined(type_idx));
+                    return Err(ValidationError::InvalidTypeIdx(type_idx));
                 }
 
                 let func_ty = &fn_types[type_idx];
