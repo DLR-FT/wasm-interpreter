@@ -43,6 +43,18 @@ impl<HostError: Clone> Clone for RuntimeOrHostError<HostError> {
     }
 }
 
+impl<HostError: PartialEq> PartialEq for RuntimeOrHostError<HostError> {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Runtime(a), Self::Runtime(b)) => a == b,
+            (Self::Host(a), Self::Host(b)) => a == b,
+            _ => false,
+        }
+    }
+}
+
+impl<HostError: Eq> Eq for RuntimeOrHostError<HostError> {}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum RuntimeError {
     Trap(TrapError),
