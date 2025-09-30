@@ -286,9 +286,16 @@ impl ValidationStack {
         label_idx: usize,
         unify_to_expected_types: bool,
     ) -> Result<(), ValidationError> {
-        let label_types = self
+        let index_of_label_in_ctrl_stack = self
             .ctrl_stack
-            .get(self.ctrl_stack.len() - label_idx - 1)
+            .len()
+            .checked_sub(label_idx)
+            .and_then(|i| i.checked_sub(1));
+
+        let label_types = index_of_label_in_ctrl_stack
+            .and_then(|index_of_label_in_ctrl_stack| {
+                self.ctrl_stack.get(index_of_label_in_ctrl_stack)
+            })
             .ok_or(ValidationError::InvalidLabelIdx(label_idx))?
             .label_types();
         ValidationStack::assert_val_types_on_top_with_custom_stacks(

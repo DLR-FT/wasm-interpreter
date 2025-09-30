@@ -129,23 +129,23 @@ fn validate_branch_and_generate_sidetable_entry(
     sidetable: &mut Sidetable,
     unify_to_expected_types: bool,
 ) -> Result<(), ValidationError> {
-    let ctrl_stack_len = stack.ctrl_stack.len();
-
     stack.assert_val_types_of_label_jump_types_on_top(label_idx, unify_to_expected_types)?;
 
-    let targeted_ctrl_block_entry = stack
+    // Get stack length before we mutably borrow the label's `CtrlStackEntry`.
+    let stack_len = stack.len();
+
+    let index_of_label_in_ctrl_stack = stack
         .ctrl_stack
-        .get(ctrl_stack_len - label_idx - 1)
+        .len()
+        .checked_sub(label_idx)
+        .and_then(|i| i.checked_sub(1));
+
+    let targeted_ctrl_block_entry = index_of_label_in_ctrl_stack
+        .and_then(|idx| stack.ctrl_stack.get_mut(idx))
         .ok_or(ValidationError::InvalidLabelIdx(label_idx))?;
 
     let valcnt = targeted_ctrl_block_entry.label_types().len();
-    let popcnt = stack.len() - targeted_ctrl_block_entry.height - valcnt;
-
-    let label_info = &mut stack
-        .ctrl_stack
-        .get_mut(ctrl_stack_len - label_idx - 1)
-        .unwrap()
-        .label_info;
+    let popcnt = stack_len - targeted_ctrl_block_entry.height - valcnt;
 
     // Now we generate the actual sidetable entry.
     //
@@ -165,7 +165,7 @@ fn validate_branch_and_generate_sidetable_entry(
         valcnt,
     });
 
-    match label_info {
+    match &mut targeted_ctrl_block_entry.label_info {
         LabelInfo::Block { stps_to_backpatch } => stps_to_backpatch.push(stp_here),
         LabelInfo::Loop { ip, stp } => {
             //we already know where to jump to for loops
