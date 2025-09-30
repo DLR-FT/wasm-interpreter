@@ -4,8 +4,9 @@ use criterion::{
     criterion_group, criterion_main, AxisScale, BenchmarkId, Criterion, PlotConfiguration,
     Throughput,
 };
+use std::convert::Infallible;
 
-use wasm::{validate, RuntimeInstance};
+use wasm::{hooks::EmptyHookSet, validate, RuntimeInstance};
 
 macro_rules! bench_wasm {
     {
@@ -48,7 +49,7 @@ macro_rules! bench_wasm {
 
             // Our interpreter
             let our_validation_info = validate(&wasm_bytes).unwrap();
-            let mut our_instance = RuntimeInstance::new_with_default_module((), &our_validation_info).unwrap();
+            let mut our_instance = RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module((), &our_validation_info).unwrap();
             let our_fn = our_instance
                 .get_function_by_name(wasm::DEFAULT_MODULE, $entry_function)
                 .unwrap();
