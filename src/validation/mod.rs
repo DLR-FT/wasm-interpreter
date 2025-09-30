@@ -187,7 +187,22 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
     let imports = handle_section(&mut wasm, &mut header, SectionTy::Import, |wasm, _| {
-        wasm.read_vec(Import::read)
+        wasm.read_vec(|wasm| {
+            let import = Import::read(wasm)?;
+
+            match import.desc {
+                ImportDesc::Func(type_idx) => {
+                    types
+                        .get(type_idx)
+                        .ok_or(ValidationError::InvalidTypeIdx(type_idx))?;
+                }
+                ImportDesc::Table(_table_type) => {}
+                ImportDesc::Mem(_mem_type) => {}
+                ImportDesc::Global(_global_type) => {}
+            }
+
+            Ok(import)
+        })
     })?
     .unwrap_or_default();
     let imports_length = get_imports_length(&imports);
@@ -202,7 +217,13 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
     // only after that do the local functions get assigned their indices.
     let local_functions =
         handle_section(&mut wasm, &mut header, SectionTy::Function, |wasm, _| {
-            wasm.read_vec(|wasm| wasm.read_var_u32().map(|u| u as usize))
+            wasm.read_vec(|wasm| {
+                let type_idx = wasm.read_var_u32()? as usize;
+                types
+                    .get(type_idx)
+                    .ok_or(ValidationError::InvalidTypeIdx(type_idx))?;
+                Ok(type_idx)
+            })
         })?
         .unwrap_or_default();
 
