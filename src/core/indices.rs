@@ -1,3 +1,6 @@
+/// This module defines index types for each Wasm index space class that exists.
+
+
 // /// This macro defines index types. Currently (2024-06-10) all indices are [`u32`].
 // /// See <https://webassembly.github.io/spec/core/binary/modules.html#indices> for more information.
 // macro_rules! def_idx_types {
@@ -15,7 +18,11 @@
 // TODO check whether is is clever to internally use usize instead of u32; potential problems are:
 // - unsound on architectures where `usize` < `u32`
 // - wasteful in memory on architectures where `usize` > `u32`
+
+/// An index for a `functype` that is defined in the type section of the current Wasm module.
 pub type TypeIdx = usize;
+/// An index for a `func` (function)
+/// Spec: v2.0 - 2.5.1 - funcidx
 pub type FuncIdx = usize;
 pub type TableIdx = usize;
 pub type MemIdx = usize;

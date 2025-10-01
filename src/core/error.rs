@@ -18,6 +18,19 @@ pub enum ValidationError {
     InvalidVersion,
     MalformedUtf8String(Utf8Error),
     Eof,
+
+    // / An index for a type is invalid.
+    // InvalidTypeIdx(TypeIdx),
+    // / An index for a function is invalid.
+    // InvalidFuncIdx(FuncIdx),
+    // InvalidTableIdx(TableIdx),
+    // InvalidMemIdx(MemIdx),
+    // InvalidGlobalIdx(GlobalIdx),
+    // InvalidElemIdx(ElemIdx),
+    // InvalidDataIdx(DataIdx),
+    // InvalidLocalIdx(LocalIdx),
+    // InvalidLabelIdx(LabelIdx),
+
     InvalidSection(SectionTy, String),
     InvalidSectionType(u8),
     SectionOutOfOrder(SectionTy),
