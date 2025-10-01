@@ -593,7 +593,7 @@ impl<'b, T> Store<'b, T> {
                     current_func_addr: func_addr,
                     stack,
                     pc: wasm_func_inst.code_expr.from,
-                    stp: wasm_func_inst.stp,
+                    stp: wasm_func_inst.stp + 1, // skip dummy sidetable entry at the beginning of the func
                     maybe_fuel,
                 };
 
