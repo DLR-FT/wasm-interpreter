@@ -95,6 +95,7 @@ pub(super) fn run<T, H: HookSet>(
                 // There might be multiple ENDs in a single function. We want to
                 // exit only when the outermost block (aka function block) ends.
                 if wasm.pc != current_function_end_marker {
+                    stp += 1;
                     continue;
                 }
 

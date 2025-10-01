@@ -384,7 +384,15 @@ fn read_instructions(
                 // https://webassembly.github.io/spec/core/appendix/algorithm.html
                 // therefore types on the stack might change.
                 let (label_info, block_ty) = stack.assert_pop_ctrl(true)?;
-                let stp_here = sidetable.len();
+                let stp_here = sidetable.len() + 1;
+
+                // dummy sidetable entry for every end instr
+                sidetable.push(SidetableEntry {
+                    delta_pc: 0,
+                    delta_stp: 0,
+                    valcnt: 0,
+                    popcnt: 0,
+                });
 
                 match label_info {
                     LabelInfo::Block { stps_to_backpatch } => {
