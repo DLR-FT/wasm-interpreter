@@ -1,7 +1,4 @@
-use std::{
-    borrow::Cow,
-    fmt::{Display, Write},
-};
+use std::{borrow::Cow, fmt::Display};
 
 use anyhow::{bail, ensure};
 use itertools::Itertools;
@@ -109,7 +106,7 @@ fn generate_file_delta_type<'r>(
                 error,
                 context,
                 line_number,
-                command: _,
+                _command: _,
             }),
             Some(Assert { results }),
         ) => Some(FileDeltaType::ScriptErrorResolved {
@@ -169,7 +166,7 @@ fn generate_file_delta_assert<'r>(
                 new_error: None,
             } => now_passing.push(NowPassingAssert {
                 line_number: *line_number,
-                command,
+                _command: command,
                 previous_error: old_error,
             }),
             OldNewAssertPair {
@@ -180,7 +177,7 @@ fn generate_file_delta_assert<'r>(
             } => {
                 now_failing.push(NowFailingAssert {
                     line_number: *line_number,
-                    command,
+                    _command: command,
                     new_error,
                 });
             }
@@ -192,7 +189,7 @@ fn generate_file_delta_assert<'r>(
             } if old_error != new_error => {
                 now_with_different_error_message.push(NowDifferentErrorAssert {
                     line_number: *line_number,
-                    command,
+                    _command: command,
                     old_error,
                     new_error,
                 })
@@ -327,19 +324,19 @@ impl Display for FileDeltaTypeIcon {
 
 struct NowPassingAssert<'report> {
     line_number: u32,
-    command: &'report str,
+    _command: &'report str,
     previous_error: &'report str,
 }
 
 struct NowFailingAssert<'report> {
     line_number: u32,
-    command: &'report str,
+    _command: &'report str,
     new_error: &'report str,
 }
 
 struct NowDifferentErrorAssert<'report> {
     line_number: u32,
-    command: &'report str,
+    _command: &'report str,
     old_error: &'report str,
     new_error: &'report str,
 }

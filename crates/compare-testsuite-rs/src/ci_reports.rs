@@ -21,7 +21,7 @@ pub enum CIReportData {
         error: String,
         context: String,
         line_number: Option<u32>,
-        command: Option<String>,
+        _command: Option<String>,
     },
 }
 
