@@ -241,6 +241,9 @@ pub(super) fn run<T, H: HookSet>(
                         current_sidetable = &store.modules[current_module_idx].sidetable;
                         current_function_end_marker = wasm_func_to_call_inst.code_expr.from()
                             + wasm_func_to_call_inst.code_expr.len();
+
+                        // skip dummy sidetable entry at the beginning of the func
+                        stp += 1;
                     }
                 }
                 trace!("Instruction: CALL");
@@ -330,6 +333,9 @@ pub(super) fn run<T, H: HookSet>(
                         current_sidetable = &store.modules[current_module_idx].sidetable;
                         current_function_end_marker = wasm_func_to_call_inst.code_expr.from()
                             + wasm_func_to_call_inst.code_expr.len();
+
+                        // skip dummy sidetable entry at the beginning of the func
+                        stp += 1;
                     }
                 }
                 trace!("Instruction: CALL_INDIRECT");
