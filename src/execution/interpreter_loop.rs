@@ -177,8 +177,13 @@ pub(super) fn run<T, H: HookSet>(
                 wasm.read_var_u32().unwrap_validated();
                 do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable)?;
             }
-            BLOCK | LOOP => {
+            BLOCK => {
                 BlockType::read(wasm).unwrap_validated();
+            }
+            LOOP => {
+                // dummy sidetable entry at every loop
+                BlockType::read(wasm).unwrap_validated();
+                stp += 1;
             }
             RETURN => {
                 //same as BR, except no need to skip n of BR n

@@ -239,8 +239,17 @@ fn read_instructions(
                 let block_ty = BlockType::read(wasm)?.as_func_type(fn_types)?;
                 let label_info = LabelInfo::Loop {
                     ip: wasm.pc,
-                    stp: sidetable.len(),
+                    stp: sidetable.len() + 1,
                 };
+
+                // dummy sidetable entry for every loop
+                sidetable.push(SidetableEntry {
+                    delta_pc: 0,
+                    delta_stp: 0,
+                    valcnt: 0,
+                    popcnt: 0,
+                });
+
                 // The types are explicitly popped and pushed in
                 // https://webassembly.github.io/spec/core/appendix/algorithm.html
                 // therefore types on the stack might change.
