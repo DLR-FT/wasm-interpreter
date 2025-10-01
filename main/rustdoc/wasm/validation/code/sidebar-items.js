@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["generate_unbackpatched_sidetable_entry","read_declared_locals","read_instructions","validate_code_section","validate_intrablock_jump_and_generate_sidetable_entry"]};
+window.SIDEBAR_ITEMS = {"fn":["read_declared_locals","read_instructions","validate_branch_and_generate_sidetable_entry","validate_code_section"]};
