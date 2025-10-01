@@ -55,5 +55,4 @@ thiserror = "2.0"
 log.workspace = true
 
 [features]
-default = ["hooks", "log_wrapper/log"]
-hooks = []
+default = ["log_wrapper/log"]

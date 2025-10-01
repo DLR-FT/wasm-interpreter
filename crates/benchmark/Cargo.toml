@@ -9,7 +9,7 @@ criterion = { version = "0.5.1", default-features = false, features = [
   "cargo_bench_support",
   "plotters",
 ] }
-wasm-interpreter = { path = "../.." }
+wasm-interpreter = { path = "../..", default-features = false }
 wasmi = "0.40.0"
 wasmtime = { version = "27.0.0", default-features = false, features = [
   "runtime",
@@ -26,8 +26,4 @@ wasmtime = []
 
 [[bench]]
 name = "general_purpose"
-harness = false
-
-[[bench]]
-name = "hook_performance_impact"
 harness = false
