@@ -54,6 +54,14 @@ pub fn validate_code_section(
         let mut stack = ValidationStack::new_for_func(func_ty);
         let stp = sidetable.len();
 
+        // dummy sidetable entry at the beginning of the func
+        sidetable.push(SidetableEntry {
+            delta_pc: 0,
+            delta_stp: 0,
+            valcnt: 0,
+            popcnt: 0,
+        });
+
         read_instructions(
             wasm,
             &mut stack,
