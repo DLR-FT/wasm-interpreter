@@ -77,17 +77,6 @@ pub(super) fn run<T, H: HookSet>(
             opcode_byte_to_str(first_instr_byte)
         );
 
-        // Fuel mechanism: 1 fuel per instruction
-        if let Some(fuel) = &mut maybe_fuel {
-            *fuel = fuel.checked_sub(1).ok_or_else(|| {
-                resumable.current_func_addr = current_func_addr;
-                resumable.pc = wasm.pc - 1;
-                resumable.stp = stp;
-
-                RuntimeError::OutOfFuel
-            })?;
-        }
-
         match first_instr_byte {
             NOP => {
                 trace!("Instruction: NOP");
@@ -96,6 +85,8 @@ pub(super) fn run<T, H: HookSet>(
                 // There might be multiple ENDs in a single function. We want to
                 // exit only when the outermost block (aka function block) ends.
                 if wasm.pc != current_function_end_marker {
+                    spend_basic_block_cost(&mut maybe_fuel, current_sidetable, stp)?;
+                    stp += 1;
                     continue;
                 }
 
@@ -134,14 +125,27 @@ pub(super) fn run<T, H: HookSet>(
                 let test_val: i32 = stack.pop_value().try_into().unwrap_validated();
 
                 if test_val != 0 {
+                    spend_basic_block_cost(&mut maybe_fuel, current_sidetable, stp)?;
                     stp += 1;
                 } else {
-                    do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable)?;
+                    do_sidetable_control_transfer(
+                        wasm,
+                        stack,
+                        &mut stp,
+                        current_sidetable,
+                        &mut maybe_fuel,
+                    )?;
                 }
                 trace!("Instruction: IF");
             }
             ELSE => {
-                do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable)?;
+                do_sidetable_control_transfer(
+                    wasm,
+                    stack,
+                    &mut stp,
+                    current_sidetable,
+                    &mut maybe_fuel,
+                )?;
             }
             BR_IF => {
                 wasm.read_var_u32().unwrap_validated();
@@ -149,8 +153,15 @@ pub(super) fn run<T, H: HookSet>(
                 let test_val: i32 = stack.pop_value().try_into().unwrap_validated();
 
                 if test_val != 0 {
-                    do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable)?;
+                    do_sidetable_control_transfer(
+                        wasm,
+                        stack,
+                        &mut stp,
+                        current_sidetable,
+                        &mut maybe_fuel,
+                    )?;
                 } else {
+                    spend_basic_block_cost(&mut maybe_fuel, current_sidetable, stp)?;
                     stp += 1;
                 }
                 trace!("Instruction: BR_IF");
@@ -171,19 +182,43 @@ pub(super) fn run<T, H: HookSet>(
                     stp += case_val;
                 }
 
-                do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable)?;
+                do_sidetable_control_transfer(
+                    wasm,
+                    stack,
+                    &mut stp,
+                    current_sidetable,
+                    &mut maybe_fuel,
+                )?;
             }
             BR => {
                 //skip n of BR n
                 wasm.read_var_u32().unwrap_validated();
-                do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable)?;
+                do_sidetable_control_transfer(
+                    wasm,
+                    stack,
+                    &mut stp,
+                    current_sidetable,
+                    &mut maybe_fuel,
+                )?;
             }
-            BLOCK | LOOP => {
+            BLOCK => {
                 BlockType::read(wasm).unwrap_validated();
+            }
+            LOOP => {
+                // dummy sidetable entry at every loop
+                BlockType::read(wasm).unwrap_validated();
+                spend_basic_block_cost(&mut maybe_fuel, current_sidetable, stp)?;
+                stp += 1;
             }
             RETURN => {
                 //same as BR, except no need to skip n of BR n
-                do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable)?;
+                do_sidetable_control_transfer(
+                    wasm,
+                    stack,
+                    &mut stp,
+                    current_sidetable,
+                    &mut maybe_fuel,
+                )?;
             }
             CALL => {
                 let local_func_idx = wasm.read_var_u32().unwrap_validated() as FuncIdx;
@@ -241,6 +276,9 @@ pub(super) fn run<T, H: HookSet>(
                         current_sidetable = &store.modules[current_module_idx].sidetable;
                         current_function_end_marker = wasm_func_to_call_inst.code_expr.from()
                             + wasm_func_to_call_inst.code_expr.len();
+
+                        spend_basic_block_cost(&mut maybe_fuel, current_sidetable, stp)?;
+                        stp += 1;
                     }
                 }
                 trace!("Instruction: CALL");
@@ -330,6 +368,9 @@ pub(super) fn run<T, H: HookSet>(
                         current_sidetable = &store.modules[current_module_idx].sidetable;
                         current_function_end_marker = wasm_func_to_call_inst.code_expr.from()
                             + wasm_func_to_call_inst.code_expr.len();
+
+                        spend_basic_block_cost(&mut maybe_fuel, current_sidetable, stp)?;
+                        stp += 1;
                     }
                 }
                 trace!("Instruction: CALL_INDIRECT");
@@ -2581,6 +2622,7 @@ fn do_sidetable_control_transfer(
     stack: &mut Stack,
     current_stp: &mut usize,
     current_sidetable: &Sidetable,
+    maybe_fuel: &mut Option<u32>,
 ) -> Result<(), RuntimeError> {
     let sidetable_entry = &current_sidetable[*current_stp];
 
@@ -2589,7 +2631,10 @@ fn do_sidetable_control_transfer(
     *current_stp = (*current_stp as isize + sidetable_entry.delta_stp) as usize;
     wasm.pc = (wasm.pc as isize + sidetable_entry.delta_pc) as usize;
 
-    Ok(())
+    // current basic block corresponds to the entry ABOVE the current one
+    // since we are always skipping the first instr of the block except for the very last END
+    // instr in the function, for which the delta_stp field is adjusted during validation instead
+    spend_basic_block_cost(maybe_fuel, current_sidetable, *current_stp - 1)
 }
 
 #[inline(always)]
@@ -2726,4 +2771,23 @@ pub(super) fn data_drop(
         .unwrap_validated();
     store_data[data_addr] = DataInst { data: Vec::new() };
     Ok(())
+}
+
+#[inline(always)]
+fn spend_basic_block_cost(
+    maybe_fuel: &mut Option<u32>,
+    current_sidetable: &Sidetable,
+    stp: usize,
+) -> Result<(), RuntimeError> {
+    match maybe_fuel {
+        Some(fuel) => {
+            if *fuel < current_sidetable[stp].delta_fuel {
+                Err(RuntimeError::OutOfFuel)
+            } else {
+                *fuel -= current_sidetable[stp].delta_fuel;
+                Ok(())
+            }
+        }
+        None => Ok(()),
+    }
 }
