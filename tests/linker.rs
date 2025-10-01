@@ -1,4 +1,5 @@
 use log::info;
+use std::convert::Infallible;
 use wasm::{resumable::RunState, validate, ExternVal, Store};
 
 const SIMPLE_IMPORT_BASE: &str = r#"
@@ -20,7 +21,7 @@ const SIMPLE_IMPORT_ADDON: &str = r#"
 
 #[test_log::test]
 pub fn compile_simple_import() {
-    let mut store = Store::new(());
+    let mut store = Store::<'_, (), Infallible>::new(());
     // let mut linker: Linker = Default::default();
 
     let wasm_bytes_addon = wat::parse_str(SIMPLE_IMPORT_ADDON).unwrap();

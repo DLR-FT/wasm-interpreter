@@ -21,11 +21,11 @@ use crate::{
 /// This function assumes that the expression has been validated. Passing unvalidated code will likely result in a
 /// panic, or undefined behaviour.
 // TODO this signature might change to support hooks or match the spec better
-pub(crate) fn run_const<T>(
+pub(crate) fn run_const<T, HostError: core::fmt::Debug>(
     wasm: &mut WasmReader,
     stack: &mut Stack,
     module: &ModuleInst,
-    store: &Store<T>,
+    store: &Store<T, HostError>,
 ) -> Result<(), RuntimeError> {
     use crate::core::reader::types::opcode::*;
     loop {
@@ -101,11 +101,11 @@ pub(crate) fn run_const<T>(
     Ok(())
 }
 
-pub(crate) fn run_const_span<T>(
+pub(crate) fn run_const_span<T, HostError: core::fmt::Debug>(
     wasm: &[u8],
     span: &Span,
     module: &ModuleInst,
-    store: &Store<T>,
+    store: &Store<T, HostError>,
 ) -> Result<Option<Value>, RuntimeError> {
     let mut wasm = WasmReader::new(wasm);
 

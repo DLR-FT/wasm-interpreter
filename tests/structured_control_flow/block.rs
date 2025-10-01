@@ -1,4 +1,6 @@
-use wasm::{validate, RuntimeInstance};
+use std::convert::Infallible;
+
+use wasm::{hooks::EmptyHookSet, validate, RuntimeInstance};
 
 /// Runs a function that does nothing and contains only a single empty block
 #[test_log::test]
@@ -14,7 +16,11 @@ fn empty() {
     .unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     instance
@@ -44,7 +50,11 @@ fn branch() {
     .unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -87,7 +97,11 @@ fn branch2() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -104,7 +118,11 @@ fn branch3() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -134,7 +152,11 @@ fn param_and_result() {
     .unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -179,7 +201,11 @@ fn return_out_of_block() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -196,7 +222,11 @@ fn br_return_out_of_block() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -213,7 +243,11 @@ fn return_out_of_block2() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -230,7 +264,11 @@ fn br_return_out_of_block2() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -265,7 +303,11 @@ fn branch_if() {
     .unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     let switch_case_fn = instance.get_function_by_index(0, 0).unwrap();
@@ -328,7 +370,11 @@ fn recursive_fibonacci() {
     .unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     let fib_fn = instance.get_function_by_index(0, 0).unwrap();
@@ -374,7 +420,11 @@ fn switch_case() {
     .unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     let switch_case_fn = instance.get_function_by_index(0, 0).unwrap();

@@ -1,13 +1,16 @@
 use log::info;
+use std::convert::Infallible;
+
 use wasm::{
+    error::RuntimeOrHostError,
     host_function_wrapper, validate,
     value::{F32, F64},
     RuntimeError, RuntimeInstance, Value,
 };
 
-fn hello(_: &mut (), _values: Vec<Value>) -> Vec<Value> {
+fn hello(_: &mut (), _values: Vec<Value>) -> Result<Vec<Value>, Infallible> {
     info!("Host function says hello from wasm!");
-    Vec::new()
+    Ok(Vec::new())
 }
 
 #[test_log::test]
@@ -22,9 +25,9 @@ pub fn host_func_call_within_module() {
     )
 )"#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
-    fn hello(_: &mut (), _values: Vec<Value>) -> Vec<Value> {
+    fn hello(_: &mut (), _values: Vec<Value>) -> Result<Vec<Value>, Infallible> {
         info!("Host function says hello from wasm!");
-        Vec::new()
+        Ok(Vec::new())
     }
 
     let mut runtime_instance = RuntimeInstance::new(());
@@ -103,13 +106,16 @@ pub fn host_func_call_within_start_func() {
     assert_eq!(Ok(()), result);
 }
 
-fn fancy_add_mult(_: &mut (), values: Vec<Value>) -> Vec<Value> {
+fn fancy_add_mult(_: &mut (), values: Vec<Value>) -> Result<Vec<Value>, Infallible> {
     let x: u32 = values[0].try_into().unwrap();
     let y: f64 = values[1].try_into().unwrap();
 
     info!("multiplying, adding, casting, swapping as host function");
 
-    Vec::from([Value::F64(F64((x as f64) * y)), Value::I32(x + (y as u32))])
+    Ok(Vec::from([
+        Value::F64(F64((x as f64) * y)),
+        Value::I32(x + (y as u32)),
+    ]))
 }
 
 const SIMPLE_MULTIVARIATE_MODULE_EXAMPLE: &str = r#"(module
@@ -153,10 +159,13 @@ pub fn simple_multivariate_host_func_within_module() {
 pub fn simple_multivariate_host_func_with_host_func_wrapper() {
     let wasm_bytes = wat::parse_str(SIMPLE_MULTIVARIATE_MODULE_EXAMPLE).unwrap();
 
-    fn wrapped_add_mult(_: &mut (), params: Vec<Value>) -> Vec<Value> {
-        host_function_wrapper(params, |(x, y): (i32, f64)| -> (f64, i32) {
-            (y + (x as f64), x * (y as i32))
-        })
+    fn wrapped_add_mult(_: &mut (), params: Vec<Value>) -> Result<Vec<Value>, Infallible> {
+        host_function_wrapper(
+            params,
+            |(x, y): (i32, f64)| -> Result<(f64, i32), Infallible> {
+                Ok((y + (x as f64), x * (y as i32)))
+            },
+        )
     }
 
     let mut runtime_instance = RuntimeInstance::new(());
@@ -214,8 +223,8 @@ pub fn weird_multi_typed_host_func() {
 ))"#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
-    fn weird_add_mult(_: &mut (), values: Vec<Value>) -> Vec<Value> {
-        Vec::from([match values[0] {
+    fn weird_add_mult(_: &mut (), values: Vec<Value>) -> Result<Vec<Value>, Infallible> {
+        Ok(Vec::from([match values[0] {
             Value::I32(val) => {
                 info!("host function saw I32");
                 Value::F64(F64((val * 5) as f64))
@@ -225,7 +234,7 @@ pub fn weird_multi_typed_host_func() {
                 Value::I64((val + 3.0) as u64)
             }
             _ => panic!("no other types admitted"),
-        }])
+        }]))
     }
 
     let mut runtime_instance = RuntimeInstance::new(());
@@ -262,10 +271,10 @@ pub fn host_func_runtime_error() {
 )"#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
-    fn mult3(_: &mut (), values: Vec<Value>) -> Vec<Value> {
+    fn mult3(_: &mut (), values: Vec<Value>) -> Result<Vec<Value>, Infallible> {
         let val: i32 = values[0].try_into().unwrap();
         info!("careless host function making type errors...");
-        Vec::from([Value::I64((val * 3) as u64)])
+        Ok(Vec::from([Value::I64((val * 3) as u64)]))
     }
 
     let mut runtime_instance = RuntimeInstance::new(());
@@ -282,5 +291,10 @@ pub fn host_func_runtime_error() {
         .get_function_by_name("importing_mod", "mult3_caller")
         .expect("wasm function could not be found");
     let result = runtime_instance.invoke_typed::<(), (f64, i64)>(&function_ref, ());
-    assert_eq!(Err(RuntimeError::HostFunctionSignatureMismatch), result);
+    assert_eq!(
+        Err(RuntimeOrHostError::Runtime(
+            RuntimeError::HostFunctionSignatureMismatch
+        )),
+        result
+    );
 }

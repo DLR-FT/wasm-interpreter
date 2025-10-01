@@ -1,4 +1,6 @@
-use wasm::{validate, RuntimeInstance};
+use std::convert::Infallible;
+
+use wasm::{hooks::EmptyHookSet, validate, RuntimeInstance};
 
 const FIBONACCI_WITH_LOOP_AND_BR_IF: &str = r#"
 (module
@@ -56,8 +58,11 @@ fn fibonacci_with_loop_and_br_if() {
     let wasm_bytes = wat::parse_str(FIBONACCI_WITH_LOOP_AND_BR_IF).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::<(), EmptyHookSet, Infallible>::new_with_default_module(
+        (),
+        &validation_info,
+    )
+    .expect("instantiation failed");
 
     let fibonacci_fn = instance.get_function_by_index(0, 0).unwrap();
 

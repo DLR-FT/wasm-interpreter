@@ -1,6 +1,11 @@
+use std::convert::Infallible;
+
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
-use wasm::{hooks::HookSet, validate, RuntimeInstance, DEFAULT_MODULE};
+use wasm::{
+    hooks::{EmptyHookSet, HookSet},
+    validate, RuntimeInstance, DEFAULT_MODULE,
+};
 
 fn criterion_benchmark(c: &mut Criterion) {
     let wat = r#"
@@ -37,7 +42,11 @@ fn criterion_benchmark(c: &mut Criterion) {
     // Set up an interpreter with the empty hook-set
     //
     let mut instance_empty_hookset =
-        RuntimeInstance::new_with_default_module((), &validation_info).unwrap();
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
+        .unwrap();
 
     //
     // Set up an interpreter with an non-empty hook-set
@@ -52,7 +61,8 @@ fn criterion_benchmark(c: &mut Criterion) {
         }
     }
 
-    let mut instance_non_empty_hookset = RuntimeInstance::new_with_hooks((), MyCustomHookSet);
+    let mut instance_non_empty_hookset =
+        RuntimeInstance::<'_, (), MyCustomHookSet, Infallible>::new_with_hooks((), MyCustomHookSet);
     instance_non_empty_hookset
         .add_module(DEFAULT_MODULE, &validation_info)
         .unwrap();

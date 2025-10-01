@@ -1,3 +1,6 @@
+use std::convert::Infallible;
+
+use wasm::hooks::EmptyHookSet;
 use wasm::{validate, RuntimeInstance};
 use wasm::{RuntimeError, TrapError, DEFAULT_MODULE};
 const REM_S_WAT: &str = r#"
@@ -24,7 +27,11 @@ pub fn i64_remainder_signed_simple() {
     let wat = String::from(REM_S_WAT).replace("{{TYPE}}", "i64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -107,7 +114,11 @@ pub fn i64_remainder_signed_panic_dividend_0() {
     let wat = String::from(REM_S_WAT).replace("{{TYPE}}", "i64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     let result = instance.invoke_typed::<(i64, i64), i64>(
@@ -117,7 +128,7 @@ pub fn i64_remainder_signed_panic_dividend_0() {
 
     assert_eq!(
         result.unwrap_err(),
-        RuntimeError::Trap(TrapError::DivideBy0)
+        RuntimeError::Trap(TrapError::DivideBy0).into()
     );
 }
 
@@ -127,7 +138,11 @@ pub fn i64_remainder_unsigned_simple() {
     let wat = String::from(REM_U_WAT).replace("{{TYPE}}", "i64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -247,7 +262,11 @@ pub fn i64_remainder_unsigned_panic_dividend_0() {
     let wat = String::from(REM_U_WAT).replace("{{TYPE}}", "i64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     let result = instance
@@ -255,7 +274,7 @@ pub fn i64_remainder_unsigned_panic_dividend_0() {
 
     assert_eq!(
         result.unwrap_err(),
-        RuntimeError::Trap(TrapError::DivideBy0)
+        RuntimeError::Trap(TrapError::DivideBy0).into()
     );
 }
 
@@ -265,7 +284,11 @@ pub fn i32_remainder_signed_simple() {
     let wat = String::from(REM_S_WAT).replace("{{TYPE}}", "i32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -364,7 +387,11 @@ pub fn remainder_signed_panic_dividend_0() {
     let wat = String::from(REM_S_WAT).replace("{{TYPE}}", "i32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     let result = instance.invoke_typed::<(i32, i32), i32>(
@@ -376,7 +403,7 @@ pub fn remainder_signed_panic_dividend_0() {
 
     assert_eq!(
         result.unwrap_err(),
-        RuntimeError::Trap(TrapError::DivideBy0)
+        RuntimeError::Trap(TrapError::DivideBy0).into()
     );
 }
 
@@ -387,7 +414,11 @@ pub fn i32_remainder_unsigned_simple() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -543,7 +574,11 @@ pub fn i32_remainder_unsigned_panic_dividend_0() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     let result = instance.invoke_typed::<(i32, i32), i32>(
@@ -555,6 +590,6 @@ pub fn i32_remainder_unsigned_panic_dividend_0() {
 
     assert_eq!(
         result.unwrap_err(),
-        RuntimeError::Trap(TrapError::DivideBy0)
+        RuntimeError::Trap(TrapError::DivideBy0).into()
     );
 }

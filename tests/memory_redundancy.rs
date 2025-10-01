@@ -1,3 +1,5 @@
+use std::convert::Infallible;
+
 /*
 # This file incorporates code from the WebAssembly testsuite, originally
 # available at https://github.com/WebAssembly/testsuite.
@@ -15,7 +17,7 @@
 # limitations under the License.
 */
 use hexf::hexf32;
-use wasm::{validate, RuntimeInstance, DEFAULT_MODULE};
+use wasm::{hooks::EmptyHookSet, validate, RuntimeInstance, DEFAULT_MODULE};
 
 macro_rules! get_func {
     ($instance:ident, $func_name:expr) => {
@@ -90,8 +92,11 @@ fn memory_redundancy() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut i = RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+        (),
+        &validation_info,
+    )
+    .expect("instantiation failed");
     let zero_everything = get_func!(i, "zero_everything");
     assert_result!(i, get_func!(i, "test_store_to_load"), (), 0x00000080);
     i.invoke_typed::<(), ()>(zero_everything, ()).unwrap();

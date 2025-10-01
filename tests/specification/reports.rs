@@ -1,6 +1,6 @@
 use std::any::Any;
 
-use wasm::{RuntimeError, TrapError};
+use wasm::{error::RuntimeOrHostError, RuntimeError, TrapError};
 
 use super::test_errors::AssertEqError;
 
@@ -54,9 +54,20 @@ impl From<wasm::ValidationError> for WastError {
     }
 }
 
-impl From<wasm::RuntimeError> for WastError {
-    fn from(value: wasm::RuntimeError) -> Self {
+impl From<RuntimeError> for WastError {
+    fn from(value: RuntimeError) -> Self {
         Self::WasmRuntimeError(value)
+    }
+}
+
+impl<HostError> From<RuntimeOrHostError<HostError>> for WastError {
+    fn from(value: RuntimeOrHostError<HostError>) -> Self {
+        match value {
+            RuntimeOrHostError::Runtime(runtime_error) => Self::from(runtime_error),
+            RuntimeOrHostError::Host(_) => {
+                unimplemented!("host functions are not supported in the Wast testsuite")
+            }
+        }
     }
 }
 

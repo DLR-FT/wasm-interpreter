@@ -1,6 +1,7 @@
 use core::mem;
 
 use alloc::{
+    fmt::Debug,
     sync::{Arc, Weak},
     vec::Vec,
 };
@@ -14,7 +15,7 @@ use crate::{
     RuntimeError, Value,
 };
 
-use super::RuntimeInstance;
+use super::{error::RuntimeOrHostError, hooks::HookSet, RuntimeInstance};
 
 #[derive(Debug)]
 pub struct Resumable {
@@ -49,19 +50,19 @@ pub struct ResumableRef {
 }
 
 impl ResumableRef {
-    pub fn resume<T>(
+    pub fn resume<T, H: HookSet + Debug, HostError: Debug>(
         mut self,
-        runtime_instance: &mut RuntimeInstance<T>,
+        runtime_instance: &mut RuntimeInstance<T, H, HostError>,
         fuel: u32,
-    ) -> Result<RunState, RuntimeError> {
+    ) -> Result<RunState, RuntimeOrHostError<HostError>> {
         // Resuming requires `self`'s dormitory to still be alive
         let Some(dormitory) = self.dormitory.upgrade() else {
-            return Err(RuntimeError::ResumableNotFound);
+            return Err(RuntimeError::ResumableNotFound.into());
         };
 
         // Check the given `RuntimeInstance` is the same one used to create `self`
         if !Arc::ptr_eq(&dormitory, &runtime_instance.store.dormitory.0) {
-            return Err(RuntimeError::ResumableNotFound);
+            return Err(RuntimeError::ResumableNotFound.into());
         }
 
         // Obtain a write lock to the `Dormitory`
@@ -92,7 +93,9 @@ impl ResumableRef {
 
                 Ok(RunState::Finished(resumable.stack.into_values()))
             }
-            Err(RuntimeError::OutOfFuel) => Ok(RunState::Resumable(self)),
+            Err(RuntimeOrHostError::Runtime(RuntimeError::OutOfFuel)) => {
+                Ok(RunState::Resumable(self))
+            }
             Err(err) => Err(err),
         }
     }

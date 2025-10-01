@@ -1,9 +1,10 @@
-use std::env;
 use std::process::ExitCode;
 use std::str::FromStr;
+use std::{convert::Infallible, env};
 
 use log::{error, LevelFilter};
 
+use wasm::hooks::EmptyHookSet;
 use wasm::{validate, RuntimeInstance};
 
 fn main() -> ExitCode {
@@ -45,13 +46,17 @@ fn main() -> ExitCode {
         }
     };
 
-    let mut instance = match RuntimeInstance::new_with_default_module((), &validation_info) {
-        Ok(instance) => instance,
-        Err(err) => {
-            error!("Instantiation failed: {err:?} [{err}]");
-            return ExitCode::FAILURE;
-        }
-    };
+    let mut instance =
+        match RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        ) {
+            Ok(instance) => instance,
+            Err(err) => {
+                error!("Instantiation failed: {err:?} [{err}]");
+                return ExitCode::FAILURE;
+            }
+        };
 
     let twelve: i32 = instance
         .invoke_typed(&instance.get_function_by_index(0, 1).unwrap(), (5, 7))

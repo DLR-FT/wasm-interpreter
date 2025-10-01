@@ -16,9 +16,13 @@
 # limitations under the License.
 */
 use core::{f32, f64};
+use std::convert::Infallible;
 
 use hexf::{hexf32, hexf64};
-use wasm::{validate, RuntimeError, RuntimeInstance, TrapError};
+use wasm::{
+    error::RuntimeOrHostError, hooks::EmptyHookSet, validate, RuntimeError, RuntimeInstance,
+    TrapError,
+};
 
 const WAT: &str = r#"
       (module
@@ -37,7 +41,11 @@ pub fn i32_wrap_i64_let_it_die() {
         .replace("{{2}}", "i32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -57,7 +65,11 @@ pub fn i32_wrap_i64() {
         .replace("{{2}}", "i32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -170,7 +182,11 @@ pub fn i32_trunc_f32_s_let_it_die() {
         .replace("{{2}}", "i32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -190,7 +206,11 @@ pub fn i32_trunc_f32_s() {
         .replace("{{2}}", "i32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -296,7 +316,7 @@ pub fn i32_trunc_f32_s() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::Trap(TrapError::UnrepresentableResult),
+        RuntimeOrHostError::Runtime(RuntimeError::Trap(TrapError::UnrepresentableResult)),
         instance
             .invoke_typed::<f32, i32>(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -306,7 +326,7 @@ pub fn i32_trunc_f32_s() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::Trap(TrapError::UnrepresentableResult),
+        RuntimeOrHostError::Runtime(RuntimeError::Trap(TrapError::UnrepresentableResult)),
         instance
             .invoke_typed::<f32, i32>(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -316,7 +336,7 @@ pub fn i32_trunc_f32_s() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::Trap(TrapError::UnrepresentableResult),
+        RuntimeOrHostError::Runtime(RuntimeError::Trap(TrapError::UnrepresentableResult)),
         instance
             .invoke_typed::<f32, i32>(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -326,7 +346,7 @@ pub fn i32_trunc_f32_s() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::Trap(TrapError::UnrepresentableResult),
+        RuntimeOrHostError::Runtime(RuntimeError::Trap(TrapError::UnrepresentableResult)),
         instance
             .invoke_typed::<f32, i32>(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -336,14 +356,14 @@ pub fn i32_trunc_f32_s() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::Trap(TrapError::BadConversionToInteger),
+        RuntimeOrHostError::Runtime(RuntimeError::Trap(TrapError::BadConversionToInteger)),
         instance
             .invoke_typed::<f32, i32>(&instance.get_function_by_index(0, 0).unwrap(), f32::NAN)
             .err()
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::Trap(TrapError::BadConversionToInteger),
+        RuntimeOrHostError::Runtime(RuntimeError::Trap(TrapError::BadConversionToInteger)),
         instance
             .invoke_typed::<f32, i32>(&instance.get_function_by_index(0, 0).unwrap(), -f32::NAN)
             .err()
@@ -360,7 +380,11 @@ pub fn i32_trunc_f32_u() {
         .replace("{{2}}", "i32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -463,7 +487,7 @@ pub fn i32_trunc_f32_u() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::Trap(TrapError::UnrepresentableResult),
+        RuntimeOrHostError::Runtime(RuntimeError::Trap(TrapError::UnrepresentableResult)),
         instance
             .invoke_typed::<f32, i32>(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -473,14 +497,14 @@ pub fn i32_trunc_f32_u() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::Trap(TrapError::UnrepresentableResult),
+        RuntimeOrHostError::Runtime(RuntimeError::Trap(TrapError::UnrepresentableResult)),
         instance
             .invoke_typed::<f32, i32>(&instance.get_function_by_index(0, 0).unwrap(), -1.0)
             .err()
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::Trap(TrapError::UnrepresentableResult),
+        RuntimeOrHostError::Runtime(RuntimeError::Trap(TrapError::UnrepresentableResult)),
         instance
             .invoke_typed::<f32, i32>(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -490,7 +514,7 @@ pub fn i32_trunc_f32_u() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::Trap(TrapError::UnrepresentableResult),
+        RuntimeOrHostError::Runtime(RuntimeError::Trap(TrapError::UnrepresentableResult)),
         instance
             .invoke_typed::<f32, i32>(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -500,14 +524,14 @@ pub fn i32_trunc_f32_u() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::Trap(TrapError::BadConversionToInteger),
+        RuntimeOrHostError::Runtime(RuntimeError::Trap(TrapError::BadConversionToInteger)),
         instance
             .invoke_typed::<f32, i32>(&instance.get_function_by_index(0, 0).unwrap(), f32::NAN)
             .err()
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::Trap(TrapError::BadConversionToInteger),
+        RuntimeOrHostError::Runtime(RuntimeError::Trap(TrapError::BadConversionToInteger)),
         instance
             .invoke_typed::<f32, i32>(&instance.get_function_by_index(0, 0).unwrap(), -f32::NAN)
             .err()
@@ -524,7 +548,11 @@ pub fn i32_trunc_f64_s_let_it_die() {
         .replace("{{2}}", "i32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -544,7 +572,11 @@ pub fn i32_trunc_f64_s() {
         .replace("{{2}}", "i32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -668,14 +700,14 @@ pub fn i32_trunc_f64_s() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::Trap(TrapError::UnrepresentableResult),
+        RuntimeOrHostError::Runtime(RuntimeError::Trap(TrapError::UnrepresentableResult)),
         instance
             .invoke_typed::<f64, i32>(&instance.get_function_by_index(0, 0).unwrap(), 2147483648.0)
             .err()
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::Trap(TrapError::UnrepresentableResult),
+        RuntimeOrHostError::Runtime(RuntimeError::Trap(TrapError::UnrepresentableResult)),
         instance
             .invoke_typed::<f64, i32>(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -685,7 +717,7 @@ pub fn i32_trunc_f64_s() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::Trap(TrapError::UnrepresentableResult),
+        RuntimeOrHostError::Runtime(RuntimeError::Trap(TrapError::UnrepresentableResult)),
         instance
             .invoke_typed::<f64, i32>(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -695,7 +727,7 @@ pub fn i32_trunc_f64_s() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::Trap(TrapError::UnrepresentableResult),
+        RuntimeOrHostError::Runtime(RuntimeError::Trap(TrapError::UnrepresentableResult)),
         instance
             .invoke_typed::<f64, i32>(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -705,14 +737,14 @@ pub fn i32_trunc_f64_s() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::Trap(TrapError::BadConversionToInteger),
+        RuntimeOrHostError::Runtime(RuntimeError::Trap(TrapError::BadConversionToInteger)),
         instance
             .invoke_typed::<f64, i32>(&instance.get_function_by_index(0, 0).unwrap(), f64::NAN)
             .err()
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::Trap(TrapError::BadConversionToInteger),
+        RuntimeOrHostError::Runtime(RuntimeError::Trap(TrapError::BadConversionToInteger)),
         instance
             .invoke_typed::<f64, i32>(&instance.get_function_by_index(0, 0).unwrap(), -f64::NAN)
             .err()
@@ -729,7 +761,11 @@ pub fn i32_trunc_f64_u() {
         .replace("{{2}}", "i32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -853,35 +889,35 @@ pub fn i32_trunc_f64_u() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::Trap(TrapError::UnrepresentableResult),
+        RuntimeOrHostError::Runtime(RuntimeError::Trap(TrapError::UnrepresentableResult)),
         instance
             .invoke_typed::<f64, i32>(&instance.get_function_by_index(0, 0).unwrap(), 4294967296.0)
             .err()
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::Trap(TrapError::UnrepresentableResult),
+        RuntimeOrHostError::Runtime(RuntimeError::Trap(TrapError::UnrepresentableResult)),
         instance
             .invoke_typed::<f64, i32>(&instance.get_function_by_index(0, 0).unwrap(), -1.0)
             .err()
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::Trap(TrapError::UnrepresentableResult),
+        RuntimeOrHostError::Runtime(RuntimeError::Trap(TrapError::UnrepresentableResult)),
         instance
             .invoke_typed::<f64, i32>(&instance.get_function_by_index(0, 0).unwrap(), 1e16)
             .err()
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::Trap(TrapError::UnrepresentableResult),
+        RuntimeOrHostError::Runtime(RuntimeError::Trap(TrapError::UnrepresentableResult)),
         instance
             .invoke_typed::<f64, i32>(&instance.get_function_by_index(0, 0).unwrap(), 1e30)
             .err()
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::Trap(TrapError::UnrepresentableResult),
+        RuntimeOrHostError::Runtime(RuntimeError::Trap(TrapError::UnrepresentableResult)),
         instance
             .invoke_typed::<f64, i32>(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -891,7 +927,7 @@ pub fn i32_trunc_f64_u() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::Trap(TrapError::UnrepresentableResult),
+        RuntimeOrHostError::Runtime(RuntimeError::Trap(TrapError::UnrepresentableResult)),
         instance
             .invoke_typed::<f64, i32>(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -901,7 +937,7 @@ pub fn i32_trunc_f64_u() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::Trap(TrapError::UnrepresentableResult),
+        RuntimeOrHostError::Runtime(RuntimeError::Trap(TrapError::UnrepresentableResult)),
         instance
             .invoke_typed::<f64, i32>(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -911,14 +947,14 @@ pub fn i32_trunc_f64_u() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::Trap(TrapError::BadConversionToInteger),
+        RuntimeOrHostError::Runtime(RuntimeError::Trap(TrapError::BadConversionToInteger)),
         instance
             .invoke_typed::<f64, i32>(&instance.get_function_by_index(0, 0).unwrap(), f64::NAN)
             .err()
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::Trap(TrapError::BadConversionToInteger),
+        RuntimeOrHostError::Runtime(RuntimeError::Trap(TrapError::BadConversionToInteger)),
         instance
             .invoke_typed::<f64, i32>(&instance.get_function_by_index(0, 0).unwrap(), -f64::NAN)
             .err()
@@ -935,7 +971,11 @@ pub fn i64_extend_i32_s_let_it_die() {
         .replace("{{2}}", "i64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -955,7 +995,11 @@ pub fn i64_extend_i32_s() {
         .replace("{{2}}", "i64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -1008,7 +1052,11 @@ pub fn i64_extend_i32_u() {
         .replace("{{2}}", "i64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -1061,7 +1109,11 @@ pub fn i64_trunc_f32_s_let_it_die() {
         .replace("{{2}}", "i64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -1081,7 +1133,11 @@ pub fn i64_trunc_f32_s() {
         .replace("{{2}}", "i64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -1205,7 +1261,7 @@ pub fn i64_trunc_f32_s() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::Trap(TrapError::UnrepresentableResult),
+        RuntimeOrHostError::Runtime(RuntimeError::Trap(TrapError::UnrepresentableResult)),
         instance
             .invoke_typed::<f32, i64>(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -1215,7 +1271,7 @@ pub fn i64_trunc_f32_s() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::Trap(TrapError::UnrepresentableResult),
+        RuntimeOrHostError::Runtime(RuntimeError::Trap(TrapError::UnrepresentableResult)),
         instance
             .invoke_typed::<f32, i64>(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -1225,7 +1281,7 @@ pub fn i64_trunc_f32_s() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::Trap(TrapError::UnrepresentableResult),
+        RuntimeOrHostError::Runtime(RuntimeError::Trap(TrapError::UnrepresentableResult)),
         instance
             .invoke_typed::<f32, i64>(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -1235,7 +1291,7 @@ pub fn i64_trunc_f32_s() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::Trap(TrapError::UnrepresentableResult),
+        RuntimeOrHostError::Runtime(RuntimeError::Trap(TrapError::UnrepresentableResult)),
         instance
             .invoke_typed::<f32, i64>(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -1245,14 +1301,14 @@ pub fn i64_trunc_f32_s() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::Trap(TrapError::BadConversionToInteger),
+        RuntimeOrHostError::Runtime(RuntimeError::Trap(TrapError::BadConversionToInteger)),
         instance
             .invoke_typed::<f32, i64>(&instance.get_function_by_index(0, 0).unwrap(), f32::NAN)
             .err()
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::Trap(TrapError::BadConversionToInteger),
+        RuntimeOrHostError::Runtime(RuntimeError::Trap(TrapError::BadConversionToInteger)),
         instance
             .invoke_typed::<f32, i64>(&instance.get_function_by_index(0, 0).unwrap(), -f32::NAN)
             .err()
@@ -1269,7 +1325,11 @@ pub fn i64_trunc_f32_u() {
         .replace("{{2}}", "i64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -1360,7 +1420,7 @@ pub fn i64_trunc_f32_u() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::Trap(TrapError::UnrepresentableResult),
+        RuntimeOrHostError::Runtime(RuntimeError::Trap(TrapError::UnrepresentableResult)),
         instance
             .invoke_typed::<f32, i64>(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -1370,14 +1430,14 @@ pub fn i64_trunc_f32_u() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::Trap(TrapError::UnrepresentableResult),
+        RuntimeOrHostError::Runtime(RuntimeError::Trap(TrapError::UnrepresentableResult)),
         instance
             .invoke_typed::<f32, i64>(&instance.get_function_by_index(0, 0).unwrap(), -1.0_f32)
             .err()
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::Trap(TrapError::UnrepresentableResult),
+        RuntimeOrHostError::Runtime(RuntimeError::Trap(TrapError::UnrepresentableResult)),
         instance
             .invoke_typed::<f32, i64>(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -1387,7 +1447,7 @@ pub fn i64_trunc_f32_u() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::Trap(TrapError::UnrepresentableResult),
+        RuntimeOrHostError::Runtime(RuntimeError::Trap(TrapError::UnrepresentableResult)),
         instance
             .invoke_typed::<f32, i64>(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -1397,14 +1457,14 @@ pub fn i64_trunc_f32_u() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::Trap(TrapError::BadConversionToInteger),
+        RuntimeOrHostError::Runtime(RuntimeError::Trap(TrapError::BadConversionToInteger)),
         instance
             .invoke_typed::<f32, i64>(&instance.get_function_by_index(0, 0).unwrap(), f32::NAN)
             .err()
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::Trap(TrapError::BadConversionToInteger),
+        RuntimeOrHostError::Runtime(RuntimeError::Trap(TrapError::BadConversionToInteger)),
         instance
             .invoke_typed::<f32, i64>(&instance.get_function_by_index(0, 0).unwrap(), -f32::NAN)
             .err()
@@ -1421,7 +1481,11 @@ pub fn i64_trunc_f64_s_let_it_die() {
         .replace("{{2}}", "i64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -1441,7 +1505,11 @@ pub fn i64_trunc_f64_s() {
         .replace("{{2}}", "i64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -1565,7 +1633,7 @@ pub fn i64_trunc_f64_s() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::Trap(TrapError::UnrepresentableResult),
+        RuntimeOrHostError::Runtime(RuntimeError::Trap(TrapError::UnrepresentableResult)),
         instance
             .invoke_typed::<f64, i64>(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -1575,7 +1643,7 @@ pub fn i64_trunc_f64_s() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::Trap(TrapError::UnrepresentableResult),
+        RuntimeOrHostError::Runtime(RuntimeError::Trap(TrapError::UnrepresentableResult)),
         instance
             .invoke_typed::<f64, i64>(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -1585,7 +1653,7 @@ pub fn i64_trunc_f64_s() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::Trap(TrapError::UnrepresentableResult),
+        RuntimeOrHostError::Runtime(RuntimeError::Trap(TrapError::UnrepresentableResult)),
         instance
             .invoke_typed::<f64, i64>(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -1595,7 +1663,7 @@ pub fn i64_trunc_f64_s() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::Trap(TrapError::UnrepresentableResult),
+        RuntimeOrHostError::Runtime(RuntimeError::Trap(TrapError::UnrepresentableResult)),
         instance
             .invoke_typed::<f64, i64>(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -1605,14 +1673,14 @@ pub fn i64_trunc_f64_s() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::Trap(TrapError::BadConversionToInteger),
+        RuntimeOrHostError::Runtime(RuntimeError::Trap(TrapError::BadConversionToInteger)),
         instance
             .invoke_typed::<f64, i64>(&instance.get_function_by_index(0, 0).unwrap(), f64::NAN)
             .err()
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::Trap(TrapError::BadConversionToInteger),
+        RuntimeOrHostError::Runtime(RuntimeError::Trap(TrapError::BadConversionToInteger)),
         instance
             .invoke_typed::<f64, i64>(&instance.get_function_by_index(0, 0).unwrap(), -f64::NAN)
             .err()
@@ -1629,7 +1697,11 @@ pub fn i64_trunc_f64_u() {
         .replace("{{2}}", "i64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -1750,7 +1822,7 @@ pub fn i64_trunc_f64_u() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::Trap(TrapError::UnrepresentableResult),
+        RuntimeOrHostError::Runtime(RuntimeError::Trap(TrapError::UnrepresentableResult)),
         instance
             .invoke_typed::<f64, i64>(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -1760,14 +1832,14 @@ pub fn i64_trunc_f64_u() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::Trap(TrapError::UnrepresentableResult),
+        RuntimeOrHostError::Runtime(RuntimeError::Trap(TrapError::UnrepresentableResult)),
         instance
             .invoke_typed::<f64, i64>(&instance.get_function_by_index(0, 0).unwrap(), -1_f64)
             .err()
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::Trap(TrapError::UnrepresentableResult),
+        RuntimeOrHostError::Runtime(RuntimeError::Trap(TrapError::UnrepresentableResult)),
         instance
             .invoke_typed::<f64, i64>(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -1777,7 +1849,7 @@ pub fn i64_trunc_f64_u() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::Trap(TrapError::UnrepresentableResult),
+        RuntimeOrHostError::Runtime(RuntimeError::Trap(TrapError::UnrepresentableResult)),
         instance
             .invoke_typed::<f64, i64>(
                 &instance.get_function_by_index(0, 0).unwrap(),
@@ -1787,14 +1859,14 @@ pub fn i64_trunc_f64_u() {
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::Trap(TrapError::BadConversionToInteger),
+        RuntimeOrHostError::Runtime(RuntimeError::Trap(TrapError::BadConversionToInteger)),
         instance
             .invoke_typed::<f64, i64>(&instance.get_function_by_index(0, 0).unwrap(), f64::NAN)
             .err()
             .unwrap()
     );
     assert_eq!(
-        RuntimeError::Trap(TrapError::BadConversionToInteger),
+        RuntimeOrHostError::Runtime(RuntimeError::Trap(TrapError::BadConversionToInteger)),
         instance
             .invoke_typed::<f64, i64>(&instance.get_function_by_index(0, 0).unwrap(), -f64::NAN)
             .err()
@@ -1811,7 +1883,11 @@ pub fn f32_convert_i32_s_let_it_die() {
         .replace("{{2}}", "f32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -1831,7 +1907,11 @@ pub fn f32_convert_i32_s() {
         .replace("{{2}}", "f32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -1881,7 +1961,11 @@ pub fn f32_convert_i32_u() {
         .replace("{{2}}", "f32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -2000,7 +2084,11 @@ pub fn f32_convert_i64_s_let_it_die() {
         .replace("{{2}}", "f32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -2019,7 +2107,11 @@ pub fn f32_convert_i64_s() {
         .replace("{{2}}", "f32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -2145,7 +2237,11 @@ pub fn f32_convert_i64_u() {
         .replace("{{2}}", "f32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -2248,7 +2344,11 @@ pub fn f32_demote_f64_let_it_die() {
         .replace("{{2}}", "f32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -2268,7 +2368,11 @@ pub fn f32_demote_f64() {
         .replace("{{2}}", "f32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -2708,7 +2812,11 @@ pub fn f64_convert_i32_s_let_it_die() {
         .replace("{{2}}", "f64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -2728,7 +2836,11 @@ pub fn f64_convert_i32_s() {
         .replace("{{2}}", "f64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -2778,7 +2890,11 @@ pub fn f64_convert_i32_u() {
         .replace("{{2}}", "f64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -2825,7 +2941,11 @@ pub fn f64_convert_i64_s_let_it_die() {
         .replace("{{2}}", "f64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -2845,7 +2965,11 @@ pub fn f64_convert_i64_s() {
         .replace("{{2}}", "f64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -2940,7 +3064,11 @@ pub fn f64_convert_i64_u() {
         .replace("{{2}}", "f64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -3066,7 +3194,11 @@ pub fn f64_promote_f32_let_it_die() {
         .replace("{{2}}", "f64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -3086,7 +3218,11 @@ pub fn f64_promote_f32() {
         .replace("{{2}}", "f64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -3200,7 +3336,11 @@ pub fn i32_reinterpret_f32_let_it_die() {
         .replace("{{2}}", "f32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -3220,7 +3360,11 @@ pub fn i32_reinterpret_f32() {
         .replace("{{2}}", "i32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -3331,7 +3475,11 @@ pub fn i64_reinterpret_f64_let_it_die() {
         .replace("{{2}}", "f64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -3351,7 +3499,11 @@ pub fn i64_reinterpret_f64() {
         .replace("{{2}}", "i64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -3461,7 +3613,11 @@ pub fn f32_reinterpret_i32_let_it_die() {
         .replace("{{2}}", "f32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -3481,7 +3637,11 @@ pub fn f32_reinterpret_i32() {
         .replace("{{2}}", "f32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -3563,7 +3723,11 @@ pub fn f64_reinterpret_i64_let_it_die() {
         .replace("{{2}}", "f64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     assert_eq!(
@@ -3583,8 +3747,11 @@ pub fn f64_reinterpret_i64() {
         .replace("{{2}}", "f64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::<(), EmptyHookSet, Infallible>::new_with_default_module(
+        (),
+        &validation_info,
+    )
+    .expect("instantiation failed");
 
     assert_eq!(
         0.0_f64,

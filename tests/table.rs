@@ -1,3 +1,6 @@
+use std::convert::Infallible;
+
+use wasm::hooks::EmptyHookSet;
 use wasm::interop::RefFunc;
 /*
 # This file incorporates code from the WebAssembly testsuite, originally
@@ -45,8 +48,11 @@ fn table_basic() {
     w.iter().for_each(|wat| {
         let wasm_bytes = wat::parse_str(wat).unwrap();
         let validation_info = validate(&wasm_bytes).expect("validation failed");
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
+        .expect("instantiation failed");
     });
 }
 
@@ -121,8 +127,11 @@ fn table_elem_test() {
     )"#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let instance = RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+        (),
+        &validation_info,
+    )
+    .expect("instantiation failed");
     // let table = &instance.modules[0].store.tables[0];
     let table = &instance.store.tables[0];
     assert!(table.len() == 2);
@@ -159,8 +168,11 @@ fn table_get_set_test() {
     "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut i = RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+        (),
+        &validation_info,
+    )
+    .expect("instantiation failed");
 
     let get_funcref = get_func!(i, "get-funcref");
     let init = get_func!(i, "init");
@@ -224,7 +236,11 @@ fn call_indirect_type_check() {
     "#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+    let mut instance =
+        RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+            (),
+            &validation_info,
+        )
         .expect("instantiation failed");
 
     let call_fn = instance

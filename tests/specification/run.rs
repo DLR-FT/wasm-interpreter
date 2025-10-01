@@ -482,7 +482,7 @@ fn run_directive<'a>(
             .map_err(|runtime_error| {
                 ScriptError::new(
                     filepath,
-                    WastError::WasmRuntimeError(runtime_error),
+                    runtime_error.into(),
                     "invoke returned error or panicked",
                     get_linenum(contents, invoke.span),
                     get_command(contents, invoke.span),

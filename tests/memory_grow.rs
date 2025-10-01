@@ -1,3 +1,5 @@
+use std::convert::Infallible;
+
 /*
 # This file incorporates code from the WebAssembly testsuite, originally
 # available at https://github.com/WebAssembly/testsuite.
@@ -14,7 +16,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 */
-use wasm::{validate, RuntimeError, RuntimeInstance, TrapError, DEFAULT_MODULE};
+use wasm::{
+    error::RuntimeOrHostError, hooks::EmptyHookSet, validate, RuntimeError, RuntimeInstance,
+    TrapError, DEFAULT_MODULE,
+};
 
 macro_rules! get_func {
     ($instance:ident, $func_name:expr) => {
@@ -57,22 +62,25 @@ fn memory_grow_test_1() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut i = RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+        (),
+        &validation_info,
+    )
+    .expect("instantiation failed");
 
     // let x = i.invoke_typed(function_ref, params)
     assert_result!(i, get_func!(i, "size"), (), 0);
-    assert_error!(i, get_func!(i, "store_at_zero"), (), Result<(), RuntimeError>, (), (), RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds));
-    assert_error!(i, get_func!(i, "load_at_zero"), (), Result<i32, RuntimeError>, (), i32, RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds));
-    assert_error!(i, get_func!(i, "store_at_page_size"), (), Result<(), RuntimeError>, (), (), RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds));
-    assert_error!(i, get_func!(i, "load_at_page_size"), (), Result<i32, RuntimeError>, (), i32, RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds));
+    assert_error!(i, get_func!(i, "store_at_zero"), (), Result<(), RuntimeOrHostError<Infallible>>, (), (), RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds).into());
+    assert_error!(i, get_func!(i, "load_at_zero"), (), Result<i32, RuntimeOrHostError<Infallible>>, (), i32, RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds).into());
+    assert_error!(i, get_func!(i, "store_at_page_size"), (), Result<(), RuntimeOrHostError<Infallible>>, (), (), RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds).into());
+    assert_error!(i, get_func!(i, "load_at_page_size"), (), Result<i32, RuntimeOrHostError<Infallible>>, (), i32, RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds).into());
     assert_result!(i, get_func!(i, "grow"), 1, 0);
     assert_result!(i, get_func!(i, "size"), (), 1);
     assert_result!(i, get_func!(i, "load_at_zero"), (), 0);
     assert_result!(i, get_func!(i, "store_at_zero"), (), ());
     assert_result!(i, get_func!(i, "load_at_zero"), (), 2);
-    assert_error!(i, get_func!(i, "store_at_page_size"), (), Result<(), RuntimeError>, (), (), RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds));
-    assert_error!(i, get_func!(i, "load_at_page_size"), (), Result<i32, RuntimeError>, (), i32, RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds));
+    assert_error!(i, get_func!(i, "store_at_page_size"), (), Result<(), RuntimeOrHostError<Infallible>>, (), (), RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds).into());
+    assert_error!(i, get_func!(i, "load_at_page_size"), (), Result<i32, RuntimeOrHostError<Infallible>>, (), i32, RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds).into());
     assert_result!(i, get_func!(i, "grow"), 4, 1);
     assert_result!(i, get_func!(i, "size"), (), 5);
     assert_result!(i, get_func!(i, "load_at_zero"), (), 2);
@@ -94,8 +102,11 @@ fn memory_grow_test_2() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut i = RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+        (),
+        &validation_info,
+    )
+    .expect("instantiation failed");
 
     assert_result!(i, get_func!(i, "grow"), 0, 0);
     assert_result!(i, get_func!(i, "grow"), 1, 0);
@@ -118,8 +129,11 @@ fn memory_grow_test_3() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut i = RuntimeInstance::<'_, (), EmptyHookSet, Infallible>::new_with_default_module(
+        (),
+        &validation_info,
+    )
+    .expect("instantiation failed");
 
     assert_result!(i, get_func!(i, "grow"), 0, 0);
     assert_result!(i, get_func!(i, "grow"), 1, 0);
