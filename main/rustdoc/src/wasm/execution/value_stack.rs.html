@@ -18,7 +18,7 @@
 <a href=#18 id=18 data-nosnippet>18</a>/// 3. Activations
 <a href=#19 id=19 data-nosnippet>19</a>///
 <a href=#20 id=20 data-nosnippet>20</a>/// See &lt;https://webassembly.github.io/spec/core/exec/runtime.html#stack&gt;
-<a href=#21 id=21 data-nosnippet>21</a></span><span class="attr">#[derive(Default)]
+<a href=#21 id=21 data-nosnippet>21</a></span><span class="attr">#[derive(Default, Debug)]
 <a href=#22 id=22 data-nosnippet>22</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>Stack {
 <a href=#23 id=23 data-nosnippet>23</a>    <span class="doccomment">/// WASM values on the stack, i.e. the actual data that instructions operate on
 <a href=#24 id=24 data-nosnippet>24</a>    </span>values: Vec&lt;Value&gt;,
@@ -298,31 +298,32 @@
 <a href=#298 id=298 data-nosnippet>298</a>}
 <a href=#299 id=299 data-nosnippet>299</a>
 <a href=#300 id=300 data-nosnippet>300</a><span class="doccomment">/// The [WASM spec](https://webassembly.github.io/spec/core/exec/runtime.html#stack) calls this `Activations`, however it refers to the call frames of functions.
-<a href=#301 id=301 data-nosnippet>301</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>CallFrame {
-<a href=#302 id=302 data-nosnippet>302</a>    <span class="doccomment">/// Store address of the function that called this [`CallFrame`]'s function
-<a href=#303 id=303 data-nosnippet>303</a>    </span><span class="kw">pub </span>return_func_addr: usize,
-<a href=#304 id=304 data-nosnippet>304</a>
-<a href=#305 id=305 data-nosnippet>305</a>    <span class="doccomment">/// Value that the PC has to be set to when this function returns
-<a href=#306 id=306 data-nosnippet>306</a>    </span><span class="kw">pub </span>return_addr: usize,
-<a href=#307 id=307 data-nosnippet>307</a>
-<a href=#308 id=308 data-nosnippet>308</a>    <span class="doccomment">/// The index to the lowermost value in [`Stack::values`] belonging to this [`CallFrame`]'s
-<a href=#309 id=309 data-nosnippet>309</a>    /// stack
-<a href=#310 id=310 data-nosnippet>310</a>    ///
-<a href=#311 id=311 data-nosnippet>311</a>    /// Values below this may still belong to this [`CallFrame`], but they are locals. Consequently,
-<a href=#312 id=312 data-nosnippet>312</a>    /// this is the lowest index down to which the stack may be popped in this [`CallFrame`].
-<a href=#313 id=313 data-nosnippet>313</a>    /// However, clearing up this [`CallFrame`] may require further popping, down to (and
-<a href=#314 id=314 data-nosnippet>314</a>    /// including!) the index stored in [`Self::call_frame_base_idx`].
-<a href=#315 id=315 data-nosnippet>315</a>    </span><span class="kw">pub </span>value_stack_base_idx: usize,
-<a href=#316 id=316 data-nosnippet>316</a>
-<a href=#317 id=317 data-nosnippet>317</a>    <span class="doccomment">/// The index to the lowermost value on [`Stack::values`] that belongs to this [`CallFrame`]
-<a href=#318 id=318 data-nosnippet>318</a>    ///
-<a href=#319 id=319 data-nosnippet>319</a>    /// Clearing this [`CallFrame`] requires popping all elements on [`Stack::values`] down to (and
-<a href=#320 id=320 data-nosnippet>320</a>    /// including!) this index.
-<a href=#321 id=321 data-nosnippet>321</a>    </span><span class="kw">pub </span>call_frame_base_idx: usize,
-<a href=#322 id=322 data-nosnippet>322</a>
-<a href=#323 id=323 data-nosnippet>323</a>    <span class="doccomment">/// Number of return values to retain on [`Stack::values`] when unwinding/popping a [`CallFrame`]
-<a href=#324 id=324 data-nosnippet>324</a>    </span><span class="kw">pub </span>return_value_count: usize,
-<a href=#325 id=325 data-nosnippet>325</a>
-<a href=#326 id=326 data-nosnippet>326</a>    <span class="comment">// Value that the stp has to be set to when this function returns
-<a href=#327 id=327 data-nosnippet>327</a>    </span><span class="kw">pub </span>return_stp: usize,
-<a href=#328 id=328 data-nosnippet>328</a>}</code></pre></div></section></main></body></html>
+<a href=#301 id=301 data-nosnippet>301</a></span><span class="attr">#[derive(Debug)]
+<a href=#302 id=302 data-nosnippet>302</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>CallFrame {
+<a href=#303 id=303 data-nosnippet>303</a>    <span class="doccomment">/// Store address of the function that called this [`CallFrame`]'s function
+<a href=#304 id=304 data-nosnippet>304</a>    </span><span class="kw">pub </span>return_func_addr: usize,
+<a href=#305 id=305 data-nosnippet>305</a>
+<a href=#306 id=306 data-nosnippet>306</a>    <span class="doccomment">/// Value that the PC has to be set to when this function returns
+<a href=#307 id=307 data-nosnippet>307</a>    </span><span class="kw">pub </span>return_addr: usize,
+<a href=#308 id=308 data-nosnippet>308</a>
+<a href=#309 id=309 data-nosnippet>309</a>    <span class="doccomment">/// The index to the lowermost value in [`Stack::values`] belonging to this [`CallFrame`]'s
+<a href=#310 id=310 data-nosnippet>310</a>    /// stack
+<a href=#311 id=311 data-nosnippet>311</a>    ///
+<a href=#312 id=312 data-nosnippet>312</a>    /// Values below this may still belong to this [`CallFrame`], but they are locals. Consequently,
+<a href=#313 id=313 data-nosnippet>313</a>    /// this is the lowest index down to which the stack may be popped in this [`CallFrame`].
+<a href=#314 id=314 data-nosnippet>314</a>    /// However, clearing up this [`CallFrame`] may require further popping, down to (and
+<a href=#315 id=315 data-nosnippet>315</a>    /// including!) the index stored in [`Self::call_frame_base_idx`].
+<a href=#316 id=316 data-nosnippet>316</a>    </span><span class="kw">pub </span>value_stack_base_idx: usize,
+<a href=#317 id=317 data-nosnippet>317</a>
+<a href=#318 id=318 data-nosnippet>318</a>    <span class="doccomment">/// The index to the lowermost value on [`Stack::values`] that belongs to this [`CallFrame`]
+<a href=#319 id=319 data-nosnippet>319</a>    ///
+<a href=#320 id=320 data-nosnippet>320</a>    /// Clearing this [`CallFrame`] requires popping all elements on [`Stack::values`] down to (and
+<a href=#321 id=321 data-nosnippet>321</a>    /// including!) this index.
+<a href=#322 id=322 data-nosnippet>322</a>    </span><span class="kw">pub </span>call_frame_base_idx: usize,
+<a href=#323 id=323 data-nosnippet>323</a>
+<a href=#324 id=324 data-nosnippet>324</a>    <span class="doccomment">/// Number of return values to retain on [`Stack::values`] when unwinding/popping a [`CallFrame`]
+<a href=#325 id=325 data-nosnippet>325</a>    </span><span class="kw">pub </span>return_value_count: usize,
+<a href=#326 id=326 data-nosnippet>326</a>
+<a href=#327 id=327 data-nosnippet>327</a>    <span class="comment">// Value that the stp has to be set to when this function returns
+<a href=#328 id=328 data-nosnippet>328</a>    </span><span class="kw">pub </span>return_stp: usize,
+<a href=#329 id=329 data-nosnippet>329</a>}</code></pre></div></section></main></body></html>
