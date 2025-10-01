@@ -310,8 +310,7 @@ impl WasmReadable for TableType {
         if lim.max.is_none() {
             lim.max = Some(u32::MAX)
         };
-        let table_type = Self { et, lim };
-        trace!("Table: {:?}", table_type);
+        trace!("Table: {:?}", Self { et, lim });
         Ok(Self { et, lim })
     }
 }

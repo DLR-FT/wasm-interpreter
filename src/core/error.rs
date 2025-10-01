@@ -224,3 +224,24 @@ impl Display for ValidationError {
         }
     }
 }
+
+#[cfg(test)]
+mod test {
+    use alloc::string::ToString;
+
+    use crate::ValidationError;
+
+    #[test]
+    fn fmt_invalid_magic() {
+        assert!(ValidationError::InvalidMagic
+            .to_string()
+            .contains("magic number"));
+    }
+
+    #[test]
+    fn fmt_invalid_version() {
+        assert!(ValidationError::InvalidVersion
+            .to_string()
+            .contains("version"));
+    }
+}
