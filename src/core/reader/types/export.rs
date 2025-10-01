@@ -78,13 +78,13 @@ impl ExportDesc {
                 *validation_info
                     .tables
                     .get(*table_idx)
-                    .ok_or(ValidationError::InvalidLocalIdx)?,
+                    .ok_or(ValidationError::InvalidTableIdx(*table_idx))?,
             ),
             ExportDesc::MemIdx(mem_idx) => ExternType::Mem(
                 *validation_info
                     .memories
                     .get(*mem_idx)
-                    .ok_or(ValidationError::InvalidLocalIdx)?,
+                    .ok_or(ValidationError::InvalidMemIndex(*mem_idx))?,
             ),
             ExportDesc::GlobalIdx(global_idx) => ExternType::Global(
                 validation_info

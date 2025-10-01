@@ -665,7 +665,7 @@ fn table_init_6_test() {
         "#;
 
     let wasm_bytes = wat::parse_str(w).unwrap();
-    assert!(validate(&wasm_bytes).err().unwrap() == ValidationError::ElementIsNotDefined(0));
+    assert!(validate(&wasm_bytes).err().unwrap() == ValidationError::InvalidElemIdx(0));
 }
 
 #[test_log::test]
@@ -677,7 +677,7 @@ fn table_init_7_test() {
         "#;
 
     let wasm_bytes = wat::parse_str(w).unwrap();
-    assert!(validate(&wasm_bytes).err().unwrap() == ValidationError::TableIsNotDefined(0));
+    assert!(validate(&wasm_bytes).err().unwrap() == ValidationError::InvalidTableIdx(0));
 }
 
 #[test_log::test]
@@ -691,7 +691,7 @@ fn table_init_8_test() {
         "#;
 
     let wasm_bytes = wat::parse_str(w).unwrap();
-    assert!(validate(&wasm_bytes).err().unwrap() == ValidationError::ElementIsNotDefined(4));
+    assert!(validate(&wasm_bytes).err().unwrap() == ValidationError::InvalidElemIdx(4));
 }
 
 #[test_log::test]
@@ -705,7 +705,7 @@ fn table_init_9_test() {
         "#;
 
     let wasm_bytes = wat::parse_str(w).unwrap();
-    assert!(validate(&wasm_bytes).err().unwrap() == ValidationError::TableIsNotDefined(0));
+    assert!(validate(&wasm_bytes).err().unwrap() == ValidationError::InvalidTableIdx(0));
 }
 
 #[test_log::test]

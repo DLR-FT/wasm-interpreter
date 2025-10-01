@@ -9,15 +9,38 @@ use core::str::Utf8Error;
 use crate::core::reader::section_header::SectionTy;
 use crate::core::reader::types::ValType;
 
-use super::indices::{DataIdx, ElemIdx, FuncIdx, MemIdx, TableIdx, TypeIdx};
+use super::indices::{DataIdx, ElemIdx, FuncIdx, LabelIdx, LocalIdx, MemIdx, TableIdx, TypeIdx};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum ValidationError {
-    /// The magic number at the very start of the given WASM file is invalid.
+    /// The magic number at the start of the Wasm bytecode is invalid.
     InvalidMagic,
+    /// The Wasm binary version at the start of the Wasm bytecode is invalid.
     InvalidVersion,
+    /// A UTF-8 string was invalid.
     MalformedUtf8String(Utf8Error),
+    /// The end of the binary file was reached unexpectedly.
     Eof,
+
+    /// An index for a type is invalid.
+    InvalidTypeIdx(TypeIdx),
+    /// An index for a function is invalid.
+    InvalidFuncIdx(FuncIdx),
+    /// An index for a table is invalid.
+    InvalidTableIdx(TableIdx),
+    /// An index for a memory is invalid.
+    InvalidMemIndex(MemIdx),
+    /// An index for a global is invalid.
+    InvalidGlobalIdx(GlobalIdx),
+    /// An index for an element segment is invalid.
+    InvalidElemIdx(ElemIdx),
+    /// An index for a data segment is invalid.
+    InvalidDataIdx(DataIdx),
+    /// An index for a local is invalid.
+    InvalidLocalIdx(LocalIdx),
+    /// An index for a label is invalid.
+    InvalidLabelIdx(LabelIdx),
+
     InvalidSection(SectionTy, String),
     InvalidSectionType(u8),
     SectionOutOfOrder(SectionTy),
@@ -33,7 +56,6 @@ pub enum ValidationError {
     InvalidInstr(u8),
     InvalidMultiByteInstr(u8, u32),
     EndInvalidValueStack,
-    InvalidLocalIdx,
     InvalidValidationStackValType(Option<ValType>),
     InvalidValidationStackType(ValidationStackEntry),
     ExpectedAnOperand,
@@ -41,26 +63,18 @@ pub enum ValidationError {
     InvalidMutType(u8),
     InvalidLimit,
     MemSizeTooBig,
-    InvalidGlobalIdx(GlobalIdx),
     GlobalIsConst,
-    MemoryIsNotDefined(MemIdx),
     //           mem.align, wanted alignment
     ErroneousAlignment(u32, u32),
     NoDataSegments,
-    DataSegmentNotFound(DataIdx),
-    InvalidLabelIdx(usize),
     ValidationCtrlStackEmpty,
     ElseWithoutMatchingIf,
     IfWithoutMatchingElse,
     UnknownTable,
-    TableIsNotDefined(TableIdx),
-    ElementIsNotDefined(ElemIdx),
     DifferentRefTypes(RefType, RefType),
     ExpectedARefType(ValType),
     WrongRefTypeForInteropValue(RefType, RefType),
-    FunctionIsNotDefined(FuncIdx),
     ReferencingAnUnreferencedFunction(FuncIdx),
-    InvalidTypeIdx(TypeIdx),
     OnlyFuncRefIsAllowed,
     TypeUnificationMismatch,
     InvalidSelectTypeVector,
@@ -89,6 +103,17 @@ impl Display for ValidationError {
             ValidationError::Eof => f.write_str(
                 "A value was expected in the WASM binary but the end of file was reached instead",
             ),
+
+            ValidationError::InvalidTypeIdx(idx) => write!(f, "invalid type index {idx}"),
+            ValidationError::InvalidFuncIdx(idx) => write!(f, "invalid func index {idx}"),
+            ValidationError::InvalidTableIdx(idx) => write!(f, "invalid table index {idx}"),
+            ValidationError::InvalidMemIndex(idx) => write!(f, "invalid memory index {idx}"),
+            ValidationError::InvalidGlobalIdx(idx) => write!(f, "invalid global index {idx}"),
+            ValidationError::InvalidElemIdx(idx) => write!(f, "invalid element segment index {idx}"),
+            ValidationError::InvalidDataIdx(idx) => write!(f, "invalid data segment index {idx}"),
+            ValidationError::InvalidLocalIdx(idx) => write!(f, "invalid local index {idx}"),
+            ValidationError::InvalidLabelIdx(idx) => write!(f, "invalid label index {idx}"),
+
             ValidationError::InvalidSection(section, reason) => f.write_fmt(format_args!(
                 "Section '{section:?}' invalid! Reason: {reason}"
             )),
@@ -132,7 +157,6 @@ impl Display for ValidationError {
             ValidationError::EndInvalidValueStack => f.write_str(
                 "Different value stack types were expected at the end of a block/function.",
             ),
-            ValidationError::InvalidLocalIdx => f.write_str("An invalid localidx was used"),
             ValidationError::InvalidValidationStackValType(ty) => f.write_fmt(format_args!(
                 "An unexpected type was found on the stack when trying to pop another: `{ty:?}`"
             )),
@@ -147,26 +171,14 @@ impl Display for ValidationError {
             )),
             ValidationError::InvalidLimit => f.write_str("Size minimum must not be greater than maximum"),
             ValidationError::MemSizeTooBig => f.write_str("Memory size must be at most 65536 pages (4GiB)"),
-            ValidationError::InvalidGlobalIdx(idx) => f.write_fmt(format_args!(
-                "An invalid global index `{idx}` was specified"
-            )),
             ValidationError::GlobalIsConst => f.write_str("A const global cannot be written to"),
             ValidationError::ExpectedAnOperand => f.write_str("Expected a ValType"), // Error => f.write_str("Expected an operand (ValType) on the stack")
-            ValidationError::MemoryIsNotDefined(memidx) => f.write_fmt(format_args!(
-                "C.mems[{memidx}] is NOT defined when it should be"
-            )),
             ValidationError::ErroneousAlignment(mem_align, minimum_wanted_alignment) => {
                 f.write_fmt(format_args!(
                     "Alignment ({mem_align}) is not less or equal to {minimum_wanted_alignment}"
                 ))
             }
             ValidationError::NoDataSegments => f.write_str("Data Count is None"),
-            ValidationError::DataSegmentNotFound(data_idx) => {
-                f.write_fmt(format_args!("Data Segment {data_idx} not found"))
-            }
-            ValidationError::InvalidLabelIdx(label_idx) => {
-                f.write_fmt(format_args!("invalid label index {label_idx}"))
-            }
             ValidationError::ValidationCtrlStackEmpty => {
                 f.write_str("cannot retrieve last ctrl block, validation ctrl stack is empty")
             }
@@ -176,12 +188,6 @@ impl Display for ValidationError {
             ValidationError::IfWithoutMatchingElse => {
                 f.write_str("read 'end' without matching 'else' instruction to 'if' instruction")
             }
-            ValidationError::TableIsNotDefined(table_idx) => f.write_fmt(format_args!(
-                "C.tables[{table_idx}] is NOT defined when it should be"
-            )),
-            ValidationError::ElementIsNotDefined(elem_idx) => f.write_fmt(format_args!(
-                "C.elems[{elem_idx}] is NOT defined when it should be"
-            )),
             ValidationError::DifferentRefTypes(rref1, rref2) => f.write_fmt(format_args!(
                 "RefType {rref1:?} is NOT equal to RefType {rref2:?}"
             )),
@@ -191,14 +197,8 @@ impl Display for ValidationError {
             ValidationError::WrongRefTypeForInteropValue(ref_given, ref_wanted) => f.write_fmt(format_args!(
                 "Wrong RefType for InteropValue: Given {ref_given:?} - Needed {ref_wanted:?}"
             )),
-            ValidationError::FunctionIsNotDefined(func_idx) => f.write_fmt(format_args!(
-                "C.functions[{func_idx}] is NOT defined when it should be"
-            )),
             ValidationError::ReferencingAnUnreferencedFunction(func_idx) => f.write_fmt(format_args!(
                 "Referenced a function ({func_idx}) that was not referenced in validation"
-            )),
-            ValidationError::InvalidTypeIdx(func_ty_idx) => f.write_fmt(format_args!(
-                "C.fn_types[{func_ty_idx}] is NOT defined when it should be"
             )),
             ValidationError::OnlyFuncRefIsAllowed => f.write_str("Only FuncRef is allowed"),
             ValidationError::TypeUnificationMismatch => {
