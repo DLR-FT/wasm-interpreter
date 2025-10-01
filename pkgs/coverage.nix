@@ -14,8 +14,7 @@ wasm-interpreter.overrideAttrs (old: {
   checkPhase = ''
     runHook preCheck
 
-    RUST_LOG=trace
-    cargo llvm-cov --no-report nextest --features log/max_level_off
+    cargo llvm-cov --no-report nextest --no-default-features
 
     runHook postCheck
   '';
