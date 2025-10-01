@@ -130,6 +130,15 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
         index: MemIdx,
         value: T,
     ) -> Result<(), RuntimeError> {
+        self.store_bytes::<N>(index, value.to_le_bytes())
+    }
+
+    /// At a given index, store a number of bytes `N` in the [`LinearMemory`]
+    pub fn store_bytes<const N: usize>(
+        &self,
+        index: MemIdx,
+        bytes: [u8; N],
+    ) -> Result<(), RuntimeError> {
         let lock_guard = self.inner_data.read();
 
         /* check destination for out of bounds access */
@@ -148,8 +157,6 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
             error!("value write would extend beyond the end of the linear memory");
             return Err(TrapError::MemoryOrDataAccessOutOfBounds.into());
         }
-
-        let bytes = value.to_le_bytes();
 
         /* gather pointers */
         let src_ptr = bytes.as_ptr();
@@ -173,11 +180,16 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
         Ok(())
     }
 
-    /// From a given index, load a datum in the [`LinearMemory`]
+    /// From a given index, load a datum from the [`LinearMemory`]
     pub fn load<const N: usize, T: LittleEndianBytes<N>>(
         &self,
         index: MemIdx,
     ) -> Result<T, RuntimeError> {
+        self.load_bytes::<N>(index).map(T::from_le_bytes)
+    }
+
+    /// From a given index, load a number of bytes `N` from the [`LinearMemory`]
+    pub fn load_bytes<const N: usize>(&self, index: MemIdx) -> Result<[u8; N], RuntimeError> {
         let lock_guard = self.inner_data.read();
 
         /* check source for out of bounds access */
@@ -216,7 +228,7 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
         //   references
         unsafe { ptr::copy_nonoverlapping(src_ptr.add(index), dst_ptr, bytes.len()) };
 
-        Ok(T::from_le_bytes(bytes))
+        Ok(bytes)
     }
 
     /// Implementation of the behavior described in

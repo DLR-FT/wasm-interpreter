@@ -51,6 +51,10 @@ impl InteropValue for f64 {
     const TY: ValType = ValType::NumType(NumType::F64);
 }
 
+impl InteropValue for [u8; 16] {
+    const TY: ValType = ValType::VecType;
+}
+
 impl InteropValue for RefFunc {
     const TY: ValType = ValType::RefType(RefType::FuncRef);
 }

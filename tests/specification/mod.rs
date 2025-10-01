@@ -22,7 +22,7 @@ pub struct GlobalConfig {
     /// A regex that acts as a blocklist filter for tests.
     /// By default all `simd_*` and `proposals` tests are blocked.
     /// To not block anything use: `^$`
-    #[envconfig(default = r"^(simd_.*|proposals|names\.wast)$")]
+    #[envconfig(default = r"^(proposals|names\.wast)$")]
     pub block_test_pattern: Regex,
 
     /// This makes the testsuite runner re-enable the panic hook during all interpreter calls, resulting in the printing of panic info on every interpreter panic.
