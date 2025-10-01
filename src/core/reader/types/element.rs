@@ -328,7 +328,7 @@ fn parse_validate_shortened_initializer_list(
         let func_idx = w.read_var_u32()?;
         if num_funcs <= func_idx as usize {
             // TODO fix error
-            return Err(ValidationError::InvalidLocalIdx);
+            return Err(ValidationError::InvalidFuncIdx(func_idx as usize));
         }
         validation_context_refs.insert(func_idx as FuncIdx);
         Ok(func_idx)

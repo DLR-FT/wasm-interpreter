@@ -334,7 +334,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
         // https://webassembly.github.io/spec/core/valid/modules.html#start-function
         let type_idx = *all_functions
             .get(func_idx)
-            .ok_or(ValidationError::FunctionIsNotDefined(func_idx))?;
+            .ok_or(ValidationError::InvalidFuncIdx(func_idx))?;
         if types[type_idx]
             != (FuncType {
                 params: ResultType {
