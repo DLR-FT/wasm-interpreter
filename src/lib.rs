@@ -24,6 +24,7 @@ pub type Result<T> = ::core::result::Result<T, Error>;
 /// An opt-in error type useful for merging all error types of this crate into a single type.
 ///
 /// Note: This crate does not use this type in any public interfaces, making it optional for downstream users.
+#[derive(Debug, PartialEq, Eq)]
 pub enum Error {
     Validation(ValidationError),
     RuntimeError(RuntimeError),
@@ -38,5 +39,26 @@ impl From<ValidationError> for Error {
 impl From<RuntimeError> for Error {
     fn from(value: RuntimeError) -> Self {
         Self::RuntimeError(value)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::{Error, RuntimeError, ValidationError};
+
+    #[test]
+    fn error_conversion_validation_error() {
+        let validation_error = ValidationError::InvalidMagic;
+        let error: Error = validation_error.into();
+
+        assert_eq!(error, Error::Validation(ValidationError::InvalidMagic))
+    }
+
+    #[test]
+    fn error_conversion_runtime_error() {
+        let runtime_error = RuntimeError::ModuleNotFound;
+        let error: Error = runtime_error.into();
+
+        assert_eq!(error, Error::RuntimeError(RuntimeError::ModuleNotFound))
     }
 }

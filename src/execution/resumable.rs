@@ -114,3 +114,25 @@ pub enum RunState {
     Finished(Vec<Value>),
     Resumable(ResumableRef),
 }
+
+#[cfg(test)]
+mod test {
+    use crate::value_stack::Stack;
+
+    use super::{Dormitory, Resumable};
+
+    /// Test that a dormitory can be constructed and that a resumable can be inserted
+    #[test]
+    fn dormitory_constructor() {
+        let dorm = Dormitory::new();
+
+        let resumable = Resumable {
+            stack: Stack::new(),
+            pc: 11,
+            stp: 13,
+            current_func_addr: 17,
+        };
+
+        dorm.insert(resumable);
+    }
+}
