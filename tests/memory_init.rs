@@ -197,7 +197,7 @@ fn memory_init_test_5() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let res = validate(&wasm_bytes);
-    assert!(res.err().unwrap() == GeneralError::DataSegmentNotFound(0));
+    assert!(res.err().unwrap() == GeneralError::InvalidDataIdx(0));
 }
 
 #[test_log::test]
@@ -212,7 +212,7 @@ fn memory_init_test_6() {
     let wasm_bytes = wat::parse_str(w).unwrap();
 
     let res = validate(&wasm_bytes);
-    assert!(res.err().unwrap() == GeneralError::DataSegmentNotFound(4));
+    assert!(res.err().unwrap() == GeneralError::InvalidDataIdx(4));
 }
 
 #[test_log::test]
@@ -276,7 +276,7 @@ fn memory_init_test_10() {
     let wasm_bytes = wat::parse_str(w).unwrap();
 
     let res = validate(&wasm_bytes);
-    assert!(res.err().unwrap() == GeneralError::MemoryIsNotDefined(0));
+    assert!(res.err().unwrap() == GeneralError::InvalidMemIndex(0));
 }
 
 #[test_log::test]
@@ -291,7 +291,7 @@ fn memory_init_test_11() {
     let wasm_bytes = wat::parse_str(w).unwrap();
 
     let res = validate(&wasm_bytes);
-    assert!(res.err().unwrap() == GeneralError::DataSegmentNotFound(1));
+    assert!(res.err().unwrap() == GeneralError::InvalidDataIdx(1));
 }
 
 #[test_log::test]

@@ -429,7 +429,7 @@ fn read_instructions(
                 let func_idx = wasm.read_var_u32()? as FuncIdx;
                 let type_idx = *type_idx_of_fn
                     .get(func_idx)
-                    .ok_or(ValidationError::FunctionIsNotDefined(func_idx))?;
+                    .ok_or(ValidationError::InvalidFuncIdx(func_idx))?;
                 let func_ty = &fn_types[type_idx];
 
                 for typ in func_ty.params.valtypes.iter().rev() {
@@ -447,7 +447,7 @@ fn read_instructions(
 
                 let tab = tables
                     .get(table_idx)
-                    .ok_or(ValidationError::TableIsNotDefined(table_idx))?;
+                    .ok_or(ValidationError::InvalidTableIdx(table_idx))?;
 
                 if tab.et != RefType::FuncRef {
                     return Err(ValidationError::WrongRefTypeForInteropValue(
@@ -495,7 +495,7 @@ fn read_instructions(
                 let local_idx = wasm.read_var_u32()? as LocalIdx;
                 let local_ty = locals
                     .get(local_idx)
-                    .ok_or(ValidationError::InvalidLocalIdx)?;
+                    .ok_or(ValidationError::InvalidLocalIdx(local_idx))?;
                 stack.push_valtype(*local_ty);
             }
             // local.set [t] -> []
@@ -503,7 +503,7 @@ fn read_instructions(
                 let local_idx = wasm.read_var_u32()? as LocalIdx;
                 let local_ty = locals
                     .get(local_idx)
-                    .ok_or(ValidationError::InvalidLocalIdx)?;
+                    .ok_or(ValidationError::InvalidLocalIdx(local_idx))?;
                 stack.assert_pop_val_type(*local_ty)?;
             }
             // local.set [t] -> [t]
@@ -511,7 +511,7 @@ fn read_instructions(
                 let local_idx = wasm.read_var_u32()? as LocalIdx;
                 let local_ty = locals
                     .get(local_idx)
-                    .ok_or(ValidationError::InvalidLocalIdx)?;
+                    .ok_or(ValidationError::InvalidLocalIdx(local_idx))?;
                 stack.assert_val_types_on_top(&[*local_ty], true)?;
             }
             // global.get [] -> [t]
@@ -546,7 +546,7 @@ fn read_instructions(
                 let table_idx = wasm.read_var_u32()? as TableIdx;
 
                 if tables.len() <= table_idx {
-                    return Err(ValidationError::TableIsNotDefined(table_idx));
+                    return Err(ValidationError::InvalidTableIdx(table_idx));
                 }
 
                 let t = tables.get(table_idx).unwrap().et;
@@ -558,7 +558,7 @@ fn read_instructions(
                 let table_idx = wasm.read_var_u32()? as TableIdx;
 
                 if tables.len() <= table_idx {
-                    return Err(ValidationError::TableIsNotDefined(table_idx));
+                    return Err(ValidationError::InvalidTableIdx(table_idx));
                 }
 
                 let t = tables.get(table_idx).unwrap().et;
@@ -568,7 +568,7 @@ fn read_instructions(
             }
             I32_LOAD => {
                 if memories.is_empty() {
-                    return Err(ValidationError::MemoryIsNotDefined(0));
+                    return Err(ValidationError::InvalidMemIndex(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 2 {
@@ -579,7 +579,7 @@ fn read_instructions(
             }
             I64_LOAD => {
                 if memories.is_empty() {
-                    return Err(ValidationError::MemoryIsNotDefined(0));
+                    return Err(ValidationError::InvalidMemIndex(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 3 {
@@ -590,7 +590,7 @@ fn read_instructions(
             }
             F32_LOAD => {
                 if memories.is_empty() {
-                    return Err(ValidationError::MemoryIsNotDefined(0));
+                    return Err(ValidationError::InvalidMemIndex(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 2 {
@@ -601,7 +601,7 @@ fn read_instructions(
             }
             F64_LOAD => {
                 if memories.is_empty() {
-                    return Err(ValidationError::MemoryIsNotDefined(0));
+                    return Err(ValidationError::InvalidMemIndex(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 3 {
@@ -612,7 +612,7 @@ fn read_instructions(
             }
             I32_LOAD8_S => {
                 if memories.is_empty() {
-                    return Err(ValidationError::MemoryIsNotDefined(0));
+                    return Err(ValidationError::InvalidMemIndex(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 0 {
@@ -623,7 +623,7 @@ fn read_instructions(
             }
             I32_LOAD8_U => {
                 if memories.is_empty() {
-                    return Err(ValidationError::MemoryIsNotDefined(0));
+                    return Err(ValidationError::InvalidMemIndex(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 0 {
@@ -634,7 +634,7 @@ fn read_instructions(
             }
             I32_LOAD16_S => {
                 if memories.is_empty() {
-                    return Err(ValidationError::MemoryIsNotDefined(0));
+                    return Err(ValidationError::InvalidMemIndex(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 1 {
@@ -645,7 +645,7 @@ fn read_instructions(
             }
             I32_LOAD16_U => {
                 if memories.is_empty() {
-                    return Err(ValidationError::MemoryIsNotDefined(0));
+                    return Err(ValidationError::InvalidMemIndex(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 1 {
@@ -656,7 +656,7 @@ fn read_instructions(
             }
             I64_LOAD8_S => {
                 if memories.is_empty() {
-                    return Err(ValidationError::MemoryIsNotDefined(0));
+                    return Err(ValidationError::InvalidMemIndex(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 0 {
@@ -667,7 +667,7 @@ fn read_instructions(
             }
             I64_LOAD8_U => {
                 if memories.is_empty() {
-                    return Err(ValidationError::MemoryIsNotDefined(0));
+                    return Err(ValidationError::InvalidMemIndex(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 0 {
@@ -678,7 +678,7 @@ fn read_instructions(
             }
             I64_LOAD16_S => {
                 if memories.is_empty() {
-                    return Err(ValidationError::MemoryIsNotDefined(0));
+                    return Err(ValidationError::InvalidMemIndex(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 1 {
@@ -689,7 +689,7 @@ fn read_instructions(
             }
             I64_LOAD16_U => {
                 if memories.is_empty() {
-                    return Err(ValidationError::MemoryIsNotDefined(0));
+                    return Err(ValidationError::InvalidMemIndex(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 1 {
@@ -700,7 +700,7 @@ fn read_instructions(
             }
             I64_LOAD32_S => {
                 if memories.is_empty() {
-                    return Err(ValidationError::MemoryIsNotDefined(0));
+                    return Err(ValidationError::InvalidMemIndex(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 2 {
@@ -711,7 +711,7 @@ fn read_instructions(
             }
             I64_LOAD32_U => {
                 if memories.is_empty() {
-                    return Err(ValidationError::MemoryIsNotDefined(0));
+                    return Err(ValidationError::InvalidMemIndex(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 2 {
@@ -722,7 +722,7 @@ fn read_instructions(
             }
             I32_STORE => {
                 if memories.is_empty() {
-                    return Err(ValidationError::MemoryIsNotDefined(0));
+                    return Err(ValidationError::InvalidMemIndex(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 2 {
@@ -733,7 +733,7 @@ fn read_instructions(
             }
             I64_STORE => {
                 if memories.is_empty() {
-                    return Err(ValidationError::MemoryIsNotDefined(0));
+                    return Err(ValidationError::InvalidMemIndex(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 3 {
@@ -744,7 +744,7 @@ fn read_instructions(
             }
             F32_STORE => {
                 if memories.is_empty() {
-                    return Err(ValidationError::MemoryIsNotDefined(0));
+                    return Err(ValidationError::InvalidMemIndex(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 2 {
@@ -755,7 +755,7 @@ fn read_instructions(
             }
             F64_STORE => {
                 if memories.is_empty() {
-                    return Err(ValidationError::MemoryIsNotDefined(0));
+                    return Err(ValidationError::InvalidMemIndex(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 3 {
@@ -766,7 +766,7 @@ fn read_instructions(
             }
             I32_STORE8 => {
                 if memories.is_empty() {
-                    return Err(ValidationError::MemoryIsNotDefined(0));
+                    return Err(ValidationError::InvalidMemIndex(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 0 {
@@ -777,7 +777,7 @@ fn read_instructions(
             }
             I32_STORE16 => {
                 if memories.is_empty() {
-                    return Err(ValidationError::MemoryIsNotDefined(0));
+                    return Err(ValidationError::InvalidMemIndex(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 1 {
@@ -788,7 +788,7 @@ fn read_instructions(
             }
             I64_STORE8 => {
                 if memories.is_empty() {
-                    return Err(ValidationError::MemoryIsNotDefined(0));
+                    return Err(ValidationError::InvalidMemIndex(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 0 {
@@ -799,7 +799,7 @@ fn read_instructions(
             }
             I64_STORE16 => {
                 if memories.is_empty() {
-                    return Err(ValidationError::MemoryIsNotDefined(0));
+                    return Err(ValidationError::InvalidMemIndex(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 1 {
@@ -810,7 +810,7 @@ fn read_instructions(
             }
             I64_STORE32 => {
                 if memories.is_empty() {
-                    return Err(ValidationError::MemoryIsNotDefined(0));
+                    return Err(ValidationError::InvalidMemIndex(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 2 {
@@ -825,7 +825,7 @@ fn read_instructions(
                     return Err(ValidationError::UnsupportedMultipleMemoriesProposal);
                 }
                 if memories.len() <= mem_idx {
-                    return Err(ValidationError::MemoryIsNotDefined(mem_idx));
+                    return Err(ValidationError::InvalidMemIndex(mem_idx));
                 }
                 stack.push_valtype(ValType::NumType(NumType::I32));
             }
@@ -835,7 +835,7 @@ fn read_instructions(
                     return Err(ValidationError::UnsupportedMultipleMemoriesProposal);
                 }
                 if memories.len() <= mem_idx {
-                    return Err(ValidationError::MemoryIsNotDefined(mem_idx));
+                    return Err(ValidationError::InvalidMemIndex(mem_idx));
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.push_valtype(ValType::NumType(NumType::I32));
@@ -1037,7 +1037,7 @@ fn read_instructions(
 
                 // checking for existence suffices for checking whether this function has a valid type.
                 if type_idx_of_fn.len() <= func_idx {
-                    return Err(ValidationError::FunctionIsNotDefined(func_idx));
+                    return Err(ValidationError::InvalidFuncIdx(func_idx));
                 }
 
                 // check whether func_idx is in C.refs
@@ -1105,13 +1105,13 @@ fn read_instructions(
                             return Err(ValidationError::UnsupportedMultipleMemoriesProposal);
                         }
                         if memories.len() <= mem_idx {
-                            return Err(ValidationError::MemoryIsNotDefined(mem_idx));
+                            return Err(ValidationError::InvalidMemIndex(mem_idx));
                         }
                         if data_count.is_none() {
                             return Err(ValidationError::NoDataSegments);
                         }
                         if data_count.unwrap() as usize <= data_idx {
-                            return Err(ValidationError::DataSegmentNotFound(data_idx));
+                            return Err(ValidationError::InvalidDataIdx(data_idx));
                         }
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
@@ -1123,7 +1123,7 @@ fn read_instructions(
                         }
                         let data_idx = wasm.read_var_u32()? as DataIdx;
                         if data_count.unwrap() as usize <= data_idx {
-                            return Err(ValidationError::DataSegmentNotFound(data_idx));
+                            return Err(ValidationError::InvalidDataIdx(data_idx));
                         }
                     }
                     MEMORY_COPY => {
@@ -1132,7 +1132,7 @@ fn read_instructions(
                             return Err(ValidationError::UnsupportedMultipleMemoriesProposal);
                         }
                         if memories.is_empty() {
-                            return Err(ValidationError::MemoryIsNotDefined(0));
+                            return Err(ValidationError::InvalidMemIndex(0));
                         }
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
@@ -1144,7 +1144,7 @@ fn read_instructions(
                             return Err(ValidationError::UnsupportedMultipleMemoriesProposal);
                         }
                         if memories.len() <= mem_idx {
-                            return Err(ValidationError::MemoryIsNotDefined(mem_idx));
+                            return Err(ValidationError::InvalidMemIndex(mem_idx));
                         }
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
@@ -1155,13 +1155,13 @@ fn read_instructions(
                         let table_idx = wasm.read_var_u32()? as TableIdx;
 
                         if tables.len() <= table_idx {
-                            return Err(ValidationError::TableIsNotDefined(table_idx));
+                            return Err(ValidationError::InvalidTableIdx(table_idx));
                         }
 
                         let t1 = tables[table_idx].et;
 
                         if elements.len() <= elem_idx {
-                            return Err(ValidationError::ElementIsNotDefined(elem_idx));
+                            return Err(ValidationError::InvalidElemIdx(elem_idx));
                         }
 
                         let t2 = elements[elem_idx].to_ref_type();
@@ -1178,7 +1178,7 @@ fn read_instructions(
                         let elem_idx = wasm.read_var_u32()? as ElemIdx;
 
                         if elements.len() <= elem_idx {
-                            return Err(ValidationError::ElementIsNotDefined(elem_idx));
+                            return Err(ValidationError::InvalidElemIdx(elem_idx));
                         }
                     }
                     TABLE_COPY => {
@@ -1186,11 +1186,11 @@ fn read_instructions(
                         let table_y_idx = wasm.read_var_u32()? as TableIdx;
 
                         if tables.len() <= table_x_idx {
-                            return Err(ValidationError::TableIsNotDefined(table_x_idx));
+                            return Err(ValidationError::InvalidTableIdx(table_x_idx));
                         }
 
                         if tables.len() <= table_y_idx {
-                            return Err(ValidationError::TableIsNotDefined(table_y_idx));
+                            return Err(ValidationError::InvalidTableIdx(table_y_idx));
                         }
 
                         let t1 = tables[table_x_idx].et;
@@ -1208,7 +1208,7 @@ fn read_instructions(
                         let table_idx = wasm.read_var_u32()? as TableIdx;
 
                         if tables.len() <= table_idx {
-                            return Err(ValidationError::TableIsNotDefined(table_idx));
+                            return Err(ValidationError::InvalidTableIdx(table_idx));
                         }
 
                         let t = tables[table_idx].et;
@@ -1222,7 +1222,7 @@ fn read_instructions(
                         let table_idx = wasm.read_var_u32()? as TableIdx;
 
                         if tables.len() <= table_idx {
-                            return Err(ValidationError::TableIsNotDefined(table_idx));
+                            return Err(ValidationError::InvalidTableIdx(table_idx));
                         }
 
                         stack.push_valtype(ValType::NumType(NumType::I32));
@@ -1231,7 +1231,7 @@ fn read_instructions(
                         let table_idx = wasm.read_var_u32()? as TableIdx;
 
                         if tables.len() <= table_idx {
-                            return Err(ValidationError::TableIsNotDefined(table_idx));
+                            return Err(ValidationError::InvalidTableIdx(table_idx));
                         }
 
                         let t = tables[table_idx].et;
@@ -1295,7 +1295,7 @@ fn read_instructions(
                 match second_instr {
                     V128_LOAD => {
                         if memories.is_empty() {
-                            return Err(ValidationError::MemoryIsNotDefined(0));
+                            return Err(ValidationError::InvalidMemIndex(0));
                         }
                         let memarg = MemArg::read(wasm)?;
                         if memarg.align > 4 {
@@ -1306,7 +1306,7 @@ fn read_instructions(
                     }
                     V128_STORE => {
                         if memories.is_empty() {
-                            return Err(ValidationError::MemoryIsNotDefined(0));
+                            return Err(ValidationError::InvalidMemIndex(0));
                         }
                         let memarg = MemArg::read(wasm)?;
                         if memarg.align > 4 {
@@ -1322,7 +1322,7 @@ fn read_instructions(
                     | V128_LOAD32X2_S | V128_LOAD32X2_U
                     => {
                         if memories.is_empty() {
-                            return Err(ValidationError::MemoryIsNotDefined(0));
+                            return Err(ValidationError::InvalidMemIndex(0));
                         }
                         let memarg = MemArg::read(wasm)?;
                         if memarg.align > 3 {
@@ -1335,7 +1335,7 @@ fn read_instructions(
                     // v128.loadN_splat + v128.loadN_zero
                     V128_LOAD8_SPLAT => {
                         if memories.is_empty() {
-                            return Err(ValidationError::MemoryIsNotDefined(0));
+                            return Err(ValidationError::InvalidMemIndex(0));
                         }
                         let memarg = MemArg::read(wasm)?;
                         if memarg.align > 0 {
@@ -1346,7 +1346,7 @@ fn read_instructions(
                     }
                     V128_LOAD16_SPLAT => {
                         if memories.is_empty() {
-                            return Err(ValidationError::MemoryIsNotDefined(0));
+                            return Err(ValidationError::InvalidMemIndex(0));
                         }
                         let memarg = MemArg::read(wasm)?;
                         if memarg.align > 1 {
@@ -1357,7 +1357,7 @@ fn read_instructions(
                     }
                     V128_LOAD32_SPLAT | V128_LOAD32_ZERO => {
                         if memories.is_empty() {
-                            return Err(ValidationError::MemoryIsNotDefined(0));
+                            return Err(ValidationError::InvalidMemIndex(0));
                         }
                         let memarg = MemArg::read(wasm)?;
                         if memarg.align > 2 {
@@ -1368,7 +1368,7 @@ fn read_instructions(
                     }
                     V128_LOAD64_SPLAT | V128_LOAD64_ZERO => {
                         if memories.is_empty() {
-                            return Err(ValidationError::MemoryIsNotDefined(0));
+                            return Err(ValidationError::InvalidMemIndex(0));
                         }
                         let memarg = MemArg::read(wasm)?;
                         if memarg.align > 3 {
@@ -1383,10 +1383,10 @@ fn read_instructions(
                         let memarg = MemArg::read(wasm)?;
                         let lane_idx = wasm.read_u8()?;
                         if lane_idx >= 16 {
-                            return Err(ValidationError::InvalidLaneIndex);
+                            return Err(ValidationError::InvalidLaneIdx(lane_idx));
                         }
                         if memories.is_empty() {
-                            return Err(ValidationError::MemoryIsNotDefined(0));
+                            return Err(ValidationError::InvalidMemIndex(0));
                         }
                         if memarg.align > 0 {
                             return Err(ValidationError::ErroneousAlignment(memarg.align, 0));
@@ -1399,10 +1399,10 @@ fn read_instructions(
                         let memarg = MemArg::read(wasm)?;
                         let lane_idx = wasm.read_u8()?;
                         if lane_idx >= 8 {
-                            return Err(ValidationError::InvalidLaneIndex);
+                            return Err(ValidationError::InvalidLaneIdx(lane_idx));
                         }
                         if memories.is_empty() {
-                            return Err(ValidationError::MemoryIsNotDefined(0));
+                            return Err(ValidationError::InvalidMemIndex(0));
                         }
                         if memarg.align > 1 {
                             return Err(ValidationError::ErroneousAlignment(memarg.align, 1));
@@ -1415,10 +1415,10 @@ fn read_instructions(
                         let memarg = MemArg::read(wasm)?;
                         let lane_idx = wasm.read_u8()?;
                         if lane_idx >= 4 {
-                            return Err(ValidationError::InvalidLaneIndex);
+                            return Err(ValidationError::InvalidLaneIdx(lane_idx));
                         }
                         if memories.is_empty() {
-                            return Err(ValidationError::MemoryIsNotDefined(0));
+                            return Err(ValidationError::InvalidMemIndex(0));
                         }
                         if memarg.align > 2 {
                             return Err(ValidationError::ErroneousAlignment(memarg.align, 2));
@@ -1431,10 +1431,10 @@ fn read_instructions(
                         let memarg = MemArg::read(wasm)?;
                         let lane_idx = wasm.read_u8()?;
                         if lane_idx >= 2 {
-                            return Err(ValidationError::InvalidLaneIndex);
+                            return Err(ValidationError::InvalidLaneIdx(lane_idx));
                         }
                         if memories.is_empty() {
-                            return Err(ValidationError::MemoryIsNotDefined(0));
+                            return Err(ValidationError::InvalidMemIndex(0));
                         }
                         if memarg.align > 3 {
                             return Err(ValidationError::ErroneousAlignment(memarg.align, 3));
@@ -1449,10 +1449,10 @@ fn read_instructions(
                         let memarg = MemArg::read(wasm)?;
                         let lane_idx = wasm.read_u8()?;
                         if lane_idx >= 16 {
-                            return Err(ValidationError::InvalidLaneIndex);
+                            return Err(ValidationError::InvalidLaneIdx(lane_idx));
                         }
                         if memories.is_empty() {
-                            return Err(ValidationError::MemoryIsNotDefined(0));
+                            return Err(ValidationError::InvalidMemIndex(0));
                         }
                         if memarg.align > 0 {
                             return Err(ValidationError::ErroneousAlignment(memarg.align, 0));
@@ -1464,10 +1464,10 @@ fn read_instructions(
                         let memarg = MemArg::read(wasm)?;
                         let lane_idx = wasm.read_u8()?;
                         if lane_idx >= 8 {
-                            return Err(ValidationError::InvalidLaneIndex);
+                            return Err(ValidationError::InvalidLaneIdx(lane_idx));
                         }
                         if memories.is_empty() {
-                            return Err(ValidationError::MemoryIsNotDefined(0));
+                            return Err(ValidationError::InvalidMemIndex(0));
                         }
                         if memarg.align > 1 {
                             return Err(ValidationError::ErroneousAlignment(memarg.align, 1));
@@ -1479,10 +1479,10 @@ fn read_instructions(
                         let memarg = MemArg::read(wasm)?;
                         let lane_idx = wasm.read_u8()?;
                         if lane_idx >= 4 {
-                            return Err(ValidationError::InvalidLaneIndex);
+                            return Err(ValidationError::InvalidLaneIdx(lane_idx));
                         }
                         if memories.is_empty() {
-                            return Err(ValidationError::MemoryIsNotDefined(0));
+                            return Err(ValidationError::InvalidMemIndex(0));
                         }
                         if memarg.align > 2 {
                             return Err(ValidationError::ErroneousAlignment(memarg.align, 2));
@@ -1494,10 +1494,10 @@ fn read_instructions(
                         let memarg = MemArg::read(wasm)?;
                         let lane_idx = wasm.read_u8()?;
                         if lane_idx >= 2 {
-                            return Err(ValidationError::InvalidLaneIndex);
+                            return Err(ValidationError::InvalidLaneIdx(lane_idx));
                         }
                         if memories.is_empty() {
-                            return Err(ValidationError::MemoryIsNotDefined(0));
+                            return Err(ValidationError::InvalidMemIndex(0));
                         }
                         if memarg.align > 3 {
                             return Err(ValidationError::ErroneousAlignment(memarg.align, 3));
@@ -1548,7 +1548,7 @@ fn read_instructions(
                         for _ in 0..16 {
                             let lane_idx = wasm.read_u8()?;
                             if lane_idx >= 32 {
-                                return Err(ValidationError::InvalidLaneIndex);
+                                return Err(ValidationError::InvalidLaneIdx(lane_idx));
                             }
                         }
                         stack.assert_pop_val_type(ValType::VecType)?;
@@ -1578,7 +1578,7 @@ fn read_instructions(
                     I8X16_EXTRACT_LANE_S | I8X16_EXTRACT_LANE_U => {
                         let lane_idx = wasm.read_u8()?;
                         if lane_idx >= 16 {
-                            return Err(ValidationError::InvalidLaneIndex);
+                            return Err(ValidationError::InvalidLaneIdx(lane_idx));
                         }
                         stack.assert_pop_val_type(ValType::VecType)?;
                         stack.push_valtype(ValType::NumType(NumType::I32));
@@ -1586,7 +1586,7 @@ fn read_instructions(
                     I16X8_EXTRACT_LANE_S | I16X8_EXTRACT_LANE_U => {
                         let lane_idx = wasm.read_u8()?;
                         if lane_idx >= 8 {
-                            return Err(ValidationError::InvalidLaneIndex);
+                            return Err(ValidationError::InvalidLaneIdx(lane_idx));
                         }
                         stack.assert_pop_val_type(ValType::VecType)?;
                         stack.push_valtype(ValType::NumType(NumType::I32));
@@ -1594,7 +1594,7 @@ fn read_instructions(
                     I32X4_EXTRACT_LANE => {
                         let lane_idx = wasm.read_u8()?;
                         if lane_idx >= 4 {
-                            return Err(ValidationError::InvalidLaneIndex);
+                            return Err(ValidationError::InvalidLaneIdx(lane_idx));
                         }
                         stack.assert_pop_val_type(ValType::VecType)?;
                         stack.push_valtype(ValType::NumType(NumType::I32));
@@ -1602,7 +1602,7 @@ fn read_instructions(
                     I64X2_EXTRACT_LANE => {
                         let lane_idx = wasm.read_u8()?;
                         if lane_idx >= 2 {
-                            return Err(ValidationError::InvalidLaneIndex);
+                            return Err(ValidationError::InvalidLaneIdx(lane_idx));
                         }
                         stack.assert_pop_val_type(ValType::VecType)?;
                         stack.push_valtype(ValType::NumType(NumType::I64));
@@ -1610,7 +1610,7 @@ fn read_instructions(
                     F32X4_EXTRACT_LANE => {
                         let lane_idx = wasm.read_u8()?;
                         if lane_idx >= 4 {
-                            return Err(ValidationError::InvalidLaneIndex);
+                            return Err(ValidationError::InvalidLaneIdx(lane_idx));
                         }
                         stack.assert_pop_val_type(ValType::VecType)?;
                         stack.push_valtype(ValType::NumType(NumType::F32));
@@ -1618,7 +1618,7 @@ fn read_instructions(
                     F64X2_EXTRACT_LANE => {
                         let lane_idx = wasm.read_u8()?;
                         if lane_idx >= 2 {
-                            return Err(ValidationError::InvalidLaneIndex);
+                            return Err(ValidationError::InvalidLaneIdx(lane_idx));
                         }
                         stack.assert_pop_val_type(ValType::VecType)?;
                         stack.push_valtype(ValType::NumType(NumType::F64));
@@ -1628,7 +1628,7 @@ fn read_instructions(
                     I8X16_REPLACE_LANE => {
                         let lane_idx = wasm.read_u8()?;
                         if lane_idx >= 16 {
-                            return Err(ValidationError::InvalidLaneIndex);
+                            return Err(ValidationError::InvalidLaneIdx(lane_idx));
                         }
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                         stack.assert_pop_val_type(ValType::VecType)?;
@@ -1637,7 +1637,7 @@ fn read_instructions(
                     I16X8_REPLACE_LANE => {
                         let lane_idx = wasm.read_u8()?;
                         if lane_idx >= 8 {
-                            return Err(ValidationError::InvalidLaneIndex);
+                            return Err(ValidationError::InvalidLaneIdx(lane_idx));
                         }
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                         stack.assert_pop_val_type(ValType::VecType)?;
@@ -1646,7 +1646,7 @@ fn read_instructions(
                     I32X4_REPLACE_LANE => {
                         let lane_idx = wasm.read_u8()?;
                         if lane_idx >= 4 {
-                            return Err(ValidationError::InvalidLaneIndex);
+                            return Err(ValidationError::InvalidLaneIdx(lane_idx));
                         }
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                         stack.assert_pop_val_type(ValType::VecType)?;
@@ -1655,7 +1655,7 @@ fn read_instructions(
                     I64X2_REPLACE_LANE => {
                         let lane_idx = wasm.read_u8()?;
                         if lane_idx >= 2 {
-                            return Err(ValidationError::InvalidLaneIndex);
+                            return Err(ValidationError::InvalidLaneIdx(lane_idx));
                         }
                         stack.assert_pop_val_type(ValType::NumType(NumType::I64))?;
                         stack.assert_pop_val_type(ValType::VecType)?;
@@ -1664,7 +1664,7 @@ fn read_instructions(
                     F32X4_REPLACE_LANE => {
                         let lane_idx = wasm.read_u8()?;
                         if lane_idx >= 4 {
-                            return Err(ValidationError::InvalidLaneIndex);
+                            return Err(ValidationError::InvalidLaneIdx(lane_idx));
                         }
                         stack.assert_pop_val_type(ValType::NumType(NumType::F32))?;
                         stack.assert_pop_val_type(ValType::VecType)?;
@@ -1673,7 +1673,7 @@ fn read_instructions(
                     F64X2_REPLACE_LANE => {
                         let lane_idx = wasm.read_u8()?;
                         if lane_idx >= 2 {
-                            return Err(ValidationError::InvalidLaneIndex);
+                            return Err(ValidationError::InvalidLaneIdx(lane_idx));
                         }
                         stack.assert_pop_val_type(ValType::NumType(NumType::F64))?;
                         stack.assert_pop_val_type(ValType::VecType)?;
