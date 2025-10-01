@@ -513,3 +513,84 @@ impl TryFrom<Value> for Ref {
         }
     }
 }
+
+#[cfg(test)]
+mod test {
+    use alloc::string::ToString;
+
+    use crate::{
+        value::{ExternAddr, F32, F64},
+        RefType,
+    };
+
+    use super::{FuncAddr, Ref};
+
+    #[test]
+    fn rounding_f32() {
+        let round_towards_0_f32 = F32(0.5 - f32::EPSILON).round();
+        let round_towards_1_f32 = F32(0.5 + f32::EPSILON).round();
+
+        assert_eq!(round_towards_0_f32, F32(0.0));
+        assert_eq!(round_towards_1_f32, F32(1.0));
+    }
+
+    #[test]
+    fn rounding_f64() {
+        let round_towards_0_f64 = F64(0.5 - f64::EPSILON).round();
+        let round_towards_1_f64 = F64(0.5 + f64::EPSILON).round();
+
+        assert_eq!(round_towards_0_f64, F64(0.0));
+        assert_eq!(round_towards_1_f64, F64(1.0));
+    }
+
+    #[test]
+    fn display_f32() {
+        for x in [
+            -1.0,
+            0.0,
+            1.0,
+            13.3,
+            f32::INFINITY,
+            f32::MAX,
+            f32::MIN,
+            f32::NAN,
+            f32::NEG_INFINITY,
+            core::f32::consts::PI,
+        ] {
+            let wrapped = F32(x).to_string();
+            let expected = x.to_string();
+            assert_eq!(wrapped, expected);
+        }
+    }
+
+    #[test]
+    fn display_f64() {
+        for x in [
+            -1.0,
+            0.0,
+            1.0,
+            13.3,
+            f64::INFINITY,
+            f64::MAX,
+            f64::MIN,
+            f64::NAN,
+            f64::NEG_INFINITY,
+            core::f64::consts::PI,
+        ] {
+            let wrapped = F64(x).to_string();
+            let expected = x.to_string();
+            assert_eq!(wrapped, expected);
+        }
+    }
+
+    #[test]
+    fn display_ref() {
+        assert_eq!(Ref::Func(FuncAddr(11)).to_string(), "FuncRef(FuncAddr(11))");
+        assert_eq!(
+            Ref::Extern(ExternAddr(13)).to_string(),
+            "ExternRef(ExternAddr(13))"
+        );
+        assert_eq!(Ref::Null(RefType::FuncRef).to_string(), "Null(FuncRef)");
+        assert_eq!(Ref::Null(RefType::ExternRef).to_string(), "Null(ExternRef)");
+    }
+}
