@@ -32,7 +32,6 @@ use crate::{
     Value,
 };
 
-#[cfg(feature = "hooks")]
 use crate::execution::hooks::HookSet;
 
 use super::{little_endian::LittleEndianBytes, store::Store};
@@ -70,7 +69,6 @@ pub(super) fn run<T, H: HookSet>(
     use crate::core::reader::types::opcode::*;
     loop {
         // call the instruction hook
-        #[cfg(feature = "hooks")]
         hooks.instruction_hook(store.modules[current_module_idx].wasm_bytecode, wasm.pc);
 
         let first_instr_byte = wasm.read_u8().unwrap_validated();
