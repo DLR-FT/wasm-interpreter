@@ -3,7 +3,7 @@
 
 extern crate alloc;
 #[macro_use]
-extern crate log;
+extern crate log_wrapper;
 
 pub use core::error::ValidationError;
 pub use core::reader::types::{export::ExportDesc, Limits, NumType, RefType, ValType};
