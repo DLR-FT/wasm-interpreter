@@ -77,17 +77,6 @@ pub(super) fn run<T, H: HookSet>(
             opcode_byte_to_str(first_instr_byte)
         );
 
-        // Fuel mechanism: 1 fuel per instruction
-        if let Some(fuel) = &mut maybe_fuel {
-            *fuel = fuel.checked_sub(1).ok_or_else(|| {
-                resumable.current_func_addr = current_func_addr;
-                resumable.pc = wasm.pc - 1;
-                resumable.stp = stp;
-
-                RuntimeError::OutOfFuel
-            })?;
-        }
-
         match first_instr_byte {
             NOP => {
                 trace!("Instruction: NOP");
@@ -2795,6 +2784,7 @@ fn spend_basic_block_cost(
             if *fuel < current_sidetable[stp].delta_fuel {
                 Err(RuntimeError::OutOfFuel)
             } else {
+                *fuel -= current_sidetable[stp].delta_fuel;
                 Ok(())
             }
         }
