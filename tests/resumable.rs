@@ -19,7 +19,7 @@ fn out_of_fuel() {
         runtime_instance
             .invoke_resumable(&func_ref, vec![], 40)
             .unwrap(),
-        RunState::Resumable(_)
+        RunState::Resumable { .. }
     ));
 }
 #[test_log::test]
@@ -71,23 +71,30 @@ fn resumable() {
     let mut run_state_mult = runtime_instance
         .invoke_resumable(&mult_global_0, vec![], 0)
         .unwrap();
-    // multiple resumables cause problems with borrow checker
     let mut run_state_add = runtime_instance
         .invoke_resumable(&add_global_1, vec![], 0)
         .unwrap();
 
+    let increment = |maybe_fuel: &mut Option<u32>| *maybe_fuel = maybe_fuel.map(|fuel| fuel + 2);
+
     for _ in 0..20 {
         run_state_mult = match run_state_mult {
             RunState::Finished(_) => panic!("should not terminate"),
-            RunState::Resumable(resumable_ref) => {
-                resumable_ref.resume(&mut runtime_instance, 2).unwrap()
+            RunState::Resumable { resumable_ref, .. } => {
+                resumable_ref
+                    .access_fuel_mut(&mut runtime_instance, increment)
+                    .unwrap();
+                resumable_ref.resume(&mut runtime_instance).unwrap()
             }
         };
         info!("Global values are {:?}", &runtime_instance.store.globals);
         run_state_add = match run_state_add {
             RunState::Finished(_) => panic!("should not terminate"),
-            RunState::Resumable(resumable_ref) => {
-                resumable_ref.resume(&mut runtime_instance, 2).unwrap()
+            RunState::Resumable { resumable_ref, .. } => {
+                resumable_ref
+                    .access_fuel_mut(&mut runtime_instance, increment)
+                    .unwrap();
+                resumable_ref.resume(&mut runtime_instance).unwrap()
             }
         };
         info!("Global values are {:?}", &runtime_instance.store.globals)
