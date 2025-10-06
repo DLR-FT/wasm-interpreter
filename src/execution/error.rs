@@ -14,7 +14,7 @@ pub enum RuntimeError {
     InvalidImportType,
     UnknownImport,
     MoreThanOneMemory,
-    OutOfFuel,
+    OutOfFuel { required_fuel: u32 },
 }
 
 impl Display for RuntimeError {
@@ -36,7 +36,10 @@ impl Display for RuntimeError {
             RuntimeError::MoreThanOneMemory => {
                 f.write_str("As of not only one memory is allowed per module.")
             }
-            RuntimeError::OutOfFuel => f.write_str("ran out of fuel"),
+            RuntimeError::OutOfFuel { required_fuel } => write!(
+                f,
+                "ran out of fuel, requires {required_fuel} units more fuel to execute"
+            ),
         }
     }
 }

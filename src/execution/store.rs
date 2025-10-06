@@ -594,26 +594,23 @@ impl<'b, T> Store<'b, T> {
                     stack,
                     pc: wasm_func_inst.code_expr.from,
                     stp: wasm_func_inst.stp,
+                    maybe_fuel,
                 };
 
                 // Run the interpreter
-                let result = interpreter_loop::run(
-                    // &mut self.modules,
-                    &mut resumable,
-                    // self.lut.as_ref().ok_or(RuntimeError::UnmetImport)?,
-                    self,
-                    EmptyHookSet,
-                    maybe_fuel,
-                );
+                let result = interpreter_loop::run(&mut resumable, self, EmptyHookSet);
 
                 match result {
                     Ok(()) => {
                         debug!("Successfully invoked function");
                         Ok(RunState::Finished(resumable.stack.into_values()))
                     }
-                    Err(RuntimeError::OutOfFuel) => {
+                    Err(RuntimeError::OutOfFuel { required_fuel }) => {
                         debug!("Successfully invoked function, but ran out of fuel");
-                        Ok(RunState::Resumable(self.dormitory.insert(resumable)))
+                        Ok(RunState::Resumable {
+                            resumable_ref: self.dormitory.insert(resumable),
+                            required_fuel,
+                        })
                     }
                     Err(err) => Err(err),
                 }
