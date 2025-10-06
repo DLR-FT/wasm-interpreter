@@ -38,7 +38,6 @@ pub(super) fn run<T, H: HookSet>(
     resumable: &mut Resumable,
     store: &mut Store<T>,
     mut hooks: H,
-    mut maybe_fuel: Option<u32>,
 ) -> Result<(), RuntimeError> {
     let stack = &mut resumable.stack;
     let mut current_func_addr = resumable.current_func_addr;
@@ -78,13 +77,13 @@ pub(super) fn run<T, H: HookSet>(
         );
 
         // Fuel mechanism: 1 fuel per instruction
-        if let Some(fuel) = &mut maybe_fuel {
+        if let Some(fuel) = &mut resumable.maybe_fuel {
             *fuel = fuel.checked_sub(1).ok_or_else(|| {
                 resumable.current_func_addr = current_func_addr;
                 resumable.pc = wasm.pc - 1;
                 resumable.stp = stp;
 
-                RuntimeError::OutOfFuel
+                RuntimeError::OutOfFuel { required_fuel: 0 }
             })?;
         }
 

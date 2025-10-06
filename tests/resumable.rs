@@ -19,7 +19,7 @@ fn out_of_fuel() {
         runtime_instance
             .invoke_resumable(&func_ref, vec![], 40)
             .unwrap(),
-        RunState::Resumable(_)
+        RunState::Resumable { .. }
     ));
 }
 #[test_log::test]
@@ -79,16 +79,16 @@ fn resumable() {
     for _ in 0..20 {
         run_state_mult = match run_state_mult {
             RunState::Finished(_) => panic!("should not terminate"),
-            RunState::Resumable(resumable_ref) => {
-                resumable_ref.resume(&mut runtime_instance, 2).unwrap()
-            }
+            RunState::Resumable { resumable_ref, .. } => resumable_ref
+                .resume(&mut runtime_instance, Some(2))
+                .unwrap(),
         };
         info!("Global values are {:?}", &runtime_instance.store.globals);
         run_state_add = match run_state_add {
             RunState::Finished(_) => panic!("should not terminate"),
-            RunState::Resumable(resumable_ref) => {
-                resumable_ref.resume(&mut runtime_instance, 2).unwrap()
-            }
+            RunState::Resumable { resumable_ref, .. } => resumable_ref
+                .resume(&mut runtime_instance, Some(2))
+                .unwrap(),
         };
         info!("Global values are {:?}", &runtime_instance.store.globals)
     }
