@@ -8,9 +8,12 @@
 
 use alloc::vec::Vec;
 use core::{
-    array,
-    iter::zip,
-    ops::{Add, Div, Mul, Neg, Sub},
+    num::NonZeroU32,
+    {
+        array,
+        iter::zip,
+        ops::{Add, Div, Mul, Neg, Sub},
+    },
 };
 
 use crate::{
@@ -36,13 +39,15 @@ use crate::execution::hooks::HookSet;
 
 use super::{little_endian::LittleEndianBytes, store::Store};
 
-/// Interprets wasm native functions. Parameters and return values are passed on the stack.
+/// Interprets wasm native functions. Wasm parameters and Wasm return values are passed on the stack.
+/// Returns `Ok(None)` in case execution successfully terminates, `Ok(Some(required_fuel))` if execution
+/// terminates due to insufficient fuel, indicating how much fuel is required to resume with `required_fuel`,
+/// and `[Error::RuntimeError]` otherwise.
 pub(super) fn run<T, H: HookSet>(
     resumable: &mut Resumable,
     store: &mut Store<T>,
     mut hooks: H,
-    mut maybe_fuel: Option<u32>,
-) -> Result<(), RuntimeError> {
+) -> Result<Option<NonZeroU32>, RuntimeError> {
     let stack = &mut resumable.stack;
     let mut current_func_addr = resumable.current_func_addr;
     let pc = resumable.pc;
@@ -80,14 +85,12 @@ pub(super) fn run<T, H: HookSet>(
         );
 
         // Fuel mechanism: 1 fuel per instruction
-        if let Some(fuel) = &mut maybe_fuel {
-            *fuel = fuel.checked_sub(1).ok_or_else(|| {
-                resumable.current_func_addr = current_func_addr;
-                resumable.pc = wasm.pc - 1;
-                resumable.stp = stp;
-
-                RuntimeError::OutOfFuel
-            })?;
+        if let Some(fuel) = &mut resumable.maybe_fuel {
+            if *fuel >= 1 {
+                *fuel -= 1;
+            } else {
+                return Ok(NonZeroU32::new(1));
+            }
         }
 
         match first_instr_byte {
@@ -4887,7 +4890,7 @@ pub(super) fn run<T, H: HookSet>(
             }
         }
     }
-    Ok(())
+    Ok(None)
 }
 
 //helper function for avoiding code duplication at intraprocedural jumps
