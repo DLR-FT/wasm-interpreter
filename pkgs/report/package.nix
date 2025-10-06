@@ -21,6 +21,7 @@ stdenvNoCC.mkDerivation {
 
     cp --recursive -- ${wasm-interpreter-pkgs.benchmark} bench
     cp --recursive -- ${wasm-interpreter-pkgs.coverage}/lcov-html coverage
+    cp --recursive -- ${wasm-interpreter-pkgs.flamegraph} flamegraph
     cp --recursive -- ${wasm-interpreter-pkgs.requirements} requirements
     cp --recursive -- ${
       wasm-interpreter-pkgs.wasm-interpreter.override { doDoc = true; }
