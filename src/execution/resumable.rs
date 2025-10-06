@@ -22,6 +22,7 @@ pub struct Resumable {
     pub(crate) pc: usize,
     pub(crate) stp: usize,
     pub(crate) current_func_addr: usize,
+    pub(crate) fuel: u32,
 }
 
 #[derive(Default)]
@@ -73,13 +74,11 @@ impl ResumableRef {
             .get_mut(&self.key)
             .expect("the key to always be valid as self was not dropped yet");
 
+        resumable.fuel += fuel;
+
         // Resume execution
-        let result = interpreter_loop::run(
-            resumable,
-            &mut runtime_instance.store,
-            EmptyHookSet,
-            Some(fuel),
-        );
+        let result =
+            interpreter_loop::run(resumable, &mut runtime_instance.store, EmptyHookSet, true);
 
         match result {
             Ok(()) => {
@@ -92,7 +91,10 @@ impl ResumableRef {
 
                 Ok(RunState::Finished(resumable.stack.into_values()))
             }
-            Err(RuntimeError::OutOfFuel) => Ok(RunState::Resumable(self)),
+            Err(RuntimeError::OutOfFuel { required_fuel }) => Ok(RunState::Resumable {
+                resumable_ref: self,
+                required_fuel,
+            }),
             Err(err) => Err(err),
         }
     }
@@ -112,5 +114,8 @@ impl Drop for ResumableRef {
 
 pub enum RunState {
     Finished(Vec<Value>),
-    Resumable(ResumableRef),
+    Resumable {
+        resumable_ref: ResumableRef,
+        required_fuel: u32,
+    },
 }
