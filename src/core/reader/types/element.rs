@@ -1,6 +1,6 @@
 use super::global::GlobalType;
 use super::RefType;
-use crate::core::indices::FuncIdx;
+use crate::core::indices::{FuncIdx, TableIdx};
 use crate::core::reader::span::Span;
 use crate::core::reader::types::TableType;
 use crate::core::reader::{WasmReadable, WasmReader};
@@ -232,10 +232,10 @@ impl ElemType {
                     // 1-2. C.tables[x] must be defined with type: limits t
                     let table_type = tables
                         .get(x as usize)
-                        .ok_or(ValidationError::UnknownTable)?
+                        .ok_or(ValidationError::InvalidTableIdx(x as TableIdx))?
                         .et;
                     if table_type != t {
-                        return Err(ValidationError::UnknownTable);
+                        return Err(ValidationError::ActiveElementTypeMismatch);
                     }
                     // 3-4. _expr must be valid with type I32 and be const: already checked during the parse of initializer expressions above.
                     // Then elemmode is valid with type t.

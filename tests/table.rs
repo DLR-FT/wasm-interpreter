@@ -82,7 +82,7 @@ fn unknown_table() {
     w.iter().for_each(|wat| {
         let wasm_bytes = wat::parse_str(wat).unwrap();
         let validation_info = validate(&wasm_bytes);
-        assert!(validation_info.err().unwrap() == GeneralError::UnknownTable);
+        assert!(validation_info.err().unwrap() == GeneralError::InvalidTableIdx(0));
     });
 }
 
