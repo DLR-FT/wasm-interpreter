@@ -41,6 +41,8 @@ pub enum ValidationError {
     /// An index for a label is invalid.
     InvalidLabelIdx(LabelIdx),
 
+    /// An active element segment's type and its table's type are different.
+    ActiveElementTypeMismatch,
     InvalidSection(SectionTy, String),
     InvalidSectionType(u8),
     SectionOutOfOrder(SectionTy),
@@ -66,11 +68,9 @@ pub enum ValidationError {
     GlobalIsConst,
     //           mem.align, wanted alignment
     ErroneousAlignment(u32, u32),
-    NoDataSegments,
     ValidationCtrlStackEmpty,
     ElseWithoutMatchingIf,
     IfWithoutMatchingElse,
-    UnknownTable,
     DifferentRefTypes(RefType, RefType),
     ExpectedARefType(ValType),
     WrongRefTypeForInteropValue(RefType, RefType),
@@ -80,9 +80,6 @@ pub enum ValidationError {
     InvalidSelectTypeVector,
     TooManyLocals(usize),
     Overflow,
-    UnknownFunction,
-    UnknownMemory,
-    UnknownGlobal,
     DuplicateExportName,
     UnsupportedMultipleMemoriesProposal,
     ExprHasTrailingInstructions,
@@ -114,6 +111,7 @@ impl Display for ValidationError {
             ValidationError::InvalidLocalIdx(idx) => write!(f, "invalid local index {idx}"),
             ValidationError::InvalidLabelIdx(idx) => write!(f, "invalid label index {idx}"),
 
+            ValidationError::ActiveElementTypeMismatch => f.write_str("an element segment's type and its table's type are different"),
             ValidationError::InvalidSection(section, reason) => f.write_fmt(format_args!(
                 "Section '{section:?}' invalid! Reason: {reason}"
             )),
@@ -178,7 +176,6 @@ impl Display for ValidationError {
                     "Alignment ({mem_align}) is not less or equal to {minimum_wanted_alignment}"
                 ))
             }
-            ValidationError::NoDataSegments => f.write_str("Data Count is None"),
             ValidationError::ValidationCtrlStackEmpty => {
                 f.write_str("cannot retrieve last ctrl block, validation ctrl stack is empty")
             }
@@ -211,11 +208,6 @@ impl Display for ValidationError {
                 f.write_fmt(format_args!("Too many locals (more than 2^32-1): {x}"))
             }
             ValidationError::Overflow => f.write_str("Overflow"),
-            // TODO: maybe move these to LinkerError also add more info to them (the name's export, function idx, etc)
-            ValidationError::UnknownFunction => f.write_str("Unknown function"),
-            ValidationError::UnknownMemory => f.write_str("Unknown memory"),
-            ValidationError::UnknownGlobal => f.write_str("Unknown global"),
-            ValidationError::UnknownTable => f.write_str("Unknown table"),
             ValidationError::DuplicateExportName => f.write_str("Duplicate export name"),
             ValidationError::UnsupportedMultipleMemoriesProposal => f.write_str("Proposal for multiple memories is not yet supported"),
             ValidationError::ExprHasTrailingInstructions => f.write_str("A code expression has invalid trailing instructions"),
