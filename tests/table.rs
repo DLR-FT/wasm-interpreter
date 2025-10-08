@@ -88,20 +88,28 @@ fn unknown_table() {
 
 #[test_log::test]
 fn table_size_minimum_must_not_be_greater_than_maximum() {
-    let w = r#"
-    (module (table 1 0 funcref))
-    (module (table 0xffff_ffff 0 funcref))
-"#
-    .split("\n")
-    .map(|el| el.trim())
-    .filter(|el| !el.is_empty())
-    .collect::<Vec<&str>>();
-
-    w.iter().for_each(|wat| {
-        let wasm_bytes = wat::parse_str(wat).unwrap();
+    {
+        let module = "(module (table 1 0 funcref))";
+        let wasm_bytes = wat::parse_str(module).unwrap();
         let validation_info = validate(&wasm_bytes);
-        assert!(validation_info.err().unwrap() == GeneralError::InvalidLimit);
-    });
+        assert_eq!(
+            validation_info.err(),
+            Some(GeneralError::MalformedLimitsMinLargerThanMax { min: 1, max: 0 })
+        );
+    }
+
+    {
+        let module = "(module (table 0xffff_ffff 0 funcref))";
+        let wasm_bytes = wat::parse_str(module).unwrap();
+        let validation_info = validate(&wasm_bytes);
+        assert_eq!(
+            validation_info.err(),
+            Some(GeneralError::MalformedLimitsMinLargerThanMax {
+                min: 0xFFFF_FFFF,
+                max: 0
+            })
+        );
+    }
 }
 
 #[test_log::test]

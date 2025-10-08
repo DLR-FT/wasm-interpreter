@@ -118,7 +118,7 @@ impl WasmReadable for ExportDesc {
             0x01 => ExportDesc::TableIdx(desc_idx),
             0x02 => ExportDesc::MemIdx(desc_idx),
             0x03 => ExportDesc::GlobalIdx(desc_idx),
-            other => return Err(ValidationError::InvalidExportDesc(other)),
+            other => return Err(ValidationError::MalformedExportDescDiscriminator(other)),
         };
         Ok(desc)
     }
