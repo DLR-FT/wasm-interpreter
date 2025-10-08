@@ -345,8 +345,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
                 },
             })
         {
-            // TODO fix error type
-            Err(ValidationError::InvalidFuncType)
+            Err(ValidationError::InvalidStartFunctionSignature)
         } else {
             Ok(func_idx)
         }

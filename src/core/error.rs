@@ -85,6 +85,8 @@ pub enum ValidationError {
     ExprHasTrailingInstructions,
     FunctionAndCodeSectionsHaveDifferentLengths,
     DataCountAndDataSectionsLengthAreDifferent,
+    /// The function signature of the start function is invalid. It must not specify any parameters or return values.
+    InvalidStartFunctionSignature,
 }
 
 impl Display for ValidationError {
@@ -213,6 +215,7 @@ impl Display for ValidationError {
             ValidationError::ExprHasTrailingInstructions => f.write_str("A code expression has invalid trailing instructions"),
             ValidationError::FunctionAndCodeSectionsHaveDifferentLengths => f.write_str("The function and code sections have different lengths"),
             ValidationError::DataCountAndDataSectionsLengthAreDifferent => f.write_str("The data count section specifies a different length than there are actual segments in the data section."),
+            ValidationError::InvalidStartFunctionSignature => f.write_str("the start function has parameters or return types")
         }
     }
 }
