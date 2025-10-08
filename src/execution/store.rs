@@ -593,8 +593,22 @@ impl<'b, T> Store<'b, T> {
                     current_func_addr: func_addr,
                     stack,
                     pc: wasm_func_inst.code_expr.from,
-                    stp: wasm_func_inst.stp,
+                    stp: wasm_func_inst.stp + 1, // skip dummy sidetable entry at the beginning of the func
+                    fuel: maybe_fuel.unwrap_or(0),
                 };
+
+                // check if there is enough fuel
+                if let Some(fuel) = maybe_fuel {
+                    let required_fuel = self.modules[wasm_func_inst.module_addr].sidetable
+                        [wasm_func_inst.stp]
+                        .delta_fuel;
+                    if required_fuel > fuel {
+                        return Ok(RunState::Resumable {
+                            resumable_ref: self.dormitory.insert(resumable),
+                            required_fuel,
+                        });
+                    }
+                }
 
                 // Run the interpreter
                 let result = interpreter_loop::run(
@@ -603,7 +617,7 @@ impl<'b, T> Store<'b, T> {
                     // self.lut.as_ref().ok_or(RuntimeError::UnmetImport)?,
                     self,
                     EmptyHookSet,
-                    maybe_fuel,
+                    maybe_fuel.is_some(),
                 );
 
                 match result {
@@ -611,9 +625,12 @@ impl<'b, T> Store<'b, T> {
                         debug!("Successfully invoked function");
                         Ok(RunState::Finished(resumable.stack.into_values()))
                     }
-                    Err(RuntimeError::OutOfFuel) => {
+                    Err(RuntimeError::OutOfFuel { required_fuel }) => {
                         debug!("Successfully invoked function, but ran out of fuel");
-                        Ok(RunState::Resumable(self.dormitory.insert(resumable)))
+                        Ok(RunState::Resumable {
+                            resumable_ref: self.dormitory.insert(resumable),
+                            required_fuel,
+                        })
                     }
                     Err(err) => Err(err),
                 }

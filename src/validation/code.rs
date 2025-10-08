@@ -54,6 +54,15 @@ pub fn validate_code_section(
         let mut stack = ValidationStack::new_for_func(func_ty);
         let stp = sidetable.len();
 
+        // dummy sidetable entry at the beginning of the func
+        sidetable.push(SidetableEntry {
+            delta_pc: 0,
+            delta_stp: 0,
+            valcnt: 0,
+            popcnt: 0,
+            delta_fuel: 0,
+        });
+
         read_instructions(
             wasm,
             &mut stack,
@@ -165,6 +174,7 @@ fn validate_branch_and_generate_sidetable_entry(
         delta_stp: stp_here as isize,
         popcnt,
         valcnt,
+        delta_fuel: 0,
     });
 
     match &mut targeted_ctrl_block_entry.label_info {
@@ -212,6 +222,10 @@ fn read_instructions(
         #[cfg(not(debug_assertions))]
         trace!("Read instruction byte {first_instr_byte:#04X?} ({first_instr_byte}) at wasm_binary[{}]", wasm.pc);
 
+        // dummy fuel counter for now
+        // every function is guaranteed to have its first sidetable entry, this can be unwrapped.
+        sidetable.last_mut().unwrap().delta_fuel += 1;
+
         use crate::core::reader::types::opcode::*;
         match first_instr_byte {
             // nop: [] -> []
@@ -231,8 +245,18 @@ fn read_instructions(
                 let block_ty = BlockType::read(wasm)?.as_func_type(fn_types)?;
                 let label_info = LabelInfo::Loop {
                     ip: wasm.pc,
-                    stp: sidetable.len(),
+                    stp: sidetable.len() + 1,
                 };
+
+                // LOOP instruction can be possibly jumped into, therefore we add a sidetable entry corresponding the basic block it starts with.
+                sidetable.push(SidetableEntry {
+                    delta_pc: 0,
+                    delta_stp: 0,
+                    valcnt: 0,
+                    popcnt: 0,
+                    delta_fuel: 0,
+                });
+
                 // The types are explicitly popped and pushed in
                 // https://webassembly.github.io/spec/core/appendix/algorithm.html
                 // therefore types on the stack might change.
@@ -249,6 +273,7 @@ fn read_instructions(
                     delta_stp: stp_here as isize,
                     popcnt: 0,
                     valcnt: block_ty.params.valtypes.len(),
+                    delta_fuel: 0,
                 });
 
                 let label_info = LabelInfo::If {
@@ -277,6 +302,7 @@ fn read_instructions(
                         delta_stp: stp_here as isize,
                         popcnt: 0,
                         valcnt: block_ty.returns.valtypes.len(),
+                        delta_fuel: 0,
                     });
                     stps_to_backpatch.push(stp_here);
 
@@ -367,7 +393,16 @@ fn read_instructions(
                 // https://webassembly.github.io/spec/core/appendix/algorithm.html
                 // therefore types on the stack might change.
                 let (label_info, block_ty) = stack.assert_pop_ctrl(true)?;
-                let stp_here = sidetable.len();
+                let stp_here = sidetable.len() + 1;
+
+                // END instruction can be possibly jumped into, therefore we add a sidetable entry corresponding the basic block it starts with.
+                sidetable.push(SidetableEntry {
+                    delta_pc: 0,
+                    delta_stp: 0,
+                    valcnt: 0,
+                    popcnt: 0,
+                    delta_fuel: 0,
+                });
 
                 match label_info {
                     LabelInfo::Block { stps_to_backpatch } => {
