@@ -67,28 +67,28 @@ fn validate_exports(validation_info: &ValidationInfo) -> Result<(), ValidationEr
                     + validation_info.imports_length.imported_functions
                     <= func_idx
                 {
-                    return Err(ValidationError::UnknownFunction);
+                    return Err(ValidationError::InvalidFuncIdx(func_idx));
                 }
             }
             TableIdx(table_idx) => {
                 if validation_info.tables.len() + validation_info.imports_length.imported_tables
                     <= table_idx
                 {
-                    return Err(ValidationError::UnknownTable);
+                    return Err(ValidationError::InvalidTableIdx(table_idx));
                 }
             }
             MemIdx(mem_idx) => {
                 if validation_info.memories.len() + validation_info.imports_length.imported_memories
                     <= mem_idx
                 {
-                    return Err(ValidationError::UnknownMemory);
+                    return Err(ValidationError::InvalidMemIndex(mem_idx));
                 }
             }
             GlobalIdx(global_idx) => {
                 if validation_info.globals.len() + validation_info.imports_length.imported_globals
                     <= global_idx
                 {
-                    return Err(ValidationError::UnknownGlobal);
+                    return Err(ValidationError::InvalidGlobalIdx(global_idx));
                 }
             }
         }
