@@ -36,7 +36,7 @@ impl WasmReadable for SectionTy {
             10 => Code,
             11 => Data,
             12 => DataCount,
-            other => return Err(ValidationError::InvalidSectionType(other)),
+            other => return Err(ValidationError::MalformedSectionTypeDiscriminator(other)),
         };
 
         Ok(ty)

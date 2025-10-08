@@ -139,7 +139,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
 
     trace!("Validating version number");
     let [0x01, 0x00, 0x00, 0x00] = wasm.strip_bytes::<4>()? else {
-        return Err(ValidationError::InvalidVersion);
+        return Err(ValidationError::InvalidBinaryFormatVersion);
     };
     debug!("Header ok");
 
@@ -148,25 +148,18 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
 
     let skip_section = |wasm: &mut WasmReader, section_header: &mut Option<SectionHeader>| {
         handle_section(wasm, section_header, SectionTy::Custom, |wasm, h| {
-            use alloc::string::*;
             // customsec ::= section_0(custom)
             // custom ::= name byte*
             // name ::= b*:vec(byte) => name (if utf8(name) = b*)
             // vec(B) ::= n:u32 (x:B)^n => x^n
             let _name = wasm.read_name()?;
 
-            let remaining_bytes = match h
+            let remaining_bytes = h
                 .contents
                 .from()
                 .checked_add(h.contents.len())
                 .and_then(|res| res.checked_sub(wasm.pc))
-            {
-                None => Err(ValidationError::InvalidSection(
-                    SectionTy::Custom,
-                    "Remaining bytes less than 0 after reading name!".to_string(),
-                )),
-                Some(remaining_bytes) => Ok(remaining_bytes),
-            }?;
+                .ok_or(ValidationError::InvalidCustomSectionLength)?;
 
             // TODO: maybe do something with these remaining bytes?
             let mut _bytes = Vec::new();

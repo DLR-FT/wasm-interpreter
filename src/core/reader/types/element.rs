@@ -213,7 +213,7 @@ impl ElemType {
                 }
                 8.. => {
                     // TODO fix error
-                    return Err(ValidationError::InvalidVersion);
+                    return Err(ValidationError::InvalidBinaryFormatVersion);
                 }
             };
 
@@ -235,7 +235,7 @@ impl ElemType {
                         .ok_or(ValidationError::InvalidTableIdx(x as TableIdx))?
                         .et;
                     if table_type != t {
-                        return Err(ValidationError::ActiveElementTypeMismatch);
+                        return Err(ValidationError::ActiveElementSegmentTypeMismatch);
                     }
                     // 3-4. _expr must be valid with type I32 and be const: already checked during the parse of initializer expressions above.
                     // Then elemmode is valid with type t.
@@ -368,7 +368,7 @@ fn parse_validate_generic_initializer_list(
 fn parse_elemkind(wasm: &mut WasmReader) -> Result<u8, ValidationError> {
     let et = wasm.read_u8()?;
     if et != 0x00 {
-        Err(ValidationError::OnlyFuncRefIsAllowed)
+        Err(ValidationError::MalformedElemKindDiscriminator(et))
     } else {
         Ok(et)
     }

@@ -65,11 +65,11 @@ impl ExportDesc {
                 let type_idx = validation_info
                     .functions
                     .get(*func_idx)
-                    .ok_or(ValidationError::InvalidFuncTypeIdx)?;
+                    .ok_or(ValidationError::InvalidFuncIdx(*func_idx))?;
                 let func_type = validation_info
                     .types
                     .get(*type_idx)
-                    .ok_or(ValidationError::InvalidFuncType)?;
+                    .ok_or(ValidationError::InvalidTypeIdx(*type_idx))?;
                 // TODO ugly clone that should disappear when types are directly parsed from bytecode instead of vector copies
                 ExternType::Func(func_type.clone())
             }
@@ -135,7 +135,7 @@ impl WasmReadable for ExportDesc {
             0x01 => ExportDesc::TableIdx(desc_idx),
             0x02 => ExportDesc::MemIdx(desc_idx),
             0x03 => ExportDesc::GlobalIdx(desc_idx),
-            other => return Err(ValidationError::InvalidExportDesc(other)),
+            other => return Err(ValidationError::MalformedExportDescDiscriminator(other)),
         };
         Ok(desc)
     }
