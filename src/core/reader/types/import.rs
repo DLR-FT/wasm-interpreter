@@ -6,7 +6,7 @@ use crate::core::reader::{WasmReadable, WasmReader};
 use crate::{ValidationError, ValidationInfo};
 
 use super::global::GlobalType;
-use super::{ExternType, MemType, TableType};
+use super::{ExternType, FuncType, MemType, TableType};
 
 #[derive(Debug, Clone)]
 pub struct Import {
@@ -18,11 +18,11 @@ pub struct Import {
     pub desc: ImportDesc,
 }
 
-impl WasmReadable for Import {
-    fn read(wasm: &mut WasmReader) -> Result<Self, ValidationError> {
+impl Import {
+    fn read(wasm: &mut WasmReader, types: &[FuncType]) -> Result<Self, ValidationError> {
         let module_name = wasm.read_name()?.to_owned();
         let name = wasm.read_name()?.to_owned();
-        let desc = ImportDesc::read(wasm)?;
+        let desc = ImportDesc::read(wasm, types)?;
 
         Ok(Self {
             module_name,
@@ -40,16 +40,27 @@ pub enum ImportDesc {
     Global(GlobalType),
 }
 
-impl WasmReadable for ImportDesc {
-    fn read(wasm: &mut WasmReader) -> Result<Self, ValidationError> {
-        let desc = match wasm.read_u8()? {
-            0x00 => Self::Func(wasm.read_var_u32()? as TypeIdx),
-            // https://webassembly.github.io/spec/core/binary/types.html#table-types
-            0x01 => Self::Table(TableType::read(wasm)?),
-            0x02 => Self::Mem(MemType::read(wasm)?),
-            0x03 => Self::Global(GlobalType::read(wasm)?),
-            other => return Err(ValidationError::InvalidImportDesc(other)),
-        };
+impl ImportDesc {
+    #[inline(always)]
+    fn read_validate(wasm: &mut WasmReader, types: &[FuncType]) -> Result<Self, ValidationError> {
+        let desc =
+            match wasm.read_u8()? {
+                0x00 => {
+                    let unvalidated_type_idx = wasm.read_var_u32()?;
+
+                    // perform check
+                    types.get(unvalidated_type_idx as usize).ok_or(
+                        ValidationError::InvalidTypeIdx(unvalidated_type_idx as usize),
+                    )?;
+
+                    Self::Func(unvalidated_type_idx as TypeIdx)
+                }
+                // https://webassembly.github.io/spec/core/binary/types.html#table-types
+                0x01 => Self::Table(TableType::read(wasm)?),
+                0x02 => Self::Mem(MemType::read(wasm)?),
+                0x03 => Self::Global(GlobalType::read(wasm)?),
+                other => return Err(ValidationError::InvalidImportDesc(other)),
+            };
 
         Ok(desc)
     }
