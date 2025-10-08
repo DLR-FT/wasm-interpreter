@@ -88,6 +88,8 @@ pub enum ValidationError {
     FunctionAndCodeSectionsHaveDifferentLengths,
     DataCountAndDataSectionsLengthAreDifferent,
     InvalidImportType,
+    /// The function signature of the start function is invalid. It must not specify any parameters or return values.
+    InvalidStartFunctionSignature,
 }
 
 impl Display for ValidationError {
@@ -218,6 +220,7 @@ impl Display for ValidationError {
             ValidationError::FunctionAndCodeSectionsHaveDifferentLengths => f.write_str("The function and code sections have different lengths"),
             ValidationError::DataCountAndDataSectionsLengthAreDifferent => f.write_str("The data count section specifies a different length than there are actual segments in the data section."),
             ValidationError::InvalidImportType => f.write_str("Invalid import type"),
+            ValidationError::InvalidStartFunctionSignature => f.write_str("The start function has parameters or return types")
         }
     }
 }
