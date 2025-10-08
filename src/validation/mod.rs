@@ -179,6 +179,10 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
+    struct CTypes(Vec<FuncType>);
+
+
+
     let types = handle_section(&mut wasm, &mut header, SectionTy::Type, |wasm, _| {
         wasm.read_vec(FuncType::read)
     })?
@@ -189,6 +193,8 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
     let imports = handle_section(&mut wasm, &mut header, SectionTy::Import, |wasm, _| {
         wasm.read_vec(|wasm| {
             let import = Import::read(wasm)?;
+
+            TypeIdx
 
             match import.desc {
                 ImportDesc::Func(type_idx) => {
