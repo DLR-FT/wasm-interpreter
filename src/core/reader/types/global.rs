@@ -22,7 +22,7 @@ impl WasmReadable for GlobalType {
         let is_mut = match wasm.read_u8()? {
             0x00 => false,
             0x01 => true,
-            other => return Err(ValidationError::InvalidMutType(other)),
+            other => return Err(ValidationError::MalformedMutDiscriminator(other)),
         };
         Ok(Self { ty, is_mut })
     }

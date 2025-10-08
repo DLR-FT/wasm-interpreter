@@ -57,7 +57,7 @@ impl WasmReader<'_> {
                 while byte & Self::CONTINUATION_BIT != 0 {
                     byte = self.read_u8()?;
                 }
-                return Err(ValidationError::Overflow);
+                return Err(ValidationError::MalformedVariableLengthInteger);
             }
 
             let low_bits = (byte & !Self::CONTINUATION_BIT) as u64;
@@ -84,7 +84,7 @@ impl WasmReader<'_> {
             // shift >= 28 checks we're at the 5th bit or larger
             // byte >> 32-28 checks whether (this byte lost bits when shifted) or (the continuation bit is set)
             if shift >= 28 && byte >> (32 - shift) != 0 {
-                return Err(ValidationError::Overflow);
+                return Err(ValidationError::MalformedVariableLengthInteger);
             }
 
             if byte & Self::CONTINUATION_BIT == 0 {
@@ -119,7 +119,7 @@ impl WasmReader<'_> {
                 // therefore ashifted_unused_bits should be -1 or 0
                 if there_are_more_bytes || (ashifted_unused_bits != 0 && ashifted_unused_bits != -1)
                 {
-                    return Err(ValidationError::Overflow);
+                    return Err(ValidationError::MalformedVariableLengthInteger);
                 } else {
                     // no need to ashift unfilled bits, all 32 bits are filled
                     return Ok(result);
@@ -155,7 +155,7 @@ impl WasmReader<'_> {
                 // therefore ashifted_unused_bits should be -1 or 0
                 if there_are_more_bytes || (ashifted_unused_bits != 0 && ashifted_unused_bits != -1)
                 {
-                    return Err(ValidationError::Overflow);
+                    return Err(ValidationError::MalformedVariableLengthInteger);
                 }
             }
 
@@ -204,7 +204,7 @@ impl WasmReader<'_> {
                 // therefore ashifted_unused_bits should be -1 or 0
                 if there_are_more_bytes || (ashifted_unused_bits != 0 && ashifted_unused_bits != -1)
                 {
-                    return Err(ValidationError::Overflow);
+                    return Err(ValidationError::MalformedVariableLengthInteger);
                 } else {
                     // no need to ashift unfilled bits, all 64 bits are filled
                     return Ok(result);
@@ -234,7 +234,7 @@ impl WasmReader<'_> {
         let utf8_str = &self.full_wasm_binary[self.pc..(self.pc + len)]; // Cannot panic because check is done above
         self.pc += len;
 
-        core::str::from_utf8(utf8_str).map_err(ValidationError::MalformedUtf8String)
+        core::str::from_utf8(utf8_str).map_err(ValidationError::MalformedUtf8)
     }
 
     pub fn read_vec_enumerated<T, F>(

@@ -123,12 +123,15 @@ impl ValidationStack {
         match self.pop_valtype()? {
             ValidationStackEntry::Val(ValType::RefType(ref_type)) => {
                 expected_ty.map_or(Ok(()), |ty| {
-                    (ty == ref_type)
-                        .then_some(())
-                        .ok_or(ValidationError::DifferentRefTypes(ref_type, ty))
+                    (ty == ref_type).then_some(()).ok_or(
+                        ValidationError::MismatchedRefTypesOnValidationStack {
+                            expected: ty,
+                            actual: ref_type,
+                        },
+                    )
                 })
             }
-            ValidationStackEntry::Val(v) => Err(ValidationError::ExpectedARefType(v)),
+            ValidationStackEntry::Val(v) => Err(ValidationError::ExpectedReferenceTypeOnStack(v)),
             ValidationStackEntry::Bottom => Ok(()),
         }
     }

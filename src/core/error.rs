@@ -1,5 +1,3 @@
-use alloc::string::String;
-
 use crate::core::indices::GlobalIdx;
 use crate::validation_stack::ValidationStackEntry;
 use crate::RefType;
@@ -15,12 +13,44 @@ use super::indices::{DataIdx, ElemIdx, FuncIdx, LabelIdx, LocalIdx, MemIdx, Tabl
 pub enum ValidationError {
     /// The magic number at the start of the Wasm bytecode is invalid.
     InvalidMagic,
-    /// The Wasm binary version at the start of the Wasm bytecode is invalid.
-    InvalidVersion,
-    /// A UTF-8 string was invalid.
-    MalformedUtf8String(Utf8Error),
+    /// The binary format version at the start of the Wasm bytecode is invalid.
+    InvalidBinaryFormatVersion,
     /// The end of the binary file was reached unexpectedly.
     Eof,
+
+    /// A UTF-8 string is malformed.
+    MalformedUtf8(Utf8Error),
+    /// The type of a section is malformed.
+    MalformedSectionTypeDiscriminator(u8),
+    /// The discriminator of a number type is malformed.
+    MalformedNumTypeDiscriminator(u8),
+    /// The discriminator of a vector type is malformed.
+    MalformedVecTypeDiscriminator(u8),
+    /// The discriminator of a function type is malformed.
+    MalformedFuncTypeDiscriminator(u8),
+    /// The discriminator of a reference type is malformed.
+    MalformedRefTypeDiscriminator(u8),
+    /// A valtype is malformed because it is neither a number, reference nor vector type.
+    MalformedValType,
+    /// The discriminator of an export description is malformed.
+    MalformedExportDescDiscriminator(u8),
+    /// The discriminator of an import description is malformed.
+    MalformedImportDescDiscriminator(u8),
+    /// The discriminator of a limits type is malformed.
+    MalformedLimitsDiscriminator(u8),
+    /// The min field of a limits type is larger than the max field.
+    MalformedLimitsMinLargerThanMax {
+        min: u32,
+        max: u32,
+    },
+    /// The discriminator of a mut type is malformed.
+    MalformedMutDiscriminator(u8),
+    /// Block types use a special 33-bit signed integer for encoding type indices.
+    MalformedBlockTypeTypeIdx(i64),
+    /// A variable-length integer was read but it overflowed.
+    MalformedVariableLengthInteger,
+    /// The discriminator of an element kind is malformed.
+    MalformedElemKindDiscriminator(u8),
 
     /// An index for a type is invalid.
     InvalidTypeIdx(TypeIdx),
@@ -43,19 +73,10 @@ pub enum ValidationError {
     /// An index for a lane of some vector type is invalid.
     InvalidLaneIdx(u8),
 
-    /// An active element segment's type and its table's type are different.
-    ActiveElementTypeMismatch,
-    InvalidSection(SectionTy, String),
-    InvalidSectionType(u8),
+    /// A section with given type is out of order. All section types have a fixed order in which they must occur.
     SectionOutOfOrder(SectionTy),
-    InvalidNumType,
-    InvalidVecType,
-    InvalidFuncType,
-    InvalidFuncTypeIdx,
-    InvalidRefType,
-    InvalidValType,
-    InvalidExportDesc(u8),
-    InvalidImportDesc(u8),
+    /// A custom section contains more bytes than its section header specifies.
+    InvalidCustomSectionLength,
     ExprMissingEnd,
     InvalidInstr(u8),
     InvalidMultiByteInstr(u8, u32),
@@ -63,165 +84,137 @@ pub enum ValidationError {
     InvalidValidationStackValType(Option<ValType>),
     InvalidValidationStackType(ValidationStackEntry),
     ExpectedAnOperand,
-    InvalidLimitsType(u8),
-    InvalidMutType(u8),
-    InvalidLimit,
-    MemSizeTooBig,
-    GlobalIsConst,
-    //           mem.align, wanted alignment
-    ErroneousAlignment(u32, u32),
+    /// The memory size specified by a mem type exceeds the maximum size.
+    MemoryTooLarge,
+    /// An attempt has been made to mutate a const global
+    MutationOfConstGlobal,
+    /// An alignment of some memory instruction is invalid
+    ErroneousAlignment {
+        alignment: u32,
+        minimum_required_alignment: u32,
+    },
+    /// The validation control stack is empty, even though an entry was expected.
+    // TODO Reconsider if we want to expose this error. It should probably never happen and thus also never bubble up to the user.
     ValidationCtrlStackEmpty,
+    /// An `else` instruction was found while not inside an `if` block.
     ElseWithoutMatchingIf,
+    /// An `end` for a matching `if` instruction was found, but there was no `else` instruction in between.
     IfWithoutMatchingElse,
-    DifferentRefTypes(RefType, RefType),
-    ExpectedARefType(ValType),
-    WrongRefTypeForInteropValue(RefType, RefType),
+    /// A `table.init` instruction specified a table and an element segment that store different reference types.
+    MismatchedRefTypesDuringTableInit {
+        table_ty: RefType,
+        elem_ty: RefType,
+    },
+    /// A `table.copy` instruction referenced two tables that store different reference types.
+    MismatchedRefTypesDuringTableCopy {
+        source_table_ty: RefType,
+        destination_table_ty: RefType,
+    },
+    /// An expected reference type did not match the actual reference type on the validation stack.
+    MismatchedRefTypesOnValidationStack {
+        expected: RefType,
+        actual: RefType,
+    },
+    /// An indirect call to a table with does not store function references was made.
+    IndirectCallToNonFuncRefTable(RefType),
+    /// A reference type was expected to be on the stack, but a value type was found.
+    ExpectedReferenceTypeOnStack(ValType),
+    /// When a is referenced in the code section it must be contained in `C.refs`, which was not the case
     ReferencingAnUnreferencedFunction(FuncIdx),
-    OnlyFuncRefIsAllowed,
-    TypeUnificationMismatch,
-    InvalidSelectTypeVector,
-    TooManyLocals(usize),
-    Overflow,
+    /// The select instructions may work with multiple values in the future. However, as of now its vector may only have one element.
+    InvalidSelectTypeVectorLength(usize),
+    /// A function specifies too many locals, i.e. more than 2^32 - 1
+    TooManyLocals(u64),
+    /// Multiple exports share the same name
     DuplicateExportName,
+    /// Multiple memories are not yet allowed without the proposal.
     UnsupportedMultipleMemoriesProposal,
-    ExprHasTrailingInstructions,
+    /// An expr in the code section has trailing instructions following its `end` instruction.
+    CodeExprHasTrailingInstructions,
+    /// The lengths of the function and code sections must match.
     FunctionAndCodeSectionsHaveDifferentLengths,
+    /// The data count specified in the data count section and the length of the data section must match.
     DataCountAndDataSectionsLengthAreDifferent,
     InvalidImportType,
     /// The function signature of the start function is invalid. It must not specify any parameters or return values.
     InvalidStartFunctionSignature,
+    /// An active element segment's type and its table's type are different.
+    ActiveElementSegmentTypeMismatch,
 }
 
 impl Display for ValidationError {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         match self {
-            ValidationError::InvalidMagic => {
-                f.write_str("The magic number at the very start of the given WASM file is invalid.")
-            }
-            ValidationError::InvalidVersion => f.write_str("The version in the WASM file header is invalid"),
-            ValidationError::MalformedUtf8String(err) => f.write_fmt(format_args!(
-                "A name could not be parsed as it was invalid UTF8: {err}"
-            )),
-            ValidationError::Eof => f.write_str(
-                "A value was expected in the WASM binary but the end of file was reached instead",
-            ),
+            ValidationError::InvalidMagic => write!(f, "The magic number is invalid"),
+            ValidationError::InvalidBinaryFormatVersion => write!(f, "The Wasm binary format version is invalid"),
+            ValidationError::Eof => write!(f, "The end of the Wasm bytecode was reached unexpectedly"),
 
-            ValidationError::InvalidTypeIdx(idx) => write!(f, "invalid type index {idx}"),
-            ValidationError::InvalidFuncIdx(idx) => write!(f, "invalid func index {idx}"),
-            ValidationError::InvalidTableIdx(idx) => write!(f, "invalid table index {idx}"),
-            ValidationError::InvalidMemIndex(idx) => write!(f, "invalid memory index {idx}"),
-            ValidationError::InvalidGlobalIdx(idx) => write!(f, "invalid global index {idx}"),
-            ValidationError::InvalidElemIdx(idx) => write!(f, "invalid element segment index {idx}"),
-            ValidationError::InvalidDataIdx(idx) => write!(f, "invalid data segment index {idx}"),
-            ValidationError::InvalidLocalIdx(idx) => write!(f, "invalid local index {idx}"),
-            ValidationError::InvalidLabelIdx(idx) => write!(f, "invalid label index {idx}"),
-            ValidationError::InvalidLaneIdx(idx) => write!(f, "invalid lane index {idx}"),
+            ValidationError::MalformedUtf8(utf8_error) => write!(f, "Failed to parse a UTF-8 string: {utf8_error}"),
+            ValidationError::MalformedSectionTypeDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as a section type discriminator"),
+            ValidationError::MalformedNumTypeDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as a number type discriminator"),
+            ValidationError::MalformedVecTypeDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as a vector type discriminator"),
+            ValidationError::MalformedFuncTypeDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as a function type discriminator"),
+            ValidationError::MalformedRefTypeDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as a reference type discriminator"),
+            ValidationError::MalformedValType => write!(f, "Failed to read a value type because it is neither a number, reference or vector type"),
+            ValidationError::MalformedExportDescDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as an export description discriminator"),
+            ValidationError::MalformedImportDescDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as an import description discriminator"),
+            ValidationError::MalformedLimitsDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as a limits type discriminator"),
+            ValidationError::MalformedLimitsMinLargerThanMax { min, max } => write!(f, "Limits are malformed because min={min} is larger than max={max}"),
+            ValidationError::MalformedMutDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as a mute type discriminator"),
+            ValidationError::MalformedBlockTypeTypeIdx(idx) => write!(f, "The type index {idx} which is encoded as a singed 33-bit integer inside a block type is malformed"),
+            ValidationError::MalformedVariableLengthInteger => write!(f, "Reading a variable-length integer overflowed"),
+            ValidationError::MalformedElemKindDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as an element kind discriminator"),
 
-            ValidationError::ActiveElementTypeMismatch => f.write_str("an element segment's type and its table's type are different"),
-            ValidationError::InvalidSection(section, reason) => f.write_fmt(format_args!(
-                "Section '{section:?}' invalid! Reason: {reason}"
-            )),
-            ValidationError::InvalidSectionType(ty) => f.write_fmt(format_args!(
-                "An invalid section type id was found in a section header: {ty}"
-            )),
-            ValidationError::SectionOutOfOrder(ty) => {
-                f.write_fmt(format_args!("The section {ty:?} is out of order"))
-            }
-            ValidationError::InvalidNumType => {
-                f.write_str("An invalid byte was read where a numtype was expected")
-            }
-            ValidationError::InvalidVecType => {
-                f.write_str("An invalid byte was read where a vectype was expected")
-            }
-            ValidationError::InvalidFuncType => {
-                f.write_str("An invalid byte was read where a functype was expected")
-            }
-            ValidationError::InvalidFuncTypeIdx => {
-                f.write_str("An invalid index to the fuctypes table was read")
-            }
-            ValidationError::InvalidRefType => {
-                f.write_str("An invalid byte was read where a reftype was expected")
-            }
-            ValidationError::InvalidValType => {
-                f.write_str("An invalid byte was read where a valtype was expected")
-            }
-            ValidationError::InvalidExportDesc(byte) => f.write_fmt(format_args!(
-                "An invalid byte `{byte:#x?}` was read where an exportdesc was expected"
-            )),
-            ValidationError::InvalidImportDesc(byte) => f.write_fmt(format_args!(
-                "An invalid byte `{byte:#x?}` was read where an importdesc was expected"
-            )),
-            ValidationError::ExprMissingEnd => f.write_str("An expr is missing an end byte"),
-            ValidationError::InvalidInstr(byte) => f.write_fmt(format_args!(
-                "An invalid instruction opcode was found: `{byte:#x?}`"
-            )),
-            ValidationError::InvalidMultiByteInstr(byte1, byte2) => f.write_fmt(format_args!(
-                "An invalid multi-byte instruction opcode was found: `{byte1:#x?} {byte2:#x?}`"
-            )),
-            ValidationError::EndInvalidValueStack => f.write_str(
-                "Different value stack types were expected at the end of a block/function.",
-            ),
-            ValidationError::InvalidValidationStackValType(ty) => f.write_fmt(format_args!(
-                "An unexpected type was found on the stack when trying to pop another: `{ty:?}`"
-            )),
-            ValidationError::InvalidValidationStackType(ty) => f.write_fmt(format_args!(
-                "An unexpected type was found on the stack: `{ty:?}`"
-            )),
-            ValidationError::InvalidLimitsType(ty) => {
-                f.write_fmt(format_args!("An invalid limits type was found: {ty:#x?}"))
-            }
-            ValidationError::InvalidMutType(byte) => f.write_fmt(format_args!(
-                "An invalid mut/const byte was found: {byte:#x?}"
-            )),
-            ValidationError::InvalidLimit => f.write_str("Size minimum must not be greater than maximum"),
-            ValidationError::MemSizeTooBig => f.write_str("Memory size must be at most 65536 pages (4GiB)"),
-            ValidationError::GlobalIsConst => f.write_str("A const global cannot be written to"),
-            ValidationError::ExpectedAnOperand => f.write_str("Expected a ValType"), // Error => f.write_str("Expected an operand (ValType) on the stack")
-            ValidationError::ErroneousAlignment(mem_align, minimum_wanted_alignment) => {
-                f.write_fmt(format_args!(
-                    "Alignment ({mem_align}) is not less or equal to {minimum_wanted_alignment}"
-                ))
-            }
-            ValidationError::ValidationCtrlStackEmpty => {
-                f.write_str("cannot retrieve last ctrl block, validation ctrl stack is empty")
-            }
-            ValidationError::ElseWithoutMatchingIf => {
-                f.write_str("read 'else' without a previous matching 'if' instruction")
-            }
-            ValidationError::IfWithoutMatchingElse => {
-                f.write_str("read 'end' without matching 'else' instruction to 'if' instruction")
-            }
-            ValidationError::DifferentRefTypes(rref1, rref2) => f.write_fmt(format_args!(
-                "RefType {rref1:?} is NOT equal to RefType {rref2:?}"
-            )),
-            ValidationError::ExpectedARefType(found_valtype) => f.write_fmt(format_args!(
-                "Expected a RefType, found a {found_valtype:?} instead"
-            )),
-            ValidationError::WrongRefTypeForInteropValue(ref_given, ref_wanted) => f.write_fmt(format_args!(
-                "Wrong RefType for InteropValue: Given {ref_given:?} - Needed {ref_wanted:?}"
-            )),
-            ValidationError::ReferencingAnUnreferencedFunction(func_idx) => f.write_fmt(format_args!(
-                "Referenced a function ({func_idx}) that was not referenced in validation"
-            )),
-            ValidationError::OnlyFuncRefIsAllowed => f.write_str("Only FuncRef is allowed"),
-            ValidationError::TypeUnificationMismatch => {
-                f.write_str("cannot unify types")
-            }
-            ValidationError::InvalidSelectTypeVector => {
-                f.write_str("SELECT T* (0x1C) instruction must have exactly one type in the subsequent type vector")
-            }
-            ValidationError::TooManyLocals(x) => {
-                f.write_fmt(format_args!("Too many locals (more than 2^32-1): {x}"))
-            }
-            ValidationError::Overflow => f.write_str("Overflow"),
-            ValidationError::DuplicateExportName => f.write_str("Duplicate export name"),
-            ValidationError::UnsupportedMultipleMemoriesProposal => f.write_str("Proposal for multiple memories is not yet supported"),
-            ValidationError::ExprHasTrailingInstructions => f.write_str("A code expression has invalid trailing instructions"),
-            ValidationError::FunctionAndCodeSectionsHaveDifferentLengths => f.write_str("The function and code sections have different lengths"),
-            ValidationError::DataCountAndDataSectionsLengthAreDifferent => f.write_str("The data count section specifies a different length than there are actual segments in the data section."),
+            ValidationError::InvalidTypeIdx(idx) => write!(f, "The type index {idx} is invalid"),
+            ValidationError::InvalidFuncIdx(idx) => write!(f, "The function index {idx} is invalid"),
+            ValidationError::InvalidTableIdx(idx) => write!(f, "The table index {idx} is invalid"),
+            ValidationError::InvalidMemIndex(idx) => write!(f, "The memory index {idx} is invalid"),
+            ValidationError::InvalidGlobalIdx(idx) => write!(f, "The global index {idx} is invalid"),
+            ValidationError::InvalidElemIdx(idx) => write!(f, "The element segment index {idx} is invalid"),
+            ValidationError::InvalidDataIdx(idx) => write!(f, "The data segment index {idx} is invalid"),
+            ValidationError::InvalidLocalIdx(idx) => write!(f, "The local index {idx} is invalid"),
+            ValidationError::InvalidLabelIdx(idx) => write!(f, "The label index {idx} is invalid"),
+            ValidationError::InvalidLaneIdx(idx) => write!(f, "The lane index {idx} is invalid"),
+
+            ValidationError::SectionOutOfOrder(ty) => write!(f, "A section of type `{ty:?}` is defined out of order"),
+            ValidationError::InvalidCustomSectionLength => write!(f, "A custom section contains more bytes than its section header specifies"),
+            ValidationError::ExprMissingEnd => write!(f, "An expr type is missing an end byte"),
+            ValidationError::InvalidInstr(byte) => write!(f, "The instruction opcode {byte:#x} is invalid"),
+            ValidationError::InvalidMultiByteInstr(first_byte, second_instr) => write!(f, "The multi-byte instruction opcode {first_byte:#x} {second_instr} is invalid"),
+            ValidationError::ActiveElementSegmentTypeMismatch => write!(f, "an element segment's type and its table's type are different"),
+            ValidationError::EndInvalidValueStack => write!(f, "Different value stack types were expected at the end of a block/function"),
+            ValidationError::InvalidValidationStackValType(ty) => write!(f, "An unexpected type `{ty:?}` was found on the stack when trying to pop another"),
+            ValidationError::InvalidValidationStackType(ty) => write!(f, "An unexpected type `{ty:?}` was found on the stack"),
+            ValidationError::ExpectedAnOperand => write!(f, "Expected a value type operand on the stack"),
+            ValidationError::MemoryTooLarge => write!(f, "The size specified by a memory type exceeds the maximum size"),
+            ValidationError::MutationOfConstGlobal => write!(f, "An attempt has been made to mutate a const global"),
+            ValidationError::ErroneousAlignment {alignment , minimum_required_alignment} => write!(f, "The alignment 2^{alignment} is not less or equal to the required alignment 2^{minimum_required_alignment}"),
+            ValidationError::ValidationCtrlStackEmpty => write!(f, "Failed to retrieve last ctrl block because validation ctrl stack is empty"),
+            ValidationError::ElseWithoutMatchingIf => write!(f, "Found `else` without a previous matching `if` instruction"),
+            ValidationError::IfWithoutMatchingElse => write!(f, "Found `end` without a previous matching `else` to an `if` instruction"),
+            ValidationError::MismatchedRefTypesDuringTableInit { table_ty, elem_ty } => write!(f, "Mismatch of table type `{table_ty:?}` and element segment type `{elem_ty:?}` for `table.init` instruction"),
+            ValidationError::MismatchedRefTypesDuringTableCopy { source_table_ty, destination_table_ty } => write!(f, "Mismatch of source table type `{source_table_ty:?}` and destination table type `{destination_table_ty:?}` for `table.copy` instruction"),
+            ValidationError::MismatchedRefTypesOnValidationStack { expected, actual } => write!(f, "Mismatch of reference types on the value stack: Expected `{expected:?}` but got `{actual:?}`"),
+            ValidationError::IndirectCallToNonFuncRefTable(table_ty) => write!(f, "An indirect call to a table which does not store function references but instead `{table_ty:?}` was made"),
+            ValidationError::ExpectedReferenceTypeOnStack(found_valtype) => write!(f, "Expected a reference type but instead found a `{found_valtype:?}` on the stack"),
+            ValidationError::ReferencingAnUnreferencedFunction(func_idx) => write!(f, "Referenced a function with index {func_idx} that was not referenced in prior validation"),
+            ValidationError::InvalidSelectTypeVectorLength(len) => write!(f, "The type vector of a `select` instruction must be of length 1 as of now but it is of length {len} instead"),
+            ValidationError::TooManyLocals(n) => write!(f,"There are {n} locals and this exceeds the maximum allowed number of 2^32-1"),
+            ValidationError::DuplicateExportName => write!(f,"Multiple exports share the same name"),
+            ValidationError::UnsupportedMultipleMemoriesProposal => write!(f,"A memory index other than 1 was used, but the proposal for multiple memories is not yet supported"),
+            ValidationError::CodeExprHasTrailingInstructions => write!(f,"A code expression has invalid trailing instructions following its `end` instruction"),
+            ValidationError::FunctionAndCodeSectionsHaveDifferentLengths => write!(f,"The function and code sections have different lengths"),
+            ValidationError::DataCountAndDataSectionsLengthAreDifferent => write!(f,"The data count section specifies a different length than there are data segments in the data section"),
             ValidationError::InvalidImportType => f.write_str("Invalid import type"),
-            ValidationError::InvalidStartFunctionSignature => f.write_str("The start function has parameters or return types")
+            ValidationError::InvalidStartFunctionSignature => write!(f,"The start function has parameters or return types which it is not allowed to have"),
         }
+    }
+}
+
+impl ValidationError {
+    /// Convert this error to a message that is compatible with the error messages used by the official Wasm testsuite.
+    pub fn to_message(&self) -> &'static str {
+        todo!("convert validation error to testsuite message");
     }
 }
 
@@ -240,7 +233,7 @@ mod test {
 
     #[test]
     fn fmt_invalid_version() {
-        assert!(ValidationError::InvalidVersion
+        assert!(ValidationError::InvalidBinaryFormatVersion
             .to_string()
             .contains("version"));
     }

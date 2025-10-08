@@ -48,7 +48,7 @@ impl WasmReadable for ImportDesc {
             0x01 => Self::Table(TableType::read(wasm)?),
             0x02 => Self::Mem(MemType::read(wasm)?),
             0x03 => Self::Global(GlobalType::read(wasm)?),
-            other => return Err(ValidationError::InvalidImportDesc(other)),
+            other => return Err(ValidationError::MalformedImportDescDiscriminator(other)),
         };
 
         Ok(desc)

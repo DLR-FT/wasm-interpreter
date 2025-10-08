@@ -6,6 +6,7 @@ use alloc::vec::Vec;
 use core::fmt::{Debug, Formatter};
 use global::GlobalType;
 
+use crate::core::indices::TypeIdx;
 use crate::core::reader::{WasmReadable, WasmReader};
 use crate::execution::assert_validated::UnwrapValidatedExt;
 use crate::ValidationError;
@@ -37,7 +38,7 @@ impl WasmReadable for NumType {
             0x7E => I64,
             0x7D => F32,
             0x7C => F64,
-            _ => return Err(ValidationError::InvalidNumType),
+            other => return Err(ValidationError::MalformedNumTypeDiscriminator(other)),
         };
         let _ = wasm.read_u8();
 
@@ -50,12 +51,13 @@ struct VecType;
 
 impl WasmReadable for VecType {
     fn read(wasm: &mut WasmReader) -> Result<Self, ValidationError> {
-        let 0x7B = wasm.peek_u8()? else {
-            return Err(ValidationError::InvalidVecType);
-        };
-        let _ = wasm.read_u8();
-
-        Ok(VecType)
+        match wasm.peek_u8()? {
+            0x7b => {
+                let _ = wasm.read_u8();
+                Ok(VecType)
+            }
+            other => Err(ValidationError::MalformedVecTypeDiscriminator(other)),
+        }
     }
 }
 
@@ -66,22 +68,12 @@ pub enum RefType {
     ExternRef,
 }
 
-impl RefType {
-    pub fn from_byte(byte: u8) -> Result<RefType, ValidationError> {
-        match byte {
-            0x70 => Ok(RefType::FuncRef),
-            0x6F => Ok(RefType::ExternRef),
-            _ => Err(ValidationError::InvalidRefType),
-        }
-    }
-}
-
 impl WasmReadable for RefType {
     fn read(wasm: &mut WasmReader) -> Result<RefType, ValidationError> {
         let ty = match wasm.peek_u8()? {
             0x70 => RefType::FuncRef,
             0x6F => RefType::ExternRef,
-            _ => return Err(ValidationError::InvalidRefType),
+            other => return Err(ValidationError::MalformedRefTypeDiscriminator(other)),
         };
         let _ = wasm.read_u8();
 
@@ -122,7 +114,7 @@ impl WasmReadable for ValType {
             return Ok(reftype);
         }
 
-        Err(ValidationError::InvalidValType)
+        Err(ValidationError::MalformedValType)
     }
 }
 
@@ -149,8 +141,9 @@ pub struct FuncType {
 
 impl WasmReadable for FuncType {
     fn read(wasm: &mut WasmReader) -> Result<FuncType, ValidationError> {
-        let 0x60 = wasm.read_u8()? else {
-            return Err(ValidationError::InvalidFuncType);
+        match wasm.read_u8()? {
+            0x60 => {}
+            other => return Err(ValidationError::MalformedFuncTypeDiscriminator(other)),
         };
 
         let params = ResultType::read(wasm)?;
@@ -179,10 +172,11 @@ impl WasmReadable for BlockType {
             Ok(BlockType::Returns(val_ty))
         } else {
             // An index to a function type
+            // TODO properly handle invalid i33 values
             wasm.read_var_i33()
                 .and_then(|idx| {
                     idx.try_into()
-                        .map_err(|_| ValidationError::InvalidFuncTypeIdx)
+                        .map_err(|_| ValidationError::MalformedBlockTypeTypeIdx(idx))
                 })
                 .map(BlockType::Type)
         }
@@ -209,14 +203,11 @@ impl BlockType {
                 },
             }),
             BlockType::Type(type_idx) => {
-                let type_idx: usize = (*type_idx)
-                    .try_into()
-                    .map_err(|_| ValidationError::InvalidFuncTypeIdx)?;
-
+                let type_idx = *type_idx as TypeIdx;
                 func_types
                     .get(type_idx)
                     .cloned()
-                    .ok_or(ValidationError::InvalidFuncTypeIdx)
+                    .ok_or(ValidationError::InvalidTypeIdx(type_idx))
             }
         }
     }
@@ -283,12 +274,15 @@ impl WasmReadable for Limits {
                     max: Some(max),
                 }
             }
-            other => return Err(ValidationError::InvalidLimitsType(other)),
+            other => return Err(ValidationError::MalformedLimitsDiscriminator(other)),
         };
 
         if let Some(max) = limits.max {
             if limits.min > max {
-                return Err(ValidationError::InvalidLimit);
+                return Err(ValidationError::MalformedLimitsMinLargerThanMax {
+                    min: limits.min,
+                    max,
+                });
             }
         }
 
@@ -325,14 +319,14 @@ impl WasmReadable for MemType {
         let mut limit = Limits::read(wasm)?;
         // Memory can only grow to 65536 pages of 64kb size (4GiB)
         if limit.min > (1 << 16) {
-            return Err(ValidationError::MemSizeTooBig);
+            return Err(ValidationError::MemoryTooLarge);
         }
         if limit.max.is_none() {
             limit.max = Some(1 << 16);
         } else if limit.max.is_some() {
             let max_limit = limit.max.unwrap();
             if max_limit > (1 << 16) {
-                return Err(ValidationError::MemSizeTooBig);
+                return Err(ValidationError::MemoryTooLarge);
             }
         }
         Ok(Self { limits: limit })

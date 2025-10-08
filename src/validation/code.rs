@@ -71,7 +71,7 @@ pub fn validate_code_section(
 
         // Check if there were unread trailing instructions after the last END
         if previous_pc + func_size as usize != wasm.pc {
-            return Err(ValidationError::ExprHasTrailingInstructions);
+            return Err(ValidationError::CodeExprHasTrailingInstructions);
         }
 
         Ok((func_block, stp))
@@ -97,10 +97,10 @@ pub fn read_declared_locals(wasm: &mut WasmReader) -> Result<Vec<ValType>, Valid
     // we check to not have more than 2^32-1 locals, and if that number is okay, we then get to instantiate them all
     // this is because the flat_map and collect take an insane amount of time
     // in total, these 2 tests take more than 240s
-    let mut total_no_of_locals: usize = 0;
+    let mut total_no_of_locals: u64 = 0;
     for local in &locals {
-        let temp = local.0;
-        if temp > i32::MAX as usize {
+        let temp = local.0 as u64;
+        if temp > u32::MAX.into() {
             return Err(ValidationError::TooManyLocals(total_no_of_locals));
         };
         total_no_of_locals = match total_no_of_locals.checked_add(temp) {
@@ -109,7 +109,7 @@ pub fn read_declared_locals(wasm: &mut WasmReader) -> Result<Vec<ValType>, Valid
         }
     }
 
-    if total_no_of_locals > i32::MAX as usize {
+    if total_no_of_locals > u32::MAX.into() {
         return Err(ValidationError::TooManyLocals(total_no_of_locals));
     }
 
@@ -450,10 +450,7 @@ fn read_instructions(
                     .ok_or(ValidationError::InvalidTableIdx(table_idx))?;
 
                 if tab.et != RefType::FuncRef {
-                    return Err(ValidationError::WrongRefTypeForInteropValue(
-                        tab.et,
-                        RefType::FuncRef,
-                    ));
+                    return Err(ValidationError::IndirectCallToNonFuncRefTable(tab.et));
                 }
 
                 let func_ty = fn_types
@@ -483,7 +480,9 @@ fn read_instructions(
             SELECT_T => {
                 let type_vec = wasm.read_vec(ValType::read)?;
                 if type_vec.len() != 1 {
-                    return Err(ValidationError::InvalidSelectTypeVector);
+                    return Err(ValidationError::InvalidSelectTypeVectorLength(
+                        type_vec.len(),
+                    ));
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.assert_pop_val_type(type_vec[0])?;
@@ -537,7 +536,7 @@ fn read_instructions(
                     .ok_or(ValidationError::InvalidGlobalIdx(global_idx))?;
 
                 if !global.ty.is_mut {
-                    return Err(ValidationError::GlobalIsConst);
+                    return Err(ValidationError::MutationOfConstGlobal);
                 }
 
                 stack.assert_pop_val_type(global.ty.ty)?;
@@ -572,7 +571,10 @@ fn read_instructions(
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 2 {
-                    return Err(ValidationError::ErroneousAlignment(memarg.align, 2));
+                    return Err(ValidationError::ErroneousAlignment {
+                        alignment: memarg.align,
+                        minimum_required_alignment: 2,
+                    });
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.push_valtype(ValType::NumType(NumType::I32));
@@ -583,7 +585,10 @@ fn read_instructions(
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 3 {
-                    return Err(ValidationError::ErroneousAlignment(memarg.align, 3));
+                    return Err(ValidationError::ErroneousAlignment {
+                        alignment: memarg.align,
+                        minimum_required_alignment: 3,
+                    });
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.push_valtype(ValType::NumType(NumType::I64));
@@ -594,7 +599,10 @@ fn read_instructions(
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 2 {
-                    return Err(ValidationError::ErroneousAlignment(memarg.align, 2));
+                    return Err(ValidationError::ErroneousAlignment {
+                        alignment: memarg.align,
+                        minimum_required_alignment: 2,
+                    });
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.push_valtype(ValType::NumType(NumType::F32));
@@ -605,7 +613,10 @@ fn read_instructions(
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 3 {
-                    return Err(ValidationError::ErroneousAlignment(memarg.align, 3));
+                    return Err(ValidationError::ErroneousAlignment {
+                        alignment: memarg.align,
+                        minimum_required_alignment: 3,
+                    });
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.push_valtype(ValType::NumType(NumType::F64));
@@ -616,7 +627,10 @@ fn read_instructions(
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 0 {
-                    return Err(ValidationError::ErroneousAlignment(memarg.align, 0));
+                    return Err(ValidationError::ErroneousAlignment {
+                        alignment: memarg.align,
+                        minimum_required_alignment: 0,
+                    });
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.push_valtype(ValType::NumType(NumType::I32));
@@ -627,7 +641,10 @@ fn read_instructions(
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 0 {
-                    return Err(ValidationError::ErroneousAlignment(memarg.align, 0));
+                    return Err(ValidationError::ErroneousAlignment {
+                        alignment: memarg.align,
+                        minimum_required_alignment: 0,
+                    });
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.push_valtype(ValType::NumType(NumType::I32));
@@ -638,7 +655,10 @@ fn read_instructions(
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 1 {
-                    return Err(ValidationError::ErroneousAlignment(memarg.align, 1));
+                    return Err(ValidationError::ErroneousAlignment {
+                        alignment: memarg.align,
+                        minimum_required_alignment: 1,
+                    });
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.push_valtype(ValType::NumType(NumType::I32));
@@ -649,7 +669,10 @@ fn read_instructions(
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 1 {
-                    return Err(ValidationError::ErroneousAlignment(memarg.align, 1));
+                    return Err(ValidationError::ErroneousAlignment {
+                        alignment: memarg.align,
+                        minimum_required_alignment: 1,
+                    });
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.push_valtype(ValType::NumType(NumType::I32));
@@ -660,7 +683,10 @@ fn read_instructions(
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 0 {
-                    return Err(ValidationError::ErroneousAlignment(memarg.align, 0));
+                    return Err(ValidationError::ErroneousAlignment {
+                        alignment: memarg.align,
+                        minimum_required_alignment: 0,
+                    });
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.push_valtype(ValType::NumType(NumType::I64));
@@ -671,7 +697,10 @@ fn read_instructions(
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 0 {
-                    return Err(ValidationError::ErroneousAlignment(memarg.align, 0));
+                    return Err(ValidationError::ErroneousAlignment {
+                        alignment: memarg.align,
+                        minimum_required_alignment: 0,
+                    });
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.push_valtype(ValType::NumType(NumType::I64));
@@ -682,7 +711,10 @@ fn read_instructions(
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 1 {
-                    return Err(ValidationError::ErroneousAlignment(memarg.align, 1));
+                    return Err(ValidationError::ErroneousAlignment {
+                        alignment: memarg.align,
+                        minimum_required_alignment: 1,
+                    });
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.push_valtype(ValType::NumType(NumType::I64));
@@ -693,7 +725,10 @@ fn read_instructions(
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 1 {
-                    return Err(ValidationError::ErroneousAlignment(memarg.align, 1));
+                    return Err(ValidationError::ErroneousAlignment {
+                        alignment: memarg.align,
+                        minimum_required_alignment: 1,
+                    });
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.push_valtype(ValType::NumType(NumType::I64));
@@ -704,7 +739,10 @@ fn read_instructions(
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 2 {
-                    return Err(ValidationError::ErroneousAlignment(memarg.align, 2));
+                    return Err(ValidationError::ErroneousAlignment {
+                        alignment: memarg.align,
+                        minimum_required_alignment: 2,
+                    });
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.push_valtype(ValType::NumType(NumType::I64));
@@ -715,7 +753,10 @@ fn read_instructions(
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 2 {
-                    return Err(ValidationError::ErroneousAlignment(memarg.align, 2));
+                    return Err(ValidationError::ErroneousAlignment {
+                        alignment: memarg.align,
+                        minimum_required_alignment: 2,
+                    });
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.push_valtype(ValType::NumType(NumType::I64));
@@ -726,7 +767,10 @@ fn read_instructions(
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 2 {
-                    return Err(ValidationError::ErroneousAlignment(memarg.align, 2));
+                    return Err(ValidationError::ErroneousAlignment {
+                        alignment: memarg.align,
+                        minimum_required_alignment: 2,
+                    });
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
@@ -737,7 +781,10 @@ fn read_instructions(
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 3 {
-                    return Err(ValidationError::ErroneousAlignment(memarg.align, 3));
+                    return Err(ValidationError::ErroneousAlignment {
+                        alignment: memarg.align,
+                        minimum_required_alignment: 3,
+                    });
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I64))?;
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
@@ -748,7 +795,10 @@ fn read_instructions(
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 2 {
-                    return Err(ValidationError::ErroneousAlignment(memarg.align, 2));
+                    return Err(ValidationError::ErroneousAlignment {
+                        alignment: memarg.align,
+                        minimum_required_alignment: 2,
+                    });
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::F32))?;
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
@@ -759,7 +809,10 @@ fn read_instructions(
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 3 {
-                    return Err(ValidationError::ErroneousAlignment(memarg.align, 3));
+                    return Err(ValidationError::ErroneousAlignment {
+                        alignment: memarg.align,
+                        minimum_required_alignment: 3,
+                    });
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::F64))?;
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
@@ -770,7 +823,10 @@ fn read_instructions(
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 0 {
-                    return Err(ValidationError::ErroneousAlignment(memarg.align, 0));
+                    return Err(ValidationError::ErroneousAlignment {
+                        alignment: memarg.align,
+                        minimum_required_alignment: 0,
+                    });
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
@@ -781,7 +837,10 @@ fn read_instructions(
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 1 {
-                    return Err(ValidationError::ErroneousAlignment(memarg.align, 1));
+                    return Err(ValidationError::ErroneousAlignment {
+                        alignment: memarg.align,
+                        minimum_required_alignment: 1,
+                    });
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
@@ -792,7 +851,10 @@ fn read_instructions(
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 0 {
-                    return Err(ValidationError::ErroneousAlignment(memarg.align, 0));
+                    return Err(ValidationError::ErroneousAlignment {
+                        alignment: memarg.align,
+                        minimum_required_alignment: 0,
+                    });
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I64))?;
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
@@ -803,7 +865,10 @@ fn read_instructions(
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 1 {
-                    return Err(ValidationError::ErroneousAlignment(memarg.align, 1));
+                    return Err(ValidationError::ErroneousAlignment {
+                        alignment: memarg.align,
+                        minimum_required_alignment: 1,
+                    });
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I64))?;
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
@@ -814,7 +879,10 @@ fn read_instructions(
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 2 {
-                    return Err(ValidationError::ErroneousAlignment(memarg.align, 2));
+                    return Err(ValidationError::ErroneousAlignment {
+                        alignment: memarg.align,
+                        minimum_required_alignment: 2,
+                    });
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I64))?;
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
@@ -1161,7 +1229,10 @@ fn read_instructions(
                         let t2 = elements[elem_idx].to_ref_type();
 
                         if t1 != t2 {
-                            return Err(ValidationError::DifferentRefTypes(t1, t2));
+                            return Err(ValidationError::MismatchedRefTypesDuringTableInit {
+                                table_ty: t1,
+                                elem_ty: t2,
+                            });
                         }
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
@@ -1191,7 +1262,10 @@ fn read_instructions(
                         let t2 = tables[table_y_idx].et;
 
                         if t1 != t2 {
-                            return Err(ValidationError::DifferentRefTypes(t1, t2));
+                            return Err(ValidationError::MismatchedRefTypesDuringTableCopy {
+                                source_table_ty: t2,
+                                destination_table_ty: t1,
+                            });
                         }
 
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
@@ -1293,7 +1367,10 @@ fn read_instructions(
                         }
                         let memarg = MemArg::read(wasm)?;
                         if memarg.align > 4 {
-                            return Err(ValidationError::ErroneousAlignment(memarg.align, 4))
+                            return Err(ValidationError::ErroneousAlignment {
+                                alignment: memarg.align,
+                                minimum_required_alignment: 4,
+                            });
                         }
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                         stack.push_valtype(ValType::VecType);
@@ -1304,7 +1381,7 @@ fn read_instructions(
                         }
                         let memarg = MemArg::read(wasm)?;
                         if memarg.align > 4 {
-                            return Err(ValidationError::ErroneousAlignment(memarg.align, 4));
+                            return Err(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: 4 });
                         }
                         stack.assert_pop_val_type(ValType::VecType)?;
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
@@ -1320,7 +1397,7 @@ fn read_instructions(
                         }
                         let memarg = MemArg::read(wasm)?;
                         if memarg.align > 3 {
-                            return Err(ValidationError::ErroneousAlignment(memarg.align, 3));
+                            return Err(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: 3 });
                         }
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                         stack.push_valtype(ValType::VecType);
@@ -1333,7 +1410,7 @@ fn read_instructions(
                         }
                         let memarg = MemArg::read(wasm)?;
                         if memarg.align > 0 {
-                            return Err(ValidationError::ErroneousAlignment(memarg.align, 0));
+                            return Err(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: 0 });
                         }
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                         stack.push_valtype(ValType::VecType);
@@ -1344,7 +1421,7 @@ fn read_instructions(
                         }
                         let memarg = MemArg::read(wasm)?;
                         if memarg.align > 1 {
-                            return Err(ValidationError::ErroneousAlignment(memarg.align, 1));
+                            return Err(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: 1 });
                         }
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                         stack.push_valtype(ValType::VecType);
@@ -1355,7 +1432,7 @@ fn read_instructions(
                         }
                         let memarg = MemArg::read(wasm)?;
                         if memarg.align > 2 {
-                            return Err(ValidationError::ErroneousAlignment(memarg.align, 2));
+                            return Err(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: 2 });
                         }
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                         stack.push_valtype(ValType::VecType);
@@ -1366,7 +1443,7 @@ fn read_instructions(
                         }
                         let memarg = MemArg::read(wasm)?;
                         if memarg.align > 3 {
-                            return Err(ValidationError::ErroneousAlignment(memarg.align, 3));
+                            return Err(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: 3 });
                         }
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                         stack.push_valtype(ValType::VecType);
@@ -1383,7 +1460,7 @@ fn read_instructions(
                             return Err(ValidationError::InvalidMemIndex(0));
                         }
                         if memarg.align > 0 {
-                            return Err(ValidationError::ErroneousAlignment(memarg.align, 0));
+                            return Err(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: 0 });
                         }
                         stack.assert_pop_val_type(ValType::VecType)?;
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
@@ -1399,7 +1476,7 @@ fn read_instructions(
                             return Err(ValidationError::InvalidMemIndex(0));
                         }
                         if memarg.align > 1 {
-                            return Err(ValidationError::ErroneousAlignment(memarg.align, 1));
+                            return Err(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: 1 });
                         }
                         stack.assert_pop_val_type(ValType::VecType)?;
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
@@ -1415,7 +1492,7 @@ fn read_instructions(
                             return Err(ValidationError::InvalidMemIndex(0));
                         }
                         if memarg.align > 2 {
-                            return Err(ValidationError::ErroneousAlignment(memarg.align, 2));
+                            return Err(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: 2 });
                         }
                         stack.assert_pop_val_type(ValType::VecType)?;
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
@@ -1431,7 +1508,7 @@ fn read_instructions(
                             return Err(ValidationError::InvalidMemIndex(0));
                         }
                         if memarg.align > 3 {
-                            return Err(ValidationError::ErroneousAlignment(memarg.align, 3));
+                            return Err(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: 3 });
                         }
                         stack.assert_pop_val_type(ValType::VecType)?;
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
@@ -1449,7 +1526,7 @@ fn read_instructions(
                             return Err(ValidationError::InvalidMemIndex(0));
                         }
                         if memarg.align > 0 {
-                            return Err(ValidationError::ErroneousAlignment(memarg.align, 0));
+                            return Err(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: 0 });
                         }
                         stack.assert_pop_val_type(ValType::VecType)?;
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
@@ -1464,7 +1541,7 @@ fn read_instructions(
                             return Err(ValidationError::InvalidMemIndex(0));
                         }
                         if memarg.align > 1 {
-                            return Err(ValidationError::ErroneousAlignment(memarg.align, 1));
+                            return Err(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: 1 });
                         }
                         stack.assert_pop_val_type(ValType::VecType)?;
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
@@ -1479,7 +1556,7 @@ fn read_instructions(
                             return Err(ValidationError::InvalidMemIndex(0));
                         }
                         if memarg.align > 2 {
-                            return Err(ValidationError::ErroneousAlignment(memarg.align, 2));
+                            return Err(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: 2 });
                         }
                         stack.assert_pop_val_type(ValType::VecType)?;
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
@@ -1494,7 +1571,7 @@ fn read_instructions(
                             return Err(ValidationError::InvalidMemIndex(0));
                         }
                         if memarg.align > 3 {
-                            return Err(ValidationError::ErroneousAlignment(memarg.align, 3));
+                            return Err(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: 3 });
                         }
                         stack.assert_pop_val_type(ValType::VecType)?;
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;

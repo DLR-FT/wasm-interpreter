@@ -373,7 +373,7 @@ mod test {
 
         assert_eq!(
             reader.handle_transaction(ValType::read),
-            Err(ValidationError::InvalidValType)
+            Err(ValidationError::MalformedValType)
         );
     }
 }
