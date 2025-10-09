@@ -118,11 +118,9 @@ fn recursion_busted_stack() {
     "#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
-    assert!(
-        matches!(
-            validate(&wasm_bytes),
-            Err(ValidationError::EndInvalidValueStack)
-        ),
+    assert_eq!(
+        validate(&wasm_bytes).err(),
+        Some(ValidationError::EndInvalidValueStack),
         "validation incorrectly passed"
     );
 }

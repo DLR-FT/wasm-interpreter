@@ -49,7 +49,10 @@ fn memory_fill() {
     let expected = [vec![217u8; 100], vec![0u8; 5]].concat();
     for (idx, expected_byte) in expected.into_iter().enumerate() {
         let mem_byte: u8 = mem_inst.mem.load(idx).unwrap();
-        assert!(mem_byte.eq_ignore_ascii_case(&expected_byte));
+        assert_eq!(
+            mem_byte.to_ascii_lowercase(),
+            expected_byte.to_ascii_lowercase()
+        );
     }
 }
 

@@ -60,66 +60,94 @@ fn table_grow_test() {
     let grow_abbrev = get_func!(i, "grow-abbrev");
     let size = get_func!(i, "size");
 
-    assert!(i.invoke_typed::<(), i32>(size, ()).unwrap() == 0);
-    assert!(
+    assert_eq!(i.invoke_typed::<(), i32>(size, ()), Ok(0));
+    assert_eq!(
         i.invoke_typed::<(i32, RefFunc), ()>(set, (0, RefFunc(Some(FuncAddr(2)))))
-            .err()
-            .unwrap()
-            == RuntimeError::Trap(TrapError::TableOrElementAccessOutOfBounds)
+            .err(),
+        Some(RuntimeError::Trap(
+            TrapError::TableOrElementAccessOutOfBounds
+        ))
     );
-    assert!(
-        i.invoke_typed::<i32, RefFunc>(get, 0).err().unwrap()
-            == RuntimeError::Trap(TrapError::TableOrElementAccessOutOfBounds)
+    assert_eq!(
+        i.invoke_typed::<i32, RefFunc>(get, 0).err(),
+        Some(RuntimeError::Trap(
+            TrapError::TableOrElementAccessOutOfBounds
+        ))
     );
 
-    assert!(
-        i.invoke_typed::<(i32, RefFunc), i32>(grow, (1, RefFunc(None)))
-            .unwrap()
-            == 0
+    assert_eq!(
+        i.invoke_typed::<(i32, RefFunc), i32>(grow, (1, RefFunc(None))),
+        Ok(0)
     );
-    assert!(i.invoke_typed::<(), i32>(size, ()).unwrap() == 1);
-    assert!(i.invoke_typed::<i32, RefFunc>(get, 0).unwrap().0.is_none());
-    assert!(i
-        .invoke_typed::<(i32, RefFunc), ()>(set, (0, RefFunc(Some(FuncAddr(2)))))
-        .is_ok());
-    assert!(i.invoke_typed::<i32, RefFunc>(get, 0).unwrap() == RefFunc(Some(FuncAddr(2))));
-    assert!(
+    assert_eq!(i.invoke_typed::<(), i32>(size, ()), Ok(1));
+    assert_eq!(i.invoke_typed::<i32, RefFunc>(get, 0), Ok(RefFunc(None)));
+    assert_eq!(
+        i.invoke_typed::<(i32, RefFunc), ()>(set, (0, RefFunc(Some(FuncAddr(2))))),
+        Ok(())
+    );
+    assert_eq!(
+        i.invoke_typed::<i32, RefFunc>(get, 0),
+        Ok(RefFunc(Some(FuncAddr(2))))
+    );
+    assert_eq!(
         i.invoke_typed::<(i32, RefFunc), ()>(set, (1, RefFunc(Some(FuncAddr(2)))))
-            .err()
-            .unwrap()
-            == RuntimeError::Trap(TrapError::TableOrElementAccessOutOfBounds)
+            .err(),
+        Some(RuntimeError::Trap(
+            TrapError::TableOrElementAccessOutOfBounds
+        ))
     );
-    assert!(
-        i.invoke_typed::<i32, RefFunc>(get, 1).err().unwrap()
-            == RuntimeError::Trap(TrapError::TableOrElementAccessOutOfBounds)
+    assert_eq!(
+        i.invoke_typed::<i32, RefFunc>(get, 1).err(),
+        Some(RuntimeError::Trap(
+            TrapError::TableOrElementAccessOutOfBounds
+        ))
     );
 
-    assert!(
-        i.invoke_typed::<(i32, RefFunc), i32>(grow_abbrev, (4, RefFunc(Some(FuncAddr(3)))))
-            .unwrap()
-            == 1
+    assert_eq!(
+        i.invoke_typed::<(i32, RefFunc), i32>(grow_abbrev, (4, RefFunc(Some(FuncAddr(3))))),
+        Ok(1)
     );
-    assert!(i.invoke_typed::<(), i32>(size, ()).unwrap() == 5);
-    assert!(i.invoke_typed::<i32, RefFunc>(get, 0).unwrap() == RefFunc(Some(FuncAddr(2))));
-    assert!(i
-        .invoke_typed::<(i32, RefFunc), ()>(set, (0, RefFunc(Some(FuncAddr(2)))))
-        .is_ok());
-    assert!(i.invoke_typed::<i32, RefFunc>(get, 0).unwrap() == RefFunc(Some(FuncAddr(2))));
-    assert!(i.invoke_typed::<i32, RefFunc>(get, 1).unwrap() == RefFunc(Some(FuncAddr(3))));
-    assert!(i.invoke_typed::<i32, RefFunc>(get, 4).unwrap() == RefFunc(Some(FuncAddr(3))));
-    assert!(i
-        .invoke_typed::<(i32, RefFunc), ()>(set, (4, RefFunc(Some(FuncAddr(4)))))
-        .is_ok());
-    assert!(i.invoke_typed::<i32, RefFunc>(get, 4).unwrap() == RefFunc(Some(FuncAddr(4))));
-    assert!(
+    assert_eq!(i.invoke_typed::<(), i32>(size, ()), Ok(5));
+    assert_eq!(
+        i.invoke_typed::<i32, RefFunc>(get, 0),
+        Ok(RefFunc(Some(FuncAddr(2))))
+    );
+    assert_eq!(
+        i.invoke_typed::<(i32, RefFunc), ()>(set, (0, RefFunc(Some(FuncAddr(2))))),
+        Ok(())
+    );
+    assert_eq!(
+        i.invoke_typed::<i32, RefFunc>(get, 0),
+        Ok(RefFunc(Some(FuncAddr(2))))
+    );
+    assert_eq!(
+        i.invoke_typed::<i32, RefFunc>(get, 1),
+        Ok(RefFunc(Some(FuncAddr(3))))
+    );
+    assert_eq!(
+        i.invoke_typed::<i32, RefFunc>(get, 4),
+        Ok(RefFunc(Some(FuncAddr(3))))
+    );
+    assert_eq!(
+        i.invoke_typed::<(i32, RefFunc), ()>(set, (4, RefFunc(Some(FuncAddr(4))))),
+        Ok(())
+    );
+    assert_eq!(
+        i.invoke_typed::<i32, RefFunc>(get, 4),
+        Ok(RefFunc(Some(FuncAddr(4))))
+    );
+    assert_eq!(
         i.invoke_typed::<(i32, RefFunc), ()>(set, (5, RefFunc(Some(FuncAddr(2)))))
-            .err()
-            .unwrap()
-            == RuntimeError::Trap(TrapError::TableOrElementAccessOutOfBounds)
+            .err(),
+        Some(RuntimeError::Trap(
+            TrapError::TableOrElementAccessOutOfBounds
+        ))
     );
-    assert!(
-        i.invoke_typed::<i32, RefFunc>(get, 5).err().unwrap()
-            == RuntimeError::Trap(TrapError::TableOrElementAccessOutOfBounds)
+    assert_eq!(
+        i.invoke_typed::<i32, RefFunc>(get, 5).err(),
+        Some(RuntimeError::Trap(
+            TrapError::TableOrElementAccessOutOfBounds
+        ))
     );
 }
 
