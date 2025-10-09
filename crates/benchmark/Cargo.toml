@@ -31,3 +31,7 @@ harness = false
 [[bench]]
 name = "hook_performance_impact"
 harness = false
+
+[[bench]]
+name = "var_length_integer_reading"
+harness = false

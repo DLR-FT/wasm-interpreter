@@ -118,6 +118,7 @@
                   cargo-flamegraph
                   cargo-llvm-cov
                   cargo-outdated
+                  cargo-show-asm
                   cargo-watch
                   critcmp # compare criterion.rs benchmark results
                   wabt
