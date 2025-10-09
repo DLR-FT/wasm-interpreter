@@ -15,7 +15,7 @@ use wasm::interop::RefFunc;
 # See the License for the specific language governing permissions and
 # limitations under the License.
 */
-use wasm::ValidationError as GeneralError;
+use wasm::ValidationError;
 use wasm::{validate, RuntimeInstance, DEFAULT_MODULE};
 
 macro_rules! get_func {
@@ -84,7 +84,7 @@ fn unknown_table() {
         let validation_info = validate(&wasm_bytes);
         assert_eq!(
             validation_info.err(),
-            Some(GeneralError::InvalidTableIdx(0))
+            Some(ValidationError::InvalidTableIdx(0))
         );
     });
 }
@@ -97,7 +97,7 @@ fn table_size_minimum_must_not_be_greater_than_maximum() {
         let validation_info = validate(&wasm_bytes);
         assert_eq!(
             validation_info.err(),
-            Some(GeneralError::MalformedLimitsMinLargerThanMax { min: 1, max: 0 })
+            Some(ValidationError::MalformedLimitsMinLargerThanMax { min: 1, max: 0 })
         );
     }
 
@@ -107,7 +107,7 @@ fn table_size_minimum_must_not_be_greater_than_maximum() {
         let validation_info = validate(&wasm_bytes);
         assert_eq!(
             validation_info.err(),
-            Some(GeneralError::MalformedLimitsMinLargerThanMax {
+            Some(ValidationError::MalformedLimitsMinLargerThanMax {
                 min: 0xFFFF_FFFF,
                 max: 0
             })
@@ -296,7 +296,7 @@ fn call_indirect_type_check() {
 //     w.iter().for_each(|wat| {
 //         let wasm_bytes = wat::parse_str(wat).unwrap();
 //         let validation_info = validate(&wasm_bytes);
-//         // assert!(validation_info.err().unwrap() == GeneralError::InvalidLimit);
+//         // assert!(validation_info.err().unwrap() == ValidationError::InvalidLimit);
 //     });
 // }
 
