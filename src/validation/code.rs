@@ -71,7 +71,7 @@ pub fn validate_code_section(
 
         // Check if there were unread trailing instructions after the last END
         if previous_pc + func_size as usize != wasm.pc {
-            return Err(ValidationError::ExprHasTrailingInstructions);
+            return Err(ValidationError::CodeExprHasTrailingInstructions);
         }
 
         Ok((func_block, stp))
@@ -97,10 +97,10 @@ pub fn read_declared_locals(wasm: &mut WasmReader) -> Result<Vec<ValType>, Valid
     // we check to not have more than 2^32-1 locals, and if that number is okay, we then get to instantiate them all
     // this is because the flat_map and collect take an insane amount of time
     // in total, these 2 tests take more than 240s
-    let mut total_no_of_locals: usize = 0;
+    let mut total_no_of_locals: u64 = 0;
     for local in &locals {
-        let temp = local.0;
-        if temp > i32::MAX as usize {
+        let temp = local.0 as u64;
+        if temp > u32::MAX.into() {
             return Err(ValidationError::TooManyLocals(total_no_of_locals));
         };
         total_no_of_locals = match total_no_of_locals.checked_add(temp) {
@@ -109,7 +109,7 @@ pub fn read_declared_locals(wasm: &mut WasmReader) -> Result<Vec<ValType>, Valid
         }
     }
 
-    if total_no_of_locals > i32::MAX as usize {
+    if total_no_of_locals > u32::MAX.into() {
         return Err(ValidationError::TooManyLocals(total_no_of_locals));
     }
 
@@ -429,7 +429,7 @@ fn read_instructions(
                 let func_idx = wasm.read_var_u32()? as FuncIdx;
                 let type_idx = *type_idx_of_fn
                     .get(func_idx)
-                    .ok_or(ValidationError::FunctionIsNotDefined(func_idx))?;
+                    .ok_or(ValidationError::InvalidFuncIdx(func_idx))?;
                 let func_ty = &fn_types[type_idx];
 
                 for typ in func_ty.params.valtypes.iter().rev() {
@@ -447,13 +447,10 @@ fn read_instructions(
 
                 let tab = tables
                     .get(table_idx)
-                    .ok_or(ValidationError::TableIsNotDefined(table_idx))?;
+                    .ok_or(ValidationError::InvalidTableIdx(table_idx))?;
 
                 if tab.et != RefType::FuncRef {
-                    return Err(ValidationError::WrongRefTypeForInteropValue(
-                        tab.et,
-                        RefType::FuncRef,
-                    ));
+                    return Err(ValidationError::IndirectCallToNonFuncRefTable(tab.et));
                 }
 
                 let func_ty = fn_types
@@ -483,7 +480,9 @@ fn read_instructions(
             SELECT_T => {
                 let type_vec = wasm.read_vec(ValType::read)?;
                 if type_vec.len() != 1 {
-                    return Err(ValidationError::InvalidSelectTypeVector);
+                    return Err(ValidationError::InvalidSelectTypeVectorLength(
+                        type_vec.len(),
+                    ));
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.assert_pop_val_type(type_vec[0])?;
@@ -495,7 +494,7 @@ fn read_instructions(
                 let local_idx = wasm.read_var_u32()? as LocalIdx;
                 let local_ty = locals
                     .get(local_idx)
-                    .ok_or(ValidationError::InvalidLocalIdx)?;
+                    .ok_or(ValidationError::InvalidLocalIdx(local_idx))?;
                 stack.push_valtype(*local_ty);
             }
             // local.set [t] -> []
@@ -503,7 +502,7 @@ fn read_instructions(
                 let local_idx = wasm.read_var_u32()? as LocalIdx;
                 let local_ty = locals
                     .get(local_idx)
-                    .ok_or(ValidationError::InvalidLocalIdx)?;
+                    .ok_or(ValidationError::InvalidLocalIdx(local_idx))?;
                 stack.assert_pop_val_type(*local_ty)?;
             }
             // local.set [t] -> [t]
@@ -511,7 +510,7 @@ fn read_instructions(
                 let local_idx = wasm.read_var_u32()? as LocalIdx;
                 let local_ty = locals
                     .get(local_idx)
-                    .ok_or(ValidationError::InvalidLocalIdx)?;
+                    .ok_or(ValidationError::InvalidLocalIdx(local_idx))?;
                 stack.assert_val_types_on_top(&[*local_ty], true)?;
             }
             // global.get [] -> [t]
@@ -537,7 +536,7 @@ fn read_instructions(
                     .ok_or(ValidationError::InvalidGlobalIdx(global_idx))?;
 
                 if !global.ty.is_mut {
-                    return Err(ValidationError::GlobalIsConst);
+                    return Err(ValidationError::MutationOfConstGlobal);
                 }
 
                 stack.assert_pop_val_type(global.ty.ty)?;
@@ -546,7 +545,7 @@ fn read_instructions(
                 let table_idx = wasm.read_var_u32()? as TableIdx;
 
                 if tables.len() <= table_idx {
-                    return Err(ValidationError::TableIsNotDefined(table_idx));
+                    return Err(ValidationError::InvalidTableIdx(table_idx));
                 }
 
                 let t = tables.get(table_idx).unwrap().et;
@@ -558,7 +557,7 @@ fn read_instructions(
                 let table_idx = wasm.read_var_u32()? as TableIdx;
 
                 if tables.len() <= table_idx {
-                    return Err(ValidationError::TableIsNotDefined(table_idx));
+                    return Err(ValidationError::InvalidTableIdx(table_idx));
                 }
 
                 let t = tables.get(table_idx).unwrap().et;
@@ -568,253 +567,322 @@ fn read_instructions(
             }
             I32_LOAD => {
                 if memories.is_empty() {
-                    return Err(ValidationError::MemoryIsNotDefined(0));
+                    return Err(ValidationError::InvalidMemIndex(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 2 {
-                    return Err(ValidationError::ErroneousAlignment(memarg.align, 2));
+                    return Err(ValidationError::ErroneousAlignment {
+                        alignment: memarg.align,
+                        minimum_required_alignment: 2,
+                    });
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.push_valtype(ValType::NumType(NumType::I32));
             }
             I64_LOAD => {
                 if memories.is_empty() {
-                    return Err(ValidationError::MemoryIsNotDefined(0));
+                    return Err(ValidationError::InvalidMemIndex(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 3 {
-                    return Err(ValidationError::ErroneousAlignment(memarg.align, 3));
+                    return Err(ValidationError::ErroneousAlignment {
+                        alignment: memarg.align,
+                        minimum_required_alignment: 3,
+                    });
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.push_valtype(ValType::NumType(NumType::I64));
             }
             F32_LOAD => {
                 if memories.is_empty() {
-                    return Err(ValidationError::MemoryIsNotDefined(0));
+                    return Err(ValidationError::InvalidMemIndex(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 2 {
-                    return Err(ValidationError::ErroneousAlignment(memarg.align, 2));
+                    return Err(ValidationError::ErroneousAlignment {
+                        alignment: memarg.align,
+                        minimum_required_alignment: 2,
+                    });
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.push_valtype(ValType::NumType(NumType::F32));
             }
             F64_LOAD => {
                 if memories.is_empty() {
-                    return Err(ValidationError::MemoryIsNotDefined(0));
+                    return Err(ValidationError::InvalidMemIndex(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 3 {
-                    return Err(ValidationError::ErroneousAlignment(memarg.align, 3));
+                    return Err(ValidationError::ErroneousAlignment {
+                        alignment: memarg.align,
+                        minimum_required_alignment: 3,
+                    });
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.push_valtype(ValType::NumType(NumType::F64));
             }
             I32_LOAD8_S => {
                 if memories.is_empty() {
-                    return Err(ValidationError::MemoryIsNotDefined(0));
+                    return Err(ValidationError::InvalidMemIndex(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 0 {
-                    return Err(ValidationError::ErroneousAlignment(memarg.align, 0));
+                    return Err(ValidationError::ErroneousAlignment {
+                        alignment: memarg.align,
+                        minimum_required_alignment: 0,
+                    });
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.push_valtype(ValType::NumType(NumType::I32));
             }
             I32_LOAD8_U => {
                 if memories.is_empty() {
-                    return Err(ValidationError::MemoryIsNotDefined(0));
+                    return Err(ValidationError::InvalidMemIndex(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 0 {
-                    return Err(ValidationError::ErroneousAlignment(memarg.align, 0));
+                    return Err(ValidationError::ErroneousAlignment {
+                        alignment: memarg.align,
+                        minimum_required_alignment: 0,
+                    });
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.push_valtype(ValType::NumType(NumType::I32));
             }
             I32_LOAD16_S => {
                 if memories.is_empty() {
-                    return Err(ValidationError::MemoryIsNotDefined(0));
+                    return Err(ValidationError::InvalidMemIndex(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 1 {
-                    return Err(ValidationError::ErroneousAlignment(memarg.align, 1));
+                    return Err(ValidationError::ErroneousAlignment {
+                        alignment: memarg.align,
+                        minimum_required_alignment: 1,
+                    });
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.push_valtype(ValType::NumType(NumType::I32));
             }
             I32_LOAD16_U => {
                 if memories.is_empty() {
-                    return Err(ValidationError::MemoryIsNotDefined(0));
+                    return Err(ValidationError::InvalidMemIndex(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 1 {
-                    return Err(ValidationError::ErroneousAlignment(memarg.align, 1));
+                    return Err(ValidationError::ErroneousAlignment {
+                        alignment: memarg.align,
+                        minimum_required_alignment: 1,
+                    });
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.push_valtype(ValType::NumType(NumType::I32));
             }
             I64_LOAD8_S => {
                 if memories.is_empty() {
-                    return Err(ValidationError::MemoryIsNotDefined(0));
+                    return Err(ValidationError::InvalidMemIndex(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 0 {
-                    return Err(ValidationError::ErroneousAlignment(memarg.align, 0));
+                    return Err(ValidationError::ErroneousAlignment {
+                        alignment: memarg.align,
+                        minimum_required_alignment: 0,
+                    });
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.push_valtype(ValType::NumType(NumType::I64));
             }
             I64_LOAD8_U => {
                 if memories.is_empty() {
-                    return Err(ValidationError::MemoryIsNotDefined(0));
+                    return Err(ValidationError::InvalidMemIndex(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 0 {
-                    return Err(ValidationError::ErroneousAlignment(memarg.align, 0));
+                    return Err(ValidationError::ErroneousAlignment {
+                        alignment: memarg.align,
+                        minimum_required_alignment: 0,
+                    });
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.push_valtype(ValType::NumType(NumType::I64));
             }
             I64_LOAD16_S => {
                 if memories.is_empty() {
-                    return Err(ValidationError::MemoryIsNotDefined(0));
+                    return Err(ValidationError::InvalidMemIndex(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 1 {
-                    return Err(ValidationError::ErroneousAlignment(memarg.align, 1));
+                    return Err(ValidationError::ErroneousAlignment {
+                        alignment: memarg.align,
+                        minimum_required_alignment: 1,
+                    });
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.push_valtype(ValType::NumType(NumType::I64));
             }
             I64_LOAD16_U => {
                 if memories.is_empty() {
-                    return Err(ValidationError::MemoryIsNotDefined(0));
+                    return Err(ValidationError::InvalidMemIndex(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 1 {
-                    return Err(ValidationError::ErroneousAlignment(memarg.align, 1));
+                    return Err(ValidationError::ErroneousAlignment {
+                        alignment: memarg.align,
+                        minimum_required_alignment: 1,
+                    });
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.push_valtype(ValType::NumType(NumType::I64));
             }
             I64_LOAD32_S => {
                 if memories.is_empty() {
-                    return Err(ValidationError::MemoryIsNotDefined(0));
+                    return Err(ValidationError::InvalidMemIndex(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 2 {
-                    return Err(ValidationError::ErroneousAlignment(memarg.align, 2));
+                    return Err(ValidationError::ErroneousAlignment {
+                        alignment: memarg.align,
+                        minimum_required_alignment: 2,
+                    });
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.push_valtype(ValType::NumType(NumType::I64));
             }
             I64_LOAD32_U => {
                 if memories.is_empty() {
-                    return Err(ValidationError::MemoryIsNotDefined(0));
+                    return Err(ValidationError::InvalidMemIndex(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 2 {
-                    return Err(ValidationError::ErroneousAlignment(memarg.align, 2));
+                    return Err(ValidationError::ErroneousAlignment {
+                        alignment: memarg.align,
+                        minimum_required_alignment: 2,
+                    });
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.push_valtype(ValType::NumType(NumType::I64));
             }
             I32_STORE => {
                 if memories.is_empty() {
-                    return Err(ValidationError::MemoryIsNotDefined(0));
+                    return Err(ValidationError::InvalidMemIndex(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 2 {
-                    return Err(ValidationError::ErroneousAlignment(memarg.align, 2));
+                    return Err(ValidationError::ErroneousAlignment {
+                        alignment: memarg.align,
+                        minimum_required_alignment: 2,
+                    });
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
             }
             I64_STORE => {
                 if memories.is_empty() {
-                    return Err(ValidationError::MemoryIsNotDefined(0));
+                    return Err(ValidationError::InvalidMemIndex(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 3 {
-                    return Err(ValidationError::ErroneousAlignment(memarg.align, 3));
+                    return Err(ValidationError::ErroneousAlignment {
+                        alignment: memarg.align,
+                        minimum_required_alignment: 3,
+                    });
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I64))?;
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
             }
             F32_STORE => {
                 if memories.is_empty() {
-                    return Err(ValidationError::MemoryIsNotDefined(0));
+                    return Err(ValidationError::InvalidMemIndex(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 2 {
-                    return Err(ValidationError::ErroneousAlignment(memarg.align, 2));
+                    return Err(ValidationError::ErroneousAlignment {
+                        alignment: memarg.align,
+                        minimum_required_alignment: 2,
+                    });
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::F32))?;
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
             }
             F64_STORE => {
                 if memories.is_empty() {
-                    return Err(ValidationError::MemoryIsNotDefined(0));
+                    return Err(ValidationError::InvalidMemIndex(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 3 {
-                    return Err(ValidationError::ErroneousAlignment(memarg.align, 3));
+                    return Err(ValidationError::ErroneousAlignment {
+                        alignment: memarg.align,
+                        minimum_required_alignment: 3,
+                    });
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::F64))?;
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
             }
             I32_STORE8 => {
                 if memories.is_empty() {
-                    return Err(ValidationError::MemoryIsNotDefined(0));
+                    return Err(ValidationError::InvalidMemIndex(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 0 {
-                    return Err(ValidationError::ErroneousAlignment(memarg.align, 0));
+                    return Err(ValidationError::ErroneousAlignment {
+                        alignment: memarg.align,
+                        minimum_required_alignment: 0,
+                    });
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
             }
             I32_STORE16 => {
                 if memories.is_empty() {
-                    return Err(ValidationError::MemoryIsNotDefined(0));
+                    return Err(ValidationError::InvalidMemIndex(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 1 {
-                    return Err(ValidationError::ErroneousAlignment(memarg.align, 1));
+                    return Err(ValidationError::ErroneousAlignment {
+                        alignment: memarg.align,
+                        minimum_required_alignment: 1,
+                    });
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
             }
             I64_STORE8 => {
                 if memories.is_empty() {
-                    return Err(ValidationError::MemoryIsNotDefined(0));
+                    return Err(ValidationError::InvalidMemIndex(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 0 {
-                    return Err(ValidationError::ErroneousAlignment(memarg.align, 0));
+                    return Err(ValidationError::ErroneousAlignment {
+                        alignment: memarg.align,
+                        minimum_required_alignment: 0,
+                    });
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I64))?;
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
             }
             I64_STORE16 => {
                 if memories.is_empty() {
-                    return Err(ValidationError::MemoryIsNotDefined(0));
+                    return Err(ValidationError::InvalidMemIndex(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 1 {
-                    return Err(ValidationError::ErroneousAlignment(memarg.align, 1));
+                    return Err(ValidationError::ErroneousAlignment {
+                        alignment: memarg.align,
+                        minimum_required_alignment: 1,
+                    });
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I64))?;
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
             }
             I64_STORE32 => {
                 if memories.is_empty() {
-                    return Err(ValidationError::MemoryIsNotDefined(0));
+                    return Err(ValidationError::InvalidMemIndex(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 2 {
-                    return Err(ValidationError::ErroneousAlignment(memarg.align, 2));
+                    return Err(ValidationError::ErroneousAlignment {
+                        alignment: memarg.align,
+                        minimum_required_alignment: 2,
+                    });
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I64))?;
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
@@ -825,7 +893,7 @@ fn read_instructions(
                     return Err(ValidationError::UnsupportedMultipleMemoriesProposal);
                 }
                 if memories.len() <= mem_idx {
-                    return Err(ValidationError::MemoryIsNotDefined(mem_idx));
+                    return Err(ValidationError::InvalidMemIndex(mem_idx));
                 }
                 stack.push_valtype(ValType::NumType(NumType::I32));
             }
@@ -835,7 +903,7 @@ fn read_instructions(
                     return Err(ValidationError::UnsupportedMultipleMemoriesProposal);
                 }
                 if memories.len() <= mem_idx {
-                    return Err(ValidationError::MemoryIsNotDefined(mem_idx));
+                    return Err(ValidationError::InvalidMemIndex(mem_idx));
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.push_valtype(ValType::NumType(NumType::I32));
@@ -1037,7 +1105,7 @@ fn read_instructions(
 
                 // checking for existence suffices for checking whether this function has a valid type.
                 if type_idx_of_fn.len() <= func_idx {
-                    return Err(ValidationError::FunctionIsNotDefined(func_idx));
+                    return Err(ValidationError::InvalidFuncIdx(func_idx));
                 }
 
                 // check whether func_idx is in C.refs
@@ -1105,25 +1173,19 @@ fn read_instructions(
                             return Err(ValidationError::UnsupportedMultipleMemoriesProposal);
                         }
                         if memories.len() <= mem_idx {
-                            return Err(ValidationError::MemoryIsNotDefined(mem_idx));
+                            return Err(ValidationError::InvalidMemIndex(mem_idx));
                         }
-                        if data_count.is_none() {
-                            return Err(ValidationError::NoDataSegments);
-                        }
-                        if data_count.unwrap() as usize <= data_idx {
-                            return Err(ValidationError::DataSegmentNotFound(data_idx));
+                        if data_count.unwrap_or(0) as usize <= data_idx {
+                            return Err(ValidationError::InvalidDataIdx(data_idx));
                         }
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                     }
                     DATA_DROP => {
-                        if data_count.is_none() {
-                            return Err(ValidationError::NoDataSegments);
-                        }
                         let data_idx = wasm.read_var_u32()? as DataIdx;
-                        if data_count.unwrap() as usize <= data_idx {
-                            return Err(ValidationError::DataSegmentNotFound(data_idx));
+                        if data_count.unwrap_or(0) as usize <= data_idx {
+                            return Err(ValidationError::InvalidDataIdx(data_idx));
                         }
                     }
                     MEMORY_COPY => {
@@ -1132,7 +1194,7 @@ fn read_instructions(
                             return Err(ValidationError::UnsupportedMultipleMemoriesProposal);
                         }
                         if memories.is_empty() {
-                            return Err(ValidationError::MemoryIsNotDefined(0));
+                            return Err(ValidationError::InvalidMemIndex(0));
                         }
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
@@ -1144,7 +1206,7 @@ fn read_instructions(
                             return Err(ValidationError::UnsupportedMultipleMemoriesProposal);
                         }
                         if memories.len() <= mem_idx {
-                            return Err(ValidationError::MemoryIsNotDefined(mem_idx));
+                            return Err(ValidationError::InvalidMemIndex(mem_idx));
                         }
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
@@ -1155,19 +1217,22 @@ fn read_instructions(
                         let table_idx = wasm.read_var_u32()? as TableIdx;
 
                         if tables.len() <= table_idx {
-                            return Err(ValidationError::TableIsNotDefined(table_idx));
+                            return Err(ValidationError::InvalidTableIdx(table_idx));
                         }
 
                         let t1 = tables[table_idx].et;
 
                         if elements.len() <= elem_idx {
-                            return Err(ValidationError::ElementIsNotDefined(elem_idx));
+                            return Err(ValidationError::InvalidElemIdx(elem_idx));
                         }
 
                         let t2 = elements[elem_idx].to_ref_type();
 
                         if t1 != t2 {
-                            return Err(ValidationError::DifferentRefTypes(t1, t2));
+                            return Err(ValidationError::MismatchedRefTypesDuringTableInit {
+                                table_ty: t1,
+                                elem_ty: t2,
+                            });
                         }
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
@@ -1178,7 +1243,7 @@ fn read_instructions(
                         let elem_idx = wasm.read_var_u32()? as ElemIdx;
 
                         if elements.len() <= elem_idx {
-                            return Err(ValidationError::ElementIsNotDefined(elem_idx));
+                            return Err(ValidationError::InvalidElemIdx(elem_idx));
                         }
                     }
                     TABLE_COPY => {
@@ -1186,18 +1251,21 @@ fn read_instructions(
                         let table_y_idx = wasm.read_var_u32()? as TableIdx;
 
                         if tables.len() <= table_x_idx {
-                            return Err(ValidationError::TableIsNotDefined(table_x_idx));
+                            return Err(ValidationError::InvalidTableIdx(table_x_idx));
                         }
 
                         if tables.len() <= table_y_idx {
-                            return Err(ValidationError::TableIsNotDefined(table_y_idx));
+                            return Err(ValidationError::InvalidTableIdx(table_y_idx));
                         }
 
                         let t1 = tables[table_x_idx].et;
                         let t2 = tables[table_y_idx].et;
 
                         if t1 != t2 {
-                            return Err(ValidationError::DifferentRefTypes(t1, t2));
+                            return Err(ValidationError::MismatchedRefTypesDuringTableCopy {
+                                source_table_ty: t2,
+                                destination_table_ty: t1,
+                            });
                         }
 
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
@@ -1208,7 +1276,7 @@ fn read_instructions(
                         let table_idx = wasm.read_var_u32()? as TableIdx;
 
                         if tables.len() <= table_idx {
-                            return Err(ValidationError::TableIsNotDefined(table_idx));
+                            return Err(ValidationError::InvalidTableIdx(table_idx));
                         }
 
                         let t = tables[table_idx].et;
@@ -1222,7 +1290,7 @@ fn read_instructions(
                         let table_idx = wasm.read_var_u32()? as TableIdx;
 
                         if tables.len() <= table_idx {
-                            return Err(ValidationError::TableIsNotDefined(table_idx));
+                            return Err(ValidationError::InvalidTableIdx(table_idx));
                         }
 
                         stack.push_valtype(ValType::NumType(NumType::I32));
@@ -1231,7 +1299,7 @@ fn read_instructions(
                         let table_idx = wasm.read_var_u32()? as TableIdx;
 
                         if tables.len() <= table_idx {
-                            return Err(ValidationError::TableIsNotDefined(table_idx));
+                            return Err(ValidationError::InvalidTableIdx(table_idx));
                         }
 
                         let t = tables[table_idx].et;

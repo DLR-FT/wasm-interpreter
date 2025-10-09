@@ -1,6 +1,6 @@
 use super::global::GlobalType;
 use super::RefType;
-use crate::core::indices::FuncIdx;
+use crate::core::indices::{FuncIdx, TableIdx};
 use crate::core::reader::span::Span;
 use crate::core::reader::types::TableType;
 use crate::core::reader::{WasmReadable, WasmReader};
@@ -213,7 +213,7 @@ impl ElemType {
                 }
                 8.. => {
                     // TODO fix error
-                    return Err(ValidationError::InvalidVersion);
+                    return Err(ValidationError::InvalidBinaryFormatVersion);
                 }
             };
 
@@ -232,10 +232,10 @@ impl ElemType {
                     // 1-2. C.tables[x] must be defined with type: limits t
                     let table_type = tables
                         .get(x as usize)
-                        .ok_or(ValidationError::UnknownTable)?
+                        .ok_or(ValidationError::InvalidTableIdx(x as TableIdx))?
                         .et;
                     if table_type != t {
-                        return Err(ValidationError::UnknownTable);
+                        return Err(ValidationError::ActiveElementSegmentTypeMismatch);
                     }
                     // 3-4. _expr must be valid with type I32 and be const: already checked during the parse of initializer expressions above.
                     // Then elemmode is valid with type t.
@@ -328,7 +328,7 @@ fn parse_validate_shortened_initializer_list(
         let func_idx = w.read_var_u32()?;
         if num_funcs <= func_idx as usize {
             // TODO fix error
-            return Err(ValidationError::InvalidLocalIdx);
+            return Err(ValidationError::InvalidFuncIdx(func_idx as usize));
         }
         validation_context_refs.insert(func_idx as FuncIdx);
         Ok(func_idx)
@@ -368,7 +368,7 @@ fn parse_validate_generic_initializer_list(
 fn parse_elemkind(wasm: &mut WasmReader) -> Result<u8, ValidationError> {
     let et = wasm.read_u8()?;
     if et != 0x00 {
-        Err(ValidationError::OnlyFuncRefIsAllowed)
+        Err(ValidationError::MalformedElemKindDiscriminator(et))
     } else {
         Ok(et)
     }
