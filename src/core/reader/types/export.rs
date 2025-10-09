@@ -15,20 +15,6 @@ pub struct Export {
     pub desc: ExportDesc,
 }
 
-impl Export {
-    /// returns the external type of `self` according to typing relation,
-    /// taking `validation_info` as validation context C
-    /// may fail if the external type is not possible to infer with C
-    /// <https://webassembly.github.io/spec/core/valid/modules.html#exports>
-    #[allow(unused)]
-    pub fn extern_type(
-        &self,
-        validation_info: &ValidationInfo,
-    ) -> Result<ExternType, ValidationError> {
-        self.desc.extern_type(validation_info)
-    }
-}
-
 impl WasmReadable for Export {
     fn read(wasm: &mut WasmReader) -> Result<Self, ValidationError> {
         let name = wasm.read_name()?.to_owned();
@@ -54,46 +40,43 @@ pub enum ExportDesc {
 impl ExportDesc {
     /// returns the external type of `self` according to typing relation,
     /// taking `validation_info` as validation context C
-    /// may fail if the external type is not possible to infer with C
+    ///
+    /// Note: This method may panic if `self` does not come from the given [`ValidationInfo`].
     /// <https://webassembly.github.io/spec/core/valid/modules.html#exports>
-    pub fn extern_type(
-        &self,
-        validation_info: &ValidationInfo,
-    ) -> Result<ExternType, ValidationError> {
-        Ok(match self {
+    pub fn extern_type(&self, validation_info: &ValidationInfo) -> ExternType {
+        match self {
             ExportDesc::FuncIdx(func_idx) => {
                 let type_idx = validation_info
                     .functions
                     .get(*func_idx)
-                    .ok_or(ValidationError::InvalidFuncTypeIdx)?;
+                    .expect("func indices to always be valid if the validation info is correct");
                 let func_type = validation_info
                     .types
                     .get(*type_idx)
-                    .ok_or(ValidationError::InvalidFuncType)?;
+                    .expect("type indices to always be valid if the validation info is correct");
                 // TODO ugly clone that should disappear when types are directly parsed from bytecode instead of vector copies
                 ExternType::Func(func_type.clone())
             }
-            // TODO more accurate errors here
             ExportDesc::TableIdx(table_idx) => ExternType::Table(
                 *validation_info
                     .tables
                     .get(*table_idx)
-                    .ok_or(ValidationError::InvalidLocalIdx)?,
+                    .expect("table indices to always be valid if the validation info is correct"),
             ),
             ExportDesc::MemIdx(mem_idx) => ExternType::Mem(
                 *validation_info
                     .memories
                     .get(*mem_idx)
-                    .ok_or(ValidationError::InvalidLocalIdx)?,
+                    .expect("mem indices to always be valid if the validation info is correct"),
             ),
             ExportDesc::GlobalIdx(global_idx) => ExternType::Global(
                 validation_info
                     .globals
                     .get(*global_idx)
-                    .ok_or(ValidationError::InvalidGlobalIdx(*global_idx))?
+                    .expect("global indices to always be valid if the validation info is correct")
                     .ty,
             ),
-        })
+        }
     }
 
     pub fn get_function_idx(&self) -> Option<FuncIdx> {
