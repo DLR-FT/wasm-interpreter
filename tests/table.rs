@@ -82,7 +82,10 @@ fn unknown_table() {
     w.iter().for_each(|wat| {
         let wasm_bytes = wat::parse_str(wat).unwrap();
         let validation_info = validate(&wasm_bytes);
-        assert!(validation_info.err().unwrap() == GeneralError::InvalidTableIdx(0));
+        assert_eq!(
+            validation_info.err(),
+            Some(GeneralError::InvalidTableIdx(0))
+        );
     });
 }
 
@@ -133,7 +136,7 @@ fn table_elem_test() {
         .expect("instantiation failed");
     // let table = &instance.modules[0].store.tables[0];
     let table = &instance.store.tables[0];
-    assert!(table.len() == 2);
+    assert_eq!(table.len(), 2);
     let wanted: [usize; 2] = [0, 2];
     table
         .elem
@@ -141,7 +144,7 @@ fn table_elem_test() {
         .enumerate()
         .for_each(|(i, rref)| match *rref {
             wasm::value::Ref::Func(func_addr) => {
-                assert!(wanted[i] == func_addr.0)
+                assert_eq!(wanted[i], func_addr.0)
             }
             _ => panic!(),
         });
