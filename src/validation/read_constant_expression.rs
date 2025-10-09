@@ -152,7 +152,7 @@ pub fn read_constant_expression(
 
                 // checking for existence suffices for checking whether this function has a valid type.
                 if num_funcs <= func_idx {
-                    return Err(ValidationError::FunctionIsNotDefined(func_idx));
+                    return Err(ValidationError::InvalidFuncIdx(func_idx));
                 }
 
                 // This func_idx is automatically in C.refs. No need to check.

@@ -17,20 +17,6 @@
 
 use wasm::{validate, RuntimeInstance, DEFAULT_MODULE};
 
-macro_rules! get_func {
-    ($instance:ident, $func_name:expr) => {
-        &$instance
-            .get_function_by_name(DEFAULT_MODULE, $func_name)
-            .unwrap()
-    };
-}
-
-macro_rules! assert_result {
-    ($instance:expr, $func:expr, $arg:expr, $result:expr) => {
-        assert_eq!($result, $instance.invoke_typed($func, $arg).unwrap());
-    };
-}
-
 #[test_log::test]
 fn table_size_test() {
     let w = r#"
@@ -64,56 +50,57 @@ fn table_size_test() {
     let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    // let get_funcref = get_func!(i, "get-funcref");
-    // let init = get_func!(i, "init");
-    let size_t0 = get_func!(i, "size-t0");
-    let size_t1 = get_func!(i, "size-t1");
-    let size_t2 = get_func!(i, "size-t2");
-    let size_t3 = get_func!(i, "size-t3");
-    let grow_t0 = get_func!(i, "grow-t0");
-    let grow_t1 = get_func!(i, "grow-t1");
-    let grow_t2 = get_func!(i, "grow-t2");
-    let grow_t3 = get_func!(i, "grow-t3");
+    // let get_funcref = i.get_function_by_name(DEFAULT_MODULE, "get-funcref").unwrap();
+    // let init = i.get_function_by_name(DEFAULT_MODULE, "init").unwrap();
+    let size_t0 = i.get_function_by_name(DEFAULT_MODULE, "size-t0").unwrap();
+    let size_t1 = i.get_function_by_name(DEFAULT_MODULE, "size-t1").unwrap();
+    let size_t2 = i.get_function_by_name(DEFAULT_MODULE, "size-t2").unwrap();
+    let size_t3 = i.get_function_by_name(DEFAULT_MODULE, "size-t3").unwrap();
+    let grow_t0 = i.get_function_by_name(DEFAULT_MODULE, "grow-t0").unwrap();
+    let grow_t1 = i.get_function_by_name(DEFAULT_MODULE, "grow-t1").unwrap();
+    let grow_t2 = i.get_function_by_name(DEFAULT_MODULE, "grow-t2").unwrap();
+    let grow_t3 = i.get_function_by_name(DEFAULT_MODULE, "grow-t3").unwrap();
 
-    assert_result!(i, size_t0, (), 0);
-    assert_result!(i, grow_t0, 1, ());
-    assert_result!(i, size_t0, (), 1);
-    assert_result!(i, grow_t0, 4, ());
-    assert_result!(i, size_t0, (), 5);
-    assert_result!(i, grow_t0, 0, ());
-    assert_result!(i, size_t0, (), 5);
+    assert_eq!(i.invoke_typed(&size_t0, ()), Ok(0));
+    assert_eq!(i.invoke_typed(&size_t0, ()), Ok(0));
+    assert_eq!(i.invoke_typed(&grow_t0, 1), Ok(()));
+    assert_eq!(i.invoke_typed(&size_t0, ()), Ok(1));
+    assert_eq!(i.invoke_typed(&grow_t0, 4), Ok(()));
+    assert_eq!(i.invoke_typed(&size_t0, ()), Ok(5));
+    assert_eq!(i.invoke_typed(&grow_t0, 0), Ok(()));
+    assert_eq!(i.invoke_typed(&size_t0, ()), Ok(5));
 
-    assert_result!(i, size_t1, (), 1);
-    assert_result!(i, grow_t1, 1, ());
-    assert_result!(i, size_t1, (), 2);
-    assert_result!(i, grow_t1, 4, ());
-    assert_result!(i, size_t1, (), 6);
-    assert_result!(i, grow_t1, 0, ());
-    assert_result!(i, size_t1, (), 6);
+    assert_eq!(i.invoke_typed(&size_t1, ()), Ok(1));
+    assert_eq!(i.invoke_typed(&grow_t1, 1), Ok(()));
+    assert_eq!(i.invoke_typed(&size_t1, ()), Ok(2));
+    assert_eq!(i.invoke_typed(&grow_t1, 4), Ok(()));
+    assert_eq!(i.invoke_typed(&size_t1, ()), Ok(6));
+    assert_eq!(i.invoke_typed(&grow_t1, 0), Ok(()));
+    assert_eq!(i.invoke_typed(&size_t1, ()), Ok(6));
 
-    assert_result!(i, size_t2, (), 0);
-    assert_result!(i, grow_t2, 3, ());
-    assert_result!(i, size_t2, (), 0);
-    assert_result!(i, grow_t2, 1, ());
-    assert_result!(i, size_t2, (), 1);
-    assert_result!(i, grow_t2, 0, ());
-    assert_result!(i, size_t2, (), 1);
-    assert_result!(i, grow_t2, 4, ());
-    assert_result!(i, size_t2, (), 1);
-    assert_result!(i, grow_t2, 1, ());
-    assert_result!(i, size_t2, (), 2);
+    assert_eq!(i.invoke_typed(&size_t2, ()), Ok(0));
+    assert_eq!(i.invoke_typed(&grow_t2, 3), Ok(()));
+    assert_eq!(i.invoke_typed(&size_t2, ()), Ok(0));
+    assert_eq!(i.invoke_typed(&grow_t2, 1), Ok(()));
+    assert_eq!(i.invoke_typed(&size_t2, ()), Ok(1));
+    assert_eq!(i.invoke_typed(&grow_t2, 0), Ok(()));
+    assert_eq!(i.invoke_typed(&size_t2, ()), Ok(1));
+    assert_eq!(i.invoke_typed(&grow_t2, 4), Ok(()));
+    assert_eq!(i.invoke_typed(&size_t2, ()), Ok(1));
+    assert_eq!(i.invoke_typed(&grow_t2, 1), Ok(()));
+    assert_eq!(i.invoke_typed(&size_t2, ()), Ok(2));
 
-    assert_result!(i, size_t3, (), 3);
-    assert_result!(i, grow_t3, 1, ());
-    assert_result!(i, size_t3, (), 4);
-    assert_result!(i, grow_t3, 3, ());
-    assert_result!(i, size_t3, (), 7);
-    assert_result!(i, grow_t3, 0, ());
-    assert_result!(i, size_t3, (), 7);
-    assert_result!(i, grow_t3, 2, ());
-    assert_result!(i, size_t3, (), 7);
-    assert_result!(i, grow_t3, 1, ());
-    assert_result!(i, size_t3, (), 8);
+    assert_eq!(i.invoke_typed(&size_t3, ()), Ok(3));
+    assert_eq!(i.invoke_typed(&grow_t3, 1), Ok(()));
+    assert_eq!(i.invoke_typed(&size_t3, ()), Ok(4));
+    assert_eq!(i.invoke_typed(&grow_t3, 3), Ok(()));
+    assert_eq!(i.invoke_typed(&size_t3, ()), Ok(7));
+    assert_eq!(i.invoke_typed(&grow_t3, 0), Ok(()));
+    assert_eq!(i.invoke_typed(&size_t3, ()), Ok(7));
+    assert_eq!(i.invoke_typed(&grow_t3, 2), Ok(()));
+    assert_eq!(i.invoke_typed(&size_t3, ()), Ok(7));
+    assert_eq!(i.invoke_typed(&grow_t3, 1), Ok(()));
+    assert_eq!(i.invoke_typed(&size_t3, ()), Ok(8));
 }
 
 //   ;; Type errors

@@ -67,28 +67,28 @@ fn validate_exports(validation_info: &ValidationInfo) -> Result<(), ValidationEr
                     + validation_info.imports_length.imported_functions
                     <= func_idx
                 {
-                    return Err(ValidationError::UnknownFunction);
+                    return Err(ValidationError::InvalidFuncIdx(func_idx));
                 }
             }
             TableIdx(table_idx) => {
                 if validation_info.tables.len() + validation_info.imports_length.imported_tables
                     <= table_idx
                 {
-                    return Err(ValidationError::UnknownTable);
+                    return Err(ValidationError::InvalidTableIdx(table_idx));
                 }
             }
             MemIdx(mem_idx) => {
                 if validation_info.memories.len() + validation_info.imports_length.imported_memories
                     <= mem_idx
                 {
-                    return Err(ValidationError::UnknownMemory);
+                    return Err(ValidationError::InvalidMemIndex(mem_idx));
                 }
             }
             GlobalIdx(global_idx) => {
                 if validation_info.globals.len() + validation_info.imports_length.imported_globals
                     <= global_idx
                 {
-                    return Err(ValidationError::UnknownGlobal);
+                    return Err(ValidationError::InvalidGlobalIdx(global_idx));
                 }
             }
         }
@@ -139,7 +139,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
 
     trace!("Validating version number");
     let [0x01, 0x00, 0x00, 0x00] = wasm.strip_bytes::<4>()? else {
-        return Err(ValidationError::InvalidVersion);
+        return Err(ValidationError::InvalidBinaryFormatVersion);
     };
     debug!("Header ok");
 
@@ -148,25 +148,18 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
 
     let skip_section = |wasm: &mut WasmReader, section_header: &mut Option<SectionHeader>| {
         handle_section(wasm, section_header, SectionTy::Custom, |wasm, h| {
-            use alloc::string::*;
             // customsec ::= section_0(custom)
             // custom ::= name byte*
             // name ::= b*:vec(byte) => name (if utf8(name) = b*)
             // vec(B) ::= n:u32 (x:B)^n => x^n
             let _name = wasm.read_name()?;
 
-            let remaining_bytes = match h
+            let remaining_bytes = h
                 .contents
                 .from()
                 .checked_add(h.contents.len())
                 .and_then(|res| res.checked_sub(wasm.pc))
-            {
-                None => Err(ValidationError::InvalidSection(
-                    SectionTy::Custom,
-                    "Remaining bytes less than 0 after reading name!".to_string(),
-                )),
-                Some(remaining_bytes) => Ok(remaining_bytes),
-            }?;
+                .ok_or(ValidationError::InvalidCustomSectionLength)?;
 
             // TODO: maybe do something with these remaining bytes?
             let mut _bytes = Vec::new();
@@ -334,7 +327,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
         // https://webassembly.github.io/spec/core/valid/modules.html#start-function
         let type_idx = *all_functions
             .get(func_idx)
-            .ok_or(ValidationError::FunctionIsNotDefined(func_idx))?;
+            .ok_or(ValidationError::InvalidFuncIdx(func_idx))?;
         if types[type_idx]
             != (FuncType {
                 params: ResultType {
@@ -345,8 +338,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
                 },
             })
         {
-            // TODO fix error type
-            Err(ValidationError::InvalidFuncType)
+            Err(ValidationError::InvalidStartFunctionSignature)
         } else {
             Ok(func_idx)
         }
