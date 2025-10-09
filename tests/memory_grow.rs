@@ -16,29 +16,6 @@
 */
 use wasm::{validate, RuntimeError, RuntimeInstance, TrapError, DEFAULT_MODULE};
 
-macro_rules! get_func {
-    ($instance:ident, $func_name:expr) => {
-        &$instance
-            .get_function_by_name(DEFAULT_MODULE, $func_name)
-            .unwrap()
-    };
-}
-
-macro_rules! assert_result {
-    ($instance:expr, $func_name:expr, $arg:expr, $result:expr) => {
-        assert_eq!($result, $instance.invoke_typed($func_name, $arg).unwrap());
-    };
-}
-
-macro_rules! assert_error {
-    ($instance:expr, $func_name:expr, $arg:expr, $ret_type:ty, $invoke_param_type:ty, $invoke_return_type:ty, $err_type:expr) => {
-        let val: $ret_type =
-            $instance.invoke_typed::<$invoke_param_type, $invoke_return_type>($func_name, $arg);
-        assert!(val.is_err());
-        assert!(val.unwrap_err() == $err_type);
-    };
-}
-
 #[test_log::test]
 fn memory_grow_test_1() {
     let w = r#"
@@ -60,27 +37,61 @@ fn memory_grow_test_1() {
     let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
+    let load_at_zero = i
+        .get_function_by_name(DEFAULT_MODULE, "load_at_zero")
+        .unwrap();
+    let store_at_zero = i
+        .get_function_by_name(DEFAULT_MODULE, "store_at_zero")
+        .unwrap();
+    let load_at_page_size = i
+        .get_function_by_name(DEFAULT_MODULE, "load_at_page_size")
+        .unwrap();
+    let store_at_page_size = i
+        .get_function_by_name(DEFAULT_MODULE, "store_at_page_size")
+        .unwrap();
+    let grow = i.get_function_by_name(DEFAULT_MODULE, "grow").unwrap();
+    let size = i.get_function_by_name(DEFAULT_MODULE, "size").unwrap();
+
     // let x = i.invoke_typed(function_ref, params)
-    assert_result!(i, get_func!(i, "size"), (), 0);
-    assert_error!(i, get_func!(i, "store_at_zero"), (), Result<(), RuntimeError>, (), (), RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds));
-    assert_error!(i, get_func!(i, "load_at_zero"), (), Result<i32, RuntimeError>, (), i32, RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds));
-    assert_error!(i, get_func!(i, "store_at_page_size"), (), Result<(), RuntimeError>, (), (), RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds));
-    assert_error!(i, get_func!(i, "load_at_page_size"), (), Result<i32, RuntimeError>, (), i32, RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds));
-    assert_result!(i, get_func!(i, "grow"), 1, 0);
-    assert_result!(i, get_func!(i, "size"), (), 1);
-    assert_result!(i, get_func!(i, "load_at_zero"), (), 0);
-    assert_result!(i, get_func!(i, "store_at_zero"), (), ());
-    assert_result!(i, get_func!(i, "load_at_zero"), (), 2);
-    assert_error!(i, get_func!(i, "store_at_page_size"), (), Result<(), RuntimeError>, (), (), RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds));
-    assert_error!(i, get_func!(i, "load_at_page_size"), (), Result<i32, RuntimeError>, (), i32, RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds));
-    assert_result!(i, get_func!(i, "grow"), 4, 1);
-    assert_result!(i, get_func!(i, "size"), (), 5);
-    assert_result!(i, get_func!(i, "load_at_zero"), (), 2);
-    assert_result!(i, get_func!(i, "store_at_zero"), (), ());
-    assert_result!(i, get_func!(i, "load_at_zero"), (), 2);
-    assert_result!(i, get_func!(i, "load_at_page_size"), (), 0);
-    assert_result!(i, get_func!(i, "store_at_page_size"), (), ());
-    assert_result!(i, get_func!(i, "load_at_page_size"), (), 3);
+    assert_eq!(i.invoke_typed(&size, ()), Ok(0));
+    assert_eq!(
+        i.invoke_typed::<(), ()>(&store_at_zero, ()).err(),
+        Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
+    );
+    assert_eq!(
+        i.invoke_typed::<(), i32>(&load_at_zero, ()).err(),
+        Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
+    );
+
+    assert_eq!(
+        i.invoke_typed::<(), ()>(&store_at_page_size, ()).err(),
+        Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
+    );
+    assert_eq!(
+        i.invoke_typed::<(), i32>(&load_at_page_size, ()).err(),
+        Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
+    );
+    assert_eq!(i.invoke_typed(&grow, 1), Ok(0));
+    assert_eq!(i.invoke_typed(&size, ()), Ok(1));
+    assert_eq!(i.invoke_typed(&load_at_zero, ()), Ok(0));
+    assert_eq!(i.invoke_typed(&store_at_zero, ()), Ok(()));
+    assert_eq!(i.invoke_typed(&load_at_zero, ()), Ok(2));
+    assert_eq!(
+        i.invoke_typed::<(), ()>(&store_at_page_size, ()).err(),
+        Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
+    );
+    assert_eq!(
+        i.invoke_typed::<(), i32>(&load_at_page_size, ()).err(),
+        Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
+    );
+    assert_eq!(i.invoke_typed(&grow, 4), Ok(1));
+    assert_eq!(i.invoke_typed(&size, ()), Ok(5));
+    assert_eq!(i.invoke_typed(&load_at_zero, ()), Ok(2));
+    assert_eq!(i.invoke_typed(&store_at_zero, ()), Ok(()));
+    assert_eq!(i.invoke_typed(&load_at_zero, ()), Ok(2));
+    assert_eq!(i.invoke_typed(&load_at_page_size, ()), Ok(0));
+    assert_eq!(i.invoke_typed(&store_at_page_size, ()), Ok(()));
+    assert_eq!(i.invoke_typed(&load_at_page_size, ()), Ok(3));
 }
 
 #[test_log::test]
@@ -97,14 +108,16 @@ fn memory_grow_test_2() {
     let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    assert_result!(i, get_func!(i, "grow"), 0, 0);
-    assert_result!(i, get_func!(i, "grow"), 1, 0);
-    assert_result!(i, get_func!(i, "grow"), 0, 1);
-    assert_result!(i, get_func!(i, "grow"), 2, 1);
-    assert_result!(i, get_func!(i, "grow"), 800, 3);
-    assert_result!(i, get_func!(i, "grow"), 0x10000, -1);
-    assert_result!(i, get_func!(i, "grow"), 64736, -1);
-    assert_result!(i, get_func!(i, "grow"), 1, 803);
+    let grow = i.get_function_by_name(DEFAULT_MODULE, "grow").unwrap();
+
+    assert_eq!(i.invoke_typed(&grow, 0), Ok(0));
+    assert_eq!(i.invoke_typed(&grow, 1), Ok(0));
+    assert_eq!(i.invoke_typed(&grow, 0), Ok(1));
+    assert_eq!(i.invoke_typed(&grow, 2), Ok(1));
+    assert_eq!(i.invoke_typed(&grow, 800), Ok(3));
+    assert_eq!(i.invoke_typed(&grow, 0x10000), Ok(-1));
+    assert_eq!(i.invoke_typed(&grow, 64736), Ok(-1));
+    assert_eq!(i.invoke_typed(&grow, 1), Ok(803));
 }
 
 #[test_log::test]
@@ -121,12 +134,14 @@ fn memory_grow_test_3() {
     let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    assert_result!(i, get_func!(i, "grow"), 0, 0);
-    assert_result!(i, get_func!(i, "grow"), 1, 0);
-    assert_result!(i, get_func!(i, "grow"), 1, 1);
-    assert_result!(i, get_func!(i, "grow"), 2, 2);
-    assert_result!(i, get_func!(i, "grow"), 6, 4);
-    assert_result!(i, get_func!(i, "grow"), 0, 10);
-    assert_result!(i, get_func!(i, "grow"), 1, -1);
-    assert_result!(i, get_func!(i, "grow"), 0x10000, -1);
+    let grow = i.get_function_by_name(DEFAULT_MODULE, "grow").unwrap();
+
+    assert_eq!(i.invoke_typed(&grow, 0), Ok(0));
+    assert_eq!(i.invoke_typed(&grow, 1), Ok(0));
+    assert_eq!(i.invoke_typed(&grow, 1), Ok(1));
+    assert_eq!(i.invoke_typed(&grow, 2), Ok(2));
+    assert_eq!(i.invoke_typed(&grow, 6), Ok(4));
+    assert_eq!(i.invoke_typed(&grow, 0), Ok(10));
+    assert_eq!(i.invoke_typed(&grow, 1), Ok(-1));
+    assert_eq!(i.invoke_typed(&grow, 0x10000), Ok(-1));
 }
