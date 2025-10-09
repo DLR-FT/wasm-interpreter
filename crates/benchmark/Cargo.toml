@@ -27,3 +27,7 @@ wasmtime = []
 [[bench]]
 name = "general_purpose"
 harness = false
+
+[[bench]]
+name = "var_length_integer_reading"
+harness = false
