@@ -18,14 +18,6 @@ use wasm::interop::RefFunc;
 use wasm::value::FuncAddr;
 use wasm::{validate, RuntimeError, RuntimeInstance, TrapError, DEFAULT_MODULE};
 
-macro_rules! get_func {
-    ($instance:ident, $func_name:expr) => {
-        &$instance
-            .get_function_by_name(DEFAULT_MODULE, $func_name)
-            .unwrap()
-    };
-}
-
 #[test_log::test]
 fn table_fill_test() {
     let w = r#"
@@ -51,109 +43,163 @@ fn table_fill_test() {
     let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let get = get_func!(i, "get");
-    let fill = get_func!(i, "fill");
-    let fill_abbrev = get_func!(i, "fill-abbrev");
-
-    assert_eq!(i.invoke_typed::<i32, RefFunc>(get, 1), Ok(RefFunc(None)));
-    assert_eq!(i.invoke_typed::<i32, RefFunc>(get, 2), Ok(RefFunc(None)));
-    assert_eq!(i.invoke_typed::<i32, RefFunc>(get, 3), Ok(RefFunc(None)));
-    assert_eq!(i.invoke_typed::<i32, RefFunc>(get, 4), Ok(RefFunc(None)));
-    assert_eq!(i.invoke_typed::<i32, RefFunc>(get, 5), Ok(RefFunc(None)));
-
-    i.invoke_typed::<(i32, RefFunc, i32), ()>(fill, (2, RefFunc(Some(FuncAddr(1))), 3))
+    let get = i.get_function_by_name(DEFAULT_MODULE, "get").unwrap();
+    let fill = i.get_function_by_name(DEFAULT_MODULE, "fill").unwrap();
+    let fill_abbrev = i
+        .get_function_by_name(DEFAULT_MODULE, "fill-abbrev")
         .unwrap();
 
-    assert_eq!(i.invoke_typed::<i32, RefFunc>(get, 1), Ok(RefFunc(None)));
-    assert_eq!(
-        i.invoke_typed::<i32, RefFunc>(get, 2).unwrap().0.unwrap().0,
-        1
-    );
-    assert_eq!(
-        i.invoke_typed::<i32, RefFunc>(get, 3).unwrap().0.unwrap().0,
-        1
-    );
-    assert_eq!(
-        i.invoke_typed::<i32, RefFunc>(get, 4).unwrap().0.unwrap().0,
-        1
-    );
-    assert_eq!(i.invoke_typed::<i32, RefFunc>(get, 5), Ok(RefFunc(None)));
+    assert_eq!(i.invoke_typed::<i32, RefFunc>(&get, 1), Ok(RefFunc(None)));
+    assert_eq!(i.invoke_typed::<i32, RefFunc>(&get, 2), Ok(RefFunc(None)));
+    assert_eq!(i.invoke_typed::<i32, RefFunc>(&get, 3), Ok(RefFunc(None)));
+    assert_eq!(i.invoke_typed::<i32, RefFunc>(&get, 4), Ok(RefFunc(None)));
+    assert_eq!(i.invoke_typed::<i32, RefFunc>(&get, 5), Ok(RefFunc(None)));
 
-    i.invoke_typed::<(i32, RefFunc, i32), ()>(fill, (4, RefFunc(Some(FuncAddr(2))), 2))
+    i.invoke_typed::<(i32, RefFunc, i32), ()>(&fill, (2, RefFunc(Some(FuncAddr(1))), 3))
         .unwrap();
 
+    assert_eq!(i.invoke_typed::<i32, RefFunc>(&get, 1), Ok(RefFunc(None)));
     assert_eq!(
-        i.invoke_typed::<i32, RefFunc>(get, 3).unwrap().0.unwrap().0,
+        i.invoke_typed::<i32, RefFunc>(&get, 2)
+            .unwrap()
+            .0
+            .unwrap()
+            .0,
         1
     );
     assert_eq!(
-        i.invoke_typed::<i32, RefFunc>(get, 4).unwrap().0.unwrap().0,
-        2
+        i.invoke_typed::<i32, RefFunc>(&get, 3)
+            .unwrap()
+            .0
+            .unwrap()
+            .0,
+        1
     );
     assert_eq!(
-        i.invoke_typed::<i32, RefFunc>(get, 5).unwrap().0.unwrap().0,
-        2
+        i.invoke_typed::<i32, RefFunc>(&get, 4)
+            .unwrap()
+            .0
+            .unwrap()
+            .0,
+        1
     );
-    assert_eq!(i.invoke_typed::<i32, RefFunc>(get, 6), Ok(RefFunc(None)));
+    assert_eq!(i.invoke_typed::<i32, RefFunc>(&get, 5), Ok(RefFunc(None)));
 
-    i.invoke_typed::<(i32, RefFunc, i32), ()>(fill, (4, RefFunc(Some(FuncAddr(3))), 0))
+    i.invoke_typed::<(i32, RefFunc, i32), ()>(&fill, (4, RefFunc(Some(FuncAddr(2))), 2))
         .unwrap();
 
     assert_eq!(
-        i.invoke_typed::<i32, RefFunc>(get, 3).unwrap().0.unwrap().0,
+        i.invoke_typed::<i32, RefFunc>(&get, 3)
+            .unwrap()
+            .0
+            .unwrap()
+            .0,
         1
     );
     assert_eq!(
-        i.invoke_typed::<i32, RefFunc>(get, 4).unwrap().0.unwrap().0,
+        i.invoke_typed::<i32, RefFunc>(&get, 4)
+            .unwrap()
+            .0
+            .unwrap()
+            .0,
         2
     );
     assert_eq!(
-        i.invoke_typed::<i32, RefFunc>(get, 5).unwrap().0.unwrap().0,
+        i.invoke_typed::<i32, RefFunc>(&get, 5)
+            .unwrap()
+            .0
+            .unwrap()
+            .0,
         2
     );
+    assert_eq!(i.invoke_typed::<i32, RefFunc>(&get, 6), Ok(RefFunc(None)));
 
-    i.invoke_typed::<(i32, RefFunc, i32), ()>(fill, (8, RefFunc(Some(FuncAddr(4))), 2))
+    i.invoke_typed::<(i32, RefFunc, i32), ()>(&fill, (4, RefFunc(Some(FuncAddr(3))), 0))
         .unwrap();
 
-    assert_eq!(i.invoke_typed::<i32, RefFunc>(get, 7), Ok(RefFunc(None)));
     assert_eq!(
-        i.invoke_typed::<i32, RefFunc>(get, 8).unwrap().0.unwrap().0,
+        i.invoke_typed::<i32, RefFunc>(&get, 3)
+            .unwrap()
+            .0
+            .unwrap()
+            .0,
+        1
+    );
+    assert_eq!(
+        i.invoke_typed::<i32, RefFunc>(&get, 4)
+            .unwrap()
+            .0
+            .unwrap()
+            .0,
+        2
+    );
+    assert_eq!(
+        i.invoke_typed::<i32, RefFunc>(&get, 5)
+            .unwrap()
+            .0
+            .unwrap()
+            .0,
+        2
+    );
+
+    i.invoke_typed::<(i32, RefFunc, i32), ()>(&fill, (8, RefFunc(Some(FuncAddr(4))), 2))
+        .unwrap();
+
+    assert_eq!(i.invoke_typed::<i32, RefFunc>(&get, 7), Ok(RefFunc(None)));
+    assert_eq!(
+        i.invoke_typed::<i32, RefFunc>(&get, 8)
+            .unwrap()
+            .0
+            .unwrap()
+            .0,
         4
     );
     assert_eq!(
-        i.invoke_typed::<i32, RefFunc>(get, 9).unwrap().0.unwrap().0,
+        i.invoke_typed::<i32, RefFunc>(&get, 9)
+            .unwrap()
+            .0
+            .unwrap()
+            .0,
         4
     );
 
-    i.invoke_typed::<(i32, RefFunc, i32), ()>(fill_abbrev, (9, RefFunc(None), 1))
+    i.invoke_typed::<(i32, RefFunc, i32), ()>(&fill_abbrev, (9, RefFunc(None), 1))
         .unwrap();
     assert_eq!(
-        i.invoke_typed::<i32, RefFunc>(get, 8).unwrap().0.unwrap().0,
+        i.invoke_typed::<i32, RefFunc>(&get, 8)
+            .unwrap()
+            .0
+            .unwrap()
+            .0,
         4
     );
-    assert_eq!(i.invoke_typed::<i32, RefFunc>(get, 9), Ok(RefFunc(None)));
+    assert_eq!(i.invoke_typed::<i32, RefFunc>(&get, 9), Ok(RefFunc(None)));
 
-    i.invoke_typed::<(i32, RefFunc, i32), ()>(fill, (10, RefFunc(Some(FuncAddr(5))), 0))
+    i.invoke_typed::<(i32, RefFunc, i32), ()>(&fill, (10, RefFunc(Some(FuncAddr(5))), 0))
         .unwrap();
-    assert_eq!(i.invoke_typed::<i32, RefFunc>(get, 9), Ok(RefFunc(None)));
+    assert_eq!(i.invoke_typed::<i32, RefFunc>(&get, 9), Ok(RefFunc(None)));
 
     assert_eq!(
-        i.invoke_typed::<(i32, RefFunc, i32), ()>(fill, (8, RefFunc(Some(FuncAddr(6))), 3))
+        i.invoke_typed::<(i32, RefFunc, i32), ()>(&fill, (8, RefFunc(Some(FuncAddr(6))), 3))
             .err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
         ))
     );
 
-    assert_eq!(i.invoke_typed::<i32, RefFunc>(get, 7), Ok(RefFunc(None)));
+    assert_eq!(i.invoke_typed::<i32, RefFunc>(&get, 7), Ok(RefFunc(None)));
     assert_eq!(
-        i.invoke_typed::<i32, RefFunc>(get, 8).unwrap().0.unwrap().0,
+        i.invoke_typed::<i32, RefFunc>(&get, 8)
+            .unwrap()
+            .0
+            .unwrap()
+            .0,
         4
     );
-    assert_eq!(i.invoke_typed::<i32, RefFunc>(get, 9), Ok(RefFunc(None)));
+    assert_eq!(i.invoke_typed::<i32, RefFunc>(&get, 9), Ok(RefFunc(None)));
 
     assert_eq!(
-        i.invoke_typed::<(i32, RefFunc, i32), ()>(fill, (11, RefFunc(None), 0))
+        i.invoke_typed::<(i32, RefFunc, i32), ()>(&fill, (11, RefFunc(None), 0))
             .err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
@@ -161,7 +207,7 @@ fn table_fill_test() {
     );
 
     assert_eq!(
-        i.invoke_typed::<(i32, RefFunc, i32), ()>(fill, (11, RefFunc(None), 10))
+        i.invoke_typed::<(i32, RefFunc, i32), ()>(&fill, (11, RefFunc(None), 10))
             .err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds

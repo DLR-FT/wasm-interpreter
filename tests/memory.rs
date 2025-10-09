@@ -84,20 +84,6 @@ fn memory_size_must_be_at_most_4gib() {
     });
 }
 
-macro_rules! get_func {
-    ($instance:ident, $func_name:expr) => {
-        &$instance
-            .get_function_by_name(DEFAULT_MODULE, $func_name)
-            .unwrap()
-    };
-}
-
-macro_rules! assert_result {
-    ($instance:expr, $func_name:expr, $arg:expr, $result:expr) => {
-        assert_eq!($result, $instance.invoke_typed($func_name, $arg).unwrap());
-    };
-}
-
 #[test_log::test]
 fn i32_and_i64_loads() {
     // #region Wat
@@ -196,84 +182,128 @@ fn i32_and_i64_loads() {
     let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let i32_load8_s = get_func!(i, "i32_load8_s");
-    let i32_load8_u = get_func!(i, "i32_load8_u");
-    let i32_load16_s = get_func!(i, "i32_load16_s");
-    let i32_load16_u = get_func!(i, "i32_load16_u");
-    let i64_load8_s = get_func!(i, "i64_load8_s");
-    let i64_load8_u = get_func!(i, "i64_load8_u");
-    let i64_load16_s = get_func!(i, "i64_load16_s");
-    let i64_load16_u = get_func!(i, "i64_load16_u");
-    let i64_load32_s = get_func!(i, "i64_load32_s");
-    let i64_load32_u = get_func!(i, "i64_load32_u");
-    let data = get_func!(i, "data");
-    // let cast = get_func!(i, "cast");
+    let i32_load8_s = i
+        .get_function_by_name(DEFAULT_MODULE, "i32_load8_s")
+        .unwrap();
+    let i32_load8_u = i
+        .get_function_by_name(DEFAULT_MODULE, "i32_load8_u")
+        .unwrap();
+    let i32_load16_s = i
+        .get_function_by_name(DEFAULT_MODULE, "i32_load16_s")
+        .unwrap();
+    let i32_load16_u = i
+        .get_function_by_name(DEFAULT_MODULE, "i32_load16_u")
+        .unwrap();
+    let i64_load8_s = i
+        .get_function_by_name(DEFAULT_MODULE, "i64_load8_s")
+        .unwrap();
+    let i64_load8_u = i
+        .get_function_by_name(DEFAULT_MODULE, "i64_load8_u")
+        .unwrap();
+    let i64_load16_s = i
+        .get_function_by_name(DEFAULT_MODULE, "i64_load16_s")
+        .unwrap();
+    let i64_load16_u = i
+        .get_function_by_name(DEFAULT_MODULE, "i64_load16_u")
+        .unwrap();
+    let i64_load32_s = i
+        .get_function_by_name(DEFAULT_MODULE, "i64_load32_s")
+        .unwrap();
+    let i64_load32_u = i
+        .get_function_by_name(DEFAULT_MODULE, "i64_load32_u")
+        .unwrap();
+    let data = i.get_function_by_name(DEFAULT_MODULE, "data").unwrap();
+    // let cast = i.get_function_by_name(DEFAULT_MODULE, "cast").unwrap();
 
-    // assert_result!(i, data, (), 1);
-    assert_eq!(1, i.invoke_typed(data, ()).unwrap());
+    // assert_eq!(i.invoke_typed( data,  ()), Ok( 1));
+    assert_eq!(1, i.invoke_typed(&data, ()).unwrap());
     // (assert_return (invoke "cast") (f64.const 42.0))
 
-    assert_result!(i, i32_load8_s, -1, -1);
-    assert_result!(i, i32_load8_s, -1, -1);
-    assert_result!(i, i32_load8_u, -1, 255);
-    assert_result!(i, i32_load16_s, -1, -1);
-    assert_result!(i, i32_load16_u, -1, 65535);
+    assert_eq!(i.invoke_typed(&i32_load8_s, -1), Ok(-1));
+    assert_eq!(i.invoke_typed(&i32_load8_s, -1), Ok(-1));
+    assert_eq!(i.invoke_typed(&i32_load8_u, -1), Ok(255));
+    assert_eq!(i.invoke_typed(&i32_load16_s, -1), Ok(-1));
+    assert_eq!(i.invoke_typed(&i32_load16_u, -1), Ok(65535));
 
-    assert_result!(i, i32_load8_s, 100, 100);
-    assert_result!(i, i32_load8_u, 200, 200);
-    assert_result!(i, i32_load16_s, 20000, 20000);
-    assert_result!(i, i32_load16_u, 40000, 40000);
+    assert_eq!(i.invoke_typed(&i32_load8_s, 100), Ok(100));
+    assert_eq!(i.invoke_typed(&i32_load8_u, 200), Ok(200));
+    assert_eq!(i.invoke_typed(&i32_load16_s, 20000), Ok(20000));
+    assert_eq!(i.invoke_typed(&i32_load16_u, 40000), Ok(40000));
 
-    assert_result!(i, i32_load8_s, 0xfedc6543_u32, 0x43);
-    assert_result!(i, i32_load8_s, 0x3456cdef, 0xffffffef_u32);
-    assert_result!(i, i32_load8_u, 0xfedc6543_u32, 0x43);
-    assert_result!(i, i32_load8_u, 0x3456cdef, 0xef);
-    assert_result!(i, i32_load16_s, 0xfedc6543_u32, 0x6543);
-    assert_result!(i, i32_load16_s, 0x3456cdef, 0xffffcdef_u32);
-    assert_result!(i, i32_load16_u, 0xfedc6543_u32, 0x6543);
-    assert_result!(i, i32_load16_u, 0x3456cdef, 0xcdef);
-
-    assert_result!(i, i64_load8_s, -1_i64, -1_i64);
-    assert_result!(i, i64_load8_u, -1_i64, 255_i64);
-    assert_result!(i, i64_load16_s, -1_i64, -1_i64);
-    assert_result!(i, i64_load16_u, -1_i64, 65535_i64);
-    assert_result!(i, i64_load32_s, -1_i64, -1_i64);
-    assert_result!(i, i64_load32_u, -1_i64, 4294967295_i64);
-
-    assert_result!(i, i64_load8_s, 100_i64, 100_i64);
-    assert_result!(i, i64_load8_u, 200_i64, 200_i64);
-    assert_result!(i, i64_load16_s, 20000_i64, 20000_i64);
-    assert_result!(i, i64_load16_u, 40000_i64, 40000_i64);
-    assert_result!(i, i64_load32_s, 20000_i64, 20000_i64);
-    assert_result!(i, i64_load32_u, 40000_i64, 40000_i64);
-
-    assert_result!(i, i64_load8_s, 0xfedcba9856346543_u64, 0x43_i64);
-    assert_result!(
-        i,
-        i64_load8_s,
-        0x3456436598bacdef_u64,
-        0xffffffffffffffef_u64
+    assert_eq!(i.invoke_typed(&i32_load8_s, 0xfedc6543_u32), Ok(0x43));
+    assert_eq!(i.invoke_typed(&i32_load8_s, 0x3456cdef), Ok(0xffffffef_u32));
+    assert_eq!(i.invoke_typed(&i32_load8_u, 0xfedc6543_u32), Ok(0x43));
+    assert_eq!(i.invoke_typed(&i32_load8_u, 0x3456cdef), Ok(0xef));
+    assert_eq!(i.invoke_typed(&i32_load16_s, 0xfedc6543_u32), Ok(0x6543));
+    assert_eq!(
+        i.invoke_typed(&i32_load16_s, 0x3456cdef),
+        Ok(0xffffcdef_u32)
     );
-    assert_result!(i, i64_load8_u, 0xfedcba9856346543_u64, 0x43_i64);
-    assert_result!(i, i64_load8_u, 0x3456436598bacdef_u64, 0xef_i64);
-    assert_result!(i, i64_load16_s, 0xfedcba9856346543_u64, 0x6543_i64);
-    assert_result!(
-        i,
-        i64_load16_s,
-        0x3456436598bacdef_u64,
-        0xffffffffffffcdef_u64
+    assert_eq!(i.invoke_typed(&i32_load16_u, 0xfedc6543_u32), Ok(0x6543));
+    assert_eq!(i.invoke_typed(&i32_load16_u, 0x3456cdef), Ok(0xcdef));
+
+    assert_eq!(i.invoke_typed(&i64_load8_s, -1_i64), Ok(-1_i64));
+    assert_eq!(i.invoke_typed(&i64_load8_u, -1_i64), Ok(255_i64));
+    assert_eq!(i.invoke_typed(&i64_load16_s, -1_i64), Ok(-1_i64));
+    assert_eq!(i.invoke_typed(&i64_load16_u, -1_i64), Ok(65535_i64));
+    assert_eq!(i.invoke_typed(&i64_load32_s, -1_i64), Ok(-1_i64));
+    assert_eq!(i.invoke_typed(&i64_load32_u, -1_i64), Ok(4294967295_i64));
+
+    assert_eq!(i.invoke_typed(&i64_load8_s, 100_i64), Ok(100_i64));
+    assert_eq!(i.invoke_typed(&i64_load8_u, 200_i64), Ok(200_i64));
+    assert_eq!(i.invoke_typed(&i64_load16_s, 20000_i64), Ok(20000_i64));
+    assert_eq!(i.invoke_typed(&i64_load16_u, 40000_i64), Ok(40000_i64));
+    assert_eq!(i.invoke_typed(&i64_load32_s, 20000_i64), Ok(20000_i64));
+    assert_eq!(i.invoke_typed(&i64_load32_u, 40000_i64), Ok(40000_i64));
+
+    assert_eq!(
+        i.invoke_typed(&i64_load8_s, 0xfedcba9856346543_u64),
+        Ok(0x43_i64)
     );
-    assert_result!(i, i64_load16_u, 0xfedcba9856346543_u64, 0x6543_i64);
-    assert_result!(i, i64_load16_u, 0x3456436598bacdef_u64, 0xcdef_i64);
-    assert_result!(i, i64_load32_s, 0xfedcba9856346543_u64, 0x56346543_i64);
-    assert_result!(
-        i,
-        i64_load32_s,
-        0x3456436598bacdef_u64,
-        0xffffffff98bacdef_u64
+    assert_eq!(
+        i.invoke_typed(&i64_load8_s, 0x3456436598bacdef_u64),
+        Ok(0xffffffffffffffef_u64)
     );
-    assert_result!(i, i64_load32_u, 0xfedcba9856346543_u64, 0x56346543_i64);
-    assert_result!(i, i64_load32_u, 0x3456436598bacdef_u64, 0x98bacdef_i64);
+    assert_eq!(
+        i.invoke_typed(&i64_load8_u, 0xfedcba9856346543_u64),
+        Ok(0x43_i64)
+    );
+    assert_eq!(
+        i.invoke_typed(&i64_load8_u, 0x3456436598bacdef_u64),
+        Ok(0xef_i64)
+    );
+    assert_eq!(
+        i.invoke_typed(&i64_load16_s, 0xfedcba9856346543_u64),
+        Ok(0x6543_i64)
+    );
+    assert_eq!(
+        i.invoke_typed(&i64_load16_s, 0x3456436598bacdef_u64),
+        Ok(0xffffffffffffcdef_u64)
+    );
+    assert_eq!(
+        i.invoke_typed(&i64_load16_u, 0xfedcba9856346543_u64),
+        Ok(0x6543_i64)
+    );
+    assert_eq!(
+        i.invoke_typed(&i64_load16_u, 0x3456436598bacdef_u64),
+        Ok(0xcdef_i64)
+    );
+    assert_eq!(
+        i.invoke_typed(&i64_load32_s, 0xfedcba9856346543_u64),
+        Ok(0x56346543_i64)
+    );
+    assert_eq!(
+        i.invoke_typed(&i64_load32_s, 0x3456436598bacdef_u64),
+        Ok(0xffffffff98bacdef_u64)
+    );
+    assert_eq!(
+        i.invoke_typed(&i64_load32_u, 0xfedcba9856346543_u64),
+        Ok(0x56346543_i64)
+    );
+    assert_eq!(
+        i.invoke_typed(&i64_load32_u, 0x3456436598bacdef_u64),
+        Ok(0x98bacdef_i64)
+    );
 }
 
 #[test_log::test]
@@ -297,14 +327,14 @@ fn memory_test_exporting_rand_globals_doesnt_change_a_memory_s_semantics() {
     let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let load = get_func!(i, "load");
+    let load = i.get_function_by_name(DEFAULT_MODULE, "load").unwrap();
 
-    assert_result!(i, load, 0, 0);
-    assert_result!(i, load, 10000, 0);
-    assert_result!(i, load, 20000, 0);
-    assert_result!(i, load, 30000, 0);
-    assert_result!(i, load, 40000, 0);
-    assert_result!(i, load, 50000, 0);
-    assert_result!(i, load, 60000, 0);
-    assert_result!(i, load, 65535, 0);
+    assert_eq!(i.invoke_typed(&load, 0), Ok(0));
+    assert_eq!(i.invoke_typed(&load, 10000), Ok(0));
+    assert_eq!(i.invoke_typed(&load, 20000), Ok(0));
+    assert_eq!(i.invoke_typed(&load, 30000), Ok(0));
+    assert_eq!(i.invoke_typed(&load, 40000), Ok(0));
+    assert_eq!(i.invoke_typed(&load, 50000), Ok(0));
+    assert_eq!(i.invoke_typed(&load, 60000), Ok(0));
+    assert_eq!(i.invoke_typed(&load, 65535), Ok(0));
 }

@@ -17,20 +17,6 @@ use log::info;
 */
 use wasm::{validate, RuntimeInstance, DEFAULT_MODULE};
 
-macro_rules! get_func {
-    ($instance:ident, $func_name:expr) => {
-        &$instance
-            .get_function_by_name(DEFAULT_MODULE, $func_name)
-            .unwrap()
-    };
-}
-
-macro_rules! assert_result {
-    ($instance:expr, $func:expr, $arg:expr, $result:expr) => {
-        assert_eq!($result, $instance.invoke_typed($func, $arg).unwrap());
-    };
-}
-
 #[test_log::test]
 fn memory_size_1() {
     let w = r#"
@@ -45,16 +31,16 @@ fn memory_size_1() {
     let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let size = get_func!(i, "size");
-    let grow = get_func!(i, "grow");
+    let size = i.get_function_by_name(DEFAULT_MODULE, "size").unwrap();
+    let grow = i.get_function_by_name(DEFAULT_MODULE, "grow").unwrap();
 
-    assert_result!(i, size, (), 0);
-    assert_result!(i, grow, 1, ());
-    assert_result!(i, size, (), 1);
-    assert_result!(i, grow, 4, ());
-    assert_result!(i, size, (), 5);
-    assert_result!(i, grow, 0, ());
-    assert_result!(i, size, (), 5);
+    assert_eq!(i.invoke_typed(&size, ()), Ok(0));
+    assert_eq!(i.invoke_typed(&grow, 1), Ok(()));
+    assert_eq!(i.invoke_typed(&size, ()), Ok(1));
+    assert_eq!(i.invoke_typed(&grow, 4), Ok(()));
+    assert_eq!(i.invoke_typed(&size, ()), Ok(5));
+    assert_eq!(i.invoke_typed(&grow, 0), Ok(()));
+    assert_eq!(i.invoke_typed(&size, ()), Ok(5));
 }
 
 #[test_log::test]
@@ -71,16 +57,16 @@ fn memory_size_2() {
     let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let size = get_func!(i, "size");
-    let grow = get_func!(i, "grow");
+    let size = i.get_function_by_name(DEFAULT_MODULE, "size").unwrap();
+    let grow = i.get_function_by_name(DEFAULT_MODULE, "grow").unwrap();
 
-    assert_result!(i, size, (), 1);
-    assert_result!(i, grow, 1, ());
-    assert_result!(i, size, (), 2);
-    assert_result!(i, grow, 4, ());
-    assert_result!(i, size, (), 6);
-    assert_result!(i, grow, 0, ());
-    assert_result!(i, size, (), 6);
+    assert_eq!(i.invoke_typed(&size, ()), Ok(1));
+    assert_eq!(i.invoke_typed(&grow, 1), Ok(()));
+    assert_eq!(i.invoke_typed(&size, ()), Ok(2));
+    assert_eq!(i.invoke_typed(&grow, 4), Ok(()));
+    assert_eq!(i.invoke_typed(&size, ()), Ok(6));
+    assert_eq!(i.invoke_typed(&grow, 0), Ok(()));
+    assert_eq!(i.invoke_typed(&size, ()), Ok(6));
 }
 
 #[test_log::test]
@@ -97,20 +83,20 @@ fn memory_size_3() {
     let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let size = get_func!(i, "size");
-    let grow = get_func!(i, "grow");
+    let size = i.get_function_by_name(DEFAULT_MODULE, "size").unwrap();
+    let grow = i.get_function_by_name(DEFAULT_MODULE, "grow").unwrap();
 
-    assert_result!(i, size, (), 0);
-    assert_result!(i, grow, 3, ());
-    assert_result!(i, size, (), 0);
-    assert_result!(i, grow, 1, ());
-    assert_result!(i, size, (), 1);
-    assert_result!(i, grow, 0, ());
-    assert_result!(i, size, (), 1);
-    assert_result!(i, grow, 4, ());
-    assert_result!(i, size, (), 1);
-    assert_result!(i, grow, 1, ());
-    assert_result!(i, size, (), 2);
+    assert_eq!(i.invoke_typed(&size, ()), Ok(0));
+    assert_eq!(i.invoke_typed(&grow, 3), Ok(()));
+    assert_eq!(i.invoke_typed(&size, ()), Ok(0));
+    assert_eq!(i.invoke_typed(&grow, 1), Ok(()));
+    assert_eq!(i.invoke_typed(&size, ()), Ok(1));
+    assert_eq!(i.invoke_typed(&grow, 0), Ok(()));
+    assert_eq!(i.invoke_typed(&size, ()), Ok(1));
+    assert_eq!(i.invoke_typed(&grow, 4), Ok(()));
+    assert_eq!(i.invoke_typed(&size, ()), Ok(1));
+    assert_eq!(i.invoke_typed(&grow, 1), Ok(()));
+    assert_eq!(i.invoke_typed(&size, ()), Ok(2));
 }
 
 #[test_log::test]
@@ -127,20 +113,20 @@ fn memory_size_4() {
     let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let size = get_func!(i, "size");
-    let grow = get_func!(i, "grow");
+    let size = i.get_function_by_name(DEFAULT_MODULE, "size").unwrap();
+    let grow = i.get_function_by_name(DEFAULT_MODULE, "grow").unwrap();
 
-    assert_result!(i, size, (), 3);
-    assert_result!(i, grow, 1, ());
-    assert_result!(i, size, (), 4);
-    assert_result!(i, grow, 3, ());
-    assert_result!(i, size, (), 7);
-    assert_result!(i, grow, 0, ());
-    assert_result!(i, size, (), 7);
-    assert_result!(i, grow, 2, ());
-    assert_result!(i, size, (), 7);
-    assert_result!(i, grow, 1, ());
-    assert_result!(i, size, (), 8);
+    assert_eq!(i.invoke_typed(&size, ()), Ok(3));
+    assert_eq!(i.invoke_typed(&grow, 1), Ok(()));
+    assert_eq!(i.invoke_typed(&size, ()), Ok(4));
+    assert_eq!(i.invoke_typed(&grow, 3), Ok(()));
+    assert_eq!(i.invoke_typed(&size, ()), Ok(7));
+    assert_eq!(i.invoke_typed(&grow, 0), Ok(()));
+    assert_eq!(i.invoke_typed(&size, ()), Ok(7));
+    assert_eq!(i.invoke_typed(&grow, 2), Ok(()));
+    assert_eq!(i.invoke_typed(&size, ()), Ok(7));
+    assert_eq!(i.invoke_typed(&grow, 1), Ok(()));
+    assert_eq!(i.invoke_typed(&size, ()), Ok(8));
 }
 
 #[test_log::test]

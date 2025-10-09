@@ -18,20 +18,6 @@ use wasm::interop::RefFunc;
 use wasm::value::FuncAddr;
 use wasm::{validate, RuntimeError, RuntimeInstance, TrapError, DEFAULT_MODULE};
 
-macro_rules! get_func {
-    ($instance:ident, $func_name:expr) => {
-        &$instance
-            .get_function_by_name(DEFAULT_MODULE, $func_name)
-            .unwrap()
-    };
-}
-
-macro_rules! assert_result {
-    ($instance:expr, $func:expr, $arg:expr, $result:expr) => {
-        assert_eq!($result, $instance.invoke_typed($func, $arg).unwrap());
-    };
-}
-
 #[test_log::test]
 fn table_grow_test() {
     let w = r#"
@@ -54,97 +40,99 @@ fn table_grow_test() {
     let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let get = get_func!(i, "get");
-    let set = get_func!(i, "set");
-    let grow = get_func!(i, "grow");
-    let grow_abbrev = get_func!(i, "grow-abbrev");
-    let size = get_func!(i, "size");
+    let get = i.get_function_by_name(DEFAULT_MODULE, "get").unwrap();
+    let set = i.get_function_by_name(DEFAULT_MODULE, "set").unwrap();
+    let grow = i.get_function_by_name(DEFAULT_MODULE, "grow").unwrap();
+    let grow_abbrev = i
+        .get_function_by_name(DEFAULT_MODULE, "grow-abbrev")
+        .unwrap();
+    let size = i.get_function_by_name(DEFAULT_MODULE, "size").unwrap();
 
-    assert_eq!(i.invoke_typed::<(), i32>(size, ()), Ok(0));
+    assert_eq!(i.invoke_typed::<(), i32>(&size, ()), Ok(0));
     assert_eq!(
-        i.invoke_typed::<(i32, RefFunc), ()>(set, (0, RefFunc(Some(FuncAddr(2)))))
+        i.invoke_typed::<(i32, RefFunc), ()>(&set, (0, RefFunc(Some(FuncAddr(2)))))
             .err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
         ))
     );
     assert_eq!(
-        i.invoke_typed::<i32, RefFunc>(get, 0).err(),
+        i.invoke_typed::<i32, RefFunc>(&get, 0).err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
         ))
     );
 
     assert_eq!(
-        i.invoke_typed::<(i32, RefFunc), i32>(grow, (1, RefFunc(None))),
+        i.invoke_typed::<(i32, RefFunc), i32>(&grow, (1, RefFunc(None))),
         Ok(0)
     );
-    assert_eq!(i.invoke_typed::<(), i32>(size, ()), Ok(1));
-    assert_eq!(i.invoke_typed::<i32, RefFunc>(get, 0), Ok(RefFunc(None)));
+    assert_eq!(i.invoke_typed::<(), i32>(&size, ()), Ok(1));
+    assert_eq!(i.invoke_typed::<i32, RefFunc>(&get, 0), Ok(RefFunc(None)));
     assert_eq!(
-        i.invoke_typed::<(i32, RefFunc), ()>(set, (0, RefFunc(Some(FuncAddr(2))))),
+        i.invoke_typed::<(i32, RefFunc), ()>(&set, (0, RefFunc(Some(FuncAddr(2))))),
         Ok(())
     );
     assert_eq!(
-        i.invoke_typed::<i32, RefFunc>(get, 0),
+        i.invoke_typed::<i32, RefFunc>(&get, 0),
         Ok(RefFunc(Some(FuncAddr(2))))
     );
     assert_eq!(
-        i.invoke_typed::<(i32, RefFunc), ()>(set, (1, RefFunc(Some(FuncAddr(2)))))
+        i.invoke_typed::<(i32, RefFunc), ()>(&set, (1, RefFunc(Some(FuncAddr(2)))))
             .err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
         ))
     );
     assert_eq!(
-        i.invoke_typed::<i32, RefFunc>(get, 1).err(),
+        i.invoke_typed::<i32, RefFunc>(&get, 1).err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
         ))
     );
 
     assert_eq!(
-        i.invoke_typed::<(i32, RefFunc), i32>(grow_abbrev, (4, RefFunc(Some(FuncAddr(3))))),
+        i.invoke_typed::<(i32, RefFunc), i32>(&grow_abbrev, (4, RefFunc(Some(FuncAddr(3))))),
         Ok(1)
     );
-    assert_eq!(i.invoke_typed::<(), i32>(size, ()), Ok(5));
+    assert_eq!(i.invoke_typed::<(), i32>(&size, ()), Ok(5));
     assert_eq!(
-        i.invoke_typed::<i32, RefFunc>(get, 0),
+        i.invoke_typed::<i32, RefFunc>(&get, 0),
         Ok(RefFunc(Some(FuncAddr(2))))
     );
     assert_eq!(
-        i.invoke_typed::<(i32, RefFunc), ()>(set, (0, RefFunc(Some(FuncAddr(2))))),
+        i.invoke_typed::<(i32, RefFunc), ()>(&set, (0, RefFunc(Some(FuncAddr(2))))),
         Ok(())
     );
     assert_eq!(
-        i.invoke_typed::<i32, RefFunc>(get, 0),
+        i.invoke_typed::<i32, RefFunc>(&get, 0),
         Ok(RefFunc(Some(FuncAddr(2))))
     );
     assert_eq!(
-        i.invoke_typed::<i32, RefFunc>(get, 1),
+        i.invoke_typed::<i32, RefFunc>(&get, 1),
         Ok(RefFunc(Some(FuncAddr(3))))
     );
     assert_eq!(
-        i.invoke_typed::<i32, RefFunc>(get, 4),
+        i.invoke_typed::<i32, RefFunc>(&get, 4),
         Ok(RefFunc(Some(FuncAddr(3))))
     );
     assert_eq!(
-        i.invoke_typed::<(i32, RefFunc), ()>(set, (4, RefFunc(Some(FuncAddr(4))))),
+        i.invoke_typed::<(i32, RefFunc), ()>(&set, (4, RefFunc(Some(FuncAddr(4))))),
         Ok(())
     );
     assert_eq!(
-        i.invoke_typed::<i32, RefFunc>(get, 4),
+        i.invoke_typed::<i32, RefFunc>(&get, 4),
         Ok(RefFunc(Some(FuncAddr(4))))
     );
     assert_eq!(
-        i.invoke_typed::<(i32, RefFunc), ()>(set, (5, RefFunc(Some(FuncAddr(2)))))
+        i.invoke_typed::<(i32, RefFunc), ()>(&set, (5, RefFunc(Some(FuncAddr(2)))))
             .err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
         ))
     );
     assert_eq!(
-        i.invoke_typed::<i32, RefFunc>(get, 5).err(),
+        i.invoke_typed::<i32, RefFunc>(&get, 5).err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
         ))
@@ -170,8 +158,8 @@ fn table_grow_outside_i32_range() {
     let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let grow = get_func!(i, "grow");
-    assert_eq!(i.invoke_typed::<(), i32>(grow, ()).unwrap(), -1);
+    let grow = i.get_function_by_name(DEFAULT_MODULE, "grow").unwrap();
+    assert_eq!(i.invoke_typed::<(), i32>(&grow, ()).unwrap(), -1);
 }
 
 #[test_log::test]
@@ -190,12 +178,12 @@ fn table_grow_unlimited() {
     let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let grow = get_func!(i, "grow");
-    assert_result!(i, grow, 0, 0);
-    assert_result!(i, grow, 1, 0);
-    assert_result!(i, grow, 0, 1);
-    assert_result!(i, grow, 2, 1);
-    assert_result!(i, grow, 800, 3);
+    let grow = i.get_function_by_name(DEFAULT_MODULE, "grow").unwrap();
+    assert_eq!(i.invoke_typed(&grow, 0), Ok(0));
+    assert_eq!(i.invoke_typed(&grow, 1), Ok(0));
+    assert_eq!(i.invoke_typed(&grow, 0), Ok(1));
+    assert_eq!(i.invoke_typed(&grow, 2), Ok(1));
+    assert_eq!(i.invoke_typed(&grow, 800), Ok(3));
 }
 
 #[test_log::test]
@@ -214,15 +202,15 @@ fn table_grow_with_max() {
     let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let grow = get_func!(i, "grow");
-    assert_result!(i, grow, 0, 0);
-    assert_result!(i, grow, 1, 0);
-    assert_result!(i, grow, 1, 1);
-    assert_result!(i, grow, 2, 2);
-    assert_result!(i, grow, 6, 4);
-    assert_result!(i, grow, 0, 10);
-    assert_result!(i, grow, 1, -1);
-    assert_result!(i, grow, 0x10000, -1);
+    let grow = i.get_function_by_name(DEFAULT_MODULE, "grow").unwrap();
+    assert_eq!(i.invoke_typed(&grow, 0), Ok(0));
+    assert_eq!(i.invoke_typed(&grow, 1), Ok(0));
+    assert_eq!(i.invoke_typed(&grow, 1), Ok(1));
+    assert_eq!(i.invoke_typed(&grow, 2), Ok(2));
+    assert_eq!(i.invoke_typed(&grow, 6), Ok(4));
+    assert_eq!(i.invoke_typed(&grow, 0), Ok(10));
+    assert_eq!(i.invoke_typed(&grow, 1), Ok(-1));
+    assert_eq!(i.invoke_typed(&grow, 0x10000), Ok(-1));
 }
 
 #[ignore = "control flow not yet implemented"]
@@ -257,17 +245,19 @@ fn table_grow_check_null() {
     let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let grow = get_func!(i, "grow");
-    let check_table_null = get_func!(i, "check-table-null");
+    let grow = i.get_function_by_name(DEFAULT_MODULE, "grow").unwrap();
+    let check_table_null = i
+        .get_function_by_name(DEFAULT_MODULE, "check-table-null")
+        .unwrap();
 
     assert_eq!(
-        i.invoke_typed::<(i32, i32), RefFunc>(check_table_null, (0, 9))
+        i.invoke_typed::<(i32, i32), RefFunc>(&check_table_null, (0, 9))
             .unwrap(),
         RefFunc(None)
     );
-    assert_result!(i, grow, 10, 10);
+    assert_eq!(i.invoke_typed(&grow, 10), Ok(10));
     assert_eq!(
-        i.invoke_typed::<(i32, i32), RefFunc>(check_table_null, (0, 19))
+        i.invoke_typed::<(i32, i32), RefFunc>(&check_table_null, (0, 19))
             .unwrap(),
         RefFunc(None)
     );
@@ -290,8 +280,10 @@ fn table_grow_with_exported_table_test() {
     let mut target_instance = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("target instantiation failed");
 
-    let grow = get_func!(target_instance, "grow");
-    assert_result!(target_instance, grow, (), 1);
+    let grow = target_instance
+        .get_function_by_name(DEFAULT_MODULE, "grow")
+        .unwrap();
+    assert_eq!(target_instance.invoke_typed(&grow, ()), Ok(1));
 }
 
 // #[test_log::test]
@@ -309,8 +301,8 @@ fn table_grow_with_exported_table_test() {
 //     let validation_info = validate(&wasm_bytes).unwrap();
 //     let mut import1_instance = RuntimeInstance::new(&validation_info).expect("import1 instantiation failed");
 
-//     let grow = get_func!(import1_instance, "grow");
-//     assert_result!(import1_instance, grow, (), 2);
+//     let grow = import1_instance.get_function_by_name(DEFAULT_MODULE, "grow").unwrap();
+//     assert_eq!(import1_instance.invoke_typed( grow,  ()), Ok( 2));
 // }
 
 // #[ignore = "table exports not yet implemented"]
@@ -329,8 +321,8 @@ fn table_grow_with_exported_table_test() {
 //     let validation_info = validate(&wasm_bytes).unwrap();
 //     let mut import2_instance = RuntimeInstance::new(&validation_info).expect("import2 instantiation failed");
 
-//     let size = get_func!(import2_instance, "size");
-//     assert_result!(import2_instance, size, (), 3);
+//     let size = import2_instance.get_function_by_name(DEFAULT_MODULE, "size").unwrap();
+//     assert_eq!(import2_instance.invoke_typed( size,  ()), Ok( 3));
 // }
 
 // TODO: we can NOT run this test yet because ???

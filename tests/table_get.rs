@@ -20,29 +20,6 @@ use wasm::{
     DEFAULT_MODULE,
 };
 
-macro_rules! get_func {
-    ($instance:ident, $func_name:expr) => {
-        &$instance
-            .get_function_by_name(DEFAULT_MODULE, $func_name)
-            .unwrap()
-    };
-}
-
-macro_rules! assert_result {
-    ($instance:expr, $func:expr, $arg:expr, $result:expr) => {
-        assert_eq!($result, $instance.invoke_typed($func, $arg).unwrap());
-    };
-}
-
-macro_rules! assert_error {
-    ($instance:expr, $func:expr, $arg:expr, $ret_type:ty, $invoke_param_type:ty, $invoke_return_type:ty, $err_type:expr) => {
-        let val: $ret_type =
-            $instance.invoke_typed::<$invoke_param_type, $invoke_return_type>($func, $arg);
-        assert!(val.is_err());
-        assert!(val.unwrap_err() == $err_type);
-    };
-}
-
 #[test_log::test]
 fn table_funcref_test() {
     let w = r#"
@@ -71,55 +48,52 @@ fn table_funcref_test() {
     let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let init = get_func!(i, "init");
-    let get_funcref = get_func!(i, "get-funcref");
-    let get_funcref_2 = get_func!(i, "get-funcref-2");
-    let is_null_funcref = get_func!(i, "is_null-funcref");
-
-    i.invoke_typed::<RefFunc, ()>(init, RefFunc(Some(FuncAddr(1))))
+    let init = i.get_function_by_name(DEFAULT_MODULE, "init").unwrap();
+    let get_funcref = i
+        .get_function_by_name(DEFAULT_MODULE, "get-funcref")
+        .unwrap();
+    let get_funcref_2 = i
+        .get_function_by_name(DEFAULT_MODULE, "get-funcref-2")
+        .unwrap();
+    let is_null_funcref = i
+        .get_function_by_name(DEFAULT_MODULE, "is_null-funcref")
         .unwrap();
 
-    assert_result!(i, get_funcref, 0, RefFunc(None));
-    assert_result!(i, get_funcref, 1, RefFunc(Some(FuncAddr(1))));
-    assert_result!(i, get_funcref_2, 0, RefFunc(None));
-    assert_result!(i, is_null_funcref, 1, 0);
-    assert_result!(i, is_null_funcref, 2, 0);
+    i.invoke_typed::<RefFunc, ()>(&init, RefFunc(Some(FuncAddr(1))))
+        .unwrap();
 
-    assert_error!(
-        i,
-        get_funcref,
-        2,
-        Result<RefFunc, RuntimeError>,
-        i32,
-        RefFunc,
-        RuntimeError::Trap(TrapError::TableOrElementAccessOutOfBounds)
+    assert_eq!(i.invoke_typed(&get_funcref, 0), Ok(RefFunc(None)));
+    assert_eq!(
+        i.invoke_typed(&get_funcref, 1),
+        Ok(RefFunc(Some(FuncAddr(1))))
     );
-    assert_error!(
-        i,
-        get_funcref_2,
-        3,
-        Result<RefFunc, RuntimeError>,
-        i32,
-        RefFunc,
-        RuntimeError::Trap(TrapError::TableOrElementAccessOutOfBounds)
+    assert_eq!(i.invoke_typed(&get_funcref_2, 0), Ok(RefFunc(None)));
+    assert_eq!(i.invoke_typed(&is_null_funcref, 1), Ok(0));
+    assert_eq!(i.invoke_typed(&is_null_funcref, 2), Ok(0));
+
+    assert_eq!(
+        i.invoke_typed::<i32, RefFunc>(&get_funcref, 2).err(),
+        Some(RuntimeError::Trap(
+            TrapError::TableOrElementAccessOutOfBounds
+        ))
     );
-    assert_error!(
-        i,
-        get_funcref,
-        -1,
-        Result<RefFunc, RuntimeError>,
-        i32,
-        RefFunc,
-        RuntimeError::Trap(TrapError::TableOrElementAccessOutOfBounds)
+    assert_eq!(
+        i.invoke_typed::<i32, RefFunc>(&get_funcref_2, 3).err(),
+        Some(RuntimeError::Trap(
+            TrapError::TableOrElementAccessOutOfBounds
+        ))
     );
-    assert_error!(
-        i,
-        get_funcref_2,
-        -1,
-        Result<RefFunc, RuntimeError>,
-        i32,
-        RefFunc,
-        RuntimeError::Trap(TrapError::TableOrElementAccessOutOfBounds)
+    assert_eq!(
+        i.invoke_typed::<i32, RefFunc>(&get_funcref, -1).err(),
+        Some(RuntimeError::Trap(
+            TrapError::TableOrElementAccessOutOfBounds
+        ))
+    );
+    assert_eq!(
+        i.invoke_typed::<i32, RefFunc>(&get_funcref_2, -1).err(),
+        Some(RuntimeError::Trap(
+            TrapError::TableOrElementAccessOutOfBounds
+        ))
     );
 }
 

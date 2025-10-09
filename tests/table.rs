@@ -18,14 +18,6 @@ use wasm::interop::RefFunc;
 use wasm::ValidationError;
 use wasm::{validate, RuntimeInstance, DEFAULT_MODULE};
 
-macro_rules! get_func {
-    ($instance:ident, $func_name:expr) => {
-        &$instance
-            .get_function_by_name(DEFAULT_MODULE, $func_name)
-            .unwrap()
-    };
-}
-
 #[test_log::test]
 fn table_basic() {
     let w = r#"
@@ -173,28 +165,30 @@ fn table_get_set_test() {
     let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let get_funcref = get_func!(i, "get-funcref");
-    let init = get_func!(i, "init");
+    let get_funcref = i
+        .get_function_by_name(DEFAULT_MODULE, "get-funcref")
+        .unwrap();
+    let init = i.get_function_by_name(DEFAULT_MODULE, "init").unwrap();
 
     // assert the function at index 1 is a FuncRef and is NOT null
     {
-        let funcref = i.invoke_typed::<i32, RefFunc>(get_funcref, 1).unwrap();
+        let funcref = i.invoke_typed::<i32, RefFunc>(&get_funcref, 1).unwrap();
 
         assert!(funcref.0.is_some());
     }
 
     // assert the function at index 2 is a FuncRef and is null
     {
-        let funcref = i.invoke_typed::<i32, RefFunc>(get_funcref, 2).unwrap();
+        let funcref = i.invoke_typed::<i32, RefFunc>(&get_funcref, 2).unwrap();
 
         assert!(funcref.0.is_none());
     }
 
     // set the function at index 2 the same as the one at index 1
-    i.invoke_typed::<(), ()>(init, ()).unwrap();
+    i.invoke_typed::<(), ()>(&init, ()).unwrap();
     // assert the function at index 2 is a FuncRef and is NOT null
     {
-        let funcref = i.invoke_typed::<i32, RefFunc>(get_funcref, 2).unwrap();
+        let funcref = i.invoke_typed::<i32, RefFunc>(&get_funcref, 2).unwrap();
 
         assert!(funcref.0.is_some());
     }
