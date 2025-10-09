@@ -17,20 +17,6 @@
 use hexf::hexf32;
 use wasm::{validate, RuntimeInstance, DEFAULT_MODULE};
 
-macro_rules! get_func {
-    ($instance:ident, $func_name:expr) => {
-        &$instance
-            .get_function_by_name(DEFAULT_MODULE, $func_name)
-            .unwrap()
-    };
-}
-
-macro_rules! assert_result {
-    ($instance:expr, $func:expr, $arg:expr, $result:expr) => {
-        assert_eq!($result, $instance.invoke_typed($func, $arg).unwrap());
-    };
-}
-
 #[test_log::test]
 fn memory_redundancy() {
     let w = r#"
@@ -92,17 +78,30 @@ fn memory_redundancy() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
-    let zero_everything = get_func!(i, "zero_everything");
-    assert_result!(i, get_func!(i, "test_store_to_load"), (), 0x00000080);
-    i.invoke_typed::<(), ()>(zero_everything, ()).unwrap();
-    assert_result!(i, get_func!(i, "test_redundant_load"), (), 0x00000080);
-    i.invoke_typed::<(), ()>(zero_everything, ()).unwrap();
-    assert_result!(
-        i,
-        get_func!(i, "test_dead_store"),
-        (),
-        hexf32!("0x1.18p-144")
+    let test_store_to_load = i
+        .get_function_by_name(DEFAULT_MODULE, "test_store_to_load")
+        .unwrap();
+    let zero_everything = i
+        .get_function_by_name(DEFAULT_MODULE, "zero_everything")
+        .unwrap();
+    let test_redundant_load = i
+        .get_function_by_name(DEFAULT_MODULE, "test_redundant_load")
+        .unwrap();
+    let test_dead_store = i
+        .get_function_by_name(DEFAULT_MODULE, "test_dead_store")
+        .unwrap();
+    let malloc_aliasing = i
+        .get_function_by_name(DEFAULT_MODULE, "malloc_aliasing")
+        .unwrap();
+
+    assert_eq!(i.invoke_typed(&test_store_to_load, ()), Ok(0x00000080));
+    i.invoke_typed::<(), ()>(&zero_everything, ()).unwrap();
+    assert_eq!(i.invoke_typed(&test_redundant_load, ()), Ok(0x00000080));
+    i.invoke_typed::<(), ()>(&zero_everything, ()).unwrap();
+    assert_eq!(
+        i.invoke_typed(&test_dead_store, ()),
+        Ok(hexf32!("0x1.18p-144"))
     );
-    i.invoke_typed::<(), ()>(zero_everything, ()).unwrap();
-    assert_result!(i, get_func!(i, "malloc_aliasing"), (), 43);
+    i.invoke_typed::<(), ()>(&zero_everything, ()).unwrap();
+    assert_eq!(i.invoke_typed(&malloc_aliasing, ()), Ok(43));
 }

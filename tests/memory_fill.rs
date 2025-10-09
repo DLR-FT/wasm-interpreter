@@ -19,14 +19,6 @@
 
 use wasm::{validate, RuntimeInstance, DEFAULT_MODULE};
 
-macro_rules! get_func {
-    ($instance:ident, $func_name:expr) => {
-        &$instance
-            .get_function_by_name(DEFAULT_MODULE, $func_name)
-            .unwrap()
-    };
-}
-
 #[test_log::test]
 fn memory_fill() {
     let w = r#"
@@ -42,8 +34,8 @@ fn memory_fill() {
     let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let fill = get_func!(i, "fill");
-    i.invoke_typed::<(), ()>(fill, ()).unwrap();
+    let fill = i.get_function_by_name(DEFAULT_MODULE, "fill").unwrap();
+    i.invoke_typed::<(), ()>(&fill, ()).unwrap();
     let mem_inst = &i.store.memories[0];
 
     let expected = [vec![217u8; 100], vec![0u8; 5]].concat();

@@ -17,14 +17,6 @@
 
 use wasm::{validate, RuntimeError, RuntimeInstance, TrapError, ValidationError, DEFAULT_MODULE};
 
-macro_rules! get_func {
-    ($instance:ident, $func_name:expr) => {
-        &$instance
-            .get_function_by_name(DEFAULT_MODULE, $func_name)
-            .unwrap()
-    };
-}
-
 #[test_log::test]
 fn table_init_1_test() {
     let w = r#"
@@ -60,90 +52,90 @@ fn table_init_1_test() {
     let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let test = get_func!(i, "test");
-    let check = get_func!(i, "check");
+    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
+    let check = i.get_function_by_name(DEFAULT_MODULE, "check").unwrap();
 
-    i.invoke_typed::<(), ()>(test, ()).unwrap();
+    i.invoke_typed::<(), ()>(&test, ()).unwrap();
 
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 0).err(),
+        i.invoke_typed::<i32, i32>(&check, 0).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 1).err(),
+        i.invoke_typed::<i32, i32>(&check, 1).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
-    assert_eq!(3, i.invoke_typed(check, 2).unwrap());
-    assert_eq!(1, i.invoke_typed(check, 3).unwrap());
-    assert_eq!(4, i.invoke_typed(check, 4).unwrap());
-    assert_eq!(1, i.invoke_typed(check, 5).unwrap());
+    assert_eq!(3, i.invoke_typed(&check, 2).unwrap());
+    assert_eq!(1, i.invoke_typed(&check, 3).unwrap());
+    assert_eq!(4, i.invoke_typed(&check, 4).unwrap());
+    assert_eq!(1, i.invoke_typed(&check, 5).unwrap());
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 6).err(),
+        i.invoke_typed::<i32, i32>(&check, 6).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
-    assert_eq!(2, i.invoke_typed(check, 7).unwrap());
-    assert_eq!(7, i.invoke_typed(check, 8).unwrap());
-    assert_eq!(1, i.invoke_typed(check, 9).unwrap());
-    assert_eq!(8, i.invoke_typed(check, 10).unwrap());
+    assert_eq!(2, i.invoke_typed(&check, 7).unwrap());
+    assert_eq!(7, i.invoke_typed(&check, 8).unwrap());
+    assert_eq!(1, i.invoke_typed(&check, 9).unwrap());
+    assert_eq!(8, i.invoke_typed(&check, 10).unwrap());
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 11).err(),
+        i.invoke_typed::<i32, i32>(&check, 11).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
-    assert_eq!(7, i.invoke_typed(check, 12).unwrap());
-    assert_eq!(5, i.invoke_typed(check, 13).unwrap());
-    assert_eq!(2, i.invoke_typed(check, 14).unwrap());
-    assert_eq!(3, i.invoke_typed(check, 15).unwrap());
-    assert_eq!(6, i.invoke_typed(check, 16).unwrap());
+    assert_eq!(7, i.invoke_typed(&check, 12).unwrap());
+    assert_eq!(5, i.invoke_typed(&check, 13).unwrap());
+    assert_eq!(2, i.invoke_typed(&check, 14).unwrap());
+    assert_eq!(3, i.invoke_typed(&check, 15).unwrap());
+    assert_eq!(6, i.invoke_typed(&check, 16).unwrap());
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 17).err(),
-        Some(RuntimeError::Trap(TrapError::UninitializedElement))
-    );
-    assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 18).err(),
+        i.invoke_typed::<i32, i32>(&check, 17).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 19).err(),
+        i.invoke_typed::<i32, i32>(&check, 18).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 20).err(),
+        i.invoke_typed::<i32, i32>(&check, 19).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 21).err(),
+        i.invoke_typed::<i32, i32>(&check, 20).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 22).err(),
+        i.invoke_typed::<i32, i32>(&check, 21).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 23).err(),
+        i.invoke_typed::<i32, i32>(&check, 22).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 24).err(),
+        i.invoke_typed::<i32, i32>(&check, 23).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 25).err(),
+        i.invoke_typed::<i32, i32>(&check, 24).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 26).err(),
+        i.invoke_typed::<i32, i32>(&check, 25).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 27).err(),
+        i.invoke_typed::<i32, i32>(&check, 26).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 28).err(),
+        i.invoke_typed::<i32, i32>(&check, 27).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 29).err(),
+        i.invoke_typed::<i32, i32>(&check, 28).err(),
+        Some(RuntimeError::Trap(TrapError::UninitializedElement))
+    );
+    assert_eq!(
+        i.invoke_typed::<i32, i32>(&check, 29).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
 }
@@ -187,99 +179,99 @@ fn table_init_2_test() {
     let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let test = get_func!(i, "test");
-    let check = get_func!(i, "check");
+    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
+    let check = i.get_function_by_name(DEFAULT_MODULE, "check").unwrap();
 
-    i.invoke_typed::<(), ()>(test, ()).unwrap();
+    i.invoke_typed::<(), ()>(&test, ()).unwrap();
 
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 0).err(),
+        i.invoke_typed::<i32, i32>(&check, 0).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 1).err(),
+        i.invoke_typed::<i32, i32>(&check, 1).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
-    assert_eq!(3, i.invoke_typed(check, 2).unwrap());
-    assert_eq!(1, i.invoke_typed(check, 3).unwrap());
-    assert_eq!(4, i.invoke_typed(check, 4).unwrap());
-    assert_eq!(1, i.invoke_typed(check, 5).unwrap());
+    assert_eq!(3, i.invoke_typed(&check, 2).unwrap());
+    assert_eq!(1, i.invoke_typed(&check, 3).unwrap());
+    assert_eq!(4, i.invoke_typed(&check, 4).unwrap());
+    assert_eq!(1, i.invoke_typed(&check, 5).unwrap());
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 6).err(),
-        Some(RuntimeError::Trap(TrapError::UninitializedElement))
-    );
-    assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 7).err(),
+        i.invoke_typed::<i32, i32>(&check, 6).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 8).err(),
+        i.invoke_typed::<i32, i32>(&check, 7).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 9).err(),
+        i.invoke_typed::<i32, i32>(&check, 8).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 10).err(),
+        i.invoke_typed::<i32, i32>(&check, 9).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 11).err(),
-        Some(RuntimeError::Trap(TrapError::UninitializedElement))
-    );
-    assert_eq!(7, i.invoke_typed(check, 12).unwrap());
-    assert_eq!(5, i.invoke_typed(check, 13).unwrap());
-    assert_eq!(2, i.invoke_typed(check, 14).unwrap());
-    assert_eq!(9, i.invoke_typed(check, 15).unwrap());
-    assert_eq!(2, i.invoke_typed(check, 16).unwrap());
-    assert_eq!(7, i.invoke_typed(check, 17).unwrap());
-    assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 18).err(),
+        i.invoke_typed::<i32, i32>(&check, 10).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 19).err(),
+        i.invoke_typed::<i32, i32>(&check, 11).err(),
+        Some(RuntimeError::Trap(TrapError::UninitializedElement))
+    );
+    assert_eq!(7, i.invoke_typed(&check, 12).unwrap());
+    assert_eq!(5, i.invoke_typed(&check, 13).unwrap());
+    assert_eq!(2, i.invoke_typed(&check, 14).unwrap());
+    assert_eq!(9, i.invoke_typed(&check, 15).unwrap());
+    assert_eq!(2, i.invoke_typed(&check, 16).unwrap());
+    assert_eq!(7, i.invoke_typed(&check, 17).unwrap());
+    assert_eq!(
+        i.invoke_typed::<i32, i32>(&check, 18).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 20).err(),
+        i.invoke_typed::<i32, i32>(&check, 19).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 21).err(),
+        i.invoke_typed::<i32, i32>(&check, 20).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 22).err(),
+        i.invoke_typed::<i32, i32>(&check, 21).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 23).err(),
+        i.invoke_typed::<i32, i32>(&check, 22).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 24).err(),
+        i.invoke_typed::<i32, i32>(&check, 23).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 25).err(),
+        i.invoke_typed::<i32, i32>(&check, 24).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 26).err(),
+        i.invoke_typed::<i32, i32>(&check, 25).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 27).err(),
+        i.invoke_typed::<i32, i32>(&check, 26).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 28).err(),
+        i.invoke_typed::<i32, i32>(&check, 27).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 29).err(),
+        i.invoke_typed::<i32, i32>(&check, 28).err(),
+        Some(RuntimeError::Trap(TrapError::UninitializedElement))
+    );
+    assert_eq!(
+        i.invoke_typed::<i32, i32>(&check, 29).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
 }
@@ -327,78 +319,78 @@ fn table_init_3_test() {
     let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let test = get_func!(i, "test");
-    let check = get_func!(i, "check");
+    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
+    let check = i.get_function_by_name(DEFAULT_MODULE, "check").unwrap();
 
-    i.invoke_typed::<(), ()>(test, ()).unwrap();
+    i.invoke_typed::<(), ()>(&test, ()).unwrap();
 
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 0).err(),
+        i.invoke_typed::<i32, i32>(&check, 0).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 1).err(),
+        i.invoke_typed::<i32, i32>(&check, 1).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
-    assert_eq!(3, i.invoke_typed(check, 2).unwrap());
-    assert_eq!(1, i.invoke_typed(check, 3).unwrap());
-    assert_eq!(4, i.invoke_typed(check, 4).unwrap());
-    assert_eq!(1, i.invoke_typed(check, 5).unwrap());
+    assert_eq!(3, i.invoke_typed(&check, 2).unwrap());
+    assert_eq!(1, i.invoke_typed(&check, 3).unwrap());
+    assert_eq!(4, i.invoke_typed(&check, 4).unwrap());
+    assert_eq!(1, i.invoke_typed(&check, 5).unwrap());
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 6).err(),
+        i.invoke_typed::<i32, i32>(&check, 6).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
-    assert_eq!(2, i.invoke_typed(check, 7).unwrap());
-    assert_eq!(7, i.invoke_typed(check, 8).unwrap());
-    assert_eq!(1, i.invoke_typed(check, 9).unwrap());
-    assert_eq!(8, i.invoke_typed(check, 10).unwrap());
+    assert_eq!(2, i.invoke_typed(&check, 7).unwrap());
+    assert_eq!(7, i.invoke_typed(&check, 8).unwrap());
+    assert_eq!(1, i.invoke_typed(&check, 9).unwrap());
+    assert_eq!(8, i.invoke_typed(&check, 10).unwrap());
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 11).err(),
+        i.invoke_typed::<i32, i32>(&check, 11).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
-    assert_eq!(7, i.invoke_typed(check, 12).unwrap());
+    assert_eq!(7, i.invoke_typed(&check, 12).unwrap());
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 13).err(),
+        i.invoke_typed::<i32, i32>(&check, 13).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
-    assert_eq!(7, i.invoke_typed(check, 14).unwrap());
-    assert_eq!(5, i.invoke_typed(check, 15).unwrap());
-    assert_eq!(2, i.invoke_typed(check, 16).unwrap());
-    assert_eq!(7, i.invoke_typed(check, 17).unwrap());
+    assert_eq!(7, i.invoke_typed(&check, 14).unwrap());
+    assert_eq!(5, i.invoke_typed(&check, 15).unwrap());
+    assert_eq!(2, i.invoke_typed(&check, 16).unwrap());
+    assert_eq!(7, i.invoke_typed(&check, 17).unwrap());
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 18).err(),
+        i.invoke_typed::<i32, i32>(&check, 18).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
-    assert_eq!(9, i.invoke_typed(check, 19).unwrap());
+    assert_eq!(9, i.invoke_typed(&check, 19).unwrap());
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 20).err(),
+        i.invoke_typed::<i32, i32>(&check, 20).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
-    assert_eq!(7, i.invoke_typed(check, 21).unwrap());
+    assert_eq!(7, i.invoke_typed(&check, 21).unwrap());
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 22).err(),
+        i.invoke_typed::<i32, i32>(&check, 22).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
-    assert_eq!(8, i.invoke_typed(check, 23).unwrap());
-    assert_eq!(8, i.invoke_typed(check, 24).unwrap());
+    assert_eq!(8, i.invoke_typed(&check, 23).unwrap());
+    assert_eq!(8, i.invoke_typed(&check, 24).unwrap());
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 25).err(),
-        Some(RuntimeError::Trap(TrapError::UninitializedElement))
-    );
-    assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 26).err(),
+        i.invoke_typed::<i32, i32>(&check, 25).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 27).err(),
+        i.invoke_typed::<i32, i32>(&check, 26).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 28).err(),
+        i.invoke_typed::<i32, i32>(&check, 27).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 29).err(),
+        i.invoke_typed::<i32, i32>(&check, 28).err(),
+        Some(RuntimeError::Trap(TrapError::UninitializedElement))
+    );
+    assert_eq!(
+        i.invoke_typed::<i32, i32>(&check, 29).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
 }
@@ -438,101 +430,101 @@ fn table_init_4_test() {
     let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let test = get_func!(i, "test");
-    let check = get_func!(i, "check");
+    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
+    let check = i.get_function_by_name(DEFAULT_MODULE, "check").unwrap();
 
-    i.invoke_typed::<(), ()>(test, ()).unwrap();
+    i.invoke_typed::<(), ()>(&test, ()).unwrap();
 
     // println!("{:#?}", i.modules[0].store.tables[1]);
 
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 0).err(),
+        i.invoke_typed::<i32, i32>(&check, 0).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 1).err(),
+        i.invoke_typed::<i32, i32>(&check, 1).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
-    assert_eq!(3, i.invoke_typed(check, 2).unwrap());
-    assert_eq!(1, i.invoke_typed(check, 3).unwrap());
-    assert_eq!(4, i.invoke_typed(check, 4).unwrap());
-    assert_eq!(1, i.invoke_typed(check, 5).unwrap());
+    assert_eq!(3, i.invoke_typed(&check, 2).unwrap());
+    assert_eq!(1, i.invoke_typed(&check, 3).unwrap());
+    assert_eq!(4, i.invoke_typed(&check, 4).unwrap());
+    assert_eq!(1, i.invoke_typed(&check, 5).unwrap());
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 6).err(),
-        Some(RuntimeError::Trap(TrapError::UninitializedElement))
-    );
-    assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 7).err(),
+        i.invoke_typed::<i32, i32>(&check, 6).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 8).err(),
+        i.invoke_typed::<i32, i32>(&check, 7).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 9).err(),
+        i.invoke_typed::<i32, i32>(&check, 8).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 10).err(),
+        i.invoke_typed::<i32, i32>(&check, 9).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 11).err(),
-        Some(RuntimeError::Trap(TrapError::UninitializedElement))
-    );
-    assert_eq!(7, i.invoke_typed(check, 12).unwrap());
-    assert_eq!(5, i.invoke_typed(check, 13).unwrap());
-    assert_eq!(2, i.invoke_typed(check, 14).unwrap());
-    assert_eq!(9, i.invoke_typed(check, 15).unwrap());
-    assert_eq!(2, i.invoke_typed(check, 16).unwrap());
-    assert_eq!(7, i.invoke_typed(check, 17).unwrap());
-    assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 18).err(),
+        i.invoke_typed::<i32, i32>(&check, 10).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 19).err(),
+        i.invoke_typed::<i32, i32>(&check, 11).err(),
+        Some(RuntimeError::Trap(TrapError::UninitializedElement))
+    );
+    assert_eq!(7, i.invoke_typed(&check, 12).unwrap());
+    assert_eq!(5, i.invoke_typed(&check, 13).unwrap());
+    assert_eq!(2, i.invoke_typed(&check, 14).unwrap());
+    assert_eq!(9, i.invoke_typed(&check, 15).unwrap());
+    assert_eq!(2, i.invoke_typed(&check, 16).unwrap());
+    assert_eq!(7, i.invoke_typed(&check, 17).unwrap());
+    assert_eq!(
+        i.invoke_typed::<i32, i32>(&check, 18).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 20).err(),
+        i.invoke_typed::<i32, i32>(&check, 19).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 21).err(),
+        i.invoke_typed::<i32, i32>(&check, 20).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 22).err(),
+        i.invoke_typed::<i32, i32>(&check, 21).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 23).err(),
+        i.invoke_typed::<i32, i32>(&check, 22).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 24).err(),
+        i.invoke_typed::<i32, i32>(&check, 23).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 25).err(),
+        i.invoke_typed::<i32, i32>(&check, 24).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 26).err(),
+        i.invoke_typed::<i32, i32>(&check, 25).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 27).err(),
+        i.invoke_typed::<i32, i32>(&check, 26).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 28).err(),
+        i.invoke_typed::<i32, i32>(&check, 27).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 29).err(),
+        i.invoke_typed::<i32, i32>(&check, 28).err(),
+        Some(RuntimeError::Trap(TrapError::UninitializedElement))
+    );
+    assert_eq!(
+        i.invoke_typed::<i32, i32>(&check, 29).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
 }
@@ -580,78 +572,78 @@ fn table_init_5_test() {
     let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let test = get_func!(i, "test");
-    let check = get_func!(i, "check");
+    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
+    let check = i.get_function_by_name(DEFAULT_MODULE, "check").unwrap();
 
-    i.invoke_typed::<(), ()>(test, ()).unwrap();
+    i.invoke_typed::<(), ()>(&test, ()).unwrap();
 
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 0).err(),
+        i.invoke_typed::<i32, i32>(&check, 0).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 1).err(),
+        i.invoke_typed::<i32, i32>(&check, 1).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
-    assert_eq!(3, i.invoke_typed(check, 2).unwrap());
-    assert_eq!(1, i.invoke_typed(check, 3).unwrap());
-    assert_eq!(4, i.invoke_typed(check, 4).unwrap());
-    assert_eq!(1, i.invoke_typed(check, 5).unwrap());
+    assert_eq!(3, i.invoke_typed(&check, 2).unwrap());
+    assert_eq!(1, i.invoke_typed(&check, 3).unwrap());
+    assert_eq!(4, i.invoke_typed(&check, 4).unwrap());
+    assert_eq!(1, i.invoke_typed(&check, 5).unwrap());
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 6).err(),
+        i.invoke_typed::<i32, i32>(&check, 6).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
-    assert_eq!(2, i.invoke_typed(check, 7).unwrap());
-    assert_eq!(7, i.invoke_typed(check, 8).unwrap());
-    assert_eq!(1, i.invoke_typed(check, 9).unwrap());
-    assert_eq!(8, i.invoke_typed(check, 10).unwrap());
+    assert_eq!(2, i.invoke_typed(&check, 7).unwrap());
+    assert_eq!(7, i.invoke_typed(&check, 8).unwrap());
+    assert_eq!(1, i.invoke_typed(&check, 9).unwrap());
+    assert_eq!(8, i.invoke_typed(&check, 10).unwrap());
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 11).err(),
+        i.invoke_typed::<i32, i32>(&check, 11).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
-    assert_eq!(7, i.invoke_typed(check, 12).unwrap());
+    assert_eq!(7, i.invoke_typed(&check, 12).unwrap());
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 13).err(),
+        i.invoke_typed::<i32, i32>(&check, 13).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
-    assert_eq!(7, i.invoke_typed(check, 14).unwrap());
-    assert_eq!(5, i.invoke_typed(check, 15).unwrap());
-    assert_eq!(2, i.invoke_typed(check, 16).unwrap());
-    assert_eq!(7, i.invoke_typed(check, 17).unwrap());
+    assert_eq!(7, i.invoke_typed(&check, 14).unwrap());
+    assert_eq!(5, i.invoke_typed(&check, 15).unwrap());
+    assert_eq!(2, i.invoke_typed(&check, 16).unwrap());
+    assert_eq!(7, i.invoke_typed(&check, 17).unwrap());
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 18).err(),
+        i.invoke_typed::<i32, i32>(&check, 18).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
-    assert_eq!(9, i.invoke_typed(check, 19).unwrap());
+    assert_eq!(9, i.invoke_typed(&check, 19).unwrap());
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 20).err(),
+        i.invoke_typed::<i32, i32>(&check, 20).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
-    assert_eq!(7, i.invoke_typed(check, 21).unwrap());
+    assert_eq!(7, i.invoke_typed(&check, 21).unwrap());
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 22).err(),
+        i.invoke_typed::<i32, i32>(&check, 22).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
-    assert_eq!(8, i.invoke_typed(check, 23).unwrap());
-    assert_eq!(8, i.invoke_typed(check, 24).unwrap());
+    assert_eq!(8, i.invoke_typed(&check, 23).unwrap());
+    assert_eq!(8, i.invoke_typed(&check, 24).unwrap());
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 25).err(),
-        Some(RuntimeError::Trap(TrapError::UninitializedElement))
-    );
-    assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 26).err(),
+        i.invoke_typed::<i32, i32>(&check, 25).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 27).err(),
+        i.invoke_typed::<i32, i32>(&check, 26).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 28).err(),
+        i.invoke_typed::<i32, i32>(&check, 27).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        i.invoke_typed::<i32, i32>(check, 29).err(),
+        i.invoke_typed::<i32, i32>(&check, 28).err(),
+        Some(RuntimeError::Trap(TrapError::UninitializedElement))
+    );
+    assert_eq!(
+        i.invoke_typed::<i32, i32>(&check, 29).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
 }
@@ -752,9 +744,9 @@ fn table_init_10_test() {
     let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let test = get_func!(i, "test");
+    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
 
-    i.invoke_typed::<(), ()>(test, ()).unwrap();
+    i.invoke_typed::<(), ()>(&test, ()).unwrap();
 }
 
 #[test_log::test]
@@ -789,10 +781,10 @@ fn table_init_11_test() {
     let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let test = get_func!(i, "test");
+    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
 
     assert_eq!(
-        i.invoke_typed::<(), ()>(test, ()).err(),
+        i.invoke_typed::<(), ()>(&test, ()).err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
         ))
@@ -831,9 +823,9 @@ fn table_init_12_test() {
     let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let test = get_func!(i, "test");
+    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
 
-    i.invoke_typed::<(), ()>(test, ()).unwrap();
+    i.invoke_typed::<(), ()>(&test, ()).unwrap();
 }
 
 #[test_log::test]
@@ -868,9 +860,9 @@ fn table_init_13_test() {
     let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let test = get_func!(i, "test");
+    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
 
-    i.invoke_typed::<(), ()>(test, ()).unwrap();
+    i.invoke_typed::<(), ()>(&test, ()).unwrap();
 }
 
 #[test_log::test]
@@ -905,10 +897,10 @@ fn table_init_14_test() {
     let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let test = get_func!(i, "test");
+    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
 
     assert_eq!(
-        i.invoke_typed::<(), ()>(test, ()).err(),
+        i.invoke_typed::<(), ()>(&test, ()).err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
         ))
@@ -947,10 +939,10 @@ fn table_init_15_test() {
     let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let test = get_func!(i, "test");
+    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
 
     assert_eq!(
-        i.invoke_typed::<(), ()>(test, ()).err(),
+        i.invoke_typed::<(), ()>(&test, ()).err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
         ))
@@ -989,10 +981,10 @@ fn table_init_16_test() {
     let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let test = get_func!(i, "test");
+    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
 
     assert_eq!(
-        i.invoke_typed::<(), ()>(test, ()).err(),
+        i.invoke_typed::<(), ()>(&test, ()).err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
         ))
@@ -1031,10 +1023,10 @@ fn table_init_17_test() {
     let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let test = get_func!(i, "test");
+    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
 
     assert_eq!(
-        i.invoke_typed::<(), ()>(test, ()).err(),
+        i.invoke_typed::<(), ()>(&test, ()).err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
         ))
@@ -1073,9 +1065,9 @@ fn table_init_18_test() {
     let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let test = get_func!(i, "test");
+    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
 
-    i.invoke_typed::<(), ()>(test, ()).unwrap();
+    i.invoke_typed::<(), ()>(&test, ()).unwrap();
 }
 
 #[test_log::test]
@@ -1110,10 +1102,10 @@ fn table_init_19_test() {
     let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let test = get_func!(i, "test");
+    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
 
     assert_eq!(
-        i.invoke_typed::<(), ()>(test, ()).err(),
+        i.invoke_typed::<(), ()>(&test, ()).err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
         ))
@@ -1152,9 +1144,9 @@ fn table_init_20_test() {
     let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let test = get_func!(i, "test");
+    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
 
-    i.invoke_typed::<(), ()>(test, ()).unwrap();
+    i.invoke_typed::<(), ()>(&test, ()).unwrap();
 }
 
 #[test_log::test]
@@ -1189,10 +1181,10 @@ fn table_init_21_test() {
     let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let test = get_func!(i, "test");
+    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
 
     assert_eq!(
-        i.invoke_typed::<(), ()>(test, ()).err(),
+        i.invoke_typed::<(), ()>(&test, ()).err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
         ))
@@ -1231,9 +1223,9 @@ fn table_init_22_test() {
     let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let test = get_func!(i, "test");
+    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
 
-    i.invoke_typed::<(), ()>(test, ()).unwrap();
+    i.invoke_typed::<(), ()>(&test, ()).unwrap();
 }
 
 #[test_log::test]
@@ -1268,10 +1260,10 @@ fn table_init_23_test() {
     let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let test = get_func!(i, "test");
+    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
 
     assert_eq!(
-        i.invoke_typed::<(), ()>(test, ()).err(),
+        i.invoke_typed::<(), ()>(&test, ()).err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
         ))
@@ -1310,10 +1302,10 @@ fn table_init_24_test() {
     let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let test = get_func!(i, "test");
+    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
 
     assert_eq!(
-        i.invoke_typed::<(), ()>(test, ()).err(),
+        i.invoke_typed::<(), ()>(&test, ()).err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
         ))
@@ -1352,9 +1344,9 @@ fn table_init_25_test() {
     let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let test = get_func!(i, "test");
+    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
 
-    i.invoke_typed::<(), ()>(test, ()).unwrap();
+    i.invoke_typed::<(), ()>(&test, ()).unwrap();
 }
 
 #[test_log::test]
@@ -1389,10 +1381,10 @@ fn table_init_26_test() {
     let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let test = get_func!(i, "test");
+    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
 
     assert_eq!(
-        i.invoke_typed::<(), ()>(test, ()).err(),
+        i.invoke_typed::<(), ()>(&test, ()).err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
         ))
@@ -1431,9 +1423,9 @@ fn table_init_27_test() {
     let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let test = get_func!(i, "test");
+    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
 
-    i.invoke_typed::<(), ()>(test, ()).unwrap();
+    i.invoke_typed::<(), ()>(&test, ()).unwrap();
 }
 
 #[test_log::test]
@@ -1468,10 +1460,10 @@ fn table_init_28_test() {
     let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let test = get_func!(i, "test");
+    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
 
     assert_eq!(
-        i.invoke_typed::<(), ()>(test, ()).err(),
+        i.invoke_typed::<(), ()>(&test, ()).err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
         ))
@@ -1510,9 +1502,9 @@ fn table_init_29_test() {
     let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let test = get_func!(i, "test");
+    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
 
-    i.invoke_typed::<(), ()>(test, ()).unwrap();
+    i.invoke_typed::<(), ()>(&test, ()).unwrap();
 }
 
 #[test_log::test]
@@ -1547,10 +1539,10 @@ fn table_init_30_test() {
     let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let test = get_func!(i, "test");
+    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
 
     assert_eq!(
-        i.invoke_typed::<(), ()>(test, ()).err(),
+        i.invoke_typed::<(), ()>(&test, ()).err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
         ))
@@ -2728,17 +2720,17 @@ fn table_init_94_test() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut inst = RuntimeInstance::new_with_default_module((), &validation_info).unwrap();
 
-    let run = get_func!(inst, "run");
-    let test = get_func!(inst, "test");
+    let run = inst.get_function_by_name(DEFAULT_MODULE, "run").unwrap();
+    let test = inst.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
     assert_eq!(
-        inst.invoke_typed::<(i32, i32), ()>(run, (24, 16)).err(),
+        inst.invoke_typed::<(i32, i32), ()>(&run, (24, 16)).err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
         ))
     );
     for i in 0..32 {
         assert_eq!(
-            inst.invoke_typed::<i32, i32>(test, i).err(),
+            inst.invoke_typed::<i32, i32>(&test, i).err(),
             Some(RuntimeError::Trap(TrapError::UninitializedElement))
         );
     }
@@ -2781,17 +2773,17 @@ fn table_init_95_test() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut inst = RuntimeInstance::new_with_default_module((), &validation_info).unwrap();
 
-    let run = get_func!(inst, "run");
-    let test = get_func!(inst, "test");
+    let run = inst.get_function_by_name(DEFAULT_MODULE, "run").unwrap();
+    let test = inst.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
     assert_eq!(
-        inst.invoke_typed::<(i32, i32), ()>(run, (25, 16)).err(),
+        inst.invoke_typed::<(i32, i32), ()>(&run, (25, 16)).err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
         ))
     );
     for i in 0..32 {
         assert_eq!(
-            inst.invoke_typed::<i32, i32>(test, i).err(),
+            inst.invoke_typed::<i32, i32>(&test, i).err(),
             Some(RuntimeError::Trap(TrapError::UninitializedElement))
         );
     }
@@ -2834,17 +2826,17 @@ fn table_init_96_test() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut inst = RuntimeInstance::new_with_default_module((), &validation_info).unwrap();
 
-    let run = get_func!(inst, "run");
-    let test = get_func!(inst, "test");
+    let run = inst.get_function_by_name(DEFAULT_MODULE, "run").unwrap();
+    let test = inst.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
     assert_eq!(
-        inst.invoke_typed::<(i32, i32), ()>(run, (96, 32)).err(),
+        inst.invoke_typed::<(i32, i32), ()>(&run, (96, 32)).err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
         ))
     );
     for i in 0..160 {
         assert_eq!(
-            inst.invoke_typed::<i32, i32>(test, i).err(),
+            inst.invoke_typed::<i32, i32>(&test, i).err(),
             Some(RuntimeError::Trap(TrapError::UninitializedElement))
         );
     }
@@ -2887,17 +2879,17 @@ fn table_init_97_test() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut inst = RuntimeInstance::new_with_default_module((), &validation_info).unwrap();
 
-    let run = get_func!(inst, "run");
-    let test = get_func!(inst, "test");
+    let run = inst.get_function_by_name(DEFAULT_MODULE, "run").unwrap();
+    let test = inst.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
     assert_eq!(
-        inst.invoke_typed::<(i32, i32), ()>(run, (97, 31)).err(),
+        inst.invoke_typed::<(i32, i32), ()>(&run, (97, 31)).err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
         ))
     );
     for i in 0..160 {
         assert_eq!(
-            inst.invoke_typed::<i32, i32>(test, i).err(),
+            inst.invoke_typed::<i32, i32>(&test, i).err(),
             Some(RuntimeError::Trap(TrapError::UninitializedElement))
         );
     }
@@ -2940,10 +2932,10 @@ fn table_init_98_test() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut inst = RuntimeInstance::new_with_default_module((), &validation_info).unwrap();
 
-    let run = get_func!(inst, "run");
-    let test = get_func!(inst, "test");
+    let run = inst.get_function_by_name(DEFAULT_MODULE, "run").unwrap();
+    let test = inst.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
     assert_eq!(
-        inst.invoke_typed::<(i32, u32), ()>(run, (48, 4294967280_u32))
+        inst.invoke_typed::<(i32, u32), ()>(&run, (48, 4294967280_u32))
             .err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
@@ -2951,7 +2943,7 @@ fn table_init_98_test() {
     );
     for i in 0..64 {
         assert_eq!(
-            inst.invoke_typed::<i32, i32>(test, i).err(),
+            inst.invoke_typed::<i32, i32>(&test, i).err(),
             Some(RuntimeError::Trap(TrapError::UninitializedElement))
         );
     }
@@ -2994,10 +2986,10 @@ fn table_init_99_test() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut inst = RuntimeInstance::new_with_default_module((), &validation_info).unwrap();
 
-    let run = get_func!(inst, "run");
-    let test = get_func!(inst, "test");
+    let run = inst.get_function_by_name(DEFAULT_MODULE, "run").unwrap();
+    let test = inst.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
     assert_eq!(
-        inst.invoke_typed::<(i32, i32), ()>(run, (0, 4294967292_u32 as i32))
+        inst.invoke_typed::<(i32, i32), ()>(&run, (0, 4294967292_u32 as i32))
             .err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
@@ -3005,7 +2997,7 @@ fn table_init_99_test() {
     );
     for i in 0..16 {
         assert_eq!(
-            inst.invoke_typed::<i32, i32>(test, i).err(),
+            inst.invoke_typed::<i32, i32>(&test, i).err(),
             Some(RuntimeError::Trap(TrapError::UninitializedElement))
         );
     }
