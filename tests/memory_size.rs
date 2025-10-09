@@ -165,9 +165,10 @@ fn memory_size_5() {
         }
     }
     let validation_info = validate(&wasm_bytes);
-    assert!(validation_info.is_err());
-    let validation_info_err = validation_info.err().unwrap();
-    assert!(validation_info_err == wasm::ValidationError::EndInvalidValueStack);
+    assert_eq!(
+        validation_info.err(),
+        Some(wasm::ValidationError::EndInvalidValueStack)
+    );
 }
 
 #[test_log::test]
@@ -192,7 +193,8 @@ fn memory_size_6() {
         }
     }
     let validation_info = validate(&wasm_bytes);
-    assert!(validation_info.is_err());
-    let validation_info_err = validation_info.err().unwrap();
-    assert!(validation_info_err == wasm::ValidationError::EndInvalidValueStack);
+    assert_eq!(
+        validation_info.err(),
+        Some(wasm::ValidationError::EndInvalidValueStack)
+    );
 }

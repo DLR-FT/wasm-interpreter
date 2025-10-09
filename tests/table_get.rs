@@ -135,6 +135,10 @@ fn table_type_error_test() {
 
     for module in invalid_modules {
         let wasm_bytes = wat::parse_str(module).unwrap();
-        assert!(validate(&wasm_bytes).is_err());
+        let result = validate(&wasm_bytes);
+        assert!(
+            result.is_err(),
+            "Result `{result:?}` was expected to be `Err`, but it is not."
+        );
     }
 }

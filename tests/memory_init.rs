@@ -197,7 +197,7 @@ fn memory_init_test_5() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let res = validate(&wasm_bytes);
-    assert!(res.err().unwrap() == GeneralError::InvalidDataIdx(0));
+    assert_eq!(res.err(), Some(GeneralError::InvalidDataIdx(0)));
 }
 
 #[test_log::test]
@@ -212,7 +212,7 @@ fn memory_init_test_6() {
     let wasm_bytes = wat::parse_str(w).unwrap();
 
     let res = validate(&wasm_bytes);
-    assert!(res.err().unwrap() == GeneralError::InvalidDataIdx(4));
+    assert_eq!(res.err(), Some(GeneralError::InvalidDataIdx(4)));
 }
 
 #[test_log::test]
@@ -276,7 +276,7 @@ fn memory_init_test_10() {
     let wasm_bytes = wat::parse_str(w).unwrap();
 
     let res = validate(&wasm_bytes);
-    assert!(res.err().unwrap() == GeneralError::InvalidMemIndex(0));
+    assert_eq!(res.err(), Some(GeneralError::InvalidMemIndex(0)));
 }
 
 #[test_log::test]
@@ -291,7 +291,7 @@ fn memory_init_test_11() {
     let wasm_bytes = wat::parse_str(w).unwrap();
 
     let res = validate(&wasm_bytes);
-    assert!(res.err().unwrap() == GeneralError::InvalidDataIdx(1));
+    assert_eq!(res.err(), Some(GeneralError::InvalidDataIdx(1)));
 }
 
 #[test_log::test]
