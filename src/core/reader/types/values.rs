@@ -1,19 +1,3 @@
-/*
-# This file incorporates code from Wasmtime, originally
-# available at https://github.com/bytecodealliance/wasm-tools.
-#
-# The original code is licensed under the Apache License, Version 2.0
-# (the "License"); you may not use this file except in compliance
-# with the License. You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-*/
 //! Methods to read basic WASM Values from a [WasmReader] object.
 //!
 //! See: <https://webassembly.github.io/spec/core/binary/values.html>
@@ -22,10 +6,18 @@
 //! This is due to the fact that these methods read elemental types which cannot be split.
 
 use alloc::vec::Vec;
-use core::mem;
 
 use crate::core::reader::WasmReader;
 use crate::ValidationError;
+
+/// Wasm encodes integers according to the LEB128 format, which specifies that
+/// only 7 bits of every byte are used to store the integer's bits. The 8th bit
+/// is always used as a bitflag for whether the next byte shall also be read as
+/// part of the current integer. Therefore, it can be called a continuation bit,
+/// which is stored here as a global constant to improve code readability.
+const CONTINUATION_BIT: u8 = 0b10000000;
+
+const INTEGER_BIT_FLAG: u8 = !CONTINUATION_BIT;
 
 impl WasmReader<'_> {
     /// Tries to read one byte and fails if the end of file is reached.
@@ -35,60 +27,130 @@ impl WasmReader<'_> {
         Ok(byte)
     }
 
-    const CONTINUATION_BIT: u8 = 1 << 7;
-
     /// Parses a variable-length `u64` (can be casted to a smaller uint if the result fits)
-    /// Taken from <https://github.com/bytecodealliance/wasm-tools>
     #[allow(unused)]
     pub fn read_var_u64(&mut self) -> Result<u64, ValidationError> {
+        /// Because up to 10 bytes (each storing 7 bits) may be used to store 64 bits,
+        /// some bits in the last byte will be left unused. This is a bitmask for
+        /// exactly these bits in the last byte.
+        const PADDING_IN_LAST_BYTE_BIT_MASK: u8 = 0b01111110;
+
         let mut result = 0;
-        let mut shift = 0;
 
-        loop {
-            let mut byte = self.read_u8()?;
-            // maximum allowed num of leb bytes for u32 is ceil(32.0/7.0) == 10
-            // shift >= 63 checks we're at the 10th bit or larger
-            // byte != 1 checks whether (this byte lost bits when shifted) or (the continuation bit is set)
-            if shift == 63 && byte != 0 && byte != 1 {
-                while byte & Self::CONTINUATION_BIT != 0 {
-                    byte = self.read_u8()?;
-                }
-                return Err(ValidationError::MalformedVariableLengthInteger);
-            }
-
-            let low_bits = (byte & !Self::CONTINUATION_BIT) as u64;
-            result |= low_bits << shift;
-
-            if byte & Self::CONTINUATION_BIT == 0 {
-                return Ok(result);
-            }
-
-            shift += 7;
+        let byte = self.read_u8()?;
+        result |= u64::from(byte & INTEGER_BIT_FLAG);
+        if byte & CONTINUATION_BIT == 0 {
+            return Ok(result);
         }
+
+        let byte = self.read_u8()?;
+        result |= u64::from(byte & INTEGER_BIT_FLAG) << 7;
+        if byte & CONTINUATION_BIT == 0 {
+            return Ok(result);
+        }
+
+        let byte = self.read_u8()?;
+        result |= u64::from(byte & INTEGER_BIT_FLAG) << 14;
+        if byte & CONTINUATION_BIT == 0 {
+            return Ok(result);
+        }
+
+        let byte = self.read_u8()?;
+        result |= u64::from(byte & INTEGER_BIT_FLAG) << 21;
+        if byte & CONTINUATION_BIT == 0 {
+            return Ok(result);
+        }
+
+        let byte = self.read_u8()?;
+        result |= u64::from(byte & INTEGER_BIT_FLAG) << 28;
+        if byte & CONTINUATION_BIT == 0 {
+            return Ok(result);
+        }
+
+        let byte = self.read_u8()?;
+        result |= u64::from(byte & INTEGER_BIT_FLAG) << 35;
+        if byte & CONTINUATION_BIT == 0 {
+            return Ok(result);
+        }
+
+        let byte = self.read_u8()?;
+        result |= u64::from(byte & INTEGER_BIT_FLAG) << 42;
+        if byte & CONTINUATION_BIT == 0 {
+            return Ok(result);
+        }
+
+        let byte = self.read_u8()?;
+        result |= u64::from(byte & INTEGER_BIT_FLAG) << 49;
+        if byte & CONTINUATION_BIT == 0 {
+            return Ok(result);
+        }
+
+        let byte = self.read_u8()?;
+        result |= u64::from(byte & INTEGER_BIT_FLAG) << 56;
+        if byte & CONTINUATION_BIT == 0 {
+            return Ok(result);
+        }
+
+        let byte = self.read_u8()?;
+        result |= u64::from(byte & INTEGER_BIT_FLAG) << 63;
+
+        // there can only be a maximum number of 10 bytes for a 64-bit integer
+        let has_next_byte = byte & CONTINUATION_BIT > 0;
+        let padding_bits_are_not_zero = byte & PADDING_IN_LAST_BYTE_BIT_MASK > 0;
+        if has_next_byte || padding_bits_are_not_zero {
+            // TODO distinguish between both error variants
+            return Err(ValidationError::MalformedVariableLengthInteger);
+        }
+
+        Ok(result)
     }
 
     /// Parses a variable-length `u32` as specified by [LEB128](https://en.wikipedia.org/wiki/LEB128#Unsigned_LEB128).
     /// Note: If `Err`, the [WasmReader] object is no longer guaranteed to be in a valid state
     pub fn read_var_u32(&mut self) -> Result<u32, ValidationError> {
+        /// Because up to 5 bytes (each storing 7 bits) may be used to store 32 bits,
+        /// some bits in the last byte will be left unused. This is a bitmask for
+        /// exactly these bits in the last byte.
+        const PADDING_IN_LAST_BYTE_BIT_MASK: u8 = 0b01110000;
+
         let mut result: u32 = 0;
-        let mut shift = 0;
 
-        loop {
-            let byte = self.read_u8()?;
-            result |= ((byte & 0x7F) as u32) << shift;
-            // maximum allowed num of leb bytes for u32 is ceil(32.0/7.0) == 5
-            // shift >= 28 checks we're at the 5th bit or larger
-            // byte >> 32-28 checks whether (this byte lost bits when shifted) or (the continuation bit is set)
-            if shift >= 28 && byte >> (32 - shift) != 0 {
-                return Err(ValidationError::MalformedVariableLengthInteger);
-            }
-
-            if byte & Self::CONTINUATION_BIT == 0 {
-                return Ok(result);
-            }
-
-            shift += 7;
+        let byte = self.read_u8()?;
+        result |= u32::from(byte & INTEGER_BIT_FLAG);
+        if byte & CONTINUATION_BIT == 0 {
+            return Ok(result);
         }
+
+        let byte = self.read_u8()?;
+        result |= u32::from(byte & INTEGER_BIT_FLAG) << 7;
+        if byte & CONTINUATION_BIT == 0 {
+            return Ok(result);
+        }
+
+        let byte = self.read_u8()?;
+        result |= u32::from(byte & INTEGER_BIT_FLAG) << 14;
+        if byte & CONTINUATION_BIT == 0 {
+            return Ok(result);
+        }
+
+        let byte = self.read_u8()?;
+        result |= u32::from(byte & INTEGER_BIT_FLAG) << 21;
+        if byte & CONTINUATION_BIT == 0 {
+            return Ok(result);
+        }
+
+        let byte = self.read_u8()?;
+        result |= u32::from(byte & INTEGER_BIT_FLAG) << 28;
+
+        // there can only be a maximum number of 5 bytes for a 32-bit integer
+        let has_next_byte = byte & CONTINUATION_BIT > 0;
+        let padding_bits_are_not_zero = byte & PADDING_IN_LAST_BYTE_BIT_MASK > 0;
+        if has_next_byte || padding_bits_are_not_zero {
+            // TODO distinguish between both error variants
+            return Err(ValidationError::MalformedVariableLengthInteger);
+        }
+
+        Ok(result)
     }
 
     pub fn read_f64(&mut self) -> Result<u64, ValidationError> {
@@ -96,74 +158,154 @@ impl WasmReader<'_> {
         Ok(u64::from_le_bytes(bytes))
     }
 
-    /// Adapted from <https://github.com/bytecodealliance/wasm-tools>
     pub fn read_var_i32(&mut self) -> Result<i32, ValidationError> {
+        /// Because up to 5 bytes (each storing 7 bits) may be used to store 32 bits,
+        /// some bits in the last byte will be left unused. This is a bitmask for
+        /// exactly these bits in the last byte.
+        const PADDING_IN_LAST_BYTE_BITMASK: u8 = 0b01110000;
+
+        /// This bitflag defines the position of the sign bit in the last byte.
+        const SIGN_IN_LAST_BYTE_BITFLAG: u8 = 0b00001000;
+
+        /// Number of bits in this number type
+        const NUM_BITS: u32 = 32;
+
         let mut result: i32 = 0;
-        let mut shift: u32 = 0;
 
-        loop {
-            let byte = self.read_u8()?;
-            result |= ((byte & 0x7F) as i32) << shift;
-
-            if shift >= 28 {
-                // maximum allowed num of leb bytes for u32 is ceil(32.0/7.0) == 5
-                // shift >= 28 checks we're at the 5th bit or larger
-                let there_are_more_bytes = (byte & Self::CONTINUATION_BIT) != 0;
-                let ashifted_unused_bits = (byte << 1) as i8 >> (32 - shift);
-                // the top unused bits of 35 bytes should be either 111 for negative numbers or 000 for positive numbers
-                // therefore ashifted_unused_bits should be -1 or 0
-                if there_are_more_bytes || (ashifted_unused_bits != 0 && ashifted_unused_bits != -1)
-                {
-                    return Err(ValidationError::MalformedVariableLengthInteger);
-                } else {
-                    // no need to ashift unfilled bits, all 32 bits are filled
-                    return Ok(result);
-                }
-            }
-
-            shift += 7;
-
-            if (byte & 0b10000000) == 0 {
-                break;
-            }
+        let byte = self.read_u8()?;
+        result |= i32::from(byte & INTEGER_BIT_FLAG);
+        if byte & CONTINUATION_BIT == 0 {
+            /// before returning the result, we need to sign extend the unspecified bits
+            const NUM_UNSPECIFIED_BITS: u32 = NUM_BITS - 7;
+            let sign_extended_result = (result << NUM_UNSPECIFIED_BITS) >> NUM_UNSPECIFIED_BITS;
+            return Ok(sign_extended_result);
         }
 
-        // fill in unfilled bits with sign bit
-        let ashift = mem::size_of::<i32>() * 8 - shift as usize;
-        Ok((result << ashift) >> ashift)
+        let byte = self.read_u8()?;
+        result |= i32::from(byte & INTEGER_BIT_FLAG) << 7;
+        if byte & CONTINUATION_BIT == 0 {
+            const NUM_UNSPECIFIED_BITS: u32 = NUM_BITS - 14;
+            let sign_extended_result = (result << NUM_UNSPECIFIED_BITS) >> NUM_UNSPECIFIED_BITS;
+            return Ok(sign_extended_result);
+        }
+
+        let byte = self.read_u8()?;
+        result |= i32::from(byte & INTEGER_BIT_FLAG) << 14;
+        if byte & CONTINUATION_BIT == 0 {
+            const NUM_UNSPECIFIED_BITS: u32 = NUM_BITS - 21;
+            let sign_extended_result = (result << NUM_UNSPECIFIED_BITS) >> NUM_UNSPECIFIED_BITS;
+            return Ok(sign_extended_result);
+        }
+
+        let byte = self.read_u8()?;
+        result |= i32::from(byte & INTEGER_BIT_FLAG) << 21;
+        if byte & CONTINUATION_BIT == 0 {
+            const NUM_UNSPECIFIED_BITS: u32 = NUM_BITS - 28;
+            let sign_extended_result = (result << NUM_UNSPECIFIED_BITS) >> NUM_UNSPECIFIED_BITS;
+            return Ok(sign_extended_result);
+        }
+
+        let byte = self.read_u8()?;
+        result |= i32::from(byte & INTEGER_BIT_FLAG) << 28;
+
+        // there can only be a maximum number of 5 bytes for a 32-bit integer
+        let has_next_byte = byte & CONTINUATION_BIT > 0;
+        if has_next_byte {
+            // TODO distinguish between both error variants
+            return Err(ValidationError::MalformedVariableLengthInteger);
+        }
+
+        // Verify that the padding and sign bits are either all ones or all
+        // zeros. To do this we count the ones and check if that number is zero
+        // or equal to the number of ones in both bitmasks combined.
+        const PADDING_AND_SIGN_BITMASK: u8 =
+            PADDING_IN_LAST_BYTE_BITMASK | SIGN_IN_LAST_BYTE_BITFLAG;
+        let number_of_ones_in_padding_and_sign_bits =
+            (byte & PADDING_AND_SIGN_BITMASK).count_ones();
+        let padding_bits_match_sign_bit = number_of_ones_in_padding_and_sign_bits
+            == PADDING_AND_SIGN_BITMASK.count_ones()
+            || number_of_ones_in_padding_and_sign_bits == 0;
+        if !padding_bits_match_sign_bit {
+            // TODO distinguish between both error variants
+            return Err(ValidationError::MalformedVariableLengthInteger);
+        }
+
+        Ok(result)
     }
 
     pub fn read_var_i33(&mut self) -> Result<i64, ValidationError> {
+        /// Because up to 5 bytes (each storing 7 bits) may be used to store 32 bits,
+        /// some bits in the last byte will be left unused. This is a bitmask for
+        /// exactly these bits in the last byte.
+        const PADDING_IN_LAST_BYTE_BITMASK: u8 = 0b01100000;
+
+        /// This bitflag defines the position of the sign bit in the last byte.
+        const SIGN_IN_LAST_BYTE_BITFLAG: u8 = 0b00010000;
+
+        /// Number of bits in this number type
+        const NUM_BITS: u32 = 33;
+
         let mut result: i64 = 0;
-        let mut shift: u32 = 0;
 
-        loop {
-            let byte = self.read_u8()?;
-            result |= ((byte & 0x7F) as i64) << shift;
-
-            if shift >= 28 {
-                // maximum allowed num of leb bytes for i33 is ceil(33.0/7.0) == 5
-                // shift >= 28 checks we're at the 5th bit or larger
-                let there_are_more_bytes = (byte & Self::CONTINUATION_BIT) != 0;
-                let ashifted_unused_bits = (byte << 1) as i8 >> (33 - shift);
-                // the top unused bits of 35 bytes should be either 11 for negative numbers or 00 for positive numbers
-                // therefore ashifted_unused_bits should be -1 or 0
-                if there_are_more_bytes || (ashifted_unused_bits != 0 && ashifted_unused_bits != -1)
-                {
-                    return Err(ValidationError::MalformedVariableLengthInteger);
-                }
-            }
-
-            shift += 7;
-
-            if (byte & 0b10000000) == 0 {
-                break;
-            }
+        let byte = self.read_u8()?;
+        result |= i64::from(byte & INTEGER_BIT_FLAG);
+        if byte & CONTINUATION_BIT == 0 {
+            /// before returning the result, we need to sign extend the unspecified bits
+            const NUM_UNSPECIFIED_BITS: u32 = NUM_BITS - 7;
+            let sign_extended_result = (result << NUM_UNSPECIFIED_BITS) >> NUM_UNSPECIFIED_BITS;
+            return Ok(sign_extended_result);
         }
 
-        // fill in unfilled bits with sign bit
-        let ashift = mem::size_of::<i64>() * 8 - shift as usize;
-        Ok((result << ashift) >> ashift)
+        let byte = self.read_u8()?;
+        result |= i64::from(byte & INTEGER_BIT_FLAG) << 7;
+        if byte & CONTINUATION_BIT == 0 {
+            const NUM_UNSPECIFIED_BITS: u32 = NUM_BITS - 14;
+            let sign_extended_result = (result << NUM_UNSPECIFIED_BITS) >> NUM_UNSPECIFIED_BITS;
+            return Ok(sign_extended_result);
+        }
+
+        let byte = self.read_u8()?;
+        result |= i64::from(byte & INTEGER_BIT_FLAG) << 14;
+        if byte & CONTINUATION_BIT == 0 {
+            const NUM_UNSPECIFIED_BITS: u32 = NUM_BITS - 21;
+            let sign_extended_result = (result << NUM_UNSPECIFIED_BITS) >> NUM_UNSPECIFIED_BITS;
+            return Ok(sign_extended_result);
+        }
+
+        let byte = self.read_u8()?;
+        result |= i64::from(byte & INTEGER_BIT_FLAG) << 21;
+        if byte & CONTINUATION_BIT == 0 {
+            const NUM_UNSPECIFIED_BITS: u32 = NUM_BITS - 28;
+            let sign_extended_result = (result << NUM_UNSPECIFIED_BITS) >> NUM_UNSPECIFIED_BITS;
+            return Ok(sign_extended_result);
+        }
+
+        let byte = self.read_u8()?;
+        result |= i64::from(byte & INTEGER_BIT_FLAG) << 28;
+
+        // there can only be a maximum number of 5 bytes for a 33-bit integer
+        let has_next_byte = byte & CONTINUATION_BIT > 0;
+        if has_next_byte {
+            // TODO distinguish between both error variants
+            return Err(ValidationError::MalformedVariableLengthInteger);
+        }
+
+        // Verify that the padding and sign bits are either all ones or all
+        // zeros. To do this we count the ones and check if that number is zero
+        // or equal to the number of ones in both bitmasks combined.
+        const PADDING_AND_SIGN_BITMASK: u8 =
+            PADDING_IN_LAST_BYTE_BITMASK | SIGN_IN_LAST_BYTE_BITFLAG;
+        let number_of_ones_in_padding_and_sign_bits =
+            (byte & PADDING_AND_SIGN_BITMASK).count_ones();
+        let padding_bits_match_sign_bit = number_of_ones_in_padding_and_sign_bits
+            == PADDING_AND_SIGN_BITMASK.count_ones()
+            || number_of_ones_in_padding_and_sign_bits == 0;
+        if !padding_bits_match_sign_bit {
+            // TODO distinguish between both error variants
+            return Err(ValidationError::MalformedVariableLengthInteger);
+        }
+
+        Ok(result)
     }
 
     pub fn read_f32(&mut self) -> Result<u32, ValidationError> {
@@ -172,39 +314,118 @@ impl WasmReader<'_> {
     }
 
     pub fn read_var_i64(&mut self) -> Result<i64, ValidationError> {
+        /// Because up to 10 bytes (each storing 7 bits) may be used to store 64 bits,
+        /// some bits in the last byte will be left unused. This is a bitmask for
+        /// exactly these bits in the last byte.
+        const PADDING_IN_LAST_BYTE_BITMASK: u8 = 0b01111110;
+
+        /// This bitflag defines the position of the sign bit in the last byte.
+        const SIGN_IN_LAST_BYTE_BITFLAG: u8 = 0b00000001;
+
+        /// Number of bits in this number type
+        const NUM_BITS: u32 = 64;
+
         let mut result: i64 = 0;
-        let mut shift: u32 = 0;
 
-        loop {
-            let byte = self.read_u8()?;
-            result |= ((byte & 0x7F) as i64) << shift;
-
-            if shift >= 63 {
-                // maximum allowed num of leb bytes for i33 is ceil(64.0/7.0) == 10
-                // shift >= 63 checks we're at the 10th bit or larger
-                let there_are_more_bytes = (byte & Self::CONTINUATION_BIT) != 0;
-                let ashifted_unused_bits = (byte << 1) as i8 >> (64 - shift);
-                // the top unused bits of 70 bytes should be either 111111 for negative numbers or 000000 for positive numbers
-                // therefore ashifted_unused_bits should be -1 or 0
-                if there_are_more_bytes || (ashifted_unused_bits != 0 && ashifted_unused_bits != -1)
-                {
-                    return Err(ValidationError::MalformedVariableLengthInteger);
-                } else {
-                    // no need to ashift unfilled bits, all 64 bits are filled
-                    return Ok(result);
-                }
-            }
-
-            shift += 7;
-
-            if (byte & 0b10000000) == 0 {
-                break;
-            }
+        let byte = self.read_u8()?;
+        result |= i64::from(byte & INTEGER_BIT_FLAG);
+        if byte & CONTINUATION_BIT == 0 {
+            /// before returning the result, we need to sign extend the unspecified bits
+            const NUM_UNSPECIFIED_BITS: u32 = NUM_BITS - 7;
+            let sign_extended_result = (result << NUM_UNSPECIFIED_BITS) >> NUM_UNSPECIFIED_BITS;
+            return Ok(sign_extended_result);
         }
 
-        // fill in unfilled bits with sign bit
-        let ashift = mem::size_of::<i64>() * 8 - shift as usize;
-        Ok((result << ashift) >> ashift)
+        let byte = self.read_u8()?;
+        result |= i64::from(byte & INTEGER_BIT_FLAG) << 7;
+        if byte & CONTINUATION_BIT == 0 {
+            const NUM_UNSPECIFIED_BITS: u32 = NUM_BITS - 14;
+            let sign_extended_result = (result << NUM_UNSPECIFIED_BITS) >> NUM_UNSPECIFIED_BITS;
+            return Ok(sign_extended_result);
+        }
+
+        let byte = self.read_u8()?;
+        result |= i64::from(byte & INTEGER_BIT_FLAG) << 14;
+        if byte & CONTINUATION_BIT == 0 {
+            const NUM_UNSPECIFIED_BITS: u32 = NUM_BITS - 21;
+            let sign_extended_result = (result << NUM_UNSPECIFIED_BITS) >> NUM_UNSPECIFIED_BITS;
+            return Ok(sign_extended_result);
+        }
+
+        let byte = self.read_u8()?;
+        result |= i64::from(byte & INTEGER_BIT_FLAG) << 21;
+        if byte & CONTINUATION_BIT == 0 {
+            const NUM_UNSPECIFIED_BITS: u32 = NUM_BITS - 28;
+            let sign_extended_result = (result << NUM_UNSPECIFIED_BITS) >> NUM_UNSPECIFIED_BITS;
+            return Ok(sign_extended_result);
+        }
+
+        let byte = self.read_u8()?;
+        result |= i64::from(byte & INTEGER_BIT_FLAG) << 28;
+        if byte & CONTINUATION_BIT == 0 {
+            const NUM_UNSPECIFIED_BITS: u32 = NUM_BITS - 35;
+            let sign_extended_result = (result << NUM_UNSPECIFIED_BITS) >> NUM_UNSPECIFIED_BITS;
+            return Ok(sign_extended_result);
+        }
+
+        let byte = self.read_u8()?;
+        result |= i64::from(byte & INTEGER_BIT_FLAG) << 35;
+        if byte & CONTINUATION_BIT == 0 {
+            const NUM_UNSPECIFIED_BITS: u32 = NUM_BITS - 42;
+            let sign_extended_result = (result << NUM_UNSPECIFIED_BITS) >> NUM_UNSPECIFIED_BITS;
+            return Ok(sign_extended_result);
+        }
+
+        let byte = self.read_u8()?;
+        result |= i64::from(byte & INTEGER_BIT_FLAG) << 42;
+        if byte & CONTINUATION_BIT == 0 {
+            const NUM_UNSPECIFIED_BITS: u32 = NUM_BITS - 49;
+            let sign_extended_result = (result << NUM_UNSPECIFIED_BITS) >> NUM_UNSPECIFIED_BITS;
+            return Ok(sign_extended_result);
+        }
+
+        let byte = self.read_u8()?;
+        result |= i64::from(byte & INTEGER_BIT_FLAG) << 49;
+        if byte & CONTINUATION_BIT == 0 {
+            const NUM_UNSPECIFIED_BITS: u32 = NUM_BITS - 56;
+            let sign_extended_result = (result << NUM_UNSPECIFIED_BITS) >> NUM_UNSPECIFIED_BITS;
+            return Ok(sign_extended_result);
+        }
+
+        let byte = self.read_u8()?;
+        result |= i64::from(byte & INTEGER_BIT_FLAG) << 56;
+        if byte & CONTINUATION_BIT == 0 {
+            const NUM_UNSPECIFIED_BITS: u32 = NUM_BITS - 63;
+            let sign_extended_result = (result << NUM_UNSPECIFIED_BITS) >> NUM_UNSPECIFIED_BITS;
+            return Ok(sign_extended_result);
+        }
+
+        let byte = self.read_u8()?;
+        result |= i64::from(byte & INTEGER_BIT_FLAG) << 63;
+
+        // there can only be a maximum number of 10 bytes for a 64-bit integer
+        let has_next_byte = byte & CONTINUATION_BIT > 0;
+        if has_next_byte {
+            // TODO distinguish between both error variants
+            return Err(ValidationError::MalformedVariableLengthInteger);
+        }
+
+        // Verify that the padding and sign bits are either all ones or all
+        // zeros. To do this we count the ones and check if that number is zero
+        // or equal to the number of ones in both bitmasks combined.
+        const PADDING_AND_SIGN_BITMASK: u8 =
+            PADDING_IN_LAST_BYTE_BITMASK | SIGN_IN_LAST_BYTE_BITFLAG;
+        let number_of_ones_in_padding_and_sign_bits =
+            (byte & PADDING_AND_SIGN_BITMASK).count_ones();
+        let padding_bits_match_sign_bit = number_of_ones_in_padding_and_sign_bits
+            == PADDING_AND_SIGN_BITMASK.count_ones()
+            || number_of_ones_in_padding_and_sign_bits == 0;
+        if !padding_bits_match_sign_bit {
+            // TODO distinguish between both error variants
+            return Err(ValidationError::MalformedVariableLengthInteger);
+        }
+
+        Ok(result)
     }
 
     /// Note: If `Err`, the [WasmReader] object is no longer guaranteed to be in a valid state
