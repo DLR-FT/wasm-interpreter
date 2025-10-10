@@ -22,6 +22,7 @@ pub struct Resumable {
     pub(crate) pc: usize,
     pub(crate) stp: usize,
     pub(crate) current_func_addr: usize,
+    pub(crate) maybe_fuel: Option<u32>,
 }
 
 #[derive(Default)]
@@ -49,10 +50,11 @@ pub struct ResumableRef {
 }
 
 impl ResumableRef {
+    /// resumes execution of the resumable. If `None` is supplied to maybe_fuel, the execution continues indefinitely regardless of the remaining fuel.
     pub fn resume<T>(
         mut self,
         runtime_instance: &mut RuntimeInstance<T>,
-        fuel: u32,
+        maybe_fuel: Option<u32>,
     ) -> Result<RunState, RuntimeError> {
         // Resuming requires `self`'s dormitory to still be alive
         let Some(dormitory) = self.dormitory.upgrade() else {
@@ -73,13 +75,13 @@ impl ResumableRef {
             .get_mut(&self.key)
             .expect("the key to always be valid as self was not dropped yet");
 
+        resumable.maybe_fuel = resumable
+            .maybe_fuel
+            .zip(maybe_fuel)
+            .map(|(fuel1, fuel2)| fuel1 + fuel2);
+
         // Resume execution
-        let result = interpreter_loop::run(
-            resumable,
-            &mut runtime_instance.store,
-            EmptyHookSet,
-            Some(fuel),
-        );
+        let result = interpreter_loop::run(resumable, &mut runtime_instance.store, EmptyHookSet);
 
         match result {
             Ok(()) => {
@@ -92,7 +94,10 @@ impl ResumableRef {
 
                 Ok(RunState::Finished(resumable.stack.into_values()))
             }
-            Err(RuntimeError::OutOfFuel) => Ok(RunState::Resumable(self)),
+            Err(RuntimeError::OutOfFuel { required_fuel }) => Ok(RunState::Resumable {
+                resumable_ref: self,
+                required_fuel,
+            }),
             Err(err) => Err(err),
         }
     }
@@ -112,5 +117,8 @@ impl Drop for ResumableRef {
 
 pub enum RunState {
     Finished(Vec<Value>),
-    Resumable(ResumableRef),
+    Resumable {
+        resumable_ref: ResumableRef,
+        required_fuel: u32,
+    },
 }
