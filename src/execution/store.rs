@@ -597,6 +597,19 @@ impl<'b, T> Store<'b, T> {
                     maybe_fuel,
                 };
 
+                // check if there is enough fuel
+                if let Some(fuel) = maybe_fuel {
+                    let required_fuel = self.modules[wasm_func_inst.module_addr].sidetable
+                        [wasm_func_inst.stp]
+                        .delta_fuel;
+                    if required_fuel > fuel {
+                        return Ok(RunState::Resumable {
+                            resumable_ref: self.dormitory.insert(resumable),
+                            required_fuel,
+                        });
+                    }
+                }
+
                 // Run the interpreter
                 let result = interpreter_loop::run(&mut resumable, self, EmptyHookSet);
 

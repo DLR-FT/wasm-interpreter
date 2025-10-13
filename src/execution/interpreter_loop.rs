@@ -23,7 +23,6 @@ use crate::{
     store::DataInst,
     unreachable_validated,
     value::{self, FuncAddr, Ref, F32, F64},
-    value_stack::Stack,
     ElemInst, FuncInst, MemInst, ModuleInst, RefType, RuntimeError, TableInst, TrapError, ValType,
     Value,
 };
@@ -64,6 +63,43 @@ pub(super) fn run<T, H: HookSet>(
 
     use crate::core::reader::types::opcode::*;
     loop {
+        macro_rules! spend_basic_block_cost {
+            ($stp_offset:literal) => {{
+                if let Some(fuel) = &mut resumable.maybe_fuel {
+                    *fuel = fuel
+                        //.checked_sub(current_sidetable[stp - $stp_offset].delta_fuel)
+                        .checked_sub(0)
+                        .ok_or_else(|| {
+                            resumable.current_func_addr = current_func_addr;
+                            resumable.pc = wasm.pc - 1;
+                            resumable.stp = stp;
+                            RuntimeError::OutOfFuel {
+                                required_fuel: current_sidetable[stp - $stp_offset].delta_fuel
+                                    - *fuel,
+                            }
+                        })?;
+                    Result::<(), RuntimeError>::Ok(())
+                } else {
+                    Ok(())
+                }
+            }};
+        }
+
+        macro_rules! do_sidetable_control_transfer {
+            () => {
+                {
+                    stack.remove_in_between(current_sidetable[stp].popcnt, current_sidetable[stp].valcnt);
+
+                    wasm.pc = (wasm.pc as isize + current_sidetable[stp].delta_pc) as usize;
+                    stp = (stp as isize + current_sidetable[stp].delta_stp) as usize;
+                    // current basic block corresponds to the entry ABOVE the current one
+                    // since we are always skipping the first instr of the block except for the very last END
+                    // instr in the function, for which the delta_stp field is adjusted during validation instead
+                    spend_basic_block_cost!(1)
+                }
+            }
+        }
+
         // call the instruction hook
         #[cfg(feature = "hooks")]
         hooks.instruction_hook(store.modules[current_module_idx].wasm_bytecode, wasm.pc);
@@ -95,6 +131,7 @@ pub(super) fn run<T, H: HookSet>(
                 // There might be multiple ENDs in a single function. We want to
                 // exit only when the outermost block (aka function block) ends.
                 if wasm.pc != current_function_end_marker {
+                    spend_basic_block_cost!(0)?;
                     stp += 1;
                     continue;
                 }
@@ -134,14 +171,15 @@ pub(super) fn run<T, H: HookSet>(
                 let test_val: i32 = stack.pop_value().try_into().unwrap_validated();
 
                 if test_val != 0 {
+                    spend_basic_block_cost!(0)?;
                     stp += 1;
                 } else {
-                    do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable)?;
+                    do_sidetable_control_transfer!()?;
                 }
                 trace!("Instruction: IF");
             }
             ELSE => {
-                do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable)?;
+                do_sidetable_control_transfer!()?;
             }
             BR_IF => {
                 wasm.read_var_u32().unwrap_validated();
@@ -149,8 +187,9 @@ pub(super) fn run<T, H: HookSet>(
                 let test_val: i32 = stack.pop_value().try_into().unwrap_validated();
 
                 if test_val != 0 {
-                    do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable)?;
+                    do_sidetable_control_transfer!()?;
                 } else {
+                    spend_basic_block_cost!(0)?;
                     stp += 1;
                 }
                 trace!("Instruction: BR_IF");
@@ -171,12 +210,12 @@ pub(super) fn run<T, H: HookSet>(
                     stp += case_val;
                 }
 
-                do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable)?;
+                do_sidetable_control_transfer!()?;
             }
             BR => {
                 //skip n of BR n
                 wasm.read_var_u32().unwrap_validated();
-                do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable)?;
+                do_sidetable_control_transfer!()?;
             }
             BLOCK => {
                 BlockType::read(wasm).unwrap_validated();
@@ -184,11 +223,12 @@ pub(super) fn run<T, H: HookSet>(
             LOOP => {
                 // dummy sidetable entry at every loop
                 BlockType::read(wasm).unwrap_validated();
+                spend_basic_block_cost!(0)?;
                 stp += 1;
             }
             RETURN => {
                 //same as BR, except no need to skip n of BR n
-                do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable)?;
+                do_sidetable_control_transfer!()?;
             }
             CALL => {
                 let local_func_idx = wasm.read_var_u32().unwrap_validated() as FuncIdx;
@@ -247,7 +287,7 @@ pub(super) fn run<T, H: HookSet>(
                         current_function_end_marker = wasm_func_to_call_inst.code_expr.from()
                             + wasm_func_to_call_inst.code_expr.len();
 
-                        // skip dummy sidetable entry at the beginning of the func
+                        spend_basic_block_cost!(0)?;
                         stp += 1;
                     }
                 }
@@ -339,7 +379,7 @@ pub(super) fn run<T, H: HookSet>(
                         current_function_end_marker = wasm_func_to_call_inst.code_expr.from()
                             + wasm_func_to_call_inst.code_expr.len();
 
-                        // skip dummy sidetable entry at the beginning of the func
+                        spend_basic_block_cost!(0)?;
                         stp += 1;
                     }
                 }
@@ -2583,23 +2623,6 @@ pub(super) fn run<T, H: HookSet>(
             }
         }
     }
-    Ok(())
-}
-
-//helper function for avoiding code duplication at intraprocedural jumps
-fn do_sidetable_control_transfer(
-    wasm: &mut WasmReader,
-    stack: &mut Stack,
-    current_stp: &mut usize,
-    current_sidetable: &Sidetable,
-) -> Result<(), RuntimeError> {
-    let sidetable_entry = &current_sidetable[*current_stp];
-
-    stack.remove_in_between(sidetable_entry.popcnt, sidetable_entry.valcnt);
-
-    *current_stp = (*current_stp as isize + sidetable_entry.delta_stp) as usize;
-    wasm.pc = (wasm.pc as isize + sidetable_entry.delta_pc) as usize;
-
     Ok(())
 }
 

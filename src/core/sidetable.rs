@@ -62,4 +62,7 @@ pub struct SidetableEntry {
     /// Taking a branch unwinds the operand stack down to the height where the targeted structured
     /// control instruction was entered.
     pub popcnt: usize,
+
+    // amount of fuel the basic block corresponding to this sidetable entry spends.
+    pub delta_fuel: u32,
 }
