@@ -33,7 +33,7 @@ use crate::execution::hooks::HookSet;
 use super::store::Store;
 
 /// Interprets wasm native functions. Parameters and return values are passed on the stack.
-pub(super) fn run<T, H: HookSet>(
+pub(super) fn run<T, H: HookSet, const BBFUEL: bool>(
     resumable: &mut Resumable,
     store: &mut Store<T>,
     mut hooks: H,
@@ -65,22 +65,26 @@ pub(super) fn run<T, H: HookSet>(
     loop {
         macro_rules! spend_basic_block_cost {
             ($stp_offset:literal) => {{
-                if let Some(fuel) = &mut resumable.maybe_fuel {
-                    *fuel = fuel
-                        //.checked_sub(current_sidetable[stp - $stp_offset].delta_fuel)
-                        .checked_sub(0)
-                        .ok_or_else(|| {
-                            resumable.current_func_addr = current_func_addr;
-                            resumable.pc = wasm.pc - 1;
-                            resumable.stp = stp;
-                            RuntimeError::OutOfFuel {
-                                required_fuel: current_sidetable[stp - $stp_offset].delta_fuel
-                                    - *fuel,
-                            }
-                        })?;
-                    Result::<(), RuntimeError>::Ok(())
+                if BBFUEL {
+                    if let Some(fuel) = &mut resumable.maybe_fuel {
+                        *fuel = fuel
+                            //.checked_sub(current_sidetable[stp - $stp_offset].delta_fuel)
+                            .checked_sub(0)
+                            .ok_or_else(|| {
+                                resumable.current_func_addr = current_func_addr;
+                                resumable.pc = wasm.pc - 1;
+                                resumable.stp = stp;
+                                RuntimeError::OutOfFuel {
+                                    required_fuel: current_sidetable[stp - $stp_offset].delta_fuel
+                                        - *fuel,
+                                }
+                            })?;
+                        Result::<(), RuntimeError>::Ok(())
+                    } else {
+                        Result::<(), RuntimeError>::Ok(())
+                    }
                 } else {
-                    Ok(())
+                    Result::<(), RuntimeError>::Ok(())
                 }
             }};
         }
@@ -113,14 +117,16 @@ pub(super) fn run<T, H: HookSet>(
         );
 
         // Fuel mechanism: 1 fuel per instruction
-        if let Some(fuel) = &mut resumable.maybe_fuel {
-            *fuel = fuel.checked_sub(1).ok_or_else(|| {
-                resumable.current_func_addr = current_func_addr;
-                resumable.pc = wasm.pc - 1;
-                resumable.stp = stp;
+        if !BBFUEL {
+            if let Some(fuel) = &mut resumable.maybe_fuel {
+                *fuel = fuel.checked_sub(1).ok_or_else(|| {
+                    resumable.current_func_addr = current_func_addr;
+                    resumable.pc = wasm.pc - 1;
+                    resumable.stp = stp;
 
-                RuntimeError::OutOfFuel { required_fuel: 0 }
-            })?;
+                    RuntimeError::OutOfFuel { required_fuel: 0 }
+                })?;
+            }
         }
 
         match first_instr_byte {

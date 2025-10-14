@@ -409,7 +409,7 @@ impl<'b, T> Store<'b, T> {
             // execute
             //   call func_ifx
             let func_addr = self.modules[current_module_idx].func_addrs[func_idx];
-            self.invoke(func_addr, Vec::new(), maybe_fuel)?;
+            self.invoke::<false>(func_addr, Vec::new(), maybe_fuel)?;
         };
 
         Ok(())
@@ -532,7 +532,7 @@ impl<'b, T> Store<'b, T> {
         addr
     }
 
-    pub fn invoke(
+    pub fn invoke<const BBFUEL: bool>(
         &mut self,
         func_addr: usize,
         params: Vec<Value>,
@@ -598,20 +598,23 @@ impl<'b, T> Store<'b, T> {
                 };
 
                 // check if there is enough fuel
-                if let Some(fuel) = maybe_fuel {
-                    let required_fuel = self.modules[wasm_func_inst.module_addr].sidetable
-                        [wasm_func_inst.stp]
-                        .delta_fuel;
-                    if required_fuel > fuel {
-                        return Ok(RunState::Resumable {
-                            resumable_ref: self.dormitory.insert(resumable),
-                            required_fuel,
-                        });
+                if BBFUEL {
+                    if let Some(fuel) = maybe_fuel {
+                        let required_fuel = self.modules[wasm_func_inst.module_addr].sidetable
+                            [wasm_func_inst.stp]
+                            .delta_fuel;
+                        if required_fuel > fuel {
+                            return Ok(RunState::Resumable {
+                                resumable_ref: self.dormitory.insert(resumable),
+                                required_fuel,
+                            });
+                        }
                     }
                 }
 
                 // Run the interpreter
-                let result = interpreter_loop::run(&mut resumable, self, EmptyHookSet);
+                let result =
+                    interpreter_loop::run::<T, _, BBFUEL>(&mut resumable, self, EmptyHookSet);
 
                 match result {
                     Ok(()) => {

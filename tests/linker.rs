@@ -55,7 +55,7 @@ pub fn compile_simple_import() {
     info!(
         "{:#?}",
         store
-            .invoke(func_addr, Vec::new(), None)
+            .invoke::<false>(func_addr, Vec::new(), None)
             .map(|rs| match rs {
                 RunState::Finished(values) => values,
                 _ => panic!("is not metered"),

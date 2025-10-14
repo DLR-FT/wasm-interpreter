@@ -65,7 +65,7 @@ impl ResumableRef {
     /// // a simple module with a single function looping forever
     /// let mut instance = RuntimeInstance::new_named((), "module", &validate(&wasm).unwrap()).unwrap();
     /// let func_ref = instance.get_function_by_name("module", "loops").unwrap();
-    /// let resumable = instance.invoke_resumable(&func_ref, vec![], 0).unwrap();
+    /// let resumable = instance.invoke_resumable::<false>(&func_ref, vec![], 0).unwrap();
     /// match resumable {
     ///     RunState::Resumable { resumable_ref, .. } => {
     ///         // inspect and modify fuel content
@@ -98,8 +98,8 @@ impl ResumableRef {
         Ok(f(&mut resumable.maybe_fuel))
     }
 
-    /// resumes execution of the resumable.
-    pub fn resume<T>(
+    /// resumes execution of the resumable. If `None` is supplied to maybe_fuel, the execution continues indefinitely regardless of the remaining fuel.
+    pub fn resume<T, const BBFUEL: bool>(
         mut self,
         runtime_instance: &mut RuntimeInstance<T>,
     ) -> Result<RunState, RuntimeError> {
@@ -123,7 +123,11 @@ impl ResumableRef {
             .expect("the key to always be valid as self was not dropped yet");
 
         // Resume execution
-        let result = interpreter_loop::run(resumable, &mut runtime_instance.store, EmptyHookSet);
+        let result = interpreter_loop::run::<T, _, BBFUEL>(
+            resumable,
+            &mut runtime_instance.store,
+            EmptyHookSet,
+        );
 
         match result {
             Ok(()) => {

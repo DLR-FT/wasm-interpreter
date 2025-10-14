@@ -137,21 +137,21 @@ where
     ) -> Result<Vec<Value>, RuntimeError> {
         let FunctionRef { func_addr } = *function_ref;
         self.store
-            .invoke(func_addr, params, None)
+            .invoke::<false>(func_addr, params, None)
             .map(|run_state| match run_state {
                 RunState::Finished(values) => values,
                 _ => unreachable!("non metered invoke call"),
             })
     }
 
-    pub fn invoke_resumable(
+    pub fn invoke_resumable<const BBFUEL: bool>(
         &mut self,
         function_ref: &FunctionRef,
         params: Vec<Value>,
         fuel: u32,
     ) -> Result<RunState, RuntimeError> {
         let FunctionRef { func_addr } = *function_ref;
-        self.store.invoke(func_addr, params, Some(fuel))
+        self.store.invoke::<BBFUEL>(func_addr, params, Some(fuel))
     }
 
     /// Adds a host function under module namespace `module_name` with name `name`.

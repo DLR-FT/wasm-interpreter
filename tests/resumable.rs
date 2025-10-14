@@ -17,7 +17,7 @@ fn out_of_fuel() {
         .unwrap();
     assert!(matches!(
         runtime_instance
-            .invoke_resumable(&func_ref, vec![], 40)
+            .invoke_resumable::<false>(&func_ref, vec![], 40)
             .unwrap(),
         RunState::Resumable { .. }
     ));
@@ -69,10 +69,10 @@ fn resumable() {
         .unwrap();
 
     let mut run_state_mult = runtime_instance
-        .invoke_resumable(&mult_global_0, vec![], 0)
+        .invoke_resumable::<false>(&mult_global_0, vec![], 0)
         .unwrap();
     let mut run_state_add = runtime_instance
-        .invoke_resumable(&add_global_1, vec![], 0)
+        .invoke_resumable::<false>(&add_global_1, vec![], 0)
         .unwrap();
 
     let increment = |maybe_fuel: &mut Option<u32>| *maybe_fuel = maybe_fuel.map(|fuel| fuel + 2);
@@ -84,7 +84,9 @@ fn resumable() {
                 resumable_ref
                     .access_fuel_mut(&mut runtime_instance, increment)
                     .unwrap();
-                resumable_ref.resume(&mut runtime_instance).unwrap()
+                resumable_ref
+                    .resume::<_, false>(&mut runtime_instance)
+                    .unwrap()
             }
         };
         info!("Global values are {:?}", &runtime_instance.store.globals);
@@ -94,7 +96,9 @@ fn resumable() {
                 resumable_ref
                     .access_fuel_mut(&mut runtime_instance, increment)
                     .unwrap();
-                resumable_ref.resume(&mut runtime_instance).unwrap()
+                resumable_ref
+                    .resume::<_, false>(&mut runtime_instance)
+                    .unwrap()
             }
         };
         info!("Global values are {:?}", &runtime_instance.store.globals)
