@@ -92,9 +92,8 @@ impl WasmReader<'_> {
     }
 
     pub fn read_f64(&mut self) -> Result<u64, ValidationError> {
-        let bytes = self.strip_bytes::<8>().map_err(|_| ValidationError::Eof)?;
-        let word = u64::from_le_bytes(bytes);
-        Ok(word)
+        let bytes = self.strip_bytes::<8>()?;
+        Ok(u64::from_le_bytes(bytes))
     }
 
     /// Adapted from <https://github.com/bytecodealliance/wasm-tools>
@@ -168,19 +167,8 @@ impl WasmReader<'_> {
     }
 
     pub fn read_f32(&mut self) -> Result<u32, ValidationError> {
-        if self.full_wasm_binary.len() - self.pc < 4 {
-            return Err(ValidationError::Eof);
-        }
-
-        let word = u32::from_le_bytes(
-            self.full_wasm_binary[self.pc..self.pc + 4]
-                .try_into()
-                .unwrap(),
-        );
-
-        self.strip_bytes::<4>()?;
-
-        Ok(word)
+        let bytes = self.strip_bytes::<4>()?;
+        Ok(u32::from_le_bytes(bytes))
     }
 
     pub fn read_var_i64(&mut self) -> Result<i64, ValidationError> {
@@ -223,11 +211,11 @@ impl WasmReader<'_> {
     pub fn read_name(&mut self) -> Result<&str, ValidationError> {
         let len = self.read_var_u32()? as usize;
 
-        if len > self.full_wasm_binary.len() - self.pc {
-            return Err(ValidationError::Eof);
-        }
+        let utf8_str = &self
+            .full_wasm_binary
+            .get(self.pc..(self.pc + len))
+            .ok_or(ValidationError::Eof)?;
 
-        let utf8_str = &self.full_wasm_binary[self.pc..(self.pc + len)]; // Cannot panic because check is done above
         self.pc += len;
 
         core::str::from_utf8(utf8_str).map_err(ValidationError::MalformedUtf8)
@@ -254,7 +242,9 @@ impl WasmReader<'_> {
         F: FnMut(&mut WasmReader) -> Result<T, ValidationError>,
     {
         let len = self.read_var_u32()?;
-        (0..len).map(|_| read_element(self)).collect()
+        core::iter::repeat_with(|| read_element(self))
+            .take(len as usize)
+            .collect()
     }
 }
 
