@@ -895,7 +895,7 @@ pub(super) fn run<T: Config>(
                 stack.push_value::<T>(constant.into())?;
             }
             F32_CONST => {
-                let constant = F32::from_bits(wasm.read_var_f32().unwrap_validated());
+                let constant = F32::from_bits(wasm.read_f32().unwrap_validated());
                 trace!("Instruction: f32.const [] -> [{constant:.7}]");
                 stack.push_value::<T>(constant.into())?;
             }
@@ -1234,7 +1234,7 @@ pub(super) fn run<T: Config>(
                 stack.push_value::<T>(constant.into())?;
             }
             F64_CONST => {
-                let constant = F64::from_bits(wasm.read_var_f64().unwrap_validated());
+                let constant = F64::from_bits(wasm.read_f64().unwrap_validated());
                 trace!("Instruction: f64.const [] -> [{constant}]");
                 stack.push_value::<T>(constant.into())?;
             }
