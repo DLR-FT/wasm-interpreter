@@ -28,15 +28,11 @@ use crate::core::reader::WasmReader;
 use crate::ValidationError;
 
 impl WasmReader<'_> {
-    /// Note: If `Err`, the [WasmReader] object is no longer guaranteed to be in a valid state
+    /// Tries to read one byte and fails if the end of file is reached.
     pub fn read_u8(&mut self) -> Result<u8, ValidationError> {
-        match self.peek_u8() {
-            Err(e) => Err(e),
-            Ok(byte) => {
-                self.pc += 1;
-                Ok(byte)
-            }
-        }
+        let byte = self.peek_u8()?;
+        self.pc += 1;
+        Ok(byte)
     }
 
     const CONTINUATION_BIT: u8 = 1 << 7;
