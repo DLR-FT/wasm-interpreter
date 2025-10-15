@@ -61,12 +61,12 @@ pub(crate) fn run_const<T: Config>(
                 stack.push_value::<T>(constant.into())?;
             }
             F32_CONST => {
-                let constant = value::F32::from_bits(wasm.read_var_f32().unwrap_validated());
+                let constant = value::F32::from_bits(wasm.read_f32().unwrap_validated());
                 trace!("Constanting instruction: f32.const [] -> [{constant}]");
                 stack.push_value::<T>(constant.into())?;
             }
             F64_CONST => {
-                let constant = value::F64::from_bits(wasm.read_var_f64().unwrap_validated());
+                let constant = value::F64::from_bits(wasm.read_f64().unwrap_validated());
                 trace!("Constanting instruction: f64.const [] -> [{constant}]");
                 stack.push_value::<T>(constant.into())?;
             }

@@ -91,7 +91,7 @@ impl WasmReader<'_> {
         }
     }
 
-    pub fn read_var_f64(&mut self) -> Result<u64, ValidationError> {
+    pub fn read_f64(&mut self) -> Result<u64, ValidationError> {
         let bytes = self.strip_bytes::<8>().map_err(|_| ValidationError::Eof)?;
         let word = u64::from_le_bytes(bytes);
         Ok(word)
@@ -167,7 +167,7 @@ impl WasmReader<'_> {
         Ok((result << ashift) >> ashift)
     }
 
-    pub fn read_var_f32(&mut self) -> Result<u32, ValidationError> {
+    pub fn read_f32(&mut self) -> Result<u32, ValidationError> {
         if self.full_wasm_binary.len() - self.pc < 4 {
             return Err(ValidationError::Eof);
         }

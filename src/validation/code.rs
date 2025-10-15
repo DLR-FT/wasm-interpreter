@@ -918,11 +918,11 @@ fn read_instructions(
                 stack.push_valtype(ValType::NumType(NumType::I64));
             }
             F32_CONST => {
-                let _num = wasm.read_var_f32()?;
+                let _num = wasm.read_f32()?;
                 stack.push_valtype(ValType::NumType(NumType::F32));
             }
             F64_CONST => {
-                let _num = wasm.read_var_f64()?;
+                let _num = wasm.read_f64()?;
                 stack.push_valtype(ValType::NumType(NumType::F64));
             }
             I32_EQZ => {
