@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["calculate_mem_address","data_drop","do_sidetable_control_transfer","elem_drop","memory_init","run","table_init"]};
+window.SIDEBAR_ITEMS = {"fn":["calculate_mem_address","data_drop","do_sidetable_control_transfer","elem_drop","from_lanes","memory_init","run","table_init","to_lanes"]};

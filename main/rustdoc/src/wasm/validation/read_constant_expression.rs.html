@@ -161,17 +161,37 @@
 <a href=#161 id=161 data-nosnippet>161</a>
 <a href=#162 id=162 data-nosnippet>162</a>                stack.push_valtype(ValType::RefType(<span class="kw">crate</span>::RefType::FuncRef));
 <a href=#163 id=163 data-nosnippet>163</a>            }
-<a href=#164 id=164 data-nosnippet>164</a>
-<a href=#165 id=165 data-nosnippet>165</a>            <span class="number">0x00</span>..=<span class="number">0x0A
-<a href=#166 id=166 data-nosnippet>166</a>            </span>| <span class="number">0x0C</span>..=<span class="number">0x22
-<a href=#167 id=167 data-nosnippet>167</a>            </span>| <span class="number">0x24</span>..=<span class="number">0x40
-<a href=#168 id=168 data-nosnippet>168</a>            </span>| <span class="number">0x45</span>..=<span class="number">0xBF
-<a href=#169 id=169 data-nosnippet>169</a>            </span>| <span class="number">0xC0</span>..=<span class="number">0xCF
-<a href=#170 id=170 data-nosnippet>170</a>            </span>| <span class="number">0xD1
-<a href=#171 id=171 data-nosnippet>171</a>            </span>| <span class="number">0xD3</span>..=<span class="number">0xFF </span>=&gt; {
-<a href=#172 id=172 data-nosnippet>172</a>                <span class="macro">trace!</span>(<span class="string">"Encountered unknown instruction in validation - constant expression - {first_instr_byte:x?}"</span>);
-<a href=#173 id=173 data-nosnippet>173</a>                <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidInstr(first_instr_byte));
-<a href=#174 id=174 data-nosnippet>174</a>            }
-<a href=#175 id=175 data-nosnippet>175</a>        }
-<a href=#176 id=176 data-nosnippet>176</a>    }
-<a href=#177 id=177 data-nosnippet>177</a>}</code></pre></div></section></main></body></html>
+<a href=#164 id=164 data-nosnippet>164</a>            FD_EXTENSIONS =&gt; {
+<a href=#165 id=165 data-nosnippet>165</a>                <span class="kw">use </span><span class="kw">crate</span>::core::reader::types::opcode::fd_extensions::<span class="kw-2">*</span>;
+<a href=#166 id=166 data-nosnippet>166</a>
+<a href=#167 id=167 data-nosnippet>167</a>                <span class="kw">let </span><span class="prelude-val">Ok</span>(second_instr) = wasm.read_var_u32() <span class="kw">else </span>{
+<a href=#168 id=168 data-nosnippet>168</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::ExprMissingEnd);
+<a href=#169 id=169 data-nosnippet>169</a>                };
+<a href=#170 id=170 data-nosnippet>170</a>                <span class="kw">match </span>second_instr {
+<a href=#171 id=171 data-nosnippet>171</a>                    V128_CONST =&gt; {
+<a href=#172 id=172 data-nosnippet>172</a>                        <span class="kw">for _ in </span><span class="number">0</span>..<span class="number">16 </span>{
+<a href=#173 id=173 data-nosnippet>173</a>                            <span class="kw">let </span>_data = wasm.read_u8()<span class="question-mark">?</span>;
+<a href=#174 id=174 data-nosnippet>174</a>                        }
+<a href=#175 id=175 data-nosnippet>175</a>                        stack.push_valtype(ValType::VecType);
+<a href=#176 id=176 data-nosnippet>176</a>                    }
+<a href=#177 id=177 data-nosnippet>177</a>                    <span class="number">0x00</span>..=<span class="number">0x0B </span>| <span class="number">0x0D</span>.. =&gt; {
+<a href=#178 id=178 data-nosnippet>178</a>                        <span class="macro">trace!</span>(<span class="string">"Encountered unknown multi-byte instruction in validation - constant expression - {first_instr_byte:x?} {second_instr}"</span>);
+<a href=#179 id=179 data-nosnippet>179</a>                        <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidInstr(first_instr_byte));
+<a href=#180 id=180 data-nosnippet>180</a>                    }
+<a href=#181 id=181 data-nosnippet>181</a>                }
+<a href=#182 id=182 data-nosnippet>182</a>            }
+<a href=#183 id=183 data-nosnippet>183</a>
+<a href=#184 id=184 data-nosnippet>184</a>            <span class="number">0x00</span>..=<span class="number">0x0A
+<a href=#185 id=185 data-nosnippet>185</a>            </span>| <span class="number">0x0C</span>..=<span class="number">0x22
+<a href=#186 id=186 data-nosnippet>186</a>            </span>| <span class="number">0x24</span>..=<span class="number">0x40
+<a href=#187 id=187 data-nosnippet>187</a>            </span>| <span class="number">0x45</span>..=<span class="number">0xBF
+<a href=#188 id=188 data-nosnippet>188</a>            </span>| <span class="number">0xC0</span>..=<span class="number">0xCF
+<a href=#189 id=189 data-nosnippet>189</a>            </span>| <span class="number">0xD1
+<a href=#190 id=190 data-nosnippet>190</a>            </span>| <span class="number">0xD3</span>..=<span class="number">0xFC
+<a href=#191 id=191 data-nosnippet>191</a>            </span>| <span class="number">0xFE</span>..=<span class="number">0xFF </span>=&gt; {
+<a href=#192 id=192 data-nosnippet>192</a>                <span class="macro">trace!</span>(<span class="string">"Encountered unknown instruction in validation - constant expression - {first_instr_byte:x?}"</span>);
+<a href=#193 id=193 data-nosnippet>193</a>                <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidInstr(first_instr_byte));
+<a href=#194 id=194 data-nosnippet>194</a>            }
+<a href=#195 id=195 data-nosnippet>195</a>        }
+<a href=#196 id=196 data-nosnippet>196</a>    }
+<a href=#197 id=197 data-nosnippet>197</a>}</code></pre></div></section></main></body></html>
