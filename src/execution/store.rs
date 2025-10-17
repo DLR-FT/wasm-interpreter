@@ -120,7 +120,7 @@ impl<'b, T> Store<'b, T> {
         // therefore I am mimicking the reference interpreter code here, I will allocate functions in the store in this step instead of step 11.
         // https://github.com/WebAssembly/spec/blob/8d6792e3d6709e8d3e90828f9c8468253287f7ed/interpreter/exec/eval.ml#L789
         let mut module_inst = ModuleInst {
-            types: validation_info.types.clone(),
+            types: todo!(),
             func_addrs: extern_vals.iter().funcs().collect(),
             table_addrs: Vec::new(),
             mem_addrs: Vec::new(),

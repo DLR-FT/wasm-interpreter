@@ -51,7 +51,7 @@ impl ElemType {
     /// functions
     pub fn read_from_wasm(
         wasm: &mut WasmReader,
-        functions: &[usize],
+        functions: &[TypeIdx],
         validation_context_refs: &mut BTreeSet<FuncIdx>,
         tables: &[TableType],
         imported_global_types: &[GlobalType],

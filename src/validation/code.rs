@@ -3,7 +3,7 @@ use alloc::vec::Vec;
 use core::iter;
 
 use crate::core::indices::{
-    DataIdx, ElemIdx, FuncIdx, GlobalIdx, LabelIdx, LocalIdx, MemIdx, TableIdx, TypeIdx,
+    CTypes, DataIdx, ElemIdx, FuncIdx, GlobalIdx, LabelIdx, LocalIdx, MemIdx, TableIdx, TypeIdx,
 };
 use crate::core::reader::section_header::{SectionHeader, SectionTy};
 use crate::core::reader::span::Span;
@@ -16,12 +16,15 @@ use crate::core::sidetable::{Sidetable, SidetableEntry};
 use crate::validation_stack::{LabelInfo, ValidationStack};
 use crate::{RefType, ValidationError};
 
+/// # Safety
+/// All [`TypeIdx`] passed indirectly to this function must be created from the same
+/// Wasm bytecode, the given [`CTypes`] object was created from.
 #[allow(clippy::too_many_arguments)]
-pub fn validate_code_section(
+pub unsafe fn validate_code_section(
     wasm: &mut WasmReader,
     section_header: SectionHeader,
-    fn_types: &[FuncType],
-    type_idx_of_fn: &[usize],
+    fn_types: &CTypes,
+    type_idx_of_fn: &[TypeIdx],
     num_imported_funcs: usize,
     globals: &[Global],
     memories: &[MemType],
@@ -39,7 +42,7 @@ pub fn validate_code_section(
         let ty_idx = *type_idx_of_fn
             .get(idx + num_imported_funcs)
             .ok_or(ValidationError::FunctionAndCodeSectionsHaveDifferentLengths)?;
-        let func_ty = fn_types[ty_idx].clone();
+        let func_ty = fn_types.get(ty_idx).clone();
 
         let func_size = wasm.read_var_u32()?;
         let func_block = wasm.make_span(func_size as usize)?;
@@ -185,15 +188,18 @@ fn validate_branch_and_generate_sidetable_entry(
     Ok(())
 }
 
+/// # Safety
+/// All [`TypeIdx`] passed indirectly to this function must be created from the same
+/// Wasm bytecode, the given [`CTypes`] object was created from.
 #[allow(clippy::too_many_arguments)]
-fn read_instructions(
+unsafe fn read_instructions(
     wasm: &mut WasmReader,
     stack: &mut ValidationStack,
     sidetable: &mut Sidetable,
     locals: &[ValType],
     globals: &[Global],
-    fn_types: &[FuncType],
-    type_idx_of_fn: &[usize],
+    fn_types: &CTypes,
+    type_idx_of_fn: &[TypeIdx],
     memories: &[MemType],
     data_count: &Option<u32>,
     tables: &[TableType],

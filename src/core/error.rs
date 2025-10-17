@@ -53,7 +53,7 @@ pub enum ValidationError {
     MalformedElemKindDiscriminator(u8),
 
     /// An index for a type is invalid.
-    InvalidTypeIdx(TypeIdx),
+    InvalidTypeIdx(u32),
     /// An index for a function is invalid.
     InvalidFuncIdx(FuncIdx),
     /// An index for a table is invalid.
