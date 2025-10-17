@@ -11,7 +11,7 @@ use crate::core::reader::types::element::ElemType;
 use crate::core::reader::types::global::Global;
 use crate::core::reader::types::memarg::MemArg;
 use crate::core::reader::types::{BlockType, FuncType, MemType, NumType, TableType, ValType};
-use crate::core::reader::{WasmReadable, WasmReader};
+use crate::core::reader::WasmReader;
 use crate::core::sidetable::{Sidetable, SidetableEntry};
 use crate::validation_stack::{LabelInfo, ValidationStack};
 use crate::{RefType, ValidationError};

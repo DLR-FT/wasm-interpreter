@@ -2,7 +2,7 @@ use alloc::borrow::ToOwned;
 use alloc::string::String;
 
 use crate::core::indices::{FuncIdx, GlobalIdx, MemIdx, TableIdx};
-use crate::core::reader::{WasmReadable, WasmReader};
+use crate::core::reader::WasmReader;
 use crate::{ValidationError, ValidationInfo};
 
 use super::ExternType;
@@ -15,8 +15,8 @@ pub struct Export {
     pub desc: ExportDesc,
 }
 
-impl WasmReadable for Export {
-    fn read(wasm: &mut WasmReader) -> Result<Self, ValidationError> {
+impl Export {
+    pub fn read(wasm: &mut WasmReader) -> Result<Self, ValidationError> {
         let name = wasm.read_name()?.to_owned();
         let desc = ExportDesc::read(wasm)?;
         Ok(Export { name, desc })
@@ -108,8 +108,8 @@ impl ExportDesc {
     }
 }
 
-impl WasmReadable for ExportDesc {
-    fn read(wasm: &mut WasmReader) -> Result<Self, ValidationError> {
+impl ExportDesc {
+    pub fn read(wasm: &mut WasmReader) -> Result<Self, ValidationError> {
         let desc_id = wasm.read_u8()?;
         let desc_idx = wasm.read_var_u32()? as usize;
 

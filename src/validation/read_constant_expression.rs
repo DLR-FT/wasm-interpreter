@@ -3,7 +3,7 @@ use alloc::vec::Vec;
 use crate::core::indices::{FuncIdx, GlobalIdx};
 use crate::core::reader::span::Span;
 use crate::core::reader::types::global::GlobalType;
-use crate::core::reader::{WasmReadable, WasmReader};
+use crate::core::reader::WasmReader;
 use crate::{NumType, RefType, ValType, ValidationError};
 
 use super::validation_stack::ValidationStack;

@@ -3,7 +3,7 @@ use super::RefType;
 use crate::core::indices::{FuncIdx, TableIdx};
 use crate::core::reader::span::Span;
 use crate::core::reader::types::TableType;
-use crate::core::reader::{WasmReadable, WasmReader};
+use crate::core::reader::WasmReader;
 use crate::read_constant_expression::read_constant_expression;
 use crate::validation_stack::ValidationStack;
 use crate::{NumType, ValType, ValidationError};
