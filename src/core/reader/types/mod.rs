@@ -172,13 +172,7 @@ impl WasmReadable for BlockType {
             Ok(BlockType::Returns(val_ty))
         } else {
             // An index to a function type
-            // TODO properly handle invalid i33 values
-            wasm.read_var_i33()
-                .and_then(|idx| {
-                    idx.try_into()
-                        .map_err(|_| ValidationError::MalformedBlockTypeTypeIdx(idx))
-                })
-                .map(BlockType::Type)
+            wasm.read_var_i33_as_u32().map(BlockType::Type)
         }
     }
 }
