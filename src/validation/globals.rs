@@ -4,7 +4,7 @@ use alloc::vec::Vec;
 use crate::core::indices::FuncIdx;
 use crate::core::reader::section_header::{SectionHeader, SectionTy};
 use crate::core::reader::types::global::{Global, GlobalType};
-use crate::core::reader::{WasmReadable, WasmReader};
+use crate::core::reader::WasmReader;
 use crate::read_constant_expression::read_constant_expression;
 use crate::validation_stack::ValidationStack;
 use crate::ValidationError;

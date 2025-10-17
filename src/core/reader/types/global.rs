@@ -1,6 +1,6 @@
 use crate::core::reader::span::Span;
 use crate::core::reader::types::ValType;
-use crate::core::reader::{WasmReadable, WasmReader};
+use crate::core::reader::WasmReader;
 use crate::ValidationError;
 
 #[derive(Debug, Copy, Clone)]
@@ -16,8 +16,8 @@ pub struct GlobalType {
     pub is_mut: bool,
 }
 
-impl WasmReadable for GlobalType {
-    fn read(wasm: &mut WasmReader) -> Result<Self, ValidationError> {
+impl GlobalType {
+    pub fn read(wasm: &mut WasmReader) -> Result<Self, ValidationError> {
         let ty = ValType::read(wasm)?;
         let is_mut = match wasm.read_u8()? {
             0x00 => false,

@@ -7,7 +7,7 @@ use core::fmt::{Debug, Formatter};
 use global::GlobalType;
 
 use crate::core::indices::TypeIdx;
-use crate::core::reader::{WasmReadable, WasmReader};
+use crate::core::reader::WasmReader;
 use crate::execution::assert_validated::UnwrapValidatedExt;
 use crate::ValidationError;
 
@@ -29,8 +29,8 @@ pub enum NumType {
     F64,
 }
 
-impl WasmReadable for NumType {
-    fn read(wasm: &mut WasmReader) -> Result<Self, ValidationError> {
+impl NumType {
+    pub fn read(wasm: &mut WasmReader) -> Result<Self, ValidationError> {
         use NumType::*;
 
         let ty = match wasm.peek_u8()? {
@@ -49,7 +49,7 @@ impl WasmReadable for NumType {
 /// <https://webassembly.github.io/spec/core/binary/types.html#vector-types>
 struct VecType;
 
-impl WasmReadable for VecType {
+impl VecType {
     fn read(wasm: &mut WasmReader) -> Result<Self, ValidationError> {
         match wasm.peek_u8()? {
             0x7b => {
@@ -68,8 +68,8 @@ pub enum RefType {
     ExternRef,
 }
 
-impl WasmReadable for RefType {
-    fn read(wasm: &mut WasmReader) -> Result<RefType, ValidationError> {
+impl RefType {
+    pub fn read(wasm: &mut WasmReader) -> Result<RefType, ValidationError> {
         let ty = match wasm.peek_u8()? {
             0x70 => RefType::FuncRef,
             0x6F => RefType::ExternRef,
@@ -102,8 +102,8 @@ impl ValType {
     }
 }
 
-impl WasmReadable for ValType {
-    fn read(wasm: &mut WasmReader) -> Result<Self, ValidationError> {
+impl ValType {
+    pub fn read(wasm: &mut WasmReader) -> Result<Self, ValidationError> {
         if let Ok(numtype) = NumType::read(wasm).map(ValType::NumType) {
             return Ok(numtype);
         };
@@ -124,8 +124,8 @@ pub struct ResultType {
     pub valtypes: Vec<ValType>,
 }
 
-impl WasmReadable for ResultType {
-    fn read(wasm: &mut WasmReader) -> Result<Self, ValidationError> {
+impl ResultType {
+    pub fn read(wasm: &mut WasmReader) -> Result<Self, ValidationError> {
         let valtypes = wasm.read_vec(ValType::read)?;
 
         Ok(ResultType { valtypes })
@@ -139,8 +139,8 @@ pub struct FuncType {
     pub returns: ResultType,
 }
 
-impl WasmReadable for FuncType {
-    fn read(wasm: &mut WasmReader) -> Result<FuncType, ValidationError> {
+impl FuncType {
+    pub fn read(wasm: &mut WasmReader) -> Result<FuncType, ValidationError> {
         match wasm.read_u8()? {
             0x60 => {}
             other => return Err(ValidationError::MalformedFuncTypeDiscriminator(other)),
@@ -161,8 +161,8 @@ pub enum BlockType {
     Type(u32),
 }
 
-impl WasmReadable for BlockType {
-    fn read(wasm: &mut WasmReader) -> Result<Self, ValidationError> {
+impl BlockType {
+    pub fn read(wasm: &mut WasmReader) -> Result<Self, ValidationError> {
         if wasm.peek_u8()? as i8 == 0x40 {
             // Empty block type
             let _ = wasm.read_u8().unwrap_validated();
@@ -259,8 +259,8 @@ impl Debug for Limits {
     }
 }
 
-impl WasmReadable for Limits {
-    fn read(wasm: &mut WasmReader) -> Result<Self, ValidationError> {
+impl Limits {
+    pub fn read(wasm: &mut WasmReader) -> Result<Self, ValidationError> {
         let limits = match wasm.read_u8()? {
             0x00 => {
                 let min = wasm.read_var_u32()?;
@@ -297,8 +297,8 @@ pub struct TableType {
 }
 
 // https://webassembly.github.io/spec/core/syntax/types.html#limits
-impl WasmReadable for TableType {
-    fn read(wasm: &mut WasmReader) -> Result<Self, ValidationError> {
+impl TableType {
+    pub fn read(wasm: &mut WasmReader) -> Result<Self, ValidationError> {
         let et = RefType::read(wasm)?;
         let mut lim = Limits::read(wasm)?;
         if lim.max.is_none() {
@@ -314,8 +314,8 @@ pub struct MemType {
     pub limits: Limits,
 }
 
-impl WasmReadable for MemType {
-    fn read(wasm: &mut WasmReader) -> Result<Self, ValidationError> {
+impl MemType {
+    pub fn read(wasm: &mut WasmReader) -> Result<Self, ValidationError> {
         let mut limit = Limits::read(wasm)?;
         // Memory can only grow to 65536 pages of 64kb size (4GiB)
         if limit.min > (1 << 16) {

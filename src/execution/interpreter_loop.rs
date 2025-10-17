@@ -22,7 +22,7 @@ use crate::{
         indices::{DataIdx, FuncIdx, GlobalIdx, LabelIdx, LocalIdx, MemIdx, TableIdx, TypeIdx},
         reader::{
             types::{memarg::MemArg, BlockType},
-            WasmReadable, WasmReader,
+            WasmReader,
         },
         sidetable::Sidetable,
     },

@@ -2,7 +2,7 @@ use alloc::borrow::ToOwned;
 use alloc::string::String;
 
 use crate::core::indices::TypeIdx;
-use crate::core::reader::{WasmReadable, WasmReader};
+use crate::core::reader::WasmReader;
 use crate::{ValidationError, ValidationInfo};
 
 use super::global::GlobalType;
@@ -18,8 +18,8 @@ pub struct Import {
     pub desc: ImportDesc,
 }
 
-impl WasmReadable for Import {
-    fn read(wasm: &mut WasmReader) -> Result<Self, ValidationError> {
+impl Import {
+    pub fn read(wasm: &mut WasmReader) -> Result<Self, ValidationError> {
         let module_name = wasm.read_name()?.to_owned();
         let name = wasm.read_name()?.to_owned();
         let desc = ImportDesc::read(wasm)?;
@@ -40,8 +40,8 @@ pub enum ImportDesc {
     Global(GlobalType),
 }
 
-impl WasmReadable for ImportDesc {
-    fn read(wasm: &mut WasmReader) -> Result<Self, ValidationError> {
+impl ImportDesc {
+    pub fn read(wasm: &mut WasmReader) -> Result<Self, ValidationError> {
         let desc = match wasm.read_u8()? {
             0x00 => Self::Func(wasm.read_var_u32()? as TypeIdx),
             // https://webassembly.github.io/spec/core/binary/types.html#table-types
