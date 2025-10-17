@@ -1,4 +1,4 @@
-use crate::resumable::RunState;
+use crate::resumable::{ResumableRef, RunState};
 use alloc::borrow::ToOwned;
 use alloc::vec::Vec;
 
@@ -144,14 +144,49 @@ where
             })
     }
 
-    pub fn invoke_resumable(
-        &mut self,
+    /// Creates a new resumable, which when resumed for the first time invokes the function `function_ref` is associated
+    /// to, with the arguments `params`. The newly created resumable initially stores `fuel` units of fuel. Returns a
+    /// `[ResumableRef]` associated to the newly created resumable on success.
+    pub fn create_resumable(
+        &self,
         function_ref: &FunctionRef,
         params: Vec<Value>,
         fuel: u32,
-    ) -> Result<RunState, RuntimeError> {
+    ) -> Result<ResumableRef, RuntimeError> {
         let FunctionRef { func_addr } = *function_ref;
-        self.store.invoke(func_addr, params, Some(fuel))
+        self.store.create_resumable(func_addr, params, Some(fuel))
+    }
+
+    /// resumes the resumable associated to `resumable_ref`. Returns a `[RunState]` associated to this resumable  if the
+    /// resumable ran out of fuel or completely executed.
+    pub fn resume(&mut self, resumable_ref: ResumableRef) -> Result<RunState, RuntimeError> {
+        self.store.resume(resumable_ref)
+    }
+
+    /// calls its argument `f` with a mutable reference of the fuel of the respective [`ResumableRef`].
+    ///
+    /// Fuel is stored as an [`Option<u32>`], where `None` means that fuel is disabled and `Some(x)` means that `x` units of fuel is left.
+    /// A ubiquitious use of this method would be using `f` to read or mutate the current fuel amount of the respective [`ResumableRef`].
+    /// # Example
+    /// ```
+    /// use wasm::{resumable::RunState, validate, RuntimeInstance};
+    /// let wasm = [ 0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00,
+    ///             0x01, 0x04, 0x01, 0x60, 0x00, 0x00, 0x03, 0x02,
+    ///             0x01, 0x00, 0x07, 0x09, 0x01, 0x05, 0x6c, 0x6f,
+    ///             0x6f, 0x70, 0x73, 0x00, 0x00, 0x0a, 0x09, 0x01,
+    ///             0x07, 0x00, 0x03, 0x40, 0x0c, 0x00, 0x0b, 0x0b ];
+    /// // a simple module with a single function looping forever
+    /// let mut instance = RuntimeInstance::new_named((), "module", &validate(&wasm).unwrap()).unwrap();
+    /// let func_ref = instance.get_function_by_name("module", "loops").unwrap();
+    /// let mut resumable_ref = instance.create_resumable(&func_ref, vec![], 0).unwrap();
+    /// instance.access_fuel_mut(&mut resumable_ref, |x| { assert_eq!(*x, Some(0)); *x = None; }).unwrap();
+    /// ```
+    pub fn access_fuel_mut<R>(
+        &mut self,
+        resumable_ref: &mut ResumableRef,
+        f: impl FnOnce(&mut Option<u32>) -> R,
+    ) -> Result<R, RuntimeError> {
+        self.store.access_fuel_mut(resumable_ref, f)
     }
 
     /// Adds a host function under module namespace `module_name` with name `name`.

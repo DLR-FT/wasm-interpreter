@@ -1,3 +1,5 @@
+use core::mem;
+
 use crate::core::indices::TypeIdx;
 use crate::core::reader::span::Span;
 use crate::core::reader::types::data::{DataModeActive, DataSegment};
@@ -14,12 +16,15 @@ use crate::execution::interpreter_loop::{self, memory_init, table_init};
 use crate::execution::value::{Ref, Value};
 use crate::execution::{run_const_span, Stack};
 use crate::registry::Registry;
-use crate::resumable::{Dormitory, Resumable, RunState};
+use crate::resumable::{
+    Dormitory, FreshResumableRef, InvokedResumableRef, Resumable, ResumableRef, RunState,
+};
 use crate::value::FuncAddr;
 use crate::{Limits, RefType, RuntimeError, TrapError, ValidationInfo};
 use alloc::borrow::ToOwned;
 use alloc::collections::btree_map::BTreeMap;
 use alloc::string::String;
+use alloc::sync::Arc;
 use alloc::vec;
 use alloc::vec::Vec;
 
@@ -51,7 +56,7 @@ pub struct Store<'b, T> {
     pub user_data: T,
 
     // data structure holding all resumable objects that belong to this store
-    pub dormitory: Dormitory,
+    pub(crate) dormitory: Dormitory,
 }
 
 impl<'b, T> Store<'b, T> {
@@ -532,12 +537,12 @@ impl<'b, T> Store<'b, T> {
         addr
     }
 
-    pub fn invoke(
-        &mut self,
+    pub fn create_resumable(
+        &self,
         func_addr: usize,
         params: Vec<Value>,
         maybe_fuel: Option<u32>,
-    ) -> Result<RunState, RuntimeError> {
+    ) -> Result<ResumableRef, RuntimeError> {
         let func_inst = self
             .functions
             .get(func_addr)
@@ -557,64 +562,168 @@ impl<'b, T> Store<'b, T> {
             panic!("Invalid parameters for function");
         }
 
-        match &func_inst {
-            FuncInst::HostFunc(host_func_inst) => {
-                let returns = (host_func_inst.hostcode)(&mut self.user_data, params);
-                debug!("Successfully invoked function");
+        Ok(ResumableRef::Fresh(FreshResumableRef {
+            func_addr,
+            params,
+            maybe_fuel,
+        }))
+    }
 
-                // Verify that the return parameters match the host function parameters
-                // since we have no validation guarantees for host functions
+    pub fn resume(&mut self, resumable_ref: ResumableRef) -> Result<RunState, RuntimeError> {
+        match resumable_ref {
+            ResumableRef::Fresh(FreshResumableRef {
+                func_addr,
+                params,
+                maybe_fuel,
+            }) => {
+                let func_inst = self
+                    .functions
+                    .get(func_addr)
+                    .expect("func addrs to always be valid if the correct store is used");
 
-                let return_types = returns.iter().map(|v| v.to_ty()).collect::<Vec<_>>();
-                if func_ty.returns.valtypes != return_types {
-                    trace!(
-                        "Func param types len: {}; Given args len: {}",
-                        func_ty.params.valtypes.len(),
-                        param_types.len()
-                    );
-                    return Err(RuntimeError::HostFunctionSignatureMismatch);
+                match func_inst {
+                    FuncInst::HostFunc(host_func_inst) => {
+                        let returns = (host_func_inst.hostcode)(&mut self.user_data, params);
+                        debug!("Successfully invoked function");
+
+                        // Verify that the return parameters match the host function parameters
+                        // since we have no validation guarantees for host functions
+
+                        let return_types = returns.iter().map(|v| v.to_ty()).collect::<Vec<_>>();
+                        if host_func_inst.function_type.returns.valtypes != return_types {
+                            trace!(
+                                "Func return types len: {}; returned args len: {}",
+                                host_func_inst.function_type.returns.valtypes.len(),
+                                return_types.len()
+                            );
+                            return Err(RuntimeError::HostFunctionSignatureMismatch);
+                        }
+
+                        Ok(RunState::Finished(returns))
+                    }
+                    FuncInst::WasmFunc(wasm_func_inst) => {
+                        // Prepare a new stack with the locals for the entry function
+                        let mut stack = Stack::new_with_values(params);
+
+                        stack.push_call_frame(
+                            usize::MAX,
+                            &wasm_func_inst.function_type,
+                            &wasm_func_inst.locals,
+                            usize::MAX,
+                            usize::MAX,
+                        )?;
+
+                        let mut resumable = Resumable {
+                            current_func_addr: func_addr,
+                            stack,
+                            pc: wasm_func_inst.code_expr.from,
+                            stp: wasm_func_inst.stp,
+                            maybe_fuel,
+                        };
+
+                        // Run the interpreter
+                        let result = interpreter_loop::run(&mut resumable, self, EmptyHookSet)?;
+
+                        match result {
+                            None => {
+                                debug!("Successfully invoked function");
+                                Ok(RunState::Finished(resumable.stack.into_values()))
+                            }
+                            Some(required_fuel) => {
+                                debug!("Successfully invoked function, but ran out of fuel");
+                                Ok(RunState::Resumable {
+                                    resumable_ref: ResumableRef::Invoked(
+                                        self.dormitory.insert(resumable),
+                                    ),
+                                    required_fuel,
+                                })
+                            }
+                        }
+                    }
                 }
-
-                Ok(RunState::Finished(returns))
             }
-            FuncInst::WasmFunc(wasm_func_inst) => {
-                // Prepare a new stack with the locals for the entry function
-                let mut stack = Stack::new_with_values(params);
-
-                stack.push_call_frame(
-                    usize::MAX,
-                    &func_ty,
-                    &wasm_func_inst.locals,
-                    usize::MAX,
-                    usize::MAX,
-                )?;
-
-                let mut resumable = Resumable {
-                    current_func_addr: func_addr,
-                    stack,
-                    pc: wasm_func_inst.code_expr.from,
-                    stp: wasm_func_inst.stp,
-                    maybe_fuel,
+            ResumableRef::Invoked(InvokedResumableRef {
+                ref dormitory,
+                ref key,
+            }) => {
+                // Resuming requires `self`'s dormitory to still be alive
+                let Some(dormitory) = dormitory.upgrade() else {
+                    return Err(RuntimeError::ResumableNotFound);
                 };
 
-                // Run the interpreter
-                let result = interpreter_loop::run(&mut resumable, self, EmptyHookSet)?;
+                // Check the given `RuntimeInstance` is the same one used to create `self`
+                if !Arc::ptr_eq(&dormitory, &self.dormitory.0) {
+                    return Err(RuntimeError::ResumableNotFound);
+                }
+
+                // Obtain a write lock to the `Dormitory`
+                let mut dormitory = dormitory.write();
+
+                // TODO We might want to remove the `Resumable` here already and later reinsert it.
+                // This would prevent holding the lock across the interpreter loop.
+                let resumable = dormitory
+                    .get_mut(key)
+                    .expect("the key to always be valid as self was not dropped yet");
+
+                // Resume execution
+                let result = interpreter_loop::run(resumable, self, EmptyHookSet)?;
 
                 match result {
                     None => {
-                        debug!("Successfully invoked function");
+                        let resumable = dormitory.remove(key)
+                            .expect("that the resumable could not have been removed already, because then this self could not exist");
+
+                        // Take the `Weak` pointing to the dormitory out of `self` and replace it with a default `Weak`.
+                        // This causes the `Drop` impl of `self` to directly quit preventing it from unnecessarily locking the dormitory.
+                        let _dormitory = mem::take(&mut self.dormitory);
+
                         Ok(RunState::Finished(resumable.stack.into_values()))
                     }
-                    Some(required_fuel) => {
-                        debug!("Successfully invoked function, but ran out of fuel");
-                        Ok(RunState::Resumable {
-                            resumable_ref: self.dormitory.insert(resumable),
-                            required_fuel,
-                        })
-                    }
+                    Some(required_fuel) => Ok(RunState::Resumable {
+                        resumable_ref,
+                        required_fuel,
+                    }),
                 }
             }
         }
+    }
+
+    pub fn access_fuel_mut<R>(
+        &mut self,
+        resumable_ref: &mut ResumableRef,
+        f: impl FnOnce(&mut Option<u32>) -> R,
+    ) -> Result<R, RuntimeError> {
+        match resumable_ref {
+            ResumableRef::Fresh(FreshResumableRef { maybe_fuel, .. }) => Ok(f(maybe_fuel)),
+            ResumableRef::Invoked(resumable_ref) => {
+                // Resuming requires `self`'s dormitory to still be alive
+                let Some(dormitory) = resumable_ref.dormitory.upgrade() else {
+                    return Err(RuntimeError::ResumableNotFound);
+                };
+
+                // Check the given `RuntimeInstance` is the same one used to create `self`
+                if !Arc::ptr_eq(&dormitory, &self.dormitory.0) {
+                    return Err(RuntimeError::ResumableNotFound);
+                }
+
+                let mut dormitory = dormitory.write();
+
+                let resumable = dormitory
+                    .get_mut(&resumable_ref.key)
+                    .expect("the key to always be valid as self was not dropped yet");
+
+                Ok(f(&mut resumable.maybe_fuel))
+            }
+        }
+    }
+
+    pub fn invoke(
+        &mut self,
+        func_addr: usize,
+        params: Vec<Value>,
+        maybe_fuel: Option<u32>,
+    ) -> Result<RunState, RuntimeError> {
+        self.resume(self.create_resumable(func_addr, params, maybe_fuel)?)
     }
 }
 
