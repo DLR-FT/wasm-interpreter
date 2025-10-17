@@ -15,10 +15,11 @@ fn out_of_fuel() {
     let func_ref = runtime_instance
         .get_function_by_name("module", "loop_forever")
         .unwrap();
+    let resumable_ref = runtime_instance
+        .create_resumable(&func_ref, Vec::new(), 40)
+        .unwrap();
     assert!(matches!(
-        runtime_instance
-            .invoke_resumable(&func_ref, vec![], 40)
-            .unwrap(),
+        runtime_instance.resume(resumable_ref).unwrap(),
         RunState::Resumable { .. }
     ));
 }
@@ -68,33 +69,40 @@ fn resumable() {
         .get_function_by_name("module", "add_global_1")
         .unwrap();
 
-    let mut run_state_mult = runtime_instance
-        .invoke_resumable(&mult_global_0, vec![], 0)
+    let resumable_ref_mult = runtime_instance
+        .create_resumable(&mult_global_0, vec![], 0)
         .unwrap();
-    let mut run_state_add = runtime_instance
-        .invoke_resumable(&add_global_1, vec![], 0)
+    let resumable_ref_add = runtime_instance
+        .create_resumable(&add_global_1, vec![], 0)
         .unwrap();
+
+    let mut run_state_mult = runtime_instance.resume(resumable_ref_mult).unwrap();
+    let mut run_state_add = runtime_instance.resume(resumable_ref_add).unwrap();
 
     let increment = |maybe_fuel: &mut Option<u32>| *maybe_fuel = maybe_fuel.map(|fuel| fuel + 2);
 
     for _ in 0..20 {
         run_state_mult = match run_state_mult {
             RunState::Finished(_) => panic!("should not terminate"),
-            RunState::Resumable { resumable_ref, .. } => {
-                resumable_ref
-                    .access_fuel_mut(&mut runtime_instance, increment)
+            RunState::Resumable {
+                mut resumable_ref, ..
+            } => {
+                runtime_instance
+                    .access_fuel_mut(&mut resumable_ref, increment)
                     .unwrap();
-                resumable_ref.resume(&mut runtime_instance).unwrap()
+                runtime_instance.resume(resumable_ref).unwrap()
             }
         };
         info!("Global values are {:?}", &runtime_instance.store.globals);
         run_state_add = match run_state_add {
             RunState::Finished(_) => panic!("should not terminate"),
-            RunState::Resumable { resumable_ref, .. } => {
-                resumable_ref
-                    .access_fuel_mut(&mut runtime_instance, increment)
+            RunState::Resumable {
+                mut resumable_ref, ..
+            } => {
+                runtime_instance
+                    .access_fuel_mut(&mut resumable_ref, increment)
                     .unwrap();
-                resumable_ref.resume(&mut runtime_instance).unwrap()
+                runtime_instance.resume(resumable_ref).unwrap()
             }
         };
         info!("Global values are {:?}", &runtime_instance.store.globals)
