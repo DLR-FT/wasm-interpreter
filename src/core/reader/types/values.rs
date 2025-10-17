@@ -233,7 +233,7 @@ impl WasmReader<'_> {
         Ok(result)
     }
 
-    pub fn read_var_i33(&mut self) -> Result<i64, ValidationError> {
+    pub fn read_var_i33_as_u32(&mut self) -> Result<u32, ValidationError> {
         /// Because up to 5 bytes (each storing 7 bits) may be used to store 32 bits,
         /// some bits in the last byte will be left unused. This is a bitmask for
         /// exactly these bits in the last byte.
@@ -253,7 +253,7 @@ impl WasmReader<'_> {
             /// before returning the result, we need to sign extend the unspecified bits
             const NUM_UNSPECIFIED_BITS: u32 = NUM_BITS - 7;
             let sign_extended_result = (result << NUM_UNSPECIFIED_BITS) >> NUM_UNSPECIFIED_BITS;
-            return Ok(sign_extended_result);
+            return u32::try_from(sign_extended_result).map_err(|_| ValidationError::I33IsNegative);
         }
 
         let byte = self.read_u8()?;
@@ -261,7 +261,7 @@ impl WasmReader<'_> {
         if byte & CONTINUATION_BIT == 0 {
             const NUM_UNSPECIFIED_BITS: u32 = NUM_BITS - 14;
             let sign_extended_result = (result << NUM_UNSPECIFIED_BITS) >> NUM_UNSPECIFIED_BITS;
-            return Ok(sign_extended_result);
+            return u32::try_from(sign_extended_result).map_err(|_| ValidationError::I33IsNegative);
         }
 
         let byte = self.read_u8()?;
@@ -269,7 +269,7 @@ impl WasmReader<'_> {
         if byte & CONTINUATION_BIT == 0 {
             const NUM_UNSPECIFIED_BITS: u32 = NUM_BITS - 21;
             let sign_extended_result = (result << NUM_UNSPECIFIED_BITS) >> NUM_UNSPECIFIED_BITS;
-            return Ok(sign_extended_result);
+            return u32::try_from(sign_extended_result).map_err(|_| ValidationError::I33IsNegative);
         }
 
         let byte = self.read_u8()?;
@@ -277,7 +277,7 @@ impl WasmReader<'_> {
         if byte & CONTINUATION_BIT == 0 {
             const NUM_UNSPECIFIED_BITS: u32 = NUM_BITS - 28;
             let sign_extended_result = (result << NUM_UNSPECIFIED_BITS) >> NUM_UNSPECIFIED_BITS;
-            return Ok(sign_extended_result);
+            return u32::try_from(sign_extended_result).map_err(|_| ValidationError::I33IsNegative);
         }
 
         let byte = self.read_u8()?;
@@ -305,7 +305,7 @@ impl WasmReader<'_> {
             return Err(ValidationError::MalformedVariableLengthInteger);
         }
 
-        Ok(result)
+        u32::try_from(result).map_err(|_| ValidationError::I33IsNegative)
     }
 
     pub fn read_f32(&mut self) -> Result<u32, ValidationError> {
