@@ -10,7 +10,7 @@ use crate::core::reader::types::export::Export;
 use crate::core::reader::types::global::{Global, GlobalType};
 use crate::core::reader::types::import::{Import, ImportDesc};
 use crate::core::reader::types::{FuncType, MemType, ResultType, TableType};
-use crate::core::reader::{WasmReadable, WasmReader};
+use crate::core::reader::WasmReader;
 use crate::core::sidetable::Sidetable;
 use crate::{ExportDesc, ValidationError};
 
