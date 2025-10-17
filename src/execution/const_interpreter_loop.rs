@@ -4,7 +4,7 @@ use crate::{
     config::Config,
     core::{
         indices::GlobalIdx,
-        reader::{span::Span, WasmReadable, WasmReader},
+        reader::{span::Span, WasmReader},
     },
     unreachable_validated,
     value::{self, Ref},

@@ -167,15 +167,6 @@ impl<'a> WasmReader<'a> {
     }
 }
 
-pub trait WasmReadable: Sized {
-    /// Reads a new [`Self`] from given [`WasmReader`].
-    ///
-    /// Note that if this function returns `Err(_)`, the [`WasmReader`] may still have been advanced,
-    /// which may lead to unexpected behaviour.
-    /// To avoid this consider using the [`WasmReader::handle_transaction`] method to wrap this function call.
-    fn read(wasm: &mut WasmReader) -> Result<Self, ValidationError>;
-}
-
 pub mod span {
     use core::ops::Index;
 
