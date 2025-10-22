@@ -57,7 +57,7 @@
 <a href=#57 id=57 data-nosnippet>57</a>                <span class="kw">while </span>byte &amp; <span class="self">Self</span>::CONTINUATION_BIT != <span class="number">0 </span>{
 <a href=#58 id=58 data-nosnippet>58</a>                    byte = <span class="self">self</span>.read_u8()<span class="question-mark">?</span>;
 <a href=#59 id=59 data-nosnippet>59</a>                }
-<a href=#60 id=60 data-nosnippet>60</a>                <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::Overflow);
+<a href=#60 id=60 data-nosnippet>60</a>                <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::MalformedVariableLengthInteger);
 <a href=#61 id=61 data-nosnippet>61</a>            }
 <a href=#62 id=62 data-nosnippet>62</a>
 <a href=#63 id=63 data-nosnippet>63</a>            <span class="kw">let </span>low_bits = (byte &amp; !<span class="self">Self</span>::CONTINUATION_BIT) <span class="kw">as </span>u64;
@@ -84,7 +84,7 @@
 <a href=#84 id=84 data-nosnippet>84</a>            // shift &gt;= 28 checks we're at the 5th bit or larger
 <a href=#85 id=85 data-nosnippet>85</a>            // byte &gt;&gt; 32-28 checks whether (this byte lost bits when shifted) or (the continuation bit is set)
 <a href=#86 id=86 data-nosnippet>86</a>            </span><span class="kw">if </span>shift &gt;= <span class="number">28 </span>&amp;&amp; byte &gt;&gt; (<span class="number">32 </span>- shift) != <span class="number">0 </span>{
-<a href=#87 id=87 data-nosnippet>87</a>                <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::Overflow);
+<a href=#87 id=87 data-nosnippet>87</a>                <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::MalformedVariableLengthInteger);
 <a href=#88 id=88 data-nosnippet>88</a>            }
 <a href=#89 id=89 data-nosnippet>89</a>
 <a href=#90 id=90 data-nosnippet>90</a>            <span class="kw">if </span>byte &amp; <span class="self">Self</span>::CONTINUATION_BIT == <span class="number">0 </span>{
@@ -119,7 +119,7 @@
 <a href=#119 id=119 data-nosnippet>119</a>                // therefore ashifted_unused_bits should be -1 or 0
 <a href=#120 id=120 data-nosnippet>120</a>                </span><span class="kw">if </span>there_are_more_bytes || (ashifted_unused_bits != <span class="number">0 </span>&amp;&amp; ashifted_unused_bits != -<span class="number">1</span>)
 <a href=#121 id=121 data-nosnippet>121</a>                {
-<a href=#122 id=122 data-nosnippet>122</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::Overflow);
+<a href=#122 id=122 data-nosnippet>122</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::MalformedVariableLengthInteger);
 <a href=#123 id=123 data-nosnippet>123</a>                } <span class="kw">else </span>{
 <a href=#124 id=124 data-nosnippet>124</a>                    <span class="comment">// no need to ashift unfilled bits, all 32 bits are filled
 <a href=#125 id=125 data-nosnippet>125</a>                    </span><span class="kw">return </span><span class="prelude-val">Ok</span>(result);
@@ -155,7 +155,7 @@
 <a href=#155 id=155 data-nosnippet>155</a>                // therefore ashifted_unused_bits should be -1 or 0
 <a href=#156 id=156 data-nosnippet>156</a>                </span><span class="kw">if </span>there_are_more_bytes || (ashifted_unused_bits != <span class="number">0 </span>&amp;&amp; ashifted_unused_bits != -<span class="number">1</span>)
 <a href=#157 id=157 data-nosnippet>157</a>                {
-<a href=#158 id=158 data-nosnippet>158</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::Overflow);
+<a href=#158 id=158 data-nosnippet>158</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::MalformedVariableLengthInteger);
 <a href=#159 id=159 data-nosnippet>159</a>                }
 <a href=#160 id=160 data-nosnippet>160</a>            }
 <a href=#161 id=161 data-nosnippet>161</a>
@@ -204,7 +204,7 @@
 <a href=#204 id=204 data-nosnippet>204</a>                // therefore ashifted_unused_bits should be -1 or 0
 <a href=#205 id=205 data-nosnippet>205</a>                </span><span class="kw">if </span>there_are_more_bytes || (ashifted_unused_bits != <span class="number">0 </span>&amp;&amp; ashifted_unused_bits != -<span class="number">1</span>)
 <a href=#206 id=206 data-nosnippet>206</a>                {
-<a href=#207 id=207 data-nosnippet>207</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::Overflow);
+<a href=#207 id=207 data-nosnippet>207</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::MalformedVariableLengthInteger);
 <a href=#208 id=208 data-nosnippet>208</a>                } <span class="kw">else </span>{
 <a href=#209 id=209 data-nosnippet>209</a>                    <span class="comment">// no need to ashift unfilled bits, all 64 bits are filled
 <a href=#210 id=210 data-nosnippet>210</a>                    </span><span class="kw">return </span><span class="prelude-val">Ok</span>(result);
@@ -234,7 +234,7 @@
 <a href=#234 id=234 data-nosnippet>234</a>        <span class="kw">let </span>utf8_str = <span class="kw-2">&amp;</span><span class="self">self</span>.full_wasm_binary[<span class="self">self</span>.pc..(<span class="self">self</span>.pc + len)]; <span class="comment">// Cannot panic because check is done above
 <a href=#235 id=235 data-nosnippet>235</a>        </span><span class="self">self</span>.pc += len;
 <a href=#236 id=236 data-nosnippet>236</a>
-<a href=#237 id=237 data-nosnippet>237</a>        core::str::from_utf8(utf8_str).map_err(ValidationError::MalformedUtf8String)
+<a href=#237 id=237 data-nosnippet>237</a>        core::str::from_utf8(utf8_str).map_err(ValidationError::MalformedUtf8)
 <a href=#238 id=238 data-nosnippet>238</a>    }
 <a href=#239 id=239 data-nosnippet>239</a>
 <a href=#240 id=240 data-nosnippet>240</a>    <span class="kw">pub fn </span>read_vec_enumerated&lt;T, F&gt;(

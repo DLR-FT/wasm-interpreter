@@ -22,7 +22,7 @@
 <a href=#22 id=22 data-nosnippet>22</a>        <span class="kw">let </span>is_mut = <span class="kw">match </span>wasm.read_u8()<span class="question-mark">? </span>{
 <a href=#23 id=23 data-nosnippet>23</a>            <span class="number">0x00 </span>=&gt; <span class="bool-val">false</span>,
 <a href=#24 id=24 data-nosnippet>24</a>            <span class="number">0x01 </span>=&gt; <span class="bool-val">true</span>,
-<a href=#25 id=25 data-nosnippet>25</a>            other =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMutType(other)),
+<a href=#25 id=25 data-nosnippet>25</a>            other =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::MalformedMutDiscriminator(other)),
 <a href=#26 id=26 data-nosnippet>26</a>        };
 <a href=#27 id=27 data-nosnippet>27</a>        <span class="prelude-val">Ok</span>(<span class="self">Self </span>{ ty, is_mut })
 <a href=#28 id=28 data-nosnippet>28</a>    }
