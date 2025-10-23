@@ -1,3 +1,4 @@
+use crate::core::reader::types::global::GlobalType;
 use crate::resumable::RunState;
 use alloc::borrow::ToOwned;
 use alloc::vec::Vec;
@@ -196,6 +197,25 @@ where
 
     pub fn user_data_mut(&mut self) -> &mut T {
         &mut self.store.user_data
+    }
+
+    /// Returns the global type of some global instance by its addr.
+    pub fn global_type(&self, global_addr: usize) -> GlobalType {
+        self.store.global_type(global_addr)
+    }
+
+    /// Returns the current value of some global instance by its addr.
+    pub fn global_read(&self, global_addr: usize) -> Value {
+        self.store.global_read(global_addr)
+    }
+
+    /// Sets a new value of some global instance by its addr.
+    ///
+    /// # Errors
+    /// - [`RuntimeError::WriteOnImmutableGlobal`]
+    /// - [`RuntimeError::GlobalTypeMismatch`]
+    pub fn global_write(&mut self, global_addr: usize, val: Value) -> Result<(), RuntimeError> {
+        self.store.global_write(global_addr, val)
     }
 }
 

@@ -1,4 +1,4 @@
-use wasm::DEFAULT_MODULE;
+use wasm::{GlobalType, NumType, ValType, Value, DEFAULT_MODULE};
 
 /// The WASM program has one mutable global initialized with a constant 3.
 /// It exports two methods:
@@ -159,4 +159,45 @@ fn global_invalid_instr() {
     if validate(&wasm_bytes).is_ok() {
         panic!("validation succeeded")
     }
+}
+
+#[test_log::test]
+fn embedder_interface() {
+    use wasm::{validate, RuntimeInstance};
+
+    let wat = r#"
+    (module
+        (global (mut i32) i32.const 1)
+        (global (mut i64) i64.const 3)
+    )
+    "#;
+    let wasm_bytes = wat::parse_str(wat).unwrap();
+
+    let validation_info = validate(&wasm_bytes).expect("validation failed");
+    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
+
+    assert_eq!(instance.global_read(0), Value::I32(1));
+    assert_eq!(instance.global_read(1), Value::I64(3));
+
+    assert_eq!(instance.global_write(0, Value::I32(33)), Ok(()));
+
+    assert_eq!(instance.global_read(0), Value::I32(33));
+    assert_eq!(instance.global_read(1), Value::I64(3));
+
+    assert_eq!(
+        instance.global_type(0),
+        GlobalType {
+            ty: ValType::NumType(NumType::I32),
+            is_mut: true,
+        }
+    );
+
+    assert_eq!(
+        instance.global_type(1),
+        GlobalType {
+            ty: ValType::NumType(NumType::I64),
+            is_mut: true,
+        }
+    );
 }
