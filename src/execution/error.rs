@@ -9,6 +9,8 @@ pub enum RuntimeError {
     ResumableNotFound,
     StackExhaustion,
     HostFunctionSignatureMismatch,
+    WriteOnImmutableGlobal,
+    GlobalTypeMismatch,
 
     // Are all of these instantiation variants? Add a new `InstantiationError` enum?
     InvalidImportType,
@@ -34,6 +36,13 @@ impl Display for RuntimeError {
             RuntimeError::UnknownImport => f.write_str("Unknown Import"),
             RuntimeError::MoreThanOneMemory => {
                 f.write_str("As of not only one memory is allowed per module.")
+            }
+
+            RuntimeError::WriteOnImmutableGlobal => f.write_str(
+                "A write operation on a global failed due to the global being immutable",
+            ),
+            RuntimeError::GlobalTypeMismatch => {
+                f.write_str("A write operation on a global failed due to a type mismatch")
             }
         }
     }

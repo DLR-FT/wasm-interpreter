@@ -1,9 +1,11 @@
+use crate::core::reader::types::global::GlobalType;
 use crate::resumable::RunState;
-use alloc::borrow::ToOwned;
+use alloc::borrow::{Cow, ToOwned};
 use alloc::vec::Vec;
 
 use const_interpreter_loop::run_const_span;
 use function_ref::FunctionRef;
+use store::ExternVal;
 use value_stack::Stack;
 
 use crate::core::reader::types::{FuncType, ResultType};
@@ -196,6 +198,34 @@ where
 
     pub fn user_data_mut(&mut self) -> &mut T {
         &mut self.store.user_data
+    }
+
+    /// Returns the global type of some global instance by its addr.
+    pub fn global_type(&self, global_addr: usize) -> GlobalType {
+        self.store.global_type(global_addr)
+    }
+
+    /// Returns the current value of some global instance by its addr.
+    pub fn global_read(&self, global_addr: usize) -> Value {
+        self.store.global_read(global_addr)
+    }
+
+    /// Sets a new value of some global instance by its addr.
+    ///
+    /// # Errors
+    /// - [`RuntimeError::WriteOnImmutableGlobal`]
+    /// - [`RuntimeError::GlobalTypeMismatch`]
+    pub fn global_write(&mut self, global_addr: usize, val: Value) -> Result<(), RuntimeError> {
+        self.store.global_write(global_addr, val)
+    }
+
+    /// Look-up an export by its name and the name of its exporting module.
+    pub fn lookup_export(
+        &self,
+        module_name: Cow<'static, str>,
+        name: Cow<'static, str>,
+    ) -> Result<ExternVal, RuntimeError> {
+        self.store.registry.lookup(module_name, name).copied()
     }
 }
 
