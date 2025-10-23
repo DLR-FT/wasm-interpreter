@@ -29,7 +29,7 @@ use crate::{
     resumable::Resumable,
     store::{DataInst, HaltExecutionError},
     unreachable_validated,
-    value::{self, FuncAddr, Ref, F32, F64},
+    value::{self, Ref, F32, F64},
     value_stack::Stack,
     ElemInst, FuncInst, MemInst, ModuleInst, RefType, RuntimeError, TableInst, TrapError, ValType,
     Value,
@@ -51,7 +51,7 @@ pub(super) fn run<T: Config>(
     let mut current_func_addr = resumable.current_func_addr;
     let pc = resumable.pc;
     let mut stp = resumable.stp;
-    let func_inst = &store.functions[current_func_addr];
+    let func_inst = store.functions.get(current_func_addr);
     let FuncInst::WasmFunc(wasm_func_inst) = &func_inst else {
         unreachable!(
             "the interpreter loop shall only be executed with native wasm functions as root call"
@@ -121,7 +121,7 @@ pub(super) fn run<T: Config>(
                 trace!("end of function reached, returning to previous call frame");
                 current_func_addr = maybe_return_func_addr;
                 let FuncInst::WasmFunc(current_wasm_func_inst) =
-                    &store.functions[current_func_addr]
+                    store.functions.get(current_func_addr)
                 else {
                     unreachable!("function addresses on the stack always correspond to native wasm functions")
                 };
@@ -197,7 +197,7 @@ pub(super) fn run<T: Config>(
             CALL => {
                 let local_func_idx = wasm.read_var_u32().unwrap_validated() as FuncIdx;
                 let FuncInst::WasmFunc(current_wasm_func_inst) =
-                    &store.functions[current_func_addr]
+                    store.functions.get(current_func_addr)
                 else {
                     unreachable!()
                 };
@@ -205,11 +205,11 @@ pub(super) fn run<T: Config>(
                 let func_to_call_addr =
                     store.modules[current_wasm_func_inst.module_addr].func_addrs[local_func_idx];
 
-                let func_to_call_ty = store.functions[func_to_call_addr].ty();
+                let func_to_call_ty = store.functions.get(func_to_call_addr).ty();
 
                 trace!("Instruction: call [{func_to_call_addr:?}]");
 
-                match &store.functions[func_to_call_addr] {
+                match store.functions.get(func_to_call_addr) {
                     FuncInst::HostFunc(host_func_to_call_inst) => {
                         let params = stack
                             .pop_tail_iter(func_to_call_ty.params.valtypes.len())
@@ -290,19 +290,19 @@ pub(super) fn run<T: Config>(
                     })?;
 
                 let func_to_call_addr = match *r {
-                    Ref::Func(func_addr) => func_addr.0,
+                    Ref::Func(func_addr) => func_addr,
                     Ref::Null(_) => return Err(TrapError::IndirectCallNullFuncRef.into()),
                     Ref::Extern(_) => unreachable_validated!(),
                 };
 
-                let func_to_call_ty = store.functions[func_to_call_addr].ty();
+                let func_to_call_ty = store.functions.get(func_to_call_addr).ty();
                 if *func_ty != func_to_call_ty {
                     return Err(TrapError::SignatureMismatch.into());
                 }
 
                 trace!("Instruction: call [{func_to_call_addr:?}]");
 
-                match &store.functions[func_to_call_addr] {
+                match store.functions.get(func_to_call_addr) {
                     FuncInst::HostFunc(host_func_to_call_inst) => {
                         let params = stack
                             .pop_tail_iter(func_to_call_ty.params.valtypes.len())
@@ -2069,7 +2069,7 @@ pub(super) fn run<T: Config>(
                     .func_addrs
                     .get(func_idx)
                     .unwrap_validated();
-                stack.push_value::<T>(Value::Ref(Ref::Func(FuncAddr(func_addr))))?;
+                stack.push_value::<T>(Value::Ref(Ref::Func(func_addr)))?;
             }
             FC_EXTENSIONS => {
                 // Should we call instruction hook here as well? Multibyte instruction
