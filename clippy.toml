@@ -1,0 +1,16 @@
+# Generally, lints are configured at the crate root, i.e. in the `src/lib.rs`
+# file. The current file contains additional configuration for specific Clippy
+# lints.
+
+# Make `clippy::missing_safety_doc` also check that private unsafe functions
+# have safety documentation.
+#
+# # Rationale
+# We use quite a bit of unsafe code internally and safety documentation allows
+# us to ensure correctness of that unsafe code.
+#
+# # Note
+# This configuration might interfere with other lints. See
+# https://doc.rust-lang.org/stable/clippy/lint_configuration.html#check-private-items
+# for a list of all affected lints.
+check-private-items = true
