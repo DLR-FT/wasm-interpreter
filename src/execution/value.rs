@@ -2,6 +2,7 @@ use core::fmt::{Debug, Display};
 use core::ops::{Add, Div, Mul, Sub};
 use core::{f32, f64};
 
+use crate::addrs::FuncAddr;
 use crate::core::reader::types::{NumType, ValType};
 use crate::RefType;
 
@@ -330,18 +331,6 @@ impl Display for Ref {
         }
     }
 }
-
-/// Represents the address of a function within a WebAssembly module.
-///
-/// Functions in WebAssembly modules can be either:
-/// - **Defined**: Declared and implemented within the module.
-/// - **Imported**: Declared in the module but implemented externally.
-///
-/// [`FuncAddr`] provides a unified representation for both types. Internally,
-/// the address corresponds to an index in a combined function namespace,
-/// typically represented as a vector.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct FuncAddr(pub usize);
 
 /// Represents the address of an external reference in the interpreter.
 ///

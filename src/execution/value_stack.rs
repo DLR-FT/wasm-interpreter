@@ -1,5 +1,6 @@
 use alloc::vec::{Drain, Vec};
 
+use crate::addrs::FuncAddr;
 use crate::core::indices::LocalIdx;
 use crate::core::reader::types::{FuncType, ValType};
 use crate::execution::assert_validated::UnwrapValidatedExt;
@@ -101,7 +102,7 @@ impl Stack {
     }
 
     /// Pop a [`CallFrame`] from the call stack, returning the caller function store address, return address, and the return stp
-    pub fn pop_call_frame(&mut self) -> (usize, usize, usize) {
+    pub fn pop_call_frame(&mut self) -> (FuncAddr, usize, usize) {
         let CallFrame {
             return_func_addr,
             return_addr,
@@ -129,7 +130,7 @@ impl Stack {
     /// Takes the current [`Self::values`]'s length as [`CallFrame::value_stack_base_idx`].
     pub fn push_call_frame(
         &mut self,
-        return_func_addr: usize,
+        return_func_addr: FuncAddr,
         func_ty: &FuncType,
         remaining_locals: &[ValType],
         return_addr: usize,
@@ -206,7 +207,7 @@ impl Stack {
 #[derive(Debug)]
 pub(crate) struct CallFrame {
     /// Store address of the function that called this [`CallFrame`]'s function
-    pub return_func_addr: usize,
+    pub return_func_addr: FuncAddr,
 
     /// Value that the PC has to be set to when this function returns
     pub return_addr: usize,

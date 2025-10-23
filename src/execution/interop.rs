@@ -11,7 +11,8 @@
 //! multiple values.
 
 use crate::{
-    value::{ExternAddr, FuncAddr, Ref, F32, F64},
+    addrs::FuncAddr,
+    value::{ExternAddr, Ref, F32, F64},
     NumType, RefType, ValType, Value,
 };
 
@@ -258,7 +259,8 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::value::{ExternAddr, FuncAddr, Value};
+    use crate::addrs::FuncAddr;
+    use crate::value::{ExternAddr, Value};
     use alloc::vec::Vec;
 
     use super::{InteropValueList, RefExtern, RefFunc};

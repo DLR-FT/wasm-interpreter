@@ -1,5 +1,6 @@
 use core::mem;
 
+use crate::addrs::FuncAddr;
 use crate::core::indices::TypeIdx;
 use crate::core::reader::span::Span;
 use crate::core::reader::types::data::{DataModeActive, DataSegment};
@@ -19,7 +20,6 @@ use crate::registry::Registry;
 use crate::resumable::{
     Dormitory, FreshResumableRef, InvokedResumableRef, Resumable, ResumableRef, RunState,
 };
-use crate::value::FuncAddr;
 use crate::{Limits, RefType, RuntimeError, TrapError, ValidationInfo};
 use alloc::borrow::ToOwned;
 use alloc::collections::btree_map::BTreeMap;
@@ -33,6 +33,8 @@ use super::interpreter_loop::{data_drop, elem_drop};
 use super::UnwrapValidatedExt;
 
 use crate::linear_memory::LinearMemory;
+
+pub mod addrs;
 
 /// The store represents all global state that can be manipulated by WebAssembly programs. It
 /// consists of the runtime representation of all instances of functions, tables, memories, and
@@ -139,7 +141,7 @@ impl<'b, T> Store<'b, T> {
 
         // TODO rewrite this part
         // <https://webassembly.github.io/spec/core/exec/modules.html#functions>
-        let func_addrs: Vec<usize> = validation_info
+        let func_addrs: Vec<FuncAddr> = validation_info
             .functions
             .iter()
             .zip(validation_info.func_blocks_stps.iter())
@@ -180,7 +182,7 @@ impl<'b, T> Store<'b, T> {
                             .get(*func_idx as usize)
                             .unwrap_validated();
 
-                        new_list.push(Ref::Func(FuncAddr(func_addr)));
+                        new_list.push(Ref::Func(func_addr));
                     }
                 }
                 ElemItems::Exprs(_, exprs) => {
@@ -428,7 +430,7 @@ impl<'b, T> Store<'b, T> {
         func: (TypeIdx, (Span, usize)),
         module_inst: &ModuleInst,
         module_addr: usize,
-    ) -> usize {
+    ) -> FuncAddr {
         let (ty, (span, stp)) = func;
 
         // TODO rewrite this huge chunk of parsing after generic way to re-parse(?) structs lands
@@ -456,9 +458,7 @@ impl<'b, T> Store<'b, T> {
             module_addr,
         });
 
-        let addr = self.functions.len();
-        self.functions.push(func_inst);
-        addr
+        self.push_func_inst(func_inst)
     }
 
     /// <https://webassembly.github.io/spec/core/exec/modules.html#host-functions>
@@ -466,14 +466,12 @@ impl<'b, T> Store<'b, T> {
         &mut self,
         func_type: FuncType,
         host_func: fn(&mut T, Vec<Value>) -> Vec<Value>,
-    ) -> usize {
+    ) -> FuncAddr {
         let func_inst = FuncInst::HostFunc(HostFuncInst {
             function_type: func_type,
             hostcode: host_func,
         });
-        let addr = self.functions.len();
-        self.functions.push(func_inst);
-        addr
+        self.push_func_inst(func_inst)
     }
 
     /// <https://webassembly.github.io/spec/core/exec/modules.html#tables>
@@ -539,14 +537,11 @@ impl<'b, T> Store<'b, T> {
 
     pub fn create_resumable(
         &self,
-        func_addr: usize,
+        func_addr: FuncAddr,
         params: Vec<Value>,
         maybe_fuel: Option<u32>,
     ) -> Result<ResumableRef, RuntimeError> {
-        let func_inst = self
-            .functions
-            .get(func_addr)
-            .ok_or(RuntimeError::FunctionNotFound)?;
+        let func_inst = self.get_function(func_addr);
 
         let func_ty = func_inst.ty();
 
@@ -576,14 +571,22 @@ impl<'b, T> Store<'b, T> {
                 params,
                 maybe_fuel,
             }) => {
-                let func_inst = self
-                    .functions
-                    .get(func_addr)
-                    .expect("func addrs to always be valid if the correct store is used");
+                let func_inst = Self::get_function_associated_fn(&self.functions, func_addr);
 
                 match func_inst {
                     FuncInst::HostFunc(host_func_inst) => {
                         let returns = (host_func_inst.hostcode)(&mut self.user_data, params);
+
+                        // We have to re-borrow the [`FuncInst`], because of the otherwise overlapping borrows of
+                        // - `self.get_function(func_addr)` and
+                        // - `&mut self.user_data`
+                        let FuncInst::HostFunc(host_func_inst) = self.get_function(func_addr)
+                        else {
+                            unreachable!(
+                                "the function with given func addr must still be a host function"
+                            )
+                        };
+
                         debug!("Successfully invoked function");
 
                         // Verify that the return parameters match the host function parameters
@@ -606,7 +609,7 @@ impl<'b, T> Store<'b, T> {
                         let mut stack = Stack::new_with_values(params);
 
                         stack.push_call_frame(
-                            usize::MAX,
+                            FuncAddr::INVALID, // TODO using a default value like this is dangerous
                             &wasm_func_inst.function_type,
                             &wasm_func_inst.locals,
                             usize::MAX,
@@ -719,7 +722,7 @@ impl<'b, T> Store<'b, T> {
 
     pub fn invoke(
         &mut self,
-        func_addr: usize,
+        func_addr: FuncAddr,
         params: Vec<Value>,
         maybe_fuel: Option<u32>,
     ) -> Result<RunState, RuntimeError> {
@@ -906,7 +909,7 @@ impl core::fmt::Debug for DataInst {
 ///<https://webassembly.github.io/spec/core/exec/runtime.html#external-values>
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum ExternVal {
-    Func(usize),
+    Func(FuncAddr),
     Table(usize),
     Mem(usize),
     Global(usize),
@@ -921,13 +924,7 @@ impl ExternVal {
     pub fn extern_type<T>(&self, store: &Store<T>) -> ExternType {
         match self {
             // TODO: fix ugly clone in function types
-            ExternVal::Func(func_addr) => ExternType::Func(
-                store
-                    .functions
-                    .get(*func_addr)
-                    .expect("the correct store to be used")
-                    .ty(),
-            ),
+            ExternVal::Func(func_addr) => ExternType::Func(store.get_function(*func_addr).ty()),
             ExternVal::Table(table_addr) => ExternType::Table(
                 store
                     .tables
@@ -959,7 +956,7 @@ impl ExternVal {
 /// <https://webassembly.github.io/spec/core/syntax/modules.html?highlight=convention#id1>
 // TODO implement this trait for ExternType lists Export lists
 pub trait ExternFilterable<T> {
-    fn funcs(self) -> impl Iterator<Item = T>;
+    fn funcs(self) -> impl Iterator<Item = FuncAddr>;
     fn tables(self) -> impl Iterator<Item = T>;
     fn mems(self) -> impl Iterator<Item = T>;
     fn globals(self) -> impl Iterator<Item = T>;
@@ -969,7 +966,7 @@ impl<'a, I> ExternFilterable<usize> for I
 where
     I: Iterator<Item = &'a ExternVal>,
 {
-    fn funcs(self) -> impl Iterator<Item = usize> {
+    fn funcs(self) -> impl Iterator<Item = FuncAddr> {
         self.filter_map(|extern_val| {
             if let ExternVal::Func(func_addr) = extern_val {
                 Some(*func_addr)
@@ -1014,7 +1011,7 @@ where
 #[derive(Debug)]
 pub struct ModuleInst<'b> {
     pub types: Vec<FuncType>,
-    pub func_addrs: Vec<usize>,
+    pub func_addrs: Vec<FuncAddr>,
     pub table_addrs: Vec<usize>,
     pub mem_addrs: Vec<usize>,
     pub global_addrs: Vec<usize>,
