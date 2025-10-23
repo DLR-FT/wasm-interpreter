@@ -6,6 +6,7 @@ use alloc::{
 };
 
 use crate::{
+    addrs::FuncAddr,
     core::slotmap::{SlotMap, SlotMapKey},
     rw_spinlock::RwSpinLock,
     value_stack::Stack,
@@ -17,7 +18,7 @@ pub(crate) struct Resumable {
     pub(crate) stack: Stack,
     pub(crate) pc: usize,
     pub(crate) stp: usize,
-    pub(crate) current_func_addr: usize,
+    pub(crate) current_func_addr: FuncAddr,
     pub(crate) maybe_fuel: Option<u32>,
 }
 
@@ -46,7 +47,7 @@ pub struct InvokedResumableRef {
 }
 
 pub struct FreshResumableRef {
-    pub(crate) func_addr: usize,
+    pub(crate) func_addr: FuncAddr,
     pub(crate) params: Vec<Value>,
     pub(crate) maybe_fuel: Option<u32>,
 }
@@ -84,7 +85,7 @@ pub enum RunState {
 
 #[cfg(test)]
 mod test {
-    use crate::value_stack::Stack;
+    use crate::{addrs::FuncAddr, value_stack::Stack};
 
     use super::{Dormitory, Resumable};
 
@@ -97,7 +98,7 @@ mod test {
             stack: Stack::new(),
             pc: 11,
             stp: 13,
-            current_func_addr: 17,
+            current_func_addr: FuncAddr::INVALID,
             maybe_fuel: None,
         };
 
