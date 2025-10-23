@@ -1,5 +1,6 @@
 use core::mem;
 
+use crate::config::Config;
 use crate::core::indices::TypeIdx;
 use crate::core::reader::span::Span;
 use crate::core::reader::types::data::{DataModeActive, DataSegment};
@@ -39,7 +40,7 @@ use crate::linear_memory::LinearMemory;
 /// globals, element segments, and data segments that have been allocated during the life time of
 /// the abstract machine.
 /// <https://webassembly.github.io/spec/core/exec/runtime.html#store>
-pub struct Store<'b, T> {
+pub struct Store<'b, T, C: Config> {
     pub functions: Vec<FuncInst<T>>,
     pub memories: Vec<MemInst>,
     pub globals: Vec<GlobalInst>,
@@ -49,6 +50,7 @@ pub struct Store<'b, T> {
     pub modules: Vec<ModuleInst<'b>>,
 
     // fields outside of the spec but are convenient are below
+    pub config: C,
 
     // all visible exports and entities added by hand or module instantiation by the interpreter
     // currently, all of the exports of an instantiated module is made visible (this is outside of spec)
@@ -59,9 +61,9 @@ pub struct Store<'b, T> {
     pub(crate) dormitory: Dormitory,
 }
 
-impl<'b, T> Store<'b, T> {
+impl<'b, T, C: Config> Store<'b, T, C> {
     /// Creates a new empty store with some user data
-    pub fn new(user_data: T) -> Self {
+    pub fn new(config: C, user_data: T) -> Self {
         Self {
             functions: Vec::default(),
             memories: Vec::default(),
@@ -73,6 +75,7 @@ impl<'b, T> Store<'b, T> {
             registry: Registry::default(),
             dormitory: Dormitory::default(),
             user_data,
+            config,
         }
     }
 
@@ -918,7 +921,7 @@ impl ExternVal {
     ///
     /// Note: This method may panic if self does not come from the given [`Store`].
     ///<https://webassembly.github.io/spec/core/valid/modules.html#imports>
-    pub fn extern_type<T>(&self, store: &Store<T>) -> ExternType {
+    pub fn extern_type<T, C: Config>(&self, store: &Store<T, C>) -> ExternType {
         match self {
             // TODO: fix ugly clone in function types
             ExternVal::Func(func_addr) => ExternType::Func(

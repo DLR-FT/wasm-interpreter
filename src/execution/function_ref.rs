@@ -1,6 +1,7 @@
 use alloc::borrow::ToOwned;
 use alloc::vec::Vec;
 
+use crate::config::Config;
 use crate::execution::{hooks::HookSet, interop::InteropValueList, RuntimeInstance};
 use crate::{ExternVal, RuntimeError, Store, Value};
 
@@ -9,10 +10,10 @@ pub struct FunctionRef {
 }
 
 impl FunctionRef {
-    pub fn new_from_name<T>(
+    pub fn new_from_name<T, C: Config>(
         module_name: &str,
         function_name: &str,
-        store: &Store<T>,
+        store: &Store<T, C>,
     ) -> Result<Self, RuntimeError> {
         // https://webassembly.github.io/spec/core/appendix/embedding.html#module-instances
         // inspired by instance_export

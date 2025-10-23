@@ -18,6 +18,7 @@ use core::{
 
 use crate::{
     assert_validated::UnwrapValidatedExt,
+    config::Config,
     core::{
         indices::{DataIdx, FuncIdx, GlobalIdx, LabelIdx, LocalIdx, MemIdx, TableIdx, TypeIdx},
         reader::{
@@ -43,9 +44,9 @@ use super::{little_endian::LittleEndianBytes, store::Store};
 /// Returns `Ok(None)` in case execution successfully terminates, `Ok(Some(required_fuel))` if execution
 /// terminates due to insufficient fuel, indicating how much fuel is required to resume with `required_fuel`,
 /// and `[Error::RuntimeError]` otherwise.
-pub(super) fn run<T, H: HookSet>(
+pub(super) fn run<T, H: HookSet, C: Config>(
     resumable: &mut Resumable,
-    store: &mut Store<T>,
+    store: &mut Store<T, C>,
     mut hooks: H,
 ) -> Result<Option<NonZeroU32>, RuntimeError> {
     let stack = &mut resumable.stack;
