@@ -6,7 +6,7 @@ use crate::{
         reader::{span::Span, WasmReadable, WasmReader},
     },
     unreachable_validated,
-    value::{self, FuncAddr, Ref},
+    value::{self, Ref},
     value_stack::Stack,
     ModuleInst, RefType, RuntimeError, Store, Value,
 };
@@ -85,7 +85,7 @@ pub(crate) fn run_const<T: Config>(
                 // we already checked for the func_idx to be in bounds during validation
                 let func_idx = wasm.read_var_u32().unwrap_validated() as usize;
                 let func_addr = *module.func_addrs.get(func_idx).unwrap_validated();
-                stack.push_value::<T>(Value::Ref(Ref::Func(FuncAddr(func_addr))))?;
+                stack.push_value::<T>(Value::Ref(Ref::Func(func_addr)))?;
             }
 
             FD_EXTENSIONS => {

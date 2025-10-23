@@ -1,11 +1,12 @@
 use alloc::borrow::ToOwned;
 use alloc::vec::Vec;
 
+use crate::addrs::FuncAddr;
 use crate::execution::{config::Config, interop::InteropValueList, RuntimeInstance};
 use crate::{ExternVal, RuntimeError, Store, Value};
 
 pub struct FunctionRef {
-    pub func_addr: usize,
+    pub func_addr: FuncAddr,
 }
 
 impl FunctionRef {

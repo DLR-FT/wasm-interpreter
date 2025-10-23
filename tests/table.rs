@@ -1,5 +1,5 @@
 use wasm::interop::RefFunc;
-use wasm::value::{FuncAddr, Ref};
+use wasm::value::Ref;
 /*
 # This file incorporates code from the WebAssembly testsuite, originally
 # available at https://github.com/WebAssembly/testsuite.
@@ -137,11 +137,11 @@ fn table_elem_test() {
 
     assert_eq!(
         instance.store.table_read(table, 0),
-        Ok(Ref::Func(FuncAddr(f1.func_addr)))
+        Ok(Ref::Func(f1.func_addr))
     );
     assert_eq!(
         instance.store.table_read(table, 1),
-        Ok(Ref::Func(FuncAddr(f3.func_addr)))
+        Ok(Ref::Func(f3.func_addr))
     );
 }
 
