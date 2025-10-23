@@ -158,9 +158,10 @@ where
     }
 
     /// resumes the resumable associated to `resumable_ref`. Returns a `[RunState]` associated to this resumable  if the
-    /// resumable ran out of fuel or completely executed.
+    // resumable ran out of fuel or completely executed.
     pub fn resume(&mut self, resumable_ref: ResumableRef) -> Result<RunState, RuntimeError> {
-        self.store.resume(resumable_ref)
+        // Safety: TODO, because this is unsound right now
+        unsafe { self.store.resume_unchecked(resumable_ref) }
     }
 
     /// calls its argument `f` with a mutable reference of the fuel of the respective [`ResumableRef`].

@@ -27,6 +27,7 @@ use alloc::string::String;
 use alloc::sync::Arc;
 use alloc::vec;
 use alloc::vec::Vec;
+use stored::Stored;
 
 use super::hooks::EmptyHookSet;
 use super::interpreter_loop::{data_drop, elem_drop};
@@ -35,6 +36,7 @@ use super::UnwrapValidatedExt;
 use crate::linear_memory::LinearMemory;
 
 pub mod addrs;
+pub mod stored;
 
 /// The store represents all global state that can be manipulated by WebAssembly programs. It
 /// consists of the runtime representation of all instances of functions, tables, memories, and
@@ -51,7 +53,9 @@ pub struct Store<'b, T> {
     pub modules: Vec<ModuleInst<'b>>,
 
     // fields outside of the spec but are convenient are below
-
+    /// A unique identifier for this store. This is used to check if a foreign `T`, thats wrapped
+    /// in a [`Stored<...>`] object belongs to this store. See the [`stored`] module for more info.
+    id: stored::StoreId,
     // all visible exports and entities added by hand or module instantiation by the interpreter
     // currently, all of the exports of an instantiated module is made visible (this is outside of spec)
     pub registry: Registry,
@@ -72,6 +76,7 @@ impl<'b, T> Store<'b, T> {
             tables: Vec::default(),
             elements: Vec::default(),
             modules: Vec::default(),
+            id: stored::StoreId::new(),
             registry: Registry::default(),
             dormitory: Dormitory::default(),
             user_data,
@@ -564,7 +569,24 @@ impl<'b, T> Store<'b, T> {
         }))
     }
 
-    pub fn resume(&mut self, resumable_ref: ResumableRef) -> Result<RunState, RuntimeError> {
+    pub fn resume(
+        &mut self,
+        resumable_ref: Stored<ResumableRef>,
+    ) -> Result<RunState, RuntimeError> {
+        let resumable_ref = self.try_unwrap_stored(resumable_ref)?;
+        // Safety: The `Stored` object, which was just unwrapped, guarantees that the store used to
+        // create the `ResumableRef` is the same as the current one.
+        let run_state = unsafe { self.resume_unchecked(resumable_ref) }?;
+
+        Ok(run_state)
+    }
+
+    /// # Safety
+    /// The caller must guarantee that the [`ResumableRef`] was created using the current [`Store`] instance.
+    pub unsafe fn resume_unchecked(
+        &mut self,
+        resumable_ref: ResumableRef,
+    ) -> Result<RunState, RuntimeError> {
         match resumable_ref {
             ResumableRef::Fresh(FreshResumableRef {
                 func_addr,
@@ -726,7 +748,8 @@ impl<'b, T> Store<'b, T> {
         params: Vec<Value>,
         maybe_fuel: Option<u32>,
     ) -> Result<RunState, RuntimeError> {
-        self.resume(self.create_resumable(func_addr, params, maybe_fuel)?)
+        // Safety: TODO, because this is unsound right now
+        unsafe { self.resume_unchecked(self.create_resumable(func_addr, params, maybe_fuel)?) }
     }
 }
 

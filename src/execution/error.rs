@@ -9,6 +9,8 @@ pub enum RuntimeError {
     ResumableNotFound,
     StackExhaustion,
     HostFunctionSignatureMismatch,
+    /// The identifier of a [`Stored<T>`] object did not match the [`Store`] it was used with.
+    StoreIdMismatch,
 
     // Are all of these instantiation variants? Add a new `InstantiationError` enum?
     InvalidImportType,
@@ -30,6 +32,9 @@ impl Display for RuntimeError {
                 f.write_str("host function call did not respect its type signature")
             }
             RuntimeError::InvalidImportType => f.write_str("Invalid import type"),
+            RuntimeError::StoreIdMismatch => f.write_str(
+                "The identifier of a stored object did not match the store it was used with",
+            ),
             // TODO: maybe move these to LinkerError also add more info to them (the name's export, function idx, etc)
             RuntimeError::UnknownImport => f.write_str("Unknown Import"),
             RuntimeError::MoreThanOneMemory => {
