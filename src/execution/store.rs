@@ -537,6 +537,71 @@ impl<'b, T: Config> Store<'b, T> {
         addr
     }
 
+    /// Returns the global type of some global instance by its addr.
+    ///
+    /// See: WebAssembly Specification 2.0 - 7.1.10 - global_type
+    pub fn global_type(&self, global_addr: usize) -> GlobalType {
+        // 1. Return `S.globals[a].type`.
+        self.globals
+            .get(global_addr)
+            .expect("global addrs to always be valid if the correct store is used")
+            .ty
+        // 2. Post-condition: the returned global type is valid
+    }
+
+    /// Returns the current value of some global instance by its addr.
+    ///
+    /// See: WebAssembly Specification 2.0 - 7.1.10 - global_read
+    pub fn global_read(&self, global_addr: usize) -> Value {
+        // 1. Let `gi` be the global instance `store.globals[globaladdr].
+        let gi = self
+            .globals
+            .get(global_addr)
+            .expect("global addrs to always be valid if the correct store is used");
+
+        // 2. Return the value `gi.value`.
+        gi.value
+    }
+
+    /// Sets a new value of some global instance by its addr.
+    ///
+    /// # Errors
+    /// - [`RuntimeError::WriteOnImmutableGlobal`]
+    /// - [`RuntimeError::GlobalTypeMismatch`]
+    ///
+    /// See: WebAssembly Specification 2.0 - 7.1.10 - global_write
+    pub fn global_write(&mut self, global_addr: usize, val: Value) -> Result<(), RuntimeError> {
+        // 1. Let `gi` be the global instance `store.globals[globaladdr]`.
+        let gi = self
+            .globals
+            .get_mut(global_addr)
+            .expect("global addrs to always be valid if the correct store is used");
+
+        // 2. Let `mut t` be the structure of the global type `gi.type`.
+        let r#mut = gi.ty.is_mut;
+        let t = gi.ty.ty;
+
+        // 3. If `mut` is not `var`, then return error.
+        if !r#mut {
+            return Err(RuntimeError::WriteOnImmutableGlobal);
+        }
+
+        // Check invariant:
+        //   It is an invariant of the semantics that the value has a type equal to the value type of `globaltype`.
+        // See: WebAssembly Specification 2.0 - 4.2.9
+        if t != val.to_ty() {
+            return Err(RuntimeError::GlobalTypeMismatch);
+        }
+
+        // 4. Replace `gi.value` with the value `val`.
+        gi.value = val;
+
+        // 5. Return the updated store.
+        // This is a noop for us, as our store `self` is mutable.
+
+        Ok(())
+    }
+
     pub fn create_resumable(
         &self,
         func_addr: usize,
