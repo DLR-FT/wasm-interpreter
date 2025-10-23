@@ -7,7 +7,7 @@ use core::str::Utf8Error;
 use crate::core::reader::section_header::SectionTy;
 use crate::core::reader::types::ValType;
 
-use super::indices::{DataIdx, ElemIdx, FuncIdx, LabelIdx, LocalIdx, MemIdx, TableIdx, TypeIdx};
+use super::indices::{DataIdx, ElemIdx, FuncIdx, LabelIdx, LocalIdx, MemIdx, TableIdx};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum ValidationError {

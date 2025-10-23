@@ -6,7 +6,7 @@ use alloc::vec::Vec;
 use core::fmt::{Debug, Formatter};
 use global::GlobalType;
 
-use crate::core::indices::TypeIdx;
+use crate::core::indices::{CTypes, TypeIdx};
 use crate::core::reader::WasmReader;
 use crate::execution::assert_validated::UnwrapValidatedExt;
 use crate::ValidationError;
@@ -158,11 +158,14 @@ impl FuncType {
 pub enum BlockType {
     Empty,
     Returns(ValType),
-    Type(u32),
+    Type(TypeIdx),
 }
 
 impl BlockType {
-    pub fn read(wasm: &mut WasmReader) -> Result<Self, ValidationError> {
+    pub fn read_and_validate(
+        wasm: &mut WasmReader,
+        c_types: &CTypes,
+    ) -> Result<Self, ValidationError> {
         if wasm.peek_u8()? as i8 == 0x40 {
             // Empty block type
             let _ = wasm.read_u8().unwrap_validated();
@@ -175,39 +178,73 @@ impl BlockType {
             // TODO properly handle invalid i33 values
             wasm.read_var_i33()
                 .and_then(|idx| {
-                    idx.try_into()
-                        .map_err(|_| ValidationError::MalformedBlockTypeTypeIdx(idx))
+                    let idx: u32 = idx
+                        .try_into()
+                        .map_err(|_| ValidationError::MalformedBlockTypeTypeIdx(idx))?;
+
+                    TypeIdx::from_and_validate(idx, c_types)
                 })
                 .map(BlockType::Type)
+        }
+    }
+
+    /// # Safety
+    /// There must be a block type next in the given [`WasmReader`] which was validated through [`Self::read_and_validate`].
+    pub unsafe fn read_unchecked(wasm: &mut WasmReader) -> Self {
+        if wasm
+            .peek_u8()
+            .expect("at least one byte because there is a valid block type at this position")
+            as i8
+            == 0x40
+        {
+            // Empty block type
+            let _ = wasm.read_u8().unwrap_validated();
+            BlockType::Empty
+        } else if let Ok(val_ty) = wasm.handle_transaction(|wasm| ValType::read(wasm)) {
+            // No parameters and given valtype as the result
+            BlockType::Returns(val_ty)
+        } else {
+            // An index to a function type
+            // TODO properly handle invalid i33 values
+            let type_idx: u32 = wasm
+                .read_var_i33()
+                .expect("a valid block type as guaranteed by the caller")
+                .try_into()
+                .expect("a positive u32 integer because the block type is valid");
+
+            // Safety: Because there must be a valid block type in the `WasmReader` (as guaranteed by the caller)
+            // and it was not an empty block or a single `ValType`, it must be a valid `TypeIdx`.
+            let type_idx = unsafe { TypeIdx::from_unchecked(type_idx) };
+            Self::Type(type_idx)
         }
     }
 }
 
 impl BlockType {
-    pub fn as_func_type(&self, func_types: &[FuncType]) -> Result<FuncType, ValidationError> {
+    /// # Safety
+    /// The current [`BlockType`] must have been created from the same
+    /// Wasm bytecode which was used to create the given [`CTypes`] object.
+    pub unsafe fn as_func_type(&self, c_types: &CTypes) -> FuncType {
         match self {
-            BlockType::Empty => Ok(FuncType {
+            BlockType::Empty => FuncType {
                 params: ResultType {
                     valtypes: Vec::new(),
                 },
                 returns: ResultType {
                     valtypes: Vec::new(),
                 },
-            }),
-            BlockType::Returns(val_type) => Ok(FuncType {
+            },
+            BlockType::Returns(val_type) => FuncType {
                 params: ResultType {
                     valtypes: Vec::new(),
                 },
                 returns: ResultType {
                     valtypes: [*val_type].into(),
                 },
-            }),
+            },
             BlockType::Type(type_idx) => {
-                let type_idx = *type_idx as TypeIdx;
-                func_types
-                    .get(type_idx)
-                    .cloned()
-                    .ok_or(ValidationError::InvalidTypeIdx(type_idx))
+                // Safety: Upheld by the caller
+                unsafe { c_types.get(*type_idx).clone() }
             }
         }
     }

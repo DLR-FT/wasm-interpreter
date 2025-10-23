@@ -43,17 +43,18 @@ impl ExportDesc {
     ///
     /// Note: This method may panic if `self` does not come from the given [`ValidationInfo`].
     /// <https://webassembly.github.io/spec/core/valid/modules.html#exports>
-    pub fn extern_type(&self, validation_info: &ValidationInfo) -> ExternType {
+    /// # Safety
+    /// The current [`ExportDesc`] must have been created from the same
+    /// Wasm bytecode which was used to create the given [`CTypes`] object.
+    pub unsafe fn extern_type(&self, validation_info: &ValidationInfo) -> ExternType {
         match self {
             ExportDesc::FuncIdx(func_idx) => {
                 let type_idx = validation_info
                     .functions
                     .get(*func_idx)
                     .expect("func indices to always be valid if the validation info is correct");
-                let func_type = validation_info
-                    .types
-                    .get(*type_idx)
-                    .expect("type indices to always be valid if the validation info is correct");
+                // Safety: Upheld by the caller
+                let func_type = unsafe { validation_info.c_types.get(*type_idx) };
                 // TODO ugly clone that should disappear when types are directly parsed from bytecode instead of vector copies
                 ExternType::Func(func_type.clone())
             }

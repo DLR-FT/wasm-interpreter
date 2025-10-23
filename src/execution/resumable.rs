@@ -123,7 +123,9 @@ impl ResumableRef {
             .expect("the key to always be valid as self was not dropped yet");
 
         // Resume execution
-        let result = interpreter_loop::run(resumable, &mut runtime_instance.store, EmptyHookSet)?;
+        let result =
+            // Safety: We just checked that both dormitories and thus also their `Store`s are the same instances.
+            unsafe { interpreter_loop::run(resumable, &mut runtime_instance.store, EmptyHookSet) }?;
 
         match result {
             None => {

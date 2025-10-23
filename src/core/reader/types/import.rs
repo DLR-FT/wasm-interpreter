@@ -22,7 +22,7 @@ impl Import {
     pub fn read(wasm: &mut WasmReader, c_types: &CTypes) -> Result<Self, ValidationError> {
         let module_name = wasm.read_name()?.to_owned();
         let name = wasm.read_name()?.to_owned();
-        let desc = ImportDesc::read(wasm, c_types)?;
+        let desc = ImportDesc::read_and_validate(wasm, c_types)?;
 
         Ok(Self {
             module_name,
@@ -41,7 +41,10 @@ pub enum ImportDesc {
 }
 
 impl ImportDesc {
-    pub fn read(wasm: &mut WasmReader, c_types: &CTypes) -> Result<Self, ValidationError> {
+    pub fn read_and_validate(
+        wasm: &mut WasmReader,
+        c_types: &CTypes,
+    ) -> Result<Self, ValidationError> {
         let desc = match wasm.read_u8()? {
             0x00 => Self::Func(TypeIdx::read_and_validate(wasm, c_types)?),
             // https://webassembly.github.io/spec/core/binary/types.html#table-types
@@ -69,7 +72,9 @@ impl ImportDesc {
                 // unlike ExportDescs, these directly refer to the types section
                 // since a corresponding function entry in function section or body
                 // in code section does not exist for these
-                let func_type = validation_info.c_types.get(*type_idx);
+
+                // Safety: Upheld by the caller
+                let func_type = unsafe { validation_info.c_types.get(*type_idx) };
                 // TODO ugly clone that should disappear when types are directly parsed from bytecode instead of vector copies
                 ExternType::Func(func_type.clone())
             }

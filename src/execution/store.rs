@@ -1,4 +1,4 @@
-use crate::core::indices::TypeIdx;
+use crate::core::indices::{CTypes, TypeIdx};
 use crate::core::reader::span::Span;
 use crate::core::reader::types::data::{DataModeActive, DataSegment};
 use crate::core::reader::types::element::{ActiveElem, ElemItems, ElemMode, ElemType};
@@ -99,7 +99,9 @@ impl<'b, T> Store<'b, T> {
                 import_name,
                 import_desc
             );
-            let import_extern_type = import_desc.extern_type(validation_info);
+            // Safety: The `ImportDesc` was just read from the `ValidationInfo`. Therefore, both have to originate
+            // from the same Wasm bytecode.
+            let import_extern_type = unsafe { import_desc.extern_type(validation_info) };
             let export_extern_val_candidate = *self.registry.lookup(
                 exporting_module_name.clone().into(),
                 import_name.clone().into(),
@@ -120,7 +122,7 @@ impl<'b, T> Store<'b, T> {
         // therefore I am mimicking the reference interpreter code here, I will allocate functions in the store in this step instead of step 11.
         // https://github.com/WebAssembly/spec/blob/8d6792e3d6709e8d3e90828f9c8468253287f7ed/interpreter/exec/eval.ml#L789
         let mut module_inst = ModuleInst {
-            types: todo!(),
+            types: validation_info.c_types.clone(),
             func_addrs: extern_vals.iter().funcs().collect(),
             table_addrs: Vec::new(),
             mem_addrs: Vec::new(),
@@ -138,7 +140,8 @@ impl<'b, T> Store<'b, T> {
             .functions
             .iter()
             .zip(validation_info.func_blocks_stps.iter())
-            .map(|(ty_idx, (span, stp))| {
+            // Safety: Upheld by the caller
+            .map(|(ty_idx, (span, stp))| unsafe {
                 self.alloc_func((*ty_idx, (*span, *stp)), &module_inst, self.modules.len())
             })
             .collect();
@@ -416,15 +419,17 @@ impl<'b, T> Store<'b, T> {
     }
 
     /// roughly matches <https://webassembly.github.io/spec/core/exec/modules.html#functions> with the addition of sidetable pointer to the input signature
+    /// # Safety
+    /// The function's [`TypeIdx`] must be created from the same Wasm bytecode, the `ModuleInst` was created from.
     // TODO refactor the type of func
     // TODO module_addr
-    fn alloc_func(
+    unsafe fn alloc_func(
         &mut self,
         func: (TypeIdx, (Span, usize)),
         module_inst: &ModuleInst,
         module_addr: usize,
     ) -> usize {
-        let (ty, (span, stp)) = func;
+        let (type_idx, (span, stp)) = func;
 
         // TODO rewrite this huge chunk of parsing after generic way to re-parse(?) structs lands
         let mut wasm_reader = WasmReader::new(module_inst.wasm_bytecode);
@@ -443,8 +448,9 @@ impl<'b, T> Store<'b, T> {
         // validation guarantees func_ty_idx exists within module_inst.types
         // TODO fix clone
         let func_inst = FuncInst::WasmFunc(WasmFuncInst {
-            function_type: module_inst.types[ty].clone(),
-            ty,
+            // Safety: Upheld by the caller
+            function_type: unsafe { module_inst.types.get(type_idx).clone() },
+            ty: type_idx,
             locals,
             code_expr,
             stp,
@@ -598,7 +604,9 @@ impl<'b, T> Store<'b, T> {
                 };
 
                 // Run the interpreter
-                let result = interpreter_loop::run(&mut resumable, self, EmptyHookSet)?;
+
+                // Safety: TODO (no way to guarantee safety here as of now, because we don't have the `Stored` object for the func addr yet.)
+                let result = unsafe { interpreter_loop::run(&mut resumable, self, EmptyHookSet) }?;
 
                 match result {
                     None => {
@@ -904,7 +912,7 @@ where
 ///<https://webassembly.github.io/spec/core/exec/runtime.html#module-instances>
 #[derive(Debug)]
 pub struct ModuleInst<'b> {
-    pub types: Vec<FuncType>,
+    pub types: CTypes,
     pub func_addrs: Vec<usize>,
     pub table_addrs: Vec<usize>,
     pub mem_addrs: Vec<usize>,

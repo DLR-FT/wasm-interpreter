@@ -1,6 +1,6 @@
 use super::global::GlobalType;
 use super::RefType;
-use crate::core::indices::{FuncIdx, TableIdx};
+use crate::core::indices::{FuncIdx, TableIdx, TypeIdx};
 use crate::core::reader::span::Span;
 use crate::core::reader::types::TableType;
 use crate::core::reader::WasmReader;

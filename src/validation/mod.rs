@@ -9,7 +9,7 @@ use crate::core::reader::types::element::ElemType;
 use crate::core::reader::types::export::Export;
 use crate::core::reader::types::global::{Global, GlobalType};
 use crate::core::reader::types::import::{Import, ImportDesc};
-use crate::core::reader::types::{FuncType, MemType, ResultType, TableType};
+use crate::core::reader::types::{FuncType, MemType, TableType};
 use crate::core::reader::WasmReader;
 use crate::core::sidetable::Sidetable;
 use crate::{ExportDesc, ValidationError};
@@ -33,7 +33,7 @@ pub(crate) struct ImportsLength {
 #[derive(Clone, Debug)]
 pub struct ValidationInfo<'bytecode> {
     pub(crate) wasm: &'bytecode [u8],
-    c_types: CTypes,
+    pub(crate) c_types: CTypes,
     pub(crate) imports: Vec<Import>,
     pub(crate) functions: Vec<TypeIdx>,
     pub(crate) tables: Vec<TableType>,
@@ -172,11 +172,13 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
-    let types = handle_section(&mut wasm, &mut header, SectionTy::Type, |wasm, _| {
-        wasm.read_vec(FuncType::read)
-    })?
-    .unwrap_or_default();
-    let c_types = CTypes::new(types);
+    let c_types = {
+        let types = handle_section(&mut wasm, &mut header, SectionTy::Type, |wasm, _| {
+            wasm.read_vec(FuncType::read)
+        })?
+        .unwrap_or_default();
+        CTypes::new(types)
+    };
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
@@ -308,16 +310,9 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
         let type_idx = *all_functions
             .get(func_idx)
             .ok_or(ValidationError::InvalidFuncIdx(func_idx))?;
-        if types[type_idx]
-            != (FuncType {
-                params: ResultType {
-                    valtypes: Vec::new(),
-                },
-                returns: ResultType {
-                    valtypes: Vec::new(),
-                },
-            })
-        {
+        // Safety: There is only one `CTypes` object in this entire function.
+        let function_type = unsafe { c_types.get(type_idx) };
+        if !function_type.params.valtypes.is_empty() || !function_type.returns.valtypes.is_empty() {
             Err(ValidationError::InvalidStartFunctionSignature)
         } else {
             Ok(func_idx)
@@ -356,20 +351,23 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
 
     let mut sidetable = Sidetable::new();
     let func_blocks_stps = handle_section(&mut wasm, &mut header, SectionTy::Code, |wasm, h| {
-        code::validate_code_section(
-            wasm,
-            h,
-            &c_types,
-            &all_functions,
-            imported_functions.count(),
-            &all_globals,
-            &all_memories,
-            &data_count,
-            &all_tables,
-            &elements,
-            &validation_context_refs,
-            &mut sidetable,
-        )
+        // Safety: There is only one `CTypes` object in this entire function.
+        unsafe {
+            code::validate_code_section(
+                wasm,
+                h,
+                &c_types,
+                &all_functions,
+                imported_functions.count(),
+                &all_globals,
+                &all_memories,
+                &data_count,
+                &all_tables,
+                &elements,
+                &validation_context_refs,
+                &mut sidetable,
+            )
+        }
     })?
     .unwrap_or_default();
 
@@ -408,7 +406,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
     debug!("Validation was successful");
     let validation_info = ValidationInfo {
         wasm: wasm.into_inner(),
-        types,
+        c_types,
         imports,
         functions: local_functions,
         tables,

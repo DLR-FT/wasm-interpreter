@@ -43,7 +43,10 @@ use super::{little_endian::LittleEndianBytes, store::Store};
 /// Returns `Ok(None)` in case execution successfully terminates, `Ok(Some(required_fuel))` if execution
 /// terminates due to insufficient fuel, indicating how much fuel is required to resume with `required_fuel`,
 /// and `[Error::RuntimeError]` otherwise.
-pub(super) fn run<T, H: HookSet>(
+///
+/// # Safety
+/// The caller must guarantee that the [`Resumable`] object was created with the same [`Store`] instance that is also passed here.
+pub(super) unsafe fn run<T, H: HookSet>(
     resumable: &mut Resumable,
     store: &mut Store<T>,
     mut hooks: H,
@@ -184,7 +187,8 @@ pub(super) fn run<T, H: HookSet>(
                 do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable)?;
             }
             BLOCK | LOOP => {
-                BlockType::read(wasm).unwrap_validated();
+                // Safety: TODO
+                let _ = unsafe { BlockType::read_unchecked(wasm) };
             }
             RETURN => {
                 //same as BR, except no need to skip n of BR n
@@ -253,7 +257,9 @@ pub(super) fn run<T, H: HookSet>(
 
             // TODO: fix push_call_frame, because the func idx that you get from the table is global func idx
             CALL_INDIRECT => {
-                let given_type_idx = wasm.read_var_u32().unwrap_validated() as TypeIdx;
+                // Safety: TODO
+                // Validation guarantees that there is a valid type index next and the caller guarantees that the current ....
+                let given_type_idx = unsafe { TypeIdx::read_unchecked(wasm) };
                 let table_idx = wasm.read_var_u32().unwrap_validated() as TableIdx;
 
                 let table_addr = *store.modules[current_module_idx]
@@ -261,10 +267,9 @@ pub(super) fn run<T, H: HookSet>(
                     .get(table_idx)
                     .unwrap_validated();
                 let tab = &store.tables[table_addr];
-                let func_ty = store.modules[current_module_idx]
-                    .types
-                    .get(given_type_idx)
-                    .unwrap_validated();
+                // Safety: TODO
+                let func_ty =
+                    unsafe { store.modules[current_module_idx].types.get(given_type_idx) };
 
                 let i: u32 = stack.pop_value().try_into().unwrap_validated();
 
