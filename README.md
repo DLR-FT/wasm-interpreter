@@ -21,12 +21,12 @@ A minimal in-place interpreter for [WebAssembly](https://webassembly.org/) bytec
 - **Minimal dependencies**: The interpreter requires only two dependencies: `log`, `libm`.
 - **Compliance with specification**: The interpreter passes all tests from the [official WebAssembly testsuite](https://github.com/WebAssembly/testsuite), except for the unfinished proposal tests. See [`GlobalConfig` in `tests/specification/mod.rs`](tests/specification/mod.rs) for the default spec-test filter regex.
 - **Host functions**: The host system can provide functions for Wasm code to call.
+- **Fuel & resumable execution**: A fuel mechanism is used to halt execution once fuel runs out. Then fuel can be refilled and execution resumed.
 
 _For information on other features, visit our [requirements page](https://dlr-ft.github.io/wasm-interpreter/main/requirements/html/index.html)._
 
 ### Planned
 
-- **Fuel & resumable execution**: A fuel mechanism is used to halt execution once fuel runs out. Then fuel can be refilled and execution resumed.
 - **C bindings**: The interpreter can be used from C code.
 - **Migratability**: Wasm instances can be transferred between systems during their execution.
 - **Threading**: There are multiple threading proposals, but we have not yet chosen a specific one. Some options are [shared-everything-threads](https://github.com/WebAssembly/shared-everything-threads), [threads](https://github.com/WebAssembly/threads), [wasi-threads](https://github.com/WebAssembly/wasi-threads).
@@ -58,5 +58,5 @@ Unless you explicitly state otherwise, any contribution intentionally submitted 
 
 ## Copyright
 
-Copyright © 2024-2025 Deutsches Zentrum für Luft- und Raumfahrt e.V. (DLR)  
+Copyright © 2024-2025 Deutsches Zentrum für Luft- und Raumfahrt e.V. (DLR)
 Copyright © 2024-2025 OxidOS Automotive SRL
