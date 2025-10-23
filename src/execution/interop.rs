@@ -11,7 +11,8 @@
 //! multiple values.
 
 use crate::{
-    value::{ExternAddr, FuncAddr, Ref, F32, F64},
+    addrs::FuncAddr,
+    value::{ExternAddr, Ref, F32, F64},
     NumType, RefType, ValType, Value,
 };
 
@@ -272,7 +273,8 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::value::{ExternAddr, FuncAddr, Value, ValueTypeMismatchError};
+    use crate::addrs::FuncAddr;
+    use crate::value::{ExternAddr, Value, ValueTypeMismatchError};
     use alloc::vec::Vec;
 
     use super::{InteropValueList, RefExtern, RefFunc};
@@ -371,7 +373,7 @@ mod tests {
 
     #[test]
     fn roundtrip_single_ref_func() {
-        const RUST_VALUE: RefFunc = RefFunc(Some(FuncAddr(57)));
+        const RUST_VALUE: RefFunc = RefFunc(Some(FuncAddr::INVALID));
         let wasm_value: Value = RUST_VALUE.into();
         assert_eq!(wasm_value.try_into(), err::<u32>());
         assert_eq!(wasm_value.try_into(), err::<i32>());
@@ -451,7 +453,7 @@ mod tests {
 
     #[test]
     fn roundtrip_list2() {
-        const RUST_VALUES: (f32, RefFunc) = (3.0, RefFunc(Some(FuncAddr(7))));
+        const RUST_VALUES: (f32, RefFunc) = (3.0, RefFunc(Some(FuncAddr::INVALID)));
         let wasm_values: Vec<Value> = RUST_VALUES.into_values();
         let roundtrip_rust_values = InteropValueList::try_from_values(wasm_values.into_iter());
         assert_eq!(roundtrip_rust_values, Ok(RUST_VALUES));

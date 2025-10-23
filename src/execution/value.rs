@@ -2,6 +2,7 @@ use core::fmt::{Debug, Display};
 use core::ops::{Add, Div, Mul, Sub};
 use core::{f32, f64};
 
+use crate::addrs::FuncAddr;
 use crate::core::reader::types::{NumType, ValType};
 use crate::RefType;
 
@@ -341,18 +342,6 @@ impl Ref {
     }
 }
 
-/// Represents the address of a function within a WebAssembly module.
-///
-/// Functions in WebAssembly modules can be either:
-/// - **Defined**: Declared and implemented within the module.
-/// - **Imported**: Declared in the module but implemented externally.
-///
-/// [`FuncAddr`] provides a unified representation for both types. Internally,
-/// the address corresponds to an index in a combined function namespace,
-/// typically represented as a vector.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct FuncAddr(pub usize);
-
 /// The WebAssembly specification defines an externaddr as an address to an
 /// "external" type, i.e. is a type which is managed by the embedder. For this
 /// interpreter the task of managing external objects and relating them to
@@ -533,6 +522,7 @@ mod test {
     use alloc::string::ToString;
 
     use crate::{
+        addrs::Addr,
         value::{ExternAddr, F32, F64},
         RefType,
     };
@@ -599,7 +589,10 @@ mod test {
 
     #[test]
     fn display_ref() {
-        assert_eq!(Ref::Func(FuncAddr(11)).to_string(), "FuncRef(FuncAddr(11))");
+        assert_eq!(
+            Ref::Func(FuncAddr::new_unchecked(11)).to_string(),
+            "FuncRef(FuncAddr(11))"
+        );
         assert_eq!(
             Ref::Extern(ExternAddr(13)).to_string(),
             "ExternRef(ExternAddr(13))"
