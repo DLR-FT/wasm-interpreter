@@ -18,6 +18,7 @@ use core::{
 
 use crate::{
     assert_validated::UnwrapValidatedExt,
+    config::Config,
     core::{
         indices::{DataIdx, FuncIdx, GlobalIdx, LabelIdx, LocalIdx, MemIdx, TableIdx, TypeIdx},
         reader::{
@@ -43,10 +44,9 @@ use super::{little_endian::LittleEndianBytes, store::Store};
 /// Returns `Ok(None)` in case execution successfully terminates, `Ok(Some(required_fuel))` if execution
 /// terminates due to insufficient fuel, indicating how much fuel is required to resume with `required_fuel`,
 /// and `[Error::RuntimeError]` otherwise.
-pub(super) fn run<T, H: HookSet>(
+pub(super) fn run<T, C: Config>(
     resumable: &mut Resumable,
-    store: &mut Store<T>,
-    mut hooks: H,
+    store: &mut Store<T, C>,
 ) -> Result<Option<NonZeroU32>, RuntimeError> {
     let stack = &mut resumable.stack;
     let mut current_func_addr = resumable.current_func_addr;
@@ -74,7 +74,10 @@ pub(super) fn run<T, H: HookSet>(
     use crate::core::reader::types::opcode::*;
     loop {
         // call the instruction hook
-        hooks.instruction_hook(store.modules[current_module_idx].wasm_bytecode, wasm.pc);
+        store
+            .config
+            .hook_set_mut()
+            .instruction_hook(store.modules[current_module_idx].wasm_bytecode, wasm.pc);
 
         let first_instr_byte = wasm.read_u8().unwrap_validated();
 
