@@ -44,9 +44,9 @@ use super::{little_endian::LittleEndianBytes, store::Store};
 /// Returns `Ok(None)` in case execution successfully terminates, `Ok(Some(required_fuel))` if execution
 /// terminates due to insufficient fuel, indicating how much fuel is required to resume with `required_fuel`,
 /// and `[Error::RuntimeError]` otherwise.
-pub(super) fn run<T, C: Config>(
+pub(super) fn run<C: Config>(
     resumable: &mut Resumable,
-    store: &mut Store<T, C>,
+    store: &mut Store<C>,
 ) -> Result<Option<NonZeroU32>, RuntimeError> {
     let stack = &mut resumable.stack;
     let mut current_func_addr = resumable.current_func_addr;
@@ -214,7 +214,7 @@ pub(super) fn run<T, C: Config>(
                             .pop_tail_iter(func_to_call_ty.params.valtypes.len())
                             .collect();
                         let returns =
-                            (host_func_to_call_inst.hostcode)(&mut store.user_data, params);
+                            (host_func_to_call_inst.hostcode)(store.config.user_data_mut(), params);
 
                         // Verify that the return parameters match the host function parameters
                         // since we have no validation guarantees for host functions
@@ -303,7 +303,7 @@ pub(super) fn run<T, C: Config>(
                             .pop_tail_iter(func_to_call_ty.params.valtypes.len())
                             .collect();
                         let returns =
-                            (host_func_to_call_inst.hostcode)(&mut store.user_data, params);
+                            (host_func_to_call_inst.hostcode)(store.config.user_data_mut(), params);
 
                         // Verify that the return parameters match the host function parameters
                         // since we have no validation guarantees for host functions

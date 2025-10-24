@@ -33,43 +33,41 @@ pub mod value_stack;
 /// The default module name if a [RuntimeInstance] was created using [RuntimeInstance::new].
 pub const DEFAULT_MODULE: &str = "__interpreter_default__";
 
-pub struct RuntimeInstance<'b, T = (), C: Config = DefaultConfig> {
-    pub store: Store<'b, T, C>,
+pub struct RuntimeInstance<'b, C: Config = DefaultConfig> {
+    pub store: Store<'b, C>,
 }
 
-impl<T: Default> Default for RuntimeInstance<'_, T> {
+impl Default for RuntimeInstance<'_, DefaultConfig> {
     fn default() -> Self {
-        Self::new(T::default())
+        Self::new()
     }
 }
 
-impl<'b, T> RuntimeInstance<'b, T> {
-    pub fn new(user_data: T) -> Self {
-        Self::new_with_config(DefaultConfig::default(), user_data)
+impl<'b> RuntimeInstance<'b, DefaultConfig> {
+    pub fn new() -> Self {
+        Self::new_with_config(DefaultConfig::default())
     }
 
     pub fn new_with_default_module(
-        user_data: T,
-        validation_info: &'_ ValidationInfo<'b>,
+        validation_info: &ValidationInfo<'b>,
     ) -> Result<Self, RuntimeError> {
-        let mut instance = Self::new_with_config(DefaultConfig::default(), user_data);
+        let mut instance = Self::new_with_config(DefaultConfig::default());
         instance.add_module(DEFAULT_MODULE, validation_info)?;
         Ok(instance)
     }
 
     pub fn new_named(
-        user_data: T,
         module_name: &str,
-        validation_info: &'_ ValidationInfo<'b>,
+        validation_info: &ValidationInfo<'b>,
         // store: &mut Store,
     ) -> Result<Self, RuntimeError> {
-        let mut instance = Self::new_with_config(DefaultConfig::default(), user_data);
+        let mut instance = Self::new_with_config(DefaultConfig::default());
         instance.add_module(module_name, validation_info)?;
         Ok(instance)
     }
 }
 
-impl<'b, T, C: Config> RuntimeInstance<'b, T, C> {
+impl<'b, C: Config> RuntimeInstance<'b, C> {
     pub fn add_module(
         &mut self,
         module_name: &str,
@@ -78,9 +76,9 @@ impl<'b, T, C: Config> RuntimeInstance<'b, T, C> {
         self.store.add_module(module_name, validation_info, None)
     }
 
-    pub fn new_with_config(config: C, user_data: T) -> Self {
+    pub fn new_with_config(config: C) -> Self {
         RuntimeInstance {
-            store: Store::new(config, user_data),
+            store: Store::new(config),
         }
     }
 
@@ -189,7 +187,7 @@ impl<'b, T, C: Config> RuntimeInstance<'b, T, C> {
         &mut self,
         module_name: &str,
         name: &str,
-        host_func: fn(&mut T, Vec<Value>) -> Vec<Value>,
+        host_func: fn(&mut C::UserData, Vec<Value>) -> Vec<Value>,
     ) -> Result<FunctionRef, RuntimeError> {
         let host_func_ty = FuncType {
             params: ResultType {
@@ -207,7 +205,7 @@ impl<'b, T, C: Config> RuntimeInstance<'b, T, C> {
         module_name: &str,
         name: &str,
         host_func_ty: FuncType,
-        host_func: fn(&mut T, Vec<Value>) -> Vec<Value>,
+        host_func: fn(&mut C::UserData, Vec<Value>) -> Vec<Value>,
     ) -> Result<FunctionRef, RuntimeError> {
         let func_addr = self.store.alloc_host_func(host_func_ty, host_func);
         self.store.registry.register(
@@ -218,12 +216,12 @@ impl<'b, T, C: Config> RuntimeInstance<'b, T, C> {
         Ok(FunctionRef { func_addr })
     }
 
-    pub fn user_data(&self) -> &T {
-        &self.store.user_data
+    pub fn user_data(&self) -> &C::UserData {
+        &self.store.config.user_data()
     }
 
-    pub fn user_data_mut(&mut self) -> &mut T {
-        &mut self.store.user_data
+    pub fn user_data_mut(&mut self) -> &mut C::UserData {
+        self.store.config.user_data_mut()
     }
 }
 

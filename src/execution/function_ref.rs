@@ -10,10 +10,10 @@ pub struct FunctionRef {
 }
 
 impl FunctionRef {
-    pub fn new_from_name<T, C: Config>(
+    pub fn new_from_name<C: Config>(
         module_name: &str,
         function_name: &str,
-        store: &Store<T, C>,
+        store: &Store<C>,
     ) -> Result<Self, RuntimeError> {
         // https://webassembly.github.io/spec/core/appendix/embedding.html#module-instances
         // inspired by instance_export

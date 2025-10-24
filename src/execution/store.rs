@@ -39,8 +39,8 @@ use crate::linear_memory::LinearMemory;
 /// globals, element segments, and data segments that have been allocated during the life time of
 /// the abstract machine.
 /// <https://webassembly.github.io/spec/core/exec/runtime.html#store>
-pub struct Store<'b, T, C: Config> {
-    pub functions: Vec<FuncInst<T>>,
+pub struct Store<'b, C: Config> {
+    pub functions: Vec<FuncInst<C::UserData>>,
     pub memories: Vec<MemInst>,
     pub globals: Vec<GlobalInst>,
     pub data: Vec<DataInst>,
@@ -54,15 +54,14 @@ pub struct Store<'b, T, C: Config> {
     // all visible exports and entities added by hand or module instantiation by the interpreter
     // currently, all of the exports of an instantiated module is made visible (this is outside of spec)
     pub registry: Registry,
-    pub user_data: T,
 
     // data structure holding all resumable objects that belong to this store
     pub(crate) dormitory: Dormitory,
 }
 
-impl<'b, T, C: Config> Store<'b, T, C> {
+impl<'b, C: Config> Store<'b, C> {
     /// Creates a new empty store with some user data
-    pub fn new(config: C, user_data: T) -> Self {
+    pub fn new(config: C) -> Self {
         Self {
             functions: Vec::default(),
             memories: Vec::default(),
@@ -73,7 +72,6 @@ impl<'b, T, C: Config> Store<'b, T, C> {
             modules: Vec::default(),
             registry: Registry::default(),
             dormitory: Dormitory::default(),
-            user_data,
             config,
         }
     }
@@ -467,7 +465,7 @@ impl<'b, T, C: Config> Store<'b, T, C> {
     pub(super) fn alloc_host_func(
         &mut self,
         func_type: FuncType,
-        host_func: fn(&mut T, Vec<Value>) -> Vec<Value>,
+        host_func: fn(&mut C::UserData, Vec<Value>) -> Vec<Value>,
     ) -> usize {
         let func_inst = FuncInst::HostFunc(HostFuncInst {
             function_type: func_type,
@@ -585,7 +583,8 @@ impl<'b, T, C: Config> Store<'b, T, C> {
 
                 match func_inst {
                     FuncInst::HostFunc(host_func_inst) => {
-                        let returns = (host_func_inst.hostcode)(&mut self.user_data, params);
+                        let returns =
+                            (host_func_inst.hostcode)(self.config.user_data_mut(), params);
                         debug!("Successfully invoked function");
 
                         // Verify that the return parameters match the host function parameters
@@ -920,7 +919,7 @@ impl ExternVal {
     ///
     /// Note: This method may panic if self does not come from the given [`Store`].
     ///<https://webassembly.github.io/spec/core/valid/modules.html#imports>
-    pub fn extern_type<T, C: Config>(&self, store: &Store<T, C>) -> ExternType {
+    pub fn extern_type<C: Config>(&self, store: &Store<C>) -> ExternType {
         match self {
             // TODO: fix ugly clone in function types
             ExternVal::Func(func_addr) => ExternType::Func(
