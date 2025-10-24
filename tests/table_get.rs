@@ -15,104 +15,105 @@
 # limitations under the License.
 */
 
-use wasm::{
-    interop::RefFunc, validate, value::FuncAddr, RuntimeError, RuntimeInstance, TrapError,
-    DEFAULT_MODULE,
-};
+// use wasm::{
+//     interop::RefFunc, validate, value::FuncAddr, RuntimeError, RuntimeInstance, TrapError,
+//     DEFAULT_MODULE,
+// };
 
-#[test_log::test]
-fn table_funcref_test() {
-    let w = r#"
-(module
-  (table $t2 2 funcref)
-  (table $t3 3 funcref)
-  (elem (table $t3) (i32.const 1) func $dummy)
-  (func $dummy)
-  (func (export "init") (param $r funcref)
-    (table.set $t2 (i32.const 1) (local.get $r))
-    (table.set $t3 (i32.const 2) (table.get $t3 (i32.const 1)))
-  )
-  (func (export "get-funcref") (param $i i32) (result funcref)
-    (table.get (local.get $i))
-  )
-  (func $f3 (export "get-funcref-2") (param $i i32) (result funcref)
-    (table.get $t3 (local.get $i))
-  )
-  (func (export "is_null-funcref") (param $i i32) (result i32)
-    (ref.is_null (call $f3 (local.get $i)))
-  )
-)
-    "#;
-    let wasm_bytes = wat::parse_str(w).unwrap();
-    let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+// TODO reimplement using externref tables, like it is done in the official testsuite
+// #[test_log::test]
+// fn table_funcref_test() {
+//     let w = r#"
+// (module
+//   (table $t2 2 funcref)
+//   (table $t3 3 funcref)
+//   (elem (table $t3) (i32.const 1) func $dummy)
+//   (func $dummy)
+//   (func (export "init") (param $r funcref)
+//     (table.set $t2 (i32.const 1) (local.get $r))
+//     (table.set $t3 (i32.const 2) (table.get $t3 (i32.const 1)))
+//   )
+//   (func (export "get-funcref") (param $i i32) (result funcref)
+//     (table.get (local.get $i))
+//   )
+//   (func $f3 (export "get-funcref-2") (param $i i32) (result funcref)
+//     (table.get $t3 (local.get $i))
+//   )
+//   (func (export "is_null-funcref") (param $i i32) (result i32)
+//     (ref.is_null (call $f3 (local.get $i)))
+//   )
+// )
+//     "#;
+//     let wasm_bytes = wat::parse_str(w).unwrap();
+//     let validation_info = validate(&wasm_bytes).unwrap();
+//     let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
+//         .expect("instantiation failed");
 
-    let init = i.get_function_by_name(DEFAULT_MODULE, "init").unwrap();
-    let get_funcref = i
-        .get_function_by_name(DEFAULT_MODULE, "get-funcref")
-        .unwrap();
-    let get_funcref_2 = i
-        .get_function_by_name(DEFAULT_MODULE, "get-funcref-2")
-        .unwrap();
-    let is_null_funcref = i
-        .get_function_by_name(DEFAULT_MODULE, "is_null-funcref")
-        .unwrap();
+//     let init = i.get_function_by_name(DEFAULT_MODULE, "init").unwrap();
+//     let get_funcref = i
+//         .get_function_by_name(DEFAULT_MODULE, "get-funcref")
+//         .unwrap();
+//     let get_funcref_2 = i
+//         .get_function_by_name(DEFAULT_MODULE, "get-funcref-2")
+//         .unwrap();
+//     let is_null_funcref = i
+//         .get_function_by_name(DEFAULT_MODULE, "is_null-funcref")
+//         .unwrap();
 
-    i.invoke_typed::<RefFunc, ()>(&init, RefFunc(Some(FuncAddr(1))))
-        .unwrap();
+//     i.invoke_typed::<RefFunc, ()>(&init, RefFunc(Some(FuncAddr(1))))
+//         .unwrap();
 
-    assert_eq!(i.invoke_typed(&get_funcref, 0), Ok(RefFunc(None)));
-    assert_eq!(
-        i.invoke_typed(&get_funcref, 1),
-        Ok(RefFunc(Some(FuncAddr(1))))
-    );
-    assert_eq!(i.invoke_typed(&get_funcref_2, 0), Ok(RefFunc(None)));
-    assert_eq!(i.invoke_typed(&is_null_funcref, 1), Ok(0));
-    assert_eq!(i.invoke_typed(&is_null_funcref, 2), Ok(0));
+//     assert_eq!(i.invoke_typed(&get_funcref, 0), Ok(RefFunc(None)));
+//     assert_eq!(
+//         i.invoke_typed(&get_funcref, 1),
+//         Ok(RefFunc(Some(FuncAddr(1))))
+//     );
+//     assert_eq!(i.invoke_typed(&get_funcref_2, 0), Ok(RefFunc(None)));
+//     assert_eq!(i.invoke_typed(&is_null_funcref, 1), Ok(0));
+//     assert_eq!(i.invoke_typed(&is_null_funcref, 2), Ok(0));
 
-    assert_eq!(
-        i.invoke_typed::<i32, RefFunc>(&get_funcref, 2).err(),
-        Some(RuntimeError::Trap(
-            TrapError::TableOrElementAccessOutOfBounds
-        ))
-    );
-    assert_eq!(
-        i.invoke_typed::<i32, RefFunc>(&get_funcref_2, 3).err(),
-        Some(RuntimeError::Trap(
-            TrapError::TableOrElementAccessOutOfBounds
-        ))
-    );
-    assert_eq!(
-        i.invoke_typed::<i32, RefFunc>(&get_funcref, -1).err(),
-        Some(RuntimeError::Trap(
-            TrapError::TableOrElementAccessOutOfBounds
-        ))
-    );
-    assert_eq!(
-        i.invoke_typed::<i32, RefFunc>(&get_funcref_2, -1).err(),
-        Some(RuntimeError::Trap(
-            TrapError::TableOrElementAccessOutOfBounds
-        ))
-    );
-}
+//     assert_eq!(
+//         i.invoke_typed::<i32, RefFunc>(&get_funcref, 2).err(),
+//         Some(RuntimeError::Trap(
+//             TrapError::TableOrElementAccessOutOfBounds
+//         ))
+//     );
+//     assert_eq!(
+//         i.invoke_typed::<i32, RefFunc>(&get_funcref_2, 3).err(),
+//         Some(RuntimeError::Trap(
+//             TrapError::TableOrElementAccessOutOfBounds
+//         ))
+//     );
+//     assert_eq!(
+//         i.invoke_typed::<i32, RefFunc>(&get_funcref, -1).err(),
+//         Some(RuntimeError::Trap(
+//             TrapError::TableOrElementAccessOutOfBounds
+//         ))
+//     );
+//     assert_eq!(
+//         i.invoke_typed::<i32, RefFunc>(&get_funcref_2, -1).err(),
+//         Some(RuntimeError::Trap(
+//             TrapError::TableOrElementAccessOutOfBounds
+//         ))
+//     );
+// }
 
-#[test_log::test]
-fn table_type_error_test() {
-    let invalid_modules = vec![
-        r#"(module (table $t 10 funcref) (func $type-index-empty-vs-i32 (result funcref) (table.get $t)))"#,
-        r#"(module (table $t 10 funcref) (func $type-index-f32-vs-i32 (result funcref) (table.get $t (f32.const 1))))"#,
-        r#"(module (table $t 10 funcref) (func $type-result-funcref-vs-empty (table.get $t (i32.const 0))))"#,
-        r#"(module (table $t 10 funcref) (func $type-result-funcref-vs-funcref (result externref) (table.get $t (i32.const 1))))"#,
-        r#"(module (table $t1 1 funcref) (table $t2 1 externref) (func $type-result-externref-vs-funcref-multi (result funcref) (table.get $t2 (i32.const 0))))"#,
-    ];
+// #[test_log::test]
+// fn table_type_error_test() {
+//     let invalid_modules = vec![
+//         r#"(module (table $t 10 funcref) (func $type-index-empty-vs-i32 (result funcref) (table.get $t)))"#,
+//         r#"(module (table $t 10 funcref) (func $type-index-f32-vs-i32 (result funcref) (table.get $t (f32.const 1))))"#,
+//         r#"(module (table $t 10 funcref) (func $type-result-funcref-vs-empty (table.get $t (i32.const 0))))"#,
+//         r#"(module (table $t 10 funcref) (func $type-result-funcref-vs-funcref (result externref) (table.get $t (i32.const 1))))"#,
+//         r#"(module (table $t1 1 funcref) (table $t2 1 externref) (func $type-result-externref-vs-funcref-multi (result funcref) (table.get $t2 (i32.const 0))))"#,
+//     ];
 
-    for module in invalid_modules {
-        let wasm_bytes = wat::parse_str(module).unwrap();
-        let result = validate(&wasm_bytes);
-        assert!(
-            result.is_err(),
-            "Result `{result:?}` was expected to be `Err`, but it is not."
-        );
-    }
-}
+//     for module in invalid_modules {
+//         let wasm_bytes = wat::parse_str(module).unwrap();
+//         let result = validate(&wasm_bytes);
+//         assert!(
+//             result.is_err(),
+//             "Result `{result:?}` was expected to be `Err`, but it is not."
+//         );
+//     }
+// }

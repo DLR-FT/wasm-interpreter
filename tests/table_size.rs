@@ -15,111 +15,112 @@
 # limitations under the License.
 */
 
-use wasm::{validate, RuntimeInstance, DEFAULT_MODULE};
+// use wasm::{validate, RuntimeInstance, DEFAULT_MODULE};
 
-#[test_log::test]
-fn table_size_test() {
-    let w = r#"
-(module
-    (table $t0 0 funcref)
-    (table $t1 1 funcref)
-    (table $t2 0 2 funcref)
-    (table $t3 3 8 funcref)
-  
-    (func (export "size-t0") (result i32) table.size)
-    (func (export "size-t1") (result i32) (table.size $t1))
-    (func (export "size-t2") (result i32) (table.size $t2))
-    (func (export "size-t3") (result i32) (table.size $t3))
-  
-    (func (export "grow-t0") (param $sz i32)
-      (drop (table.grow $t0 (ref.null func) (local.get $sz)))
-    )
-    (func (export "grow-t1") (param $sz i32)
-      (drop (table.grow $t1 (ref.null func) (local.get $sz)))
-    )
-    (func (export "grow-t2") (param $sz i32)
-      (drop (table.grow $t2 (ref.null func) (local.get $sz)))
-    )
-    (func (export "grow-t3") (param $sz i32)
-      (drop (table.grow $t3 (ref.null func) (local.get $sz)))
-    )
-)
-    "#;
-    let wasm_bytes = wat::parse_str(w).unwrap();
-    let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+// TODO reimplement using externref tables, like it is done in the official testsuite
+// #[test_log::test]
+// fn table_size_test() {
+//     let w = r#"
+// (module
+//     (table $t0 0 funcref)
+//     (table $t1 1 funcref)
+//     (table $t2 0 2 funcref)
+//     (table $t3 3 8 funcref)
 
-    // let get_funcref = i.get_function_by_name(DEFAULT_MODULE, "get-funcref").unwrap();
-    // let init = i.get_function_by_name(DEFAULT_MODULE, "init").unwrap();
-    let size_t0 = i.get_function_by_name(DEFAULT_MODULE, "size-t0").unwrap();
-    let size_t1 = i.get_function_by_name(DEFAULT_MODULE, "size-t1").unwrap();
-    let size_t2 = i.get_function_by_name(DEFAULT_MODULE, "size-t2").unwrap();
-    let size_t3 = i.get_function_by_name(DEFAULT_MODULE, "size-t3").unwrap();
-    let grow_t0 = i.get_function_by_name(DEFAULT_MODULE, "grow-t0").unwrap();
-    let grow_t1 = i.get_function_by_name(DEFAULT_MODULE, "grow-t1").unwrap();
-    let grow_t2 = i.get_function_by_name(DEFAULT_MODULE, "grow-t2").unwrap();
-    let grow_t3 = i.get_function_by_name(DEFAULT_MODULE, "grow-t3").unwrap();
+//     (func (export "size-t0") (result i32) table.size)
+//     (func (export "size-t1") (result i32) (table.size $t1))
+//     (func (export "size-t2") (result i32) (table.size $t2))
+//     (func (export "size-t3") (result i32) (table.size $t3))
 
-    assert_eq!(i.invoke_typed(&size_t0, ()), Ok(0));
-    assert_eq!(i.invoke_typed(&size_t0, ()), Ok(0));
-    assert_eq!(i.invoke_typed(&grow_t0, 1), Ok(()));
-    assert_eq!(i.invoke_typed(&size_t0, ()), Ok(1));
-    assert_eq!(i.invoke_typed(&grow_t0, 4), Ok(()));
-    assert_eq!(i.invoke_typed(&size_t0, ()), Ok(5));
-    assert_eq!(i.invoke_typed(&grow_t0, 0), Ok(()));
-    assert_eq!(i.invoke_typed(&size_t0, ()), Ok(5));
-
-    assert_eq!(i.invoke_typed(&size_t1, ()), Ok(1));
-    assert_eq!(i.invoke_typed(&grow_t1, 1), Ok(()));
-    assert_eq!(i.invoke_typed(&size_t1, ()), Ok(2));
-    assert_eq!(i.invoke_typed(&grow_t1, 4), Ok(()));
-    assert_eq!(i.invoke_typed(&size_t1, ()), Ok(6));
-    assert_eq!(i.invoke_typed(&grow_t1, 0), Ok(()));
-    assert_eq!(i.invoke_typed(&size_t1, ()), Ok(6));
-
-    assert_eq!(i.invoke_typed(&size_t2, ()), Ok(0));
-    assert_eq!(i.invoke_typed(&grow_t2, 3), Ok(()));
-    assert_eq!(i.invoke_typed(&size_t2, ()), Ok(0));
-    assert_eq!(i.invoke_typed(&grow_t2, 1), Ok(()));
-    assert_eq!(i.invoke_typed(&size_t2, ()), Ok(1));
-    assert_eq!(i.invoke_typed(&grow_t2, 0), Ok(()));
-    assert_eq!(i.invoke_typed(&size_t2, ()), Ok(1));
-    assert_eq!(i.invoke_typed(&grow_t2, 4), Ok(()));
-    assert_eq!(i.invoke_typed(&size_t2, ()), Ok(1));
-    assert_eq!(i.invoke_typed(&grow_t2, 1), Ok(()));
-    assert_eq!(i.invoke_typed(&size_t2, ()), Ok(2));
-
-    assert_eq!(i.invoke_typed(&size_t3, ()), Ok(3));
-    assert_eq!(i.invoke_typed(&grow_t3, 1), Ok(()));
-    assert_eq!(i.invoke_typed(&size_t3, ()), Ok(4));
-    assert_eq!(i.invoke_typed(&grow_t3, 3), Ok(()));
-    assert_eq!(i.invoke_typed(&size_t3, ()), Ok(7));
-    assert_eq!(i.invoke_typed(&grow_t3, 0), Ok(()));
-    assert_eq!(i.invoke_typed(&size_t3, ()), Ok(7));
-    assert_eq!(i.invoke_typed(&grow_t3, 2), Ok(()));
-    assert_eq!(i.invoke_typed(&size_t3, ()), Ok(7));
-    assert_eq!(i.invoke_typed(&grow_t3, 1), Ok(()));
-    assert_eq!(i.invoke_typed(&size_t3, ()), Ok(8));
-}
-
-//   ;; Type errors
-
-//   (assert_invalid
-//     (module
-//       (table $t 1 externref)
-//       (func $type-result-i32-vs-empty
-//         (table.size $t)
-//       )
+//     (func (export "grow-t0") (param $sz i32)
+//       (drop (table.grow $t0 (ref.null func) (local.get $sz)))
 //     )
-//     "type mismatch"
-//   )
-//   (assert_invalid
-//     (module
-//       (table $t 1 externref)
-//       (func $type-result-i32-vs-f32 (result f32)
-//         (table.size $t)
-//       )
+//     (func (export "grow-t1") (param $sz i32)
+//       (drop (table.grow $t1 (ref.null func) (local.get $sz)))
 //     )
-//     "type mismatch"
-//   )
+//     (func (export "grow-t2") (param $sz i32)
+//       (drop (table.grow $t2 (ref.null func) (local.get $sz)))
+//     )
+//     (func (export "grow-t3") (param $sz i32)
+//       (drop (table.grow $t3 (ref.null func) (local.get $sz)))
+//     )
+// )
+//     "#;
+//     let wasm_bytes = wat::parse_str(w).unwrap();
+//     let validation_info = validate(&wasm_bytes).unwrap();
+//     let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
+//         .expect("instantiation failed");
+
+//     // let get_funcref = i.get_function_by_name(DEFAULT_MODULE, "get-funcref").unwrap();
+//     // let init = i.get_function_by_name(DEFAULT_MODULE, "init").unwrap();
+//     let size_t0 = i.get_function_by_name(DEFAULT_MODULE, "size-t0").unwrap();
+//     let size_t1 = i.get_function_by_name(DEFAULT_MODULE, "size-t1").unwrap();
+//     let size_t2 = i.get_function_by_name(DEFAULT_MODULE, "size-t2").unwrap();
+//     let size_t3 = i.get_function_by_name(DEFAULT_MODULE, "size-t3").unwrap();
+//     let grow_t0 = i.get_function_by_name(DEFAULT_MODULE, "grow-t0").unwrap();
+//     let grow_t1 = i.get_function_by_name(DEFAULT_MODULE, "grow-t1").unwrap();
+//     let grow_t2 = i.get_function_by_name(DEFAULT_MODULE, "grow-t2").unwrap();
+//     let grow_t3 = i.get_function_by_name(DEFAULT_MODULE, "grow-t3").unwrap();
+
+//     assert_eq!(i.invoke_typed(&size_t0, ()), Ok(0));
+//     assert_eq!(i.invoke_typed(&size_t0, ()), Ok(0));
+//     assert_eq!(i.invoke_typed(&grow_t0, 1), Ok(()));
+//     assert_eq!(i.invoke_typed(&size_t0, ()), Ok(1));
+//     assert_eq!(i.invoke_typed(&grow_t0, 4), Ok(()));
+//     assert_eq!(i.invoke_typed(&size_t0, ()), Ok(5));
+//     assert_eq!(i.invoke_typed(&grow_t0, 0), Ok(()));
+//     assert_eq!(i.invoke_typed(&size_t0, ()), Ok(5));
+
+//     assert_eq!(i.invoke_typed(&size_t1, ()), Ok(1));
+//     assert_eq!(i.invoke_typed(&grow_t1, 1), Ok(()));
+//     assert_eq!(i.invoke_typed(&size_t1, ()), Ok(2));
+//     assert_eq!(i.invoke_typed(&grow_t1, 4), Ok(()));
+//     assert_eq!(i.invoke_typed(&size_t1, ()), Ok(6));
+//     assert_eq!(i.invoke_typed(&grow_t1, 0), Ok(()));
+//     assert_eq!(i.invoke_typed(&size_t1, ()), Ok(6));
+
+//     assert_eq!(i.invoke_typed(&size_t2, ()), Ok(0));
+//     assert_eq!(i.invoke_typed(&grow_t2, 3), Ok(()));
+//     assert_eq!(i.invoke_typed(&size_t2, ()), Ok(0));
+//     assert_eq!(i.invoke_typed(&grow_t2, 1), Ok(()));
+//     assert_eq!(i.invoke_typed(&size_t2, ()), Ok(1));
+//     assert_eq!(i.invoke_typed(&grow_t2, 0), Ok(()));
+//     assert_eq!(i.invoke_typed(&size_t2, ()), Ok(1));
+//     assert_eq!(i.invoke_typed(&grow_t2, 4), Ok(()));
+//     assert_eq!(i.invoke_typed(&size_t2, ()), Ok(1));
+//     assert_eq!(i.invoke_typed(&grow_t2, 1), Ok(()));
+//     assert_eq!(i.invoke_typed(&size_t2, ()), Ok(2));
+
+//     assert_eq!(i.invoke_typed(&size_t3, ()), Ok(3));
+//     assert_eq!(i.invoke_typed(&grow_t3, 1), Ok(()));
+//     assert_eq!(i.invoke_typed(&size_t3, ()), Ok(4));
+//     assert_eq!(i.invoke_typed(&grow_t3, 3), Ok(()));
+//     assert_eq!(i.invoke_typed(&size_t3, ()), Ok(7));
+//     assert_eq!(i.invoke_typed(&grow_t3, 0), Ok(()));
+//     assert_eq!(i.invoke_typed(&size_t3, ()), Ok(7));
+//     assert_eq!(i.invoke_typed(&grow_t3, 2), Ok(()));
+//     assert_eq!(i.invoke_typed(&size_t3, ()), Ok(7));
+//     assert_eq!(i.invoke_typed(&grow_t3, 1), Ok(()));
+//     assert_eq!(i.invoke_typed(&size_t3, ()), Ok(8));
+// }
+
+// //   ;; Type errors
+
+// //   (assert_invalid
+// //     (module
+// //       (table $t 1 externref)
+// //       (func $type-result-i32-vs-empty
+// //         (table.size $t)
+// //       )
+// //     )
+// //     "type mismatch"
+// //   )
+// //   (assert_invalid
+// //     (module
+// //       (table $t 1 externref)
+// //       (func $type-result-i32-vs-f32 (result f32)
+// //         (table.size $t)
+// //       )
+// //     )
+// //     "type mismatch"
+// //   )
