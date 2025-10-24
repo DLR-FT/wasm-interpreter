@@ -9,7 +9,6 @@ use value_stack::Stack;
 
 use crate::core::reader::types::{FuncType, ResultType};
 use crate::execution::assert_validated::UnwrapValidatedExt;
-use crate::execution::hooks::{EmptyHookSet, HookSet};
 use crate::execution::store::Store;
 use crate::execution::value::Value;
 use crate::interop::InteropValueList;
@@ -34,53 +33,43 @@ pub mod value_stack;
 /// The default module name if a [RuntimeInstance] was created using [RuntimeInstance::new].
 pub const DEFAULT_MODULE: &str = "__interpreter_default__";
 
-pub struct RuntimeInstance<'b, T = (), H = EmptyHookSet, C = DefaultConfig>
-where
-    H: HookSet + core::fmt::Debug,
-    C: Config,
-{
-    pub hook_set: H,
+pub struct RuntimeInstance<'b, T = (), C: Config = DefaultConfig> {
     pub store: Store<'b, T, C>,
 }
 
-impl<T: Default, C: Default + Config> Default for RuntimeInstance<'_, T, EmptyHookSet, C> {
+impl<T: Default> Default for RuntimeInstance<'_, T> {
     fn default() -> Self {
-        Self::new(C::default(), T::default())
+        Self::new(T::default())
     }
 }
 
-impl<'b, T, C: Config> RuntimeInstance<'b, T, EmptyHookSet, C> {
-    pub fn new(config: C, user_data: T) -> Self {
-        Self::new_with_hooks(config, user_data, EmptyHookSet)
+impl<'b, T> RuntimeInstance<'b, T> {
+    pub fn new(user_data: T) -> Self {
+        Self::new_with_config(DefaultConfig::default(), user_data)
     }
 
     pub fn new_with_default_module(
-        config: C,
         user_data: T,
         validation_info: &'_ ValidationInfo<'b>,
     ) -> Result<Self, RuntimeError> {
-        let mut instance = Self::new_with_hooks(config, user_data, EmptyHookSet);
+        let mut instance = Self::new_with_config(DefaultConfig::default(), user_data);
         instance.add_module(DEFAULT_MODULE, validation_info)?;
         Ok(instance)
     }
 
     pub fn new_named(
-        config: C,
         user_data: T,
         module_name: &str,
         validation_info: &'_ ValidationInfo<'b>,
         // store: &mut Store,
     ) -> Result<Self, RuntimeError> {
-        let mut instance = Self::new_with_hooks(config, user_data, EmptyHookSet);
+        let mut instance = Self::new_with_config(DefaultConfig::default(), user_data);
         instance.add_module(module_name, validation_info)?;
         Ok(instance)
     }
 }
 
-impl<'b, T, H, C: Config> RuntimeInstance<'b, T, H, C>
-where
-    H: HookSet + core::fmt::Debug,
-{
+impl<'b, T, C: Config> RuntimeInstance<'b, T, C> {
     pub fn add_module(
         &mut self,
         module_name: &str,
@@ -89,9 +78,8 @@ where
         self.store.add_module(module_name, validation_info, None)
     }
 
-    pub fn new_with_hooks(config: C, user_data: T, hook_set: H) -> Self {
+    pub fn new_with_config(config: C, user_data: T) -> Self {
         RuntimeInstance {
-            hook_set,
             store: Store::new(config, user_data),
         }
     }

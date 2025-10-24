@@ -29,7 +29,6 @@ use alloc::sync::Arc;
 use alloc::vec;
 use alloc::vec::Vec;
 
-use super::hooks::EmptyHookSet;
 use super::interpreter_loop::{data_drop, elem_drop};
 use super::UnwrapValidatedExt;
 
@@ -625,7 +624,7 @@ impl<'b, T, C: Config> Store<'b, T, C> {
                         };
 
                         // Run the interpreter
-                        let result = interpreter_loop::run(&mut resumable, self, EmptyHookSet)?;
+                        let result = interpreter_loop::run(&mut resumable, self)?;
 
                         match result {
                             None => {
@@ -669,7 +668,7 @@ impl<'b, T, C: Config> Store<'b, T, C> {
                     .expect("the key to always be valid as self was not dropped yet");
 
                 // Resume execution
-                let result = interpreter_loop::run(resumable, self, EmptyHookSet)?;
+                let result = interpreter_loop::run(resumable, self)?;
 
                 match result {
                     None => {
