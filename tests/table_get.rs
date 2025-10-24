@@ -16,28 +16,33 @@
 */
 
 use wasm::{
-    interop::RefFunc, validate, value::FuncAddr, RuntimeError, RuntimeInstance, TrapError,
-    DEFAULT_MODULE,
+    interop::{RefExtern, RefFunc},
+    validate,
+    value::ExternAddr,
+    RuntimeError, RuntimeInstance, TrapError, DEFAULT_MODULE,
 };
 
 #[test_log::test]
 fn table_funcref_test() {
     let w = r#"
 (module
-  (table $t2 2 funcref)
+  (table $t2 2 externref)
   (table $t3 3 funcref)
   (elem (table $t3) (i32.const 1) func $dummy)
   (func $dummy)
-  (func (export "init") (param $r funcref)
+
+  (func (export "init") (param $r externref)
     (table.set $t2 (i32.const 1) (local.get $r))
     (table.set $t3 (i32.const 2) (table.get $t3 (i32.const 1)))
   )
-  (func (export "get-funcref") (param $i i32) (result funcref)
+
+  (func (export "get-externref") (param $i i32) (result externref)
     (table.get (local.get $i))
   )
-  (func $f3 (export "get-funcref-2") (param $i i32) (result funcref)
+  (func $f3 (export "get-funcref") (param $i i32) (result funcref)
     (table.get $t3 (local.get $i))
   )
+
   (func (export "is_null-funcref") (param $i i32) (result i32)
     (ref.is_null (call $f3 (local.get $i)))
   )
@@ -49,48 +54,48 @@ fn table_funcref_test() {
         .expect("instantiation failed");
 
     let init = i.get_function_by_name(DEFAULT_MODULE, "init").unwrap();
+    let get_externref = i
+        .get_function_by_name(DEFAULT_MODULE, "get-externref")
+        .unwrap();
     let get_funcref = i
         .get_function_by_name(DEFAULT_MODULE, "get-funcref")
-        .unwrap();
-    let get_funcref_2 = i
-        .get_function_by_name(DEFAULT_MODULE, "get-funcref-2")
         .unwrap();
     let is_null_funcref = i
         .get_function_by_name(DEFAULT_MODULE, "is_null-funcref")
         .unwrap();
 
-    i.invoke_typed::<RefFunc, ()>(&init, RefFunc(Some(FuncAddr(1))))
+    i.invoke_typed::<RefExtern, ()>(&init, RefExtern(Some(ExternAddr(1))))
         .unwrap();
 
-    assert_eq!(i.invoke_typed(&get_funcref, 0), Ok(RefFunc(None)));
+    assert_eq!(i.invoke_typed(&get_externref, 0), Ok(RefExtern(None)));
     assert_eq!(
-        i.invoke_typed(&get_funcref, 1),
-        Ok(RefFunc(Some(FuncAddr(1))))
+        i.invoke_typed(&get_externref, 1),
+        Ok(RefExtern(Some(ExternAddr(1))))
     );
-    assert_eq!(i.invoke_typed(&get_funcref_2, 0), Ok(RefFunc(None)));
+    assert_eq!(i.invoke_typed(&get_funcref, 0), Ok(RefFunc(None)));
     assert_eq!(i.invoke_typed(&is_null_funcref, 1), Ok(0));
     assert_eq!(i.invoke_typed(&is_null_funcref, 2), Ok(0));
 
     assert_eq!(
-        i.invoke_typed::<i32, RefFunc>(&get_funcref, 2).err(),
+        i.invoke_typed::<i32, RefFunc>(&get_externref, 2).err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
         ))
     );
     assert_eq!(
-        i.invoke_typed::<i32, RefFunc>(&get_funcref_2, 3).err(),
+        i.invoke_typed::<i32, RefFunc>(&get_funcref, 3).err(),
+        Some(RuntimeError::Trap(
+            TrapError::TableOrElementAccessOutOfBounds
+        ))
+    );
+    assert_eq!(
+        i.invoke_typed::<i32, RefFunc>(&get_externref, -1).err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
         ))
     );
     assert_eq!(
         i.invoke_typed::<i32, RefFunc>(&get_funcref, -1).err(),
-        Some(RuntimeError::Trap(
-            TrapError::TableOrElementAccessOutOfBounds
-        ))
-    );
-    assert_eq!(
-        i.invoke_typed::<i32, RefFunc>(&get_funcref_2, -1).err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
         ))
