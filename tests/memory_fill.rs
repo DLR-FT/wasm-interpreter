@@ -17,13 +17,13 @@
 
 // use core::slice::SlicePattern;
 
-use wasm::{validate, RuntimeInstance, DEFAULT_MODULE};
+use wasm::{validate, ExternVal, RuntimeInstance, DEFAULT_MODULE};
 
 #[test_log::test]
 fn memory_fill() {
     let w = r#"
     (module
-        (memory 1)
+        (memory (export "mem") 1)
         (func (export "fill")
             (memory.fill (i32.const 0) (i32.const 2777) (i32.const 100))
         )
@@ -31,16 +31,19 @@ fn memory_fill() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _default_module) = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut i, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
     let fill = i.get_function_by_name(DEFAULT_MODULE, "fill").unwrap();
+    let ExternVal::Mem(mem) = i.store.instance_export(module, "mem").unwrap() else {
+        panic!("expected memory")
+    };
+
     i.invoke_typed::<(), ()>(&fill, ()).unwrap();
-    let mem_inst = &i.store.memories[0];
 
     let expected = [vec![217u8; 100], vec![0u8; 5]].concat();
     for (idx, expected_byte) in expected.into_iter().enumerate() {
-        let mem_byte: u8 = mem_inst.mem.load(idx).unwrap();
+        let mem_byte: u8 = i.store.mem_read(mem, idx as u32).unwrap();
         assert_eq!(
             mem_byte.to_ascii_lowercase(),
             expected_byte.to_ascii_lowercase()
