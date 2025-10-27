@@ -16,8 +16,8 @@ use wasm::value::{FuncAddr, Ref};
 # See the License for the specific language governing permissions and
 # limitations under the License.
 */
-use wasm::ValidationError;
 use wasm::{validate, RuntimeInstance, DEFAULT_MODULE};
+use wasm::{ExternVal, ValidationError};
 
 #[test_log::test]
 fn table_basic() {
@@ -112,7 +112,7 @@ fn table_size_minimum_must_not_be_greater_than_maximum() {
 fn table_elem_test() {
     let w = r#"
     (module
-        (table 2 funcref)
+        (table (export "tab") 2 funcref)
         (elem (i32.const 0) $f1 $f3)
         (func $f1 (export "f1") (result i32)
             i32.const 42)
@@ -125,20 +125,23 @@ fn table_elem_test() {
     )"#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (instance, default_module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     let f1 = instance.get_function_by_name(DEFAULT_MODULE, "f1").unwrap();
     let f3 = instance.get_function_by_name(DEFAULT_MODULE, "f3").unwrap();
 
-    let table = &instance.store.tables[0];
+    let Ok(ExternVal::Table(table)) = instance.store.instance_export(default_module, "tab") else {
+        panic!("expected a table to be exported")
+    };
+
     assert_eq!(
-        &table.elem,
-        &[
-            Ref::Func(FuncAddr(f1.func_addr)),
-            Ref::Func(FuncAddr(f3.func_addr))
-        ]
+        instance.store.table_read(table, 0),
+        Ok(Ref::Func(FuncAddr(f1.func_addr)))
+    );
+    assert_eq!(
+        instance.store.table_read(table, 1),
+        Ok(Ref::Func(FuncAddr(f3.func_addr)))
     );
 }
 
