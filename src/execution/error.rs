@@ -13,6 +13,7 @@ pub enum RuntimeError {
     GlobalTypeMismatch,
     /// A host function returned the [`HaltExecutionError`](crate::HaltExecutionError), which caused execution to be halted.
     HostFunctionHaltedExecution,
+    // An access to a table element was out of bounds
     TableAccessOutOfBounds,
     UnknownExport,
     TableTypeMismatch,
