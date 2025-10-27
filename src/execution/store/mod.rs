@@ -1,6 +1,6 @@
 use core::mem;
 
-use crate::addrs::{AddrVec, FuncAddr, TableAddr};
+use crate::addrs::{AddrVec, FuncAddr, MemAddr, TableAddr};
 use crate::config::Config;
 use crate::core::indices::TypeIdx;
 use crate::core::reader::span::Span;
@@ -44,7 +44,7 @@ pub mod addrs;
 pub struct Store<'b, T: Config> {
     pub(crate) functions: AddrVec<FuncAddr, FuncInst<T>>,
     pub(crate) tables: AddrVec<TableAddr, TableInst>,
-    pub memories: Vec<MemInst>,
+    pub(crate) memories: AddrVec<MemAddr, MemInst>,
     pub globals: Vec<GlobalInst>,
     pub data: Vec<DataInst>,
     pub elements: Vec<ElemInst>,
@@ -71,7 +71,7 @@ impl<'b, T: Config> Store<'b, T> {
         Self {
             functions: AddrVec::default(),
             tables: AddrVec::default(),
-            memories: Vec::default(),
+            memories: AddrVec::default(),
             globals: Vec::default(),
             data: Vec::default(),
             elements: Vec::default(),
@@ -224,7 +224,7 @@ impl<'b, T: Config> Store<'b, T> {
             .iter()
             .map(|table_type| self.alloc_table(*table_type, Ref::Null(table_type.et)))
             .collect();
-        let mem_addrs: Vec<usize> = module
+        let mem_addrs: Vec<MemAddr> = module
             .memories
             .iter()
             .map(|mem_type| self.alloc_mem(*mem_type))
@@ -260,7 +260,7 @@ impl<'b, T: Config> Store<'b, T> {
         let mut table_addrs_mod: Vec<TableAddr> = extern_vals.iter().tables().collect();
         table_addrs_mod.extend(table_addrs);
 
-        let mut mem_addrs_mod: Vec<usize> = extern_vals.iter().mems().collect();
+        let mut mem_addrs_mod: Vec<MemAddr> = extern_vals.iter().mems().collect();
         mem_addrs_mod.extend(mem_addrs);
 
         // skipping step 17 partially as it was partially done in instantiation step
@@ -624,7 +624,7 @@ impl<'b, T: Config> Store<'b, T> {
     /// Allocates a new linear memory and returns its memory address.
     ///
     /// See: WebAssembly Specification 2.0 - 7.1.9 - mem_alloc
-    pub fn mem_alloc(&mut self, mem_type: MemType) -> usize {
+    pub fn mem_alloc(&mut self, mem_type: MemType) -> MemAddr {
         // 1. Pre-condition: `memtype` is valid.
 
         // 2. Let `memaddr` be the result of allocating a memory in `store` with memory type `memtype`.
@@ -637,12 +637,9 @@ impl<'b, T: Config> Store<'b, T> {
     /// Gets the memory type of some memory by its memory address
     ///
     /// See: WebAssemblySpecification 2.0 - 7.1.9 - mem_type
-    pub fn mem_type(&self, mem_addr: usize) -> MemType {
+    pub fn mem_type(&self, mem_addr: MemAddr) -> MemType {
         // 1. Return `S.mems[a].type`.
-        self.memories
-            .get(mem_addr)
-            .expect("memory addrs to always be valid")
-            .ty
+        self.memories.get(mem_addr).ty
 
         // 2. Post-condition: the returned memory type is valid.
     }
@@ -650,15 +647,12 @@ impl<'b, T: Config> Store<'b, T> {
     /// Reads a byte from some memory by its memory address and an index into the memory
     ///
     /// See: WebAssemblySpecification 2.0 - 7.1.9 - mem_read
-    pub fn mem_read(&self, mem_addr: usize, i: u32) -> Result<u8, RuntimeError> {
+    pub fn mem_read(&self, mem_addr: MemAddr, i: u32) -> Result<u8, RuntimeError> {
         // Convert the index type
         let i = usize::try_from(i).expect("the architecture to be at least 32-bit");
 
         // 1. Let `mi` be the memory instance `store.mems[memaddr]`.
-        let mi = self
-            .memories
-            .get(mem_addr)
-            .expect("memory addrs to always be valid");
+        let mi = self.memories.get(mem_addr);
 
         // 2. If `i` is larger than or equal to the length of `mi.data`, then return `error`.
         // 3. Else, return the byte `mi.data[i]`.
@@ -668,15 +662,12 @@ impl<'b, T: Config> Store<'b, T> {
     /// Writes a byte into some memory by its memory address and an index into the memory
     ///
     /// See: WebAssemblySpecification 2.0 - 7.1.9 - mem_write
-    pub fn mem_write(&self, mem_addr: usize, i: u32, byte: u8) -> Result<(), RuntimeError> {
+    pub fn mem_write(&self, mem_addr: MemAddr, i: u32, byte: u8) -> Result<(), RuntimeError> {
         // Convert the index type
         let i = usize::try_from(i).expect("the architecture to be at least 32-bit");
 
         // 1. Let `mi` be the memory instance `store.mems[memaddr]`.
-        let mi = self
-            .memories
-            .get(mem_addr)
-            .expect("memory addrs to always be valid");
+        let mi = self.memories.get(mem_addr);
 
         mi.mem.store(i, byte)
     }
@@ -684,13 +675,9 @@ impl<'b, T: Config> Store<'b, T> {
     /// Gets the size of some memory by its memory address in pages.
     ///
     /// See: WebAssemblySpecification 2.0 - 7.1.9 - mem_size
-    pub fn mem_size(&self, mem_addr: usize) -> u32 {
+    pub fn mem_size(&self, mem_addr: MemAddr) -> u32 {
         // 1. Return the length of `store.mems[memaddr].data` divided by the page size.
-        let length = self
-            .memories
-            .get(mem_addr)
-            .expect("mem addrs to always be valid")
-            .size();
+        let length = self.memories.get(mem_addr).size();
 
         // In addition we have to convert the length back to a `u32`
         length.try_into().expect(
@@ -700,16 +687,13 @@ impl<'b, T: Config> Store<'b, T> {
     /// Grows some memory by its memory address by `n` pages.
     ///
     /// See: WebAssemblySpecification 2.0 - 7.1.9 - mem_grow
-    pub fn mem_grow(&mut self, mem_addr: usize, n: u32) -> Result<(), RuntimeError> {
+    pub fn mem_grow(&mut self, mem_addr: MemAddr, n: u32) -> Result<(), RuntimeError> {
         // 1. Try growing the memory instance `store.mems[memaddr]` by `n` pages:
         //   a. If it succeeds, then return the updated store.
         //   b. Else, return `error`.
         //
         // Note: Returning the new store is a noop for us because we mutate the store instead.
-        self.memories
-            .get_mut(mem_addr)
-            .expect("memory addrs to always be valid")
-            .grow(n)
+        self.memories.get_mut(mem_addr).grow(n)
     }
 
     /// Allocates a new global and returns its global address.
@@ -850,7 +834,7 @@ impl<'b, T: Config> Store<'b, T> {
     }
 
     /// <https://webassembly.github.io/spec/core/exec/modules.html#memories>
-    fn alloc_mem(&mut self, mem_type: MemType) -> usize {
+    fn alloc_mem(&mut self, mem_type: MemType) -> MemAddr {
         let mem_inst = MemInst {
             ty: mem_type,
             mem: LinearMemory::new_with_initial_pages(
@@ -858,9 +842,7 @@ impl<'b, T: Config> Store<'b, T> {
             ),
         };
 
-        let addr = self.memories.len();
-        self.memories.push(mem_inst);
-        addr
+        self.memories.insert(mem_inst)
     }
 
     /// <https://webassembly.github.io/spec/core/exec/modules.html#globals>
@@ -1283,7 +1265,7 @@ impl core::fmt::Debug for DataInst {
 pub enum ExternVal {
     Func(FuncAddr),
     Table(TableAddr),
-    Mem(usize),
+    Mem(MemAddr),
     Global(usize),
 }
 
@@ -1298,13 +1280,7 @@ impl ExternVal {
             // TODO: fix ugly clone in function types
             ExternVal::Func(func_addr) => ExternType::Func(store.functions.get(*func_addr).ty()),
             ExternVal::Table(table_addr) => ExternType::Table(store.tables.get(*table_addr).ty),
-            ExternVal::Mem(mem_addr) => ExternType::Mem(
-                store
-                    .memories
-                    .get(*mem_addr)
-                    .expect("the correct store to be used")
-                    .ty,
-            ),
+            ExternVal::Mem(mem_addr) => ExternType::Mem(store.memories.get(*mem_addr).ty),
             ExternVal::Global(global_addr) => ExternType::Global(
                 store
                     .globals
@@ -1324,7 +1300,7 @@ impl ExternVal {
 pub trait ExternFilterable<T> {
     fn funcs(self) -> impl Iterator<Item = FuncAddr>;
     fn tables(self) -> impl Iterator<Item = TableAddr>;
-    fn mems(self) -> impl Iterator<Item = T>;
+    fn mems(self) -> impl Iterator<Item = MemAddr>;
     fn globals(self) -> impl Iterator<Item = T>;
 }
 
@@ -1352,7 +1328,7 @@ where
         })
     }
 
-    fn mems(self) -> impl Iterator<Item = usize> {
+    fn mems(self) -> impl Iterator<Item = MemAddr> {
         self.filter_map(|extern_val| {
             if let ExternVal::Mem(mem_addr) = extern_val {
                 Some(*mem_addr)
@@ -1379,7 +1355,7 @@ pub struct ModuleInst<'b> {
     pub types: Vec<FuncType>,
     pub func_addrs: Vec<FuncAddr>,
     pub table_addrs: Vec<TableAddr>,
-    pub mem_addrs: Vec<usize>,
+    pub mem_addrs: Vec<MemAddr>,
     pub global_addrs: Vec<usize>,
     pub elem_addrs: Vec<usize>,
     pub data_addrs: Vec<usize>,
