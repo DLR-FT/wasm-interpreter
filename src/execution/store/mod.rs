@@ -1,6 +1,6 @@
 use core::mem;
 
-use crate::addrs::{AddrVec, FuncAddr};
+use crate::addrs::{AddrVec, FuncAddr, TableAddr};
 use crate::config::Config;
 use crate::core::indices::TypeIdx;
 use crate::core::reader::span::Span;
@@ -43,10 +43,10 @@ pub mod addrs;
 /// <https://webassembly.github.io/spec/core/exec/runtime.html#store>
 pub struct Store<'b, T: Config> {
     pub(crate) functions: AddrVec<FuncAddr, FuncInst<T>>,
+    pub(crate) tables: AddrVec<TableAddr, TableInst>,
     pub memories: Vec<MemInst>,
     pub globals: Vec<GlobalInst>,
     pub data: Vec<DataInst>,
-    pub tables: Vec<TableInst>,
     pub elements: Vec<ElemInst>,
     pub modules: Vec<ModuleInst<'b>>,
 
@@ -70,10 +70,10 @@ impl<'b, T: Config> Store<'b, T> {
         // For us the store is empty except for the user data, which we do not have control over.
         Self {
             functions: AddrVec::default(),
+            tables: AddrVec::default(),
             memories: Vec::default(),
             globals: Vec::default(),
             data: Vec::default(),
-            tables: Vec::default(),
             elements: Vec::default(),
             modules: Vec::default(),
             registry: Registry::default(),
@@ -219,7 +219,7 @@ impl<'b, T: Config> Store<'b, T> {
         // allocation: skip step 2 as it was done in instantiation step 5
 
         // allocation: step 3-13
-        let table_addrs: Vec<usize> = module
+        let table_addrs: Vec<TableAddr> = module
             .tables
             .iter()
             .map(|table_type| self.alloc_table(*table_type, Ref::Null(table_type.et)))
@@ -257,7 +257,7 @@ impl<'b, T: Config> Store<'b, T> {
         // allocation: skip step 14 as it was done in instantiation step 5
 
         // allocation: step 15,16
-        let mut table_addrs_mod: Vec<usize> = extern_vals.iter().tables().collect();
+        let mut table_addrs_mod: Vec<TableAddr> = extern_vals.iter().tables().collect();
         table_addrs_mod.extend(table_addrs);
 
         let mut mem_addrs_mod: Vec<usize> = extern_vals.iter().mems().collect();
@@ -513,7 +513,7 @@ impl<'b, T: Config> Store<'b, T> {
         &mut self,
         table_type: TableType,
         r#ref: Ref,
-    ) -> Result<usize, RuntimeError> {
+    ) -> Result<TableAddr, RuntimeError> {
         // Check pre-condition: ref has correct type
         if table_type.et != r#ref.ty() {
             return Err(RuntimeError::TableTypeMismatch);
@@ -534,12 +534,9 @@ impl<'b, T: Config> Store<'b, T> {
     /// Gets the type of some table by its addr.
     ///
     /// See: WebAssembly Specification 2.0 - 7.1.8 - table_type
-    pub fn table_type(&self, table_addr: usize) -> TableType {
+    pub fn table_type(&self, table_addr: TableAddr) -> TableType {
         // 1. Return `S.tables[a].type`.
-        self.tables
-            .get(table_addr)
-            .expect("table addrs to always be valid")
-            .ty
+        self.tables.get(table_addr).ty
 
         // 2. Post-condition: the returned table type is valid.
     }
@@ -547,15 +544,12 @@ impl<'b, T: Config> Store<'b, T> {
     /// Reads a single reference from a table by its table address and an index into the table.
     ///
     /// See: WebAssembly Specification 2.0 - 7.1.8 - table_read
-    pub fn table_read(&self, table_addr: usize, i: u32) -> Result<Ref, RuntimeError> {
+    pub fn table_read(&self, table_addr: TableAddr, i: u32) -> Result<Ref, RuntimeError> {
         // Convert `i` to usize for indexing
         let i = usize::try_from(i).expect("the architecture to be at least 32-bit");
 
         // 1. Let `ti` be the table instance `store.tables[tableaddr]`
-        let ti = self
-            .tables
-            .get(table_addr)
-            .expect("table addrs to always be valid");
+        let ti = self.tables.get(table_addr);
 
         // 2. If `i` is larger than or equal to the length of `ti.elem`, then return `error`.
         // 3. Else, return the reference value `ti.elem[i]`.
@@ -570,7 +564,7 @@ impl<'b, T: Config> Store<'b, T> {
     /// See: WebAssembly Specification 2.0 - 7.1.8 - table_write
     pub fn table_write(
         &mut self,
-        table_addr: usize,
+        table_addr: TableAddr,
         i: u32,
         r#ref: Ref,
     ) -> Result<(), RuntimeError> {
@@ -578,10 +572,7 @@ impl<'b, T: Config> Store<'b, T> {
         let i = usize::try_from(i).expect("the architecture to be at least 32-bit");
 
         // 1. Let `ti` be the table instance `store.tables[tableaddr]`.
-        let ti = self
-            .tables
-            .get_mut(table_addr)
-            .expect("table addrs to always be valid");
+        let ti = self.tables.get_mut(table_addr);
 
         // Check pre-condition: ref has correct type
         if ti.ty.et != r#ref.ty() {
@@ -603,14 +594,9 @@ impl<'b, T: Config> Store<'b, T> {
     /// Gets the current size of a table by its table address.
     ///
     /// See: WebAssembly Specification 2.0 - 7.1.8 - table_size
-    pub fn table_size(&self, table_addr: usize) -> u32 {
+    pub fn table_size(&self, table_addr: TableAddr) -> u32 {
         // 1. Return the length of `store.tables[tableaddr].elem`.
-        let len = self
-            .tables
-            .get(table_addr)
-            .expect("table addrs to always be valid")
-            .elem
-            .len();
+        let len = self.tables.get(table_addr).elem.len();
 
         // In addition we have to convert the length back to a `u32`
         u32::try_from(len).expect(
@@ -623,7 +609,7 @@ impl<'b, T: Config> Store<'b, T> {
     /// See: WebAssembly Specification 2.0 - 7.1.8 - table_grow
     pub fn table_grow(
         &mut self,
-        table_addr: usize,
+        table_addr: TableAddr,
         n: u32,
         r#ref: Ref,
     ) -> Result<(), RuntimeError> {
@@ -632,10 +618,7 @@ impl<'b, T: Config> Store<'b, T> {
         //   b. Else, return `error`.
         //
         // Note: Returning the new store is a noop for us because we mutate the store instead.
-        self.tables
-            .get_mut(table_addr)
-            .expect("table addrs to always be valid")
-            .grow(n, r#ref)
+        self.tables.get_mut(table_addr).grow(n, r#ref)
     }
 
     /// Allocates a new linear memory and returns its memory address.
@@ -857,15 +840,13 @@ impl<'b, T: Config> Store<'b, T> {
     }
 
     /// <https://webassembly.github.io/spec/core/exec/modules.html#tables>
-    fn alloc_table(&mut self, table_type: TableType, reff: Ref) -> usize {
+    fn alloc_table(&mut self, table_type: TableType, reff: Ref) -> TableAddr {
         let table_inst = TableInst {
             ty: table_type,
             elem: vec![reff; table_type.lim.min as usize],
         };
 
-        let addr = self.tables.len();
-        self.tables.push(table_inst);
-        addr
+        self.tables.insert(table_inst)
     }
 
     /// <https://webassembly.github.io/spec/core/exec/modules.html#memories>
@@ -1301,7 +1282,7 @@ impl core::fmt::Debug for DataInst {
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum ExternVal {
     Func(FuncAddr),
-    Table(usize),
+    Table(TableAddr),
     Mem(usize),
     Global(usize),
 }
@@ -1316,13 +1297,7 @@ impl ExternVal {
         match self {
             // TODO: fix ugly clone in function types
             ExternVal::Func(func_addr) => ExternType::Func(store.functions.get(*func_addr).ty()),
-            ExternVal::Table(table_addr) => ExternType::Table(
-                store
-                    .tables
-                    .get(*table_addr)
-                    .expect("the correct store to be used")
-                    .ty,
-            ),
+            ExternVal::Table(table_addr) => ExternType::Table(store.tables.get(*table_addr).ty),
             ExternVal::Mem(mem_addr) => ExternType::Mem(
                 store
                     .memories
@@ -1348,7 +1323,7 @@ impl ExternVal {
 // TODO implement this trait for ExternType lists Export lists
 pub trait ExternFilterable<T> {
     fn funcs(self) -> impl Iterator<Item = FuncAddr>;
-    fn tables(self) -> impl Iterator<Item = T>;
+    fn tables(self) -> impl Iterator<Item = TableAddr>;
     fn mems(self) -> impl Iterator<Item = T>;
     fn globals(self) -> impl Iterator<Item = T>;
 }
@@ -1367,7 +1342,7 @@ where
         })
     }
 
-    fn tables(self) -> impl Iterator<Item = usize> {
+    fn tables(self) -> impl Iterator<Item = TableAddr> {
         self.filter_map(|extern_val| {
             if let ExternVal::Table(table_addr) = extern_val {
                 Some(*table_addr)
@@ -1403,7 +1378,7 @@ where
 pub struct ModuleInst<'b> {
     pub types: Vec<FuncType>,
     pub func_addrs: Vec<FuncAddr>,
-    pub table_addrs: Vec<usize>,
+    pub table_addrs: Vec<TableAddr>,
     pub mem_addrs: Vec<usize>,
     pub global_addrs: Vec<usize>,
     pub elem_addrs: Vec<usize>,
