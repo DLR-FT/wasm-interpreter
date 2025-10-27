@@ -23,7 +23,7 @@ use wasm::{validate, RuntimeInstance, DEFAULT_MODULE};
 fn memory_fill() {
     let w = r#"
     (module
-        (memory 1)
+        (memory (export "mem") 1)
         (func (export "fill")
             (memory.fill (i32.const 0) (i32.const 2777) (i32.const 100))
         )
@@ -35,6 +35,9 @@ fn memory_fill() {
         .expect("instantiation failed");
 
     let fill = i.get_function_by_name(DEFAULT_MODULE, "fill").unwrap();
+    // TODO where to get module addr from?
+    let mem = i.store.instance_export(DEFAULT_MODULE, "mem");
+
     i.invoke_typed::<(), ()>(&fill, ()).unwrap();
     let mem_inst = &i.store.memories[0];
 
