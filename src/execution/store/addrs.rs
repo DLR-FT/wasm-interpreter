@@ -19,7 +19,7 @@
 //! the [`Store`](crate::Store) are possible, while providing a nice API, even
 //! if it is just used internally.
 
-use core::marker::PhantomData;
+use core::{cmp::Ordering, marker::PhantomData};
 
 use alloc::vec::Vec;
 
@@ -69,6 +69,44 @@ impl<A: Addr, Inst> AddrVec<A, Inst> {
         self.inner.push(instance);
         A::new_unchecked(new_addr)
     }
+
+    /// Mutably borrows two instances by their addresses and returns those
+    /// references. In the case where both given addresses are equal, `None` is
+    /// returned instead.
+    pub(crate) fn get_two_mut(
+        &mut self,
+        addr_one: A,
+        addr_two: A,
+    ) -> Option<(&mut Inst, &mut Inst)> {
+        let addr_one = addr_one.into_inner();
+        let addr_two = addr_two.into_inner();
+
+        match addr_one.cmp(&addr_two) {
+            Ordering::Greater => {
+                let (left, right) = self.inner.split_at_mut(addr_one);
+                let one = right.get_mut(0).expect(
+                    "this to be exactly the same as addr_one and addresses to always be valid",
+                );
+                let two = left
+                    .get_mut(addr_two)
+                    .expect("addresses to always be valid");
+
+                Some((one, two))
+            }
+            Ordering::Less => {
+                let (left, right) = self.inner.split_at_mut(addr_two);
+                let one = left
+                    .get_mut(addr_one)
+                    .expect("addresses to always be valid");
+                let two = right.get_mut(0).expect(
+                    "this to be exactly the same as addr_two and addresses to always be valid",
+                );
+
+                Some((one, two))
+            }
+            Ordering::Equal => None,
+        }
+    }
 }
 
 /// An address to a function instance that lives in a specific [`Store`](crate::execution::store::Store).
@@ -87,6 +125,26 @@ impl core::fmt::Display for FuncAddr {
 }
 
 impl Addr for FuncAddr {
+    fn new_unchecked(inner: usize) -> Self {
+        Self(inner)
+    }
+
+    fn into_inner(self) -> usize {
+        self.0
+    }
+}
+
+/// An address to a table instance that lives in a specific [`Store`](crate::Store).
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub struct TableAddr(usize);
+
+impl core::fmt::Display for TableAddr {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "table address {}", self.0)
+    }
+}
+
+impl Addr for TableAddr {
     fn new_unchecked(inner: usize) -> Self {
         Self(inner)
     }
