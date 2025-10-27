@@ -19,7 +19,8 @@
 //! the [`Store`](crate::Store) are possible, while providing a nice API, even
 //! if it is just used internally.
 
-use core::marker::PhantomData;
+use super::TableInst;
+use core::{cmp::Ordering, marker::PhantomData};
 
 use alloc::vec::Vec;
 
@@ -51,6 +52,13 @@ impl<A: Addr, Inst> AddrVec<A, Inst> {
     pub fn get(&self, addr: A) -> &Inst {
         self.inner
             .get(addr.into_inner())
+            .expect("addrs to always be valid")
+    }
+
+    /// Returns a mutable reference to some instance by its address `addr`.
+    pub fn get_mut(&mut self, addr: A) -> &mut Inst {
+        self.inner
+            .get_mut(addr.into_inner())
             .expect("addrs to always be valid")
     }
 
@@ -90,5 +98,62 @@ impl Addr for FuncAddr {
 
     fn into_inner(self) -> usize {
         self.0
+    }
+}
+
+/// An address to a [`TableInst`] that lives in a specific [`Store`](crate::Store).
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub struct TableAddr(usize);
+
+impl core::fmt::Display for TableAddr {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "table address {}", self.0)
+    }
+}
+
+impl Addr for TableAddr {
+    fn new_unchecked(inner: usize) -> Self {
+        Self(inner)
+    }
+
+    fn into_inner(self) -> usize {
+        self.0
+    }
+}
+
+impl AddrVec<TableAddr, TableInst> {
+    /// Mutably borrows two table instances by their table addresses and
+    /// returns those references. In the case where both given table
+    /// addresses are equal, `None` is returned instead.
+    pub(crate) fn get_two_mut(
+        &mut self,
+        addr_one: TableAddr,
+        addr_two: TableAddr,
+    ) -> Option<(&mut TableInst, &mut TableInst)> {
+        match addr_one.0.cmp(&addr_two.0) {
+            Ordering::Greater => {
+                let (left, right) = self.inner.split_at_mut(addr_one.0);
+                let one = right.get_mut(0).expect(
+                    "this to be exactly the same as addr_one and addresses to always be valid",
+                );
+                let two = left
+                    .get_mut(addr_two.0)
+                    .expect("addresses to always be valid");
+
+                Some((one, two))
+            }
+            Ordering::Less => {
+                let (left, right) = self.inner.split_at_mut(addr_two.0);
+                let one = left
+                    .get_mut(addr_one.0)
+                    .expect("addresses to always be valid");
+                let two = right.get_mut(0).expect(
+                    "this to be exactly the same as addr_two and addresses to always be valid",
+                );
+
+                Some((one, two))
+            }
+            Ordering::Equal => None,
+        }
     }
 }

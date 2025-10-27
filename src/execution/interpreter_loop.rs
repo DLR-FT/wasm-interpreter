@@ -17,6 +17,7 @@ use core::{
 };
 
 use crate::{
+    addrs::{AddrVec, TableAddr},
     assert_validated::UnwrapValidatedExt,
     core::{
         indices::{DataIdx, FuncIdx, GlobalIdx, LabelIdx, LocalIdx, MemIdx, TableIdx, TypeIdx},
@@ -268,7 +269,7 @@ pub(super) fn run<T: Config>(
                     .table_addrs
                     .get(table_idx)
                     .unwrap_validated();
-                let tab = &store.tables[table_addr];
+                let tab = store.tables.get(table_addr);
                 let func_ty = store.modules[current_module_idx]
                     .types
                     .get(given_type_idx)
@@ -428,7 +429,7 @@ pub(super) fn run<T: Config>(
                     .table_addrs
                     .get(table_idx)
                     .unwrap_validated();
-                let tab = &store.tables[table_addr];
+                let tab = store.tables.get(table_addr);
 
                 let i: i32 = stack.pop_value().try_into().unwrap_validated();
 
@@ -451,7 +452,7 @@ pub(super) fn run<T: Config>(
                     .table_addrs
                     .get(table_idx)
                     .unwrap_validated();
-                let tab = &mut store.tables[table_addr];
+                let tab = store.tables.get_mut(table_addr);
 
                 let val: Ref = stack.pop_value().try_into().unwrap_validated();
                 let i: i32 = stack.pop_value().try_into().unwrap_validated();
@@ -2335,12 +2336,14 @@ pub(super) fn run<T: Config>(
                         let table_x_idx = wasm.read_var_u32().unwrap_validated() as usize;
                         let table_y_idx = wasm.read_var_u32().unwrap_validated() as usize;
 
-                        let tab_x_elem_len = store.tables
-                            [store.modules[current_module_idx].table_addrs[table_x_idx]]
+                        let tab_x_elem_len = store
+                            .tables
+                            .get(store.modules[current_module_idx].table_addrs[table_x_idx])
                             .elem
                             .len();
-                        let tab_y_elem_len = store.tables
-                            [store.modules[current_module_idx].table_addrs[table_y_idx]]
+                        let tab_y_elem_len = store
+                            .tables
+                            .get(store.modules[current_module_idx].table_addrs[table_y_idx])
                             .elem
                             .len();
 
@@ -2378,10 +2381,9 @@ pub(super) fn run<T: Config>(
                                 .table_addrs
                                 .get(table_x_idx)
                                 .unwrap_validated();
-                            let table = &mut store.tables[table_addr];
+                            let table = store.tables.get_mut(table_addr);
                             table.elem.copy_within(s as usize..src_res, d as usize);
                         } else {
-                            use core::cmp::Ordering::*;
                             let src_addr = *store.modules[current_module_idx]
                                 .table_addrs
                                 .get(src)
@@ -2391,17 +2393,10 @@ pub(super) fn run<T: Config>(
                                 .get(dst)
                                 .unwrap_validated();
 
-                            let (src_table, dst_table) = match dst_addr.cmp(&src_addr) {
-                                Greater => {
-                                    let (left, right) = store.tables.split_at_mut(dst_addr);
-                                    (&left[src_addr], &mut right[0])
-                                }
-                                Less => {
-                                    let (left, right) = store.tables.split_at_mut(src_addr);
-                                    (&right[0], &mut left[dst_addr])
-                                }
-                                Equal => unreachable!(),
-                            };
+                            let (src_table, dst_table) = store
+                                .tables
+                                .get_two_mut(src_addr, dst_addr)
+                                .expect("both addrs to never be equal");
 
                             dst_table.elem[d as usize..dst_res]
                                 .copy_from_slice(&src_table.elem[s as usize..src_res]);
@@ -2422,7 +2417,7 @@ pub(super) fn run<T: Config>(
                             .table_addrs
                             .get(table_idx)
                             .unwrap_validated();
-                        let tab = &mut store.tables[table_addr];
+                        let tab = &mut store.tables.get_mut(table_addr);
 
                         let sz = tab.elem.len() as u32;
 
@@ -2447,7 +2442,7 @@ pub(super) fn run<T: Config>(
                             .table_addrs
                             .get(table_idx)
                             .unwrap_validated();
-                        let tab = &mut store.tables[table_addr];
+                        let tab = store.tables.get(table_addr);
 
                         let sz = tab.elem.len() as u32;
 
@@ -2461,7 +2456,7 @@ pub(super) fn run<T: Config>(
                             .table_addrs
                             .get(table_idx)
                             .unwrap_validated();
-                        let tab = &mut store.tables[table_addr];
+                        let tab = store.tables.get_mut(table_addr);
 
                         let len: u32 = stack.pop_value().try_into().unwrap_validated();
                         let val: Ref = stack.pop_value().try_into().unwrap_validated();
@@ -4945,7 +4940,7 @@ fn calculate_mem_address(memarg: &MemArg, relative_address: u32) -> Result<usize
 #[allow(clippy::too_many_arguments)]
 pub(super) fn table_init(
     store_modules: &[ModuleInst],
-    store_tables: &mut [TableInst],
+    store_tables: &mut AddrVec<TableAddr, TableInst>,
     store_elements: &[ElemInst],
     current_module_idx: usize,
     elem_idx: usize,
@@ -4958,12 +4953,13 @@ pub(super) fn table_init(
         .table_addrs
         .get(table_idx)
         .unwrap_validated();
-    let tab = &mut store_tables[tab_addr];
-
     let elem_addr = *store_modules[current_module_idx]
         .elem_addrs
         .get(elem_idx)
         .unwrap_validated();
+
+    let tab = store_tables.get_mut(tab_addr);
+
     let elem = &store_elements[elem_addr];
 
     trace!(
