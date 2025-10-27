@@ -1,4 +1,5 @@
 use wasm::interop::RefFunc;
+use wasm::value::{FuncAddr, Ref};
 /*
 # This file incorporates code from the WebAssembly testsuite, originally
 # available at https://github.com/WebAssembly/testsuite.
@@ -113,34 +114,31 @@ fn table_elem_test() {
     (module
         (table 2 funcref)
         (elem (i32.const 0) $f1 $f3)
-        (func $f1 (result i32)
+        (func $f1 (export "f1") (result i32)
             i32.const 42)
-        (func $f2 (result i32)
+        (func $f2 (export "f2") (result i32)
             i32.const 13)
-        (func $f3 (result i64)
+        (func $f3 (export "f3") (result i64)
             i64.const 13)
-        (func $f4 (result i32)
+        (func $f4 (export "f4") (result i32)
             i32.const 13)
     )"#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
     let instance = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
-    // let table = &instance.modules[0].store.tables[0];
+
+    let f1 = instance.get_function_by_name(DEFAULT_MODULE, "f1").unwrap();
+    let f3 = instance.get_function_by_name(DEFAULT_MODULE, "f3").unwrap();
+
     let table = &instance.store.tables[0];
-    assert_eq!(table.len(), 2);
-    let wanted: [usize; 2] = [0, 2];
-    table
-        .elem
-        .iter()
-        .enumerate()
-        .for_each(|(i, rref)| match *rref {
-            wasm::value::Ref::Func(func_addr) => {
-                assert_eq!(wanted[i], func_addr.0)
-            }
-            _ => panic!(),
-        });
-    // assert!(instance.store.tables)
+    assert_eq!(
+        &table.elem,
+        &[
+            Ref::Func(FuncAddr(f1.func_addr)),
+            Ref::Func(FuncAddr(f3.func_addr))
+        ]
+    );
 }
 
 #[test_log::test]
@@ -203,7 +201,7 @@ fn call_indirect_type_check() {
     (type $type_1 (func (param i32) (result i32)))
     (type $type_2 (func (param i32) (result i32)))
     (type $type_3 (func (param i32) (result i32)))
-    
+
     (func $add_one_func (type $type_1) (param $x i32) (result i32)
         local.get $x
         i32.const 1
@@ -223,7 +221,7 @@ fn call_indirect_type_check() {
         local.get $index
         call_indirect 0 (type $type_3)
     )
-    
+
     (export "call_function" (func $call_function))
     )
     "#;
