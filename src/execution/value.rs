@@ -353,14 +353,14 @@ impl Ref {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct FuncAddr(pub usize);
 
-/// Represents the address of an external reference in the interpreter.
+/// The WebAssembly specification defines an externaddr as an address to an
+/// "external" type, i.e. is a type which is managed by the embedder. For this
+/// interpreter the task of managing external objects and relating them to
+/// addresses is handed off to the user, which means that an [`ExternAddr`] can
+/// simply be seen as an integer that is opaque to Wasm code without any meaning
+/// assigned to it.
 ///
-/// External references are managed at the interpreter level and are not part of
-/// the WebAssembly module itself. They are typically used to refer to host
-/// functions or objects that interact with the module.
-///
-/// Internally, [`ExternAddr`] corresponds to an index in a linear vector,
-/// enabling dynamic storage and retrieval of external values.
+/// See: WebAssembly Specification 2.0 - 2.3.3, 4.2.1
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ExternAddr(pub usize);
 
