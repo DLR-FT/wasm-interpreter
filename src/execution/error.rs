@@ -13,9 +13,10 @@ pub enum RuntimeError {
     GlobalTypeMismatch,
     /// A host function returned the [`HaltExecutionError`](crate::HaltExecutionError), which caused execution to be halted.
     HostFunctionHaltedExecution,
-    TableAccessOutOfBounds,
     UnknownExport,
     TableTypeMismatch,
+    // An access to a table element was out of bounds
+    TableAccessOutOfBounds,
 
     // Are all of these instantiation variants? Add a new `InstantiationError` enum?
     InvalidImportType,
@@ -39,8 +40,10 @@ impl Display for RuntimeError {
             RuntimeError::HostFunctionHaltedExecution => {
                 f.write_str("A host function requested execution to be halted.")
             }
+            RuntimeError::TableAccessOutOfBounds => {
+                f.write_str("An table access was out of bounds")
+            }
             RuntimeError::InvalidImportType => f.write_str("Invalid import type"),
-            RuntimeError::TableAccessOutOfBounds => f.write_str("A table access was out of bounds"),
             RuntimeError::UnknownExport => {
                 f.write_str("An unknown export was referenced by its name.")
             }
