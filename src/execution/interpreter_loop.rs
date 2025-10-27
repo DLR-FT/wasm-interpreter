@@ -76,6 +76,18 @@ pub(super) fn run<T, H: HookSet>(
         // call the instruction hook
         hooks.instruction_hook(store.modules[current_module_idx].wasm_bytecode, wasm.pc);
 
+        // Fuel mechanism: 1 fuel per instruction
+        if let Some(fuel) = &mut resumable.maybe_fuel {
+            if *fuel >= 1 {
+                *fuel -= 1;
+            } else {
+                resumable.current_func_addr = current_func_addr;
+                resumable.pc = wasm.pc;
+                resumable.stp = stp;
+                return Ok(NonZeroU32::new(1));
+            }
+        }
+
         let first_instr_byte = wasm.read_u8().unwrap_validated();
 
         #[cfg(debug_assertions)]
@@ -83,15 +95,6 @@ pub(super) fn run<T, H: HookSet>(
             "Executing instruction {}",
             opcode_byte_to_str(first_instr_byte)
         );
-
-        // Fuel mechanism: 1 fuel per instruction
-        if let Some(fuel) = &mut resumable.maybe_fuel {
-            if *fuel >= 1 {
-                *fuel -= 1;
-            } else {
-                return Ok(NonZeroU32::new(1));
-            }
-        }
 
         match first_instr_byte {
             NOP => {

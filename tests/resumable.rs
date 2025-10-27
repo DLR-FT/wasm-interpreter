@@ -108,3 +108,70 @@ fn resumable() {
         info!("Global values are {:?}", &runtime_instance.store.globals)
     }
 }
+
+#[test_log::test]
+fn resumable_internal_state() {
+    let wat = r#"(module
+        (global $global_0 (mut i32)
+            i32.const 0
+        )
+        ;; add 1 to global_0 to track internal state
+        (func (export "add_global_0")
+          global.get $global_0
+          i32.const 1
+          i32.add
+          global.set $global_0
+          global.get $global_0
+          i32.const 10
+          i32.add
+          global.set $global_0
+          global.get $global_0
+          i32.const 100
+          i32.add
+          global.set $global_0
+          global.get $global_0
+          i32.const 1000
+          i32.add
+          global.set $global_0
+        )
+    )"#;
+    let expected = [0, 1, 11, 111, 1111];
+    let wasm_bytes = wat::parse_str(wat).unwrap();
+    let validation_info = validate(&wasm_bytes).unwrap();
+    let mut runtime_instance = RuntimeInstance::new_named((), "module", &validation_info).unwrap();
+    let add_global_0 = runtime_instance
+        .get_function_by_name("module", "add_global_0")
+        .unwrap();
+    let resumable_ref_add = runtime_instance
+        .create_resumable(&add_global_0, vec![], 4)
+        .unwrap();
+    assert_eq!(
+        runtime_instance.store.globals[0].value,
+        wasm::Value::I32(expected[0])
+    );
+    let mut run_state_add = runtime_instance.resume(resumable_ref_add).unwrap();
+    let increment = |maybe_fuel: &mut Option<u32>| *maybe_fuel = maybe_fuel.map(|fuel| fuel + 4);
+    for i in 1..4 {
+        run_state_add = match run_state_add {
+            RunState::Finished(_) => {
+                assert_eq!(
+                    runtime_instance.store.globals[0].value,
+                    wasm::Value::I32(expected[i])
+                );
+                return;
+            }
+            RunState::Resumable {
+                mut resumable_ref, ..
+            } => {
+                assert_eq!(
+                    runtime_instance.store.globals[0].value,
+                    wasm::Value::I32(expected[i])
+                );
+                runtime_instance
+                    .access_fuel_mut(&mut resumable_ref, increment)
+                    .unwrap();
+                runtime_instance.resume(resumable_ref).unwrap()
+            }
+        }
+    }
+}
