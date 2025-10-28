@@ -1,4 +1,5 @@
 use crate::{
+    addrs::ModuleAddr,
     assert_validated::UnwrapValidatedExt,
     config::Config,
     core::{
@@ -8,7 +9,7 @@ use crate::{
     unreachable_validated,
     value::{self, Ref},
     value_stack::Stack,
-    ModuleInst, RefType, RuntimeError, Store, Value,
+    RefType, RuntimeError, Store, Value,
 };
 
 // TODO update this documentation
@@ -25,7 +26,7 @@ use crate::{
 pub(crate) fn run_const<T: Config>(
     wasm: &mut WasmReader,
     stack: &mut Stack,
-    module: &ModuleInst,
+    module: ModuleAddr,
     store: &Store<T>,
 ) -> Result<(), RuntimeError> {
     use crate::core::reader::types::opcode::*;
@@ -47,7 +48,9 @@ pub(crate) fn run_const<T: Config>(
                 let global_idx = wasm.read_var_u32().unwrap_validated() as GlobalIdx;
 
                 //TODO replace double indirection
-                let global = store.globals.get(module.global_addrs[global_idx]);
+                let global = store
+                    .globals
+                    .get(store.modules.get(module).global_addrs[global_idx]);
 
                 trace!(
                     "Constant instruction: global.get [{global_idx}] -> [{:?}]",
@@ -84,7 +87,12 @@ pub(crate) fn run_const<T: Config>(
             REF_FUNC => {
                 // we already checked for the func_idx to be in bounds during validation
                 let func_idx = wasm.read_var_u32().unwrap_validated() as usize;
-                let func_addr = *module.func_addrs.get(func_idx).unwrap_validated();
+                let func_addr = *store
+                    .modules
+                    .get(module)
+                    .func_addrs
+                    .get(func_idx)
+                    .unwrap_validated();
                 stack.push_value::<T>(Value::Ref(Ref::Func(func_addr)))?;
             }
 
@@ -122,7 +130,7 @@ pub(crate) fn run_const<T: Config>(
 pub(crate) fn run_const_span<T: Config>(
     wasm: &[u8],
     span: &Span,
-    module: &ModuleInst,
+    module: ModuleAddr,
     store: &Store<T>,
 ) -> Result<Option<Value>, RuntimeError> {
     let mut wasm = WasmReader::new(wasm);
