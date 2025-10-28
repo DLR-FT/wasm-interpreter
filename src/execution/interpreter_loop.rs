@@ -6,7 +6,6 @@
 //! 1. There must be only imports and one `impl` with one function (`run`) in it.
 //! 2. This module must only use [`RuntimeError`] and never [`Error`](crate::core::error::ValidationError).
 
-use alloc::vec::Vec;
 use core::{
     num::NonZeroU32,
     {
@@ -17,7 +16,7 @@ use core::{
 };
 
 use crate::{
-    addrs::{AddrVec, ElemAddr, MemAddr, TableAddr},
+    addrs::{AddrVec, DataAddr, ElemAddr, MemAddr, TableAddr},
     assert_validated::UnwrapValidatedExt,
     core::{
         indices::{DataIdx, FuncIdx, GlobalIdx, LabelIdx, LocalIdx, MemIdx, TableIdx, TypeIdx},
@@ -28,12 +27,12 @@ use crate::{
         sidetable::Sidetable,
     },
     resumable::Resumable,
-    store::{DataInst, HaltExecutionError},
+    store::HaltExecutionError,
     unreachable_validated,
     value::{self, Ref, F32, F64},
     value_stack::Stack,
-    ElemInst, FuncInst, MemInst, ModuleInst, RefType, RuntimeError, TableInst, TrapError, ValType,
-    Value,
+    DataInst, ElemInst, FuncInst, MemInst, ModuleInst, RefType, RuntimeError, TableInst, TrapError,
+    ValType, Value,
 };
 
 use crate::execution::config::Config;
@@ -5011,7 +5010,7 @@ pub(super) fn elem_drop(
 pub(super) fn memory_init(
     store_modules: &[ModuleInst],
     store_memories: &mut AddrVec<MemAddr, MemInst>,
-    store_data: &[DataInst],
+    store_data: &AddrVec<DataAddr, DataInst>,
     current_module_idx: usize,
     data_idx: usize,
     mem_idx: usize,
@@ -5027,7 +5026,9 @@ pub(super) fn memory_init(
 
     mem.mem.init(
         d as MemIdx,
-        &store_data[store_modules[current_module_idx].data_addrs[data_idx]].data,
+        &store_data
+            .get(store_modules[current_module_idx].data_addrs[data_idx])
+            .data,
         s as MemIdx,
         n as MemIdx,
     )?;
@@ -5039,7 +5040,7 @@ pub(super) fn memory_init(
 #[inline(always)]
 pub(super) fn data_drop(
     store_modules: &[ModuleInst],
-    store_data: &mut [DataInst],
+    store_data: &mut AddrVec<DataAddr, DataInst>,
     current_module_idx: usize,
     data_idx: usize,
 ) -> Result<(), RuntimeError> {
@@ -5049,12 +5050,12 @@ pub(super) fn data_drop(
     // I thought that using DataMode would be better because we can see if the
     // data segment is passive or active
 
-    // Also, we should set data to null here (empty), which we do using an empty init vec
+    // Also, we should set data to null here (empty), which we do by clearing it
     let data_addr = *store_modules[current_module_idx]
         .data_addrs
         .get(data_idx)
         .unwrap_validated();
-    store_data[data_addr] = DataInst { data: Vec::new() };
+    store_data.get_mut(data_addr).data.clear();
     Ok(())
 }
 

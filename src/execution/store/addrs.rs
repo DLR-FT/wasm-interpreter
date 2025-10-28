@@ -218,3 +218,23 @@ impl Addr for ElemAddr {
         self.0
     }
 }
+
+/// An address to a data instance that lives in a specific [`Store`](crate::Store).
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub struct DataAddr(usize);
+
+impl core::fmt::Display for DataAddr {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "data segment address {}", self.0)
+    }
+}
+
+impl Addr for DataAddr {
+    fn new_unchecked(inner: usize) -> Self {
+        Self(inner)
+    }
+
+    fn into_inner(self) -> usize {
+        self.0
+    }
+}
