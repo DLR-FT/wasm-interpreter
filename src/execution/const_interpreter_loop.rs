@@ -47,7 +47,7 @@ pub(crate) fn run_const<T: Config>(
                 let global_idx = wasm.read_var_u32().unwrap_validated() as GlobalIdx;
 
                 //TODO replace double indirection
-                let global = &store.globals[module.global_addrs[global_idx]];
+                let global = store.globals.get(module.global_addrs[global_idx]);
 
                 trace!(
                     "Constant instruction: global.get [{global_idx}] -> [{:?}]",

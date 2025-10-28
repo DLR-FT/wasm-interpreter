@@ -403,7 +403,7 @@ pub(super) fn run<T: Config>(
                     .global_addrs
                     .get(global_idx)
                     .unwrap_validated();
-                let global = &store.globals[global_addr];
+                let global = store.globals.get(global_addr);
 
                 stack.push_value::<T>(global.value)?;
 
@@ -419,7 +419,7 @@ pub(super) fn run<T: Config>(
                     .global_addrs
                     .get(global_idx)
                     .unwrap_validated();
-                let global = &mut store.globals[global_addr];
+                let global = store.globals.get_mut(global_addr);
                 global.value = stack.pop_value();
                 trace!("Instruction: GLOBAL_SET");
             }
