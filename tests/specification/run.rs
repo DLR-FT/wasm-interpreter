@@ -6,6 +6,7 @@ use std::panic::UnwindSafe;
 use bumpalo::Bump;
 use itertools::enumerate;
 use log::debug;
+use wasm::addrs::ModuleAddr;
 use wasm::function_ref::FunctionRef;
 use wasm::ExternVal;
 use wasm::RefType;
@@ -116,7 +117,7 @@ fn encode(modulee: &mut wast::QuoteWat) -> Result<Vec<u8>, WastError> {
 fn validate_instantiate<'a, 'b: 'a>(
     interpreter: &'a mut RuntimeInstance<'b>,
     bytes: &'b [u8],
-    modules: &mut Vec<usize>,
+    modules: &mut Vec<ModuleAddr>,
 ) -> Result<(), WastError> {
     let validation_info =
         catch_unwind_and_suppress_panic_handler(|| validate(bytes)).map_err(WastError::Panic)??;
@@ -206,11 +207,11 @@ pub fn run_spec_test(filepath: &str) -> Result<AssertReport, ScriptError> {
 fn run_directive<'a>(
     wast_directive: WastDirective,
     arena: &'a Bump,
-    visible_modules: &mut HashMap<String, usize>,
+    visible_modules: &mut HashMap<String, ModuleAddr>,
     interpreter: &mut RuntimeInstance<'a>,
     contents: &str,
     filepath: &str,
-    modules: &mut Vec<usize>,
+    modules: &mut Vec<ModuleAddr>,
 ) -> Result<Option<AssertOutcome>, ScriptError> {
     match wast_directive {
         wast::WastDirective::Wat(mut quoted) => {
@@ -527,8 +528,8 @@ fn run_directive<'a>(
 }
 
 fn execute_assert_return(
-    visible_modules: &HashMap<String, usize>,
-    modules: &[usize],
+    visible_modules: &HashMap<String, ModuleAddr>,
+    modules: &[ModuleAddr],
     interpreter: &mut RuntimeInstance,
     exec: wast::WastExecute,
     results: Vec<wast::WastRet>,
@@ -623,8 +624,8 @@ fn execute_assert_return(
 
 fn execute<'a>(
     arena: &'a bumpalo::Bump,
-    visible_modules: &HashMap<String, usize>,
-    modules: &mut Vec<usize>,
+    visible_modules: &HashMap<String, ModuleAddr>,
+    modules: &mut Vec<ModuleAddr>,
     interpreter: &mut RuntimeInstance<'a>,
     exec: wast::WastExecute,
 ) -> Result<(), WastError> {
