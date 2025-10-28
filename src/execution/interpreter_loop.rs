@@ -17,7 +17,7 @@ use core::{
 };
 
 use crate::{
-    addrs::{AddrVec, MemAddr, TableAddr},
+    addrs::{AddrVec, ElemAddr, MemAddr, TableAddr},
     assert_validated::UnwrapValidatedExt,
     core::{
         indices::{DataIdx, FuncIdx, GlobalIdx, LabelIdx, LocalIdx, MemIdx, TableIdx, TypeIdx},
@@ -4941,7 +4941,7 @@ fn calculate_mem_address(memarg: &MemArg, relative_address: u32) -> Result<usize
 pub(super) fn table_init(
     store_modules: &[ModuleInst],
     store_tables: &mut AddrVec<TableAddr, TableInst>,
-    store_elements: &[ElemInst],
+    store_elements: &AddrVec<ElemAddr, ElemInst>,
     current_module_idx: usize,
     elem_idx: usize,
     table_idx: usize,
@@ -4960,7 +4960,7 @@ pub(super) fn table_init(
 
     let tab = store_tables.get_mut(tab_addr);
 
-    let elem = &store_elements[elem_addr];
+    let elem = store_elements.get(elem_addr);
 
     trace!(
         "Instruction: table.init '{}' '{}' [{} {} {}] -> []",
@@ -4993,7 +4993,7 @@ pub(super) fn table_init(
 #[inline(always)]
 pub(super) fn elem_drop(
     store_modules: &[ModuleInst],
-    store_elements: &mut [ElemInst],
+    store_elements: &mut AddrVec<ElemAddr, ElemInst>,
     current_module_idx: usize,
     elem_idx: usize,
 ) -> Result<(), RuntimeError> {
@@ -5002,7 +5002,7 @@ pub(super) fn elem_drop(
         .elem_addrs
         .get(elem_idx)
         .unwrap_validated();
-    store_elements[elem_addr].references.clear();
+    store_elements.get_mut(elem_addr).references.clear();
     Ok(())
 }
 
