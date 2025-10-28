@@ -1,6 +1,8 @@
 use core::mem;
 
-use crate::addrs::{AddrVec, DataAddr, ElemAddr, FuncAddr, GlobalAddr, MemAddr, TableAddr};
+use crate::addrs::{
+    AddrVec, DataAddr, ElemAddr, FuncAddr, GlobalAddr, MemAddr, ModuleAddr, TableAddr,
+};
 use crate::config::Config;
 use crate::core::indices::TypeIdx;
 use crate::core::reader::span::Span;
@@ -48,9 +50,15 @@ pub struct Store<'b, T: Config> {
     pub(crate) globals: AddrVec<GlobalAddr, GlobalInst>,
     pub(crate) elements: AddrVec<ElemAddr, ElemInst>,
     pub(crate) data: AddrVec<DataAddr, DataInst>,
-    pub modules: Vec<ModuleInst<'b>>,
 
     // fields outside of the spec but are convenient are below
+    /// An address space of modules instantiated within the context of this [`Store`].
+    ///
+    /// Although the WebAssembly Specification 2.0 does not specify module instances
+    /// to be part of the [`Store`], in reality they can be managed very similar to
+    /// other instance types. Therefore, we extend the [`Store`] by a module address
+    /// space along with a `ModuleAddr` index type.
+    pub(crate) modules: AddrVec<ModuleAddr, ModuleInst<'b>>,
 
     // all visible exports and entities added by hand or module instantiation by the interpreter
     // currently, all of the exports of an instantiated module is made visible (this is outside of spec)
@@ -75,7 +83,7 @@ impl<'b, T: Config> Store<'b, T> {
             globals: AddrVec::default(),
             elements: AddrVec::default(),
             data: AddrVec::default(),
-            modules: Vec::default(),
+            modules: AddrVec::default(),
             registry: Registry::default(),
             dormitory: Dormitory::default(),
             user_data,
@@ -93,7 +101,7 @@ impl<'b, T: Config> Store<'b, T> {
         name: &str,
         validation_info: &ValidationInfo<'b>,
         maybe_fuel: Option<u32>,
-    ) -> Result<usize, RuntimeError> {
+    ) -> Result<ModuleAddr, RuntimeError> {
         // instantiation step -1: collect extern_vals, this section basically acts as a linker between modules
         // best attempt at trying to match the spec implementation in terms of errors
         debug!("adding module with name {:?}", name);
@@ -131,7 +139,7 @@ impl<'b, T: Config> Store<'b, T> {
         // module_inst_init is unfortunately circularly defined from parts of module_inst that would be defined in step 11, which uses module_inst_init again implicitly.
         // therefore I am mimicking the reference interpreter code here, I will allocate functions in the store in this step instead of step 11.
         // https://github.com/WebAssembly/spec/blob/8d6792e3d6709e8d3e90828f9c8468253287f7ed/interpreter/exec/eval.ml#L789
-        let mut module_inst = ModuleInst {
+        let module_inst = ModuleInst {
             types: validation_info.types.clone(),
             func_addrs: extern_vals.iter().funcs().collect(),
             table_addrs: Vec::new(),
@@ -143,6 +151,7 @@ impl<'b, T: Config> Store<'b, T> {
             wasm_bytecode: validation_info.wasm,
             sidetable: validation_info.sidetable.clone(),
         };
+        let module_addr = self.modules.insert(module_inst);
 
         // TODO rewrite this part
         // <https://webassembly.github.io/spec/core/exec/modules.html#functions>
@@ -150,12 +159,13 @@ impl<'b, T: Config> Store<'b, T> {
             .functions
             .iter()
             .zip(validation_info.func_blocks_stps.iter())
-            .map(|(ty_idx, (span, stp))| {
-                self.alloc_func((*ty_idx, (*span, *stp)), &module_inst, self.modules.len())
-            })
+            .map(|(ty_idx, (span, stp))| self.alloc_func((*ty_idx, (*span, *stp)), module_addr))
             .collect();
 
-        module_inst.func_addrs.extend(func_addrs);
+        self.modules
+            .get_mut(module_addr)
+            .func_addrs
+            .extend(func_addrs);
 
         // instantiation: this roughly matches step 6,7,8
         // validation guarantees these will evaluate without errors.
@@ -163,7 +173,7 @@ impl<'b, T: Config> Store<'b, T> {
             .globals
             .iter()
             .map(|global| {
-                run_const_span(validation_info.wasm, &global.init_expr, &module_inst, self)
+                run_const_span(validation_info.wasm, &global.init_expr, module_addr, self)
                     .transpose()
                     .unwrap_validated()
             })
@@ -182,7 +192,9 @@ impl<'b, T: Config> Store<'b, T> {
                 // validation guarantees corresponding func_idx's existence
                 ElemItems::RefFuncs(ref_funcs) => {
                     for func_idx in ref_funcs {
-                        let func_addr = *module_inst
+                        let func_addr = *self
+                            .modules
+                            .get(module_addr)
                             .func_addrs
                             .get(*func_idx as usize)
                             .unwrap_validated();
@@ -193,7 +205,7 @@ impl<'b, T: Config> Store<'b, T> {
                 ElemItems::Exprs(_, exprs) => {
                     for expr in exprs {
                         new_list.push(
-                            run_const_span(validation_info.wasm, expr, &module_inst, self)?
+                            run_const_span(validation_info.wasm, expr, module_addr, self)?
                                 .unwrap_validated() // there is a return value
                                 .try_into()
                                 .unwrap_validated(), // return value has the correct type
@@ -264,13 +276,17 @@ impl<'b, T: Config> Store<'b, T> {
         mem_addrs_mod.extend(mem_addrs);
 
         // skipping step 17 partially as it was partially done in instantiation step
-        module_inst.global_addrs.extend(global_addrs);
+        self.modules
+            .get_mut(module_addr)
+            .global_addrs
+            .extend(global_addrs);
 
         // allocation: step 18,19
         let export_insts: BTreeMap<String, ExternVal> = module
             .exports
             .iter()
             .map(|Export { name, desc }| {
+                let module_inst = self.modules.get(module_addr);
                 let value = match desc {
                     ExportDesc::FuncIdx(func_idx) => {
                         ExternVal::Func(module_inst.func_addrs[*func_idx])
@@ -288,6 +304,7 @@ impl<'b, T: Config> Store<'b, T> {
             .collect();
 
         // allocation: step 20,21 initialize module (except functions and globals due to instantiation step 5, allocation step 14,17)
+        let module_inst = self.modules.get_mut(module_addr);
         module_inst.table_addrs = table_addrs_mod;
         module_inst.mem_addrs = mem_addrs_mod;
         module_inst.elem_addrs = elem_addrs;
@@ -298,12 +315,9 @@ impl<'b, T: Config> Store<'b, T> {
 
         // register module exports, this is outside of the spec
         self.registry
-            .register_module(name.to_owned().into(), &module_inst)?;
+            .register_module(name.to_owned().into(), module_inst)?;
 
         // instantiation step 11 end: module_inst properly allocated after this point.
-        // TODO: it is too hard with our codebase to do the following steps without adding the module to the store
-        let current_module_idx = self.modules.len();
-        self.modules.push(module_inst);
 
         // instantiation: step 12-15
         // TODO have to stray away from the spec a bit since our codebase does not lend itself well to freely executing instructions by themselves
@@ -330,36 +344,31 @@ impl<'b, T: Config> Store<'b, T> {
                     //   i32.const n
                     //   table.init table_idx_i i
                     //   elem.drop i
-                    let d: i32 = run_const_span(
-                        validation_info.wasm,
-                        einstr_i,
-                        &self.modules[current_module_idx],
-                        self,
-                    )?
-                    .unwrap_validated() // there is a return value
-                    .try_into()
-                    .unwrap_validated(); // return value has correct type
+                    let d: i32 = run_const_span(validation_info.wasm, einstr_i, module_addr, self)?
+                        .unwrap_validated() // there is a return value
+                        .try_into()
+                        .unwrap_validated(); // return value has correct type
 
                     let s = 0;
                     table_init(
                         &self.modules,
                         &mut self.tables,
                         &self.elements,
-                        current_module_idx,
+                        module_addr,
                         i,
                         *table_idx_i as usize,
                         n,
                         s,
                         d,
                     )?;
-                    elem_drop(&self.modules, &mut self.elements, current_module_idx, i)?;
+                    elem_drop(&self.modules, &mut self.elements, module_addr, i)?;
                 }
                 ElemMode::Declarative => {
                     // instantiation step 15:
                     // TODO (for now, we are doing hopefully what is equivalent to it)
                     // execute:
                     //   elem.drop i
-                    elem_drop(&self.modules, &mut self.elements, current_module_idx, i)?;
+                    elem_drop(&self.modules, &mut self.elements, module_addr, i)?;
                 }
                 ElemMode::Passive => (),
             }
@@ -387,29 +396,24 @@ impl<'b, T: Config> Store<'b, T> {
                     //   i32.const n
                     //   memory.init i
                     //   data.drop i
-                    let d: i32 = run_const_span(
-                        validation_info.wasm,
-                        dinstr_i,
-                        &self.modules[current_module_idx],
-                        self,
-                    )?
-                    .unwrap_validated() // there is a return value
-                    .try_into()
-                    .unwrap_validated(); // return value has the correct type
+                    let d: i32 = run_const_span(validation_info.wasm, dinstr_i, module_addr, self)?
+                        .unwrap_validated() // there is a return value
+                        .try_into()
+                        .unwrap_validated(); // return value has the correct type
 
                     let s = 0;
                     memory_init(
                         &self.modules,
                         &mut self.memories,
                         &self.data,
-                        current_module_idx,
+                        module_addr,
                         i,
                         0,
                         n,
                         s,
                         d,
                     )?;
-                    data_drop(&self.modules, &mut self.data, current_module_idx, i)?;
+                    data_drop(&self.modules, &mut self.data, module_addr, i)?;
                 }
                 crate::core::reader::types::data::DataMode::Passive => (),
             }
@@ -420,11 +424,11 @@ impl<'b, T: Config> Store<'b, T> {
             // TODO (for now, we are doing hopefully what is equivalent to it)
             // execute
             //   call func_ifx
-            let func_addr = self.modules[current_module_idx].func_addrs[func_idx];
+            let func_addr = self.modules.get(module_addr).func_addrs[func_idx];
             self.invoke(func_addr, Vec::new(), maybe_fuel)?;
         };
 
-        Ok(current_module_idx)
+        Ok(module_addr)
     }
 
     /// Gets an export of a specific module instance by its name
@@ -432,14 +436,11 @@ impl<'b, T: Config> Store<'b, T> {
     /// See: WebAssembly Specification 2.0 - 7.1.6 - instance_export
     pub fn instance_export(
         &self,
-        module_addr: usize,
+        module_addr: ModuleAddr,
         name: &str,
     ) -> Result<ExternVal, RuntimeError> {
         // Fetch the module instance because we store them in the [`Store`]
-        let module_inst = self
-            .modules
-            .get(module_addr)
-            .expect("module addrs to always be valid");
+        let module_inst = self.modules.get(module_addr);
 
         // 1. Assert: due to validity of the module instance `moduleinst`, all its export names are different
 
@@ -783,16 +784,11 @@ impl<'b, T: Config> Store<'b, T> {
     /// roughly matches <https://webassembly.github.io/spec/core/exec/modules.html#functions> with the addition of sidetable pointer to the input signature
     // TODO refactor the type of func
     // TODO module_addr
-    fn alloc_func(
-        &mut self,
-        func: (TypeIdx, (Span, usize)),
-        module_inst: &ModuleInst,
-        module_addr: usize,
-    ) -> FuncAddr {
+    fn alloc_func(&mut self, func: (TypeIdx, (Span, usize)), module_addr: ModuleAddr) -> FuncAddr {
         let (ty, (span, stp)) = func;
 
         // TODO rewrite this huge chunk of parsing after generic way to re-parse(?) structs lands
-        let mut wasm_reader = WasmReader::new(module_inst.wasm_bytecode);
+        let mut wasm_reader = WasmReader::new(self.modules.get(module_addr).wasm_bytecode);
         wasm_reader.move_start_to(span).unwrap_validated();
 
         let (locals, bytes_read) = wasm_reader
@@ -808,7 +804,7 @@ impl<'b, T: Config> Store<'b, T> {
         // validation guarantees func_ty_idx exists within module_inst.types
         // TODO fix clone
         let func_inst = FuncInst::WasmFunc(WasmFuncInst {
-            function_type: module_inst.types[ty].clone(),
+            function_type: self.modules.get(module_addr).types[ty].clone(),
             ty,
             locals,
             code_expr,
@@ -879,15 +875,11 @@ impl<'b, T: Config> Store<'b, T> {
     /// for only registering a module.
     pub fn reregister_module(
         &mut self,
-        module_addr: usize,
+        module_addr: ModuleAddr,
         name: &str,
     ) -> Result<(), RuntimeError> {
-        self.registry.register_module(
-            name.to_owned().into(),
-            self.modules
-                .get(module_addr)
-                .expect("module addrs to always be valid"),
-        )
+        self.registry
+            .register_module(name.to_owned().into(), self.modules.get(module_addr))
     }
 
     pub fn create_resumable(
@@ -1091,7 +1083,7 @@ pub struct WasmFuncInst {
 
     // implicit back ref required for function invocation and is in the spec
     // TODO module_addr or module ref?
-    pub module_addr: usize,
+    pub module_addr: ModuleAddr,
 }
 
 #[derive(Debug)]
