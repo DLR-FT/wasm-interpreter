@@ -194,3 +194,23 @@ impl Addr for GlobalAddr {
         self.0
     }
 }
+
+/// An address to an element instance that lives in a specific [`Store`](crate::Store).
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub struct ElemAddr(usize);
+
+impl core::fmt::Display for ElemAddr {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "element segment address {}", self.0)
+    }
+}
+
+impl Addr for ElemAddr {
+    fn new_unchecked(inner: usize) -> Self {
+        Self(inner)
+    }
+
+    fn into_inner(self) -> usize {
+        self.0
+    }
+}

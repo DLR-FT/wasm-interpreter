@@ -1,6 +1,6 @@
 use core::mem;
 
-use crate::addrs::{AddrVec, FuncAddr, GlobalAddr, MemAddr, TableAddr};
+use crate::addrs::{AddrVec, ElemAddr, FuncAddr, GlobalAddr, MemAddr, TableAddr};
 use crate::config::Config;
 use crate::core::indices::TypeIdx;
 use crate::core::reader::span::Span;
@@ -46,8 +46,8 @@ pub struct Store<'b, T: Config> {
     pub(crate) tables: AddrVec<TableAddr, TableInst>,
     pub(crate) memories: AddrVec<MemAddr, MemInst>,
     pub(crate) globals: AddrVec<GlobalAddr, GlobalInst>,
+    pub(crate) elements: AddrVec<ElemAddr, ElemInst>,
     pub data: Vec<DataInst>,
-    pub elements: Vec<ElemInst>,
     pub modules: Vec<ModuleInst<'b>>,
 
     // fields outside of the spec but are convenient are below
@@ -73,8 +73,8 @@ impl<'b, T: Config> Store<'b, T> {
             tables: AddrVec::default(),
             memories: AddrVec::default(),
             globals: AddrVec::default(),
+            elements: AddrVec::default(),
             data: Vec::default(),
-            elements: Vec::default(),
             modules: Vec::default(),
             registry: Registry::default(),
             dormitory: Dormitory::default(),
@@ -851,15 +851,13 @@ impl<'b, T: Config> Store<'b, T> {
     }
 
     /// <https://webassembly.github.io/spec/core/exec/modules.html#element-segments>
-    fn alloc_elem(&mut self, ref_type: RefType, refs: Vec<Ref>) -> usize {
+    fn alloc_elem(&mut self, ref_type: RefType, refs: Vec<Ref>) -> ElemAddr {
         let elem_inst = ElemInst {
             ty: ref_type,
             references: refs,
         };
 
-        let addr = self.elements.len();
-        self.elements.push(elem_inst);
-        addr
+        self.elements.insert(elem_inst)
     }
 
     /// <https://webassembly.github.io/spec/core/exec/modules.html#data-segments>
@@ -1346,7 +1344,7 @@ pub struct ModuleInst<'b> {
     pub table_addrs: Vec<TableAddr>,
     pub mem_addrs: Vec<MemAddr>,
     pub global_addrs: Vec<GlobalAddr>,
-    pub elem_addrs: Vec<usize>,
+    pub elem_addrs: Vec<ElemAddr>,
     pub data_addrs: Vec<usize>,
     ///<https://webassembly.github.io/spec/core/exec/runtime.html#export-instances>
     /// matches the list of ExportInst structs in the spec, however the spec never uses the name attribute
