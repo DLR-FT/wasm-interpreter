@@ -1,6 +1,6 @@
 use core::mem;
 
-use crate::addrs::{AddrVec, FuncAddr, MemAddr, TableAddr};
+use crate::addrs::{AddrVec, FuncAddr, GlobalAddr, MemAddr, TableAddr};
 use crate::config::Config;
 use crate::core::indices::TypeIdx;
 use crate::core::reader::span::Span;
@@ -45,7 +45,7 @@ pub struct Store<'b, T: Config> {
     pub(crate) functions: AddrVec<FuncAddr, FuncInst<T>>,
     pub(crate) tables: AddrVec<TableAddr, TableInst>,
     pub(crate) memories: AddrVec<MemAddr, MemInst>,
-    pub globals: Vec<GlobalInst>,
+    pub(crate) globals: AddrVec<GlobalAddr, GlobalInst>,
     pub data: Vec<DataInst>,
     pub elements: Vec<ElemInst>,
     pub modules: Vec<ModuleInst<'b>>,
@@ -72,7 +72,7 @@ impl<'b, T: Config> Store<'b, T> {
             functions: AddrVec::default(),
             tables: AddrVec::default(),
             memories: AddrVec::default(),
-            globals: Vec::default(),
+            globals: AddrVec::default(),
             data: Vec::default(),
             elements: Vec::default(),
             modules: Vec::default(),
@@ -229,7 +229,7 @@ impl<'b, T: Config> Store<'b, T> {
             .iter()
             .map(|mem_type| self.alloc_mem(*mem_type))
             .collect();
-        let global_addrs: Vec<usize> = module
+        let global_addrs: Vec<GlobalAddr> = module
             .globals
             .iter()
             .zip(vals)
@@ -703,7 +703,7 @@ impl<'b, T: Config> Store<'b, T> {
         &mut self,
         global_type: GlobalType,
         val: Value,
-    ) -> Result<usize, RuntimeError> {
+    ) -> Result<GlobalAddr, RuntimeError> {
         // Check pre-condition: val has correct type
         if global_type.ty != val.to_ty() {
             return Err(RuntimeError::GlobalTypeMismatch);
@@ -723,24 +723,18 @@ impl<'b, T: Config> Store<'b, T> {
     /// Returns the global type of some global instance by its addr.
     ///
     /// See: WebAssembly Specification 2.0 - 7.1.10 - global_type
-    pub fn global_type(&self, global_addr: usize) -> GlobalType {
+    pub fn global_type(&self, global_addr: GlobalAddr) -> GlobalType {
         // 1. Return `S.globals[a].type`.
-        self.globals
-            .get(global_addr)
-            .expect("global addrs to always be valid if the correct store is used")
-            .ty
+        self.globals.get(global_addr).ty
         // 2. Post-condition: the returned global type is valid
     }
 
     /// Returns the current value of some global instance by its addr.
     ///
     /// See: WebAssembly Specification 2.0 - 7.1.10 - global_read
-    pub fn global_read(&self, global_addr: usize) -> Value {
+    pub fn global_read(&self, global_addr: GlobalAddr) -> Value {
         // 1. Let `gi` be the global instance `store.globals[globaladdr].
-        let gi = self
-            .globals
-            .get(global_addr)
-            .expect("global addrs to always be valid if the correct store is used");
+        let gi = self.globals.get(global_addr);
 
         // 2. Return the value `gi.value`.
         gi.value
@@ -753,12 +747,13 @@ impl<'b, T: Config> Store<'b, T> {
     /// - [` RuntimeError::GlobalTypeMismatch`]
     ///
     /// See: WebAssembly Specification 2.0 - 7.1.10 - global_write
-    pub fn global_write(&mut self, global_addr: usize, val: Value) -> Result<(), RuntimeError> {
+    pub fn global_write(
+        &mut self,
+        global_addr: GlobalAddr,
+        val: Value,
+    ) -> Result<(), RuntimeError> {
         // 1. Let `gi` be the global instance `store.globals[globaladdr]`.
-        let gi = self
-            .globals
-            .get_mut(global_addr)
-            .expect("global addrs to always be valid if the correct store is used");
+        let gi = self.globals.get_mut(global_addr);
 
         // 2. Let `mut t` be the structure of the global type `gi.type`.
         let r#mut = gi.ty.is_mut;
@@ -846,15 +841,13 @@ impl<'b, T: Config> Store<'b, T> {
     }
 
     /// <https://webassembly.github.io/spec/core/exec/modules.html#globals>
-    fn alloc_global(&mut self, global_type: GlobalType, val: Value) -> usize {
+    fn alloc_global(&mut self, global_type: GlobalType, val: Value) -> GlobalAddr {
         let global_inst = GlobalInst {
             ty: global_type,
             value: val,
         };
 
-        let addr = self.globals.len();
-        self.globals.push(global_inst);
-        addr
+        self.globals.insert(global_inst)
     }
 
     /// <https://webassembly.github.io/spec/core/exec/modules.html#element-segments>
@@ -1266,7 +1259,7 @@ pub enum ExternVal {
     Func(FuncAddr),
     Table(TableAddr),
     Mem(MemAddr),
-    Global(usize),
+    Global(GlobalAddr),
 }
 
 impl ExternVal {
@@ -1281,13 +1274,9 @@ impl ExternVal {
             ExternVal::Func(func_addr) => ExternType::Func(store.functions.get(*func_addr).ty()),
             ExternVal::Table(table_addr) => ExternType::Table(store.tables.get(*table_addr).ty),
             ExternVal::Mem(mem_addr) => ExternType::Mem(store.memories.get(*mem_addr).ty),
-            ExternVal::Global(global_addr) => ExternType::Global(
-                store
-                    .globals
-                    .get(*global_addr)
-                    .expect("the correct store to be used")
-                    .ty,
-            ),
+            ExternVal::Global(global_addr) => {
+                ExternType::Global(store.globals.get(*global_addr).ty)
+            }
         }
     }
 }
@@ -1297,14 +1286,14 @@ impl ExternVal {
 /// <https://webassembly.github.io/spec/core/syntax/types.html#id3>
 /// <https://webassembly.github.io/spec/core/syntax/modules.html?highlight=convention#id1>
 // TODO implement this trait for ExternType lists Export lists
-pub trait ExternFilterable<T> {
+pub trait ExternFilterable {
     fn funcs(self) -> impl Iterator<Item = FuncAddr>;
     fn tables(self) -> impl Iterator<Item = TableAddr>;
     fn mems(self) -> impl Iterator<Item = MemAddr>;
-    fn globals(self) -> impl Iterator<Item = T>;
+    fn globals(self) -> impl Iterator<Item = GlobalAddr>;
 }
 
-impl<'a, I> ExternFilterable<usize> for I
+impl<'a, I> ExternFilterable for I
 where
     I: Iterator<Item = &'a ExternVal>,
 {
@@ -1338,7 +1327,7 @@ where
         })
     }
 
-    fn globals(self) -> impl Iterator<Item = usize> {
+    fn globals(self) -> impl Iterator<Item = GlobalAddr> {
         self.filter_map(|extern_val| {
             if let ExternVal::Global(global_addr) = extern_val {
                 Some(*global_addr)
@@ -1356,7 +1345,7 @@ pub struct ModuleInst<'b> {
     pub func_addrs: Vec<FuncAddr>,
     pub table_addrs: Vec<TableAddr>,
     pub mem_addrs: Vec<MemAddr>,
-    pub global_addrs: Vec<usize>,
+    pub global_addrs: Vec<GlobalAddr>,
     pub elem_addrs: Vec<usize>,
     pub data_addrs: Vec<usize>,
     ///<https://webassembly.github.io/spec/core/exec/runtime.html#export-instances>

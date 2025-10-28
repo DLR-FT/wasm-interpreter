@@ -1,3 +1,4 @@
+use crate::addrs::GlobalAddr;
 use crate::core::reader::types::global::GlobalType;
 use crate::resumable::{ResumableRef, RunState};
 use alloc::borrow::{Cow, ToOwned};
@@ -226,12 +227,12 @@ impl<'b, T: Config> RuntimeInstance<'b, T> {
     }
 
     /// Returns the global type of some global instance by its addr.
-    pub fn global_type(&self, global_addr: usize) -> GlobalType {
+    pub fn global_type(&self, global_addr: GlobalAddr) -> GlobalType {
         self.store.global_type(global_addr)
     }
 
     /// Returns the current value of some global instance by its addr.
-    pub fn global_read(&self, global_addr: usize) -> Value {
+    pub fn global_read(&self, global_addr: GlobalAddr) -> Value {
         self.store.global_read(global_addr)
     }
 
@@ -240,7 +241,11 @@ impl<'b, T: Config> RuntimeInstance<'b, T> {
     /// # Errors
     /// - [`RuntimeError::WriteOnImmutableGlobal`]
     /// - [`RuntimeError::GlobalTypeMismatch`]
-    pub fn global_write(&mut self, global_addr: usize, val: Value) -> Result<(), RuntimeError> {
+    pub fn global_write(
+        &mut self,
+        global_addr: GlobalAddr,
+        val: Value,
+    ) -> Result<(), RuntimeError> {
         self.store.global_write(global_addr, val)
     }
 
