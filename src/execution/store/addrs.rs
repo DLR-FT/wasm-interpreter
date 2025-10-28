@@ -195,3 +195,22 @@ impl Addr for GlobalAddr {
         self.0
     }
 }
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub struct ElemAddr(usize);
+
+impl core::fmt::Display for ElemAddr {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "memory address {}", self.0)
+    }
+}
+
+impl Addr for ElemAddr {
+    fn new_unchecked(inner: usize) -> Self {
+        Self(inner)
+    }
+
+    fn into_inner(self) -> usize {
+        self.0
+    }
+}
