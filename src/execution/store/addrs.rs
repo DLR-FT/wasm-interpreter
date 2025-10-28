@@ -173,3 +173,24 @@ impl Addr for MemAddr {
         self.0
     }
 }
+
+/// An address to a global instance that lives in a specific [`Store`](crate::Store).
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub struct GlobalAddr(usize);
+
+impl core::fmt::Display for GlobalAddr {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "global address {}", self.0)
+    }
+}
+
+impl Addr for GlobalAddr {
+    fn new_unchecked(inner: usize) -> Self {
+        Self(inner)
+    }
+
+    /// Returns the inner integer represented by this [`GlobalAddr`].
+    fn into_inner(self) -> usize {
+        self.0
+    }
+}
