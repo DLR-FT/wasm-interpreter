@@ -6,6 +6,7 @@ use alloc::vec::Vec;
 
 use const_interpreter_loop::run_const_span;
 use function_ref::FunctionRef;
+use store::addrs::ModuleAddr;
 use store::ExternVal;
 use store::HaltExecutionError;
 use value_stack::Stack;
@@ -56,10 +57,10 @@ impl<'b, T: Config> RuntimeInstance<'b, T> {
     pub fn new_with_default_module(
         user_data: T,
         validation_info: &'_ ValidationInfo<'b>,
-    ) -> Result<Self, RuntimeError> {
+    ) -> Result<(Self, ModuleAddr), RuntimeError> {
         let mut instance = Self::new(user_data);
-        instance.add_module(DEFAULT_MODULE, validation_info)?;
-        Ok(instance)
+        let module_addr = instance.add_module(DEFAULT_MODULE, validation_info)?;
+        Ok((instance, module_addr))
     }
 
     pub fn new_named(
@@ -77,7 +78,7 @@ impl<'b, T: Config> RuntimeInstance<'b, T> {
         &mut self,
         module_name: &str,
         validation_info: &'_ ValidationInfo<'b>,
-    ) -> Result<(), RuntimeError> {
+    ) -> Result<ModuleAddr, RuntimeError> {
         self.store.add_module(module_name, validation_info, None)
     }
 
@@ -92,14 +93,10 @@ impl<'b, T: Config> RuntimeInstance<'b, T> {
 
     pub fn get_function_by_index(
         &self,
-        module_addr: usize,
+        module_addr: ModuleAddr,
         function_idx: usize,
     ) -> Result<FunctionRef, RuntimeError> {
-        let module_inst = self
-            .store
-            .modules
-            .get(module_addr)
-            .ok_or(RuntimeError::ModuleNotFound)?;
+        let module_inst = self.store.modules.get(module_addr);
         let func_addr = *module_inst
             .func_addrs
             .get(function_idx)
