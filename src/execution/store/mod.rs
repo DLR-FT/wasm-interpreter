@@ -1,6 +1,6 @@
 use core::mem;
 
-use crate::addrs::{AddrVec, ElemAddr, FuncAddr, GlobalAddr, MemAddr, TableAddr};
+use crate::addrs::{AddrVec, DataAddr, ElemAddr, FuncAddr, GlobalAddr, MemAddr, TableAddr};
 use crate::config::Config;
 use crate::core::indices::TypeIdx;
 use crate::core::reader::span::Span;
@@ -47,7 +47,7 @@ pub struct Store<'b, T: Config> {
     pub(crate) memories: AddrVec<MemAddr, MemInst>,
     pub(crate) globals: AddrVec<GlobalAddr, GlobalInst>,
     pub(crate) elements: AddrVec<ElemAddr, ElemInst>,
-    pub data: Vec<DataInst>,
+    pub(crate) data: AddrVec<DataAddr, DataInst>,
     pub modules: Vec<ModuleInst<'b>>,
 
     // fields outside of the spec but are convenient are below
@@ -74,7 +74,7 @@ impl<'b, T: Config> Store<'b, T> {
             memories: AddrVec::default(),
             globals: AddrVec::default(),
             elements: AddrVec::default(),
-            data: Vec::default(),
+            data: AddrVec::default(),
             modules: Vec::default(),
             registry: Registry::default(),
             dormitory: Dormitory::default(),
@@ -861,14 +861,12 @@ impl<'b, T: Config> Store<'b, T> {
     }
 
     /// <https://webassembly.github.io/spec/core/exec/modules.html#data-segments>
-    fn alloc_data(&mut self, bytes: &[u8]) -> usize {
+    fn alloc_data(&mut self, bytes: &[u8]) -> DataAddr {
         let data_inst = DataInst {
             data: Vec::from(bytes),
         };
 
-        let addr = self.data.len();
-        self.data.push(data_inst);
-        addr
+        self.data.insert(data_inst)
     }
 
     /// This function allows an already instantiated module to be reregistered
@@ -1345,7 +1343,7 @@ pub struct ModuleInst<'b> {
     pub mem_addrs: Vec<MemAddr>,
     pub global_addrs: Vec<GlobalAddr>,
     pub elem_addrs: Vec<ElemAddr>,
-    pub data_addrs: Vec<usize>,
+    pub data_addrs: Vec<DataAddr>,
     ///<https://webassembly.github.io/spec/core/exec/runtime.html#export-instances>
     /// matches the list of ExportInst structs in the spec, however the spec never uses the name attribute
     /// except during linking, which is up to the embedder to implement.
