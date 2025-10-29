@@ -1,18 +1,18 @@
-/// Trait that allows user specified configuration for various items during interpretation
+/// Trait that allows user specified configuration for various items during interpretation. Additionally, the types
+/// implementing this trait can act as custom user data within an interpreter instance, passed along to each method of
+/// this trait and host functions whenever they are invoked.
 ///
 /// The default implementation of all trait methods have the least overhead, i. e. most can be optimized out fully.
 // It must always be checked that there is no additional performance penalty for the default config!
-pub trait Config: Default {
+pub trait Config {
     /// A hook which is called before every wasm instruction
     ///
     /// This allows the most intricate insight into the interpreters behavior, at the cost of a
     /// hefty performance penalty
     #[allow(unused_variables)]
+    #[inline(always)]
     fn instruction_hook(&mut self, bytecode: &[u8], pc: usize) {}
 }
 
 /// Default implementation of the interpreter configuration, with all hooks empty
-#[derive(Default, Debug)]
-pub struct DefaultConfig;
-
-impl Config for DefaultConfig {}
+impl Config for () {}

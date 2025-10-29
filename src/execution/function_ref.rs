@@ -9,7 +9,7 @@ pub struct FunctionRef {
 }
 
 impl FunctionRef {
-    pub fn new_from_name<T>(
+    pub fn new_from_name<T: Config>(
         module_name: &str,
         function_name: &str,
         store: &Store<T>,
@@ -31,22 +31,18 @@ impl FunctionRef {
         }
     }
 
-    pub fn invoke_typed<
-        C: Config + core::fmt::Debug,
-        Param: InteropValueList,
-        Returns: InteropValueList,
-    >(
+    pub fn invoke_typed<T: Config, Param: InteropValueList, Returns: InteropValueList>(
         &self,
-        runtime: &mut RuntimeInstance<C>,
+        runtime: &mut RuntimeInstance<T>,
         params: Param,
         // store: &mut Store,
     ) -> Result<Returns, RuntimeError> {
         runtime.invoke_typed(self, params /* , store */)
     }
 
-    pub fn invoke<T, C: Config + core::fmt::Debug>(
+    pub fn invoke<T: Config>(
         &self,
-        runtime: &mut RuntimeInstance<T, C>,
+        runtime: &mut RuntimeInstance<T>,
         params: Vec<Value>,
         // store: &mut Store,
     ) -> Result<Vec<Value>, RuntimeError> {

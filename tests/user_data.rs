@@ -1,16 +1,20 @@
 use std::sync::mpsc::Sender;
 
-use wasm::{RuntimeInstance, Value};
+use wasm::{config::Config, RuntimeInstance, Value};
 
 #[test_log::test]
 fn counter() {
-    fn add_one(user_data: &mut u32, _params: Vec<Value>) -> Vec<Value> {
-        *user_data += 1;
+    #[derive(Debug, PartialEq)]
+    struct MyCounter(pub u32);
+    impl Config for MyCounter {}
+
+    fn add_one(user_data: &mut MyCounter, _params: Vec<Value>) -> Vec<Value> {
+        user_data.0 += 1;
 
         Vec::new()
     }
 
-    let mut instance = RuntimeInstance::new(0);
+    let mut instance = RuntimeInstance::new(MyCounter(0));
     instance
         .add_host_function_typed::<(), ()>("host", "add_one", add_one)
         .unwrap();
@@ -23,23 +27,27 @@ fn counter() {
             .unwrap();
     }
 
-    assert_eq!(*instance.user_data(), 5);
+    assert_eq!(*instance.user_data(), MyCounter(5));
 }
 
 #[test_log::test]
 fn channels() {
+    struct MySender(pub Sender<String>);
+    impl Config for MySender {}
+
     let (tx, rx) = std::sync::mpsc::channel::<String>();
 
     std::thread::spawn(|| {
-        fn send_message(user_data: &mut Sender<String>, _params: Vec<Value>) -> Vec<Value> {
+        fn send_message(user_data: &mut MySender, _params: Vec<Value>) -> Vec<Value> {
             user_data
+                .0
                 .send("Hello from host function!".to_owned())
                 .unwrap();
 
             Vec::new()
         }
 
-        let mut instance = RuntimeInstance::new(tx);
+        let mut instance = RuntimeInstance::new(MySender(tx));
         instance
             .add_host_function_typed::<(), ()>("host", "send_message", send_message)
             .unwrap();

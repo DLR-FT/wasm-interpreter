@@ -1,5 +1,6 @@
 use crate::{
     assert_validated::UnwrapValidatedExt,
+    config::Config,
     core::{
         indices::GlobalIdx,
         reader::{span::Span, WasmReadable, WasmReader},
@@ -21,7 +22,7 @@ use crate::{
 /// This function assumes that the expression has been validated. Passing unvalidated code will likely result in a
 /// panic, or undefined behaviour.
 // TODO this signature might change to support hooks or match the spec better
-pub(crate) fn run_const<T>(
+pub(crate) fn run_const<T: Config>(
     wasm: &mut WasmReader,
     stack: &mut Stack,
     module: &ModuleInst,
@@ -118,7 +119,7 @@ pub(crate) fn run_const<T>(
     Ok(())
 }
 
-pub(crate) fn run_const_span<T>(
+pub(crate) fn run_const_span<T: Config>(
     wasm: &[u8],
     span: &Span,
     module: &ModuleInst,
