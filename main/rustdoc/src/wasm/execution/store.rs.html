@@ -605,7 +605,7 @@
 <a href=#605 id=605 data-nosnippet>605</a>                        <span class="comment">// Prepare a new stack with the locals for the entry function
 <a href=#606 id=606 data-nosnippet>606</a>                        </span><span class="kw">let </span><span class="kw-2">mut </span>stack = Stack::new_with_values(params);
 <a href=#607 id=607 data-nosnippet>607</a>
-<a href=#608 id=608 data-nosnippet>608</a>                        stack.push_call_frame(
+<a href=#608 id=608 data-nosnippet>608</a>                        stack.push_call_frame::&lt;T&gt;(
 <a href=#609 id=609 data-nosnippet>609</a>                            usize::MAX,
 <a href=#610 id=610 data-nosnippet>610</a>                            <span class="kw-2">&amp;</span>wasm_func_inst.function_type,
 <a href=#611 id=611 data-nosnippet>611</a>                            <span class="kw-2">&amp;</span>wasm_func_inst.locals,

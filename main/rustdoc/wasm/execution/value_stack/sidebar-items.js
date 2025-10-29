@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["MAX_CALL_STACK_SIZE","MAX_VALUE_STACK_SIZE"],"struct":["CallFrame","Stack"]};
+window.SIDEBAR_ITEMS = {"struct":["CallFrame","Stack"]};
