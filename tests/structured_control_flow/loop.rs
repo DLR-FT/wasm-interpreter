@@ -56,11 +56,10 @@ fn fibonacci_with_loop_and_br_if() {
     let wasm_bytes = wat::parse_str(FIBONACCI_WITH_LOOP_AND_BR_IF).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
-    let fibonacci_fn = instance.get_function_by_index(0, 0).unwrap();
+    let fibonacci_fn = instance.get_function_by_index(module, 0).unwrap();
 
     assert_eq!(1, instance.invoke_typed(&fibonacci_fn, -5).unwrap());
     assert_eq!(1, instance.invoke_typed(&fibonacci_fn, 0).unwrap());

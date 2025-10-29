@@ -15,11 +15,10 @@ fn dynamic_add() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
-    let func = instance.get_function_by_index(0, 0).unwrap();
+    let func = instance.get_function_by_index(module, 0).unwrap();
 
     let res = instance
         .invoke(&func, vec![Value::I32(11), Value::I32(1)])

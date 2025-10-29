@@ -18,14 +18,13 @@ pub fn f64_const() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     assert_eq!(
         3.14159265359_f64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), ())
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), ())
             .unwrap()
     );
 }
@@ -47,15 +46,14 @@ pub fn f64_eq() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     assert_eq!(
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (1.1_f64, 1.1_f64)
             )
             .unwrap()
@@ -64,7 +62,7 @@ pub fn f64_eq() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (1.1_f64, 1.2_f64)
             )
             .unwrap()
@@ -86,15 +84,14 @@ pub fn f64_ne() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     assert_eq!(
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (1.1_f64, 1.1_f64)
             )
             .unwrap()
@@ -103,7 +100,7 @@ pub fn f64_ne() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (1.1_f64, 1.2_f64)
             )
             .unwrap()
@@ -112,7 +109,7 @@ pub fn f64_ne() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0.0_f64, -0.0_f64)
             )
             .unwrap()
@@ -134,15 +131,14 @@ pub fn f64_lt() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     assert_eq!(
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (1.0_f64, 2.0_f64)
             )
             .unwrap()
@@ -151,7 +147,7 @@ pub fn f64_lt() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (2.0_f64, 1.0_f64)
             )
             .unwrap()
@@ -160,7 +156,7 @@ pub fn f64_lt() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (1.0_f64, 1.0_f64)
             )
             .unwrap()
@@ -182,15 +178,14 @@ pub fn f64_gt() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     assert_eq!(
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (1.0_f64, 2.0_f64)
             )
             .unwrap()
@@ -199,7 +194,7 @@ pub fn f64_gt() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (2.0_f64, 1.0_f64)
             )
             .unwrap()
@@ -208,7 +203,7 @@ pub fn f64_gt() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (1.0_f64, 1.0_f64)
             )
             .unwrap()
@@ -230,15 +225,14 @@ pub fn f64_le() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     assert_eq!(
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (1.0_f64, 2.0_f64)
             )
             .unwrap()
@@ -247,7 +241,7 @@ pub fn f64_le() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (2.0_f64, 1.0_f64)
             )
             .unwrap()
@@ -256,7 +250,7 @@ pub fn f64_le() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (1.0_f64, 1.0_f64)
             )
             .unwrap()
@@ -278,15 +272,14 @@ pub fn f64_ge() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     assert_eq!(
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (1.0_f64, 2.0_f64)
             )
             .unwrap()
@@ -295,7 +288,7 @@ pub fn f64_ge() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (2.0_f64, 1.0_f64)
             )
             .unwrap()
@@ -304,7 +297,7 @@ pub fn f64_ge() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (1.0_f64, 1.0_f64)
             )
             .unwrap()
@@ -325,20 +318,15 @@ pub fn f64_abs() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     {
         let result = instance
-            .invoke_typed::<f64, f64>(&instance.get_function_by_index(0, 0).unwrap(), -f64::NAN)
-            .unwrap();
-        assert!(result.is_nan());
-        assert!(result.is_sign_positive());
-    }
-    {
-        let result = instance
-            .invoke_typed::<f64, f64>(&instance.get_function_by_index(0, 0).unwrap(), f64::NAN)
+            .invoke_typed::<f64, f64>(
+                &instance.get_function_by_index(module, 0).unwrap(),
+                -f64::NAN,
+            )
             .unwrap();
         assert!(result.is_nan());
         assert!(result.is_sign_positive());
@@ -346,7 +334,17 @@ pub fn f64_abs() {
     {
         let result = instance
             .invoke_typed::<f64, f64>(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
+                f64::NAN,
+            )
+            .unwrap();
+        assert!(result.is_nan());
+        assert!(result.is_sign_positive());
+    }
+    {
+        let result = instance
+            .invoke_typed::<f64, f64>(
+                &instance.get_function_by_index(module, 0).unwrap(),
                 f64::NEG_INFINITY,
             )
             .unwrap();
@@ -356,7 +354,7 @@ pub fn f64_abs() {
     {
         let result = instance
             .invoke_typed::<f64, f64>(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 f64::INFINITY,
             )
             .unwrap();
@@ -366,25 +364,31 @@ pub fn f64_abs() {
     assert_eq!(
         1.5_f64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 1.5_f64)
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), 1.5_f64)
             .unwrap()
     );
     assert_eq!(
         1.5_f64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -1.5_f64)
+            .invoke_typed(
+                &instance.get_function_by_index(module, 0).unwrap(),
+                -1.5_f64
+            )
             .unwrap()
     );
     assert_eq!(
         0.0_f64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 0.0_f64)
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), 0.0_f64)
             .unwrap()
     );
     assert_eq!(
         0.0_f64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -0.0_f64)
+            .invoke_typed(
+                &instance.get_function_by_index(module, 0).unwrap(),
+                -0.0_f64
+            )
             .unwrap()
     );
 }
@@ -403,20 +407,25 @@ pub fn f64_neg() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     {
         let result = instance
-            .invoke_typed::<f64, f64>(&instance.get_function_by_index(0, 0).unwrap(), -f64::NAN)
+            .invoke_typed::<f64, f64>(
+                &instance.get_function_by_index(module, 0).unwrap(),
+                -f64::NAN,
+            )
             .unwrap();
         assert!(result.is_nan());
         assert!(result.is_sign_positive());
     }
     {
         let result = instance
-            .invoke_typed::<f64, f64>(&instance.get_function_by_index(0, 0).unwrap(), f64::NAN)
+            .invoke_typed::<f64, f64>(
+                &instance.get_function_by_index(module, 0).unwrap(),
+                f64::NAN,
+            )
             .unwrap();
         assert!(result.is_nan());
         assert!(result.is_sign_negative());
@@ -424,7 +433,7 @@ pub fn f64_neg() {
     {
         let result = instance
             .invoke_typed::<f64, f64>(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 f64::NEG_INFINITY,
             )
             .unwrap();
@@ -434,7 +443,7 @@ pub fn f64_neg() {
     {
         let result = instance
             .invoke_typed::<f64, f64>(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 f64::INFINITY,
             )
             .unwrap();
@@ -444,25 +453,31 @@ pub fn f64_neg() {
     assert_eq!(
         -1.5_f64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 1.5_f64)
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), 1.5_f64)
             .unwrap()
     );
     assert_eq!(
         1.5_f64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -1.5_f64)
+            .invoke_typed(
+                &instance.get_function_by_index(module, 0).unwrap(),
+                -1.5_f64
+            )
             .unwrap()
     );
     assert_eq!(
         -0.0_f64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 0.0_f64)
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), 0.0_f64)
             .unwrap()
     );
     assert_eq!(
         0.0_f64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -0.0_f64)
+            .invoke_typed(
+                &instance.get_function_by_index(module, 0).unwrap(),
+                -0.0_f64
+            )
             .unwrap()
     );
 }
@@ -481,26 +496,31 @@ pub fn f64_ceil() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     assert_eq!(
         2.0_f64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 1.5_f64)
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), 1.5_f64)
             .unwrap()
     );
     assert_eq!(
         -1.0_f64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -1.5_f64)
+            .invoke_typed(
+                &instance.get_function_by_index(module, 0).unwrap(),
+                -1.5_f64
+            )
             .unwrap()
     );
     assert_eq!(
         0.0_f64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -0.1_f64)
+            .invoke_typed(
+                &instance.get_function_by_index(module, 0).unwrap(),
+                -0.1_f64
+            )
             .unwrap()
     );
 }
@@ -519,26 +539,31 @@ pub fn f64_floor() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     assert_eq!(
         1.0_f64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 1.5_f64)
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), 1.5_f64)
             .unwrap()
     );
     assert_eq!(
         -2.0_f64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -1.5_f64)
+            .invoke_typed(
+                &instance.get_function_by_index(module, 0).unwrap(),
+                -1.5_f64
+            )
             .unwrap()
     );
     assert_eq!(
         -1.0_f64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -0.1_f64)
+            .invoke_typed(
+                &instance.get_function_by_index(module, 0).unwrap(),
+                -0.1_f64
+            )
             .unwrap()
     );
 }
@@ -557,26 +582,28 @@ pub fn f64_trunc() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     assert_eq!(
         1.0_f64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 1.5_f64)
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), 1.5_f64)
             .unwrap()
     );
     assert_eq!(
         -1.0_f64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -1.5_f64)
+            .invoke_typed(
+                &instance.get_function_by_index(module, 0).unwrap(),
+                -1.5_f64
+            )
             .unwrap()
     );
     assert_eq!(
         0.0_f64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 0.9_f64)
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), 0.9_f64)
             .unwrap()
     );
 }
@@ -595,32 +622,34 @@ pub fn f64_nearest() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     assert_eq!(
         2.0_f64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 1.5_f64)
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), 1.5_f64)
             .unwrap()
     );
     assert_eq!(
         -2.0_f64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -1.5_f64)
+            .invoke_typed(
+                &instance.get_function_by_index(module, 0).unwrap(),
+                -1.5_f64
+            )
             .unwrap()
     );
     assert_eq!(
         1.0_f64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 0.6_f64)
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), 0.6_f64)
             .unwrap()
     );
     assert_eq!(
         0.0_f64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 0.4_f64)
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), 0.4_f64)
             .unwrap()
     );
 }
@@ -640,24 +669,26 @@ pub fn f64_sqrt() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     assert_eq!(
         2.0_f64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 4.0_f64)
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), 4.0_f64)
             .unwrap()
     );
     assert_eq!(
         1.4142135623730951_f64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 2.0_f64)
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), 2.0_f64)
             .unwrap()
     );
     assert!(instance
-        .invoke_typed::<f64, f64>(&instance.get_function_by_index(0, 0).unwrap(), -f64::NAN)
+        .invoke_typed::<f64, f64>(
+            &instance.get_function_by_index(module, 0).unwrap(),
+            -f64::NAN
+        )
         .unwrap()
         .is_nan());
 }
@@ -677,15 +708,14 @@ pub fn f64_add() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     assert_eq!(
         3.0_f64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (1.5_f64, 1.5_f64)
             )
             .unwrap()
@@ -694,7 +724,7 @@ pub fn f64_add() {
         -1.0_f64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (1.0_f64, -2.0_f64)
             )
             .unwrap()
@@ -703,7 +733,7 @@ pub fn f64_add() {
         0.0_f64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0.1_f64, -0.1_f64)
             )
             .unwrap()
@@ -725,15 +755,14 @@ pub fn f64_sub() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     assert_eq!(
         0.0_f64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (1.5_f64, 1.5_f64)
             )
             .unwrap()
@@ -742,7 +771,7 @@ pub fn f64_sub() {
         3.0_f64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (1.0_f64, -2.0_f64)
             )
             .unwrap()
@@ -751,7 +780,7 @@ pub fn f64_sub() {
         0.2_f64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0.1_f64, -0.1_f64)
             )
             .unwrap()
@@ -773,15 +802,14 @@ pub fn f64_mul() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     assert_eq!(
         6.0_f64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (2.0_f64, 3.0_f64)
             )
             .unwrap()
@@ -790,7 +818,7 @@ pub fn f64_mul() {
         -4.0_f64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (2.0_f64, -2.0_f64)
             )
             .unwrap()
@@ -799,7 +827,7 @@ pub fn f64_mul() {
         0.0_f64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0.0_f64, 5.0_f64)
             )
             .unwrap()
@@ -821,15 +849,14 @@ pub fn f64_div() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     assert_eq!(
         2.0_f64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (6.0_f64, 3.0_f64)
             )
             .unwrap()
@@ -838,21 +865,21 @@ pub fn f64_div() {
         -1.0_f64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (2.0_f64, -2.0_f64)
             )
             .unwrap()
     );
     assert!(instance
         .invoke_typed::<(f64, f64), f64>(
-            &instance.get_function_by_index(0, 0).unwrap(),
+            &instance.get_function_by_index(module, 0).unwrap(),
             (1.0_f64, 0.0_f64)
         )
         .unwrap()
         .is_infinite());
     assert!(instance
         .invoke_typed::<(f64, f64), f64>(
-            &instance.get_function_by_index(0, 0).unwrap(),
+            &instance.get_function_by_index(module, 0).unwrap(),
             (0.0_f64, 0.0_f64)
         )
         .unwrap()
@@ -874,14 +901,13 @@ pub fn f64_min() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     {
         let result = instance
             .invoke_typed::<(f64, f64), f64>(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (f64::NAN, -f64::NAN),
             )
             .unwrap();
@@ -890,7 +916,7 @@ pub fn f64_min() {
     {
         let result = instance
             .invoke_typed::<(f64, f64), f64>(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (f64::NAN, f64::NAN),
             )
             .unwrap();
@@ -900,7 +926,7 @@ pub fn f64_min() {
     {
         let result = instance
             .invoke_typed::<(f64, f64), f64>(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (f64::INFINITY, f64::NEG_INFINITY),
             )
             .unwrap();
@@ -911,7 +937,7 @@ pub fn f64_min() {
         42_f64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (f64::INFINITY, 42_f64)
             )
             .unwrap()
@@ -920,7 +946,7 @@ pub fn f64_min() {
         -0_f64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (-0_f64, 0_f64)
             )
             .unwrap()
@@ -929,7 +955,7 @@ pub fn f64_min() {
         1.0_f64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (1.0_f64, 2.0_f64)
             )
             .unwrap()
@@ -938,7 +964,7 @@ pub fn f64_min() {
         -2.0_f64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (-1.0_f64, -2.0_f64)
             )
             .unwrap()
@@ -947,14 +973,14 @@ pub fn f64_min() {
         -0.0_f64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0.0_f64, -0.0_f64)
             )
             .unwrap()
     );
     assert!(instance
         .invoke_typed::<(f64, f64), f64>(
-            &instance.get_function_by_index(0, 0).unwrap(),
+            &instance.get_function_by_index(module, 0).unwrap(),
             (f64::NAN, 1.0_f64)
         )
         .unwrap()
@@ -976,14 +1002,13 @@ pub fn f64_max() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     {
         let result = instance
             .invoke_typed::<(f64, f64), f64>(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (f64::NAN, -f64::NAN),
             )
             .unwrap();
@@ -992,7 +1017,7 @@ pub fn f64_max() {
     {
         let result = instance
             .invoke_typed::<(f64, f64), f64>(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (f64::NAN, f64::NAN),
             )
             .unwrap();
@@ -1002,7 +1027,7 @@ pub fn f64_max() {
     {
         let result = instance
             .invoke_typed::<(f64, f64), f64>(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (f64::INFINITY, f64::NEG_INFINITY),
             )
             .unwrap();
@@ -1013,7 +1038,7 @@ pub fn f64_max() {
         42_f64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (f64::NEG_INFINITY, 42_f64)
             )
             .unwrap()
@@ -1022,7 +1047,7 @@ pub fn f64_max() {
         0_f64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (-0_f64, 0_f64)
             )
             .unwrap()
@@ -1032,7 +1057,7 @@ pub fn f64_max() {
         2.0_f64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (1.0_f64, 2.0_f64)
             )
             .unwrap()
@@ -1041,7 +1066,7 @@ pub fn f64_max() {
         -1.0_f64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (-1.0_f64, -2.0_f64)
             )
             .unwrap()
@@ -1050,14 +1075,14 @@ pub fn f64_max() {
         0.0_f64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0.0_f64, -0.0_f64)
             )
             .unwrap()
     );
     assert!(instance
         .invoke_typed::<(f64, f64), f64>(
-            &instance.get_function_by_index(0, 0).unwrap(),
+            &instance.get_function_by_index(module, 0).unwrap(),
             (f64::NAN, 1.0_f64)
         )
         .unwrap()
@@ -1079,15 +1104,14 @@ pub fn f64_copysign() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     assert_eq!(
         1.5_f64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (1.5_f64, 2.0_f64)
             )
             .unwrap()
@@ -1096,7 +1120,7 @@ pub fn f64_copysign() {
         -1.5_f64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (1.5_f64, -2.0_f64)
             )
             .unwrap()
@@ -1105,7 +1129,7 @@ pub fn f64_copysign() {
         -1.5_f64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (-1.5_f64, -0.0_f64)
             )
             .unwrap()
@@ -1114,7 +1138,7 @@ pub fn f64_copysign() {
         1.5_f64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (-1.5_f64, 0.0_f64)
             )
             .unwrap()

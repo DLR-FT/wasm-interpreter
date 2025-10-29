@@ -25,27 +25,32 @@ pub fn i32_bitwise_and() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     assert_eq!(
         1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (33, 11))
+            .invoke_typed(
+                &instance.get_function_by_index(module, 0).unwrap(),
+                (33, 11)
+            )
             .unwrap()
     );
     assert_eq!(
         5,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (77, 23))
+            .invoke_typed(
+                &instance.get_function_by_index(module, 0).unwrap(),
+                (77, 23)
+            )
             .unwrap()
     );
     assert_eq!(
         180244,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (192534, 1231412)
             )
             .unwrap()
@@ -54,7 +59,7 @@ pub fn i32_bitwise_and() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i32::MIN, i32::MAX)
             )
             .unwrap()
@@ -70,27 +75,32 @@ pub fn i32_bitwise_or() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     assert_eq!(
         43,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (33, 11))
+            .invoke_typed(
+                &instance.get_function_by_index(module, 0).unwrap(),
+                (33, 11)
+            )
             .unwrap()
     );
     assert_eq!(
         95,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (77, 23))
+            .invoke_typed(
+                &instance.get_function_by_index(module, 0).unwrap(),
+                (77, 23)
+            )
             .unwrap()
     );
     assert_eq!(
         1243702,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (192534, 1231412)
             )
             .unwrap()
@@ -99,7 +109,7 @@ pub fn i32_bitwise_or() {
         -1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i32::MIN, i32::MAX)
             )
             .unwrap()
@@ -115,27 +125,32 @@ pub fn i32_bitwise_xor() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     assert_eq!(
         42,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (33, 11))
+            .invoke_typed(
+                &instance.get_function_by_index(module, 0).unwrap(),
+                (33, 11)
+            )
             .unwrap()
     );
     assert_eq!(
         90,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (77, 23))
+            .invoke_typed(
+                &instance.get_function_by_index(module, 0).unwrap(),
+                (77, 23)
+            )
             .unwrap()
     );
     assert_eq!(
         1063458,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (192534, 1231412)
             )
             .unwrap()
@@ -144,7 +159,7 @@ pub fn i32_bitwise_xor() {
         -1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i32::MIN, i32::MAX)
             )
             .unwrap()
@@ -160,27 +175,32 @@ pub fn i32_bitwise_shl() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     assert_eq!(
         67584,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (33, 11))
+            .invoke_typed(
+                &instance.get_function_by_index(module, 0).unwrap(),
+                (33, 11)
+            )
             .unwrap()
     );
     assert_eq!(
         645922816,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (77, 23))
+            .invoke_typed(
+                &instance.get_function_by_index(module, 0).unwrap(),
+                (77, 23)
+            )
             .unwrap()
     );
     assert_eq!(
         23068672,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (192534, 1231412)
             )
             .unwrap()
@@ -189,7 +209,7 @@ pub fn i32_bitwise_shl() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i32::MIN, i32::MAX)
             )
             .unwrap()
@@ -205,15 +225,14 @@ pub fn i32_bitwise_shr_s() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     assert_eq!(
         8881445,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (142_103_123, 4)
             )
             .unwrap()
@@ -222,7 +241,7 @@ pub fn i32_bitwise_shr_s() {
         23879,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (391_248_921, 14)
             )
             .unwrap()
@@ -231,7 +250,7 @@ pub fn i32_bitwise_shr_s() {
         601955006,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (1_203_910_012, 33)
             )
             .unwrap()
@@ -240,7 +259,7 @@ pub fn i32_bitwise_shr_s() {
         1056594615,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (2_113_189_231, 33)
             )
             .unwrap()
@@ -249,7 +268,7 @@ pub fn i32_bitwise_shr_s() {
         -1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i32::MIN, i32::MAX)
             )
             .unwrap()
@@ -259,7 +278,7 @@ pub fn i32_bitwise_shr_s() {
     assert_eq!(
         4,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (8, 1))
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), (8, 1))
             .unwrap()
     );
 
@@ -267,13 +286,13 @@ pub fn i32_bitwise_shr_s() {
     assert_eq!(
         -1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (-1, 0))
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), (-1, 0))
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (1, 0))
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), (1, 0))
             .unwrap()
     );
 
@@ -281,13 +300,13 @@ pub fn i32_bitwise_shr_s() {
     assert_eq!(
         -4,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (-8, 1))
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), (-8, 1))
             .unwrap()
     );
     assert_eq!(
         -1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (-1, 1))
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), (-1, 1))
             .unwrap()
     );
 
@@ -295,14 +314,17 @@ pub fn i32_bitwise_shr_s() {
     assert_eq!(
         -1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (-1, 31))
+            .invoke_typed(
+                &instance.get_function_by_index(module, 0).unwrap(),
+                (-1, 31)
+            )
             .unwrap()
     );
     assert_eq!(
         -1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i32::MIN, 31)
             )
             .unwrap()
@@ -311,7 +333,7 @@ pub fn i32_bitwise_shr_s() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i32::MAX, 31)
             )
             .unwrap()
@@ -321,19 +343,25 @@ pub fn i32_bitwise_shr_s() {
     assert_eq!(
         -1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (-1, 32))
+            .invoke_typed(
+                &instance.get_function_by_index(module, 0).unwrap(),
+                (-1, 32)
+            )
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (1, 32))
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), (1, 32))
             .unwrap()
     );
     assert_eq!(
         -1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (-1, 100))
+            .invoke_typed(
+                &instance.get_function_by_index(module, 0).unwrap(),
+                (-1, 100)
+            )
             .unwrap()
     );
 
@@ -342,7 +370,7 @@ pub fn i32_bitwise_shr_s() {
         i32::MIN / 2,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i32::MIN, 1)
             )
             .unwrap()
@@ -351,7 +379,7 @@ pub fn i32_bitwise_shr_s() {
         i32::MAX / 2,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i32::MAX, 1)
             )
             .unwrap()
@@ -362,7 +390,7 @@ pub fn i32_bitwise_shr_s() {
         -2,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i32::MIN, 30)
             )
             .unwrap()
@@ -371,7 +399,7 @@ pub fn i32_bitwise_shr_s() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i32::MAX, 30)
             )
             .unwrap()
@@ -387,15 +415,14 @@ pub fn i32_bitwise_shr_u() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     assert_eq!(
         8881445,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (142_103_123, 4)
             )
             .unwrap()
@@ -404,7 +431,7 @@ pub fn i32_bitwise_shr_u() {
         23879,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (391_248_921, 14)
             )
             .unwrap()
@@ -413,7 +440,7 @@ pub fn i32_bitwise_shr_u() {
         601955006,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (1_203_910_012, 33)
             )
             .unwrap()
@@ -422,7 +449,7 @@ pub fn i32_bitwise_shr_u() {
         1056594615,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (2_113_189_231, 33)
             )
             .unwrap()
@@ -431,7 +458,7 @@ pub fn i32_bitwise_shr_u() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i32::MIN, i32::MAX)
             )
             .unwrap()
@@ -441,7 +468,7 @@ pub fn i32_bitwise_shr_u() {
     assert_eq!(
         4,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (8, 1))
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), (8, 1))
             .unwrap()
     );
 
@@ -449,13 +476,13 @@ pub fn i32_bitwise_shr_u() {
     assert_eq!(
         -1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (-1, 0))
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), (-1, 0))
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (1, 0))
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), (1, 0))
             .unwrap()
     );
 
@@ -463,13 +490,13 @@ pub fn i32_bitwise_shr_u() {
     assert_eq!(
         i32::MAX - 3,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (-8, 1))
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), (-8, 1))
             .unwrap()
     );
     assert_eq!(
         i32::MAX,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (-1, 1))
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), (-1, 1))
             .unwrap()
     );
 
@@ -477,14 +504,17 @@ pub fn i32_bitwise_shr_u() {
     assert_eq!(
         1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (-1, 31))
+            .invoke_typed(
+                &instance.get_function_by_index(module, 0).unwrap(),
+                (-1, 31)
+            )
             .unwrap()
     );
     assert_eq!(
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i32::MIN, 31)
             )
             .unwrap()
@@ -493,7 +523,7 @@ pub fn i32_bitwise_shr_u() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i32::MAX, 31)
             )
             .unwrap()
@@ -503,19 +533,25 @@ pub fn i32_bitwise_shr_u() {
     assert_eq!(
         -1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (-1, 32))
+            .invoke_typed(
+                &instance.get_function_by_index(module, 0).unwrap(),
+                (-1, 32)
+            )
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (1, 32))
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), (1, 32))
             .unwrap()
     );
     assert_eq!(
         268435455,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (-1, 100))
+            .invoke_typed(
+                &instance.get_function_by_index(module, 0).unwrap(),
+                (-1, 100)
+            )
             .unwrap()
     );
 
@@ -524,7 +560,7 @@ pub fn i32_bitwise_shr_u() {
         -(i32::MIN / 2),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i32::MIN, 1)
             )
             .unwrap()
@@ -533,7 +569,7 @@ pub fn i32_bitwise_shr_u() {
         i32::MAX / 2,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i32::MAX, 1)
             )
             .unwrap()
@@ -544,7 +580,7 @@ pub fn i32_bitwise_shr_u() {
         2,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i32::MIN, 30)
             )
             .unwrap()
@@ -553,7 +589,7 @@ pub fn i32_bitwise_shr_u() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i32::MAX, 30)
             )
             .unwrap()
@@ -569,15 +605,14 @@ pub fn i32_bitwise_rotl() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     assert_eq!(
         -2021317328,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (142_103_123, 4)
             )
             .unwrap()
@@ -586,7 +621,7 @@ pub fn i32_bitwise_rotl() {
         2131117524,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (391_248_921, 14)
             )
             .unwrap()
@@ -595,7 +630,7 @@ pub fn i32_bitwise_rotl() {
         -1887147272,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (1_203_910_012, 33)
             )
             .unwrap()
@@ -604,7 +639,7 @@ pub fn i32_bitwise_rotl() {
         -68588834,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (2_113_189_231, 33)
             )
             .unwrap()
@@ -613,7 +648,7 @@ pub fn i32_bitwise_rotl() {
         1073741824,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i32::MIN, i32::MAX)
             )
             .unwrap()
@@ -623,7 +658,7 @@ pub fn i32_bitwise_rotl() {
     assert_eq!(
         16,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (8, 1))
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), (8, 1))
             .unwrap()
     );
 
@@ -631,13 +666,13 @@ pub fn i32_bitwise_rotl() {
     assert_eq!(
         -1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (-1, 0))
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), (-1, 0))
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (1, 0))
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), (1, 0))
             .unwrap()
     );
 
@@ -645,13 +680,13 @@ pub fn i32_bitwise_rotl() {
     assert_eq!(
         -15,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (-8, 1))
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), (-8, 1))
             .unwrap()
     );
     assert_eq!(
         -1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (-1, 1))
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), (-1, 1))
             .unwrap()
     );
 
@@ -659,14 +694,17 @@ pub fn i32_bitwise_rotl() {
     assert_eq!(
         -1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (-1, 31))
+            .invoke_typed(
+                &instance.get_function_by_index(module, 0).unwrap(),
+                (-1, 31)
+            )
             .unwrap()
     );
     assert_eq!(
         i32::MAX / 2 + 1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i32::MIN, 31)
             )
             .unwrap()
@@ -675,7 +713,7 @@ pub fn i32_bitwise_rotl() {
         i32::MIN / 2 - 1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i32::MAX, 31)
             )
             .unwrap()
@@ -685,19 +723,25 @@ pub fn i32_bitwise_rotl() {
     assert_eq!(
         -1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (-1, 32))
+            .invoke_typed(
+                &instance.get_function_by_index(module, 0).unwrap(),
+                (-1, 32)
+            )
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (1, 32))
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), (1, 32))
             .unwrap()
     );
     assert_eq!(
         -1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (-1, 100))
+            .invoke_typed(
+                &instance.get_function_by_index(module, 0).unwrap(),
+                (-1, 100)
+            )
             .unwrap()
     );
 
@@ -706,7 +750,7 @@ pub fn i32_bitwise_rotl() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i32::MIN, 1)
             )
             .unwrap()
@@ -715,7 +759,7 @@ pub fn i32_bitwise_rotl() {
         -2,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i32::MAX, 1)
             )
             .unwrap()
@@ -726,7 +770,7 @@ pub fn i32_bitwise_rotl() {
         i32::MAX / 4 + 1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i32::MIN, 30)
             )
             .unwrap()
@@ -735,7 +779,7 @@ pub fn i32_bitwise_rotl() {
         i32::MIN / 4 - 1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i32::MAX, 30)
             )
             .unwrap()
@@ -751,15 +795,14 @@ pub fn i32_bitwise_rotr() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     assert_eq!(
         814187813,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (142_103_123, 4)
             )
             .unwrap()
@@ -768,7 +811,7 @@ pub fn i32_bitwise_rotr() {
         -261857977,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (391_248_921, 14)
             )
             .unwrap()
@@ -777,7 +820,7 @@ pub fn i32_bitwise_rotr() {
         601955006,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (1_203_910_012, 33)
             )
             .unwrap()
@@ -786,7 +829,7 @@ pub fn i32_bitwise_rotr() {
         -1090889033,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (2_113_189_231, 33)
             )
             .unwrap()
@@ -795,7 +838,7 @@ pub fn i32_bitwise_rotr() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i32::MIN, i32::MAX)
             )
             .unwrap()
@@ -805,7 +848,7 @@ pub fn i32_bitwise_rotr() {
     assert_eq!(
         4,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (8, 1))
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), (8, 1))
             .unwrap()
     );
 
@@ -813,13 +856,13 @@ pub fn i32_bitwise_rotr() {
     assert_eq!(
         -1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (-1, 0))
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), (-1, 0))
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (1, 0))
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), (1, 0))
             .unwrap()
     );
 
@@ -827,13 +870,13 @@ pub fn i32_bitwise_rotr() {
     assert_eq!(
         i32::MAX - 3,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (-8, 1))
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), (-8, 1))
             .unwrap()
     );
     assert_eq!(
         -1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (-1, 1))
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), (-1, 1))
             .unwrap()
     );
 
@@ -841,14 +884,17 @@ pub fn i32_bitwise_rotr() {
     assert_eq!(
         -1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (-1, 31))
+            .invoke_typed(
+                &instance.get_function_by_index(module, 0).unwrap(),
+                (-1, 31)
+            )
             .unwrap()
     );
     assert_eq!(
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i32::MIN, 31)
             )
             .unwrap()
@@ -857,7 +903,7 @@ pub fn i32_bitwise_rotr() {
         -2,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i32::MAX, 31)
             )
             .unwrap()
@@ -867,19 +913,25 @@ pub fn i32_bitwise_rotr() {
     assert_eq!(
         -1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (-1, 32))
+            .invoke_typed(
+                &instance.get_function_by_index(module, 0).unwrap(),
+                (-1, 32)
+            )
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (1, 32))
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), (1, 32))
             .unwrap()
     );
     assert_eq!(
         -1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), (-1, 100))
+            .invoke_typed(
+                &instance.get_function_by_index(module, 0).unwrap(),
+                (-1, 100)
+            )
             .unwrap()
     );
 
@@ -888,7 +940,7 @@ pub fn i32_bitwise_rotr() {
         i32::MAX / 2 + 1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i32::MIN, 1)
             )
             .unwrap()
@@ -897,7 +949,7 @@ pub fn i32_bitwise_rotr() {
         i32::MIN / 2 - 1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i32::MAX, 1)
             )
             .unwrap()
@@ -908,7 +960,7 @@ pub fn i32_bitwise_rotr() {
         2,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i32::MIN, 30)
             )
             .unwrap()
@@ -917,7 +969,7 @@ pub fn i32_bitwise_rotr() {
         -3,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i32::MAX, 30)
             )
             .unwrap()
@@ -933,44 +985,49 @@ pub fn i32_bitwise_clz() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     assert_eq!(
         26,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 33)
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), 33)
             .unwrap()
     );
     assert_eq!(
         25,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 77)
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), 77)
             .unwrap()
     );
     assert_eq!(
         14,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 192534)
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), 192534)
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), i32::MIN)
+            .invoke_typed(
+                &instance.get_function_by_index(module, 0).unwrap(),
+                i32::MIN
+            )
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), i32::MAX)
+            .invoke_typed(
+                &instance.get_function_by_index(module, 0).unwrap(),
+                i32::MAX
+            )
             .unwrap()
     );
     assert_eq!(
         32,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 0)
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), 0)
             .unwrap()
     );
 }
@@ -984,44 +1041,49 @@ pub fn i32_bitwise_ctz() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     assert_eq!(
         0,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 33)
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), 33)
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 77)
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), 77)
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 192534)
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), 192534)
             .unwrap()
     );
     assert_eq!(
         31,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), i32::MIN)
+            .invoke_typed(
+                &instance.get_function_by_index(module, 0).unwrap(),
+                i32::MIN
+            )
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), i32::MAX)
+            .invoke_typed(
+                &instance.get_function_by_index(module, 0).unwrap(),
+                i32::MAX
+            )
             .unwrap()
     );
     assert_eq!(
         32,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 0)
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), 0)
             .unwrap()
     );
 }
@@ -1035,44 +1097,49 @@ pub fn i32_bitwise_popcnt() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     assert_eq!(
         2,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 33)
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), 33)
             .unwrap()
     );
     assert_eq!(
         4,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 77)
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), 77)
             .unwrap()
     );
     assert_eq!(
         8,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 192534)
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), 192534)
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), i32::MIN)
+            .invoke_typed(
+                &instance.get_function_by_index(module, 0).unwrap(),
+                i32::MIN
+            )
             .unwrap()
     );
     assert_eq!(
         31,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), i32::MAX)
+            .invoke_typed(
+                &instance.get_function_by_index(module, 0).unwrap(),
+                i32::MAX
+            )
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 0)
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), 0)
             .unwrap()
     );
 }
@@ -1103,15 +1170,14 @@ pub fn i64_bitwise_and() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     assert_eq!(
         1_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (33_i64, 11_i64)
             )
             .unwrap()
@@ -1120,7 +1186,7 @@ pub fn i64_bitwise_and() {
         5_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (77_i64, 23_i64)
             )
             .unwrap()
@@ -1129,7 +1195,7 @@ pub fn i64_bitwise_and() {
         180244_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (192534_i64, 1231412_i64)
             )
             .unwrap()
@@ -1138,7 +1204,7 @@ pub fn i64_bitwise_and() {
         0_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i64::MIN, i64::MAX)
             )
             .unwrap()
@@ -1154,15 +1220,14 @@ pub fn i64_bitwise_or() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     assert_eq!(
         43_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (33_i64, 11_i64)
             )
             .unwrap()
@@ -1171,7 +1236,7 @@ pub fn i64_bitwise_or() {
         95_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (77_i64, 23_i64)
             )
             .unwrap()
@@ -1180,7 +1245,7 @@ pub fn i64_bitwise_or() {
         1243702_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (192534_i64, 1231412_i64)
             )
             .unwrap()
@@ -1189,7 +1254,7 @@ pub fn i64_bitwise_or() {
         -1_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i64::MIN, i64::MAX)
             )
             .unwrap()
@@ -1205,15 +1270,14 @@ pub fn i64_bitwise_xor() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     assert_eq!(
         42_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (33_i64, 11_i64)
             )
             .unwrap()
@@ -1222,7 +1286,7 @@ pub fn i64_bitwise_xor() {
         90_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (77_i64, 23_i64)
             )
             .unwrap()
@@ -1231,7 +1295,7 @@ pub fn i64_bitwise_xor() {
         1063458_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (192534_i64, 1231412_i64)
             )
             .unwrap()
@@ -1240,7 +1304,7 @@ pub fn i64_bitwise_xor() {
         -1_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i64::MIN, i64::MAX)
             )
             .unwrap()
@@ -1256,15 +1320,14 @@ pub fn i64_bitwise_shl() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     assert_eq!(
         67584_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (33_i64, 11_i64)
             )
             .unwrap()
@@ -1273,7 +1336,7 @@ pub fn i64_bitwise_shl() {
         645922816_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (77_i64, 23_i64)
             )
             .unwrap()
@@ -1282,7 +1345,7 @@ pub fn i64_bitwise_shl() {
         99079191802150912_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (192534_i64, 1231412_i64)
             )
             .unwrap()
@@ -1291,7 +1354,7 @@ pub fn i64_bitwise_shl() {
         0_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i64::MIN, i64::MAX)
             )
             .unwrap()
@@ -1307,15 +1370,14 @@ pub fn i64_bitwise_shr_s() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     assert_eq!(
         8881445_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (142_103_123_i64, 4_i64)
             )
             .unwrap()
@@ -1324,7 +1386,7 @@ pub fn i64_bitwise_shr_s() {
         23879_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (391_248_921_i64, 14_i64)
             )
             .unwrap()
@@ -1333,7 +1395,7 @@ pub fn i64_bitwise_shr_s() {
         0_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (1_203_910_012_i64, 33_i64)
             )
             .unwrap()
@@ -1342,7 +1404,7 @@ pub fn i64_bitwise_shr_s() {
         0_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (2_113_189_231_i64, 33_i64)
             )
             .unwrap()
@@ -1351,7 +1413,7 @@ pub fn i64_bitwise_shr_s() {
         -1_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i64::MIN, i64::MAX)
             )
             .unwrap()
@@ -1362,7 +1424,7 @@ pub fn i64_bitwise_shr_s() {
         4_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (8_i64, 1_i64)
             )
             .unwrap()
@@ -1373,7 +1435,7 @@ pub fn i64_bitwise_shr_s() {
         -1_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (-1_i64, 0_i64)
             )
             .unwrap()
@@ -1382,7 +1444,7 @@ pub fn i64_bitwise_shr_s() {
         1_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (1_i64, 0_i64)
             )
             .unwrap()
@@ -1393,7 +1455,7 @@ pub fn i64_bitwise_shr_s() {
         -4_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (-8_i64, 1_i64)
             )
             .unwrap()
@@ -1402,7 +1464,7 @@ pub fn i64_bitwise_shr_s() {
         -1_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (-1_i64, 1_i64)
             )
             .unwrap()
@@ -1413,7 +1475,7 @@ pub fn i64_bitwise_shr_s() {
         -1_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (-1_i64, 31_i64)
             )
             .unwrap()
@@ -1422,7 +1484,7 @@ pub fn i64_bitwise_shr_s() {
         -4294967296_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i64::MIN, 31_i64)
             )
             .unwrap()
@@ -1431,7 +1493,7 @@ pub fn i64_bitwise_shr_s() {
         4294967295_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i64::MAX, 31_i64)
             )
             .unwrap()
@@ -1442,7 +1504,7 @@ pub fn i64_bitwise_shr_s() {
         -1_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (-1_i64, 32_i64)
             )
             .unwrap()
@@ -1451,7 +1513,7 @@ pub fn i64_bitwise_shr_s() {
         0_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (1_i64, 32_i64)
             )
             .unwrap()
@@ -1460,7 +1522,7 @@ pub fn i64_bitwise_shr_s() {
         -1_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (-1_i64, 100_i64)
             )
             .unwrap()
@@ -1471,7 +1533,7 @@ pub fn i64_bitwise_shr_s() {
         i64::MIN / 2,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i64::MIN, 1_i64)
             )
             .unwrap()
@@ -1480,7 +1542,7 @@ pub fn i64_bitwise_shr_s() {
         i64::MAX / 2,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i64::MAX, 1_i64)
             )
             .unwrap()
@@ -1491,7 +1553,7 @@ pub fn i64_bitwise_shr_s() {
         -8589934592_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i64::MIN, 30_i64)
             )
             .unwrap()
@@ -1500,7 +1562,7 @@ pub fn i64_bitwise_shr_s() {
         8589934591_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i64::MAX, 30_i64)
             )
             .unwrap()
@@ -1516,15 +1578,14 @@ pub fn i64_bitwise_shr_u() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     assert_eq!(
         8881445_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (142_103_123_i64, 4_i64)
             )
             .unwrap()
@@ -1533,7 +1594,7 @@ pub fn i64_bitwise_shr_u() {
         23879_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (391_248_921_i64, 14_i64)
             )
             .unwrap()
@@ -1542,7 +1603,7 @@ pub fn i64_bitwise_shr_u() {
         0_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (1_203_910_012_i64, 33_i64)
             )
             .unwrap()
@@ -1551,7 +1612,7 @@ pub fn i64_bitwise_shr_u() {
         0_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (2_113_189_231_i64, 33_i64)
             )
             .unwrap()
@@ -1560,7 +1621,7 @@ pub fn i64_bitwise_shr_u() {
         1_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i64::MIN, i64::MAX)
             )
             .unwrap()
@@ -1571,7 +1632,7 @@ pub fn i64_bitwise_shr_u() {
         4_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (8_i64, 1_i64)
             )
             .unwrap()
@@ -1582,7 +1643,7 @@ pub fn i64_bitwise_shr_u() {
         -1_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (-1_i64, 0_i64)
             )
             .unwrap()
@@ -1591,7 +1652,7 @@ pub fn i64_bitwise_shr_u() {
         1_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (1_i64, 0_i64)
             )
             .unwrap()
@@ -1602,7 +1663,7 @@ pub fn i64_bitwise_shr_u() {
         i64::MAX - 3,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (-8_i64, 1_i64)
             )
             .unwrap()
@@ -1611,7 +1672,7 @@ pub fn i64_bitwise_shr_u() {
         i64::MAX,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (-1_i64, 1_i64)
             )
             .unwrap()
@@ -1622,7 +1683,7 @@ pub fn i64_bitwise_shr_u() {
         8589934591_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (-1_i64, 31_i64)
             )
             .unwrap()
@@ -1631,7 +1692,7 @@ pub fn i64_bitwise_shr_u() {
         4294967296_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i64::MIN, 31_i64)
             )
             .unwrap()
@@ -1640,7 +1701,7 @@ pub fn i64_bitwise_shr_u() {
         4294967295_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i64::MAX, 31_i64)
             )
             .unwrap()
@@ -1651,7 +1712,7 @@ pub fn i64_bitwise_shr_u() {
         4294967295_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (-1_i64, 32_i64)
             )
             .unwrap()
@@ -1660,7 +1721,7 @@ pub fn i64_bitwise_shr_u() {
         0_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (1_i64, 32_i64)
             )
             .unwrap()
@@ -1669,7 +1730,7 @@ pub fn i64_bitwise_shr_u() {
         268435455_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (-1_i64, 100_i64)
             )
             .unwrap()
@@ -1680,7 +1741,7 @@ pub fn i64_bitwise_shr_u() {
         -(i64::MIN / 2),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i64::MIN, 1_i64)
             )
             .unwrap()
@@ -1689,7 +1750,7 @@ pub fn i64_bitwise_shr_u() {
         i64::MAX / 2,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i64::MAX, 1_i64)
             )
             .unwrap()
@@ -1700,7 +1761,7 @@ pub fn i64_bitwise_shr_u() {
         8589934592_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i64::MIN, 30_i64)
             )
             .unwrap()
@@ -1709,7 +1770,7 @@ pub fn i64_bitwise_shr_u() {
         8589934591_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i64::MAX, 30_i64)
             )
             .unwrap()
@@ -1725,15 +1786,14 @@ pub fn i64_bitwise_rotl() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     assert_eq!(
         2273649968_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (142_103_123_i64, 4_i64)
             )
             .unwrap()
@@ -1742,7 +1802,7 @@ pub fn i64_bitwise_rotl() {
         6410222321664_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (391_248_921_i64, 14_i64)
             )
             .unwrap()
@@ -1751,7 +1811,7 @@ pub fn i64_bitwise_rotl() {
         -8105235815975616512_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (1_203_910_012_i64, 33_i64)
             )
             .unwrap()
@@ -1760,7 +1820,7 @@ pub fn i64_bitwise_rotl() {
         -294586798900772864_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (2_113_189_231_i64, 33_i64)
             )
             .unwrap()
@@ -1769,7 +1829,7 @@ pub fn i64_bitwise_rotl() {
         4611686018427387904_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i64::MIN, i64::MAX)
             )
             .unwrap()
@@ -1780,7 +1840,7 @@ pub fn i64_bitwise_rotl() {
         16_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (8_i64, 1_i64)
             )
             .unwrap()
@@ -1791,7 +1851,7 @@ pub fn i64_bitwise_rotl() {
         -1_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (-1_i64, 0_i64)
             )
             .unwrap()
@@ -1800,7 +1860,7 @@ pub fn i64_bitwise_rotl() {
         1_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (1_i64, 0_i64)
             )
             .unwrap()
@@ -1811,7 +1871,7 @@ pub fn i64_bitwise_rotl() {
         -15_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (-8_i64, 1_i64)
             )
             .unwrap()
@@ -1820,7 +1880,7 @@ pub fn i64_bitwise_rotl() {
         -1_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (-1_i64, 1_i64)
             )
             .unwrap()
@@ -1831,7 +1891,7 @@ pub fn i64_bitwise_rotl() {
         -1_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (-1_i64, 31_i64)
             )
             .unwrap()
@@ -1840,7 +1900,7 @@ pub fn i64_bitwise_rotl() {
         1073741824_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i64::MIN, 31_i64)
             )
             .unwrap()
@@ -1849,7 +1909,7 @@ pub fn i64_bitwise_rotl() {
         -1073741825_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i64::MAX, 31_i64)
             )
             .unwrap()
@@ -1860,7 +1920,7 @@ pub fn i64_bitwise_rotl() {
         -1_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (-1_i64, 32_i64)
             )
             .unwrap()
@@ -1869,7 +1929,7 @@ pub fn i64_bitwise_rotl() {
         4294967296_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (1_i64, 32_i64)
             )
             .unwrap()
@@ -1878,7 +1938,7 @@ pub fn i64_bitwise_rotl() {
         -1_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (-1_i64, 100_i64)
             )
             .unwrap()
@@ -1889,7 +1949,7 @@ pub fn i64_bitwise_rotl() {
         1_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i64::MIN, 1_i64)
             )
             .unwrap()
@@ -1898,7 +1958,7 @@ pub fn i64_bitwise_rotl() {
         -2_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i64::MAX, 1_i64)
             )
             .unwrap()
@@ -1909,7 +1969,7 @@ pub fn i64_bitwise_rotl() {
         536870912_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i64::MIN, 30_i64)
             )
             .unwrap()
@@ -1918,7 +1978,7 @@ pub fn i64_bitwise_rotl() {
         -536870913_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i64::MAX, 30_i64)
             )
             .unwrap()
@@ -1934,15 +1994,14 @@ pub fn i64_bitwise_rotr() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     assert_eq!(
         3458764513829422373_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (142_103_123_i64, 4_i64)
             )
             .unwrap()
@@ -1951,7 +2010,7 @@ pub fn i64_bitwise_rotr() {
         -1124774006935757497_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (391_248_921_i64, 14_i64)
             )
             .unwrap()
@@ -1960,7 +2019,7 @@ pub fn i64_bitwise_rotr() {
         2585377064433483776_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (1_203_910_012_i64, 33_i64)
             )
             .unwrap()
@@ -1969,7 +2028,7 @@ pub fn i64_bitwise_rotr() {
         4538039318702194688_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (2_113_189_231_i64, 33_i64)
             )
             .unwrap()
@@ -1978,7 +2037,7 @@ pub fn i64_bitwise_rotr() {
         1_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i64::MIN, i64::MAX)
             )
             .unwrap()
@@ -1989,7 +2048,7 @@ pub fn i64_bitwise_rotr() {
         4_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (8_i64, 1_i64)
             )
             .unwrap()
@@ -2000,7 +2059,7 @@ pub fn i64_bitwise_rotr() {
         -1_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (-1_i64, 0_i64)
             )
             .unwrap()
@@ -2009,7 +2068,7 @@ pub fn i64_bitwise_rotr() {
         1_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (1_i64, 0_i64)
             )
             .unwrap()
@@ -2020,7 +2079,7 @@ pub fn i64_bitwise_rotr() {
         i64::MAX - 3,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (-8_i64, 1_i64)
             )
             .unwrap()
@@ -2029,7 +2088,7 @@ pub fn i64_bitwise_rotr() {
         -1_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (-1_i64, 1_i64)
             )
             .unwrap()
@@ -2040,7 +2099,7 @@ pub fn i64_bitwise_rotr() {
         -1_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (-1_i64, 31_i64)
             )
             .unwrap()
@@ -2049,7 +2108,7 @@ pub fn i64_bitwise_rotr() {
         4294967296_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i64::MIN, 31_i64)
             )
             .unwrap()
@@ -2058,7 +2117,7 @@ pub fn i64_bitwise_rotr() {
         -4294967297_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i64::MAX, 31_i64)
             )
             .unwrap()
@@ -2069,7 +2128,7 @@ pub fn i64_bitwise_rotr() {
         -1_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (-1_i64, 32_i64)
             )
             .unwrap()
@@ -2078,7 +2137,7 @@ pub fn i64_bitwise_rotr() {
         4294967296_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (1_i64, 32_i64)
             )
             .unwrap()
@@ -2087,7 +2146,7 @@ pub fn i64_bitwise_rotr() {
         -1_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (-1_i64, 100_i64)
             )
             .unwrap()
@@ -2098,7 +2157,7 @@ pub fn i64_bitwise_rotr() {
         i64::MAX / 2 + 1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i64::MIN, 1_i64)
             )
             .unwrap()
@@ -2107,7 +2166,7 @@ pub fn i64_bitwise_rotr() {
         i64::MIN / 2 - 1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i64::MAX, 1_i64)
             )
             .unwrap()
@@ -2118,7 +2177,7 @@ pub fn i64_bitwise_rotr() {
         8589934592_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i64::MIN, 30_i64)
             )
             .unwrap()
@@ -2127,7 +2186,7 @@ pub fn i64_bitwise_rotr() {
         -8589934593_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i64::MAX, 30_i64)
             )
             .unwrap()
@@ -2143,44 +2202,52 @@ pub fn i64_bitwise_clz() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     assert_eq!(
         58_i64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 33_i64)
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), 33_i64)
             .unwrap()
     );
     assert_eq!(
         57_i64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 77_i64)
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), 77_i64)
             .unwrap()
     );
     assert_eq!(
         46_i64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 192534_i64)
+            .invoke_typed(
+                &instance.get_function_by_index(module, 0).unwrap(),
+                192534_i64
+            )
             .unwrap()
     );
     assert_eq!(
         0_i64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), i64::MIN)
+            .invoke_typed(
+                &instance.get_function_by_index(module, 0).unwrap(),
+                i64::MIN
+            )
             .unwrap()
     );
     assert_eq!(
         1_i64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), i64::MAX)
+            .invoke_typed(
+                &instance.get_function_by_index(module, 0).unwrap(),
+                i64::MAX
+            )
             .unwrap()
     );
     assert_eq!(
         64_i64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 0_i64)
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), 0_i64)
             .unwrap()
     );
 }
@@ -2194,44 +2261,52 @@ pub fn i64_bitwise_ctz() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     assert_eq!(
         0_i64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 33_i64)
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), 33_i64)
             .unwrap()
     );
     assert_eq!(
         0_i64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 77_i64)
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), 77_i64)
             .unwrap()
     );
     assert_eq!(
         1_i64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 192534_i64)
+            .invoke_typed(
+                &instance.get_function_by_index(module, 0).unwrap(),
+                192534_i64
+            )
             .unwrap()
     );
     assert_eq!(
         63_i64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), i64::MIN)
+            .invoke_typed(
+                &instance.get_function_by_index(module, 0).unwrap(),
+                i64::MIN
+            )
             .unwrap()
     );
     assert_eq!(
         0_i64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), i64::MAX)
+            .invoke_typed(
+                &instance.get_function_by_index(module, 0).unwrap(),
+                i64::MAX
+            )
             .unwrap()
     );
     assert_eq!(
         64_i64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 0_i64)
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), 0_i64)
             .unwrap()
     );
 }
@@ -2245,44 +2320,52 @@ pub fn i64_bitwise_popcnt() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     assert_eq!(
         2_i64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 33_i64)
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), 33_i64)
             .unwrap()
     );
     assert_eq!(
         4_i64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 77_i64)
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), 77_i64)
             .unwrap()
     );
     assert_eq!(
         8_i64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 192534_i64)
+            .invoke_typed(
+                &instance.get_function_by_index(module, 0).unwrap(),
+                192534_i64
+            )
             .unwrap()
     );
     assert_eq!(
         1_i64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), i64::MIN)
+            .invoke_typed(
+                &instance.get_function_by_index(module, 0).unwrap(),
+                i64::MIN
+            )
             .unwrap()
     );
     assert_eq!(
         63_i64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), i64::MAX)
+            .invoke_typed(
+                &instance.get_function_by_index(module, 0).unwrap(),
+                i64::MAX
+            )
             .unwrap()
     );
     assert_eq!(
         0_i64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 0_i64)
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), 0_i64)
             .unwrap()
     );
 }

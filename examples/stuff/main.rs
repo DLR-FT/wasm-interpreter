@@ -45,7 +45,7 @@ fn main() -> ExitCode {
         }
     };
 
-    let (mut instance, _default_module) =
+    let (mut instance, module_addr) =
         match RuntimeInstance::new_with_default_module((), &validation_info) {
             Ok(instance) => instance,
             Err(err) => {
@@ -55,22 +55,31 @@ fn main() -> ExitCode {
         };
 
     let twelve: i32 = instance
-        .invoke_typed(&instance.get_function_by_index(0, 1).unwrap(), (5, 7))
+        .invoke_typed(
+            &instance.get_function_by_index(module_addr, 1).unwrap(),
+            (5, 7),
+        )
         .unwrap();
     assert_eq!(twelve, 12);
 
     let twelve_plus_one: i32 = instance
-        .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), twelve)
+        .invoke_typed(
+            &instance.get_function_by_index(module_addr, 0).unwrap(),
+            twelve,
+        )
         .unwrap();
     assert_eq!(twelve_plus_one, 13);
 
     instance
-        .invoke_typed::<_, ()>(&instance.get_function_by_index(0, 2).unwrap(), 42_i32)
+        .invoke_typed::<_, ()>(
+            &instance.get_function_by_index(module_addr, 2).unwrap(),
+            42_i32,
+        )
         .unwrap();
 
     assert_eq!(
         instance
-            .invoke_typed::<(), i32>(&instance.get_function_by_index(0, 3).unwrap(), ())
+            .invoke_typed::<(), i32>(&instance.get_function_by_index(module_addr, 3).unwrap(), ())
             .unwrap(),
         42_i32
     );

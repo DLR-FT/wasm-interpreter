@@ -787,8 +787,8 @@ impl<'b, T: Config> Store<'b, T> {
     /// Sets a new value of some global instance by its addr.
     ///
     /// # Errors
-    /// - [`RuntimeError::WriteOnImmutableGlobal`]
-    /// - [`RuntimeError::GlobalTypeMismatch`]
+    /// - [` RuntimeError::WriteOnImmutableGlobal`]
+    /// - [` RuntimeError::GlobalTypeMismatch`]
     ///
     /// See: WebAssembly Specification 2.0 - 7.1.10 - global_write
     pub fn global_write(&mut self, global_addr: usize, val: Value) -> Result<(), RuntimeError> {
