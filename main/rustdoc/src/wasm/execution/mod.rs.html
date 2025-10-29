@@ -8,17 +8,17 @@
 <a href=#8 id=8 data-nosnippet>8</a>
 <a href=#9 id=9 data-nosnippet>9</a><span class="kw">use </span><span class="kw">crate</span>::core::reader::types::{FuncType, ResultType};
 <a href=#10 id=10 data-nosnippet>10</a><span class="kw">use </span><span class="kw">crate</span>::execution::assert_validated::UnwrapValidatedExt;
-<a href=#11 id=11 data-nosnippet>11</a><span class="kw">use </span><span class="kw">crate</span>::execution::hooks::{EmptyHookSet, HookSet};
+<a href=#11 id=11 data-nosnippet>11</a><span class="kw">use </span><span class="kw">crate</span>::execution::config::Config;
 <a href=#12 id=12 data-nosnippet>12</a><span class="kw">use </span><span class="kw">crate</span>::execution::store::Store;
 <a href=#13 id=13 data-nosnippet>13</a><span class="kw">use </span><span class="kw">crate</span>::execution::value::Value;
 <a href=#14 id=14 data-nosnippet>14</a><span class="kw">use </span><span class="kw">crate</span>::interop::InteropValueList;
 <a href=#15 id=15 data-nosnippet>15</a><span class="kw">use crate</span>::{RuntimeError, ValidationInfo};
 <a href=#16 id=16 data-nosnippet>16</a>
 <a href=#17 id=17 data-nosnippet>17</a><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>assert_validated;
-<a href=#18 id=18 data-nosnippet>18</a><span class="kw">pub mod </span>const_interpreter_loop;
-<a href=#19 id=19 data-nosnippet>19</a><span class="kw">pub mod </span>error;
-<a href=#20 id=20 data-nosnippet>20</a><span class="kw">pub mod </span>function_ref;
-<a href=#21 id=21 data-nosnippet>21</a><span class="kw">pub mod </span>hooks;
+<a href=#18 id=18 data-nosnippet>18</a><span class="kw">pub mod </span>config;
+<a href=#19 id=19 data-nosnippet>19</a><span class="kw">pub mod </span>const_interpreter_loop;
+<a href=#20 id=20 data-nosnippet>20</a><span class="kw">pub mod </span>error;
+<a href=#21 id=21 data-nosnippet>21</a><span class="kw">pub mod </span>function_ref;
 <a href=#22 id=22 data-nosnippet>22</a><span class="kw">pub mod </span>interop;
 <a href=#23 id=23 data-nosnippet>23</a><span class="kw">mod </span>interpreter_loop;
 <a href=#24 id=24 data-nosnippet>24</a><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>linear_memory;
@@ -32,230 +32,217 @@
 <a href=#32 id=32 data-nosnippet>32</a><span class="doccomment">/// The default module name if a [RuntimeInstance] was created using [RuntimeInstance::new].
 <a href=#33 id=33 data-nosnippet>33</a></span><span class="kw">pub const </span>DEFAULT_MODULE: <span class="kw-2">&amp;</span>str = <span class="string">"__interpreter_default__"</span>;
 <a href=#34 id=34 data-nosnippet>34</a>
-<a href=#35 id=35 data-nosnippet>35</a><span class="kw">pub struct </span>RuntimeInstance&lt;<span class="lifetime">'b</span>, T = (), H = EmptyHookSet&gt;
-<a href=#36 id=36 data-nosnippet>36</a><span class="kw">where
-<a href=#37 id=37 data-nosnippet>37</a>    </span>H: HookSet + core::fmt::Debug,
-<a href=#38 id=38 data-nosnippet>38</a>{
-<a href=#39 id=39 data-nosnippet>39</a>    <span class="kw">pub </span>hook_set: H,
-<a href=#40 id=40 data-nosnippet>40</a>    <span class="kw">pub </span>store: Store&lt;<span class="lifetime">'b</span>, T&gt;,
-<a href=#41 id=41 data-nosnippet>41</a>}
-<a href=#42 id=42 data-nosnippet>42</a>
-<a href=#43 id=43 data-nosnippet>43</a><span class="kw">impl</span>&lt;T: Default&gt; Default <span class="kw">for </span>RuntimeInstance&lt;<span class="lifetime">'_</span>, T, EmptyHookSet&gt; {
-<a href=#44 id=44 data-nosnippet>44</a>    <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
-<a href=#45 id=45 data-nosnippet>45</a>        <span class="self">Self</span>::new(T::default())
-<a href=#46 id=46 data-nosnippet>46</a>    }
-<a href=#47 id=47 data-nosnippet>47</a>}
-<a href=#48 id=48 data-nosnippet>48</a>
-<a href=#49 id=49 data-nosnippet>49</a><span class="kw">impl</span>&lt;<span class="lifetime">'b</span>, T&gt; RuntimeInstance&lt;<span class="lifetime">'b</span>, T, EmptyHookSet&gt; {
-<a href=#50 id=50 data-nosnippet>50</a>    <span class="kw">pub fn </span>new(user_data: T) -&gt; <span class="self">Self </span>{
-<a href=#51 id=51 data-nosnippet>51</a>        <span class="self">Self</span>::new_with_hooks(user_data, EmptyHookSet)
-<a href=#52 id=52 data-nosnippet>52</a>    }
-<a href=#53 id=53 data-nosnippet>53</a>
-<a href=#54 id=54 data-nosnippet>54</a>    <span class="kw">pub fn </span>new_with_default_module(
-<a href=#55 id=55 data-nosnippet>55</a>        user_data: T,
-<a href=#56 id=56 data-nosnippet>56</a>        validation_info: <span class="kw-2">&amp;</span><span class="lifetime">'_ </span>ValidationInfo&lt;<span class="lifetime">'b</span>&gt;,
-<a href=#57 id=57 data-nosnippet>57</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, RuntimeError&gt; {
-<a href=#58 id=58 data-nosnippet>58</a>        <span class="kw">let </span><span class="kw-2">mut </span>instance = <span class="self">Self</span>::new_with_hooks(user_data, EmptyHookSet);
-<a href=#59 id=59 data-nosnippet>59</a>        instance.add_module(DEFAULT_MODULE, validation_info)<span class="question-mark">?</span>;
-<a href=#60 id=60 data-nosnippet>60</a>        <span class="prelude-val">Ok</span>(instance)
-<a href=#61 id=61 data-nosnippet>61</a>    }
-<a href=#62 id=62 data-nosnippet>62</a>
-<a href=#63 id=63 data-nosnippet>63</a>    <span class="kw">pub fn </span>new_named(
-<a href=#64 id=64 data-nosnippet>64</a>        user_data: T,
-<a href=#65 id=65 data-nosnippet>65</a>        module_name: <span class="kw-2">&amp;</span>str,
-<a href=#66 id=66 data-nosnippet>66</a>        validation_info: <span class="kw-2">&amp;</span><span class="lifetime">'_ </span>ValidationInfo&lt;<span class="lifetime">'b</span>&gt;,
-<a href=#67 id=67 data-nosnippet>67</a>        <span class="comment">// store: &amp;mut Store,
-<a href=#68 id=68 data-nosnippet>68</a>    </span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, RuntimeError&gt; {
-<a href=#69 id=69 data-nosnippet>69</a>        <span class="kw">let </span><span class="kw-2">mut </span>instance = <span class="self">Self</span>::new_with_hooks(user_data, EmptyHookSet);
-<a href=#70 id=70 data-nosnippet>70</a>        instance.add_module(module_name, validation_info)<span class="question-mark">?</span>;
-<a href=#71 id=71 data-nosnippet>71</a>        <span class="prelude-val">Ok</span>(instance)
-<a href=#72 id=72 data-nosnippet>72</a>    }
-<a href=#73 id=73 data-nosnippet>73</a>}
-<a href=#74 id=74 data-nosnippet>74</a>
-<a href=#75 id=75 data-nosnippet>75</a><span class="kw">impl</span>&lt;<span class="lifetime">'b</span>, T, H&gt; RuntimeInstance&lt;<span class="lifetime">'b</span>, T, H&gt;
-<a href=#76 id=76 data-nosnippet>76</a><span class="kw">where
-<a href=#77 id=77 data-nosnippet>77</a>    </span>H: HookSet + core::fmt::Debug,
-<a href=#78 id=78 data-nosnippet>78</a>{
-<a href=#79 id=79 data-nosnippet>79</a>    <span class="kw">pub fn </span>add_module(
-<a href=#80 id=80 data-nosnippet>80</a>        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-<a href=#81 id=81 data-nosnippet>81</a>        module_name: <span class="kw-2">&amp;</span>str,
-<a href=#82 id=82 data-nosnippet>82</a>        validation_info: <span class="kw-2">&amp;</span><span class="lifetime">'_ </span>ValidationInfo&lt;<span class="lifetime">'b</span>&gt;,
-<a href=#83 id=83 data-nosnippet>83</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), RuntimeError&gt; {
-<a href=#84 id=84 data-nosnippet>84</a>        <span class="self">self</span>.store.add_module(module_name, validation_info, <span class="prelude-val">None</span>)
-<a href=#85 id=85 data-nosnippet>85</a>    }
-<a href=#86 id=86 data-nosnippet>86</a>
-<a href=#87 id=87 data-nosnippet>87</a>    <span class="kw">pub fn </span>new_with_hooks(user_data: T, hook_set: H) -&gt; <span class="self">Self </span>{
-<a href=#88 id=88 data-nosnippet>88</a>        RuntimeInstance {
-<a href=#89 id=89 data-nosnippet>89</a>            hook_set,
-<a href=#90 id=90 data-nosnippet>90</a>            store: Store::new(user_data),
-<a href=#91 id=91 data-nosnippet>91</a>        }
-<a href=#92 id=92 data-nosnippet>92</a>    }
-<a href=#93 id=93 data-nosnippet>93</a>
-<a href=#94 id=94 data-nosnippet>94</a>    <span class="kw">pub fn </span>get_function_by_name(
-<a href=#95 id=95 data-nosnippet>95</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
-<a href=#96 id=96 data-nosnippet>96</a>        module_name: <span class="kw-2">&amp;</span>str,
-<a href=#97 id=97 data-nosnippet>97</a>        function_name: <span class="kw-2">&amp;</span>str,
-<a href=#98 id=98 data-nosnippet>98</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;FunctionRef, RuntimeError&gt; {
-<a href=#99 id=99 data-nosnippet>99</a>        FunctionRef::new_from_name(module_name, function_name, <span class="kw-2">&amp;</span><span class="self">self</span>.store)
-<a href=#100 id=100 data-nosnippet>100</a>            .map_err(|<span class="kw">_</span>| RuntimeError::FunctionNotFound)
-<a href=#101 id=101 data-nosnippet>101</a>    }
-<a href=#102 id=102 data-nosnippet>102</a>
-<a href=#103 id=103 data-nosnippet>103</a>    <span class="kw">pub fn </span>get_function_by_index(
-<a href=#104 id=104 data-nosnippet>104</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
-<a href=#105 id=105 data-nosnippet>105</a>        module_addr: usize,
-<a href=#106 id=106 data-nosnippet>106</a>        function_idx: usize,
-<a href=#107 id=107 data-nosnippet>107</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;FunctionRef, RuntimeError&gt; {
-<a href=#108 id=108 data-nosnippet>108</a>        <span class="kw">let </span>module_inst = <span class="self">self
-<a href=#109 id=109 data-nosnippet>109</a>            </span>.store
-<a href=#110 id=110 data-nosnippet>110</a>            .modules
-<a href=#111 id=111 data-nosnippet>111</a>            .get(module_addr)
-<a href=#112 id=112 data-nosnippet>112</a>            .ok_or(RuntimeError::ModuleNotFound)<span class="question-mark">?</span>;
-<a href=#113 id=113 data-nosnippet>113</a>        <span class="kw">let </span>func_addr = <span class="kw-2">*</span>module_inst
-<a href=#114 id=114 data-nosnippet>114</a>            .func_addrs
-<a href=#115 id=115 data-nosnippet>115</a>            .get(function_idx)
-<a href=#116 id=116 data-nosnippet>116</a>            .ok_or(RuntimeError::FunctionNotFound)<span class="question-mark">?</span>;
+<a href=#35 id=35 data-nosnippet>35</a><span class="kw">pub struct </span>RuntimeInstance&lt;<span class="lifetime">'b</span>, T: Config = ()&gt; {
+<a href=#36 id=36 data-nosnippet>36</a>    <span class="kw">pub </span>store: Store&lt;<span class="lifetime">'b</span>, T&gt;,
+<a href=#37 id=37 data-nosnippet>37</a>}
+<a href=#38 id=38 data-nosnippet>38</a>
+<a href=#39 id=39 data-nosnippet>39</a><span class="kw">impl</span>&lt;T: Config + Default&gt; Default <span class="kw">for </span>RuntimeInstance&lt;<span class="lifetime">'_</span>, T&gt; {
+<a href=#40 id=40 data-nosnippet>40</a>    <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
+<a href=#41 id=41 data-nosnippet>41</a>        <span class="self">Self</span>::new(T::default())
+<a href=#42 id=42 data-nosnippet>42</a>    }
+<a href=#43 id=43 data-nosnippet>43</a>}
+<a href=#44 id=44 data-nosnippet>44</a>
+<a href=#45 id=45 data-nosnippet>45</a><span class="kw">impl</span>&lt;<span class="lifetime">'b</span>, T: Config&gt; RuntimeInstance&lt;<span class="lifetime">'b</span>, T&gt; {
+<a href=#46 id=46 data-nosnippet>46</a>    <span class="kw">pub fn </span>new(user_data: T) -&gt; <span class="self">Self </span>{
+<a href=#47 id=47 data-nosnippet>47</a>        RuntimeInstance {
+<a href=#48 id=48 data-nosnippet>48</a>            store: Store::new(user_data),
+<a href=#49 id=49 data-nosnippet>49</a>        }
+<a href=#50 id=50 data-nosnippet>50</a>    }
+<a href=#51 id=51 data-nosnippet>51</a>
+<a href=#52 id=52 data-nosnippet>52</a>    <span class="kw">pub fn </span>new_with_default_module(
+<a href=#53 id=53 data-nosnippet>53</a>        user_data: T,
+<a href=#54 id=54 data-nosnippet>54</a>        validation_info: <span class="kw-2">&amp;</span><span class="lifetime">'_ </span>ValidationInfo&lt;<span class="lifetime">'b</span>&gt;,
+<a href=#55 id=55 data-nosnippet>55</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, RuntimeError&gt; {
+<a href=#56 id=56 data-nosnippet>56</a>        <span class="kw">let </span><span class="kw-2">mut </span>instance = <span class="self">Self</span>::new(user_data);
+<a href=#57 id=57 data-nosnippet>57</a>        instance.add_module(DEFAULT_MODULE, validation_info)<span class="question-mark">?</span>;
+<a href=#58 id=58 data-nosnippet>58</a>        <span class="prelude-val">Ok</span>(instance)
+<a href=#59 id=59 data-nosnippet>59</a>    }
+<a href=#60 id=60 data-nosnippet>60</a>
+<a href=#61 id=61 data-nosnippet>61</a>    <span class="kw">pub fn </span>new_named(
+<a href=#62 id=62 data-nosnippet>62</a>        user_data: T,
+<a href=#63 id=63 data-nosnippet>63</a>        module_name: <span class="kw-2">&amp;</span>str,
+<a href=#64 id=64 data-nosnippet>64</a>        validation_info: <span class="kw-2">&amp;</span><span class="lifetime">'_ </span>ValidationInfo&lt;<span class="lifetime">'b</span>&gt;,
+<a href=#65 id=65 data-nosnippet>65</a>        <span class="comment">// store: &amp;mut Store,
+<a href=#66 id=66 data-nosnippet>66</a>    </span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, RuntimeError&gt; {
+<a href=#67 id=67 data-nosnippet>67</a>        <span class="kw">let </span><span class="kw-2">mut </span>instance = <span class="self">Self</span>::new(user_data);
+<a href=#68 id=68 data-nosnippet>68</a>        instance.add_module(module_name, validation_info)<span class="question-mark">?</span>;
+<a href=#69 id=69 data-nosnippet>69</a>        <span class="prelude-val">Ok</span>(instance)
+<a href=#70 id=70 data-nosnippet>70</a>    }
+<a href=#71 id=71 data-nosnippet>71</a>
+<a href=#72 id=72 data-nosnippet>72</a>    <span class="kw">pub fn </span>add_module(
+<a href=#73 id=73 data-nosnippet>73</a>        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+<a href=#74 id=74 data-nosnippet>74</a>        module_name: <span class="kw-2">&amp;</span>str,
+<a href=#75 id=75 data-nosnippet>75</a>        validation_info: <span class="kw-2">&amp;</span><span class="lifetime">'_ </span>ValidationInfo&lt;<span class="lifetime">'b</span>&gt;,
+<a href=#76 id=76 data-nosnippet>76</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), RuntimeError&gt; {
+<a href=#77 id=77 data-nosnippet>77</a>        <span class="self">self</span>.store.add_module(module_name, validation_info, <span class="prelude-val">None</span>)
+<a href=#78 id=78 data-nosnippet>78</a>    }
+<a href=#79 id=79 data-nosnippet>79</a>
+<a href=#80 id=80 data-nosnippet>80</a>    <span class="kw">pub fn </span>get_function_by_name(
+<a href=#81 id=81 data-nosnippet>81</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
+<a href=#82 id=82 data-nosnippet>82</a>        module_name: <span class="kw-2">&amp;</span>str,
+<a href=#83 id=83 data-nosnippet>83</a>        function_name: <span class="kw-2">&amp;</span>str,
+<a href=#84 id=84 data-nosnippet>84</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;FunctionRef, RuntimeError&gt; {
+<a href=#85 id=85 data-nosnippet>85</a>        FunctionRef::new_from_name(module_name, function_name, <span class="kw-2">&amp;</span><span class="self">self</span>.store)
+<a href=#86 id=86 data-nosnippet>86</a>            .map_err(|<span class="kw">_</span>| RuntimeError::FunctionNotFound)
+<a href=#87 id=87 data-nosnippet>87</a>    }
+<a href=#88 id=88 data-nosnippet>88</a>
+<a href=#89 id=89 data-nosnippet>89</a>    <span class="kw">pub fn </span>get_function_by_index(
+<a href=#90 id=90 data-nosnippet>90</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
+<a href=#91 id=91 data-nosnippet>91</a>        module_addr: usize,
+<a href=#92 id=92 data-nosnippet>92</a>        function_idx: usize,
+<a href=#93 id=93 data-nosnippet>93</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;FunctionRef, RuntimeError&gt; {
+<a href=#94 id=94 data-nosnippet>94</a>        <span class="kw">let </span>module_inst = <span class="self">self
+<a href=#95 id=95 data-nosnippet>95</a>            </span>.store
+<a href=#96 id=96 data-nosnippet>96</a>            .modules
+<a href=#97 id=97 data-nosnippet>97</a>            .get(module_addr)
+<a href=#98 id=98 data-nosnippet>98</a>            .ok_or(RuntimeError::ModuleNotFound)<span class="question-mark">?</span>;
+<a href=#99 id=99 data-nosnippet>99</a>        <span class="kw">let </span>func_addr = <span class="kw-2">*</span>module_inst
+<a href=#100 id=100 data-nosnippet>100</a>            .func_addrs
+<a href=#101 id=101 data-nosnippet>101</a>            .get(function_idx)
+<a href=#102 id=102 data-nosnippet>102</a>            .ok_or(RuntimeError::FunctionNotFound)<span class="question-mark">?</span>;
+<a href=#103 id=103 data-nosnippet>103</a>
+<a href=#104 id=104 data-nosnippet>104</a>        <span class="prelude-val">Ok</span>(FunctionRef { func_addr })
+<a href=#105 id=105 data-nosnippet>105</a>    }
+<a href=#106 id=106 data-nosnippet>106</a>
+<a href=#107 id=107 data-nosnippet>107</a>    <span class="doccomment">/// Invokes a function with the given parameters of type `Param`, and return types of type `Returns`.
+<a href=#108 id=108 data-nosnippet>108</a>    </span><span class="kw">pub fn </span>invoke_typed&lt;Params: InteropValueList, Returns: InteropValueList&gt;(
+<a href=#109 id=109 data-nosnippet>109</a>        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+<a href=#110 id=110 data-nosnippet>110</a>        function_ref: <span class="kw-2">&amp;</span>FunctionRef,
+<a href=#111 id=111 data-nosnippet>111</a>        params: Params,
+<a href=#112 id=112 data-nosnippet>112</a>        <span class="comment">// store: &amp;mut Store,
+<a href=#113 id=113 data-nosnippet>113</a>    </span>) -&gt; <span class="prelude-ty">Result</span>&lt;Returns, RuntimeError&gt; {
+<a href=#114 id=114 data-nosnippet>114</a>        <span class="self">self</span>.invoke(function_ref, params.into_values())
+<a href=#115 id=115 data-nosnippet>115</a>            .map(|values| Returns::try_from_values(values.into_iter()).unwrap_validated())
+<a href=#116 id=116 data-nosnippet>116</a>    }
 <a href=#117 id=117 data-nosnippet>117</a>
-<a href=#118 id=118 data-nosnippet>118</a>        <span class="prelude-val">Ok</span>(FunctionRef { func_addr })
-<a href=#119 id=119 data-nosnippet>119</a>    }
-<a href=#120 id=120 data-nosnippet>120</a>
-<a href=#121 id=121 data-nosnippet>121</a>    <span class="doccomment">/// Invokes a function with the given parameters of type `Param`, and return types of type `Returns`.
-<a href=#122 id=122 data-nosnippet>122</a>    </span><span class="kw">pub fn </span>invoke_typed&lt;Params: InteropValueList, Returns: InteropValueList&gt;(
-<a href=#123 id=123 data-nosnippet>123</a>        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-<a href=#124 id=124 data-nosnippet>124</a>        function_ref: <span class="kw-2">&amp;</span>FunctionRef,
-<a href=#125 id=125 data-nosnippet>125</a>        params: Params,
-<a href=#126 id=126 data-nosnippet>126</a>        <span class="comment">// store: &amp;mut Store,
-<a href=#127 id=127 data-nosnippet>127</a>    </span>) -&gt; <span class="prelude-ty">Result</span>&lt;Returns, RuntimeError&gt; {
-<a href=#128 id=128 data-nosnippet>128</a>        <span class="self">self</span>.invoke(function_ref, params.into_values())
-<a href=#129 id=129 data-nosnippet>129</a>            .map(|values| Returns::try_from_values(values.into_iter()).unwrap_validated())
-<a href=#130 id=130 data-nosnippet>130</a>    }
-<a href=#131 id=131 data-nosnippet>131</a>
-<a href=#132 id=132 data-nosnippet>132</a>    <span class="doccomment">/// Invokes a function with the given parameters. The return types depend on the function signature.
-<a href=#133 id=133 data-nosnippet>133</a>    </span><span class="kw">pub fn </span>invoke(
-<a href=#134 id=134 data-nosnippet>134</a>        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-<a href=#135 id=135 data-nosnippet>135</a>        function_ref: <span class="kw-2">&amp;</span>FunctionRef,
-<a href=#136 id=136 data-nosnippet>136</a>        params: Vec&lt;Value&gt;,
-<a href=#137 id=137 data-nosnippet>137</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;Value&gt;, RuntimeError&gt; {
-<a href=#138 id=138 data-nosnippet>138</a>        <span class="kw">let </span>FunctionRef { func_addr } = <span class="kw-2">*</span>function_ref;
-<a href=#139 id=139 data-nosnippet>139</a>        <span class="self">self</span>.store
-<a href=#140 id=140 data-nosnippet>140</a>            .invoke(func_addr, params, <span class="prelude-val">None</span>)
-<a href=#141 id=141 data-nosnippet>141</a>            .map(|run_state| <span class="kw">match </span>run_state {
-<a href=#142 id=142 data-nosnippet>142</a>                RunState::Finished(values) =&gt; values,
-<a href=#143 id=143 data-nosnippet>143</a>                <span class="kw">_ </span>=&gt; <span class="macro">unreachable!</span>(<span class="string">"non metered invoke call"</span>),
-<a href=#144 id=144 data-nosnippet>144</a>            })
-<a href=#145 id=145 data-nosnippet>145</a>    }
-<a href=#146 id=146 data-nosnippet>146</a>
-<a href=#147 id=147 data-nosnippet>147</a>    <span class="doccomment">/// Creates a new resumable, which when resumed for the first time invokes the function `function_ref` is associated
-<a href=#148 id=148 data-nosnippet>148</a>    /// to, with the arguments `params`. The newly created resumable initially stores `fuel` units of fuel. Returns a
-<a href=#149 id=149 data-nosnippet>149</a>    /// `[ResumableRef]` associated to the newly created resumable on success.
-<a href=#150 id=150 data-nosnippet>150</a>    </span><span class="kw">pub fn </span>create_resumable(
-<a href=#151 id=151 data-nosnippet>151</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
-<a href=#152 id=152 data-nosnippet>152</a>        function_ref: <span class="kw-2">&amp;</span>FunctionRef,
-<a href=#153 id=153 data-nosnippet>153</a>        params: Vec&lt;Value&gt;,
-<a href=#154 id=154 data-nosnippet>154</a>        fuel: u32,
-<a href=#155 id=155 data-nosnippet>155</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;ResumableRef, RuntimeError&gt; {
-<a href=#156 id=156 data-nosnippet>156</a>        <span class="kw">let </span>FunctionRef { func_addr } = <span class="kw-2">*</span>function_ref;
-<a href=#157 id=157 data-nosnippet>157</a>        <span class="self">self</span>.store.create_resumable(func_addr, params, <span class="prelude-val">Some</span>(fuel))
-<a href=#158 id=158 data-nosnippet>158</a>    }
-<a href=#159 id=159 data-nosnippet>159</a>
-<a href=#160 id=160 data-nosnippet>160</a>    <span class="doccomment">/// resumes the resumable associated to `resumable_ref`. Returns a `[RunState]` associated to this resumable  if the
-<a href=#161 id=161 data-nosnippet>161</a>    /// resumable ran out of fuel or completely executed.
-<a href=#162 id=162 data-nosnippet>162</a>    </span><span class="kw">pub fn </span>resume(<span class="kw-2">&amp;mut </span><span class="self">self</span>, resumable_ref: ResumableRef) -&gt; <span class="prelude-ty">Result</span>&lt;RunState, RuntimeError&gt; {
-<a href=#163 id=163 data-nosnippet>163</a>        <span class="self">self</span>.store.resume(resumable_ref)
-<a href=#164 id=164 data-nosnippet>164</a>    }
-<a href=#165 id=165 data-nosnippet>165</a>
-<a href=#166 id=166 data-nosnippet>166</a>    <span class="doccomment">/// calls its argument `f` with a mutable reference of the fuel of the respective [`ResumableRef`].
-<a href=#167 id=167 data-nosnippet>167</a>    ///
-<a href=#168 id=168 data-nosnippet>168</a>    /// Fuel is stored as an [`Option&lt;u32&gt;`], where `None` means that fuel is disabled and `Some(x)` means that `x` units of fuel is left.
-<a href=#169 id=169 data-nosnippet>169</a>    /// A ubiquitious use of this method would be using `f` to read or mutate the current fuel amount of the respective [`ResumableRef`].
-<a href=#170 id=170 data-nosnippet>170</a>    /// # Example
-<a href=#171 id=171 data-nosnippet>171</a>    /// ```
-<a href=#172 id=172 data-nosnippet>172</a>    /// use wasm::{resumable::RunState, validate, RuntimeInstance};
-<a href=#173 id=173 data-nosnippet>173</a>    /// let wasm = [ 0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00,
-<a href=#174 id=174 data-nosnippet>174</a>    ///             0x01, 0x04, 0x01, 0x60, 0x00, 0x00, 0x03, 0x02,
-<a href=#175 id=175 data-nosnippet>175</a>    ///             0x01, 0x00, 0x07, 0x09, 0x01, 0x05, 0x6c, 0x6f,
-<a href=#176 id=176 data-nosnippet>176</a>    ///             0x6f, 0x70, 0x73, 0x00, 0x00, 0x0a, 0x09, 0x01,
-<a href=#177 id=177 data-nosnippet>177</a>    ///             0x07, 0x00, 0x03, 0x40, 0x0c, 0x00, 0x0b, 0x0b ];
-<a href=#178 id=178 data-nosnippet>178</a>    /// // a simple module with a single function looping forever
-<a href=#179 id=179 data-nosnippet>179</a>    /// let mut instance = RuntimeInstance::new_named((), "module", &amp;validate(&amp;wasm).unwrap()).unwrap();
-<a href=#180 id=180 data-nosnippet>180</a>    /// let func_ref = instance.get_function_by_name("module", "loops").unwrap();
-<a href=#181 id=181 data-nosnippet>181</a>    /// let mut resumable_ref = instance.create_resumable(&amp;func_ref, vec![], 0).unwrap();
-<a href=#182 id=182 data-nosnippet>182</a>    /// instance.access_fuel_mut(&amp;mut resumable_ref, |x| { assert_eq!(*x, Some(0)); *x = None; }).unwrap();
-<a href=#183 id=183 data-nosnippet>183</a>    /// ```
-<a href=#184 id=184 data-nosnippet>184</a>    </span><span class="kw">pub fn </span>access_fuel_mut&lt;R&gt;(
-<a href=#185 id=185 data-nosnippet>185</a>        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-<a href=#186 id=186 data-nosnippet>186</a>        resumable_ref: <span class="kw-2">&amp;mut </span>ResumableRef,
-<a href=#187 id=187 data-nosnippet>187</a>        f: <span class="kw">impl </span>FnOnce(<span class="kw-2">&amp;mut </span><span class="prelude-ty">Option</span>&lt;u32&gt;) -&gt; R,
-<a href=#188 id=188 data-nosnippet>188</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;R, RuntimeError&gt; {
-<a href=#189 id=189 data-nosnippet>189</a>        <span class="self">self</span>.store.access_fuel_mut(resumable_ref, f)
-<a href=#190 id=190 data-nosnippet>190</a>    }
-<a href=#191 id=191 data-nosnippet>191</a>
-<a href=#192 id=192 data-nosnippet>192</a>    <span class="doccomment">/// Adds a host function under module namespace `module_name` with name `name`.
-<a href=#193 id=193 data-nosnippet>193</a>    /// roughly similar to `func_alloc` in &lt;https://webassembly.github.io/spec/core/appendix/embedding.html#functions&gt;
-<a href=#194 id=194 data-nosnippet>194</a>    /// except the host function is made visible to other modules through these names.
-<a href=#195 id=195 data-nosnippet>195</a>    </span><span class="kw">pub fn </span>add_host_function_typed&lt;Params: InteropValueList, Returns: InteropValueList&gt;(
-<a href=#196 id=196 data-nosnippet>196</a>        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-<a href=#197 id=197 data-nosnippet>197</a>        module_name: <span class="kw-2">&amp;</span>str,
-<a href=#198 id=198 data-nosnippet>198</a>        name: <span class="kw-2">&amp;</span>str,
-<a href=#199 id=199 data-nosnippet>199</a>        host_func: <span class="kw">fn</span>(<span class="kw-2">&amp;mut </span>T, Vec&lt;Value&gt;) -&gt; Vec&lt;Value&gt;,
-<a href=#200 id=200 data-nosnippet>200</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;FunctionRef, RuntimeError&gt; {
-<a href=#201 id=201 data-nosnippet>201</a>        <span class="kw">let </span>host_func_ty = FuncType {
-<a href=#202 id=202 data-nosnippet>202</a>            params: ResultType {
-<a href=#203 id=203 data-nosnippet>203</a>                valtypes: Vec::from(Params::TYS),
-<a href=#204 id=204 data-nosnippet>204</a>            },
-<a href=#205 id=205 data-nosnippet>205</a>            returns: ResultType {
-<a href=#206 id=206 data-nosnippet>206</a>                valtypes: Vec::from(Returns::TYS),
-<a href=#207 id=207 data-nosnippet>207</a>            },
-<a href=#208 id=208 data-nosnippet>208</a>        };
-<a href=#209 id=209 data-nosnippet>209</a>        <span class="self">self</span>.add_host_function(module_name, name, host_func_ty, host_func)
-<a href=#210 id=210 data-nosnippet>210</a>    }
-<a href=#211 id=211 data-nosnippet>211</a>
-<a href=#212 id=212 data-nosnippet>212</a>    <span class="kw">pub fn </span>add_host_function(
-<a href=#213 id=213 data-nosnippet>213</a>        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-<a href=#214 id=214 data-nosnippet>214</a>        module_name: <span class="kw-2">&amp;</span>str,
-<a href=#215 id=215 data-nosnippet>215</a>        name: <span class="kw-2">&amp;</span>str,
-<a href=#216 id=216 data-nosnippet>216</a>        host_func_ty: FuncType,
-<a href=#217 id=217 data-nosnippet>217</a>        host_func: <span class="kw">fn</span>(<span class="kw-2">&amp;mut </span>T, Vec&lt;Value&gt;) -&gt; Vec&lt;Value&gt;,
-<a href=#218 id=218 data-nosnippet>218</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;FunctionRef, RuntimeError&gt; {
-<a href=#219 id=219 data-nosnippet>219</a>        <span class="kw">let </span>func_addr = <span class="self">self</span>.store.alloc_host_func(host_func_ty, host_func);
-<a href=#220 id=220 data-nosnippet>220</a>        <span class="self">self</span>.store.registry.register(
-<a href=#221 id=221 data-nosnippet>221</a>            module_name.to_owned().into(),
-<a href=#222 id=222 data-nosnippet>222</a>            name.to_owned().into(),
-<a href=#223 id=223 data-nosnippet>223</a>            store::ExternVal::Func(func_addr),
-<a href=#224 id=224 data-nosnippet>224</a>        )<span class="question-mark">?</span>;
-<a href=#225 id=225 data-nosnippet>225</a>        <span class="prelude-val">Ok</span>(FunctionRef { func_addr })
-<a href=#226 id=226 data-nosnippet>226</a>    }
-<a href=#227 id=227 data-nosnippet>227</a>
-<a href=#228 id=228 data-nosnippet>228</a>    <span class="kw">pub fn </span>user_data(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>T {
-<a href=#229 id=229 data-nosnippet>229</a>        <span class="kw-2">&amp;</span><span class="self">self</span>.store.user_data
-<a href=#230 id=230 data-nosnippet>230</a>    }
-<a href=#231 id=231 data-nosnippet>231</a>
-<a href=#232 id=232 data-nosnippet>232</a>    <span class="kw">pub fn </span>user_data_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>T {
-<a href=#233 id=233 data-nosnippet>233</a>        <span class="kw-2">&amp;mut </span><span class="self">self</span>.store.user_data
-<a href=#234 id=234 data-nosnippet>234</a>    }
-<a href=#235 id=235 data-nosnippet>235</a>}
-<a href=#236 id=236 data-nosnippet>236</a>
-<a href=#237 id=237 data-nosnippet>237</a><span class="doccomment">/// Helper function to quickly construct host functions without worrying about wasm to Rust
-<a href=#238 id=238 data-nosnippet>238</a>/// type conversion. For user data, simply move the mutable reference into the passed closure.
-<a href=#239 id=239 data-nosnippet>239</a>/// # Example
-<a href=#240 id=240 data-nosnippet>240</a>/// ```
-<a href=#241 id=241 data-nosnippet>241</a>/// use wasm::{validate, RuntimeInstance, host_function_wrapper, Value};
-<a href=#242 id=242 data-nosnippet>242</a>/// fn my_wrapped_host_func(user_data: &amp;mut (), params: Vec&lt;Value&gt;) -&gt; Vec&lt;Value&gt; {
-<a href=#243 id=243 data-nosnippet>243</a>///     host_function_wrapper(params, |(x, y): (u32, i32)| -&gt; u32 {
-<a href=#244 id=244 data-nosnippet>244</a>///         let _user_data = user_data;
-<a href=#245 id=245 data-nosnippet>245</a>///         x + (y as u32)
-<a href=#246 id=246 data-nosnippet>246</a>///  })
-<a href=#247 id=247 data-nosnippet>247</a>/// }
-<a href=#248 id=248 data-nosnippet>248</a>/// fn main() {
-<a href=#249 id=249 data-nosnippet>249</a>///     let mut instance = RuntimeInstance::new(());
-<a href=#250 id=250 data-nosnippet>250</a>///     let foo_bar = instance.add_host_function_typed::&lt;(u32,i32),u32&gt;("foo", "bar", my_wrapped_host_func).unwrap();
-<a href=#251 id=251 data-nosnippet>251</a>/// }
-<a href=#252 id=252 data-nosnippet>252</a>/// ```
-<a href=#253 id=253 data-nosnippet>253</a></span><span class="kw">pub fn </span>host_function_wrapper&lt;Params: InteropValueList, Results: InteropValueList&gt;(
-<a href=#254 id=254 data-nosnippet>254</a>    params: Vec&lt;Value&gt;,
-<a href=#255 id=255 data-nosnippet>255</a>    f: <span class="kw">impl </span>FnOnce(Params) -&gt; Results,
-<a href=#256 id=256 data-nosnippet>256</a>) -&gt; Vec&lt;Value&gt; {
-<a href=#257 id=257 data-nosnippet>257</a>    <span class="kw">let </span>params =
-<a href=#258 id=258 data-nosnippet>258</a>        Params::try_from_values(params.into_iter()).expect(<span class="string">"Params match the actual parameters"</span>);
-<a href=#259 id=259 data-nosnippet>259</a>    <span class="kw">let </span>results = f(params);
-<a href=#260 id=260 data-nosnippet>260</a>    results.into_values()
-<a href=#261 id=261 data-nosnippet>261</a>}</code></pre></div></section></main></body></html>
+<a href=#118 id=118 data-nosnippet>118</a>    <span class="doccomment">/// Invokes a function with the given parameters. The return types depend on the function signature.
+<a href=#119 id=119 data-nosnippet>119</a>    </span><span class="kw">pub fn </span>invoke(
+<a href=#120 id=120 data-nosnippet>120</a>        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+<a href=#121 id=121 data-nosnippet>121</a>        function_ref: <span class="kw-2">&amp;</span>FunctionRef,
+<a href=#122 id=122 data-nosnippet>122</a>        params: Vec&lt;Value&gt;,
+<a href=#123 id=123 data-nosnippet>123</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;Value&gt;, RuntimeError&gt; {
+<a href=#124 id=124 data-nosnippet>124</a>        <span class="kw">let </span>FunctionRef { func_addr } = <span class="kw-2">*</span>function_ref;
+<a href=#125 id=125 data-nosnippet>125</a>        <span class="self">self</span>.store
+<a href=#126 id=126 data-nosnippet>126</a>            .invoke(func_addr, params, <span class="prelude-val">None</span>)
+<a href=#127 id=127 data-nosnippet>127</a>            .map(|run_state| <span class="kw">match </span>run_state {
+<a href=#128 id=128 data-nosnippet>128</a>                RunState::Finished(values) =&gt; values,
+<a href=#129 id=129 data-nosnippet>129</a>                <span class="kw">_ </span>=&gt; <span class="macro">unreachable!</span>(<span class="string">"non metered invoke call"</span>),
+<a href=#130 id=130 data-nosnippet>130</a>            })
+<a href=#131 id=131 data-nosnippet>131</a>    }
+<a href=#132 id=132 data-nosnippet>132</a>
+<a href=#133 id=133 data-nosnippet>133</a>    <span class="doccomment">/// Creates a new resumable, which when resumed for the first time invokes the function `function_ref` is associated
+<a href=#134 id=134 data-nosnippet>134</a>    /// to, with the arguments `params`. The newly created resumable initially stores `fuel` units of fuel. Returns a
+<a href=#135 id=135 data-nosnippet>135</a>    /// `[ResumableRef]` associated to the newly created resumable on success.
+<a href=#136 id=136 data-nosnippet>136</a>    </span><span class="kw">pub fn </span>create_resumable(
+<a href=#137 id=137 data-nosnippet>137</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
+<a href=#138 id=138 data-nosnippet>138</a>        function_ref: <span class="kw-2">&amp;</span>FunctionRef,
+<a href=#139 id=139 data-nosnippet>139</a>        params: Vec&lt;Value&gt;,
+<a href=#140 id=140 data-nosnippet>140</a>        fuel: u32,
+<a href=#141 id=141 data-nosnippet>141</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;ResumableRef, RuntimeError&gt; {
+<a href=#142 id=142 data-nosnippet>142</a>        <span class="kw">let </span>FunctionRef { func_addr } = <span class="kw-2">*</span>function_ref;
+<a href=#143 id=143 data-nosnippet>143</a>        <span class="self">self</span>.store.create_resumable(func_addr, params, <span class="prelude-val">Some</span>(fuel))
+<a href=#144 id=144 data-nosnippet>144</a>    }
+<a href=#145 id=145 data-nosnippet>145</a>
+<a href=#146 id=146 data-nosnippet>146</a>    <span class="doccomment">/// resumes the resumable associated to `resumable_ref`. Returns a `[RunState]` associated to this resumable  if the
+<a href=#147 id=147 data-nosnippet>147</a>    /// resumable ran out of fuel or completely executed.
+<a href=#148 id=148 data-nosnippet>148</a>    </span><span class="kw">pub fn </span>resume(<span class="kw-2">&amp;mut </span><span class="self">self</span>, resumable_ref: ResumableRef) -&gt; <span class="prelude-ty">Result</span>&lt;RunState, RuntimeError&gt; {
+<a href=#149 id=149 data-nosnippet>149</a>        <span class="self">self</span>.store.resume(resumable_ref)
+<a href=#150 id=150 data-nosnippet>150</a>    }
+<a href=#151 id=151 data-nosnippet>151</a>
+<a href=#152 id=152 data-nosnippet>152</a>    <span class="doccomment">/// calls its argument `f` with a mutable reference of the fuel of the respective [`ResumableRef`].
+<a href=#153 id=153 data-nosnippet>153</a>    ///
+<a href=#154 id=154 data-nosnippet>154</a>    /// Fuel is stored as an [`Option&lt;u32&gt;`], where `None` means that fuel is disabled and `Some(x)` means that `x` units of fuel is left.
+<a href=#155 id=155 data-nosnippet>155</a>    /// A ubiquitious use of this method would be using `f` to read or mutate the current fuel amount of the respective [`ResumableRef`].
+<a href=#156 id=156 data-nosnippet>156</a>    /// # Example
+<a href=#157 id=157 data-nosnippet>157</a>    /// ```
+<a href=#158 id=158 data-nosnippet>158</a>    /// use wasm::{resumable::RunState, validate, RuntimeInstance};
+<a href=#159 id=159 data-nosnippet>159</a>    /// let wasm = [ 0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00,
+<a href=#160 id=160 data-nosnippet>160</a>    ///             0x01, 0x04, 0x01, 0x60, 0x00, 0x00, 0x03, 0x02,
+<a href=#161 id=161 data-nosnippet>161</a>    ///             0x01, 0x00, 0x07, 0x09, 0x01, 0x05, 0x6c, 0x6f,
+<a href=#162 id=162 data-nosnippet>162</a>    ///             0x6f, 0x70, 0x73, 0x00, 0x00, 0x0a, 0x09, 0x01,
+<a href=#163 id=163 data-nosnippet>163</a>    ///             0x07, 0x00, 0x03, 0x40, 0x0c, 0x00, 0x0b, 0x0b ];
+<a href=#164 id=164 data-nosnippet>164</a>    /// // a simple module with a single function looping forever
+<a href=#165 id=165 data-nosnippet>165</a>    /// let mut instance = RuntimeInstance::new_named((), "module", &amp;validate(&amp;wasm).unwrap()).unwrap();
+<a href=#166 id=166 data-nosnippet>166</a>    /// let func_ref = instance.get_function_by_name("module", "loops").unwrap();
+<a href=#167 id=167 data-nosnippet>167</a>    /// let mut resumable_ref = instance.create_resumable(&amp;func_ref, vec![], 0).unwrap();
+<a href=#168 id=168 data-nosnippet>168</a>    /// instance.access_fuel_mut(&amp;mut resumable_ref, |x| { assert_eq!(*x, Some(0)); *x = None; }).unwrap();
+<a href=#169 id=169 data-nosnippet>169</a>    /// ```
+<a href=#170 id=170 data-nosnippet>170</a>    </span><span class="kw">pub fn </span>access_fuel_mut&lt;R&gt;(
+<a href=#171 id=171 data-nosnippet>171</a>        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+<a href=#172 id=172 data-nosnippet>172</a>        resumable_ref: <span class="kw-2">&amp;mut </span>ResumableRef,
+<a href=#173 id=173 data-nosnippet>173</a>        f: <span class="kw">impl </span>FnOnce(<span class="kw-2">&amp;mut </span><span class="prelude-ty">Option</span>&lt;u32&gt;) -&gt; R,
+<a href=#174 id=174 data-nosnippet>174</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;R, RuntimeError&gt; {
+<a href=#175 id=175 data-nosnippet>175</a>        <span class="self">self</span>.store.access_fuel_mut(resumable_ref, f)
+<a href=#176 id=176 data-nosnippet>176</a>    }
+<a href=#177 id=177 data-nosnippet>177</a>
+<a href=#178 id=178 data-nosnippet>178</a>    <span class="doccomment">/// Adds a host function under module namespace `module_name` with name `name`.
+<a href=#179 id=179 data-nosnippet>179</a>    /// roughly similar to `func_alloc` in &lt;https://webassembly.github.io/spec/core/appendix/embedding.html#functions&gt;
+<a href=#180 id=180 data-nosnippet>180</a>    /// except the host function is made visible to other modules through these names.
+<a href=#181 id=181 data-nosnippet>181</a>    </span><span class="kw">pub fn </span>add_host_function_typed&lt;Params: InteropValueList, Returns: InteropValueList&gt;(
+<a href=#182 id=182 data-nosnippet>182</a>        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+<a href=#183 id=183 data-nosnippet>183</a>        module_name: <span class="kw-2">&amp;</span>str,
+<a href=#184 id=184 data-nosnippet>184</a>        name: <span class="kw-2">&amp;</span>str,
+<a href=#185 id=185 data-nosnippet>185</a>        host_func: <span class="kw">fn</span>(<span class="kw-2">&amp;mut </span>T, Vec&lt;Value&gt;) -&gt; Vec&lt;Value&gt;,
+<a href=#186 id=186 data-nosnippet>186</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;FunctionRef, RuntimeError&gt; {
+<a href=#187 id=187 data-nosnippet>187</a>        <span class="kw">let </span>host_func_ty = FuncType {
+<a href=#188 id=188 data-nosnippet>188</a>            params: ResultType {
+<a href=#189 id=189 data-nosnippet>189</a>                valtypes: Vec::from(Params::TYS),
+<a href=#190 id=190 data-nosnippet>190</a>            },
+<a href=#191 id=191 data-nosnippet>191</a>            returns: ResultType {
+<a href=#192 id=192 data-nosnippet>192</a>                valtypes: Vec::from(Returns::TYS),
+<a href=#193 id=193 data-nosnippet>193</a>            },
+<a href=#194 id=194 data-nosnippet>194</a>        };
+<a href=#195 id=195 data-nosnippet>195</a>        <span class="self">self</span>.add_host_function(module_name, name, host_func_ty, host_func)
+<a href=#196 id=196 data-nosnippet>196</a>    }
+<a href=#197 id=197 data-nosnippet>197</a>
+<a href=#198 id=198 data-nosnippet>198</a>    <span class="kw">pub fn </span>add_host_function(
+<a href=#199 id=199 data-nosnippet>199</a>        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+<a href=#200 id=200 data-nosnippet>200</a>        module_name: <span class="kw-2">&amp;</span>str,
+<a href=#201 id=201 data-nosnippet>201</a>        name: <span class="kw-2">&amp;</span>str,
+<a href=#202 id=202 data-nosnippet>202</a>        host_func_ty: FuncType,
+<a href=#203 id=203 data-nosnippet>203</a>        host_func: <span class="kw">fn</span>(<span class="kw-2">&amp;mut </span>T, Vec&lt;Value&gt;) -&gt; Vec&lt;Value&gt;,
+<a href=#204 id=204 data-nosnippet>204</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;FunctionRef, RuntimeError&gt; {
+<a href=#205 id=205 data-nosnippet>205</a>        <span class="kw">let </span>func_addr = <span class="self">self</span>.store.alloc_host_func(host_func_ty, host_func);
+<a href=#206 id=206 data-nosnippet>206</a>        <span class="self">self</span>.store.registry.register(
+<a href=#207 id=207 data-nosnippet>207</a>            module_name.to_owned().into(),
+<a href=#208 id=208 data-nosnippet>208</a>            name.to_owned().into(),
+<a href=#209 id=209 data-nosnippet>209</a>            store::ExternVal::Func(func_addr),
+<a href=#210 id=210 data-nosnippet>210</a>        )<span class="question-mark">?</span>;
+<a href=#211 id=211 data-nosnippet>211</a>        <span class="prelude-val">Ok</span>(FunctionRef { func_addr })
+<a href=#212 id=212 data-nosnippet>212</a>    }
+<a href=#213 id=213 data-nosnippet>213</a>
+<a href=#214 id=214 data-nosnippet>214</a>    <span class="kw">pub fn </span>user_data(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>T {
+<a href=#215 id=215 data-nosnippet>215</a>        <span class="kw-2">&amp;</span><span class="self">self</span>.store.user_data
+<a href=#216 id=216 data-nosnippet>216</a>    }
+<a href=#217 id=217 data-nosnippet>217</a>
+<a href=#218 id=218 data-nosnippet>218</a>    <span class="kw">pub fn </span>user_data_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>T {
+<a href=#219 id=219 data-nosnippet>219</a>        <span class="kw-2">&amp;mut </span><span class="self">self</span>.store.user_data
+<a href=#220 id=220 data-nosnippet>220</a>    }
+<a href=#221 id=221 data-nosnippet>221</a>}
+<a href=#222 id=222 data-nosnippet>222</a>
+<a href=#223 id=223 data-nosnippet>223</a><span class="doccomment">/// Helper function to quickly construct host functions without worrying about wasm to Rust
+<a href=#224 id=224 data-nosnippet>224</a>/// type conversion. For reading/writing user data into the current configuration, simply move
+<a href=#225 id=225 data-nosnippet>225</a>/// `user_data` into the passed closure.
+<a href=#226 id=226 data-nosnippet>226</a>/// # Example
+<a href=#227 id=227 data-nosnippet>227</a>/// ```
+<a href=#228 id=228 data-nosnippet>228</a>/// use wasm::{validate, RuntimeInstance, host_function_wrapper, Value};
+<a href=#229 id=229 data-nosnippet>229</a>/// fn my_wrapped_host_func(user_data: &amp;mut (), params: Vec&lt;Value&gt;) -&gt; Vec&lt;Value&gt; {
+<a href=#230 id=230 data-nosnippet>230</a>///     host_function_wrapper(params, |(x, y): (u32, i32)| -&gt; u32 {
+<a href=#231 id=231 data-nosnippet>231</a>///         let _user_data = user_data;
+<a href=#232 id=232 data-nosnippet>232</a>///         x + (y as u32)
+<a href=#233 id=233 data-nosnippet>233</a>///  })
+<a href=#234 id=234 data-nosnippet>234</a>/// }
+<a href=#235 id=235 data-nosnippet>235</a>/// fn main() {
+<a href=#236 id=236 data-nosnippet>236</a>///     let mut instance = RuntimeInstance::new(());
+<a href=#237 id=237 data-nosnippet>237</a>///     let foo_bar = instance.add_host_function_typed::&lt;(u32,i32),u32&gt;("foo", "bar", my_wrapped_host_func).unwrap();
+<a href=#238 id=238 data-nosnippet>238</a>/// }
+<a href=#239 id=239 data-nosnippet>239</a>/// ```
+<a href=#240 id=240 data-nosnippet>240</a></span><span class="kw">pub fn </span>host_function_wrapper&lt;Params: InteropValueList, Results: InteropValueList&gt;(
+<a href=#241 id=241 data-nosnippet>241</a>    params: Vec&lt;Value&gt;,
+<a href=#242 id=242 data-nosnippet>242</a>    f: <span class="kw">impl </span>FnOnce(Params) -&gt; Results,
+<a href=#243 id=243 data-nosnippet>243</a>) -&gt; Vec&lt;Value&gt; {
+<a href=#244 id=244 data-nosnippet>244</a>    <span class="kw">let </span>params =
+<a href=#245 id=245 data-nosnippet>245</a>        Params::try_from_values(params.into_iter()).expect(<span class="string">"Params match the actual parameters"</span>);
+<a href=#246 id=246 data-nosnippet>246</a>    <span class="kw">let </span>results = f(params);
+<a href=#247 id=247 data-nosnippet>247</a>    results.into_values()
+<a href=#248 id=248 data-nosnippet>248</a>}</code></pre></div></section></main></body></html>

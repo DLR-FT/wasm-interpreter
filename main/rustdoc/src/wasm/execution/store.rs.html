@@ -1,34 +1,34 @@
 <!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/execution/store.rs`."><title>store.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-6c3ea77c.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="wasm" data-themes="" data-resource-suffix="" data-rustdoc-version="1.86.0 (05f9846f8 2025-03-31) (built from a source tarball)" data-channel="1.86.0" data-search-js="search-581efc7a.js" data-settings-js="settings-6dad6058.js" ><script src="../../../static.files/storage-3a5871a4.js"></script><script defer src="../../../static.files/src-script-b8d3f215.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-4d63596a.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">wasm/execution/</div>store.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span>core::mem;
 <a href=#2 id=2 data-nosnippet>2</a>
-<a href=#3 id=3 data-nosnippet>3</a><span class="kw">use </span><span class="kw">crate</span>::core::indices::TypeIdx;
-<a href=#4 id=4 data-nosnippet>4</a><span class="kw">use </span><span class="kw">crate</span>::core::reader::span::Span;
-<a href=#5 id=5 data-nosnippet>5</a><span class="kw">use </span><span class="kw">crate</span>::core::reader::types::data::{DataModeActive, DataSegment};
-<a href=#6 id=6 data-nosnippet>6</a><span class="kw">use </span><span class="kw">crate</span>::core::reader::types::element::{ActiveElem, ElemItems, ElemMode, ElemType};
-<a href=#7 id=7 data-nosnippet>7</a><span class="kw">use </span><span class="kw">crate</span>::core::reader::types::export::{Export, ExportDesc};
-<a href=#8 id=8 data-nosnippet>8</a><span class="kw">use </span><span class="kw">crate</span>::core::reader::types::global::{Global, GlobalType};
-<a href=#9 id=9 data-nosnippet>9</a><span class="kw">use </span><span class="kw">crate</span>::core::reader::types::import::Import;
-<a href=#10 id=10 data-nosnippet>10</a><span class="kw">use </span><span class="kw">crate</span>::core::reader::types::{
-<a href=#11 id=11 data-nosnippet>11</a>    ExternType, FuncType, ImportSubTypeRelation, MemType, TableType, ValType,
-<a href=#12 id=12 data-nosnippet>12</a>};
-<a href=#13 id=13 data-nosnippet>13</a><span class="kw">use </span><span class="kw">crate</span>::core::reader::WasmReader;
-<a href=#14 id=14 data-nosnippet>14</a><span class="kw">use </span><span class="kw">crate</span>::core::sidetable::Sidetable;
-<a href=#15 id=15 data-nosnippet>15</a><span class="kw">use </span><span class="kw">crate</span>::execution::interpreter_loop::{<span class="self">self</span>, memory_init, table_init};
-<a href=#16 id=16 data-nosnippet>16</a><span class="kw">use </span><span class="kw">crate</span>::execution::value::{Ref, Value};
-<a href=#17 id=17 data-nosnippet>17</a><span class="kw">use </span><span class="kw">crate</span>::execution::{run_const_span, Stack};
-<a href=#18 id=18 data-nosnippet>18</a><span class="kw">use </span><span class="kw">crate</span>::registry::Registry;
-<a href=#19 id=19 data-nosnippet>19</a><span class="kw">use </span><span class="kw">crate</span>::resumable::{
-<a href=#20 id=20 data-nosnippet>20</a>    Dormitory, FreshResumableRef, InvokedResumableRef, Resumable, ResumableRef, RunState,
-<a href=#21 id=21 data-nosnippet>21</a>};
-<a href=#22 id=22 data-nosnippet>22</a><span class="kw">use </span><span class="kw">crate</span>::value::FuncAddr;
-<a href=#23 id=23 data-nosnippet>23</a><span class="kw">use crate</span>::{Limits, RefType, RuntimeError, TrapError, ValidationInfo};
-<a href=#24 id=24 data-nosnippet>24</a><span class="kw">use </span>alloc::borrow::ToOwned;
-<a href=#25 id=25 data-nosnippet>25</a><span class="kw">use </span>alloc::collections::btree_map::BTreeMap;
-<a href=#26 id=26 data-nosnippet>26</a><span class="kw">use </span>alloc::string::String;
-<a href=#27 id=27 data-nosnippet>27</a><span class="kw">use </span>alloc::sync::Arc;
-<a href=#28 id=28 data-nosnippet>28</a><span class="kw">use </span>alloc::vec;
-<a href=#29 id=29 data-nosnippet>29</a><span class="kw">use </span>alloc::vec::Vec;
-<a href=#30 id=30 data-nosnippet>30</a>
-<a href=#31 id=31 data-nosnippet>31</a><span class="kw">use </span><span class="kw">super</span>::hooks::EmptyHookSet;
+<a href=#3 id=3 data-nosnippet>3</a><span class="kw">use </span><span class="kw">crate</span>::config::Config;
+<a href=#4 id=4 data-nosnippet>4</a><span class="kw">use </span><span class="kw">crate</span>::core::indices::TypeIdx;
+<a href=#5 id=5 data-nosnippet>5</a><span class="kw">use </span><span class="kw">crate</span>::core::reader::span::Span;
+<a href=#6 id=6 data-nosnippet>6</a><span class="kw">use </span><span class="kw">crate</span>::core::reader::types::data::{DataModeActive, DataSegment};
+<a href=#7 id=7 data-nosnippet>7</a><span class="kw">use </span><span class="kw">crate</span>::core::reader::types::element::{ActiveElem, ElemItems, ElemMode, ElemType};
+<a href=#8 id=8 data-nosnippet>8</a><span class="kw">use </span><span class="kw">crate</span>::core::reader::types::export::{Export, ExportDesc};
+<a href=#9 id=9 data-nosnippet>9</a><span class="kw">use </span><span class="kw">crate</span>::core::reader::types::global::{Global, GlobalType};
+<a href=#10 id=10 data-nosnippet>10</a><span class="kw">use </span><span class="kw">crate</span>::core::reader::types::import::Import;
+<a href=#11 id=11 data-nosnippet>11</a><span class="kw">use </span><span class="kw">crate</span>::core::reader::types::{
+<a href=#12 id=12 data-nosnippet>12</a>    ExternType, FuncType, ImportSubTypeRelation, MemType, TableType, ValType,
+<a href=#13 id=13 data-nosnippet>13</a>};
+<a href=#14 id=14 data-nosnippet>14</a><span class="kw">use </span><span class="kw">crate</span>::core::reader::WasmReader;
+<a href=#15 id=15 data-nosnippet>15</a><span class="kw">use </span><span class="kw">crate</span>::core::sidetable::Sidetable;
+<a href=#16 id=16 data-nosnippet>16</a><span class="kw">use </span><span class="kw">crate</span>::execution::interpreter_loop::{<span class="self">self</span>, memory_init, table_init};
+<a href=#17 id=17 data-nosnippet>17</a><span class="kw">use </span><span class="kw">crate</span>::execution::value::{Ref, Value};
+<a href=#18 id=18 data-nosnippet>18</a><span class="kw">use </span><span class="kw">crate</span>::execution::{run_const_span, Stack};
+<a href=#19 id=19 data-nosnippet>19</a><span class="kw">use </span><span class="kw">crate</span>::registry::Registry;
+<a href=#20 id=20 data-nosnippet>20</a><span class="kw">use </span><span class="kw">crate</span>::resumable::{
+<a href=#21 id=21 data-nosnippet>21</a>    Dormitory, FreshResumableRef, InvokedResumableRef, Resumable, ResumableRef, RunState,
+<a href=#22 id=22 data-nosnippet>22</a>};
+<a href=#23 id=23 data-nosnippet>23</a><span class="kw">use </span><span class="kw">crate</span>::value::FuncAddr;
+<a href=#24 id=24 data-nosnippet>24</a><span class="kw">use crate</span>::{Limits, RefType, RuntimeError, TrapError, ValidationInfo};
+<a href=#25 id=25 data-nosnippet>25</a><span class="kw">use </span>alloc::borrow::ToOwned;
+<a href=#26 id=26 data-nosnippet>26</a><span class="kw">use </span>alloc::collections::btree_map::BTreeMap;
+<a href=#27 id=27 data-nosnippet>27</a><span class="kw">use </span>alloc::string::String;
+<a href=#28 id=28 data-nosnippet>28</a><span class="kw">use </span>alloc::sync::Arc;
+<a href=#29 id=29 data-nosnippet>29</a><span class="kw">use </span>alloc::vec;
+<a href=#30 id=30 data-nosnippet>30</a><span class="kw">use </span>alloc::vec::Vec;
+<a href=#31 id=31 data-nosnippet>31</a>
 <a href=#32 id=32 data-nosnippet>32</a><span class="kw">use </span><span class="kw">super</span>::interpreter_loop::{data_drop, elem_drop};
 <a href=#33 id=33 data-nosnippet>33</a><span class="kw">use </span><span class="kw">super</span>::UnwrapValidatedExt;
 <a href=#34 id=34 data-nosnippet>34</a>
@@ -39,7 +39,7 @@
 <a href=#39 id=39 data-nosnippet>39</a>/// globals, element segments, and data segments that have been allocated during the life time of
 <a href=#40 id=40 data-nosnippet>40</a>/// the abstract machine.
 <a href=#41 id=41 data-nosnippet>41</a>/// &lt;https://webassembly.github.io/spec/core/exec/runtime.html#store&gt;
-<a href=#42 id=42 data-nosnippet>42</a></span><span class="kw">pub struct </span>Store&lt;<span class="lifetime">'b</span>, T&gt; {
+<a href=#42 id=42 data-nosnippet>42</a></span><span class="kw">pub struct </span>Store&lt;<span class="lifetime">'b</span>, T: Config&gt; {
 <a href=#43 id=43 data-nosnippet>43</a>    <span class="kw">pub </span>functions: Vec&lt;FuncInst&lt;T&gt;&gt;,
 <a href=#44 id=44 data-nosnippet>44</a>    <span class="kw">pub </span>memories: Vec&lt;MemInst&gt;,
 <a href=#45 id=45 data-nosnippet>45</a>    <span class="kw">pub </span>globals: Vec&lt;GlobalInst&gt;,
@@ -59,7 +59,7 @@
 <a href=#59 id=59 data-nosnippet>59</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) dormitory: Dormitory,
 <a href=#60 id=60 data-nosnippet>60</a>}
 <a href=#61 id=61 data-nosnippet>61</a>
-<a href=#62 id=62 data-nosnippet>62</a><span class="kw">impl</span>&lt;<span class="lifetime">'b</span>, T&gt; Store&lt;<span class="lifetime">'b</span>, T&gt; {
+<a href=#62 id=62 data-nosnippet>62</a><span class="kw">impl</span>&lt;<span class="lifetime">'b</span>, T: Config&gt; Store&lt;<span class="lifetime">'b</span>, T&gt; {
 <a href=#63 id=63 data-nosnippet>63</a>    <span class="doccomment">/// Creates a new empty store with some user data
 <a href=#64 id=64 data-nosnippet>64</a>    </span><span class="kw">pub fn </span>new(user_data: T) -&gt; <span class="self">Self </span>{
 <a href=#65 id=65 data-nosnippet>65</a>        <span class="self">Self </span>{
@@ -622,7 +622,7 @@
 <a href=#622 id=622 data-nosnippet>622</a>                        };
 <a href=#623 id=623 data-nosnippet>623</a>
 <a href=#624 id=624 data-nosnippet>624</a>                        <span class="comment">// Run the interpreter
-<a href=#625 id=625 data-nosnippet>625</a>                        </span><span class="kw">let </span>result = interpreter_loop::run(<span class="kw-2">&amp;mut </span>resumable, <span class="self">self</span>, EmptyHookSet)<span class="question-mark">?</span>;
+<a href=#625 id=625 data-nosnippet>625</a>                        </span><span class="kw">let </span>result = interpreter_loop::run(<span class="kw-2">&amp;mut </span>resumable, <span class="self">self</span>)<span class="question-mark">?</span>;
 <a href=#626 id=626 data-nosnippet>626</a>
 <a href=#627 id=627 data-nosnippet>627</a>                        <span class="kw">match </span>result {
 <a href=#628 id=628 data-nosnippet>628</a>                            <span class="prelude-val">None </span>=&gt; {
@@ -666,7 +666,7 @@
 <a href=#666 id=666 data-nosnippet>666</a>                    .expect(<span class="string">"the key to always be valid as self was not dropped yet"</span>);
 <a href=#667 id=667 data-nosnippet>667</a>
 <a href=#668 id=668 data-nosnippet>668</a>                <span class="comment">// Resume execution
-<a href=#669 id=669 data-nosnippet>669</a>                </span><span class="kw">let </span>result = interpreter_loop::run(resumable, <span class="self">self</span>, EmptyHookSet)<span class="question-mark">?</span>;
+<a href=#669 id=669 data-nosnippet>669</a>                </span><span class="kw">let </span>result = interpreter_loop::run(resumable, <span class="self">self</span>)<span class="question-mark">?</span>;
 <a href=#670 id=670 data-nosnippet>670</a>
 <a href=#671 id=671 data-nosnippet>671</a>                <span class="kw">match </span>result {
 <a href=#672 id=672 data-nosnippet>672</a>                    <span class="prelude-val">None </span>=&gt; {
@@ -918,7 +918,7 @@
 <a href=#918 id=918 data-nosnippet>918</a>    ///
 <a href=#919 id=919 data-nosnippet>919</a>    /// Note: This method may panic if self does not come from the given [`Store`].
 <a href=#920 id=920 data-nosnippet>920</a>    ///&lt;https://webassembly.github.io/spec/core/valid/modules.html#imports&gt;
-<a href=#921 id=921 data-nosnippet>921</a>    </span><span class="kw">pub fn </span>extern_type&lt;T&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, store: <span class="kw-2">&amp;</span>Store&lt;T&gt;) -&gt; ExternType {
+<a href=#921 id=921 data-nosnippet>921</a>    </span><span class="kw">pub fn </span>extern_type&lt;T: Config&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, store: <span class="kw-2">&amp;</span>Store&lt;T&gt;) -&gt; ExternType {
 <a href=#922 id=922 data-nosnippet>922</a>        <span class="kw">match </span><span class="self">self </span>{
 <a href=#923 id=923 data-nosnippet>923</a>            <span class="comment">// TODO: fix ugly clone in function types
 <a href=#924 id=924 data-nosnippet>924</a>            </span>ExternVal::Func(func_addr) =&gt; ExternType::Func(
