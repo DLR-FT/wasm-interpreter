@@ -175,3 +175,34 @@ fn resumable_internal_state() {
         }
     }
 }
+
+#[test_log::test]
+fn resumable_drop() {
+    let wat = r#"
+            (module
+            (func (export "loop_forever") (loop br 0)
+            ))"#;
+    let wasm_bytes = wat::parse_str(wat).unwrap();
+    let validation_info = &validate(&wasm_bytes).expect("validation failed");
+    let mut runtime_instance = RuntimeInstance::new_named((), "module", validation_info).unwrap();
+    let func_ref = runtime_instance
+        .get_function_by_name("module", "loop_forever")
+        .unwrap();
+    let resumable_ref = runtime_instance
+        .create_resumable(&func_ref, Vec::new(), 40)
+        .unwrap();
+    {
+        let resumable_ref = runtime_instance
+            .create_resumable(&func_ref, Vec::new(), 40)
+            .unwrap();
+        assert!(matches!(
+            runtime_instance.resume(resumable_ref).unwrap(),
+            RunState::Resumable { .. }
+        ));
+        // now drop it, the other resumable should still be able to access the dormitory in store
+    }
+    assert!(matches!(
+        runtime_instance.resume(resumable_ref).unwrap(),
+        RunState::Resumable { .. }
+    ));
+}

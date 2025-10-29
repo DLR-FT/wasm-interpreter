@@ -634,7 +634,7 @@ impl<'b, T: Config> Store<'b, T> {
         }))
     }
 
-    pub fn resume(&mut self, resumable_ref: ResumableRef) -> Result<RunState, RuntimeError> {
+    pub fn resume(&mut self, mut resumable_ref: ResumableRef) -> Result<RunState, RuntimeError> {
         match resumable_ref {
             ResumableRef::Fresh(FreshResumableRef {
                 func_addr,
@@ -712,11 +712,11 @@ impl<'b, T: Config> Store<'b, T> {
                 }
             }
             ResumableRef::Invoked(InvokedResumableRef {
-                ref dormitory,
+                dormitory: ref mut dormitory_weak,
                 ref key,
             }) => {
                 // Resuming requires `self`'s dormitory to still be alive
-                let Some(dormitory) = dormitory.upgrade() else {
+                let Some(dormitory) = dormitory_weak.upgrade() else {
                     return Err(RuntimeError::ResumableNotFound);
                 };
 
@@ -744,7 +744,7 @@ impl<'b, T: Config> Store<'b, T> {
 
                         // Take the `Weak` pointing to the dormitory out of `self` and replace it with a default `Weak`.
                         // This causes the `Drop` impl of `self` to directly quit preventing it from unnecessarily locking the dormitory.
-                        let _dormitory = mem::take(&mut self.dormitory);
+                        let _dormitory = mem::take(dormitory_weak);
 
                         Ok(RunState::Finished(resumable.stack.into_values()))
                     }
