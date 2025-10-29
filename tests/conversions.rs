@@ -37,13 +37,14 @@ pub fn i32_wrap_i64_let_it_die() {
         .replace("{{2}}", "i32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         -1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -1)
+            .invoke_typed(&instance.get_function_by_index(module_addr, 0).unwrap(), -1)
             .unwrap()
     );
 }
@@ -57,26 +58,33 @@ pub fn i32_wrap_i64() {
         .replace("{{2}}", "i32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         -1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -1_i64)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -1_i64
+            )
             .unwrap()
     );
     assert_eq!(
         -100000,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -100000_i64)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -100000_i64
+            )
             .unwrap()
     );
     assert_eq!(
         0x80000000_u32 as i32,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 0x80000000_i64
             )
             .unwrap()
@@ -85,7 +93,7 @@ pub fn i32_wrap_i64() {
         0x7fffffff,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 0xffffffff7fffffff_u64 as i64
             )
             .unwrap()
@@ -94,7 +102,7 @@ pub fn i32_wrap_i64() {
         0x00000000,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 0xffffffff00000000_u64 as i64
             )
             .unwrap()
@@ -103,7 +111,7 @@ pub fn i32_wrap_i64() {
         0xffffffff_u32 as i32,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 0xfffffffeffffffff_u64 as i64
             )
             .unwrap()
@@ -112,7 +120,7 @@ pub fn i32_wrap_i64() {
         0x00000001,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 0xffffffff00000001_u64 as i64
             )
             .unwrap()
@@ -120,14 +128,17 @@ pub fn i32_wrap_i64() {
     assert_eq!(
         0,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 0_i64)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                0_i64
+            )
             .unwrap()
     );
     assert_eq!(
         0x9abcdef0_u32 as i32,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 1311768467463790320_i64
             )
             .unwrap()
@@ -136,7 +147,7 @@ pub fn i32_wrap_i64() {
         0xffffffff_u32 as i32,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 0x00000000ffffffff_i64
             )
             .unwrap()
@@ -145,7 +156,7 @@ pub fn i32_wrap_i64() {
         0x00000000,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 0x0000000100000000_i64
             )
             .unwrap()
@@ -154,7 +165,7 @@ pub fn i32_wrap_i64() {
         0x00000001,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 0x0000000100000001_i64
             )
             .unwrap()
@@ -170,13 +181,14 @@ pub fn i32_trunc_f32_s_let_it_die() {
         .replace("{{2}}", "i32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         -1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -1)
+            .invoke_typed(&instance.get_function_by_index(module_addr, 0).unwrap(), -1)
             .unwrap()
     );
 }
@@ -190,26 +202,33 @@ pub fn i32_trunc_f32_s() {
         .replace("{{2}}", "i32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         0,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 0.0_f32)
-            .unwrap()
-    );
-    assert_eq!(
-        0,
-        instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -0.0_f32)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                0.0_f32
+            )
             .unwrap()
     );
     assert_eq!(
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -0.0_f32
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf32!("0x1p-149")
             )
             .unwrap()
@@ -218,7 +237,7 @@ pub fn i32_trunc_f32_s() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf32!("-0x1p-149")
             )
             .unwrap()
@@ -226,14 +245,17 @@ pub fn i32_trunc_f32_s() {
     assert_eq!(
         1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 1.0_f32)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                1.0_f32
+            )
             .unwrap()
     );
     assert_eq!(
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf32!("0x1.19999ap+0")
             )
             .unwrap()
@@ -241,20 +263,26 @@ pub fn i32_trunc_f32_s() {
     assert_eq!(
         1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 1.5_f32)
-            .unwrap()
-    );
-    assert_eq!(
-        -1,
-        instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -1.0_f32)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                1.5_f32
+            )
             .unwrap()
     );
     assert_eq!(
         -1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -1.0_f32
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        -1,
+        instance
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf32!("-0x1.19999ap+0")
             )
             .unwrap()
@@ -262,26 +290,35 @@ pub fn i32_trunc_f32_s() {
     assert_eq!(
         -1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -1.5_f32)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -1.5_f32
+            )
             .unwrap()
     );
     assert_eq!(
         -1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -1.9_f32)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -1.9_f32
+            )
             .unwrap()
     );
     assert_eq!(
         -2,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -2.0_f32)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -2.0_f32
+            )
             .unwrap()
     );
     assert_eq!(
         2147483520,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 2147483520.0_f32
             )
             .unwrap()
@@ -290,7 +327,7 @@ pub fn i32_trunc_f32_s() {
         2147483648_u32 as i32,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 -2147483648.0_f32
             )
             .unwrap()
@@ -299,7 +336,7 @@ pub fn i32_trunc_f32_s() {
         RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
             .invoke_typed::<f32, i32>(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 2147483648.0_f32
             )
             .err()
@@ -309,7 +346,7 @@ pub fn i32_trunc_f32_s() {
         RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
             .invoke_typed::<f32, i32>(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 -2147483904.0_f32
             )
             .err()
@@ -319,7 +356,7 @@ pub fn i32_trunc_f32_s() {
         RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
             .invoke_typed::<f32, i32>(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 f32::INFINITY
             )
             .err()
@@ -329,7 +366,7 @@ pub fn i32_trunc_f32_s() {
         RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
             .invoke_typed::<f32, i32>(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 f32::NEG_INFINITY
             )
             .err()
@@ -338,14 +375,20 @@ pub fn i32_trunc_f32_s() {
     assert_eq!(
         RuntimeError::Trap(TrapError::BadConversionToInteger),
         instance
-            .invoke_typed::<f32, i32>(&instance.get_function_by_index(0, 0).unwrap(), f32::NAN)
+            .invoke_typed::<f32, i32>(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                f32::NAN
+            )
             .err()
             .unwrap()
     );
     assert_eq!(
         RuntimeError::Trap(TrapError::BadConversionToInteger),
         instance
-            .invoke_typed::<f32, i32>(&instance.get_function_by_index(0, 0).unwrap(), -f32::NAN)
+            .invoke_typed::<f32, i32>(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -f32::NAN
+            )
             .err()
             .unwrap()
     );
@@ -360,26 +403,33 @@ pub fn i32_trunc_f32_u() {
         .replace("{{2}}", "i32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         0,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 0.0_f32)
-            .unwrap()
-    );
-    assert_eq!(
-        0,
-        instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -0.0_f32)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                0.0_f32
+            )
             .unwrap()
     );
     assert_eq!(
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -0.0_f32
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf32!("0x1p-149")
             )
             .unwrap()
@@ -388,7 +438,7 @@ pub fn i32_trunc_f32_u() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf32!("-0x1p-149")
             )
             .unwrap()
@@ -396,14 +446,17 @@ pub fn i32_trunc_f32_u() {
     assert_eq!(
         1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 1.0_f32)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                1.0_f32
+            )
             .unwrap()
     );
     assert_eq!(
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf32!("0x1.19999ap+0")
             )
             .unwrap()
@@ -411,26 +464,35 @@ pub fn i32_trunc_f32_u() {
     assert_eq!(
         1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 1.5_f32)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                1.5_f32
+            )
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 1.9_f32)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                1.9_f32
+            )
             .unwrap()
     );
     assert_eq!(
         2,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 2.0_f32)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                2.0_f32
+            )
             .unwrap()
     );
     assert_eq!(
         -2147483648,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 2147483648_f32
             )
             .unwrap()
@@ -439,7 +501,7 @@ pub fn i32_trunc_f32_u() {
         -256,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 4294967040.0_f32
             )
             .unwrap()
@@ -448,7 +510,7 @@ pub fn i32_trunc_f32_u() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf32!("-0x1.ccccccp-1")
             )
             .unwrap()
@@ -457,7 +519,7 @@ pub fn i32_trunc_f32_u() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf32!("-0x1.fffffep-1")
             )
             .unwrap()
@@ -466,7 +528,7 @@ pub fn i32_trunc_f32_u() {
         RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
             .invoke_typed::<f32, i32>(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 4294967296.0_f32
             )
             .err()
@@ -475,7 +537,10 @@ pub fn i32_trunc_f32_u() {
     assert_eq!(
         RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
-            .invoke_typed::<f32, i32>(&instance.get_function_by_index(0, 0).unwrap(), -1.0)
+            .invoke_typed::<f32, i32>(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -1.0
+            )
             .err()
             .unwrap()
     );
@@ -483,7 +548,7 @@ pub fn i32_trunc_f32_u() {
         RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
             .invoke_typed::<f32, i32>(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 f32::INFINITY
             )
             .err()
@@ -493,7 +558,7 @@ pub fn i32_trunc_f32_u() {
         RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
             .invoke_typed::<f32, i32>(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 f32::NEG_INFINITY
             )
             .err()
@@ -502,14 +567,20 @@ pub fn i32_trunc_f32_u() {
     assert_eq!(
         RuntimeError::Trap(TrapError::BadConversionToInteger),
         instance
-            .invoke_typed::<f32, i32>(&instance.get_function_by_index(0, 0).unwrap(), f32::NAN)
+            .invoke_typed::<f32, i32>(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                f32::NAN
+            )
             .err()
             .unwrap()
     );
     assert_eq!(
         RuntimeError::Trap(TrapError::BadConversionToInteger),
         instance
-            .invoke_typed::<f32, i32>(&instance.get_function_by_index(0, 0).unwrap(), -f32::NAN)
+            .invoke_typed::<f32, i32>(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -f32::NAN
+            )
             .err()
             .unwrap()
     );
@@ -524,13 +595,14 @@ pub fn i32_trunc_f64_s_let_it_die() {
         .replace("{{2}}", "i32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         -1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -1)
+            .invoke_typed(&instance.get_function_by_index(module_addr, 0).unwrap(), -1)
             .unwrap()
     );
 }
@@ -544,26 +616,33 @@ pub fn i32_trunc_f64_s() {
         .replace("{{2}}", "i32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         0,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 0.0_f64)
-            .unwrap()
-    );
-    assert_eq!(
-        0,
-        instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -0.0_f64)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                0.0_f64
+            )
             .unwrap()
     );
     assert_eq!(
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -0.0_f64
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("0x0.0000000000001p-1022")
             )
             .unwrap()
@@ -572,7 +651,7 @@ pub fn i32_trunc_f64_s() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("-0x0.0000000000001p-1022")
             )
             .unwrap()
@@ -580,14 +659,17 @@ pub fn i32_trunc_f64_s() {
     assert_eq!(
         1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 1.0_f64)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                1.0_f64
+            )
             .unwrap()
     );
     assert_eq!(
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("0x1.199999999999ap+0")
             )
             .unwrap()
@@ -595,20 +677,26 @@ pub fn i32_trunc_f64_s() {
     assert_eq!(
         1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 1.5_f64)
-            .unwrap()
-    );
-    assert_eq!(
-        -1,
-        instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -1.0_f64)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                1.5_f64
+            )
             .unwrap()
     );
     assert_eq!(
         -1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -1.0_f64
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        -1,
+        instance
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("-0x1.199999999999ap+0")
             )
             .unwrap()
@@ -616,26 +704,35 @@ pub fn i32_trunc_f64_s() {
     assert_eq!(
         -1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -1.5_f64)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -1.5_f64
+            )
             .unwrap()
     );
     assert_eq!(
         -1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -1.9_f64)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -1.9_f64
+            )
             .unwrap()
     );
     assert_eq!(
         -2,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -2.0_f64)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -2.0_f64
+            )
             .unwrap()
     );
     assert_eq!(
         2147483647,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 2147483647.0_f64
             )
             .unwrap()
@@ -644,7 +741,7 @@ pub fn i32_trunc_f64_s() {
         -2147483648,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 -2147483648.0_f64
             )
             .unwrap()
@@ -653,7 +750,7 @@ pub fn i32_trunc_f64_s() {
         -2147483648,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 -2147483648.9_f64
             )
             .unwrap()
@@ -662,7 +759,7 @@ pub fn i32_trunc_f64_s() {
         -2147483648,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 -2147483648.9_f64
             )
             .unwrap()
@@ -670,7 +767,10 @@ pub fn i32_trunc_f64_s() {
     assert_eq!(
         RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
-            .invoke_typed::<f64, i32>(&instance.get_function_by_index(0, 0).unwrap(), 2147483648.0)
+            .invoke_typed::<f64, i32>(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                2147483648.0
+            )
             .err()
             .unwrap()
     );
@@ -678,7 +778,7 @@ pub fn i32_trunc_f64_s() {
         RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
             .invoke_typed::<f64, i32>(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 -2147483649.0
             )
             .err()
@@ -688,7 +788,7 @@ pub fn i32_trunc_f64_s() {
         RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
             .invoke_typed::<f64, i32>(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 f64::INFINITY
             )
             .err()
@@ -698,7 +798,7 @@ pub fn i32_trunc_f64_s() {
         RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
             .invoke_typed::<f64, i32>(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 f64::NEG_INFINITY
             )
             .err()
@@ -707,14 +807,20 @@ pub fn i32_trunc_f64_s() {
     assert_eq!(
         RuntimeError::Trap(TrapError::BadConversionToInteger),
         instance
-            .invoke_typed::<f64, i32>(&instance.get_function_by_index(0, 0).unwrap(), f64::NAN)
+            .invoke_typed::<f64, i32>(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                f64::NAN
+            )
             .err()
             .unwrap()
     );
     assert_eq!(
         RuntimeError::Trap(TrapError::BadConversionToInteger),
         instance
-            .invoke_typed::<f64, i32>(&instance.get_function_by_index(0, 0).unwrap(), -f64::NAN)
+            .invoke_typed::<f64, i32>(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -f64::NAN
+            )
             .err()
             .unwrap()
     );
@@ -729,26 +835,33 @@ pub fn i32_trunc_f64_u() {
         .replace("{{2}}", "i32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         0,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 0.0_f64)
-            .unwrap()
-    );
-    assert_eq!(
-        0,
-        instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -0.0_f64)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                0.0_f64
+            )
             .unwrap()
     );
     assert_eq!(
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -0.0_f64
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("0x0.0000000000001p-1022")
             )
             .unwrap()
@@ -757,7 +870,7 @@ pub fn i32_trunc_f64_u() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("-0x0.0000000000001p-1022")
             )
             .unwrap()
@@ -765,14 +878,17 @@ pub fn i32_trunc_f64_u() {
     assert_eq!(
         1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 1.0_f64)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                1.0_f64
+            )
             .unwrap()
     );
     assert_eq!(
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("0x1.199999999999ap+0")
             )
             .unwrap()
@@ -780,26 +896,35 @@ pub fn i32_trunc_f64_u() {
     assert_eq!(
         1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 1.5_f64)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                1.5_f64
+            )
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 1.9_f64)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                1.9_f64
+            )
             .unwrap()
     );
     assert_eq!(
         2,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 2.0_f64)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                2.0_f64
+            )
             .unwrap()
     );
     assert_eq!(
         -2147483648,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 2147483648_f64
             )
             .unwrap()
@@ -808,7 +933,7 @@ pub fn i32_trunc_f64_u() {
         -1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 4294967295.0_f64
             )
             .unwrap()
@@ -817,7 +942,7 @@ pub fn i32_trunc_f64_u() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("-0x1.ccccccccccccdp-1")
             )
             .unwrap()
@@ -826,7 +951,7 @@ pub fn i32_trunc_f64_u() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("-0x1.fffffffffffffp-1")
             )
             .unwrap()
@@ -834,20 +959,26 @@ pub fn i32_trunc_f64_u() {
     assert_eq!(
         100000000,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 1e8_f64)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                1e8_f64
+            )
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -0.9)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -0.9
+            )
             .unwrap()
     );
     assert_eq!(
         4294967295_u32 as i32,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 4294967295.9_f64
             )
             .unwrap()
@@ -855,28 +986,10 @@ pub fn i32_trunc_f64_u() {
     assert_eq!(
         RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
-            .invoke_typed::<f64, i32>(&instance.get_function_by_index(0, 0).unwrap(), 4294967296.0)
-            .err()
-            .unwrap()
-    );
-    assert_eq!(
-        RuntimeError::Trap(TrapError::UnrepresentableResult),
-        instance
-            .invoke_typed::<f64, i32>(&instance.get_function_by_index(0, 0).unwrap(), -1.0)
-            .err()
-            .unwrap()
-    );
-    assert_eq!(
-        RuntimeError::Trap(TrapError::UnrepresentableResult),
-        instance
-            .invoke_typed::<f64, i32>(&instance.get_function_by_index(0, 0).unwrap(), 1e16)
-            .err()
-            .unwrap()
-    );
-    assert_eq!(
-        RuntimeError::Trap(TrapError::UnrepresentableResult),
-        instance
-            .invoke_typed::<f64, i32>(&instance.get_function_by_index(0, 0).unwrap(), 1e30)
+            .invoke_typed::<f64, i32>(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                4294967296.0
+            )
             .err()
             .unwrap()
     );
@@ -884,7 +997,37 @@ pub fn i32_trunc_f64_u() {
         RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
             .invoke_typed::<f64, i32>(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -1.0
+            )
+            .err()
+            .unwrap()
+    );
+    assert_eq!(
+        RuntimeError::Trap(TrapError::UnrepresentableResult),
+        instance
+            .invoke_typed::<f64, i32>(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                1e16
+            )
+            .err()
+            .unwrap()
+    );
+    assert_eq!(
+        RuntimeError::Trap(TrapError::UnrepresentableResult),
+        instance
+            .invoke_typed::<f64, i32>(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                1e30
+            )
+            .err()
+            .unwrap()
+    );
+    assert_eq!(
+        RuntimeError::Trap(TrapError::UnrepresentableResult),
+        instance
+            .invoke_typed::<f64, i32>(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 9223372036854775808_f64
             )
             .err()
@@ -894,7 +1037,7 @@ pub fn i32_trunc_f64_u() {
         RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
             .invoke_typed::<f64, i32>(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 f64::INFINITY
             )
             .err()
@@ -904,7 +1047,7 @@ pub fn i32_trunc_f64_u() {
         RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
             .invoke_typed::<f64, i32>(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 f64::NEG_INFINITY
             )
             .err()
@@ -913,14 +1056,20 @@ pub fn i32_trunc_f64_u() {
     assert_eq!(
         RuntimeError::Trap(TrapError::BadConversionToInteger),
         instance
-            .invoke_typed::<f64, i32>(&instance.get_function_by_index(0, 0).unwrap(), f64::NAN)
+            .invoke_typed::<f64, i32>(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                f64::NAN
+            )
             .err()
             .unwrap()
     );
     assert_eq!(
         RuntimeError::Trap(TrapError::BadConversionToInteger),
         instance
-            .invoke_typed::<f64, i32>(&instance.get_function_by_index(0, 0).unwrap(), -f64::NAN)
+            .invoke_typed::<f64, i32>(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -f64::NAN
+            )
             .err()
             .unwrap()
     );
@@ -935,13 +1084,14 @@ pub fn i64_extend_i32_s_let_it_die() {
         .replace("{{2}}", "i64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         -1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -1)
+            .invoke_typed(&instance.get_function_by_index(module_addr, 0).unwrap(), -1)
             .unwrap()
     );
 }
@@ -955,44 +1105,54 @@ pub fn i64_extend_i32_s() {
         .replace("{{2}}", "i64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         0_i64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 0)
+            .invoke_typed(&instance.get_function_by_index(module_addr, 0).unwrap(), 0)
             .unwrap()
     );
     assert_eq!(
         10000_i64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 10000)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                10000
+            )
             .unwrap()
     );
     assert_eq!(
         -10000_i64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -10000)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -10000
+            )
             .unwrap()
     );
     assert_eq!(
         -1_i64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -1)
+            .invoke_typed(&instance.get_function_by_index(module_addr, 0).unwrap(), -1)
             .unwrap()
     );
     assert_eq!(
         0x000000007fffffff_i64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 0x7fffffff)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                0x7fffffff
+            )
             .unwrap()
     );
     assert_eq!(
         0xffffffff80000000_u64 as i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 0x80000000_u32 as i32
             )
             .unwrap()
@@ -1008,44 +1168,54 @@ pub fn i64_extend_i32_u() {
         .replace("{{2}}", "i64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         0_i64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 0)
+            .invoke_typed(&instance.get_function_by_index(module_addr, 0).unwrap(), 0)
             .unwrap()
     );
     assert_eq!(
         10000_i64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 10000)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                10000
+            )
             .unwrap()
     );
     assert_eq!(
         0x00000000ffffd8f0_i64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -10000)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -10000
+            )
             .unwrap()
     );
     assert_eq!(
         0xffffffff_i64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -1)
+            .invoke_typed(&instance.get_function_by_index(module_addr, 0).unwrap(), -1)
             .unwrap()
     );
     assert_eq!(
         0x000000007fffffff_i64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 0x7fffffff)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                0x7fffffff
+            )
             .unwrap()
     );
     assert_eq!(
         0x0000000080000000_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 0x80000000_u32 as i32
             )
             .unwrap()
@@ -1061,13 +1231,14 @@ pub fn i64_trunc_f32_s_let_it_die() {
         .replace("{{2}}", "i64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         -1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -1)
+            .invoke_typed(&instance.get_function_by_index(module_addr, 0).unwrap(), -1)
             .unwrap()
     );
 }
@@ -1081,26 +1252,33 @@ pub fn i64_trunc_f32_s() {
         .replace("{{2}}", "i64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         0_i64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 0.0_f32)
-            .unwrap()
-    );
-    assert_eq!(
-        0_i64,
-        instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -0.0_f32)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                0.0_f32
+            )
             .unwrap()
     );
     assert_eq!(
         0_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -0.0_f32
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        0_i64,
+        instance
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf32!("0x1p-149")
             )
             .unwrap()
@@ -1109,7 +1287,7 @@ pub fn i64_trunc_f32_s() {
         0_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf32!("-0x1p-149")
             )
             .unwrap()
@@ -1117,14 +1295,17 @@ pub fn i64_trunc_f32_s() {
     assert_eq!(
         1_i64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 1.0_f32)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                1.0_f32
+            )
             .unwrap()
     );
     assert_eq!(
         1_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf32!("0x1.19999ap+0")
             )
             .unwrap()
@@ -1132,20 +1313,26 @@ pub fn i64_trunc_f32_s() {
     assert_eq!(
         1_i64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 1.5_f32)
-            .unwrap()
-    );
-    assert_eq!(
-        -1_i64,
-        instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -1.0_f32)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                1.5_f32
+            )
             .unwrap()
     );
     assert_eq!(
         -1_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -1.0_f32
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        -1_i64,
+        instance
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf32!("-0x1.19999ap+0")
             )
             .unwrap()
@@ -1153,26 +1340,35 @@ pub fn i64_trunc_f32_s() {
     assert_eq!(
         -1_i64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -1.5_f32)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -1.5_f32
+            )
             .unwrap()
     );
     assert_eq!(
         -1_i64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -1.9_f32)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -1.9_f32
+            )
             .unwrap()
     );
     assert_eq!(
         -2_i64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -2.0_f32)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -2.0_f32
+            )
             .unwrap()
     );
     assert_eq!(
         4294967296_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 4294967296_f32
             )
             .unwrap()
@@ -1181,7 +1377,7 @@ pub fn i64_trunc_f32_s() {
         -4294967296_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 -4294967296_f32
             )
             .unwrap()
@@ -1190,7 +1386,7 @@ pub fn i64_trunc_f32_s() {
         9223371487098961920_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 9223371487098961920.0_f32
             )
             .unwrap()
@@ -1199,7 +1395,7 @@ pub fn i64_trunc_f32_s() {
         -9223372036854775808_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 -9223372036854775808.0_f32
             )
             .unwrap()
@@ -1208,7 +1404,7 @@ pub fn i64_trunc_f32_s() {
         RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
             .invoke_typed::<f32, i64>(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 9223372036854775808.0_f32
             )
             .err()
@@ -1218,7 +1414,7 @@ pub fn i64_trunc_f32_s() {
         RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
             .invoke_typed::<f32, i64>(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 -9223373136366403584.0_f32
             )
             .err()
@@ -1228,7 +1424,7 @@ pub fn i64_trunc_f32_s() {
         RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
             .invoke_typed::<f32, i64>(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 f32::INFINITY
             )
             .err()
@@ -1238,7 +1434,7 @@ pub fn i64_trunc_f32_s() {
         RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
             .invoke_typed::<f32, i64>(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 f32::NEG_INFINITY
             )
             .err()
@@ -1247,14 +1443,20 @@ pub fn i64_trunc_f32_s() {
     assert_eq!(
         RuntimeError::Trap(TrapError::BadConversionToInteger),
         instance
-            .invoke_typed::<f32, i64>(&instance.get_function_by_index(0, 0).unwrap(), f32::NAN)
+            .invoke_typed::<f32, i64>(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                f32::NAN
+            )
             .err()
             .unwrap()
     );
     assert_eq!(
         RuntimeError::Trap(TrapError::BadConversionToInteger),
         instance
-            .invoke_typed::<f32, i64>(&instance.get_function_by_index(0, 0).unwrap(), -f32::NAN)
+            .invoke_typed::<f32, i64>(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -f32::NAN
+            )
             .err()
             .unwrap()
     );
@@ -1269,26 +1471,33 @@ pub fn i64_trunc_f32_u() {
         .replace("{{2}}", "i64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         0_i64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 0.0_f32)
-            .unwrap()
-    );
-    assert_eq!(
-        0_i64,
-        instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -0.0_f32)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                0.0_f32
+            )
             .unwrap()
     );
     assert_eq!(
         0_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -0.0_f32
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        0_i64,
+        instance
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf32!("0x1p-149")
             )
             .unwrap()
@@ -1297,7 +1506,7 @@ pub fn i64_trunc_f32_u() {
         0_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf32!("-0x1p-149")
             )
             .unwrap()
@@ -1305,14 +1514,17 @@ pub fn i64_trunc_f32_u() {
     assert_eq!(
         1_i64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 1.0_f32)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                1.0_f32
+            )
             .unwrap()
     );
     assert_eq!(
         1_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf32!("0x1.19999ap+0")
             )
             .unwrap()
@@ -1320,14 +1532,17 @@ pub fn i64_trunc_f32_u() {
     assert_eq!(
         1_i64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 1.5_f32)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                1.5_f32
+            )
             .unwrap()
     );
     assert_eq!(
         4294967296_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 4294967296_f32
             )
             .unwrap()
@@ -1336,7 +1551,7 @@ pub fn i64_trunc_f32_u() {
         -1099511627776_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 18446742974197923840.0_f32
             )
             .unwrap()
@@ -1345,7 +1560,7 @@ pub fn i64_trunc_f32_u() {
         1_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf32!("0x1.19999ap+0")
             )
             .unwrap()
@@ -1354,7 +1569,7 @@ pub fn i64_trunc_f32_u() {
         0_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf32!("-0x1.fffffep-1")
             )
             .unwrap()
@@ -1363,7 +1578,7 @@ pub fn i64_trunc_f32_u() {
         RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
             .invoke_typed::<f32, i64>(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 18446744073709551616.0_f32
             )
             .err()
@@ -1372,7 +1587,10 @@ pub fn i64_trunc_f32_u() {
     assert_eq!(
         RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
-            .invoke_typed::<f32, i64>(&instance.get_function_by_index(0, 0).unwrap(), -1.0_f32)
+            .invoke_typed::<f32, i64>(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -1.0_f32
+            )
             .err()
             .unwrap()
     );
@@ -1380,7 +1598,7 @@ pub fn i64_trunc_f32_u() {
         RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
             .invoke_typed::<f32, i64>(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 f32::INFINITY
             )
             .err()
@@ -1390,7 +1608,7 @@ pub fn i64_trunc_f32_u() {
         RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
             .invoke_typed::<f32, i64>(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 f32::NEG_INFINITY
             )
             .err()
@@ -1399,14 +1617,20 @@ pub fn i64_trunc_f32_u() {
     assert_eq!(
         RuntimeError::Trap(TrapError::BadConversionToInteger),
         instance
-            .invoke_typed::<f32, i64>(&instance.get_function_by_index(0, 0).unwrap(), f32::NAN)
+            .invoke_typed::<f32, i64>(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                f32::NAN
+            )
             .err()
             .unwrap()
     );
     assert_eq!(
         RuntimeError::Trap(TrapError::BadConversionToInteger),
         instance
-            .invoke_typed::<f32, i64>(&instance.get_function_by_index(0, 0).unwrap(), -f32::NAN)
+            .invoke_typed::<f32, i64>(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -f32::NAN
+            )
             .err()
             .unwrap()
     );
@@ -1421,13 +1645,14 @@ pub fn i64_trunc_f64_s_let_it_die() {
         .replace("{{2}}", "i64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         -1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -1)
+            .invoke_typed(&instance.get_function_by_index(module_addr, 0).unwrap(), -1)
             .unwrap()
     );
 }
@@ -1441,26 +1666,33 @@ pub fn i64_trunc_f64_s() {
         .replace("{{2}}", "i64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         0_i64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 0.0_f64)
-            .unwrap()
-    );
-    assert_eq!(
-        0_i64,
-        instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -0.0_f64)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                0.0_f64
+            )
             .unwrap()
     );
     assert_eq!(
         0_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -0.0_f64
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        0_i64,
+        instance
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("0x0.0000000000001p-1022")
             )
             .unwrap()
@@ -1469,7 +1701,7 @@ pub fn i64_trunc_f64_s() {
         0_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("-0x0.0000000000001p-1022")
             )
             .unwrap()
@@ -1477,14 +1709,17 @@ pub fn i64_trunc_f64_s() {
     assert_eq!(
         1_i64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 1.0_f64)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                1.0_f64
+            )
             .unwrap()
     );
     assert_eq!(
         1_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("0x1.199999999999ap+0")
             )
             .unwrap()
@@ -1492,20 +1727,26 @@ pub fn i64_trunc_f64_s() {
     assert_eq!(
         1_i64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 1.5_f64)
-            .unwrap()
-    );
-    assert_eq!(
-        -1_i64,
-        instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -1.0_f64)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                1.5_f64
+            )
             .unwrap()
     );
     assert_eq!(
         -1_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -1.0_f64
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        -1_i64,
+        instance
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("-0x1.199999999999ap+0")
             )
             .unwrap()
@@ -1513,26 +1754,35 @@ pub fn i64_trunc_f64_s() {
     assert_eq!(
         -1_i64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -1.5_f64)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -1.5_f64
+            )
             .unwrap()
     );
     assert_eq!(
         -1_i64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -1.9_f64)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -1.9_f64
+            )
             .unwrap()
     );
     assert_eq!(
         -2_i64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -2.0_f64)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -2.0_f64
+            )
             .unwrap()
     );
     assert_eq!(
         4294967296_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 4294967296_f64
             )
             .unwrap()
@@ -1541,7 +1791,7 @@ pub fn i64_trunc_f64_s() {
         -4294967296_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 -4294967296_f64
             )
             .unwrap()
@@ -1550,7 +1800,7 @@ pub fn i64_trunc_f64_s() {
         9223372036854774784_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 9223372036854774784.0_f64
             )
             .unwrap()
@@ -1559,7 +1809,7 @@ pub fn i64_trunc_f64_s() {
         -9223372036854775808_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 -9223372036854775808.0_f64
             )
             .unwrap()
@@ -1568,7 +1818,7 @@ pub fn i64_trunc_f64_s() {
         RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
             .invoke_typed::<f64, i64>(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 9223372036854775808.0_f64
             )
             .err()
@@ -1578,7 +1828,7 @@ pub fn i64_trunc_f64_s() {
         RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
             .invoke_typed::<f64, i64>(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 -9223372036854777856.0_f64
             )
             .err()
@@ -1588,7 +1838,7 @@ pub fn i64_trunc_f64_s() {
         RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
             .invoke_typed::<f64, i64>(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 f64::INFINITY
             )
             .err()
@@ -1598,7 +1848,7 @@ pub fn i64_trunc_f64_s() {
         RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
             .invoke_typed::<f64, i64>(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 f64::NEG_INFINITY
             )
             .err()
@@ -1607,14 +1857,20 @@ pub fn i64_trunc_f64_s() {
     assert_eq!(
         RuntimeError::Trap(TrapError::BadConversionToInteger),
         instance
-            .invoke_typed::<f64, i64>(&instance.get_function_by_index(0, 0).unwrap(), f64::NAN)
+            .invoke_typed::<f64, i64>(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                f64::NAN
+            )
             .err()
             .unwrap()
     );
     assert_eq!(
         RuntimeError::Trap(TrapError::BadConversionToInteger),
         instance
-            .invoke_typed::<f64, i64>(&instance.get_function_by_index(0, 0).unwrap(), -f64::NAN)
+            .invoke_typed::<f64, i64>(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -f64::NAN
+            )
             .err()
             .unwrap()
     );
@@ -1629,26 +1885,33 @@ pub fn i64_trunc_f64_u() {
         .replace("{{2}}", "i64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         0_i64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 0.0_f64)
-            .unwrap()
-    );
-    assert_eq!(
-        0_i64,
-        instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -0.0_f64)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                0.0_f64
+            )
             .unwrap()
     );
     assert_eq!(
         0_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -0.0_f64
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        0_i64,
+        instance
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("0x0.0000000000001p-1022")
             )
             .unwrap()
@@ -1657,7 +1920,7 @@ pub fn i64_trunc_f64_u() {
         0_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("-0x0.0000000000001p-1022")
             )
             .unwrap()
@@ -1665,14 +1928,17 @@ pub fn i64_trunc_f64_u() {
     assert_eq!(
         1_i64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 1.0_f64)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                1.0_f64
+            )
             .unwrap()
     );
     assert_eq!(
         1_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("0x1.199999999999ap+0")
             )
             .unwrap()
@@ -1680,14 +1946,17 @@ pub fn i64_trunc_f64_u() {
     assert_eq!(
         1_i64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 1.5_f64)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                1.5_f64
+            )
             .unwrap()
     );
     assert_eq!(
         0xffffffff_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 4294967295_f64
             )
             .unwrap()
@@ -1696,7 +1965,7 @@ pub fn i64_trunc_f64_u() {
         0x100000000_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 4294967296_f64
             )
             .unwrap()
@@ -1705,7 +1974,7 @@ pub fn i64_trunc_f64_u() {
         -2048_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 18446744073709549568.0_f64
             )
             .unwrap()
@@ -1714,7 +1983,7 @@ pub fn i64_trunc_f64_u() {
         0_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("-0x1.ccccccccccccdp-1")
             )
             .unwrap()
@@ -1723,7 +1992,7 @@ pub fn i64_trunc_f64_u() {
         0_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("-0x1.fffffffffffffp-1")
             )
             .unwrap()
@@ -1731,20 +2000,26 @@ pub fn i64_trunc_f64_u() {
     assert_eq!(
         100000000_i64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 1e8_f64)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                1e8_f64
+            )
             .unwrap()
     );
     assert_eq!(
         10000000000000000_i64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 1e16_f64)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                1e16_f64
+            )
             .unwrap()
     );
     assert_eq!(
         -9223372036854775808_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 9223372036854775808_f64
             )
             .unwrap()
@@ -1753,7 +2028,7 @@ pub fn i64_trunc_f64_u() {
         RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
             .invoke_typed::<f64, i64>(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 18446744073709551616.0_f64
             )
             .err()
@@ -1762,7 +2037,10 @@ pub fn i64_trunc_f64_u() {
     assert_eq!(
         RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
-            .invoke_typed::<f64, i64>(&instance.get_function_by_index(0, 0).unwrap(), -1_f64)
+            .invoke_typed::<f64, i64>(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -1_f64
+            )
             .err()
             .unwrap()
     );
@@ -1770,7 +2048,7 @@ pub fn i64_trunc_f64_u() {
         RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
             .invoke_typed::<f64, i64>(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 f64::INFINITY
             )
             .err()
@@ -1780,7 +2058,7 @@ pub fn i64_trunc_f64_u() {
         RuntimeError::Trap(TrapError::UnrepresentableResult),
         instance
             .invoke_typed::<f64, i64>(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 f64::NEG_INFINITY
             )
             .err()
@@ -1789,14 +2067,20 @@ pub fn i64_trunc_f64_u() {
     assert_eq!(
         RuntimeError::Trap(TrapError::BadConversionToInteger),
         instance
-            .invoke_typed::<f64, i64>(&instance.get_function_by_index(0, 0).unwrap(), f64::NAN)
+            .invoke_typed::<f64, i64>(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                f64::NAN
+            )
             .err()
             .unwrap()
     );
     assert_eq!(
         RuntimeError::Trap(TrapError::BadConversionToInteger),
         instance
-            .invoke_typed::<f64, i64>(&instance.get_function_by_index(0, 0).unwrap(), -f64::NAN)
+            .invoke_typed::<f64, i64>(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -f64::NAN
+            )
             .err()
             .unwrap()
     );
@@ -1811,13 +2095,14 @@ pub fn f32_convert_i32_s_let_it_die() {
         .replace("{{2}}", "f32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         -1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -1)
+            .invoke_typed(&instance.get_function_by_index(module_addr, 0).unwrap(), -1)
             .unwrap()
     );
 }
@@ -1831,43 +2116,53 @@ pub fn f32_convert_i32_s() {
         .replace("{{2}}", "f32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         1.0_f32,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 1)
+            .invoke_typed(&instance.get_function_by_index(module_addr, 0).unwrap(), 1)
             .unwrap()
     );
     assert_eq!(
         -1.0_f32,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -1)
+            .invoke_typed(&instance.get_function_by_index(module_addr, 0).unwrap(), -1)
             .unwrap()
     );
     assert_eq!(
         0.0_f32,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 0)
+            .invoke_typed(&instance.get_function_by_index(module_addr, 0).unwrap(), 0)
             .unwrap()
     );
     assert_eq!(
         2147483648_f32,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 2147483647)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                2147483647
+            )
             .unwrap()
     );
     assert_eq!(
         -2147483648_f32,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -2147483648)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -2147483648
+            )
             .unwrap()
     );
     assert_eq!(
         hexf32!("0x1.26580cp+30"),
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 1234567890)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                1234567890
+            )
             .unwrap()
     );
 }
@@ -1881,44 +2176,54 @@ pub fn f32_convert_i32_u() {
         .replace("{{2}}", "f32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         1.0_f32,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 1)
+            .invoke_typed(&instance.get_function_by_index(module_addr, 0).unwrap(), 1)
             .unwrap()
     );
     assert_eq!(
         0.0_f32,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 0)
+            .invoke_typed(&instance.get_function_by_index(module_addr, 0).unwrap(), 0)
             .unwrap()
     );
     assert_eq!(
         2147483648_f32,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 2147483647)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                2147483647
+            )
             .unwrap()
     );
     assert_eq!(
         2147483648_f32,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -2147483648)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -2147483648
+            )
             .unwrap()
     );
     assert_eq!(
         hexf32!("0x1.234568p+28"),
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 0x12345678)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                0x12345678
+            )
             .unwrap()
     );
     assert_eq!(
         4294967296.0_f32,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 0xffffffff_u32 as i32
             )
             .unwrap()
@@ -1927,7 +2232,7 @@ pub fn f32_convert_i32_u() {
         hexf32!("0x1.000000p+31"),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 0x80000080_u32 as i32
             )
             .unwrap()
@@ -1936,7 +2241,7 @@ pub fn f32_convert_i32_u() {
         hexf32!("0x1.000002p+31"),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 0x80000081_u32 as i32
             )
             .unwrap()
@@ -1945,7 +2250,7 @@ pub fn f32_convert_i32_u() {
         hexf32!("0x1.000002p+31"),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 0x80000082_u32 as i32
             )
             .unwrap()
@@ -1954,7 +2259,7 @@ pub fn f32_convert_i32_u() {
         hexf32!("0x1.fffffcp+31"),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 0xfffffe80_u32 as i32
             )
             .unwrap()
@@ -1963,7 +2268,7 @@ pub fn f32_convert_i32_u() {
         hexf32!("0x1.fffffep+31"),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 0xfffffe81_u32 as i32
             )
             .unwrap()
@@ -1972,7 +2277,7 @@ pub fn f32_convert_i32_u() {
         hexf32!("0x1.fffffep+31"),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 0xfffffe82_u32 as i32
             )
             .unwrap()
@@ -1980,13 +2285,19 @@ pub fn f32_convert_i32_u() {
     assert_eq!(
         16777216.0_f32,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 16777217)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                16777217
+            )
             .unwrap()
     );
     assert_eq!(
         16777220.0_f32,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 16777219)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                16777219
+            )
             .unwrap()
     );
 }
@@ -2000,13 +2311,14 @@ pub fn f32_convert_i64_s_let_it_die() {
         .replace("{{2}}", "f32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         -1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -1)
+            .invoke_typed(&instance.get_function_by_index(module_addr, 0).unwrap(), -1)
             .unwrap()
     );
 }
@@ -2019,32 +2331,42 @@ pub fn f32_convert_i64_s() {
         .replace("{{2}}", "f32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         1.0_f32,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 1_i64)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                1_i64
+            )
             .unwrap()
     );
     assert_eq!(
         -1.0_f32,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -1_i64)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -1_i64
+            )
             .unwrap()
     );
     assert_eq!(
         0.0_f32,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 0_i64)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                0_i64
+            )
             .unwrap()
     );
     assert_eq!(
         9223372036854775807_f32,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 9223372036854775807_i64
             )
             .unwrap()
@@ -2053,7 +2375,7 @@ pub fn f32_convert_i64_s() {
         -9223372036854775808_f32,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 -9223372036854775808_i64
             )
             .unwrap()
@@ -2062,7 +2384,7 @@ pub fn f32_convert_i64_s() {
         hexf32!("0x1.1db9e8p+48"),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 314159265358979_i64
             )
             .unwrap()
@@ -2070,14 +2392,17 @@ pub fn f32_convert_i64_s() {
     assert_eq!(
         16777216.0_f32,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 16777217_i64)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                16777217_i64
+            )
             .unwrap()
     );
     assert_eq!(
         -16777216.0_f32,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 -16777217_i64
             )
             .unwrap()
@@ -2085,14 +2410,17 @@ pub fn f32_convert_i64_s() {
     assert_eq!(
         16777220.0_f32,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 16777219_i64)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                16777219_i64
+            )
             .unwrap()
     );
     assert_eq!(
         -16777220.0_f32,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 -16777219_i64
             )
             .unwrap()
@@ -2102,7 +2430,7 @@ pub fn f32_convert_i64_s() {
         hexf32!("0x1.fffffep+62"),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 0x7fffff4000000001_i64
             )
             .unwrap()
@@ -2111,7 +2439,7 @@ pub fn f32_convert_i64_s() {
         hexf32!("-0x1.fffffep+62"),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 0x8000004000000001_u64 as i64
             )
             .unwrap()
@@ -2120,7 +2448,7 @@ pub fn f32_convert_i64_s() {
         hexf32!("0x1.000002p+53"),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 0x0020000020000001_i64
             )
             .unwrap()
@@ -2129,7 +2457,7 @@ pub fn f32_convert_i64_s() {
         hexf32!("-0x1.000002p+53"),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 0xffdfffffdfffffff_u64 as i64
             )
             .unwrap()
@@ -2145,26 +2473,33 @@ pub fn f32_convert_i64_u() {
         .replace("{{2}}", "f32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         1.0_f32,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 1_i64)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                1_i64
+            )
             .unwrap()
     );
     assert_eq!(
         0.0_f32,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 0_i64)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                0_i64
+            )
             .unwrap()
     );
     assert_eq!(
         9223372036854775807_f32,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 9223372036854775807_i64
             )
             .unwrap()
@@ -2173,7 +2508,7 @@ pub fn f32_convert_i64_u() {
         9223372036854775808_f32,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 -9223372036854775808_i64
             )
             .unwrap()
@@ -2182,7 +2517,7 @@ pub fn f32_convert_i64_u() {
         18446744073709551616.0_f32,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 0xffffffffffffffff_u64 as i64
             )
             .unwrap()
@@ -2191,13 +2526,19 @@ pub fn f32_convert_i64_u() {
     assert_eq!(
         16777216.0_f32,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 16777217_i64)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                16777217_i64
+            )
             .unwrap()
     );
     assert_eq!(
         16777220.0_f32,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 16777219_i64)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                16777219_i64
+            )
             .unwrap()
     );
 
@@ -2205,7 +2546,7 @@ pub fn f32_convert_i64_u() {
         hexf32!("0x1.000002p+53"),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 0x0020000020000001_i64
             )
             .unwrap()
@@ -2214,7 +2555,7 @@ pub fn f32_convert_i64_u() {
         hexf32!("0x1.fffffep+62"),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 0x7fffffbfffffffff_i64
             )
             .unwrap()
@@ -2223,7 +2564,7 @@ pub fn f32_convert_i64_u() {
         hexf32!("0x1.000002p+63"),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 0x8000008000000001_u64 as i64
             )
             .unwrap()
@@ -2232,7 +2573,7 @@ pub fn f32_convert_i64_u() {
         hexf32!("0x1.fffffep+63"),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 0xfffffe8000000001_u64 as i64
             )
             .unwrap()
@@ -2248,13 +2589,17 @@ pub fn f32_demote_f64_let_it_die() {
         .replace("{{2}}", "f32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         0.0_f32,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 0.0_f64)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                0.0_f64
+            )
             .unwrap()
     );
 }
@@ -2268,26 +2613,33 @@ pub fn f32_demote_f64() {
         .replace("{{2}}", "f32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         0.0_f32,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 0.0_f64)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                0.0_f64
+            )
             .unwrap()
     );
     assert_eq!(
         -0.0_f32,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -0.0_f64)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -0.0_f64
+            )
             .unwrap()
     );
     assert_eq!(
         0.0_f32,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("0x0.0000000000001p-1022")
             )
             .unwrap()
@@ -2296,7 +2648,7 @@ pub fn f32_demote_f64() {
         -0.0_f32,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("-0x0.0000000000001p-1022")
             )
             .unwrap()
@@ -2304,20 +2656,26 @@ pub fn f32_demote_f64() {
     assert_eq!(
         1.0_f32,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 1.0_f64)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                1.0_f64
+            )
             .unwrap()
     );
     assert_eq!(
         -1.0_f32,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -1.0_f64)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -1.0_f64
+            )
             .unwrap()
     );
     assert_eq!(
         hexf32!("0x1p-126"),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("0x1.fffffe0000000p-127")
             )
             .unwrap()
@@ -2326,7 +2684,7 @@ pub fn f32_demote_f64() {
         hexf32!("-0x1p-126"),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("-0x1.fffffe0000000p-127")
             )
             .unwrap()
@@ -2335,7 +2693,7 @@ pub fn f32_demote_f64() {
         hexf32!("0x1.fffffcp-127"),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("0x1.fffffdfffffffp-127")
             )
             .unwrap()
@@ -2344,7 +2702,7 @@ pub fn f32_demote_f64() {
         hexf32!("-0x1.fffffcp-127"),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("-0x1.fffffdfffffffp-127")
             )
             .unwrap()
@@ -2353,7 +2711,7 @@ pub fn f32_demote_f64() {
         hexf32!("0x1p-149"),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("0x1p-149")
             )
             .unwrap()
@@ -2362,7 +2720,7 @@ pub fn f32_demote_f64() {
         hexf32!("-0x1p-149"),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("-0x1p-149")
             )
             .unwrap()
@@ -2371,7 +2729,7 @@ pub fn f32_demote_f64() {
         hexf32!("0x1.fffffcp+127"),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("0x1.fffffd0000000p+127")
             )
             .unwrap()
@@ -2380,7 +2738,7 @@ pub fn f32_demote_f64() {
         hexf32!("-0x1.fffffcp+127"),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("-0x1.fffffd0000000p+127")
             )
             .unwrap()
@@ -2389,7 +2747,7 @@ pub fn f32_demote_f64() {
         hexf32!("0x1.fffffep+127"),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("0x1.fffffd0000001p+127")
             )
             .unwrap()
@@ -2398,7 +2756,7 @@ pub fn f32_demote_f64() {
         hexf32!("-0x1.fffffep+127"),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("-0x1.fffffd0000001p+127")
             )
             .unwrap()
@@ -2407,7 +2765,7 @@ pub fn f32_demote_f64() {
         hexf32!("0x1.fffffep+127"),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("0x1.fffffep+127")
             )
             .unwrap()
@@ -2416,7 +2774,7 @@ pub fn f32_demote_f64() {
         hexf32!("-0x1.fffffep+127"),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("-0x1.fffffep+127")
             )
             .unwrap()
@@ -2425,7 +2783,7 @@ pub fn f32_demote_f64() {
         hexf32!("0x1.fffffep+127"),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("0x1.fffffefffffffp+127")
             )
             .unwrap()
@@ -2434,7 +2792,7 @@ pub fn f32_demote_f64() {
         hexf32!("-0x1.fffffep+127"),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("-0x1.fffffefffffffp+127")
             )
             .unwrap()
@@ -2443,7 +2801,7 @@ pub fn f32_demote_f64() {
         f32::INFINITY,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("0x1.ffffffp+127")
             )
             .unwrap()
@@ -2452,7 +2810,7 @@ pub fn f32_demote_f64() {
         f32::NEG_INFINITY,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("-0x1.ffffffp+127")
             )
             .unwrap()
@@ -2461,7 +2819,7 @@ pub fn f32_demote_f64() {
         hexf32!("0x1p-119"),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("0x1p-119")
             )
             .unwrap()
@@ -2470,7 +2828,7 @@ pub fn f32_demote_f64() {
         hexf32!("0x1.8f867ep+125"),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("0x1.8f867ep+125")
             )
             .unwrap()
@@ -2479,7 +2837,7 @@ pub fn f32_demote_f64() {
         f32::INFINITY,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 f64::INFINITY
             )
             .unwrap()
@@ -2488,7 +2846,7 @@ pub fn f32_demote_f64() {
         f32::NEG_INFINITY,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 f64::NEG_INFINITY
             )
             .unwrap()
@@ -2497,7 +2855,7 @@ pub fn f32_demote_f64() {
         1.0_f32,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("0x1.0000000000001p+0")
             )
             .unwrap()
@@ -2506,7 +2864,7 @@ pub fn f32_demote_f64() {
         1.0_f32,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("0x1.fffffffffffffp-1")
             )
             .unwrap()
@@ -2515,7 +2873,7 @@ pub fn f32_demote_f64() {
         hexf32!("0x1.000000p+0"),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("0x1.0000010000000p+0")
             )
             .unwrap()
@@ -2524,7 +2882,7 @@ pub fn f32_demote_f64() {
         hexf32!("0x1.000002p+0"),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("0x1.0000010000001p+0")
             )
             .unwrap()
@@ -2533,7 +2891,7 @@ pub fn f32_demote_f64() {
         hexf32!("0x1.000002p+0"),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("0x1.000002fffffffp+0")
             )
             .unwrap()
@@ -2542,7 +2900,7 @@ pub fn f32_demote_f64() {
         hexf32!("0x1.000004p+0"),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("0x1.0000030000000p+0")
             )
             .unwrap()
@@ -2551,7 +2909,7 @@ pub fn f32_demote_f64() {
         hexf32!("0x1.000004p+0"),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("0x1.0000050000000p+0")
             )
             .unwrap()
@@ -2560,7 +2918,7 @@ pub fn f32_demote_f64() {
         hexf32!("0x1.0p+24"),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("0x1.0000010000000p+24")
             )
             .unwrap()
@@ -2569,7 +2927,7 @@ pub fn f32_demote_f64() {
         hexf32!("0x1.000002p+24"),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("0x1.0000010000001p+24")
             )
             .unwrap()
@@ -2578,7 +2936,7 @@ pub fn f32_demote_f64() {
         hexf32!("0x1.000002p+24"),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("0x1.000002fffffffp+24")
             )
             .unwrap()
@@ -2587,7 +2945,7 @@ pub fn f32_demote_f64() {
         hexf32!("0x1.000004p+24"),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("0x1.0000030000000p+24")
             )
             .unwrap()
@@ -2596,7 +2954,7 @@ pub fn f32_demote_f64() {
         hexf32!("0x1.4eae5p+108"),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("0x1.4eae4f7024c7p+108")
             )
             .unwrap()
@@ -2605,7 +2963,7 @@ pub fn f32_demote_f64() {
         hexf32!("0x1.a12e72p-113"),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("0x1.a12e71e358685p-113")
             )
             .unwrap()
@@ -2614,7 +2972,7 @@ pub fn f32_demote_f64() {
         hexf32!("0x1.cb9834p-127"),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("0x1.cb98354d521ffp-127")
             )
             .unwrap()
@@ -2623,7 +2981,7 @@ pub fn f32_demote_f64() {
         hexf32!("-0x1.6972b4p+1"),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("-0x1.6972b30cfb562p+1")
             )
             .unwrap()
@@ -2632,7 +2990,7 @@ pub fn f32_demote_f64() {
         hexf32!("-0x1.bedbe4p+112"),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("-0x1.bedbe4819d4c4p+112")
             )
             .unwrap()
@@ -2647,7 +3005,7 @@ pub fn f32_demote_f64() {
         0.0_f32,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("0x1p-1022")
             )
             .unwrap()
@@ -2656,7 +3014,7 @@ pub fn f32_demote_f64() {
         -0.0_f32,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("-0x1p-1022")
             )
             .unwrap()
@@ -2665,7 +3023,7 @@ pub fn f32_demote_f64() {
         0.0_f32,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("0x1.0p-150")
             )
             .unwrap()
@@ -2674,7 +3032,7 @@ pub fn f32_demote_f64() {
         -0.0_f32,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("-0x1.0p-150")
             )
             .unwrap()
@@ -2683,7 +3041,7 @@ pub fn f32_demote_f64() {
         hexf32!("0x1p-149"),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("0x1.0000000000001p-150")
             )
             .unwrap()
@@ -2692,7 +3050,7 @@ pub fn f32_demote_f64() {
         hexf32!("-0x1p-149"),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("-0x1.0000000000001p-150")
             )
             .unwrap()
@@ -2708,13 +3066,14 @@ pub fn f64_convert_i32_s_let_it_die() {
         .replace("{{2}}", "f64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         -1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -1)
+            .invoke_typed(&instance.get_function_by_index(module_addr, 0).unwrap(), -1)
             .unwrap()
     );
 }
@@ -2728,43 +3087,53 @@ pub fn f64_convert_i32_s() {
         .replace("{{2}}", "f64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         1.0_f64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 1)
+            .invoke_typed(&instance.get_function_by_index(module_addr, 0).unwrap(), 1)
             .unwrap()
     );
     assert_eq!(
         -1.0_f64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -1)
+            .invoke_typed(&instance.get_function_by_index(module_addr, 0).unwrap(), -1)
             .unwrap()
     );
     assert_eq!(
         0.0_f64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 0)
+            .invoke_typed(&instance.get_function_by_index(module_addr, 0).unwrap(), 0)
             .unwrap()
     );
     assert_eq!(
         2147483647_f64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 2147483647)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                2147483647
+            )
             .unwrap()
     );
     assert_eq!(
         -2147483648_f64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -2147483648)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -2147483648
+            )
             .unwrap()
     );
     assert_eq!(
         987654321_f64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 987654321)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                987654321
+            )
             .unwrap()
     );
 }
@@ -2778,38 +3147,45 @@ pub fn f64_convert_i32_u() {
         .replace("{{2}}", "f64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         1.0_f64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 1)
+            .invoke_typed(&instance.get_function_by_index(module_addr, 0).unwrap(), 1)
             .unwrap()
     );
     assert_eq!(
         0.0_f64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 0)
+            .invoke_typed(&instance.get_function_by_index(module_addr, 0).unwrap(), 0)
             .unwrap()
     );
     assert_eq!(
         2147483647_f64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 2147483647)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                2147483647
+            )
             .unwrap()
     );
     assert_eq!(
         2147483648_f64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -2147483648)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -2147483648
+            )
             .unwrap()
     );
     assert_eq!(
         4294967295.0_f64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 0xffffffff_u32 as i32
             )
             .unwrap()
@@ -2825,13 +3201,14 @@ pub fn f64_convert_i64_s_let_it_die() {
         .replace("{{2}}", "f64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         -1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -1)
+            .invoke_typed(&instance.get_function_by_index(module_addr, 0).unwrap(), -1)
             .unwrap()
     );
 }
@@ -2845,32 +3222,42 @@ pub fn f64_convert_i64_s() {
         .replace("{{2}}", "f64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         1.0_f64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 1_i64)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                1_i64
+            )
             .unwrap()
     );
     assert_eq!(
         -1.0_f64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -1_i64)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -1_i64
+            )
             .unwrap()
     );
     assert_eq!(
         0.0_f64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 0_i64)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                0_i64
+            )
             .unwrap()
     );
     assert_eq!(
         9223372036854775807_f64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 9223372036854775807_i64
             )
             .unwrap()
@@ -2879,7 +3266,7 @@ pub fn f64_convert_i64_s() {
         -9223372036854775808_f64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 -9223372036854775808_i64
             )
             .unwrap()
@@ -2888,7 +3275,7 @@ pub fn f64_convert_i64_s() {
         4669201609102990_f64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 4669201609102990_i64
             )
             .unwrap()
@@ -2897,7 +3284,7 @@ pub fn f64_convert_i64_s() {
         9007199254740992_f64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 9007199254740993_i64
             )
             .unwrap()
@@ -2906,7 +3293,7 @@ pub fn f64_convert_i64_s() {
         -9007199254740992_f64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 -9007199254740993_i64
             )
             .unwrap()
@@ -2915,7 +3302,7 @@ pub fn f64_convert_i64_s() {
         9007199254740996_f64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 9007199254740995_i64
             )
             .unwrap()
@@ -2924,7 +3311,7 @@ pub fn f64_convert_i64_s() {
         -9007199254740996_f64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 -9007199254740995_i64
             )
             .unwrap()
@@ -2940,26 +3327,33 @@ pub fn f64_convert_i64_u() {
         .replace("{{2}}", "f64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         1.0_f64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 1_i64)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                1_i64
+            )
             .unwrap()
     );
     assert_eq!(
         0.0_f64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 0_i64)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                0_i64
+            )
             .unwrap()
     );
     assert_eq!(
         9223372036854775807_f64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 9223372036854775807_i64
             )
             .unwrap()
@@ -2968,7 +3362,7 @@ pub fn f64_convert_i64_u() {
         9223372036854775808_f64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 -9223372036854775808_i64
             )
             .unwrap()
@@ -2977,7 +3371,7 @@ pub fn f64_convert_i64_u() {
         18446744073709551616.0_f64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 0xffffffffffffffff_u64 as i64
             )
             .unwrap()
@@ -2986,7 +3380,7 @@ pub fn f64_convert_i64_u() {
         hexf64!("0x1.0000000000000p+63"),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 0x8000000000000400_u64 as i64
             )
             .unwrap()
@@ -2995,7 +3389,7 @@ pub fn f64_convert_i64_u() {
         hexf64!("0x1.0000000000001p+63"),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 0x8000000000000401_u64 as i64
             )
             .unwrap()
@@ -3004,7 +3398,7 @@ pub fn f64_convert_i64_u() {
         hexf64!("0x1.0000000000001p+63"),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 0x8000000000000402_u64 as i64
             )
             .unwrap()
@@ -3013,7 +3407,7 @@ pub fn f64_convert_i64_u() {
         hexf64!("0x1.ffffffffffffep+63"),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 0xfffffffffffff400_u64 as i64
             )
             .unwrap()
@@ -3022,7 +3416,7 @@ pub fn f64_convert_i64_u() {
         hexf64!("0x1.fffffffffffffp+63"),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 0xfffffffffffff401_u64 as i64
             )
             .unwrap()
@@ -3031,7 +3425,7 @@ pub fn f64_convert_i64_u() {
         hexf64!("0x1.fffffffffffffp+63"),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 0xfffffffffffff402_u64 as i64
             )
             .unwrap()
@@ -3041,7 +3435,7 @@ pub fn f64_convert_i64_u() {
         9007199254740992_f64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 9007199254740993_i64
             )
             .unwrap()
@@ -3050,7 +3444,7 @@ pub fn f64_convert_i64_u() {
         9007199254740996_f64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 9007199254740995_i64
             )
             .unwrap()
@@ -3066,13 +3460,14 @@ pub fn f64_promote_f32_let_it_die() {
         .replace("{{2}}", "f64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         -1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -1)
+            .invoke_typed(&instance.get_function_by_index(module_addr, 0).unwrap(), -1)
             .unwrap()
     );
 }
@@ -3086,26 +3481,33 @@ pub fn f64_promote_f32() {
         .replace("{{2}}", "f64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         0.0_f64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 0.0_f32)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                0.0_f32
+            )
             .unwrap()
     );
     assert_eq!(
         -0.0_f64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -0.0_f32)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -0.0_f32
+            )
             .unwrap()
     );
     assert_eq!(
         hexf64!("0x1p-149"),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf32!("0x1p-149")
             )
             .unwrap()
@@ -3114,7 +3516,7 @@ pub fn f64_promote_f32() {
         hexf64!("-0x1p-149"),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf32!("-0x1p-149")
             )
             .unwrap()
@@ -3122,20 +3524,26 @@ pub fn f64_promote_f32() {
     assert_eq!(
         1.0_f64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 1.0_f32)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                1.0_f32
+            )
             .unwrap()
     );
     assert_eq!(
         -1.0_f64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -1.0_f32)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -1.0_f32
+            )
             .unwrap()
     );
     assert_eq!(
         hexf64!("-0x1.fffffep+127"),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf32!("-0x1.fffffep+127")
             )
             .unwrap()
@@ -3144,7 +3552,7 @@ pub fn f64_promote_f32() {
         hexf64!("0x1.fffffep+127"),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf32!("0x1.fffffep+127")
             )
             .unwrap()
@@ -3153,7 +3561,7 @@ pub fn f64_promote_f32() {
         hexf64!("0x1p-119"),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf32!("0x1p-119")
             )
             .unwrap()
@@ -3162,7 +3570,7 @@ pub fn f64_promote_f32() {
         6.638_253_671_010_439_5e37_f64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf32!("0x1.8f867ep+125")
             )
             .unwrap()
@@ -3171,7 +3579,7 @@ pub fn f64_promote_f32() {
         f64::INFINITY,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 f32::INFINITY
             )
             .unwrap()
@@ -3180,7 +3588,7 @@ pub fn f64_promote_f32() {
         f64::NEG_INFINITY,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 f32::NEG_INFINITY
             )
             .unwrap()
@@ -3200,13 +3608,14 @@ pub fn i32_reinterpret_f32_let_it_die() {
         .replace("{{2}}", "f32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         -1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -1)
+            .invoke_typed(&instance.get_function_by_index(module_addr, 0).unwrap(), -1)
             .unwrap()
     );
 }
@@ -3220,26 +3629,33 @@ pub fn i32_reinterpret_f32() {
         .replace("{{2}}", "i32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         0,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 0.0_f32)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                0.0_f32
+            )
             .unwrap()
     );
     assert_eq!(
         0x80000000_u32 as i32,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -0.0_f32)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -0.0_f32
+            )
             .unwrap()
     );
     assert_eq!(
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf32!("0x1p-149")
             )
             .unwrap()
@@ -3249,7 +3665,7 @@ pub fn i32_reinterpret_f32() {
         0x80000001_u32 as i32,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf32!("-0x1p-149")
             )
             .unwrap()
@@ -3257,14 +3673,17 @@ pub fn i32_reinterpret_f32() {
     assert_eq!(
         1065353216,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 1.0_f32)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                1.0_f32
+            )
             .unwrap()
     );
     assert_eq!(
         1078530010,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 3.1415926_f32
             )
             .unwrap()
@@ -3273,7 +3692,7 @@ pub fn i32_reinterpret_f32() {
         2139095039,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf32!("0x1.fffffep+127")
             )
             .unwrap()
@@ -3282,7 +3701,7 @@ pub fn i32_reinterpret_f32() {
         -8388609,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf32!("-0x1.fffffep+127")
             )
             .unwrap()
@@ -3291,7 +3710,7 @@ pub fn i32_reinterpret_f32() {
         0x7f800000,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 f32::INFINITY
             )
             .unwrap()
@@ -3300,7 +3719,7 @@ pub fn i32_reinterpret_f32() {
         0xff800000_u32 as i32,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 f32::NEG_INFINITY
             )
             .unwrap()
@@ -3308,13 +3727,19 @@ pub fn i32_reinterpret_f32() {
     assert_eq!(
         0x7fc00000,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), f32::NAN)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                f32::NAN
+            )
             .unwrap()
     );
     assert_eq!(
         0xffc00000_u32 as i32,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -f32::NAN)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -f32::NAN
+            )
             .unwrap()
     );
     // (assert_return (invoke "i32.reinterpret_f32" (f32.const -nan)) (i32.const 0xffc00000))
@@ -3331,13 +3756,14 @@ pub fn i64_reinterpret_f64_let_it_die() {
         .replace("{{2}}", "f64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         -1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -1)
+            .invoke_typed(&instance.get_function_by_index(module_addr, 0).unwrap(), -1)
             .unwrap()
     );
 }
@@ -3351,26 +3777,33 @@ pub fn i64_reinterpret_f64() {
         .replace("{{2}}", "i64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         0_i64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 0.0_f64)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                0.0_f64
+            )
             .unwrap()
     );
     assert_eq!(
         0x8000000000000000_u64 as i64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -0.0_f64)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -0.0_f64
+            )
             .unwrap()
     );
     assert_eq!(
         1_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("0x0.0000000000001p-1022")
             )
             .unwrap()
@@ -3380,7 +3813,7 @@ pub fn i64_reinterpret_f64() {
         0x8000000000000001_u64 as i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("-0x0.0000000000001p-1022")
             )
             .unwrap()
@@ -3388,14 +3821,17 @@ pub fn i64_reinterpret_f64() {
     assert_eq!(
         4607182418800017408_i64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 1.0_f64)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                1.0_f64
+            )
             .unwrap()
     );
     assert_eq!(
         4614256656552045841_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 3.14159265358979_f64
             )
             .unwrap()
@@ -3404,7 +3840,7 @@ pub fn i64_reinterpret_f64() {
         9218868437227405311_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("0x1.fffffffffffffp+1023")
             )
             .unwrap()
@@ -3413,7 +3849,7 @@ pub fn i64_reinterpret_f64() {
         -4503599627370497_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 hexf64!("-0x1.fffffffffffffp+1023")
             )
             .unwrap()
@@ -3422,7 +3858,7 @@ pub fn i64_reinterpret_f64() {
         0x7ff0000000000000_u64 as i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 f64::INFINITY
             )
             .unwrap()
@@ -3431,7 +3867,7 @@ pub fn i64_reinterpret_f64() {
         0xfff0000000000000_u64 as i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 f64::NEG_INFINITY
             )
             .unwrap()
@@ -3439,13 +3875,19 @@ pub fn i64_reinterpret_f64() {
     assert_eq!(
         0x7ff8000000000000_u64 as i64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), f64::NAN)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                f64::NAN
+            )
             .unwrap()
     );
     assert_eq!(
         0xfff8000000000000_u64 as i64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -f64::NAN)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -f64::NAN
+            )
             .unwrap()
     );
     // (assert_return (invoke "i64.reinterpret_f64" (f64.const nan:0x4000000000000)) (i64.const 0x7ff4000000000000))
@@ -3461,13 +3903,14 @@ pub fn f32_reinterpret_i32_let_it_die() {
         .replace("{{2}}", "f32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         -1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -1)
+            .invoke_typed(&instance.get_function_by_index(module_addr, 0).unwrap(), -1)
             .unwrap()
     );
 }
@@ -3481,20 +3924,21 @@ pub fn f32_reinterpret_i32() {
         .replace("{{2}}", "f32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         0.0_f32,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 0)
+            .invoke_typed(&instance.get_function_by_index(module_addr, 0).unwrap(), 0)
             .unwrap()
     );
     assert_eq!(
         -0.0_f32,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 0x80000000_u32 as i32
             )
             .unwrap()
@@ -3502,40 +3946,52 @@ pub fn f32_reinterpret_i32() {
     assert_eq!(
         hexf32!("0x1p-149"),
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 1)
+            .invoke_typed(&instance.get_function_by_index(module_addr, 0).unwrap(), 1)
             .unwrap()
     );
     // (assert_return (invoke "f32.reinterpret_i32" (i32.const -1)) (f32.const -nan:0x7fffff))
     assert_eq!(
         hexf32!("0x1.b79a2ap-113"),
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 123456789)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                123456789
+            )
             .unwrap()
     );
     assert_eq!(
         hexf32!("-0x1p-149"),
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -2147483647)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -2147483647
+            )
             .unwrap()
     );
     assert_eq!(
         f32::INFINITY,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 0x7f800000)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                0x7f800000
+            )
             .unwrap()
     );
     assert_eq!(
         f32::NEG_INFINITY,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 0xff800000_u32 as i32
             )
             .unwrap()
     );
     {
         let result: f32 = instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 0x7fc00000)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                0x7fc00000,
+            )
             .unwrap();
         assert!(result.is_nan());
         assert!(result.is_sign_positive());
@@ -3543,7 +3999,7 @@ pub fn f32_reinterpret_i32() {
     {
         let result: f32 = instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 0xffc00000_u32 as i32,
             )
             .unwrap();
@@ -3563,13 +4019,14 @@ pub fn f64_reinterpret_i64_let_it_die() {
         .replace("{{2}}", "f64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         -1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -1)
+            .invoke_typed(&instance.get_function_by_index(module_addr, 0).unwrap(), -1)
             .unwrap()
     );
 }
@@ -3583,19 +4040,26 @@ pub fn f64_reinterpret_i64() {
         .replace("{{2}}", "f64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         0.0_f64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 0_i64)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                0_i64
+            )
             .unwrap()
     );
     assert_eq!(
         hexf64!("0x0.0000000000001p-1022"),
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 1_i64)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                1_i64
+            )
             .unwrap()
     );
     // (assert_return (invoke "f64.reinterpret_i64" (i64.const -1)) (f64.const -nan:0xfffffffffffff))
@@ -3603,7 +4067,7 @@ pub fn f64_reinterpret_i64() {
         -0.0_f64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 0x8000000000000000_u64 as i64
             )
             .unwrap()
@@ -3612,7 +4076,7 @@ pub fn f64_reinterpret_i64() {
         hexf64!("0x0.00000499602d2p-1022"),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 1234567890_i64
             )
             .unwrap()
@@ -3621,7 +4085,7 @@ pub fn f64_reinterpret_i64() {
         hexf64!("-0x0.0000000000001p-1022"),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 -9223372036854775807_i64
             )
             .unwrap()
@@ -3630,7 +4094,7 @@ pub fn f64_reinterpret_i64() {
         f64::INFINITY,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 0x7ff0000000000000_u64 as i64
             )
             .unwrap()
@@ -3639,7 +4103,7 @@ pub fn f64_reinterpret_i64() {
         f64::NEG_INFINITY,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 0xfff0000000000000_u64 as i64
             )
             .unwrap()
@@ -3647,7 +4111,7 @@ pub fn f64_reinterpret_i64() {
     {
         let result: f64 = instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 0x7ff8000000000000_u64 as i64,
             )
             .unwrap();
@@ -3657,7 +4121,7 @@ pub fn f64_reinterpret_i64() {
     {
         let result: f64 = instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 0xfff8000000000000_u64 as i64,
             )
             .unwrap();

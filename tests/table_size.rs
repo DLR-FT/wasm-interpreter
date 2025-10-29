@@ -47,7 +47,7 @@ fn table_size_test() {
     "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut i, module_addr) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
     // let get_funcref = i.get_function_by_name(DEFAULT_MODULE, "get-funcref").unwrap();

@@ -68,10 +68,10 @@ impl<'b, T: Config> RuntimeInstance<'b, T> {
         module_name: &str,
         validation_info: &'_ ValidationInfo<'b>,
         // store: &mut Store,
-    ) -> Result<Self, RuntimeError> {
+    ) -> Result<(Self, ModuleAddr), RuntimeError> {
         let mut instance = Self::new(user_data);
-        instance.add_module(module_name, validation_info)?;
-        Ok(instance)
+        let module_addr = instance.add_module(module_name, validation_info)?;
+        Ok((instance, module_addr))
     }
 
     pub fn add_module(
