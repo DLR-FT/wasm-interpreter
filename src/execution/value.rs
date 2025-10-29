@@ -331,6 +331,16 @@ impl Display for Ref {
     }
 }
 
+impl Ref {
+    pub fn ty(self) -> RefType {
+        match self {
+            Ref::Null(ref_type) => ref_type,
+            Ref::Func(_) => RefType::FuncRef,
+            Ref::Extern(_) => RefType::ExternRef,
+        }
+    }
+}
+
 /// Represents the address of a function within a WebAssembly module.
 ///
 /// Functions in WebAssembly modules can be either:
