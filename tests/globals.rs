@@ -28,9 +28,8 @@ fn valid_global() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     // Set global to 17. 5 is returned as previous (default) value.
     assert_eq!(
@@ -106,9 +105,8 @@ fn imported_globals() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     // Set global to 17. 3 is returned as previous (default) value.
     assert_eq!(

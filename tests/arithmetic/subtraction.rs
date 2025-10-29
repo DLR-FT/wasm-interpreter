@@ -19,15 +19,14 @@ pub fn i64_subtract() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     assert_eq!(
         -10_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (1_i64, 11_i64)
             )
             .unwrap()
@@ -36,7 +35,7 @@ pub fn i64_subtract() {
         0_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0_i64, 0_i64)
             )
             .unwrap()
@@ -45,7 +44,7 @@ pub fn i64_subtract() {
         10_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (-10_i64, -20_i64)
             )
             .unwrap()
@@ -55,7 +54,7 @@ pub fn i64_subtract() {
         i64::MAX - 1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i64::MAX - 1, 0_i64)
             )
             .unwrap()
@@ -64,7 +63,7 @@ pub fn i64_subtract() {
         i64::MIN + 3,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (i64::MIN + 3, 0_i64)
             )
             .unwrap()

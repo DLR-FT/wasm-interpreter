@@ -82,12 +82,12 @@ pub fn unmet_imports() {
 pub fn compile_simple_import() {
     let wasm_bytes = wat::parse_str(SIMPLE_IMPORT_ADDON).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, _env_module) =
+    let (mut instance, _module_env) =
         RuntimeInstance::new_named((), "env", &validation_info).expect("instantiation failed");
 
     let wasm_bytes = wat::parse_str(SIMPLE_IMPORT_BASE).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let _base_module = instance
+    let _module_base = instance
         .add_module("base", &validation_info)
         .expect("Successful instantiation");
 
@@ -100,12 +100,12 @@ pub fn compile_simple_import() {
 pub fn run_simple_import() {
     let wasm_bytes = wat::parse_str(SIMPLE_IMPORT_ADDON).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, _env_module) =
+    let (mut instance, _module_env) =
         RuntimeInstance::new_named((), "env", &validation_info).expect("instantiation failed");
 
     let wasm_bytes = wat::parse_str(SIMPLE_IMPORT_BASE).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let _base_module = instance
+    let module_base = instance
         .add_module("base", &validation_info)
         .expect("instantiation failed");
 
@@ -113,7 +113,7 @@ pub fn run_simple_import() {
     assert_eq!(3, instance.invoke_typed(&get_three, ()).unwrap());
 
     // Function 0 should be the imported function
-    let get_three = instance.get_function_by_index(1, 1).unwrap();
+    let get_three = instance.get_function_by_index(module_base, 1).unwrap();
     assert_eq!(3, instance.invoke_typed(&get_three, ()).unwrap());
 }
 
@@ -121,12 +121,12 @@ pub fn run_simple_import() {
 pub fn run_call_indirect() {
     let wasm_bytes = wat::parse_str(SIMPLE_IMPORT_ADDON).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, _env_module) =
+    let (mut instance, _module_env) =
         RuntimeInstance::new_named((), "env", &validation_info).expect("instantiation failed");
 
     let wasm_bytes = wat::parse_str(CALL_INDIRECT_BASE).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let _base_module = instance
+    let _module_base = instance
         .add_module("base", &validation_info)
         .expect("Successful instantiation");
 

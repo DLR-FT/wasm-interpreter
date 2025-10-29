@@ -41,14 +41,13 @@ pub fn i64_eqz_panic() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     assert_eq!(
         1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), ())
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), ())
             .unwrap()
     );
 }
@@ -69,27 +68,26 @@ pub fn i64_eqz() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     assert_eq!(
         1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 0_i64)
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), 0_i64)
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 1_i64)
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), 1_i64)
             .unwrap()
     );
     assert_eq!(
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 0x8000000000000000u64 as i64
             )
             .unwrap()
@@ -98,7 +96,7 @@ pub fn i64_eqz() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 0x7fffffffffffffffu64 as i64
             )
             .unwrap()
@@ -107,7 +105,7 @@ pub fn i64_eqz() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 0xffffffffffffffffu64 as i64
             )
             .unwrap()
@@ -131,14 +129,13 @@ pub fn i64_eq_panic_first_arg() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     assert_eq!(
         1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), ())
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), ())
             .unwrap()
     );
 }
@@ -160,14 +157,13 @@ pub fn i64_eq_panic_second_arg() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     assert_eq!(
         1,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), ())
+            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), ())
             .unwrap()
     );
 }
@@ -178,15 +174,14 @@ pub fn i64_eq() {
     let wat = String::from(WAT).replace("{{0}}", "eq");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     assert_eq!(
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0_i64, 0_i64)
             )
             .unwrap()
@@ -195,7 +190,7 @@ pub fn i64_eq() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (1_i64, 1_i64)
             )
             .unwrap()
@@ -204,7 +199,7 @@ pub fn i64_eq() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (-1_i64, 1_i64)
             )
             .unwrap()
@@ -213,7 +208,7 @@ pub fn i64_eq() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0x8000000000000000u64 as i64, 0x8000000000000000u64 as i64)
             )
             .unwrap()
@@ -222,7 +217,7 @@ pub fn i64_eq() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0x7fffffffffffffffu64 as i64, 0x7fffffffffffffffu64 as i64)
             )
             .unwrap()
@@ -231,7 +226,7 @@ pub fn i64_eq() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (-1_i64, -1_i64)
             )
             .unwrap()
@@ -240,7 +235,7 @@ pub fn i64_eq() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (1_i64, 0_i64)
             )
             .unwrap()
@@ -249,7 +244,7 @@ pub fn i64_eq() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0_i64, 1_i64)
             )
             .unwrap()
@@ -258,7 +253,7 @@ pub fn i64_eq() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0x8000000000000000u64 as i64, 0_i64)
             )
             .unwrap()
@@ -267,7 +262,7 @@ pub fn i64_eq() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0_i64, 0x8000000000000000u64 as i64)
             )
             .unwrap()
@@ -276,7 +271,7 @@ pub fn i64_eq() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0x8000000000000000u64 as i64, -1_i64)
             )
             .unwrap()
@@ -285,7 +280,7 @@ pub fn i64_eq() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (-1_i64, 0x8000000000000000u64 as i64)
             )
             .unwrap()
@@ -294,7 +289,7 @@ pub fn i64_eq() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0x8000000000000000u64 as i64, 0x7fffffffffffffffu64 as i64)
             )
             .unwrap()
@@ -303,7 +298,7 @@ pub fn i64_eq() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0x7fffffffffffffffu64 as i64, 0x8000000000000000u64 as i64)
             )
             .unwrap()
@@ -316,15 +311,14 @@ pub fn i64_ne() {
     let wat = String::from(WAT).replace("{{0}}", "ne");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     assert_eq!(
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0_i64, 0_i64)
             )
             .unwrap()
@@ -333,7 +327,7 @@ pub fn i64_ne() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (1_i64, 1_i64)
             )
             .unwrap()
@@ -342,7 +336,7 @@ pub fn i64_ne() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (-1_i64, 1_i64)
             )
             .unwrap()
@@ -351,7 +345,7 @@ pub fn i64_ne() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0x8000000000000000u64 as i64, 0x8000000000000000u64 as i64)
             )
             .unwrap()
@@ -360,7 +354,7 @@ pub fn i64_ne() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0x7fffffffffffffffu64 as i64, 0x7fffffffffffffffu64 as i64)
             )
             .unwrap()
@@ -369,7 +363,7 @@ pub fn i64_ne() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (-1_i64, -1_i64)
             )
             .unwrap()
@@ -378,7 +372,7 @@ pub fn i64_ne() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (1_i64, 0_i64)
             )
             .unwrap()
@@ -387,7 +381,7 @@ pub fn i64_ne() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0_i64, 1_i64)
             )
             .unwrap()
@@ -396,7 +390,7 @@ pub fn i64_ne() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0x8000000000000000u64 as i64, 0_i64)
             )
             .unwrap()
@@ -405,7 +399,7 @@ pub fn i64_ne() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0_i64, 0x8000000000000000u64 as i64)
             )
             .unwrap()
@@ -414,7 +408,7 @@ pub fn i64_ne() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0x8000000000000000u64 as i64, -1_i64)
             )
             .unwrap()
@@ -423,7 +417,7 @@ pub fn i64_ne() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (-1_i64, 0x8000000000000000u64 as i64)
             )
             .unwrap()
@@ -432,7 +426,7 @@ pub fn i64_ne() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0x8000000000000000u64 as i64, 0x7fffffffffffffffu64 as i64)
             )
             .unwrap()
@@ -441,7 +435,7 @@ pub fn i64_ne() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0x7fffffffffffffffu64 as i64, 0x8000000000000000u64 as i64)
             )
             .unwrap()
@@ -454,15 +448,14 @@ pub fn i64_lt_s() {
     let wat = String::from(WAT).replace("{{0}}", "lt_s");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     assert_eq!(
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0_i64, 0_i64)
             )
             .unwrap()
@@ -471,7 +464,7 @@ pub fn i64_lt_s() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (1_i64, 1_i64)
             )
             .unwrap()
@@ -480,7 +473,7 @@ pub fn i64_lt_s() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (-1_i64, 1_i64)
             )
             .unwrap()
@@ -489,7 +482,7 @@ pub fn i64_lt_s() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0x8000000000000000u64 as i64, 0x8000000000000000u64 as i64)
             )
             .unwrap()
@@ -498,7 +491,7 @@ pub fn i64_lt_s() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0x7fffffffffffffffu64 as i64, 0x7fffffffffffffffu64 as i64)
             )
             .unwrap()
@@ -507,7 +500,7 @@ pub fn i64_lt_s() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (-1_i64, -1_i64)
             )
             .unwrap()
@@ -516,7 +509,7 @@ pub fn i64_lt_s() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (1_i64, 0_i64)
             )
             .unwrap()
@@ -525,7 +518,7 @@ pub fn i64_lt_s() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0_i64, 1_i64)
             )
             .unwrap()
@@ -534,7 +527,7 @@ pub fn i64_lt_s() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0x8000000000000000u64 as i64, 0_i64)
             )
             .unwrap()
@@ -543,7 +536,7 @@ pub fn i64_lt_s() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0_i64, 0x8000000000000000u64 as i64)
             )
             .unwrap()
@@ -552,7 +545,7 @@ pub fn i64_lt_s() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0x8000000000000000u64 as i64, -1_i64)
             )
             .unwrap()
@@ -561,7 +554,7 @@ pub fn i64_lt_s() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (-1_i64, 0x8000000000000000u64 as i64)
             )
             .unwrap()
@@ -570,7 +563,7 @@ pub fn i64_lt_s() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0x8000000000000000u64 as i64, 0x7fffffffffffffffu64 as i64)
             )
             .unwrap()
@@ -579,7 +572,7 @@ pub fn i64_lt_s() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0x7fffffffffffffffu64 as i64, 0x8000000000000000u64 as i64)
             )
             .unwrap()
@@ -592,15 +585,14 @@ pub fn i64_lt_u() {
     let wat = String::from(WAT).replace("{{0}}", "lt_u");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     assert_eq!(
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0_i64, 0_i64)
             )
             .unwrap()
@@ -609,7 +601,7 @@ pub fn i64_lt_u() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (1_i64, 1_i64)
             )
             .unwrap()
@@ -618,7 +610,7 @@ pub fn i64_lt_u() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (-1_i64, 1_i64)
             )
             .unwrap()
@@ -627,7 +619,7 @@ pub fn i64_lt_u() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0x8000000000000000u64 as i64, 0x8000000000000000u64 as i64)
             )
             .unwrap()
@@ -636,7 +628,7 @@ pub fn i64_lt_u() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0x7fffffffffffffffu64 as i64, 0x7fffffffffffffffu64 as i64)
             )
             .unwrap()
@@ -645,7 +637,7 @@ pub fn i64_lt_u() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (-1_i64, -1_i64)
             )
             .unwrap()
@@ -654,7 +646,7 @@ pub fn i64_lt_u() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (1_i64, 0_i64)
             )
             .unwrap()
@@ -663,7 +655,7 @@ pub fn i64_lt_u() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0_i64, 1_i64)
             )
             .unwrap()
@@ -672,7 +664,7 @@ pub fn i64_lt_u() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0x8000000000000000u64 as i64, 0_i64)
             )
             .unwrap()
@@ -681,7 +673,7 @@ pub fn i64_lt_u() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0_i64, 0x8000000000000000u64 as i64)
             )
             .unwrap()
@@ -690,7 +682,7 @@ pub fn i64_lt_u() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0x8000000000000000u64 as i64, -1_i64)
             )
             .unwrap()
@@ -699,7 +691,7 @@ pub fn i64_lt_u() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (-1_i64, 0x8000000000000000u64 as i64)
             )
             .unwrap()
@@ -708,7 +700,7 @@ pub fn i64_lt_u() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0x8000000000000000u64 as i64, 0x7fffffffffffffffu64 as i64)
             )
             .unwrap()
@@ -717,7 +709,7 @@ pub fn i64_lt_u() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0x7fffffffffffffffu64 as i64, 0x8000000000000000u64 as i64)
             )
             .unwrap()
@@ -730,15 +722,14 @@ pub fn i64_gt_s() {
     let wat = String::from(WAT).replace("{{0}}", "gt_s");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     assert_eq!(
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0_i64, 0_i64)
             )
             .unwrap()
@@ -747,7 +738,7 @@ pub fn i64_gt_s() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (1_i64, 1_i64)
             )
             .unwrap()
@@ -756,7 +747,7 @@ pub fn i64_gt_s() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (-1_i64, 1_i64)
             )
             .unwrap()
@@ -765,7 +756,7 @@ pub fn i64_gt_s() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0x8000000000000000u64 as i64, 0x8000000000000000u64 as i64)
             )
             .unwrap()
@@ -774,7 +765,7 @@ pub fn i64_gt_s() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0x7fffffffffffffffu64 as i64, 0x7fffffffffffffffu64 as i64)
             )
             .unwrap()
@@ -783,7 +774,7 @@ pub fn i64_gt_s() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (-1_i64, -1_i64)
             )
             .unwrap()
@@ -792,7 +783,7 @@ pub fn i64_gt_s() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (1_i64, 0_i64)
             )
             .unwrap()
@@ -801,7 +792,7 @@ pub fn i64_gt_s() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0_i64, 1_i64)
             )
             .unwrap()
@@ -810,7 +801,7 @@ pub fn i64_gt_s() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0x8000000000000000u64 as i64, 0_i64)
             )
             .unwrap()
@@ -819,7 +810,7 @@ pub fn i64_gt_s() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0_i64, 0x8000000000000000u64 as i64)
             )
             .unwrap()
@@ -828,7 +819,7 @@ pub fn i64_gt_s() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0x8000000000000000u64 as i64, -1_i64)
             )
             .unwrap()
@@ -837,7 +828,7 @@ pub fn i64_gt_s() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (-1_i64, 0x8000000000000000u64 as i64)
             )
             .unwrap()
@@ -846,7 +837,7 @@ pub fn i64_gt_s() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0x8000000000000000u64 as i64, 0x7fffffffffffffffu64 as i64)
             )
             .unwrap()
@@ -855,7 +846,7 @@ pub fn i64_gt_s() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0x7fffffffffffffffu64 as i64, 0x8000000000000000u64 as i64)
             )
             .unwrap()
@@ -868,15 +859,14 @@ pub fn i64_gt_u() {
     let wat = String::from(WAT).replace("{{0}}", "gt_u");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     assert_eq!(
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0_i64, 0_i64)
             )
             .unwrap()
@@ -885,7 +875,7 @@ pub fn i64_gt_u() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (1_i64, 1_i64)
             )
             .unwrap()
@@ -894,7 +884,7 @@ pub fn i64_gt_u() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (-1_i64, 1_i64)
             )
             .unwrap()
@@ -903,7 +893,7 @@ pub fn i64_gt_u() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0x8000000000000000u64 as i64, 0x8000000000000000u64 as i64)
             )
             .unwrap()
@@ -912,7 +902,7 @@ pub fn i64_gt_u() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0x7fffffffffffffffu64 as i64, 0x7fffffffffffffffu64 as i64)
             )
             .unwrap()
@@ -921,7 +911,7 @@ pub fn i64_gt_u() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (-1_i64, -1_i64)
             )
             .unwrap()
@@ -930,7 +920,7 @@ pub fn i64_gt_u() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (1_i64, 0_i64)
             )
             .unwrap()
@@ -939,7 +929,7 @@ pub fn i64_gt_u() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0_i64, 1_i64)
             )
             .unwrap()
@@ -948,7 +938,7 @@ pub fn i64_gt_u() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0x8000000000000000u64 as i64, 0_i64)
             )
             .unwrap()
@@ -957,7 +947,7 @@ pub fn i64_gt_u() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0_i64, 0x8000000000000000u64 as i64)
             )
             .unwrap()
@@ -966,7 +956,7 @@ pub fn i64_gt_u() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0x8000000000000000u64 as i64, -1_i64)
             )
             .unwrap()
@@ -975,7 +965,7 @@ pub fn i64_gt_u() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (-1_i64, 0x8000000000000000u64 as i64)
             )
             .unwrap()
@@ -984,7 +974,7 @@ pub fn i64_gt_u() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0x8000000000000000u64 as i64, 0x7fffffffffffffffu64 as i64)
             )
             .unwrap()
@@ -993,7 +983,7 @@ pub fn i64_gt_u() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0x7fffffffffffffffu64 as i64, 0x8000000000000000u64 as i64)
             )
             .unwrap()
@@ -1006,15 +996,14 @@ pub fn i64_le_s() {
     let wat = String::from(WAT).replace("{{0}}", "le_s");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     assert_eq!(
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0_i64, 0_i64)
             )
             .unwrap()
@@ -1023,7 +1012,7 @@ pub fn i64_le_s() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (1_i64, 1_i64)
             )
             .unwrap()
@@ -1032,7 +1021,7 @@ pub fn i64_le_s() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (-1_i64, 1_i64)
             )
             .unwrap()
@@ -1041,7 +1030,7 @@ pub fn i64_le_s() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0x8000000000000000u64 as i64, 0x8000000000000000u64 as i64)
             )
             .unwrap()
@@ -1050,7 +1039,7 @@ pub fn i64_le_s() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0x7fffffffffffffffu64 as i64, 0x7fffffffffffffffu64 as i64)
             )
             .unwrap()
@@ -1059,7 +1048,7 @@ pub fn i64_le_s() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (-1_i64, -1_i64)
             )
             .unwrap()
@@ -1068,7 +1057,7 @@ pub fn i64_le_s() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (1_i64, 0_i64)
             )
             .unwrap()
@@ -1077,7 +1066,7 @@ pub fn i64_le_s() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0_i64, 1_i64)
             )
             .unwrap()
@@ -1086,7 +1075,7 @@ pub fn i64_le_s() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0x8000000000000000u64 as i64, 0_i64)
             )
             .unwrap()
@@ -1095,7 +1084,7 @@ pub fn i64_le_s() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0_i64, 0x8000000000000000u64 as i64)
             )
             .unwrap()
@@ -1104,7 +1093,7 @@ pub fn i64_le_s() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0x8000000000000000u64 as i64, -1_i64)
             )
             .unwrap()
@@ -1113,7 +1102,7 @@ pub fn i64_le_s() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (-1_i64, 0x8000000000000000u64 as i64)
             )
             .unwrap()
@@ -1122,7 +1111,7 @@ pub fn i64_le_s() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0x8000000000000000u64 as i64, 0x7fffffffffffffffu64 as i64)
             )
             .unwrap()
@@ -1131,7 +1120,7 @@ pub fn i64_le_s() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0x7fffffffffffffffu64 as i64, 0x8000000000000000u64 as i64)
             )
             .unwrap()
@@ -1145,15 +1134,14 @@ pub fn i64_le_u() {
     let wat = String::from(WAT).replace("{{0}}", "le_u");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     assert_eq!(
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0_i64, 0_i64)
             )
             .unwrap()
@@ -1162,7 +1150,7 @@ pub fn i64_le_u() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (1_i64, 1_i64)
             )
             .unwrap()
@@ -1171,7 +1159,7 @@ pub fn i64_le_u() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (-1_i64, 1_i64)
             )
             .unwrap()
@@ -1180,7 +1168,7 @@ pub fn i64_le_u() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0x8000000000000000u64 as i64, 0x8000000000000000u64 as i64)
             )
             .unwrap()
@@ -1189,7 +1177,7 @@ pub fn i64_le_u() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0x7fffffffffffffffu64 as i64, 0x7fffffffffffffffu64 as i64)
             )
             .unwrap()
@@ -1198,7 +1186,7 @@ pub fn i64_le_u() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (-1_i64, -1_i64)
             )
             .unwrap()
@@ -1207,7 +1195,7 @@ pub fn i64_le_u() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (1_i64, 0_i64)
             )
             .unwrap()
@@ -1216,7 +1204,7 @@ pub fn i64_le_u() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0_i64, 1_i64)
             )
             .unwrap()
@@ -1225,7 +1213,7 @@ pub fn i64_le_u() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0x8000000000000000u64 as i64, 0_i64)
             )
             .unwrap()
@@ -1234,7 +1222,7 @@ pub fn i64_le_u() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0_i64, 0x8000000000000000u64 as i64)
             )
             .unwrap()
@@ -1243,7 +1231,7 @@ pub fn i64_le_u() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0x8000000000000000u64 as i64, -1_i64)
             )
             .unwrap()
@@ -1252,7 +1240,7 @@ pub fn i64_le_u() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (-1_i64, 0x8000000000000000u64 as i64)
             )
             .unwrap()
@@ -1261,7 +1249,7 @@ pub fn i64_le_u() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0x8000000000000000u64 as i64, 0x7fffffffffffffffu64 as i64)
             )
             .unwrap()
@@ -1270,7 +1258,7 @@ pub fn i64_le_u() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0x7fffffffffffffffu64 as i64, 0x8000000000000000u64 as i64)
             )
             .unwrap()
@@ -1283,15 +1271,14 @@ pub fn i64_ge_s() {
     let wat = String::from(WAT).replace("{{0}}", "ge_s");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     assert_eq!(
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0_i64, 0_i64)
             )
             .unwrap()
@@ -1300,7 +1287,7 @@ pub fn i64_ge_s() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (1_i64, 1_i64)
             )
             .unwrap()
@@ -1309,7 +1296,7 @@ pub fn i64_ge_s() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (-1_i64, 1_i64)
             )
             .unwrap()
@@ -1318,7 +1305,7 @@ pub fn i64_ge_s() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0x8000000000000000u64 as i64, 0x8000000000000000u64 as i64)
             )
             .unwrap()
@@ -1327,7 +1314,7 @@ pub fn i64_ge_s() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0x7fffffffffffffffu64 as i64, 0x7fffffffffffffffu64 as i64)
             )
             .unwrap()
@@ -1336,7 +1323,7 @@ pub fn i64_ge_s() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (-1_i64, -1_i64)
             )
             .unwrap()
@@ -1345,7 +1332,7 @@ pub fn i64_ge_s() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (1_i64, 0_i64)
             )
             .unwrap()
@@ -1354,7 +1341,7 @@ pub fn i64_ge_s() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0_i64, 1_i64)
             )
             .unwrap()
@@ -1363,7 +1350,7 @@ pub fn i64_ge_s() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0x8000000000000000u64 as i64, 0_i64)
             )
             .unwrap()
@@ -1372,7 +1359,7 @@ pub fn i64_ge_s() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0_i64, 0x8000000000000000u64 as i64)
             )
             .unwrap()
@@ -1381,7 +1368,7 @@ pub fn i64_ge_s() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0x8000000000000000u64 as i64, -1_i64)
             )
             .unwrap()
@@ -1390,7 +1377,7 @@ pub fn i64_ge_s() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (-1_i64, 0x8000000000000000u64 as i64)
             )
             .unwrap()
@@ -1399,7 +1386,7 @@ pub fn i64_ge_s() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0x8000000000000000u64 as i64, 0x7fffffffffffffffu64 as i64)
             )
             .unwrap()
@@ -1408,7 +1395,7 @@ pub fn i64_ge_s() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0x7fffffffffffffffu64 as i64, 0x8000000000000000u64 as i64)
             )
             .unwrap()
@@ -1421,15 +1408,14 @@ pub fn i64_ge_u() {
     let wat = String::from(WAT).replace("{{0}}", "ge_u");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
     assert_eq!(
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0_i64, 0_i64)
             )
             .unwrap()
@@ -1438,7 +1424,7 @@ pub fn i64_ge_u() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (1_i64, 1_i64)
             )
             .unwrap()
@@ -1447,7 +1433,7 @@ pub fn i64_ge_u() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (-1_i64, 1_i64)
             )
             .unwrap()
@@ -1456,7 +1442,7 @@ pub fn i64_ge_u() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0x8000000000000000u64 as i64, 0x8000000000000000u64 as i64)
             )
             .unwrap()
@@ -1465,7 +1451,7 @@ pub fn i64_ge_u() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0x7fffffffffffffffu64 as i64, 0x7fffffffffffffffu64 as i64)
             )
             .unwrap()
@@ -1474,7 +1460,7 @@ pub fn i64_ge_u() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (-1_i64, -1_i64)
             )
             .unwrap()
@@ -1483,7 +1469,7 @@ pub fn i64_ge_u() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (1_i64, 0_i64)
             )
             .unwrap()
@@ -1492,7 +1478,7 @@ pub fn i64_ge_u() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0_i64, 1_i64)
             )
             .unwrap()
@@ -1501,7 +1487,7 @@ pub fn i64_ge_u() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0x8000000000000000u64 as i64, 0_i64)
             )
             .unwrap()
@@ -1510,7 +1496,7 @@ pub fn i64_ge_u() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0_i64, 0x8000000000000000u64 as i64)
             )
             .unwrap()
@@ -1519,7 +1505,7 @@ pub fn i64_ge_u() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0x8000000000000000u64 as i64, -1_i64)
             )
             .unwrap()
@@ -1528,7 +1514,7 @@ pub fn i64_ge_u() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (-1_i64, 0x8000000000000000u64 as i64)
             )
             .unwrap()
@@ -1537,7 +1523,7 @@ pub fn i64_ge_u() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0x8000000000000000u64 as i64, 0x7fffffffffffffffu64 as i64)
             )
             .unwrap()
@@ -1546,7 +1532,7 @@ pub fn i64_ge_u() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module, 0).unwrap(),
                 (0x7fffffffffffffffu64 as i64, 0x8000000000000000u64 as i64)
             )
             .unwrap()

@@ -72,12 +72,12 @@ pub fn host_func_call_as_start_func() {
     runtime_instance
         .add_host_function_typed::<(), ()>("hello_mod", "hello", hello)
         .expect("function registration failed");
-    let _importing_module = runtime_instance
+    let _module_addr = runtime_instance
         .add_module(
             "importing_mod",
             &validate(&wasm_bytes).expect("validation failed"),
         )
-        .unwrap();
+        .expect("instantiation to be successful");
 }
 
 #[test_log::test]
@@ -98,12 +98,12 @@ pub fn host_func_call_within_start_func() {
     runtime_instance
         .add_host_function_typed::<(), ()>("hello_mod", "hello", hello)
         .expect("function registration failed");
-    let _importing_module = runtime_instance
+    let _module_addr = runtime_instance
         .add_module(
             "importing_mod",
             &validate(&wasm_bytes).expect("validation failed"),
         )
-        .unwrap();
+        .expect("instantiation to be successful");
 }
 
 fn fancy_add_mult(_: &mut (), values: Vec<Value>) -> Result<Vec<Value>, HaltExecutionError> {

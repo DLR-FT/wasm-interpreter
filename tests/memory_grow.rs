@@ -34,7 +34,7 @@ fn memory_grow_test_1() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _default_module) = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
     let load_at_zero = i
@@ -105,7 +105,7 @@ fn memory_grow_test_2() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _default_module) = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
     let grow = i.get_function_by_name(DEFAULT_MODULE, "grow").unwrap();
@@ -131,7 +131,7 @@ fn memory_grow_test_3() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _default_module) = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
     let grow = i.get_function_by_name(DEFAULT_MODULE, "grow").unwrap();
