@@ -1,5 +1,6 @@
 use core::mem;
 
+use crate::config::Config;
 use crate::core::indices::TypeIdx;
 use crate::core::reader::span::Span;
 use crate::core::reader::types::data::{DataModeActive, DataSegment};
@@ -28,7 +29,6 @@ use alloc::sync::Arc;
 use alloc::vec;
 use alloc::vec::Vec;
 
-use super::config::DefaultConfig;
 use super::interpreter_loop::{data_drop, elem_drop};
 use super::UnwrapValidatedExt;
 
@@ -39,7 +39,7 @@ use crate::linear_memory::LinearMemory;
 /// globals, element segments, and data segments that have been allocated during the life time of
 /// the abstract machine.
 /// <https://webassembly.github.io/spec/core/exec/runtime.html#store>
-pub struct Store<'b, T> {
+pub struct Store<'b, T: Config> {
     pub functions: Vec<FuncInst<T>>,
     pub memories: Vec<MemInst>,
     pub globals: Vec<GlobalInst>,
@@ -59,7 +59,7 @@ pub struct Store<'b, T> {
     pub(crate) dormitory: Dormitory,
 }
 
-impl<'b, T> Store<'b, T> {
+impl<'b, T: Config> Store<'b, T> {
     /// Creates a new empty store with some user data
     pub fn new(user_data: T) -> Self {
         Self {
@@ -622,7 +622,7 @@ impl<'b, T> Store<'b, T> {
                         };
 
                         // Run the interpreter
-                        let result = interpreter_loop::run(&mut resumable, self, DefaultConfig)?;
+                        let result = interpreter_loop::run(&mut resumable, self)?;
 
                         match result {
                             None => {
@@ -666,7 +666,7 @@ impl<'b, T> Store<'b, T> {
                     .expect("the key to always be valid as self was not dropped yet");
 
                 // Resume execution
-                let result = interpreter_loop::run(resumable, self, DefaultConfig)?;
+                let result = interpreter_loop::run(resumable, self)?;
 
                 match result {
                     None => {
@@ -918,7 +918,7 @@ impl ExternVal {
     ///
     /// Note: This method may panic if self does not come from the given [`Store`].
     ///<https://webassembly.github.io/spec/core/valid/modules.html#imports>
-    pub fn extern_type<T>(&self, store: &Store<T>) -> ExternType {
+    pub fn extern_type<T: Config>(&self, store: &Store<T>) -> ExternType {
         match self {
             // TODO: fix ugly clone in function types
             ExternVal::Func(func_addr) => ExternType::Func(

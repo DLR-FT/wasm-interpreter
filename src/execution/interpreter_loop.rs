@@ -43,10 +43,9 @@ use super::{little_endian::LittleEndianBytes, store::Store};
 /// Returns `Ok(None)` in case execution successfully terminates, `Ok(Some(required_fuel))` if execution
 /// terminates due to insufficient fuel, indicating how much fuel is required to resume with `required_fuel`,
 /// and `[Error::RuntimeError]` otherwise.
-pub(super) fn run<T, C: Config>(
+pub(super) fn run<T: Config>(
     resumable: &mut Resumable,
     store: &mut Store<T>,
-    mut config: C,
 ) -> Result<Option<NonZeroU32>, RuntimeError> {
     let stack = &mut resumable.stack;
     let mut current_func_addr = resumable.current_func_addr;
@@ -74,7 +73,9 @@ pub(super) fn run<T, C: Config>(
     use crate::core::reader::types::opcode::*;
     loop {
         // call the instruction hook
-        config.instruction_hook(store.modules[current_module_idx].wasm_bytecode, wasm.pc);
+        store
+            .user_data
+            .instruction_hook(store.modules[current_module_idx].wasm_bytecode, wasm.pc);
 
         // Fuel mechanism: 1 fuel per instruction
         if let Some(fuel) = &mut resumable.maybe_fuel {

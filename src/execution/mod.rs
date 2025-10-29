@@ -8,7 +8,7 @@ use value_stack::Stack;
 
 use crate::core::reader::types::{FuncType, ResultType};
 use crate::execution::assert_validated::UnwrapValidatedExt;
-use crate::execution::config::{Config, DefaultConfig};
+use crate::execution::config::Config;
 use crate::execution::store::Store;
 use crate::execution::value::Value;
 use crate::interop::InteropValueList;
@@ -32,30 +32,28 @@ pub mod value_stack;
 /// The default module name if a [RuntimeInstance] was created using [RuntimeInstance::new].
 pub const DEFAULT_MODULE: &str = "__interpreter_default__";
 
-pub struct RuntimeInstance<'b, T = (), C = DefaultConfig>
-where
-    C: Config + core::fmt::Debug,
-{
-    pub config: C,
+pub struct RuntimeInstance<'b, T: Config = ()> {
     pub store: Store<'b, T>,
 }
 
-impl<T: Default> Default for RuntimeInstance<'_, T, DefaultConfig> {
+impl<T: Config + Default> Default for RuntimeInstance<'_, T> {
     fn default() -> Self {
         Self::new(T::default())
     }
 }
 
-impl<'b, T> RuntimeInstance<'b, T, DefaultConfig> {
+impl<'b, T: Config> RuntimeInstance<'b, T> {
     pub fn new(user_data: T) -> Self {
-        Self::new_with_config(user_data, DefaultConfig)
+        RuntimeInstance {
+            store: Store::new(user_data),
+        }
     }
 
     pub fn new_with_default_module(
         user_data: T,
         validation_info: &'_ ValidationInfo<'b>,
     ) -> Result<Self, RuntimeError> {
-        let mut instance = Self::new_with_config(user_data, DefaultConfig);
+        let mut instance = Self::new(user_data);
         instance.add_module(DEFAULT_MODULE, validation_info)?;
         Ok(instance)
     }
@@ -66,29 +64,17 @@ impl<'b, T> RuntimeInstance<'b, T, DefaultConfig> {
         validation_info: &'_ ValidationInfo<'b>,
         // store: &mut Store,
     ) -> Result<Self, RuntimeError> {
-        let mut instance = Self::new_with_config(user_data, DefaultConfig);
+        let mut instance = Self::new(user_data);
         instance.add_module(module_name, validation_info)?;
         Ok(instance)
     }
-}
 
-impl<'b, T, C> RuntimeInstance<'b, T, C>
-where
-    C: Config + core::fmt::Debug,
-{
     pub fn add_module(
         &mut self,
         module_name: &str,
         validation_info: &'_ ValidationInfo<'b>,
     ) -> Result<(), RuntimeError> {
         self.store.add_module(module_name, validation_info, None)
-    }
-
-    pub fn new_with_config(user_data: T, config: C) -> Self {
-        RuntimeInstance {
-            config,
-            store: Store::new(user_data),
-        }
     }
 
     pub fn get_function_by_name(
@@ -235,7 +221,8 @@ where
 }
 
 /// Helper function to quickly construct host functions without worrying about wasm to Rust
-/// type conversion. For user data, simply move the mutable reference into the passed closure.
+/// type conversion. For reading/writing user data into the current configuration, simply move
+/// `user_data` into the passed closure.
 /// # Example
 /// ```
 /// use wasm::{validate, RuntimeInstance, host_function_wrapper, Value};
