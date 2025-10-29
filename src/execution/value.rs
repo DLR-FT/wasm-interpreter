@@ -354,12 +354,6 @@ pub struct FuncAddr(pub usize);
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ExternAddr(pub usize);
 
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum RefValueTy {
-    Func,
-    Extern,
-}
-
 impl Value {
     pub fn default_from_ty(ty: ValType) -> Self {
         match ty {
