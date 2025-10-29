@@ -1,14 +1,11 @@
 use alloc::vec::{Drain, Vec};
 
+use crate::config::Config;
 use crate::core::indices::LocalIdx;
 use crate::core::reader::types::{FuncType, ValType};
 use crate::execution::assert_validated::UnwrapValidatedExt;
 use crate::execution::value::Value;
 use crate::RuntimeError;
-
-// TODO make these configurable
-const MAX_VALUE_STACK_SIZE: usize = 0xf0000; // 64 Kibi-Values
-const MAX_CALL_STACK_SIZE: usize = 0x1000; // 4 Kibi-Functions
 
 /// The stack at runtime containing
 /// 1. Values
@@ -67,9 +64,9 @@ impl Stack {
     }
 
     /// Push a value to the value stack
-    pub fn push_value(&mut self, value: Value) -> Result<(), RuntimeError> {
+    pub fn push_value<C: Config>(&mut self, value: Value) -> Result<(), RuntimeError> {
         // check for value stack exhaustion
-        if self.values.len() > MAX_VALUE_STACK_SIZE {
+        if self.values.len() > C::MAX_VALUE_STACK_SIZE {
             return Err(RuntimeError::StackExhaustion);
         }
 
@@ -127,7 +124,7 @@ impl Stack {
     /// Push a call frame to the call stack
     ///
     /// Takes the current [`Self::values`]'s length as [`CallFrame::value_stack_base_idx`].
-    pub fn push_call_frame(
+    pub fn push_call_frame<C: Config>(
         &mut self,
         return_func_addr: usize,
         func_ty: &FuncType,
@@ -136,7 +133,7 @@ impl Stack {
         return_stp: usize,
     ) -> Result<(), RuntimeError> {
         // check for call stack exhaustion
-        if self.call_frame_count() > MAX_CALL_STACK_SIZE {
+        if self.call_frame_count() > C::MAX_CALL_STACK_SIZE {
             return Err(RuntimeError::StackExhaustion);
         }
 
