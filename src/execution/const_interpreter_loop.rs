@@ -53,39 +53,39 @@ pub(crate) fn run_const<T: Config>(
                     "Constant instruction: global.get [{global_idx}] -> [{:?}]",
                     global
                 );
-                stack.push_value(global.value)?;
+                stack.push_value::<T>(global.value)?;
             }
             I32_CONST => {
                 let constant = wasm.read_var_i32().unwrap_validated();
                 trace!("Constant instruction: i32.const [] -> [{constant}]");
-                stack.push_value(constant.into())?;
+                stack.push_value::<T>(constant.into())?;
             }
             F32_CONST => {
                 let constant = value::F32::from_bits(wasm.read_var_f32().unwrap_validated());
                 trace!("Constanting instruction: f32.const [] -> [{constant}]");
-                stack.push_value(constant.into())?;
+                stack.push_value::<T>(constant.into())?;
             }
             F64_CONST => {
                 let constant = value::F64::from_bits(wasm.read_var_f64().unwrap_validated());
                 trace!("Constanting instruction: f64.const [] -> [{constant}]");
-                stack.push_value(constant.into())?;
+                stack.push_value::<T>(constant.into())?;
             }
             I64_CONST => {
                 let constant = wasm.read_var_i64().unwrap_validated();
                 trace!("Constant instruction: i64.const [] -> [{constant}]");
-                stack.push_value(constant.into())?;
+                stack.push_value::<T>(constant.into())?;
             }
             REF_NULL => {
                 let reftype = RefType::read(wasm).unwrap_validated();
 
-                stack.push_value(Value::Ref(Ref::Null(reftype)))?;
+                stack.push_value::<T>(Value::Ref(Ref::Null(reftype)))?;
                 trace!("Instruction: ref.null '{:?}' -> [{:?}]", reftype, reftype);
             }
             REF_FUNC => {
                 // we already checked for the func_idx to be in bounds during validation
                 let func_idx = wasm.read_var_u32().unwrap_validated() as usize;
                 let func_addr = *module.func_addrs.get(func_idx).unwrap_validated();
-                stack.push_value(Value::Ref(Ref::Func(FuncAddr(func_addr))))?;
+                stack.push_value::<T>(Value::Ref(Ref::Func(FuncAddr(func_addr))))?;
             }
 
             FD_EXTENSIONS => {
@@ -98,7 +98,7 @@ pub(crate) fn run_const<T: Config>(
                             *byte_ref = wasm.read_u8().unwrap_validated();
                         }
 
-                        stack.push_value(Value::V128(data))?;
+                        stack.push_value::<T>(Value::V128(data))?;
                     }
                     0x00..=0x0B | 0x0D.. => unreachable_validated!(),
                 }
