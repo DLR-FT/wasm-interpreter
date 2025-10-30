@@ -450,47 +450,6 @@ impl<'b, T: Config> Store<'b, T> {
             .ok_or(RuntimeError::UnknownExport)
     }
 
-    /// roughly matches <https://webassembly.github.io/spec/core/exec/modules.html#functions> with the addition of sidetable pointer to the input signature
-    // TODO refactor the type of func
-    // TODO module_addr
-    fn alloc_func(
-        &mut self,
-        func: (TypeIdx, (Span, usize)),
-        module_inst: &ModuleInst,
-        module_addr: usize,
-    ) -> usize {
-        let (ty, (span, stp)) = func;
-
-        // TODO rewrite this huge chunk of parsing after generic way to re-parse(?) structs lands
-        let mut wasm_reader = WasmReader::new(module_inst.wasm_bytecode);
-        wasm_reader.move_start_to(span).unwrap_validated();
-
-        let (locals, bytes_read) = wasm_reader
-            .measure_num_read_bytes(crate::code::read_declared_locals)
-            .unwrap_validated();
-
-        let code_expr = wasm_reader
-            .make_span(span.len() - bytes_read)
-            .unwrap_validated();
-
-        // core of the method below
-
-        // validation guarantees func_ty_idx exists within module_inst.types
-        // TODO fix clone
-        let func_inst = FuncInst::WasmFunc(WasmFuncInst {
-            function_type: module_inst.types[ty].clone(),
-            ty,
-            locals,
-            code_expr,
-            stp,
-            module_addr,
-        });
-
-        let addr = self.functions.len();
-        self.functions.push(func_inst);
-        addr
-    }
-
     /// Allocates a new function with some host code.
     ///
     /// This type of function is also called a host function.
@@ -506,7 +465,7 @@ impl<'b, T: Config> Store<'b, T> {
     ///
     /// See: <https://webassembly.github.io/spec/core/exec/modules.html#host-functions>
     /// See: WebAssembly Specification 2.0 - 7.1.7 - func_alloc
-    pub fn alloc_host_func(
+    pub fn func_alloc(
         &mut self,
         func_type: FuncType,
         host_func: fn(&mut T, Vec<Value>) -> Result<Vec<Value>, HaltExecutionError>,
@@ -539,6 +498,16 @@ impl<'b, T: Config> Store<'b, T> {
             .ty()
 
         // 2. Post-condition: the returned function type is valid.
+    }
+
+    /// See: WebAssembly Specification 2.0 - 7.1.7 - func_invoke
+    pub fn invoke(
+        &mut self,
+        func_addr: usize,
+        params: Vec<Value>,
+        maybe_fuel: Option<u32>,
+    ) -> Result<RunState, RuntimeError> {
+        self.resume(self.create_resumable(func_addr, params, maybe_fuel)?)
     }
 
     /// Allocates a new table with some table type and an initialization value `ref` and returns its table address.
@@ -788,67 +757,6 @@ impl<'b, T: Config> Store<'b, T> {
         Ok(global_addr)
     }
 
-    /// <https://webassembly.github.io/spec/core/exec/modules.html#tables>
-    fn alloc_table(&mut self, table_type: TableType, reff: Ref) -> usize {
-        let table_inst = TableInst {
-            ty: table_type,
-            elem: vec![reff; table_type.lim.min as usize],
-        };
-
-        let addr = self.tables.len();
-        self.tables.push(table_inst);
-        addr
-    }
-
-    /// <https://webassembly.github.io/spec/core/exec/modules.html#memories>
-    fn alloc_mem(&mut self, mem_type: MemType) -> usize {
-        let mem_inst = MemInst {
-            ty: mem_type,
-            mem: LinearMemory::new_with_initial_pages(
-                mem_type.limits.min.try_into().unwrap_validated(),
-            ),
-        };
-
-        let addr = self.memories.len();
-        self.memories.push(mem_inst);
-        addr
-    }
-
-    /// <https://webassembly.github.io/spec/core/exec/modules.html#globals>
-    fn alloc_global(&mut self, global_type: GlobalType, val: Value) -> usize {
-        let global_inst = GlobalInst {
-            ty: global_type,
-            value: val,
-        };
-
-        let addr = self.globals.len();
-        self.globals.push(global_inst);
-        addr
-    }
-
-    /// <https://webassembly.github.io/spec/core/exec/modules.html#element-segments>
-    fn alloc_elem(&mut self, ref_type: RefType, refs: Vec<Ref>) -> usize {
-        let elem_inst = ElemInst {
-            ty: ref_type,
-            references: refs,
-        };
-
-        let addr = self.elements.len();
-        self.elements.push(elem_inst);
-        addr
-    }
-
-    /// <https://webassembly.github.io/spec/core/exec/modules.html#data-segments>
-    fn alloc_data(&mut self, bytes: &[u8]) -> usize {
-        let data_inst = DataInst {
-            data: Vec::from(bytes),
-        };
-
-        let addr = self.data.len();
-        self.data.push(data_inst);
-        addr
-    }
-
     /// Returns the global type of some global instance by its addr.
     ///
     /// See: WebAssembly Specification 2.0 - 7.1.10 - global_type
@@ -912,6 +820,108 @@ impl<'b, T: Config> Store<'b, T> {
         // This is a noop for us, as our store `self` is mutable.
 
         Ok(())
+    }
+
+    /// roughly matches <https://webassembly.github.io/spec/core/exec/modules.html#functions> with the addition of sidetable pointer to the input signature
+    // TODO refactor the type of func
+    // TODO module_addr
+    fn alloc_func(
+        &mut self,
+        func: (TypeIdx, (Span, usize)),
+        module_inst: &ModuleInst,
+        module_addr: usize,
+    ) -> usize {
+        let (ty, (span, stp)) = func;
+
+        // TODO rewrite this huge chunk of parsing after generic way to re-parse(?) structs lands
+        let mut wasm_reader = WasmReader::new(module_inst.wasm_bytecode);
+        wasm_reader.move_start_to(span).unwrap_validated();
+
+        let (locals, bytes_read) = wasm_reader
+            .measure_num_read_bytes(crate::code::read_declared_locals)
+            .unwrap_validated();
+
+        let code_expr = wasm_reader
+            .make_span(span.len() - bytes_read)
+            .unwrap_validated();
+
+        // core of the method below
+
+        // validation guarantees func_ty_idx exists within module_inst.types
+        // TODO fix clone
+        let func_inst = FuncInst::WasmFunc(WasmFuncInst {
+            function_type: module_inst.types[ty].clone(),
+            ty,
+            locals,
+            code_expr,
+            stp,
+            module_addr,
+        });
+
+        let addr = self.functions.len();
+        self.functions.push(func_inst);
+        addr
+    }
+
+    /// <https://webassembly.github.io/spec/core/exec/modules.html#tables>
+    fn alloc_table(&mut self, table_type: TableType, reff: Ref) -> usize {
+        let table_inst = TableInst {
+            ty: table_type,
+            elem: vec![reff; table_type.lim.min as usize],
+        };
+
+        let addr = self.tables.len();
+        self.tables.push(table_inst);
+        addr
+    }
+
+    /// <https://webassembly.github.io/spec/core/exec/modules.html#memories>
+    fn alloc_mem(&mut self, mem_type: MemType) -> usize {
+        let mem_inst = MemInst {
+            ty: mem_type,
+            mem: LinearMemory::new_with_initial_pages(
+                mem_type.limits.min.try_into().unwrap_validated(),
+            ),
+        };
+
+        let addr = self.memories.len();
+        self.memories.push(mem_inst);
+        addr
+    }
+
+    /// <https://webassembly.github.io/spec/core/exec/modules.html#globals>
+    fn alloc_global(&mut self, global_type: GlobalType, val: Value) -> usize {
+        let global_inst = GlobalInst {
+            ty: global_type,
+            value: val,
+        };
+
+        let addr = self.globals.len();
+        self.globals.push(global_inst);
+        addr
+    }
+
+    /// <https://webassembly.github.io/spec/core/exec/modules.html#element-segments>
+    fn alloc_elem(&mut self, ref_type: RefType, refs: Vec<Ref>) -> usize {
+        let elem_inst = ElemInst {
+            ty: ref_type,
+            references: refs,
+        };
+
+        let addr = self.elements.len();
+        self.elements.push(elem_inst);
+        addr
+    }
+
+    /// <https://webassembly.github.io/spec/core/exec/modules.html#data-segments>
+    fn alloc_data(&mut self, bytes: &[u8]) -> usize {
+        let data_inst = DataInst {
+            data: Vec::from(bytes),
+        };
+
+        let addr = self.data.len();
+        self.data.push(data_inst);
+        addr
     }
 
     pub fn create_resumable(
@@ -1096,15 +1106,6 @@ impl<'b, T: Config> Store<'b, T> {
                 Ok(f(&mut resumable.maybe_fuel))
             }
         }
-    }
-
-    pub fn invoke(
-        &mut self,
-        func_addr: usize,
-        params: Vec<Value>,
-        maybe_fuel: Option<u32>,
-    ) -> Result<RunState, RuntimeError> {
-        self.resume(self.create_resumable(func_addr, params, maybe_fuel)?)
     }
 }
 
