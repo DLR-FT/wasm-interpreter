@@ -331,6 +331,16 @@ impl Display for Ref {
     }
 }
 
+impl Ref {
+    pub fn ty(self) -> RefType {
+        match self {
+            Ref::Null(ref_type) => ref_type,
+            Ref::Func(_) => RefType::FuncRef,
+            Ref::Extern(_) => RefType::ExternRef,
+        }
+    }
+}
+
 /// Represents the address of a function within a WebAssembly module.
 ///
 /// Functions in WebAssembly modules can be either:
@@ -353,12 +363,6 @@ pub struct FuncAddr(pub usize);
 /// enabling dynamic storage and retrieval of external values.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ExternAddr(pub usize);
-
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum RefValueTy {
-    Func,
-    Extern,
-}
 
 impl Value {
     pub fn default_from_ty(ty: ValType) -> Self {

@@ -61,7 +61,11 @@ pub struct Store<'b, T: Config> {
 
 impl<'b, T: Config> Store<'b, T> {
     /// Creates a new empty store with some user data
+    ///
+    /// See: WebAssembly Specification 2.0 - 7.1.4 - store_init
     pub fn new(user_data: T) -> Self {
+        // 1. Return the empty store.
+        // For us the store is empty except for the user data, which we do not have control over.
         Self {
             functions: Vec::default(),
             memories: Vec::default(),
@@ -81,12 +85,13 @@ impl<'b, T: Config> Store<'b, T> {
     /// this method roughly matches the suggested embedder function`module_instantiate`
     /// <https://webassembly.github.io/spec/core/appendix/embedding.html#modules>
     /// except external values for module instantiation are retrieved from `self`.
+    /// Returns the module addr of the new module instance
     pub fn add_module(
         &mut self,
         name: &str,
         validation_info: &ValidationInfo<'b>,
         maybe_fuel: Option<u32>,
-    ) -> Result<(), RuntimeError> {
+    ) -> Result<usize, RuntimeError> {
         // instantiation step -1: collect extern_vals, this section basically acts as a linker between modules
         // best attempt at trying to match the spec implementation in terms of errors
         debug!("adding module with name {:?}", name);
@@ -417,124 +422,340 @@ impl<'b, T: Config> Store<'b, T> {
             self.invoke(func_addr, Vec::new(), maybe_fuel)?;
         };
 
-        Ok(())
+        Ok(current_module_idx)
     }
 
-    /// roughly matches <https://webassembly.github.io/spec/core/exec/modules.html#functions> with the addition of sidetable pointer to the input signature
-    // TODO refactor the type of func
-    // TODO module_addr
-    fn alloc_func(
-        &mut self,
-        func: (TypeIdx, (Span, usize)),
-        module_inst: &ModuleInst,
+    /// Gets an export of a specific module instance by its name
+    ///
+    /// See: WebAssembly Specification 2.0 - 7.1.6 - instance_export
+    pub fn instance_export(
+        &self,
         module_addr: usize,
-    ) -> usize {
-        let (ty, (span, stp)) = func;
+        name: &str,
+    ) -> Result<ExternVal, RuntimeError> {
+        // Fetch the module instance because we store them in the [`Store`]
+        let module_inst = self
+            .modules
+            .get(module_addr)
+            .expect("module addrs to always be valid");
 
-        // TODO rewrite this huge chunk of parsing after generic way to re-parse(?) structs lands
-        let mut wasm_reader = WasmReader::new(module_inst.wasm_bytecode);
-        wasm_reader.move_start_to(span).unwrap_validated();
+        // 1. Assert: due to validity of the module instance `moduleinst`, all its export names are different
 
-        let (locals, bytes_read) = wasm_reader
-            .measure_num_read_bytes(crate::code::read_declared_locals)
-            .unwrap_validated();
-
-        let code_expr = wasm_reader
-            .make_span(span.len() - bytes_read)
-            .unwrap_validated();
-
-        // core of the method below
-
-        // validation guarantees func_ty_idx exists within module_inst.types
-        // TODO fix clone
-        let func_inst = FuncInst::WasmFunc(WasmFuncInst {
-            function_type: module_inst.types[ty].clone(),
-            ty,
-            locals,
-            code_expr,
-            stp,
-            module_addr,
-        });
-
-        let addr = self.functions.len();
-        self.functions.push(func_inst);
-        addr
+        // 2. If there exists an `exportinst_i` in `moduleinst.exports` such that name `exportinst_i.name` equals `name`, then:
+        //   a. Return the external value `exportinst_i.value`.
+        // 3. Else return `error`.
+        module_inst
+            .exports
+            .get(name)
+            .copied()
+            .ok_or(RuntimeError::UnknownExport)
     }
 
-    /// <https://webassembly.github.io/spec/core/exec/modules.html#host-functions>
-    pub(super) fn alloc_host_func(
+    /// Allocates a new function with some host code.
+    ///
+    /// This type of function is also called a host function.
+    ///
+    /// # Panics & Unexpected Behavior
+    /// The specification states that:
+    ///
+    /// > This operation must make sure that the provided host function satisfies the pre-
+    /// > and post-conditions required for a function instance with type `functype`.
+    ///
+    /// Therefore, all "invalid" host functions (e.g. those which return incorrect return values)
+    /// can cause the interpreter to panic or behave unexpectedly.
+    ///
+    /// See: <https://webassembly.github.io/spec/core/exec/modules.html#host-functions>
+    /// See: WebAssembly Specification 2.0 - 7.1.7 - func_alloc
+    pub fn func_alloc(
         &mut self,
         func_type: FuncType,
         host_func: fn(&mut T, Vec<Value>) -> Result<Vec<Value>, HaltExecutionError>,
     ) -> usize {
+        // 1. Pre-condition: `functype` is valid.
+
+        // 2. Let `funcaddr` be the result of allocating a host function in `store` with
+        //    function type `functype` and host function code `hostfunc`.
         let func_inst = FuncInst::HostFunc(HostFuncInst {
             function_type: func_type,
             hostcode: host_func,
         });
-        let addr = self.functions.len();
+        let func_addr = self.functions.len();
         self.functions.push(func_inst);
-        addr
+
+        // 3. Return the new store paired with `funcaddr`.
+        //
+        // Note: Returning the new store is a noop for us because we mutate the store instead.
+        func_addr
     }
 
-    /// <https://webassembly.github.io/spec/core/exec/modules.html#tables>
-    fn alloc_table(&mut self, table_type: TableType, reff: Ref) -> usize {
-        let table_inst = TableInst {
-            ty: table_type,
-            elem: vec![reff; table_type.lim.min as usize],
-        };
+    /// Gets the type of a function by its addr.
+    ///
+    /// See: WebAssembly Specification 2.0 - 7.1.7 - func_type
+    pub fn func_type(&self, func_addr: usize) -> FuncType {
+        // 1. Return `S.funcs[a].type`.
+        self.functions
+            .get(func_addr)
+            .expect("func addrs to always be valid")
+            .ty()
 
-        let addr = self.tables.len();
-        self.tables.push(table_inst);
-        addr
+        // 2. Post-condition: the returned function type is valid.
     }
 
-    /// <https://webassembly.github.io/spec/core/exec/modules.html#memories>
-    fn alloc_mem(&mut self, mem_type: MemType) -> usize {
-        let mem_inst = MemInst {
-            ty: mem_type,
-            mem: LinearMemory::new_with_initial_pages(
-                mem_type.limits.min.try_into().unwrap_validated(),
-            ),
-        };
-
-        let addr = self.memories.len();
-        self.memories.push(mem_inst);
-        addr
+    /// See: WebAssembly Specification 2.0 - 7.1.7 - func_invoke
+    pub fn invoke(
+        &mut self,
+        func_addr: usize,
+        params: Vec<Value>,
+        maybe_fuel: Option<u32>,
+    ) -> Result<RunState, RuntimeError> {
+        self.resume(self.create_resumable(func_addr, params, maybe_fuel)?)
     }
 
-    /// <https://webassembly.github.io/spec/core/exec/modules.html#globals>
-    fn alloc_global(&mut self, global_type: GlobalType, val: Value) -> usize {
-        let global_inst = GlobalInst {
-            ty: global_type,
-            value: val,
-        };
+    /// Allocates a new table with some table type and an initialization value `ref` and returns its table address.
+    ///
+    /// See: WebAssembly Specification 2.0 - 7.1.8 - table_alloc
+    pub fn table_alloc(
+        &mut self,
+        table_type: TableType,
+        r#ref: Ref,
+    ) -> Result<usize, RuntimeError> {
+        // Check pre-condition: ref has correct type
+        if table_type.et != r#ref.ty() {
+            return Err(RuntimeError::TableTypeMismatch);
+        }
 
-        let addr = self.globals.len();
-        self.globals.push(global_inst);
-        addr
+        // 1. Pre-condition: `tabletype` is valid
+
+        // 2. Let `tableaddr` be the result of allocating a table in `store` with table type `tabletype`
+        //    and initialization value `ref`.
+        let table_addr = self.alloc_table(table_type, r#ref);
+
+        // 3. Return the new store paired with `tableaddr`.
+        //
+        // Note: Returning the new store is a noop for us because we mutate the store instead.
+        Ok(table_addr)
     }
 
-    /// <https://webassembly.github.io/spec/core/exec/modules.html#element-segments>
-    fn alloc_elem(&mut self, ref_type: RefType, refs: Vec<Ref>) -> usize {
-        let elem_inst = ElemInst {
-            ty: ref_type,
-            references: refs,
-        };
+    /// Gets the type of some table by its addr.
+    ///
+    /// See: WebAssembly Specification 2.0 - 7.1.8 - table_type
+    pub fn table_type(&self, table_addr: usize) -> TableType {
+        // 1. Return `S.tables[a].type`.
+        self.tables
+            .get(table_addr)
+            .expect("table addrs to always be valid")
+            .ty
 
-        let addr = self.elements.len();
-        self.elements.push(elem_inst);
-        addr
+        // 2. Post-condition: the returned table type is valid.
     }
 
-    /// <https://webassembly.github.io/spec/core/exec/modules.html#data-segments>
-    fn alloc_data(&mut self, bytes: &[u8]) -> usize {
-        let data_inst = DataInst {
-            data: Vec::from(bytes),
-        };
+    /// Reads a single reference from a table by its table address and an index into the table.
+    ///
+    /// See: WebAssembly Specification 2.0 - 7.1.8 - table_read
+    pub fn table_read(&self, table_addr: usize, i: u32) -> Result<Ref, RuntimeError> {
+        // Convert `i` to usize for indexing
+        let i = usize::try_from(i).expect("the architecture to be at least 32-bit");
 
-        let addr = self.data.len();
-        self.data.push(data_inst);
-        addr
+        // 1. Let `ti` be the table instance `store.tables[tableaddr]`
+        let ti = self
+            .tables
+            .get(table_addr)
+            .expect("table addrs to always be valid");
+
+        // 2. If `i` is larger than or equal to the length of `ti.elem`, then return `error`.
+        // 3. Else, return the reference value `ti.elem[i]`.
+        ti.elem
+            .get(i)
+            .copied()
+            .ok_or(RuntimeError::TableAccessOutOfBounds)
+    }
+
+    /// Writes a single reference into a table by its table address and an index into the table.
+    ///
+    /// See: WebAssembly Specification 2.0 - 7.1.8 - table_write
+    pub fn table_write(
+        &mut self,
+        table_addr: usize,
+        i: u32,
+        r#ref: Ref,
+    ) -> Result<(), RuntimeError> {
+        // Convert `i` to usize for indexing
+        let i = usize::try_from(i).expect("the architecture to be at least 32-bit");
+
+        // 1. Let `ti` be the table instance `store.tables[tableaddr]`.
+        let ti = self
+            .tables
+            .get_mut(table_addr)
+            .expect("table addrs to always be valid");
+
+        // Check pre-condition: ref has correct type
+        if ti.ty.et != r#ref.ty() {
+            return Err(RuntimeError::TableTypeMismatch);
+        }
+
+        // 2. If `i` is larger than or equal to the length of `ti.elem`, then return `error`.
+        // 3. Replace `ti.elem[i]` with the reference value `ref`
+        *ti.elem
+            .get_mut(i)
+            .ok_or(RuntimeError::TableAccessOutOfBounds)? = r#ref;
+
+        // 4. Return the updated store.
+        //
+        // Note: Returning the new store is a noop for us because we mutate the store instead.
+        Ok(())
+    }
+
+    /// Gets the current size of a table by its table address.
+    ///
+    /// See: WebAssembly Specification 2.0 - 7.1.8 - table_size
+    pub fn table_size(&self, table_addr: usize) -> u32 {
+        // 1. Return the length of `store.tables[tableaddr].elem`.
+        let len = self
+            .tables
+            .get(table_addr)
+            .expect("table addrs to always be valid")
+            .elem
+            .len();
+
+        // In addition we have to convert the length back to a `u32`
+        u32::try_from(len).expect(
+            "the maximum table length to be u32::MAX because thats what the specification allows for indexing",
+        )
+    }
+
+    /// Grows a table referenced by its table address by `n` elements.
+    ///
+    /// See: WebAssembly Specification 2.0 - 7.1.8 - table_grow
+    pub fn table_grow(
+        &mut self,
+        table_addr: usize,
+        n: u32,
+        r#ref: Ref,
+    ) -> Result<(), RuntimeError> {
+        // 1. Try growing the table instance `store.tables[tableaddr] by `n` elements with initialization value `ref`:
+        //   a. If it succeeds, return the updated store.
+        //   b. Else, return `error`.
+        //
+        // Note: Returning the new store is a noop for us because we mutate the store instead.
+        self.tables
+            .get_mut(table_addr)
+            .expect("table addrs to always be valid")
+            .grow(n, r#ref)
+    }
+
+    /// Allocates a new linear memory and returns its memory address.
+    ///
+    /// See: WebAssembly Specification 2.0 - 7.1.9 - mem_alloc
+    pub fn mem_alloc(&mut self, mem_type: MemType) -> usize {
+        // 1. Pre-condition: `memtype` is valid.
+
+        // 2. Let `memaddr` be the result of allocating a memory in `store` with memory type `memtype`.
+        // 3. Return the new store paired with `memaddr`.
+        //
+        // Note: Returning the new store is a noop for us because we mutate the store instead.
+        self.alloc_mem(mem_type)
+    }
+
+    /// Gets the memory type of some memory by its memory address
+    ///
+    /// See: WebAssemblySpecification 2.0 - 7.1.9 - mem_type
+    pub fn mem_type(&self, mem_addr: usize) -> MemType {
+        // 1. Return `S.mems[a].type`.
+        self.memories
+            .get(mem_addr)
+            .expect("memory addrs to always be valid")
+            .ty
+
+        // 2. Post-condition: the returned memory type is valid.
+    }
+
+    /// Reads a byte from some memory by its memory address and an index into the memory
+    ///
+    /// See: WebAssemblySpecification 2.0 - 7.1.9 - mem_read
+    pub fn mem_read(&self, mem_addr: usize, i: u32) -> Result<u8, RuntimeError> {
+        // Convert the index type
+        let i = usize::try_from(i).expect("the architecture to be at least 32-bit");
+
+        // 1. Let `mi` be the memory instance `store.mems[memaddr]`.
+        let mi = self
+            .memories
+            .get(mem_addr)
+            .expect("memory addrs to always be valid");
+
+        // 2. If `i` is larger than or equal to the length of `mi.data`, then return `error`.
+        // 3. Else, return the byte `mi.data[i]`.
+        mi.mem.load(i)
+    }
+
+    /// Writes a byte into some memory by its memory address and an index into the memory
+    ///
+    /// See: WebAssemblySpecification 2.0 - 7.1.9 - mem_write
+    pub fn mem_write(&self, mem_addr: usize, i: u32, byte: u8) -> Result<(), RuntimeError> {
+        // Convert the index type
+        let i = usize::try_from(i).expect("the architecture to be at least 32-bit");
+
+        // 1. Let `mi` be the memory instance `store.mems[memaddr]`.
+        let mi = self
+            .memories
+            .get(mem_addr)
+            .expect("memory addrs to always be valid");
+
+        mi.mem.store(i, byte)
+    }
+
+    /// Gets the size of some memory by its memory address in pages.
+    ///
+    /// See: WebAssemblySpecification 2.0 - 7.1.9 - mem_size
+    pub fn mem_size(&self, mem_addr: usize) -> u32 {
+        // 1. Return the length of `store.mems[memaddr].data` divided by the page size.
+        let length = self
+            .memories
+            .get(mem_addr)
+            .expect("mem addrs to always be valid")
+            .size();
+
+        // In addition we have to convert the length back to a `u32`
+        length.try_into().expect(
+            "the maximum memory length to be smaller than u32::MAX because thats what the specification allows for indexing into the memory. Also the memory size is measured in pages, not bytes.")
+    }
+
+    /// Grows some memory by its memory address by `n` pages.
+    ///
+    /// See: WebAssemblySpecification 2.0 - 7.1.9 - mem_grow
+    pub fn mem_grow(&mut self, mem_addr: usize, n: u32) -> Result<(), RuntimeError> {
+        // 1. Try growing the memory instance `store.mems[memaddr]` by `n` pages:
+        //   a. If it succeeds, then return the updated store.
+        //   b. Else, return `error`.
+        //
+        // Note: Returning the new store is a noop for us because we mutate the store instead.
+        self.memories
+            .get_mut(mem_addr)
+            .expect("memory addrs to always be valid")
+            .grow(n)
+    }
+
+    /// Allocates a new global and returns its global address.
+    ///
+    /// See: WebAssemblySpecification 2.0 - 7.1.10 - global_alloc
+    pub fn global_alloc(
+        &mut self,
+        global_type: GlobalType,
+        val: Value,
+    ) -> Result<usize, RuntimeError> {
+        // Check pre-condition: val has correct type
+        if global_type.ty != val.to_ty() {
+            return Err(RuntimeError::GlobalTypeMismatch);
+        }
+
+        // 1. Pre-condition: `globaltype` is valid.
+
+        // 2. Let `globaladdr` be the result of allocating a global with global type `globaltype` and initialization value `val`.
+        let global_addr = self.alloc_global(global_type, val);
+
+        // 3. Return the new store paired with `globaladdr`.
+        //
+        // Note: Returning the new store is a noop for us because we mutate the store instead.
+        Ok(global_addr)
     }
 
     /// Returns the global type of some global instance by its addr.
@@ -600,6 +821,108 @@ impl<'b, T: Config> Store<'b, T> {
         // This is a noop for us, as our store `self` is mutable.
 
         Ok(())
+    }
+
+    /// roughly matches <https://webassembly.github.io/spec/core/exec/modules.html#functions> with the addition of sidetable pointer to the input signature
+    // TODO refactor the type of func
+    // TODO module_addr
+    fn alloc_func(
+        &mut self,
+        func: (TypeIdx, (Span, usize)),
+        module_inst: &ModuleInst,
+        module_addr: usize,
+    ) -> usize {
+        let (ty, (span, stp)) = func;
+
+        // TODO rewrite this huge chunk of parsing after generic way to re-parse(?) structs lands
+        let mut wasm_reader = WasmReader::new(module_inst.wasm_bytecode);
+        wasm_reader.move_start_to(span).unwrap_validated();
+
+        let (locals, bytes_read) = wasm_reader
+            .measure_num_read_bytes(crate::code::read_declared_locals)
+            .unwrap_validated();
+
+        let code_expr = wasm_reader
+            .make_span(span.len() - bytes_read)
+            .unwrap_validated();
+
+        // core of the method below
+
+        // validation guarantees func_ty_idx exists within module_inst.types
+        // TODO fix clone
+        let func_inst = FuncInst::WasmFunc(WasmFuncInst {
+            function_type: module_inst.types[ty].clone(),
+            ty,
+            locals,
+            code_expr,
+            stp,
+            module_addr,
+        });
+
+        let addr = self.functions.len();
+        self.functions.push(func_inst);
+        addr
+    }
+
+    /// <https://webassembly.github.io/spec/core/exec/modules.html#tables>
+    fn alloc_table(&mut self, table_type: TableType, reff: Ref) -> usize {
+        let table_inst = TableInst {
+            ty: table_type,
+            elem: vec![reff; table_type.lim.min as usize],
+        };
+
+        let addr = self.tables.len();
+        self.tables.push(table_inst);
+        addr
+    }
+
+    /// <https://webassembly.github.io/spec/core/exec/modules.html#memories>
+    fn alloc_mem(&mut self, mem_type: MemType) -> usize {
+        let mem_inst = MemInst {
+            ty: mem_type,
+            mem: LinearMemory::new_with_initial_pages(
+                mem_type.limits.min.try_into().unwrap_validated(),
+            ),
+        };
+
+        let addr = self.memories.len();
+        self.memories.push(mem_inst);
+        addr
+    }
+
+    /// <https://webassembly.github.io/spec/core/exec/modules.html#globals>
+    fn alloc_global(&mut self, global_type: GlobalType, val: Value) -> usize {
+        let global_inst = GlobalInst {
+            ty: global_type,
+            value: val,
+        };
+
+        let addr = self.globals.len();
+        self.globals.push(global_inst);
+        addr
+    }
+
+    /// <https://webassembly.github.io/spec/core/exec/modules.html#element-segments>
+    fn alloc_elem(&mut self, ref_type: RefType, refs: Vec<Ref>) -> usize {
+        let elem_inst = ElemInst {
+            ty: ref_type,
+            references: refs,
+        };
+
+        let addr = self.elements.len();
+        self.elements.push(elem_inst);
+        addr
+    }
+
+    /// <https://webassembly.github.io/spec/core/exec/modules.html#data-segments>
+    fn alloc_data(&mut self, bytes: &[u8]) -> usize {
+        let data_inst = DataInst {
+            data: Vec::from(bytes),
+        };
+
+        let addr = self.data.len();
+        self.data.push(data_inst);
+        addr
     }
 
     pub fn create_resumable(
@@ -784,15 +1107,6 @@ impl<'b, T: Config> Store<'b, T> {
                 Ok(f(&mut resumable.maybe_fuel))
             }
         }
-    }
-
-    pub fn invoke(
-        &mut self,
-        func_addr: usize,
-        params: Vec<Value>,
-        maybe_fuel: Option<u32>,
-    ) -> Result<RunState, RuntimeError> {
-        self.resume(self.create_resumable(func_addr, params, maybe_fuel)?)
     }
 }
 
