@@ -16,8 +16,9 @@ fn i32_add_one() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, _default_module) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         12,
@@ -61,8 +62,9 @@ fn i64_add_one() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, _default_module) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         12_i64,

@@ -45,13 +45,14 @@ fn main() -> ExitCode {
         }
     };
 
-    let mut instance = match RuntimeInstance::new_with_default_module((), &validation_info) {
-        Ok(instance) => instance,
-        Err(err) => {
-            error!("Instantiation failed: {err:?} [{err}]");
-            return ExitCode::FAILURE;
-        }
-    };
+    let (mut instance, _default_module) =
+        match RuntimeInstance::new_with_default_module((), &validation_info) {
+            Ok(instance) => instance,
+            Err(err) => {
+                error!("Instantiation failed: {err:?} [{err}]");
+                return ExitCode::FAILURE;
+            }
+        };
 
     let twelve: i32 = instance
         .invoke_typed(&instance.get_function_by_index(0, 1).unwrap(), (5, 7))

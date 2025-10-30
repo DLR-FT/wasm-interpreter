@@ -36,8 +36,9 @@ pub fn i32_trunc_sat_f32_s_let_it_die() {
         .replace("{{2}}", "i32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, _default_module) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         -1,
@@ -55,8 +56,9 @@ pub fn i32_trunc_sat_f32_s() {
         .replace("{{2}}", "i32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, _default_module) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         0,
@@ -221,8 +223,9 @@ pub fn i32_trunc_sat_f32_u_let_it_die() {
         .replace("{{2}}", "i32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, _default_module) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         -1,
@@ -240,8 +243,9 @@ pub fn i32_trunc_sat_f32_u() {
         .replace("{{2}}", "i32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, _default_module) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         0,
@@ -400,8 +404,9 @@ pub fn i32_trunc_sat_f64_s_let_it_die() {
         .replace("{{2}}", "i32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, _default_module) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         -1,
@@ -419,8 +424,9 @@ pub fn i32_trunc_sat_f64_s() {
         .replace("{{2}}", "i32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, _default_module) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         0,
@@ -579,8 +585,9 @@ pub fn i32_trunc_sat_f64_u_let_it_die() {
         .replace("{{2}}", "i32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, _default_module) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         -1,
@@ -598,8 +605,9 @@ pub fn i32_trunc_sat_f64_u() {
         .replace("{{2}}", "i32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, _default_module) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         0,
@@ -779,8 +787,9 @@ pub fn i64_trunc_sat_f32_s_let_it_die() {
         .replace("{{2}}", "i64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, _default_module) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         -1,
@@ -798,8 +807,9 @@ pub fn i64_trunc_sat_f32_s() {
         .replace("{{2}}", "i64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, _default_module) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         0_i64,
@@ -982,8 +992,9 @@ pub fn i64_trunc_sat_f32_u_let_it_die() {
         .replace("{{2}}", "i64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, _default_module) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         -1,
@@ -1001,8 +1012,9 @@ pub fn i64_trunc_sat_f32_u() {
         .replace("{{2}}", "i64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, _default_module) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         0_i64,
@@ -1149,8 +1161,9 @@ pub fn i64_trunc_sat_f64_s_let_it_die() {
         .replace("{{2}}", "i32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, _default_module) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         -1,
@@ -1168,8 +1181,9 @@ pub fn i64_trunc_sat_f64_s() {
         .replace("{{2}}", "i64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, _default_module) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         0_i64,
@@ -1352,8 +1366,9 @@ pub fn i64_trunc_sat_f64_u_let_it_die() {
         .replace("{{2}}", "i32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, _default_module) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         -1,
@@ -1371,8 +1386,9 @@ pub fn i64_trunc_sat_f64_u() {
         .replace("{{2}}", "i64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, _default_module) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         0_i64,

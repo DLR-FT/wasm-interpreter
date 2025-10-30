@@ -31,7 +31,7 @@ fn memory_fill() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut i, _default_module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
     let fill = i.get_function_by_name(DEFAULT_MODULE, "fill").unwrap();

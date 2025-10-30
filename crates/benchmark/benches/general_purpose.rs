@@ -48,7 +48,7 @@ macro_rules! bench_wasm {
 
             // Our interpreter
             let our_validation_info = validate(&wasm_bytes).unwrap();
-            let mut our_instance = RuntimeInstance::new_with_default_module((), &our_validation_info).unwrap();
+            let (mut our_instance, _default_module) = RuntimeInstance::new_with_default_module((), &our_validation_info).unwrap();
             let our_fn = our_instance
                 .get_function_by_name(wasm::DEFAULT_MODULE, $entry_function)
                 .unwrap();

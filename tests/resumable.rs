@@ -11,7 +11,8 @@ fn out_of_fuel() {
             ))"#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = &validate(&wasm_bytes).expect("validation failed");
-    let mut runtime_instance = RuntimeInstance::new_named((), "module", validation_info).unwrap();
+    let (mut runtime_instance, _module) =
+        RuntimeInstance::new_named((), "module", validation_info).unwrap();
     let func_ref = runtime_instance
         .get_function_by_name("module", "loop_forever")
         .unwrap();
@@ -61,7 +62,8 @@ fn resumable() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut runtime_instance = RuntimeInstance::new_named((), "module", &validation_info).unwrap();
+    let (mut runtime_instance, _module) =
+        RuntimeInstance::new_named((), "module", &validation_info).unwrap();
     let mult_global_0 = runtime_instance
         .get_function_by_name("module", "mult_global_0")
         .unwrap();
@@ -138,7 +140,8 @@ fn resumable_internal_state() {
     let expected = [0, 1, 11, 111, 1111];
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut runtime_instance = RuntimeInstance::new_named((), "module", &validation_info).unwrap();
+    let (mut runtime_instance, _module) =
+        RuntimeInstance::new_named((), "module", &validation_info).unwrap();
     let add_global_0 = runtime_instance
         .get_function_by_name("module", "add_global_0")
         .unwrap();
@@ -184,7 +187,8 @@ fn resumable_drop() {
             ))"#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = &validate(&wasm_bytes).expect("validation failed");
-    let mut runtime_instance = RuntimeInstance::new_named((), "module", validation_info).unwrap();
+    let (mut runtime_instance, _module) =
+        RuntimeInstance::new_named((), "module", validation_info).unwrap();
     let func_ref = runtime_instance
         .get_function_by_name("module", "loop_forever")
         .unwrap();

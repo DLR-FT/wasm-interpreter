@@ -25,12 +25,12 @@ fn table_size_test() {
     (table $t1 1 funcref)
     (table $t2 0 2 funcref)
     (table $t3 3 8 funcref)
-  
+
     (func (export "size-t0") (result i32) table.size)
     (func (export "size-t1") (result i32) (table.size $t1))
     (func (export "size-t2") (result i32) (table.size $t2))
     (func (export "size-t3") (result i32) (table.size $t3))
-  
+
     (func (export "grow-t0") (param $sz i32)
       (drop (table.grow $t0 (ref.null func) (local.get $sz)))
     )
@@ -47,7 +47,7 @@ fn table_size_test() {
     "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut i, _default_module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
     // let get_funcref = i.get_function_by_name(DEFAULT_MODULE, "get-funcref").unwrap();

@@ -52,31 +52,34 @@ impl<'b, T: Config> RuntimeInstance<'b, T> {
         }
     }
 
+    // Returns the new [`RuntimeInstance`] and module addr of the default module.
     pub fn new_with_default_module(
         user_data: T,
         validation_info: &'_ ValidationInfo<'b>,
-    ) -> Result<Self, RuntimeError> {
+    ) -> Result<(Self, usize), RuntimeError> {
         let mut instance = Self::new(user_data);
-        instance.add_module(DEFAULT_MODULE, validation_info)?;
-        Ok(instance)
+        let module_addr = instance.add_module(DEFAULT_MODULE, validation_info)?;
+        Ok((instance, module_addr))
     }
 
+    // Returns the new [`RuntimeInstance`] and module addr of the new named module.
     pub fn new_named(
         user_data: T,
         module_name: &str,
         validation_info: &'_ ValidationInfo<'b>,
         // store: &mut Store,
-    ) -> Result<Self, RuntimeError> {
+    ) -> Result<(Self, usize), RuntimeError> {
         let mut instance = Self::new(user_data);
-        instance.add_module(module_name, validation_info)?;
-        Ok(instance)
+        let module_addr = instance.add_module(module_name, validation_info)?;
+        Ok((instance, module_addr))
     }
 
+    // Returns the module addr
     pub fn add_module(
         &mut self,
         module_name: &str,
         validation_info: &'_ ValidationInfo<'b>,
-    ) -> Result<(), RuntimeError> {
+    ) -> Result<usize, RuntimeError> {
         self.store.add_module(module_name, validation_info, None)
     }
 
@@ -165,7 +168,7 @@ impl<'b, T: Config> RuntimeInstance<'b, T> {
     ///             0x6f, 0x70, 0x73, 0x00, 0x00, 0x0a, 0x09, 0x01,
     ///             0x07, 0x00, 0x03, 0x40, 0x0c, 0x00, 0x0b, 0x0b ];
     /// // a simple module with a single function looping forever
-    /// let mut instance = RuntimeInstance::new_named((), "module", &validate(&wasm).unwrap()).unwrap();
+    /// let (mut instance, _module) = RuntimeInstance::new_named((), "module", &validate(&wasm).unwrap()).unwrap();
     /// let func_ref = instance.get_function_by_name("module", "loops").unwrap();
     /// let mut resumable_ref = instance.create_resumable(&func_ref, vec![], 0).unwrap();
     /// instance.access_fuel_mut(&mut resumable_ref, |x| { assert_eq!(*x, Some(0)); *x = None; }).unwrap();
