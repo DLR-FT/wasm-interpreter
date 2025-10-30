@@ -205,7 +205,7 @@ impl<'b, T: Config> RuntimeInstance<'b, T> {
         host_func_ty: FuncType,
         host_func: fn(&mut T, Vec<Value>) -> Result<Vec<Value>, HaltExecutionError>,
     ) -> Result<FunctionRef, RuntimeError> {
-        let func_addr = self.store.alloc_host_func(host_func_ty, host_func);
+        let func_addr = self.store.func_alloc(host_func_ty, host_func);
         self.store.registry.register(
             module_name.to_owned().into(),
             name.to_owned().into(),
