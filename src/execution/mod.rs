@@ -52,31 +52,34 @@ impl<'b, T: Config> RuntimeInstance<'b, T> {
         }
     }
 
+    // Returns the new [`RuntimeInstance`] and module addr of the default module.
     pub fn new_with_default_module(
         user_data: T,
         validation_info: &'_ ValidationInfo<'b>,
-    ) -> Result<Self, RuntimeError> {
+    ) -> Result<(Self, usize), RuntimeError> {
         let mut instance = Self::new(user_data);
-        instance.add_module(DEFAULT_MODULE, validation_info)?;
-        Ok(instance)
+        let module_addr = instance.add_module(DEFAULT_MODULE, validation_info)?;
+        Ok((instance, module_addr))
     }
 
+    // Returns the new [`RuntimeInstance`] and module addr of the new named module.
     pub fn new_named(
         user_data: T,
         module_name: &str,
         validation_info: &'_ ValidationInfo<'b>,
         // store: &mut Store,
-    ) -> Result<Self, RuntimeError> {
+    ) -> Result<(Self, usize), RuntimeError> {
         let mut instance = Self::new(user_data);
-        instance.add_module(module_name, validation_info)?;
-        Ok(instance)
+        let module_addr = instance.add_module(module_name, validation_info)?;
+        Ok((instance, module_addr))
     }
 
+    // Returns the module addr
     pub fn add_module(
         &mut self,
         module_name: &str,
         validation_info: &'_ ValidationInfo<'b>,
-    ) -> Result<(), RuntimeError> {
+    ) -> Result<usize, RuntimeError> {
         self.store.add_module(module_name, validation_info, None)
     }
 

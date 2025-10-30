@@ -85,12 +85,13 @@ impl<'b, T: Config> Store<'b, T> {
     /// this method roughly matches the suggested embedder function`module_instantiate`
     /// <https://webassembly.github.io/spec/core/appendix/embedding.html#modules>
     /// except external values for module instantiation are retrieved from `self`.
+    /// Returns the module addr of the new module instance
     pub fn add_module(
         &mut self,
         name: &str,
         validation_info: &ValidationInfo<'b>,
         maybe_fuel: Option<u32>,
-    ) -> Result<(), RuntimeError> {
+    ) -> Result<usize, RuntimeError> {
         // instantiation step -1: collect extern_vals, this section basically acts as a linker between modules
         // best attempt at trying to match the spec implementation in terms of errors
         debug!("adding module with name {:?}", name);
@@ -421,7 +422,7 @@ impl<'b, T: Config> Store<'b, T> {
             self.invoke(func_addr, Vec::new(), maybe_fuel)?;
         };
 
-        Ok(())
+        Ok(current_module_idx)
     }
 
     /// Gets an export of a specific module instance by its name
