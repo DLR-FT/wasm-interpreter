@@ -634,7 +634,7 @@
 <a href=#634 id=634 data-nosnippet>634</a>        }))
 <a href=#635 id=635 data-nosnippet>635</a>    }
 <a href=#636 id=636 data-nosnippet>636</a>
-<a href=#637 id=637 data-nosnippet>637</a>    <span class="kw">pub fn </span>resume(<span class="kw-2">&amp;mut </span><span class="self">self</span>, resumable_ref: ResumableRef) -&gt; <span class="prelude-ty">Result</span>&lt;RunState, RuntimeError&gt; {
+<a href=#637 id=637 data-nosnippet>637</a>    <span class="kw">pub fn </span>resume(<span class="kw-2">&amp;mut </span><span class="self">self</span>, <span class="kw-2">mut </span>resumable_ref: ResumableRef) -&gt; <span class="prelude-ty">Result</span>&lt;RunState, RuntimeError&gt; {
 <a href=#638 id=638 data-nosnippet>638</a>        <span class="kw">match </span>resumable_ref {
 <a href=#639 id=639 data-nosnippet>639</a>            ResumableRef::Fresh(FreshResumableRef {
 <a href=#640 id=640 data-nosnippet>640</a>                func_addr,
@@ -712,11 +712,11 @@
 <a href=#712 id=712 data-nosnippet>712</a>                }
 <a href=#713 id=713 data-nosnippet>713</a>            }
 <a href=#714 id=714 data-nosnippet>714</a>            ResumableRef::Invoked(InvokedResumableRef {
-<a href=#715 id=715 data-nosnippet>715</a>                <span class="kw-2">ref </span>dormitory,
+<a href=#715 id=715 data-nosnippet>715</a>                dormitory: <span class="kw-2">ref mut </span>dormitory_weak,
 <a href=#716 id=716 data-nosnippet>716</a>                <span class="kw-2">ref </span>key,
 <a href=#717 id=717 data-nosnippet>717</a>            }) =&gt; {
 <a href=#718 id=718 data-nosnippet>718</a>                <span class="comment">// Resuming requires `self`'s dormitory to still be alive
-<a href=#719 id=719 data-nosnippet>719</a>                </span><span class="kw">let </span><span class="prelude-val">Some</span>(dormitory) = dormitory.upgrade() <span class="kw">else </span>{
+<a href=#719 id=719 data-nosnippet>719</a>                </span><span class="kw">let </span><span class="prelude-val">Some</span>(dormitory) = dormitory_weak.upgrade() <span class="kw">else </span>{
 <a href=#720 id=720 data-nosnippet>720</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(RuntimeError::ResumableNotFound);
 <a href=#721 id=721 data-nosnippet>721</a>                };
 <a href=#722 id=722 data-nosnippet>722</a>
@@ -744,7 +744,7 @@
 <a href=#744 id=744 data-nosnippet>744</a>
 <a href=#745 id=745 data-nosnippet>745</a>                        <span class="comment">// Take the `Weak` pointing to the dormitory out of `self` and replace it with a default `Weak`.
 <a href=#746 id=746 data-nosnippet>746</a>                        // This causes the `Drop` impl of `self` to directly quit preventing it from unnecessarily locking the dormitory.
-<a href=#747 id=747 data-nosnippet>747</a>                        </span><span class="kw">let </span>_dormitory = mem::take(<span class="kw-2">&amp;mut </span><span class="self">self</span>.dormitory);
+<a href=#747 id=747 data-nosnippet>747</a>                        </span><span class="kw">let </span>_dormitory = mem::take(dormitory_weak);
 <a href=#748 id=748 data-nosnippet>748</a>
 <a href=#749 id=749 data-nosnippet>749</a>                        <span class="prelude-val">Ok</span>(RunState::Finished(resumable.stack.into_values()))
 <a href=#750 id=750 data-nosnippet>750</a>                    }
