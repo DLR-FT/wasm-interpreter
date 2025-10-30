@@ -18,13 +18,14 @@ pub fn f32_const() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         3.141_592_7_f32,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), ())
+            .invoke_typed(&instance.get_function_by_index(module_addr, 0).unwrap(), ())
             .unwrap()
     );
 }
@@ -48,14 +49,15 @@ pub fn f32_eq() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 (1.1_f32, 1.1_f32)
             )
             .unwrap()
@@ -64,7 +66,7 @@ pub fn f32_eq() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 (1.1_f32, 1.2_f32)
             )
             .unwrap()
@@ -78,14 +80,15 @@ pub fn f32_ne() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 (1.1_f32, 1.1_f32)
             )
             .unwrap()
@@ -94,7 +97,7 @@ pub fn f32_ne() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 (1.1_f32, 1.2_f32)
             )
             .unwrap()
@@ -103,7 +106,7 @@ pub fn f32_ne() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 (0.0_f32, -0.0_f32)
             )
             .unwrap()
@@ -117,14 +120,15 @@ pub fn f32_lt() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 (1.0_f32, 2.0_f32)
             )
             .unwrap()
@@ -133,7 +137,7 @@ pub fn f32_lt() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 (2.0_f32, 1.0_f32)
             )
             .unwrap()
@@ -142,7 +146,7 @@ pub fn f32_lt() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 (1.0_f32, 1.0_f32)
             )
             .unwrap()
@@ -156,14 +160,15 @@ pub fn f32_gt() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 (1.0_f32, 2.0_f32)
             )
             .unwrap()
@@ -172,7 +177,7 @@ pub fn f32_gt() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 (2.0_f32, 1.0_f32)
             )
             .unwrap()
@@ -181,7 +186,7 @@ pub fn f32_gt() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 (1.0_f32, 1.0_f32)
             )
             .unwrap()
@@ -195,14 +200,15 @@ pub fn f32_le() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 (1.0_f32, 2.0_f32)
             )
             .unwrap()
@@ -211,7 +217,7 @@ pub fn f32_le() {
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 (2.0_f32, 1.0_f32)
             )
             .unwrap()
@@ -220,7 +226,7 @@ pub fn f32_le() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 (1.0_f32, 1.0_f32)
             )
             .unwrap()
@@ -234,14 +240,15 @@ pub fn f32_ge() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         0,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 (1.0_f32, 2.0_f32)
             )
             .unwrap()
@@ -250,7 +257,7 @@ pub fn f32_ge() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 (2.0_f32, 1.0_f32)
             )
             .unwrap()
@@ -259,7 +266,7 @@ pub fn f32_ge() {
         1,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 (1.0_f32, 1.0_f32)
             )
             .unwrap()
@@ -281,19 +288,16 @@ pub fn f32_abs() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     {
         let result = instance
-            .invoke_typed::<f32, f32>(&instance.get_function_by_index(0, 0).unwrap(), -f32::NAN)
-            .unwrap();
-        assert!(result.is_nan());
-        assert!(result.is_sign_positive());
-    }
-    {
-        let result = instance
-            .invoke_typed::<f32, f32>(&instance.get_function_by_index(0, 0).unwrap(), f32::NAN)
+            .invoke_typed::<f32, f32>(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -f32::NAN,
+            )
             .unwrap();
         assert!(result.is_nan());
         assert!(result.is_sign_positive());
@@ -301,7 +305,17 @@ pub fn f32_abs() {
     {
         let result = instance
             .invoke_typed::<f32, f32>(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                f32::NAN,
+            )
+            .unwrap();
+        assert!(result.is_nan());
+        assert!(result.is_sign_positive());
+    }
+    {
+        let result = instance
+            .invoke_typed::<f32, f32>(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 f32::NEG_INFINITY,
             )
             .unwrap();
@@ -311,7 +325,7 @@ pub fn f32_abs() {
     {
         let result = instance
             .invoke_typed::<f32, f32>(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 f32::INFINITY,
             )
             .unwrap();
@@ -321,25 +335,37 @@ pub fn f32_abs() {
     assert_eq!(
         1.5_f32,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 1.5_f32)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                1.5_f32
+            )
             .unwrap()
     );
     assert_eq!(
         1.5_f32,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -1.5_f32)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -1.5_f32
+            )
             .unwrap()
     );
     assert_eq!(
         0.0_f32,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 0.0_f32)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                0.0_f32
+            )
             .unwrap()
     );
     assert_eq!(
         0.0_f32,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -0.0_f32)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -0.0_f32
+            )
             .unwrap()
     );
 }
@@ -351,19 +377,26 @@ pub fn f32_neg() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     {
         let result = instance
-            .invoke_typed::<f32, f32>(&instance.get_function_by_index(0, 0).unwrap(), -f32::NAN)
+            .invoke_typed::<f32, f32>(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -f32::NAN,
+            )
             .unwrap();
         assert!(result.is_nan());
         assert!(result.is_sign_positive());
     }
     {
         let result = instance
-            .invoke_typed::<f32, f32>(&instance.get_function_by_index(0, 0).unwrap(), f32::NAN)
+            .invoke_typed::<f32, f32>(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                f32::NAN,
+            )
             .unwrap();
         assert!(result.is_nan());
         assert!(result.is_sign_negative());
@@ -371,7 +404,7 @@ pub fn f32_neg() {
     {
         let result = instance
             .invoke_typed::<f32, f32>(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 f32::NEG_INFINITY,
             )
             .unwrap();
@@ -381,7 +414,7 @@ pub fn f32_neg() {
     {
         let result = instance
             .invoke_typed::<f32, f32>(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 f32::INFINITY,
             )
             .unwrap();
@@ -391,25 +424,37 @@ pub fn f32_neg() {
     assert_eq!(
         -1.5_f32,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 1.5_f32)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                1.5_f32
+            )
             .unwrap()
     );
     assert_eq!(
         1.5_f32,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -1.5_f32)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -1.5_f32
+            )
             .unwrap()
     );
     assert_eq!(
         -0.0_f32,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 0.0_f32)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                0.0_f32
+            )
             .unwrap()
     );
     assert_eq!(
         0.0_f32,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -0.0_f32)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -0.0_f32
+            )
             .unwrap()
     );
 }
@@ -421,25 +466,35 @@ pub fn f32_ceil() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         2.0_f32,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 1.5_f32)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                1.5_f32
+            )
             .unwrap()
     );
     assert_eq!(
         -1.0_f32,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -1.5_f32)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -1.5_f32
+            )
             .unwrap()
     );
     assert_eq!(
         0.0_f32,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -0.1_f32)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -0.1_f32
+            )
             .unwrap()
     );
 }
@@ -451,25 +506,35 @@ pub fn f32_floor() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         1.0_f32,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 1.5_f32)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                1.5_f32
+            )
             .unwrap()
     );
     assert_eq!(
         -2.0_f32,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -1.5_f32)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -1.5_f32
+            )
             .unwrap()
     );
     assert_eq!(
         -1.0_f32,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -0.1_f32)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -0.1_f32
+            )
             .unwrap()
     );
 }
@@ -481,25 +546,35 @@ pub fn f32_trunc() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         1.0_f32,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 1.5_f32)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                1.5_f32
+            )
             .unwrap()
     );
     assert_eq!(
         -1.0_f32,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -1.5_f32)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -1.5_f32
+            )
             .unwrap()
     );
     assert_eq!(
         0.0_f32,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 0.9_f32)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                0.9_f32
+            )
             .unwrap()
     );
 }
@@ -511,31 +586,44 @@ pub fn f32_nearest() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         2.0_f32,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 1.5_f32)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                1.5_f32
+            )
             .unwrap()
     );
     assert_eq!(
         -2.0_f32,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -1.5_f32)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -1.5_f32
+            )
             .unwrap()
     );
     assert_eq!(
         1.0_f32,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 0.6_f32)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                0.6_f32
+            )
             .unwrap()
     );
     assert_eq!(
         0.0_f32,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 0.4_f32)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                0.4_f32
+            )
             .unwrap()
     );
 }
@@ -548,23 +636,33 @@ pub fn f32_sqrt() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         2.0_f32,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 4.0_f32)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                4.0_f32
+            )
             .unwrap()
     );
     assert_eq!(
         1.4142135_f32,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 2.0_f32)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                2.0_f32
+            )
             .unwrap()
     );
     assert!(instance
-        .invoke_typed::<f32, f32>(&instance.get_function_by_index(0, 0).unwrap(), -f32::NAN)
+        .invoke_typed::<f32, f32>(
+            &instance.get_function_by_index(module_addr, 0).unwrap(),
+            -f32::NAN
+        )
         .unwrap()
         .is_nan());
 }
@@ -585,14 +683,15 @@ pub fn f32_add() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         3.0_f32,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 (1.5_f32, 1.5_f32)
             )
             .unwrap()
@@ -601,7 +700,7 @@ pub fn f32_add() {
         -1.0_f32,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 (1.0_f32, -2.0_f32)
             )
             .unwrap()
@@ -610,7 +709,7 @@ pub fn f32_add() {
         0.0_f32,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 (0.1_f32, -0.1_f32)
             )
             .unwrap()
@@ -624,14 +723,15 @@ pub fn f32_sub() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         0.0_f32,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 (1.5_f32, 1.5_f32)
             )
             .unwrap()
@@ -640,7 +740,7 @@ pub fn f32_sub() {
         3.0_f32,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 (1.0_f32, -2.0_f32)
             )
             .unwrap()
@@ -649,7 +749,7 @@ pub fn f32_sub() {
         0.2_f32,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 (0.1_f32, -0.1_f32)
             )
             .unwrap()
@@ -663,14 +763,15 @@ pub fn f32_mul() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         6.0_f32,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 (2.0_f32, 3.0_f32)
             )
             .unwrap()
@@ -679,7 +780,7 @@ pub fn f32_mul() {
         -4.0_f32,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 (2.0_f32, -2.0_f32)
             )
             .unwrap()
@@ -688,7 +789,7 @@ pub fn f32_mul() {
         0.0_f32,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 (0.0_f32, 5.0_f32)
             )
             .unwrap()
@@ -702,14 +803,15 @@ pub fn f32_div() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         2.0_f32,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 (6.0_f32, 3.0_f32)
             )
             .unwrap()
@@ -718,21 +820,21 @@ pub fn f32_div() {
         -1.0_f32,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 (2.0_f32, -2.0_f32)
             )
             .unwrap()
     );
     assert!(instance
         .invoke_typed::<(f32, f32), f32>(
-            &instance.get_function_by_index(0, 0).unwrap(),
+            &instance.get_function_by_index(module_addr, 0).unwrap(),
             (1.0_f32, 0.0_f32)
         )
         .unwrap()
         .is_infinite());
     assert!(instance
         .invoke_typed::<(f32, f32), f32>(
-            &instance.get_function_by_index(0, 0).unwrap(),
+            &instance.get_function_by_index(module_addr, 0).unwrap(),
             (0.0_f32, 0.0_f32)
         )
         .unwrap()
@@ -746,13 +848,14 @@ pub fn f32_min() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     {
         let result = instance
             .invoke_typed::<(f32, f32), f32>(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 (f32::NAN, -f32::NAN),
             )
             .unwrap();
@@ -761,7 +864,7 @@ pub fn f32_min() {
     {
         let result = instance
             .invoke_typed::<(f32, f32), f32>(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 (f32::NAN, f32::NAN),
             )
             .unwrap();
@@ -771,7 +874,7 @@ pub fn f32_min() {
     {
         let result = instance
             .invoke_typed::<(f32, f32), f32>(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 (f32::INFINITY, f32::NEG_INFINITY),
             )
             .unwrap();
@@ -782,7 +885,7 @@ pub fn f32_min() {
         42_f32,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 (f32::INFINITY, 42_f32)
             )
             .unwrap()
@@ -791,7 +894,7 @@ pub fn f32_min() {
         -0_f32,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 (-0_f32, 0_f32)
             )
             .unwrap()
@@ -800,7 +903,7 @@ pub fn f32_min() {
         1.0_f32,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 (1.0_f32, 2.0_f32)
             )
             .unwrap()
@@ -809,7 +912,7 @@ pub fn f32_min() {
         -2.0_f32,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 (-1.0_f32, -2.0_f32)
             )
             .unwrap()
@@ -818,14 +921,14 @@ pub fn f32_min() {
         -0.0_f32,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 (0.0_f32, -0.0_f32)
             )
             .unwrap()
     );
     assert!(instance
         .invoke_typed::<(f32, f32), f32>(
-            &instance.get_function_by_index(0, 0).unwrap(),
+            &instance.get_function_by_index(module_addr, 0).unwrap(),
             (f32::NAN, 1.0_f32)
         )
         .unwrap()
@@ -839,13 +942,14 @@ pub fn f32_max() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     {
         let result = instance
             .invoke_typed::<(f32, f32), f32>(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 (f32::NAN, -f32::NAN),
             )
             .unwrap();
@@ -854,7 +958,7 @@ pub fn f32_max() {
     {
         let result = instance
             .invoke_typed::<(f32, f32), f32>(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 (f32::NAN, f32::NAN),
             )
             .unwrap();
@@ -864,7 +968,7 @@ pub fn f32_max() {
     {
         let result = instance
             .invoke_typed::<(f32, f32), f32>(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 (f32::INFINITY, f32::NEG_INFINITY),
             )
             .unwrap();
@@ -875,7 +979,7 @@ pub fn f32_max() {
         42_f32,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 (f32::NEG_INFINITY, 42_f32)
             )
             .unwrap()
@@ -884,7 +988,7 @@ pub fn f32_max() {
         0_f32,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 (-0_f32, 0_f32)
             )
             .unwrap()
@@ -894,7 +998,7 @@ pub fn f32_max() {
         2.0_f32,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 (1.0_f32, 2.0_f32)
             )
             .unwrap()
@@ -903,7 +1007,7 @@ pub fn f32_max() {
         -1.0_f32,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 (-1.0_f32, -2.0_f32)
             )
             .unwrap()
@@ -912,14 +1016,14 @@ pub fn f32_max() {
         0.0_f32,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 (0.0_f32, -0.0_f32)
             )
             .unwrap()
     );
     assert!(instance
         .invoke_typed::<(f32, f32), f32>(
-            &instance.get_function_by_index(0, 0).unwrap(),
+            &instance.get_function_by_index(module_addr, 0).unwrap(),
             (f32::NAN, 1.0_f32)
         )
         .unwrap()
@@ -933,14 +1037,15 @@ pub fn f32_copysign() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         1.5_f32,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 (1.5_f32, 2.0_f32)
             )
             .unwrap()
@@ -949,7 +1054,7 @@ pub fn f32_copysign() {
         -1.5_f32,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 (1.5_f32, -2.0_f32)
             )
             .unwrap()
@@ -958,7 +1063,7 @@ pub fn f32_copysign() {
         -1.5_f32,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 (-1.5_f32, -0.0_f32)
             )
             .unwrap()
@@ -967,7 +1072,7 @@ pub fn f32_copysign() {
         1.5_f32,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 (-1.5_f32, 0.0_f32)
             )
             .unwrap()
@@ -986,12 +1091,16 @@ pub fn f32_convert_i32_s() {
     "#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     let i32_s_val = -42_i32;
     let f32_result = instance
-        .invoke_typed::<i32, f32>(&instance.get_function_by_index(0, 0).unwrap(), i32_s_val)
+        .invoke_typed::<i32, f32>(
+            &instance.get_function_by_index(module_addr, 0).unwrap(),
+            i32_s_val,
+        )
         .unwrap();
     assert_eq!(f32_result, -42.0_f32);
 }
@@ -1008,8 +1117,9 @@ pub fn f32_convert_i32_u() {
     "#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     let test_cases: Vec<(i32, f32)> = vec![
         (-2147483648, 2147483648.0),
@@ -1023,7 +1133,10 @@ pub fn f32_convert_i32_u() {
 
     for (input, expected) in test_cases {
         let result = instance
-            .invoke_typed::<i32, f32>(&instance.get_function_by_index(0, 0).unwrap(), input)
+            .invoke_typed::<i32, f32>(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                input,
+            )
             .unwrap();
         assert_eq!(
             result, expected,
@@ -1035,7 +1148,10 @@ pub fn f32_convert_i32_u() {
     // Test for precision loss
     let large_value = 0xFFFFFFFF_u32 as i32; // Maximum u32 value
     let result = instance
-        .invoke_typed::<i32, f32>(&instance.get_function_by_index(0, 0).unwrap(), large_value)
+        .invoke_typed::<i32, f32>(
+            &instance.get_function_by_index(module_addr, 0).unwrap(),
+            large_value,
+        )
         .unwrap();
     assert!(
         result > 4294967040.0 && result <= 4294967296.0,
@@ -1055,12 +1171,16 @@ pub fn f32_convert_i64_s() {
     "#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     let i64_s_val = i64::MIN; // Minimum i64 value
     let f32_result: f32 = instance
-        .invoke_typed::<i64, f32>(&instance.get_function_by_index(0, 0).unwrap(), i64_s_val)
+        .invoke_typed::<i64, f32>(
+            &instance.get_function_by_index(module_addr, 0).unwrap(),
+            i64_s_val,
+        )
         .unwrap();
     assert_eq!(f32_result, i64::MIN as f32);
 
@@ -1068,7 +1188,7 @@ pub fn f32_convert_i64_s() {
         9223371500000000000.0,
         instance
             .invoke_typed::<i64, f32>(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 0x7fffff4000000001_i64
             )
             .unwrap()
@@ -1077,7 +1197,7 @@ pub fn f32_convert_i64_s() {
         -9223371500000000000.0,
         instance
             .invoke_typed::<i64, f32>(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 0x8000004000000001_u64 as i64
             )
             .unwrap()
@@ -1096,14 +1216,15 @@ pub fn f32_convert_i64_u() {
     "#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         9223373000000000000.0,
         instance
             .invoke_typed::<i64, f32>(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 0x8000008000000001u64 as i64
             )
             .unwrap()
@@ -1112,7 +1233,7 @@ pub fn f32_convert_i64_u() {
         18446743000000000000.0,
         instance
             .invoke_typed::<i64, f32>(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 0xfffffe8000000001u64 as i64
             )
             .unwrap()
@@ -1131,8 +1252,9 @@ pub fn f32_reinterpret_i32() {
     "#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     let test_cases = vec![
         (0x00000000, 0.0), // Positive zero
@@ -1146,7 +1268,10 @@ pub fn f32_reinterpret_i32() {
 
     for (input, expected) in test_cases {
         let result = instance
-            .invoke_typed::<i32, f32>(&instance.get_function_by_index(0, 0).unwrap(), input)
+            .invoke_typed::<i32, f32>(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                input,
+            )
             .unwrap();
         if expected.is_nan() {
             assert!(result.is_nan(), "Failed for input: {input:x}");

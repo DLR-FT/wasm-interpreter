@@ -6,7 +6,6 @@
 //! 1. There must be only imports and one `impl` with one function (`run`) in it.
 //! 2. This module must only use [`RuntimeError`] and never [`Error`](crate::core::error::ValidationError).
 
-use alloc::vec::Vec;
 use core::{
     num::NonZeroU32,
     {
@@ -17,6 +16,7 @@ use core::{
 };
 
 use crate::{
+    addrs::{AddrVec, DataAddr, ElemAddr, MemAddr, ModuleAddr, TableAddr},
     assert_validated::UnwrapValidatedExt,
     core::{
         indices::{DataIdx, FuncIdx, GlobalIdx, LabelIdx, LocalIdx, MemIdx, TableIdx, TypeIdx},
@@ -27,12 +27,12 @@ use crate::{
         sidetable::Sidetable,
     },
     resumable::Resumable,
-    store::{DataInst, HaltExecutionError},
+    store::HaltExecutionError,
     unreachable_validated,
-    value::{self, FuncAddr, Ref, F32, F64},
+    value::{self, Ref, F32, F64},
     value_stack::Stack,
-    ElemInst, FuncInst, MemInst, ModuleInst, RefType, RuntimeError, TableInst, TrapError, ValType,
-    Value,
+    DataInst, ElemInst, FuncInst, MemInst, ModuleInst, RefType, RuntimeError, TableInst, TrapError,
+    ValType, Value,
 };
 
 use crate::execution::config::Config;
@@ -51,18 +51,18 @@ pub(super) fn run<T: Config>(
     let mut current_func_addr = resumable.current_func_addr;
     let pc = resumable.pc;
     let mut stp = resumable.stp;
-    let func_inst = &store.functions[current_func_addr];
+    let func_inst = store.functions.get(current_func_addr);
     let FuncInst::WasmFunc(wasm_func_inst) = &func_inst else {
         unreachable!(
             "the interpreter loop shall only be executed with native wasm functions as root call"
         );
     };
-    let mut current_module_idx = wasm_func_inst.module_addr;
+    let mut current_module = wasm_func_inst.module_addr;
 
     // Start reading the function's instructions
-    let wasm = &mut WasmReader::new(store.modules[current_module_idx].wasm_bytecode);
+    let wasm = &mut WasmReader::new(store.modules.get(current_module).wasm_bytecode);
 
-    let mut current_sidetable: &Sidetable = &store.modules[current_module_idx].sidetable;
+    let mut current_sidetable: &Sidetable = &store.modules.get(current_module).sidetable;
 
     // local variable for holding where the function code ends (last END instr address + 1) to avoid lookup at every END instr
     let mut current_function_end_marker =
@@ -75,7 +75,7 @@ pub(super) fn run<T: Config>(
         // call the instruction hook
         store
             .user_data
-            .instruction_hook(store.modules[current_module_idx].wasm_bytecode, wasm.pc);
+            .instruction_hook(store.modules.get(current_module).wasm_bytecode, wasm.pc);
 
         // Fuel mechanism: 1 fuel per instruction
         if let Some(fuel) = &mut resumable.maybe_fuel {
@@ -121,16 +121,16 @@ pub(super) fn run<T: Config>(
                 trace!("end of function reached, returning to previous call frame");
                 current_func_addr = maybe_return_func_addr;
                 let FuncInst::WasmFunc(current_wasm_func_inst) =
-                    &store.functions[current_func_addr]
+                    store.functions.get(current_func_addr)
                 else {
                     unreachable!("function addresses on the stack always correspond to native wasm functions")
                 };
-                current_module_idx = current_wasm_func_inst.module_addr;
-                wasm.full_wasm_binary = store.modules[current_module_idx].wasm_bytecode;
+                current_module = current_wasm_func_inst.module_addr;
+                wasm.full_wasm_binary = store.modules.get(current_module).wasm_bytecode;
                 wasm.pc = maybe_return_address;
                 stp = maybe_return_stp;
 
-                current_sidetable = &store.modules[current_module_idx].sidetable;
+                current_sidetable = &store.modules.get(current_module).sidetable;
 
                 current_function_end_marker = current_wasm_func_inst.code_expr.from()
                     + current_wasm_func_inst.code_expr.len();
@@ -197,19 +197,21 @@ pub(super) fn run<T: Config>(
             CALL => {
                 let local_func_idx = wasm.read_var_u32().unwrap_validated() as FuncIdx;
                 let FuncInst::WasmFunc(current_wasm_func_inst) =
-                    &store.functions[current_func_addr]
+                    store.functions.get(current_func_addr)
                 else {
                     unreachable!()
                 };
 
-                let func_to_call_addr =
-                    store.modules[current_wasm_func_inst.module_addr].func_addrs[local_func_idx];
+                let func_to_call_addr = store
+                    .modules
+                    .get(current_wasm_func_inst.module_addr)
+                    .func_addrs[local_func_idx];
 
-                let func_to_call_ty = store.functions[func_to_call_addr].ty();
+                let func_to_call_ty = store.functions.get(func_to_call_addr).ty();
 
                 trace!("Instruction: call [{func_to_call_addr:?}]");
 
-                match &store.functions[func_to_call_addr] {
+                match store.functions.get(func_to_call_addr) {
                     FuncInst::HostFunc(host_func_to_call_inst) => {
                         let params = stack
                             .pop_tail_iter(func_to_call_ty.params.valtypes.len())
@@ -245,13 +247,13 @@ pub(super) fn run<T: Config>(
                         )?;
 
                         current_func_addr = func_to_call_addr;
-                        current_module_idx = wasm_func_to_call_inst.module_addr;
-                        wasm.full_wasm_binary = store.modules[current_module_idx].wasm_bytecode;
+                        current_module = wasm_func_to_call_inst.module_addr;
+                        wasm.full_wasm_binary = store.modules.get(current_module).wasm_bytecode;
                         wasm.move_start_to(wasm_func_to_call_inst.code_expr)
                             .expect("code expression spans to always be valid");
 
                         stp = wasm_func_to_call_inst.stp;
-                        current_sidetable = &store.modules[current_module_idx].sidetable;
+                        current_sidetable = &store.modules.get(current_module).sidetable;
                         current_function_end_marker = wasm_func_to_call_inst.code_expr.from()
                             + wasm_func_to_call_inst.code_expr.len();
                     }
@@ -264,12 +266,16 @@ pub(super) fn run<T: Config>(
                 let given_type_idx = wasm.read_var_u32().unwrap_validated() as TypeIdx;
                 let table_idx = wasm.read_var_u32().unwrap_validated() as TableIdx;
 
-                let table_addr = *store.modules[current_module_idx]
+                let table_addr = *store
+                    .modules
+                    .get(current_module)
                     .table_addrs
                     .get(table_idx)
                     .unwrap_validated();
-                let tab = &store.tables[table_addr];
-                let func_ty = store.modules[current_module_idx]
+                let tab = store.tables.get(table_addr);
+                let func_ty = store
+                    .modules
+                    .get(current_module)
                     .types
                     .get(given_type_idx)
                     .unwrap_validated();
@@ -290,19 +296,19 @@ pub(super) fn run<T: Config>(
                     })?;
 
                 let func_to_call_addr = match *r {
-                    Ref::Func(func_addr) => func_addr.0,
+                    Ref::Func(func_addr) => func_addr,
                     Ref::Null(_) => return Err(TrapError::IndirectCallNullFuncRef.into()),
                     Ref::Extern(_) => unreachable_validated!(),
                 };
 
-                let func_to_call_ty = store.functions[func_to_call_addr].ty();
+                let func_to_call_ty = store.functions.get(func_to_call_addr).ty();
                 if *func_ty != func_to_call_ty {
                     return Err(TrapError::SignatureMismatch.into());
                 }
 
                 trace!("Instruction: call [{func_to_call_addr:?}]");
 
-                match &store.functions[func_to_call_addr] {
+                match store.functions.get(func_to_call_addr) {
                     FuncInst::HostFunc(host_func_to_call_inst) => {
                         let params = stack
                             .pop_tail_iter(func_to_call_ty.params.valtypes.len())
@@ -338,13 +344,13 @@ pub(super) fn run<T: Config>(
                         )?;
 
                         current_func_addr = func_to_call_addr;
-                        current_module_idx = wasm_func_to_call_inst.module_addr;
-                        wasm.full_wasm_binary = store.modules[current_module_idx].wasm_bytecode;
+                        current_module = wasm_func_to_call_inst.module_addr;
+                        wasm.full_wasm_binary = store.modules.get(current_module).wasm_bytecode;
                         wasm.move_start_to(wasm_func_to_call_inst.code_expr)
                             .expect("code expression spans to always be valid");
 
                         stp = wasm_func_to_call_inst.stp;
-                        current_sidetable = &store.modules[current_module_idx].sidetable;
+                        current_sidetable = &store.modules.get(current_module).sidetable;
                         current_function_end_marker = wasm_func_to_call_inst.code_expr.from()
                             + wasm_func_to_call_inst.code_expr.len();
                     }
@@ -398,11 +404,13 @@ pub(super) fn run<T: Config>(
             }
             GLOBAL_GET => {
                 let global_idx = wasm.read_var_u32().unwrap_validated() as GlobalIdx;
-                let global_addr = *store.modules[current_module_idx]
+                let global_addr = *store
+                    .modules
+                    .get(current_module)
                     .global_addrs
                     .get(global_idx)
                     .unwrap_validated();
-                let global = &store.globals[global_addr];
+                let global = store.globals.get(global_addr);
 
                 stack.push_value::<T>(global.value)?;
 
@@ -414,21 +422,25 @@ pub(super) fn run<T: Config>(
             }
             GLOBAL_SET => {
                 let global_idx = wasm.read_var_u32().unwrap_validated() as GlobalIdx;
-                let global_addr = *store.modules[current_module_idx]
+                let global_addr = *store
+                    .modules
+                    .get(current_module)
                     .global_addrs
                     .get(global_idx)
                     .unwrap_validated();
-                let global = &mut store.globals[global_addr];
+                let global = store.globals.get_mut(global_addr);
                 global.value = stack.pop_value();
                 trace!("Instruction: GLOBAL_SET");
             }
             TABLE_GET => {
                 let table_idx = wasm.read_var_u32().unwrap_validated() as TableIdx;
-                let table_addr = *store.modules[current_module_idx]
+                let table_addr = *store
+                    .modules
+                    .get(current_module)
                     .table_addrs
                     .get(table_idx)
                     .unwrap_validated();
-                let tab = &store.tables[table_addr];
+                let tab = store.tables.get(table_addr);
 
                 let i: i32 = stack.pop_value().try_into().unwrap_validated();
 
@@ -447,11 +459,13 @@ pub(super) fn run<T: Config>(
             }
             TABLE_SET => {
                 let table_idx = wasm.read_var_u32().unwrap_validated() as TableIdx;
-                let table_addr = *store.modules[current_module_idx]
+                let table_addr = *store
+                    .modules
+                    .get(current_module)
                     .table_addrs
                     .get(table_idx)
                     .unwrap_validated();
-                let tab = &mut store.tables[table_addr];
+                let tab = store.tables.get_mut(table_addr);
 
                 let val: Ref = stack.pop_value().try_into().unwrap_validated();
                 let i: i32 = stack.pop_value().try_into().unwrap_validated();
@@ -474,11 +488,13 @@ pub(super) fn run<T: Config>(
                 let memarg = MemArg::read(wasm).unwrap_validated();
                 let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
 
-                let mem_addr = *store.modules[current_module_idx]
+                let mem_addr = *store
+                    .modules
+                    .get(current_module)
                     .mem_addrs
                     .first()
                     .unwrap_validated();
-                let mem_inst = &store.memories[mem_addr];
+                let mem_inst = store.memories.get(mem_addr);
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data = mem_inst.mem.load(idx)?;
@@ -490,11 +506,13 @@ pub(super) fn run<T: Config>(
                 let memarg = MemArg::read(wasm).unwrap_validated();
                 let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
 
-                let mem_addr = *store.modules[current_module_idx]
+                let mem_addr = *store
+                    .modules
+                    .get(current_module)
                     .mem_addrs
                     .first()
                     .unwrap_validated();
-                let mem = &store.memories[mem_addr];
+                let mem = store.memories.get(mem_addr);
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data = mem.mem.load(idx)?;
@@ -506,11 +524,13 @@ pub(super) fn run<T: Config>(
                 let memarg = MemArg::read(wasm).unwrap_validated();
                 let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
 
-                let mem_addr = *store.modules[current_module_idx]
+                let mem_addr = *store
+                    .modules
+                    .get(current_module)
                     .mem_addrs
                     .first()
                     .unwrap_validated();
-                let mem = &store.memories[mem_addr];
+                let mem = store.memories.get(mem_addr);
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data = mem.mem.load(idx)?;
@@ -522,11 +542,13 @@ pub(super) fn run<T: Config>(
                 let memarg = MemArg::read(wasm).unwrap_validated();
                 let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
 
-                let mem_addr = *store.modules[current_module_idx]
+                let mem_addr = *store
+                    .modules
+                    .get(current_module)
                     .mem_addrs
                     .first()
                     .unwrap_validated();
-                let mem = &store.memories[mem_addr];
+                let mem = store.memories.get(mem_addr);
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data = mem.mem.load(idx)?;
@@ -538,11 +560,13 @@ pub(super) fn run<T: Config>(
                 let memarg = MemArg::read(wasm).unwrap_validated();
                 let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
 
-                let mem_addr = *store.modules[current_module_idx]
+                let mem_addr = *store
+                    .modules
+                    .get(current_module)
                     .mem_addrs
                     .first()
                     .unwrap_validated();
-                let mem = &store.memories[mem_addr];
+                let mem = store.memories.get(mem_addr);
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data: i8 = mem.mem.load(idx)?;
@@ -554,11 +578,13 @@ pub(super) fn run<T: Config>(
                 let memarg = MemArg::read(wasm).unwrap_validated();
                 let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
 
-                let mem_addr = *store.modules[current_module_idx]
+                let mem_addr = *store
+                    .modules
+                    .get(current_module)
                     .mem_addrs
                     .first()
                     .unwrap_validated();
-                let mem = &store.memories[mem_addr];
+                let mem = store.memories.get(mem_addr);
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data: u8 = mem.mem.load(idx)?;
@@ -570,11 +596,13 @@ pub(super) fn run<T: Config>(
                 let memarg = MemArg::read(wasm).unwrap_validated();
                 let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
 
-                let mem_addr = *store.modules[current_module_idx]
+                let mem_addr = *store
+                    .modules
+                    .get(current_module)
                     .mem_addrs
                     .first()
                     .unwrap_validated();
-                let mem = &store.memories[mem_addr];
+                let mem = store.memories.get(mem_addr);
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data: i16 = mem.mem.load(idx)?;
@@ -586,11 +614,13 @@ pub(super) fn run<T: Config>(
                 let memarg = MemArg::read(wasm).unwrap_validated();
                 let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
 
-                let mem_addr = *store.modules[current_module_idx]
+                let mem_addr = *store
+                    .modules
+                    .get(current_module)
                     .mem_addrs
                     .first()
                     .unwrap_validated();
-                let mem = &store.memories[mem_addr];
+                let mem = store.memories.get(mem_addr);
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data: u16 = mem.mem.load(idx)?;
@@ -602,11 +632,13 @@ pub(super) fn run<T: Config>(
                 let memarg = MemArg::read(wasm).unwrap_validated();
                 let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
 
-                let mem_addr = *store.modules[current_module_idx]
+                let mem_addr = *store
+                    .modules
+                    .get(current_module)
                     .mem_addrs
                     .first()
                     .unwrap_validated();
-                let mem = &store.memories[mem_addr];
+                let mem = store.memories.get(mem_addr);
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data: i8 = mem.mem.load(idx)?;
@@ -618,11 +650,13 @@ pub(super) fn run<T: Config>(
                 let memarg = MemArg::read(wasm).unwrap_validated();
                 let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
 
-                let mem_addr = *store.modules[current_module_idx]
+                let mem_addr = *store
+                    .modules
+                    .get(current_module)
                     .mem_addrs
                     .first()
                     .unwrap_validated();
-                let mem = &store.memories[mem_addr];
+                let mem = store.memories.get(mem_addr);
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data: u8 = mem.mem.load(idx)?;
@@ -634,11 +668,13 @@ pub(super) fn run<T: Config>(
                 let memarg = MemArg::read(wasm).unwrap_validated();
                 let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
 
-                let mem_addr = *store.modules[current_module_idx]
+                let mem_addr = *store
+                    .modules
+                    .get(current_module)
                     .mem_addrs
                     .first()
                     .unwrap_validated();
-                let mem = &store.memories[mem_addr];
+                let mem = store.memories.get(mem_addr);
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data: i16 = mem.mem.load(idx)?;
@@ -650,11 +686,13 @@ pub(super) fn run<T: Config>(
                 let memarg = MemArg::read(wasm).unwrap_validated();
                 let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
 
-                let mem_addr = *store.modules[current_module_idx]
+                let mem_addr = *store
+                    .modules
+                    .get(current_module)
                     .mem_addrs
                     .first()
                     .unwrap_validated();
-                let mem = &store.memories[mem_addr];
+                let mem = store.memories.get(mem_addr);
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data: u16 = mem.mem.load(idx)?;
@@ -666,11 +704,13 @@ pub(super) fn run<T: Config>(
                 let memarg = MemArg::read(wasm).unwrap_validated();
                 let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
 
-                let mem_addr = *store.modules[current_module_idx]
+                let mem_addr = *store
+                    .modules
+                    .get(current_module)
                     .mem_addrs
                     .first()
                     .unwrap_validated();
-                let mem = &store.memories[mem_addr];
+                let mem = store.memories.get(mem_addr);
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data: i32 = mem.mem.load(idx)?;
@@ -682,11 +722,13 @@ pub(super) fn run<T: Config>(
                 let memarg = MemArg::read(wasm).unwrap_validated();
                 let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
 
-                let mem_addr = *store.modules[current_module_idx]
+                let mem_addr = *store
+                    .modules
+                    .get(current_module)
                     .mem_addrs
                     .first()
                     .unwrap_validated();
-                let mem = &store.memories[mem_addr];
+                let mem = store.memories.get(mem_addr);
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data: u32 = mem.mem.load(idx)?;
@@ -700,11 +742,13 @@ pub(super) fn run<T: Config>(
                 let data_to_store: u32 = stack.pop_value().try_into().unwrap_validated();
                 let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
 
-                let mem_addr = *store.modules[current_module_idx]
+                let mem_addr = *store
+                    .modules
+                    .get(current_module)
                     .mem_addrs
                     .first()
                     .unwrap_validated();
-                let mem = &store.memories[mem_addr];
+                let mem = store.memories.get(mem_addr);
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 mem.mem.store(idx, data_to_store)?;
@@ -717,11 +761,13 @@ pub(super) fn run<T: Config>(
                 let data_to_store: u64 = stack.pop_value().try_into().unwrap_validated();
                 let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
 
-                let mem_addr = *store.modules[current_module_idx]
+                let mem_addr = *store
+                    .modules
+                    .get(current_module)
                     .mem_addrs
                     .first()
                     .unwrap_validated();
-                let mem = &store.memories[mem_addr];
+                let mem = store.memories.get(mem_addr);
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 mem.mem.store(idx, data_to_store)?;
@@ -734,11 +780,13 @@ pub(super) fn run<T: Config>(
                 let data_to_store: F32 = stack.pop_value().try_into().unwrap_validated();
                 let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
 
-                let mem_addr = *store.modules[current_module_idx]
+                let mem_addr = *store
+                    .modules
+                    .get(current_module)
                     .mem_addrs
                     .first()
                     .unwrap_validated();
-                let mem = &store.memories[mem_addr];
+                let mem = store.memories.get(mem_addr);
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 mem.mem.store(idx, data_to_store)?;
@@ -751,11 +799,13 @@ pub(super) fn run<T: Config>(
                 let data_to_store: F64 = stack.pop_value().try_into().unwrap_validated();
                 let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
 
-                let mem_addr = *store.modules[current_module_idx]
+                let mem_addr = *store
+                    .modules
+                    .get(current_module)
                     .mem_addrs
                     .first()
                     .unwrap_validated();
-                let mem = &store.memories[mem_addr];
+                let mem = store.memories.get(mem_addr);
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 mem.mem.store(idx, data_to_store)?;
@@ -770,11 +820,13 @@ pub(super) fn run<T: Config>(
 
                 let wrapped_data = data_to_store as i8;
 
-                let mem_addr = *store.modules[current_module_idx]
+                let mem_addr = *store
+                    .modules
+                    .get(current_module)
                     .mem_addrs
                     .first()
                     .unwrap_validated();
-                let mem = &store.memories[mem_addr];
+                let mem = store.memories.get(mem_addr);
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 mem.mem.store(idx, wrapped_data)?;
@@ -789,11 +841,13 @@ pub(super) fn run<T: Config>(
 
                 let wrapped_data = data_to_store as i16;
 
-                let mem_addr = *store.modules[current_module_idx]
+                let mem_addr = *store
+                    .modules
+                    .get(current_module)
                     .mem_addrs
                     .first()
                     .unwrap_validated();
-                let mem = &store.memories[mem_addr];
+                let mem = store.memories.get(mem_addr);
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 mem.mem.store(idx, wrapped_data)?;
@@ -808,11 +862,13 @@ pub(super) fn run<T: Config>(
 
                 let wrapped_data = data_to_store as i8;
 
-                let mem_addr = *store.modules[current_module_idx]
+                let mem_addr = *store
+                    .modules
+                    .get(current_module)
                     .mem_addrs
                     .first()
                     .unwrap_validated();
-                let mem = &store.memories[mem_addr];
+                let mem = store.memories.get(mem_addr);
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 mem.mem.store(idx, wrapped_data)?;
@@ -827,11 +883,13 @@ pub(super) fn run<T: Config>(
 
                 let wrapped_data = data_to_store as i16;
 
-                let mem_addr = *store.modules[current_module_idx]
+                let mem_addr = *store
+                    .modules
+                    .get(current_module)
                     .mem_addrs
                     .first()
                     .unwrap_validated();
-                let mem = &store.memories[mem_addr];
+                let mem = store.memories.get(mem_addr);
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 mem.mem.store(idx, wrapped_data)?;
@@ -846,11 +904,13 @@ pub(super) fn run<T: Config>(
 
                 let wrapped_data = data_to_store as i32;
 
-                let mem_addr = *store.modules[current_module_idx]
+                let mem_addr = *store
+                    .modules
+                    .get(current_module)
                     .mem_addrs
                     .first()
                     .unwrap_validated();
-                let mem = &store.memories[mem_addr];
+                let mem = store.memories.get(mem_addr);
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 mem.mem.store(idx, wrapped_data)?;
@@ -859,22 +919,26 @@ pub(super) fn run<T: Config>(
             }
             MEMORY_SIZE => {
                 let mem_idx = wasm.read_u8().unwrap_validated() as usize;
-                let mem_addr = *store.modules[current_module_idx]
+                let mem_addr = *store
+                    .modules
+                    .get(current_module)
                     .mem_addrs
                     .get(mem_idx)
                     .unwrap_validated();
-                let mem = &mut store.memories[mem_addr];
+                let mem = store.memories.get(mem_addr);
                 let size = mem.size() as u32;
                 stack.push_value::<T>(Value::I32(size))?;
                 trace!("Instruction: memory.size [] -> [{}]", size);
             }
             MEMORY_GROW => {
                 let mem_idx = wasm.read_u8().unwrap_validated() as usize;
-                let mem_addr = *store.modules[current_module_idx]
+                let mem_addr = *store
+                    .modules
+                    .get(current_module)
                     .mem_addrs
                     .get(mem_idx)
                     .unwrap_validated();
-                let mem = &mut store.memories[mem_addr];
+                let mem = store.memories.get_mut(mem_addr);
                 let sz: u32 = mem.size() as u32;
 
                 let n: u32 = stack.pop_value().try_into().unwrap_validated();
@@ -2065,11 +2129,13 @@ pub(super) fn run<T: Config>(
             // https://webassembly.github.io/spec/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-ref-mathsf-ref-func-x
             REF_FUNC => {
                 let func_idx = wasm.read_var_u32().unwrap_validated() as FuncIdx;
-                let func_addr = *store.modules[current_module_idx]
+                let func_addr = *store
+                    .modules
+                    .get(current_module)
                     .func_addrs
                     .get(func_idx)
                     .unwrap_validated();
-                stack.push_value::<T>(Value::Ref(Ref::Func(FuncAddr(func_addr))))?;
+                stack.push_value::<T>(Value::Ref(Ref::Func(func_addr)))?;
             }
             FC_EXTENSIONS => {
                 // Should we call instruction hook here as well? Multibyte instruction
@@ -2223,7 +2289,7 @@ pub(super) fn run<T: Config>(
                             &store.modules,
                             &mut store.memories,
                             &store.data,
-                            current_module_idx,
+                            current_module,
                             data_idx,
                             mem_idx,
                             n,
@@ -2233,12 +2299,7 @@ pub(super) fn run<T: Config>(
                     }
                     DATA_DROP => {
                         let data_idx = wasm.read_var_u32().unwrap_validated() as DataIdx;
-                        data_drop(
-                            &store.modules,
-                            &mut store.data,
-                            current_module_idx,
-                            data_idx,
-                        )?;
+                        data_drop(&store.modules, &mut store.data, current_module, data_idx)?;
                     }
                     // See https://webassembly.github.io/bulk-memory-operations/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-copy
                     MEMORY_COPY => {
@@ -2254,17 +2315,21 @@ pub(super) fn run<T: Config>(
                         let s: i32 = stack.pop_value().try_into().unwrap_validated();
                         let d: i32 = stack.pop_value().try_into().unwrap_validated();
 
-                        let src_addr = *store.modules[current_module_idx]
+                        let src_addr = *store
+                            .modules
+                            .get(current_module)
                             .mem_addrs
                             .get(src_idx)
                             .unwrap_validated();
-                        let dst_addr = *store.modules[current_module_idx]
+                        let dst_addr = *store
+                            .modules
+                            .get(current_module)
                             .mem_addrs
                             .get(dst_idx)
                             .unwrap_validated();
 
-                        let src_mem = &store.memories[src_addr];
-                        let dest_mem = &store.memories[dst_addr];
+                        let src_mem = store.memories.get(src_addr);
+                        let dest_mem = store.memories.get(dst_addr);
 
                         dest_mem
                             .mem
@@ -2278,11 +2343,13 @@ pub(super) fn run<T: Config>(
                         //      val => the value to set each byte to (must be < 256)
                         //      d => the pointer to the region to update
                         let mem_idx = wasm.read_u8().unwrap_validated() as usize;
-                        let mem_addr = *store.modules[current_module_idx]
+                        let mem_addr = *store
+                            .modules
+                            .get(current_module)
                             .mem_addrs
                             .get(mem_idx)
                             .unwrap_validated();
-                        let mem = &mut store.memories[mem_addr];
+                        let mem = store.memories.get(mem_addr);
                         let n: i32 = stack.pop_value().try_into().unwrap_validated();
                         let val: i32 = stack.pop_value().try_into().unwrap_validated();
 
@@ -2312,7 +2379,7 @@ pub(super) fn run<T: Config>(
                             &store.modules,
                             &mut store.tables,
                             &store.elements,
-                            current_module_idx,
+                            current_module,
                             elem_idx,
                             table_idx,
                             n,
@@ -2326,7 +2393,7 @@ pub(super) fn run<T: Config>(
                         elem_drop(
                             &store.modules,
                             &mut store.elements,
-                            current_module_idx,
+                            current_module,
                             elem_idx,
                         )?;
                     }
@@ -2335,12 +2402,14 @@ pub(super) fn run<T: Config>(
                         let table_x_idx = wasm.read_var_u32().unwrap_validated() as usize;
                         let table_y_idx = wasm.read_var_u32().unwrap_validated() as usize;
 
-                        let tab_x_elem_len = store.tables
-                            [store.modules[current_module_idx].table_addrs[table_x_idx]]
+                        let tab_x_elem_len = store
+                            .tables
+                            .get(store.modules.get(current_module).table_addrs[table_x_idx])
                             .elem
                             .len();
-                        let tab_y_elem_len = store.tables
-                            [store.modules[current_module_idx].table_addrs[table_y_idx]]
+                        let tab_y_elem_len = store
+                            .tables
+                            .get(store.modules.get(current_module).table_addrs[table_y_idx])
                             .elem
                             .len();
 
@@ -2374,34 +2443,32 @@ pub(super) fn run<T: Config>(
                         let src = table_y_idx;
 
                         if table_x_idx == table_y_idx {
-                            let table_addr = *store.modules[current_module_idx]
+                            let table_addr = *store
+                                .modules
+                                .get(current_module)
                                 .table_addrs
                                 .get(table_x_idx)
                                 .unwrap_validated();
-                            let table = &mut store.tables[table_addr];
+                            let table = store.tables.get_mut(table_addr);
                             table.elem.copy_within(s as usize..src_res, d as usize);
                         } else {
-                            use core::cmp::Ordering::*;
-                            let src_addr = *store.modules[current_module_idx]
+                            let src_addr = *store
+                                .modules
+                                .get(current_module)
                                 .table_addrs
                                 .get(src)
                                 .unwrap_validated();
-                            let dst_addr = *store.modules[current_module_idx]
+                            let dst_addr = *store
+                                .modules
+                                .get(current_module)
                                 .table_addrs
                                 .get(dst)
                                 .unwrap_validated();
 
-                            let (src_table, dst_table) = match dst_addr.cmp(&src_addr) {
-                                Greater => {
-                                    let (left, right) = store.tables.split_at_mut(dst_addr);
-                                    (&left[src_addr], &mut right[0])
-                                }
-                                Less => {
-                                    let (left, right) = store.tables.split_at_mut(src_addr);
-                                    (&right[0], &mut left[dst_addr])
-                                }
-                                Equal => unreachable!(),
-                            };
+                            let (src_table, dst_table) = store
+                                .tables
+                                .get_two_mut(src_addr, dst_addr)
+                                .expect("both addrs to never be equal");
 
                             dst_table.elem[d as usize..dst_res]
                                 .copy_from_slice(&src_table.elem[s as usize..src_res]);
@@ -2418,11 +2485,13 @@ pub(super) fn run<T: Config>(
                     }
                     TABLE_GROW => {
                         let table_idx = wasm.read_var_u32().unwrap_validated() as usize;
-                        let table_addr = *store.modules[current_module_idx]
+                        let table_addr = *store
+                            .modules
+                            .get(current_module)
                             .table_addrs
                             .get(table_idx)
                             .unwrap_validated();
-                        let tab = &mut store.tables[table_addr];
+                        let tab = &mut store.tables.get_mut(table_addr);
 
                         let sz = tab.elem.len() as u32;
 
@@ -2443,11 +2512,13 @@ pub(super) fn run<T: Config>(
                     }
                     TABLE_SIZE => {
                         let table_idx = wasm.read_var_u32().unwrap_validated() as usize;
-                        let table_addr = *store.modules[current_module_idx]
+                        let table_addr = *store
+                            .modules
+                            .get(current_module)
                             .table_addrs
                             .get(table_idx)
                             .unwrap_validated();
-                        let tab = &mut store.tables[table_addr];
+                        let tab = store.tables.get(table_addr);
 
                         let sz = tab.elem.len() as u32;
 
@@ -2457,11 +2528,13 @@ pub(super) fn run<T: Config>(
                     }
                     TABLE_FILL => {
                         let table_idx = wasm.read_var_u32().unwrap_validated() as usize;
-                        let table_addr = *store.modules[current_module_idx]
+                        let table_addr = *store
+                            .modules
+                            .get(current_module)
                             .table_addrs
                             .get(table_idx)
                             .unwrap_validated();
-                        let tab = &mut store.tables[table_addr];
+                        let tab = store.tables.get_mut(table_addr);
 
                         let len: u32 = stack.pop_value().try_into().unwrap_validated();
                         let val: Ref = stack.pop_value().try_into().unwrap_validated();
@@ -2582,11 +2655,13 @@ pub(super) fn run<T: Config>(
                 match second_instr {
                     V128_LOAD => {
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let mem_addr = store.modules[current_module_idx]
+                        let mem_addr = *store
+                            .modules
+                            .get(current_module)
                             .mem_addrs
                             .first()
                             .unwrap_validated();
-                        let memory = &store.memories[*mem_addr];
+                        let memory = store.memories.get(mem_addr);
 
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -2596,11 +2671,13 @@ pub(super) fn run<T: Config>(
                     }
                     V128_STORE => {
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let mem_addr = store.modules[current_module_idx]
+                        let mem_addr = *store
+                            .modules
+                            .get(current_module)
                             .mem_addrs
                             .first()
                             .unwrap_validated();
-                        let memory = &store.memories[*mem_addr];
+                        let memory = store.memories.get(mem_addr);
 
                         let data: [u8; 16] = stack.pop_value().try_into().unwrap_validated();
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
@@ -2612,11 +2689,13 @@ pub(super) fn run<T: Config>(
                     // v128.loadNxM_sx
                     V128_LOAD8X8_S => {
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let mem_addr = store.modules[current_module_idx]
+                        let mem_addr = *store
+                            .modules
+                            .get(current_module)
                             .mem_addrs
                             .first()
                             .unwrap_validated();
-                        let memory = &store.memories[*mem_addr];
+                        let memory = store.memories.get(mem_addr);
 
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -2634,11 +2713,13 @@ pub(super) fn run<T: Config>(
                     }
                     V128_LOAD8X8_U => {
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let mem_addr = store.modules[current_module_idx]
+                        let mem_addr = *store
+                            .modules
+                            .get(current_module)
                             .mem_addrs
                             .first()
                             .unwrap_validated();
-                        let memory = &store.memories[*mem_addr];
+                        let memory = store.memories.get(mem_addr);
 
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -2656,11 +2737,13 @@ pub(super) fn run<T: Config>(
                     }
                     V128_LOAD16X4_S => {
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let mem_addr = store.modules[current_module_idx]
+                        let mem_addr = *store
+                            .modules
+                            .get(current_module)
                             .mem_addrs
                             .first()
                             .unwrap_validated();
-                        let memory = &store.memories[*mem_addr];
+                        let memory = store.memories.get(mem_addr);
 
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -2678,11 +2761,13 @@ pub(super) fn run<T: Config>(
                     }
                     V128_LOAD16X4_U => {
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let mem_addr = store.modules[current_module_idx]
+                        let mem_addr = *store
+                            .modules
+                            .get(current_module)
                             .mem_addrs
                             .first()
                             .unwrap_validated();
-                        let memory = &store.memories[*mem_addr];
+                        let memory = store.memories.get(mem_addr);
 
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -2700,11 +2785,13 @@ pub(super) fn run<T: Config>(
                     }
                     V128_LOAD32X2_S => {
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let mem_addr = store.modules[current_module_idx]
+                        let mem_addr = *store
+                            .modules
+                            .get(current_module)
                             .mem_addrs
                             .first()
                             .unwrap_validated();
-                        let memory = &store.memories[*mem_addr];
+                        let memory = store.memories.get(mem_addr);
 
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -2722,11 +2809,13 @@ pub(super) fn run<T: Config>(
                     }
                     V128_LOAD32X2_U => {
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let mem_addr = store.modules[current_module_idx]
+                        let mem_addr = *store
+                            .modules
+                            .get(current_module)
                             .mem_addrs
                             .first()
                             .unwrap_validated();
-                        let memory = &store.memories[*mem_addr];
+                        let memory = store.memories.get(mem_addr);
 
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -2746,11 +2835,13 @@ pub(super) fn run<T: Config>(
                     // v128.loadN_splat
                     V128_LOAD8_SPLAT => {
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let mem_addr = store.modules[current_module_idx]
+                        let mem_addr = *store
+                            .modules
+                            .get(current_module)
                             .mem_addrs
                             .first()
                             .unwrap_validated();
-                        let memory = &store.memories[*mem_addr];
+                        let memory = store.memories.get(mem_addr);
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let idx = calculate_mem_address(&memarg, relative_address)?;
 
@@ -2759,11 +2850,13 @@ pub(super) fn run<T: Config>(
                     }
                     V128_LOAD16_SPLAT => {
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let mem_addr = store.modules[current_module_idx]
+                        let mem_addr = *store
+                            .modules
+                            .get(current_module)
                             .mem_addrs
                             .first()
                             .unwrap_validated();
-                        let memory = &store.memories[*mem_addr];
+                        let memory = store.memories.get(mem_addr);
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let idx = calculate_mem_address(&memarg, relative_address)?;
 
@@ -2772,11 +2865,13 @@ pub(super) fn run<T: Config>(
                     }
                     V128_LOAD32_SPLAT => {
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let mem_addr = store.modules[current_module_idx]
+                        let mem_addr = *store
+                            .modules
+                            .get(current_module)
                             .mem_addrs
                             .first()
                             .unwrap_validated();
-                        let memory = &store.memories[*mem_addr];
+                        let memory = store.memories.get(mem_addr);
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let idx = calculate_mem_address(&memarg, relative_address)?;
 
@@ -2785,11 +2880,13 @@ pub(super) fn run<T: Config>(
                     }
                     V128_LOAD64_SPLAT => {
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let mem_addr = store.modules[current_module_idx]
+                        let mem_addr = *store
+                            .modules
+                            .get(current_module)
                             .mem_addrs
                             .first()
                             .unwrap_validated();
-                        let memory = &store.memories[*mem_addr];
+                        let memory = store.memories.get(mem_addr);
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let idx = calculate_mem_address(&memarg, relative_address)?;
 
@@ -2800,11 +2897,13 @@ pub(super) fn run<T: Config>(
                     // v128.loadN_zero
                     V128_LOAD32_ZERO => {
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let mem_addr = store.modules[current_module_idx]
+                        let mem_addr = *store
+                            .modules
+                            .get(current_module)
                             .mem_addrs
                             .first()
                             .unwrap_validated();
-                        let memory = &store.memories[*mem_addr];
+                        let memory = store.memories.get(mem_addr);
 
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -2814,11 +2913,13 @@ pub(super) fn run<T: Config>(
                     }
                     V128_LOAD64_ZERO => {
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let mem_addr = store.modules[current_module_idx]
+                        let mem_addr = *store
+                            .modules
+                            .get(current_module)
                             .mem_addrs
                             .first()
                             .unwrap_validated();
-                        let memory = &store.memories[*mem_addr];
+                        let memory = store.memories.get(mem_addr);
 
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -2832,11 +2933,13 @@ pub(super) fn run<T: Config>(
                         let data: [u8; 16] = stack.pop_value().try_into().unwrap_validated();
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let mem_addr = store.modules[current_module_idx]
+                        let mem_addr = *store
+                            .modules
+                            .get(current_module)
                             .mem_addrs
                             .first()
                             .unwrap_validated();
-                        let memory = &store.memories[*mem_addr];
+                        let memory = store.memories.get(mem_addr);
                         let idx = calculate_mem_address(&memarg, relative_address)?;
                         let lane_idx = wasm.read_u8().unwrap_validated() as usize;
                         let mut lanes: [u8; 16] = to_lanes(data);
@@ -2849,11 +2952,13 @@ pub(super) fn run<T: Config>(
                         let data: [u8; 16] = stack.pop_value().try_into().unwrap_validated();
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let mem_addr = store.modules[current_module_idx]
+                        let mem_addr = *store
+                            .modules
+                            .get(current_module)
                             .mem_addrs
                             .first()
                             .unwrap_validated();
-                        let memory = &store.memories[*mem_addr];
+                        let memory = store.memories.get(mem_addr);
                         let idx = calculate_mem_address(&memarg, relative_address)?;
                         let lane_idx = wasm.read_u8().unwrap_validated() as usize;
                         let mut lanes: [u16; 8] = to_lanes(data);
@@ -2865,11 +2970,13 @@ pub(super) fn run<T: Config>(
                         let data: [u8; 16] = stack.pop_value().try_into().unwrap_validated();
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let mem_addr = store.modules[current_module_idx]
+                        let mem_addr = *store
+                            .modules
+                            .get(current_module)
                             .mem_addrs
                             .first()
                             .unwrap_validated();
-                        let memory = &store.memories[*mem_addr];
+                        let memory = store.memories.get(mem_addr);
                         let idx = calculate_mem_address(&memarg, relative_address)?;
                         let lane_idx = wasm.read_u8().unwrap_validated() as usize;
                         let mut lanes: [u32; 4] = to_lanes(data);
@@ -2881,11 +2988,13 @@ pub(super) fn run<T: Config>(
                         let data: [u8; 16] = stack.pop_value().try_into().unwrap_validated();
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let mem_addr = store.modules[current_module_idx]
+                        let mem_addr = *store
+                            .modules
+                            .get(current_module)
                             .mem_addrs
                             .first()
                             .unwrap_validated();
-                        let memory = &store.memories[*mem_addr];
+                        let memory = store.memories.get(mem_addr);
                         let idx = calculate_mem_address(&memarg, relative_address)?;
                         let lane_idx = wasm.read_u8().unwrap_validated() as usize;
                         let mut lanes: [u64; 2] = to_lanes(data);
@@ -2899,11 +3008,13 @@ pub(super) fn run<T: Config>(
                         let data: [u8; 16] = stack.pop_value().try_into().unwrap_validated();
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let mem_addr = store.modules[current_module_idx]
+                        let mem_addr = *store
+                            .modules
+                            .get(current_module)
                             .mem_addrs
                             .first()
                             .unwrap_validated();
-                        let memory = &store.memories[*mem_addr];
+                        let memory = store.memories.get(mem_addr);
                         let idx = calculate_mem_address(&memarg, relative_address)?;
                         let lane_idx = wasm.read_u8().unwrap_validated() as usize;
 
@@ -2915,11 +3026,13 @@ pub(super) fn run<T: Config>(
                         let data: [u8; 16] = stack.pop_value().try_into().unwrap_validated();
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let mem_addr = store.modules[current_module_idx]
+                        let mem_addr = *store
+                            .modules
+                            .get(current_module)
                             .mem_addrs
                             .first()
                             .unwrap_validated();
-                        let memory = &store.memories[*mem_addr];
+                        let memory = store.memories.get(mem_addr);
                         let idx = calculate_mem_address(&memarg, relative_address)?;
                         let lane_idx = wasm.read_u8().unwrap_validated() as usize;
 
@@ -2931,11 +3044,13 @@ pub(super) fn run<T: Config>(
                         let data: [u8; 16] = stack.pop_value().try_into().unwrap_validated();
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let mem_addr = store.modules[current_module_idx]
+                        let mem_addr = *store
+                            .modules
+                            .get(current_module)
                             .mem_addrs
                             .first()
                             .unwrap_validated();
-                        let memory = &store.memories[*mem_addr];
+                        let memory = store.memories.get(mem_addr);
                         let idx = calculate_mem_address(&memarg, relative_address)?;
                         let lane_idx = wasm.read_u8().unwrap_validated() as usize;
 
@@ -2947,11 +3062,13 @@ pub(super) fn run<T: Config>(
                         let data: [u8; 16] = stack.pop_value().try_into().unwrap_validated();
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let mem_addr = store.modules[current_module_idx]
+                        let mem_addr = *store
+                            .modules
+                            .get(current_module)
                             .mem_addrs
                             .first()
                             .unwrap_validated();
-                        let memory = &store.memories[*mem_addr];
+                        let memory = store.memories.get(mem_addr);
                         let idx = calculate_mem_address(&memarg, relative_address)?;
                         let lane_idx = wasm.read_u8().unwrap_validated() as usize;
 
@@ -4944,27 +5061,30 @@ fn calculate_mem_address(memarg: &MemArg, relative_address: u32) -> Result<usize
 #[inline(always)]
 #[allow(clippy::too_many_arguments)]
 pub(super) fn table_init(
-    store_modules: &[ModuleInst],
-    store_tables: &mut [TableInst],
-    store_elements: &[ElemInst],
-    current_module_idx: usize,
+    store_modules: &AddrVec<ModuleAddr, ModuleInst>,
+    store_tables: &mut AddrVec<TableAddr, TableInst>,
+    store_elements: &AddrVec<ElemAddr, ElemInst>,
+    current_module: ModuleAddr,
     elem_idx: usize,
     table_idx: usize,
     n: i32,
     s: i32,
     d: i32,
 ) -> Result<(), RuntimeError> {
-    let tab_addr = *store_modules[current_module_idx]
+    let tab_addr = *store_modules
+        .get(current_module)
         .table_addrs
         .get(table_idx)
         .unwrap_validated();
-    let tab = &mut store_tables[tab_addr];
-
-    let elem_addr = *store_modules[current_module_idx]
+    let elem_addr = *store_modules
+        .get(current_module)
         .elem_addrs
         .get(elem_idx)
         .unwrap_validated();
-    let elem = &store_elements[elem_addr];
+
+    let tab = store_tables.get_mut(tab_addr);
+
+    let elem = store_elements.get(elem_addr);
 
     trace!(
         "Instruction: table.init '{}' '{}' [{} {} {}] -> []",
@@ -4996,42 +5116,46 @@ pub(super) fn table_init(
 
 #[inline(always)]
 pub(super) fn elem_drop(
-    store_modules: &[ModuleInst],
-    store_elements: &mut [ElemInst],
-    current_module_idx: usize,
+    store_modules: &AddrVec<ModuleAddr, ModuleInst>,
+    store_elements: &mut AddrVec<ElemAddr, ElemInst>,
+    current_module: ModuleAddr,
     elem_idx: usize,
 ) -> Result<(), RuntimeError> {
     // WARN: i'm not sure if this is okay or not
-    let elem_addr = *store_modules[current_module_idx]
+    let elem_addr = *store_modules
+        .get(current_module)
         .elem_addrs
         .get(elem_idx)
         .unwrap_validated();
-    store_elements[elem_addr].references.clear();
+    store_elements.get_mut(elem_addr).references.clear();
     Ok(())
 }
 
 #[inline(always)]
 #[allow(clippy::too_many_arguments)]
 pub(super) fn memory_init(
-    store_modules: &[ModuleInst],
-    store_memories: &mut [MemInst],
-    store_data: &[DataInst],
-    current_module_idx: usize,
+    store_modules: &AddrVec<ModuleAddr, ModuleInst>,
+    store_memories: &mut AddrVec<MemAddr, MemInst>,
+    store_data: &AddrVec<DataAddr, DataInst>,
+    current_module: ModuleAddr,
     data_idx: usize,
     mem_idx: usize,
     n: i32,
     s: i32,
     d: i32,
 ) -> Result<(), RuntimeError> {
-    let mem_addr = *store_modules[current_module_idx]
+    let mem_addr = *store_modules
+        .get(current_module)
         .mem_addrs
         .get(mem_idx)
         .unwrap_validated();
-    let mem = &store_memories[mem_addr];
+    let mem = store_memories.get(mem_addr);
 
     mem.mem.init(
         d as MemIdx,
-        &store_data[store_modules[current_module_idx].data_addrs[data_idx]].data,
+        &store_data
+            .get(store_modules.get(current_module).data_addrs[data_idx])
+            .data,
         s as MemIdx,
         n as MemIdx,
     )?;
@@ -5042,9 +5166,9 @@ pub(super) fn memory_init(
 
 #[inline(always)]
 pub(super) fn data_drop(
-    store_modules: &[ModuleInst],
-    store_data: &mut [DataInst],
-    current_module_idx: usize,
+    store_modules: &AddrVec<ModuleAddr, ModuleInst>,
+    store_data: &mut AddrVec<DataAddr, DataInst>,
+    current_module: ModuleAddr,
     data_idx: usize,
 ) -> Result<(), RuntimeError> {
     // Here is debatable
@@ -5053,12 +5177,13 @@ pub(super) fn data_drop(
     // I thought that using DataMode would be better because we can see if the
     // data segment is passive or active
 
-    // Also, we should set data to null here (empty), which we do using an empty init vec
-    let data_addr = *store_modules[current_module_idx]
+    // Also, we should set data to null here (empty), which we do by clearing it
+    let data_addr = *store_modules
+        .get(current_module)
         .data_addrs
         .get(data_idx)
         .unwrap_validated();
-    store_data[data_addr] = DataInst { data: Vec::new() };
+    store_data.get_mut(data_addr).data.clear();
     Ok(())
 }
 

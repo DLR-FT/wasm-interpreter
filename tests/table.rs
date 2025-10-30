@@ -1,4 +1,5 @@
 use wasm::interop::RefFunc;
+use wasm::value::Ref;
 /*
 # This file incorporates code from the WebAssembly testsuite, originally
 # available at https://github.com/WebAssembly/testsuite.
@@ -15,8 +16,8 @@ use wasm::interop::RefFunc;
 # See the License for the specific language governing permissions and
 # limitations under the License.
 */
-use wasm::ValidationError;
 use wasm::{validate, RuntimeInstance, DEFAULT_MODULE};
+use wasm::{ExternVal, ValidationError};
 
 #[test_log::test]
 fn table_basic() {
@@ -111,36 +112,38 @@ fn table_size_minimum_must_not_be_greater_than_maximum() {
 fn table_elem_test() {
     let w = r#"
     (module
-        (table 2 funcref)
+        (table (export "tab") 2 funcref)
         (elem (i32.const 0) $f1 $f3)
-        (func $f1 (result i32)
+        (func $f1 (export "f1") (result i32)
             i32.const 42)
-        (func $f2 (result i32)
+        (func $f2 (export "f2") (result i32)
             i32.const 13)
-        (func $f3 (result i64)
+        (func $f3 (export "f3") (result i64)
             i64.const 13)
-        (func $f4 (result i32)
+        (func $f4 (export "f4") (result i32)
             i32.const 13)
     )"#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
+    // TODO why does this not return the module addr?
     let instance = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
-    // let table = &instance.modules[0].store.tables[0];
-    let table = &instance.store.tables[0];
-    assert_eq!(table.len(), 2);
-    let wanted: [usize; 2] = [0, 2];
-    table
-        .elem
-        .iter()
-        .enumerate()
-        .for_each(|(i, rref)| match *rref {
-            wasm::value::Ref::Func(func_addr) => {
-                assert_eq!(wanted[i], func_addr.0)
-            }
-            _ => panic!(),
-        });
-    // assert!(instance.store.tables)
+
+    let f1 = instance.get_function_by_name(DEFAULT_MODULE, "f1").unwrap();
+    let f3 = instance.get_function_by_name(DEFAULT_MODULE, "f3").unwrap();
+
+    let Ok(ExternVal::Table(table)) = instance.store.instance_export(DEFAULT_MODULE, "tab") else {
+        panic!("expected a table to be exported")
+    };
+
+    assert_eq!(
+        instance.store.table_read(table, 0),
+        Ok(Ref::Func(f1.func_addr))
+    );
+    assert_eq!(
+        instance.store.table_read(table, 1),
+        Ok(Ref::Func(f3.func_addr))
+    );
 }
 
 #[test_log::test]
@@ -162,7 +165,7 @@ fn table_get_set_test() {
     "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut i, module_addr) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
     let get_funcref = i
@@ -203,7 +206,7 @@ fn call_indirect_type_check() {
     (type $type_1 (func (param i32) (result i32)))
     (type $type_2 (func (param i32) (result i32)))
     (type $type_3 (func (param i32) (result i32)))
-    
+
     (func $add_one_func (type $type_1) (param $x i32) (result i32)
         local.get $x
         i32.const 1
@@ -223,14 +226,15 @@ fn call_indirect_type_check() {
         local.get $index
         call_indirect 0 (type $type_3)
     )
-    
+
     (export "call_function" (func $call_function))
     )
     "#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     let call_fn = instance
         .get_function_by_name(DEFAULT_MODULE, "call_function")

@@ -14,11 +14,12 @@ fn empty() {
     .unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     instance
-        .invoke_typed::<(), ()>(&instance.get_function_by_index(0, 0).unwrap(), ())
+        .invoke_typed::<(), ()>(&instance.get_function_by_index(module_addr, 0).unwrap(), ())
         .unwrap();
 }
 
@@ -44,13 +45,14 @@ fn branch() {
     .unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         8,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), ())
+            .invoke_typed(&instance.get_function_by_index(module_addr, 0).unwrap(), ())
             .unwrap()
     );
 }
@@ -87,13 +89,14 @@ fn branch2() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         13,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), ())
+            .invoke_typed(&instance.get_function_by_index(module_addr, 0).unwrap(), ())
             .unwrap()
     );
 }
@@ -104,13 +107,14 @@ fn branch3() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         5,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), ())
+            .invoke_typed(&instance.get_function_by_index(module_addr, 0).unwrap(), ())
             .unwrap()
     );
 }
@@ -134,13 +138,14 @@ fn param_and_result() {
     .unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         7,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 6)
+            .invoke_typed(&instance.get_function_by_index(module_addr, 0).unwrap(), 6)
             .unwrap()
     );
 }
@@ -179,13 +184,14 @@ fn return_out_of_block() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         3,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), ())
+            .invoke_typed(&instance.get_function_by_index(module_addr, 0).unwrap(), ())
             .unwrap()
     );
 }
@@ -196,13 +202,14 @@ fn br_return_out_of_block() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         3,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), ())
+            .invoke_typed(&instance.get_function_by_index(module_addr, 0).unwrap(), ())
             .unwrap()
     );
 }
@@ -213,13 +220,14 @@ fn return_out_of_block2() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         5,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), ())
+            .invoke_typed(&instance.get_function_by_index(module_addr, 0).unwrap(), ())
             .unwrap()
     );
 }
@@ -230,13 +238,14 @@ fn br_return_out_of_block2() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         5,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), ())
+            .invoke_typed(&instance.get_function_by_index(module_addr, 0).unwrap(), ())
             .unwrap()
     );
 }
@@ -265,10 +274,11 @@ fn branch_if() {
     .unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
-    let switch_case_fn = instance.get_function_by_index(0, 0).unwrap();
+    let switch_case_fn = instance.get_function_by_index(module_addr, 0).unwrap();
 
     assert_eq!(6, instance.invoke_typed(&switch_case_fn, 6).unwrap());
     assert_eq!(123, instance.invoke_typed(&switch_case_fn, -123).unwrap());
@@ -294,15 +304,15 @@ fn recursive_fibonacci() {
                     local.get $n_left
                     br_if $zero_check
                     local.get $x0
-                    return  
+                    return
                 )
-              
+
                 ;; otherwise decrement n_left
                 local.get $n_left
                 i32.const -1
                 i32.add
                 local.set $n_left
-              
+
                 ;; store x1 temporarily
                 local.get $x1
 
@@ -315,7 +325,7 @@ fn recursive_fibonacci() {
                 ;; set x0 to the previous x1
                 local.set $x0
 
-              
+
                 (call $fib_internal
                   (local.get $x0)
                   (local.get $x1)
@@ -328,10 +338,11 @@ fn recursive_fibonacci() {
     .unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
-    let fib_fn = instance.get_function_by_index(0, 0).unwrap();
+    let fib_fn = instance.get_function_by_index(module_addr, 0).unwrap();
 
     let first_ten = (0..10)
         .map(|n| instance.invoke_typed(&fib_fn, n).unwrap())
@@ -374,10 +385,11 @@ fn switch_case() {
     .unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
-    let switch_case_fn = instance.get_function_by_index(0, 0).unwrap();
+    let switch_case_fn = instance.get_function_by_index(module_addr, 0).unwrap();
 
     assert_eq!(9, instance.invoke_typed(&switch_case_fn, -5).unwrap());
     assert_eq!(9, instance.invoke_typed(&switch_case_fn, -1).unwrap());

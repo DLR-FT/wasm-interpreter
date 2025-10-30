@@ -16,8 +16,9 @@ fn i32_add_one() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         12,
@@ -61,25 +62,35 @@ fn i64_add_one() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         12_i64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 11_i64)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                11_i64
+            )
             .unwrap()
     );
     assert_eq!(
         1_i64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), 0_i64)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                0_i64
+            )
             .unwrap()
     );
     assert_eq!(
         -5_i64,
         instance
-            .invoke_typed(&instance.get_function_by_index(0, 0).unwrap(), -6_i64)
+            .invoke_typed(
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
+                -6_i64
+            )
             .unwrap()
     );
 }

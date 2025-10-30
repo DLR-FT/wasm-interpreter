@@ -28,8 +28,9 @@ pub fn i32_division_signed_simple() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         10,
@@ -152,8 +153,9 @@ pub fn i32_division_signed_panic_dividend_0() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     let result = instance.invoke_typed::<(i32, i32), i32>(
         &instance
@@ -177,8 +179,9 @@ pub fn i32_division_signed_panic_result_unrepresentable() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     let result = instance.invoke_typed::<(i32, i32), i32>(
         &instance
@@ -202,8 +205,9 @@ pub fn i32_division_unsigned_simple() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         10,
@@ -305,8 +309,9 @@ pub fn i32_division_unsigned_panic_dividend_0() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     let result = instance.invoke_typed::<(i32, i32), i32>(
         &instance
@@ -330,14 +335,15 @@ pub fn i64_division_signed_simple() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         10_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 (20_i64, 2_i64)
             )
             .unwrap()
@@ -346,7 +352,7 @@ pub fn i64_division_signed_simple() {
         9_001_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 (81_018_001_i64, 9_001_i64)
             )
             .unwrap()
@@ -355,7 +361,7 @@ pub fn i64_division_signed_simple() {
         -10_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 (20_i64, -2_i64)
             )
             .unwrap()
@@ -364,7 +370,7 @@ pub fn i64_division_signed_simple() {
         10_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 (-20_i64, -2_i64)
             )
             .unwrap()
@@ -373,7 +379,7 @@ pub fn i64_division_signed_simple() {
         -10_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(0, 0).unwrap(),
+                &instance.get_function_by_index(module_addr, 0).unwrap(),
                 (-20_i64, 2_i64)
             )
             .unwrap()

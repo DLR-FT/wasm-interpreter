@@ -1,3 +1,4 @@
+use crate::addrs::GlobalAddr;
 use crate::core::reader::types::global::GlobalType;
 use crate::resumable::{ResumableRef, RunState};
 use alloc::borrow::{Cow, ToOwned};
@@ -5,6 +6,7 @@ use alloc::vec::Vec;
 
 use const_interpreter_loop::run_const_span;
 use function_ref::FunctionRef;
+use store::addrs::ModuleAddr;
 use store::ExternVal;
 use store::HaltExecutionError;
 use value_stack::Stack;
@@ -55,10 +57,10 @@ impl<'b, T: Config> RuntimeInstance<'b, T> {
     pub fn new_with_default_module(
         user_data: T,
         validation_info: &'_ ValidationInfo<'b>,
-    ) -> Result<Self, RuntimeError> {
+    ) -> Result<(Self, ModuleAddr), RuntimeError> {
         let mut instance = Self::new(user_data);
-        instance.add_module(DEFAULT_MODULE, validation_info)?;
-        Ok(instance)
+        let module_addr = instance.add_module(DEFAULT_MODULE, validation_info)?;
+        Ok((instance, module_addr))
     }
 
     pub fn new_named(
@@ -66,17 +68,17 @@ impl<'b, T: Config> RuntimeInstance<'b, T> {
         module_name: &str,
         validation_info: &'_ ValidationInfo<'b>,
         // store: &mut Store,
-    ) -> Result<Self, RuntimeError> {
+    ) -> Result<(Self, ModuleAddr), RuntimeError> {
         let mut instance = Self::new(user_data);
-        instance.add_module(module_name, validation_info)?;
-        Ok(instance)
+        let module_addr = instance.add_module(module_name, validation_info)?;
+        Ok((instance, module_addr))
     }
 
     pub fn add_module(
         &mut self,
         module_name: &str,
         validation_info: &'_ ValidationInfo<'b>,
-    ) -> Result<(), RuntimeError> {
+    ) -> Result<ModuleAddr, RuntimeError> {
         self.store.add_module(module_name, validation_info, None)
     }
 
@@ -91,14 +93,10 @@ impl<'b, T: Config> RuntimeInstance<'b, T> {
 
     pub fn get_function_by_index(
         &self,
-        module_addr: usize,
+        module_addr: ModuleAddr,
         function_idx: usize,
     ) -> Result<FunctionRef, RuntimeError> {
-        let module_inst = self
-            .store
-            .modules
-            .get(module_addr)
-            .ok_or(RuntimeError::ModuleNotFound)?;
+        let module_inst = self.store.modules.get(module_addr);
         let func_addr = *module_inst
             .func_addrs
             .get(function_idx)
@@ -205,7 +203,7 @@ impl<'b, T: Config> RuntimeInstance<'b, T> {
         host_func_ty: FuncType,
         host_func: fn(&mut T, Vec<Value>) -> Result<Vec<Value>, HaltExecutionError>,
     ) -> Result<FunctionRef, RuntimeError> {
-        let func_addr = self.store.alloc_host_func(host_func_ty, host_func);
+        let func_addr = self.store.func_alloc(host_func_ty, host_func);
         self.store.registry.register(
             module_name.to_owned().into(),
             name.to_owned().into(),
@@ -223,12 +221,12 @@ impl<'b, T: Config> RuntimeInstance<'b, T> {
     }
 
     /// Returns the global type of some global instance by its addr.
-    pub fn global_type(&self, global_addr: usize) -> GlobalType {
+    pub fn global_type(&self, global_addr: GlobalAddr) -> GlobalType {
         self.store.global_type(global_addr)
     }
 
     /// Returns the current value of some global instance by its addr.
-    pub fn global_read(&self, global_addr: usize) -> Value {
+    pub fn global_read(&self, global_addr: GlobalAddr) -> Value {
         self.store.global_read(global_addr)
     }
 
@@ -237,7 +235,11 @@ impl<'b, T: Config> RuntimeInstance<'b, T> {
     /// # Errors
     /// - [`RuntimeError::WriteOnImmutableGlobal`]
     /// - [`RuntimeError::GlobalTypeMismatch`]
-    pub fn global_write(&mut self, global_addr: usize, val: Value) -> Result<(), RuntimeError> {
+    pub fn global_write(
+        &mut self,
+        global_addr: GlobalAddr,
+        val: Value,
+    ) -> Result<(), RuntimeError> {
         self.store.global_write(global_addr, val)
     }
 

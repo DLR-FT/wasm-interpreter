@@ -1,4 +1,3 @@
-use wasm::interop::RefFunc;
 /*
 # This file incorporates code from the WebAssembly testsuite, originally
 # available at https://github.com/WebAssembly/testsuite.
@@ -15,20 +14,21 @@ use wasm::interop::RefFunc;
 # See the License for the specific language governing permissions and
 # limitations under the License.
 */
-use wasm::value::FuncAddr;
+use wasm::interop::RefExtern;
+use wasm::value::ExternAddr;
 use wasm::{validate, RuntimeError, RuntimeInstance, TrapError, DEFAULT_MODULE};
 
 #[test_log::test]
 fn table_grow_test() {
     let w = r#"
     (module
-        (table $t 0 funcref)
-        (func (export "get") (param $i i32) (result funcref) (table.get $t (local.get $i)))
-        (func (export "set") (param $i i32) (param $r funcref) (table.set $t (local.get $i) (local.get $r)))
-        (func (export "grow") (param $sz i32) (param $init funcref) (result i32)
+        (table $t 0 externref)
+        (func (export "get") (param $i i32) (result externref) (table.get $t (local.get $i)))
+        (func (export "set") (param $i i32) (param $r externref) (table.set $t (local.get $i) (local.get $r)))
+        (func (export "grow") (param $sz i32) (param $init externref) (result i32)
             (table.grow $t (local.get $init) (local.get $sz))
         )
-        (func (export "grow-abbrev") (param $sz i32) (param $init funcref) (result i32)
+        (func (export "grow-abbrev") (param $sz i32) (param $init externref) (result i32)
             (table.grow (local.get $init) (local.get $sz))
         )
         (func (export "size") (result i32) (table.size $t))
@@ -37,7 +37,7 @@ fn table_grow_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut i, module_addr) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
     let get = i.get_function_by_name(DEFAULT_MODULE, "get").unwrap();
@@ -50,89 +50,92 @@ fn table_grow_test() {
 
     assert_eq!(i.invoke_typed::<(), i32>(&size, ()), Ok(0));
     assert_eq!(
-        i.invoke_typed::<(i32, RefFunc), ()>(&set, (0, RefFunc(Some(FuncAddr(2)))))
+        i.invoke_typed::<(i32, RefExtern), ()>(&set, (0, RefExtern(Some(ExternAddr(2)))))
             .err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
         ))
     );
     assert_eq!(
-        i.invoke_typed::<i32, RefFunc>(&get, 0).err(),
+        i.invoke_typed::<i32, RefExtern>(&get, 0).err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
         ))
     );
 
     assert_eq!(
-        i.invoke_typed::<(i32, RefFunc), i32>(&grow, (1, RefFunc(None))),
+        i.invoke_typed::<(i32, RefExtern), i32>(&grow, (1, RefExtern(None))),
         Ok(0)
     );
     assert_eq!(i.invoke_typed::<(), i32>(&size, ()), Ok(1));
-    assert_eq!(i.invoke_typed::<i32, RefFunc>(&get, 0), Ok(RefFunc(None)));
     assert_eq!(
-        i.invoke_typed::<(i32, RefFunc), ()>(&set, (0, RefFunc(Some(FuncAddr(2))))),
+        i.invoke_typed::<i32, RefExtern>(&get, 0),
+        Ok(RefExtern(None))
+    );
+    assert_eq!(
+        i.invoke_typed::<(i32, RefExtern), ()>(&set, (0, RefExtern(Some(ExternAddr(2))))),
         Ok(())
     );
     assert_eq!(
-        i.invoke_typed::<i32, RefFunc>(&get, 0),
-        Ok(RefFunc(Some(FuncAddr(2))))
+        i.invoke_typed::<i32, RefExtern>(&get, 0),
+        Ok(RefExtern(Some(ExternAddr(2))))
     );
     assert_eq!(
-        i.invoke_typed::<(i32, RefFunc), ()>(&set, (1, RefFunc(Some(FuncAddr(2)))))
+        i.invoke_typed::<(i32, RefExtern), ()>(&set, (1, RefExtern(Some(ExternAddr(2)))))
             .err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
         ))
     );
     assert_eq!(
-        i.invoke_typed::<i32, RefFunc>(&get, 1).err(),
+        i.invoke_typed::<i32, RefExtern>(&get, 1).err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
         ))
     );
 
     assert_eq!(
-        i.invoke_typed::<(i32, RefFunc), i32>(&grow_abbrev, (4, RefFunc(Some(FuncAddr(3))))),
+        i.invoke_typed::<(i32, RefExtern), i32>(&grow_abbrev, (4, RefExtern(Some(ExternAddr(3))))),
         Ok(1)
     );
     assert_eq!(i.invoke_typed::<(), i32>(&size, ()), Ok(5));
     assert_eq!(
-        i.invoke_typed::<i32, RefFunc>(&get, 0),
-        Ok(RefFunc(Some(FuncAddr(2))))
+        i.invoke_typed::<i32, RefExtern>(&get, 0),
+        Ok(RefExtern(Some(ExternAddr(2))))
     );
     assert_eq!(
-        i.invoke_typed::<(i32, RefFunc), ()>(&set, (0, RefFunc(Some(FuncAddr(2))))),
+        i.invoke_typed::<(i32, RefExtern), ()>(&set, (0, RefExtern(Some(ExternAddr(2))))),
         Ok(())
     );
     assert_eq!(
-        i.invoke_typed::<i32, RefFunc>(&get, 0),
-        Ok(RefFunc(Some(FuncAddr(2))))
+        i.invoke_typed::<i32, RefExtern>(&get, 0),
+        Ok(RefExtern(Some(ExternAddr(2))))
     );
     assert_eq!(
-        i.invoke_typed::<i32, RefFunc>(&get, 1),
-        Ok(RefFunc(Some(FuncAddr(3))))
+        i.invoke_typed::<i32, RefExtern>(&get, 1),
+        Ok(RefExtern(Some(ExternAddr(3))))
     );
     assert_eq!(
-        i.invoke_typed::<i32, RefFunc>(&get, 4),
-        Ok(RefFunc(Some(FuncAddr(3))))
+        i.invoke_typed::<i32, RefExtern>(&get, 4),
+        Ok(RefExtern(Some(ExternAddr(3))))
     );
     assert_eq!(
-        i.invoke_typed::<(i32, RefFunc), ()>(&set, (4, RefFunc(Some(FuncAddr(4))))),
+        i.invoke_typed::<(i32, RefExtern), ()>(&set, (4, RefExtern(Some(ExternAddr(4))))),
         Ok(())
     );
     assert_eq!(
-        i.invoke_typed::<i32, RefFunc>(&get, 4),
-        Ok(RefFunc(Some(FuncAddr(4))))
+        i.invoke_typed::<i32, RefExtern>(&get, 4),
+        Ok(RefExtern(Some(ExternAddr(4))))
     );
     assert_eq!(
-        i.invoke_typed::<(i32, RefFunc), ()>(&set, (5, RefFunc(Some(FuncAddr(2)))))
+        i.invoke_typed::<(i32, RefExtern), ()>(&set, (5, RefExtern(Some(ExternAddr(2)))))
             .err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
         ))
     );
     assert_eq!(
-        i.invoke_typed::<i32, RefFunc>(&get, 5).err(),
+        i.invoke_typed::<i32, RefExtern>(&get, 5).err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
         ))
@@ -155,7 +158,7 @@ fn table_grow_outside_i32_range() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut i, module_addr) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
     let grow = i.get_function_by_name(DEFAULT_MODULE, "grow").unwrap();
@@ -175,7 +178,7 @@ fn table_grow_unlimited() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut i, module_addr) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
     let grow = i.get_function_by_name(DEFAULT_MODULE, "grow").unwrap();
@@ -199,7 +202,7 @@ fn table_grow_with_max() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut i, module_addr) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
     let grow = i.get_function_by_name(DEFAULT_MODULE, "grow").unwrap();
@@ -242,7 +245,7 @@ fn table_grow_check_null() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut i, module_addr) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
     let grow = i.get_function_by_name(DEFAULT_MODULE, "grow").unwrap();
@@ -251,15 +254,15 @@ fn table_grow_check_null() {
         .unwrap();
 
     assert_eq!(
-        i.invoke_typed::<(i32, i32), RefFunc>(&check_table_null, (0, 9))
+        i.invoke_typed::<(i32, i32), RefExtern>(&check_table_null, (0, 9))
             .unwrap(),
-        RefFunc(None)
+        RefExtern(None)
     );
     assert_eq!(i.invoke_typed(&grow, 10), Ok(10));
     assert_eq!(
-        i.invoke_typed::<(i32, i32), RefFunc>(&check_table_null, (0, 19))
+        i.invoke_typed::<(i32, i32), RefExtern>(&check_table_null, (0, 19))
             .unwrap(),
-        RefFunc(None)
+        RefExtern(None)
     );
 }
 
@@ -269,7 +272,7 @@ fn table_grow_with_exported_table_test() {
     let target_wat = r#"
     (module
         (table (export "table") 1 funcref)
-        (func (export "grow") (result i32) 
+        (func (export "grow") (result i32)
             (table.grow (ref.null func) (i32.const 1))
         )
     )
@@ -277,8 +280,9 @@ fn table_grow_with_exported_table_test() {
 
     let wasm_bytes = wat::parse_str(target_wat).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut target_instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("target instantiation failed");
+    let (mut target_instance, module_addr) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("target instantiation failed");
 
     let grow = target_instance
         .get_function_by_name(DEFAULT_MODULE, "grow")

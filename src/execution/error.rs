@@ -13,6 +13,10 @@ pub enum RuntimeError {
     GlobalTypeMismatch,
     /// A host function returned the [`HaltExecutionError`](crate::HaltExecutionError), which caused execution to be halted.
     HostFunctionHaltedExecution,
+    UnknownExport,
+    TableTypeMismatch,
+    // An access to a table element was out of bounds
+    TableAccessOutOfBounds,
 
     // Are all of these instantiation variants? Add a new `InstantiationError` enum?
     InvalidImportType,
@@ -36,7 +40,16 @@ impl Display for RuntimeError {
             RuntimeError::HostFunctionHaltedExecution => {
                 f.write_str("A host function requested execution to be halted.")
             }
+            RuntimeError::TableAccessOutOfBounds => {
+                f.write_str("An table access was out of bounds")
+            }
             RuntimeError::InvalidImportType => f.write_str("Invalid import type"),
+            RuntimeError::UnknownExport => {
+                f.write_str("An unknown export was referenced by its name.")
+            }
+            RuntimeError::TableTypeMismatch => {
+                f.write_str("An alloc/write operation failed on a table due to a type mismatch.")
+            }
             // TODO: maybe move these to LinkerError also add more info to them (the name's export, function idx, etc)
             RuntimeError::UnknownImport => f.write_str("Unknown Import"),
             RuntimeError::MoreThanOneMemory => {
@@ -47,7 +60,7 @@ impl Display for RuntimeError {
                 "A write operation on a global failed due to the global being immutable",
             ),
             RuntimeError::GlobalTypeMismatch => {
-                f.write_str("A write operation on a global failed due to a type mismatch")
+                f.write_str("An alloc/write operation on a global failed due to a type mismatch")
             }
         }
     }
