@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["Ref","RefValueTy","Value"],"struct":["ExternAddr","F32","F64","FuncAddr"]};
+window.SIDEBAR_ITEMS = {"enum":["Ref","RefValueTy","Value"],"struct":["ExternAddr","F32","F64","FuncAddr","ValueTypeMismatchError"]};
