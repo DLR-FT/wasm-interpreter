@@ -179,7 +179,7 @@ fn i32_and_i64_loads() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut i, _default_module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
     let i32_load8_s = i
@@ -324,7 +324,7 @@ fn memory_test_exporting_rand_globals_doesnt_change_a_memory_s_semantics() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut i, _default_module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
     let load = i.get_function_by_name(DEFAULT_MODULE, "load").unwrap();

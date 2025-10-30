@@ -166,7 +166,7 @@ pub fn run_spec_test(filepath: &str) -> Result<AssertReport, ScriptError> {
         catch_unwind_and_suppress_panic_handler(|| validate(&spectest_wasm))
             .unwrap()
             .unwrap();
-    let interpreter = &mut catch_unwind_and_suppress_panic_handler(|| {
+    let (interpreter, _spectest_module) = &mut catch_unwind_and_suppress_panic_handler(|| {
         RuntimeInstance::new_named((), "spectest", &spectest_validation_info)
     })
     .unwrap()

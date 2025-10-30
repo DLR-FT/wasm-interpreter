@@ -23,15 +23,15 @@ fn table_fill_test() {
     let w = r#"
     (module
       (table $t 10 funcref)
-    
+
       (func (export "fill") (param $i i32) (param $r funcref) (param $n i32)
         (table.fill $t (local.get $i) (local.get $r) (local.get $n))
       )
-    
+
       (func (export "fill-abbrev") (param $i i32) (param $r funcref) (param $n i32)
         (table.fill $t (local.get $i) (local.get $r) (local.get $n))
       )
-    
+
       (func (export "get") (param $i i32) (result funcref)
         (table.get $t (local.get $i))
       )
@@ -40,7 +40,7 @@ fn table_fill_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut i, _default_module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
     let get = i.get_function_by_name(DEFAULT_MODULE, "get").unwrap();

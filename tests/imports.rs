@@ -50,7 +50,7 @@ const CALL_INDIRECT_BASE: &str = r#"
     (func (export "run") (result i32 i32)
         i32.const 0
         call_indirect (type $void_to_i32)
-        
+
         i32.const 1
         call_indirect (type $void_to_i32)
     )
@@ -82,12 +82,12 @@ pub fn unmet_imports() {
 pub fn compile_simple_import() {
     let wasm_bytes = wat::parse_str(SIMPLE_IMPORT_ADDON).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance =
+    let (mut instance, _env_module) =
         RuntimeInstance::new_named((), "env", &validation_info).expect("instantiation failed");
 
     let wasm_bytes = wat::parse_str(SIMPLE_IMPORT_BASE).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    instance
+    let _base_module = instance
         .add_module("base", &validation_info)
         .expect("Successful instantiation");
 
@@ -100,12 +100,12 @@ pub fn compile_simple_import() {
 pub fn run_simple_import() {
     let wasm_bytes = wat::parse_str(SIMPLE_IMPORT_ADDON).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance =
+    let (mut instance, _env_module) =
         RuntimeInstance::new_named((), "env", &validation_info).expect("instantiation failed");
 
     let wasm_bytes = wat::parse_str(SIMPLE_IMPORT_BASE).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    instance
+    let _base_module = instance
         .add_module("base", &validation_info)
         .expect("instantiation failed");
 
@@ -121,12 +121,12 @@ pub fn run_simple_import() {
 pub fn run_call_indirect() {
     let wasm_bytes = wat::parse_str(SIMPLE_IMPORT_ADDON).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance =
+    let (mut instance, _env_module) =
         RuntimeInstance::new_named((), "env", &validation_info).expect("instantiation failed");
 
     let wasm_bytes = wat::parse_str(CALL_INDIRECT_BASE).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    instance
+    let _base_module = instance
         .add_module("base", &validation_info)
         .expect("Successful instantiation");
 

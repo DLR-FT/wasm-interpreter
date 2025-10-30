@@ -24,8 +24,9 @@ pub fn i64_remainder_signed_simple() {
     let wat = String::from(REM_S_WAT).replace("{{TYPE}}", "i64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, _default_module) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         0_i64,
@@ -107,8 +108,9 @@ pub fn i64_remainder_signed_panic_dividend_0() {
     let wat = String::from(REM_S_WAT).replace("{{TYPE}}", "i64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, _default_module) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     let result = instance.invoke_typed::<(i64, i64), i64>(
         &instance.get_function_by_index(0, 0).unwrap(),
@@ -127,8 +129,9 @@ pub fn i64_remainder_unsigned_simple() {
     let wat = String::from(REM_U_WAT).replace("{{TYPE}}", "i64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, _default_module) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         0_i64,
@@ -247,8 +250,9 @@ pub fn i64_remainder_unsigned_panic_dividend_0() {
     let wat = String::from(REM_U_WAT).replace("{{TYPE}}", "i64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, _default_module) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     let result = instance
         .invoke_typed::<(i64, i64), i64>(&instance.get_function_by_index(0, 0).unwrap(), (222, 0));
@@ -265,8 +269,9 @@ pub fn i32_remainder_signed_simple() {
     let wat = String::from(REM_S_WAT).replace("{{TYPE}}", "i32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, _default_module) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         0,
@@ -364,8 +369,9 @@ pub fn remainder_signed_panic_dividend_0() {
     let wat = String::from(REM_S_WAT).replace("{{TYPE}}", "i32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, _default_module) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     let result = instance.invoke_typed::<(i32, i32), i32>(
         &instance
@@ -387,8 +393,9 @@ pub fn i32_remainder_unsigned_simple() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, _default_module) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     assert_eq!(
         0,
@@ -543,8 +550,9 @@ pub fn i32_remainder_unsigned_panic_dividend_0() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, _default_module) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     let result = instance.invoke_typed::<(i32, i32), i32>(
         &instance

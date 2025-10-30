@@ -124,8 +124,9 @@ fn table_elem_test() {
     )"#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (instance, _default_module) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
     // let table = &instance.modules[0].store.tables[0];
     let table = &instance.store.tables[0];
     assert_eq!(table.len(), 2);
@@ -162,7 +163,7 @@ fn table_get_set_test() {
     "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut i, _default_module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
     let get_funcref = i
@@ -203,7 +204,7 @@ fn call_indirect_type_check() {
     (type $type_1 (func (param i32) (result i32)))
     (type $type_2 (func (param i32) (result i32)))
     (type $type_3 (func (param i32) (result i32)))
-    
+
     (func $add_one_func (type $type_1) (param $x i32) (result i32)
         local.get $x
         i32.const 1
@@ -223,14 +224,15 @@ fn call_indirect_type_check() {
         local.get $index
         call_indirect 0 (type $type_3)
     )
-    
+
     (export "call_function" (func $call_function))
     )
     "#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let (mut instance, _default_module) =
+        RuntimeInstance::new_with_default_module((), &validation_info)
+            .expect("instantiation failed");
 
     let call_fn = instance
         .get_function_by_name(DEFAULT_MODULE, "call_function")
