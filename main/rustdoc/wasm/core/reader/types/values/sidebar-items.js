@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {};
+window.SIDEBAR_ITEMS = {"constant":["CONTINUATION_BIT","INTEGER_BIT_FLAG"]};

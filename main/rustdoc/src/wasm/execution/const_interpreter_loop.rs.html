@@ -61,12 +61,12 @@
 <a href=#61 id=61 data-nosnippet>61</a>                stack.push_value::&lt;T&gt;(constant.into())<span class="question-mark">?</span>;
 <a href=#62 id=62 data-nosnippet>62</a>            }
 <a href=#63 id=63 data-nosnippet>63</a>            F32_CONST =&gt; {
-<a href=#64 id=64 data-nosnippet>64</a>                <span class="kw">let </span>constant = value::F32::from_bits(wasm.read_var_f32().unwrap_validated());
+<a href=#64 id=64 data-nosnippet>64</a>                <span class="kw">let </span>constant = value::F32::from_bits(wasm.read_f32().unwrap_validated());
 <a href=#65 id=65 data-nosnippet>65</a>                <span class="macro">trace!</span>(<span class="string">"Constanting instruction: f32.const [] -&gt; [{constant}]"</span>);
 <a href=#66 id=66 data-nosnippet>66</a>                stack.push_value::&lt;T&gt;(constant.into())<span class="question-mark">?</span>;
 <a href=#67 id=67 data-nosnippet>67</a>            }
 <a href=#68 id=68 data-nosnippet>68</a>            F64_CONST =&gt; {
-<a href=#69 id=69 data-nosnippet>69</a>                <span class="kw">let </span>constant = value::F64::from_bits(wasm.read_var_f64().unwrap_validated());
+<a href=#69 id=69 data-nosnippet>69</a>                <span class="kw">let </span>constant = value::F64::from_bits(wasm.read_f64().unwrap_validated());
 <a href=#70 id=70 data-nosnippet>70</a>                <span class="macro">trace!</span>(<span class="string">"Constanting instruction: f64.const [] -&gt; [{constant}]"</span>);
 <a href=#71 id=71 data-nosnippet>71</a>                stack.push_value::&lt;T&gt;(constant.into())<span class="question-mark">?</span>;
 <a href=#72 id=72 data-nosnippet>72</a>            }
