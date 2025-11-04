@@ -69,7 +69,8 @@ pub struct Store<'b, T: Config> {
     pub(crate) dormitory: Dormitory,
 }
 
-impl<'b, T: Config> Store<'b, T> {
+// Constructor
+impl<T: Config> Store<'_, T> {
     /// Creates a new empty store with some user data
     ///
     /// See: WebAssembly Specification 2.0 - 7.1.4 - store_init
@@ -89,7 +90,9 @@ impl<'b, T: Config> Store<'b, T> {
             user_data,
         }
     }
+}
 
+impl<'b, T: Config> Store<'b, T> {
     /// instantiates a validated module with `validation_info` as validation evidence with name `name`
     /// with the steps in <https://webassembly.github.io/spec/core/exec/modules.html#instantiation>
     /// this method roughly matches the suggested embedder function`module_instantiate`
@@ -1204,7 +1207,6 @@ pub struct HostFuncInst<T> {
     pub function_type: FuncType,
     pub hostcode: fn(&mut T, Vec<Value>) -> Result<Vec<Value>, HaltExecutionError>,
 }
-
 impl<T> FuncInst<T> {
     pub fn ty(&self) -> FuncType {
         match self {
