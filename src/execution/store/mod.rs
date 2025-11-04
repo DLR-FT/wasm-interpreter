@@ -3,6 +3,7 @@ use core::mem;
 use crate::addrs::{
     AddrVec, DataAddr, ElemAddr, FuncAddr, GlobalAddr, MemAddr, ModuleAddr, TableAddr,
 };
+use crate::checked::StoreId;
 use crate::config::Config;
 use crate::core::indices::TypeIdx;
 use crate::core::reader::span::Span;
@@ -64,6 +65,10 @@ pub struct Store<'b, T: Config> {
     /// space along with a `ModuleAddr` index type.
     pub(crate) modules: AddrVec<ModuleAddr, ModuleInst<'b>>,
 
+    /// A unique identifier for this store. This is used to verify that
+    /// stored objects belong to the current [`Store`].
+    pub(crate) id: StoreId,
+
     // all visible exports and entities added by hand or module instantiation by the interpreter
     // currently, all of the exports of an instantiated module is made visible (this is outside of spec)
     pub registry: Registry,
@@ -88,6 +93,7 @@ impl<'b, T: Config> Store<'b, T> {
             elements: AddrVec::default(),
             data: AddrVec::default(),
             modules: AddrVec::default(),
+            id: StoreId::new(),
             registry: Registry::default(),
             dormitory: Dormitory::default(),
             user_data,
