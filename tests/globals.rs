@@ -1,4 +1,4 @@
-use wasm::{GlobalType, NumType, ValType, Value, DEFAULT_MODULE};
+use wasm::{ExternVal, GlobalType, NumType, ValType, Value, DEFAULT_MODULE};
 
 /// The WASM program has one mutable global initialized with a constant 3.
 /// It exports two methods:
@@ -169,27 +169,38 @@ fn embedder_interface() {
 
     let wat = r#"
     (module
-        (global (mut i32) i32.const 1)
-        (global (mut i64) i64.const 3)
+        (global (export "global_0") (mut i32) i32.const 1)
+        (global (export "global_1") (mut i64) i64.const 3)
     )
     "#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, _default_module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
+        .expect("instantiation failed");
 
-    assert_eq!(instance.global_read(0), Value::I32(1));
-    assert_eq!(instance.global_read(1), Value::I64(3));
+    let ExternVal::Global(global_0) = instance.store.instance_export(module, "global_0").unwrap()
+    else {
+        panic!("expected global");
+    };
+    let ExternVal::Global(global_1) = instance.store.instance_export(module, "global_1").unwrap()
+    else {
+        panic!("expected global");
+    };
 
-    assert_eq!(instance.global_write(0, Value::I32(33)), Ok(()));
-
-    assert_eq!(instance.global_read(0), Value::I32(33));
-    assert_eq!(instance.global_read(1), Value::I64(3));
+    assert_eq!(instance.store.global_read(global_0), Value::I32(1));
+    assert_eq!(instance.store.global_read(global_1), Value::I64(3));
 
     assert_eq!(
-        instance.global_type(0),
+        instance.store.global_write(global_0, Value::I32(33)),
+        Ok(())
+    );
+
+    assert_eq!(instance.store.global_read(global_0), Value::I32(33));
+    assert_eq!(instance.store.global_read(global_1), Value::I64(3));
+
+    assert_eq!(
+        instance.store.global_type(global_0),
         GlobalType {
             ty: ValType::NumType(NumType::I32),
             is_mut: true,
@@ -197,7 +208,7 @@ fn embedder_interface() {
     );
 
     assert_eq!(
-        instance.global_type(1),
+        instance.store.global_type(global_1),
         GlobalType {
             ty: ValType::NumType(NumType::I64),
             is_mut: true,

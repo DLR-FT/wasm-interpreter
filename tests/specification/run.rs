@@ -602,7 +602,7 @@ fn execute_assert_return(
                         _ => None,
                     })
                     .ok_or(RuntimeError::FunctionNotFound)?; // TODO fix error
-                Ok::<_, RuntimeError>(store.globals[global_addr].value)
+                Ok::<_, RuntimeError>(store.global_read(global_addr))
             }))
             .map_err(WastError::Panic)??;
 
