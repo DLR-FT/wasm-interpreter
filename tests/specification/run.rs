@@ -422,7 +422,7 @@ fn run_directive<'a>(
                     RuntimeError::ModuleNotFound
                     | RuntimeError::UnknownImport
                     | RuntimeError::InvalidImportType
-                    | RuntimeError::UnableToResolveImport,
+                    | RuntimeError::UnableToResolveExternLookup,
                 )) => Ok(()),
                 _ => Err(WastError::AssertUnlinkableButLinked),
             };

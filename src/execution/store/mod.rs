@@ -3,6 +3,7 @@ use core::mem;
 use crate::addrs::{
     AddrVec, DataAddr, ElemAddr, FuncAddr, GlobalAddr, MemAddr, ModuleAddr, TableAddr,
 };
+use crate::checked::StoreId;
 use crate::config::Config;
 use crate::core::indices::TypeIdx;
 use crate::core::reader::span::Span;
@@ -63,6 +64,9 @@ pub struct Store<'b, T: Config> {
     /// space along with a `ModuleAddr` index type.
     pub(crate) modules: AddrVec<ModuleAddr, ModuleInst<'b>>,
 
+    /// A unique identifier for this store. This is used to verify that
+    /// stored objects belong to the current [`Store`].
+    pub(crate) id: StoreId,
     pub user_data: T,
 
     // data structure holding all resumable objects that belong to this store
@@ -84,6 +88,7 @@ impl<'b, T: Config> Store<'b, T> {
             elements: AddrVec::default(),
             data: AddrVec::default(),
             modules: AddrVec::default(),
+            id: StoreId::new(),
             dormitory: Dormitory::default(),
             user_data,
         }
@@ -680,7 +685,9 @@ impl<'b, T: Config> Store<'b, T> {
     /// # A Note About Safety
     ///
     /// This method is always safe. However it returns a [`MemAddr`], which can
-    /// only be used with other unchecked methods.
+    /// only be used with other unchecked methods. Consider using the safe and
+    /// stored [`Store::mem_alloc`] variant instead, which returns a
+    /// [`Stored<MemAddr>`](crate::execution::checked::Stored).
     pub fn mem_alloc_unchecked(&mut self, mem_type: MemType) -> MemAddr {
         // 1. Pre-condition: `memtype` is valid.
 
