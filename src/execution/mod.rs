@@ -9,6 +9,7 @@ use crate::execution::value::Value;
 use crate::interop::InteropValueList;
 
 pub(crate) mod assert_validated;
+pub mod checked;
 pub mod config;
 pub mod const_interpreter_loop;
 pub mod error;

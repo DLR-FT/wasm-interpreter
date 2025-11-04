@@ -4,7 +4,7 @@ use alloc::{
     vec::Vec,
 };
 
-use crate::{addrs::ModuleAddr, ExternVal, RuntimeError, Store, ValidationInfo};
+use crate::{addrs::ModuleAddr, checked::StoreId, ExternVal, RuntimeError, Store, ValidationInfo};
 
 use super::config::Config;
 
@@ -50,6 +50,14 @@ pub struct Linker {
     /// It is guaranteed that the addresses of all extern values belong to the
     /// same [`Store`].
     extern_vals: BTreeMap<ImportKey, ExternVal>,
+
+    /// This is for the safe/checked methods which make sure that all objects
+    /// used originate from the same [`Store`].
+    ///
+    /// Initially the store id is `None`. Only when a store-specific object or a
+    /// [`Store`] itself is used with a checked method, is this field set.  Once
+    /// initialized it is never written to again.
+    pub(crate) store_id: Option<StoreId>,
 }
 
 impl Linker {
