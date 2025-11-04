@@ -2,9 +2,9 @@
 
 use core::sync::atomic::{AtomicU64, Ordering};
 
-use crate::{config::Config, RuntimeError};
+use crate::{config::Config, core::reader::types::FuncType, RuntimeError};
 
-use super::Store;
+use super::{addrs::FuncAddr, Store};
 
 /// A unique identifier for a specfic [`Store]
 #[derive(Copy, Clone, PartialEq, Eq)]
@@ -39,5 +39,13 @@ impl<T: Config> Store<'_, T> {
         } else {
             Err(RuntimeError::StoreIdMismatch)
         }
+    }
+
+    /// Gets the type of a function by its addr.
+    ///
+    /// See: WebAssembly Specification 2.0 - 7.1.7 - func_type
+    pub fn func_type(&self, func_addr: Stored<FuncAddr>) -> Result<FuncType, RuntimeError> {
+        let func_addr = self.try_unwrap_stored(func_addr)?;
+        Ok(self.func_type_unchecked(func_addr))
     }
 }
