@@ -18,6 +18,10 @@ pub enum RuntimeError {
     UnknownExport,
     TableTypeMismatch,
 
+    /// The identifier of a stored object did not match the
+    /// [`Store`](crate::execution::store::Store) it was used with.
+    StoreIdMismatch,
+
     // Are all of these instantiation variants? Add a new `InstantiationError` enum?
     InvalidImportType,
     UnknownImport,
@@ -33,11 +37,16 @@ pub enum RuntimeError {
     /// module name and name for which an extern already exists.
     DuplicateExternDefinition,
 
-    /// An import could not be resolved because no extern value existed for it.
-    UnableToResolveImport,
+    /// An extern lookup could not be resolved because no matching extern value existed for it.
+    UnableToResolveExternLookup,
 
     /// A function was invoked with incorrect parameters or return types.
     FunctionInvocationSignatureMismatch,
+
+    /// A checked method of a [`Linker`](crate::execution::linker::Linker) was
+    /// used, even though that [`Linker`](crate::execution::linker::Linker) has
+    /// not yet been associated to any store through its id.
+    LinkerNotYetAssociatedWithStoreId,
 }
 
 impl Display for RuntimeError {
@@ -88,12 +97,14 @@ impl Display for RuntimeError {
             RuntimeError::DuplicateExternDefinition => {
                 f.write_str("Linking failed because of a duplicate definition of some extern value")
             }
-            RuntimeError::UnableToResolveImport => {
-                f.write_str("Linking failed because an import could not be resolved")
+            RuntimeError::UnableToResolveExternLookup => {
+                f.write_str("An extern lookup could not be resolved because no matching extern value existed for it.")
             }
             RuntimeError::FunctionInvocationSignatureMismatch => {
                 f.write_str("A function was invoked with incorrect parameters or return types")
             }
+            RuntimeError::StoreIdMismatch => f.write_str( "The identifier of a stored object did not match the store it was used with"),
+            RuntimeError::LinkerNotYetAssociatedWithStoreId => f.write_str("A checked method of a linker was used, even though that linker has not yet been associated to any store through its id"),
         }
     }
 }
