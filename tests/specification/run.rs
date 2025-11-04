@@ -7,6 +7,7 @@ use bumpalo::Bump;
 use itertools::enumerate;
 use log::debug;
 use wasm::function_ref::FunctionRef;
+use wasm::ExternVal;
 use wasm::RefType;
 use wasm::RuntimeError;
 use wasm::TrapError;
@@ -115,16 +116,19 @@ fn encode(modulee: &mut wast::QuoteWat) -> Result<Vec<u8>, WastError> {
 fn validate_instantiate<'a, 'b: 'a>(
     interpreter: &'a mut RuntimeInstance<'b>,
     bytes: &'b [u8],
+    modules: &mut Vec<usize>,
 ) -> Result<(), WastError> {
     let validation_info =
         catch_unwind_and_suppress_panic_handler(|| validate(bytes)).map_err(WastError::Panic)??;
 
     // TODO change hacky hidden name that uses interpreter internals
-    let module_name = format!("module_{}", interpreter.store.modules.len());
-    catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
+    let module_name = format!("module_{}", modules.len());
+    let module = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
         interpreter.add_module(module_name.as_str(), &validation_info)
     }))
     .map_err(WastError::Panic)??;
+
+    modules.push(module);
 
     Ok(())
 }
@@ -166,11 +170,17 @@ pub fn run_spec_test(filepath: &str) -> Result<AssertReport, ScriptError> {
         catch_unwind_and_suppress_panic_handler(|| validate(&spectest_wasm))
             .unwrap()
             .unwrap();
-    let (interpreter, _spectest_module) = &mut catch_unwind_and_suppress_panic_handler(|| {
+    let (mut interpreter, spectest_module) = catch_unwind_and_suppress_panic_handler(|| {
         RuntimeInstance::new_named((), "spectest", &spectest_validation_info)
     })
     .unwrap()
     .unwrap();
+
+    // A list of all modules
+    //
+    // We keep this list because linking is currently still done automatically during instantiation.
+    // However, the spectests expect linking to be a separate operation from instantiation.
+    let mut modules = vec![spectest_module];
 
     for (i, directive) in enumerate(wast.directives) {
         debug!("at directive {:?}", i);
@@ -179,9 +189,10 @@ pub fn run_spec_test(filepath: &str) -> Result<AssertReport, ScriptError> {
             directive,
             &arena,
             &mut visible_modules,
-            interpreter,
+            &mut interpreter,
             &contents,
             filepath,
+            &mut modules,
         )?;
 
         if let Some(assert_outcome) = directive_result {
@@ -199,6 +210,7 @@ fn run_directive<'a>(
     interpreter: &mut RuntimeInstance<'a>,
     contents: &str,
     filepath: &str,
+    modules: &mut Vec<usize>,
 ) -> Result<Option<AssertOutcome>, ScriptError> {
     match wast_directive {
         wast::WastDirective::Wat(mut quoted) => {
@@ -214,26 +226,11 @@ fn run_directive<'a>(
                 )
             })?;
 
-            // retain information of the id of the current wast
-            match quoted {
-                QuoteWat::Wat(wast::Wat::Module(wast::core::Module {
-                    id: _maybe_id @ Some(id),
-                    ..
-                }))
-                | QuoteWat::Wat(wast::Wat::Component(wast::component::Component {
-                    id: _maybe_id @ Some(id),
-                    ..
-                })) => {
-                    visible_modules.insert(id.name().to_owned(), interpreter.store.modules.len())
-                }
-                _ => None,
-            };
-
             // re-allocate the wasm bytecode into an arena backed allocation, gifting it a
             // lifetime of the outermost scope in the current function
             let wasm_bytes = arena.alloc_slice_clone(&wasm_bytes) as &[u8];
 
-            validate_instantiate(interpreter, wasm_bytes).map_err(|err| {
+            validate_instantiate(interpreter, wasm_bytes, modules).map_err(|err| {
                 ScriptError::new(
                     filepath,
                     err,
@@ -243,6 +240,19 @@ fn run_directive<'a>(
                 )
             })?;
 
+            // retain information of the id of the current wast
+            match quoted {
+                QuoteWat::Wat(wast::Wat::Module(wast::core::Module {
+                    id: _maybe_id @ Some(id),
+                    ..
+                }))
+                | QuoteWat::Wat(wast::Wat::Component(wast::component::Component {
+                    id: _maybe_id @ Some(id),
+                    ..
+                })) => visible_modules.insert(id.name().to_owned(), *modules.last().unwrap()),
+                _ => None,
+            };
+
             Ok(None)
         }
         wast::WastDirective::AssertReturn {
@@ -250,7 +260,8 @@ fn run_directive<'a>(
             exec,
             results,
         } => {
-            let err_or_panic = execute_assert_return(visible_modules, interpreter, exec, results);
+            let err_or_panic =
+                execute_assert_return(visible_modules, modules, interpreter, exec, results);
 
             Ok(Some(AssertOutcome {
                 line_number: get_linenum(contents, span),
@@ -263,7 +274,7 @@ fn run_directive<'a>(
             exec,
             message,
         } => {
-            let result = execute(arena, visible_modules, interpreter, exec);
+            let result = execute(arena, visible_modules, modules, interpreter, exec);
             let result = match result {
                 Err(WastError::WasmRuntimeError(wasm::RuntimeError::Trap(trap_error))) => {
                     let actual_matches_expected =
@@ -310,7 +321,7 @@ fn run_directive<'a>(
             let cmd = get_command(contents, span);
             let result = encode(&mut modulee).and_then(|bytes| {
                 let bytes = arena.alloc_slice_clone(&bytes);
-                validate_instantiate(interpreter, bytes)
+                validate_instantiate(interpreter, bytes, modules)
             });
 
             let maybe_assert_error = match result {
@@ -337,24 +348,35 @@ fn run_directive<'a>(
         wast::WastDirective::Register {
             name,
             module: modulee,
-            ..
+            span,
         } => {
             // TODO this implementation is incorrect, but a correct implementation requires a refactor discussion
 
             // spec tests tells us to use the last defined module if module name is not specified
-            // TODO this ugly chunk might need to be refactored out
-            let store = &mut interpreter.store;
-            let module_addr = match modulee {
-                None => store.modules.len() - 1,
-                Some(id) => {
-                    log::error!("looking for {:?} in \n{:?}", id.name(), visible_modules);
-                    visible_modules[id.name()]
-                }
-            };
-            store
-                .registry
-                .register_module(name.to_owned().into(), &store.modules[module_addr])
-                .unwrap();
+            let module = match modulee {
+                None => modules.last().copied(),
+                Some(id) => visible_modules.get(id.name()).copied(),
+            }
+            .ok_or(ScriptError::new(
+                filepath,
+                WastError::UnknownModuleReferenced,
+                "Register directive (WAT) failed",
+                get_linenum(contents, span),
+                get_command(contents, span),
+            ))?;
+
+            interpreter
+                .store
+                .reregister_module(module, name)
+                .map_err(|runtime_error| {
+                    ScriptError::new(
+                        filepath,
+                        WastError::WasmRuntimeError(runtime_error),
+                        "Register directive (WAT) failed",
+                        get_linenum(contents, span),
+                        get_command(contents, span),
+                    )
+                })?;
 
             Ok(None)
         }
@@ -369,7 +391,7 @@ fn run_directive<'a>(
             // if it can't be parsed, then the test itself must be written incorrectly, thus the unwrap
             let bytes: &[u8] = arena.alloc_slice_clone(&module.encode().unwrap());
 
-            let result = match validate_instantiate(interpreter, bytes) {
+            let result = match validate_instantiate(interpreter, bytes, modules) {
                 // module shouldn't have instantiated
                 Err(WastError::WasmRuntimeError(
                     RuntimeError::ModuleNotFound
@@ -393,6 +415,7 @@ fn run_directive<'a>(
             let execution_result = execute(
                 arena,
                 visible_modules,
+                modules,
                 interpreter,
                 wast::WastExecute::Invoke(call),
             );
@@ -423,31 +446,39 @@ fn run_directive<'a>(
         wast::WastDirective::Invoke(invoke) => {
             let args: Vec<Value> = invoke.args.into_iter().map(arg_to_value).collect();
 
-            let function_ref = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
-                let store = &mut interpreter.store;
-                let module_inst = match invoke.module {
-                    None => store.modules.last().unwrap(),
-                    Some(id) => {
-                        let module_addr = visible_modules
-                            .get(id.name())
-                            .ok_or(RuntimeError::ModuleNotFound)?;
-                        store
-                            .modules
-                            .get(*module_addr)
-                            .ok_or(RuntimeError::ModuleNotFound)?
-                    }
-                };
+            // spec tests tells us to use the last defined module if module name is not specified
+            let module = match invoke.module {
+                None => modules.last().copied(),
+                Some(id) => visible_modules.get(id.name()).copied(),
+            }
+            .ok_or(ScriptError::new(
+                filepath,
+                WastError::UnknownModuleReferenced,
+                "Invoke directive (WAT) failed",
+                get_linenum(contents, invoke.span),
+                get_command(contents, invoke.span),
+            ))?;
 
-                module_inst
-                    .exports
-                    .get(invoke.name)
-                    .and_then(|value| match value {
-                        wasm::ExternVal::Func(func_addr) => Some(FunctionRef {
-                            func_addr: *func_addr,
-                        }),
-                        _ => None,
+            let function_ref = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
+                let func_addr = interpreter
+                    .store
+                    .instance_export(module, invoke.name)
+                    .map_err(WastError::WasmRuntimeError)
+                    .and_then(|extern_val| match extern_val {
+                        ExternVal::Func(func) => Ok(func),
+                        _ => Err(WastError::UnknownFunctionReferenced),
                     })
-                    .ok_or(RuntimeError::FunctionNotFound)
+                    .map_err(|err| {
+                        ScriptError::new(
+                            filepath,
+                            err,
+                            "Invoke Wast directive",
+                            get_linenum(contents, invoke.span),
+                            get_command(contents, invoke.span),
+                        )
+                    })?;
+
+                Ok(FunctionRef { func_addr })
             }))
             .map_err(|panic_error| {
                 ScriptError::new(
@@ -457,16 +488,7 @@ fn run_directive<'a>(
                     get_linenum(contents, invoke.span),
                     get_command(contents, invoke.span),
                 )
-            })?
-            .map_err(|runtime_error| {
-                ScriptError::new(
-                    filepath,
-                    WastError::WasmRuntimeError(runtime_error),
-                    "invoke directive failed to find function",
-                    get_linenum(contents, invoke.span),
-                    get_command(contents, invoke.span),
-                )
-            })?;
+            })??;
 
             catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
                 interpreter.invoke(&function_ref, args)
@@ -506,6 +528,7 @@ fn run_directive<'a>(
 
 fn execute_assert_return(
     visible_modules: &HashMap<String, usize>,
+    modules: &[usize],
     interpreter: &mut RuntimeInstance,
     exec: wast::WastExecute,
     results: Vec<wast::WastRet>,
@@ -529,37 +552,28 @@ fn execute_assert_return(
                 .collect::<Vec<WastRetCore>>();
 
             // spec tests tells us to use the last defined module if module name is not specified
-            // TODO this ugly chunk might need to be refactored out
-            let func = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
-                let store = &mut interpreter.store;
-                let module_inst = match invoke_info.module {
-                    None => store.modules.last().unwrap(),
-                    Some(id) => {
-                        let module_addr = visible_modules
-                            .get(id.name())
-                            .ok_or(RuntimeError::ModuleNotFound)?;
-                        store
-                            .modules
-                            .get(*module_addr)
-                            .ok_or(RuntimeError::ModuleNotFound)?
-                    }
-                };
+            let module = match invoke_info.module {
+                None => modules.last().copied(),
+                Some(id) => visible_modules.get(id.name()).copied(),
+            }
+            .ok_or(WastError::UnknownModuleReferenced)?;
 
-                module_inst
-                    .exports
-                    .get(invoke_info.name)
-                    .and_then(|value| match value {
-                        wasm::ExternVal::Func(func_addr) => Some(FunctionRef {
-                            func_addr: *func_addr,
-                        }),
-                        _ => None,
-                    })
-                    .ok_or(RuntimeError::FunctionNotFound)
+            let function_ref = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
+                let func_addr = interpreter
+                    .store
+                    .instance_export(module, invoke_info.name)
+                    .map_err(WastError::WasmRuntimeError)
+                    .and_then(|extern_val| match extern_val {
+                        ExternVal::Func(func) => Ok(func),
+                        _ => Err(WastError::UnknownFunctionReferenced),
+                    })?;
+
+                Ok::<FunctionRef, WastError>(FunctionRef { func_addr })
             }))
             .map_err(WastError::Panic)??;
 
             let actual = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
-                interpreter.invoke(&func, args)
+                interpreter.invoke(&function_ref, args)
             }))
             .map_err(WastError::Panic)??;
 
@@ -580,29 +594,24 @@ fn execute_assert_return(
                 })
                 .collect::<Vec<WastRetCore>>();
 
+            // spec tests tells us to use the last defined module if module name is not specified
+            let module = match module {
+                None => modules.last().copied(),
+                Some(id) => visible_modules.get(id.name()).copied(),
+            }
+            .ok_or(WastError::UnknownModuleReferenced)?;
+
             let actual = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
-                let store = &mut interpreter.store;
-                let module_inst = match module {
-                    None => store.modules.last().unwrap(),
-                    Some(id) => {
-                        let module_addr = visible_modules
-                            .get(id.name())
-                            .ok_or(RuntimeError::ModuleNotFound)?;
-                        store
-                            .modules
-                            .get(*module_addr)
-                            .ok_or(RuntimeError::ModuleNotFound)?
-                    }
-                };
-                let global_addr = module_inst
-                    .exports
-                    .get(global)
-                    .and_then(|value| match value {
-                        wasm::ExternVal::Global(global_addr) => Some(*global_addr),
-                        _ => None,
-                    })
-                    .ok_or(RuntimeError::FunctionNotFound)?; // TODO fix error
-                Ok::<_, RuntimeError>(store.global_read(global_addr))
+                let global_addr = interpreter
+                    .store
+                    .instance_export(module, global)
+                    .map_err(WastError::WasmRuntimeError)
+                    .and_then(|extern_val| match extern_val {
+                        ExternVal::Global(global) => Ok(global),
+                        _ => Err(WastError::UnknownGlobalReferenced),
+                    })?;
+
+                Ok::<Value, WastError>(interpreter.store.global_read(global_addr))
             }))
             .map_err(WastError::Panic)??;
 
@@ -615,6 +624,7 @@ fn execute_assert_return(
 fn execute<'a>(
     arena: &'a bumpalo::Bump,
     visible_modules: &HashMap<String, usize>,
+    modules: &mut Vec<usize>,
     interpreter: &mut RuntimeInstance<'a>,
     exec: wast::WastExecute,
 ) -> Result<(), WastError> {
@@ -627,37 +637,28 @@ fn execute<'a>(
                 .collect::<Vec<_>>();
 
             // spec tests tells us to use the last defined module if module name is not specified
-            // TODO this ugly chunk might need to be refactored out
-            let func = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
-                let store = &mut interpreter.store;
-                let module_inst = match invoke_info.module {
-                    None => store.modules.last().unwrap(),
-                    Some(id) => {
-                        let module_addr = visible_modules
-                            .get(id.name())
-                            .ok_or(RuntimeError::ModuleNotFound)?;
-                        store
-                            .modules
-                            .get(*module_addr)
-                            .ok_or(RuntimeError::ModuleNotFound)?
-                    }
-                };
+            let module = match invoke_info.module {
+                None => modules.last().copied(),
+                Some(id) => visible_modules.get(id.name()).copied(),
+            }
+            .ok_or(WastError::UnknownModuleReferenced)?;
 
-                module_inst
-                    .exports
-                    .get(invoke_info.name)
-                    .and_then(|value| match value {
-                        wasm::ExternVal::Func(func_addr) => Some(FunctionRef {
-                            func_addr: *func_addr,
-                        }),
-                        _ => None,
-                    })
-                    .ok_or(RuntimeError::FunctionNotFound)
+            let function_ref = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
+                let func_addr = interpreter
+                    .store
+                    .instance_export(module, invoke_info.name)
+                    .map_err(WastError::WasmRuntimeError)
+                    .and_then(|extern_val| match extern_val {
+                        ExternVal::Func(func) => Ok(func),
+                        _ => Err(WastError::UnknownFunctionReferenced),
+                    })?;
+
+                Ok::<FunctionRef, WastError>(FunctionRef { func_addr })
             }))
             .map_err(WastError::Panic)??;
 
             catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
-                interpreter.invoke(&func, args)
+                interpreter.invoke(&function_ref, args)
             }))
             .map_err(WastError::Panic)??;
 
@@ -673,12 +674,12 @@ fn execute<'a>(
             let validation_info = catch_unwind_and_suppress_panic_handler(|| validate(bytecode))
                 .map_err(WastError::Panic)??;
 
-            // TODO change hacky hidden name that uses interpreter internals
-            let module_name = format!("module_{}", interpreter.store.modules.len());
-            catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
+            let module_name = format!("module_{}", modules.len());
+            let module_addr = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
                 interpreter.add_module(module_name.as_str(), &validation_info)
             }))
             .map_err(WastError::Panic)??;
+            modules.push(module_addr);
 
             Ok(())
         }
