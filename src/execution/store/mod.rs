@@ -925,6 +925,27 @@ impl<'b, T: Config> Store<'b, T> {
         addr
     }
 
+    /// This function allows an already instantiated module to be reregistered
+    /// under a different name. All previous registers of this module are not
+    /// affected.
+    ///
+    /// Note: This method exists as a temporary solution because our suboptimal registry
+    /// design. Because [`Store::add_module`] automatically registers all
+    /// modules directly after instantiation, we still need to provide some way
+    /// for only registering a module.
+    pub fn reregister_module(
+        &mut self,
+        module_addr: usize,
+        name: &str,
+    ) -> Result<(), RuntimeError> {
+        self.registry.register_module(
+            name.to_owned().into(),
+            self.modules
+                .get(module_addr)
+                .expect("module addrs to always be valid"),
+        )
+    }
+
     pub fn create_resumable(
         &self,
         func_addr: usize,

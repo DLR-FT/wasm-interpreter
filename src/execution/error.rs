@@ -21,6 +21,8 @@ pub enum RuntimeError {
     // Are all of these instantiation variants? Add a new `InstantiationError` enum?
     InvalidImportType,
     UnknownImport,
+    /// It was attempted to register a symbol under a name for which a symbol already exists.
+    RegistrySymbolAlreadyExists,
     MoreThanOneMemory,
 }
 
@@ -42,6 +44,9 @@ impl Display for RuntimeError {
             }
             RuntimeError::InvalidImportType => f.write_str("Invalid import type"),
             RuntimeError::TableAccessOutOfBounds => f.write_str("A table access was out of bounds"),
+            RuntimeError::RegistrySymbolAlreadyExists => f.write_str(
+                "It was attempted to register a symbol under a name for which a symbol already exists.",
+            ),
             RuntimeError::UnknownExport => {
                 f.write_str("An unknown export was referenced by its name.")
             }
