@@ -17,6 +17,8 @@ pub enum RuntimeError {
     TableAccessOutOfBounds,
     UnknownExport,
     TableTypeMismatch,
+    /// The identifier of a [`Stored<T>`] object did not match the [`Store`] it was used with.
+    StoreIdMismatch,
 
     // Are all of these instantiation variants? Add a new `InstantiationError` enum?
     InvalidImportType,
@@ -65,6 +67,7 @@ impl Display for RuntimeError {
             RuntimeError::GlobalTypeMismatch => {
                 f.write_str("An alloc/write operation on a global failed due to a type mismatch")
             }
+            RuntimeError::StoreIdMismatch => f.write_str( "The identifier of a stored object did not match the store it was used with"),
         }
     }
 }

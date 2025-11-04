@@ -37,6 +37,7 @@ use super::UnwrapValidatedExt;
 use crate::linear_memory::LinearMemory;
 
 pub mod addrs;
+pub mod stored;
 
 /// The store represents all global state that can be manipulated by WebAssembly programs. It
 /// consists of the runtime representation of all instances of functions, tables, memories, and
@@ -59,6 +60,10 @@ pub struct Store<'b, T: Config> {
     /// other instance types. Therefore, we extend the [`Store`] by a module address
     /// space along with a `ModuleAddr` index type.
     pub(crate) modules: AddrVec<ModuleAddr, ModuleInst<'b>>,
+
+    /// A unique identifier for this store. This is used to check if a foreign `T`, thats wrapped
+    /// in a [`Stored<...>`] object belongs to this store. See the [`stored`] module for more info.
+    id: stored::StoreId,
 
     // all visible exports and entities added by hand or module instantiation by the interpreter
     // currently, all of the exports of an instantiated module is made visible (this is outside of spec)
@@ -84,6 +89,7 @@ impl<'b, T: Config> Store<'b, T> {
             elements: AddrVec::default(),
             data: AddrVec::default(),
             modules: AddrVec::default(),
+            id: stored::StoreId::new(),
             registry: Registry::default(),
             dormitory: Dormitory::default(),
             user_data,
