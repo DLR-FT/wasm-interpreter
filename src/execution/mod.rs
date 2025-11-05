@@ -82,7 +82,8 @@ impl<'b, T: Config> RuntimeInstance<'b, T> {
         module_name: &str,
         validation_info: &'_ ValidationInfo<'b>,
     ) -> Result<ModuleAddr, RuntimeError> {
-        self.store.add_module(module_name, validation_info, None)
+        self.store
+            .add_module_unchecked(module_name, validation_info, None)
     }
 
     pub fn get_function_by_name(

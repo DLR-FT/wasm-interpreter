@@ -61,10 +61,6 @@ pub struct Store<'b, T: Config> {
     /// space along with a `ModuleAddr` index type.
     pub(crate) modules: AddrVec<ModuleAddr, ModuleInst<'b>>,
 
-    /// A unique identifier for this store. This is used to check if a foreign `T`, thats wrapped
-    /// in a [`Stored<...>`] object belongs to this store. See the [`stored`] module for more info.
-    id: stored::StoreId,
-
     // all visible exports and entities added by hand or module instantiation by the interpreter
     // currently, all of the exports of an instantiated module is made visible (this is outside of spec)
     pub registry: Registry,
@@ -74,7 +70,8 @@ pub struct Store<'b, T: Config> {
     pub(crate) dormitory: Dormitory,
 }
 
-impl<'b, T: Config> Store<'b, T> {
+// Constructor
+impl<T: Config> Store<'_, T> {
     /// Creates a new empty store with some user data
     ///
     /// See: WebAssembly Specification 2.0 - 7.1.4 - store_init
@@ -89,20 +86,29 @@ impl<'b, T: Config> Store<'b, T> {
             elements: AddrVec::default(),
             data: AddrVec::default(),
             modules: AddrVec::default(),
-            id: stored::StoreId::new(),
             registry: Registry::default(),
             dormitory: Dormitory::default(),
             user_data,
         }
     }
+}
 
+/// Unchecked Internal Interface
+impl<'b, T: Config> Store<'b, T> {
     /// instantiates a validated module with `validation_info` as validation evidence with name `name`
     /// with the steps in <https://webassembly.github.io/spec/core/exec/modules.html#instantiation>
     /// this method roughly matches the suggested embedder function`module_instantiate`
     /// <https://webassembly.github.io/spec/core/appendix/embedding.html#modules>
     /// except external values for module instantiation are retrieved from `self`.
     /// Returns the module addr of the new module instance
-    pub fn add_module(
+    ///
+    /// # Safety
+    /// There are no safety bounds. Nonetheless, this method is marked as
+    /// unchecked because it returnes a raw [`ModuleAddr`]. To make use of this
+    /// memory address, the use of other unchecked methods is necessary.
+    /// Therefore, this method is also marked as unchecked, so it can not be
+    /// used by accident.
+    pub fn add_module_unchecked(
         &mut self,
         name: &str,
         validation_info: &ValidationInfo<'b>,
@@ -1225,7 +1231,6 @@ pub struct HostFuncInst<T> {
     pub function_type: FuncType,
     pub hostcode: fn(&mut T, Vec<Value>) -> Result<Vec<Value>, HaltExecutionError>,
 }
-
 impl<T> FuncInst<T> {
     pub fn ty(&self) -> FuncType {
         match self {
