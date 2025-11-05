@@ -177,28 +177,48 @@ fn embedder_interface() {
     let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let ExternVal::Global(global_0) = instance.store.instance_export(module, "global_0").unwrap()
+    let ExternVal::Global(global_0) = instance
+        .store
+        .instance_export_unchecked(module, "global_0")
+        .unwrap()
     else {
         panic!("expected global");
     };
-    let ExternVal::Global(global_1) = instance.store.instance_export(module, "global_1").unwrap()
+    let ExternVal::Global(global_1) = instance
+        .store
+        .instance_export_unchecked(module, "global_1")
+        .unwrap()
     else {
         panic!("expected global");
     };
-
-    assert_eq!(instance.store.global_read(global_0), Value::I32(1));
-    assert_eq!(instance.store.global_read(global_1), Value::I64(3));
 
     assert_eq!(
-        instance.store.global_write(global_0, Value::I32(33)),
+        instance.store.global_read_unchecked(global_0),
+        Value::I32(1)
+    );
+    assert_eq!(
+        instance.store.global_read_unchecked(global_1),
+        Value::I64(3)
+    );
+
+    assert_eq!(
+        instance
+            .store
+            .global_write_unchecked(global_0, Value::I32(33)),
         Ok(())
     );
 
-    assert_eq!(instance.store.global_read(global_0), Value::I32(33));
-    assert_eq!(instance.store.global_read(global_1), Value::I64(3));
+    assert_eq!(
+        instance.store.global_read_unchecked(global_0),
+        Value::I32(33)
+    );
+    assert_eq!(
+        instance.store.global_read_unchecked(global_1),
+        Value::I64(3)
+    );
 
     assert_eq!(
-        instance.store.global_type(global_0),
+        instance.store.global_type_unchecked(global_0),
         GlobalType {
             ty: ValType::NumType(NumType::I32),
             is_mut: true,
@@ -206,7 +226,7 @@ fn embedder_interface() {
     );
 
     assert_eq!(
-        instance.store.global_type(global_1),
+        instance.store.global_type_unchecked(global_1),
         GlobalType {
             ty: ValType::NumType(NumType::I64),
             is_mut: true,

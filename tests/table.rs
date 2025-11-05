@@ -131,16 +131,19 @@ fn table_elem_test() {
     let f1 = instance.get_function_by_name(DEFAULT_MODULE, "f1").unwrap();
     let f3 = instance.get_function_by_name(DEFAULT_MODULE, "f3").unwrap();
 
-    let Ok(ExternVal::Table(table)) = instance.store.instance_export(default_module, "tab") else {
+    let Ok(ExternVal::Table(table)) = instance
+        .store
+        .instance_export_unchecked(default_module, "tab")
+    else {
         panic!("expected a table to be exported")
     };
 
     assert_eq!(
-        instance.store.table_read(table, 0),
+        instance.store.table_read_unchecked(table, 0),
         Ok(Ref::Func(f1.func_addr))
     );
     assert_eq!(
-        instance.store.table_read(table, 1),
+        instance.store.table_read_unchecked(table, 1),
         Ok(Ref::Func(f3.func_addr))
     );
 }

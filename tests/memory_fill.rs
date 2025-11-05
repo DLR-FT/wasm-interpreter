@@ -35,7 +35,7 @@ fn memory_fill() {
         .expect("instantiation failed");
 
     let fill = i.get_function_by_name(DEFAULT_MODULE, "fill").unwrap();
-    let ExternVal::Mem(mem) = i.store.instance_export(module, "mem").unwrap() else {
+    let ExternVal::Mem(mem) = i.store.instance_export_unchecked(module, "mem").unwrap() else {
         panic!("expected memory")
     };
 
@@ -43,7 +43,7 @@ fn memory_fill() {
 
     let expected = [vec![217u8; 100], vec![0u8; 5]].concat();
     for (idx, expected_byte) in expected.into_iter().enumerate() {
-        let mem_byte: u8 = i.store.mem_read(mem, idx as u32).unwrap();
+        let mem_byte: u8 = i.store.mem_read_unchecked(mem, idx as u32).unwrap();
         assert_eq!(
             mem_byte.to_ascii_lowercase(),
             expected_byte.to_ascii_lowercase()

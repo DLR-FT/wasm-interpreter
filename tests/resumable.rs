@@ -73,7 +73,7 @@ fn resumable() {
 
     let ExternVal::Global(global_0) = runtime_instance
         .store
-        .instance_export(module, "global_0")
+        .instance_export_unchecked(module, "global_0")
         .unwrap()
     else {
         panic!("expected global");
@@ -81,7 +81,7 @@ fn resumable() {
 
     let ExternVal::Global(global_1) = runtime_instance
         .store
-        .instance_export(module, "global_1")
+        .instance_export_unchecked(module, "global_1")
         .unwrap()
     else {
         panic!("expected global");
@@ -114,8 +114,8 @@ fn resumable() {
 
         info!(
             "Global values are global_0={:?} global_1={:?}",
-            runtime_instance.store.global_read(global_0),
-            runtime_instance.store.global_read(global_1),
+            runtime_instance.store.global_read_unchecked(global_0),
+            runtime_instance.store.global_read_unchecked(global_1),
         );
 
         run_state_add = match run_state_add {
@@ -132,8 +132,8 @@ fn resumable() {
 
         info!(
             "Global values are global_0={:?} global_1={:?}",
-            runtime_instance.store.global_read(global_0),
-            runtime_instance.store.global_read(global_1),
+            runtime_instance.store.global_read_unchecked(global_0),
+            runtime_instance.store.global_read_unchecked(global_1),
         );
     }
 }
@@ -174,7 +174,7 @@ fn resumable_internal_state() {
         .unwrap();
     let ExternVal::Global(global_0) = runtime_instance
         .store
-        .instance_export(module, "global_0")
+        .instance_export_unchecked(module, "global_0")
         .unwrap()
     else {
         panic!("expected global");
@@ -183,7 +183,7 @@ fn resumable_internal_state() {
         .create_resumable(&add_global_0, vec![], 4)
         .unwrap();
     assert_eq!(
-        runtime_instance.store.global_read(global_0),
+        runtime_instance.store.global_read_unchecked(global_0),
         wasm::Value::I32(expected[0])
     );
     let mut run_state_add = runtime_instance.resume(resumable_ref_add).unwrap();
@@ -192,7 +192,7 @@ fn resumable_internal_state() {
         run_state_add = match run_state_add {
             RunState::Finished(_) => {
                 assert_eq!(
-                    runtime_instance.store.global_read(global_0),
+                    runtime_instance.store.global_read_unchecked(global_0),
                     wasm::Value::I32(expected[i])
                 );
                 return;
@@ -201,7 +201,7 @@ fn resumable_internal_state() {
                 mut resumable_ref, ..
             } => {
                 assert_eq!(
-                    runtime_instance.store.global_read(global_0),
+                    runtime_instance.store.global_read_unchecked(global_0),
                     wasm::Value::I32(expected[i])
                 );
                 runtime_instance

@@ -368,7 +368,7 @@ fn run_directive<'a>(
 
             interpreter
                 .store
-                .reregister_module(module, name)
+                .reregister_module_unchecked(module, name)
                 .map_err(|runtime_error| {
                     ScriptError::new(
                         filepath,
@@ -463,7 +463,7 @@ fn run_directive<'a>(
             let function_ref = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
                 let func_addr = interpreter
                     .store
-                    .instance_export(module, invoke.name)
+                    .instance_export_unchecked(module, invoke.name)
                     .map_err(WastError::WasmRuntimeError)
                     .and_then(|extern_val| match extern_val {
                         ExternVal::Func(func) => Ok(func),
@@ -562,7 +562,7 @@ fn execute_assert_return(
             let function_ref = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
                 let func_addr = interpreter
                     .store
-                    .instance_export(module, invoke_info.name)
+                    .instance_export_unchecked(module, invoke_info.name)
                     .map_err(WastError::WasmRuntimeError)
                     .and_then(|extern_val| match extern_val {
                         ExternVal::Func(func) => Ok(func),
@@ -605,14 +605,14 @@ fn execute_assert_return(
             let actual = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
                 let global_addr = interpreter
                     .store
-                    .instance_export(module, global)
+                    .instance_export_unchecked(module, global)
                     .map_err(WastError::WasmRuntimeError)
                     .and_then(|extern_val| match extern_val {
                         ExternVal::Global(global) => Ok(global),
                         _ => Err(WastError::UnknownGlobalReferenced),
                     })?;
 
-                Ok::<Value, WastError>(interpreter.store.global_read(global_addr))
+                Ok::<Value, WastError>(interpreter.store.global_read_unchecked(global_addr))
             }))
             .map_err(WastError::Panic)??;
 
@@ -647,7 +647,7 @@ fn execute<'a>(
             let function_ref = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
                 let func_addr = interpreter
                     .store
-                    .instance_export(module, invoke_info.name)
+                    .instance_export_unchecked(module, invoke_info.name)
                     .map_err(WastError::WasmRuntimeError)
                     .and_then(|extern_val| match extern_val {
                         ExternVal::Func(func) => Ok(func),

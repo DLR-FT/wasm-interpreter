@@ -127,7 +127,7 @@ impl<'b, T: Config> RuntimeInstance<'b, T> {
     ) -> Result<Vec<Value>, RuntimeError> {
         let FunctionRef { func_addr } = *function_ref;
         self.store
-            .invoke(func_addr, params, None)
+            .invoke_unchecked(func_addr, params, None)
             .map(|run_state| match run_state {
                 RunState::Finished(values) => values,
                 _ => unreachable!("non metered invoke call"),
@@ -144,13 +144,14 @@ impl<'b, T: Config> RuntimeInstance<'b, T> {
         fuel: u32,
     ) -> Result<ResumableRef, RuntimeError> {
         let FunctionRef { func_addr } = *function_ref;
-        self.store.create_resumable(func_addr, params, Some(fuel))
+        self.store
+            .create_resumable_unchecked(func_addr, params, Some(fuel))
     }
 
     /// resumes the resumable associated to `resumable_ref`. Returns a `[RunState]` associated to this resumable  if the
     /// resumable ran out of fuel or completely executed.
     pub fn resume(&mut self, resumable_ref: ResumableRef) -> Result<RunState, RuntimeError> {
-        self.store.resume(resumable_ref)
+        self.store.resume_unchecked(resumable_ref)
     }
 
     /// calls its argument `f` with a mutable reference of the fuel of the respective [`ResumableRef`].
@@ -176,7 +177,7 @@ impl<'b, T: Config> RuntimeInstance<'b, T> {
         resumable_ref: &mut ResumableRef,
         f: impl FnOnce(&mut Option<u32>) -> R,
     ) -> Result<R, RuntimeError> {
-        self.store.access_fuel_mut(resumable_ref, f)
+        self.store.access_fuel_mut_unchecked(resumable_ref, f)
     }
 
     /// Adds a host function under module namespace `module_name` with name `name`.
@@ -206,7 +207,7 @@ impl<'b, T: Config> RuntimeInstance<'b, T> {
         host_func_ty: FuncType,
         host_func: fn(&mut T, Vec<Value>) -> Result<Vec<Value>, HaltExecutionError>,
     ) -> Result<FunctionRef, RuntimeError> {
-        let func_addr = self.store.func_alloc(host_func_ty, host_func);
+        let func_addr = self.store.func_alloc_unchecked(host_func_ty, host_func);
         self.store.registry.register(
             module_name.to_owned().into(),
             name.to_owned().into(),
@@ -225,12 +226,12 @@ impl<'b, T: Config> RuntimeInstance<'b, T> {
 
     /// Returns the global type of some global instance by its addr.
     pub fn global_type(&self, global_addr: GlobalAddr) -> GlobalType {
-        self.store.global_type(global_addr)
+        self.store.global_type_unchecked(global_addr)
     }
 
     /// Returns the current value of some global instance by its addr.
     pub fn global_read(&self, global_addr: GlobalAddr) -> Value {
-        self.store.global_read(global_addr)
+        self.store.global_read_unchecked(global_addr)
     }
 
     /// Sets a new value of some global instance by its addr.
@@ -243,7 +244,7 @@ impl<'b, T: Config> RuntimeInstance<'b, T> {
         global_addr: GlobalAddr,
         val: Value,
     ) -> Result<(), RuntimeError> {
-        self.store.global_write(global_addr, val)
+        self.store.global_write_unchecked(global_addr, val)
     }
 
     /// Look-up an export by its name and the name of its exporting module.
