@@ -17,7 +17,7 @@ use crate::{
 
 use super::{
     addrs::{FuncAddr, GlobalAddr, MemAddr, ModuleAddr, TableAddr},
-    ExternVal, Store,
+    ExternVal, FuncInst, HaltExecutionError, Store, StoredHostFuncInst,
 };
 
 /// A unique identifier for a specfic [`Store]
@@ -207,6 +207,38 @@ impl<'b, T: Config> CheckedStore<'b, T> {
         self.inner
             .instance_export_unchecked(module_addr, name)
             .map(|extern_val| self.wrap_extern_val(extern_val))
+    }
+
+    /// Allocates a new function with some host code.
+    ///
+    /// This is the safe variant of [`Store::func_alloc_unchecked`]. It uses
+    /// _stored_ variants of arguments/return types to be able to track which
+    /// [`Store`] instance they belong to. This is important, because internally
+    /// the interpreter assumes that all references into the [`Store`] (e.g.
+    /// address types) are always valid.
+    // TODO unfortunatly safe host functions can not be implemented as a layer
+    // around the pre-existing `Store::func_alloc_unchecked` solution. This is
+    // because we use fn pointers for host functions.
+    pub fn func_alloc(
+        &mut self,
+        func_type: FuncType,
+        host_func: fn(&mut T, Vec<StoredValue>) -> Result<Vec<StoredValue>, HaltExecutionError>,
+    ) -> Stored<FuncAddr> {
+        // 1. Pre-condition: `functype` is valid.
+
+        // 2. Let `funcaddr` be the result of allocating a host function in `store` with
+        //    function type `functype` and host function code `hostfunc`.
+        // 3. Return the new store paired with `funcaddr`.
+        //
+        // Note: Returning the new store is a noop for us because we mutate the store instead.
+        let func_addr = self
+            .functions
+            .insert(FuncInst::StoredHostFunc(StoredHostFuncInst {
+                function_type: func_type,
+                hostcode: host_func,
+            }));
+
+        self.wrap_stored(func_addr)
     }
 
     /// Gets the type of a function by its addr.

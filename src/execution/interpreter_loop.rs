@@ -15,6 +15,8 @@ use core::{
     },
 };
 
+use alloc::vec::Vec;
+
 use crate::{
     addrs::{AddrVec, DataAddr, ElemAddr, MemAddr, ModuleAddr, TableAddr},
     assert_validated::UnwrapValidatedExt,
@@ -235,6 +237,38 @@ pub(super) fn run<T: Config>(
                             stack.push_value::<T>(value)?;
                         }
                     }
+                    FuncInst::StoredHostFunc(host_func_to_call_inst) => {
+                        let params: Vec<Value> = stack
+                            .pop_tail_iter(func_to_call_ty.params.valtypes.len())
+                            .collect();
+                        let stored_params = params
+                            .into_iter()
+                            .map(|value| store.wrap_value(value))
+                            .collect();
+                        let stored_returns =
+                            (host_func_to_call_inst.hostcode)(&mut store.user_data, stored_params);
+
+                        let stored_returns = stored_returns.map_err(|HaltExecutionError| {
+                            RuntimeError::HostFunctionHaltedExecution
+                        })?;
+
+                        let returns = stored_returns
+                            .into_iter()
+                            .map(|stored_value| store.try_unwrap_value(stored_value))
+                            .collect::<Result<Vec<Value>, RuntimeError>>()?;
+
+                        // Verify that the return parameters match the host function parameters
+                        // since we have no validation guarantees for host functions
+                        if returns.len() != func_to_call_ty.returns.valtypes.len() {
+                            return Err(RuntimeError::HostFunctionSignatureMismatch);
+                        }
+                        for (value, ty) in zip(returns, func_to_call_ty.returns.valtypes) {
+                            if value.to_ty() != ty {
+                                return Err(RuntimeError::HostFunctionSignatureMismatch);
+                            }
+                            stack.push_value::<T>(value)?;
+                        }
+                    }
                     FuncInst::WasmFunc(wasm_func_to_call_inst) => {
                         let remaining_locals = &wasm_func_to_call_inst.locals;
 
@@ -319,6 +353,38 @@ pub(super) fn run<T: Config>(
                         let returns = returns.map_err(|HaltExecutionError| {
                             RuntimeError::HostFunctionHaltedExecution
                         })?;
+
+                        // Verify that the return parameters match the host function parameters
+                        // since we have no validation guarantees for host functions
+                        if returns.len() != func_to_call_ty.returns.valtypes.len() {
+                            return Err(RuntimeError::HostFunctionSignatureMismatch);
+                        }
+                        for (value, ty) in zip(returns, func_to_call_ty.returns.valtypes) {
+                            if value.to_ty() != ty {
+                                return Err(RuntimeError::HostFunctionSignatureMismatch);
+                            }
+                            stack.push_value::<T>(value)?;
+                        }
+                    }
+                    FuncInst::StoredHostFunc(host_func_to_call_inst) => {
+                        let params: Vec<Value> = stack
+                            .pop_tail_iter(func_to_call_ty.params.valtypes.len())
+                            .collect();
+                        let stored_params = params
+                            .into_iter()
+                            .map(|value| store.wrap_value(value))
+                            .collect();
+                        let stored_returns =
+                            (host_func_to_call_inst.hostcode)(&mut store.user_data, stored_params);
+
+                        let stored_returns = stored_returns.map_err(|HaltExecutionError| {
+                            RuntimeError::HostFunctionHaltedExecution
+                        })?;
+
+                        let returns = stored_returns
+                            .into_iter()
+                            .map(|stored_value| store.try_unwrap_value(stored_value))
+                            .collect::<Result<Vec<Value>, RuntimeError>>()?;
 
                         // Verify that the return parameters match the host function parameters
                         // since we have no validation guarantees for host functions

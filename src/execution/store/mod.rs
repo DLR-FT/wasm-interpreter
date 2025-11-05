@@ -30,6 +30,7 @@ use alloc::string::String;
 use alloc::sync::Arc;
 use alloc::vec;
 use alloc::vec::Vec;
+use stored::StoredValue;
 
 use super::interpreter_loop::{data_drop, elem_drop};
 use super::UnwrapValidatedExt;
@@ -1082,6 +1083,41 @@ impl<'b, T: Config> Store<'b, T> {
 
                         Ok(RunState::Finished(returns))
                     }
+
+                    FuncInst::StoredHostFunc(host_func_inst) => {
+                        let stored_params = params
+                            .into_iter()
+                            .map(|value| self.wrap_value(value))
+                            .collect();
+                        let returns = (host_func_inst.hostcode)(&mut self.user_data, stored_params);
+
+                        debug!("Successfully invoked function");
+
+                        let returns = returns.map_err(|HaltExecutionError| {
+                            RuntimeError::HostFunctionHaltedExecution
+                        })?;
+
+                        let returns = returns
+                            .into_iter()
+                            .map(|stored_value| self.try_unwrap_value(stored_value))
+                            .collect::<Result<Vec<Value>, RuntimeError>>()?;
+
+                        // Verify that the return parameters match the host function parameters
+                        // since we have no validation guarantees for host functions
+                        let return_types = returns.iter().map(|v| v.to_ty()).collect::<Vec<_>>();
+
+                        if host_func_inst.function_type.returns.valtypes != return_types {
+                            trace!(
+                                "Func return types len: {}; returned args len: {}",
+                                host_func_inst.function_type.returns.valtypes.len(),
+                                return_types.len()
+                            );
+                            return Err(RuntimeError::HostFunctionSignatureMismatch);
+                        }
+
+                        Ok(RunState::Finished(returns))
+                    }
+
                     FuncInst::WasmFunc(wasm_func_inst) => {
                         // Prepare a new stack with the locals for the entry function
                         let mut stack = Stack::new_with_values(params);
@@ -1210,6 +1246,7 @@ pub struct HaltExecutionError;
 pub enum FuncInst<T> {
     WasmFunc(WasmFuncInst),
     HostFunc(HostFuncInst<T>),
+    StoredHostFunc(StoredHostFuncInst<T>),
 }
 
 #[derive(Debug)]
@@ -1231,11 +1268,21 @@ pub struct HostFuncInst<T> {
     pub function_type: FuncType,
     pub hostcode: fn(&mut T, Vec<Value>) -> Result<Vec<Value>, HaltExecutionError>,
 }
+
+#[derive(Debug)]
+pub struct StoredHostFuncInst<T> {
+    pub function_type: FuncType,
+    pub hostcode: fn(&mut T, Vec<StoredValue>) -> Result<Vec<StoredValue>, HaltExecutionError>,
+}
+
 impl<T> FuncInst<T> {
     pub fn ty(&self) -> FuncType {
         match self {
             FuncInst::WasmFunc(wasm_func_inst) => wasm_func_inst.function_type.clone(),
             FuncInst::HostFunc(host_func_inst) => host_func_inst.function_type.clone(),
+            FuncInst::StoredHostFunc(stored_host_func_inst) => {
+                stored_host_func_inst.function_type.clone()
+            }
         }
     }
 }
