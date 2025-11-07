@@ -31,14 +31,14 @@ use instances::{
     DataInst, ElemInst, FuncInst, GlobalInst, HostFuncInst, MemInst, ModuleInst, TableInst,
     WasmFuncInst,
 };
+use linear_memory::LinearMemory;
 
 use super::interpreter_loop::{data_drop, elem_drop};
 use super::UnwrapValidatedExt;
 
-use crate::linear_memory::LinearMemory;
-
 pub mod addrs;
 pub(crate) mod instances;
+pub(crate) mod linear_memory;
 
 /// The store represents all global state that can be manipulated by WebAssembly programs. It
 /// consists of the runtime representation of all instances of functions, tables, memories, and
