@@ -26,13 +26,13 @@ use crate::{
         },
         sidetable::Sidetable,
     },
+    instances::{DataInst, ElemInst, FuncInst, MemInst, ModuleInst, TableInst},
     resumable::Resumable,
     store::HaltExecutionError,
     unreachable_validated,
     value::{self, Ref, F32, F64},
     value_stack::Stack,
-    DataInst, ElemInst, FuncInst, MemInst, ModuleInst, RefType, RuntimeError, TableInst, TrapError,
-    ValType, Value,
+    RefType, RuntimeError, TrapError, ValType, Value,
 };
 
 use crate::execution::config::Config;
