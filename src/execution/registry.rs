@@ -1,4 +1,5 @@
-use crate::{ModuleInst, RuntimeError};
+use crate::instances::ModuleInst;
+use crate::RuntimeError;
 
 use alloc::borrow::Cow;
 use alloc::collections::BTreeMap;

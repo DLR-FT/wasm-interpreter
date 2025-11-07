@@ -11,11 +11,8 @@ use crate::core::reader::types::element::{ActiveElem, ElemItems, ElemMode, ElemT
 use crate::core::reader::types::export::{Export, ExportDesc};
 use crate::core::reader::types::global::{Global, GlobalType};
 use crate::core::reader::types::import::Import;
-use crate::core::reader::types::{
-    ExternType, FuncType, ImportSubTypeRelation, MemType, TableType, ValType,
-};
+use crate::core::reader::types::{ExternType, FuncType, ImportSubTypeRelation, MemType, TableType};
 use crate::core::reader::WasmReader;
-use crate::core::sidetable::Sidetable;
 use crate::execution::interpreter_loop::{self, memory_init, table_init};
 use crate::execution::value::{Ref, Value};
 use crate::execution::{run_const_span, Stack};
@@ -23,13 +20,17 @@ use crate::registry::Registry;
 use crate::resumable::{
     Dormitory, FreshResumableRef, InvokedResumableRef, Resumable, ResumableRef, RunState,
 };
-use crate::{Limits, RefType, RuntimeError, TrapError, ValidationInfo};
+use crate::{RefType, RuntimeError, ValidationInfo};
 use alloc::borrow::ToOwned;
 use alloc::collections::btree_map::BTreeMap;
 use alloc::string::String;
 use alloc::sync::Arc;
 use alloc::vec;
 use alloc::vec::Vec;
+use instances::{
+    DataInst, ElemInst, FuncInst, GlobalInst, HostFuncInst, MemInst, ModuleInst, TableInst,
+    WasmFuncInst,
+};
 
 use super::interpreter_loop::{data_drop, elem_drop};
 use super::UnwrapValidatedExt;
@@ -37,6 +38,7 @@ use super::UnwrapValidatedExt;
 use crate::linear_memory::LinearMemory;
 
 pub mod addrs;
+pub(crate) mod instances;
 
 /// The store represents all global state that can be manipulated by WebAssembly programs. It
 /// consists of the runtime representation of all instances of functions, tables, memories, and
@@ -805,7 +807,7 @@ impl<'b, T: Config> Store<'b, T> {
         // TODO fix clone
         let func_inst = FuncInst::WasmFunc(WasmFuncInst {
             function_type: self.modules.get(module_addr).types[ty].clone(),
-            ty,
+            _ty: ty,
             locals,
             code_expr,
             stp,
@@ -849,7 +851,7 @@ impl<'b, T: Config> Store<'b, T> {
     /// <https://webassembly.github.io/spec/core/exec/modules.html#element-segments>
     fn alloc_elem(&mut self, ref_type: RefType, refs: Vec<Ref>) -> ElemAddr {
         let elem_inst = ElemInst {
-            ty: ref_type,
+            _ty: ref_type,
             references: refs,
         };
 
@@ -1065,182 +1067,6 @@ impl<'b, T: Config> Store<'b, T> {
 /// A marker error for host functions to return, in case they want execution to be halted.
 pub struct HaltExecutionError;
 
-#[derive(Debug)]
-// TODO does not match the spec FuncInst
-pub enum FuncInst<T> {
-    WasmFunc(WasmFuncInst),
-    HostFunc(HostFuncInst<T>),
-}
-
-#[derive(Debug)]
-pub struct WasmFuncInst {
-    pub function_type: FuncType,
-    pub ty: TypeIdx,
-    pub locals: Vec<ValType>,
-    pub code_expr: Span,
-    ///index of the sidetable corresponding to the beginning of this functions code
-    pub stp: usize,
-
-    // implicit back ref required for function invocation and is in the spec
-    // TODO module_addr or module ref?
-    pub module_addr: ModuleAddr,
-}
-
-#[derive(Debug)]
-pub struct HostFuncInst<T> {
-    pub function_type: FuncType,
-    pub hostcode: fn(&mut T, Vec<Value>) -> Result<Vec<Value>, HaltExecutionError>,
-}
-
-impl<T> FuncInst<T> {
-    pub fn ty(&self) -> FuncType {
-        match self {
-            FuncInst::WasmFunc(wasm_func_inst) => wasm_func_inst.function_type.clone(),
-            FuncInst::HostFunc(host_func_inst) => host_func_inst.function_type.clone(),
-        }
-    }
-}
-
-#[derive(Clone, Debug)]
-/// <https://webassembly.github.io/spec/core/exec/runtime.html#element-instances>
-pub struct ElemInst {
-    pub ty: RefType,
-    pub references: Vec<Ref>,
-}
-
-impl ElemInst {
-    pub fn len(&self) -> usize {
-        self.references.len()
-    }
-    pub fn is_empty(&self) -> bool {
-        self.references.is_empty()
-    }
-}
-
-// TODO: The tables have to be both imported and exported (an enum instead of a struct)
-//       That is because when we import tables we can give a different size to the imported table
-//        thus having a wrapper over the initial table
-#[derive(Debug)]
-pub struct TableInst {
-    pub ty: TableType,
-    pub elem: Vec<Ref>,
-}
-
-impl TableInst {
-    pub fn len(&self) -> usize {
-        self.elem.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.elem.is_empty()
-    }
-
-    pub fn new(ty: TableType) -> Self {
-        Self {
-            ty,
-            elem: vec![Ref::Null(ty.et); ty.lim.min as usize],
-        }
-    }
-
-    /// <https://webassembly.github.io/spec/core/exec/modules.html#growing-tables>
-    pub fn grow(&mut self, n: u32, reff: Ref) -> Result<(), RuntimeError> {
-        // TODO refactor error, the spec Table.grow raises Table.{SizeOverflow, SizeLimit, OutOfMemory}
-        let len = n
-            .checked_add(self.elem.len() as u32)
-            .ok_or(TrapError::TableOrElementAccessOutOfBounds)?;
-
-        // roughly matches step 4,5,6
-        // checks limits_prime.valid() for limits_prime := { min: len, max: self.ty.lim.max }
-        // https://webassembly.github.io/spec/core/valid/types.html#limits
-        if self.ty.lim.max.map(|max| len > max).unwrap_or(false) {
-            return Err(TrapError::TableOrElementAccessOutOfBounds.into());
-        }
-        let limits_prime = Limits {
-            min: len,
-            max: self.ty.lim.max,
-        };
-
-        self.elem.extend(vec![reff; n as usize]);
-
-        self.ty.lim = limits_prime;
-        Ok(())
-    }
-}
-
-pub struct MemInst {
-    #[allow(warnings)]
-    pub ty: MemType,
-    pub mem: LinearMemory,
-}
-impl core::fmt::Debug for MemInst {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        f.debug_struct("MemInst")
-            .field("ty", &self.ty)
-            .finish_non_exhaustive()
-    }
-}
-
-impl MemInst {
-    pub fn new(ty: MemType) -> Self {
-        Self {
-            ty,
-            mem: LinearMemory::new_with_initial_pages(ty.limits.min.try_into().unwrap()),
-        }
-    }
-
-    /// <https://webassembly.github.io/spec/core/exec/modules.html#growing-memories>
-    pub fn grow(&mut self, n: u32) -> Result<(), RuntimeError> {
-        // TODO refactor error, the spec Table.grow raises Memory.{SizeOverflow, SizeLimit, OutOfMemory}
-        let len = n + self.mem.pages() as u32;
-        if len > Limits::MAX_MEM_PAGES {
-            return Err(TrapError::MemoryOrDataAccessOutOfBounds.into());
-        }
-
-        // roughly matches step 4,5,6
-        // checks limits_prime.valid() for limits_prime := { min: len, max: self.ty.lim.max }
-        // https://webassembly.github.io/spec/core/valid/types.html#limits
-        if self.ty.limits.max.map(|max| len > max).unwrap_or(false) {
-            return Err(TrapError::MemoryOrDataAccessOutOfBounds.into());
-        }
-        let limits_prime = Limits {
-            min: len,
-            max: self.ty.limits.max,
-        };
-
-        self.mem.grow(n.try_into().unwrap());
-
-        self.ty.limits = limits_prime;
-        Ok(())
-    }
-
-    /// Can never be bigger than 65,356 pages
-    pub fn size(&self) -> usize {
-        self.mem.len() / (crate::Limits::MEM_PAGE_SIZE as usize)
-    }
-}
-
-// pub struct GlobalInstV2 {
-//     Local(LocalGlobalInst),
-//     Imported(ImportedGlobalInst)
-// }
-
-#[derive(Debug)]
-pub struct GlobalInst {
-    pub ty: GlobalType,
-    /// Must be of the same type as specified in `ty`
-    pub value: Value,
-}
-
-pub struct DataInst {
-    pub data: Vec<u8>,
-}
-
-impl core::fmt::Debug for DataInst {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        f.debug_struct("DataInst").finish_non_exhaustive()
-    }
-}
-
 ///<https://webassembly.github.io/spec/core/exec/runtime.html#external-values>
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum ExternVal {
@@ -1324,27 +1150,4 @@ where
             }
         })
     }
-}
-
-///<https://webassembly.github.io/spec/core/exec/runtime.html#module-instances>
-#[derive(Debug)]
-pub struct ModuleInst<'b> {
-    pub types: Vec<FuncType>,
-    pub func_addrs: Vec<FuncAddr>,
-    pub table_addrs: Vec<TableAddr>,
-    pub mem_addrs: Vec<MemAddr>,
-    pub global_addrs: Vec<GlobalAddr>,
-    pub elem_addrs: Vec<ElemAddr>,
-    pub data_addrs: Vec<DataAddr>,
-    ///<https://webassembly.github.io/spec/core/exec/runtime.html#export-instances>
-    /// matches the list of ExportInst structs in the spec, however the spec never uses the name attribute
-    /// except during linking, which is up to the embedder to implement.
-    /// therefore this is a map data structure instead.
-    pub exports: BTreeMap<String, ExternVal>,
-
-    // TODO the bytecode is not in the spec, but required for re-parsing
-    pub wasm_bytecode: &'b [u8],
-
-    // sidetable is not in the spec, but required for control flow
-    pub sidetable: Sidetable,
 }
