@@ -26,7 +26,6 @@ pub mod error;
 pub mod function_ref;
 pub mod interop;
 mod interpreter_loop;
-pub(crate) mod linear_memory;
 pub(crate) mod little_endian;
 pub mod registry;
 pub mod resumable;
