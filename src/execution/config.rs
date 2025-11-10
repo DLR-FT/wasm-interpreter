@@ -18,6 +18,37 @@ pub trait Config {
     #[allow(unused_variables)]
     #[inline(always)]
     fn instruction_hook(&mut self, bytecode: &[u8], pc: usize) {}
+
+    /// Amount of fuel to be deducted when a single byte `instr` is hit. The cost corresponding to `UNREACHABLE` and
+    /// `END` instructions and other bytes that do not correspond to any Wasm instruction are ignored.
+    // It must always be checked that the calls to this method fold into a constant if it is just a match statement that
+    // yields constants.
+    #[inline(always)]
+    fn get_flat_cost(_instr: u8) -> u32 {
+        1
+    }
+
+    /// Amount of fuel to be deducted when a multi-byte instruction that starts with the byte 0xFC is hit. This method
+    /// should return the cost of an instruction obtained by prepending 0xFC to of an unsigned 32-bit LEB
+    /// representation of `instr`. Multi-byte sequences obtained this way that do not correspond to any Wasm instruction
+    /// are ignored.
+    // It must always be checked that the calls to this method fold into a constant if it is just a match statement that
+    // yields constants.
+    #[inline(always)]
+    fn get_fc_extension_flat_cost(_instr: u32) -> u32 {
+        1
+    }
+
+    /// Amount of fuel to be deducted when a multi-byte instruction that starts with the byte 0xFD is hit. This method
+    /// should return the cost of an instruction obtained by prepending 0xFD to of an unsigned 32-bit LEB
+    /// representation of `instr`. Multi-byte sequences obtained this way that do not correspond to any Wasm instruction
+    /// are ignored.
+    // It must always be checked that the calls to this method fold into a constant if it is just a match statement that
+    // yields constants.
+    #[inline(always)]
+    fn get_fd_extension_flat_cost(_instr: u32) -> u32 {
+        1
+    }
 }
 
 /// Default implementation of the interpreter configuration, with all hooks empty
