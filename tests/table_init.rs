@@ -15,7 +15,7 @@
 # limitations under the License.
 */
 
-use wasm::{validate, RuntimeError, RuntimeInstance, TrapError, ValidationError, DEFAULT_MODULE};
+use wasm::{validate, RuntimeError, RuntimeInstance, TrapError, ValidationError};
 
 #[test_log::test]
 fn table_init_1_test() {
@@ -49,11 +49,21 @@ fn table_init_1_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut i, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
-    let check = i.get_function_by_name(DEFAULT_MODULE, "check").unwrap();
+    let test = i
+        .store
+        .instance_export(module, "test")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    let check = i
+        .store
+        .instance_export(module, "check")
+        .unwrap()
+        .as_func()
+        .unwrap();
 
     i.invoke_typed::<(), ()>(test, ()).unwrap();
 
@@ -176,11 +186,21 @@ fn table_init_2_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut i, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
-    let check = i.get_function_by_name(DEFAULT_MODULE, "check").unwrap();
+    let test = i
+        .store
+        .instance_export(module, "test")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    let check = i
+        .store
+        .instance_export(module, "check")
+        .unwrap()
+        .as_func()
+        .unwrap();
 
     i.invoke_typed::<(), ()>(test, ()).unwrap();
 
@@ -316,11 +336,21 @@ fn table_init_3_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut i, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
-    let check = i.get_function_by_name(DEFAULT_MODULE, "check").unwrap();
+    let test = i
+        .store
+        .instance_export(module, "test")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    let check = i
+        .store
+        .instance_export(module, "check")
+        .unwrap()
+        .as_func()
+        .unwrap();
 
     i.invoke_typed::<(), ()>(test, ()).unwrap();
 
@@ -427,11 +457,21 @@ fn table_init_4_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut i, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
-    let check = i.get_function_by_name(DEFAULT_MODULE, "check").unwrap();
+    let test = i
+        .store
+        .instance_export(module, "test")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    let check = i
+        .store
+        .instance_export(module, "check")
+        .unwrap()
+        .as_func()
+        .unwrap();
 
     i.invoke_typed::<(), ()>(test, ()).unwrap();
 
@@ -569,11 +609,21 @@ fn table_init_5_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut i, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
-    let check = i.get_function_by_name(DEFAULT_MODULE, "check").unwrap();
+    let test = i
+        .store
+        .instance_export(module, "test")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    let check = i
+        .store
+        .instance_export(module, "check")
+        .unwrap()
+        .as_func()
+        .unwrap();
 
     i.invoke_typed::<(), ()>(test, ()).unwrap();
 
@@ -741,10 +791,15 @@ fn table_init_10_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut i, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
+    let test = i
+        .store
+        .instance_export(module, "test")
+        .unwrap()
+        .as_func()
+        .unwrap();
 
     i.invoke_typed::<(), ()>(test, ()).unwrap();
 }
@@ -778,10 +833,15 @@ fn table_init_11_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut i, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
+    let test = i
+        .store
+        .instance_export(module, "test")
+        .unwrap()
+        .as_func()
+        .unwrap();
 
     assert_eq!(
         i.invoke_typed::<(), ()>(test, ()).err(),
@@ -820,10 +880,15 @@ fn table_init_12_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut i, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
+    let test = i
+        .store
+        .instance_export(module, "test")
+        .unwrap()
+        .as_func()
+        .unwrap();
 
     i.invoke_typed::<(), ()>(test, ()).unwrap();
 }
@@ -857,10 +922,15 @@ fn table_init_13_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut i, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
+    let test = i
+        .store
+        .instance_export(module, "test")
+        .unwrap()
+        .as_func()
+        .unwrap();
 
     i.invoke_typed::<(), ()>(test, ()).unwrap();
 }
@@ -894,10 +964,15 @@ fn table_init_14_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut i, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
+    let test = i
+        .store
+        .instance_export(module, "test")
+        .unwrap()
+        .as_func()
+        .unwrap();
 
     assert_eq!(
         i.invoke_typed::<(), ()>(test, ()).err(),
@@ -936,10 +1011,15 @@ fn table_init_15_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut i, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
+    let test = i
+        .store
+        .instance_export(module, "test")
+        .unwrap()
+        .as_func()
+        .unwrap();
 
     assert_eq!(
         i.invoke_typed::<(), ()>(test, ()).err(),
@@ -978,10 +1058,15 @@ fn table_init_16_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut i, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
+    let test = i
+        .store
+        .instance_export(module, "test")
+        .unwrap()
+        .as_func()
+        .unwrap();
 
     assert_eq!(
         i.invoke_typed::<(), ()>(test, ()).err(),
@@ -1020,10 +1105,15 @@ fn table_init_17_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut i, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
+    let test = i
+        .store
+        .instance_export(module, "test")
+        .unwrap()
+        .as_func()
+        .unwrap();
 
     assert_eq!(
         i.invoke_typed::<(), ()>(test, ()).err(),
@@ -1062,10 +1152,15 @@ fn table_init_18_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut i, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
+    let test = i
+        .store
+        .instance_export(module, "test")
+        .unwrap()
+        .as_func()
+        .unwrap();
 
     i.invoke_typed::<(), ()>(test, ()).unwrap();
 }
@@ -1099,10 +1194,15 @@ fn table_init_19_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut i, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
+    let test = i
+        .store
+        .instance_export(module, "test")
+        .unwrap()
+        .as_func()
+        .unwrap();
 
     assert_eq!(
         i.invoke_typed::<(), ()>(test, ()).err(),
@@ -1141,10 +1241,15 @@ fn table_init_20_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut i, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
+    let test = i
+        .store
+        .instance_export(module, "test")
+        .unwrap()
+        .as_func()
+        .unwrap();
 
     i.invoke_typed::<(), ()>(test, ()).unwrap();
 }
@@ -1178,10 +1283,15 @@ fn table_init_21_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut i, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
+    let test = i
+        .store
+        .instance_export(module, "test")
+        .unwrap()
+        .as_func()
+        .unwrap();
 
     assert_eq!(
         i.invoke_typed::<(), ()>(test, ()).err(),
@@ -1220,10 +1330,15 @@ fn table_init_22_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut i, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
+    let test = i
+        .store
+        .instance_export(module, "test")
+        .unwrap()
+        .as_func()
+        .unwrap();
 
     i.invoke_typed::<(), ()>(test, ()).unwrap();
 }
@@ -1257,10 +1372,15 @@ fn table_init_23_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut i, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
+    let test = i
+        .store
+        .instance_export(module, "test")
+        .unwrap()
+        .as_func()
+        .unwrap();
 
     assert_eq!(
         i.invoke_typed::<(), ()>(test, ()).err(),
@@ -1299,10 +1419,15 @@ fn table_init_24_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut i, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
+    let test = i
+        .store
+        .instance_export(module, "test")
+        .unwrap()
+        .as_func()
+        .unwrap();
 
     assert_eq!(
         i.invoke_typed::<(), ()>(test, ()).err(),
@@ -1341,10 +1466,15 @@ fn table_init_25_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut i, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
+    let test = i
+        .store
+        .instance_export(module, "test")
+        .unwrap()
+        .as_func()
+        .unwrap();
 
     i.invoke_typed::<(), ()>(test, ()).unwrap();
 }
@@ -1378,10 +1508,15 @@ fn table_init_26_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut i, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
+    let test = i
+        .store
+        .instance_export(module, "test")
+        .unwrap()
+        .as_func()
+        .unwrap();
 
     assert_eq!(
         i.invoke_typed::<(), ()>(test, ()).err(),
@@ -1420,10 +1555,15 @@ fn table_init_27_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut i, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
+    let test = i
+        .store
+        .instance_export(module, "test")
+        .unwrap()
+        .as_func()
+        .unwrap();
 
     i.invoke_typed::<(), ()>(test, ()).unwrap();
 }
@@ -1457,10 +1597,15 @@ fn table_init_28_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut i, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
+    let test = i
+        .store
+        .instance_export(module, "test")
+        .unwrap()
+        .as_func()
+        .unwrap();
 
     assert_eq!(
         i.invoke_typed::<(), ()>(test, ()).err(),
@@ -1499,10 +1644,15 @@ fn table_init_29_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut i, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
+    let test = i
+        .store
+        .instance_export(module, "test")
+        .unwrap()
+        .as_func()
+        .unwrap();
 
     i.invoke_typed::<(), ()>(test, ()).unwrap();
 }
@@ -1536,10 +1686,15 @@ fn table_init_30_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut i, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
+    let test = i
+        .store
+        .instance_export(module, "test")
+        .unwrap()
+        .as_func()
+        .unwrap();
 
     assert_eq!(
         i.invoke_typed::<(), ()>(test, ()).err(),
@@ -2718,11 +2873,21 @@ fn table_init_94_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut inst, _module) =
+    let (mut inst, module) =
         RuntimeInstance::new_with_default_module((), &validation_info).unwrap();
 
-    let run = inst.get_function_by_name(DEFAULT_MODULE, "run").unwrap();
-    let test = inst.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
+    let run = inst
+        .store
+        .instance_export(module, "run")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    let test = inst
+        .store
+        .instance_export(module, "test")
+        .unwrap()
+        .as_func()
+        .unwrap();
     assert_eq!(
         inst.invoke_typed::<(i32, i32), ()>(run, (24, 16)).err(),
         Some(RuntimeError::Trap(
@@ -2772,11 +2937,21 @@ fn table_init_95_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut inst, _module) =
+    let (mut inst, module) =
         RuntimeInstance::new_with_default_module((), &validation_info).unwrap();
 
-    let run = inst.get_function_by_name(DEFAULT_MODULE, "run").unwrap();
-    let test = inst.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
+    let run = inst
+        .store
+        .instance_export(module, "run")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    let test = inst
+        .store
+        .instance_export(module, "test")
+        .unwrap()
+        .as_func()
+        .unwrap();
     assert_eq!(
         inst.invoke_typed::<(i32, i32), ()>(run, (25, 16)).err(),
         Some(RuntimeError::Trap(
@@ -2826,11 +3001,21 @@ fn table_init_96_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut inst, _module) =
+    let (mut inst, module) =
         RuntimeInstance::new_with_default_module((), &validation_info).unwrap();
 
-    let run = inst.get_function_by_name(DEFAULT_MODULE, "run").unwrap();
-    let test = inst.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
+    let run = inst
+        .store
+        .instance_export(module, "run")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    let test = inst
+        .store
+        .instance_export(module, "test")
+        .unwrap()
+        .as_func()
+        .unwrap();
     assert_eq!(
         inst.invoke_typed::<(i32, i32), ()>(run, (96, 32)).err(),
         Some(RuntimeError::Trap(
@@ -2880,11 +3065,21 @@ fn table_init_97_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut inst, _module) =
+    let (mut inst, module) =
         RuntimeInstance::new_with_default_module((), &validation_info).unwrap();
 
-    let run = inst.get_function_by_name(DEFAULT_MODULE, "run").unwrap();
-    let test = inst.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
+    let run = inst
+        .store
+        .instance_export(module, "run")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    let test = inst
+        .store
+        .instance_export(module, "test")
+        .unwrap()
+        .as_func()
+        .unwrap();
     assert_eq!(
         inst.invoke_typed::<(i32, i32), ()>(run, (97, 31)).err(),
         Some(RuntimeError::Trap(
@@ -2934,10 +3129,20 @@ fn table_init_98_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (inst, _module) = RuntimeInstance::new_with_default_module((), &validation_info).unwrap();
+    let (inst, module) = RuntimeInstance::new_with_default_module((), &validation_info).unwrap();
 
-    let run = inst.get_function_by_name(DEFAULT_MODULE, "run").unwrap();
-    let test = inst.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
+    let run = inst
+        .store
+        .instance_export(module, "run")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    let test = inst
+        .store
+        .instance_export(module, "test")
+        .unwrap()
+        .as_func()
+        .unwrap();
     let (mut inst, _default_module) =
         RuntimeInstance::new_with_default_module((), &validation_info).unwrap();
     assert_eq!(
@@ -2990,11 +3195,21 @@ fn table_init_99_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut inst, _module) =
+    let (mut inst, module) =
         RuntimeInstance::new_with_default_module((), &validation_info).unwrap();
 
-    let run = inst.get_function_by_name(DEFAULT_MODULE, "run").unwrap();
-    let test = inst.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
+    let run = inst
+        .store
+        .instance_export(module, "run")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    let test = inst
+        .store
+        .instance_export(module, "test")
+        .unwrap()
+        .as_func()
+        .unwrap();
     assert_eq!(
         inst.invoke_typed::<(i32, i32), ()>(run, (0, 4294967292_u32 as i32))
             .err(),

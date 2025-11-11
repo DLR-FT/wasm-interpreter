@@ -3,7 +3,7 @@ use log::info;
 use wasm::{
     host_function_wrapper, validate,
     value::{F32, F64},
-    HaltExecutionError, RuntimeError, RuntimeInstance, Value,
+    ExternVal, HaltExecutionError, RuntimeError, RuntimeInstance, Value,
 };
 
 fn hello(_: &mut (), _values: Vec<Value>) -> Result<Vec<Value>, HaltExecutionError> {
@@ -23,25 +23,27 @@ pub fn host_func_call_within_module() {
     )
 )"#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
+    let validation_info = validate(&wasm_bytes).expect("validation failed");
+
     fn hello(_: &mut (), _values: Vec<Value>) -> Result<Vec<Value>, HaltExecutionError> {
         info!("Host function says hello from wasm!");
         Ok(Vec::new())
     }
 
     let mut runtime_instance = RuntimeInstance::new(());
-    runtime_instance
+    let hello = runtime_instance
         .add_host_function_typed::<(), ()>("hello_mod", "hello", hello)
         .expect("function registration failed");
-    runtime_instance
-        .add_module(
-            "importing_mod",
-            &validate(&wasm_bytes).expect("validation failed"),
-            None,
-        )
-        .expect("instantiation failed");
+    let importing_mod = runtime_instance
+        .store
+        .module_instantiate(&validation_info, vec![ExternVal::Func(hello)], None)
+        .unwrap();
     let function_ref = runtime_instance
-        .get_function_by_name("importing_mod", "hello_caller")
-        .expect("wasm function could not be found");
+        .store
+        .instance_export(importing_mod, "hello_caller")
+        .unwrap()
+        .as_func()
+        .unwrap();
     let result = runtime_instance
         .invoke_typed::<i32, i32>(function_ref, 2)
         .expect("wasm function invocation failed");
@@ -51,13 +53,10 @@ pub fn host_func_call_within_module() {
 #[test_log::test]
 pub fn host_func_call_as_first_func() {
     let mut runtime_instance = RuntimeInstance::new(());
-    runtime_instance
+    let hello = runtime_instance
         .add_host_function_typed::<(), ()>("hello_mod", "hello", hello)
         .expect("function registration failed");
-    let function_ref = runtime_instance
-        .get_function_by_name("hello_mod", "hello")
-        .expect("wasm function could not be found");
-    let result = runtime_instance.invoke_typed::<(), ()>(function_ref, ());
+    let result = runtime_instance.invoke_typed::<(), ()>(hello, ());
     assert_eq!(Ok(()), result);
 }
 
@@ -143,7 +142,7 @@ pub fn simple_multivariate_host_func_within_module() {
             fancy_add_mult,
         )
         .expect("function registration failed");
-    runtime_instance
+    let importing_mod = runtime_instance
         .add_module(
             "importing_mod",
             &validate(&wasm_bytes).expect("validation failed"),
@@ -151,8 +150,11 @@ pub fn simple_multivariate_host_func_within_module() {
         )
         .expect("instantiation failed");
     let function_ref = runtime_instance
-        .get_function_by_name("importing_mod", "fancy_add_mult_caller")
-        .expect("wasm function could not be found");
+        .store
+        .instance_export(importing_mod, "fancy_add_mult_caller")
+        .unwrap()
+        .as_func()
+        .unwrap();
     let result = runtime_instance
         .invoke_typed::<(), (f64, i32, i64)>(function_ref, ())
         .expect("wasm function invocation failed");
@@ -180,7 +182,7 @@ pub fn simple_multivariate_host_func_with_host_func_wrapper() {
             wrapped_add_mult,
         )
         .expect("function registration failed");
-    runtime_instance
+    let importing_mod = runtime_instance
         .add_module(
             "importing_mod",
             &validate(&wasm_bytes).expect("validation failed"),
@@ -188,8 +190,11 @@ pub fn simple_multivariate_host_func_with_host_func_wrapper() {
         )
         .expect("instantiation failed");
     let function_ref = runtime_instance
-        .get_function_by_name("importing_mod", "fancy_add_mult_caller")
-        .expect("wasm function could not be found");
+        .store
+        .instance_export(importing_mod, "fancy_add_mult_caller")
+        .unwrap()
+        .as_func()
+        .unwrap();
     let result = runtime_instance
         .invoke_typed::<(), (f64, i32, i64)>(function_ref, ())
         .expect("wasm function invocation failed");
@@ -199,18 +204,16 @@ pub fn simple_multivariate_host_func_with_host_func_wrapper() {
 #[test_log::test]
 pub fn simple_multivariate_host_func_as_first_func() {
     let mut runtime_instance = RuntimeInstance::new(());
-    runtime_instance
+    let fancy_add_mult = runtime_instance
         .add_host_function_typed::<(i32, f64), (f64, i32)>(
             "hello_mod",
             "fancy_add_mult",
             fancy_add_mult,
         )
         .expect("function registration failed");
-    let function_ref = runtime_instance
-        .get_function_by_name("hello_mod", "fancy_add_mult")
-        .expect("wasm function could not be found");
+
     let result = runtime_instance
-        .invoke_typed::<(i32, f64), (f64, i32)>(function_ref, (3, 5.0))
+        .invoke_typed::<(i32, f64), (f64, i32)>(fancy_add_mult, (3, 5.0))
         .expect("wasm function invocation failed");
     assert_eq!((15.0, 8), result);
 }
@@ -227,6 +230,7 @@ pub fn weird_multi_typed_host_func() {
         call $weird_add
 ))"#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
+    let validation_info = validate(&wasm_bytes).unwrap();
 
     fn weird_add_mult(_: &mut (), values: Vec<Value>) -> Result<Vec<Value>, HaltExecutionError> {
         Ok(Vec::from([match values[0] {
@@ -243,22 +247,30 @@ pub fn weird_multi_typed_host_func() {
     }
 
     let mut runtime_instance = RuntimeInstance::new(());
-    runtime_instance
+
+    let weird_mult = runtime_instance
         .add_host_function_typed::<i32, f64>("hello_mod", "weird_mult", weird_add_mult)
         .expect("function registration failed");
-    runtime_instance
+    let weird_add = runtime_instance
         .add_host_function_typed::<f32, i64>("hello_mod", "weird_add", weird_add_mult)
         .expect("function registration failed");
-    runtime_instance
-        .add_module(
-            "importing_mod",
-            &validate(&wasm_bytes).expect("validation failed"),
+
+    let importing_mod = runtime_instance
+        .store
+        .module_instantiate(
+            &validation_info,
+            vec![ExternVal::Func(weird_mult), ExternVal::Func(weird_add)],
             None,
         )
-        .expect("instantiation failed");
+        .unwrap();
+
     let function_ref = runtime_instance
-        .get_function_by_name("importing_mod", "weird_add_mult_caller")
-        .expect("wasm function could not be found");
+        .store
+        .instance_export(importing_mod, "weird_add_mult_caller")
+        .unwrap()
+        .as_func()
+        .unwrap();
+
     let result = runtime_instance
         .invoke_typed::<(), (f64, i64)>(function_ref, ())
         .expect("wasm function invocation failed");
@@ -276,6 +288,7 @@ pub fn host_func_runtime_error() {
     )
 )"#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
+    let validation_info = validate(&wasm_bytes).expect("validation failed");
 
     fn mult3(_: &mut (), values: Vec<Value>) -> Result<Vec<Value>, HaltExecutionError> {
         let val: i32 = values[0].try_into().unwrap();
@@ -284,19 +297,19 @@ pub fn host_func_runtime_error() {
     }
 
     let mut runtime_instance = RuntimeInstance::new(());
-    runtime_instance
+    let mult3 = runtime_instance
         .add_host_function_typed::<i32, i32>("hello_mod", "mult3", mult3)
         .expect("function registration failed");
-    runtime_instance
-        .add_module(
-            "importing_mod",
-            &validate(&wasm_bytes).expect("validation failed"),
-            None,
-        )
-        .expect("instantiation failed");
+    let importing_mod = runtime_instance
+        .store
+        .module_instantiate(&validation_info, vec![ExternVal::Func(mult3)], None)
+        .unwrap();
     let function_ref = runtime_instance
-        .get_function_by_name("importing_mod", "mult3_caller")
-        .expect("wasm function could not be found");
+        .store
+        .instance_export(importing_mod, "mult3_caller")
+        .unwrap()
+        .as_func()
+        .unwrap();
     let result = runtime_instance.invoke_typed::<(), (f64, i64)>(function_ref, ());
     assert_eq!(Err(RuntimeError::HostFunctionSignatureMismatch), result);
 }

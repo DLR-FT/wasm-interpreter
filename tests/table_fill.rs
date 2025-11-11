@@ -16,7 +16,7 @@
 */
 use wasm::interop::RefExtern;
 use wasm::value::ExternAddr;
-use wasm::{validate, RuntimeError, RuntimeInstance, TrapError, DEFAULT_MODULE};
+use wasm::{validate, RuntimeError, RuntimeInstance, TrapError};
 
 #[test_log::test]
 fn table_fill_test() {
@@ -40,13 +40,26 @@ fn table_fill_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut i, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let get = i.get_function_by_name(DEFAULT_MODULE, "get").unwrap();
-    let fill = i.get_function_by_name(DEFAULT_MODULE, "fill").unwrap();
+    let get = i
+        .store
+        .instance_export(module, "get")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    let fill = i
+        .store
+        .instance_export(module, "fill")
+        .unwrap()
+        .as_func()
+        .unwrap();
     let fill_abbrev = i
-        .get_function_by_name(DEFAULT_MODULE, "fill-abbrev")
+        .store
+        .instance_export(module, "fill-abbrev")
+        .unwrap()
+        .as_func()
         .unwrap();
 
     assert_eq!(

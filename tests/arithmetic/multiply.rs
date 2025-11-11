@@ -1,4 +1,4 @@
-use wasm::{validate, RuntimeInstance, DEFAULT_MODULE};
+use wasm::{validate, RuntimeInstance};
 
 const MULTIPLY_WAT_TEMPLATE: &str = r#"
     (module
@@ -18,64 +18,26 @@ pub fn i32_multiply() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let (mut instance, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    assert_eq!(
-        33,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "multiply")
-                    .unwrap(),
-                11
-            )
-            .unwrap()
-    );
-    assert_eq!(
-        0,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "multiply")
-                    .unwrap(),
-                0
-            )
-            .unwrap()
-    );
-    assert_eq!(
-        -30,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "multiply")
-                    .unwrap(),
-                -10
-            )
-            .unwrap()
-    );
+    let multiply = instance
+        .store
+        .instance_export(module, "multiply")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    assert_eq!(33, instance.invoke_typed(multiply, 11).unwrap());
+    assert_eq!(0, instance.invoke_typed(multiply, 0).unwrap());
+    assert_eq!(-30, instance.invoke_typed(multiply, -10).unwrap());
 
     assert_eq!(
         i32::MAX - 5,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "multiply")
-                    .unwrap(),
-                i32::MAX - 1
-            )
-            .unwrap()
+        instance.invoke_typed(multiply, i32::MAX - 1).unwrap()
     );
     assert_eq!(
         i32::MIN + 3,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "multiply")
-                    .unwrap(),
-                i32::MIN + 1
-            )
-            .unwrap()
+        instance.invoke_typed(multiply, i32::MIN + 1).unwrap()
     );
 }
 
