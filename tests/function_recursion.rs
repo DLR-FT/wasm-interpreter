@@ -26,7 +26,7 @@ fn simple_function_call() {
         3 * 7 + 13,
         instance
             .invoke_typed(
-                &instance
+                instance
                     .get_function_by_name(DEFAULT_MODULE, "simple_caller")
                     .unwrap(),
                 (3, 7)
@@ -64,7 +64,7 @@ fn recursion_valid() {
         12,
         instance
             .invoke_typed(
-                &instance
+                instance
                     .get_function_by_name(DEFAULT_MODULE, "add_two")
                     .unwrap(),
                 10
@@ -75,7 +75,7 @@ fn recursion_valid() {
         2,
         instance
             .invoke_typed(
-                &instance
+                instance
                     .get_function_by_name(DEFAULT_MODULE, "add_two")
                     .unwrap(),
                 0
@@ -86,7 +86,7 @@ fn recursion_valid() {
         -4,
         instance
             .invoke_typed(
-                &instance
+                instance
                     .get_function_by_name(DEFAULT_MODULE, "add_two")
                     .unwrap(),
                 -6
@@ -154,7 +154,7 @@ fn multivalue_call() {
     assert_eq!(
         (10, 42.0, 5),
         instance
-            .invoke_typed::<(), (i32, f32, i64)>(&foo_fn, ())
+            .invoke_typed::<(), (i32, f32, i64)>(foo_fn, ())
             .unwrap()
     );
 }

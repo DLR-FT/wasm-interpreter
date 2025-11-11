@@ -23,7 +23,7 @@ fn i32_add_one() {
         12,
         instance
             .invoke_typed(
-                &instance
+                instance
                     .get_function_by_name(DEFAULT_MODULE, "add_one")
                     .unwrap(),
                 11
@@ -34,7 +34,7 @@ fn i32_add_one() {
         1,
         instance
             .invoke_typed(
-                &instance
+                instance
                     .get_function_by_name(DEFAULT_MODULE, "add_one")
                     .unwrap(),
                 0
@@ -45,7 +45,7 @@ fn i32_add_one() {
         -5,
         instance
             .invoke_typed(
-                &instance
+                instance
                     .get_function_by_name(DEFAULT_MODULE, "add_one")
                     .unwrap(),
                 -6
@@ -67,19 +67,19 @@ fn i64_add_one() {
     assert_eq!(
         12_i64,
         instance
-            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), 11_i64)
+            .invoke_typed(instance.get_function_by_index(module, 0).unwrap(), 11_i64)
             .unwrap()
     );
     assert_eq!(
         1_i64,
         instance
-            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), 0_i64)
+            .invoke_typed(instance.get_function_by_index(module, 0).unwrap(), 0_i64)
             .unwrap()
     );
     assert_eq!(
         -5_i64,
         instance
-            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), -6_i64)
+            .invoke_typed(instance.get_function_by_index(module, 0).unwrap(), -6_i64)
             .unwrap()
     );
 }

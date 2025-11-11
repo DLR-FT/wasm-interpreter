@@ -26,7 +26,7 @@ fn counter() {
 
     for _ in 0..5 {
         instance
-            .invoke_typed::<(), ()>(&add_one_func_ref, ())
+            .invoke_typed::<(), ()>(add_one_func_ref, ())
             .unwrap();
     }
 
@@ -62,7 +62,7 @@ fn channels() {
             .get_function_by_name("host", "send_message")
             .unwrap();
         instance
-            .invoke_typed::<(), ()>(&send_message_func_ref, ())
+            .invoke_typed::<(), ()>(send_message_func_ref, ())
             .unwrap();
     });
 

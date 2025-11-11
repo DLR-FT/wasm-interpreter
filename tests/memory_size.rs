@@ -34,13 +34,13 @@ fn memory_size_1() {
     let size = i.get_function_by_name(DEFAULT_MODULE, "size").unwrap();
     let grow = i.get_function_by_name(DEFAULT_MODULE, "grow").unwrap();
 
-    assert_eq!(i.invoke_typed(&size, ()), Ok(0));
-    assert_eq!(i.invoke_typed(&grow, 1), Ok(()));
-    assert_eq!(i.invoke_typed(&size, ()), Ok(1));
-    assert_eq!(i.invoke_typed(&grow, 4), Ok(()));
-    assert_eq!(i.invoke_typed(&size, ()), Ok(5));
-    assert_eq!(i.invoke_typed(&grow, 0), Ok(()));
-    assert_eq!(i.invoke_typed(&size, ()), Ok(5));
+    assert_eq!(i.invoke_typed(size, ()), Ok(0));
+    assert_eq!(i.invoke_typed(grow, 1), Ok(()));
+    assert_eq!(i.invoke_typed(size, ()), Ok(1));
+    assert_eq!(i.invoke_typed(grow, 4), Ok(()));
+    assert_eq!(i.invoke_typed(size, ()), Ok(5));
+    assert_eq!(i.invoke_typed(grow, 0), Ok(()));
+    assert_eq!(i.invoke_typed(size, ()), Ok(5));
 }
 
 #[test_log::test]
@@ -60,13 +60,13 @@ fn memory_size_2() {
     let size = i.get_function_by_name(DEFAULT_MODULE, "size").unwrap();
     let grow = i.get_function_by_name(DEFAULT_MODULE, "grow").unwrap();
 
-    assert_eq!(i.invoke_typed(&size, ()), Ok(1));
-    assert_eq!(i.invoke_typed(&grow, 1), Ok(()));
-    assert_eq!(i.invoke_typed(&size, ()), Ok(2));
-    assert_eq!(i.invoke_typed(&grow, 4), Ok(()));
-    assert_eq!(i.invoke_typed(&size, ()), Ok(6));
-    assert_eq!(i.invoke_typed(&grow, 0), Ok(()));
-    assert_eq!(i.invoke_typed(&size, ()), Ok(6));
+    assert_eq!(i.invoke_typed(size, ()), Ok(1));
+    assert_eq!(i.invoke_typed(grow, 1), Ok(()));
+    assert_eq!(i.invoke_typed(size, ()), Ok(2));
+    assert_eq!(i.invoke_typed(grow, 4), Ok(()));
+    assert_eq!(i.invoke_typed(size, ()), Ok(6));
+    assert_eq!(i.invoke_typed(grow, 0), Ok(()));
+    assert_eq!(i.invoke_typed(size, ()), Ok(6));
 }
 
 #[test_log::test]
@@ -86,17 +86,17 @@ fn memory_size_3() {
     let size = i.get_function_by_name(DEFAULT_MODULE, "size").unwrap();
     let grow = i.get_function_by_name(DEFAULT_MODULE, "grow").unwrap();
 
-    assert_eq!(i.invoke_typed(&size, ()), Ok(0));
-    assert_eq!(i.invoke_typed(&grow, 3), Ok(()));
-    assert_eq!(i.invoke_typed(&size, ()), Ok(0));
-    assert_eq!(i.invoke_typed(&grow, 1), Ok(()));
-    assert_eq!(i.invoke_typed(&size, ()), Ok(1));
-    assert_eq!(i.invoke_typed(&grow, 0), Ok(()));
-    assert_eq!(i.invoke_typed(&size, ()), Ok(1));
-    assert_eq!(i.invoke_typed(&grow, 4), Ok(()));
-    assert_eq!(i.invoke_typed(&size, ()), Ok(1));
-    assert_eq!(i.invoke_typed(&grow, 1), Ok(()));
-    assert_eq!(i.invoke_typed(&size, ()), Ok(2));
+    assert_eq!(i.invoke_typed(size, ()), Ok(0));
+    assert_eq!(i.invoke_typed(grow, 3), Ok(()));
+    assert_eq!(i.invoke_typed(size, ()), Ok(0));
+    assert_eq!(i.invoke_typed(grow, 1), Ok(()));
+    assert_eq!(i.invoke_typed(size, ()), Ok(1));
+    assert_eq!(i.invoke_typed(grow, 0), Ok(()));
+    assert_eq!(i.invoke_typed(size, ()), Ok(1));
+    assert_eq!(i.invoke_typed(grow, 4), Ok(()));
+    assert_eq!(i.invoke_typed(size, ()), Ok(1));
+    assert_eq!(i.invoke_typed(grow, 1), Ok(()));
+    assert_eq!(i.invoke_typed(size, ()), Ok(2));
 }
 
 #[test_log::test]
@@ -116,17 +116,17 @@ fn memory_size_4() {
     let size = i.get_function_by_name(DEFAULT_MODULE, "size").unwrap();
     let grow = i.get_function_by_name(DEFAULT_MODULE, "grow").unwrap();
 
-    assert_eq!(i.invoke_typed(&size, ()), Ok(3));
-    assert_eq!(i.invoke_typed(&grow, 1), Ok(()));
-    assert_eq!(i.invoke_typed(&size, ()), Ok(4));
-    assert_eq!(i.invoke_typed(&grow, 3), Ok(()));
-    assert_eq!(i.invoke_typed(&size, ()), Ok(7));
-    assert_eq!(i.invoke_typed(&grow, 0), Ok(()));
-    assert_eq!(i.invoke_typed(&size, ()), Ok(7));
-    assert_eq!(i.invoke_typed(&grow, 2), Ok(()));
-    assert_eq!(i.invoke_typed(&size, ()), Ok(7));
-    assert_eq!(i.invoke_typed(&grow, 1), Ok(()));
-    assert_eq!(i.invoke_typed(&size, ()), Ok(8));
+    assert_eq!(i.invoke_typed(size, ()), Ok(3));
+    assert_eq!(i.invoke_typed(grow, 1), Ok(()));
+    assert_eq!(i.invoke_typed(size, ()), Ok(4));
+    assert_eq!(i.invoke_typed(grow, 3), Ok(()));
+    assert_eq!(i.invoke_typed(size, ()), Ok(7));
+    assert_eq!(i.invoke_typed(grow, 0), Ok(()));
+    assert_eq!(i.invoke_typed(size, ()), Ok(7));
+    assert_eq!(i.invoke_typed(grow, 2), Ok(()));
+    assert_eq!(i.invoke_typed(size, ()), Ok(7));
+    assert_eq!(i.invoke_typed(grow, 1), Ok(()));
+    assert_eq!(i.invoke_typed(size, ()), Ok(8));
 }
 
 #[test_log::test]

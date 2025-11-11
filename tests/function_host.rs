@@ -42,7 +42,7 @@ pub fn host_func_call_within_module() {
         .get_function_by_name("importing_mod", "hello_caller")
         .expect("wasm function could not be found");
     let result = runtime_instance
-        .invoke_typed::<i32, i32>(&function_ref, 2)
+        .invoke_typed::<i32, i32>(function_ref, 2)
         .expect("wasm function invocation failed");
     assert_eq!(4, result);
 }
@@ -56,7 +56,7 @@ pub fn host_func_call_as_first_func() {
     let function_ref = runtime_instance
         .get_function_by_name("hello_mod", "hello")
         .expect("wasm function could not be found");
-    let result = runtime_instance.invoke_typed::<(), ()>(&function_ref, ());
+    let result = runtime_instance.invoke_typed::<(), ()>(function_ref, ());
     assert_eq!(Ok(()), result);
 }
 
@@ -150,7 +150,7 @@ pub fn simple_multivariate_host_func_within_module() {
         .get_function_by_name("importing_mod", "fancy_add_mult_caller")
         .expect("wasm function could not be found");
     let result = runtime_instance
-        .invoke_typed::<(), (f64, i32, i64)>(&function_ref, ())
+        .invoke_typed::<(), (f64, i32, i64)>(function_ref, ())
         .expect("wasm function invocation failed");
     assert_eq!((8.0, 6, 5), result);
 }
@@ -186,7 +186,7 @@ pub fn simple_multivariate_host_func_with_host_func_wrapper() {
         .get_function_by_name("importing_mod", "fancy_add_mult_caller")
         .expect("wasm function could not be found");
     let result = runtime_instance
-        .invoke_typed::<(), (f64, i32, i64)>(&function_ref, ())
+        .invoke_typed::<(), (f64, i32, i64)>(function_ref, ())
         .expect("wasm function invocation failed");
     assert_eq!((6.0, 8, 5), result);
 }
@@ -205,7 +205,7 @@ pub fn simple_multivariate_host_func_as_first_func() {
         .get_function_by_name("hello_mod", "fancy_add_mult")
         .expect("wasm function could not be found");
     let result = runtime_instance
-        .invoke_typed::<(i32, f64), (f64, i32)>(&function_ref, (3, 5.0))
+        .invoke_typed::<(i32, f64), (f64, i32)>(function_ref, (3, 5.0))
         .expect("wasm function invocation failed");
     assert_eq!((15.0, 8), result);
 }
@@ -254,7 +254,7 @@ pub fn weird_multi_typed_host_func() {
         .get_function_by_name("importing_mod", "weird_add_mult_caller")
         .expect("wasm function could not be found");
     let result = runtime_instance
-        .invoke_typed::<(), (f64, i64)>(&function_ref, ())
+        .invoke_typed::<(), (f64, i64)>(function_ref, ())
         .expect("wasm function invocation failed");
     assert_eq!((10.0, 6), result);
 }
@@ -290,6 +290,6 @@ pub fn host_func_runtime_error() {
     let function_ref = runtime_instance
         .get_function_by_name("importing_mod", "mult3_caller")
         .expect("wasm function could not be found");
-    let result = runtime_instance.invoke_typed::<(), (f64, i64)>(&function_ref, ());
+    let result = runtime_instance.invoke_typed::<(), (f64, i64)>(function_ref, ());
     assert_eq!(Err(RuntimeError::HostFunctionSignatureMismatch), result);
 }

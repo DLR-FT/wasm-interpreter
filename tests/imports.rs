@@ -110,11 +110,11 @@ pub fn run_simple_import() {
         .expect("instantiation failed");
 
     let get_three = instance.get_function_by_name("base", "get_three").unwrap();
-    assert_eq!(3, instance.invoke_typed(&get_three, ()).unwrap());
+    assert_eq!(3, instance.invoke_typed(get_three, ()).unwrap());
 
     // Function 0 should be the imported function
     let get_three = instance.get_function_by_index(module_base, 1).unwrap();
-    assert_eq!(3, instance.invoke_typed(&get_three, ()).unwrap());
+    assert_eq!(3, instance.invoke_typed(get_three, ()).unwrap());
 }
 
 #[test_log::test]
@@ -131,7 +131,7 @@ pub fn run_call_indirect() {
         .expect("Successful instantiation");
 
     let run = instance.get_function_by_name("base", "run").unwrap();
-    assert_eq!((1, 3), instance.invoke_typed(&run, ()).unwrap());
+    assert_eq!((1, 3), instance.invoke_typed(run, ()).unwrap());
 }
 
 // #[test_log::test]

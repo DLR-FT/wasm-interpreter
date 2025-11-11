@@ -135,14 +135,8 @@ fn table_elem_test() {
         panic!("expected a table to be exported")
     };
 
-    assert_eq!(
-        instance.store.table_read(table, 0),
-        Ok(Ref::Func(f1.func_addr))
-    );
-    assert_eq!(
-        instance.store.table_read(table, 1),
-        Ok(Ref::Func(f3.func_addr))
-    );
+    assert_eq!(instance.store.table_read(table, 0), Ok(Ref::Func(f1)));
+    assert_eq!(instance.store.table_read(table, 1), Ok(Ref::Func(f3)));
 }
 
 #[test_log::test]
@@ -174,23 +168,23 @@ fn table_get_set_test() {
 
     // assert the function at index 1 is a FuncRef and is NOT null
     {
-        let funcref = i.invoke_typed::<i32, RefFunc>(&get_funcref, 1).unwrap();
+        let funcref = i.invoke_typed::<i32, RefFunc>(get_funcref, 1).unwrap();
 
         assert!(funcref.0.is_some());
     }
 
     // assert the function at index 2 is a FuncRef and is null
     {
-        let funcref = i.invoke_typed::<i32, RefFunc>(&get_funcref, 2).unwrap();
+        let funcref = i.invoke_typed::<i32, RefFunc>(get_funcref, 2).unwrap();
 
         assert!(funcref.0.is_none());
     }
 
     // set the function at index 2 the same as the one at index 1
-    i.invoke_typed::<(), ()>(&init, ()).unwrap();
+    i.invoke_typed::<(), ()>(init, ()).unwrap();
     // assert the function at index 2 is a FuncRef and is NOT null
     {
-        let funcref = i.invoke_typed::<i32, RefFunc>(&get_funcref, 2).unwrap();
+        let funcref = i.invoke_typed::<i32, RefFunc>(get_funcref, 2).unwrap();
 
         assert!(funcref.0.is_some());
     }
@@ -241,25 +235,25 @@ fn call_indirect_type_check() {
     assert_eq!(
         4,
         instance
-            .invoke_typed::<(i32, i32), i32>(&call_fn, (3, 0))
+            .invoke_typed::<(i32, i32), i32>(call_fn, (3, 0))
             .unwrap()
     );
     assert_eq!(
         6,
         instance
-            .invoke_typed::<(i32, i32), i32>(&call_fn, (5, 0))
+            .invoke_typed::<(i32, i32), i32>(call_fn, (5, 0))
             .unwrap()
     );
     assert_eq!(
         6,
         instance
-            .invoke_typed::<(i32, i32), i32>(&call_fn, (3, 1))
+            .invoke_typed::<(i32, i32), i32>(call_fn, (3, 1))
             .unwrap()
     );
     assert_eq!(
         10,
         instance
-            .invoke_typed::<(i32, i32), i32>(&call_fn, (5, 1))
+            .invoke_typed::<(i32, i32), i32>(call_fn, (5, 1))
             .unwrap()
     );
 }

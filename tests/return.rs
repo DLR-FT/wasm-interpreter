@@ -31,7 +31,7 @@ fn return_valid() {
         12,
         instance
             .invoke_typed(
-                &instance
+                instance
                     .get_function_by_name(DEFAULT_MODULE, "add")
                     .unwrap(),
                 (10, 2)
@@ -42,7 +42,7 @@ fn return_valid() {
         2,
         instance
             .invoke_typed(
-                &instance
+                instance
                     .get_function_by_name(DEFAULT_MODULE, "add")
                     .unwrap(),
                 (0, 2)
@@ -53,7 +53,7 @@ fn return_valid() {
         -4,
         instance
             .invoke_typed(
-                &instance
+                instance
                     .get_function_by_name(DEFAULT_MODULE, "add")
                     .unwrap(),
                 (-6, 2)

@@ -36,14 +36,14 @@ fn memory_copy_test_1() {
         .expect("instantiation failed");
 
     let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
-    i.invoke_typed::<(), ()>(&test, ()).unwrap();
+    i.invoke_typed::<(), ()>(test, ()).unwrap();
 
     let load8_u = i.get_function_by_name(DEFAULT_MODULE, "load8_u").unwrap();
     let results = Vec::from([
         0, 0, 3, 1, 4, 1, 0, 0, 0, 0, 0, 0, 7, 5, 2, 3, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     ]);
     for (j, result) in results.into_iter().enumerate() {
-        assert_eq!(i.invoke_typed(&load8_u, j as i32), Ok(result));
+        assert_eq!(i.invoke_typed(load8_u, j as i32), Ok(result));
     }
 }
 
@@ -68,14 +68,14 @@ fn memory_copy_test_2() {
         .expect("instantiation failed");
 
     let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
-    i.invoke_typed::<(), ()>(&test, ()).unwrap();
+    i.invoke_typed::<(), ()>(test, ()).unwrap();
 
     let load8_u = i.get_function_by_name(DEFAULT_MODULE, "load8_u").unwrap();
     let results = Vec::from([
         0, 0, 3, 1, 4, 1, 0, 0, 0, 0, 0, 0, 7, 3, 1, 4, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     ]);
     for (j, result) in results.into_iter().enumerate() {
-        assert_eq!(i.invoke_typed(&load8_u, j as i32), Ok(result));
+        assert_eq!(i.invoke_typed(load8_u, j as i32), Ok(result));
     }
 }
 
@@ -100,7 +100,7 @@ fn memory_copy_test_3() {
         .expect("instantiation failed");
 
     let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
-    i.invoke_typed::<(), ()>(&test, ()).unwrap();
+    i.invoke_typed::<(), ()>(test, ()).unwrap();
 
     let load8_u = i.get_function_by_name(DEFAULT_MODULE, "load8_u").unwrap();
     let offsets = Vec::from([
@@ -111,7 +111,7 @@ fn memory_copy_test_3() {
         0, 0, 3, 1, 4, 1, 0, 0, 0, 0, 0, 0, 7, 5, 2, 3, 6, 0, 0, 0, 0, 0, 0, 0, 0, 3, 6, 0, 0, 0,
     ]);
     for j in 0..offsets.len() {
-        assert_eq!(i.invoke_typed(&load8_u, offsets[j]), Ok(results[j]));
+        assert_eq!(i.invoke_typed(load8_u, offsets[j]), Ok(results[j]));
     }
 }
 
@@ -136,7 +136,7 @@ fn memory_copy_test_4() {
         .expect("instantiation failed");
 
     let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
-    i.invoke_typed::<(), ()>(&test, ()).unwrap();
+    i.invoke_typed::<(), ()>(test, ()).unwrap();
 
     let load8_u = i.get_function_by_name(DEFAULT_MODULE, "load8_u").unwrap();
     let offsets = Vec::from([
@@ -147,7 +147,7 @@ fn memory_copy_test_4() {
         0, 0, 3, 1, 4, 1, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     ]);
     for j in 0..offsets.len() {
-        assert_eq!(i.invoke_typed(&load8_u, offsets[j]), Ok(results[j]));
+        assert_eq!(i.invoke_typed(load8_u, offsets[j]), Ok(results[j]));
     }
 }
 
@@ -172,7 +172,7 @@ fn memory_copy_test_5() {
         .expect("instantiation failed");
 
     let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
-    i.invoke_typed::<(), ()>(&test, ()).unwrap();
+    i.invoke_typed::<(), ()>(test, ()).unwrap();
 
     let load8_u = i.get_function_by_name(DEFAULT_MODULE, "load8_u").unwrap();
     let offsets = Vec::from([
@@ -183,7 +183,7 @@ fn memory_copy_test_5() {
         0, 0, 3, 1, 4, 1, 0, 0, 0, 0, 7, 5, 2, 3, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     ]);
     for j in 0..offsets.len() {
-        assert_eq!(i.invoke_typed(&load8_u, offsets[j]), Ok(results[j]));
+        assert_eq!(i.invoke_typed(load8_u, offsets[j]), Ok(results[j]));
     }
 }
 
@@ -207,7 +207,7 @@ fn memory_copy_test_6() {
         .expect("instantiation failed");
 
     let run = i.get_function_by_name(DEFAULT_MODULE, "run").unwrap();
-    let result = i.invoke_typed::<(i32, i32, i32), ()>(&run, (65516, 0, 40));
+    let result = i.invoke_typed::<(i32, i32, i32), ()>(run, (65516, 0, 40));
     assert_eq!(
         result.err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds)),
@@ -257,7 +257,7 @@ fn memory_copy_test_6() {
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     ]);
     for j in 0..offsets.len() {
-        assert_eq!(i.invoke_typed(&load8_u, offsets[j]), Ok(results[j]));
+        assert_eq!(i.invoke_typed(load8_u, offsets[j]), Ok(results[j]));
     }
 }
 
@@ -281,7 +281,7 @@ fn memory_copy_test_7() {
         .expect("instantiation failed");
 
     let run = i.get_function_by_name(DEFAULT_MODULE, "run").unwrap();
-    let result = i.invoke_typed::<(i32, i32, i32), ()>(&run, (65515, 0, 39));
+    let result = i.invoke_typed::<(i32, i32, i32), ()>(run, (65515, 0, 39));
     assert_eq!(
         result.err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
@@ -331,7 +331,7 @@ fn memory_copy_test_7() {
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     ]);
     for j in 0..offsets.len() {
-        assert_eq!(i.invoke_typed(&load8_u, offsets[j]), Ok(results[j]));
+        assert_eq!(i.invoke_typed(load8_u, offsets[j]), Ok(results[j]));
     }
 }
 
@@ -355,7 +355,7 @@ fn memory_copy_test_8() {
         .expect("instantiation failed");
 
     let run = i.get_function_by_name(DEFAULT_MODULE, "run").unwrap();
-    let result = i.invoke_typed::<(i32, i32, i32), ()>(&run, (65515, 0, 39));
+    let result = i.invoke_typed::<(i32, i32, i32), ()>(run, (65515, 0, 39));
     assert_eq!(
         result.err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
@@ -405,7 +405,7 @@ fn memory_copy_test_8() {
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     ]);
     for j in 0..offsets.len() {
-        assert_eq!(i.invoke_typed(&load8_u, offsets[j]), Ok(results[j]));
+        assert_eq!(i.invoke_typed(load8_u, offsets[j]), Ok(results[j]));
     }
 }
 
@@ -429,7 +429,7 @@ fn memory_copy_test_9() {
         .expect("instantiation failed");
 
     let run = i.get_function_by_name(DEFAULT_MODULE, "run").unwrap();
-    let result = i.invoke_typed::<(i32, i32, i32), ()>(&run, (0, 65516, 40));
+    let result = i.invoke_typed::<(i32, i32, i32), ()>(run, (0, 65516, 40));
     assert_eq!(
         result.err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
@@ -480,7 +480,7 @@ fn memory_copy_test_9() {
         1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
     ]);
     for j in 0..offsets.len() {
-        assert_eq!(i.invoke_typed(&load8_u, offsets[j]), Ok(results[j]));
+        assert_eq!(i.invoke_typed(load8_u, offsets[j]), Ok(results[j]));
     }
 }
 
@@ -504,7 +504,7 @@ fn memory_copy_test_10() {
         .expect("instantiation failed");
 
     let run = i.get_function_by_name(DEFAULT_MODULE, "run").unwrap();
-    let result = i.invoke_typed::<(i32, i32, i32), ()>(&run, (0, 65515, 39));
+    let result = i.invoke_typed::<(i32, i32, i32), ()>(run, (0, 65515, 39));
     assert_eq!(
         result.err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
@@ -555,7 +555,7 @@ fn memory_copy_test_10() {
         1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
     ]);
     for j in 0..offsets.len() {
-        assert_eq!(i.invoke_typed(&load8_u, offsets[j]), Ok(results[j]));
+        assert_eq!(i.invoke_typed(load8_u, offsets[j]), Ok(results[j]));
     }
 }
 
@@ -579,7 +579,7 @@ fn memory_copy_test_11() {
         .expect("instantiation failed");
 
     let run = i.get_function_by_name(DEFAULT_MODULE, "run").unwrap();
-    let result = i.invoke_typed::<(i32, i32, i32), ()>(&run, (65516, 65486, 40));
+    let result = i.invoke_typed::<(i32, i32, i32), ()>(run, (65516, 65486, 40));
     assert_eq!(
         result.err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
@@ -630,7 +630,7 @@ fn memory_copy_test_11() {
         1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
     ]);
     for j in 0..offsets.len() {
-        assert_eq!(i.invoke_typed(&load8_u, offsets[j]), Ok(results[j]));
+        assert_eq!(i.invoke_typed(load8_u, offsets[j]), Ok(results[j]));
     }
 }
 
@@ -654,7 +654,7 @@ fn memory_copy_test_12() {
         .expect("instantiation failed");
 
     let run = i.get_function_by_name(DEFAULT_MODULE, "run").unwrap();
-    let result = i.invoke_typed::<(i32, i32, i32), ()>(&run, (65486, 65516, 40));
+    let result = i.invoke_typed::<(i32, i32, i32), ()>(run, (65486, 65516, 40));
     assert_eq!(
         result.err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
@@ -705,7 +705,7 @@ fn memory_copy_test_12() {
         1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
     ]);
     for j in 0..offsets.len() {
-        assert_eq!(i.invoke_typed(&load8_u, offsets[j]), Ok(results[j]));
+        assert_eq!(i.invoke_typed(load8_u, offsets[j]), Ok(results[j]));
     }
 }
 
@@ -729,7 +729,7 @@ fn memory_copy_test_13() {
         .expect("instantiation failed");
 
     let run = i.get_function_by_name(DEFAULT_MODULE, "run").unwrap();
-    let result = i.invoke_typed::<(i32, i32, i32), ()>(&run, (65516, 65506, 40));
+    let result = i.invoke_typed::<(i32, i32, i32), ()>(run, (65516, 65506, 40));
     assert_eq!(
         result.err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
@@ -780,7 +780,7 @@ fn memory_copy_test_13() {
         1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
     ]);
     for j in 0..offsets.len() {
-        assert_eq!(i.invoke_typed(&load8_u, offsets[j]), Ok(results[j]));
+        assert_eq!(i.invoke_typed(load8_u, offsets[j]), Ok(results[j]));
     }
 }
 
@@ -804,7 +804,7 @@ fn memory_copy_test_14() {
         .expect("instantiation failed");
 
     let run = i.get_function_by_name(DEFAULT_MODULE, "run").unwrap();
-    let result = i.invoke_typed::<(i32, i32, i32), ()>(&run, (65506, 65516, 40));
+    let result = i.invoke_typed::<(i32, i32, i32), ()>(run, (65506, 65516, 40));
     assert_eq!(
         result.err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
@@ -855,7 +855,7 @@ fn memory_copy_test_14() {
         1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
     ]);
     for j in 0..offsets.len() {
-        assert_eq!(i.invoke_typed(&load8_u, offsets[j]), Ok(results[j]));
+        assert_eq!(i.invoke_typed(load8_u, offsets[j]), Ok(results[j]));
     }
 }
 
@@ -879,7 +879,7 @@ fn memory_copy_test_15() {
         .expect("instantiation failed");
 
     let run = i.get_function_by_name(DEFAULT_MODULE, "run").unwrap();
-    let result = i.invoke_typed::<(i32, i32, i32), ()>(&run, (65516, 65516, 40));
+    let result = i.invoke_typed::<(i32, i32, i32), ()>(run, (65516, 65516, 40));
     assert_eq!(
         result.err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
@@ -930,7 +930,7 @@ fn memory_copy_test_15() {
         1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
     ]);
     for j in 0..offsets.len() {
-        assert_eq!(i.invoke_typed(&load8_u, offsets[j]), Ok(results[j]));
+        assert_eq!(i.invoke_typed(load8_u, offsets[j]), Ok(results[j]));
     }
 }
 
@@ -954,7 +954,7 @@ fn memory_copy_test_16() {
         .expect("instantiation failed");
 
     let run = i.get_function_by_name(DEFAULT_MODULE, "run").unwrap();
-    let result = i.invoke_typed::<(i32, i32, i32), ()>(&run, (0, 65516, 4294963200_u32 as i32));
+    let result = i.invoke_typed::<(i32, i32, i32), ()>(run, (0, 65516, 4294963200_u32 as i32));
     assert_eq!(
         result.err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
@@ -1005,7 +1005,7 @@ fn memory_copy_test_16() {
         1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
     ]);
     for j in 0..offsets.len() {
-        assert_eq!(i.invoke_typed(&load8_u, offsets[j]), Ok(results[j]));
+        assert_eq!(i.invoke_typed(load8_u, offsets[j]), Ok(results[j]));
     }
 }
 
@@ -1029,7 +1029,7 @@ fn memory_copy_test_17() {
         .expect("instantiation failed");
 
     let run = i.get_function_by_name(DEFAULT_MODULE, "run").unwrap();
-    let result = i.invoke_typed::<(i32, i32, i32), ()>(&run, (65516, 61440, 4294967040_u32 as i32));
+    let result = i.invoke_typed::<(i32, i32, i32), ()>(run, (65516, 61440, 4294967040_u32 as i32));
     assert_eq!(
         result.err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
@@ -1080,6 +1080,6 @@ fn memory_copy_test_17() {
         19, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     ]);
     for j in 0..offsets.len() {
-        assert_eq!(i.invoke_typed(&load8_u, offsets[j]), Ok(results[j]));
+        assert_eq!(i.invoke_typed(load8_u, offsets[j]), Ok(results[j]));
     }
 }

@@ -94,14 +94,14 @@ fn memory_redundancy() {
         .get_function_by_name(DEFAULT_MODULE, "malloc_aliasing")
         .unwrap();
 
-    assert_eq!(i.invoke_typed(&test_store_to_load, ()), Ok(0x00000080));
-    i.invoke_typed::<(), ()>(&zero_everything, ()).unwrap();
-    assert_eq!(i.invoke_typed(&test_redundant_load, ()), Ok(0x00000080));
-    i.invoke_typed::<(), ()>(&zero_everything, ()).unwrap();
+    assert_eq!(i.invoke_typed(test_store_to_load, ()), Ok(0x00000080));
+    i.invoke_typed::<(), ()>(zero_everything, ()).unwrap();
+    assert_eq!(i.invoke_typed(test_redundant_load, ()), Ok(0x00000080));
+    i.invoke_typed::<(), ()>(zero_everything, ()).unwrap();
     assert_eq!(
-        i.invoke_typed(&test_dead_store, ()),
+        i.invoke_typed(test_dead_store, ()),
         Ok(hexf32!("0x1.18p-144"))
     );
-    i.invoke_typed::<(), ()>(&zero_everything, ()).unwrap();
-    assert_eq!(i.invoke_typed(&malloc_aliasing, ()), Ok(43));
+    i.invoke_typed::<(), ()>(zero_everything, ()).unwrap();
+    assert_eq!(i.invoke_typed(malloc_aliasing, ()), Ok(43));
 }

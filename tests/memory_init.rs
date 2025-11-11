@@ -36,7 +36,7 @@ fn memory_init_test_1() {
     let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
     let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
-    i.invoke_typed::<(), ()>(&test, ()).unwrap();
+    i.invoke_typed::<(), ()>(test, ()).unwrap();
 
     let load8_u = i.get_function_by_name(DEFAULT_MODULE, "load8_u").unwrap();
 
@@ -48,7 +48,7 @@ fn memory_init_test_1() {
         0, 0, 3, 1, 4, 1, 0, 0, 0, 0, 0, 0, 7, 5, 2, 3, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     ]);
     for j in 0..offsets.len() {
-        assert_eq!(i.invoke_typed(&load8_u, offsets[j]), Ok(results[j]));
+        assert_eq!(i.invoke_typed(load8_u, offsets[j]), Ok(results[j]));
     }
 }
 
@@ -71,7 +71,7 @@ fn memory_init_test_2() {
     let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
     let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
-    i.invoke_typed::<(), ()>(&test, ()).unwrap();
+    i.invoke_typed::<(), ()>(test, ()).unwrap();
 
     let load8_u = i.get_function_by_name(DEFAULT_MODULE, "load8_u").unwrap();
 
@@ -83,7 +83,7 @@ fn memory_init_test_2() {
         0, 0, 3, 1, 4, 1, 0, 2, 7, 1, 8, 0, 7, 5, 2, 3, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     ]);
     for j in 0..offsets.len() {
-        assert_eq!(i.invoke_typed(&load8_u, offsets[j]), Ok(results[j]));
+        assert_eq!(i.invoke_typed(load8_u, offsets[j]), Ok(results[j]));
     }
 }
 
@@ -106,7 +106,7 @@ fn memory_init_test_3() {
     let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
     let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
-    i.invoke_typed::<(), ()>(&test, ()).unwrap();
+    i.invoke_typed::<(), ()>(test, ()).unwrap();
 
     let load8_u = i.get_function_by_name(DEFAULT_MODULE, "load8_u").unwrap();
 
@@ -118,7 +118,7 @@ fn memory_init_test_3() {
         0, 0, 3, 1, 4, 1, 0, 0, 0, 0, 0, 0, 7, 5, 2, 9, 2, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     ]);
     for j in 0..offsets.len() {
-        assert_eq!(i.invoke_typed(&load8_u, offsets[j]), Ok(results[j]));
+        assert_eq!(i.invoke_typed(load8_u, offsets[j]), Ok(results[j]));
     }
 }
 
@@ -149,7 +149,7 @@ fn memory_init_test_4() {
     let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
     let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
-    i.invoke_typed::<(), ()>(&test, ()).unwrap();
+    i.invoke_typed::<(), ()>(test, ()).unwrap();
 
     let load8_u = i.get_function_by_name(DEFAULT_MODULE, "load8_u").unwrap();
 
@@ -161,7 +161,7 @@ fn memory_init_test_4() {
         0, 0, 3, 1, 4, 1, 0, 2, 7, 1, 8, 0, 7, 0, 7, 5, 2, 7, 0, 9, 0, 7, 0, 8, 8, 0, 0, 0, 0, 0,
     ]);
     for j in 0..offsets.len() {
-        assert_eq!(i.invoke_typed(&load8_u, offsets[j]), Ok(results[j]));
+        assert_eq!(i.invoke_typed(load8_u, offsets[j]), Ok(results[j]));
     }
 }
 
@@ -207,7 +207,7 @@ fn memory_init_test_7() {
     let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
     let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
-    i.invoke_typed::<(), ()>(&test, ()).unwrap();
+    i.invoke_typed::<(), ()>(test, ()).unwrap();
 }
 
 #[test_log::test]
@@ -226,7 +226,7 @@ fn memory_init_test_8() {
         .expect("instantiation failed");
     let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
     assert_eq!(
-        i.invoke_typed::<(), ()>(&test, ()).err(),
+        i.invoke_typed::<(), ()>(test, ()).err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
     );
 }
@@ -246,7 +246,7 @@ fn memory_init_test_9() {
         .expect("instantiation failed");
     let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
     assert_eq!(
-        i.invoke_typed::<(), ()>(&test, ()).err(),
+        i.invoke_typed::<(), ()>(test, ()).err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
     );
 }
@@ -294,7 +294,7 @@ fn memory_init_test_12() {
     let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
     let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
-    i.invoke_typed::<(), ()>(&test, ()).unwrap();
+    i.invoke_typed::<(), ()>(test, ()).unwrap();
 }
 
 #[test_log::test]
@@ -312,7 +312,7 @@ fn memory_init_test_13() {
         .expect("instantiation failed");
     let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
     assert_eq!(
-        i.invoke_typed::<(), ()>(&test, ()).err(),
+        i.invoke_typed::<(), ()>(test, ()).err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
     );
 }

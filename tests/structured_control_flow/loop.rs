@@ -61,11 +61,11 @@ fn fibonacci_with_loop_and_br_if() {
 
     let fibonacci_fn = instance.get_function_by_index(module, 0).unwrap();
 
-    assert_eq!(1, instance.invoke_typed(&fibonacci_fn, -5).unwrap());
-    assert_eq!(1, instance.invoke_typed(&fibonacci_fn, 0).unwrap());
-    assert_eq!(1, instance.invoke_typed(&fibonacci_fn, 1).unwrap());
-    assert_eq!(2, instance.invoke_typed(&fibonacci_fn, 2).unwrap());
-    assert_eq!(3, instance.invoke_typed(&fibonacci_fn, 3).unwrap());
-    assert_eq!(5, instance.invoke_typed(&fibonacci_fn, 4).unwrap());
-    assert_eq!(8, instance.invoke_typed(&fibonacci_fn, 5).unwrap());
+    assert_eq!(1, instance.invoke_typed(fibonacci_fn, -5).unwrap());
+    assert_eq!(1, instance.invoke_typed(fibonacci_fn, 0).unwrap());
+    assert_eq!(1, instance.invoke_typed(fibonacci_fn, 1).unwrap());
+    assert_eq!(2, instance.invoke_typed(fibonacci_fn, 2).unwrap());
+    assert_eq!(3, instance.invoke_typed(fibonacci_fn, 3).unwrap());
+    assert_eq!(5, instance.invoke_typed(fibonacci_fn, 4).unwrap());
+    assert_eq!(8, instance.invoke_typed(fibonacci_fn, 5).unwrap());
 }

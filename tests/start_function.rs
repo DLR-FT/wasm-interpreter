@@ -32,7 +32,7 @@ fn start_function() {
         42,
         instance
             .invoke_typed(
-                &instance
+                instance
                     .get_function_by_name(DEFAULT_MODULE, "load_num")
                     .unwrap(),
                 ()

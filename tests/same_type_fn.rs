@@ -28,7 +28,7 @@ fn same_type_fn() {
         -5,
         instance
             .invoke_typed(
-                &instance
+                instance
                     .get_function_by_name(DEFAULT_MODULE, "add_one")
                     .unwrap(),
                 -6
@@ -39,7 +39,7 @@ fn same_type_fn() {
         -4,
         instance
             .invoke_typed(
-                &instance
+                instance
                     .get_function_by_name(DEFAULT_MODULE, "add_two")
                     .unwrap(),
                 -6

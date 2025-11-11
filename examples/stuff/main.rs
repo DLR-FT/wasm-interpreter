@@ -56,7 +56,7 @@ fn main() -> ExitCode {
 
     let twelve: i32 = instance
         .invoke_typed(
-            &instance.get_function_by_index(module_addr, 1).unwrap(),
+            instance.get_function_by_index(module_addr, 1).unwrap(),
             (5, 7),
         )
         .unwrap();
@@ -64,7 +64,7 @@ fn main() -> ExitCode {
 
     let twelve_plus_one: i32 = instance
         .invoke_typed(
-            &instance.get_function_by_index(module_addr, 0).unwrap(),
+            instance.get_function_by_index(module_addr, 0).unwrap(),
             twelve,
         )
         .unwrap();
@@ -72,14 +72,14 @@ fn main() -> ExitCode {
 
     instance
         .invoke_typed::<_, ()>(
-            &instance.get_function_by_index(module_addr, 2).unwrap(),
+            instance.get_function_by_index(module_addr, 2).unwrap(),
             42_i32,
         )
         .unwrap();
 
     assert_eq!(
         instance
-            .invoke_typed::<(), i32>(&instance.get_function_by_index(module_addr, 3).unwrap(), ())
+            .invoke_typed::<(), i32>(instance.get_function_by_index(module_addr, 3).unwrap(), ())
             .unwrap(),
         42_i32
     );

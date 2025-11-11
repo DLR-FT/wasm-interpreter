@@ -36,7 +36,7 @@ fn valid_global() {
         5,
         instance
             .invoke_typed(
-                &instance
+                instance
                     .get_function_by_name(DEFAULT_MODULE, "set")
                     .unwrap(),
                 17
@@ -49,7 +49,7 @@ fn valid_global() {
         17,
         instance
             .invoke_typed(
-                &instance
+                instance
                     .get_function_by_name(DEFAULT_MODULE, "get")
                     .unwrap(),
                 ()
@@ -113,7 +113,7 @@ fn imported_globals() {
         3,
         instance
             .invoke_typed(
-                &instance
+                instance
                     .get_function_by_name(DEFAULT_MODULE, "set")
                     .unwrap(),
                 17
@@ -126,7 +126,7 @@ fn imported_globals() {
         17,
         instance
             .invoke_typed(
-                &instance
+                instance
                     .get_function_by_name(DEFAULT_MODULE, "get")
                     .unwrap(),
                 ()

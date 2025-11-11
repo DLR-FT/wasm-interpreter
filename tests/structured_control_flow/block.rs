@@ -18,7 +18,7 @@ fn empty() {
         .expect("instantiation failed");
 
     instance
-        .invoke_typed::<(), ()>(&instance.get_function_by_index(module, 0).unwrap(), ())
+        .invoke_typed::<(), ()>(instance.get_function_by_index(module, 0).unwrap(), ())
         .unwrap();
 }
 
@@ -50,7 +50,7 @@ fn branch() {
     assert_eq!(
         8,
         instance
-            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), ())
+            .invoke_typed(instance.get_function_by_index(module, 0).unwrap(), ())
             .unwrap()
     );
 }
@@ -93,7 +93,7 @@ fn branch2() {
     assert_eq!(
         13,
         instance
-            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), ())
+            .invoke_typed(instance.get_function_by_index(module, 0).unwrap(), ())
             .unwrap()
     );
 }
@@ -110,7 +110,7 @@ fn branch3() {
     assert_eq!(
         5,
         instance
-            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), ())
+            .invoke_typed(instance.get_function_by_index(module, 0).unwrap(), ())
             .unwrap()
     );
 }
@@ -140,7 +140,7 @@ fn param_and_result() {
     assert_eq!(
         7,
         instance
-            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), 6)
+            .invoke_typed(instance.get_function_by_index(module, 0).unwrap(), 6)
             .unwrap()
     );
 }
@@ -185,7 +185,7 @@ fn return_out_of_block() {
     assert_eq!(
         3,
         instance
-            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), ())
+            .invoke_typed(instance.get_function_by_index(module, 0).unwrap(), ())
             .unwrap()
     );
 }
@@ -202,7 +202,7 @@ fn br_return_out_of_block() {
     assert_eq!(
         3,
         instance
-            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), ())
+            .invoke_typed(instance.get_function_by_index(module, 0).unwrap(), ())
             .unwrap()
     );
 }
@@ -219,7 +219,7 @@ fn return_out_of_block2() {
     assert_eq!(
         5,
         instance
-            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), ())
+            .invoke_typed(instance.get_function_by_index(module, 0).unwrap(), ())
             .unwrap()
     );
 }
@@ -236,7 +236,7 @@ fn br_return_out_of_block2() {
     assert_eq!(
         5,
         instance
-            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), ())
+            .invoke_typed(instance.get_function_by_index(module, 0).unwrap(), ())
             .unwrap()
     );
 }
@@ -270,9 +270,9 @@ fn branch_if() {
 
     let switch_case_fn = instance.get_function_by_index(module, 0).unwrap();
 
-    assert_eq!(6, instance.invoke_typed(&switch_case_fn, 6).unwrap());
-    assert_eq!(123, instance.invoke_typed(&switch_case_fn, -123).unwrap());
-    assert_eq!(0, instance.invoke_typed(&switch_case_fn, 0).unwrap());
+    assert_eq!(6, instance.invoke_typed(switch_case_fn, 6).unwrap());
+    assert_eq!(123, instance.invoke_typed(switch_case_fn, -123).unwrap());
+    assert_eq!(0, instance.invoke_typed(switch_case_fn, 0).unwrap());
 }
 
 #[test_log::test]
@@ -334,7 +334,7 @@ fn recursive_fibonacci() {
     let fib_fn = instance.get_function_by_index(module, 0).unwrap();
 
     let first_ten = (0..10)
-        .map(|n| instance.invoke_typed(&fib_fn, n).unwrap())
+        .map(|n| instance.invoke_typed(fib_fn, n).unwrap())
         .collect::<Vec<i32>>();
     assert_eq!(&first_ten, &[0, 1, 1, 2, 3, 5, 8, 13, 21, 34]);
 }
@@ -379,14 +379,14 @@ fn switch_case() {
 
     let switch_case_fn = instance.get_function_by_index(module, 0).unwrap();
 
-    assert_eq!(9, instance.invoke_typed(&switch_case_fn, -5).unwrap());
-    assert_eq!(9, instance.invoke_typed(&switch_case_fn, -1).unwrap());
-    assert_eq!(1, instance.invoke_typed(&switch_case_fn, 0).unwrap());
-    assert_eq!(3, instance.invoke_typed(&switch_case_fn, 1).unwrap());
-    assert_eq!(5, instance.invoke_typed(&switch_case_fn, 2).unwrap());
-    assert_eq!(7, instance.invoke_typed(&switch_case_fn, 3).unwrap());
-    assert_eq!(9, instance.invoke_typed(&switch_case_fn, 4).unwrap());
-    assert_eq!(9, instance.invoke_typed(&switch_case_fn, 7).unwrap());
+    assert_eq!(9, instance.invoke_typed(switch_case_fn, -5).unwrap());
+    assert_eq!(9, instance.invoke_typed(switch_case_fn, -1).unwrap());
+    assert_eq!(1, instance.invoke_typed(switch_case_fn, 0).unwrap());
+    assert_eq!(3, instance.invoke_typed(switch_case_fn, 1).unwrap());
+    assert_eq!(5, instance.invoke_typed(switch_case_fn, 2).unwrap());
+    assert_eq!(7, instance.invoke_typed(switch_case_fn, 3).unwrap());
+    assert_eq!(9, instance.invoke_typed(switch_case_fn, 4).unwrap());
+    assert_eq!(9, instance.invoke_typed(switch_case_fn, 7).unwrap());
 }
 
 #[test_log::test]
