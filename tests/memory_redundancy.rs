@@ -15,7 +15,7 @@
 # limitations under the License.
 */
 use hexf::hexf32;
-use wasm::{validate, RuntimeInstance, DEFAULT_MODULE};
+use wasm::{validate, RuntimeInstance};
 
 #[test_log::test]
 fn memory_redundancy() {
@@ -76,22 +76,37 @@ fn memory_redundancy() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut i, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
     let test_store_to_load = i
-        .get_function_by_name(DEFAULT_MODULE, "test_store_to_load")
+        .store
+        .instance_export(module, "test_store_to_load")
+        .unwrap()
+        .as_func()
         .unwrap();
     let zero_everything = i
-        .get_function_by_name(DEFAULT_MODULE, "zero_everything")
+        .store
+        .instance_export(module, "zero_everything")
+        .unwrap()
+        .as_func()
         .unwrap();
     let test_redundant_load = i
-        .get_function_by_name(DEFAULT_MODULE, "test_redundant_load")
+        .store
+        .instance_export(module, "test_redundant_load")
+        .unwrap()
+        .as_func()
         .unwrap();
     let test_dead_store = i
-        .get_function_by_name(DEFAULT_MODULE, "test_dead_store")
+        .store
+        .instance_export(module, "test_dead_store")
+        .unwrap()
+        .as_func()
         .unwrap();
     let malloc_aliasing = i
-        .get_function_by_name(DEFAULT_MODULE, "malloc_aliasing")
+        .store
+        .instance_export(module, "malloc_aliasing")
+        .unwrap()
+        .as_func()
         .unwrap();
 
     assert_eq!(i.invoke_typed(test_store_to_load, ()), Ok(0x00000080));

@@ -1,4 +1,4 @@
-use wasm::{GlobalType, NumType, ValType, Value, DEFAULT_MODULE};
+use wasm::{GlobalType, NumType, ValType, Value};
 
 /// The WASM program has one mutable global initialized with a constant 3.
 /// It exports two methods:
@@ -28,34 +28,28 @@ fn valid_global() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
+    let set = instance
+        .store
+        .instance_export(module, "set")
+        .unwrap()
+        .as_func()
+        .unwrap();
+
+    let get = instance
+        .store
+        .instance_export(module, "get")
+        .unwrap()
+        .as_func()
+        .unwrap();
+
     // Set global to 17. 5 is returned as previous (default) value.
-    assert_eq!(
-        5,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "set")
-                    .unwrap(),
-                17
-            )
-            .unwrap()
-    );
+    assert_eq!(5, instance.invoke_typed(set, 17).unwrap());
 
     // Now 17 will be returned when getting the global
-    assert_eq!(
-        17,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "get")
-                    .unwrap(),
-                ()
-            )
-            .unwrap()
-    );
+    assert_eq!(17, instance.invoke_typed(get, ()).unwrap());
 }
 
 #[test_log::test]
@@ -105,34 +99,28 @@ fn imported_globals() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
+    let set = instance
+        .store
+        .instance_export(module, "set")
+        .unwrap()
+        .as_func()
+        .unwrap();
+
+    let get = instance
+        .store
+        .instance_export(module, "get")
+        .unwrap()
+        .as_func()
+        .unwrap();
+
     // Set global to 17. 3 is returned as previous (default) value.
-    assert_eq!(
-        3,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "set")
-                    .unwrap(),
-                17
-            )
-            .unwrap()
-    );
+    assert_eq!(3, instance.invoke_typed(set, 17).unwrap());
 
     // Now 17 will be returned when getting the global
-    assert_eq!(
-        17,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "get")
-                    .unwrap(),
-                ()
-            )
-            .unwrap()
-    );
+    assert_eq!(17, instance.invoke_typed(get, ()).unwrap());
 }
 
 #[test_log::test]

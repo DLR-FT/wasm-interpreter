@@ -16,7 +16,7 @@
 */
 use wasm::interop::RefExtern;
 use wasm::value::ExternAddr;
-use wasm::{validate, RuntimeError, RuntimeInstance, TrapError, DEFAULT_MODULE};
+use wasm::{validate, RuntimeError, RuntimeInstance, TrapError};
 
 #[test_log::test]
 fn table_grow_test() {
@@ -37,16 +37,39 @@ fn table_grow_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut i, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let get = i.get_function_by_name(DEFAULT_MODULE, "get").unwrap();
-    let set = i.get_function_by_name(DEFAULT_MODULE, "set").unwrap();
-    let grow = i.get_function_by_name(DEFAULT_MODULE, "grow").unwrap();
-    let grow_abbrev = i
-        .get_function_by_name(DEFAULT_MODULE, "grow-abbrev")
+    let get = i
+        .store
+        .instance_export(module, "get")
+        .unwrap()
+        .as_func()
         .unwrap();
-    let size = i.get_function_by_name(DEFAULT_MODULE, "size").unwrap();
+    let set = i
+        .store
+        .instance_export(module, "set")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    let grow = i
+        .store
+        .instance_export(module, "grow")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    let grow_abbrev = i
+        .store
+        .instance_export(module, "grow-abbrev")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    let size = i
+        .store
+        .instance_export(module, "size")
+        .unwrap()
+        .as_func()
+        .unwrap();
 
     assert_eq!(i.invoke_typed::<(), i32>(size, ()), Ok(0));
     assert_eq!(
@@ -158,10 +181,15 @@ fn table_grow_outside_i32_range() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut i, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let grow = i.get_function_by_name(DEFAULT_MODULE, "grow").unwrap();
+    let grow = i
+        .store
+        .instance_export(module, "grow")
+        .unwrap()
+        .as_func()
+        .unwrap();
     assert_eq!(i.invoke_typed::<(), i32>(grow, ()).unwrap(), -1);
 }
 
@@ -178,10 +206,15 @@ fn table_grow_unlimited() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut i, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let grow = i.get_function_by_name(DEFAULT_MODULE, "grow").unwrap();
+    let grow = i
+        .store
+        .instance_export(module, "grow")
+        .unwrap()
+        .as_func()
+        .unwrap();
     assert_eq!(i.invoke_typed(grow, 0), Ok(0));
     assert_eq!(i.invoke_typed(grow, 1), Ok(0));
     assert_eq!(i.invoke_typed(grow, 0), Ok(1));
@@ -202,10 +235,15 @@ fn table_grow_with_max() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut i, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let grow = i.get_function_by_name(DEFAULT_MODULE, "grow").unwrap();
+    let grow = i
+        .store
+        .instance_export(module, "grow")
+        .unwrap()
+        .as_func()
+        .unwrap();
     assert_eq!(i.invoke_typed(grow, 0), Ok(0));
     assert_eq!(i.invoke_typed(grow, 1), Ok(0));
     assert_eq!(i.invoke_typed(grow, 1), Ok(1));
@@ -245,12 +283,20 @@ fn table_grow_check_null() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut i, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let grow = i.get_function_by_name(DEFAULT_MODULE, "grow").unwrap();
+    let grow = i
+        .store
+        .instance_export(module, "grow")
+        .unwrap()
+        .as_func()
+        .unwrap();
     let check_table_null = i
-        .get_function_by_name(DEFAULT_MODULE, "check-table-null")
+        .store
+        .instance_export(module, "check-table-null")
+        .unwrap()
+        .as_func()
         .unwrap();
 
     assert_eq!(
@@ -280,12 +326,15 @@ fn table_grow_with_exported_table_test() {
 
     let wasm_bytes = wat::parse_str(target_wat).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut target_instance, _module) =
+    let (mut target_instance, module) =
         RuntimeInstance::new_with_default_module((), &validation_info)
             .expect("target instantiation failed");
 
     let grow = target_instance
-        .get_function_by_name(DEFAULT_MODULE, "grow")
+        .store
+        .instance_export(module, "grow")
+        .unwrap()
+        .as_func()
         .unwrap();
     assert_eq!(target_instance.invoke_typed(grow, ()), Ok(1));
 }
@@ -305,7 +354,7 @@ fn table_grow_with_exported_table_test() {
 //     let validation_info = validate(&wasm_bytes).unwrap();
 //     let mut import1_instance = RuntimeInstance::new(&validation_info).expect("import1 instantiation failed");
 
-//     let grow = import1_instance.get_function_by_name(DEFAULT_MODULE, "grow").unwrap();
+//     let grow = import1_instance.store.instance_export(module, "grow").unwrap().as_func().unwrap();
 //     assert_eq!(import1_instance.invoke_typed( grow,  ()), Ok( 2));
 // }
 
@@ -325,7 +374,7 @@ fn table_grow_with_exported_table_test() {
 //     let validation_info = validate(&wasm_bytes).unwrap();
 //     let mut import2_instance = RuntimeInstance::new(&validation_info).expect("import2 instantiation failed");
 
-//     let size = import2_instance.get_function_by_name(DEFAULT_MODULE, "size").unwrap();
+//     let size = import2_instance.store.instance_export(module, "size").unwrap().as_func().unwrap();
 //     assert_eq!(import2_instance.invoke_typed( size,  ()), Ok( 3));
 // }
 

@@ -98,22 +98,6 @@ impl<'b, T: Config> RuntimeInstance<'b, T> {
             .lookup_module(Cow::Owned(module_name.to_owned()))
     }
 
-    pub fn get_function_by_name(
-        &self,
-        module_name: &str,
-        function_name: &str,
-    ) -> Result<FuncAddr, RuntimeError> {
-        // TODO get rid of allocation. this requires a rework of the registry
-        self.store
-            .registry
-            .lookup(
-                Cow::Owned(module_name.to_owned()),
-                Cow::Owned(function_name.to_owned()),
-            )?
-            .as_func()
-            .ok_or(RuntimeError::FunctionNotFound)
-    }
-
     pub fn get_function_by_index(
         &self,
         module_addr: ModuleAddr,
@@ -184,8 +168,8 @@ impl<'b, T: Config> RuntimeInstance<'b, T> {
     ///             0x6f, 0x70, 0x73, 0x00, 0x00, 0x0a, 0x09, 0x01,
     ///             0x07, 0x00, 0x03, 0x40, 0x0c, 0x00, 0x0b, 0x0b ];
     /// // a simple module with a single function looping forever
-    /// let (mut instance, _module) = RuntimeInstance::new_named((), "module", &validate(&wasm).unwrap()).unwrap();
-    /// let func_addr = instance.get_function_by_name("module", "loops").unwrap();
+    /// let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validate(&wasm).unwrap()).unwrap();
+    /// let func_addr = instance.store.instance_export(module, "loops").unwrap().as_func().unwrap();
     /// let mut resumable_ref = instance.create_resumable(func_addr, vec![], 0).unwrap();
     /// instance.access_fuel_mut(&mut resumable_ref, |x| { assert_eq!(*x, Some(0)); *x = None; }).unwrap();
     /// ```
