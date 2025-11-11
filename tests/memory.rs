@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 */
-use wasm::{validate, RuntimeInstance, ValidationError, DEFAULT_MODULE};
+use wasm::{validate, RuntimeInstance, ValidationError};
 
 #[test_log::test]
 fn memory_basic() {
@@ -86,7 +86,6 @@ fn memory_size_must_be_at_most_4gib() {
 
 #[test_log::test]
 fn i32_and_i64_loads() {
-    // #region Wat
     let w = r#"
   (module
     (memory 1)
@@ -175,44 +174,79 @@ fn i32_and_i64_loads() {
     )
   )
       "#;
-    // #endregion
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut i, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
     let i32_load8_s = i
-        .get_function_by_name(DEFAULT_MODULE, "i32_load8_s")
+        .store
+        .instance_export(module, "i32_load8_s")
+        .unwrap()
+        .as_func()
         .unwrap();
     let i32_load8_u = i
-        .get_function_by_name(DEFAULT_MODULE, "i32_load8_u")
+        .store
+        .instance_export(module, "i32_load8_u")
+        .unwrap()
+        .as_func()
         .unwrap();
     let i32_load16_s = i
-        .get_function_by_name(DEFAULT_MODULE, "i32_load16_s")
+        .store
+        .instance_export(module, "i32_load16_s")
+        .unwrap()
+        .as_func()
         .unwrap();
     let i32_load16_u = i
-        .get_function_by_name(DEFAULT_MODULE, "i32_load16_u")
+        .store
+        .instance_export(module, "i32_load16_u")
+        .unwrap()
+        .as_func()
         .unwrap();
     let i64_load8_s = i
-        .get_function_by_name(DEFAULT_MODULE, "i64_load8_s")
+        .store
+        .instance_export(module, "i64_load8_s")
+        .unwrap()
+        .as_func()
         .unwrap();
     let i64_load8_u = i
-        .get_function_by_name(DEFAULT_MODULE, "i64_load8_u")
+        .store
+        .instance_export(module, "i64_load8_u")
+        .unwrap()
+        .as_func()
         .unwrap();
     let i64_load16_s = i
-        .get_function_by_name(DEFAULT_MODULE, "i64_load16_s")
+        .store
+        .instance_export(module, "i64_load16_s")
+        .unwrap()
+        .as_func()
         .unwrap();
     let i64_load16_u = i
-        .get_function_by_name(DEFAULT_MODULE, "i64_load16_u")
+        .store
+        .instance_export(module, "i64_load16_u")
+        .unwrap()
+        .as_func()
         .unwrap();
     let i64_load32_s = i
-        .get_function_by_name(DEFAULT_MODULE, "i64_load32_s")
+        .store
+        .instance_export(module, "i64_load32_s")
+        .unwrap()
+        .as_func()
         .unwrap();
     let i64_load32_u = i
-        .get_function_by_name(DEFAULT_MODULE, "i64_load32_u")
+        .store
+        .instance_export(module, "i64_load32_u")
+        .unwrap()
+        .as_func()
         .unwrap();
-    let data = i.get_function_by_name(DEFAULT_MODULE, "data").unwrap();
+
+    let data = i
+        .store
+        .instance_export(module, "data")
+        .unwrap()
+        .as_func()
+        .unwrap();
     // let cast = i.get_function_by_name(DEFAULT_MODULE, "cast").unwrap();
 
     // assert_eq!(i.invoke_typed( data,  ()), Ok( 1));
@@ -321,10 +355,15 @@ fn memory_test_exporting_rand_globals_doesnt_change_a_memory_s_semantics() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut i, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let load = i.get_function_by_name(DEFAULT_MODULE, "load").unwrap();
+    let load = i
+        .store
+        .instance_export(module, "load")
+        .unwrap()
+        .as_func()
+        .unwrap();
 
     assert_eq!(i.invoke_typed(load, 0), Ok(0));
     assert_eq!(i.invoke_typed(load, 10000), Ok(0));

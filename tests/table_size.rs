@@ -15,7 +15,7 @@
 # limitations under the License.
 */
 
-use wasm::{validate, RuntimeInstance, DEFAULT_MODULE};
+use wasm::{validate, RuntimeInstance};
 
 #[test_log::test]
 fn table_size_test() {
@@ -47,19 +47,59 @@ fn table_size_test() {
     "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _default_module) = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut i, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    // let get_funcref = i.get_function_by_name(DEFAULT_MODULE, "get-funcref").unwrap();
-    // let init = i.get_function_by_name(DEFAULT_MODULE, "init").unwrap();
-    let size_t0 = i.get_function_by_name(DEFAULT_MODULE, "size-t0").unwrap();
-    let size_t1 = i.get_function_by_name(DEFAULT_MODULE, "size-t1").unwrap();
-    let size_t2 = i.get_function_by_name(DEFAULT_MODULE, "size-t2").unwrap();
-    let size_t3 = i.get_function_by_name(DEFAULT_MODULE, "size-t3").unwrap();
-    let grow_t0 = i.get_function_by_name(DEFAULT_MODULE, "grow-t0").unwrap();
-    let grow_t1 = i.get_function_by_name(DEFAULT_MODULE, "grow-t1").unwrap();
-    let grow_t2 = i.get_function_by_name(DEFAULT_MODULE, "grow-t2").unwrap();
-    let grow_t3 = i.get_function_by_name(DEFAULT_MODULE, "grow-t3").unwrap();
+    // let get_funcref = i.store.instance_export(module, "get-funcref").unwrap().as_func().unwrap();
+    // let init = i.store.instance_export(module, "init").unwrap().as_func().unwrap();
+    let size_t0 = i
+        .store
+        .instance_export(module, "size-t0")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    let size_t1 = i
+        .store
+        .instance_export(module, "size-t1")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    let size_t2 = i
+        .store
+        .instance_export(module, "size-t2")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    let size_t3 = i
+        .store
+        .instance_export(module, "size-t3")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    let grow_t0 = i
+        .store
+        .instance_export(module, "grow-t0")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    let grow_t1 = i
+        .store
+        .instance_export(module, "grow-t1")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    let grow_t2 = i
+        .store
+        .instance_export(module, "grow-t2")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    let grow_t3 = i
+        .store
+        .instance_export(module, "grow-t3")
+        .unwrap()
+        .as_func()
+        .unwrap();
 
     assert_eq!(i.invoke_typed(size_t0, ()), Ok(0));
     assert_eq!(i.invoke_typed(size_t0, ()), Ok(0));

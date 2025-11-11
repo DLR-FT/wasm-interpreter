@@ -11,10 +11,13 @@ fn out_of_fuel() {
             ))"#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = &validate(&wasm_bytes).expect("validation failed");
-    let (mut runtime_instance, _module) =
-        RuntimeInstance::new_named((), "module", validation_info).unwrap();
+    let (mut runtime_instance, module) =
+        RuntimeInstance::new_with_default_module((), validation_info).unwrap();
     let func_addr = runtime_instance
-        .get_function_by_name("module", "loop_forever")
+        .store
+        .instance_export(module, "loop_forever")
+        .unwrap()
+        .as_func()
         .unwrap();
     let resumable_ref = runtime_instance
         .create_resumable(func_addr, Vec::new(), 40)
@@ -63,27 +66,33 @@ fn resumable() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
     let (mut runtime_instance, module) =
-        RuntimeInstance::new_named((), "module", &validation_info).unwrap();
+        RuntimeInstance::new_with_default_module((), &validation_info).unwrap();
+
     let mult_global_0 = runtime_instance
-        .get_function_by_name("module", "mult_global_0")
+        .store
+        .instance_export(module, "mult_global_0")
+        .unwrap()
+        .as_func()
         .unwrap();
     let add_global_1 = runtime_instance
-        .get_function_by_name("module", "add_global_1")
+        .store
+        .instance_export(module, "add_global_1")
+        .unwrap()
+        .as_func()
         .unwrap();
-
     let global_0 = runtime_instance
         .store
         .instance_export(module, "global_0")
         .unwrap()
         .as_global()
-        .expect("global");
+        .unwrap();
 
     let global_1 = runtime_instance
         .store
         .instance_export(module, "global_1")
         .unwrap()
         .as_global()
-        .expect("global");
+        .unwrap();
 
     let resumable_ref_mult = runtime_instance
         .create_resumable(mult_global_0, vec![], 0)
@@ -166,16 +175,19 @@ fn resumable_internal_state() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
     let (mut runtime_instance, module) =
-        RuntimeInstance::new_named((), "module", &validation_info).unwrap();
+        RuntimeInstance::new_with_default_module((), &validation_info).unwrap();
     let add_global_0 = runtime_instance
-        .get_function_by_name("module", "add_global_0")
+        .store
+        .instance_export(module, "add_global_0")
+        .unwrap()
+        .as_func()
         .unwrap();
     let global_0 = runtime_instance
         .store
         .instance_export(module, "global_0")
         .unwrap()
         .as_global()
-        .expect("global");
+        .unwrap();
     let resumable_ref_add = runtime_instance
         .create_resumable(add_global_0, vec![], 4)
         .unwrap();
@@ -218,10 +230,13 @@ fn resumable_drop() {
             ))"#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = &validate(&wasm_bytes).expect("validation failed");
-    let (mut runtime_instance, _module) =
-        RuntimeInstance::new_named((), "module", validation_info).unwrap();
+    let (mut runtime_instance, module) =
+        RuntimeInstance::new_with_default_module((), validation_info).unwrap();
     let func_addr = runtime_instance
-        .get_function_by_name("module", "loop_forever")
+        .store
+        .instance_export(module, "loop_forever")
+        .unwrap()
+        .as_func()
         .unwrap();
     let resumable_ref = runtime_instance
         .create_resumable(func_addr, Vec::new(), 40)

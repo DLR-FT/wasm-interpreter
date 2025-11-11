@@ -1,4 +1,4 @@
-use wasm::{validate, RuntimeInstance, DEFAULT_MODULE};
+use wasm::{validate, RuntimeInstance};
 const BASE_WAT: &str = r#"
     (module
         (memory 1)
@@ -17,26 +17,25 @@ fn basic_memory() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let _ = instance.invoke_typed::<i32, ()>(
-        instance
-            .get_function_by_name(DEFAULT_MODULE, "store_num")
-            .unwrap(),
-        42,
-    );
-    assert_eq!(
-        42,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "load_num")
-                    .unwrap(),
-                ()
-            )
-            .unwrap()
-    );
+    let store_num = instance
+        .store
+        .instance_export(module, "store_num")
+        .unwrap()
+        .as_func()
+        .unwrap();
+
+    let load_num = instance
+        .store
+        .instance_export(module, "load_num")
+        .unwrap()
+        .as_func()
+        .unwrap();
+
+    let _ = instance.invoke_typed::<i32, ()>(store_num, 42);
+    assert_eq!(42, instance.invoke_typed(load_num, ()).unwrap());
 }
 
 /// Two simple methods for storing and loading an f32 from the first slot in linear memory.
@@ -49,16 +48,22 @@ fn f32_basic_memory() {
     let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    instance
-        .invoke_typed::<f32, ()>(
-            instance.get_function_by_index(module, 0).unwrap(),
-            133.7_f32,
-        )
+    let store_num = instance
+        .store
+        .instance_export(module, "store_num")
+        .unwrap()
+        .as_func()
         .unwrap();
-    assert_eq!(
-        133.7_f32,
-        instance
-            .invoke_typed(instance.get_function_by_index(module, 1).unwrap(), ())
-            .unwrap()
-    );
+
+    let load_num = instance
+        .store
+        .instance_export(module, "load_num")
+        .unwrap()
+        .as_func()
+        .unwrap();
+
+    instance
+        .invoke_typed::<f32, ()>(store_num, 133.7_f32)
+        .unwrap();
+    assert_eq!(133.7_f32, instance.invoke_typed(load_num, ()).unwrap());
 }

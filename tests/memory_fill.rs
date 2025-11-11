@@ -17,7 +17,7 @@
 
 // use core::slice::SlicePattern;
 
-use wasm::{validate, RuntimeInstance, DEFAULT_MODULE};
+use wasm::{validate, RuntimeInstance};
 
 #[test_log::test]
 fn memory_fill() {
@@ -34,7 +34,12 @@ fn memory_fill() {
     let (mut i, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let fill = i.get_function_by_name(DEFAULT_MODULE, "fill").unwrap();
+    let fill = i
+        .store
+        .instance_export(module, "fill")
+        .unwrap()
+        .as_func()
+        .unwrap();
     let mem = i
         .store
         .instance_export(module, "mem")
