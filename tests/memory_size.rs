@@ -15,7 +15,7 @@ use log::info;
 # See the License for the specific language governing permissions and
 # limitations under the License.
 */
-use wasm::{validate, RuntimeInstance, DEFAULT_MODULE};
+use wasm::{validate, RuntimeInstance};
 
 #[test_log::test]
 fn memory_size_1() {
@@ -28,11 +28,21 @@ fn memory_size_1() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut i, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let size = i.get_function_by_name(DEFAULT_MODULE, "size").unwrap();
-    let grow = i.get_function_by_name(DEFAULT_MODULE, "grow").unwrap();
+    let size = i
+        .store
+        .instance_export(module, "size")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    let grow = i
+        .store
+        .instance_export(module, "grow")
+        .unwrap()
+        .as_func()
+        .unwrap();
 
     assert_eq!(i.invoke_typed(size, ()), Ok(0));
     assert_eq!(i.invoke_typed(grow, 1), Ok(()));
@@ -54,11 +64,21 @@ fn memory_size_2() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut i, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let size = i.get_function_by_name(DEFAULT_MODULE, "size").unwrap();
-    let grow = i.get_function_by_name(DEFAULT_MODULE, "grow").unwrap();
+    let size = i
+        .store
+        .instance_export(module, "size")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    let grow = i
+        .store
+        .instance_export(module, "grow")
+        .unwrap()
+        .as_func()
+        .unwrap();
 
     assert_eq!(i.invoke_typed(size, ()), Ok(1));
     assert_eq!(i.invoke_typed(grow, 1), Ok(()));
@@ -80,11 +100,21 @@ fn memory_size_3() {
 "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut i, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let size = i.get_function_by_name(DEFAULT_MODULE, "size").unwrap();
-    let grow = i.get_function_by_name(DEFAULT_MODULE, "grow").unwrap();
+    let size = i
+        .store
+        .instance_export(module, "size")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    let grow = i
+        .store
+        .instance_export(module, "grow")
+        .unwrap()
+        .as_func()
+        .unwrap();
 
     assert_eq!(i.invoke_typed(size, ()), Ok(0));
     assert_eq!(i.invoke_typed(grow, 3), Ok(()));
@@ -110,11 +140,21 @@ fn memory_size_4() {
 "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut i, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let size = i.get_function_by_name(DEFAULT_MODULE, "size").unwrap();
-    let grow = i.get_function_by_name(DEFAULT_MODULE, "grow").unwrap();
+    let size = i
+        .store
+        .instance_export(module, "size")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    let grow = i
+        .store
+        .instance_export(module, "grow")
+        .unwrap()
+        .as_func()
+        .unwrap();
 
     assert_eq!(i.invoke_typed(size, ()), Ok(3));
     assert_eq!(i.invoke_typed(grow, 1), Ok(()));

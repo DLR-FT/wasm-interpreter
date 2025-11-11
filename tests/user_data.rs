@@ -18,16 +18,12 @@ fn counter() {
     }
 
     let mut instance = RuntimeInstance::new(MyCounter(0));
-    instance
+    let add_one = instance
         .add_host_function_typed::<(), ()>("host", "add_one", add_one)
         .unwrap();
 
-    let add_one_func_ref = instance.get_function_by_name("host", "add_one").unwrap();
-
     for _ in 0..5 {
-        instance
-            .invoke_typed::<(), ()>(add_one_func_ref, ())
-            .unwrap();
+        instance.invoke_typed::<(), ()>(add_one, ()).unwrap();
     }
 
     assert_eq!(*instance.user_data(), MyCounter(5));
@@ -54,16 +50,11 @@ fn channels() {
         }
 
         let mut instance = RuntimeInstance::new(MySender(tx));
-        instance
+        let send_message = instance
             .add_host_function_typed::<(), ()>("host", "send_message", send_message)
             .unwrap();
 
-        let send_message_func_ref = instance
-            .get_function_by_name("host", "send_message")
-            .unwrap();
-        instance
-            .invoke_typed::<(), ()>(send_message_func_ref, ())
-            .unwrap();
+        instance.invoke_typed::<(), ()>(send_message, ()).unwrap();
     });
 
     assert_eq!(rx.recv(), Ok("Hello from host function!".to_owned()));

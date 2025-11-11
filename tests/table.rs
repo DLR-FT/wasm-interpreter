@@ -16,7 +16,7 @@ use wasm::value::Ref;
 # See the License for the specific language governing permissions and
 # limitations under the License.
 */
-use wasm::{validate, RuntimeInstance, DEFAULT_MODULE};
+use wasm::{validate, RuntimeInstance};
 use wasm::{ExternVal, ValidationError};
 
 #[test_log::test]
@@ -125,13 +125,23 @@ fn table_elem_test() {
     )"#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (instance, default_module) = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let f1 = instance.get_function_by_name(DEFAULT_MODULE, "f1").unwrap();
-    let f3 = instance.get_function_by_name(DEFAULT_MODULE, "f3").unwrap();
+    let f1 = instance
+        .store
+        .instance_export(module, "f1")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    let f3 = instance
+        .store
+        .instance_export(module, "f3")
+        .unwrap()
+        .as_func()
+        .unwrap();
 
-    let Ok(ExternVal::Table(table)) = instance.store.instance_export(default_module, "tab") else {
+    let Ok(ExternVal::Table(table)) = instance.store.instance_export(module, "tab") else {
         panic!("expected a table to be exported")
     };
 
@@ -158,13 +168,21 @@ fn table_get_set_test() {
     "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut i, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
     let get_funcref = i
-        .get_function_by_name(DEFAULT_MODULE, "get-funcref")
+        .store
+        .instance_export(module, "get-funcref")
+        .unwrap()
+        .as_func()
         .unwrap();
-    let init = i.get_function_by_name(DEFAULT_MODULE, "init").unwrap();
+    let init = i
+        .store
+        .instance_export(module, "init")
+        .unwrap()
+        .as_func()
+        .unwrap();
 
     // assert the function at index 1 is a FuncRef and is NOT null
     {
@@ -225,11 +243,14 @@ fn call_indirect_type_check() {
     "#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
     let call_fn = instance
-        .get_function_by_name(DEFAULT_MODULE, "call_function")
+        .store
+        .instance_export(module, "call_function")
+        .unwrap()
+        .as_func()
         .unwrap();
 
     assert_eq!(

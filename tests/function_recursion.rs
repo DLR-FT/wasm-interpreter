@@ -1,4 +1,4 @@
-use wasm::{validate, RuntimeInstance, DEFAULT_MODULE};
+use wasm::{validate, RuntimeInstance};
 
 const FUNCTION_CALL: &str = r#"
     (module
@@ -19,19 +19,19 @@ fn simple_function_call() {
     let wasm_bytes = wat::parse_str(FUNCTION_CALL).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
+
+    let simple_caller = instance
+        .store
+        .instance_export(module, "simple_caller")
+        .unwrap()
+        .as_func()
+        .unwrap();
 
     assert_eq!(
         3 * 7 + 13,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "simple_caller")
-                    .unwrap(),
-                (3, 7)
-            )
-            .unwrap()
+        instance.invoke_typed(simple_caller, (3, 7)).unwrap()
     );
 }
 
@@ -57,42 +57,19 @@ fn recursion_valid() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    assert_eq!(
-        12,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "add_two")
-                    .unwrap(),
-                10
-            )
-            .unwrap()
-    );
-    assert_eq!(
-        2,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "add_two")
-                    .unwrap(),
-                0
-            )
-            .unwrap()
-    );
-    assert_eq!(
-        -4,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "add_two")
-                    .unwrap(),
-                -6
-            )
-            .unwrap()
-    );
+    let add_two = instance
+        .store
+        .instance_export(module, "add_two")
+        .unwrap()
+        .as_func()
+        .unwrap();
+
+    assert_eq!(12, instance.invoke_typed(add_two, 10).unwrap());
+    assert_eq!(2, instance.invoke_typed(add_two, 0).unwrap());
+    assert_eq!(-4, instance.invoke_typed(add_two, -6).unwrap());
 }
 
 #[test_log::test]
@@ -144,17 +121,20 @@ fn multivalue_call() {
     "#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let foo_fn = instance
-        .get_function_by_name(DEFAULT_MODULE, "bar")
+    let foo = instance
+        .store
+        .instance_export(module, "bar")
+        .unwrap()
+        .as_func()
         .unwrap();
 
     assert_eq!(
         (10, 42.0, 5),
         instance
-            .invoke_typed::<(), (i32, f32, i64)>(foo_fn, ())
+            .invoke_typed::<(), (i32, f32, i64)>(foo, ())
             .unwrap()
     );
 }

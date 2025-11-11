@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 */
-use wasm::{validate, RuntimeError, RuntimeInstance, TrapError, DEFAULT_MODULE};
+use wasm::{validate, RuntimeError, RuntimeInstance, TrapError};
 
 #[test_log::test]
 fn memory_trap_1() {
@@ -41,13 +41,26 @@ fn memory_trap_1() {
 "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut i, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let store = i.get_function_by_name(DEFAULT_MODULE, "store").unwrap();
-    let load = i.get_function_by_name(DEFAULT_MODULE, "load").unwrap();
+    let store = i
+        .store
+        .instance_export(module, "store")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    let load = i
+        .store
+        .instance_export(module, "load")
+        .unwrap()
+        .as_func()
+        .unwrap();
     let grow = i
-        .get_function_by_name(DEFAULT_MODULE, "memory.grow")
+        .store
+        .instance_export(module, "memory.grow")
+        .unwrap()
+        .as_func()
         .unwrap();
 
     assert_eq!(i.invoke_typed(store, (-4, 42)), Ok(()));
