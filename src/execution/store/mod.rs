@@ -317,7 +317,7 @@ impl<'b, T: Config> Store<'b, T> {
 
         // register module exports, this is outside of the spec
         self.registry
-            .register_module(name.to_owned().into(), module_inst)?;
+            .register_module(name.to_owned().into(), module_inst, module_addr)?;
 
         // instantiation step 11 end: module_inst properly allocated after this point.
 
@@ -880,8 +880,11 @@ impl<'b, T: Config> Store<'b, T> {
         module_addr: ModuleAddr,
         name: &str,
     ) -> Result<(), RuntimeError> {
-        self.registry
-            .register_module(name.to_owned().into(), self.modules.get(module_addr))
+        self.registry.register_module(
+            name.to_owned().into(),
+            self.modules.get(module_addr),
+            module_addr,
+        )
     }
 
     pub fn create_resumable(

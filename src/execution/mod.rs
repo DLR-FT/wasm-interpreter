@@ -84,6 +84,13 @@ impl<'b, T: Config> RuntimeInstance<'b, T> {
         self.store.add_module(module_name, validation_info, None)
     }
 
+    pub fn get_module_by_name(&self, module_name: &str) -> Option<ModuleAddr> {
+        // TODO get rid of allocation. this requires a rework of the registry
+        self.store
+            .registry
+            .lookup_module(Cow::Owned(module_name.to_owned()))
+    }
+
     pub fn get_function_by_name(
         &self,
         module_name: &str,
