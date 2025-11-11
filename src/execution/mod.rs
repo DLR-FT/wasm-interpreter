@@ -5,8 +5,7 @@ use alloc::borrow::{Cow, ToOwned};
 use alloc::vec::Vec;
 
 use const_interpreter_loop::run_const_span;
-use function_ref::FunctionRef;
-use store::addrs::ModuleAddr;
+use store::addrs::{FuncAddr, ModuleAddr};
 use store::ExternVal;
 use store::HaltExecutionError;
 use value_stack::Stack;
@@ -23,7 +22,6 @@ pub(crate) mod assert_validated;
 pub mod config;
 pub mod const_interpreter_loop;
 pub mod error;
-pub mod function_ref;
 pub mod interop;
 mod interpreter_loop;
 pub(crate) mod little_endian;
@@ -95,45 +93,51 @@ impl<'b, T: Config> RuntimeInstance<'b, T> {
         &self,
         module_name: &str,
         function_name: &str,
-    ) -> Result<FunctionRef, RuntimeError> {
-        FunctionRef::new_from_name(module_name, function_name, &self.store)
-            .map_err(|_| RuntimeError::FunctionNotFound)
+    ) -> Result<FuncAddr, RuntimeError> {
+        // TODO get rid of allocation. this requires a rework of the registry
+        self.store
+            .registry
+            .lookup(
+                Cow::Owned(module_name.to_owned()),
+                Cow::Owned(function_name.to_owned()),
+            )?
+            .as_func()
+            .ok_or(RuntimeError::FunctionNotFound)
     }
 
     pub fn get_function_by_index(
         &self,
         module_addr: ModuleAddr,
         function_idx: usize,
-    ) -> Result<FunctionRef, RuntimeError> {
+    ) -> Result<FuncAddr, RuntimeError> {
         let module_inst = self.store.modules.get(module_addr);
-        let func_addr = *module_inst
+        let function = *module_inst
             .func_addrs
             .get(function_idx)
             .ok_or(RuntimeError::FunctionNotFound)?;
 
-        Ok(FunctionRef { func_addr })
+        Ok(function)
     }
 
     /// Invokes a function with the given parameters of type `Param`, and return types of type `Returns`.
     pub fn invoke_typed<Params: InteropValueList, Returns: InteropValueList>(
         &mut self,
-        function_ref: &FunctionRef,
+        function: FuncAddr,
         params: Params,
         // store: &mut Store,
     ) -> Result<Returns, RuntimeError> {
-        self.invoke(function_ref, params.into_values())
+        self.invoke(function, params.into_values())
             .map(|values| Returns::try_from_values(values.into_iter()).unwrap_validated())
     }
 
     /// Invokes a function with the given parameters. The return types depend on the function signature.
     pub fn invoke(
         &mut self,
-        function_ref: &FunctionRef,
+        function: FuncAddr,
         params: Vec<Value>,
     ) -> Result<Vec<Value>, RuntimeError> {
-        let FunctionRef { func_addr } = *function_ref;
         self.store
-            .invoke(func_addr, params, None)
+            .invoke(function, params, None)
             .map(|run_state| match run_state {
                 RunState::Finished(values) => values,
                 _ => unreachable!("non metered invoke call"),
@@ -145,12 +149,11 @@ impl<'b, T: Config> RuntimeInstance<'b, T> {
     /// `[ResumableRef]` associated to the newly created resumable on success.
     pub fn create_resumable(
         &self,
-        function_ref: &FunctionRef,
+        function: FuncAddr,
         params: Vec<Value>,
         fuel: u32,
     ) -> Result<ResumableRef, RuntimeError> {
-        let FunctionRef { func_addr } = *function_ref;
-        self.store.create_resumable(func_addr, params, Some(fuel))
+        self.store.create_resumable(function, params, Some(fuel))
     }
 
     /// resumes the resumable associated to `resumable_ref`. Returns a `[RunState]` associated to this resumable  if the
@@ -173,8 +176,8 @@ impl<'b, T: Config> RuntimeInstance<'b, T> {
     ///             0x07, 0x00, 0x03, 0x40, 0x0c, 0x00, 0x0b, 0x0b ];
     /// // a simple module with a single function looping forever
     /// let (mut instance, _module) = RuntimeInstance::new_named((), "module", &validate(&wasm).unwrap()).unwrap();
-    /// let func_ref = instance.get_function_by_name("module", "loops").unwrap();
-    /// let mut resumable_ref = instance.create_resumable(&func_ref, vec![], 0).unwrap();
+    /// let func_addr = instance.get_function_by_name("module", "loops").unwrap();
+    /// let mut resumable_ref = instance.create_resumable(func_addr, vec![], 0).unwrap();
     /// instance.access_fuel_mut(&mut resumable_ref, |x| { assert_eq!(*x, Some(0)); *x = None; }).unwrap();
     /// ```
     pub fn access_fuel_mut<R>(
@@ -193,7 +196,7 @@ impl<'b, T: Config> RuntimeInstance<'b, T> {
         module_name: &str,
         name: &str,
         host_func: fn(&mut T, Vec<Value>) -> Result<Vec<Value>, HaltExecutionError>,
-    ) -> Result<FunctionRef, RuntimeError> {
+    ) -> Result<FuncAddr, RuntimeError> {
         let host_func_ty = FuncType {
             params: ResultType {
                 valtypes: Vec::from(Params::TYS),
@@ -211,14 +214,14 @@ impl<'b, T: Config> RuntimeInstance<'b, T> {
         name: &str,
         host_func_ty: FuncType,
         host_func: fn(&mut T, Vec<Value>) -> Result<Vec<Value>, HaltExecutionError>,
-    ) -> Result<FunctionRef, RuntimeError> {
-        let func_addr = self.store.func_alloc(host_func_ty, host_func);
+    ) -> Result<FuncAddr, RuntimeError> {
+        let function = self.store.func_alloc(host_func_ty, host_func);
         self.store.registry.register(
             module_name.to_owned().into(),
             name.to_owned().into(),
-            store::ExternVal::Func(func_addr),
+            store::ExternVal::Func(function),
         )?;
-        Ok(FunctionRef { func_addr })
+        Ok(function)
     }
 
     pub fn user_data(&self) -> &T {

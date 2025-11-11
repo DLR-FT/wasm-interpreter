@@ -21,12 +21,12 @@ fn dynamic_add() {
     let func = instance.get_function_by_index(module, 0).unwrap();
 
     let res = instance
-        .invoke(&func, vec![Value::I32(11), Value::I32(1)])
+        .invoke(func, vec![Value::I32(11), Value::I32(1)])
         .expect("invocation failed");
     assert_eq!(vec![Value::I32(12)], res);
 
-    let res = func
-        .invoke(&mut instance, vec![Value::I32(-6i32 as u32), Value::I32(1)])
+    let res = instance
+        .invoke(func, vec![Value::I32(-6i32 as u32), Value::I32(1)])
         .expect("invocation failed");
     assert_eq!(vec![Value::I32(-5i32 as u32)], res);
 }

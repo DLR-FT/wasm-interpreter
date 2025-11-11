@@ -121,7 +121,7 @@ macro_rules! bench_wasm {
                 let bid = BenchmarkId::new("our", n);
                 group.bench_with_input(bid, &n, |b, &s| {
                     b.iter(|| {
-                        our_instance.invoke_typed::<$arg_type, $return_type>(&our_fn, s).unwrap();
+                        our_instance.invoke_typed::<$arg_type, $return_type>(our_fn, s).unwrap();
                     })
                 });
             }

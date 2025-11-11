@@ -13,11 +13,11 @@ fn out_of_fuel() {
     let validation_info = &validate(&wasm_bytes).expect("validation failed");
     let (mut runtime_instance, _module) =
         RuntimeInstance::new_named((), "module", validation_info).unwrap();
-    let func_ref = runtime_instance
+    let func_addr = runtime_instance
         .get_function_by_name("module", "loop_forever")
         .unwrap();
     let resumable_ref = runtime_instance
-        .create_resumable(&func_ref, Vec::new(), 40)
+        .create_resumable(func_addr, Vec::new(), 40)
         .unwrap();
     assert!(matches!(
         runtime_instance.resume(resumable_ref).unwrap(),
@@ -86,10 +86,10 @@ fn resumable() {
         .expect("global");
 
     let resumable_ref_mult = runtime_instance
-        .create_resumable(&mult_global_0, vec![], 0)
+        .create_resumable(mult_global_0, vec![], 0)
         .unwrap();
     let resumable_ref_add = runtime_instance
-        .create_resumable(&add_global_1, vec![], 0)
+        .create_resumable(add_global_1, vec![], 0)
         .unwrap();
 
     let mut run_state_mult = runtime_instance.resume(resumable_ref_mult).unwrap();
@@ -177,7 +177,7 @@ fn resumable_internal_state() {
         .as_global()
         .expect("global");
     let resumable_ref_add = runtime_instance
-        .create_resumable(&add_global_0, vec![], 4)
+        .create_resumable(add_global_0, vec![], 4)
         .unwrap();
     assert_eq!(
         runtime_instance.store.global_read(global_0),
@@ -220,15 +220,15 @@ fn resumable_drop() {
     let validation_info = &validate(&wasm_bytes).expect("validation failed");
     let (mut runtime_instance, _module) =
         RuntimeInstance::new_named((), "module", validation_info).unwrap();
-    let func_ref = runtime_instance
+    let func_addr = runtime_instance
         .get_function_by_name("module", "loop_forever")
         .unwrap();
     let resumable_ref = runtime_instance
-        .create_resumable(&func_ref, Vec::new(), 40)
+        .create_resumable(func_addr, Vec::new(), 40)
         .unwrap();
     {
         let resumable_ref = runtime_instance
-            .create_resumable(&func_ref, Vec::new(), 40)
+            .create_resumable(func_addr, Vec::new(), 40)
             .unwrap();
         assert!(matches!(
             runtime_instance.resume(resumable_ref).unwrap(),

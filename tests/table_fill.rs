@@ -50,34 +50,34 @@ fn table_fill_test() {
         .unwrap();
 
     assert_eq!(
-        i.invoke_typed::<i32, RefExtern>(&get, 1),
+        i.invoke_typed::<i32, RefExtern>(get, 1),
         Ok(RefExtern(None))
     );
     assert_eq!(
-        i.invoke_typed::<i32, RefExtern>(&get, 2),
+        i.invoke_typed::<i32, RefExtern>(get, 2),
         Ok(RefExtern(None))
     );
     assert_eq!(
-        i.invoke_typed::<i32, RefExtern>(&get, 3),
+        i.invoke_typed::<i32, RefExtern>(get, 3),
         Ok(RefExtern(None))
     );
     assert_eq!(
-        i.invoke_typed::<i32, RefExtern>(&get, 4),
+        i.invoke_typed::<i32, RefExtern>(get, 4),
         Ok(RefExtern(None))
     );
     assert_eq!(
-        i.invoke_typed::<i32, RefExtern>(&get, 5),
+        i.invoke_typed::<i32, RefExtern>(get, 5),
         Ok(RefExtern(None))
     );
 
-    i.invoke_typed::<(i32, RefExtern, i32), ()>(&fill, (2, RefExtern(Some(ExternAddr(1))), 3))
+    i.invoke_typed::<(i32, RefExtern, i32), ()>(fill, (2, RefExtern(Some(ExternAddr(1))), 3))
         .unwrap();
     assert_eq!(
-        i.invoke_typed::<i32, RefExtern>(&get, 1),
+        i.invoke_typed::<i32, RefExtern>(get, 1),
         Ok(RefExtern(None))
     );
     assert_eq!(
-        i.invoke_typed::<i32, RefExtern>(&get, 2)
+        i.invoke_typed::<i32, RefExtern>(get, 2)
             .unwrap()
             .0
             .unwrap()
@@ -85,7 +85,7 @@ fn table_fill_test() {
         1
     );
     assert_eq!(
-        i.invoke_typed::<i32, RefExtern>(&get, 3)
+        i.invoke_typed::<i32, RefExtern>(get, 3)
             .unwrap()
             .0
             .unwrap()
@@ -93,7 +93,7 @@ fn table_fill_test() {
         1
     );
     assert_eq!(
-        i.invoke_typed::<i32, RefExtern>(&get, 4)
+        i.invoke_typed::<i32, RefExtern>(get, 4)
             .unwrap()
             .0
             .unwrap()
@@ -101,15 +101,15 @@ fn table_fill_test() {
         1
     );
     assert_eq!(
-        i.invoke_typed::<i32, RefExtern>(&get, 5),
+        i.invoke_typed::<i32, RefExtern>(get, 5),
         Ok(RefExtern(None))
     );
 
-    i.invoke_typed::<(i32, RefExtern, i32), ()>(&fill, (4, RefExtern(Some(ExternAddr(2))), 2))
+    i.invoke_typed::<(i32, RefExtern, i32), ()>(fill, (4, RefExtern(Some(ExternAddr(2))), 2))
         .unwrap();
 
     assert_eq!(
-        i.invoke_typed::<i32, RefExtern>(&get, 3)
+        i.invoke_typed::<i32, RefExtern>(get, 3)
             .unwrap()
             .0
             .unwrap()
@@ -117,7 +117,7 @@ fn table_fill_test() {
         1
     );
     assert_eq!(
-        i.invoke_typed::<i32, RefExtern>(&get, 4)
+        i.invoke_typed::<i32, RefExtern>(get, 4)
             .unwrap()
             .0
             .unwrap()
@@ -125,7 +125,7 @@ fn table_fill_test() {
         2
     );
     assert_eq!(
-        i.invoke_typed::<i32, RefExtern>(&get, 5)
+        i.invoke_typed::<i32, RefExtern>(get, 5)
             .unwrap()
             .0
             .unwrap()
@@ -133,15 +133,15 @@ fn table_fill_test() {
         2
     );
     assert_eq!(
-        i.invoke_typed::<i32, RefExtern>(&get, 6),
+        i.invoke_typed::<i32, RefExtern>(get, 6),
         Ok(RefExtern(None))
     );
 
-    i.invoke_typed::<(i32, RefExtern, i32), ()>(&fill, (4, RefExtern(Some(ExternAddr(3))), 0))
+    i.invoke_typed::<(i32, RefExtern, i32), ()>(fill, (4, RefExtern(Some(ExternAddr(3))), 0))
         .unwrap();
 
     assert_eq!(
-        i.invoke_typed::<i32, RefExtern>(&get, 3)
+        i.invoke_typed::<i32, RefExtern>(get, 3)
             .unwrap()
             .0
             .unwrap()
@@ -149,7 +149,7 @@ fn table_fill_test() {
         1
     );
     assert_eq!(
-        i.invoke_typed::<i32, RefExtern>(&get, 4)
+        i.invoke_typed::<i32, RefExtern>(get, 4)
             .unwrap()
             .0
             .unwrap()
@@ -157,7 +157,7 @@ fn table_fill_test() {
         2
     );
     assert_eq!(
-        i.invoke_typed::<i32, RefExtern>(&get, 5)
+        i.invoke_typed::<i32, RefExtern>(get, 5)
             .unwrap()
             .0
             .unwrap()
@@ -165,15 +165,15 @@ fn table_fill_test() {
         2
     );
 
-    i.invoke_typed::<(i32, RefExtern, i32), ()>(&fill, (8, RefExtern(Some(ExternAddr(4))), 2))
+    i.invoke_typed::<(i32, RefExtern, i32), ()>(fill, (8, RefExtern(Some(ExternAddr(4))), 2))
         .unwrap();
 
     assert_eq!(
-        i.invoke_typed::<i32, RefExtern>(&get, 7),
+        i.invoke_typed::<i32, RefExtern>(get, 7),
         Ok(RefExtern(None))
     );
     assert_eq!(
-        i.invoke_typed::<i32, RefExtern>(&get, 8)
+        i.invoke_typed::<i32, RefExtern>(get, 8)
             .unwrap()
             .0
             .unwrap()
@@ -181,7 +181,7 @@ fn table_fill_test() {
         4
     );
     assert_eq!(
-        i.invoke_typed::<i32, RefExtern>(&get, 9)
+        i.invoke_typed::<i32, RefExtern>(get, 9)
             .unwrap()
             .0
             .unwrap()
@@ -189,10 +189,10 @@ fn table_fill_test() {
         4
     );
 
-    i.invoke_typed::<(i32, RefExtern, i32), ()>(&fill_abbrev, (9, RefExtern(None), 1))
+    i.invoke_typed::<(i32, RefExtern, i32), ()>(fill_abbrev, (9, RefExtern(None), 1))
         .unwrap();
     assert_eq!(
-        i.invoke_typed::<i32, RefExtern>(&get, 8)
+        i.invoke_typed::<i32, RefExtern>(get, 8)
             .unwrap()
             .0
             .unwrap()
@@ -200,19 +200,19 @@ fn table_fill_test() {
         4
     );
     assert_eq!(
-        i.invoke_typed::<i32, RefExtern>(&get, 9),
+        i.invoke_typed::<i32, RefExtern>(get, 9),
         Ok(RefExtern(None))
     );
 
-    i.invoke_typed::<(i32, RefExtern, i32), ()>(&fill, (10, RefExtern(Some(ExternAddr(5))), 0))
+    i.invoke_typed::<(i32, RefExtern, i32), ()>(fill, (10, RefExtern(Some(ExternAddr(5))), 0))
         .unwrap();
     assert_eq!(
-        i.invoke_typed::<i32, RefExtern>(&get, 9),
+        i.invoke_typed::<i32, RefExtern>(get, 9),
         Ok(RefExtern(None))
     );
 
     assert_eq!(
-        i.invoke_typed::<(i32, RefExtern, i32), ()>(&fill, (8, RefExtern(Some(ExternAddr(6))), 3))
+        i.invoke_typed::<(i32, RefExtern, i32), ()>(fill, (8, RefExtern(Some(ExternAddr(6))), 3))
             .err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
@@ -220,11 +220,11 @@ fn table_fill_test() {
     );
 
     assert_eq!(
-        i.invoke_typed::<i32, RefExtern>(&get, 7),
+        i.invoke_typed::<i32, RefExtern>(get, 7),
         Ok(RefExtern(None))
     );
     assert_eq!(
-        i.invoke_typed::<i32, RefExtern>(&get, 8)
+        i.invoke_typed::<i32, RefExtern>(get, 8)
             .unwrap()
             .0
             .unwrap()
@@ -232,12 +232,12 @@ fn table_fill_test() {
         4
     );
     assert_eq!(
-        i.invoke_typed::<i32, RefExtern>(&get, 9),
+        i.invoke_typed::<i32, RefExtern>(get, 9),
         Ok(RefExtern(None))
     );
 
     assert_eq!(
-        i.invoke_typed::<(i32, RefExtern, i32), ()>(&fill, (11, RefExtern(None), 0))
+        i.invoke_typed::<(i32, RefExtern, i32), ()>(fill, (11, RefExtern(None), 0))
             .err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
@@ -245,7 +245,7 @@ fn table_fill_test() {
     );
 
     assert_eq!(
-        i.invoke_typed::<(i32, RefExtern, i32), ()>(&fill, (11, RefExtern(None), 10))
+        i.invoke_typed::<(i32, RefExtern, i32), ()>(fill, (11, RefExtern(None), 10))
             .err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds

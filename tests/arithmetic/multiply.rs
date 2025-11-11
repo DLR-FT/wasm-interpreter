@@ -25,7 +25,7 @@ pub fn i32_multiply() {
         33,
         instance
             .invoke_typed(
-                &instance
+                instance
                     .get_function_by_name(DEFAULT_MODULE, "multiply")
                     .unwrap(),
                 11
@@ -36,7 +36,7 @@ pub fn i32_multiply() {
         0,
         instance
             .invoke_typed(
-                &instance
+                instance
                     .get_function_by_name(DEFAULT_MODULE, "multiply")
                     .unwrap(),
                 0
@@ -47,7 +47,7 @@ pub fn i32_multiply() {
         -30,
         instance
             .invoke_typed(
-                &instance
+                instance
                     .get_function_by_name(DEFAULT_MODULE, "multiply")
                     .unwrap(),
                 -10
@@ -59,7 +59,7 @@ pub fn i32_multiply() {
         i32::MAX - 5,
         instance
             .invoke_typed(
-                &instance
+                instance
                     .get_function_by_name(DEFAULT_MODULE, "multiply")
                     .unwrap(),
                 i32::MAX - 1
@@ -70,7 +70,7 @@ pub fn i32_multiply() {
         i32::MIN + 3,
         instance
             .invoke_typed(
-                &instance
+                instance
                     .get_function_by_name(DEFAULT_MODULE, "multiply")
                     .unwrap(),
                 i32::MIN + 1
@@ -94,19 +94,19 @@ pub fn i64_multiply() {
     assert_eq!(
         33_i64,
         instance
-            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), 11_i64)
+            .invoke_typed(instance.get_function_by_index(module, 0).unwrap(), 11_i64)
             .unwrap()
     );
     assert_eq!(
         0_i64,
         instance
-            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), 0_i64)
+            .invoke_typed(instance.get_function_by_index(module, 0).unwrap(), 0_i64)
             .unwrap()
     );
     assert_eq!(
         -30_i64,
         instance
-            .invoke_typed(&instance.get_function_by_index(module, 0).unwrap(), -10_i64)
+            .invoke_typed(instance.get_function_by_index(module, 0).unwrap(), -10_i64)
             .unwrap()
     );
 
@@ -114,7 +114,7 @@ pub fn i64_multiply() {
         i64::MAX - 5,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(module, 0).unwrap(),
+                instance.get_function_by_index(module, 0).unwrap(),
                 i64::MAX - 1
             )
             .unwrap()
@@ -123,7 +123,7 @@ pub fn i64_multiply() {
         i64::MIN + 3,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(module, 0).unwrap(),
+                instance.get_function_by_index(module, 0).unwrap(),
                 i64::MIN + 1
             )
             .unwrap()

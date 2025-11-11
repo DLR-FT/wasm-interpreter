@@ -31,7 +31,7 @@ pub fn i64_remainder_signed_simple() {
         0_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(module, 0).unwrap(),
+                instance.get_function_by_index(module, 0).unwrap(),
                 (20_i64, 2_i64)
             )
             .unwrap()
@@ -40,7 +40,7 @@ pub fn i64_remainder_signed_simple() {
         999_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(module, 0).unwrap(),
+                instance.get_function_by_index(module, 0).unwrap(),
                 (10_000_i64, 9_001_i64)
             )
             .unwrap()
@@ -49,7 +49,7 @@ pub fn i64_remainder_signed_simple() {
         -2_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(module, 0).unwrap(),
+                instance.get_function_by_index(module, 0).unwrap(),
                 (-20_i64, 3_i64)
             )
             .unwrap()
@@ -58,7 +58,7 @@ pub fn i64_remainder_signed_simple() {
         -2_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(module, 0).unwrap(),
+                instance.get_function_by_index(module, 0).unwrap(),
                 (-20_i64, -3_i64)
             )
             .unwrap()
@@ -67,7 +67,7 @@ pub fn i64_remainder_signed_simple() {
         2_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(module, 0).unwrap(),
+                instance.get_function_by_index(module, 0).unwrap(),
                 (20_i64, -3_i64)
             )
             .unwrap()
@@ -76,7 +76,7 @@ pub fn i64_remainder_signed_simple() {
         2_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(module, 0).unwrap(),
+                instance.get_function_by_index(module, 0).unwrap(),
                 (20_i64, 3_i64)
             )
             .unwrap()
@@ -85,7 +85,7 @@ pub fn i64_remainder_signed_simple() {
         0_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(module, 0).unwrap(),
+                instance.get_function_by_index(module, 0).unwrap(),
                 (i64::MIN, -1_i64)
             )
             .unwrap()
@@ -94,7 +94,7 @@ pub fn i64_remainder_signed_simple() {
         0_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(module, 0).unwrap(),
+                instance.get_function_by_index(module, 0).unwrap(),
                 (i64::MIN, 2_i64)
             )
             .unwrap()
@@ -111,7 +111,7 @@ pub fn i64_remainder_signed_panic_dividend_0() {
         .expect("instantiation failed");
 
     let result = instance.invoke_typed::<(i64, i64), i64>(
-        &instance.get_function_by_index(module, 0).unwrap(),
+        instance.get_function_by_index(module, 0).unwrap(),
         (222_i64, 0_i64),
     );
 
@@ -134,7 +134,7 @@ pub fn i64_remainder_unsigned_simple() {
         0_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(module, 0).unwrap(),
+                instance.get_function_by_index(module, 0).unwrap(),
                 (i64::MIN, 2_i64)
             )
             .unwrap()
@@ -143,7 +143,7 @@ pub fn i64_remainder_unsigned_simple() {
         i64::MIN,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(module, 0).unwrap(),
+                instance.get_function_by_index(module, 0).unwrap(),
                 (i64::MIN, -2_i64)
             )
             .unwrap()
@@ -152,7 +152,7 @@ pub fn i64_remainder_unsigned_simple() {
         (i64::MAX - 1),
         instance
             .invoke_typed(
-                &instance.get_function_by_index(module, 0).unwrap(),
+                instance.get_function_by_index(module, 0).unwrap(),
                 (-2_i64, i64::MIN)
             )
             .unwrap()
@@ -161,7 +161,7 @@ pub fn i64_remainder_unsigned_simple() {
         2_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(module, 0).unwrap(),
+                instance.get_function_by_index(module, 0).unwrap(),
                 (2_i64, i64::MIN)
             )
             .unwrap()
@@ -171,7 +171,7 @@ pub fn i64_remainder_unsigned_simple() {
         0_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(module, 0).unwrap(),
+                instance.get_function_by_index(module, 0).unwrap(),
                 (20_i64, 2_i64)
             )
             .unwrap()
@@ -180,7 +180,7 @@ pub fn i64_remainder_unsigned_simple() {
         999_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(module, 0).unwrap(),
+                instance.get_function_by_index(module, 0).unwrap(),
                 (10_000_i64, 9_001_i64)
             )
             .unwrap()
@@ -189,7 +189,7 @@ pub fn i64_remainder_unsigned_simple() {
         2_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(module, 0).unwrap(),
+                instance.get_function_by_index(module, 0).unwrap(),
                 (-20_i64, 3_i64)
             )
             .unwrap()
@@ -198,7 +198,7 @@ pub fn i64_remainder_unsigned_simple() {
         -20_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(module, 0).unwrap(),
+                instance.get_function_by_index(module, 0).unwrap(),
                 (-20_i64, -3_i64)
             )
             .unwrap()
@@ -207,7 +207,7 @@ pub fn i64_remainder_unsigned_simple() {
         20_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(module, 0).unwrap(),
+                instance.get_function_by_index(module, 0).unwrap(),
                 (20_i64, -3_i64)
             )
             .unwrap()
@@ -216,7 +216,7 @@ pub fn i64_remainder_unsigned_simple() {
         2_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(module, 0).unwrap(),
+                instance.get_function_by_index(module, 0).unwrap(),
                 (20_i64, 3_i64)
             )
             .unwrap()
@@ -225,7 +225,7 @@ pub fn i64_remainder_unsigned_simple() {
         i64::MIN,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(module, 0).unwrap(),
+                instance.get_function_by_index(module, 0).unwrap(),
                 (i64::MIN, -1_i64)
             )
             .unwrap()
@@ -234,7 +234,7 @@ pub fn i64_remainder_unsigned_simple() {
         0_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(module, 0).unwrap(),
+                instance.get_function_by_index(module, 0).unwrap(),
                 (i64::MIN, 2_i64)
             )
             .unwrap()
@@ -251,7 +251,7 @@ pub fn i64_remainder_unsigned_panic_dividend_0() {
         .expect("instantiation failed");
 
     let result = instance.invoke_typed::<(i64, i64), i64>(
-        &instance.get_function_by_index(module, 0).unwrap(),
+        instance.get_function_by_index(module, 0).unwrap(),
         (222, 0),
     );
 
@@ -274,7 +274,7 @@ pub fn i32_remainder_signed_simple() {
         0,
         instance
             .invoke_typed(
-                &instance
+                instance
                     .get_function_by_name(DEFAULT_MODULE, "rem_s")
                     .unwrap(),
                 (20, 2)
@@ -285,7 +285,7 @@ pub fn i32_remainder_signed_simple() {
         999,
         instance
             .invoke_typed(
-                &instance
+                instance
                     .get_function_by_name(DEFAULT_MODULE, "rem_s")
                     .unwrap(),
                 (10_000, 9_001)
@@ -296,7 +296,7 @@ pub fn i32_remainder_signed_simple() {
         -2,
         instance
             .invoke_typed(
-                &instance
+                instance
                     .get_function_by_name(DEFAULT_MODULE, "rem_s")
                     .unwrap(),
                 (-20, 3)
@@ -307,7 +307,7 @@ pub fn i32_remainder_signed_simple() {
         -2,
         instance
             .invoke_typed(
-                &instance
+                instance
                     .get_function_by_name(DEFAULT_MODULE, "rem_s")
                     .unwrap(),
                 (-20, -3)
@@ -318,7 +318,7 @@ pub fn i32_remainder_signed_simple() {
         2,
         instance
             .invoke_typed(
-                &instance
+                instance
                     .get_function_by_name(DEFAULT_MODULE, "rem_s")
                     .unwrap(),
                 (20, -3)
@@ -329,7 +329,7 @@ pub fn i32_remainder_signed_simple() {
         2,
         instance
             .invoke_typed(
-                &instance
+                instance
                     .get_function_by_name(DEFAULT_MODULE, "rem_s")
                     .unwrap(),
                 (20, 3)
@@ -340,7 +340,7 @@ pub fn i32_remainder_signed_simple() {
         0,
         instance
             .invoke_typed(
-                &instance
+                instance
                     .get_function_by_name(DEFAULT_MODULE, "rem_s")
                     .unwrap(),
                 (i32::MIN, -1)
@@ -351,7 +351,7 @@ pub fn i32_remainder_signed_simple() {
         0,
         instance
             .invoke_typed(
-                &instance
+                instance
                     .get_function_by_name(DEFAULT_MODULE, "rem_s")
                     .unwrap(),
                 (i32::MIN, 2)
@@ -370,7 +370,7 @@ pub fn remainder_signed_panic_dividend_0() {
         .expect("instantiation failed");
 
     let result = instance.invoke_typed::<(i32, i32), i32>(
-        &instance
+        instance
             .get_function_by_name(DEFAULT_MODULE, "rem_s")
             .unwrap(),
         (222, 0),
@@ -396,7 +396,7 @@ pub fn i32_remainder_unsigned_simple() {
         0,
         instance
             .invoke_typed(
-                &instance
+                instance
                     .get_function_by_name(DEFAULT_MODULE, "rem_u")
                     .unwrap(),
                 (i32::MIN, 2)
@@ -407,7 +407,7 @@ pub fn i32_remainder_unsigned_simple() {
         i32::MIN,
         instance
             .invoke_typed(
-                &instance
+                instance
                     .get_function_by_name(DEFAULT_MODULE, "rem_u")
                     .unwrap(),
                 (i32::MIN, -2)
@@ -418,7 +418,7 @@ pub fn i32_remainder_unsigned_simple() {
         -(i32::MIN + 2),
         instance
             .invoke_typed(
-                &instance
+                instance
                     .get_function_by_name(DEFAULT_MODULE, "rem_u")
                     .unwrap(),
                 (-2, i32::MIN)
@@ -429,7 +429,7 @@ pub fn i32_remainder_unsigned_simple() {
         2,
         instance
             .invoke_typed(
-                &instance
+                instance
                     .get_function_by_name(DEFAULT_MODULE, "rem_u")
                     .unwrap(),
                 (2, i32::MIN)
@@ -440,7 +440,7 @@ pub fn i32_remainder_unsigned_simple() {
         i32::MAX,
         instance
             .invoke_typed(
-                &instance
+                instance
                     .get_function_by_name(DEFAULT_MODULE, "rem_u")
                     .unwrap(),
                 (i32::MAX, i32::MIN)
@@ -452,7 +452,7 @@ pub fn i32_remainder_unsigned_simple() {
         0,
         instance
             .invoke_typed(
-                &instance
+                instance
                     .get_function_by_name(DEFAULT_MODULE, "rem_u")
                     .unwrap(),
                 (20, 2)
@@ -463,7 +463,7 @@ pub fn i32_remainder_unsigned_simple() {
         999,
         instance
             .invoke_typed(
-                &instance
+                instance
                     .get_function_by_name(DEFAULT_MODULE, "rem_u")
                     .unwrap(),
                 (10_000, 9_001)
@@ -474,7 +474,7 @@ pub fn i32_remainder_unsigned_simple() {
         2,
         instance
             .invoke_typed(
-                &instance
+                instance
                     .get_function_by_name(DEFAULT_MODULE, "rem_u")
                     .unwrap(),
                 (-20, 3)
@@ -485,7 +485,7 @@ pub fn i32_remainder_unsigned_simple() {
         -20,
         instance
             .invoke_typed(
-                &instance
+                instance
                     .get_function_by_name(DEFAULT_MODULE, "rem_u")
                     .unwrap(),
                 (-20, -3)
@@ -496,7 +496,7 @@ pub fn i32_remainder_unsigned_simple() {
         20,
         instance
             .invoke_typed(
-                &instance
+                instance
                     .get_function_by_name(DEFAULT_MODULE, "rem_u")
                     .unwrap(),
                 (20, -3)
@@ -507,7 +507,7 @@ pub fn i32_remainder_unsigned_simple() {
         2,
         instance
             .invoke_typed(
-                &instance
+                instance
                     .get_function_by_name(DEFAULT_MODULE, "rem_u")
                     .unwrap(),
                 (20, 3)
@@ -518,7 +518,7 @@ pub fn i32_remainder_unsigned_simple() {
         i32::MIN,
         instance
             .invoke_typed(
-                &instance
+                instance
                     .get_function_by_name(DEFAULT_MODULE, "rem_u")
                     .unwrap(),
                 (i32::MIN, -1)
@@ -529,7 +529,7 @@ pub fn i32_remainder_unsigned_simple() {
         0,
         instance
             .invoke_typed(
-                &instance
+                instance
                     .get_function_by_name(DEFAULT_MODULE, "rem_u")
                     .unwrap(),
                 (i32::MIN, 2)
@@ -549,7 +549,7 @@ pub fn i32_remainder_unsigned_panic_dividend_0() {
         .expect("instantiation failed");
 
     let result = instance.invoke_typed::<(i32, i32), i32>(
-        &instance
+        instance
             .get_function_by_name(DEFAULT_MODULE, "rem_u")
             .unwrap(),
         (222, 0),

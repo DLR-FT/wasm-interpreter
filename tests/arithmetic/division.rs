@@ -35,7 +35,7 @@ pub fn i32_division_signed_simple() {
         10,
         instance
             .invoke_typed(
-                &instance
+                instance
                     .get_function_by_name(DEFAULT_MODULE, "signed_division")
                     .unwrap(),
                 (20, 2)
@@ -46,7 +46,7 @@ pub fn i32_division_signed_simple() {
         9_001,
         instance
             .invoke_typed(
-                &instance
+                instance
                     .get_function_by_name(DEFAULT_MODULE, "signed_division")
                     .unwrap(),
                 (81_018_001, 9_001)
@@ -57,7 +57,7 @@ pub fn i32_division_signed_simple() {
         -10,
         instance
             .invoke_typed(
-                &instance
+                instance
                     .get_function_by_name(DEFAULT_MODULE, "signed_division")
                     .unwrap(),
                 (20, -2)
@@ -68,7 +68,7 @@ pub fn i32_division_signed_simple() {
         10,
         instance
             .invoke_typed(
-                &instance
+                instance
                     .get_function_by_name(DEFAULT_MODULE, "signed_division")
                     .unwrap(),
                 (-20, -2)
@@ -79,7 +79,7 @@ pub fn i32_division_signed_simple() {
         -10,
         instance
             .invoke_typed(
-                &instance
+                instance
                     .get_function_by_name(DEFAULT_MODULE, "signed_division")
                     .unwrap(),
                 (-20, 2)
@@ -90,7 +90,7 @@ pub fn i32_division_signed_simple() {
         10,
         instance
             .invoke_typed(
-                &instance
+                instance
                     .get_function_by_name(DEFAULT_MODULE, "signed_division")
                     .unwrap(),
                 (20, 2)
@@ -101,7 +101,7 @@ pub fn i32_division_signed_simple() {
         9_001,
         instance
             .invoke_typed(
-                &instance
+                instance
                     .get_function_by_name(DEFAULT_MODULE, "signed_division")
                     .unwrap(),
                 (81_018_001, 9_001)
@@ -112,7 +112,7 @@ pub fn i32_division_signed_simple() {
         -10,
         instance
             .invoke_typed(
-                &instance
+                instance
                     .get_function_by_name(DEFAULT_MODULE, "signed_division")
                     .unwrap(),
                 (20, -2)
@@ -123,7 +123,7 @@ pub fn i32_division_signed_simple() {
         10,
         instance
             .invoke_typed(
-                &instance
+                instance
                     .get_function_by_name(DEFAULT_MODULE, "signed_division")
                     .unwrap(),
                 (-20, -2)
@@ -134,7 +134,7 @@ pub fn i32_division_signed_simple() {
         -10,
         instance
             .invoke_typed(
-                &instance
+                instance
                     .get_function_by_name(DEFAULT_MODULE, "signed_division")
                     .unwrap(),
                 (-20, 2)
@@ -156,7 +156,7 @@ pub fn i32_division_signed_panic_dividend_0() {
         .expect("instantiation failed");
 
     let result = instance.invoke_typed::<(i32, i32), i32>(
-        &instance
+        instance
             .get_function_by_name(DEFAULT_MODULE, "signed_division")
             .unwrap(),
         (222, 0),
@@ -181,7 +181,7 @@ pub fn i32_division_signed_panic_result_unrepresentable() {
         .expect("instantiation failed");
 
     let result = instance.invoke_typed::<(i32, i32), i32>(
-        &instance
+        instance
             .get_function_by_name(DEFAULT_MODULE, "signed_division")
             .unwrap(),
         (i32::MIN, -1),
@@ -209,7 +209,7 @@ pub fn i32_division_unsigned_simple() {
         10,
         instance
             .invoke_typed(
-                &instance
+                instance
                     .get_function_by_name(DEFAULT_MODULE, "unsigned_division")
                     .unwrap(),
                 (20, 2)
@@ -220,7 +220,7 @@ pub fn i32_division_unsigned_simple() {
         9_001,
         instance
             .invoke_typed(
-                &instance
+                instance
                     .get_function_by_name(DEFAULT_MODULE, "unsigned_division")
                     .unwrap(),
                 (81_018_001, 9_001)
@@ -231,7 +231,7 @@ pub fn i32_division_unsigned_simple() {
         0,
         instance
             .invoke_typed(
-                &instance
+                instance
                     .get_function_by_name(DEFAULT_MODULE, "unsigned_division")
                     .unwrap(),
                 (i32::MIN, -1)
@@ -243,7 +243,7 @@ pub fn i32_division_unsigned_simple() {
         0,
         instance
             .invoke_typed(
-                &instance
+                instance
                     .get_function_by_name(DEFAULT_MODULE, "unsigned_division")
                     .unwrap(),
                 (i32::MIN, -1)
@@ -254,7 +254,7 @@ pub fn i32_division_unsigned_simple() {
         -20,
         instance
             .invoke_typed(
-                &instance
+                instance
                     .get_function_by_name(DEFAULT_MODULE, "unsigned_division")
                     .unwrap(),
                 (-20, 1)
@@ -265,7 +265,7 @@ pub fn i32_division_unsigned_simple() {
         2147483638,
         instance
             .invoke_typed(
-                &instance
+                instance
                     .get_function_by_name(DEFAULT_MODULE, "unsigned_division")
                     .unwrap(),
                 (-20, 2)
@@ -276,7 +276,7 @@ pub fn i32_division_unsigned_simple() {
         1431655758,
         instance
             .invoke_typed(
-                &instance
+                instance
                     .get_function_by_name(DEFAULT_MODULE, "unsigned_division")
                     .unwrap(),
                 (-20, 3)
@@ -287,7 +287,7 @@ pub fn i32_division_unsigned_simple() {
         1073741819,
         instance
             .invoke_typed(
-                &instance
+                instance
                     .get_function_by_name(DEFAULT_MODULE, "unsigned_division")
                     .unwrap(),
                 (-20, 4)
@@ -309,7 +309,7 @@ pub fn i32_division_unsigned_panic_dividend_0() {
         .expect("instantiation failed");
 
     let result = instance.invoke_typed::<(i32, i32), i32>(
-        &instance
+        instance
             .get_function_by_name(DEFAULT_MODULE, "unsigned_division")
             .unwrap(),
         (222, 0),
@@ -337,7 +337,7 @@ pub fn i64_division_signed_simple() {
         10_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(module, 0).unwrap(),
+                instance.get_function_by_index(module, 0).unwrap(),
                 (20_i64, 2_i64)
             )
             .unwrap()
@@ -346,7 +346,7 @@ pub fn i64_division_signed_simple() {
         9_001_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(module, 0).unwrap(),
+                instance.get_function_by_index(module, 0).unwrap(),
                 (81_018_001_i64, 9_001_i64)
             )
             .unwrap()
@@ -355,7 +355,7 @@ pub fn i64_division_signed_simple() {
         -10_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(module, 0).unwrap(),
+                instance.get_function_by_index(module, 0).unwrap(),
                 (20_i64, -2_i64)
             )
             .unwrap()
@@ -364,7 +364,7 @@ pub fn i64_division_signed_simple() {
         10_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(module, 0).unwrap(),
+                instance.get_function_by_index(module, 0).unwrap(),
                 (-20_i64, -2_i64)
             )
             .unwrap()
@@ -373,7 +373,7 @@ pub fn i64_division_signed_simple() {
         -10_i64,
         instance
             .invoke_typed(
-                &instance.get_function_by_index(module, 0).unwrap(),
+                instance.get_function_by_index(module, 0).unwrap(),
                 (-20_i64, 2_i64)
             )
             .unwrap()

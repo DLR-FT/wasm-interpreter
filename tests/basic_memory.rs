@@ -21,7 +21,7 @@ fn basic_memory() {
         .expect("instantiation failed");
 
     let _ = instance.invoke_typed::<i32, ()>(
-        &instance
+        instance
             .get_function_by_name(DEFAULT_MODULE, "store_num")
             .unwrap(),
         42,
@@ -30,7 +30,7 @@ fn basic_memory() {
         42,
         instance
             .invoke_typed(
-                &instance
+                instance
                     .get_function_by_name(DEFAULT_MODULE, "load_num")
                     .unwrap(),
                 ()
@@ -51,14 +51,14 @@ fn f32_basic_memory() {
 
     instance
         .invoke_typed::<f32, ()>(
-            &instance.get_function_by_index(module, 0).unwrap(),
+            instance.get_function_by_index(module, 0).unwrap(),
             133.7_f32,
         )
         .unwrap();
     assert_eq!(
         133.7_f32,
         instance
-            .invoke_typed(&instance.get_function_by_index(module, 1).unwrap(), ())
+            .invoke_typed(instance.get_function_by_index(module, 1).unwrap(), ())
             .unwrap()
     );
 }

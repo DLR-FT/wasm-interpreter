@@ -44,10 +44,10 @@ fn polymorphic_select_test() {
 
     let select_test_fn = instance.get_function_by_index(module, 0).unwrap();
 
-    assert_eq!(4, instance.invoke_typed(&select_test_fn, 0).unwrap());
-    assert_eq!(8, instance.invoke_typed(&select_test_fn, 1).unwrap());
-    assert_eq!(15, instance.invoke_typed(&select_test_fn, 2).unwrap());
-    assert_eq!(16, instance.invoke_typed(&select_test_fn, 3).unwrap());
+    assert_eq!(4, instance.invoke_typed(select_test_fn, 0).unwrap());
+    assert_eq!(8, instance.invoke_typed(select_test_fn, 1).unwrap());
+    assert_eq!(15, instance.invoke_typed(select_test_fn, 2).unwrap());
+    assert_eq!(16, instance.invoke_typed(select_test_fn, 3).unwrap());
 }
 
 #[test_log::test]
@@ -64,8 +64,8 @@ fn typed_select_test() {
 
     let select_test_fn = instance.get_function_by_index(module, 0).unwrap();
 
-    assert_eq!(4, instance.invoke_typed(&select_test_fn, 0).unwrap());
-    assert_eq!(8, instance.invoke_typed(&select_test_fn, 1).unwrap());
-    assert_eq!(15, instance.invoke_typed(&select_test_fn, 2).unwrap());
-    assert_eq!(16, instance.invoke_typed(&select_test_fn, 3).unwrap());
+    assert_eq!(4, instance.invoke_typed(select_test_fn, 0).unwrap());
+    assert_eq!(8, instance.invoke_typed(select_test_fn, 1).unwrap());
+    assert_eq!(15, instance.invoke_typed(select_test_fn, 2).unwrap());
+    assert_eq!(16, instance.invoke_typed(select_test_fn, 3).unwrap());
 }

@@ -7,7 +7,6 @@ use bumpalo::Bump;
 use itertools::enumerate;
 use log::debug;
 use wasm::addrs::ModuleAddr;
-use wasm::function_ref::FunctionRef;
 use wasm::ExternVal;
 use wasm::RefType;
 use wasm::RuntimeError;
@@ -460,8 +459,8 @@ fn run_directive<'a>(
                 get_command(contents, invoke.span),
             ))?;
 
-            let function_ref = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
-                let func_addr = interpreter
+            let func_addr = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
+                interpreter
                     .store
                     .instance_export(module, invoke.name)
                     .map_err(WastError::WasmRuntimeError)
@@ -477,9 +476,7 @@ fn run_directive<'a>(
                             get_linenum(contents, invoke.span),
                             get_command(contents, invoke.span),
                         )
-                    })?;
-
-                Ok(FunctionRef { func_addr })
+                    })
             }))
             .map_err(|panic_error| {
                 ScriptError::new(
@@ -492,7 +489,7 @@ fn run_directive<'a>(
             })??;
 
             catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
-                interpreter.invoke(&function_ref, args)
+                interpreter.invoke(func_addr, args)
             }))
             .map_err(|panic_error| {
                 ScriptError::new(
@@ -559,22 +556,20 @@ fn execute_assert_return(
             }
             .ok_or(WastError::UnknownModuleReferenced)?;
 
-            let function_ref = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
-                let func_addr = interpreter
+            let func_addr = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
+                interpreter
                     .store
                     .instance_export(module, invoke_info.name)
                     .map_err(WastError::WasmRuntimeError)
                     .and_then(|extern_val| match extern_val {
                         ExternVal::Func(func) => Ok(func),
                         _ => Err(WastError::UnknownFunctionReferenced),
-                    })?;
-
-                Ok::<FunctionRef, WastError>(FunctionRef { func_addr })
+                    })
             }))
             .map_err(WastError::Panic)??;
 
             let actual = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
-                interpreter.invoke(&function_ref, args)
+                interpreter.invoke(func_addr, args)
             }))
             .map_err(WastError::Panic)??;
 
@@ -644,22 +639,20 @@ fn execute<'a>(
             }
             .ok_or(WastError::UnknownModuleReferenced)?;
 
-            let function_ref = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
-                let func_addr = interpreter
+            let func_addr = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
+                interpreter
                     .store
                     .instance_export(module, invoke_info.name)
                     .map_err(WastError::WasmRuntimeError)
                     .and_then(|extern_val| match extern_val {
                         ExternVal::Func(func) => Ok(func),
                         _ => Err(WastError::UnknownFunctionReferenced),
-                    })?;
-
-                Ok::<FunctionRef, WastError>(FunctionRef { func_addr })
+                    })
             }))
             .map_err(WastError::Panic)??;
 
             catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
-                interpreter.invoke(&function_ref, args)
+                interpreter.invoke(func_addr, args)
             }))
             .map_err(WastError::Panic)??;
 
