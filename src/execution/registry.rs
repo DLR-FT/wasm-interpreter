@@ -1,3 +1,4 @@
+use crate::addrs::ModuleAddr;
 use crate::instances::ModuleInst;
 use crate::RuntimeError;
 
@@ -12,7 +13,10 @@ struct ImportKey {
     name: Cow<'static, str>,
 }
 #[derive(Default, Debug)]
-pub struct Registry(BTreeMap<ImportKey, ExternVal>);
+pub struct Registry {
+    extern_vals: BTreeMap<ImportKey, ExternVal>,
+    modules: BTreeMap<Cow<'static, str>, ModuleAddr>,
+}
 
 impl Registry {
     pub fn register(
@@ -22,7 +26,7 @@ impl Registry {
         extern_val: ExternVal,
     ) -> Result<(), RuntimeError> {
         if self
-            .0
+            .extern_vals
             .insert(ImportKey { module_name, name }, extern_val)
             .is_some()
         {
@@ -40,16 +44,23 @@ impl Registry {
         // Note: We cannot do a `&str` lookup on a [`String`] map key.
         // Thus we have to use `Cow<'static, str>` as a key
         // (at least this prevents allocations with static names).
-        self.0
+        self.extern_vals
             .get(&ImportKey { module_name, name })
             .ok_or(RuntimeError::UnknownImport)
+    }
+
+    pub fn lookup_module(&self, module_name: Cow<'static, str>) -> Option<ModuleAddr> {
+        self.modules.get(&module_name).copied()
     }
 
     pub fn register_module(
         &mut self,
         module_name: Cow<'static, str>,
         module_inst: &ModuleInst,
+        module_addr: ModuleAddr,
     ) -> Result<(), RuntimeError> {
+        self.modules.insert(module_name.clone(), module_addr);
+
         for (entity_name, extern_val) in &module_inst.exports {
             // FIXME this clones module_name. Maybe prevent by using `Cow<'static, Arc<str>>`.
             self.register(
