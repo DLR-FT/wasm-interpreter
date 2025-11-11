@@ -1098,6 +1098,36 @@ impl ExternVal {
     }
 }
 
+impl ExternVal {
+    pub fn as_func(self) -> Option<FuncAddr> {
+        match self {
+            ExternVal::Func(func_addr) => Some(func_addr),
+            _ => None,
+        }
+    }
+
+    pub fn as_table(self) -> Option<TableAddr> {
+        match self {
+            ExternVal::Table(table_addr) => Some(table_addr),
+            _ => None,
+        }
+    }
+
+    pub fn as_mem(self) -> Option<MemAddr> {
+        match self {
+            ExternVal::Mem(mem_addr) => Some(mem_addr),
+            _ => None,
+        }
+    }
+
+    pub fn as_global(self) -> Option<GlobalAddr> {
+        match self {
+            ExternVal::Global(global_addr) => Some(global_addr),
+            _ => None,
+        }
+    }
+}
+
 /// common convention functions defined for lists of ExternVals, ExternTypes, Exports
 /// <https://webassembly.github.io/spec/core/exec/runtime.html#conventions>
 /// <https://webassembly.github.io/spec/core/syntax/types.html#id3>
@@ -1115,42 +1145,18 @@ where
     I: Iterator<Item = &'a ExternVal>,
 {
     fn funcs(self) -> impl Iterator<Item = FuncAddr> {
-        self.filter_map(|extern_val| {
-            if let ExternVal::Func(func_addr) = extern_val {
-                Some(*func_addr)
-            } else {
-                None
-            }
-        })
+        self.filter_map(|extern_val| extern_val.as_func())
     }
 
     fn tables(self) -> impl Iterator<Item = TableAddr> {
-        self.filter_map(|extern_val| {
-            if let ExternVal::Table(table_addr) = extern_val {
-                Some(*table_addr)
-            } else {
-                None
-            }
-        })
+        self.filter_map(|extern_val| extern_val.as_table())
     }
 
     fn mems(self) -> impl Iterator<Item = MemAddr> {
-        self.filter_map(|extern_val| {
-            if let ExternVal::Mem(mem_addr) = extern_val {
-                Some(*mem_addr)
-            } else {
-                None
-            }
-        })
+        self.filter_map(|extern_val| extern_val.as_mem())
     }
 
     fn globals(self) -> impl Iterator<Item = GlobalAddr> {
-        self.filter_map(|extern_val| {
-            if let ExternVal::Global(global_addr) = extern_val {
-                Some(*global_addr)
-            } else {
-                None
-            }
-        })
+        self.filter_map(|extern_val| extern_val.as_global())
     }
 }

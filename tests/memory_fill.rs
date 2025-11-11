@@ -17,7 +17,7 @@
 
 // use core::slice::SlicePattern;
 
-use wasm::{validate, ExternVal, RuntimeInstance, DEFAULT_MODULE};
+use wasm::{validate, RuntimeInstance, DEFAULT_MODULE};
 
 #[test_log::test]
 fn memory_fill() {
@@ -35,9 +35,12 @@ fn memory_fill() {
         .expect("instantiation failed");
 
     let fill = i.get_function_by_name(DEFAULT_MODULE, "fill").unwrap();
-    let ExternVal::Mem(mem) = i.store.instance_export(module, "mem").unwrap() else {
-        panic!("expected memory")
-    };
+    let mem = i
+        .store
+        .instance_export(module, "mem")
+        .unwrap()
+        .as_mem()
+        .expect("memory");
 
     i.invoke_typed::<(), ()>(&fill, ()).unwrap();
 

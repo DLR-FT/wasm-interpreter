@@ -1,6 +1,6 @@
 use core::panic;
 use log::info;
-use wasm::{resumable::RunState, validate, ExternVal, RuntimeInstance};
+use wasm::{resumable::RunState, validate, RuntimeInstance};
 
 #[test_log::test]
 
@@ -71,21 +71,19 @@ fn resumable() {
         .get_function_by_name("module", "add_global_1")
         .unwrap();
 
-    let ExternVal::Global(global_0) = runtime_instance
+    let global_0 = runtime_instance
         .store
         .instance_export(module, "global_0")
         .unwrap()
-    else {
-        panic!("expected global");
-    };
+        .as_global()
+        .expect("global");
 
-    let ExternVal::Global(global_1) = runtime_instance
+    let global_1 = runtime_instance
         .store
         .instance_export(module, "global_1")
         .unwrap()
-    else {
-        panic!("expected global");
-    };
+        .as_global()
+        .expect("global");
 
     let resumable_ref_mult = runtime_instance
         .create_resumable(&mult_global_0, vec![], 0)
@@ -172,13 +170,12 @@ fn resumable_internal_state() {
     let add_global_0 = runtime_instance
         .get_function_by_name("module", "add_global_0")
         .unwrap();
-    let ExternVal::Global(global_0) = runtime_instance
+    let global_0 = runtime_instance
         .store
         .instance_export(module, "global_0")
         .unwrap()
-    else {
-        panic!("expected global");
-    };
+        .as_global()
+        .expect("global");
     let resumable_ref_add = runtime_instance
         .create_resumable(&add_global_0, vec![], 4)
         .unwrap();
