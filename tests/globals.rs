@@ -1,4 +1,4 @@
-use wasm::{ExternVal, GlobalType, NumType, ValType, Value, DEFAULT_MODULE};
+use wasm::{GlobalType, NumType, ValType, Value, DEFAULT_MODULE};
 
 /// The WASM program has one mutable global initialized with a constant 3.
 /// It exports two methods:
@@ -177,14 +177,18 @@ fn embedder_interface() {
     let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let ExternVal::Global(global_0) = instance.store.instance_export(module, "global_0").unwrap()
-    else {
-        panic!("expected global");
-    };
-    let ExternVal::Global(global_1) = instance.store.instance_export(module, "global_1").unwrap()
-    else {
-        panic!("expected global");
-    };
+    let global_0 = instance
+        .store
+        .instance_export(module, "global_0")
+        .unwrap()
+        .as_global()
+        .expect("global");
+    let global_1 = instance
+        .store
+        .instance_export(module, "global_1")
+        .unwrap()
+        .as_global()
+        .expect("global");
 
     assert_eq!(instance.store.global_read(global_0), Value::I32(1));
     assert_eq!(instance.store.global_read(global_1), Value::I64(3));
