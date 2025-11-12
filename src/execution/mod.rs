@@ -24,6 +24,7 @@ pub mod const_interpreter_loop;
 pub mod error;
 pub mod interop;
 mod interpreter_loop;
+pub mod linker;
 pub(crate) mod little_endian;
 pub mod registry;
 pub mod resumable;
