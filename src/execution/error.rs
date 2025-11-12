@@ -27,6 +27,12 @@ pub enum RuntimeError {
     /// The number of module exports did not match the number of extern values
     /// provided for instantiation.
     ExternValsLenMismatch,
+    /// Happens when a definition would cause an extern to be defined with a
+    /// module name and name for which an extern already exists.
+    DuplicateExternDefinition,
+
+    /// An import could not be resolved because no extern value existed for it.
+    UnableToResolveImport,
 }
 
 impl Display for RuntimeError {
@@ -70,6 +76,12 @@ impl Display for RuntimeError {
             }
             RuntimeError::ExternValsLenMismatch => {
                 f.write_str("The number of module exports did not match the number of extern values provided for instantiation.")
+            }
+            RuntimeError::DuplicateExternDefinition => {
+                f.write_str("Linking failed because of a duplicate definition of some extern value")
+            }
+            RuntimeError::UnableToResolveImport => {
+                f.write_str("Linking failed because an import could not be resolved")
             }
         }
     }
