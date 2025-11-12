@@ -323,7 +323,7 @@ impl<'b, T: Config> Store<'b, T> {
                     table_idx: table_idx_i,
                     init_expr: einstr_i,
                 }) => {
-                    let n = elem_items.len() as i32;
+                    let n = elem_items.len() as u32;
                     // equivalent to init.len() in spec
                     // instantiation step 14:
                     // TODO (for now, we are doing hopefully what is equivalent to it)
@@ -371,7 +371,7 @@ impl<'b, T: Config> Store<'b, T> {
                     memory_idx,
                     offset: dinstr_i,
                 }) => {
-                    let n = init.len() as i32;
+                    let n = init.len() as u32;
                     // assert: mem_idx is 0
                     if *memory_idx != 0 {
                         // TODO fix error
