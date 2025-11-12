@@ -985,7 +985,6 @@ pub(super) fn run<T: Config>(
                 trace!("Instruction: memory.size [] -> [{}]", size);
             }
             MEMORY_GROW => {
-                decrement_fuel!(T::get_flat_cost(MEMORY_GROW));
                 let mem_idx = wasm.read_u8().unwrap_validated() as usize;
                 let mem_addr = *store
                     .modules
@@ -997,6 +996,19 @@ pub(super) fn run<T: Config>(
                 let sz: u32 = mem.size() as u32;
 
                 let n: u32 = stack.pop_value().try_into().unwrap_validated();
+                // decrement fuel, but push n back if it fails
+                let cost = T::get_flat_cost(MEMORY_GROW) + n * T::get_cost_per_element(MEMORY_GROW);
+                if let Some(fuel) = &mut resumable.maybe_fuel {
+                    if *fuel >= cost {
+                        *fuel -= cost;
+                    } else {
+                        stack.push_value::<T>(Value::I32(n)).unwrap_validated(); // we are pushing back what was just popped, this can't panic.
+                        resumable.current_func_addr = current_func_addr;
+                        resumable.pc = wasm.pc - prev_pc; // the instruction was fetched already, we roll this back
+                        resumable.stp = stp;
+                        return Ok(NonZeroU32::new(cost - *fuel));
+                    }
+                }
 
                 // TODO this instruction is non-deterministic w.r.t. spec, and can fail if the embedder wills it.
                 // for now we execute it always according to the following match expr.
@@ -2467,7 +2479,6 @@ pub(super) fn run<T: Config>(
                     // See https://webassembly.github.io/bulk-memory-operations/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-init-x
                     // Copy a region from a data segment into memory
                     MEMORY_INIT => {
-                        decrement_fuel!(T::get_fc_extension_flat_cost(MEMORY_INIT));
                         //  mappings:
                         //      n => number of bytes to copy
                         //      s => starting pointer in the data segment
@@ -2475,7 +2486,22 @@ pub(super) fn run<T: Config>(
                         let data_idx = wasm.read_var_u32().unwrap_validated() as DataIdx;
                         let mem_idx = wasm.read_u8().unwrap_validated() as usize;
 
-                        let n: i32 = stack.pop_value().try_into().unwrap_validated();
+                        let n: u32 = stack.pop_value().try_into().unwrap_validated();
+                        // decrement fuel, but push n back if it fails
+                        let cost = T::get_fc_extension_flat_cost(MEMORY_INIT)
+                            + n * T::get_fc_extension_cost_per_element(MEMORY_INIT);
+                        if let Some(fuel) = &mut resumable.maybe_fuel {
+                            if *fuel >= cost {
+                                *fuel -= cost;
+                            } else {
+                                stack.push_value::<T>(Value::I32(n)).unwrap_validated(); // we are pushing back what was just popped, this can't panic.
+                                resumable.current_func_addr = current_func_addr;
+                                resumable.pc = wasm.pc - prev_pc; // the instruction was fetched already, we roll this back
+                                resumable.stp = stp;
+                                return Ok(NonZeroU32::new(cost - *fuel));
+                            }
+                        }
+
                         let s: i32 = stack.pop_value().try_into().unwrap_validated();
                         let d: i32 = stack.pop_value().try_into().unwrap_validated();
 
@@ -2498,7 +2524,6 @@ pub(super) fn run<T: Config>(
                     }
                     // See https://webassembly.github.io/bulk-memory-operations/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-copy
                     MEMORY_COPY => {
-                        decrement_fuel!(T::get_fc_extension_flat_cost(MEMORY_COPY));
                         //  mappings:
                         //      n => number of bytes to copy
                         //      s => source address to copy from
@@ -2507,7 +2532,23 @@ pub(super) fn run<T: Config>(
                             wasm.read_u8().unwrap_validated() as usize,
                             wasm.read_u8().unwrap_validated() as usize,
                         );
-                        let n: i32 = stack.pop_value().try_into().unwrap_validated();
+
+                        let n: u32 = stack.pop_value().try_into().unwrap_validated();
+                        // decrement fuel, but push n back if it fails
+                        let cost = T::get_fc_extension_flat_cost(MEMORY_COPY)
+                            + n * T::get_fc_extension_cost_per_element(MEMORY_COPY);
+                        if let Some(fuel) = &mut resumable.maybe_fuel {
+                            if *fuel >= cost {
+                                *fuel -= cost;
+                            } else {
+                                stack.push_value::<T>(Value::I32(n)).unwrap_validated(); // we are pushing back what was just popped, this can't panic.
+                                resumable.current_func_addr = current_func_addr;
+                                resumable.pc = wasm.pc - prev_pc; // the instruction was fetched already, we roll this back
+                                resumable.stp = stp;
+                                return Ok(NonZeroU32::new(cost - *fuel));
+                            }
+                        }
+
                         let s: i32 = stack.pop_value().try_into().unwrap_validated();
                         let d: i32 = stack.pop_value().try_into().unwrap_validated();
 
@@ -2534,7 +2575,6 @@ pub(super) fn run<T: Config>(
                     }
                     // See https://webassembly.github.io/bulk-memory-operations/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-fill
                     MEMORY_FILL => {
-                        decrement_fuel!(T::get_fc_extension_flat_cost(MEMORY_FILL));
                         //  mappings:
                         //      n => number of bytes to update
                         //      val => the value to set each byte to (must be < 256)
@@ -2547,7 +2587,23 @@ pub(super) fn run<T: Config>(
                             .get(mem_idx)
                             .unwrap_validated();
                         let mem = store.memories.get(mem_addr);
-                        let n: i32 = stack.pop_value().try_into().unwrap_validated();
+
+                        let n: u32 = stack.pop_value().try_into().unwrap_validated();
+                        // decrement fuel, but push n back if it fails
+                        let cost = T::get_fc_extension_flat_cost(MEMORY_FILL)
+                            + n * T::get_fc_extension_cost_per_element(MEMORY_FILL);
+                        if let Some(fuel) = &mut resumable.maybe_fuel {
+                            if *fuel >= cost {
+                                *fuel -= cost;
+                            } else {
+                                stack.push_value::<T>(Value::I32(n)).unwrap_validated(); // we are pushing back what was just popped, this can't panic.
+                                resumable.current_func_addr = current_func_addr;
+                                resumable.pc = wasm.pc - prev_pc; // the instruction was fetched already, we roll this back
+                                resumable.stp = stp;
+                                return Ok(NonZeroU32::new(cost - *fuel));
+                            }
+                        }
+
                         let val: i32 = stack.pop_value().try_into().unwrap_validated();
 
                         if !(0..=255).contains(&val) {
@@ -2565,11 +2621,24 @@ pub(super) fn run<T: Config>(
                     // in binary format it seems that elemidx is first ???????
                     // this is ONLY for passive elements
                     TABLE_INIT => {
-                        decrement_fuel!(T::get_fc_extension_flat_cost(TABLE_INIT));
                         let elem_idx = wasm.read_var_u32().unwrap_validated() as usize;
                         let table_idx = wasm.read_var_u32().unwrap_validated() as usize;
 
-                        let n: i32 = stack.pop_value().try_into().unwrap_validated(); // size
+                        let n: u32 = stack.pop_value().try_into().unwrap_validated(); // size
+                        let cost = T::get_fc_extension_flat_cost(TABLE_INIT)
+                            + n * T::get_fc_extension_cost_per_element(TABLE_INIT);
+                        if let Some(fuel) = &mut resumable.maybe_fuel {
+                            if *fuel >= cost {
+                                *fuel -= cost;
+                            } else {
+                                stack.push_value::<T>(Value::I32(n)).unwrap_validated(); // we are pushing back what was just popped, this can't panic.
+                                resumable.current_func_addr = current_func_addr;
+                                resumable.pc = wasm.pc - prev_pc; // the instruction was fetched already, we roll this back
+                                resumable.stp = stp;
+                                return Ok(NonZeroU32::new(cost - *fuel));
+                            }
+                        }
+
                         let s: i32 = stack.pop_value().try_into().unwrap_validated(); // offset
                         let d: i32 = stack.pop_value().try_into().unwrap_validated(); // dst
 
@@ -2614,6 +2683,20 @@ pub(super) fn run<T: Config>(
                             .len();
 
                         let n: u32 = stack.pop_value().try_into().unwrap_validated(); // size
+                        let cost = T::get_fc_extension_flat_cost(TABLE_COPY)
+                            + n * T::get_fc_extension_cost_per_element(TABLE_COPY);
+                        if let Some(fuel) = &mut resumable.maybe_fuel {
+                            if *fuel >= cost {
+                                *fuel -= cost;
+                            } else {
+                                stack.push_value::<T>(Value::I32(n)).unwrap_validated(); // we are pushing back what was just popped, this can't panic.
+                                resumable.current_func_addr = current_func_addr;
+                                resumable.pc = wasm.pc - prev_pc; // the instruction was fetched already, we roll this back
+                                resumable.stp = stp;
+                                return Ok(NonZeroU32::new(cost - *fuel));
+                            }
+                        }
+
                         let s: u32 = stack.pop_value().try_into().unwrap_validated(); // source
                         let d: u32 = stack.pop_value().try_into().unwrap_validated(); // destination
 
@@ -2697,6 +2780,20 @@ pub(super) fn run<T: Config>(
                         let sz = tab.elem.len() as u32;
 
                         let n: u32 = stack.pop_value().try_into().unwrap_validated();
+                        let cost = T::get_fc_extension_flat_cost(TABLE_GROW)
+                            + n * T::get_fc_extension_cost_per_element(TABLE_GROW);
+                        if let Some(fuel) = &mut resumable.maybe_fuel {
+                            if *fuel >= cost {
+                                *fuel -= cost;
+                            } else {
+                                stack.push_value::<T>(Value::I32(n)).unwrap_validated(); // we are pushing back what was just popped, this can't panic.
+                                resumable.current_func_addr = current_func_addr;
+                                resumable.pc = wasm.pc - prev_pc; // the instruction was fetched already, we roll this back
+                                resumable.stp = stp;
+                                return Ok(NonZeroU32::new(cost - *fuel));
+                            }
+                        }
+
                         let val: Ref = stack.pop_value().try_into().unwrap_validated();
 
                         // TODO this instruction is non-deterministic w.r.t. spec, and can fail if the embedder wills it.
@@ -2740,6 +2837,20 @@ pub(super) fn run<T: Config>(
                         let tab = store.tables.get_mut(table_addr);
 
                         let len: u32 = stack.pop_value().try_into().unwrap_validated();
+                        let cost = T::get_fc_extension_flat_cost(TABLE_FILL)
+                            + len * T::get_fc_extension_cost_per_element(TABLE_FILL);
+                        if let Some(fuel) = &mut resumable.maybe_fuel {
+                            if *fuel >= cost {
+                                *fuel -= cost;
+                            } else {
+                                stack.push_value::<T>(Value::I32(len)).unwrap_validated(); // we are pushing back what was just popped, this can't panic.
+                                resumable.current_func_addr = current_func_addr;
+                                resumable.pc = wasm.pc - prev_pc; // the instruction was fetched already, we roll this back
+                                resumable.stp = stp;
+                                return Ok(NonZeroU32::new(cost - *fuel));
+                            }
+                        }
+
                         let val: Ref = stack.pop_value().try_into().unwrap_validated();
                         let dst: u32 = stack.pop_value().try_into().unwrap_validated();
 
@@ -5523,7 +5634,7 @@ pub(super) fn table_init(
     current_module: ModuleAddr,
     elem_idx: usize,
     table_idx: usize,
-    n: i32,
+    n: u32,
     s: i32,
     d: i32,
 ) -> Result<(), RuntimeError> {
@@ -5596,7 +5707,7 @@ pub(super) fn memory_init(
     current_module: ModuleAddr,
     data_idx: usize,
     mem_idx: usize,
-    n: i32,
+    n: u32,
     s: i32,
     d: i32,
 ) -> Result<(), RuntimeError> {
