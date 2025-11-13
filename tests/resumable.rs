@@ -185,12 +185,12 @@ fn resumable_internal_state() {
     );
     let mut run_state_add = runtime_instance.resume(resumable_ref_add).unwrap();
     let increment = |maybe_fuel: &mut Option<u32>| *maybe_fuel = maybe_fuel.map(|fuel| fuel + 4);
-    for i in 1..4 {
+    for expected in expected.into_iter().take(4).skip(1) {
         run_state_add = match run_state_add {
             RunState::Finished(_) => {
                 assert_eq!(
                     runtime_instance.store.global_read(global_0),
-                    wasm::Value::I32(expected[i])
+                    wasm::Value::I32(expected)
                 );
                 return;
             }
@@ -199,7 +199,7 @@ fn resumable_internal_state() {
             } => {
                 assert_eq!(
                     runtime_instance.store.global_read(global_0),
-                    wasm::Value::I32(expected[i])
+                    wasm::Value::I32(expected)
                 );
                 runtime_instance
                     .access_fuel_mut(&mut resumable_ref, increment)
