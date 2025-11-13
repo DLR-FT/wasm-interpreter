@@ -35,6 +35,9 @@ pub enum RuntimeError {
 
     /// An import could not be resolved because no extern value existed for it.
     UnableToResolveImport,
+
+    /// A function was invoked with incorrect parameters or return types.
+    FunctionInvocationSignatureMismatch,
 }
 
 impl Display for RuntimeError {
@@ -87,6 +90,9 @@ impl Display for RuntimeError {
             }
             RuntimeError::UnableToResolveImport => {
                 f.write_str("Linking failed because an import could not be resolved")
+            }
+            RuntimeError::FunctionInvocationSignatureMismatch => {
+                f.write_str("A function was invoked with incorrect parameters or return types")
             }
         }
     }
