@@ -1,4 +1,4 @@
-use wasm::{linker::Linker, resumable::RunState, validate, Store, Value};
+use wasm::{linker::Linker, resumable::RunState, validate, RuntimeError, Store, Value};
 
 const SIMPLE_IMPORT_BASE: &str = r#"
 (module
@@ -71,4 +71,61 @@ pub fn compile_simple_import() {
             _ => unreachable!("fuel is disabled"),
         });
     assert_eq!(get_three_result.unwrap(), &[Value::I32(3)],);
+}
+
+#[test_log::test]
+fn define_duplicate_extern_value() {
+    const MODULE_WITH_EMPTY_FUNCTION: &str = r#"(module (func (export "foo") nop))"#;
+    let wasm_bytes = wat::parse_str(MODULE_WITH_EMPTY_FUNCTION).unwrap();
+    let validation_info = validate(&wasm_bytes).unwrap();
+
+    let mut store = Store::new(());
+
+    let module = store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
+
+    let foo_function = store.instance_export(module, "foo").unwrap();
+
+    {
+        let mut linker = Linker::new();
+
+        linker
+            .define_module_instance(&store, "bar".to_owned(), module)
+            .unwrap();
+        assert_eq!(
+            linker.define_module_instance(&store, "bar".to_owned(), module),
+            Err(RuntimeError::DuplicateExternDefinition)
+        );
+    }
+    {
+        let mut linker = Linker::new();
+        linker
+            .define_module_instance(&store, "bar".to_owned(), module)
+            .unwrap();
+        assert_eq!(
+            linker.define("bar".to_owned(), "foo".to_owned(), foo_function),
+            Err(RuntimeError::DuplicateExternDefinition)
+        );
+    }
+    {
+        let mut linker = Linker::new();
+        linker
+            .define("bar".to_owned(), "foo".to_owned(), foo_function)
+            .unwrap();
+        assert_eq!(
+            linker.define("bar".to_owned(), "foo".to_owned(), foo_function),
+            Err(RuntimeError::DuplicateExternDefinition)
+        );
+    }
+    {
+        let mut linker = Linker::new();
+        linker
+            .define("bar".to_owned(), "foo".to_owned(), foo_function)
+            .unwrap();
+        assert_eq!(
+            linker.define_module_instance(&store, "bar".to_owned(), module),
+            Err(RuntimeError::DuplicateExternDefinition)
+        );
+    }
 }
