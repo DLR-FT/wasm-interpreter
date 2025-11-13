@@ -16,10 +16,12 @@ use crate::core::reader::WasmReader;
 use crate::execution::interpreter_loop::{self, memory_init, table_init};
 use crate::execution::value::{Ref, Value};
 use crate::execution::{run_const_span, Stack};
+use crate::interop::InteropValueList;
 use crate::registry::Registry;
 use crate::resumable::{
     Dormitory, FreshResumableRef, InvokedResumableRef, Resumable, ResumableRef, RunState,
 };
+use crate::value::ValueTypeMismatchError;
 use crate::{RefType, RuntimeError, ValidationInfo};
 use alloc::borrow::ToOwned;
 use alloc::collections::btree_map::BTreeMap;
@@ -1105,6 +1107,33 @@ impl<'b, T: Config> Store<'b, T> {
                 Ok(f(&mut resumable.maybe_fuel))
             }
         }
+    }
+
+    /// Invokes a function without fuel enabled.
+    pub fn invoke_without_fuel(
+        &mut self,
+        func_addr: FuncAddr,
+        params: Vec<Value>,
+    ) -> Result<Vec<Value>, RuntimeError> {
+        match self.invoke(func_addr, params, None)? {
+            RunState::Finished(values) => Ok(values),
+            RunState::Resumable { .. } => unreachable!("fuel was not enabled"),
+        }
+    }
+
+    /// Invokes a function without fuel enabled and performs parameter and
+    /// result type conversion for statically known types.
+    pub fn invoke_typed_without_fuel<Params: InteropValueList, Returns: InteropValueList>(
+        &mut self,
+        function: FuncAddr,
+        params: Params,
+    ) -> Result<Returns, RuntimeError> {
+        self.invoke_without_fuel(function, params.into_values())
+            .and_then(|results| {
+                Returns::try_from_values(results.into_iter()).map_err(|ValueTypeMismatchError| {
+                    RuntimeError::FunctionInvocationSignatureMismatch
+                })
+            })
     }
 }
 
