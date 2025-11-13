@@ -14,11 +14,17 @@ use crate::{
     config::Config,
     core::reader::types::{FuncType, MemType, TableType},
     resumable::{ResumableRef, RunState},
-    value::{ExternAddr, Ref, F32, F64},
-    GlobalType, RefType, RuntimeError, ValidationInfo, Value,
+    value::{Ref, ValueTypeMismatchError},
+    GlobalType, RuntimeError, ValidationInfo, Value,
 };
 
 use super::{ExternVal, Store};
+
+mod interop;
+mod value;
+
+pub use interop::*;
+pub use value::*;
 
 /// A unique identifier for a specific [`Store`]
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -446,6 +452,22 @@ impl<'b, T: Config> Store<'b, T> {
             .collect();
         Ok(returns)
     }
+
+    pub fn invoke_typed_without_fuel_checked<
+        Params: StoredInteropValueList,
+        Returns: StoredInteropValueList,
+    >(
+        &mut self,
+        function: Stored<FuncAddr>,
+        params: Params,
+    ) -> Result<Returns, RuntimeError> {
+        self.invoke_without_fuel_checked(function, params.into_values())
+            .and_then(|results| {
+                Returns::try_from_values(results.into_iter()).map_err(|ValueTypeMismatchError| {
+                    RuntimeError::FunctionInvocationSignatureMismatch
+                })
+            })
+    }
 }
 
 /// A generic stored wrapper. This is mostly used to wrap address types.
@@ -489,25 +511,6 @@ impl<T> Stored<T> {
             inner: &mut self.inner,
         }
     }
-}
-
-/// A stored variant of [`Value`]
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum StoredValue {
-    I32(u32),
-    I64(u64),
-    F32(F32),
-    F64(F64),
-    V128([u8; 16]),
-    Ref(StoredRef),
-}
-
-/// A stored variant of [`Ref`]
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum StoredRef {
-    Null(RefType),
-    Func(Stored<FuncAddr>),
-    Extern(Stored<ExternAddr>),
 }
 
 /// A stored variant of [`ExternVal`]

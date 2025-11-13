@@ -1229,7 +1229,7 @@ impl<'b, T: Config> Store<'b, T> {
     }
 
     /// Invokes a function without fuel enabled.
-    /// 
+    ///
     /// # Safety
     /// The caller has to guarantee that the given [`FuncAddr`] or any
     /// [`FuncAddr`] or [`ExternAddr`](crate::execution::value::ExternAddr)
@@ -1248,7 +1248,7 @@ impl<'b, T: Config> Store<'b, T> {
 
     /// Invokes a function without fuel enabled and performs parameter and
     /// result type conversion for statically known types.
-    /// 
+    ///
     /// The caller has to guarantee that the given [`FuncAddr`] or any
     /// [`FuncAddr`] or [`ExternAddr`](crate::execution::value::ExternAddr)
     /// values contained in the parameter values came from the current [`Store`]
