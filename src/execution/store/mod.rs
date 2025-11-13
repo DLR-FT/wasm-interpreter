@@ -888,7 +888,7 @@ impl<'b, T: Config> Store<'b, T> {
                 func_ty.params.valtypes.len(),
                 param_types.len()
             );
-            panic!("Invalid parameters for function");
+            return Err(RuntimeError::FunctionInvocationSignatureMismatch);
         }
 
         Ok(ResumableRef::Fresh(FreshResumableRef {
@@ -1137,8 +1137,9 @@ impl<'b, T: Config> Store<'b, T> {
     ) -> Result<Returns, RuntimeError> {
         self.invoke_without_fuel(function, params.into_values())
             .and_then(|values| {
-                Returns::try_from_values(values.into_iter())
-                    .map_err(|ValueTypeMismatchError| todo!("throw correct error here"))
+                Returns::try_from_values(values.into_iter()).map_err(|ValueTypeMismatchError| {
+                    RuntimeError::FunctionInvocationSignatureMismatch
+                })
             })
     }
 }
