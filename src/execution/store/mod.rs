@@ -947,7 +947,7 @@ impl<'b, T: Config> Store<'b, T> {
                 func_ty.params.valtypes.len(),
                 param_types.len()
             );
-            panic!("Invalid parameters for function");
+            return Err(RuntimeError::FunctionInvocationSignatureMismatch);
         }
 
         Ok(ResumableRef::Fresh(FreshResumableRef {
