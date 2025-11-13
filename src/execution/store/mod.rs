@@ -20,6 +20,7 @@ use crate::execution::{run_const_span, Stack};
 use crate::resumable::{
     Dormitory, FreshResumableRef, InvokedResumableRef, Resumable, ResumableRef, RunState,
 };
+use crate::value::ValueTypeMismatchError;
 use crate::{RefType, RuntimeError, ValidationInfo};
 use alloc::collections::btree_map::BTreeMap;
 use alloc::string::String;
@@ -878,7 +879,7 @@ impl<'b, T: Config> Store<'b, T> {
                 func_ty.params.valtypes.len(),
                 param_types.len()
             );
-            panic!("Invalid parameters for function");
+            return Err(RuntimeError::FunctionInvocationSignatureMismatch);
         }
 
         Ok(ResumableRef::Fresh(FreshResumableRef {
@@ -1113,7 +1114,7 @@ impl<'b, T: Config> Store<'b, T> {
         self.invoke_without_fuel(function, params.into_values())
             .and_then(|values| {
                 Returns::try_from_values(values.into_iter())
-                    .map_err(|ValueTypeMismatchError| todo!("throw correct error here"))
+                    .map_err(|ValueTypeMismatchError| RuntimeError::FunctionInvocationSignatureMismatch)
             })
     }
 }
