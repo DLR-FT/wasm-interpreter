@@ -92,49 +92,41 @@ impl<'b, T: Config> Store<'b, T> {
         }
     }
 
-    /// instantiates a validated module with `validation_info` as validation evidence with name `name`
-    /// with the steps in <https://webassembly.github.io/spec/core/exec/modules.html#instantiation>
-    /// this method roughly matches the suggested embedder function`module_instantiate`
-    /// <https://webassembly.github.io/spec/core/appendix/embedding.html#modules>
-    /// except external values for module instantiation are retrieved from `self`.
-    /// Returns the module addr of the new module instance
-    pub fn add_module(
+    /// Instantiate a new module instance from a [`ValidationInfo`] in this [`Store`].
+    ///
+    /// See: WebAssembly Specification 2.0 - 7.1.5 - module_instantiate
+    pub fn module_instantiate(
         &mut self,
-        name: &str,
         validation_info: &ValidationInfo<'b>,
+        extern_vals: Vec<ExternVal>,
         maybe_fuel: Option<u32>,
     ) -> Result<ModuleAddr, RuntimeError> {
-        // instantiation step -1: collect extern_vals, this section basically acts as a linker between modules
-        // best attempt at trying to match the spec implementation in terms of errors
-        debug!("adding module with name {:?}", name);
-        let mut extern_vals = Vec::new();
+        // instantiation: step 1
+        // The module is guaranteed to be valid, because only validation can
+        // produce `ValidationInfo`s.
 
-        for Import {
-            module_name: exporting_module_name,
-            name: import_name,
-            desc: import_desc,
-        } in &validation_info.imports
-        {
-            trace!(
-                "trying to import from exporting module instance named {:?}, the entity with name {:?} with desc: {:?}",
-                exporting_module_name,
-                import_name,
-                import_desc
-            );
-            let import_extern_type = import_desc.extern_type(validation_info);
-            let export_extern_val_candidate = *self.registry.lookup(
-                exporting_module_name.clone().into(),
-                import_name.clone().into(),
-            )?;
-            trace!("export candidate found: {:?}", export_extern_val_candidate);
-            if !export_extern_val_candidate
-                .extern_type(self)
-                .is_subtype_of(&import_extern_type)
-            {
+        // instantiation: step 3
+        if validation_info.imports.len() != extern_vals.len() {
+            return Err(RuntimeError::ExternValsLenMismatch);
+        }
+
+        // instantiation: step 4
+        let imports_as_extern_types = validation_info
+            .imports
+            .iter()
+            .map(|import| import.desc.extern_type(validation_info));
+        for (extern_val, import_as_extern_type) in extern_vals.iter().zip(imports_as_extern_types) {
+            // instantiation: step 4a
+            // check that extern_val is valid in this Store, which should be guaranteed by the caller through a safety constraint in the future.
+            // TODO document this instantiation step properly
+
+            // instantiation: step 4b
+            let extern_type = extern_val.extern_type(self);
+
+            // instantiation: step 4c
+            if !extern_type.is_subtype_of(&import_as_extern_type) {
                 return Err(RuntimeError::InvalidImportType);
             }
-            trace!("import and export matches. Adding to externvals");
-            extern_vals.push(export_extern_val_candidate)
         }
 
         // instantiation: step 5
@@ -226,7 +218,6 @@ impl<'b, T: Config> Store<'b, T> {
         // allocation: step 1
         let module = validation_info;
 
-        let extern_vals = extern_vals;
         let vals = global_init_vals;
         let ref_lists = element_init_ref_lists;
 
@@ -314,10 +305,6 @@ impl<'b, T: Config> Store<'b, T> {
         module_inst.exports = export_insts;
 
         // allocation: end
-
-        // register module exports, this is outside of the spec
-        self.registry
-            .register_module(name.to_owned().into(), module_inst, module_addr)?;
 
         // instantiation step 11 end: module_inst properly allocated after this point.
 
@@ -429,6 +416,60 @@ impl<'b, T: Config> Store<'b, T> {
             let func_addr = self.modules.get(module_addr).func_addrs[func_idx];
             self.invoke(func_addr, Vec::new(), maybe_fuel)?;
         };
+
+        Ok(module_addr)
+    }
+
+    /// instantiates a validated module with `validation_info` as validation evidence with name `name`
+    /// with the steps in <https://webassembly.github.io/spec/core/exec/modules.html#instantiation>
+    /// this method roughly matches the suggested embedder function`module_instantiate`
+    /// <https://webassembly.github.io/spec/core/appendix/embedding.html#modules>
+    /// except external values for module instantiation are retrieved from `self`.
+    /// Returns the module addr of the new module instance
+    pub fn add_module(
+        &mut self,
+        name: &str,
+        validation_info: &ValidationInfo<'b>,
+        maybe_fuel: Option<u32>,
+    ) -> Result<ModuleAddr, RuntimeError> {
+        debug!("adding module with name {:?}", name);
+        let mut extern_vals = Vec::new();
+
+        for Import {
+            module_name: exporting_module_name,
+            name: import_name,
+            desc: import_desc,
+        } in &validation_info.imports
+        {
+            trace!(
+                "trying to import from exporting module instance named {:?}, the entity with name {:?} with desc: {:?}",
+                exporting_module_name,
+                import_name,
+                import_desc
+            );
+            let import_extern_type = import_desc.extern_type(validation_info);
+            let export_extern_val_candidate = *self.registry.lookup(
+                exporting_module_name.clone().into(),
+                import_name.clone().into(),
+            )?;
+            trace!("export candidate found: {:?}", export_extern_val_candidate);
+            if !export_extern_val_candidate
+                .extern_type(self)
+                .is_subtype_of(&import_extern_type)
+            {
+                return Err(RuntimeError::InvalidImportType);
+            }
+            trace!("import and export matches. Adding to externvals");
+            extern_vals.push(export_extern_val_candidate)
+        }
+
+        let module_addr = self.module_instantiate(validation_info, extern_vals, maybe_fuel)?;
+
+        self.registry.register_module(
+            name.to_owned().into(),
+            self.modules.get(module_addr),
+            module_addr,
+        )?;
 
         Ok(module_addr)
     }
