@@ -1,5 +1,5 @@
 use wasm::{validate, RuntimeInstance};
-use wasm::{RuntimeError, TrapError, DEFAULT_MODULE};
+use wasm::{RuntimeError, TrapError};
 const REM_S_WAT: &str = r#"
     (module
         (func (export "rem_s") (param $divisor {{TYPE}}) (param $dividend {{TYPE}}) (result {{TYPE}})
@@ -267,97 +267,24 @@ pub fn i32_remainder_signed_simple() {
     let wat = String::from(REM_S_WAT).replace("{{TYPE}}", "i32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    assert_eq!(
-        0,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "rem_s")
-                    .unwrap(),
-                (20, 2)
-            )
-            .unwrap()
-    );
-    assert_eq!(
-        999,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "rem_s")
-                    .unwrap(),
-                (10_000, 9_001)
-            )
-            .unwrap()
-    );
-    assert_eq!(
-        -2,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "rem_s")
-                    .unwrap(),
-                (-20, 3)
-            )
-            .unwrap()
-    );
-    assert_eq!(
-        -2,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "rem_s")
-                    .unwrap(),
-                (-20, -3)
-            )
-            .unwrap()
-    );
-    assert_eq!(
-        2,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "rem_s")
-                    .unwrap(),
-                (20, -3)
-            )
-            .unwrap()
-    );
-    assert_eq!(
-        2,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "rem_s")
-                    .unwrap(),
-                (20, 3)
-            )
-            .unwrap()
-    );
-    assert_eq!(
-        0,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "rem_s")
-                    .unwrap(),
-                (i32::MIN, -1)
-            )
-            .unwrap()
-    );
-    assert_eq!(
-        0,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "rem_s")
-                    .unwrap(),
-                (i32::MIN, 2)
-            )
-            .unwrap()
-    );
+    let rem_s = instance
+        .store
+        .instance_export(module, "rem_s")
+        .unwrap()
+        .as_func()
+        .unwrap();
+
+    assert_eq!(0, instance.invoke_typed(rem_s, (20, 2)).unwrap());
+    assert_eq!(999, instance.invoke_typed(rem_s, (10_000, 9_001)).unwrap());
+    assert_eq!(-2, instance.invoke_typed(rem_s, (-20, 3)).unwrap());
+    assert_eq!(-2, instance.invoke_typed(rem_s, (-20, -3)).unwrap());
+    assert_eq!(2, instance.invoke_typed(rem_s, (20, -3)).unwrap());
+    assert_eq!(2, instance.invoke_typed(rem_s, (20, 3)).unwrap());
+    assert_eq!(0, instance.invoke_typed(rem_s, (i32::MIN, -1)).unwrap());
+    assert_eq!(0, instance.invoke_typed(rem_s, (i32::MIN, 2)).unwrap());
 }
 
 /// A simple function to test signed remainder's RuntimeError when dividing by 0
@@ -366,15 +293,17 @@ pub fn remainder_signed_panic_dividend_0() {
     let wat = String::from(REM_S_WAT).replace("{{TYPE}}", "i32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let result = instance.invoke_typed::<(i32, i32), i32>(
-        instance
-            .get_function_by_name(DEFAULT_MODULE, "rem_s")
-            .unwrap(),
-        (222, 0),
-    );
+    let rem_s = instance
+        .store
+        .instance_export(module, "rem_s")
+        .unwrap()
+        .as_func()
+        .unwrap();
+
+    let result = instance.invoke_typed::<(i32, i32), i32>(rem_s, (222, 0));
 
     assert_eq!(
         result.unwrap_err(),
@@ -389,153 +318,42 @@ pub fn i32_remainder_unsigned_simple() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    assert_eq!(
-        0,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "rem_u")
-                    .unwrap(),
-                (i32::MIN, 2)
-            )
-            .unwrap()
-    );
+    let rem_u = instance
+        .store
+        .instance_export(module, "rem_u")
+        .unwrap()
+        .as_func()
+        .unwrap();
+
+    assert_eq!(0, instance.invoke_typed(rem_u, (i32::MIN, 2)).unwrap());
     assert_eq!(
         i32::MIN,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "rem_u")
-                    .unwrap(),
-                (i32::MIN, -2)
-            )
-            .unwrap()
+        instance.invoke_typed(rem_u, (i32::MIN, -2)).unwrap()
     );
     assert_eq!(
         -(i32::MIN + 2),
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "rem_u")
-                    .unwrap(),
-                (-2, i32::MIN)
-            )
-            .unwrap()
+        instance.invoke_typed(rem_u, (-2, i32::MIN)).unwrap()
     );
-    assert_eq!(
-        2,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "rem_u")
-                    .unwrap(),
-                (2, i32::MIN)
-            )
-            .unwrap()
-    );
+    assert_eq!(2, instance.invoke_typed(rem_u, (2, i32::MIN)).unwrap());
     assert_eq!(
         i32::MAX,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "rem_u")
-                    .unwrap(),
-                (i32::MAX, i32::MIN)
-            )
-            .unwrap()
+        instance.invoke_typed(rem_u, (i32::MAX, i32::MIN)).unwrap()
     );
 
-    assert_eq!(
-        0,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "rem_u")
-                    .unwrap(),
-                (20, 2)
-            )
-            .unwrap()
-    );
-    assert_eq!(
-        999,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "rem_u")
-                    .unwrap(),
-                (10_000, 9_001)
-            )
-            .unwrap()
-    );
-    assert_eq!(
-        2,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "rem_u")
-                    .unwrap(),
-                (-20, 3)
-            )
-            .unwrap()
-    );
-    assert_eq!(
-        -20,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "rem_u")
-                    .unwrap(),
-                (-20, -3)
-            )
-            .unwrap()
-    );
-    assert_eq!(
-        20,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "rem_u")
-                    .unwrap(),
-                (20, -3)
-            )
-            .unwrap()
-    );
-    assert_eq!(
-        2,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "rem_u")
-                    .unwrap(),
-                (20, 3)
-            )
-            .unwrap()
-    );
+    assert_eq!(0, instance.invoke_typed(rem_u, (20, 2)).unwrap());
+    assert_eq!(999, instance.invoke_typed(rem_u, (10_000, 9_001)).unwrap());
+    assert_eq!(2, instance.invoke_typed(rem_u, (-20, 3)).unwrap());
+    assert_eq!(-20, instance.invoke_typed(rem_u, (-20, -3)).unwrap());
+    assert_eq!(20, instance.invoke_typed(rem_u, (20, -3)).unwrap());
+    assert_eq!(2, instance.invoke_typed(rem_u, (20, 3)).unwrap());
     assert_eq!(
         i32::MIN,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "rem_u")
-                    .unwrap(),
-                (i32::MIN, -1)
-            )
-            .unwrap()
+        instance.invoke_typed(rem_u, (i32::MIN, -1)).unwrap()
     );
-    assert_eq!(
-        0,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "rem_u")
-                    .unwrap(),
-                (i32::MIN, 2)
-            )
-            .unwrap()
-    );
+    assert_eq!(0, instance.invoke_typed(rem_u, (i32::MIN, 2)).unwrap());
 }
 
 /// A simple function to test signed remainder's RuntimeError when dividing by 0
@@ -545,15 +363,17 @@ pub fn i32_remainder_unsigned_panic_dividend_0() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let result = instance.invoke_typed::<(i32, i32), i32>(
-        instance
-            .get_function_by_name(DEFAULT_MODULE, "rem_u")
-            .unwrap(),
-        (222, 0),
-    );
+    let rem_u = instance
+        .store
+        .instance_export(module, "rem_u")
+        .unwrap()
+        .as_func()
+        .unwrap();
+
+    let result = instance.invoke_typed::<(i32, i32), i32>(rem_u, (222, 0));
 
     assert_eq!(
         result.unwrap_err(),

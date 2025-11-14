@@ -19,7 +19,7 @@ use wasm::{
     interop::{RefExtern, RefFunc},
     validate,
     value::ExternAddr,
-    RuntimeError, RuntimeInstance, TrapError, DEFAULT_MODULE,
+    RuntimeError, RuntimeInstance, TrapError,
 };
 
 #[test_log::test]
@@ -50,18 +50,32 @@ fn table_funcref_test() {
     "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
+    let (mut i, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let init = i.get_function_by_name(DEFAULT_MODULE, "init").unwrap();
+    let init = i
+        .store
+        .instance_export(module, "init")
+        .unwrap()
+        .as_func()
+        .unwrap();
     let get_externref = i
-        .get_function_by_name(DEFAULT_MODULE, "get-externref")
+        .store
+        .instance_export(module, "get-externref")
+        .unwrap()
+        .as_func()
         .unwrap();
     let get_funcref = i
-        .get_function_by_name(DEFAULT_MODULE, "get-funcref")
+        .store
+        .instance_export(module, "get-funcref")
+        .unwrap()
+        .as_func()
         .unwrap();
     let is_null_funcref = i
-        .get_function_by_name(DEFAULT_MODULE, "is_null-funcref")
+        .store
+        .instance_export(module, "is_null-funcref")
+        .unwrap()
+        .as_func()
         .unwrap();
 
     i.invoke_typed::<RefExtern, ()>(init, RefExtern(Some(ExternAddr(1))))

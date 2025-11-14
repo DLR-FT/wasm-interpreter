@@ -109,7 +109,13 @@ pub fn run_simple_import() {
         .add_module("base", &validation_info)
         .expect("instantiation failed");
 
-    let get_three = instance.get_function_by_name("base", "get_three").unwrap();
+    let get_three = instance
+        .store
+        .instance_export(module_base, "get_three")
+        .unwrap()
+        .as_func()
+        .unwrap();
+
     assert_eq!(3, instance.invoke_typed(get_three, ()).unwrap());
 
     // Function 0 should be the imported function
@@ -126,11 +132,17 @@ pub fn run_call_indirect() {
 
     let wasm_bytes = wat::parse_str(CALL_INDIRECT_BASE).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let _module_base = instance
+    let module_base = instance
         .add_module("base", &validation_info)
         .expect("Successful instantiation");
 
-    let run = instance.get_function_by_name("base", "run").unwrap();
+    let run = instance
+        .store
+        .instance_export(module_base, "run")
+        .unwrap()
+        .as_func()
+        .unwrap();
+
     assert_eq!((1, 3), instance.invoke_typed(run, ()).unwrap());
 }
 
