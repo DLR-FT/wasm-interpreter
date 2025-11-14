@@ -1,4 +1,4 @@
-use wasm::{validate, RuntimeInstance};
+use wasm::{resumable::FueledInstantiation, validate, RuntimeInstance};
 
 const _UNMET_IMPORTS: &str = r#"
 (module
@@ -105,7 +105,10 @@ pub fn run_simple_import() {
 
     let wasm_bytes = wat::parse_str(SIMPLE_IMPORT_BASE).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let module_base = instance
+    let FueledInstantiation {
+        module_addr: module_base,
+        ..
+    } = instance
         .add_module("base", &validation_info, None)
         .expect("instantiation failed");
 

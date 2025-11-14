@@ -1,4 +1,8 @@
-use wasm::{linker::Linker, resumable::RunState, validate, RuntimeError, Store, Value};
+use wasm::{
+    linker::Linker,
+    resumable::{FueledInstantiation, RunState},
+    validate, RuntimeError, Store, Value,
+};
 
 const SIMPLE_IMPORT_BASE: &str = r#"
 (module
@@ -29,7 +33,9 @@ pub fn compile_simple_import() {
     let mut linker = Linker::new();
 
     // First instantiate the addon module
-    let addon = linker
+    let FueledInstantiation {
+        module_addr: addon, ..
+    } = linker
         .module_instantiate(&mut store, &validation_info_addon, None)
         .unwrap();
     // We also want to define all of its exports, to makes them discoverable for
@@ -53,7 +59,9 @@ pub fn compile_simple_import() {
     );
 
     // 2. Perform the actual instantiation directly on the `Store`
-    let base = store
+    let FueledInstantiation {
+        module_addr: base, ..
+    } = store
         .module_instantiate(&validation_info_base, linked_base_imports, None)
         .unwrap();
 
@@ -67,7 +75,7 @@ pub fn compile_simple_import() {
     let get_three_result = store
         .invoke(get_three, Vec::new(), None)
         .map(|rs| match rs {
-            RunState::Finished(values) => values,
+            RunState::Finished { values, .. } => values,
             _ => unreachable!("fuel is disabled"),
         });
     assert_eq!(get_three_result.unwrap(), &[Value::I32(3)],);
@@ -81,7 +89,10 @@ fn define_duplicate_extern_value() {
 
     let mut store = Store::new(());
 
-    let module = store
+    let FueledInstantiation {
+        module_addr: module,
+        ..
+    } = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap();
 
