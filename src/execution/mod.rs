@@ -1,6 +1,6 @@
 use crate::addrs::GlobalAddr;
 use crate::core::reader::types::global::GlobalType;
-use crate::resumable::{ResumableRef, RunState};
+use crate::resumable::{FueledInstantiation, ResumableRef, RunState};
 use alloc::borrow::{Cow, ToOwned};
 use alloc::vec::Vec;
 
@@ -58,7 +58,8 @@ impl<'b, T: Config> RuntimeInstance<'b, T> {
         validation_info: &'_ ValidationInfo<'b>,
     ) -> Result<(Self, ModuleAddr), RuntimeError> {
         let mut instance = Self::new(user_data);
-        let module_addr = instance.add_module(DEFAULT_MODULE, validation_info, None)?;
+        let FueledInstantiation { module_addr, .. } =
+            instance.add_module(DEFAULT_MODULE, validation_info, None)?;
         Ok((instance, module_addr))
     }
 
@@ -70,7 +71,8 @@ impl<'b, T: Config> RuntimeInstance<'b, T> {
         // store: &mut Store,
     ) -> Result<(Self, ModuleAddr), RuntimeError> {
         let mut instance = Self::new(user_data);
-        let module_addr = instance.add_module(module_name, validation_info, None)?;
+        let FueledInstantiation { module_addr, .. } =
+            instance.add_module(module_name, validation_info, None)?;
         Ok((instance, module_addr))
     }
 
@@ -81,7 +83,7 @@ impl<'b, T: Config> RuntimeInstance<'b, T> {
         module_name: &str,
         validation_info: &'_ ValidationInfo<'b>,
         maybe_fuel: Option<u32>,
-    ) -> Result<ModuleAddr, RuntimeError> {
+    ) -> Result<FueledInstantiation, RuntimeError> {
         self.store
             .add_module(module_name, validation_info, maybe_fuel)
     }

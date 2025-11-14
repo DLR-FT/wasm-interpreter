@@ -6,7 +6,7 @@ use alloc::{
 };
 
 use crate::{
-    addrs::FuncAddr,
+    addrs::{FuncAddr, ModuleAddr},
     core::slotmap::{SlotMap, SlotMapKey},
     rw_spinlock::RwSpinLock,
     value_stack::Stack,
@@ -86,6 +86,14 @@ pub enum RunState {
         resumable_ref: ResumableRef,
         required_fuel: NonZeroU32,
     },
+}
+
+/// Represents a successful, possibly fueled instantiation of a module.
+pub struct FueledInstantiation {
+    /// contains the store address of the module that has successfully instantiated.
+    pub module_addr: ModuleAddr,
+    /// contains `Some(remaining_fuel)` if instantiation was fuel-metered and `None` otherwise.
+    pub maybe_remaining_fuel: Option<u32>,
 }
 
 #[cfg(test)]

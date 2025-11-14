@@ -7,6 +7,7 @@ use bumpalo::Bump;
 use itertools::enumerate;
 use log::debug;
 use wasm::addrs::ModuleAddr;
+use wasm::resumable::FueledInstantiation;
 use wasm::ExternVal;
 use wasm::RefType;
 use wasm::RuntimeError;
@@ -123,7 +124,10 @@ fn validate_instantiate<'a, 'b: 'a>(
 
     // TODO change hacky hidden name that uses interpreter internals
     let module_name = format!("module_{}", modules.len());
-    let module = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
+    let FueledInstantiation {
+        module_addr: module,
+        ..
+    } = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
         interpreter.add_module(module_name.as_str(), &validation_info, None)
     }))
     .map_err(WastError::Panic)??;
@@ -669,10 +673,11 @@ fn execute<'a>(
                 .map_err(WastError::Panic)??;
 
             let module_name = format!("module_{}", modules.len());
-            let module_addr = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
-                interpreter.add_module(module_name.as_str(), &validation_info, None)
-            }))
-            .map_err(WastError::Panic)??;
+            let FueledInstantiation { module_addr, .. } =
+                catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
+                    interpreter.add_module(module_name.as_str(), &validation_info, None)
+                }))
+                .map_err(WastError::Panic)??;
             modules.push(module_addr);
 
             Ok(())

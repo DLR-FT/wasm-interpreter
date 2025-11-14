@@ -4,7 +4,10 @@ use alloc::{
     vec::Vec,
 };
 
-use crate::{addrs::ModuleAddr, ExternVal, RuntimeError, Store, ValidationInfo};
+use crate::{
+    addrs::ModuleAddr, resumable::FueledInstantiation, ExternVal, RuntimeError, Store,
+    ValidationInfo,
+};
 
 use super::config::Config;
 
@@ -147,7 +150,7 @@ impl Linker {
         store: &mut Store<'b, T>,
         validation_info: &ValidationInfo<'b>,
         maybe_fuel: Option<u32>,
-    ) -> Result<ModuleAddr, RuntimeError> {
+    ) -> Result<FueledInstantiation, RuntimeError> {
         store.module_instantiate(
             validation_info,
             self.instantiate_pre(validation_info)?,
