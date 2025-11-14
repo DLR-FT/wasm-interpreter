@@ -323,7 +323,7 @@
 <a href=#323 id=323 data-nosnippet>323</a>                    table_idx: table_idx_i,
 <a href=#324 id=324 data-nosnippet>324</a>                    init_expr: einstr_i,
 <a href=#325 id=325 data-nosnippet>325</a>                }) =&gt; {
-<a href=#326 id=326 data-nosnippet>326</a>                    <span class="kw">let </span>n = elem_items.len() <span class="kw">as </span>i32;
+<a href=#326 id=326 data-nosnippet>326</a>                    <span class="kw">let </span>n = elem_items.len() <span class="kw">as </span>u32;
 <a href=#327 id=327 data-nosnippet>327</a>                    <span class="comment">// equivalent to init.len() in spec
 <a href=#328 id=328 data-nosnippet>328</a>                    // instantiation step 14:
 <a href=#329 id=329 data-nosnippet>329</a>                    // TODO (for now, we are doing hopefully what is equivalent to it)
@@ -371,7 +371,7 @@
 <a href=#371 id=371 data-nosnippet>371</a>                    memory_idx,
 <a href=#372 id=372 data-nosnippet>372</a>                    offset: dinstr_i,
 <a href=#373 id=373 data-nosnippet>373</a>                }) =&gt; {
-<a href=#374 id=374 data-nosnippet>374</a>                    <span class="kw">let </span>n = init.len() <span class="kw">as </span>i32;
+<a href=#374 id=374 data-nosnippet>374</a>                    <span class="kw">let </span>n = init.len() <span class="kw">as </span>u32;
 <a href=#375 id=375 data-nosnippet>375</a>                    <span class="comment">// assert: mem_idx is 0
 <a href=#376 id=376 data-nosnippet>376</a>                    </span><span class="kw">if </span><span class="kw-2">*</span>memory_idx != <span class="number">0 </span>{
 <a href=#377 id=377 data-nosnippet>377</a>                        <span class="comment">// TODO fix error

@@ -18,7 +18,79 @@
 <a href=#18 id=18 data-nosnippet>18</a>    </span><span class="attr">#[allow(unused_variables)]
 <a href=#19 id=19 data-nosnippet>19</a>    #[inline(always)]
 <a href=#20 id=20 data-nosnippet>20</a>    </span><span class="kw">fn </span>instruction_hook(<span class="kw-2">&amp;mut </span><span class="self">self</span>, bytecode: <span class="kw-2">&amp;</span>[u8], pc: usize) {}
-<a href=#21 id=21 data-nosnippet>21</a>}
-<a href=#22 id=22 data-nosnippet>22</a>
-<a href=#23 id=23 data-nosnippet>23</a><span class="doccomment">/// Default implementation of the interpreter configuration, with all hooks empty
-<a href=#24 id=24 data-nosnippet>24</a></span><span class="kw">impl </span>Config <span class="kw">for </span>() {}</code></pre></div></section></main></body></html>
+<a href=#21 id=21 data-nosnippet>21</a>
+<a href=#22 id=22 data-nosnippet>22</a>    <span class="doccomment">/// Amount of fuel to be deducted when a single byte `instr` is hit. The cost corresponding to `UNREACHABLE` and
+<a href=#23 id=23 data-nosnippet>23</a>    /// `END` instructions and other bytes that do not correspond to any Wasm instruction are ignored.
+<a href=#24 id=24 data-nosnippet>24</a>    </span><span class="comment">// It must always be checked that the calls to this method fold into a constant if it is just a match statement that
+<a href=#25 id=25 data-nosnippet>25</a>    // yields constants.
+<a href=#26 id=26 data-nosnippet>26</a>    </span><span class="attr">#[inline(always)]
+<a href=#27 id=27 data-nosnippet>27</a>    </span><span class="kw">fn </span>get_flat_cost(_instr: u8) -&gt; u32 {
+<a href=#28 id=28 data-nosnippet>28</a>        <span class="number">1
+<a href=#29 id=29 data-nosnippet>29</a>    </span>}
+<a href=#30 id=30 data-nosnippet>30</a>
+<a href=#31 id=31 data-nosnippet>31</a>    <span class="doccomment">/// Amount of fuel to be deducted when a multi-byte instruction that starts with the byte 0xFC is hit. This method
+<a href=#32 id=32 data-nosnippet>32</a>    /// should return the cost of an instruction obtained by prepending 0xFC to of an unsigned 32-bit LEB
+<a href=#33 id=33 data-nosnippet>33</a>    /// representation of `instr`. Multi-byte sequences obtained this way that do not correspond to any Wasm instruction
+<a href=#34 id=34 data-nosnippet>34</a>    /// are ignored.
+<a href=#35 id=35 data-nosnippet>35</a>    </span><span class="comment">// It must always be checked that the calls to this method fold into a constant if it is just a match statement that
+<a href=#36 id=36 data-nosnippet>36</a>    // yields constants.
+<a href=#37 id=37 data-nosnippet>37</a>    </span><span class="attr">#[inline(always)]
+<a href=#38 id=38 data-nosnippet>38</a>    </span><span class="kw">fn </span>get_fc_extension_flat_cost(_instr: u32) -&gt; u32 {
+<a href=#39 id=39 data-nosnippet>39</a>        <span class="number">1
+<a href=#40 id=40 data-nosnippet>40</a>    </span>}
+<a href=#41 id=41 data-nosnippet>41</a>
+<a href=#42 id=42 data-nosnippet>42</a>    <span class="doccomment">/// Amount of fuel to be deducted when a multi-byte instruction that starts with the byte 0xFD is hit. This method
+<a href=#43 id=43 data-nosnippet>43</a>    /// should return the cost of an instruction obtained by prepending 0xFD to of an unsigned 32-bit LEB
+<a href=#44 id=44 data-nosnippet>44</a>    /// representation of `instr`. Multi-byte sequences obtained this way that do not correspond to any Wasm instruction
+<a href=#45 id=45 data-nosnippet>45</a>    /// are ignored.
+<a href=#46 id=46 data-nosnippet>46</a>    </span><span class="comment">// It must always be checked that the calls to this method fold into a constant if it is just a match statement that
+<a href=#47 id=47 data-nosnippet>47</a>    // yields constants.
+<a href=#48 id=48 data-nosnippet>48</a>    </span><span class="attr">#[inline(always)]
+<a href=#49 id=49 data-nosnippet>49</a>    </span><span class="kw">fn </span>get_fd_extension_flat_cost(_instr: u32) -&gt; u32 {
+<a href=#50 id=50 data-nosnippet>50</a>        <span class="number">1
+<a href=#51 id=51 data-nosnippet>51</a>    </span>}
+<a href=#52 id=52 data-nosnippet>52</a>
+<a href=#53 id=53 data-nosnippet>53</a>    <span class="doccomment">/// Amount of fuel to be deducted per element of a single byte instruction `instr` that executes in asymptotically
+<a href=#54 id=54 data-nosnippet>54</a>    /// linear time with respect to one of the values it pops from the stack.
+<a href=#55 id=55 data-nosnippet>55</a>    ///
+<a href=#56 id=56 data-nosnippet>56</a>    /// In Wasm 2.0 specification, this applies to the following instructions:
+<a href=#57 id=57 data-nosnippet>57</a>    /// - `MEMORY.GROW` of type `[n: i32] -&gt; [i32]`
+<a href=#58 id=58 data-nosnippet>58</a>    ///
+<a href=#59 id=59 data-nosnippet>59</a>    /// The cost of the instruction is calculated as `cost := get_flat_cost(instr) + n*get_cost_per_element(instr)`.
+<a href=#60 id=60 data-nosnippet>60</a>    /// where `n` is the stack value marked in the instruction type signature above. Other instructions and bytes that
+<a href=#61 id=61 data-nosnippet>61</a>    /// do not correspond to any instruction are ignored.
+<a href=#62 id=62 data-nosnippet>62</a>    </span><span class="comment">// It must always be checked that the calls to this method fold into a constant if it is just a match statement that
+<a href=#63 id=63 data-nosnippet>63</a>    // yields constants.
+<a href=#64 id=64 data-nosnippet>64</a>    </span><span class="attr">#[inline(always)]
+<a href=#65 id=65 data-nosnippet>65</a>    </span><span class="kw">fn </span>get_cost_per_element(_instr: u8) -&gt; u32 {
+<a href=#66 id=66 data-nosnippet>66</a>        <span class="number">0
+<a href=#67 id=67 data-nosnippet>67</a>    </span>}
+<a href=#68 id=68 data-nosnippet>68</a>
+<a href=#69 id=69 data-nosnippet>69</a>    <span class="doccomment">/// Amount of fuel to be deducted per element of a  multi-byte instruction that starts with the byte 0xFC,
+<a href=#70 id=70 data-nosnippet>70</a>    /// which executes in asymptotically linear time with respect to one of the values it pops from the stack. This
+<a href=#71 id=71 data-nosnippet>71</a>    /// method should return the cost of an instruction obtained by prepending 0xFD to of an unsigned 32-bit LEB
+<a href=#72 id=72 data-nosnippet>72</a>    /// representation of `instr`. Multi-byte sequences obtained this way that do not correspond to any Wasm instruction
+<a href=#73 id=73 data-nosnippet>73</a>    /// are ignored.
+<a href=#74 id=74 data-nosnippet>74</a>    ///
+<a href=#75 id=75 data-nosnippet>75</a>    /// In Wasm 2.0 specification, this applies to the following instructions:
+<a href=#76 id=76 data-nosnippet>76</a>    /// - `MEMORY.INIT x`  of type `[d:i32 s: i32 n: i32] -&gt; []`
+<a href=#77 id=77 data-nosnippet>77</a>    /// - `MEMORY.FILL`    of type `[d: i32 val: i32 n: i32] -&gt; []`
+<a href=#78 id=78 data-nosnippet>78</a>    /// - `MEMORY.COPY`    of type `[d: i32 s: i32 n: i32] -&gt; []`
+<a href=#79 id=79 data-nosnippet>79</a>    /// - `TABLE.GROW x`   of type `[val: ref n: i32] -&gt; [i32]`
+<a href=#80 id=80 data-nosnippet>80</a>    /// - `TABLE.INIT x y` of type `[d: i32 s: i32 n: i32] -&gt; []`
+<a href=#81 id=81 data-nosnippet>81</a>    /// - `TABLE.FILL x`   of type `[i: i32 val: ref n: i32] -&gt; []`
+<a href=#82 id=82 data-nosnippet>82</a>    /// - `TABLE.COPY x y` of type `[d: i32 s: i32 n: i32] -&gt; []`
+<a href=#83 id=83 data-nosnippet>83</a>    ///
+<a href=#84 id=84 data-nosnippet>84</a>    /// The cost of the instruction is calculated as `cost := get_flat_cost(instr) + n*get_cost_per_element(instr)`.
+<a href=#85 id=85 data-nosnippet>85</a>    /// where `n` is the stack value marked in the instruction type signature above. Other instructions and multi-byte
+<a href=#86 id=86 data-nosnippet>86</a>    /// sequences that do not correspond to any instruction are ignored.
+<a href=#87 id=87 data-nosnippet>87</a>    </span><span class="comment">// It must always be checked that the calls to this method fold into a constant if it is just a match statement that
+<a href=#88 id=88 data-nosnippet>88</a>    // yields constants.
+<a href=#89 id=89 data-nosnippet>89</a>    </span><span class="attr">#[inline(always)]
+<a href=#90 id=90 data-nosnippet>90</a>    </span><span class="kw">fn </span>get_fc_extension_cost_per_element(_instr: u32) -&gt; u32 {
+<a href=#91 id=91 data-nosnippet>91</a>        <span class="number">0
+<a href=#92 id=92 data-nosnippet>92</a>    </span>}
+<a href=#93 id=93 data-nosnippet>93</a>}
+<a href=#94 id=94 data-nosnippet>94</a>
+<a href=#95 id=95 data-nosnippet>95</a><span class="doccomment">/// Default implementation of the interpreter configuration, with all hooks empty
+<a href=#96 id=96 data-nosnippet>96</a></span><span class="kw">impl </span>Config <span class="kw">for </span>() {}</code></pre></div></section></main></body></html>
