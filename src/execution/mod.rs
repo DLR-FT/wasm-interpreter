@@ -83,20 +83,6 @@ impl<'b, T: Config> RuntimeInstance<'b, T> {
         self.store.add_module(module_name, validation_info, None)
     }
 
-    pub fn get_function_by_index(
-        &self,
-        module_addr: ModuleAddr,
-        function_idx: usize,
-    ) -> Result<FuncAddr, RuntimeError> {
-        let module_inst = self.store.modules.get(module_addr);
-        let function = *module_inst
-            .func_addrs
-            .get(function_idx)
-            .ok_or(RuntimeError::FunctionNotFound)?;
-
-        Ok(function)
-    }
-
     /// Invokes a function with the given parameters of type `Param`, and return types of type `Returns`.
     pub fn invoke_typed<Params: InteropValueList, Returns: InteropValueList>(
         &mut self,
