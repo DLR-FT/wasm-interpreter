@@ -2,7 +2,7 @@ use wasm::{validate, RuntimeInstance};
 
 const SELECT_TEST: &str = r#"
 (module
-  (func $select_test (param $num i32) (result i32)
+  (func (export "select_test") (param $num i32) (result i32)
     (if (result i32)
       (i32.le_s
         (local.get $num)
@@ -26,8 +26,6 @@ const SELECT_TEST: &str = r#"
       )
     )
   )
-
-  (export "select_test" (func $select_test))
 )"#;
 
 #[test_log::test]
@@ -42,12 +40,17 @@ fn polymorphic_select_test() {
     let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let select_test_fn = instance.get_function_by_index(module, 0).unwrap();
+    let select_test = instance
+        .store
+        .instance_export(module, "select_test")
+        .unwrap()
+        .as_func()
+        .unwrap();
 
-    assert_eq!(4, instance.invoke_typed(select_test_fn, 0).unwrap());
-    assert_eq!(8, instance.invoke_typed(select_test_fn, 1).unwrap());
-    assert_eq!(15, instance.invoke_typed(select_test_fn, 2).unwrap());
-    assert_eq!(16, instance.invoke_typed(select_test_fn, 3).unwrap());
+    assert_eq!(4, instance.invoke_typed(select_test, 0).unwrap());
+    assert_eq!(8, instance.invoke_typed(select_test, 1).unwrap());
+    assert_eq!(15, instance.invoke_typed(select_test, 2).unwrap());
+    assert_eq!(16, instance.invoke_typed(select_test, 3).unwrap());
 }
 
 #[test_log::test]
@@ -62,10 +65,15 @@ fn typed_select_test() {
     let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let select_test_fn = instance.get_function_by_index(module, 0).unwrap();
+    let select_test = instance
+        .store
+        .instance_export(module, "select_test")
+        .unwrap()
+        .as_func()
+        .unwrap();
 
-    assert_eq!(4, instance.invoke_typed(select_test_fn, 0).unwrap());
-    assert_eq!(8, instance.invoke_typed(select_test_fn, 1).unwrap());
-    assert_eq!(15, instance.invoke_typed(select_test_fn, 2).unwrap());
-    assert_eq!(16, instance.invoke_typed(select_test_fn, 3).unwrap());
+    assert_eq!(4, instance.invoke_typed(select_test, 0).unwrap());
+    assert_eq!(8, instance.invoke_typed(select_test, 1).unwrap());
+    assert_eq!(15, instance.invoke_typed(select_test, 2).unwrap());
+    assert_eq!(16, instance.invoke_typed(select_test, 3).unwrap());
 }
