@@ -417,7 +417,7 @@ impl<'b, T: Config> Store<'b, T> {
             // execute
             //   call func_ifx
             let func_addr = self.modules.get(module_addr).func_addrs[func_idx];
-            let RunState::Finished(_) = self.invoke(func_addr, Vec::new(), maybe_fuel)? else {
+            let RunState::Finished { .. } = self.invoke(func_addr, Vec::new(), maybe_fuel)? else {
                 return Err(RuntimeError::OutOfFuel);
             };
         };
@@ -994,7 +994,10 @@ impl<'b, T: Config> Store<'b, T> {
                             return Err(RuntimeError::HostFunctionSignatureMismatch);
                         }
 
-                        Ok(RunState::Finished(returns))
+                        Ok(RunState::Finished {
+                            values: returns,
+                            maybe_remaining_fuel: maybe_fuel,
+                        })
                     }
                     FuncInst::WasmFunc(wasm_func_inst) => {
                         // Prepare a new stack with the locals for the entry function
@@ -1022,7 +1025,12 @@ impl<'b, T: Config> Store<'b, T> {
                         match result {
                             None => {
                                 debug!("Successfully invoked function");
-                                Ok(RunState::Finished(resumable.stack.into_values()))
+                                let maybe_remaining_fuel = resumable.maybe_fuel;
+                                let values = resumable.stack.into_values();
+                                Ok(RunState::Finished {
+                                    values,
+                                    maybe_remaining_fuel,
+                                })
                             }
                             Some(required_fuel) => {
                                 debug!("Successfully invoked function, but ran out of fuel");
@@ -1071,8 +1079,12 @@ impl<'b, T: Config> Store<'b, T> {
                         // Take the `Weak` pointing to the dormitory out of `self` and replace it with a default `Weak`.
                         // This causes the `Drop` impl of `self` to directly quit preventing it from unnecessarily locking the dormitory.
                         let _dormitory = mem::take(dormitory_weak);
-
-                        Ok(RunState::Finished(resumable.stack.into_values()))
+                        let maybe_remaining_fuel = resumable.maybe_fuel;
+                        let values = resumable.stack.into_values();
+                        Ok(RunState::Finished {
+                            values,
+                            maybe_remaining_fuel,
+                        })
                     }
                     Some(required_fuel) => Ok(RunState::Resumable {
                         resumable_ref,

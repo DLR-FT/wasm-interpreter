@@ -99,7 +99,7 @@ fn resumable() {
 
     for _ in 0..20 {
         run_state_mult = match run_state_mult {
-            RunState::Finished(_) => panic!("should not terminate"),
+            RunState::Finished { .. } => panic!("should not terminate"),
             RunState::Resumable {
                 mut resumable_ref, ..
             } => {
@@ -117,7 +117,7 @@ fn resumable() {
         );
 
         run_state_add = match run_state_add {
-            RunState::Finished(_) => panic!("should not terminate"),
+            RunState::Finished { .. } => panic!("should not terminate"),
             RunState::Resumable {
                 mut resumable_ref, ..
             } => {
@@ -187,7 +187,7 @@ fn resumable_internal_state() {
     let increment = |maybe_fuel: &mut Option<u32>| *maybe_fuel = maybe_fuel.map(|fuel| fuel + 4);
     for expected in expected.into_iter().take(4).skip(1) {
         run_state_add = match run_state_add {
-            RunState::Finished(_) => {
+            RunState::Finished { .. } => {
                 assert_eq!(
                     runtime_instance.store.global_read(global_0),
                     wasm::Value::I32(expected)

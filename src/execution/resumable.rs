@@ -52,11 +52,11 @@ pub struct FreshResumableRef {
     pub(crate) maybe_fuel: Option<u32>,
 }
 
-/// An object associated to a resumable that is held internally. The variant `ResumableRef::Fresh` indicates this
-/// resumable has never been invoked/resumed to. `ResumableRef::Invoked` indicates this resumable has been
-/// invoked/resumed to at least once.
+/// An object associated to a resumable that is held internally.
 pub enum ResumableRef {
+    /// indicates this resumable has never been invoked/resumed to.
     Fresh(FreshResumableRef),
+    /// indicates this resumable has been invoked/resumed to at least once.
     Invoked(InvokedResumableRef),
 }
 
@@ -72,11 +72,16 @@ impl Drop for InvokedResumableRef {
     }
 }
 
-/// Represents the state of a possibly interrupted resumable. `RunState::Finished` represents a resumable that has
-/// executed completely. `RunState::Resumable` represents a resumable that has ran out of fuel during execution, missing
-/// at least `required_fuel` units of fuel to continue further execution.
+/// Represents the state of a possibly interrupted resumable.
 pub enum RunState {
-    Finished(Vec<Value>),
+    /// represents a resumable that has executed completely with return values `values` and possibly remaining fuel
+    /// `maybe_remaining_fuel` (has `Some(remaining_fuel)` for fuel-metered operations and `None` otherwise)
+    Finished {
+        values: Vec<Value>,
+        maybe_remaining_fuel: Option<u32>,
+    },
+    /// represents a resumable that has ran out of fuel during execution, missing at least `required_fuel` units of fuel
+    /// to continue further execution.
     Resumable {
         resumable_ref: ResumableRef,
         required_fuel: NonZeroU32,

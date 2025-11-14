@@ -67,7 +67,7 @@ pub fn compile_simple_import() {
     let get_three_result = store
         .invoke(get_three, Vec::new(), None)
         .map(|rs| match rs {
-            RunState::Finished(values) => values,
+            RunState::Finished { values, .. } => values,
             _ => unreachable!("fuel is disabled"),
         });
     assert_eq!(get_three_result.unwrap(), &[Value::I32(3)],);

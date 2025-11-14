@@ -143,7 +143,7 @@ impl<'b, T: Config> RuntimeInstance<'b, T> {
         self.store
             .invoke(function, params, None)
             .map(|run_state| match run_state {
-                RunState::Finished(values) => values,
+                RunState::Finished { values, .. } => values,
                 _ => unreachable!("non metered invoke call"),
             })
     }
