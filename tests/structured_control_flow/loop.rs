@@ -2,7 +2,7 @@ use wasm::{validate, RuntimeInstance};
 
 const FIBONACCI_WITH_LOOP_AND_BR_IF: &str = r#"
 (module
-  (func $fibonacci (param $n i32) (result i32)
+  (func (export "fibonacci") (param $n i32) (result i32)
     (local $prev i32)
     (local $curr i32)
     (local $counter i32)
@@ -47,8 +47,6 @@ const FIBONACCI_WITH_LOOP_AND_BR_IF: &str = r#"
 
     local.get $curr
   )
-
-  (export "fibonacci" (func $fibonacci))
 )"#;
 
 #[test_log::test]
@@ -59,7 +57,12 @@ fn fibonacci_with_loop_and_br_if() {
     let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    let fibonacci_fn = instance.get_function_by_index(module, 0).unwrap();
+    let fibonacci_fn = instance
+        .store
+        .instance_export(module, "fibonacci")
+        .unwrap()
+        .as_func()
+        .unwrap();
 
     assert_eq!(1, instance.invoke_typed(fibonacci_fn, -5).unwrap());
     assert_eq!(1, instance.invoke_typed(fibonacci_fn, 0).unwrap());

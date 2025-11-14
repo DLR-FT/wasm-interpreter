@@ -13,12 +13,12 @@ fn main() -> ExitCode {
     let wat = r#"
     (module
         (memory 1)
-        (func $add_one (param $x i32) (result i32) (local $ununsed_local i32)
+        (func $add_one (export "add_one") (param $x i32) (result i32) (local $ununsed_local i32)
             local.get $x
             i32.const 1
             i32.add)
 
-        (func $add (param $x i32) (param $y i32) (result i32)
+        (func $add (export "add") (param $x i32) (param $y i32) (result i32)
             local.get $y
             local.get $x
             i32.add)
@@ -45,7 +45,7 @@ fn main() -> ExitCode {
         }
     };
 
-    let (mut instance, module_addr) =
+    let (mut instance, module) =
         match RuntimeInstance::new_with_default_module((), &validation_info) {
             Ok(instance) => instance,
             Err(err) => {
@@ -54,33 +54,44 @@ fn main() -> ExitCode {
             }
         };
 
-    let twelve: i32 = instance
-        .invoke_typed(
-            instance.get_function_by_index(module_addr, 1).unwrap(),
-            (5, 7),
-        )
+    let add_one = instance
+        .store
+        .instance_export(module, "add_one")
+        .unwrap()
+        .as_func()
         .unwrap();
+
+    let add = instance
+        .store
+        .instance_export(module, "add")
+        .unwrap()
+        .as_func()
+        .unwrap();
+
+    let store_num = instance
+        .store
+        .instance_export(module, "store_num")
+        .unwrap()
+        .as_func()
+        .unwrap();
+
+    let load_num = instance
+        .store
+        .instance_export(module, "load_num")
+        .unwrap()
+        .as_func()
+        .unwrap();
+
+    let twelve: i32 = instance.invoke_typed(add, (5, 7)).unwrap();
     assert_eq!(twelve, 12);
 
-    let twelve_plus_one: i32 = instance
-        .invoke_typed(
-            instance.get_function_by_index(module_addr, 0).unwrap(),
-            twelve,
-        )
-        .unwrap();
+    let twelve_plus_one: i32 = instance.invoke_typed(add_one, twelve).unwrap();
     assert_eq!(twelve_plus_one, 13);
 
-    instance
-        .invoke_typed::<_, ()>(
-            instance.get_function_by_index(module_addr, 2).unwrap(),
-            42_i32,
-        )
-        .unwrap();
+    instance.invoke_typed::<_, ()>(store_num, 42_i32).unwrap();
 
     assert_eq!(
-        instance
-            .invoke_typed::<(), i32>(instance.get_function_by_index(module_addr, 3).unwrap(), ())
-            .unwrap(),
+        instance.invoke_typed::<(), i32>(load_num, ()).unwrap(),
         42_i32
     );
 

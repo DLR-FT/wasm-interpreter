@@ -8,7 +8,7 @@ use wasm::{validate, RuntimeInstance};
 pub fn f64_const() {
     let wat = r#"
         (module
-            (func (export "getF64Const") (result f64)
+            (func (export "get_f64_const") (result f64)
                 f64.const 3.14159265359  ;; Pi
             )
         )
@@ -21,11 +21,16 @@ pub fn f64_const() {
     let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
+    let function = instance
+        .store
+        .instance_export(module, "get_f64_const")
+        .unwrap()
+        .as_func()
+        .unwrap();
+
     assert_eq!(
         3.14159265359_f64,
-        instance
-            .invoke_typed(instance.get_function_by_index(module, 0).unwrap(), ())
-            .unwrap()
+        instance.invoke_typed(function, ()).unwrap()
     );
 }
 
@@ -49,23 +54,20 @@ pub fn f64_eq() {
     let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
+    let function = instance
+        .store
+        .instance_export(module, "f64_eq")
+        .unwrap()
+        .as_func()
+        .unwrap();
+
     assert_eq!(
         1,
-        instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (1.1_f64, 1.1_f64)
-            )
-            .unwrap()
+        instance.invoke_typed(function, (1.1_f64, 1.1_f64)).unwrap()
     );
     assert_eq!(
         0,
-        instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (1.1_f64, 1.2_f64)
-            )
-            .unwrap()
+        instance.invoke_typed(function, (1.1_f64, 1.2_f64)).unwrap()
     );
 }
 
@@ -87,31 +89,25 @@ pub fn f64_ne() {
     let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
+    let function = instance
+        .store
+        .instance_export(module, "f64_ne")
+        .unwrap()
+        .as_func()
+        .unwrap();
+
     assert_eq!(
         0,
-        instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (1.1_f64, 1.1_f64)
-            )
-            .unwrap()
+        instance.invoke_typed(function, (1.1_f64, 1.1_f64)).unwrap()
     );
     assert_eq!(
         1,
-        instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (1.1_f64, 1.2_f64)
-            )
-            .unwrap()
+        instance.invoke_typed(function, (1.1_f64, 1.2_f64)).unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (0.0_f64, -0.0_f64)
-            )
+            .invoke_typed(function, (0.0_f64, -0.0_f64))
             .unwrap()
     );
 }
@@ -134,32 +130,24 @@ pub fn f64_lt() {
     let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
+    let function = instance
+        .store
+        .instance_export(module, "f64_lt")
+        .unwrap()
+        .as_func()
+        .unwrap();
+
     assert_eq!(
         1,
-        instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (1.0_f64, 2.0_f64)
-            )
-            .unwrap()
+        instance.invoke_typed(function, (1.0_f64, 2.0_f64)).unwrap()
     );
     assert_eq!(
         0,
-        instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (2.0_f64, 1.0_f64)
-            )
-            .unwrap()
+        instance.invoke_typed(function, (2.0_f64, 1.0_f64)).unwrap()
     );
     assert_eq!(
         0,
-        instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (1.0_f64, 1.0_f64)
-            )
-            .unwrap()
+        instance.invoke_typed(function, (1.0_f64, 1.0_f64)).unwrap()
     );
 }
 
@@ -181,32 +169,24 @@ pub fn f64_gt() {
     let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
+    let function = instance
+        .store
+        .instance_export(module, "f64_gt")
+        .unwrap()
+        .as_func()
+        .unwrap();
+
     assert_eq!(
         0,
-        instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (1.0_f64, 2.0_f64)
-            )
-            .unwrap()
+        instance.invoke_typed(function, (1.0_f64, 2.0_f64)).unwrap()
     );
     assert_eq!(
         1,
-        instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (2.0_f64, 1.0_f64)
-            )
-            .unwrap()
+        instance.invoke_typed(function, (2.0_f64, 1.0_f64)).unwrap()
     );
     assert_eq!(
         0,
-        instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (1.0_f64, 1.0_f64)
-            )
-            .unwrap()
+        instance.invoke_typed(function, (1.0_f64, 1.0_f64)).unwrap()
     );
 }
 
@@ -228,32 +208,24 @@ pub fn f64_le() {
     let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
+    let function = instance
+        .store
+        .instance_export(module, "f64_le")
+        .unwrap()
+        .as_func()
+        .unwrap();
+
     assert_eq!(
         1,
-        instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (1.0_f64, 2.0_f64)
-            )
-            .unwrap()
+        instance.invoke_typed(function, (1.0_f64, 2.0_f64)).unwrap()
     );
     assert_eq!(
         0,
-        instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (2.0_f64, 1.0_f64)
-            )
-            .unwrap()
+        instance.invoke_typed(function, (2.0_f64, 1.0_f64)).unwrap()
     );
     assert_eq!(
         1,
-        instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (1.0_f64, 1.0_f64)
-            )
-            .unwrap()
+        instance.invoke_typed(function, (1.0_f64, 1.0_f64)).unwrap()
     );
 }
 
@@ -275,32 +247,24 @@ pub fn f64_ge() {
     let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
+    let function = instance
+        .store
+        .instance_export(module, "f64_ge")
+        .unwrap()
+        .as_func()
+        .unwrap();
+
     assert_eq!(
         0,
-        instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (1.0_f64, 2.0_f64)
-            )
-            .unwrap()
+        instance.invoke_typed(function, (1.0_f64, 2.0_f64)).unwrap()
     );
     assert_eq!(
         1,
-        instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (2.0_f64, 1.0_f64)
-            )
-            .unwrap()
+        instance.invoke_typed(function, (2.0_f64, 1.0_f64)).unwrap()
     );
     assert_eq!(
         1,
-        instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (1.0_f64, 1.0_f64)
-            )
-            .unwrap()
+        instance.invoke_typed(function, (1.0_f64, 1.0_f64)).unwrap()
     );
 }
 
@@ -321,67 +285,45 @@ pub fn f64_abs() {
     let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
+    let function = instance
+        .store
+        .instance_export(module, "f64_abs")
+        .unwrap()
+        .as_func()
+        .unwrap();
+
     {
         let result = instance
-            .invoke_typed::<f64, f64>(
-                instance.get_function_by_index(module, 0).unwrap(),
-                -f64::NAN,
-            )
+            .invoke_typed::<f64, f64>(function, -f64::NAN)
             .unwrap();
         assert!(result.is_nan());
         assert!(result.is_sign_positive());
     }
     {
         let result = instance
-            .invoke_typed::<f64, f64>(instance.get_function_by_index(module, 0).unwrap(), f64::NAN)
+            .invoke_typed::<f64, f64>(function, f64::NAN)
             .unwrap();
         assert!(result.is_nan());
         assert!(result.is_sign_positive());
     }
     {
         let result = instance
-            .invoke_typed::<f64, f64>(
-                instance.get_function_by_index(module, 0).unwrap(),
-                f64::NEG_INFINITY,
-            )
+            .invoke_typed::<f64, f64>(function, f64::NEG_INFINITY)
             .unwrap();
         assert!(result.is_infinite());
         assert!(result.is_sign_positive());
     }
     {
         let result = instance
-            .invoke_typed::<f64, f64>(
-                instance.get_function_by_index(module, 0).unwrap(),
-                f64::INFINITY,
-            )
+            .invoke_typed::<f64, f64>(function, f64::INFINITY)
             .unwrap();
         assert!(result.is_infinite());
         assert!(result.is_sign_positive());
     }
-    assert_eq!(
-        1.5_f64,
-        instance
-            .invoke_typed(instance.get_function_by_index(module, 0).unwrap(), 1.5_f64)
-            .unwrap()
-    );
-    assert_eq!(
-        1.5_f64,
-        instance
-            .invoke_typed(instance.get_function_by_index(module, 0).unwrap(), -1.5_f64)
-            .unwrap()
-    );
-    assert_eq!(
-        0.0_f64,
-        instance
-            .invoke_typed(instance.get_function_by_index(module, 0).unwrap(), 0.0_f64)
-            .unwrap()
-    );
-    assert_eq!(
-        0.0_f64,
-        instance
-            .invoke_typed(instance.get_function_by_index(module, 0).unwrap(), -0.0_f64)
-            .unwrap()
-    );
+    assert_eq!(1.5_f64, instance.invoke_typed(function, 1.5_f64).unwrap());
+    assert_eq!(1.5_f64, instance.invoke_typed(function, -1.5_f64).unwrap());
+    assert_eq!(0.0_f64, instance.invoke_typed(function, 0.0_f64).unwrap());
+    assert_eq!(0.0_f64, instance.invoke_typed(function, -0.0_f64).unwrap());
 }
 
 /// A simple function to test the f64.neg implementation
@@ -401,67 +343,45 @@ pub fn f64_neg() {
     let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
+    let function = instance
+        .store
+        .instance_export(module, "f64_neg")
+        .unwrap()
+        .as_func()
+        .unwrap();
+
     {
         let result = instance
-            .invoke_typed::<f64, f64>(
-                instance.get_function_by_index(module, 0).unwrap(),
-                -f64::NAN,
-            )
+            .invoke_typed::<f64, f64>(function, -f64::NAN)
             .unwrap();
         assert!(result.is_nan());
         assert!(result.is_sign_positive());
     }
     {
         let result = instance
-            .invoke_typed::<f64, f64>(instance.get_function_by_index(module, 0).unwrap(), f64::NAN)
+            .invoke_typed::<f64, f64>(function, f64::NAN)
             .unwrap();
         assert!(result.is_nan());
         assert!(result.is_sign_negative());
     }
     {
         let result = instance
-            .invoke_typed::<f64, f64>(
-                instance.get_function_by_index(module, 0).unwrap(),
-                f64::NEG_INFINITY,
-            )
+            .invoke_typed::<f64, f64>(function, f64::NEG_INFINITY)
             .unwrap();
         assert!(result.is_infinite());
         assert!(result.is_sign_positive());
     }
     {
         let result = instance
-            .invoke_typed::<f64, f64>(
-                instance.get_function_by_index(module, 0).unwrap(),
-                f64::INFINITY,
-            )
+            .invoke_typed::<f64, f64>(function, f64::INFINITY)
             .unwrap();
         assert!(result.is_infinite());
         assert!(result.is_sign_negative());
     }
-    assert_eq!(
-        -1.5_f64,
-        instance
-            .invoke_typed(instance.get_function_by_index(module, 0).unwrap(), 1.5_f64)
-            .unwrap()
-    );
-    assert_eq!(
-        1.5_f64,
-        instance
-            .invoke_typed(instance.get_function_by_index(module, 0).unwrap(), -1.5_f64)
-            .unwrap()
-    );
-    assert_eq!(
-        -0.0_f64,
-        instance
-            .invoke_typed(instance.get_function_by_index(module, 0).unwrap(), 0.0_f64)
-            .unwrap()
-    );
-    assert_eq!(
-        0.0_f64,
-        instance
-            .invoke_typed(instance.get_function_by_index(module, 0).unwrap(), -0.0_f64)
-            .unwrap()
-    );
+    assert_eq!(-1.5_f64, instance.invoke_typed(function, 1.5_f64).unwrap());
+    assert_eq!(1.5_f64, instance.invoke_typed(function, -1.5_f64).unwrap());
+    assert_eq!(-0.0_f64, instance.invoke_typed(function, 0.0_f64).unwrap());
+    assert_eq!(0.0_f64, instance.invoke_typed(function, -0.0_f64).unwrap());
 }
 
 /// A simple function to test the f64.ceil implementation
@@ -481,24 +401,16 @@ pub fn f64_ceil() {
     let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    assert_eq!(
-        2.0_f64,
-        instance
-            .invoke_typed(instance.get_function_by_index(module, 0).unwrap(), 1.5_f64)
-            .unwrap()
-    );
-    assert_eq!(
-        -1.0_f64,
-        instance
-            .invoke_typed(instance.get_function_by_index(module, 0).unwrap(), -1.5_f64)
-            .unwrap()
-    );
-    assert_eq!(
-        0.0_f64,
-        instance
-            .invoke_typed(instance.get_function_by_index(module, 0).unwrap(), -0.1_f64)
-            .unwrap()
-    );
+    let function = instance
+        .store
+        .instance_export(module, "f64_ceil")
+        .unwrap()
+        .as_func()
+        .unwrap();
+
+    assert_eq!(2.0_f64, instance.invoke_typed(function, 1.5_f64).unwrap());
+    assert_eq!(-1.0_f64, instance.invoke_typed(function, -1.5_f64).unwrap());
+    assert_eq!(0.0_f64, instance.invoke_typed(function, -0.1_f64).unwrap());
 }
 
 /// A simple function to test the f64.floor implementation
@@ -518,24 +430,16 @@ pub fn f64_floor() {
     let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    assert_eq!(
-        1.0_f64,
-        instance
-            .invoke_typed(instance.get_function_by_index(module, 0).unwrap(), 1.5_f64)
-            .unwrap()
-    );
-    assert_eq!(
-        -2.0_f64,
-        instance
-            .invoke_typed(instance.get_function_by_index(module, 0).unwrap(), -1.5_f64)
-            .unwrap()
-    );
-    assert_eq!(
-        -1.0_f64,
-        instance
-            .invoke_typed(instance.get_function_by_index(module, 0).unwrap(), -0.1_f64)
-            .unwrap()
-    );
+    let function = instance
+        .store
+        .instance_export(module, "f64_floor")
+        .unwrap()
+        .as_func()
+        .unwrap();
+
+    assert_eq!(1.0_f64, instance.invoke_typed(function, 1.5_f64).unwrap());
+    assert_eq!(-2.0_f64, instance.invoke_typed(function, -1.5_f64).unwrap());
+    assert_eq!(-1.0_f64, instance.invoke_typed(function, -0.1_f64).unwrap());
 }
 
 /// A simple function to test the f64.trunc implementation
@@ -555,24 +459,16 @@ pub fn f64_trunc() {
     let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    assert_eq!(
-        1.0_f64,
-        instance
-            .invoke_typed(instance.get_function_by_index(module, 0).unwrap(), 1.5_f64)
-            .unwrap()
-    );
-    assert_eq!(
-        -1.0_f64,
-        instance
-            .invoke_typed(instance.get_function_by_index(module, 0).unwrap(), -1.5_f64)
-            .unwrap()
-    );
-    assert_eq!(
-        0.0_f64,
-        instance
-            .invoke_typed(instance.get_function_by_index(module, 0).unwrap(), 0.9_f64)
-            .unwrap()
-    );
+    let function = instance
+        .store
+        .instance_export(module, "f64_trunc")
+        .unwrap()
+        .as_func()
+        .unwrap();
+
+    assert_eq!(1.0_f64, instance.invoke_typed(function, 1.5_f64).unwrap());
+    assert_eq!(-1.0_f64, instance.invoke_typed(function, -1.5_f64).unwrap());
+    assert_eq!(0.0_f64, instance.invoke_typed(function, 0.9_f64).unwrap());
 }
 
 /// A simple function to test the f64.nearest implementation
@@ -592,30 +488,17 @@ pub fn f64_nearest() {
     let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    assert_eq!(
-        2.0_f64,
-        instance
-            .invoke_typed(instance.get_function_by_index(module, 0).unwrap(), 1.5_f64)
-            .unwrap()
-    );
-    assert_eq!(
-        -2.0_f64,
-        instance
-            .invoke_typed(instance.get_function_by_index(module, 0).unwrap(), -1.5_f64)
-            .unwrap()
-    );
-    assert_eq!(
-        1.0_f64,
-        instance
-            .invoke_typed(instance.get_function_by_index(module, 0).unwrap(), 0.6_f64)
-            .unwrap()
-    );
-    assert_eq!(
-        0.0_f64,
-        instance
-            .invoke_typed(instance.get_function_by_index(module, 0).unwrap(), 0.4_f64)
-            .unwrap()
-    );
+    let function = instance
+        .store
+        .instance_export(module, "f64_nearest")
+        .unwrap()
+        .as_func()
+        .unwrap();
+
+    assert_eq!(2.0_f64, instance.invoke_typed(function, 1.5_f64).unwrap());
+    assert_eq!(-2.0_f64, instance.invoke_typed(function, -1.5_f64).unwrap());
+    assert_eq!(1.0_f64, instance.invoke_typed(function, 0.6_f64).unwrap());
+    assert_eq!(0.0_f64, instance.invoke_typed(function, 0.4_f64).unwrap());
 }
 
 /// A simple function to test the f64.sqrt implementation
@@ -636,23 +519,20 @@ pub fn f64_sqrt() {
     let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
-    assert_eq!(
-        2.0_f64,
-        instance
-            .invoke_typed(instance.get_function_by_index(module, 0).unwrap(), 4.0_f64)
-            .unwrap()
-    );
+    let function = instance
+        .store
+        .instance_export(module, "f64_sqrt")
+        .unwrap()
+        .as_func()
+        .unwrap();
+
+    assert_eq!(2.0_f64, instance.invoke_typed(function, 4.0_f64).unwrap());
     assert_eq!(
         1.4142135623730951_f64,
-        instance
-            .invoke_typed(instance.get_function_by_index(module, 0).unwrap(), 2.0_f64)
-            .unwrap()
+        instance.invoke_typed(function, 2.0_f64).unwrap()
     );
     assert!(instance
-        .invoke_typed::<f64, f64>(
-            instance.get_function_by_index(module, 0).unwrap(),
-            -f64::NAN
-        )
+        .invoke_typed::<f64, f64>(function, -f64::NAN)
         .unwrap()
         .is_nan());
 }
@@ -675,31 +555,27 @@ pub fn f64_add() {
     let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
+    let function = instance
+        .store
+        .instance_export(module, "f64_add")
+        .unwrap()
+        .as_func()
+        .unwrap();
+
     assert_eq!(
         3.0_f64,
-        instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (1.5_f64, 1.5_f64)
-            )
-            .unwrap()
+        instance.invoke_typed(function, (1.5_f64, 1.5_f64)).unwrap()
     );
     assert_eq!(
         -1.0_f64,
         instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (1.0_f64, -2.0_f64)
-            )
+            .invoke_typed(function, (1.0_f64, -2.0_f64))
             .unwrap()
     );
     assert_eq!(
         0.0_f64,
         instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (0.1_f64, -0.1_f64)
-            )
+            .invoke_typed(function, (0.1_f64, -0.1_f64))
             .unwrap()
     );
 }
@@ -722,31 +598,27 @@ pub fn f64_sub() {
     let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
+    let function = instance
+        .store
+        .instance_export(module, "f64_sub")
+        .unwrap()
+        .as_func()
+        .unwrap();
+
     assert_eq!(
         0.0_f64,
-        instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (1.5_f64, 1.5_f64)
-            )
-            .unwrap()
+        instance.invoke_typed(function, (1.5_f64, 1.5_f64)).unwrap()
     );
     assert_eq!(
         3.0_f64,
         instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (1.0_f64, -2.0_f64)
-            )
+            .invoke_typed(function, (1.0_f64, -2.0_f64))
             .unwrap()
     );
     assert_eq!(
         0.2_f64,
         instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (0.1_f64, -0.1_f64)
-            )
+            .invoke_typed(function, (0.1_f64, -0.1_f64))
             .unwrap()
     );
 }
@@ -769,32 +641,26 @@ pub fn f64_mul() {
     let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
+    let function = instance
+        .store
+        .instance_export(module, "f64_mul")
+        .unwrap()
+        .as_func()
+        .unwrap();
+
     assert_eq!(
         6.0_f64,
-        instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (2.0_f64, 3.0_f64)
-            )
-            .unwrap()
+        instance.invoke_typed(function, (2.0_f64, 3.0_f64)).unwrap()
     );
     assert_eq!(
         -4.0_f64,
         instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (2.0_f64, -2.0_f64)
-            )
+            .invoke_typed(function, (2.0_f64, -2.0_f64))
             .unwrap()
     );
     assert_eq!(
         0.0_f64,
-        instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (0.0_f64, 5.0_f64)
-            )
-            .unwrap()
+        instance.invoke_typed(function, (0.0_f64, 5.0_f64)).unwrap()
     );
 }
 
@@ -816,36 +682,29 @@ pub fn f64_div() {
     let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
+    let function = instance
+        .store
+        .instance_export(module, "f64_div")
+        .unwrap()
+        .as_func()
+        .unwrap();
+
     assert_eq!(
         2.0_f64,
-        instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (6.0_f64, 3.0_f64)
-            )
-            .unwrap()
+        instance.invoke_typed(function, (6.0_f64, 3.0_f64)).unwrap()
     );
     assert_eq!(
         -1.0_f64,
         instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (2.0_f64, -2.0_f64)
-            )
+            .invoke_typed(function, (2.0_f64, -2.0_f64))
             .unwrap()
     );
     assert!(instance
-        .invoke_typed::<(f64, f64), f64>(
-            instance.get_function_by_index(module, 0).unwrap(),
-            (1.0_f64, 0.0_f64)
-        )
+        .invoke_typed::<(f64, f64), f64>(function, (1.0_f64, 0.0_f64))
         .unwrap()
         .is_infinite());
     assert!(instance
-        .invoke_typed::<(f64, f64), f64>(
-            instance.get_function_by_index(module, 0).unwrap(),
-            (0.0_f64, 0.0_f64)
-        )
+        .invoke_typed::<(f64, f64), f64>(function, (0.0_f64, 0.0_f64))
         .unwrap()
         .is_nan());
 }
@@ -868,31 +727,29 @@ pub fn f64_min() {
     let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
+    let function = instance
+        .store
+        .instance_export(module, "f64_min")
+        .unwrap()
+        .as_func()
+        .unwrap();
+
     {
         let result = instance
-            .invoke_typed::<(f64, f64), f64>(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (f64::NAN, -f64::NAN),
-            )
+            .invoke_typed::<(f64, f64), f64>(function, (f64::NAN, -f64::NAN))
             .unwrap();
         assert!(result.is_nan());
     }
     {
         let result = instance
-            .invoke_typed::<(f64, f64), f64>(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (f64::NAN, f64::NAN),
-            )
+            .invoke_typed::<(f64, f64), f64>(function, (f64::NAN, f64::NAN))
             .unwrap();
         assert!(result.is_nan());
         assert!(result.is_sign_positive());
     }
     {
         let result = instance
-            .invoke_typed::<(f64, f64), f64>(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (f64::INFINITY, f64::NEG_INFINITY),
-            )
+            .invoke_typed::<(f64, f64), f64>(function, (f64::INFINITY, f64::NEG_INFINITY))
             .unwrap();
         assert!(result.is_infinite());
         assert!(result.is_sign_negative());
@@ -900,53 +757,31 @@ pub fn f64_min() {
     assert_eq!(
         42_f64,
         instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (f64::INFINITY, 42_f64)
-            )
+            .invoke_typed(function, (f64::INFINITY, 42_f64))
             .unwrap()
     );
     assert_eq!(
         -0_f64,
-        instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (-0_f64, 0_f64)
-            )
-            .unwrap()
+        instance.invoke_typed(function, (-0_f64, 0_f64)).unwrap()
     );
     assert_eq!(
         1.0_f64,
-        instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (1.0_f64, 2.0_f64)
-            )
-            .unwrap()
+        instance.invoke_typed(function, (1.0_f64, 2.0_f64)).unwrap()
     );
     assert_eq!(
         -2.0_f64,
         instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (-1.0_f64, -2.0_f64)
-            )
+            .invoke_typed(function, (-1.0_f64, -2.0_f64))
             .unwrap()
     );
     assert_eq!(
         -0.0_f64,
         instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (0.0_f64, -0.0_f64)
-            )
+            .invoke_typed(function, (0.0_f64, -0.0_f64))
             .unwrap()
     );
     assert!(instance
-        .invoke_typed::<(f64, f64), f64>(
-            instance.get_function_by_index(module, 0).unwrap(),
-            (f64::NAN, 1.0_f64)
-        )
+        .invoke_typed::<(f64, f64), f64>(function, (f64::NAN, 1.0_f64))
         .unwrap()
         .is_nan());
 }
@@ -969,31 +804,29 @@ pub fn f64_max() {
     let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
+    let function = instance
+        .store
+        .instance_export(module, "f64_max")
+        .unwrap()
+        .as_func()
+        .unwrap();
+
     {
         let result = instance
-            .invoke_typed::<(f64, f64), f64>(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (f64::NAN, -f64::NAN),
-            )
+            .invoke_typed::<(f64, f64), f64>(function, (f64::NAN, -f64::NAN))
             .unwrap();
         assert!(result.is_nan());
     }
     {
         let result = instance
-            .invoke_typed::<(f64, f64), f64>(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (f64::NAN, f64::NAN),
-            )
+            .invoke_typed::<(f64, f64), f64>(function, (f64::NAN, f64::NAN))
             .unwrap();
         assert!(result.is_nan());
         assert!(result.is_sign_positive());
     }
     {
         let result = instance
-            .invoke_typed::<(f64, f64), f64>(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (f64::INFINITY, f64::NEG_INFINITY),
-            )
+            .invoke_typed::<(f64, f64), f64>(function, (f64::INFINITY, f64::NEG_INFINITY))
             .unwrap();
         assert!(result.is_infinite());
         assert!(result.is_sign_positive());
@@ -1001,54 +834,32 @@ pub fn f64_max() {
     assert_eq!(
         42_f64,
         instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (f64::NEG_INFINITY, 42_f64)
-            )
+            .invoke_typed(function, (f64::NEG_INFINITY, 42_f64))
             .unwrap()
     );
     assert_eq!(
         0_f64,
-        instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (-0_f64, 0_f64)
-            )
-            .unwrap()
+        instance.invoke_typed(function, (-0_f64, 0_f64)).unwrap()
     );
 
     assert_eq!(
         2.0_f64,
-        instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (1.0_f64, 2.0_f64)
-            )
-            .unwrap()
+        instance.invoke_typed(function, (1.0_f64, 2.0_f64)).unwrap()
     );
     assert_eq!(
         -1.0_f64,
         instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (-1.0_f64, -2.0_f64)
-            )
+            .invoke_typed(function, (-1.0_f64, -2.0_f64))
             .unwrap()
     );
     assert_eq!(
         0.0_f64,
         instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (0.0_f64, -0.0_f64)
-            )
+            .invoke_typed(function, (0.0_f64, -0.0_f64))
             .unwrap()
     );
     assert!(instance
-        .invoke_typed::<(f64, f64), f64>(
-            instance.get_function_by_index(module, 0).unwrap(),
-            (f64::NAN, 1.0_f64)
-        )
+        .invoke_typed::<(f64, f64), f64>(function, (f64::NAN, 1.0_f64))
         .unwrap()
         .is_nan());
 }
@@ -1071,40 +882,33 @@ pub fn f64_copysign() {
     let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
         .expect("instantiation failed");
 
+    let function = instance
+        .store
+        .instance_export(module, "f64_copysign")
+        .unwrap()
+        .as_func()
+        .unwrap();
+
     assert_eq!(
         1.5_f64,
+        instance.invoke_typed(function, (1.5_f64, 2.0_f64)).unwrap()
+    );
+    assert_eq!(
+        -1.5_f64,
         instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (1.5_f64, 2.0_f64)
-            )
+            .invoke_typed(function, (1.5_f64, -2.0_f64))
             .unwrap()
     );
     assert_eq!(
         -1.5_f64,
         instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (1.5_f64, -2.0_f64)
-            )
-            .unwrap()
-    );
-    assert_eq!(
-        -1.5_f64,
-        instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (-1.5_f64, -0.0_f64)
-            )
+            .invoke_typed(function, (-1.5_f64, -0.0_f64))
             .unwrap()
     );
     assert_eq!(
         1.5_f64,
         instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (-1.5_f64, 0.0_f64)
-            )
+            .invoke_typed(function, (-1.5_f64, 0.0_f64))
             .unwrap()
     );
 }
