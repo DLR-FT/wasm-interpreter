@@ -120,7 +120,12 @@ pub fn run_simple_import() {
     assert_eq!(3, instance.invoke_typed(get_three, ()).unwrap());
 
     // Function 0 should be the imported function
-    let get_three = instance.get_function_by_index(module_base, 1).unwrap();
+    let get_three = instance
+        .store
+        .instance_export(module_base, "get_three")
+        .unwrap()
+        .as_func()
+        .unwrap();
     assert_eq!(3, instance.invoke_typed(get_three, ()).unwrap());
 }
 
