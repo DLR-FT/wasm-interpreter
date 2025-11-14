@@ -58,7 +58,7 @@ impl<'b, T: Config> RuntimeInstance<'b, T> {
         validation_info: &'_ ValidationInfo<'b>,
     ) -> Result<(Self, ModuleAddr), RuntimeError> {
         let mut instance = Self::new(user_data);
-        let module_addr = instance.add_module(DEFAULT_MODULE, validation_info)?;
+        let module_addr = instance.add_module(DEFAULT_MODULE, validation_info, None)?;
         Ok((instance, module_addr))
     }
 
@@ -70,17 +70,20 @@ impl<'b, T: Config> RuntimeInstance<'b, T> {
         // store: &mut Store,
     ) -> Result<(Self, ModuleAddr), RuntimeError> {
         let mut instance = Self::new(user_data);
-        let module_addr = instance.add_module(module_name, validation_info)?;
+        let module_addr = instance.add_module(module_name, validation_info, None)?;
         Ok((instance, module_addr))
     }
 
-    // Returns the module addr
+    // Returns the module addr. Invocation of the start function is optionally metered if `Some(fuel: u32)` is supplied
+    // to `maybe_fuel` (Returns `RuntimeError::OutOfFuel` in case of fuel depletion).
     pub fn add_module(
         &mut self,
         module_name: &str,
         validation_info: &'_ ValidationInfo<'b>,
+        maybe_fuel: Option<u32>,
     ) -> Result<ModuleAddr, RuntimeError> {
-        self.store.add_module(module_name, validation_info, None)
+        self.store
+            .add_module(module_name, validation_info, maybe_fuel)
     }
 
     pub fn get_module_by_name(&self, module_name: &str) -> Option<ModuleAddr> {

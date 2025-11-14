@@ -124,7 +124,7 @@ fn validate_instantiate<'a, 'b: 'a>(
     // TODO change hacky hidden name that uses interpreter internals
     let module_name = format!("module_{}", modules.len());
     let module = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
-        interpreter.add_module(module_name.as_str(), &validation_info)
+        interpreter.add_module(module_name.as_str(), &validation_info, None)
     }))
     .map_err(WastError::Panic)??;
 
@@ -670,7 +670,7 @@ fn execute<'a>(
 
             let module_name = format!("module_{}", modules.len());
             let module_addr = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
-                interpreter.add_module(module_name.as_str(), &validation_info)
+                interpreter.add_module(module_name.as_str(), &validation_info, None)
             }))
             .map_err(WastError::Panic)??;
             modules.push(module_addr);

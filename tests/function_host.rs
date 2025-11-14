@@ -36,6 +36,7 @@ pub fn host_func_call_within_module() {
         .add_module(
             "importing_mod",
             &validate(&wasm_bytes).expect("validation failed"),
+            None,
         )
         .expect("instantiation failed");
     let function_ref = runtime_instance
@@ -76,6 +77,7 @@ pub fn host_func_call_as_start_func() {
         .add_module(
             "importing_mod",
             &validate(&wasm_bytes).expect("validation failed"),
+            None,
         )
         .expect("instantiation to be successful");
 }
@@ -102,6 +104,7 @@ pub fn host_func_call_within_start_func() {
         .add_module(
             "importing_mod",
             &validate(&wasm_bytes).expect("validation failed"),
+            None,
         )
         .expect("instantiation to be successful");
 }
@@ -144,6 +147,7 @@ pub fn simple_multivariate_host_func_within_module() {
         .add_module(
             "importing_mod",
             &validate(&wasm_bytes).expect("validation failed"),
+            None,
         )
         .expect("instantiation failed");
     let function_ref = runtime_instance
@@ -180,6 +184,7 @@ pub fn simple_multivariate_host_func_with_host_func_wrapper() {
         .add_module(
             "importing_mod",
             &validate(&wasm_bytes).expect("validation failed"),
+            None,
         )
         .expect("instantiation failed");
     let function_ref = runtime_instance
@@ -248,6 +253,7 @@ pub fn weird_multi_typed_host_func() {
         .add_module(
             "importing_mod",
             &validate(&wasm_bytes).expect("validation failed"),
+            None,
         )
         .expect("instantiation failed");
     let function_ref = runtime_instance
@@ -285,6 +291,7 @@ pub fn host_func_runtime_error() {
         .add_module(
             "importing_mod",
             &validate(&wasm_bytes).expect("validation failed"),
+            None,
         )
         .expect("instantiation failed");
     let function_ref = runtime_instance
