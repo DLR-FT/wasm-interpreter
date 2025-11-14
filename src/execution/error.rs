@@ -92,6 +92,15 @@ impl Display for RuntimeError {
     }
 }
 
+impl core::error::Error for RuntimeError {
+    fn source(&self) -> Option<&(dyn core::error::Error + 'static)> {
+        match self {
+            RuntimeError::Trap(trap_err) => Some(trap_err),
+            _ => None,
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum TrapError {
     DivideBy0,
@@ -142,6 +151,8 @@ impl Display for TrapError {
         }
     }
 }
+
+impl core::error::Error for TrapError {}
 
 impl From<TrapError> for RuntimeError {
     fn from(value: TrapError) -> Self {
