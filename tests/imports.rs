@@ -107,7 +107,8 @@ pub fn run_simple_import() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let module_base = instance
         .add_module("base", &validation_info, None)
-        .expect("instantiation failed");
+        .expect("instantiation failed")
+        .module_addr;
 
     let get_three = instance.get_function_by_name("base", "get_three").unwrap();
     assert_eq!(3, instance.invoke_typed(get_three, ()).unwrap());

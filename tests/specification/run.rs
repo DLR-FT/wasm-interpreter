@@ -126,7 +126,8 @@ fn validate_instantiate<'a, 'b: 'a>(
     let module = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
         interpreter.add_module(module_name.as_str(), &validation_info, None)
     }))
-    .map_err(WastError::Panic)??;
+    .map_err(WastError::Panic)??
+    .module_addr;
 
     modules.push(module);
 
@@ -672,7 +673,8 @@ fn execute<'a>(
             let module_addr = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
                 interpreter.add_module(module_name.as_str(), &validation_info, None)
             }))
-            .map_err(WastError::Panic)??;
+            .map_err(WastError::Panic)??
+            .module_addr;
             modules.push(module_addr);
 
             Ok(())

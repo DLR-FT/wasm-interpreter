@@ -8,6 +8,7 @@ use const_interpreter_loop::run_const_span;
 use store::addrs::{FuncAddr, ModuleAddr};
 use store::ExternVal;
 use store::HaltExecutionError;
+use store::InstantiationOutcome;
 use value_stack::Stack;
 
 use crate::core::reader::types::{FuncType, ResultType};
@@ -58,7 +59,9 @@ impl<'b, T: Config> RuntimeInstance<'b, T> {
         validation_info: &'_ ValidationInfo<'b>,
     ) -> Result<(Self, ModuleAddr), RuntimeError> {
         let mut instance = Self::new(user_data);
-        let module_addr = instance.add_module(DEFAULT_MODULE, validation_info, None)?;
+        let module_addr = instance
+            .add_module(DEFAULT_MODULE, validation_info, None)?
+            .module_addr;
         Ok((instance, module_addr))
     }
 
@@ -70,7 +73,9 @@ impl<'b, T: Config> RuntimeInstance<'b, T> {
         // store: &mut Store,
     ) -> Result<(Self, ModuleAddr), RuntimeError> {
         let mut instance = Self::new(user_data);
-        let module_addr = instance.add_module(module_name, validation_info, None)?;
+        let module_addr = instance
+            .add_module(module_name, validation_info, None)?
+            .module_addr;
         Ok((instance, module_addr))
     }
 
@@ -81,7 +86,7 @@ impl<'b, T: Config> RuntimeInstance<'b, T> {
         module_name: &str,
         validation_info: &'_ ValidationInfo<'b>,
         maybe_fuel: Option<u32>,
-    ) -> Result<ModuleAddr, RuntimeError> {
+    ) -> Result<InstantiationOutcome, RuntimeError> {
         self.store
             .add_module(module_name, validation_info, maybe_fuel)
     }

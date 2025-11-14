@@ -103,7 +103,7 @@ impl<'b, T: Config> Store<'b, T> {
         validation_info: &ValidationInfo<'b>,
         extern_vals: Vec<ExternVal>,
         maybe_fuel: Option<u32>,
-    ) -> Result<ModuleAddr, RuntimeError> {
+    ) -> Result<InstantiationOutcome, RuntimeError> {
         // instantiation: step 1
         // The module is guaranteed to be valid, because only validation can
         // produce `ValidationInfo`s.
@@ -412,17 +412,27 @@ impl<'b, T: Config> Store<'b, T> {
         }
 
         // instantiation: step 17
-        if let Some(func_idx) = validation_info.start {
+        let maybe_remaining_fuel = if let Some(func_idx) = validation_info.start {
             // TODO (for now, we are doing hopefully what is equivalent to it)
             // execute
             //   call func_ifx
             let func_addr = self.modules.get(module_addr).func_addrs[func_idx];
-            let RunState::Finished { .. } = self.invoke(func_addr, Vec::new(), maybe_fuel)? else {
+            let RunState::Finished {
+                maybe_remaining_fuel,
+                ..
+            } = self.invoke(func_addr, Vec::new(), maybe_fuel)?
+            else {
                 return Err(RuntimeError::OutOfFuel);
             };
+            maybe_remaining_fuel
+        } else {
+            maybe_fuel
         };
 
-        Ok(module_addr)
+        Ok(InstantiationOutcome {
+            module_addr,
+            maybe_remaining_fuel,
+        })
     }
 
     /// instantiates a validated module with `validation_info` as validation evidence with name `name`
@@ -436,7 +446,7 @@ impl<'b, T: Config> Store<'b, T> {
         name: &str,
         validation_info: &ValidationInfo<'b>,
         maybe_fuel: Option<u32>,
-    ) -> Result<ModuleAddr, RuntimeError> {
+    ) -> Result<InstantiationOutcome, RuntimeError> {
         debug!("adding module with name {:?}", name);
         let mut extern_vals = Vec::new();
 
@@ -468,15 +478,16 @@ impl<'b, T: Config> Store<'b, T> {
             extern_vals.push(export_extern_val_candidate)
         }
 
-        let module_addr = self.module_instantiate(validation_info, extern_vals, maybe_fuel)?;
+        let instantiation_outcome =
+            self.module_instantiate(validation_info, extern_vals, maybe_fuel)?;
 
         self.registry.register_module(
             name.to_owned().into(),
-            self.modules.get(module_addr),
-            module_addr,
+            self.modules.get(instantiation_outcome.module_addr),
+            instantiation_outcome.module_addr,
         )?;
 
-        Ok(module_addr)
+        Ok(instantiation_outcome)
     }
 
     /// Gets an export of a specific module instance by its name
@@ -1217,4 +1228,12 @@ where
     fn globals(self) -> impl Iterator<Item = GlobalAddr> {
         self.filter_map(|extern_val| extern_val.as_global())
     }
+}
+
+/// Represents a successful, possibly fueled instantiation of a module.
+pub struct InstantiationOutcome {
+    /// contains the store address of the module that has successfully instantiated.
+    pub module_addr: ModuleAddr,
+    /// contains `Some(remaining_fuel)` if instantiation was fuel-metered and `None` otherwise.
+    pub maybe_remaining_fuel: Option<u32>,
 }
