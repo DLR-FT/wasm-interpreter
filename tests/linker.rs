@@ -31,7 +31,8 @@ pub fn compile_simple_import() {
     // First instantiate the addon module
     let addon = linker
         .module_instantiate(&mut store, &validation_info_addon, None)
-        .unwrap();
+        .unwrap()
+        .module_addr;
     // We also want to define all of its exports, to makes them discoverable for
     // linking of the base module.
     linker
@@ -55,7 +56,8 @@ pub fn compile_simple_import() {
     // 2. Perform the actual instantiation directly on the `Store`
     let base = store
         .module_instantiate(&validation_info_base, linked_base_imports, None)
-        .unwrap();
+        .unwrap()
+        .module_addr;
 
     let get_three = store
         .instance_export(base, "get_three")
@@ -83,7 +85,8 @@ fn define_duplicate_extern_value() {
 
     let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
-        .unwrap();
+        .unwrap()
+        .module_addr;
 
     let foo_function = store.instance_export(module, "foo").unwrap();
 
