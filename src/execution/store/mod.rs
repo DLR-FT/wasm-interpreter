@@ -94,6 +94,9 @@ impl<'b, T: Config> Store<'b, T> {
 
     /// Instantiate a new module instance from a [`ValidationInfo`] in this [`Store`].
     ///
+    /// Note that if this returns an `Err(_)`, the store might be left in an ill-defined state. This might cause further
+    /// operations to have unexpected results.
+    ///
     /// See: WebAssembly Specification 2.0 - 7.1.5 - module_instantiate
     pub fn module_instantiate(
         &mut self,
@@ -414,7 +417,9 @@ impl<'b, T: Config> Store<'b, T> {
             // execute
             //   call func_ifx
             let func_addr = self.modules.get(module_addr).func_addrs[func_idx];
-            self.invoke(func_addr, Vec::new(), maybe_fuel)?;
+            let RunState::Finished(_) = self.invoke(func_addr, Vec::new(), maybe_fuel)? else {
+                return Err(RuntimeError::OutOfFuel);
+            };
         };
 
         Ok(module_addr)

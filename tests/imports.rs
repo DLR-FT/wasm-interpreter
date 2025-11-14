@@ -88,7 +88,7 @@ pub fn compile_simple_import() {
     let wasm_bytes = wat::parse_str(SIMPLE_IMPORT_BASE).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let _module_base = instance
-        .add_module("base", &validation_info)
+        .add_module("base", &validation_info, None)
         .expect("Successful instantiation");
 
     // assert_eq!((), instance.invoke_typed_named("print_three", ()).unwrap());
@@ -106,7 +106,7 @@ pub fn run_simple_import() {
     let wasm_bytes = wat::parse_str(SIMPLE_IMPORT_BASE).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let module_base = instance
-        .add_module("base", &validation_info)
+        .add_module("base", &validation_info, None)
         .expect("instantiation failed");
 
     let get_three = instance.get_function_by_name("base", "get_three").unwrap();
@@ -127,7 +127,7 @@ pub fn run_call_indirect() {
     let wasm_bytes = wat::parse_str(CALL_INDIRECT_BASE).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let _module_base = instance
-        .add_module("base", &validation_info)
+        .add_module("base", &validation_info, None)
         .expect("Successful instantiation");
 
     let run = instance.get_function_by_name("base", "run").unwrap();

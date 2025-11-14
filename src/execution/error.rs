@@ -24,6 +24,8 @@ pub enum RuntimeError {
     /// It was attempted to register a symbol under a name for which a symbol already exists.
     RegistrySymbolAlreadyExists,
     MoreThanOneMemory,
+    /// Fueled execution that is not resumable has ran out of fuel.
+    OutOfFuel,
     /// The number of module exports did not match the number of extern values
     /// provided for instantiation.
     ExternValsLenMismatch,
@@ -73,6 +75,9 @@ impl Display for RuntimeError {
             ),
             RuntimeError::GlobalTypeMismatch => {
                 f.write_str("An alloc/write operation on a global failed due to a type mismatch")
+            }
+            RuntimeError::OutOfFuel => {
+                f.write_str("Fueled execution that is not resumable has ran out of fuel")
             }
             RuntimeError::ExternValsLenMismatch => {
                 f.write_str("The number of module exports did not match the number of extern values provided for instantiation.")
