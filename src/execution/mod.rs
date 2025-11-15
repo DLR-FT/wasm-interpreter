@@ -19,6 +19,7 @@ use crate::interop::InteropValueList;
 use crate::{RuntimeError, ValidationInfo};
 
 pub(crate) mod assert_validated;
+pub mod checked;
 pub mod config;
 pub mod const_interpreter_loop;
 pub mod error;

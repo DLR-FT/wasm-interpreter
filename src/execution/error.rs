@@ -17,6 +17,9 @@ pub enum RuntimeError {
     TableAccessOutOfBounds,
     UnknownExport,
     TableTypeMismatch,
+    /// The identifier of a [`Stored<T>`](crate::execution::checked::Stored) object did not match the
+    /// [`Store`](crate::execution::Store) it was used with.
+    StoreIdMismatch,
 
     // Are all of these instantiation variants? Add a new `InstantiationError` enum?
     InvalidImportType,
@@ -35,6 +38,9 @@ pub enum RuntimeError {
 
     /// An import could not be resolved because no extern value existed for it.
     UnableToResolveImport,
+
+    /// A function was invoked with incorrect parameters or return types.
+    FunctionInvocationSignatureMismatch,
 }
 
 impl Display for RuntimeError {
@@ -88,6 +94,10 @@ impl Display for RuntimeError {
             RuntimeError::UnableToResolveImport => {
                 f.write_str("Linking failed because an import could not be resolved")
             }
+            RuntimeError::FunctionInvocationSignatureMismatch => {
+                f.write_str("A function was invoked with incorrect parameters or return types")
+            }
+            RuntimeError::StoreIdMismatch => f.write_str( "The identifier of a stored object did not match the store it was used with"),
         }
     }
 }
