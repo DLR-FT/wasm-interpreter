@@ -21,7 +21,10 @@ fn counter() {
     let add_one = instance.store.func_alloc_typed::<(), ()>(add_one);
 
     for _ in 0..5 {
-        instance.invoke_typed::<(), ()>(add_one, ()).unwrap();
+        instance
+            .store
+            .invoke_typed_without_fuel::<(), ()>(add_one, ())
+            .unwrap();
     }
 
     assert_eq!(instance.store.user_data, MyCounter(5));
@@ -50,7 +53,10 @@ fn channels() {
         let mut instance = RuntimeInstance::new(MySender(tx));
         let send_message = instance.store.func_alloc_typed::<(), ()>(send_message);
 
-        instance.invoke_typed::<(), ()>(send_message, ()).unwrap();
+        instance
+            .store
+            .invoke_typed_without_fuel::<(), ()>(send_message, ())
+            .unwrap();
     });
 
     assert_eq!(rx.recv(), Ok("Hello from host function!".to_owned()));

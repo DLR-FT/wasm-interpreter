@@ -74,46 +74,67 @@ fn memory_grow_test_1() {
         .as_func()
         .unwrap();
 
-    // let x = i.invoke_typed(function_ref, params)
-    assert_eq!(i.invoke_typed(size, ()), Ok(0));
+    // let x = i.store.invoke_typed_without_fuel(function_ref, params)
+    assert_eq!(i.store.invoke_typed_without_fuel(size, ()), Ok(0));
     assert_eq!(
-        i.invoke_typed::<(), ()>(store_at_zero, ()).err(),
+        i.store
+            .invoke_typed_without_fuel::<(), ()>(store_at_zero, ())
+            .err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
     );
     assert_eq!(
-        i.invoke_typed::<(), i32>(load_at_zero, ()).err(),
+        i.store
+            .invoke_typed_without_fuel::<(), i32>(load_at_zero, ())
+            .err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
     );
 
     assert_eq!(
-        i.invoke_typed::<(), ()>(store_at_page_size, ()).err(),
+        i.store
+            .invoke_typed_without_fuel::<(), ()>(store_at_page_size, ())
+            .err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
     );
     assert_eq!(
-        i.invoke_typed::<(), i32>(load_at_page_size, ()).err(),
+        i.store
+            .invoke_typed_without_fuel::<(), i32>(load_at_page_size, ())
+            .err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
     );
-    assert_eq!(i.invoke_typed(grow, 1), Ok(0));
-    assert_eq!(i.invoke_typed(size, ()), Ok(1));
-    assert_eq!(i.invoke_typed(load_at_zero, ()), Ok(0));
-    assert_eq!(i.invoke_typed(store_at_zero, ()), Ok(()));
-    assert_eq!(i.invoke_typed(load_at_zero, ()), Ok(2));
+    assert_eq!(i.store.invoke_typed_without_fuel(grow, 1), Ok(0));
+    assert_eq!(i.store.invoke_typed_without_fuel(size, ()), Ok(1));
+    assert_eq!(i.store.invoke_typed_without_fuel(load_at_zero, ()), Ok(0));
+    assert_eq!(i.store.invoke_typed_without_fuel(store_at_zero, ()), Ok(()));
+    assert_eq!(i.store.invoke_typed_without_fuel(load_at_zero, ()), Ok(2));
     assert_eq!(
-        i.invoke_typed::<(), ()>(store_at_page_size, ()).err(),
+        i.store
+            .invoke_typed_without_fuel::<(), ()>(store_at_page_size, ())
+            .err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
     );
     assert_eq!(
-        i.invoke_typed::<(), i32>(load_at_page_size, ()).err(),
+        i.store
+            .invoke_typed_without_fuel::<(), i32>(load_at_page_size, ())
+            .err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
     );
-    assert_eq!(i.invoke_typed(grow, 4), Ok(1));
-    assert_eq!(i.invoke_typed(size, ()), Ok(5));
-    assert_eq!(i.invoke_typed(load_at_zero, ()), Ok(2));
-    assert_eq!(i.invoke_typed(store_at_zero, ()), Ok(()));
-    assert_eq!(i.invoke_typed(load_at_zero, ()), Ok(2));
-    assert_eq!(i.invoke_typed(load_at_page_size, ()), Ok(0));
-    assert_eq!(i.invoke_typed(store_at_page_size, ()), Ok(()));
-    assert_eq!(i.invoke_typed(load_at_page_size, ()), Ok(3));
+    assert_eq!(i.store.invoke_typed_without_fuel(grow, 4), Ok(1));
+    assert_eq!(i.store.invoke_typed_without_fuel(size, ()), Ok(5));
+    assert_eq!(i.store.invoke_typed_without_fuel(load_at_zero, ()), Ok(2));
+    assert_eq!(i.store.invoke_typed_without_fuel(store_at_zero, ()), Ok(()));
+    assert_eq!(i.store.invoke_typed_without_fuel(load_at_zero, ()), Ok(2));
+    assert_eq!(
+        i.store.invoke_typed_without_fuel(load_at_page_size, ()),
+        Ok(0)
+    );
+    assert_eq!(
+        i.store.invoke_typed_without_fuel(store_at_page_size, ()),
+        Ok(())
+    );
+    assert_eq!(
+        i.store.invoke_typed_without_fuel(load_at_page_size, ()),
+        Ok(3)
+    );
 }
 
 #[test_log::test]
@@ -137,14 +158,14 @@ fn memory_grow_test_2() {
         .as_func()
         .unwrap();
 
-    assert_eq!(i.invoke_typed(grow, 0), Ok(0));
-    assert_eq!(i.invoke_typed(grow, 1), Ok(0));
-    assert_eq!(i.invoke_typed(grow, 0), Ok(1));
-    assert_eq!(i.invoke_typed(grow, 2), Ok(1));
-    assert_eq!(i.invoke_typed(grow, 800), Ok(3));
-    assert_eq!(i.invoke_typed(grow, 0x10000), Ok(-1));
-    assert_eq!(i.invoke_typed(grow, 64736), Ok(-1));
-    assert_eq!(i.invoke_typed(grow, 1), Ok(803));
+    assert_eq!(i.store.invoke_typed_without_fuel(grow, 0), Ok(0));
+    assert_eq!(i.store.invoke_typed_without_fuel(grow, 1), Ok(0));
+    assert_eq!(i.store.invoke_typed_without_fuel(grow, 0), Ok(1));
+    assert_eq!(i.store.invoke_typed_without_fuel(grow, 2), Ok(1));
+    assert_eq!(i.store.invoke_typed_without_fuel(grow, 800), Ok(3));
+    assert_eq!(i.store.invoke_typed_without_fuel(grow, 0x10000), Ok(-1));
+    assert_eq!(i.store.invoke_typed_without_fuel(grow, 64736), Ok(-1));
+    assert_eq!(i.store.invoke_typed_without_fuel(grow, 1), Ok(803));
 }
 
 #[test_log::test]
@@ -168,12 +189,12 @@ fn memory_grow_test_3() {
         .as_func()
         .unwrap();
 
-    assert_eq!(i.invoke_typed(grow, 0), Ok(0));
-    assert_eq!(i.invoke_typed(grow, 1), Ok(0));
-    assert_eq!(i.invoke_typed(grow, 1), Ok(1));
-    assert_eq!(i.invoke_typed(grow, 2), Ok(2));
-    assert_eq!(i.invoke_typed(grow, 6), Ok(4));
-    assert_eq!(i.invoke_typed(grow, 0), Ok(10));
-    assert_eq!(i.invoke_typed(grow, 1), Ok(-1));
-    assert_eq!(i.invoke_typed(grow, 0x10000), Ok(-1));
+    assert_eq!(i.store.invoke_typed_without_fuel(grow, 0), Ok(0));
+    assert_eq!(i.store.invoke_typed_without_fuel(grow, 1), Ok(0));
+    assert_eq!(i.store.invoke_typed_without_fuel(grow, 1), Ok(1));
+    assert_eq!(i.store.invoke_typed_without_fuel(grow, 2), Ok(2));
+    assert_eq!(i.store.invoke_typed_without_fuel(grow, 6), Ok(4));
+    assert_eq!(i.store.invoke_typed_without_fuel(grow, 0), Ok(10));
+    assert_eq!(i.store.invoke_typed_without_fuel(grow, 1), Ok(-1));
+    assert_eq!(i.store.invoke_typed_without_fuel(grow, 0x10000), Ok(-1));
 }

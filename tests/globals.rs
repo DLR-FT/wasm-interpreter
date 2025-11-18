@@ -46,10 +46,16 @@ fn valid_global() {
         .unwrap();
 
     // Set global to 17. 5 is returned as previous (default) value.
-    assert_eq!(5, instance.invoke_typed(set, 17).unwrap());
+    assert_eq!(
+        5,
+        instance.store.invoke_typed_without_fuel(set, 17).unwrap()
+    );
 
     // Now 17 will be returned when getting the global
-    assert_eq!(17, instance.invoke_typed(get, ()).unwrap());
+    assert_eq!(
+        17,
+        instance.store.invoke_typed_without_fuel(get, ()).unwrap()
+    );
 }
 
 #[test_log::test]
@@ -117,10 +123,16 @@ fn imported_globals() {
         .unwrap();
 
     // Set global to 17. 3 is returned as previous (default) value.
-    assert_eq!(3, instance.invoke_typed(set, 17).unwrap());
+    assert_eq!(
+        3,
+        instance.store.invoke_typed_without_fuel(set, 17).unwrap()
+    );
 
     // Now 17 will be returned when getting the global
-    assert_eq!(17, instance.invoke_typed(get, ()).unwrap());
+    assert_eq!(
+        17,
+        instance.store.invoke_typed_without_fuel(get, ()).unwrap()
+    );
 }
 
 #[test_log::test]

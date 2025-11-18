@@ -24,7 +24,10 @@ fn empty() {
         .as_func()
         .unwrap();
 
-    instance.invoke_typed::<(), ()>(do_nothing, ()).unwrap();
+    instance
+        .store
+        .invoke_typed_without_fuel::<(), ()>(do_nothing, ())
+        .unwrap();
 }
 
 #[test_log::test]
@@ -59,7 +62,13 @@ fn branch() {
         .as_func()
         .unwrap();
 
-    assert_eq!(8, instance.invoke_typed(with_branch, ()).unwrap());
+    assert_eq!(
+        8,
+        instance
+            .store
+            .invoke_typed_without_fuel(with_branch, ())
+            .unwrap()
+    );
 }
 
 const BRANCH23_WAT: &str = r#"
@@ -104,7 +113,13 @@ fn branch2() {
         .as_func()
         .unwrap();
 
-    assert_eq!(13, instance.invoke_typed(with_branch, ()).unwrap());
+    assert_eq!(
+        13,
+        instance
+            .store
+            .invoke_typed_without_fuel(with_branch, ())
+            .unwrap()
+    );
 }
 
 #[test_log::test]
@@ -123,7 +138,13 @@ fn branch3() {
         .as_func()
         .unwrap();
 
-    assert_eq!(5, instance.invoke_typed(with_branch, ()).unwrap());
+    assert_eq!(
+        5,
+        instance
+            .store
+            .invoke_typed_without_fuel(with_branch, ())
+            .unwrap()
+    );
 }
 
 #[test_log::test]
@@ -155,7 +176,13 @@ fn param_and_result() {
         .as_func()
         .unwrap();
 
-    assert_eq!(7, instance.invoke_typed(add_one, 6).unwrap());
+    assert_eq!(
+        7,
+        instance
+            .store
+            .invoke_typed_without_fuel(add_one, 6)
+            .unwrap()
+    );
 }
 
 const RETURN_OUT_OF_BLOCK: &str = r#"
@@ -202,7 +229,13 @@ fn return_out_of_block() {
         .as_func()
         .unwrap();
 
-    assert_eq!(3, instance.invoke_typed(get_three, ()).unwrap());
+    assert_eq!(
+        3,
+        instance
+            .store
+            .invoke_typed_without_fuel(get_three, ())
+            .unwrap()
+    );
 }
 
 #[test_log::test]
@@ -220,7 +253,13 @@ fn br_return_out_of_block() {
         .unwrap()
         .as_func()
         .unwrap();
-    assert_eq!(3, instance.invoke_typed(get_three, ()).unwrap());
+    assert_eq!(
+        3,
+        instance
+            .store
+            .invoke_typed_without_fuel(get_three, ())
+            .unwrap()
+    );
 }
 
 #[test_log::test]
@@ -239,7 +278,13 @@ fn return_out_of_block2() {
         .as_func()
         .unwrap();
 
-    assert_eq!(5, instance.invoke_typed(get_three, ()).unwrap());
+    assert_eq!(
+        5,
+        instance
+            .store
+            .invoke_typed_without_fuel(get_three, ())
+            .unwrap()
+    );
 }
 
 #[test_log::test]
@@ -258,7 +303,13 @@ fn br_return_out_of_block2() {
         .as_func()
         .unwrap();
 
-    assert_eq!(5, instance.invoke_typed(get_three, ()).unwrap());
+    assert_eq!(
+        5,
+        instance
+            .store
+            .invoke_typed_without_fuel(get_three, ())
+            .unwrap()
+    );
 }
 
 #[test_log::test]
@@ -295,9 +346,12 @@ fn branch_if() {
         .as_func()
         .unwrap();
 
-    assert_eq!(6, instance.invoke_typed(abs, 6).unwrap());
-    assert_eq!(123, instance.invoke_typed(abs, -123).unwrap());
-    assert_eq!(0, instance.invoke_typed(abs, 0).unwrap());
+    assert_eq!(6, instance.store.invoke_typed_without_fuel(abs, 6).unwrap());
+    assert_eq!(
+        123,
+        instance.store.invoke_typed_without_fuel(abs, -123).unwrap()
+    );
+    assert_eq!(0, instance.store.invoke_typed_without_fuel(abs, 0).unwrap());
 }
 
 #[test_log::test]
@@ -364,7 +418,12 @@ fn recursive_fibonacci() {
         .unwrap();
 
     let first_ten = (0..10)
-        .map(|n| instance.invoke_typed(fibonacci, n).unwrap())
+        .map(|n| {
+            instance
+                .store
+                .invoke_typed_without_fuel(fibonacci, n)
+                .unwrap()
+        })
         .collect::<Vec<i32>>();
     assert_eq!(&first_ten, &[0, 1, 1, 2, 3, 5, 8, 13, 21, 34]);
 }
@@ -414,14 +473,62 @@ fn switch_case() {
         .as_func()
         .unwrap();
 
-    assert_eq!(9, instance.invoke_typed(switch_case, -5).unwrap());
-    assert_eq!(9, instance.invoke_typed(switch_case, -1).unwrap());
-    assert_eq!(1, instance.invoke_typed(switch_case, 0).unwrap());
-    assert_eq!(3, instance.invoke_typed(switch_case, 1).unwrap());
-    assert_eq!(5, instance.invoke_typed(switch_case, 2).unwrap());
-    assert_eq!(7, instance.invoke_typed(switch_case, 3).unwrap());
-    assert_eq!(9, instance.invoke_typed(switch_case, 4).unwrap());
-    assert_eq!(9, instance.invoke_typed(switch_case, 7).unwrap());
+    assert_eq!(
+        9,
+        instance
+            .store
+            .invoke_typed_without_fuel(switch_case, -5)
+            .unwrap()
+    );
+    assert_eq!(
+        9,
+        instance
+            .store
+            .invoke_typed_without_fuel(switch_case, -1)
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .store
+            .invoke_typed_without_fuel(switch_case, 0)
+            .unwrap()
+    );
+    assert_eq!(
+        3,
+        instance
+            .store
+            .invoke_typed_without_fuel(switch_case, 1)
+            .unwrap()
+    );
+    assert_eq!(
+        5,
+        instance
+            .store
+            .invoke_typed_without_fuel(switch_case, 2)
+            .unwrap()
+    );
+    assert_eq!(
+        7,
+        instance
+            .store
+            .invoke_typed_without_fuel(switch_case, 3)
+            .unwrap()
+    );
+    assert_eq!(
+        9,
+        instance
+            .store
+            .invoke_typed_without_fuel(switch_case, 4)
+            .unwrap()
+    );
+    assert_eq!(
+        9,
+        instance
+            .store
+            .invoke_typed_without_fuel(switch_case, 7)
+            .unwrap()
+    );
 }
 
 #[test_log::test]

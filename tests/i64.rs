@@ -51,7 +51,13 @@ pub fn i64_eqz_panic() {
         .as_func()
         .unwrap();
 
-    assert_eq!(1, instance.invoke_typed(i64_eqz, ()).unwrap());
+    assert_eq!(
+        1,
+        instance
+            .store
+            .invoke_typed_without_fuel(i64_eqz, ())
+            .unwrap()
+    );
 }
 
 #[test_log::test]
@@ -79,24 +85,39 @@ pub fn i64_eqz() {
         .as_func()
         .unwrap();
 
-    assert_eq!(1, instance.invoke_typed(i64_eqz, 0_i64).unwrap());
-    assert_eq!(0, instance.invoke_typed(i64_eqz, 1_i64).unwrap());
     assert_eq!(
-        0,
+        1,
         instance
-            .invoke_typed(i64_eqz, 0x8000000000000000u64 as i64)
+            .store
+            .invoke_typed_without_fuel(i64_eqz, 0_i64)
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke_typed(i64_eqz, 0x7fffffffffffffffu64 as i64)
+            .store
+            .invoke_typed_without_fuel(i64_eqz, 1_i64)
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke_typed(i64_eqz, 0xffffffffffffffffu64 as i64)
+            .store
+            .invoke_typed_without_fuel(i64_eqz, 0x8000000000000000u64 as i64)
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .store
+            .invoke_typed_without_fuel(i64_eqz, 0x7fffffffffffffffu64 as i64)
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .store
+            .invoke_typed_without_fuel(i64_eqz, 0xffffffffffffffffu64 as i64)
             .unwrap()
     );
 }
@@ -128,7 +149,13 @@ pub fn i64_eq_panic_first_arg() {
         .as_func()
         .unwrap();
 
-    assert_eq!(1, instance.invoke_typed(i64_eq, ()).unwrap());
+    assert_eq!(
+        1,
+        instance
+            .store
+            .invoke_typed_without_fuel(i64_eq, ())
+            .unwrap()
+    );
 }
 
 #[should_panic]
@@ -158,7 +185,13 @@ pub fn i64_eq_panic_second_arg() {
         .as_func()
         .unwrap();
 
-    assert_eq!(1, instance.invoke_typed(i64_eq, ()).unwrap());
+    assert_eq!(
+        1,
+        instance
+            .store
+            .invoke_typed_without_fuel(i64_eq, ())
+            .unwrap()
+    );
 }
 
 /// A function to test the i64.eq implementation using the [WASM TestSuite](https://github.com/WebAssembly/testsuite/blob/5741d6c5172866174fde27c6b5447af757528d1a/i64.wast#L304)
@@ -177,13 +210,32 @@ pub fn i64_eq() {
         .as_func()
         .unwrap();
 
-    assert_eq!(1, instance.invoke_typed(function, (0_i64, 0_i64)).unwrap());
-    assert_eq!(1, instance.invoke_typed(function, (1_i64, 1_i64)).unwrap());
-    assert_eq!(0, instance.invoke_typed(function, (-1_i64, 1_i64)).unwrap());
     assert_eq!(
         1,
         instance
-            .invoke_typed(
+            .store
+            .invoke_typed_without_fuel(function, (0_i64, 0_i64))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .store
+            .invoke_typed_without_fuel(function, (1_i64, 1_i64))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .store
+            .invoke_typed_without_fuel(function, (-1_i64, 1_i64))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .store
+            .invoke_typed_without_fuel(
                 function,
                 (0x8000000000000000u64 as i64, 0x8000000000000000u64 as i64)
             )
@@ -192,7 +244,8 @@ pub fn i64_eq() {
     assert_eq!(
         1,
         instance
-            .invoke_typed(
+            .store
+            .invoke_typed_without_fuel(
                 function,
                 (0x7fffffffffffffffu64 as i64, 0x7fffffffffffffffu64 as i64)
             )
@@ -200,38 +253,58 @@ pub fn i64_eq() {
     );
     assert_eq!(
         1,
-        instance.invoke_typed(function, (-1_i64, -1_i64)).unwrap()
-    );
-    assert_eq!(0, instance.invoke_typed(function, (1_i64, 0_i64)).unwrap());
-    assert_eq!(0, instance.invoke_typed(function, (0_i64, 1_i64)).unwrap());
-    assert_eq!(
-        0,
         instance
-            .invoke_typed(function, (0x8000000000000000u64 as i64, 0_i64))
+            .store
+            .invoke_typed_without_fuel(function, (-1_i64, -1_i64))
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke_typed(function, (0_i64, 0x8000000000000000u64 as i64))
+            .store
+            .invoke_typed_without_fuel(function, (1_i64, 0_i64))
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke_typed(function, (0x8000000000000000u64 as i64, -1_i64))
+            .store
+            .invoke_typed_without_fuel(function, (0_i64, 1_i64))
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke_typed(function, (-1_i64, 0x8000000000000000u64 as i64))
+            .store
+            .invoke_typed_without_fuel(function, (0x8000000000000000u64 as i64, 0_i64))
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke_typed(
+            .store
+            .invoke_typed_without_fuel(function, (0_i64, 0x8000000000000000u64 as i64))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .store
+            .invoke_typed_without_fuel(function, (0x8000000000000000u64 as i64, -1_i64))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .store
+            .invoke_typed_without_fuel(function, (-1_i64, 0x8000000000000000u64 as i64))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .store
+            .invoke_typed_without_fuel(
                 function,
                 (0x8000000000000000u64 as i64, 0x7fffffffffffffffu64 as i64)
             )
@@ -240,7 +313,8 @@ pub fn i64_eq() {
     assert_eq!(
         0,
         instance
-            .invoke_typed(
+            .store
+            .invoke_typed_without_fuel(
                 function,
                 (0x7fffffffffffffffu64 as i64, 0x8000000000000000u64 as i64)
             )
@@ -264,13 +338,32 @@ pub fn i64_ne() {
         .as_func()
         .unwrap();
 
-    assert_eq!(0, instance.invoke_typed(function, (0_i64, 0_i64)).unwrap());
-    assert_eq!(0, instance.invoke_typed(function, (1_i64, 1_i64)).unwrap());
-    assert_eq!(1, instance.invoke_typed(function, (-1_i64, 1_i64)).unwrap());
     assert_eq!(
         0,
         instance
-            .invoke_typed(
+            .store
+            .invoke_typed_without_fuel(function, (0_i64, 0_i64))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .store
+            .invoke_typed_without_fuel(function, (1_i64, 1_i64))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .store
+            .invoke_typed_without_fuel(function, (-1_i64, 1_i64))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .store
+            .invoke_typed_without_fuel(
                 function,
                 (0x8000000000000000u64 as i64, 0x8000000000000000u64 as i64)
             )
@@ -279,7 +372,8 @@ pub fn i64_ne() {
     assert_eq!(
         0,
         instance
-            .invoke_typed(
+            .store
+            .invoke_typed_without_fuel(
                 function,
                 (0x7fffffffffffffffu64 as i64, 0x7fffffffffffffffu64 as i64)
             )
@@ -287,38 +381,58 @@ pub fn i64_ne() {
     );
     assert_eq!(
         0,
-        instance.invoke_typed(function, (-1_i64, -1_i64)).unwrap()
-    );
-    assert_eq!(1, instance.invoke_typed(function, (1_i64, 0_i64)).unwrap());
-    assert_eq!(1, instance.invoke_typed(function, (0_i64, 1_i64)).unwrap());
-    assert_eq!(
-        1,
         instance
-            .invoke_typed(function, (0x8000000000000000u64 as i64, 0_i64))
+            .store
+            .invoke_typed_without_fuel(function, (-1_i64, -1_i64))
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke_typed(function, (0_i64, 0x8000000000000000u64 as i64))
+            .store
+            .invoke_typed_without_fuel(function, (1_i64, 0_i64))
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke_typed(function, (0x8000000000000000u64 as i64, -1_i64))
+            .store
+            .invoke_typed_without_fuel(function, (0_i64, 1_i64))
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke_typed(function, (-1_i64, 0x8000000000000000u64 as i64))
+            .store
+            .invoke_typed_without_fuel(function, (0x8000000000000000u64 as i64, 0_i64))
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke_typed(
+            .store
+            .invoke_typed_without_fuel(function, (0_i64, 0x8000000000000000u64 as i64))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .store
+            .invoke_typed_without_fuel(function, (0x8000000000000000u64 as i64, -1_i64))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .store
+            .invoke_typed_without_fuel(function, (-1_i64, 0x8000000000000000u64 as i64))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .store
+            .invoke_typed_without_fuel(
                 function,
                 (0x8000000000000000u64 as i64, 0x7fffffffffffffffu64 as i64)
             )
@@ -327,7 +441,8 @@ pub fn i64_ne() {
     assert_eq!(
         1,
         instance
-            .invoke_typed(
+            .store
+            .invoke_typed_without_fuel(
                 function,
                 (0x7fffffffffffffffu64 as i64, 0x8000000000000000u64 as i64)
             )
@@ -351,13 +466,32 @@ pub fn i64_lt_s() {
         .as_func()
         .unwrap();
 
-    assert_eq!(0, instance.invoke_typed(function, (0_i64, 0_i64)).unwrap());
-    assert_eq!(0, instance.invoke_typed(function, (1_i64, 1_i64)).unwrap());
-    assert_eq!(1, instance.invoke_typed(function, (-1_i64, 1_i64)).unwrap());
     assert_eq!(
         0,
         instance
-            .invoke_typed(
+            .store
+            .invoke_typed_without_fuel(function, (0_i64, 0_i64))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .store
+            .invoke_typed_without_fuel(function, (1_i64, 1_i64))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .store
+            .invoke_typed_without_fuel(function, (-1_i64, 1_i64))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .store
+            .invoke_typed_without_fuel(
                 function,
                 (0x8000000000000000u64 as i64, 0x8000000000000000u64 as i64)
             )
@@ -366,7 +500,8 @@ pub fn i64_lt_s() {
     assert_eq!(
         0,
         instance
-            .invoke_typed(
+            .store
+            .invoke_typed_without_fuel(
                 function,
                 (0x7fffffffffffffffu64 as i64, 0x7fffffffffffffffu64 as i64)
             )
@@ -374,38 +509,58 @@ pub fn i64_lt_s() {
     );
     assert_eq!(
         0,
-        instance.invoke_typed(function, (-1_i64, -1_i64)).unwrap()
-    );
-    assert_eq!(0, instance.invoke_typed(function, (1_i64, 0_i64)).unwrap());
-    assert_eq!(1, instance.invoke_typed(function, (0_i64, 1_i64)).unwrap());
-    assert_eq!(
-        1,
         instance
-            .invoke_typed(function, (0x8000000000000000u64 as i64, 0_i64))
+            .store
+            .invoke_typed_without_fuel(function, (-1_i64, -1_i64))
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke_typed(function, (0_i64, 0x8000000000000000u64 as i64))
+            .store
+            .invoke_typed_without_fuel(function, (1_i64, 0_i64))
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke_typed(function, (0x8000000000000000u64 as i64, -1_i64))
+            .store
+            .invoke_typed_without_fuel(function, (0_i64, 1_i64))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .store
+            .invoke_typed_without_fuel(function, (0x8000000000000000u64 as i64, 0_i64))
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke_typed(function, (-1_i64, 0x8000000000000000u64 as i64))
+            .store
+            .invoke_typed_without_fuel(function, (0_i64, 0x8000000000000000u64 as i64))
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke_typed(
+            .store
+            .invoke_typed_without_fuel(function, (0x8000000000000000u64 as i64, -1_i64))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .store
+            .invoke_typed_without_fuel(function, (-1_i64, 0x8000000000000000u64 as i64))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .store
+            .invoke_typed_without_fuel(
                 function,
                 (0x8000000000000000u64 as i64, 0x7fffffffffffffffu64 as i64)
             )
@@ -414,7 +569,8 @@ pub fn i64_lt_s() {
     assert_eq!(
         0,
         instance
-            .invoke_typed(
+            .store
+            .invoke_typed_without_fuel(
                 function,
                 (0x7fffffffffffffffu64 as i64, 0x8000000000000000u64 as i64)
             )
@@ -438,13 +594,32 @@ pub fn i64_lt_u() {
         .as_func()
         .unwrap();
 
-    assert_eq!(0, instance.invoke_typed(function, (0_i64, 0_i64)).unwrap());
-    assert_eq!(0, instance.invoke_typed(function, (1_i64, 1_i64)).unwrap());
-    assert_eq!(0, instance.invoke_typed(function, (-1_i64, 1_i64)).unwrap());
     assert_eq!(
         0,
         instance
-            .invoke_typed(
+            .store
+            .invoke_typed_without_fuel(function, (0_i64, 0_i64))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .store
+            .invoke_typed_without_fuel(function, (1_i64, 1_i64))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .store
+            .invoke_typed_without_fuel(function, (-1_i64, 1_i64))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .store
+            .invoke_typed_without_fuel(
                 function,
                 (0x8000000000000000u64 as i64, 0x8000000000000000u64 as i64)
             )
@@ -453,7 +628,8 @@ pub fn i64_lt_u() {
     assert_eq!(
         0,
         instance
-            .invoke_typed(
+            .store
+            .invoke_typed_without_fuel(
                 function,
                 (0x7fffffffffffffffu64 as i64, 0x7fffffffffffffffu64 as i64)
             )
@@ -461,38 +637,58 @@ pub fn i64_lt_u() {
     );
     assert_eq!(
         0,
-        instance.invoke_typed(function, (-1_i64, -1_i64)).unwrap()
+        instance
+            .store
+            .invoke_typed_without_fuel(function, (-1_i64, -1_i64))
+            .unwrap()
     );
-    assert_eq!(0, instance.invoke_typed(function, (1_i64, 0_i64)).unwrap());
-    assert_eq!(1, instance.invoke_typed(function, (0_i64, 1_i64)).unwrap());
     assert_eq!(
         0,
         instance
-            .invoke_typed(function, (0x8000000000000000u64 as i64, 0_i64))
+            .store
+            .invoke_typed_without_fuel(function, (1_i64, 0_i64))
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke_typed(function, (0_i64, 0x8000000000000000u64 as i64))
+            .store
+            .invoke_typed_without_fuel(function, (0_i64, 1_i64))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .store
+            .invoke_typed_without_fuel(function, (0x8000000000000000u64 as i64, 0_i64))
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke_typed(function, (0x8000000000000000u64 as i64, -1_i64))
+            .store
+            .invoke_typed_without_fuel(function, (0_i64, 0x8000000000000000u64 as i64))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .store
+            .invoke_typed_without_fuel(function, (0x8000000000000000u64 as i64, -1_i64))
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke_typed(function, (-1_i64, 0x8000000000000000u64 as i64))
+            .store
+            .invoke_typed_without_fuel(function, (-1_i64, 0x8000000000000000u64 as i64))
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke_typed(
+            .store
+            .invoke_typed_without_fuel(
                 function,
                 (0x8000000000000000u64 as i64, 0x7fffffffffffffffu64 as i64)
             )
@@ -501,7 +697,8 @@ pub fn i64_lt_u() {
     assert_eq!(
         1,
         instance
-            .invoke_typed(
+            .store
+            .invoke_typed_without_fuel(
                 function,
                 (0x7fffffffffffffffu64 as i64, 0x8000000000000000u64 as i64)
             )
@@ -525,13 +722,32 @@ pub fn i64_gt_s() {
         .as_func()
         .unwrap();
 
-    assert_eq!(0, instance.invoke_typed(function, (0_i64, 0_i64)).unwrap());
-    assert_eq!(0, instance.invoke_typed(function, (1_i64, 1_i64)).unwrap());
-    assert_eq!(0, instance.invoke_typed(function, (-1_i64, 1_i64)).unwrap());
     assert_eq!(
         0,
         instance
-            .invoke_typed(
+            .store
+            .invoke_typed_without_fuel(function, (0_i64, 0_i64))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .store
+            .invoke_typed_without_fuel(function, (1_i64, 1_i64))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .store
+            .invoke_typed_without_fuel(function, (-1_i64, 1_i64))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .store
+            .invoke_typed_without_fuel(
                 function,
                 (0x8000000000000000u64 as i64, 0x8000000000000000u64 as i64)
             )
@@ -540,7 +756,8 @@ pub fn i64_gt_s() {
     assert_eq!(
         0,
         instance
-            .invoke_typed(
+            .store
+            .invoke_typed_without_fuel(
                 function,
                 (0x7fffffffffffffffu64 as i64, 0x7fffffffffffffffu64 as i64)
             )
@@ -548,38 +765,58 @@ pub fn i64_gt_s() {
     );
     assert_eq!(
         0,
-        instance.invoke_typed(function, (-1_i64, -1_i64)).unwrap()
-    );
-    assert_eq!(1, instance.invoke_typed(function, (1_i64, 0_i64)).unwrap());
-    assert_eq!(0, instance.invoke_typed(function, (0_i64, 1_i64)).unwrap());
-    assert_eq!(
-        0,
         instance
-            .invoke_typed(function, (0x8000000000000000u64 as i64, 0_i64))
+            .store
+            .invoke_typed_without_fuel(function, (-1_i64, -1_i64))
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke_typed(function, (0_i64, 0x8000000000000000u64 as i64))
+            .store
+            .invoke_typed_without_fuel(function, (1_i64, 0_i64))
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke_typed(function, (0x8000000000000000u64 as i64, -1_i64))
+            .store
+            .invoke_typed_without_fuel(function, (0_i64, 1_i64))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .store
+            .invoke_typed_without_fuel(function, (0x8000000000000000u64 as i64, 0_i64))
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke_typed(function, (-1_i64, 0x8000000000000000u64 as i64))
+            .store
+            .invoke_typed_without_fuel(function, (0_i64, 0x8000000000000000u64 as i64))
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke_typed(
+            .store
+            .invoke_typed_without_fuel(function, (0x8000000000000000u64 as i64, -1_i64))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .store
+            .invoke_typed_without_fuel(function, (-1_i64, 0x8000000000000000u64 as i64))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .store
+            .invoke_typed_without_fuel(
                 function,
                 (0x8000000000000000u64 as i64, 0x7fffffffffffffffu64 as i64)
             )
@@ -588,7 +825,8 @@ pub fn i64_gt_s() {
     assert_eq!(
         1,
         instance
-            .invoke_typed(
+            .store
+            .invoke_typed_without_fuel(
                 function,
                 (0x7fffffffffffffffu64 as i64, 0x8000000000000000u64 as i64)
             )
@@ -612,13 +850,32 @@ pub fn i64_gt_u() {
         .as_func()
         .unwrap();
 
-    assert_eq!(0, instance.invoke_typed(function, (0_i64, 0_i64)).unwrap());
-    assert_eq!(0, instance.invoke_typed(function, (1_i64, 1_i64)).unwrap());
-    assert_eq!(1, instance.invoke_typed(function, (-1_i64, 1_i64)).unwrap());
     assert_eq!(
         0,
         instance
-            .invoke_typed(
+            .store
+            .invoke_typed_without_fuel(function, (0_i64, 0_i64))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .store
+            .invoke_typed_without_fuel(function, (1_i64, 1_i64))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .store
+            .invoke_typed_without_fuel(function, (-1_i64, 1_i64))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .store
+            .invoke_typed_without_fuel(
                 function,
                 (0x8000000000000000u64 as i64, 0x8000000000000000u64 as i64)
             )
@@ -627,7 +884,8 @@ pub fn i64_gt_u() {
     assert_eq!(
         0,
         instance
-            .invoke_typed(
+            .store
+            .invoke_typed_without_fuel(
                 function,
                 (0x7fffffffffffffffu64 as i64, 0x7fffffffffffffffu64 as i64)
             )
@@ -635,38 +893,58 @@ pub fn i64_gt_u() {
     );
     assert_eq!(
         0,
-        instance.invoke_typed(function, (-1_i64, -1_i64)).unwrap()
+        instance
+            .store
+            .invoke_typed_without_fuel(function, (-1_i64, -1_i64))
+            .unwrap()
     );
-    assert_eq!(1, instance.invoke_typed(function, (1_i64, 0_i64)).unwrap());
-    assert_eq!(0, instance.invoke_typed(function, (0_i64, 1_i64)).unwrap());
     assert_eq!(
         1,
         instance
-            .invoke_typed(function, (0x8000000000000000u64 as i64, 0_i64))
+            .store
+            .invoke_typed_without_fuel(function, (1_i64, 0_i64))
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke_typed(function, (0_i64, 0x8000000000000000u64 as i64))
+            .store
+            .invoke_typed_without_fuel(function, (0_i64, 1_i64))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .store
+            .invoke_typed_without_fuel(function, (0x8000000000000000u64 as i64, 0_i64))
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke_typed(function, (0x8000000000000000u64 as i64, -1_i64))
+            .store
+            .invoke_typed_without_fuel(function, (0_i64, 0x8000000000000000u64 as i64))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .store
+            .invoke_typed_without_fuel(function, (0x8000000000000000u64 as i64, -1_i64))
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke_typed(function, (-1_i64, 0x8000000000000000u64 as i64))
+            .store
+            .invoke_typed_without_fuel(function, (-1_i64, 0x8000000000000000u64 as i64))
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke_typed(
+            .store
+            .invoke_typed_without_fuel(
                 function,
                 (0x8000000000000000u64 as i64, 0x7fffffffffffffffu64 as i64)
             )
@@ -675,7 +953,8 @@ pub fn i64_gt_u() {
     assert_eq!(
         0,
         instance
-            .invoke_typed(
+            .store
+            .invoke_typed_without_fuel(
                 function,
                 (0x7fffffffffffffffu64 as i64, 0x8000000000000000u64 as i64)
             )
@@ -699,13 +978,32 @@ pub fn i64_le_s() {
         .as_func()
         .unwrap();
 
-    assert_eq!(1, instance.invoke_typed(function, (0_i64, 0_i64)).unwrap());
-    assert_eq!(1, instance.invoke_typed(function, (1_i64, 1_i64)).unwrap());
-    assert_eq!(1, instance.invoke_typed(function, (-1_i64, 1_i64)).unwrap());
     assert_eq!(
         1,
         instance
-            .invoke_typed(
+            .store
+            .invoke_typed_without_fuel(function, (0_i64, 0_i64))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .store
+            .invoke_typed_without_fuel(function, (1_i64, 1_i64))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .store
+            .invoke_typed_without_fuel(function, (-1_i64, 1_i64))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .store
+            .invoke_typed_without_fuel(
                 function,
                 (0x8000000000000000u64 as i64, 0x8000000000000000u64 as i64)
             )
@@ -714,7 +1012,8 @@ pub fn i64_le_s() {
     assert_eq!(
         1,
         instance
-            .invoke_typed(
+            .store
+            .invoke_typed_without_fuel(
                 function,
                 (0x7fffffffffffffffu64 as i64, 0x7fffffffffffffffu64 as i64)
             )
@@ -722,38 +1021,58 @@ pub fn i64_le_s() {
     );
     assert_eq!(
         1,
-        instance.invoke_typed(function, (-1_i64, -1_i64)).unwrap()
-    );
-    assert_eq!(0, instance.invoke_typed(function, (1_i64, 0_i64)).unwrap());
-    assert_eq!(1, instance.invoke_typed(function, (0_i64, 1_i64)).unwrap());
-    assert_eq!(
-        1,
         instance
-            .invoke_typed(function, (0x8000000000000000u64 as i64, 0_i64))
+            .store
+            .invoke_typed_without_fuel(function, (-1_i64, -1_i64))
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke_typed(function, (0_i64, 0x8000000000000000u64 as i64))
+            .store
+            .invoke_typed_without_fuel(function, (1_i64, 0_i64))
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke_typed(function, (0x8000000000000000u64 as i64, -1_i64))
+            .store
+            .invoke_typed_without_fuel(function, (0_i64, 1_i64))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .store
+            .invoke_typed_without_fuel(function, (0x8000000000000000u64 as i64, 0_i64))
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke_typed(function, (-1_i64, 0x8000000000000000u64 as i64))
+            .store
+            .invoke_typed_without_fuel(function, (0_i64, 0x8000000000000000u64 as i64))
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke_typed(
+            .store
+            .invoke_typed_without_fuel(function, (0x8000000000000000u64 as i64, -1_i64))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .store
+            .invoke_typed_without_fuel(function, (-1_i64, 0x8000000000000000u64 as i64))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .store
+            .invoke_typed_without_fuel(
                 function,
                 (0x8000000000000000u64 as i64, 0x7fffffffffffffffu64 as i64)
             )
@@ -762,7 +1081,8 @@ pub fn i64_le_s() {
     assert_eq!(
         0,
         instance
-            .invoke_typed(
+            .store
+            .invoke_typed_without_fuel(
                 function,
                 (0x7fffffffffffffffu64 as i64, 0x8000000000000000u64 as i64)
             )
@@ -787,13 +1107,32 @@ pub fn i64_le_u() {
         .as_func()
         .unwrap();
 
-    assert_eq!(1, instance.invoke_typed(function, (0_i64, 0_i64)).unwrap());
-    assert_eq!(1, instance.invoke_typed(function, (1_i64, 1_i64)).unwrap());
-    assert_eq!(0, instance.invoke_typed(function, (-1_i64, 1_i64)).unwrap());
     assert_eq!(
         1,
         instance
-            .invoke_typed(
+            .store
+            .invoke_typed_without_fuel(function, (0_i64, 0_i64))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .store
+            .invoke_typed_without_fuel(function, (1_i64, 1_i64))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .store
+            .invoke_typed_without_fuel(function, (-1_i64, 1_i64))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .store
+            .invoke_typed_without_fuel(
                 function,
                 (0x8000000000000000u64 as i64, 0x8000000000000000u64 as i64)
             )
@@ -802,7 +1141,8 @@ pub fn i64_le_u() {
     assert_eq!(
         1,
         instance
-            .invoke_typed(
+            .store
+            .invoke_typed_without_fuel(
                 function,
                 (0x7fffffffffffffffu64 as i64, 0x7fffffffffffffffu64 as i64)
             )
@@ -810,38 +1150,58 @@ pub fn i64_le_u() {
     );
     assert_eq!(
         1,
-        instance.invoke_typed(function, (-1_i64, -1_i64)).unwrap()
+        instance
+            .store
+            .invoke_typed_without_fuel(function, (-1_i64, -1_i64))
+            .unwrap()
     );
-    assert_eq!(0, instance.invoke_typed(function, (1_i64, 0_i64)).unwrap());
-    assert_eq!(1, instance.invoke_typed(function, (0_i64, 1_i64)).unwrap());
     assert_eq!(
         0,
         instance
-            .invoke_typed(function, (0x8000000000000000u64 as i64, 0_i64))
+            .store
+            .invoke_typed_without_fuel(function, (1_i64, 0_i64))
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke_typed(function, (0_i64, 0x8000000000000000u64 as i64))
+            .store
+            .invoke_typed_without_fuel(function, (0_i64, 1_i64))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .store
+            .invoke_typed_without_fuel(function, (0x8000000000000000u64 as i64, 0_i64))
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke_typed(function, (0x8000000000000000u64 as i64, -1_i64))
+            .store
+            .invoke_typed_without_fuel(function, (0_i64, 0x8000000000000000u64 as i64))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .store
+            .invoke_typed_without_fuel(function, (0x8000000000000000u64 as i64, -1_i64))
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke_typed(function, (-1_i64, 0x8000000000000000u64 as i64))
+            .store
+            .invoke_typed_without_fuel(function, (-1_i64, 0x8000000000000000u64 as i64))
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke_typed(
+            .store
+            .invoke_typed_without_fuel(
                 function,
                 (0x8000000000000000u64 as i64, 0x7fffffffffffffffu64 as i64)
             )
@@ -850,7 +1210,8 @@ pub fn i64_le_u() {
     assert_eq!(
         1,
         instance
-            .invoke_typed(
+            .store
+            .invoke_typed_without_fuel(
                 function,
                 (0x7fffffffffffffffu64 as i64, 0x8000000000000000u64 as i64)
             )
@@ -874,13 +1235,32 @@ pub fn i64_ge_s() {
         .as_func()
         .unwrap();
 
-    assert_eq!(1, instance.invoke_typed(function, (0_i64, 0_i64)).unwrap());
-    assert_eq!(1, instance.invoke_typed(function, (1_i64, 1_i64)).unwrap());
-    assert_eq!(0, instance.invoke_typed(function, (-1_i64, 1_i64)).unwrap());
     assert_eq!(
         1,
         instance
-            .invoke_typed(
+            .store
+            .invoke_typed_without_fuel(function, (0_i64, 0_i64))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .store
+            .invoke_typed_without_fuel(function, (1_i64, 1_i64))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .store
+            .invoke_typed_without_fuel(function, (-1_i64, 1_i64))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .store
+            .invoke_typed_without_fuel(
                 function,
                 (0x8000000000000000u64 as i64, 0x8000000000000000u64 as i64)
             )
@@ -889,7 +1269,8 @@ pub fn i64_ge_s() {
     assert_eq!(
         1,
         instance
-            .invoke_typed(
+            .store
+            .invoke_typed_without_fuel(
                 function,
                 (0x7fffffffffffffffu64 as i64, 0x7fffffffffffffffu64 as i64)
             )
@@ -897,38 +1278,58 @@ pub fn i64_ge_s() {
     );
     assert_eq!(
         1,
-        instance.invoke_typed(function, (-1_i64, -1_i64)).unwrap()
-    );
-    assert_eq!(1, instance.invoke_typed(function, (1_i64, 0_i64)).unwrap());
-    assert_eq!(0, instance.invoke_typed(function, (0_i64, 1_i64)).unwrap());
-    assert_eq!(
-        0,
         instance
-            .invoke_typed(function, (0x8000000000000000u64 as i64, 0_i64))
+            .store
+            .invoke_typed_without_fuel(function, (-1_i64, -1_i64))
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke_typed(function, (0_i64, 0x8000000000000000u64 as i64))
+            .store
+            .invoke_typed_without_fuel(function, (1_i64, 0_i64))
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke_typed(function, (0x8000000000000000u64 as i64, -1_i64))
+            .store
+            .invoke_typed_without_fuel(function, (0_i64, 1_i64))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .store
+            .invoke_typed_without_fuel(function, (0x8000000000000000u64 as i64, 0_i64))
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke_typed(function, (-1_i64, 0x8000000000000000u64 as i64))
+            .store
+            .invoke_typed_without_fuel(function, (0_i64, 0x8000000000000000u64 as i64))
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke_typed(
+            .store
+            .invoke_typed_without_fuel(function, (0x8000000000000000u64 as i64, -1_i64))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .store
+            .invoke_typed_without_fuel(function, (-1_i64, 0x8000000000000000u64 as i64))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .store
+            .invoke_typed_without_fuel(
                 function,
                 (0x8000000000000000u64 as i64, 0x7fffffffffffffffu64 as i64)
             )
@@ -937,7 +1338,8 @@ pub fn i64_ge_s() {
     assert_eq!(
         1,
         instance
-            .invoke_typed(
+            .store
+            .invoke_typed_without_fuel(
                 function,
                 (0x7fffffffffffffffu64 as i64, 0x8000000000000000u64 as i64)
             )
@@ -961,13 +1363,32 @@ pub fn i64_ge_u() {
         .as_func()
         .unwrap();
 
-    assert_eq!(1, instance.invoke_typed(function, (0_i64, 0_i64)).unwrap());
-    assert_eq!(1, instance.invoke_typed(function, (1_i64, 1_i64)).unwrap());
-    assert_eq!(1, instance.invoke_typed(function, (-1_i64, 1_i64)).unwrap());
     assert_eq!(
         1,
         instance
-            .invoke_typed(
+            .store
+            .invoke_typed_without_fuel(function, (0_i64, 0_i64))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .store
+            .invoke_typed_without_fuel(function, (1_i64, 1_i64))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .store
+            .invoke_typed_without_fuel(function, (-1_i64, 1_i64))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .store
+            .invoke_typed_without_fuel(
                 function,
                 (0x8000000000000000u64 as i64, 0x8000000000000000u64 as i64)
             )
@@ -976,7 +1397,8 @@ pub fn i64_ge_u() {
     assert_eq!(
         1,
         instance
-            .invoke_typed(
+            .store
+            .invoke_typed_without_fuel(
                 function,
                 (0x7fffffffffffffffu64 as i64, 0x7fffffffffffffffu64 as i64)
             )
@@ -984,38 +1406,58 @@ pub fn i64_ge_u() {
     );
     assert_eq!(
         1,
-        instance.invoke_typed(function, (-1_i64, -1_i64)).unwrap()
+        instance
+            .store
+            .invoke_typed_without_fuel(function, (-1_i64, -1_i64))
+            .unwrap()
     );
-    assert_eq!(1, instance.invoke_typed(function, (1_i64, 0_i64)).unwrap());
-    assert_eq!(0, instance.invoke_typed(function, (0_i64, 1_i64)).unwrap());
     assert_eq!(
         1,
         instance
-            .invoke_typed(function, (0x8000000000000000u64 as i64, 0_i64))
+            .store
+            .invoke_typed_without_fuel(function, (1_i64, 0_i64))
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke_typed(function, (0_i64, 0x8000000000000000u64 as i64))
+            .store
+            .invoke_typed_without_fuel(function, (0_i64, 1_i64))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .store
+            .invoke_typed_without_fuel(function, (0x8000000000000000u64 as i64, 0_i64))
             .unwrap()
     );
     assert_eq!(
         0,
         instance
-            .invoke_typed(function, (0x8000000000000000u64 as i64, -1_i64))
+            .store
+            .invoke_typed_without_fuel(function, (0_i64, 0x8000000000000000u64 as i64))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .store
+            .invoke_typed_without_fuel(function, (0x8000000000000000u64 as i64, -1_i64))
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke_typed(function, (-1_i64, 0x8000000000000000u64 as i64))
+            .store
+            .invoke_typed_without_fuel(function, (-1_i64, 0x8000000000000000u64 as i64))
             .unwrap()
     );
     assert_eq!(
         1,
         instance
-            .invoke_typed(
+            .store
+            .invoke_typed_without_fuel(
                 function,
                 (0x8000000000000000u64 as i64, 0x7fffffffffffffffu64 as i64)
             )
@@ -1024,7 +1466,8 @@ pub fn i64_ge_u() {
     assert_eq!(
         0,
         instance
-            .invoke_typed(
+            .store
+            .invoke_typed_without_fuel(
                 function,
                 (0x7fffffffffffffffu64 as i64, 0x8000000000000000u64 as i64)
             )

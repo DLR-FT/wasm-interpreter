@@ -32,7 +32,25 @@ fn return_valid() {
         .as_func()
         .unwrap();
 
-    assert_eq!(12, instance.invoke_typed(add, (10, 2)).unwrap());
-    assert_eq!(2, instance.invoke_typed(add, (0, 2)).unwrap());
-    assert_eq!(-4, instance.invoke_typed(add, (-6, 2)).unwrap());
+    assert_eq!(
+        12,
+        instance
+            .store
+            .invoke_typed_without_fuel(add, (10, 2))
+            .unwrap()
+    );
+    assert_eq!(
+        2,
+        instance
+            .store
+            .invoke_typed_without_fuel(add, (0, 2))
+            .unwrap()
+    );
+    assert_eq!(
+        -4,
+        instance
+            .store
+            .invoke_typed_without_fuel(add, (-6, 2))
+            .unwrap()
+    );
 }

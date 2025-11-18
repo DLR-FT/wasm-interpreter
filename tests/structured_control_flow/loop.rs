@@ -64,11 +64,53 @@ fn fibonacci_with_loop_and_br_if() {
         .as_func()
         .unwrap();
 
-    assert_eq!(1, instance.invoke_typed(fibonacci_fn, -5).unwrap());
-    assert_eq!(1, instance.invoke_typed(fibonacci_fn, 0).unwrap());
-    assert_eq!(1, instance.invoke_typed(fibonacci_fn, 1).unwrap());
-    assert_eq!(2, instance.invoke_typed(fibonacci_fn, 2).unwrap());
-    assert_eq!(3, instance.invoke_typed(fibonacci_fn, 3).unwrap());
-    assert_eq!(5, instance.invoke_typed(fibonacci_fn, 4).unwrap());
-    assert_eq!(8, instance.invoke_typed(fibonacci_fn, 5).unwrap());
+    assert_eq!(
+        1,
+        instance
+            .store
+            .invoke_typed_without_fuel(fibonacci_fn, -5)
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .store
+            .invoke_typed_without_fuel(fibonacci_fn, 0)
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .store
+            .invoke_typed_without_fuel(fibonacci_fn, 1)
+            .unwrap()
+    );
+    assert_eq!(
+        2,
+        instance
+            .store
+            .invoke_typed_without_fuel(fibonacci_fn, 2)
+            .unwrap()
+    );
+    assert_eq!(
+        3,
+        instance
+            .store
+            .invoke_typed_without_fuel(fibonacci_fn, 3)
+            .unwrap()
+    );
+    assert_eq!(
+        5,
+        instance
+            .store
+            .invoke_typed_without_fuel(fibonacci_fn, 4)
+            .unwrap()
+    );
+    assert_eq!(
+        8,
+        instance
+            .store
+            .invoke_typed_without_fuel(fibonacci_fn, 5)
+            .unwrap()
+    );
 }
