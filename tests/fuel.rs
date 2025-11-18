@@ -20,10 +20,11 @@ fn out_of_fuel() {
         .as_func()
         .unwrap();
     let resumable_ref = runtime_instance
-        .create_resumable(func_addr, Vec::new(), 40)
+        .store
+        .create_resumable(func_addr, Vec::new(), Some(40))
         .unwrap();
     assert!(matches!(
-        runtime_instance.resume(resumable_ref).unwrap(),
+        runtime_instance.store.resume(resumable_ref).unwrap(),
         RunState::Resumable { .. }
     ));
 }
@@ -95,14 +96,16 @@ fn resumable() {
         .unwrap();
 
     let resumable_ref_mult = runtime_instance
-        .create_resumable(mult_global_0, vec![], 0)
+        .store
+        .create_resumable(mult_global_0, vec![], Some(0))
         .unwrap();
     let resumable_ref_add = runtime_instance
-        .create_resumable(add_global_1, vec![], 0)
+        .store
+        .create_resumable(add_global_1, vec![], Some(0))
         .unwrap();
 
-    let mut run_state_mult = runtime_instance.resume(resumable_ref_mult).unwrap();
-    let mut run_state_add = runtime_instance.resume(resumable_ref_add).unwrap();
+    let mut run_state_mult = runtime_instance.store.resume(resumable_ref_mult).unwrap();
+    let mut run_state_add = runtime_instance.store.resume(resumable_ref_add).unwrap();
 
     let increment = |maybe_fuel: &mut Option<u32>| *maybe_fuel = maybe_fuel.map(|fuel| fuel + 2);
 
@@ -113,9 +116,10 @@ fn resumable() {
                 mut resumable_ref, ..
             } => {
                 runtime_instance
+                    .store
                     .access_fuel_mut(&mut resumable_ref, increment)
                     .unwrap();
-                runtime_instance.resume(resumable_ref).unwrap()
+                runtime_instance.store.resume(resumable_ref).unwrap()
             }
         };
 
@@ -131,9 +135,10 @@ fn resumable() {
                 mut resumable_ref, ..
             } => {
                 runtime_instance
+                    .store
                     .access_fuel_mut(&mut resumable_ref, increment)
                     .unwrap();
-                runtime_instance.resume(resumable_ref).unwrap()
+                runtime_instance.store.resume(resumable_ref).unwrap()
             }
         };
 
@@ -189,13 +194,14 @@ fn resumable_internal_state() {
         .as_global()
         .unwrap();
     let resumable_ref_add = runtime_instance
-        .create_resumable(add_global_0, vec![], 4)
+        .store
+        .create_resumable(add_global_0, vec![], Some(4))
         .unwrap();
     assert_eq!(
         runtime_instance.store.global_read(global_0),
         wasm::Value::I32(expected[0])
     );
-    let mut run_state_add = runtime_instance.resume(resumable_ref_add).unwrap();
+    let mut run_state_add = runtime_instance.store.resume(resumable_ref_add).unwrap();
     let increment = |maybe_fuel: &mut Option<u32>| *maybe_fuel = maybe_fuel.map(|fuel| fuel + 4);
     for expected in expected.into_iter().take(4).skip(1) {
         run_state_add = match run_state_add {
@@ -214,9 +220,10 @@ fn resumable_internal_state() {
                     wasm::Value::I32(expected)
                 );
                 runtime_instance
+                    .store
                     .access_fuel_mut(&mut resumable_ref, increment)
                     .unwrap();
-                runtime_instance.resume(resumable_ref).unwrap()
+                runtime_instance.store.resume(resumable_ref).unwrap()
             }
         }
     }
@@ -239,20 +246,22 @@ fn resumable_drop() {
         .as_func()
         .unwrap();
     let resumable_ref = runtime_instance
-        .create_resumable(func_addr, Vec::new(), 40)
+        .store
+        .create_resumable(func_addr, Vec::new(), Some(40))
         .unwrap();
     {
         let resumable_ref = runtime_instance
-            .create_resumable(func_addr, Vec::new(), 40)
+            .store
+            .create_resumable(func_addr, Vec::new(), Some(40))
             .unwrap();
         assert!(matches!(
-            runtime_instance.resume(resumable_ref).unwrap(),
+            runtime_instance.store.resume(resumable_ref).unwrap(),
             RunState::Resumable { .. }
         ));
         // now drop it, the other resumable should still be able to access the dormitory in store
     }
     assert!(matches!(
-        runtime_instance.resume(resumable_ref).unwrap(),
+        runtime_instance.store.resume(resumable_ref).unwrap(),
         RunState::Resumable { .. }
     ));
 }
