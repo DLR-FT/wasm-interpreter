@@ -113,14 +113,6 @@ impl<'b, T: Config> RuntimeInstance<'b, T> {
             })
     }
 
-    pub fn user_data(&self) -> &T {
-        &self.store.user_data
-    }
-
-    pub fn user_data_mut(&mut self) -> &mut T {
-        &mut self.store.user_data
-    }
-
     /// Returns the global type of some global instance by its addr.
     pub fn global_type(&self, global_addr: GlobalAddr) -> GlobalType {
         self.store.global_type(global_addr)
