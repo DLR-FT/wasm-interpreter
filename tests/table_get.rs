@@ -78,38 +78,53 @@ fn table_funcref_test() {
         .as_func()
         .unwrap();
 
-    i.invoke_typed::<RefExtern, ()>(init, RefExtern(Some(ExternAddr(1))))
+    i.store
+        .invoke_typed_without_fuel::<RefExtern, ()>(init, RefExtern(Some(ExternAddr(1))))
         .unwrap();
 
-    assert_eq!(i.invoke_typed(get_externref, 0), Ok(RefExtern(None)));
     assert_eq!(
-        i.invoke_typed(get_externref, 1),
+        i.store.invoke_typed_without_fuel(get_externref, 0),
+        Ok(RefExtern(None))
+    );
+    assert_eq!(
+        i.store.invoke_typed_without_fuel(get_externref, 1),
         Ok(RefExtern(Some(ExternAddr(1))))
     );
-    assert_eq!(i.invoke_typed(get_funcref, 0), Ok(RefFunc(None)));
-    assert_eq!(i.invoke_typed(is_null_funcref, 1), Ok(0));
-    assert_eq!(i.invoke_typed(is_null_funcref, 2), Ok(0));
+    assert_eq!(
+        i.store.invoke_typed_without_fuel(get_funcref, 0),
+        Ok(RefFunc(None))
+    );
+    assert_eq!(i.store.invoke_typed_without_fuel(is_null_funcref, 1), Ok(0));
+    assert_eq!(i.store.invoke_typed_without_fuel(is_null_funcref, 2), Ok(0));
 
     assert_eq!(
-        i.invoke_typed::<i32, RefFunc>(get_externref, 2).err(),
+        i.store
+            .invoke_typed_without_fuel::<i32, RefFunc>(get_externref, 2)
+            .err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
         ))
     );
     assert_eq!(
-        i.invoke_typed::<i32, RefFunc>(get_funcref, 3).err(),
+        i.store
+            .invoke_typed_without_fuel::<i32, RefFunc>(get_funcref, 3)
+            .err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
         ))
     );
     assert_eq!(
-        i.invoke_typed::<i32, RefFunc>(get_externref, -1).err(),
+        i.store
+            .invoke_typed_without_fuel::<i32, RefFunc>(get_externref, -1)
+            .err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
         ))
     );
     assert_eq!(
-        i.invoke_typed::<i32, RefFunc>(get_funcref, -1).err(),
+        i.store
+            .invoke_typed_without_fuel::<i32, RefFunc>(get_funcref, -1)
+            .err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
         ))

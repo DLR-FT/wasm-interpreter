@@ -1,8 +1,7 @@
-use crate::resumable::RunState;
 use alloc::vec::Vec;
 
 use const_interpreter_loop::run_const_span;
-use store::addrs::{FuncAddr, ModuleAddr};
+use store::addrs::ModuleAddr;
 use store::HaltExecutionError;
 use store::InstantiationOutcome;
 use value_stack::Stack;
@@ -84,31 +83,6 @@ impl<'b, T: Config> RuntimeInstance<'b, T> {
     ) -> Result<InstantiationOutcome, RuntimeError> {
         self.store
             .add_module(module_name, validation_info, maybe_fuel)
-    }
-
-    /// Invokes a function with the given parameters of type `Param`, and return types of type `Returns`.
-    pub fn invoke_typed<Params: InteropValueList, Returns: InteropValueList>(
-        &mut self,
-        function: FuncAddr,
-        params: Params,
-        // store: &mut Store,
-    ) -> Result<Returns, RuntimeError> {
-        self.invoke(function, params.into_values())
-            .map(|values| Returns::try_from_values(values.into_iter()).unwrap_validated())
-    }
-
-    /// Invokes a function with the given parameters. The return types depend on the function signature.
-    pub fn invoke(
-        &mut self,
-        function: FuncAddr,
-        params: Vec<Value>,
-    ) -> Result<Vec<Value>, RuntimeError> {
-        self.store
-            .invoke(function, params, None)
-            .map(|run_state| match run_state {
-                RunState::Finished { values, .. } => values,
-                _ => unreachable!("non metered invoke call"),
-            })
     }
 }
 

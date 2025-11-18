@@ -41,7 +41,9 @@ fn memory_copy_test_1() {
         .unwrap()
         .as_func()
         .unwrap();
-    i.invoke_typed::<(), ()>(test, ()).unwrap();
+    i.store
+        .invoke_typed_without_fuel::<(), ()>(test, ())
+        .unwrap();
 
     let load8_u = i
         .store
@@ -53,7 +55,10 @@ fn memory_copy_test_1() {
         0, 0, 3, 1, 4, 1, 0, 0, 0, 0, 0, 0, 7, 5, 2, 3, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     ]);
     for (j, result) in results.into_iter().enumerate() {
-        assert_eq!(i.invoke_typed(load8_u, j as i32), Ok(result));
+        assert_eq!(
+            i.store.invoke_typed_without_fuel(load8_u, j as i32),
+            Ok(result)
+        );
     }
 }
 
@@ -83,7 +88,9 @@ fn memory_copy_test_2() {
         .unwrap()
         .as_func()
         .unwrap();
-    i.invoke_typed::<(), ()>(test, ()).unwrap();
+    i.store
+        .invoke_typed_without_fuel::<(), ()>(test, ())
+        .unwrap();
 
     let load8_u = i
         .store
@@ -95,7 +102,10 @@ fn memory_copy_test_2() {
         0, 0, 3, 1, 4, 1, 0, 0, 0, 0, 0, 0, 7, 3, 1, 4, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     ]);
     for (j, result) in results.into_iter().enumerate() {
-        assert_eq!(i.invoke_typed(load8_u, j as i32), Ok(result));
+        assert_eq!(
+            i.store.invoke_typed_without_fuel(load8_u, j as i32),
+            Ok(result)
+        );
     }
 }
 
@@ -125,7 +135,9 @@ fn memory_copy_test_3() {
         .unwrap()
         .as_func()
         .unwrap();
-    i.invoke_typed::<(), ()>(test, ()).unwrap();
+    i.store
+        .invoke_typed_without_fuel::<(), ()>(test, ())
+        .unwrap();
 
     let load8_u = i
         .store
@@ -141,7 +153,10 @@ fn memory_copy_test_3() {
         0, 0, 3, 1, 4, 1, 0, 0, 0, 0, 0, 0, 7, 5, 2, 3, 6, 0, 0, 0, 0, 0, 0, 0, 0, 3, 6, 0, 0, 0,
     ]);
     for j in 0..offsets.len() {
-        assert_eq!(i.invoke_typed(load8_u, offsets[j]), Ok(results[j]));
+        assert_eq!(
+            i.store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            Ok(results[j])
+        );
     }
 }
 
@@ -171,7 +186,9 @@ fn memory_copy_test_4() {
         .unwrap()
         .as_func()
         .unwrap();
-    i.invoke_typed::<(), ()>(test, ()).unwrap();
+    i.store
+        .invoke_typed_without_fuel::<(), ()>(test, ())
+        .unwrap();
 
     let load8_u = i
         .store
@@ -187,7 +204,10 @@ fn memory_copy_test_4() {
         0, 0, 3, 1, 4, 1, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     ]);
     for j in 0..offsets.len() {
-        assert_eq!(i.invoke_typed(load8_u, offsets[j]), Ok(results[j]));
+        assert_eq!(
+            i.store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            Ok(results[j])
+        );
     }
 }
 
@@ -217,7 +237,9 @@ fn memory_copy_test_5() {
         .unwrap()
         .as_func()
         .unwrap();
-    i.invoke_typed::<(), ()>(test, ()).unwrap();
+    i.store
+        .invoke_typed_without_fuel::<(), ()>(test, ())
+        .unwrap();
 
     let load8_u = i
         .store
@@ -233,7 +255,10 @@ fn memory_copy_test_5() {
         0, 0, 3, 1, 4, 1, 0, 0, 0, 0, 7, 5, 2, 3, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     ]);
     for j in 0..offsets.len() {
-        assert_eq!(i.invoke_typed(load8_u, offsets[j]), Ok(results[j]));
+        assert_eq!(
+            i.store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            Ok(results[j])
+        );
     }
 }
 
@@ -262,7 +287,9 @@ fn memory_copy_test_6() {
         .unwrap()
         .as_func()
         .unwrap();
-    let result = i.invoke_typed::<(i32, i32, i32), ()>(run, (65516, 0, 40));
+    let result = i
+        .store
+        .invoke_typed_without_fuel::<(i32, i32, i32), ()>(run, (65516, 0, 40));
     assert_eq!(
         result.err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds)),
@@ -317,7 +344,10 @@ fn memory_copy_test_6() {
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     ]);
     for j in 0..offsets.len() {
-        assert_eq!(i.invoke_typed(load8_u, offsets[j]), Ok(results[j]));
+        assert_eq!(
+            i.store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            Ok(results[j])
+        );
     }
 }
 
@@ -346,7 +376,9 @@ fn memory_copy_test_7() {
         .unwrap()
         .as_func()
         .unwrap();
-    let result = i.invoke_typed::<(i32, i32, i32), ()>(run, (65515, 0, 39));
+    let result = i
+        .store
+        .invoke_typed_without_fuel::<(i32, i32, i32), ()>(run, (65515, 0, 39));
     assert_eq!(
         result.err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
@@ -401,7 +433,10 @@ fn memory_copy_test_7() {
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     ]);
     for j in 0..offsets.len() {
-        assert_eq!(i.invoke_typed(load8_u, offsets[j]), Ok(results[j]));
+        assert_eq!(
+            i.store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            Ok(results[j])
+        );
     }
 }
 
@@ -430,7 +465,9 @@ fn memory_copy_test_8() {
         .unwrap()
         .as_func()
         .unwrap();
-    let result = i.invoke_typed::<(i32, i32, i32), ()>(run, (65515, 0, 39));
+    let result = i
+        .store
+        .invoke_typed_without_fuel::<(i32, i32, i32), ()>(run, (65515, 0, 39));
     assert_eq!(
         result.err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
@@ -485,7 +522,10 @@ fn memory_copy_test_8() {
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     ]);
     for j in 0..offsets.len() {
-        assert_eq!(i.invoke_typed(load8_u, offsets[j]), Ok(results[j]));
+        assert_eq!(
+            i.store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            Ok(results[j])
+        );
     }
 }
 
@@ -514,7 +554,9 @@ fn memory_copy_test_9() {
         .unwrap()
         .as_func()
         .unwrap();
-    let result = i.invoke_typed::<(i32, i32, i32), ()>(run, (0, 65516, 40));
+    let result = i
+        .store
+        .invoke_typed_without_fuel::<(i32, i32, i32), ()>(run, (0, 65516, 40));
     assert_eq!(
         result.err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
@@ -570,7 +612,10 @@ fn memory_copy_test_9() {
         1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
     ]);
     for j in 0..offsets.len() {
-        assert_eq!(i.invoke_typed(load8_u, offsets[j]), Ok(results[j]));
+        assert_eq!(
+            i.store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            Ok(results[j])
+        );
     }
 }
 
@@ -599,7 +644,9 @@ fn memory_copy_test_10() {
         .unwrap()
         .as_func()
         .unwrap();
-    let result = i.invoke_typed::<(i32, i32, i32), ()>(run, (0, 65515, 39));
+    let result = i
+        .store
+        .invoke_typed_without_fuel::<(i32, i32, i32), ()>(run, (0, 65515, 39));
     assert_eq!(
         result.err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
@@ -655,7 +702,10 @@ fn memory_copy_test_10() {
         1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
     ]);
     for j in 0..offsets.len() {
-        assert_eq!(i.invoke_typed(load8_u, offsets[j]), Ok(results[j]));
+        assert_eq!(
+            i.store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            Ok(results[j])
+        );
     }
 }
 
@@ -684,7 +734,9 @@ fn memory_copy_test_11() {
         .unwrap()
         .as_func()
         .unwrap();
-    let result = i.invoke_typed::<(i32, i32, i32), ()>(run, (65516, 65486, 40));
+    let result = i
+        .store
+        .invoke_typed_without_fuel::<(i32, i32, i32), ()>(run, (65516, 65486, 40));
     assert_eq!(
         result.err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
@@ -740,7 +792,10 @@ fn memory_copy_test_11() {
         1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
     ]);
     for j in 0..offsets.len() {
-        assert_eq!(i.invoke_typed(load8_u, offsets[j]), Ok(results[j]));
+        assert_eq!(
+            i.store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            Ok(results[j])
+        );
     }
 }
 
@@ -769,7 +824,9 @@ fn memory_copy_test_12() {
         .unwrap()
         .as_func()
         .unwrap();
-    let result = i.invoke_typed::<(i32, i32, i32), ()>(run, (65486, 65516, 40));
+    let result = i
+        .store
+        .invoke_typed_without_fuel::<(i32, i32, i32), ()>(run, (65486, 65516, 40));
     assert_eq!(
         result.err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
@@ -825,7 +882,10 @@ fn memory_copy_test_12() {
         1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
     ]);
     for j in 0..offsets.len() {
-        assert_eq!(i.invoke_typed(load8_u, offsets[j]), Ok(results[j]));
+        assert_eq!(
+            i.store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            Ok(results[j])
+        );
     }
 }
 
@@ -854,7 +914,9 @@ fn memory_copy_test_13() {
         .unwrap()
         .as_func()
         .unwrap();
-    let result = i.invoke_typed::<(i32, i32, i32), ()>(run, (65516, 65506, 40));
+    let result = i
+        .store
+        .invoke_typed_without_fuel::<(i32, i32, i32), ()>(run, (65516, 65506, 40));
     assert_eq!(
         result.err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
@@ -910,7 +972,10 @@ fn memory_copy_test_13() {
         1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
     ]);
     for j in 0..offsets.len() {
-        assert_eq!(i.invoke_typed(load8_u, offsets[j]), Ok(results[j]));
+        assert_eq!(
+            i.store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            Ok(results[j])
+        );
     }
 }
 
@@ -939,7 +1004,9 @@ fn memory_copy_test_14() {
         .unwrap()
         .as_func()
         .unwrap();
-    let result = i.invoke_typed::<(i32, i32, i32), ()>(run, (65506, 65516, 40));
+    let result = i
+        .store
+        .invoke_typed_without_fuel::<(i32, i32, i32), ()>(run, (65506, 65516, 40));
     assert_eq!(
         result.err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
@@ -995,7 +1062,10 @@ fn memory_copy_test_14() {
         1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
     ]);
     for j in 0..offsets.len() {
-        assert_eq!(i.invoke_typed(load8_u, offsets[j]), Ok(results[j]));
+        assert_eq!(
+            i.store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            Ok(results[j])
+        );
     }
 }
 
@@ -1024,7 +1094,9 @@ fn memory_copy_test_15() {
         .unwrap()
         .as_func()
         .unwrap();
-    let result = i.invoke_typed::<(i32, i32, i32), ()>(run, (65516, 65516, 40));
+    let result = i
+        .store
+        .invoke_typed_without_fuel::<(i32, i32, i32), ()>(run, (65516, 65516, 40));
     assert_eq!(
         result.err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
@@ -1080,7 +1152,10 @@ fn memory_copy_test_15() {
         1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
     ]);
     for j in 0..offsets.len() {
-        assert_eq!(i.invoke_typed(load8_u, offsets[j]), Ok(results[j]));
+        assert_eq!(
+            i.store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            Ok(results[j])
+        );
     }
 }
 
@@ -1109,7 +1184,9 @@ fn memory_copy_test_16() {
         .unwrap()
         .as_func()
         .unwrap();
-    let result = i.invoke_typed::<(i32, i32, i32), ()>(run, (0, 65516, 4294963200_u32 as i32));
+    let result = i
+        .store
+        .invoke_typed_without_fuel::<(i32, i32, i32), ()>(run, (0, 65516, 4294963200_u32 as i32));
     assert_eq!(
         result.err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
@@ -1165,7 +1242,10 @@ fn memory_copy_test_16() {
         1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
     ]);
     for j in 0..offsets.len() {
-        assert_eq!(i.invoke_typed(load8_u, offsets[j]), Ok(results[j]));
+        assert_eq!(
+            i.store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            Ok(results[j])
+        );
     }
 }
 
@@ -1194,7 +1274,10 @@ fn memory_copy_test_17() {
         .unwrap()
         .as_func()
         .unwrap();
-    let result = i.invoke_typed::<(i32, i32, i32), ()>(run, (65516, 61440, 4294967040_u32 as i32));
+    let result = i.store.invoke_typed_without_fuel::<(i32, i32, i32), ()>(
+        run,
+        (65516, 61440, 4294967040_u32 as i32),
+    );
     assert_eq!(
         result.err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
@@ -1250,6 +1333,9 @@ fn memory_copy_test_17() {
         19, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     ]);
     for j in 0..offsets.len() {
-        assert_eq!(i.invoke_typed(load8_u, offsets[j]), Ok(results[j]));
+        assert_eq!(
+            i.store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            Ok(results[j])
+        );
     }
 }
