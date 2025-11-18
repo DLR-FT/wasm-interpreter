@@ -1,5 +1,3 @@
-use crate::addrs::GlobalAddr;
-use crate::core::reader::types::global::GlobalType;
 use crate::resumable::RunState;
 use alloc::vec::Vec;
 
@@ -111,29 +109,6 @@ impl<'b, T: Config> RuntimeInstance<'b, T> {
                 RunState::Finished { values, .. } => values,
                 _ => unreachable!("non metered invoke call"),
             })
-    }
-
-    /// Returns the global type of some global instance by its addr.
-    pub fn global_type(&self, global_addr: GlobalAddr) -> GlobalType {
-        self.store.global_type(global_addr)
-    }
-
-    /// Returns the current value of some global instance by its addr.
-    pub fn global_read(&self, global_addr: GlobalAddr) -> Value {
-        self.store.global_read(global_addr)
-    }
-
-    /// Sets a new value of some global instance by its addr.
-    ///
-    /// # Errors
-    /// - [`RuntimeError::WriteOnImmutableGlobal`]
-    /// - [`RuntimeError::GlobalTypeMismatch`]
-    pub fn global_write(
-        &mut self,
-        global_addr: GlobalAddr,
-        val: Value,
-    ) -> Result<(), RuntimeError> {
-        self.store.global_write(global_addr, val)
     }
 }
 
