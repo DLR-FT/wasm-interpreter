@@ -31,9 +31,7 @@ pub fn host_func_call_within_module() {
     }
 
     let mut runtime_instance = RuntimeInstance::new(());
-    let hello = runtime_instance
-        .add_host_function_typed::<(), ()>("hello_mod", "hello", hello)
-        .expect("function registration failed");
+    let hello = runtime_instance.store.func_alloc_typed::<(), ()>(hello);
     let importing_mod = runtime_instance
         .store
         .module_instantiate(&validation_info, vec![ExternVal::Func(hello)], None)
@@ -53,9 +51,7 @@ pub fn host_func_call_within_module() {
 #[test_log::test]
 pub fn host_func_call_as_first_func() {
     let mut runtime_instance = RuntimeInstance::new(());
-    let hello = runtime_instance
-        .add_host_function_typed::<(), ()>("hello_mod", "hello", hello)
-        .expect("function registration failed");
+    let hello = runtime_instance.store.func_alloc_typed::<(), ()>(hello);
     let result = runtime_instance.invoke_typed::<(), ()>(hello, ());
     assert_eq!(Ok(()), result);
 }
@@ -69,13 +65,12 @@ pub fn host_func_call_as_start_func() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let mut runtime_instance = RuntimeInstance::new(());
-    runtime_instance
-        .add_host_function_typed::<(), ()>("hello_mod", "hello", hello)
-        .expect("function registration failed");
+    let hello = runtime_instance.store.func_alloc_typed::<(), ()>(hello);
     let _module_addr = runtime_instance
-        .add_module(
-            "importing_mod",
-            &validate(&wasm_bytes).expect("validation failed"),
+        .store
+        .module_instantiate(
+            &validate(&wasm_bytes).unwrap(),
+            vec![ExternVal::Func(hello)],
             None,
         )
         .expect("instantiation to be successful");
@@ -96,13 +91,12 @@ pub fn host_func_call_within_start_func() {
 )"#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let mut runtime_instance = RuntimeInstance::new(());
-    runtime_instance
-        .add_host_function_typed::<(), ()>("hello_mod", "hello", hello)
-        .expect("function registration failed");
+    let hello = runtime_instance.store.func_alloc_typed::<(), ()>(hello);
     let _module_addr = runtime_instance
-        .add_module(
-            "importing_mod",
+        .store
+        .module_instantiate(
             &validate(&wasm_bytes).expect("validation failed"),
+            vec![ExternVal::Func(hello)],
             None,
         )
         .expect("instantiation to be successful");
@@ -135,17 +129,14 @@ pub fn simple_multivariate_host_func_within_module() {
     let wasm_bytes = wat::parse_str(SIMPLE_MULTIVARIATE_MODULE_EXAMPLE).unwrap();
 
     let mut runtime_instance = RuntimeInstance::new(());
-    runtime_instance
-        .add_host_function_typed::<(i32, f64), (f64, i32)>(
-            "hello_mod",
-            "fancy_add_mult",
-            fancy_add_mult,
-        )
-        .expect("function registration failed");
+    let fancy_add_mult = runtime_instance
+        .store
+        .func_alloc_typed::<(i32, f64), (f64, i32)>(fancy_add_mult);
     let importing_mod = runtime_instance
-        .add_module(
-            "importing_mod",
+        .store
+        .module_instantiate(
             &validate(&wasm_bytes).expect("validation failed"),
+            vec![ExternVal::Func(fancy_add_mult)],
             None,
         )
         .expect("instantiation failed");
@@ -175,17 +166,14 @@ pub fn simple_multivariate_host_func_with_host_func_wrapper() {
     }
 
     let mut runtime_instance = RuntimeInstance::new(());
-    runtime_instance
-        .add_host_function_typed::<(i32, f64), (f64, i32)>(
-            "hello_mod",
-            "fancy_add_mult",
-            wrapped_add_mult,
-        )
-        .expect("function registration failed");
+    let wrapped_add_mult = runtime_instance
+        .store
+        .func_alloc_typed::<(i32, f64), (f64, i32)>(wrapped_add_mult);
     let importing_mod = runtime_instance
-        .add_module(
-            "importing_mod",
+        .store
+        .module_instantiate(
             &validate(&wasm_bytes).expect("validation failed"),
+            vec![ExternVal::Func(wrapped_add_mult)],
             None,
         )
         .expect("instantiation failed");
@@ -205,12 +193,8 @@ pub fn simple_multivariate_host_func_with_host_func_wrapper() {
 pub fn simple_multivariate_host_func_as_first_func() {
     let mut runtime_instance = RuntimeInstance::new(());
     let fancy_add_mult = runtime_instance
-        .add_host_function_typed::<(i32, f64), (f64, i32)>(
-            "hello_mod",
-            "fancy_add_mult",
-            fancy_add_mult,
-        )
-        .expect("function registration failed");
+        .store
+        .func_alloc_typed::<(i32, f64), (f64, i32)>(fancy_add_mult);
 
     let result = runtime_instance
         .invoke_typed::<(i32, f64), (f64, i32)>(fancy_add_mult, (3, 5.0))
@@ -249,11 +233,11 @@ pub fn weird_multi_typed_host_func() {
     let mut runtime_instance = RuntimeInstance::new(());
 
     let weird_mult = runtime_instance
-        .add_host_function_typed::<i32, f64>("hello_mod", "weird_mult", weird_add_mult)
-        .expect("function registration failed");
+        .store
+        .func_alloc_typed::<i32, f64>(weird_add_mult);
     let weird_add = runtime_instance
-        .add_host_function_typed::<f32, i64>("hello_mod", "weird_add", weird_add_mult)
-        .expect("function registration failed");
+        .store
+        .func_alloc_typed::<f32, i64>(weird_add_mult);
 
     let importing_mod = runtime_instance
         .store
@@ -297,9 +281,7 @@ pub fn host_func_runtime_error() {
     }
 
     let mut runtime_instance = RuntimeInstance::new(());
-    let mult3 = runtime_instance
-        .add_host_function_typed::<i32, i32>("hello_mod", "mult3", mult3)
-        .expect("function registration failed");
+    let mult3 = runtime_instance.store.func_alloc_typed::<i32, i32>(mult3);
     let importing_mod = runtime_instance
         .store
         .module_instantiate(&validation_info, vec![ExternVal::Func(mult3)], None)
