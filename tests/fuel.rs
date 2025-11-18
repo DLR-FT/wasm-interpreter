@@ -278,7 +278,9 @@ fn fueled_initialization() {
     let wasm_bytes = wat::parse_str(FUELED_INITIALIZATION_WAT).unwrap();
     let validation_info = &validate(&wasm_bytes).expect("validation falied");
     let mut runtime_instance = RuntimeInstance::new(());
-    let module = runtime_instance.add_module("module", validation_info, Some(2));
+    let module = runtime_instance
+        .store
+        .module_instantiate(validation_info, Vec::new(), Some(2));
     assert!(module.is_ok());
 }
 
@@ -287,6 +289,8 @@ fn fueled_initialization_fail() {
     let wasm_bytes = wat::parse_str(FUELED_INITIALIZATION_WAT).unwrap();
     let validation_info = &validate(&wasm_bytes).expect("validation falied");
     let mut runtime_instance = RuntimeInstance::new(());
-    let module = runtime_instance.add_module("module", validation_info, Some(0));
+    let module = runtime_instance
+        .store
+        .module_instantiate(validation_info, Vec::new(), Some(0));
     assert!(matches!(module, Err(wasm::RuntimeError::OutOfFuel)));
 }
