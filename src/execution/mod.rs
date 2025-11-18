@@ -1,12 +1,11 @@
 use crate::addrs::GlobalAddr;
 use crate::core::reader::types::global::GlobalType;
 use crate::resumable::{ResumableRef, RunState};
-use alloc::borrow::{Cow, ToOwned};
+use alloc::borrow::ToOwned;
 use alloc::vec::Vec;
 
 use const_interpreter_loop::run_const_span;
 use store::addrs::{FuncAddr, ModuleAddr};
-use store::ExternVal;
 use store::HaltExecutionError;
 use store::InstantiationOutcome;
 use value_stack::Stack;
@@ -225,15 +224,6 @@ impl<'b, T: Config> RuntimeInstance<'b, T> {
         val: Value,
     ) -> Result<(), RuntimeError> {
         self.store.global_write(global_addr, val)
-    }
-
-    /// Look-up an export by its name and the name of its exporting module.
-    pub fn lookup_export(
-        &self,
-        module_name: Cow<'static, str>,
-        name: Cow<'static, str>,
-    ) -> Result<ExternVal, RuntimeError> {
-        self.store.registry.lookup(module_name, name).copied()
     }
 }
 
