@@ -24,7 +24,7 @@ fn counter() {
         instance.invoke_typed::<(), ()>(add_one, ()).unwrap();
     }
 
-    assert_eq!(*instance.user_data(), MyCounter(5));
+    assert_eq!(instance.store.user_data, MyCounter(5));
 }
 
 #[test_log::test]
