@@ -7,6 +7,7 @@ use bumpalo::Bump;
 use itertools::enumerate;
 use log::debug;
 use wasm::addrs::ModuleAddr;
+use wasm::linker::Linker;
 use wasm::ExternVal;
 use wasm::RefType;
 use wasm::RuntimeError;
@@ -116,22 +117,21 @@ fn encode(modulee: &mut wast::QuoteWat) -> Result<Vec<u8>, WastError> {
 fn validate_instantiate<'a, 'b: 'a>(
     interpreter: &'a mut RuntimeInstance<'b>,
     bytes: &'b [u8],
-    modules: &mut Vec<ModuleAddr>,
-) -> Result<(), WastError> {
+    linker: &Linker,
+    last_instantiated_module: &mut Option<ModuleAddr>,
+) -> Result<ModuleAddr, WastError> {
     let validation_info =
         catch_unwind_and_suppress_panic_handler(|| validate(bytes)).map_err(WastError::Panic)??;
 
-    // TODO change hacky hidden name that uses interpreter internals
-    let module_name = format!("module_{}", modules.len());
     let module = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
-        interpreter.add_module(module_name.as_str(), &validation_info, None)
+        linker.module_instantiate(&mut interpreter.store, &validation_info, None)
     }))
     .map_err(WastError::Panic)??
     .module_addr;
 
-    modules.push(module);
+    *last_instantiated_module = Some(module);
 
-    Ok(())
+    Ok(module)
 }
 
 /// If returns `Some`:
@@ -144,8 +144,6 @@ pub fn run_spec_test(filepath: &str) -> Result<AssertReport, ScriptError> {
     // -=-= Initialization =-=-
     let arena = bumpalo::Bump::new();
     debug!("{}", filepath);
-
-    let mut visible_modules = HashMap::new();
 
     let contents = std::fs::read_to_string(filepath).map_err(|err| {
         ScriptError::new_lineless(filepath, err.into(), "failed to open wast file")
@@ -177,11 +175,20 @@ pub fn run_spec_test(filepath: &str) -> Result<AssertReport, ScriptError> {
     .unwrap()
     .unwrap();
 
-    // A list of all modules
-    //
-    // We keep this list because linking is currently still done automatically during instantiation.
-    // However, the spectests expect linking to be a separate operation from instantiation.
-    let mut modules = vec![spectest_module];
+    // The last instantiated module is used implicitly whenever a module id
+    // parameter is missing.
+    let mut last_instantiated_module: Option<ModuleAddr> = None;
+
+    // The linker is used to perform automatic linking prior to every module
+    // instantiation.
+    let mut linker = Linker::new();
+    linker
+        .define_module_instance(&interpreter.store, "spectest".to_owned(), spectest_module)
+        .unwrap();
+
+    // Because the linker only links imports and exports and does not keep track
+    // of modules, we need to store modules by their names separately.
+    let mut visible_modules = HashMap::new();
 
     for (i, directive) in enumerate(wast.directives) {
         debug!("at directive {:?}", i);
@@ -189,11 +196,12 @@ pub fn run_spec_test(filepath: &str) -> Result<AssertReport, ScriptError> {
         let directive_result = run_directive(
             directive,
             &arena,
-            &mut visible_modules,
             &mut interpreter,
             &contents,
             filepath,
-            &mut modules,
+            &mut visible_modules,
+            &mut last_instantiated_module,
+            &mut linker,
         )?;
 
         if let Some(assert_outcome) = directive_result {
@@ -204,14 +212,16 @@ pub fn run_spec_test(filepath: &str) -> Result<AssertReport, ScriptError> {
     Ok(asserts)
 }
 
+#[allow(clippy::too_many_arguments)] // reason = "this testsuite runner module needs a redesign anyway"
 fn run_directive<'a>(
     wast_directive: WastDirective,
     arena: &'a Bump,
-    visible_modules: &mut HashMap<String, ModuleAddr>,
     interpreter: &mut RuntimeInstance<'a>,
     contents: &str,
     filepath: &str,
-    modules: &mut Vec<ModuleAddr>,
+    visible_modules: &mut HashMap<String, ModuleAddr>,
+    last_instantiated_module: &mut Option<ModuleAddr>,
+    linker: &mut Linker,
 ) -> Result<Option<AssertOutcome>, ScriptError> {
     match wast_directive {
         wast::WastDirective::Wat(mut quoted) => {
@@ -231,15 +241,17 @@ fn run_directive<'a>(
             // lifetime of the outermost scope in the current function
             let wasm_bytes = arena.alloc_slice_clone(&wasm_bytes) as &[u8];
 
-            validate_instantiate(interpreter, wasm_bytes, modules).map_err(|err| {
-                ScriptError::new(
-                    filepath,
-                    err,
-                    "Module directive (WAT) failed in validation or instantiation.",
-                    get_linenum(contents, quoted.span()),
-                    get_command(contents, quoted.span()),
-                )
-            })?;
+            let module =
+                validate_instantiate(interpreter, wasm_bytes, linker, last_instantiated_module)
+                    .map_err(|err| {
+                        ScriptError::new(
+                            filepath,
+                            err,
+                            "Module directive (WAT) failed in validation or instantiation.",
+                            get_linenum(contents, quoted.span()),
+                            get_command(contents, quoted.span()),
+                        )
+                    })?;
 
             // retain information of the id of the current wast
             match quoted {
@@ -250,7 +262,7 @@ fn run_directive<'a>(
                 | QuoteWat::Wat(wast::Wat::Component(wast::component::Component {
                     id: _maybe_id @ Some(id),
                     ..
-                })) => visible_modules.insert(id.name().to_owned(), *modules.last().unwrap()),
+                })) => visible_modules.insert(id.name().to_owned(), module),
                 _ => None,
             };
 
@@ -261,8 +273,13 @@ fn run_directive<'a>(
             exec,
             results,
         } => {
-            let err_or_panic =
-                execute_assert_return(visible_modules, modules, interpreter, exec, results);
+            let err_or_panic = execute_assert_return(
+                visible_modules,
+                interpreter,
+                exec,
+                results,
+                last_instantiated_module,
+            );
 
             Ok(Some(AssertOutcome {
                 line_number: get_linenum(contents, span),
@@ -275,7 +292,14 @@ fn run_directive<'a>(
             exec,
             message,
         } => {
-            let result = execute(arena, visible_modules, modules, interpreter, exec);
+            let result = execute(
+                arena,
+                visible_modules,
+                interpreter,
+                exec,
+                last_instantiated_module,
+                linker,
+            );
             let result = match result {
                 Err(WastError::WasmRuntimeError(wasm::RuntimeError::Trap(trap_error))) => {
                     let actual_matches_expected =
@@ -322,11 +346,11 @@ fn run_directive<'a>(
             let cmd = get_command(contents, span);
             let result = encode(&mut modulee).and_then(|bytes| {
                 let bytes = arena.alloc_slice_clone(&bytes);
-                validate_instantiate(interpreter, bytes, modules)
+                validate_instantiate(interpreter, bytes, linker, last_instantiated_module)
             });
 
             let maybe_assert_error = match result {
-                Ok(()) => Some(WastError::AssertInvalidButValid),
+                Ok(_module) => Some(WastError::AssertInvalidButValid),
                 Err(panic_err @ WastError::Panic(_)) => {
                     return Err(ScriptError::new(
                         filepath,
@@ -351,11 +375,9 @@ fn run_directive<'a>(
             module: modulee,
             span,
         } => {
-            // TODO this implementation is incorrect, but a correct implementation requires a refactor discussion
-
             // spec tests tells us to use the last defined module if module name is not specified
             let module = match modulee {
-                None => modules.last().copied(),
+                None => last_instantiated_module.as_ref().copied(),
                 Some(id) => visible_modules.get(id.name()).copied(),
             }
             .ok_or(ScriptError::new(
@@ -366,9 +388,8 @@ fn run_directive<'a>(
                 get_command(contents, span),
             ))?;
 
-            interpreter
-                .store
-                .reregister_module(module, name)
+            linker
+                .define_module_instance(&interpreter.store, name.to_owned(), module)
                 .map_err(|runtime_error| {
                     ScriptError::new(
                         filepath,
@@ -392,15 +413,17 @@ fn run_directive<'a>(
             // if it can't be parsed, then the test itself must be written incorrectly, thus the unwrap
             let bytes: &[u8] = arena.alloc_slice_clone(&module.encode().unwrap());
 
-            let result = match validate_instantiate(interpreter, bytes, modules) {
-                // module shouldn't have instantiated
-                Err(WastError::WasmRuntimeError(
-                    RuntimeError::ModuleNotFound
-                    | RuntimeError::UnknownImport
-                    | RuntimeError::InvalidImportType,
-                )) => Ok(()),
-                _ => Err(WastError::AssertUnlinkableButLinked),
-            };
+            let result =
+                match validate_instantiate(interpreter, bytes, linker, last_instantiated_module) {
+                    // module shouldn't have instantiated
+                    Err(WastError::WasmRuntimeError(
+                        RuntimeError::ModuleNotFound
+                        | RuntimeError::UnknownImport
+                        | RuntimeError::InvalidImportType
+                        | RuntimeError::UnableToResolveImport,
+                    )) => Ok(()),
+                    _ => Err(WastError::AssertUnlinkableButLinked),
+                };
 
             Ok(Some(AssertOutcome {
                 line_number,
@@ -416,9 +439,10 @@ fn run_directive<'a>(
             let execution_result = execute(
                 arena,
                 visible_modules,
-                modules,
                 interpreter,
                 wast::WastExecute::Invoke(call),
+                last_instantiated_module,
+                linker,
             );
 
             let result = match execution_result {
@@ -449,7 +473,7 @@ fn run_directive<'a>(
 
             // spec tests tells us to use the last defined module if module name is not specified
             let module = match invoke.module {
-                None => modules.last().copied(),
+                None => last_instantiated_module.as_ref().copied(),
                 Some(id) => visible_modules.get(id.name()).copied(),
             }
             .ok_or(ScriptError::new(
@@ -527,10 +551,10 @@ fn run_directive<'a>(
 
 fn execute_assert_return(
     visible_modules: &HashMap<String, ModuleAddr>,
-    modules: &[ModuleAddr],
     interpreter: &mut RuntimeInstance,
     exec: wast::WastExecute,
     results: Vec<wast::WastRet>,
+    last_instantiated_module: &mut Option<ModuleAddr>,
 ) -> Result<(), WastError> {
     match exec {
         wast::WastExecute::Invoke(invoke_info) => {
@@ -552,7 +576,7 @@ fn execute_assert_return(
 
             // spec tests tells us to use the last defined module if module name is not specified
             let module = match invoke_info.module {
-                None => modules.last().copied(),
+                None => last_instantiated_module.as_ref().copied(),
                 Some(id) => visible_modules.get(id.name()).copied(),
             }
             .ok_or(WastError::UnknownModuleReferenced)?;
@@ -593,7 +617,7 @@ fn execute_assert_return(
 
             // spec tests tells us to use the last defined module if module name is not specified
             let module = match module {
-                None => modules.last().copied(),
+                None => last_instantiated_module.as_ref().copied(),
                 Some(id) => visible_modules.get(id.name()).copied(),
             }
             .ok_or(WastError::UnknownModuleReferenced)?;
@@ -621,9 +645,10 @@ fn execute_assert_return(
 fn execute<'a>(
     arena: &'a bumpalo::Bump,
     visible_modules: &HashMap<String, ModuleAddr>,
-    modules: &mut Vec<ModuleAddr>,
     interpreter: &mut RuntimeInstance<'a>,
     exec: wast::WastExecute,
+    last_instantiated_module: &mut Option<ModuleAddr>,
+    linker: &mut Linker,
 ) -> Result<(), WastError> {
     match exec {
         wast::WastExecute::Invoke(invoke_info) => {
@@ -635,7 +660,7 @@ fn execute<'a>(
 
             // spec tests tells us to use the last defined module if module name is not specified
             let module = match invoke_info.module {
-                None => modules.last().copied(),
+                None => last_instantiated_module.as_ref().copied(),
                 Some(id) => visible_modules.get(id.name()).copied(),
             }
             .ok_or(WastError::UnknownModuleReferenced)?;
@@ -666,16 +691,9 @@ fn execute<'a>(
         } => todo!("`get` directive inside `assert_trap`"),
         wast::WastExecute::Wat(Wat::Module(mut module)) => {
             let bytecode: &[u8] = arena.alloc_slice_clone(&module.encode()?);
-            let validation_info = catch_unwind_and_suppress_panic_handler(|| validate(bytecode))
-                .map_err(WastError::Panic)??;
 
-            let module_name = format!("module_{}", modules.len());
-            let module_addr = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
-                interpreter.add_module(module_name.as_str(), &validation_info, None)
-            }))
-            .map_err(WastError::Panic)??
-            .module_addr;
-            modules.push(module_addr);
+            let _module =
+                validate_instantiate(interpreter, bytecode, linker, last_instantiated_module)?;
 
             Ok(())
         }
