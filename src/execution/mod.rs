@@ -1,7 +1,6 @@
 use crate::addrs::GlobalAddr;
 use crate::core::reader::types::global::GlobalType;
 use crate::resumable::RunState;
-use alloc::borrow::ToOwned;
 use alloc::vec::Vec;
 
 use const_interpreter_loop::run_const_span;
@@ -10,7 +9,6 @@ use store::HaltExecutionError;
 use store::InstantiationOutcome;
 use value_stack::Stack;
 
-use crate::core::reader::types::{FuncType, ResultType};
 use crate::execution::assert_validated::UnwrapValidatedExt;
 use crate::execution::config::Config;
 use crate::execution::store::Store;
@@ -115,42 +113,6 @@ impl<'b, T: Config> RuntimeInstance<'b, T> {
             })
     }
 
-    /// Adds a host function under module namespace `module_name` with name `name`.
-    /// roughly similar to `func_alloc` in <https://webassembly.github.io/spec/core/appendix/embedding.html#functions>
-    /// except the host function is made visible to other modules through these names.
-    pub fn add_host_function_typed<Params: InteropValueList, Returns: InteropValueList>(
-        &mut self,
-        module_name: &str,
-        name: &str,
-        host_func: fn(&mut T, Vec<Value>) -> Result<Vec<Value>, HaltExecutionError>,
-    ) -> Result<FuncAddr, RuntimeError> {
-        let host_func_ty = FuncType {
-            params: ResultType {
-                valtypes: Vec::from(Params::TYS),
-            },
-            returns: ResultType {
-                valtypes: Vec::from(Returns::TYS),
-            },
-        };
-        self.add_host_function(module_name, name, host_func_ty, host_func)
-    }
-
-    pub fn add_host_function(
-        &mut self,
-        module_name: &str,
-        name: &str,
-        host_func_ty: FuncType,
-        host_func: fn(&mut T, Vec<Value>) -> Result<Vec<Value>, HaltExecutionError>,
-    ) -> Result<FuncAddr, RuntimeError> {
-        let function = self.store.func_alloc(host_func_ty, host_func);
-        self.store.registry.register(
-            module_name.to_owned().into(),
-            name.to_owned().into(),
-            store::ExternVal::Func(function),
-        )?;
-        Ok(function)
-    }
-
     pub fn user_data(&self) -> &T {
         &self.store.user_data
     }
@@ -197,7 +159,7 @@ impl<'b, T: Config> RuntimeInstance<'b, T> {
 /// }
 /// fn main() {
 ///     let mut instance = RuntimeInstance::new(());
-///     let foo_bar = instance.add_host_function_typed::<(u32,i32), u32>("foo", "bar", my_wrapped_host_func).unwrap();
+///     let foo_bar = instance.store.func_alloc_typed::<(u32, i32), u32>(my_wrapped_host_func);
 /// }
 /// ```
 pub fn host_function_wrapper<Params: InteropValueList, Results: InteropValueList>(

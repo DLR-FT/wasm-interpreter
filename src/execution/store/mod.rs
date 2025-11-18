@@ -11,7 +11,9 @@ use crate::core::reader::types::element::{ActiveElem, ElemItems, ElemMode, ElemT
 use crate::core::reader::types::export::{Export, ExportDesc};
 use crate::core::reader::types::global::{Global, GlobalType};
 use crate::core::reader::types::import::Import;
-use crate::core::reader::types::{ExternType, FuncType, ImportSubTypeRelation, MemType, TableType};
+use crate::core::reader::types::{
+    ExternType, FuncType, ImportSubTypeRelation, MemType, ResultType, TableType,
+};
 use crate::core::reader::WasmReader;
 use crate::execution::interpreter_loop::{self, memory_init, table_init};
 use crate::execution::value::{Ref, Value};
@@ -33,6 +35,7 @@ use instances::{
 };
 use linear_memory::LinearMemory;
 
+use super::interop::InteropValueList;
 use super::interpreter_loop::{data_drop, elem_drop};
 use super::UnwrapValidatedExt;
 
@@ -1161,6 +1164,27 @@ impl<'b, T: Config> Store<'b, T> {
                 Ok(f(&mut resumable.maybe_fuel))
             }
         }
+    }
+
+    /// Allocates a new function with a statically known type signature with some host code.
+    ///
+    /// This function is simply syntactic sugar for calling [`Store::func_alloc`].
+    ///
+    /// # Panics & Unexpected Behavior
+    /// Same as [`Store::func_alloc`].
+    pub fn func_alloc_typed<Params: InteropValueList, Returns: InteropValueList>(
+        &mut self,
+        host_func: fn(&mut T, Vec<Value>) -> Result<Vec<Value>, HaltExecutionError>,
+    ) -> FuncAddr {
+        let func_type = FuncType {
+            params: ResultType {
+                valtypes: Vec::from(Params::TYS),
+            },
+            returns: ResultType {
+                valtypes: Vec::from(Returns::TYS),
+            },
+        };
+        self.func_alloc(func_type, host_func)
     }
 }
 

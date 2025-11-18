@@ -18,9 +18,7 @@ fn counter() {
     }
 
     let mut instance = RuntimeInstance::new(MyCounter(0));
-    let add_one = instance
-        .add_host_function_typed::<(), ()>("host", "add_one", add_one)
-        .unwrap();
+    let add_one = instance.store.func_alloc_typed::<(), ()>(add_one);
 
     for _ in 0..5 {
         instance.invoke_typed::<(), ()>(add_one, ()).unwrap();
@@ -50,9 +48,7 @@ fn channels() {
         }
 
         let mut instance = RuntimeInstance::new(MySender(tx));
-        let send_message = instance
-            .add_host_function_typed::<(), ()>("host", "send_message", send_message)
-            .unwrap();
+        let send_message = instance.store.func_alloc_typed::<(), ()>(send_message);
 
         instance.invoke_typed::<(), ()>(send_message, ()).unwrap();
     });
