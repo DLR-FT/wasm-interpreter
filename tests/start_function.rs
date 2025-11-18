@@ -34,5 +34,11 @@ fn start_function() {
         .as_func()
         .unwrap();
 
-    assert_eq!(42, instance.invoke_typed(load_num, ()).unwrap());
+    assert_eq!(
+        42,
+        instance
+            .store
+            .invoke_typed_without_fuel(load_num, ())
+            .unwrap()
+    );
 }

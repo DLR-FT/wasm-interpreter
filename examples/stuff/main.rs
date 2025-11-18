@@ -82,16 +82,28 @@ fn main() -> ExitCode {
         .as_func()
         .unwrap();
 
-    let twelve: i32 = instance.invoke_typed(add, (5, 7)).unwrap();
+    let twelve: i32 = instance
+        .store
+        .invoke_typed_without_fuel(add, (5, 7))
+        .unwrap();
     assert_eq!(twelve, 12);
 
-    let twelve_plus_one: i32 = instance.invoke_typed(add_one, twelve).unwrap();
+    let twelve_plus_one: i32 = instance
+        .store
+        .invoke_typed_without_fuel(add_one, twelve)
+        .unwrap();
     assert_eq!(twelve_plus_one, 13);
 
-    instance.invoke_typed::<_, ()>(store_num, 42_i32).unwrap();
+    instance
+        .store
+        .invoke_typed_without_fuel::<_, ()>(store_num, 42_i32)
+        .unwrap();
 
     assert_eq!(
-        instance.invoke_typed::<(), i32>(load_num, ()).unwrap(),
+        instance
+            .store
+            .invoke_typed_without_fuel::<(), i32>(load_num, ())
+            .unwrap(),
         42_i32
     );
 

@@ -186,23 +186,34 @@ fn table_get_set_test() {
 
     // assert the function at index 1 is a FuncRef and is NOT null
     {
-        let funcref = i.invoke_typed::<i32, RefFunc>(get_funcref, 1).unwrap();
+        let funcref = i
+            .store
+            .invoke_typed_without_fuel::<i32, RefFunc>(get_funcref, 1)
+            .unwrap();
 
         assert!(funcref.0.is_some());
     }
 
     // assert the function at index 2 is a FuncRef and is null
     {
-        let funcref = i.invoke_typed::<i32, RefFunc>(get_funcref, 2).unwrap();
+        let funcref = i
+            .store
+            .invoke_typed_without_fuel::<i32, RefFunc>(get_funcref, 2)
+            .unwrap();
 
         assert!(funcref.0.is_none());
     }
 
     // set the function at index 2 the same as the one at index 1
-    i.invoke_typed::<(), ()>(init, ()).unwrap();
+    i.store
+        .invoke_typed_without_fuel::<(), ()>(init, ())
+        .unwrap();
     // assert the function at index 2 is a FuncRef and is NOT null
     {
-        let funcref = i.invoke_typed::<i32, RefFunc>(get_funcref, 2).unwrap();
+        let funcref = i
+            .store
+            .invoke_typed_without_fuel::<i32, RefFunc>(get_funcref, 2)
+            .unwrap();
 
         assert!(funcref.0.is_some());
     }
@@ -256,25 +267,29 @@ fn call_indirect_type_check() {
     assert_eq!(
         4,
         instance
-            .invoke_typed::<(i32, i32), i32>(call_fn, (3, 0))
+            .store
+            .invoke_typed_without_fuel::<(i32, i32), i32>(call_fn, (3, 0))
             .unwrap()
     );
     assert_eq!(
         6,
         instance
-            .invoke_typed::<(i32, i32), i32>(call_fn, (5, 0))
+            .store
+            .invoke_typed_without_fuel::<(i32, i32), i32>(call_fn, (5, 0))
             .unwrap()
     );
     assert_eq!(
         6,
         instance
-            .invoke_typed::<(i32, i32), i32>(call_fn, (3, 1))
+            .store
+            .invoke_typed_without_fuel::<(i32, i32), i32>(call_fn, (3, 1))
             .unwrap()
     );
     assert_eq!(
         10,
         instance
-            .invoke_typed::<(i32, i32), i32>(call_fn, (5, 1))
+            .store
+            .invoke_typed_without_fuel::<(i32, i32), i32>(call_fn, (5, 1))
             .unwrap()
     );
 }

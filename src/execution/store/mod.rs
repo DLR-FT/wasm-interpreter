@@ -37,6 +37,7 @@ use linear_memory::LinearMemory;
 
 use super::interop::InteropValueList;
 use super::interpreter_loop::{data_drop, elem_drop};
+use super::value::ValueTypeMismatchError;
 use super::UnwrapValidatedExt;
 
 pub mod addrs;
@@ -1185,6 +1186,39 @@ impl<'b, T: Config> Store<'b, T> {
             },
         };
         self.func_alloc(func_type, host_func)
+    }
+
+    /// Invokes a function without fuel.
+    ///
+    /// This is a wrapper around [`Store::invoke`].
+    pub fn invoke_without_fuel(
+        &mut self,
+        function: FuncAddr,
+        params: Vec<Value>,
+    ) -> Result<Vec<Value>, RuntimeError> {
+        self.invoke(function, params, None)
+            .map(|run_state| match run_state {
+                RunState::Finished {
+                    values,
+                    maybe_remaining_fuel: _,
+                } => values,
+                RunState::Resumable { .. } => unreachable!("fuel is disabled"),
+            })
+    }
+
+    /// Invokes a function with a statically known type signature without fuel.
+    ///
+    /// This is a wrapper around [`Store::invoke`].
+    pub fn invoke_typed_without_fuel<Params: InteropValueList, Returns: InteropValueList>(
+        &mut self,
+        function: FuncAddr,
+        params: Params,
+    ) -> Result<Returns, RuntimeError> {
+        self.invoke_without_fuel(function, params.into_values())
+            .and_then(|values| {
+                Returns::try_from_values(values.into_iter())
+                    .map_err(|ValueTypeMismatchError| todo!("throw correct error here"))
+            })
     }
 }
 

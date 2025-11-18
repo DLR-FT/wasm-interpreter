@@ -490,7 +490,7 @@ fn run_directive<'a>(
             })??;
 
             catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
-                interpreter.invoke(func_addr, args)
+                interpreter.store.invoke_without_fuel(func_addr, args)
             }))
             .map_err(|panic_error| {
                 ScriptError::new(
@@ -570,7 +570,7 @@ fn execute_assert_return(
             .map_err(WastError::Panic)??;
 
             let actual = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
-                interpreter.invoke(func_addr, args)
+                interpreter.store.invoke_without_fuel(func_addr, args)
             }))
             .map_err(WastError::Panic)??;
 
@@ -653,7 +653,7 @@ fn execute<'a>(
             .map_err(WastError::Panic)??;
 
             catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
-                interpreter.invoke(func_addr, args)
+                interpreter.store.invoke_without_fuel(func_addr, args)
             }))
             .map_err(WastError::Panic)??;
 

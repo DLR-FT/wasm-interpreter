@@ -101,46 +101,46 @@ fn table_size_test() {
         .as_func()
         .unwrap();
 
-    assert_eq!(i.invoke_typed(size_t0, ()), Ok(0));
-    assert_eq!(i.invoke_typed(size_t0, ()), Ok(0));
-    assert_eq!(i.invoke_typed(grow_t0, 1), Ok(()));
-    assert_eq!(i.invoke_typed(size_t0, ()), Ok(1));
-    assert_eq!(i.invoke_typed(grow_t0, 4), Ok(()));
-    assert_eq!(i.invoke_typed(size_t0, ()), Ok(5));
-    assert_eq!(i.invoke_typed(grow_t0, 0), Ok(()));
-    assert_eq!(i.invoke_typed(size_t0, ()), Ok(5));
+    assert_eq!(i.store.invoke_typed_without_fuel(size_t0, ()), Ok(0));
+    assert_eq!(i.store.invoke_typed_without_fuel(size_t0, ()), Ok(0));
+    assert_eq!(i.store.invoke_typed_without_fuel(grow_t0, 1), Ok(()));
+    assert_eq!(i.store.invoke_typed_without_fuel(size_t0, ()), Ok(1));
+    assert_eq!(i.store.invoke_typed_without_fuel(grow_t0, 4), Ok(()));
+    assert_eq!(i.store.invoke_typed_without_fuel(size_t0, ()), Ok(5));
+    assert_eq!(i.store.invoke_typed_without_fuel(grow_t0, 0), Ok(()));
+    assert_eq!(i.store.invoke_typed_without_fuel(size_t0, ()), Ok(5));
 
-    assert_eq!(i.invoke_typed(size_t1, ()), Ok(1));
-    assert_eq!(i.invoke_typed(grow_t1, 1), Ok(()));
-    assert_eq!(i.invoke_typed(size_t1, ()), Ok(2));
-    assert_eq!(i.invoke_typed(grow_t1, 4), Ok(()));
-    assert_eq!(i.invoke_typed(size_t1, ()), Ok(6));
-    assert_eq!(i.invoke_typed(grow_t1, 0), Ok(()));
-    assert_eq!(i.invoke_typed(size_t1, ()), Ok(6));
+    assert_eq!(i.store.invoke_typed_without_fuel(size_t1, ()), Ok(1));
+    assert_eq!(i.store.invoke_typed_without_fuel(grow_t1, 1), Ok(()));
+    assert_eq!(i.store.invoke_typed_without_fuel(size_t1, ()), Ok(2));
+    assert_eq!(i.store.invoke_typed_without_fuel(grow_t1, 4), Ok(()));
+    assert_eq!(i.store.invoke_typed_without_fuel(size_t1, ()), Ok(6));
+    assert_eq!(i.store.invoke_typed_without_fuel(grow_t1, 0), Ok(()));
+    assert_eq!(i.store.invoke_typed_without_fuel(size_t1, ()), Ok(6));
 
-    assert_eq!(i.invoke_typed(size_t2, ()), Ok(0));
-    assert_eq!(i.invoke_typed(grow_t2, 3), Ok(()));
-    assert_eq!(i.invoke_typed(size_t2, ()), Ok(0));
-    assert_eq!(i.invoke_typed(grow_t2, 1), Ok(()));
-    assert_eq!(i.invoke_typed(size_t2, ()), Ok(1));
-    assert_eq!(i.invoke_typed(grow_t2, 0), Ok(()));
-    assert_eq!(i.invoke_typed(size_t2, ()), Ok(1));
-    assert_eq!(i.invoke_typed(grow_t2, 4), Ok(()));
-    assert_eq!(i.invoke_typed(size_t2, ()), Ok(1));
-    assert_eq!(i.invoke_typed(grow_t2, 1), Ok(()));
-    assert_eq!(i.invoke_typed(size_t2, ()), Ok(2));
+    assert_eq!(i.store.invoke_typed_without_fuel(size_t2, ()), Ok(0));
+    assert_eq!(i.store.invoke_typed_without_fuel(grow_t2, 3), Ok(()));
+    assert_eq!(i.store.invoke_typed_without_fuel(size_t2, ()), Ok(0));
+    assert_eq!(i.store.invoke_typed_without_fuel(grow_t2, 1), Ok(()));
+    assert_eq!(i.store.invoke_typed_without_fuel(size_t2, ()), Ok(1));
+    assert_eq!(i.store.invoke_typed_without_fuel(grow_t2, 0), Ok(()));
+    assert_eq!(i.store.invoke_typed_without_fuel(size_t2, ()), Ok(1));
+    assert_eq!(i.store.invoke_typed_without_fuel(grow_t2, 4), Ok(()));
+    assert_eq!(i.store.invoke_typed_without_fuel(size_t2, ()), Ok(1));
+    assert_eq!(i.store.invoke_typed_without_fuel(grow_t2, 1), Ok(()));
+    assert_eq!(i.store.invoke_typed_without_fuel(size_t2, ()), Ok(2));
 
-    assert_eq!(i.invoke_typed(size_t3, ()), Ok(3));
-    assert_eq!(i.invoke_typed(grow_t3, 1), Ok(()));
-    assert_eq!(i.invoke_typed(size_t3, ()), Ok(4));
-    assert_eq!(i.invoke_typed(grow_t3, 3), Ok(()));
-    assert_eq!(i.invoke_typed(size_t3, ()), Ok(7));
-    assert_eq!(i.invoke_typed(grow_t3, 0), Ok(()));
-    assert_eq!(i.invoke_typed(size_t3, ()), Ok(7));
-    assert_eq!(i.invoke_typed(grow_t3, 2), Ok(()));
-    assert_eq!(i.invoke_typed(size_t3, ()), Ok(7));
-    assert_eq!(i.invoke_typed(grow_t3, 1), Ok(()));
-    assert_eq!(i.invoke_typed(size_t3, ()), Ok(8));
+    assert_eq!(i.store.invoke_typed_without_fuel(size_t3, ()), Ok(3));
+    assert_eq!(i.store.invoke_typed_without_fuel(grow_t3, 1), Ok(()));
+    assert_eq!(i.store.invoke_typed_without_fuel(size_t3, ()), Ok(4));
+    assert_eq!(i.store.invoke_typed_without_fuel(grow_t3, 3), Ok(()));
+    assert_eq!(i.store.invoke_typed_without_fuel(size_t3, ()), Ok(7));
+    assert_eq!(i.store.invoke_typed_without_fuel(grow_t3, 0), Ok(()));
+    assert_eq!(i.store.invoke_typed_without_fuel(size_t3, ()), Ok(7));
+    assert_eq!(i.store.invoke_typed_without_fuel(grow_t3, 2), Ok(()));
+    assert_eq!(i.store.invoke_typed_without_fuel(size_t3, ()), Ok(7));
+    assert_eq!(i.store.invoke_typed_without_fuel(grow_t3, 1), Ok(()));
+    assert_eq!(i.store.invoke_typed_without_fuel(size_t3, ()), Ok(8));
 }
 
 //   ;; Type errors

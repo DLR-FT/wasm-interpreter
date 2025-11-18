@@ -32,10 +32,13 @@ fn odd_with_if_else() {
         .as_func()
         .unwrap();
 
-    assert_eq!(1, instance.invoke_typed(odd, -5).unwrap());
-    assert_eq!(0, instance.invoke_typed(odd, 0).unwrap());
-    assert_eq!(1, instance.invoke_typed(odd, 3).unwrap());
-    assert_eq!(0, instance.invoke_typed(odd, 4).unwrap());
+    assert_eq!(
+        1,
+        instance.store.invoke_typed_without_fuel(odd, -5).unwrap()
+    );
+    assert_eq!(0, instance.store.invoke_typed_without_fuel(odd, 0).unwrap());
+    assert_eq!(1, instance.store.invoke_typed_without_fuel(odd, 3).unwrap());
+    assert_eq!(0, instance.store.invoke_typed_without_fuel(odd, 4).unwrap());
 }
 
 #[test_log::test]
@@ -68,10 +71,13 @@ fn odd_with_if() {
         .as_func()
         .unwrap();
 
-    assert_eq!(1, instance.invoke_typed(odd, -5).unwrap());
-    assert_eq!(0, instance.invoke_typed(odd, 0).unwrap());
-    assert_eq!(1, instance.invoke_typed(odd, 3).unwrap());
-    assert_eq!(0, instance.invoke_typed(odd, 4).unwrap());
+    assert_eq!(
+        1,
+        instance.store.invoke_typed_without_fuel(odd, -5).unwrap()
+    );
+    assert_eq!(0, instance.store.invoke_typed_without_fuel(odd, 0).unwrap());
+    assert_eq!(1, instance.store.invoke_typed_without_fuel(odd, 3).unwrap());
+    assert_eq!(0, instance.store.invoke_typed_without_fuel(odd, 4).unwrap());
 }
 
 #[test_log::test]
@@ -126,10 +132,34 @@ fn odd_with_if_else_recursive() {
         .as_func()
         .unwrap();
 
-    assert_eq!(1, instance.invoke_typed(even_odd_fn, 1).unwrap());
-    assert_eq!(0, instance.invoke_typed(even_odd_fn, 0).unwrap());
-    assert_eq!(1, instance.invoke_typed(even_odd_fn, 3).unwrap());
-    assert_eq!(0, instance.invoke_typed(even_odd_fn, 4).unwrap());
+    assert_eq!(
+        1,
+        instance
+            .store
+            .invoke_typed_without_fuel(even_odd_fn, 1)
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .store
+            .invoke_typed_without_fuel(even_odd_fn, 0)
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .store
+            .invoke_typed_without_fuel(even_odd_fn, 3)
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        instance
+            .store
+            .invoke_typed_without_fuel(even_odd_fn, 4)
+            .unwrap()
+    );
 }
 
 #[test_log::test]
@@ -174,13 +204,55 @@ fn recursive_fibonacci_if_else() {
         .as_func()
         .unwrap();
 
-    assert_eq!(1, instance.invoke_typed(fibonacci_fn, -5).unwrap());
-    assert_eq!(1, instance.invoke_typed(fibonacci_fn, 0).unwrap());
-    assert_eq!(1, instance.invoke_typed(fibonacci_fn, 1).unwrap());
-    assert_eq!(2, instance.invoke_typed(fibonacci_fn, 2).unwrap());
-    assert_eq!(3, instance.invoke_typed(fibonacci_fn, 3).unwrap());
-    assert_eq!(5, instance.invoke_typed(fibonacci_fn, 4).unwrap());
-    assert_eq!(8, instance.invoke_typed(fibonacci_fn, 5).unwrap());
+    assert_eq!(
+        1,
+        instance
+            .store
+            .invoke_typed_without_fuel(fibonacci_fn, -5)
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .store
+            .invoke_typed_without_fuel(fibonacci_fn, 0)
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        instance
+            .store
+            .invoke_typed_without_fuel(fibonacci_fn, 1)
+            .unwrap()
+    );
+    assert_eq!(
+        2,
+        instance
+            .store
+            .invoke_typed_without_fuel(fibonacci_fn, 2)
+            .unwrap()
+    );
+    assert_eq!(
+        3,
+        instance
+            .store
+            .invoke_typed_without_fuel(fibonacci_fn, 3)
+            .unwrap()
+    );
+    assert_eq!(
+        5,
+        instance
+            .store
+            .invoke_typed_without_fuel(fibonacci_fn, 4)
+            .unwrap()
+    );
+    assert_eq!(
+        8,
+        instance
+            .store
+            .invoke_typed_without_fuel(fibonacci_fn, 5)
+            .unwrap()
+    );
 }
 
 #[test_log::test]
@@ -205,8 +277,14 @@ fn if_without_else_type_check1() {
         .as_func()
         .unwrap();
 
-    instance.invoke_typed::<i32, ()>(empty_fn, 1).unwrap();
-    instance.invoke_typed::<i32, ()>(empty_fn, 0).unwrap();
+    instance
+        .store
+        .invoke_typed_without_fuel::<i32, ()>(empty_fn, 1)
+        .unwrap();
+    instance
+        .store
+        .invoke_typed_without_fuel::<i32, ()>(empty_fn, 0)
+        .unwrap();
 }
 
 #[test_log::test]
@@ -252,8 +330,20 @@ fn if_without_else_type_check3() {
         .as_func()
         .unwrap();
 
-    assert_eq!(7, instance.invoke_typed(add_one_if_true_fn, 1).unwrap());
-    assert_eq!(5, instance.invoke_typed(add_one_if_true_fn, 0).unwrap());
+    assert_eq!(
+        7,
+        instance
+            .store
+            .invoke_typed_without_fuel(add_one_if_true_fn, 1)
+            .unwrap()
+    );
+    assert_eq!(
+        5,
+        instance
+            .store
+            .invoke_typed_without_fuel(add_one_if_true_fn, 0)
+            .unwrap()
+    );
 }
 
 #[test_log::test]
@@ -282,13 +372,15 @@ fn if_without_else_type_check4() {
     assert_eq!(
         (7, 42),
         instance
-            .invoke_typed::<i32, (i32, i64)>(add_one_if_true_fn, 1)
+            .store
+            .invoke_typed_without_fuel::<i32, (i32, i64)>(add_one_if_true_fn, 1)
             .unwrap()
     );
     assert_eq!(
         (5, 20),
         instance
-            .invoke_typed::<i32, (i32, i64)>(add_one_if_true_fn, 0)
+            .store
+            .invoke_typed_without_fuel::<i32, (i32, i64)>(add_one_if_true_fn, 0)
             .unwrap()
     );
 }
