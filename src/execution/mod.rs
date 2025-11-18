@@ -52,32 +52,24 @@ impl<'b, T: Config> RuntimeInstance<'b, T> {
         validation_info: &'_ ValidationInfo<'b>,
     ) -> Result<(Self, ModuleAddr), RuntimeError> {
         let mut instance = Self::new(user_data);
-        let module_addr = instance.add_module(DEFAULT_MODULE, validation_info, None)?;
+        let module_addr = instance
+            .store
+            .module_instantiate(validation_info, Vec::new(), None)?;
         Ok((instance, module_addr))
     }
 
     // Returns the new [`RuntimeInstance`] and module addr of the new named module.
     pub fn new_named(
         user_data: T,
-        module_name: &str,
+        _module_name: &str,
         validation_info: &'_ ValidationInfo<'b>,
         // store: &mut Store,
     ) -> Result<(Self, ModuleAddr), RuntimeError> {
         let mut instance = Self::new(user_data);
-        let module_addr = instance.add_module(module_name, validation_info, None)?;
+        let module_addr = instance
+            .store
+            .module_instantiate(validation_info, Vec::new(), None)?;
         Ok((instance, module_addr))
-    }
-
-    // Returns the module addr. Invocation of the start function is optionally metered if `Some(fuel: u32)` is supplied
-    // to `maybe_fuel` (Returns `RuntimeError::OutOfFuel` in case of fuel depletion).
-    pub fn add_module(
-        &mut self,
-        module_name: &str,
-        validation_info: &'_ ValidationInfo<'b>,
-        maybe_fuel: Option<u32>,
-    ) -> Result<ModuleAddr, RuntimeError> {
-        self.store
-            .add_module(module_name, validation_info, maybe_fuel)
     }
 }
 
