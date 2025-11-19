@@ -58,21 +58,6 @@ impl<'b, T: Config> RuntimeInstance<'b, T> {
             .module_addr;
         Ok((instance, module_addr))
     }
-
-    // Returns the new [`RuntimeInstance`] and module addr of the new named module.
-    pub fn new_named(
-        user_data: T,
-        _module_name: &str,
-        validation_info: &'_ ValidationInfo<'b>,
-        // store: &mut Store,
-    ) -> Result<(Self, ModuleAddr), RuntimeError> {
-        let mut instance = Self::new(user_data);
-        let module_addr = instance
-            .store
-            .module_instantiate(validation_info, Vec::new(), None)?
-            .module_addr;
-        Ok((instance, module_addr))
-    }
 }
 
 /// Helper function to quickly construct host functions without worrying about wasm to Rust
