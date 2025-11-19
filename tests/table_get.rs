@@ -19,7 +19,7 @@ use wasm::{
     interop::{RefExtern, RefFunc},
     validate,
     value::ExternAddr,
-    RuntimeError, RuntimeInstance, TrapError,
+    RuntimeError, Store, TrapError,
 };
 
 #[test_log::test]
@@ -50,59 +50,54 @@ fn table_funcref_test() {
     "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new(());
-    let module = i
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
-    let init = i
-        .store
+    let init = store
         .instance_export(module, "init")
         .unwrap()
         .as_func()
         .unwrap();
-    let get_externref = i
-        .store
+    let get_externref = store
         .instance_export(module, "get-externref")
         .unwrap()
         .as_func()
         .unwrap();
-    let get_funcref = i
-        .store
+    let get_funcref = store
         .instance_export(module, "get-funcref")
         .unwrap()
         .as_func()
         .unwrap();
-    let is_null_funcref = i
-        .store
+    let is_null_funcref = store
         .instance_export(module, "is_null-funcref")
         .unwrap()
         .as_func()
         .unwrap();
 
-    i.store
+    store
         .invoke_typed_without_fuel::<RefExtern, ()>(init, RefExtern(Some(ExternAddr(1))))
         .unwrap();
 
     assert_eq!(
-        i.store.invoke_typed_without_fuel(get_externref, 0),
+        store.invoke_typed_without_fuel(get_externref, 0),
         Ok(RefExtern(None))
     );
     assert_eq!(
-        i.store.invoke_typed_without_fuel(get_externref, 1),
+        store.invoke_typed_without_fuel(get_externref, 1),
         Ok(RefExtern(Some(ExternAddr(1))))
     );
     assert_eq!(
-        i.store.invoke_typed_without_fuel(get_funcref, 0),
+        store.invoke_typed_without_fuel(get_funcref, 0),
         Ok(RefFunc(None))
     );
-    assert_eq!(i.store.invoke_typed_without_fuel(is_null_funcref, 1), Ok(0));
-    assert_eq!(i.store.invoke_typed_without_fuel(is_null_funcref, 2), Ok(0));
+    assert_eq!(store.invoke_typed_without_fuel(is_null_funcref, 1), Ok(0));
+    assert_eq!(store.invoke_typed_without_fuel(is_null_funcref, 2), Ok(0));
 
     assert_eq!(
-        i.store
+        store
             .invoke_typed_without_fuel::<i32, RefFunc>(get_externref, 2)
             .err(),
         Some(RuntimeError::Trap(
@@ -110,7 +105,7 @@ fn table_funcref_test() {
         ))
     );
     assert_eq!(
-        i.store
+        store
             .invoke_typed_without_fuel::<i32, RefFunc>(get_funcref, 3)
             .err(),
         Some(RuntimeError::Trap(
@@ -118,7 +113,7 @@ fn table_funcref_test() {
         ))
     );
     assert_eq!(
-        i.store
+        store
             .invoke_typed_without_fuel::<i32, RefFunc>(get_externref, -1)
             .err(),
         Some(RuntimeError::Trap(
@@ -126,7 +121,7 @@ fn table_funcref_test() {
         ))
     );
     assert_eq!(
-        i.store
+        store
             .invoke_typed_without_fuel::<i32, RefFunc>(get_funcref, -1)
             .err(),
         Some(RuntimeError::Trap(

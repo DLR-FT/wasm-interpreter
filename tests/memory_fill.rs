@@ -17,7 +17,7 @@
 
 // use core::slice::SlicePattern;
 
-use wasm::{validate, RuntimeInstance};
+use wasm::{validate, Store};
 
 #[test_log::test]
 fn memory_fill() {
@@ -31,33 +31,28 @@ fn memory_fill() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new(());
-    let module = i
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
-    let fill = i
-        .store
+    let fill = store
         .instance_export(module, "fill")
         .unwrap()
         .as_func()
         .unwrap();
-    let mem = i
-        .store
+    let mem = store
         .instance_export(module, "mem")
         .unwrap()
         .as_mem()
         .expect("memory");
 
-    i.store
-        .invoke_typed_without_fuel::<(), ()>(fill, ())
-        .unwrap();
+    store.invoke_typed_without_fuel::<(), ()>(fill, ()).unwrap();
 
     let expected = [vec![217u8; 100], vec![0u8; 5]].concat();
     for (idx, expected_byte) in expected.into_iter().enumerate() {
-        let mem_byte: u8 = i.store.mem_read(mem, idx as u32).unwrap();
+        let mem_byte: u8 = store.mem_read(mem, idx as u32).unwrap();
         assert_eq!(
             mem_byte.to_ascii_lowercase(),
             expected_byte.to_ascii_lowercase()

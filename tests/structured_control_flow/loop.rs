@@ -1,4 +1,4 @@
-use wasm::{validate, RuntimeInstance};
+use wasm::{validate, Store};
 
 const FIBONACCI_WITH_LOOP_AND_BR_IF: &str = r#"
 (module
@@ -54,15 +54,13 @@ fn fibonacci_with_loop_and_br_if() {
     let wasm_bytes = wat::parse_str(FIBONACCI_WITH_LOOP_AND_BR_IF).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new(());
-    let module = instance
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
-    let fibonacci_fn = instance
-        .store
+    let fibonacci_fn = store
         .instance_export(module, "fibonacci")
         .unwrap()
         .as_func()
@@ -70,51 +68,12 @@ fn fibonacci_with_loop_and_br_if() {
 
     assert_eq!(
         1,
-        instance
-            .store
-            .invoke_typed_without_fuel(fibonacci_fn, -5)
-            .unwrap()
+        store.invoke_typed_without_fuel(fibonacci_fn, -5).unwrap()
     );
-    assert_eq!(
-        1,
-        instance
-            .store
-            .invoke_typed_without_fuel(fibonacci_fn, 0)
-            .unwrap()
-    );
-    assert_eq!(
-        1,
-        instance
-            .store
-            .invoke_typed_without_fuel(fibonacci_fn, 1)
-            .unwrap()
-    );
-    assert_eq!(
-        2,
-        instance
-            .store
-            .invoke_typed_without_fuel(fibonacci_fn, 2)
-            .unwrap()
-    );
-    assert_eq!(
-        3,
-        instance
-            .store
-            .invoke_typed_without_fuel(fibonacci_fn, 3)
-            .unwrap()
-    );
-    assert_eq!(
-        5,
-        instance
-            .store
-            .invoke_typed_without_fuel(fibonacci_fn, 4)
-            .unwrap()
-    );
-    assert_eq!(
-        8,
-        instance
-            .store
-            .invoke_typed_without_fuel(fibonacci_fn, 5)
-            .unwrap()
-    );
+    assert_eq!(1, store.invoke_typed_without_fuel(fibonacci_fn, 0).unwrap());
+    assert_eq!(1, store.invoke_typed_without_fuel(fibonacci_fn, 1).unwrap());
+    assert_eq!(2, store.invoke_typed_without_fuel(fibonacci_fn, 2).unwrap());
+    assert_eq!(3, store.invoke_typed_without_fuel(fibonacci_fn, 3).unwrap());
+    assert_eq!(5, store.invoke_typed_without_fuel(fibonacci_fn, 4).unwrap());
+    assert_eq!(8, store.invoke_typed_without_fuel(fibonacci_fn, 5).unwrap());
 }

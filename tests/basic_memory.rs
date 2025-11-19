@@ -1,4 +1,4 @@
-use wasm::{validate, RuntimeInstance};
+use wasm::{validate, Store};
 const BASE_WAT: &str = r#"
     (module
         (memory 1)
@@ -17,37 +17,26 @@ fn basic_memory() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new(());
-    let module = instance
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
-    let store_num = instance
-        .store
+    let store_num = store
         .instance_export(module, "store_num")
         .unwrap()
         .as_func()
         .unwrap();
 
-    let load_num = instance
-        .store
+    let load_num = store
         .instance_export(module, "load_num")
         .unwrap()
         .as_func()
         .unwrap();
 
-    let _ = instance
-        .store
-        .invoke_typed_without_fuel::<i32, ()>(store_num, 42);
-    assert_eq!(
-        42,
-        instance
-            .store
-            .invoke_typed_without_fuel(load_num, ())
-            .unwrap()
-    );
+    let _ = store.invoke_typed_without_fuel::<i32, ()>(store_num, 42);
+    assert_eq!(42, store.invoke_typed_without_fuel(load_num, ()).unwrap());
 }
 
 /// Two simple methods for storing and loading an f32 from the first slot in linear memory.
@@ -57,36 +46,29 @@ fn f32_basic_memory() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new(());
-    let module = instance
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
-    let store_num = instance
-        .store
+    let store_num = store
         .instance_export(module, "store_num")
         .unwrap()
         .as_func()
         .unwrap();
 
-    let load_num = instance
-        .store
+    let load_num = store
         .instance_export(module, "load_num")
         .unwrap()
         .as_func()
         .unwrap();
 
-    instance
-        .store
+    store
         .invoke_typed_without_fuel::<f32, ()>(store_num, 133.7_f32)
         .unwrap();
     assert_eq!(
         133.7_f32,
-        instance
-            .store
-            .invoke_typed_without_fuel(load_num, ())
-            .unwrap()
+        store.invoke_typed_without_fuel(load_num, ()).unwrap()
     );
 }
