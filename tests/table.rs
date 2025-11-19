@@ -38,8 +38,11 @@ fn table_basic() {
     w.iter().for_each(|wat| {
         let wasm_bytes = wat::parse_str(wat).unwrap();
         let validation_info = validate(&wasm_bytes).expect("validation failed");
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("instantiation failed");
+        let mut instance = RuntimeInstance::new(());
+        instance
+            .store
+            .module_instantiate(&validation_info, Vec::new(), None)
+            .unwrap();
     });
 }
 
@@ -57,7 +60,7 @@ fn table_basic() {
 //     w.iter().for_each(|wat| {
 //         let wasm_bytes = wat::parse_str(wat).unwrap();
 //         let validation_info = validate(&wasm_bytes).expect("validation failed");
-//         RuntimeInstance::new(&validation_info).expect("instantiation failed");
+//         RuntimeInstance::new(&validation_info)
 //     });
 // }
 
@@ -125,8 +128,12 @@ fn table_elem_test() {
     )"#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap()
+        .module_addr;
 
     let f1 = instance
         .store
@@ -168,8 +175,12 @@ fn table_get_set_test() {
     "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut i = RuntimeInstance::new(());
+    let module = i
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap()
+        .module_addr;
 
     let get_funcref = i
         .store
@@ -254,8 +265,12 @@ fn call_indirect_type_check() {
     "#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap()
+        .module_addr;
 
     let call_fn = instance
         .store

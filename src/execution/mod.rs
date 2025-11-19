@@ -1,7 +1,6 @@
 use alloc::vec::Vec;
 
 use const_interpreter_loop::run_const_span;
-use store::addrs::ModuleAddr;
 use store::HaltExecutionError;
 use value_stack::Stack;
 
@@ -10,7 +9,6 @@ use crate::execution::config::Config;
 use crate::execution::store::Store;
 use crate::execution::value::Value;
 use crate::interop::InteropValueList;
-use crate::{RuntimeError, ValidationInfo};
 
 pub(crate) mod assert_validated;
 pub mod config;
@@ -39,24 +37,11 @@ impl<T: Config + Default> Default for RuntimeInstance<'_, T> {
     }
 }
 
-impl<'b, T: Config> RuntimeInstance<'b, T> {
+impl<T: Config> RuntimeInstance<'_, T> {
     pub fn new(user_data: T) -> Self {
         RuntimeInstance {
             store: Store::new(user_data),
         }
-    }
-
-    // Returns the new [`RuntimeInstance`] and module addr of the default module.
-    pub fn new_with_default_module(
-        user_data: T,
-        validation_info: &'_ ValidationInfo<'b>,
-    ) -> Result<(Self, ModuleAddr), RuntimeError> {
-        let mut instance = Self::new(user_data);
-        let module_addr = instance
-            .store
-            .module_instantiate(validation_info, Vec::new(), None)?
-            .module_addr;
-        Ok((instance, module_addr))
     }
 }
 

@@ -143,8 +143,9 @@ pub fn simple_multivariate_host_func_within_module() {
             vec![ExternVal::Func(fancy_add_mult)],
             None,
         )
-        .expect("instantiation failed")
+        .unwrap()
         .module_addr;
+
     let function_ref = runtime_instance
         .store
         .instance_export(importing_mod, "fancy_add_mult_caller")
@@ -182,8 +183,9 @@ pub fn simple_multivariate_host_func_with_host_func_wrapper() {
             vec![ExternVal::Func(wrapped_add_mult)],
             None,
         )
-        .expect("instantiation failed")
+        .unwrap()
         .module_addr;
+
     let function_ref = runtime_instance
         .store
         .instance_export(importing_mod, "fancy_add_mult_caller")

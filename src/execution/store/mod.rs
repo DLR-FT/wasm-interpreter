@@ -1127,13 +1127,16 @@ impl<'b, T: Config> Store<'b, T> {
     ///
     /// ```
     /// use wasm::{resumable::RunState, validate, RuntimeInstance};
+    /// // a simple module with a single function looping forever
     /// let wasm = [ 0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00,
     ///             0x01, 0x04, 0x01, 0x60, 0x00, 0x00, 0x03, 0x02,
     ///             0x01, 0x00, 0x07, 0x09, 0x01, 0x05, 0x6c, 0x6f,
     ///             0x6f, 0x70, 0x73, 0x00, 0x00, 0x0a, 0x09, 0x01,
     ///             0x07, 0x00, 0x03, 0x40, 0x0c, 0x00, 0x0b, 0x0b ];
-    /// // a simple module with a single function looping forever
-    /// let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validate(&wasm).unwrap()).unwrap();
+    /// let validation_info = validate(&wasm).unwrap();
+    ///
+    /// let mut instance = RuntimeInstance::new(());
+    /// let module = instance.store.module_instantiate(&validation_info, Vec::new(), None).unwrap().module_addr;
     /// let func_addr = instance.store.instance_export(module, "loops").unwrap().as_func().unwrap();
     /// let mut resumable_ref = instance.store.create_resumable(func_addr, Vec::new(), Some(0)).unwrap();
     /// instance.store.access_fuel_mut(&mut resumable_ref, |x| { assert_eq!(*x, Some(0)); *x = None; }).unwrap();
