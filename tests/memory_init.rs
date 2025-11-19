@@ -33,8 +33,12 @@ fn memory_init_test_1() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut i = RuntimeInstance::new(());
+    let module = i
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
+
     let test = i
         .store
         .instance_export(module, "test")
@@ -83,8 +87,12 @@ fn memory_init_test_2() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut i = RuntimeInstance::new(());
+    let module = i
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
+
     let test = i
         .store
         .instance_export(module, "test")
@@ -133,8 +141,12 @@ fn memory_init_test_3() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut i = RuntimeInstance::new(());
+    let module = i
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
+
     let test = i
         .store
         .instance_export(module, "test")
@@ -191,8 +203,12 @@ fn memory_init_test_4() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut i = RuntimeInstance::new(());
+    let module = i
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
+
     let test = i
         .store
         .instance_export(module, "test")
@@ -264,8 +280,12 @@ fn memory_init_test_7() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut i = RuntimeInstance::new(());
+    let module = i
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
+
     let test = i
         .store
         .instance_export(module, "test")
@@ -289,8 +309,12 @@ fn memory_init_test_8() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut i = RuntimeInstance::new(());
+    let module = i
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
+
     let test = i
         .store
         .instance_export(module, "test")
@@ -314,8 +338,12 @@ fn memory_init_test_9() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut i = RuntimeInstance::new(());
+    let module = i
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
+
     let test = i
         .store
         .instance_export(module, "test")
@@ -368,8 +396,12 @@ fn memory_init_test_12() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut i = RuntimeInstance::new(());
+    let module = i
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
+
     let test = i
         .store
         .instance_export(module, "test")
@@ -392,8 +424,12 @@ fn memory_init_test_13() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut i = RuntimeInstance::new(());
+    let module = i
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
+
     let test = i
         .store
         .instance_export(module, "test")

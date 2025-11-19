@@ -22,8 +22,11 @@ fn odd_with_if_else() {
     )
     .unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
 
     let odd = instance
         .store
@@ -61,8 +64,11 @@ fn odd_with_if() {
     )
     .unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
 
     let odd = instance
         .store
@@ -122,8 +128,11 @@ fn odd_with_if_else_recursive() {
     )
     .unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
 
     let even_odd_fn = instance
         .store
@@ -194,8 +203,11 @@ fn recursive_fibonacci_if_else() {
     )
     .unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
 
     let fibonacci_fn = instance
         .store
@@ -267,8 +279,11 @@ fn if_without_else_type_check1() {
     )
     .unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
 
     let empty_fn = instance
         .store
@@ -320,8 +335,11 @@ fn if_without_else_type_check3() {
     )
     .unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
 
     let add_one_if_true_fn = instance
         .store
@@ -360,8 +378,11 @@ fn if_without_else_type_check4() {
     )
     .unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
 
     let add_one_if_true_fn = instance
         .store

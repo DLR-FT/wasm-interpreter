@@ -18,8 +18,11 @@ pub fn f64_const() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
 
     let function = instance
         .store
@@ -54,8 +57,11 @@ pub fn f64_eq() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
 
     let function = instance
         .store
@@ -95,8 +101,11 @@ pub fn f64_ne() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
 
     let function = instance
         .store
@@ -143,8 +152,11 @@ pub fn f64_lt() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
 
     let function = instance
         .store
@@ -191,8 +203,11 @@ pub fn f64_gt() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
 
     let function = instance
         .store
@@ -239,8 +254,11 @@ pub fn f64_le() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
 
     let function = instance
         .store
@@ -287,8 +305,11 @@ pub fn f64_ge() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
 
     let function = instance
         .store
@@ -334,8 +355,11 @@ pub fn f64_abs() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
 
     let function = instance
         .store
@@ -420,8 +444,11 @@ pub fn f64_neg() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
 
     let function = instance
         .store
@@ -506,8 +533,11 @@ pub fn f64_ceil() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
 
     let function = instance
         .store
@@ -553,8 +583,11 @@ pub fn f64_floor() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
 
     let function = instance
         .store
@@ -600,8 +633,11 @@ pub fn f64_trunc() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
 
     let function = instance
         .store
@@ -647,8 +683,11 @@ pub fn f64_nearest() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
 
     let function = instance
         .store
@@ -702,8 +741,11 @@ pub fn f64_sqrt() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
 
     let function = instance
         .store
@@ -748,8 +790,11 @@ pub fn f64_add() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
 
     let function = instance
         .store
@@ -796,8 +841,11 @@ pub fn f64_sub() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
 
     let function = instance
         .store
@@ -844,8 +892,11 @@ pub fn f64_mul() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
 
     let function = instance
         .store
@@ -892,8 +943,11 @@ pub fn f64_div() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
 
     let function = instance
         .store
@@ -943,8 +997,11 @@ pub fn f64_min() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
 
     let function = instance
         .store
@@ -1036,8 +1093,11 @@ pub fn f64_max() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
 
     let function = instance
         .store
@@ -1130,8 +1190,11 @@ pub fn f64_copysign() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
 
     let function = instance
         .store

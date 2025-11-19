@@ -37,8 +37,11 @@ fn table_grow_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut i = RuntimeInstance::new(());
+    let module = i
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
 
     let get = i
         .store
@@ -221,8 +224,11 @@ fn table_grow_outside_i32_range() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut i = RuntimeInstance::new(());
+    let module = i
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
 
     let grow = i
         .store
@@ -251,8 +257,11 @@ fn table_grow_unlimited() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut i = RuntimeInstance::new(());
+    let module = i
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
 
     let grow = i
         .store
@@ -280,8 +289,11 @@ fn table_grow_with_max() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut i = RuntimeInstance::new(());
+    let module = i
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
 
     let grow = i
         .store
@@ -328,8 +340,11 @@ fn table_grow_check_null() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut i = RuntimeInstance::new(());
+    let module = i
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
 
     let grow = i
         .store
@@ -373,20 +388,19 @@ fn table_grow_with_exported_table_test() {
 
     let wasm_bytes = wat::parse_str(target_wat).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut target_instance, module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("target instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
 
-    let grow = target_instance
+    let grow = instance
         .store
         .instance_export(module, "grow")
         .unwrap()
         .as_func()
         .unwrap();
-    assert_eq!(
-        target_instance.store.invoke_typed_without_fuel(grow, ()),
-        Ok(1)
-    );
+    assert_eq!(instance.store.invoke_typed_without_fuel(grow, ()), Ok(1));
 }
 
 // #[test_log::test]

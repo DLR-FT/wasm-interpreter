@@ -10,9 +10,12 @@ fn out_of_fuel() {
             (func (export "loop_forever") (loop br 0)
             ))"#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
-    let validation_info = &validate(&wasm_bytes).expect("validation failed");
-    let (mut runtime_instance, module) =
-        RuntimeInstance::new_with_default_module((), validation_info).unwrap();
+    let validation_info = validate(&wasm_bytes).expect("validation failed");
+    let mut runtime_instance = RuntimeInstance::new(());
+    let module = runtime_instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
     let func_addr = runtime_instance
         .store
         .instance_export(module, "loop_forever")
@@ -66,8 +69,11 @@ fn resumable() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut runtime_instance, module) =
-        RuntimeInstance::new_with_default_module((), &validation_info).unwrap();
+    let mut runtime_instance = RuntimeInstance::new(());
+    let module = runtime_instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
 
     let mult_global_0 = runtime_instance
         .store
@@ -179,8 +185,11 @@ fn resumable_internal_state() {
     let expected = [0, 1, 11, 111, 1111];
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut runtime_instance, module) =
-        RuntimeInstance::new_with_default_module((), &validation_info).unwrap();
+    let mut runtime_instance = RuntimeInstance::new(());
+    let module = runtime_instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
     let add_global_0 = runtime_instance
         .store
         .instance_export(module, "add_global_0")
@@ -236,9 +245,12 @@ fn resumable_drop() {
             (func (export "loop_forever") (loop br 0)
             ))"#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
-    let validation_info = &validate(&wasm_bytes).expect("validation failed");
-    let (mut runtime_instance, module) =
-        RuntimeInstance::new_with_default_module((), validation_info).unwrap();
+    let validation_info = validate(&wasm_bytes).expect("validation failed");
+    let mut runtime_instance = RuntimeInstance::new(());
+    let module = runtime_instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
     let func_addr = runtime_instance
         .store
         .instance_export(module, "loop_forever")

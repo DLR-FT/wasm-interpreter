@@ -25,8 +25,11 @@ pub fn i32_bitwise_and() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
 
     let function = instance
         .store
@@ -74,8 +77,11 @@ pub fn i32_bitwise_or() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
 
     let function = instance
         .store
@@ -123,8 +129,11 @@ pub fn i32_bitwise_xor() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
 
     let function = instance
         .store
@@ -172,8 +181,11 @@ pub fn i32_bitwise_shl() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
 
     let function = instance
         .store
@@ -221,8 +233,11 @@ pub fn i32_bitwise_shr_s() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
 
     let function = instance
         .store
@@ -396,8 +411,11 @@ pub fn i32_bitwise_shr_u() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
 
     let function = instance
         .store
@@ -571,8 +589,11 @@ pub fn i32_bitwise_rotl() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
 
     let function = instance
         .store
@@ -746,8 +767,11 @@ pub fn i32_bitwise_rotr() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
 
     let function = instance
         .store
@@ -921,8 +945,11 @@ pub fn i32_bitwise_clz() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
 
     let function = instance
         .store
@@ -984,8 +1011,11 @@ pub fn i32_bitwise_ctz() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
 
     let function = instance
         .store
@@ -1047,8 +1077,11 @@ pub fn i32_bitwise_popcnt() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
 
     let function = instance
         .store
@@ -1127,8 +1160,11 @@ pub fn i64_bitwise_and() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
 
     let function = instance
         .store
@@ -1176,8 +1212,11 @@ pub fn i64_bitwise_or() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
 
     let function = instance
         .store
@@ -1225,8 +1264,11 @@ pub fn i64_bitwise_xor() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
 
     let function = instance
         .store
@@ -1274,8 +1316,11 @@ pub fn i64_bitwise_shl() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
 
     let function = instance
         .store
@@ -1323,8 +1368,11 @@ pub fn i64_bitwise_shr_s() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
 
     let function = instance
         .store
@@ -1498,8 +1546,11 @@ pub fn i64_bitwise_shr_u() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
 
     let function = instance
         .store
@@ -1673,8 +1724,11 @@ pub fn i64_bitwise_rotl() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
 
     let function = instance
         .store
@@ -1848,8 +1902,11 @@ pub fn i64_bitwise_rotr() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
 
     let function = instance
         .store
@@ -2023,8 +2080,11 @@ pub fn i64_bitwise_clz() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
 
     let function = instance
         .store
@@ -2086,8 +2146,11 @@ pub fn i64_bitwise_ctz() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
 
     let function = instance
         .store
@@ -2149,8 +2212,11 @@ pub fn i64_bitwise_popcnt() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
 
     let function = instance
         .store
