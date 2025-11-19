@@ -82,8 +82,12 @@ pub fn unmet_imports() {
 pub fn compile_simple_import() {
     let wasm_bytes = wat::parse_str(SIMPLE_IMPORT_ADDON).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, module_env) =
-        RuntimeInstance::new_named((), "env", &validation_info).expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module_env = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .expect("instantiation failed")
+        .module_addr;
 
     let get_one = instance
         .store
@@ -106,8 +110,12 @@ pub fn compile_simple_import() {
 pub fn run_simple_import() {
     let wasm_bytes = wat::parse_str(SIMPLE_IMPORT_ADDON).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, module_env) =
-        RuntimeInstance::new_named((), "env", &validation_info).expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module_env = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap()
+        .module_addr;
 
     let get_one = instance
         .store
@@ -157,8 +165,12 @@ pub fn run_simple_import() {
 pub fn run_call_indirect() {
     let wasm_bytes = wat::parse_str(SIMPLE_IMPORT_ADDON).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, module_env) =
-        RuntimeInstance::new_named((), "env", &validation_info).expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module_env = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap()
+        .module_addr;
 
     let get_one = instance
         .store

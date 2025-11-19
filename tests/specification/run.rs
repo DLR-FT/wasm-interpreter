@@ -169,11 +169,17 @@ pub fn run_spec_test(filepath: &str) -> Result<AssertReport, ScriptError> {
         catch_unwind_and_suppress_panic_handler(|| validate(&spectest_wasm))
             .unwrap()
             .unwrap();
-    let (mut interpreter, spectest_module) = catch_unwind_and_suppress_panic_handler(|| {
-        RuntimeInstance::new_named((), "spectest", &spectest_validation_info)
-    })
+    let mut interpreter =
+        catch_unwind_and_suppress_panic_handler(|| RuntimeInstance::new(())).unwrap();
+
+    let spectest_module = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
+        interpreter
+            .store
+            .module_instantiate(&spectest_validation_info, Vec::new(), None)
+    }))
     .unwrap()
-    .unwrap();
+    .unwrap()
+    .module_addr;
 
     // The last instantiated module is used implicitly whenever a module id
     // parameter is missing.
