@@ -14,8 +14,12 @@ fn empty() {
     .unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap()
+        .module_addr;
 
     let do_nothing = instance
         .store
@@ -52,8 +56,12 @@ fn branch() {
     .unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap()
+        .module_addr;
 
     let with_branch = instance
         .store
@@ -103,8 +111,12 @@ fn branch2() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap()
+        .module_addr;
 
     let with_branch = instance
         .store
@@ -128,8 +140,12 @@ fn branch3() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap()
+        .module_addr;
 
     let with_branch = instance
         .store
@@ -166,8 +182,12 @@ fn param_and_result() {
     .unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap()
+        .module_addr;
 
     let add_one = instance
         .store
@@ -219,8 +239,12 @@ fn return_out_of_block() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap()
+        .module_addr;
 
     let get_three = instance
         .store
@@ -244,8 +268,12 @@ fn br_return_out_of_block() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap()
+        .module_addr;
 
     let get_three = instance
         .store
@@ -268,8 +296,12 @@ fn return_out_of_block2() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap()
+        .module_addr;
 
     let get_three = instance
         .store
@@ -293,8 +325,12 @@ fn br_return_out_of_block2() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap()
+        .module_addr;
 
     let get_three = instance
         .store
@@ -336,8 +372,12 @@ fn branch_if() {
     .unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap()
+        .module_addr;
 
     let abs = instance
         .store
@@ -407,8 +447,12 @@ fn recursive_fibonacci() {
     .unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap()
+        .module_addr;
 
     let fibonacci = instance
         .store
@@ -463,8 +507,12 @@ fn switch_case() {
     .unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut instance = RuntimeInstance::new(());
+    let module = instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap()
+        .module_addr;
 
     let switch_case = instance
         .store

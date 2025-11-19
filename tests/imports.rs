@@ -86,7 +86,7 @@ pub fn compile_simple_import() {
     let module_env = instance
         .store
         .module_instantiate(&validation_info, Vec::new(), None)
-        .expect("instantiation failed")
+        .unwrap()
         .module_addr;
 
     let get_one = instance
@@ -127,7 +127,7 @@ pub fn run_simple_import() {
     let module_base = instance
         .store
         .module_instantiate(&validation_info, vec![get_one], None)
-        .expect("instantiation failed")
+        .unwrap()
         .module_addr;
 
     let get_three = instance
@@ -203,7 +203,7 @@ pub fn run_call_indirect() {
 //     let wasm_bytes = wat::parse_str(CYCLICAL_IMPORT).unwrap();
 //     let validation_info = validate(&wasm_bytes).expect("validation failed");
 //     let mut instance =
-//         RuntimeInstance::new_named((), "env", &validation_info).expect("instantiation failed");
+//         RuntimeInstance::new_named((), "env", &validation_info)
 
 //     let wasm_bytes = wat::parse_str(SIMPLE_IMPORT_BASE).unwrap();
 //     let validation_info = validate(&wasm_bytes).expect("validation failed");

@@ -45,14 +45,18 @@ fn main() -> ExitCode {
         }
     };
 
-    let (mut instance, module) =
-        match RuntimeInstance::new_with_default_module((), &validation_info) {
-            Ok(instance) => instance,
-            Err(err) => {
-                error!("Instantiation failed: {err:?} [{err}]");
-                return ExitCode::FAILURE;
-            }
-        };
+    let mut instance = RuntimeInstance::new(());
+
+    let module = match instance
+        .store
+        .module_instantiate(&validation_info, Vec::new(), None)
+    {
+        Ok(outcome) => outcome.module_addr,
+        Err(err) => {
+            error!("Instantiation failed: {err:?} [{err}]");
+            return ExitCode::FAILURE;
+        }
+    };
 
     let add_one = instance
         .store
