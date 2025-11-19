@@ -12,70 +12,26 @@ use wasm::checked::StoredExternVal;
 use wasm::checked::StoredRef;
 use wasm::checked::StoredValue;
 use wasm::linker::Linker;
+use wasm::value::F32;
+use wasm::value::F64;
+use wasm::GlobalType;
+use wasm::Limits;
+use wasm::MemType;
+use wasm::NumType;
 use wasm::RefType;
 use wasm::RuntimeError;
+use wasm::TableType;
 use wasm::TrapError;
+use wasm::ValType;
 use wasm::{validate, Store};
 use wast::core::WastArgCore;
 use wast::core::WastRetCore;
-use wast::QuoteWat;
-use wast::WastArg;
-use wast::WastDirective;
-use wast::WastRet;
-use wast::Wat;
+use wast::{QuoteWat, WastArg, WastDirective, WastRet, Wat};
 
 use crate::specification::reports::*;
 use crate::specification::test_errors::*;
 
 use super::ENV_CONFIG;
-
-//Each script runs within an interpreter that has the following module with name "spectest" defined
-//https://github.com/WebAssembly/spec/tree/main/interpreter#spectest-host-module
-// TODO printing not possible since host functions are not implemented yet
-const SPEC_TEST_WAT: &str = r#"
-(module
-  ;; Memory
-  (memory (export "memory") 1 2)
-
-  ;; Table
-  (table (export "table") 10 20 funcref)
-
-  ;; Globals
-  (global (export "global_i32") i32 (i32.const 666))
-  (global (export "global_i64") i64 (i64.const 666))
-  (global (export "global_f32") f32 (f32.const 666.6))
-  (global (export "global_f64") f64 (f64.const 666.6))
-
-  ;; Dummy functions for printing
-  (func (export "print")
-    ;; No params, no results
-  )
-
-  (func (export "print_i32") (param i32)
-    ;; No results
-  )
-
-  (func (export "print_i64") (param i64)
-    ;; No results
-  )
-
-  (func (export "print_f32") (param f32)
-    ;; No results
-  )
-
-  (func (export "print_f64") (param f64)
-    ;; No results
-  )
-
-  (func (export "print_i32_f32") (param i32 f32)
-    ;; No results
-  )
-
-  (func (export "print_f64_f64") (param f64 f64)
-    ;; No results
-  )
-)
-"#;
 
 pub fn error_to_wasm_testsuite_string(runtime_error: &RuntimeError) -> Result<String, WastError> {
     match runtime_error {
@@ -164,21 +120,7 @@ pub fn run_spec_test(filepath: &str) -> Result<AssertReport, ScriptError> {
 
     // We need to keep the wasm_bytes in-scope for the lifetime of the store.
     // As such, we hoist the bytes into an Option, and assign it once a module directive is found.
-    #[allow(unused_assignments)]
-    // let mut wasm_bytes: Option<Vec<u8>> = None;
-    let spectest_wasm = wat::parse_str(SPEC_TEST_WAT).unwrap();
-    let spectest_validation_info =
-        catch_unwind_and_suppress_panic_handler(|| validate(&spectest_wasm))
-            .unwrap()
-            .unwrap();
     let mut store = catch_unwind_and_suppress_panic_handler(|| Store::new(())).unwrap();
-
-    let spectest_module = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
-        store.module_instantiate(&spectest_validation_info, Vec::new(), None)
-    }))
-    .unwrap()
-    .unwrap()
-    .module_addr;
 
     // The last instantiated module is used implicitly whenever a module id
     // parameter is missing.
@@ -187,9 +129,11 @@ pub fn run_spec_test(filepath: &str) -> Result<AssertReport, ScriptError> {
     // The linker is used to perform automatic linking prior to every module
     // instantiation.
     let mut linker = Linker::new();
-    linker
-        .define_module_instance(&store, "spectest".to_owned(), spectest_module)
-        .unwrap();
+
+    // Initialize a few extern values inside the store and make them available
+    // to be imported by all future module instantiations.
+    init_spectest(&mut store, &mut linker)
+        .expect("spectest environment initialization to always succeed on an empty Store/Linker");
 
     // Because the linker only links imports and exports and does not keep track
     // of modules, we need to store modules by their names separately.
@@ -761,4 +705,211 @@ pub fn catch_unwind_and_suppress_panic_handler<R>(
     }
 
     result
+}
+
+// All *.wast test run within an interpreter context where some extern values
+// are always available for imports. These extern values are automatically
+// allocated and linked by this function.
+//
+// See: <https://github.com/WebAssembly/spec/tree/main/interpreter#spectest-host-module>
+fn init_spectest(store: &mut Store<()>, linker: &mut Linker) -> Result<(), RuntimeError> {
+    let memory = store.mem_alloc(MemType {
+        limits: Limits {
+            min: 1,
+            max: Some(2),
+        },
+    });
+
+    let table = store.table_alloc(
+        TableType {
+            lim: Limits {
+                min: 10,
+                max: Some(20),
+            },
+            et: RefType::FuncRef,
+        },
+        StoredRef::Null(RefType::FuncRef),
+    )?;
+
+    let global_i32 = store.global_alloc(
+        GlobalType {
+            ty: ValType::NumType(NumType::I32),
+            is_mut: false,
+        },
+        StoredValue::I32(666),
+    )?;
+
+    let global_i64 = store.global_alloc(
+        GlobalType {
+            ty: ValType::NumType(NumType::I64),
+            is_mut: false,
+        },
+        StoredValue::I64(666),
+    )?;
+
+    let global_f32 = store.global_alloc(
+        GlobalType {
+            ty: ValType::NumType(NumType::F32),
+            is_mut: false,
+        },
+        StoredValue::F32(F32(666.6)),
+    )?;
+
+    let global_f64 = store.global_alloc(
+        GlobalType {
+            ty: ValType::NumType(NumType::F64),
+            is_mut: false,
+        },
+        StoredValue::F64(F64(666.6)),
+    )?;
+
+    let print = store.func_alloc_typed::<(), ()>(spectec_functions::print);
+    let print_i32 = store.func_alloc_typed::<i32, ()>(spectec_functions::print_i32);
+    let print_i64 = store.func_alloc_typed::<i64, ()>(spectec_functions::print_i64);
+    let print_f32 = store.func_alloc_typed::<f32, ()>(spectec_functions::print_f32);
+    let print_f64 = store.func_alloc_typed::<f64, ()>(spectec_functions::print_f64);
+    let print_i32_f32 = store.func_alloc_typed::<(i32, f32), ()>(spectec_functions::print_i32_f32);
+    let print_f64_f64 = store.func_alloc_typed::<(f64, f64), ()>(spectec_functions::print_f64_f64);
+
+    linker.define(
+        "spectest".to_owned(),
+        "memory".to_owned(),
+        StoredExternVal::Mem(memory),
+    )?;
+    linker.define(
+        "spectest".to_owned(),
+        "table".to_owned(),
+        StoredExternVal::Table(table),
+    )?;
+    linker.define(
+        "spectest".to_owned(),
+        "global_i32".to_owned(),
+        StoredExternVal::Global(global_i32),
+    )?;
+    linker.define(
+        "spectest".to_owned(),
+        "global_i64".to_owned(),
+        StoredExternVal::Global(global_i64),
+    )?;
+    linker.define(
+        "spectest".to_owned(),
+        "global_f32".to_owned(),
+        StoredExternVal::Global(global_f32),
+    )?;
+    linker.define(
+        "spectest".to_owned(),
+        "global_f64".to_owned(),
+        StoredExternVal::Global(global_f64),
+    )?;
+    linker.define(
+        "spectest".to_owned(),
+        "print".to_owned(),
+        StoredExternVal::Func(print),
+    )?;
+    linker.define(
+        "spectest".to_owned(),
+        "print_i32".to_owned(),
+        StoredExternVal::Func(print_i32),
+    )?;
+    linker.define(
+        "spectest".to_owned(),
+        "print_i64".to_owned(),
+        StoredExternVal::Func(print_i64),
+    )?;
+    linker.define(
+        "spectest".to_owned(),
+        "print_f32".to_owned(),
+        StoredExternVal::Func(print_f32),
+    )?;
+    linker.define(
+        "spectest".to_owned(),
+        "print_f64".to_owned(),
+        StoredExternVal::Func(print_f64),
+    )?;
+    linker.define(
+        "spectest".to_owned(),
+        "print_i32_f32".to_owned(),
+        StoredExternVal::Func(print_i32_f32),
+    )?;
+    linker.define(
+        "spectest".to_owned(),
+        "print_f64_f64".to_owned(),
+        StoredExternVal::Func(print_f64_f64),
+    )?;
+
+    Ok(())
+}
+
+mod spectec_functions {
+    use wasm::{host_function_wrapper, HaltExecutionError, Value};
+
+    pub fn print(
+        _user_data: &mut (),
+        params: Vec<Value>,
+    ) -> Result<Vec<Value>, HaltExecutionError> {
+        host_function_wrapper::<(), ()>(params, |()| {
+            // TODO print something here?
+            Ok(())
+        })
+    }
+
+    pub fn print_i32(
+        _user_data: &mut (),
+        params: Vec<Value>,
+    ) -> Result<Vec<Value>, HaltExecutionError> {
+        host_function_wrapper::<i32, ()>(params, |_x| {
+            // TODO print parameters here?
+            Ok(())
+        })
+    }
+
+    pub fn print_i64(
+        _user_data: &mut (),
+        params: Vec<Value>,
+    ) -> Result<Vec<Value>, HaltExecutionError> {
+        host_function_wrapper::<i64, ()>(params, |_x| {
+            // TODO print parameters here?
+            Ok(())
+        })
+    }
+
+    pub fn print_f32(
+        _user_data: &mut (),
+        params: Vec<Value>,
+    ) -> Result<Vec<Value>, HaltExecutionError> {
+        host_function_wrapper::<f32, ()>(params, |_x| {
+            // TODO print parameters here?
+            Ok(())
+        })
+    }
+
+    pub fn print_f64(
+        _user_data: &mut (),
+        params: Vec<Value>,
+    ) -> Result<Vec<Value>, HaltExecutionError> {
+        host_function_wrapper::<f64, ()>(params, |_x| {
+            // TODO print parameters here?
+            Ok(())
+        })
+    }
+
+    pub fn print_i32_f32(
+        _user_data: &mut (),
+        params: Vec<Value>,
+    ) -> Result<Vec<Value>, HaltExecutionError> {
+        host_function_wrapper::<(i32, f32), ()>(params, |(_a, _b)| {
+            // TODO print parameters here?
+            Ok(())
+        })
+    }
+
+    pub fn print_f64_f64(
+        _user_data: &mut (),
+        params: Vec<Value>,
+    ) -> Result<Vec<Value>, HaltExecutionError> {
+        host_function_wrapper::<(f64, f64), ()>(params, |(_a, _b)| {
+            // TODO print parameters here?
+            Ok(())
+        })
+    }
 }
