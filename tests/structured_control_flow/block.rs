@@ -1,4 +1,4 @@
-use wasm::{validate, RuntimeInstance};
+use wasm::{validate, Store};
 
 /// Runs a function that does nothing and contains only a single empty block
 #[test_log::test]
@@ -14,21 +14,18 @@ fn empty() {
     .unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new(());
-    let module = instance
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap();
 
-    let do_nothing = instance
-        .store
+    let do_nothing = store
         .instance_export(module, "do_nothing")
         .unwrap()
         .as_func()
         .unwrap();
 
-    instance
-        .store
+    store
         .invoke_typed_without_fuel::<(), ()>(do_nothing, ())
         .unwrap();
 }
@@ -55,26 +52,18 @@ fn branch() {
     .unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new(());
-    let module = instance
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap();
 
-    let with_branch = instance
-        .store
+    let with_branch = store
         .instance_export(module, "with_branch")
         .unwrap()
         .as_func()
         .unwrap();
 
-    assert_eq!(
-        8,
-        instance
-            .store
-            .invoke_typed_without_fuel(with_branch, ())
-            .unwrap()
-    );
+    assert_eq!(8, store.invoke_typed_without_fuel(with_branch, ()).unwrap());
 }
 
 const BRANCH23_WAT: &str = r#"
@@ -109,14 +98,12 @@ fn branch2() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new(());
-    let module = instance
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap();
 
-    let with_branch = instance
-        .store
+    let with_branch = store
         .instance_export(module, "with_branch")
         .unwrap()
         .as_func()
@@ -124,10 +111,7 @@ fn branch2() {
 
     assert_eq!(
         13,
-        instance
-            .store
-            .invoke_typed_without_fuel(with_branch, ())
-            .unwrap()
+        store.invoke_typed_without_fuel(with_branch, ()).unwrap()
     );
 }
 
@@ -137,26 +121,18 @@ fn branch3() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new(());
-    let module = instance
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap();
 
-    let with_branch = instance
-        .store
+    let with_branch = store
         .instance_export(module, "with_branch")
         .unwrap()
         .as_func()
         .unwrap();
 
-    assert_eq!(
-        5,
-        instance
-            .store
-            .invoke_typed_without_fuel(with_branch, ())
-            .unwrap()
-    );
+    assert_eq!(5, store.invoke_typed_without_fuel(with_branch, ()).unwrap());
 }
 
 #[test_log::test]
@@ -178,26 +154,18 @@ fn param_and_result() {
     .unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new(());
-    let module = instance
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap();
 
-    let add_one = instance
-        .store
+    let add_one = store
         .instance_export(module, "add_one")
         .unwrap()
         .as_func()
         .unwrap();
 
-    assert_eq!(
-        7,
-        instance
-            .store
-            .invoke_typed_without_fuel(add_one, 6)
-            .unwrap()
-    );
+    assert_eq!(7, store.invoke_typed_without_fuel(add_one, 6).unwrap());
 }
 
 const RETURN_OUT_OF_BLOCK: &str = r#"
@@ -234,26 +202,18 @@ fn return_out_of_block() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new(());
-    let module = instance
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap();
 
-    let get_three = instance
-        .store
+    let get_three = store
         .instance_export(module, "get_three")
         .unwrap()
         .as_func()
         .unwrap();
 
-    assert_eq!(
-        3,
-        instance
-            .store
-            .invoke_typed_without_fuel(get_three, ())
-            .unwrap()
-    );
+    assert_eq!(3, store.invoke_typed_without_fuel(get_three, ()).unwrap());
 }
 
 #[test_log::test]
@@ -262,25 +222,17 @@ fn br_return_out_of_block() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new(());
-    let module = instance
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap();
 
-    let get_three = instance
-        .store
+    let get_three = store
         .instance_export(module, "get_three")
         .unwrap()
         .as_func()
         .unwrap();
-    assert_eq!(
-        3,
-        instance
-            .store
-            .invoke_typed_without_fuel(get_three, ())
-            .unwrap()
-    );
+    assert_eq!(3, store.invoke_typed_without_fuel(get_three, ()).unwrap());
 }
 
 #[test_log::test]
@@ -289,26 +241,18 @@ fn return_out_of_block2() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new(());
-    let module = instance
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap();
 
-    let get_three = instance
-        .store
+    let get_three = store
         .instance_export(module, "get_three")
         .unwrap()
         .as_func()
         .unwrap();
 
-    assert_eq!(
-        5,
-        instance
-            .store
-            .invoke_typed_without_fuel(get_three, ())
-            .unwrap()
-    );
+    assert_eq!(5, store.invoke_typed_without_fuel(get_three, ()).unwrap());
 }
 
 #[test_log::test]
@@ -317,26 +261,18 @@ fn br_return_out_of_block2() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new(());
-    let module = instance
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap();
 
-    let get_three = instance
-        .store
+    let get_three = store
         .instance_export(module, "get_three")
         .unwrap()
         .as_func()
         .unwrap();
 
-    assert_eq!(
-        5,
-        instance
-            .store
-            .invoke_typed_without_fuel(get_three, ())
-            .unwrap()
-    );
+    assert_eq!(5, store.invoke_typed_without_fuel(get_three, ()).unwrap());
 }
 
 #[test_log::test]
@@ -363,25 +299,20 @@ fn branch_if() {
     .unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new(());
-    let module = instance
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap();
 
-    let abs = instance
-        .store
+    let abs = store
         .instance_export(module, "abs")
         .unwrap()
         .as_func()
         .unwrap();
 
-    assert_eq!(6, instance.store.invoke_typed_without_fuel(abs, 6).unwrap());
-    assert_eq!(
-        123,
-        instance.store.invoke_typed_without_fuel(abs, -123).unwrap()
-    );
-    assert_eq!(0, instance.store.invoke_typed_without_fuel(abs, 0).unwrap());
+    assert_eq!(6, store.invoke_typed_without_fuel(abs, 6).unwrap());
+    assert_eq!(123, store.invoke_typed_without_fuel(abs, -123).unwrap());
+    assert_eq!(0, store.invoke_typed_without_fuel(abs, 0).unwrap());
 }
 
 #[test_log::test]
@@ -437,26 +368,19 @@ fn recursive_fibonacci() {
     .unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new(());
-    let module = instance
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap();
 
-    let fibonacci = instance
-        .store
+    let fibonacci = store
         .instance_export(module, "fibonacci")
         .unwrap()
         .as_func()
         .unwrap();
 
     let first_ten = (0..10)
-        .map(|n| {
-            instance
-                .store
-                .invoke_typed_without_fuel(fibonacci, n)
-                .unwrap()
-        })
+        .map(|n| store.invoke_typed_without_fuel(fibonacci, n).unwrap())
         .collect::<Vec<i32>>();
     assert_eq!(&first_ten, &[0, 1, 1, 2, 3, 5, 8, 13, 21, 34]);
 }
@@ -496,75 +420,25 @@ fn switch_case() {
     .unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new(());
-    let module = instance
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap();
 
-    let switch_case = instance
-        .store
+    let switch_case = store
         .instance_export(module, "switch_case")
         .unwrap()
         .as_func()
         .unwrap();
 
-    assert_eq!(
-        9,
-        instance
-            .store
-            .invoke_typed_without_fuel(switch_case, -5)
-            .unwrap()
-    );
-    assert_eq!(
-        9,
-        instance
-            .store
-            .invoke_typed_without_fuel(switch_case, -1)
-            .unwrap()
-    );
-    assert_eq!(
-        1,
-        instance
-            .store
-            .invoke_typed_without_fuel(switch_case, 0)
-            .unwrap()
-    );
-    assert_eq!(
-        3,
-        instance
-            .store
-            .invoke_typed_without_fuel(switch_case, 1)
-            .unwrap()
-    );
-    assert_eq!(
-        5,
-        instance
-            .store
-            .invoke_typed_without_fuel(switch_case, 2)
-            .unwrap()
-    );
-    assert_eq!(
-        7,
-        instance
-            .store
-            .invoke_typed_without_fuel(switch_case, 3)
-            .unwrap()
-    );
-    assert_eq!(
-        9,
-        instance
-            .store
-            .invoke_typed_without_fuel(switch_case, 4)
-            .unwrap()
-    );
-    assert_eq!(
-        9,
-        instance
-            .store
-            .invoke_typed_without_fuel(switch_case, 7)
-            .unwrap()
-    );
+    assert_eq!(9, store.invoke_typed_without_fuel(switch_case, -5).unwrap());
+    assert_eq!(9, store.invoke_typed_without_fuel(switch_case, -1).unwrap());
+    assert_eq!(1, store.invoke_typed_without_fuel(switch_case, 0).unwrap());
+    assert_eq!(3, store.invoke_typed_without_fuel(switch_case, 1).unwrap());
+    assert_eq!(5, store.invoke_typed_without_fuel(switch_case, 2).unwrap());
+    assert_eq!(7, store.invoke_typed_without_fuel(switch_case, 3).unwrap());
+    assert_eq!(9, store.invoke_typed_without_fuel(switch_case, 4).unwrap());
+    assert_eq!(9, store.invoke_typed_without_fuel(switch_case, 7).unwrap());
 }
 
 #[test_log::test]

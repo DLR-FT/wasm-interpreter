@@ -29,7 +29,11 @@ pub(crate) struct ImportsLength {
 }
 
 /// Information collected from validating a module.
-/// This can be used to create a [crate::RuntimeInstance].
+///
+/// This can be used to instantiate a new module instance in some
+/// [`Store`](crate::Store) either through
+/// [`Store::module_instantiate`](crate::Store::module_instantiate) or
+/// [`Linker::module_instantiate`](crate::execution::linker::Linker::module_instantiate).
 #[derive(Clone, Debug)]
 pub struct ValidationInfo<'bytecode> {
     pub(crate) wasm: &'bytecode [u8],

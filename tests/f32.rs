@@ -1,7 +1,7 @@
 #![allow(clippy::approx_constant)]
 use core::f32;
 
-use wasm::{validate, RuntimeInstance};
+use wasm::{validate, Store};
 
 /// A simple function to test the f32.const implementation
 #[test_log::test]
@@ -18,14 +18,12 @@ pub fn f32_const() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let mut instance = RuntimeInstance::new(());
-    let module = instance
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap();
 
-    let function = instance
-        .store
+    let function = store
         .instance_export(module, "getF32Const")
         .unwrap()
         .as_func()
@@ -33,10 +31,7 @@ pub fn f32_const() {
 
     assert_eq!(
         3.141_592_7_f32,
-        instance
-            .store
-            .invoke_typed_without_fuel(function, ())
-            .unwrap()
+        store.invoke_typed_without_fuel(function, ()).unwrap()
     );
 }
 
@@ -59,14 +54,12 @@ pub fn f32_eq() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let mut instance = RuntimeInstance::new(());
-    let module = instance
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap();
 
-    let function = instance
-        .store
+    let function = store
         .instance_export(module, "f32_eq")
         .unwrap()
         .as_func()
@@ -74,15 +67,13 @@ pub fn f32_eq() {
 
     assert_eq!(
         1,
-        instance
-            .store
+        store
             .invoke_typed_without_fuel(function, (1.1_f32, 1.1_f32))
             .unwrap()
     );
     assert_eq!(
         0,
-        instance
-            .store
+        store
             .invoke_typed_without_fuel(function, (1.1_f32, 1.2_f32))
             .unwrap()
     );
@@ -95,14 +86,12 @@ pub fn f32_ne() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new(());
-    let module = instance
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap();
 
-    let function = instance
-        .store
+    let function = store
         .instance_export(module, "f32_ne")
         .unwrap()
         .as_func()
@@ -110,22 +99,19 @@ pub fn f32_ne() {
 
     assert_eq!(
         0,
-        instance
-            .store
+        store
             .invoke_typed_without_fuel(function, (1.1_f32, 1.1_f32))
             .unwrap()
     );
     assert_eq!(
         1,
-        instance
-            .store
+        store
             .invoke_typed_without_fuel(function, (1.1_f32, 1.2_f32))
             .unwrap()
     );
     assert_eq!(
         0,
-        instance
-            .store
+        store
             .invoke_typed_without_fuel(function, (0.0_f32, -0.0_f32))
             .unwrap()
     );
@@ -138,14 +124,12 @@ pub fn f32_lt() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new(());
-    let module = instance
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap();
 
-    let function = instance
-        .store
+    let function = store
         .instance_export(module, "f32_lt")
         .unwrap()
         .as_func()
@@ -153,22 +137,19 @@ pub fn f32_lt() {
 
     assert_eq!(
         1,
-        instance
-            .store
+        store
             .invoke_typed_without_fuel(function, (1.0_f32, 2.0_f32))
             .unwrap()
     );
     assert_eq!(
         0,
-        instance
-            .store
+        store
             .invoke_typed_without_fuel(function, (2.0_f32, 1.0_f32))
             .unwrap()
     );
     assert_eq!(
         0,
-        instance
-            .store
+        store
             .invoke_typed_without_fuel(function, (1.0_f32, 1.0_f32))
             .unwrap()
     );
@@ -181,14 +162,12 @@ pub fn f32_gt() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new(());
-    let module = instance
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap();
 
-    let function = instance
-        .store
+    let function = store
         .instance_export(module, "f32_gt")
         .unwrap()
         .as_func()
@@ -196,22 +175,19 @@ pub fn f32_gt() {
 
     assert_eq!(
         0,
-        instance
-            .store
+        store
             .invoke_typed_without_fuel(function, (1.0_f32, 2.0_f32))
             .unwrap()
     );
     assert_eq!(
         1,
-        instance
-            .store
+        store
             .invoke_typed_without_fuel(function, (2.0_f32, 1.0_f32))
             .unwrap()
     );
     assert_eq!(
         0,
-        instance
-            .store
+        store
             .invoke_typed_without_fuel(function, (1.0_f32, 1.0_f32))
             .unwrap()
     );
@@ -224,14 +200,12 @@ pub fn f32_le() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new(());
-    let module = instance
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap();
 
-    let function = instance
-        .store
+    let function = store
         .instance_export(module, "f32_le")
         .unwrap()
         .as_func()
@@ -239,22 +213,19 @@ pub fn f32_le() {
 
     assert_eq!(
         1,
-        instance
-            .store
+        store
             .invoke_typed_without_fuel(function, (1.0_f32, 2.0_f32))
             .unwrap()
     );
     assert_eq!(
         0,
-        instance
-            .store
+        store
             .invoke_typed_without_fuel(function, (2.0_f32, 1.0_f32))
             .unwrap()
     );
     assert_eq!(
         1,
-        instance
-            .store
+        store
             .invoke_typed_without_fuel(function, (1.0_f32, 1.0_f32))
             .unwrap()
     );
@@ -267,14 +238,12 @@ pub fn f32_ge() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new(());
-    let module = instance
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap();
 
-    let function = instance
-        .store
+    let function = store
         .instance_export(module, "f32_ge")
         .unwrap()
         .as_func()
@@ -282,22 +251,19 @@ pub fn f32_ge() {
 
     assert_eq!(
         0,
-        instance
-            .store
+        store
             .invoke_typed_without_fuel(function, (1.0_f32, 2.0_f32))
             .unwrap()
     );
     assert_eq!(
         1,
-        instance
-            .store
+        store
             .invoke_typed_without_fuel(function, (2.0_f32, 1.0_f32))
             .unwrap()
     );
     assert_eq!(
         1,
-        instance
-            .store
+        store
             .invoke_typed_without_fuel(function, (1.0_f32, 1.0_f32))
             .unwrap()
     );
@@ -318,46 +284,40 @@ pub fn f32_abs() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new(());
-    let module = instance
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap();
 
-    let function = instance
-        .store
+    let function = store
         .instance_export(module, "f32_abs")
         .unwrap()
         .as_func()
         .unwrap();
 
     {
-        let result = instance
-            .store
+        let result = store
             .invoke_typed_without_fuel::<f32, f32>(function, -f32::NAN)
             .unwrap();
         assert!(result.is_nan());
         assert!(result.is_sign_positive());
     }
     {
-        let result = instance
-            .store
+        let result = store
             .invoke_typed_without_fuel::<f32, f32>(function, f32::NAN)
             .unwrap();
         assert!(result.is_nan());
         assert!(result.is_sign_positive());
     }
     {
-        let result = instance
-            .store
+        let result = store
             .invoke_typed_without_fuel::<f32, f32>(function, f32::NEG_INFINITY)
             .unwrap();
         assert!(result.is_infinite());
         assert!(result.is_sign_positive());
     }
     {
-        let result = instance
-            .store
+        let result = store
             .invoke_typed_without_fuel::<f32, f32>(function, f32::INFINITY)
             .unwrap();
         assert!(result.is_infinite());
@@ -365,31 +325,19 @@ pub fn f32_abs() {
     }
     assert_eq!(
         1.5_f32,
-        instance
-            .store
-            .invoke_typed_without_fuel(function, 1.5_f32)
-            .unwrap()
+        store.invoke_typed_without_fuel(function, 1.5_f32).unwrap()
     );
     assert_eq!(
         1.5_f32,
-        instance
-            .store
-            .invoke_typed_without_fuel(function, -1.5_f32)
-            .unwrap()
+        store.invoke_typed_without_fuel(function, -1.5_f32).unwrap()
     );
     assert_eq!(
         0.0_f32,
-        instance
-            .store
-            .invoke_typed_without_fuel(function, 0.0_f32)
-            .unwrap()
+        store.invoke_typed_without_fuel(function, 0.0_f32).unwrap()
     );
     assert_eq!(
         0.0_f32,
-        instance
-            .store
-            .invoke_typed_without_fuel(function, -0.0_f32)
-            .unwrap()
+        store.invoke_typed_without_fuel(function, -0.0_f32).unwrap()
     );
 }
 
@@ -400,46 +348,40 @@ pub fn f32_neg() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new(());
-    let module = instance
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap();
 
-    let function = instance
-        .store
+    let function = store
         .instance_export(module, "f32_neg")
         .unwrap()
         .as_func()
         .unwrap();
 
     {
-        let result = instance
-            .store
+        let result = store
             .invoke_typed_without_fuel::<f32, f32>(function, -f32::NAN)
             .unwrap();
         assert!(result.is_nan());
         assert!(result.is_sign_positive());
     }
     {
-        let result = instance
-            .store
+        let result = store
             .invoke_typed_without_fuel::<f32, f32>(function, f32::NAN)
             .unwrap();
         assert!(result.is_nan());
         assert!(result.is_sign_negative());
     }
     {
-        let result = instance
-            .store
+        let result = store
             .invoke_typed_without_fuel::<f32, f32>(function, f32::NEG_INFINITY)
             .unwrap();
         assert!(result.is_infinite());
         assert!(result.is_sign_positive());
     }
     {
-        let result = instance
-            .store
+        let result = store
             .invoke_typed_without_fuel::<f32, f32>(function, f32::INFINITY)
             .unwrap();
         assert!(result.is_infinite());
@@ -447,31 +389,19 @@ pub fn f32_neg() {
     }
     assert_eq!(
         -1.5_f32,
-        instance
-            .store
-            .invoke_typed_without_fuel(function, 1.5_f32)
-            .unwrap()
+        store.invoke_typed_without_fuel(function, 1.5_f32).unwrap()
     );
     assert_eq!(
         1.5_f32,
-        instance
-            .store
-            .invoke_typed_without_fuel(function, -1.5_f32)
-            .unwrap()
+        store.invoke_typed_without_fuel(function, -1.5_f32).unwrap()
     );
     assert_eq!(
         -0.0_f32,
-        instance
-            .store
-            .invoke_typed_without_fuel(function, 0.0_f32)
-            .unwrap()
+        store.invoke_typed_without_fuel(function, 0.0_f32).unwrap()
     );
     assert_eq!(
         0.0_f32,
-        instance
-            .store
-            .invoke_typed_without_fuel(function, -0.0_f32)
-            .unwrap()
+        store.invoke_typed_without_fuel(function, -0.0_f32).unwrap()
     );
 }
 
@@ -482,14 +412,12 @@ pub fn f32_ceil() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new(());
-    let module = instance
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap();
 
-    let function = instance
-        .store
+    let function = store
         .instance_export(module, "f32_ceil")
         .unwrap()
         .as_func()
@@ -497,24 +425,15 @@ pub fn f32_ceil() {
 
     assert_eq!(
         2.0_f32,
-        instance
-            .store
-            .invoke_typed_without_fuel(function, 1.5_f32)
-            .unwrap()
+        store.invoke_typed_without_fuel(function, 1.5_f32).unwrap()
     );
     assert_eq!(
         -1.0_f32,
-        instance
-            .store
-            .invoke_typed_without_fuel(function, -1.5_f32)
-            .unwrap()
+        store.invoke_typed_without_fuel(function, -1.5_f32).unwrap()
     );
     assert_eq!(
         0.0_f32,
-        instance
-            .store
-            .invoke_typed_without_fuel(function, -0.1_f32)
-            .unwrap()
+        store.invoke_typed_without_fuel(function, -0.1_f32).unwrap()
     );
 }
 
@@ -525,14 +444,12 @@ pub fn f32_floor() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new(());
-    let module = instance
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap();
 
-    let function = instance
-        .store
+    let function = store
         .instance_export(module, "f32_floor")
         .unwrap()
         .as_func()
@@ -540,24 +457,15 @@ pub fn f32_floor() {
 
     assert_eq!(
         1.0_f32,
-        instance
-            .store
-            .invoke_typed_without_fuel(function, 1.5_f32)
-            .unwrap()
+        store.invoke_typed_without_fuel(function, 1.5_f32).unwrap()
     );
     assert_eq!(
         -2.0_f32,
-        instance
-            .store
-            .invoke_typed_without_fuel(function, -1.5_f32)
-            .unwrap()
+        store.invoke_typed_without_fuel(function, -1.5_f32).unwrap()
     );
     assert_eq!(
         -1.0_f32,
-        instance
-            .store
-            .invoke_typed_without_fuel(function, -0.1_f32)
-            .unwrap()
+        store.invoke_typed_without_fuel(function, -0.1_f32).unwrap()
     );
 }
 
@@ -568,14 +476,12 @@ pub fn f32_trunc() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new(());
-    let module = instance
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap();
 
-    let function = instance
-        .store
+    let function = store
         .instance_export(module, "f32_trunc")
         .unwrap()
         .as_func()
@@ -583,24 +489,15 @@ pub fn f32_trunc() {
 
     assert_eq!(
         1.0_f32,
-        instance
-            .store
-            .invoke_typed_without_fuel(function, 1.5_f32)
-            .unwrap()
+        store.invoke_typed_without_fuel(function, 1.5_f32).unwrap()
     );
     assert_eq!(
         -1.0_f32,
-        instance
-            .store
-            .invoke_typed_without_fuel(function, -1.5_f32)
-            .unwrap()
+        store.invoke_typed_without_fuel(function, -1.5_f32).unwrap()
     );
     assert_eq!(
         0.0_f32,
-        instance
-            .store
-            .invoke_typed_without_fuel(function, 0.9_f32)
-            .unwrap()
+        store.invoke_typed_without_fuel(function, 0.9_f32).unwrap()
     );
 }
 
@@ -611,14 +508,12 @@ pub fn f32_nearest() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new(());
-    let module = instance
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap();
 
-    let function = instance
-        .store
+    let function = store
         .instance_export(module, "f32_nearest")
         .unwrap()
         .as_func()
@@ -626,31 +521,19 @@ pub fn f32_nearest() {
 
     assert_eq!(
         2.0_f32,
-        instance
-            .store
-            .invoke_typed_without_fuel(function, 1.5_f32)
-            .unwrap()
+        store.invoke_typed_without_fuel(function, 1.5_f32).unwrap()
     );
     assert_eq!(
         -2.0_f32,
-        instance
-            .store
-            .invoke_typed_without_fuel(function, -1.5_f32)
-            .unwrap()
+        store.invoke_typed_without_fuel(function, -1.5_f32).unwrap()
     );
     assert_eq!(
         1.0_f32,
-        instance
-            .store
-            .invoke_typed_without_fuel(function, 0.6_f32)
-            .unwrap()
+        store.invoke_typed_without_fuel(function, 0.6_f32).unwrap()
     );
     assert_eq!(
         0.0_f32,
-        instance
-            .store
-            .invoke_typed_without_fuel(function, 0.4_f32)
-            .unwrap()
+        store.invoke_typed_without_fuel(function, 0.4_f32).unwrap()
     );
 }
 
@@ -662,14 +545,12 @@ pub fn f32_sqrt() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new(());
-    let module = instance
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap();
 
-    let function = instance
-        .store
+    let function = store
         .instance_export(module, "f32_sqrt")
         .unwrap()
         .as_func()
@@ -677,20 +558,13 @@ pub fn f32_sqrt() {
 
     assert_eq!(
         2.0_f32,
-        instance
-            .store
-            .invoke_typed_without_fuel(function, 4.0_f32)
-            .unwrap()
+        store.invoke_typed_without_fuel(function, 4.0_f32).unwrap()
     );
     assert_eq!(
         1.4142135_f32,
-        instance
-            .store
-            .invoke_typed_without_fuel(function, 2.0_f32)
-            .unwrap()
+        store.invoke_typed_without_fuel(function, 2.0_f32).unwrap()
     );
-    assert!(instance
-        .store
+    assert!(store
         .invoke_typed_without_fuel::<f32, f32>(function, -f32::NAN)
         .unwrap()
         .is_nan());
@@ -712,14 +586,12 @@ pub fn f32_add() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new(());
-    let module = instance
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap();
 
-    let function = instance
-        .store
+    let function = store
         .instance_export(module, "f32_add")
         .unwrap()
         .as_func()
@@ -727,22 +599,19 @@ pub fn f32_add() {
 
     assert_eq!(
         3.0_f32,
-        instance
-            .store
+        store
             .invoke_typed_without_fuel(function, (1.5_f32, 1.5_f32))
             .unwrap()
     );
     assert_eq!(
         -1.0_f32,
-        instance
-            .store
+        store
             .invoke_typed_without_fuel(function, (1.0_f32, -2.0_f32))
             .unwrap()
     );
     assert_eq!(
         0.0_f32,
-        instance
-            .store
+        store
             .invoke_typed_without_fuel(function, (0.1_f32, -0.1_f32))
             .unwrap()
     );
@@ -755,14 +624,12 @@ pub fn f32_sub() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new(());
-    let module = instance
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap();
 
-    let function = instance
-        .store
+    let function = store
         .instance_export(module, "f32_sub")
         .unwrap()
         .as_func()
@@ -770,22 +637,19 @@ pub fn f32_sub() {
 
     assert_eq!(
         0.0_f32,
-        instance
-            .store
+        store
             .invoke_typed_without_fuel(function, (1.5_f32, 1.5_f32))
             .unwrap()
     );
     assert_eq!(
         3.0_f32,
-        instance
-            .store
+        store
             .invoke_typed_without_fuel(function, (1.0_f32, -2.0_f32))
             .unwrap()
     );
     assert_eq!(
         0.2_f32,
-        instance
-            .store
+        store
             .invoke_typed_without_fuel(function, (0.1_f32, -0.1_f32))
             .unwrap()
     );
@@ -798,14 +662,12 @@ pub fn f32_mul() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new(());
-    let module = instance
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap();
 
-    let function = instance
-        .store
+    let function = store
         .instance_export(module, "f32_mul")
         .unwrap()
         .as_func()
@@ -813,22 +675,19 @@ pub fn f32_mul() {
 
     assert_eq!(
         6.0_f32,
-        instance
-            .store
+        store
             .invoke_typed_without_fuel(function, (2.0_f32, 3.0_f32))
             .unwrap()
     );
     assert_eq!(
         -4.0_f32,
-        instance
-            .store
+        store
             .invoke_typed_without_fuel(function, (2.0_f32, -2.0_f32))
             .unwrap()
     );
     assert_eq!(
         0.0_f32,
-        instance
-            .store
+        store
             .invoke_typed_without_fuel(function, (0.0_f32, 5.0_f32))
             .unwrap()
     );
@@ -841,14 +700,12 @@ pub fn f32_div() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new(());
-    let module = instance
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap();
 
-    let function = instance
-        .store
+    let function = store
         .instance_export(module, "f32_div")
         .unwrap()
         .as_func()
@@ -856,25 +713,21 @@ pub fn f32_div() {
 
     assert_eq!(
         2.0_f32,
-        instance
-            .store
+        store
             .invoke_typed_without_fuel(function, (6.0_f32, 3.0_f32))
             .unwrap()
     );
     assert_eq!(
         -1.0_f32,
-        instance
-            .store
+        store
             .invoke_typed_without_fuel(function, (2.0_f32, -2.0_f32))
             .unwrap()
     );
-    assert!(instance
-        .store
+    assert!(store
         .invoke_typed_without_fuel::<(f32, f32), f32>(function, (1.0_f32, 0.0_f32))
         .unwrap()
         .is_infinite());
-    assert!(instance
-        .store
+    assert!(store
         .invoke_typed_without_fuel::<(f32, f32), f32>(function, (0.0_f32, 0.0_f32))
         .unwrap()
         .is_nan());
@@ -887,37 +740,32 @@ pub fn f32_min() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new(());
-    let module = instance
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap();
 
-    let function = instance
-        .store
+    let function = store
         .instance_export(module, "f32_min")
         .unwrap()
         .as_func()
         .unwrap();
 
     {
-        let result = instance
-            .store
+        let result = store
             .invoke_typed_without_fuel::<(f32, f32), f32>(function, (f32::NAN, -f32::NAN))
             .unwrap();
         assert!(result.is_nan());
     }
     {
-        let result = instance
-            .store
+        let result = store
             .invoke_typed_without_fuel::<(f32, f32), f32>(function, (f32::NAN, f32::NAN))
             .unwrap();
         assert!(result.is_nan());
         assert!(result.is_sign_positive());
     }
     {
-        let result = instance
-            .store
+        let result = store
             .invoke_typed_without_fuel::<(f32, f32), f32>(
                 function,
                 (f32::INFINITY, f32::NEG_INFINITY),
@@ -928,41 +776,35 @@ pub fn f32_min() {
     }
     assert_eq!(
         42_f32,
-        instance
-            .store
+        store
             .invoke_typed_without_fuel(function, (f32::INFINITY, 42_f32))
             .unwrap()
     );
     assert_eq!(
         -0_f32,
-        instance
-            .store
+        store
             .invoke_typed_without_fuel(function, (-0_f32, 0_f32))
             .unwrap()
     );
     assert_eq!(
         1.0_f32,
-        instance
-            .store
+        store
             .invoke_typed_without_fuel(function, (1.0_f32, 2.0_f32))
             .unwrap()
     );
     assert_eq!(
         -2.0_f32,
-        instance
-            .store
+        store
             .invoke_typed_without_fuel(function, (-1.0_f32, -2.0_f32))
             .unwrap()
     );
     assert_eq!(
         -0.0_f32,
-        instance
-            .store
+        store
             .invoke_typed_without_fuel(function, (0.0_f32, -0.0_f32))
             .unwrap()
     );
-    assert!(instance
-        .store
+    assert!(store
         .invoke_typed_without_fuel::<(f32, f32), f32>(function, (f32::NAN, 1.0_f32))
         .unwrap()
         .is_nan());
@@ -975,37 +817,32 @@ pub fn f32_max() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new(());
-    let module = instance
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap();
 
-    let function = instance
-        .store
+    let function = store
         .instance_export(module, "f32_max")
         .unwrap()
         .as_func()
         .unwrap();
 
     {
-        let result = instance
-            .store
+        let result = store
             .invoke_typed_without_fuel::<(f32, f32), f32>(function, (f32::NAN, -f32::NAN))
             .unwrap();
         assert!(result.is_nan());
     }
     {
-        let result = instance
-            .store
+        let result = store
             .invoke_typed_without_fuel::<(f32, f32), f32>(function, (f32::NAN, f32::NAN))
             .unwrap();
         assert!(result.is_nan());
         assert!(result.is_sign_positive());
     }
     {
-        let result = instance
-            .store
+        let result = store
             .invoke_typed_without_fuel::<(f32, f32), f32>(
                 function,
                 (f32::INFINITY, f32::NEG_INFINITY),
@@ -1016,42 +853,36 @@ pub fn f32_max() {
     }
     assert_eq!(
         42_f32,
-        instance
-            .store
+        store
             .invoke_typed_without_fuel(function, (f32::NEG_INFINITY, 42_f32))
             .unwrap()
     );
     assert_eq!(
         0_f32,
-        instance
-            .store
+        store
             .invoke_typed_without_fuel(function, (-0_f32, 0_f32))
             .unwrap()
     );
 
     assert_eq!(
         2.0_f32,
-        instance
-            .store
+        store
             .invoke_typed_without_fuel(function, (1.0_f32, 2.0_f32))
             .unwrap()
     );
     assert_eq!(
         -1.0_f32,
-        instance
-            .store
+        store
             .invoke_typed_without_fuel(function, (-1.0_f32, -2.0_f32))
             .unwrap()
     );
     assert_eq!(
         0.0_f32,
-        instance
-            .store
+        store
             .invoke_typed_without_fuel(function, (0.0_f32, -0.0_f32))
             .unwrap()
     );
-    assert!(instance
-        .store
+    assert!(store
         .invoke_typed_without_fuel::<(f32, f32), f32>(function, (f32::NAN, 1.0_f32))
         .unwrap()
         .is_nan());
@@ -1064,14 +895,12 @@ pub fn f32_copysign() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new(());
-    let module = instance
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap();
 
-    let function = instance
-        .store
+    let function = store
         .instance_export(module, "f32_copysign")
         .unwrap()
         .as_func()
@@ -1079,29 +908,25 @@ pub fn f32_copysign() {
 
     assert_eq!(
         1.5_f32,
-        instance
-            .store
+        store
             .invoke_typed_without_fuel(function, (1.5_f32, 2.0_f32))
             .unwrap()
     );
     assert_eq!(
         -1.5_f32,
-        instance
-            .store
+        store
             .invoke_typed_without_fuel(function, (1.5_f32, -2.0_f32))
             .unwrap()
     );
     assert_eq!(
         -1.5_f32,
-        instance
-            .store
+        store
             .invoke_typed_without_fuel(function, (-1.5_f32, -0.0_f32))
             .unwrap()
     );
     assert_eq!(
         1.5_f32,
-        instance
-            .store
+        store
             .invoke_typed_without_fuel(function, (-1.5_f32, 0.0_f32))
             .unwrap()
     );
@@ -1119,22 +944,19 @@ pub fn f32_convert_i32_s() {
     "#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new(());
-    let module = instance
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap();
 
-    let convert_i32_s = instance
-        .store
+    let convert_i32_s = store
         .instance_export(module, "convert_i32_s")
         .unwrap()
         .as_func()
         .unwrap();
 
     let i32_s_val = -42_i32;
-    let f32_result = instance
-        .store
+    let f32_result = store
         .invoke_typed_without_fuel::<i32, f32>(convert_i32_s, i32_s_val)
         .unwrap();
     assert_eq!(f32_result, -42.0_f32);
@@ -1152,14 +974,12 @@ pub fn f32_convert_i32_u() {
     "#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new(());
-    let module = instance
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap();
 
-    let convert_i32_u = instance
-        .store
+    let convert_i32_u = store
         .instance_export(module, "convert_i32_u")
         .unwrap()
         .as_func()
@@ -1176,8 +996,7 @@ pub fn f32_convert_i32_u() {
     ];
 
     for (input, expected) in test_cases {
-        let result = instance
-            .store
+        let result = store
             .invoke_typed_without_fuel::<i32, f32>(convert_i32_u, input)
             .unwrap();
         assert_eq!(
@@ -1189,8 +1008,7 @@ pub fn f32_convert_i32_u() {
 
     // Test for precision loss
     let large_value = 0xFFFFFFFF_u32 as i32; // Maximum u32 value
-    let result = instance
-        .store
+    let result = store
         .invoke_typed_without_fuel::<i32, f32>(convert_i32_u, large_value)
         .unwrap();
     assert!(
@@ -1211,37 +1029,32 @@ pub fn f32_convert_i64_s() {
     "#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new(());
-    let module = instance
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap();
 
-    let convert_i64_s = instance
-        .store
+    let convert_i64_s = store
         .instance_export(module, "convert_i64_s")
         .unwrap()
         .as_func()
         .unwrap();
 
     let i64_s_val = i64::MIN; // Minimum i64 value
-    let f32_result: f32 = instance
-        .store
+    let f32_result: f32 = store
         .invoke_typed_without_fuel::<i64, f32>(convert_i64_s, i64_s_val)
         .unwrap();
     assert_eq!(f32_result, i64::MIN as f32);
 
     assert_eq!(
         9223371500000000000.0,
-        instance
-            .store
+        store
             .invoke_typed_without_fuel::<i64, f32>(convert_i64_s, 0x7fffff4000000001_i64)
             .unwrap()
     );
     assert_eq!(
         -9223371500000000000.0,
-        instance
-            .store
+        store
             .invoke_typed_without_fuel::<i64, f32>(convert_i64_s, 0x8000004000000001_u64 as i64)
             .unwrap()
     );
@@ -1259,14 +1072,12 @@ pub fn f32_convert_i64_u() {
     "#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new(());
-    let module = instance
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap();
 
-    let convert_i64_u = instance
-        .store
+    let convert_i64_u = store
         .instance_export(module, "convert_i64_u")
         .unwrap()
         .as_func()
@@ -1274,15 +1085,13 @@ pub fn f32_convert_i64_u() {
 
     assert_eq!(
         9223373000000000000.0,
-        instance
-            .store
+        store
             .invoke_typed_without_fuel::<i64, f32>(convert_i64_u, 0x8000008000000001u64 as i64)
             .unwrap()
     );
     assert_eq!(
         18446743000000000000.0,
-        instance
-            .store
+        store
             .invoke_typed_without_fuel::<i64, f32>(convert_i64_u, 0xfffffe8000000001u64 as i64)
             .unwrap()
     );
@@ -1300,14 +1109,12 @@ pub fn f32_reinterpret_i32() {
     "#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new(());
-    let module = instance
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap();
 
-    let reinterpret_i32 = instance
-        .store
+    let reinterpret_i32 = store
         .instance_export(module, "reinterpret_i32")
         .unwrap()
         .as_func()
@@ -1324,8 +1131,7 @@ pub fn f32_reinterpret_i32() {
     ];
 
     for (input, expected) in test_cases {
-        let result = instance
-            .store
+        let result = store
             .invoke_typed_without_fuel::<i32, f32>(reinterpret_i32, input)
             .unwrap();
         if expected.is_nan() {

@@ -1,4 +1,4 @@
-use wasm::{validate, RuntimeInstance};
+use wasm::{validate, Store};
 
 const MULTIPLY_WAT_TEMPLATE: &str = r#"
     (module
@@ -16,40 +16,20 @@ fn i32_add_one() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new(());
-    let module = instance
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap();
 
-    let add_one = instance
-        .store
+    let add_one = store
         .instance_export(module, "add_one")
         .unwrap()
         .as_func()
         .unwrap();
 
-    assert_eq!(
-        12,
-        instance
-            .store
-            .invoke_typed_without_fuel(add_one, 11)
-            .unwrap()
-    );
-    assert_eq!(
-        1,
-        instance
-            .store
-            .invoke_typed_without_fuel(add_one, 0)
-            .unwrap()
-    );
-    assert_eq!(
-        -5,
-        instance
-            .store
-            .invoke_typed_without_fuel(add_one, -6)
-            .unwrap()
-    );
+    assert_eq!(12, store.invoke_typed_without_fuel(add_one, 11).unwrap());
+    assert_eq!(1, store.invoke_typed_without_fuel(add_one, 0).unwrap());
+    assert_eq!(-5, store.invoke_typed_without_fuel(add_one, -6).unwrap());
 }
 
 /// A simple function to add 1 to an i64 and return the result
@@ -59,14 +39,12 @@ fn i64_add_one() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new(());
-    let module = instance
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap();
 
-    let add_one = instance
-        .store
+    let add_one = store
         .instance_export(module, "add_one")
         .unwrap()
         .as_func()
@@ -74,23 +52,14 @@ fn i64_add_one() {
 
     assert_eq!(
         12_i64,
-        instance
-            .store
-            .invoke_typed_without_fuel(add_one, 11_i64)
-            .unwrap()
+        store.invoke_typed_without_fuel(add_one, 11_i64).unwrap()
     );
     assert_eq!(
         1_i64,
-        instance
-            .store
-            .invoke_typed_without_fuel(add_one, 0_i64)
-            .unwrap()
+        store.invoke_typed_without_fuel(add_one, 0_i64).unwrap()
     );
     assert_eq!(
         -5_i64,
-        instance
-            .store
-            .invoke_typed_without_fuel(add_one, -6_i64)
-            .unwrap()
+        store.invoke_typed_without_fuel(add_one, -6_i64).unwrap()
     );
 }

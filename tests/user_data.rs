@@ -1,6 +1,6 @@
 use std::sync::mpsc::Sender;
 
-use wasm::{config::Config, HaltExecutionError, RuntimeInstance, Value};
+use wasm::{config::Config, HaltExecutionError, Store, Value};
 
 #[test_log::test]
 fn counter() {
@@ -17,17 +17,16 @@ fn counter() {
         Ok(Vec::new())
     }
 
-    let mut instance = RuntimeInstance::new(MyCounter(0));
-    let add_one = instance.store.func_alloc_typed::<(), ()>(add_one);
+    let mut store = Store::new(MyCounter(0));
+    let add_one = store.func_alloc_typed::<(), ()>(add_one);
 
     for _ in 0..5 {
-        instance
-            .store
+        store
             .invoke_typed_without_fuel::<(), ()>(add_one, ())
             .unwrap();
     }
 
-    assert_eq!(instance.store.user_data, MyCounter(5));
+    assert_eq!(store.user_data, MyCounter(5));
 }
 
 #[test_log::test]
@@ -50,11 +49,10 @@ fn channels() {
             Ok(Vec::new())
         }
 
-        let mut instance = RuntimeInstance::new(MySender(tx));
-        let send_message = instance.store.func_alloc_typed::<(), ()>(send_message);
+        let mut store = Store::new(MySender(tx));
+        let send_message = store.func_alloc_typed::<(), ()>(send_message);
 
-        instance
-            .store
+        store
             .invoke_typed_without_fuel::<(), ()>(send_message, ())
             .unwrap();
     });

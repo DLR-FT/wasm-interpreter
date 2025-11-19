@@ -15,7 +15,7 @@
 # limitations under the License.
 */
 use wasm::ValidationError;
-use wasm::{validate, RuntimeError, RuntimeInstance, TrapError};
+use wasm::{validate, RuntimeError, Store, TrapError};
 
 #[test_log::test]
 fn memory_init_test_1() {
@@ -33,24 +33,19 @@ fn memory_init_test_1() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new(());
-    let module = i
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap();
 
-    let test = i
-        .store
+    let test = store
         .instance_export(module, "test")
         .unwrap()
         .as_func()
         .unwrap();
-    i.store
-        .invoke_typed_without_fuel::<(), ()>(test, ())
-        .unwrap();
+    store.invoke_typed_without_fuel::<(), ()>(test, ()).unwrap();
 
-    let load8_u = i
-        .store
+    let load8_u = store
         .instance_export(module, "load8_u")
         .unwrap()
         .as_func()
@@ -65,7 +60,7 @@ fn memory_init_test_1() {
     ]);
     for j in 0..offsets.len() {
         assert_eq!(
-            i.store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            store.invoke_typed_without_fuel(load8_u, offsets[j]),
             Ok(results[j])
         );
     }
@@ -87,24 +82,19 @@ fn memory_init_test_2() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new(());
-    let module = i
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap();
 
-    let test = i
-        .store
+    let test = store
         .instance_export(module, "test")
         .unwrap()
         .as_func()
         .unwrap();
-    i.store
-        .invoke_typed_without_fuel::<(), ()>(test, ())
-        .unwrap();
+    store.invoke_typed_without_fuel::<(), ()>(test, ()).unwrap();
 
-    let load8_u = i
-        .store
+    let load8_u = store
         .instance_export(module, "load8_u")
         .unwrap()
         .as_func()
@@ -119,7 +109,7 @@ fn memory_init_test_2() {
     ]);
     for j in 0..offsets.len() {
         assert_eq!(
-            i.store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            store.invoke_typed_without_fuel(load8_u, offsets[j]),
             Ok(results[j])
         );
     }
@@ -141,24 +131,19 @@ fn memory_init_test_3() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new(());
-    let module = i
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap();
 
-    let test = i
-        .store
+    let test = store
         .instance_export(module, "test")
         .unwrap()
         .as_func()
         .unwrap();
-    i.store
-        .invoke_typed_without_fuel::<(), ()>(test, ())
-        .unwrap();
+    store.invoke_typed_without_fuel::<(), ()>(test, ()).unwrap();
 
-    let load8_u = i
-        .store
+    let load8_u = store
         .instance_export(module, "load8_u")
         .unwrap()
         .as_func()
@@ -173,7 +158,7 @@ fn memory_init_test_3() {
     ]);
     for j in 0..offsets.len() {
         assert_eq!(
-            i.store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            store.invoke_typed_without_fuel(load8_u, offsets[j]),
             Ok(results[j])
         );
     }
@@ -203,24 +188,19 @@ fn memory_init_test_4() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new(());
-    let module = i
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap();
 
-    let test = i
-        .store
+    let test = store
         .instance_export(module, "test")
         .unwrap()
         .as_func()
         .unwrap();
-    i.store
-        .invoke_typed_without_fuel::<(), ()>(test, ())
-        .unwrap();
+    store.invoke_typed_without_fuel::<(), ()>(test, ()).unwrap();
 
-    let load8_u = i
-        .store
+    let load8_u = store
         .instance_export(module, "load8_u")
         .unwrap()
         .as_func()
@@ -235,7 +215,7 @@ fn memory_init_test_4() {
     ]);
     for j in 0..offsets.len() {
         assert_eq!(
-            i.store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            store.invoke_typed_without_fuel(load8_u, offsets[j]),
             Ok(results[j])
         );
     }
@@ -280,21 +260,17 @@ fn memory_init_test_7() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new(());
-    let module = i
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap();
 
-    let test = i
-        .store
+    let test = store
         .instance_export(module, "test")
         .unwrap()
         .as_func()
         .unwrap();
-    i.store
-        .invoke_typed_without_fuel::<(), ()>(test, ())
-        .unwrap();
+    store.invoke_typed_without_fuel::<(), ()>(test, ()).unwrap();
 }
 
 #[test_log::test]
@@ -309,20 +285,18 @@ fn memory_init_test_8() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new(());
-    let module = i
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap();
 
-    let test = i
-        .store
+    let test = store
         .instance_export(module, "test")
         .unwrap()
         .as_func()
         .unwrap();
     assert_eq!(
-        i.store.invoke_typed_without_fuel::<(), ()>(test, ()).err(),
+        store.invoke_typed_without_fuel::<(), ()>(test, ()).err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
     );
 }
@@ -338,20 +312,18 @@ fn memory_init_test_9() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new(());
-    let module = i
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap();
 
-    let test = i
-        .store
+    let test = store
         .instance_export(module, "test")
         .unwrap()
         .as_func()
         .unwrap();
     assert_eq!(
-        i.store.invoke_typed_without_fuel::<(), ()>(test, ()).err(),
+        store.invoke_typed_without_fuel::<(), ()>(test, ()).err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
     );
 }
@@ -396,21 +368,17 @@ fn memory_init_test_12() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new(());
-    let module = i
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap();
 
-    let test = i
-        .store
+    let test = store
         .instance_export(module, "test")
         .unwrap()
         .as_func()
         .unwrap();
-    i.store
-        .invoke_typed_without_fuel::<(), ()>(test, ())
-        .unwrap();
+    store.invoke_typed_without_fuel::<(), ()>(test, ()).unwrap();
 }
 
 #[test_log::test]
@@ -424,20 +392,18 @@ fn memory_init_test_13() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new(());
-    let module = i
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap();
 
-    let test = i
-        .store
+    let test = store
         .instance_export(module, "test")
         .unwrap()
         .as_func()
         .unwrap();
     assert_eq!(
-        i.store.invoke_typed_without_fuel::<(), ()>(test, ()).err(),
+        store.invoke_typed_without_fuel::<(), ()>(test, ()).err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
     );
 }
