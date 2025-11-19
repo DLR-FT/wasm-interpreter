@@ -22,9 +22,6 @@ pub mod store;
 pub mod value;
 pub mod value_stack;
 
-/// The default module name if a [RuntimeInstance] was created using [RuntimeInstance::new].
-pub const DEFAULT_MODULE: &str = "__interpreter_default__";
-
 /// Helper function to quickly construct host functions without worrying about wasm to Rust
 /// type conversion. For reading/writing user data into the current configuration, simply move
 /// `user_data` into the passed closure.
