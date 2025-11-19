@@ -1,4 +1,4 @@
-use wasm::{validate, RuntimeInstance};
+use wasm::{validate, Store};
 
 const SELECT_TEST: &str = r#"
 (module
@@ -37,48 +37,22 @@ fn polymorphic_select_test() {
     validate(&wasm_bytes).expect("validation failed");
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new(());
-    let module = instance
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
-    let select_test = instance
-        .store
+    let select_test = store
         .instance_export(module, "select_test")
         .unwrap()
         .as_func()
         .unwrap();
 
-    assert_eq!(
-        4,
-        instance
-            .store
-            .invoke_typed_without_fuel(select_test, 0)
-            .unwrap()
-    );
-    assert_eq!(
-        8,
-        instance
-            .store
-            .invoke_typed_without_fuel(select_test, 1)
-            .unwrap()
-    );
-    assert_eq!(
-        15,
-        instance
-            .store
-            .invoke_typed_without_fuel(select_test, 2)
-            .unwrap()
-    );
-    assert_eq!(
-        16,
-        instance
-            .store
-            .invoke_typed_without_fuel(select_test, 3)
-            .unwrap()
-    );
+    assert_eq!(4, store.invoke_typed_without_fuel(select_test, 0).unwrap());
+    assert_eq!(8, store.invoke_typed_without_fuel(select_test, 1).unwrap());
+    assert_eq!(15, store.invoke_typed_without_fuel(select_test, 2).unwrap());
+    assert_eq!(16, store.invoke_typed_without_fuel(select_test, 3).unwrap());
 }
 
 #[test_log::test]
@@ -90,46 +64,20 @@ fn typed_select_test() {
     validate(&wasm_bytes).expect("validation failed");
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new(());
-    let module = instance
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
-    let select_test = instance
-        .store
+    let select_test = store
         .instance_export(module, "select_test")
         .unwrap()
         .as_func()
         .unwrap();
 
-    assert_eq!(
-        4,
-        instance
-            .store
-            .invoke_typed_without_fuel(select_test, 0)
-            .unwrap()
-    );
-    assert_eq!(
-        8,
-        instance
-            .store
-            .invoke_typed_without_fuel(select_test, 1)
-            .unwrap()
-    );
-    assert_eq!(
-        15,
-        instance
-            .store
-            .invoke_typed_without_fuel(select_test, 2)
-            .unwrap()
-    );
-    assert_eq!(
-        16,
-        instance
-            .store
-            .invoke_typed_without_fuel(select_test, 3)
-            .unwrap()
-    );
+    assert_eq!(4, store.invoke_typed_without_fuel(select_test, 0).unwrap());
+    assert_eq!(8, store.invoke_typed_without_fuel(select_test, 1).unwrap());
+    assert_eq!(15, store.invoke_typed_without_fuel(select_test, 2).unwrap());
+    assert_eq!(16, store.invoke_typed_without_fuel(select_test, 3).unwrap());
 }

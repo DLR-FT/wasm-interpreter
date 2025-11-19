@@ -1,4 +1,4 @@
-use wasm::{validate, RuntimeInstance};
+use wasm::{validate, Store};
 
 /// This test checks if we can validate and executa a module which has two functions with the same signature.
 #[test_log::test]
@@ -19,38 +19,23 @@ fn same_type_fn() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new(());
-    let module = instance
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
-    let add_one = instance
-        .store
+    let add_one = store
         .instance_export(module, "add_one")
         .unwrap()
         .as_func()
         .unwrap();
-    let add_two = instance
-        .store
+    let add_two = store
         .instance_export(module, "add_two")
         .unwrap()
         .as_func()
         .unwrap();
 
-    assert_eq!(
-        -5,
-        instance
-            .store
-            .invoke_typed_without_fuel(add_one, -6)
-            .unwrap()
-    );
-    assert_eq!(
-        -4,
-        instance
-            .store
-            .invoke_typed_without_fuel(add_two, -6)
-            .unwrap()
-    );
+    assert_eq!(-5, store.invoke_typed_without_fuel(add_one, -6).unwrap());
+    assert_eq!(-4, store.invoke_typed_without_fuel(add_two, -6).unwrap());
 }

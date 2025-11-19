@@ -15,7 +15,7 @@
 # limitations under the License.
 */
 use hexf::hexf32;
-use wasm::{validate, RuntimeInstance};
+use wasm::{validate, Store};
 
 #[test_log::test]
 fn memory_redundancy() {
@@ -76,67 +76,58 @@ fn memory_redundancy() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new(());
-    let module = i
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
-    let test_store_to_load = i
-        .store
+    let test_store_to_load = store
         .instance_export(module, "test_store_to_load")
         .unwrap()
         .as_func()
         .unwrap();
-    let zero_everything = i
-        .store
+    let zero_everything = store
         .instance_export(module, "zero_everything")
         .unwrap()
         .as_func()
         .unwrap();
-    let test_redundant_load = i
-        .store
+    let test_redundant_load = store
         .instance_export(module, "test_redundant_load")
         .unwrap()
         .as_func()
         .unwrap();
-    let test_dead_store = i
-        .store
+    let test_dead_store = store
         .instance_export(module, "test_dead_store")
         .unwrap()
         .as_func()
         .unwrap();
-    let malloc_aliasing = i
-        .store
+    let malloc_aliasing = store
         .instance_export(module, "malloc_aliasing")
         .unwrap()
         .as_func()
         .unwrap();
 
     assert_eq!(
-        i.store.invoke_typed_without_fuel(test_store_to_load, ()),
+        store.invoke_typed_without_fuel(test_store_to_load, ()),
         Ok(0x00000080)
     );
-    i.store
+    store
         .invoke_typed_without_fuel::<(), ()>(zero_everything, ())
         .unwrap();
     assert_eq!(
-        i.store.invoke_typed_without_fuel(test_redundant_load, ()),
+        store.invoke_typed_without_fuel(test_redundant_load, ()),
         Ok(0x00000080)
     );
-    i.store
+    store
         .invoke_typed_without_fuel::<(), ()>(zero_everything, ())
         .unwrap();
     assert_eq!(
-        i.store.invoke_typed_without_fuel(test_dead_store, ()),
+        store.invoke_typed_without_fuel(test_dead_store, ()),
         Ok(hexf32!("0x1.18p-144"))
     );
-    i.store
+    store
         .invoke_typed_without_fuel::<(), ()>(zero_everything, ())
         .unwrap();
-    assert_eq!(
-        i.store.invoke_typed_without_fuel(malloc_aliasing, ()),
-        Ok(43)
-    );
+    assert_eq!(store.invoke_typed_without_fuel(malloc_aliasing, ()), Ok(43));
 }

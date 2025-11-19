@@ -15,7 +15,7 @@ use log::info;
 # See the License for the specific language governing permissions and
 # limitations under the License.
 */
-use wasm::{validate, RuntimeInstance};
+use wasm::{validate, Store};
 
 #[test_log::test]
 fn memory_size_1() {
@@ -28,33 +28,30 @@ fn memory_size_1() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new(());
-    let module = i
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
-    let size = i
-        .store
+    let size = store
         .instance_export(module, "size")
         .unwrap()
         .as_func()
         .unwrap();
-    let grow = i
-        .store
+    let grow = store
         .instance_export(module, "grow")
         .unwrap()
         .as_func()
         .unwrap();
 
-    assert_eq!(i.store.invoke_typed_without_fuel(size, ()), Ok(0));
-    assert_eq!(i.store.invoke_typed_without_fuel(grow, 1), Ok(()));
-    assert_eq!(i.store.invoke_typed_without_fuel(size, ()), Ok(1));
-    assert_eq!(i.store.invoke_typed_without_fuel(grow, 4), Ok(()));
-    assert_eq!(i.store.invoke_typed_without_fuel(size, ()), Ok(5));
-    assert_eq!(i.store.invoke_typed_without_fuel(grow, 0), Ok(()));
-    assert_eq!(i.store.invoke_typed_without_fuel(size, ()), Ok(5));
+    assert_eq!(store.invoke_typed_without_fuel(size, ()), Ok(0));
+    assert_eq!(store.invoke_typed_without_fuel(grow, 1), Ok(()));
+    assert_eq!(store.invoke_typed_without_fuel(size, ()), Ok(1));
+    assert_eq!(store.invoke_typed_without_fuel(grow, 4), Ok(()));
+    assert_eq!(store.invoke_typed_without_fuel(size, ()), Ok(5));
+    assert_eq!(store.invoke_typed_without_fuel(grow, 0), Ok(()));
+    assert_eq!(store.invoke_typed_without_fuel(size, ()), Ok(5));
 }
 
 #[test_log::test]
@@ -68,33 +65,30 @@ fn memory_size_2() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new(());
-    let module = i
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
-    let size = i
-        .store
+    let size = store
         .instance_export(module, "size")
         .unwrap()
         .as_func()
         .unwrap();
-    let grow = i
-        .store
+    let grow = store
         .instance_export(module, "grow")
         .unwrap()
         .as_func()
         .unwrap();
 
-    assert_eq!(i.store.invoke_typed_without_fuel(size, ()), Ok(1));
-    assert_eq!(i.store.invoke_typed_without_fuel(grow, 1), Ok(()));
-    assert_eq!(i.store.invoke_typed_without_fuel(size, ()), Ok(2));
-    assert_eq!(i.store.invoke_typed_without_fuel(grow, 4), Ok(()));
-    assert_eq!(i.store.invoke_typed_without_fuel(size, ()), Ok(6));
-    assert_eq!(i.store.invoke_typed_without_fuel(grow, 0), Ok(()));
-    assert_eq!(i.store.invoke_typed_without_fuel(size, ()), Ok(6));
+    assert_eq!(store.invoke_typed_without_fuel(size, ()), Ok(1));
+    assert_eq!(store.invoke_typed_without_fuel(grow, 1), Ok(()));
+    assert_eq!(store.invoke_typed_without_fuel(size, ()), Ok(2));
+    assert_eq!(store.invoke_typed_without_fuel(grow, 4), Ok(()));
+    assert_eq!(store.invoke_typed_without_fuel(size, ()), Ok(6));
+    assert_eq!(store.invoke_typed_without_fuel(grow, 0), Ok(()));
+    assert_eq!(store.invoke_typed_without_fuel(size, ()), Ok(6));
 }
 
 #[test_log::test]
@@ -108,37 +102,34 @@ fn memory_size_3() {
 "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new(());
-    let module = i
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
-    let size = i
-        .store
+    let size = store
         .instance_export(module, "size")
         .unwrap()
         .as_func()
         .unwrap();
-    let grow = i
-        .store
+    let grow = store
         .instance_export(module, "grow")
         .unwrap()
         .as_func()
         .unwrap();
 
-    assert_eq!(i.store.invoke_typed_without_fuel(size, ()), Ok(0));
-    assert_eq!(i.store.invoke_typed_without_fuel(grow, 3), Ok(()));
-    assert_eq!(i.store.invoke_typed_without_fuel(size, ()), Ok(0));
-    assert_eq!(i.store.invoke_typed_without_fuel(grow, 1), Ok(()));
-    assert_eq!(i.store.invoke_typed_without_fuel(size, ()), Ok(1));
-    assert_eq!(i.store.invoke_typed_without_fuel(grow, 0), Ok(()));
-    assert_eq!(i.store.invoke_typed_without_fuel(size, ()), Ok(1));
-    assert_eq!(i.store.invoke_typed_without_fuel(grow, 4), Ok(()));
-    assert_eq!(i.store.invoke_typed_without_fuel(size, ()), Ok(1));
-    assert_eq!(i.store.invoke_typed_without_fuel(grow, 1), Ok(()));
-    assert_eq!(i.store.invoke_typed_without_fuel(size, ()), Ok(2));
+    assert_eq!(store.invoke_typed_without_fuel(size, ()), Ok(0));
+    assert_eq!(store.invoke_typed_without_fuel(grow, 3), Ok(()));
+    assert_eq!(store.invoke_typed_without_fuel(size, ()), Ok(0));
+    assert_eq!(store.invoke_typed_without_fuel(grow, 1), Ok(()));
+    assert_eq!(store.invoke_typed_without_fuel(size, ()), Ok(1));
+    assert_eq!(store.invoke_typed_without_fuel(grow, 0), Ok(()));
+    assert_eq!(store.invoke_typed_without_fuel(size, ()), Ok(1));
+    assert_eq!(store.invoke_typed_without_fuel(grow, 4), Ok(()));
+    assert_eq!(store.invoke_typed_without_fuel(size, ()), Ok(1));
+    assert_eq!(store.invoke_typed_without_fuel(grow, 1), Ok(()));
+    assert_eq!(store.invoke_typed_without_fuel(size, ()), Ok(2));
 }
 
 #[test_log::test]
@@ -152,37 +143,34 @@ fn memory_size_4() {
 "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let mut i = RuntimeInstance::new(());
-    let module = i
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
-    let size = i
-        .store
+    let size = store
         .instance_export(module, "size")
         .unwrap()
         .as_func()
         .unwrap();
-    let grow = i
-        .store
+    let grow = store
         .instance_export(module, "grow")
         .unwrap()
         .as_func()
         .unwrap();
 
-    assert_eq!(i.store.invoke_typed_without_fuel(size, ()), Ok(3));
-    assert_eq!(i.store.invoke_typed_without_fuel(grow, 1), Ok(()));
-    assert_eq!(i.store.invoke_typed_without_fuel(size, ()), Ok(4));
-    assert_eq!(i.store.invoke_typed_without_fuel(grow, 3), Ok(()));
-    assert_eq!(i.store.invoke_typed_without_fuel(size, ()), Ok(7));
-    assert_eq!(i.store.invoke_typed_without_fuel(grow, 0), Ok(()));
-    assert_eq!(i.store.invoke_typed_without_fuel(size, ()), Ok(7));
-    assert_eq!(i.store.invoke_typed_without_fuel(grow, 2), Ok(()));
-    assert_eq!(i.store.invoke_typed_without_fuel(size, ()), Ok(7));
-    assert_eq!(i.store.invoke_typed_without_fuel(grow, 1), Ok(()));
-    assert_eq!(i.store.invoke_typed_without_fuel(size, ()), Ok(8));
+    assert_eq!(store.invoke_typed_without_fuel(size, ()), Ok(3));
+    assert_eq!(store.invoke_typed_without_fuel(grow, 1), Ok(()));
+    assert_eq!(store.invoke_typed_without_fuel(size, ()), Ok(4));
+    assert_eq!(store.invoke_typed_without_fuel(grow, 3), Ok(()));
+    assert_eq!(store.invoke_typed_without_fuel(size, ()), Ok(7));
+    assert_eq!(store.invoke_typed_without_fuel(grow, 0), Ok(()));
+    assert_eq!(store.invoke_typed_without_fuel(size, ()), Ok(7));
+    assert_eq!(store.invoke_typed_without_fuel(grow, 2), Ok(()));
+    assert_eq!(store.invoke_typed_without_fuel(size, ()), Ok(7));
+    assert_eq!(store.invoke_typed_without_fuel(grow, 1), Ok(()));
+    assert_eq!(store.invoke_typed_without_fuel(size, ()), Ok(8));
 }
 
 #[test_log::test]

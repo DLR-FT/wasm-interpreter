@@ -5,7 +5,7 @@ use criterion::{
     Throughput,
 };
 
-use wasm::{validate, RuntimeInstance};
+use wasm::{validate, Store};
 
 macro_rules! bench_wasm {
     {
@@ -48,9 +48,9 @@ macro_rules! bench_wasm {
 
             // Our interpreter
             let our_validation_info = validate(&wasm_bytes).unwrap();
-            let mut our_instance = RuntimeInstance::new(());
-            let module = our_instance.store.module_instantiate(&our_validation_info, Vec::new(), None).unwrap().module_addr;
-            let our_fn = our_instance.store.instance_export(module, $entry_function)
+            let mut store = Store::new(());
+            let module = store.module_instantiate(&our_validation_info, Vec::new(), None).unwrap().module_addr;
+            let our_fn = store.instance_export(module, $entry_function)
                 .unwrap()
                 .as_func()
                 .unwrap();
@@ -123,7 +123,7 @@ macro_rules! bench_wasm {
                 let bid = BenchmarkId::new("our", n);
                 group.bench_with_input(bid, &n, |b, &s| {
                     b.iter(|| {
-                        our_instance.store.invoke_typed_without_fuel::<$arg_type, $return_type>(our_fn, s).unwrap();
+                        store.invoke_typed_without_fuel::<$arg_type, $return_type>(our_fn, s).unwrap();
                     })
                 });
             }

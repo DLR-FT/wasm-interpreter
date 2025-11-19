@@ -4,7 +4,7 @@ use std::str::FromStr;
 
 use log::{error, LevelFilter};
 
-use wasm::{validate, RuntimeInstance};
+use wasm::{validate, Store};
 
 fn main() -> ExitCode {
     let level = LevelFilter::from_str(&env::var("RUST_LOG").unwrap_or("TRACE".to_owned())).unwrap();
@@ -45,12 +45,9 @@ fn main() -> ExitCode {
         }
     };
 
-    let mut instance = RuntimeInstance::new(());
+    let mut store = Store::new(());
 
-    let module = match instance
-        .store
-        .module_instantiate(&validation_info, Vec::new(), None)
-    {
+    let module = match store.module_instantiate(&validation_info, Vec::new(), None) {
         Ok(outcome) => outcome.module_addr,
         Err(err) => {
             error!("Instantiation failed: {err:?} [{err}]");
@@ -58,54 +55,42 @@ fn main() -> ExitCode {
         }
     };
 
-    let add_one = instance
-        .store
+    let add_one = store
         .instance_export(module, "add_one")
         .unwrap()
         .as_func()
         .unwrap();
 
-    let add = instance
-        .store
+    let add = store
         .instance_export(module, "add")
         .unwrap()
         .as_func()
         .unwrap();
 
-    let store_num = instance
-        .store
+    let store_num = store
         .instance_export(module, "store_num")
         .unwrap()
         .as_func()
         .unwrap();
 
-    let load_num = instance
-        .store
+    let load_num = store
         .instance_export(module, "load_num")
         .unwrap()
         .as_func()
         .unwrap();
 
-    let twelve: i32 = instance
-        .store
-        .invoke_typed_without_fuel(add, (5, 7))
-        .unwrap();
+    let twelve: i32 = store.invoke_typed_without_fuel(add, (5, 7)).unwrap();
     assert_eq!(twelve, 12);
 
-    let twelve_plus_one: i32 = instance
-        .store
-        .invoke_typed_without_fuel(add_one, twelve)
-        .unwrap();
+    let twelve_plus_one: i32 = store.invoke_typed_without_fuel(add_one, twelve).unwrap();
     assert_eq!(twelve_plus_one, 13);
 
-    instance
-        .store
+    store
         .invoke_typed_without_fuel::<_, ()>(store_num, 42_i32)
         .unwrap();
 
     assert_eq!(
-        instance
-            .store
+        store
             .invoke_typed_without_fuel::<(), i32>(load_num, ())
             .unwrap(),
         42_i32

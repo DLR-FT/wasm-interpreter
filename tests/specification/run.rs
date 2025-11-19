@@ -13,7 +13,7 @@ use wasm::RefType;
 use wasm::RuntimeError;
 use wasm::TrapError;
 use wasm::Value;
-use wasm::{validate, RuntimeInstance};
+use wasm::{validate, Store};
 use wast::core::WastArgCore;
 use wast::core::WastRetCore;
 use wast::QuoteWat;
@@ -115,7 +115,7 @@ fn encode(modulee: &mut wast::QuoteWat) -> Result<Vec<u8>, WastError> {
 }
 
 fn validate_instantiate<'a, 'b: 'a>(
-    interpreter: &'a mut RuntimeInstance<'b>,
+    store: &'a mut Store<'b, ()>,
     bytes: &'b [u8],
     linker: &Linker,
     last_instantiated_module: &mut Option<ModuleAddr>,
@@ -124,7 +124,7 @@ fn validate_instantiate<'a, 'b: 'a>(
         catch_unwind_and_suppress_panic_handler(|| validate(bytes)).map_err(WastError::Panic)??;
 
     let module = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
-        linker.module_instantiate(&mut interpreter.store, &validation_info, None)
+        linker.module_instantiate(store, &validation_info, None)
     }))
     .map_err(WastError::Panic)??
     .module_addr;
@@ -160,7 +160,7 @@ pub fn run_spec_test(filepath: &str) -> Result<AssertReport, ScriptError> {
     // -=-= Testing & Compilation =-=-
     let mut asserts = AssertReport::new(filepath);
 
-    // We need to keep the wasm_bytes in-scope for the lifetime of the interpreter.
+    // We need to keep the wasm_bytes in-scope for the lifetime of the store.
     // As such, we hoist the bytes into an Option, and assign it once a module directive is found.
     #[allow(unused_assignments)]
     // let mut wasm_bytes: Option<Vec<u8>> = None;
@@ -169,13 +169,10 @@ pub fn run_spec_test(filepath: &str) -> Result<AssertReport, ScriptError> {
         catch_unwind_and_suppress_panic_handler(|| validate(&spectest_wasm))
             .unwrap()
             .unwrap();
-    let mut interpreter =
-        catch_unwind_and_suppress_panic_handler(|| RuntimeInstance::new(())).unwrap();
+    let mut store = catch_unwind_and_suppress_panic_handler(|| Store::new(())).unwrap();
 
     let spectest_module = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
-        interpreter
-            .store
-            .module_instantiate(&spectest_validation_info, Vec::new(), None)
+        store.module_instantiate(&spectest_validation_info, Vec::new(), None)
     }))
     .unwrap()
     .unwrap()
@@ -189,7 +186,7 @@ pub fn run_spec_test(filepath: &str) -> Result<AssertReport, ScriptError> {
     // instantiation.
     let mut linker = Linker::new();
     linker
-        .define_module_instance(&interpreter.store, "spectest".to_owned(), spectest_module)
+        .define_module_instance(&store, "spectest".to_owned(), spectest_module)
         .unwrap();
 
     // Because the linker only links imports and exports and does not keep track
@@ -202,7 +199,7 @@ pub fn run_spec_test(filepath: &str) -> Result<AssertReport, ScriptError> {
         let directive_result = run_directive(
             directive,
             &arena,
-            &mut interpreter,
+            &mut store,
             &contents,
             filepath,
             &mut visible_modules,
@@ -222,7 +219,7 @@ pub fn run_spec_test(filepath: &str) -> Result<AssertReport, ScriptError> {
 fn run_directive<'a>(
     wast_directive: WastDirective,
     arena: &'a Bump,
-    interpreter: &mut RuntimeInstance<'a>,
+    store: &mut Store<'a, ()>,
     contents: &str,
     filepath: &str,
     visible_modules: &mut HashMap<String, ModuleAddr>,
@@ -247,17 +244,16 @@ fn run_directive<'a>(
             // lifetime of the outermost scope in the current function
             let wasm_bytes = arena.alloc_slice_clone(&wasm_bytes) as &[u8];
 
-            let module =
-                validate_instantiate(interpreter, wasm_bytes, linker, last_instantiated_module)
-                    .map_err(|err| {
-                        ScriptError::new(
-                            filepath,
-                            err,
-                            "Module directive (WAT) failed in validation or instantiation.",
-                            get_linenum(contents, quoted.span()),
-                            get_command(contents, quoted.span()),
-                        )
-                    })?;
+            let module = validate_instantiate(store, wasm_bytes, linker, last_instantiated_module)
+                .map_err(|err| {
+                    ScriptError::new(
+                        filepath,
+                        err,
+                        "Module directive (WAT) failed in validation or instantiation.",
+                        get_linenum(contents, quoted.span()),
+                        get_command(contents, quoted.span()),
+                    )
+                })?;
 
             // retain information of the id of the current wast
             match quoted {
@@ -281,7 +277,7 @@ fn run_directive<'a>(
         } => {
             let err_or_panic = execute_assert_return(
                 visible_modules,
-                interpreter,
+                store,
                 exec,
                 results,
                 last_instantiated_module,
@@ -301,7 +297,7 @@ fn run_directive<'a>(
             let result = execute(
                 arena,
                 visible_modules,
-                interpreter,
+                store,
                 exec,
                 last_instantiated_module,
                 linker,
@@ -352,7 +348,7 @@ fn run_directive<'a>(
             let cmd = get_command(contents, span);
             let result = encode(&mut modulee).and_then(|bytes| {
                 let bytes = arena.alloc_slice_clone(&bytes);
-                validate_instantiate(interpreter, bytes, linker, last_instantiated_module)
+                validate_instantiate(store, bytes, linker, last_instantiated_module)
             });
 
             let maybe_assert_error = match result {
@@ -395,7 +391,7 @@ fn run_directive<'a>(
             ))?;
 
             linker
-                .define_module_instance(&interpreter.store, name.to_owned(), module)
+                .define_module_instance(store, name.to_owned(), module)
                 .map_err(|runtime_error| {
                     ScriptError::new(
                         filepath,
@@ -419,17 +415,17 @@ fn run_directive<'a>(
             // if it can't be parsed, then the test itself must be written incorrectly, thus the unwrap
             let bytes: &[u8] = arena.alloc_slice_clone(&module.encode().unwrap());
 
-            let result =
-                match validate_instantiate(interpreter, bytes, linker, last_instantiated_module) {
-                    // module shouldn't have instantiated
-                    Err(WastError::WasmRuntimeError(
-                        RuntimeError::ModuleNotFound
-                        | RuntimeError::UnknownImport
-                        | RuntimeError::InvalidImportType
-                        | RuntimeError::UnableToResolveImport,
-                    )) => Ok(()),
-                    _ => Err(WastError::AssertUnlinkableButLinked),
-                };
+            let result = match validate_instantiate(store, bytes, linker, last_instantiated_module)
+            {
+                // module shouldn't have instantiated
+                Err(WastError::WasmRuntimeError(
+                    RuntimeError::ModuleNotFound
+                    | RuntimeError::UnknownImport
+                    | RuntimeError::InvalidImportType
+                    | RuntimeError::UnableToResolveImport,
+                )) => Ok(()),
+                _ => Err(WastError::AssertUnlinkableButLinked),
+            };
 
             Ok(Some(AssertOutcome {
                 line_number,
@@ -445,7 +441,7 @@ fn run_directive<'a>(
             let execution_result = execute(
                 arena,
                 visible_modules,
-                interpreter,
+                store,
                 wast::WastExecute::Invoke(call),
                 last_instantiated_module,
                 linker,
@@ -491,8 +487,7 @@ fn run_directive<'a>(
             ))?;
 
             let func_addr = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
-                interpreter
-                    .store
+                store
                     .instance_export(module, invoke.name)
                     .map_err(WastError::WasmRuntimeError)
                     .and_then(|extern_val| match extern_val {
@@ -520,7 +515,7 @@ fn run_directive<'a>(
             })??;
 
             catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
-                interpreter.store.invoke_without_fuel(func_addr, args)
+                store.invoke_without_fuel(func_addr, args)
             }))
             .map_err(|panic_error| {
                 ScriptError::new(
@@ -557,7 +552,7 @@ fn run_directive<'a>(
 
 fn execute_assert_return(
     visible_modules: &HashMap<String, ModuleAddr>,
-    interpreter: &mut RuntimeInstance,
+    store: &mut Store<()>,
     exec: wast::WastExecute,
     results: Vec<wast::WastRet>,
     last_instantiated_module: &mut Option<ModuleAddr>,
@@ -588,8 +583,7 @@ fn execute_assert_return(
             .ok_or(WastError::UnknownModuleReferenced)?;
 
             let func_addr = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
-                interpreter
-                    .store
+                store
                     .instance_export(module, invoke_info.name)
                     .map_err(WastError::WasmRuntimeError)
                     .and_then(|extern_val| match extern_val {
@@ -600,7 +594,7 @@ fn execute_assert_return(
             .map_err(WastError::Panic)??;
 
             let actual = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
-                interpreter.store.invoke_without_fuel(func_addr, args)
+                store.invoke_without_fuel(func_addr, args)
             }))
             .map_err(WastError::Panic)??;
 
@@ -629,8 +623,7 @@ fn execute_assert_return(
             .ok_or(WastError::UnknownModuleReferenced)?;
 
             let actual = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
-                let global_addr = interpreter
-                    .store
+                let global_addr = store
                     .instance_export(module, global)
                     .map_err(WastError::WasmRuntimeError)
                     .and_then(|extern_val| match extern_val {
@@ -638,7 +631,7 @@ fn execute_assert_return(
                         _ => Err(WastError::UnknownGlobalReferenced),
                     })?;
 
-                Ok::<Value, WastError>(interpreter.store.global_read(global_addr))
+                Ok::<Value, WastError>(store.global_read(global_addr))
             }))
             .map_err(WastError::Panic)??;
 
@@ -651,7 +644,7 @@ fn execute_assert_return(
 fn execute<'a>(
     arena: &'a bumpalo::Bump,
     visible_modules: &HashMap<String, ModuleAddr>,
-    interpreter: &mut RuntimeInstance<'a>,
+    store: &mut Store<'a, ()>,
     exec: wast::WastExecute,
     last_instantiated_module: &mut Option<ModuleAddr>,
     linker: &mut Linker,
@@ -672,8 +665,7 @@ fn execute<'a>(
             .ok_or(WastError::UnknownModuleReferenced)?;
 
             let func_addr = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
-                interpreter
-                    .store
+                store
                     .instance_export(module, invoke_info.name)
                     .map_err(WastError::WasmRuntimeError)
                     .and_then(|extern_val| match extern_val {
@@ -684,7 +676,7 @@ fn execute<'a>(
             .map_err(WastError::Panic)??;
 
             catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
-                interpreter.store.invoke_without_fuel(func_addr, args)
+                store.invoke_without_fuel(func_addr, args)
             }))
             .map_err(WastError::Panic)??;
 
@@ -698,8 +690,7 @@ fn execute<'a>(
         wast::WastExecute::Wat(Wat::Module(mut module)) => {
             let bytecode: &[u8] = arena.alloc_slice_clone(&module.encode()?);
 
-            let _module =
-                validate_instantiate(interpreter, bytecode, linker, last_instantiated_module)?;
+            let _module = validate_instantiate(store, bytecode, linker, last_instantiated_module)?;
 
             Ok(())
         }

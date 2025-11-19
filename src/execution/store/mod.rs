@@ -1126,7 +1126,7 @@ impl<'b, T: Config> Store<'b, T> {
     /// # Example
     ///
     /// ```
-    /// use wasm::{resumable::RunState, validate, RuntimeInstance};
+    /// use wasm::{resumable::RunState, validate,  Store};
     /// // a simple module with a single function looping forever
     /// let wasm = [ 0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00,
     ///             0x01, 0x04, 0x01, 0x60, 0x00, 0x00, 0x03, 0x02,
@@ -1135,11 +1135,11 @@ impl<'b, T: Config> Store<'b, T> {
     ///             0x07, 0x00, 0x03, 0x40, 0x0c, 0x00, 0x0b, 0x0b ];
     /// let validation_info = validate(&wasm).unwrap();
     ///
-    /// let mut instance = RuntimeInstance::new(());
-    /// let module = instance.store.module_instantiate(&validation_info, Vec::new(), None).unwrap().module_addr;
-    /// let func_addr = instance.store.instance_export(module, "loops").unwrap().as_func().unwrap();
-    /// let mut resumable_ref = instance.store.create_resumable(func_addr, Vec::new(), Some(0)).unwrap();
-    /// instance.store.access_fuel_mut(&mut resumable_ref, |x| { assert_eq!(*x, Some(0)); *x = None; }).unwrap();
+    /// let mut store = Store::new(());
+    /// let module = store.module_instantiate(&validation_info, Vec::new(), None).unwrap().module_addr;
+    /// let func_addr = store.instance_export(module, "loops").unwrap().as_func().unwrap();
+    /// let mut resumable_ref = store.create_resumable(func_addr, Vec::new(), Some(0)).unwrap();
+    /// store.access_fuel_mut(&mut resumable_ref, |x| { assert_eq!(*x, Some(0)); *x = None; }).unwrap();
     /// ```
     pub fn access_fuel_mut<R>(
         &mut self,

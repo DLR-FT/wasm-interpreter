@@ -1,4 +1,4 @@
-use wasm::{validate, RuntimeInstance};
+use wasm::{validate, Store};
 
 /// A simple function to add 2 two i32s but using the RETURN opcode.
 #[test_log::test]
@@ -22,39 +22,19 @@ fn return_valid() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let mut instance = RuntimeInstance::new(());
-    let module = instance
-        .store
+    let mut store = Store::new(());
+    let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
-    let add = instance
-        .store
+    let add = store
         .instance_export(module, "add")
         .unwrap()
         .as_func()
         .unwrap();
 
-    assert_eq!(
-        12,
-        instance
-            .store
-            .invoke_typed_without_fuel(add, (10, 2))
-            .unwrap()
-    );
-    assert_eq!(
-        2,
-        instance
-            .store
-            .invoke_typed_without_fuel(add, (0, 2))
-            .unwrap()
-    );
-    assert_eq!(
-        -4,
-        instance
-            .store
-            .invoke_typed_without_fuel(add, (-6, 2))
-            .unwrap()
-    );
+    assert_eq!(12, store.invoke_typed_without_fuel(add, (10, 2)).unwrap());
+    assert_eq!(2, store.invoke_typed_without_fuel(add, (0, 2)).unwrap());
+    assert_eq!(-4, store.invoke_typed_without_fuel(add, (-6, 2)).unwrap());
 }
