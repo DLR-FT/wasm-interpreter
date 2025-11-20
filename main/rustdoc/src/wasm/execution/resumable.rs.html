@@ -52,12 +52,12 @@
 <a href=#52 id=52 data-nosnippet>52</a>    <span class="kw">pub</span>(<span class="kw">crate</span>) maybe_fuel: <span class="prelude-ty">Option</span>&lt;u32&gt;,
 <a href=#53 id=53 data-nosnippet>53</a>}
 <a href=#54 id=54 data-nosnippet>54</a>
-<a href=#55 id=55 data-nosnippet>55</a><span class="doccomment">/// An object associated to a resumable that is held internally. The variant `ResumableRef::Fresh` indicates this
-<a href=#56 id=56 data-nosnippet>56</a>/// resumable has never been invoked/resumed to. `ResumableRef::Invoked` indicates this resumable has been
-<a href=#57 id=57 data-nosnippet>57</a>/// invoked/resumed to at least once.
-<a href=#58 id=58 data-nosnippet>58</a></span><span class="kw">pub enum </span>ResumableRef {
-<a href=#59 id=59 data-nosnippet>59</a>    Fresh(FreshResumableRef),
-<a href=#60 id=60 data-nosnippet>60</a>    Invoked(InvokedResumableRef),
+<a href=#55 id=55 data-nosnippet>55</a><span class="doccomment">/// An object associated to a resumable that is held internally.
+<a href=#56 id=56 data-nosnippet>56</a></span><span class="kw">pub enum </span>ResumableRef {
+<a href=#57 id=57 data-nosnippet>57</a>    <span class="doccomment">/// indicates this resumable has never been invoked/resumed to.
+<a href=#58 id=58 data-nosnippet>58</a>    </span>Fresh(FreshResumableRef),
+<a href=#59 id=59 data-nosnippet>59</a>    <span class="doccomment">/// indicates this resumable has been invoked/resumed to at least once.
+<a href=#60 id=60 data-nosnippet>60</a>    </span>Invoked(InvokedResumableRef),
 <a href=#61 id=61 data-nosnippet>61</a>}
 <a href=#62 id=62 data-nosnippet>62</a>
 <a href=#63 id=63 data-nosnippet>63</a><span class="kw">impl </span>Drop <span class="kw">for </span>InvokedResumableRef {
@@ -72,36 +72,41 @@
 <a href=#72 id=72 data-nosnippet>72</a>    }
 <a href=#73 id=73 data-nosnippet>73</a>}
 <a href=#74 id=74 data-nosnippet>74</a>
-<a href=#75 id=75 data-nosnippet>75</a><span class="doccomment">/// Represents the state of a possibly interrupted resumable. `RunState::Finished` represents a resumable that has
-<a href=#76 id=76 data-nosnippet>76</a>/// executed completely. `RunState::Resumable` represents a resumable that has ran out of fuel during execution, missing
-<a href=#77 id=77 data-nosnippet>77</a>/// at least `required_fuel` units of fuel to continue further execution.
-<a href=#78 id=78 data-nosnippet>78</a></span><span class="kw">pub enum </span>RunState {
-<a href=#79 id=79 data-nosnippet>79</a>    Finished(Vec&lt;Value&gt;),
-<a href=#80 id=80 data-nosnippet>80</a>    Resumable {
-<a href=#81 id=81 data-nosnippet>81</a>        resumable_ref: ResumableRef,
-<a href=#82 id=82 data-nosnippet>82</a>        required_fuel: NonZeroU32,
-<a href=#83 id=83 data-nosnippet>83</a>    },
-<a href=#84 id=84 data-nosnippet>84</a>}
-<a href=#85 id=85 data-nosnippet>85</a>
-<a href=#86 id=86 data-nosnippet>86</a><span class="attr">#[cfg(test)]
-<a href=#87 id=87 data-nosnippet>87</a></span><span class="kw">mod </span>test {
-<a href=#88 id=88 data-nosnippet>88</a>    <span class="kw">use crate</span>::{addrs::FuncAddr, value_stack::Stack};
-<a href=#89 id=89 data-nosnippet>89</a>
-<a href=#90 id=90 data-nosnippet>90</a>    <span class="kw">use super</span>::{Dormitory, Resumable};
-<a href=#91 id=91 data-nosnippet>91</a>
-<a href=#92 id=92 data-nosnippet>92</a>    <span class="doccomment">/// Test that a dormitory can be constructed and that a resumable can be inserted
-<a href=#93 id=93 data-nosnippet>93</a>    </span><span class="attr">#[test]
-<a href=#94 id=94 data-nosnippet>94</a>    </span><span class="kw">fn </span>dormitory_constructor() {
-<a href=#95 id=95 data-nosnippet>95</a>        <span class="kw">let </span>dorm = Dormitory::new();
+<a href=#75 id=75 data-nosnippet>75</a><span class="doccomment">/// Represents the state of a possibly interrupted resumable.
+<a href=#76 id=76 data-nosnippet>76</a></span><span class="kw">pub enum </span>RunState {
+<a href=#77 id=77 data-nosnippet>77</a>    <span class="doccomment">/// represents a resumable that has executed completely with return values `values` and possibly remaining fuel
+<a href=#78 id=78 data-nosnippet>78</a>    /// `maybe_remaining_fuel` (has `Some(remaining_fuel)` for fuel-metered operations and `None` otherwise)
+<a href=#79 id=79 data-nosnippet>79</a>    </span>Finished {
+<a href=#80 id=80 data-nosnippet>80</a>        values: Vec&lt;Value&gt;,
+<a href=#81 id=81 data-nosnippet>81</a>        maybe_remaining_fuel: <span class="prelude-ty">Option</span>&lt;u32&gt;,
+<a href=#82 id=82 data-nosnippet>82</a>    },
+<a href=#83 id=83 data-nosnippet>83</a>    <span class="doccomment">/// represents a resumable that has ran out of fuel during execution, missing at least `required_fuel` units of fuel
+<a href=#84 id=84 data-nosnippet>84</a>    /// to continue further execution.
+<a href=#85 id=85 data-nosnippet>85</a>    </span>Resumable {
+<a href=#86 id=86 data-nosnippet>86</a>        resumable_ref: ResumableRef,
+<a href=#87 id=87 data-nosnippet>87</a>        required_fuel: NonZeroU32,
+<a href=#88 id=88 data-nosnippet>88</a>    },
+<a href=#89 id=89 data-nosnippet>89</a>}
+<a href=#90 id=90 data-nosnippet>90</a>
+<a href=#91 id=91 data-nosnippet>91</a><span class="attr">#[cfg(test)]
+<a href=#92 id=92 data-nosnippet>92</a></span><span class="kw">mod </span>test {
+<a href=#93 id=93 data-nosnippet>93</a>    <span class="kw">use crate</span>::{addrs::FuncAddr, value_stack::Stack};
+<a href=#94 id=94 data-nosnippet>94</a>
+<a href=#95 id=95 data-nosnippet>95</a>    <span class="kw">use super</span>::{Dormitory, Resumable};
 <a href=#96 id=96 data-nosnippet>96</a>
-<a href=#97 id=97 data-nosnippet>97</a>        <span class="kw">let </span>resumable = Resumable {
-<a href=#98 id=98 data-nosnippet>98</a>            stack: Stack::new(),
-<a href=#99 id=99 data-nosnippet>99</a>            pc: <span class="number">11</span>,
-<a href=#100 id=100 data-nosnippet>100</a>            stp: <span class="number">13</span>,
-<a href=#101 id=101 data-nosnippet>101</a>            current_func_addr: FuncAddr::INVALID,
-<a href=#102 id=102 data-nosnippet>102</a>            maybe_fuel: <span class="prelude-val">None</span>,
-<a href=#103 id=103 data-nosnippet>103</a>        };
-<a href=#104 id=104 data-nosnippet>104</a>
-<a href=#105 id=105 data-nosnippet>105</a>        dorm.insert(resumable);
-<a href=#106 id=106 data-nosnippet>106</a>    }
-<a href=#107 id=107 data-nosnippet>107</a>}</code></pre></div></section></main></body></html>
+<a href=#97 id=97 data-nosnippet>97</a>    <span class="doccomment">/// Test that a dormitory can be constructed and that a resumable can be inserted
+<a href=#98 id=98 data-nosnippet>98</a>    </span><span class="attr">#[test]
+<a href=#99 id=99 data-nosnippet>99</a>    </span><span class="kw">fn </span>dormitory_constructor() {
+<a href=#100 id=100 data-nosnippet>100</a>        <span class="kw">let </span>dorm = Dormitory::new();
+<a href=#101 id=101 data-nosnippet>101</a>
+<a href=#102 id=102 data-nosnippet>102</a>        <span class="kw">let </span>resumable = Resumable {
+<a href=#103 id=103 data-nosnippet>103</a>            stack: Stack::new(),
+<a href=#104 id=104 data-nosnippet>104</a>            pc: <span class="number">11</span>,
+<a href=#105 id=105 data-nosnippet>105</a>            stp: <span class="number">13</span>,
+<a href=#106 id=106 data-nosnippet>106</a>            current_func_addr: FuncAddr::INVALID,
+<a href=#107 id=107 data-nosnippet>107</a>            maybe_fuel: <span class="prelude-val">None</span>,
+<a href=#108 id=108 data-nosnippet>108</a>        };
+<a href=#109 id=109 data-nosnippet>109</a>
+<a href=#110 id=110 data-nosnippet>110</a>        dorm.insert(resumable);
+<a href=#111 id=111 data-nosnippet>111</a>    }
+<a href=#112 id=112 data-nosnippet>112</a>}</code></pre></div></section></main></body></html>
