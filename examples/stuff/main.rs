@@ -4,7 +4,7 @@ use std::str::FromStr;
 
 use log::{error, LevelFilter};
 
-use wasm::{validate, RuntimeInstance};
+use wasm::{validate, Store};
 
 fn main() -> ExitCode {
     let level = LevelFilter::from_str(&env::var("RUST_LOG").unwrap_or("TRACE".to_owned())).unwrap();
@@ -13,12 +13,12 @@ fn main() -> ExitCode {
     let wat = r#"
     (module
         (memory 1)
-        (func $add_one (param $x i32) (result i32) (local $ununsed_local i32)
+        (func $add_one (export "add_one") (param $x i32) (result i32) (local $ununsed_local i32)
             local.get $x
             i32.const 1
             i32.add)
 
-        (func $add (param $x i32) (param $y i32) (result i32)
+        (func $add (export "add") (param $x i32) (param $y i32) (result i32)
             local.get $y
             local.get $x
             i32.add)
@@ -45,41 +45,53 @@ fn main() -> ExitCode {
         }
     };
 
-    let (mut instance, module_addr) =
-        match RuntimeInstance::new_with_default_module((), &validation_info) {
-            Ok(instance) => instance,
-            Err(err) => {
-                error!("Instantiation failed: {err:?} [{err}]");
-                return ExitCode::FAILURE;
-            }
-        };
+    let mut store = Store::new(());
 
-    let twelve: i32 = instance
-        .invoke_typed(
-            instance.get_function_by_index(module_addr, 1).unwrap(),
-            (5, 7),
-        )
+    let module = match store.module_instantiate(&validation_info, Vec::new(), None) {
+        Ok(instance) => instance,
+        Err(err) => {
+            error!("Instantiation failed: {err:?} [{err}]");
+            return ExitCode::FAILURE;
+        }
+    };
+
+    let add_one = store
+        .instance_export(module, "add_one")
+        .unwrap()
+        .as_func()
         .unwrap();
+
+    let add = store
+        .instance_export(module, "add")
+        .unwrap()
+        .as_func()
+        .unwrap();
+
+    let store_num = store
+        .instance_export(module, "store_num")
+        .unwrap()
+        .as_func()
+        .unwrap();
+
+    let load_num = store
+        .instance_export(module, "load_num")
+        .unwrap()
+        .as_func()
+        .unwrap();
+
+    let twelve: i32 = store.invoke_typed_without_fuel(add, (5, 7)).unwrap();
     assert_eq!(twelve, 12);
 
-    let twelve_plus_one: i32 = instance
-        .invoke_typed(
-            instance.get_function_by_index(module_addr, 0).unwrap(),
-            twelve,
-        )
-        .unwrap();
+    let twelve_plus_one: i32 = store.invoke_typed_without_fuel(add_one, twelve).unwrap();
     assert_eq!(twelve_plus_one, 13);
 
-    instance
-        .invoke_typed::<_, ()>(
-            instance.get_function_by_index(module_addr, 2).unwrap(),
-            42_i32,
-        )
+    store
+        .invoke_typed_without_fuel::<_, ()>(store_num, 42_i32)
         .unwrap();
 
     assert_eq!(
-        instance
-            .invoke_typed::<(), i32>(instance.get_function_by_index(module_addr, 3).unwrap(), ())
+        store
+            .invoke_typed_without_fuel::<(), i32>(load_num, ())
             .unwrap(),
         42_i32
     );

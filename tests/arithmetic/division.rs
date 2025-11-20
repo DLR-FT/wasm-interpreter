@@ -1,5 +1,5 @@
-use wasm::{validate, RuntimeInstance, TrapError};
-use wasm::{RuntimeError, DEFAULT_MODULE};
+use wasm::RuntimeError;
+use wasm::{validate, Store, TrapError};
 
 const WAT_SIGNED_DIVISION_TEMPLATE: &str = r#"
     (module
@@ -28,117 +28,75 @@ pub fn i32_division_signed_simple() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let (mut instance, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut store = Store::new(());
+    let module = store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
+
+    let signed_division = store
+        .instance_export(module, "signed_division")
+        .unwrap()
+        .as_func()
+        .unwrap();
 
     assert_eq!(
         10,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "signed_division")
-                    .unwrap(),
-                (20, 2)
-            )
+        store
+            .invoke_typed_without_fuel(signed_division, (20, 2))
             .unwrap()
     );
     assert_eq!(
         9_001,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "signed_division")
-                    .unwrap(),
-                (81_018_001, 9_001)
-            )
+        store
+            .invoke_typed_without_fuel(signed_division, (81_018_001, 9_001))
             .unwrap()
     );
     assert_eq!(
         -10,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "signed_division")
-                    .unwrap(),
-                (20, -2)
-            )
+        store
+            .invoke_typed_without_fuel(signed_division, (20, -2))
             .unwrap()
     );
     assert_eq!(
         10,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "signed_division")
-                    .unwrap(),
-                (-20, -2)
-            )
+        store
+            .invoke_typed_without_fuel(signed_division, (-20, -2))
             .unwrap()
     );
     assert_eq!(
         -10,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "signed_division")
-                    .unwrap(),
-                (-20, 2)
-            )
+        store
+            .invoke_typed_without_fuel(signed_division, (-20, 2))
             .unwrap()
     );
     assert_eq!(
         10,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "signed_division")
-                    .unwrap(),
-                (20, 2)
-            )
+        store
+            .invoke_typed_without_fuel(signed_division, (20, 2))
             .unwrap()
     );
     assert_eq!(
         9_001,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "signed_division")
-                    .unwrap(),
-                (81_018_001, 9_001)
-            )
+        store
+            .invoke_typed_without_fuel(signed_division, (81_018_001, 9_001))
             .unwrap()
     );
     assert_eq!(
         -10,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "signed_division")
-                    .unwrap(),
-                (20, -2)
-            )
+        store
+            .invoke_typed_without_fuel(signed_division, (20, -2))
             .unwrap()
     );
     assert_eq!(
         10,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "signed_division")
-                    .unwrap(),
-                (-20, -2)
-            )
+        store
+            .invoke_typed_without_fuel(signed_division, (-20, -2))
             .unwrap()
     );
     assert_eq!(
         -10,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "signed_division")
-                    .unwrap(),
-                (-20, 2)
-            )
+        store
+            .invoke_typed_without_fuel(signed_division, (-20, 2))
             .unwrap()
     );
 }
@@ -152,15 +110,18 @@ pub fn i32_division_signed_panic_dividend_0() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let (mut instance, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut store = Store::new(());
+    let module = store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
 
-    let result = instance.invoke_typed::<(i32, i32), i32>(
-        instance
-            .get_function_by_name(DEFAULT_MODULE, "signed_division")
-            .unwrap(),
-        (222, 0),
-    );
+    let signed_division = store
+        .instance_export(module, "signed_division")
+        .unwrap()
+        .as_func()
+        .unwrap();
+
+    let result = store.invoke_typed_without_fuel::<(i32, i32), i32>(signed_division, (222, 0));
 
     assert_eq!(
         result.unwrap_err(),
@@ -177,15 +138,19 @@ pub fn i32_division_signed_panic_result_unrepresentable() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let (mut instance, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut store = Store::new(());
+    let module = store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
 
-    let result = instance.invoke_typed::<(i32, i32), i32>(
-        instance
-            .get_function_by_name(DEFAULT_MODULE, "signed_division")
-            .unwrap(),
-        (i32::MIN, -1),
-    );
+    let signed_division = store
+        .instance_export(module, "signed_division")
+        .unwrap()
+        .as_func()
+        .unwrap();
+
+    let result =
+        store.invoke_typed_without_fuel::<(i32, i32), i32>(signed_division, (i32::MIN, -1));
 
     assert_eq!(
         result.unwrap_err(),
@@ -202,96 +167,64 @@ pub fn i32_division_unsigned_simple() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let (mut instance, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut store = Store::new(());
+    let module = store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
+
+    let unsigned_division = store
+        .instance_export(module, "unsigned_division")
+        .unwrap()
+        .as_func()
+        .unwrap();
 
     assert_eq!(
         10,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "unsigned_division")
-                    .unwrap(),
-                (20, 2)
-            )
+        store
+            .invoke_typed_without_fuel(unsigned_division, (20, 2))
             .unwrap()
     );
     assert_eq!(
         9_001,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "unsigned_division")
-                    .unwrap(),
-                (81_018_001, 9_001)
-            )
+        store
+            .invoke_typed_without_fuel(unsigned_division, (81_018_001, 9_001))
             .unwrap()
     );
     assert_eq!(
         0,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "unsigned_division")
-                    .unwrap(),
-                (i32::MIN, -1)
-            )
+        store
+            .invoke_typed_without_fuel(unsigned_division, (i32::MIN, -1))
             .unwrap()
     );
 
     assert_eq!(
         0,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "unsigned_division")
-                    .unwrap(),
-                (i32::MIN, -1)
-            )
+        store
+            .invoke_typed_without_fuel(unsigned_division, (i32::MIN, -1))
             .unwrap()
     );
     assert_eq!(
         -20,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "unsigned_division")
-                    .unwrap(),
-                (-20, 1)
-            )
+        store
+            .invoke_typed_without_fuel(unsigned_division, (-20, 1))
             .unwrap()
     );
     assert_eq!(
         2147483638,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "unsigned_division")
-                    .unwrap(),
-                (-20, 2)
-            )
+        store
+            .invoke_typed_without_fuel(unsigned_division, (-20, 2))
             .unwrap()
     );
     assert_eq!(
         1431655758,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "unsigned_division")
-                    .unwrap(),
-                (-20, 3)
-            )
+        store
+            .invoke_typed_without_fuel(unsigned_division, (-20, 3))
             .unwrap()
     );
     assert_eq!(
         1073741819,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "unsigned_division")
-                    .unwrap(),
-                (-20, 4)
-            )
+        store
+            .invoke_typed_without_fuel(unsigned_division, (-20, 4))
             .unwrap()
     );
 }
@@ -305,15 +238,18 @@ pub fn i32_division_unsigned_panic_dividend_0() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let (mut instance, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut store = Store::new(());
+    let module = store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
 
-    let result = instance.invoke_typed::<(i32, i32), i32>(
-        instance
-            .get_function_by_name(DEFAULT_MODULE, "unsigned_division")
-            .unwrap(),
-        (222, 0),
-    );
+    let unsigned_division = store
+        .instance_export(module, "unsigned_division")
+        .unwrap()
+        .as_func()
+        .unwrap();
+
+    let result = store.invoke_typed_without_fuel::<(i32, i32), i32>(unsigned_division, (222, 0));
 
     assert_eq!(
         result.unwrap_err(),
@@ -330,52 +266,45 @@ pub fn i64_division_signed_simple() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut store = Store::new(());
+    let module = store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
+
+    let signed_division = store
+        .instance_export(module, "signed_division")
+        .unwrap()
+        .as_func()
+        .unwrap();
 
     assert_eq!(
         10_i64,
-        instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (20_i64, 2_i64)
-            )
+        store
+            .invoke_typed_without_fuel(signed_division, (20_i64, 2_i64))
             .unwrap()
     );
     assert_eq!(
         9_001_i64,
-        instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (81_018_001_i64, 9_001_i64)
-            )
+        store
+            .invoke_typed_without_fuel(signed_division, (81_018_001_i64, 9_001_i64))
             .unwrap()
     );
     assert_eq!(
         -10_i64,
-        instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (20_i64, -2_i64)
-            )
+        store
+            .invoke_typed_without_fuel(signed_division, (20_i64, -2_i64))
             .unwrap()
     );
     assert_eq!(
         10_i64,
-        instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (-20_i64, -2_i64)
-            )
+        store
+            .invoke_typed_without_fuel(signed_division, (-20_i64, -2_i64))
             .unwrap()
     );
     assert_eq!(
         -10_i64,
-        instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (-20_i64, 2_i64)
-            )
+        store
+            .invoke_typed_without_fuel(signed_division, (-20_i64, 2_i64))
             .unwrap()
     );
 }

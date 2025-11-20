@@ -1,24 +1,15 @@
-use crate::addrs::GlobalAddr;
-use crate::core::reader::types::global::GlobalType;
-use crate::resumable::{ResumableRef, RunState};
-use alloc::borrow::{Cow, ToOwned};
 use alloc::vec::Vec;
 
 use const_interpreter_loop::run_const_span;
-use store::addrs::{FuncAddr, ModuleAddr};
-use store::ExternVal;
 use store::HaltExecutionError;
 use value_stack::Stack;
 
-use crate::core::reader::types::{FuncType, ResultType};
 use crate::execution::assert_validated::UnwrapValidatedExt;
-use crate::execution::config::Config;
-use crate::execution::store::Store;
 use crate::execution::value::Value;
 use crate::interop::InteropValueList;
-use crate::{RuntimeError, ValidationInfo};
 
 pub(crate) mod assert_validated;
+pub mod checked;
 pub mod config;
 pub mod const_interpreter_loop;
 pub mod error;
@@ -26,255 +17,17 @@ pub mod interop;
 mod interpreter_loop;
 pub mod linker;
 pub(crate) mod little_endian;
-pub mod registry;
 pub mod resumable;
 pub mod store;
 pub mod value;
 pub mod value_stack;
-
-/// The default module name if a [RuntimeInstance] was created using [RuntimeInstance::new].
-pub const DEFAULT_MODULE: &str = "__interpreter_default__";
-
-pub struct RuntimeInstance<'b, T: Config = ()> {
-    pub store: Store<'b, T>,
-}
-
-impl<T: Config + Default> Default for RuntimeInstance<'_, T> {
-    fn default() -> Self {
-        Self::new(T::default())
-    }
-}
-
-impl<'b, T: Config> RuntimeInstance<'b, T> {
-    pub fn new(user_data: T) -> Self {
-        RuntimeInstance {
-            store: Store::new(user_data),
-        }
-    }
-
-    // Returns the new [`RuntimeInstance`] and module addr of the default module.
-    pub fn new_with_default_module(
-        user_data: T,
-        validation_info: &'_ ValidationInfo<'b>,
-    ) -> Result<(Self, ModuleAddr), RuntimeError> {
-        let mut instance = Self::new(user_data);
-        let module_addr = instance.add_module(DEFAULT_MODULE, validation_info, None)?;
-        Ok((instance, module_addr))
-    }
-
-    // Returns the new [`RuntimeInstance`] and module addr of the new named module.
-    pub fn new_named(
-        user_data: T,
-        module_name: &str,
-        validation_info: &'_ ValidationInfo<'b>,
-        // store: &mut Store,
-    ) -> Result<(Self, ModuleAddr), RuntimeError> {
-        let mut instance = Self::new(user_data);
-        let module_addr = instance.add_module(module_name, validation_info, None)?;
-        Ok((instance, module_addr))
-    }
-
-    // Returns the module addr. Invocation of the start function is optionally metered if `Some(fuel: u32)` is supplied
-    // to `maybe_fuel` (Returns `RuntimeError::OutOfFuel` in case of fuel depletion).
-    pub fn add_module(
-        &mut self,
-        module_name: &str,
-        validation_info: &'_ ValidationInfo<'b>,
-        maybe_fuel: Option<u32>,
-    ) -> Result<ModuleAddr, RuntimeError> {
-        self.store
-            .add_module(module_name, validation_info, maybe_fuel)
-    }
-
-    pub fn get_module_by_name(&self, module_name: &str) -> Option<ModuleAddr> {
-        // TODO get rid of allocation. this requires a rework of the registry
-        self.store
-            .registry
-            .lookup_module(Cow::Owned(module_name.to_owned()))
-    }
-
-    pub fn get_function_by_name(
-        &self,
-        module_name: &str,
-        function_name: &str,
-    ) -> Result<FuncAddr, RuntimeError> {
-        // TODO get rid of allocation. this requires a rework of the registry
-        self.store
-            .registry
-            .lookup(
-                Cow::Owned(module_name.to_owned()),
-                Cow::Owned(function_name.to_owned()),
-            )?
-            .as_func()
-            .ok_or(RuntimeError::FunctionNotFound)
-    }
-
-    pub fn get_function_by_index(
-        &self,
-        module_addr: ModuleAddr,
-        function_idx: usize,
-    ) -> Result<FuncAddr, RuntimeError> {
-        let module_inst = self.store.modules.get(module_addr);
-        let function = *module_inst
-            .func_addrs
-            .get(function_idx)
-            .ok_or(RuntimeError::FunctionNotFound)?;
-
-        Ok(function)
-    }
-
-    /// Invokes a function with the given parameters of type `Param`, and return types of type `Returns`.
-    pub fn invoke_typed<Params: InteropValueList, Returns: InteropValueList>(
-        &mut self,
-        function: FuncAddr,
-        params: Params,
-        // store: &mut Store,
-    ) -> Result<Returns, RuntimeError> {
-        self.invoke(function, params.into_values())
-            .map(|values| Returns::try_from_values(values.into_iter()).unwrap_validated())
-    }
-
-    /// Invokes a function with the given parameters. The return types depend on the function signature.
-    pub fn invoke(
-        &mut self,
-        function: FuncAddr,
-        params: Vec<Value>,
-    ) -> Result<Vec<Value>, RuntimeError> {
-        self.store
-            .invoke(function, params, None)
-            .map(|run_state| match run_state {
-                RunState::Finished(values) => values,
-                _ => unreachable!("non metered invoke call"),
-            })
-    }
-
-    /// Creates a new resumable, which when resumed for the first time invokes the function `function_ref` is associated
-    /// to, with the arguments `params`. The newly created resumable initially stores `fuel` units of fuel. Returns a
-    /// `[ResumableRef]` associated to the newly created resumable on success.
-    pub fn create_resumable(
-        &self,
-        function: FuncAddr,
-        params: Vec<Value>,
-        fuel: u32,
-    ) -> Result<ResumableRef, RuntimeError> {
-        self.store.create_resumable(function, params, Some(fuel))
-    }
-
-    /// resumes the resumable associated to `resumable_ref`. Returns a `[RunState]` associated to this resumable  if the
-    /// resumable ran out of fuel or completely executed.
-    pub fn resume(&mut self, resumable_ref: ResumableRef) -> Result<RunState, RuntimeError> {
-        self.store.resume(resumable_ref)
-    }
-
-    /// calls its argument `f` with a mutable reference of the fuel of the respective [`ResumableRef`].
-    ///
-    /// Fuel is stored as an [`Option<u32>`], where `None` means that fuel is disabled and `Some(x)` means that `x` units of fuel is left.
-    /// A ubiquitious use of this method would be using `f` to read or mutate the current fuel amount of the respective [`ResumableRef`].
-    /// # Example
-    /// ```
-    /// use wasm::{resumable::RunState, validate, RuntimeInstance};
-    /// let wasm = [ 0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00,
-    ///             0x01, 0x04, 0x01, 0x60, 0x00, 0x00, 0x03, 0x02,
-    ///             0x01, 0x00, 0x07, 0x09, 0x01, 0x05, 0x6c, 0x6f,
-    ///             0x6f, 0x70, 0x73, 0x00, 0x00, 0x0a, 0x09, 0x01,
-    ///             0x07, 0x00, 0x03, 0x40, 0x0c, 0x00, 0x0b, 0x0b ];
-    /// // a simple module with a single function looping forever
-    /// let (mut instance, _module) = RuntimeInstance::new_named((), "module", &validate(&wasm).unwrap()).unwrap();
-    /// let func_addr = instance.get_function_by_name("module", "loops").unwrap();
-    /// let mut resumable_ref = instance.create_resumable(func_addr, vec![], 0).unwrap();
-    /// instance.access_fuel_mut(&mut resumable_ref, |x| { assert_eq!(*x, Some(0)); *x = None; }).unwrap();
-    /// ```
-    pub fn access_fuel_mut<R>(
-        &mut self,
-        resumable_ref: &mut ResumableRef,
-        f: impl FnOnce(&mut Option<u32>) -> R,
-    ) -> Result<R, RuntimeError> {
-        self.store.access_fuel_mut(resumable_ref, f)
-    }
-
-    /// Adds a host function under module namespace `module_name` with name `name`.
-    /// roughly similar to `func_alloc` in <https://webassembly.github.io/spec/core/appendix/embedding.html#functions>
-    /// except the host function is made visible to other modules through these names.
-    pub fn add_host_function_typed<Params: InteropValueList, Returns: InteropValueList>(
-        &mut self,
-        module_name: &str,
-        name: &str,
-        host_func: fn(&mut T, Vec<Value>) -> Result<Vec<Value>, HaltExecutionError>,
-    ) -> Result<FuncAddr, RuntimeError> {
-        let host_func_ty = FuncType {
-            params: ResultType {
-                valtypes: Vec::from(Params::TYS),
-            },
-            returns: ResultType {
-                valtypes: Vec::from(Returns::TYS),
-            },
-        };
-        self.add_host_function(module_name, name, host_func_ty, host_func)
-    }
-
-    pub fn add_host_function(
-        &mut self,
-        module_name: &str,
-        name: &str,
-        host_func_ty: FuncType,
-        host_func: fn(&mut T, Vec<Value>) -> Result<Vec<Value>, HaltExecutionError>,
-    ) -> Result<FuncAddr, RuntimeError> {
-        let function = self.store.func_alloc(host_func_ty, host_func);
-        self.store.registry.register(
-            module_name.to_owned().into(),
-            name.to_owned().into(),
-            store::ExternVal::Func(function),
-        )?;
-        Ok(function)
-    }
-
-    pub fn user_data(&self) -> &T {
-        &self.store.user_data
-    }
-
-    pub fn user_data_mut(&mut self) -> &mut T {
-        &mut self.store.user_data
-    }
-
-    /// Returns the global type of some global instance by its addr.
-    pub fn global_type(&self, global_addr: GlobalAddr) -> GlobalType {
-        self.store.global_type(global_addr)
-    }
-
-    /// Returns the current value of some global instance by its addr.
-    pub fn global_read(&self, global_addr: GlobalAddr) -> Value {
-        self.store.global_read(global_addr)
-    }
-
-    /// Sets a new value of some global instance by its addr.
-    ///
-    /// # Errors
-    /// - [`RuntimeError::WriteOnImmutableGlobal`]
-    /// - [`RuntimeError::GlobalTypeMismatch`]
-    pub fn global_write(
-        &mut self,
-        global_addr: GlobalAddr,
-        val: Value,
-    ) -> Result<(), RuntimeError> {
-        self.store.global_write(global_addr, val)
-    }
-
-    /// Look-up an export by its name and the name of its exporting module.
-    pub fn lookup_export(
-        &self,
-        module_name: Cow<'static, str>,
-        name: Cow<'static, str>,
-    ) -> Result<ExternVal, RuntimeError> {
-        self.store.registry.lookup(module_name, name).copied()
-    }
-}
 
 /// Helper function to quickly construct host functions without worrying about wasm to Rust
 /// type conversion. For reading/writing user data into the current configuration, simply move
 /// `user_data` into the passed closure.
 /// # Example
 /// ```
-/// use wasm::{validate, RuntimeInstance, host_function_wrapper, Value, HaltExecutionError};
+/// use wasm::{validate,  Store, host_function_wrapper, Value, HaltExecutionError};
 /// fn my_wrapped_host_func(user_data: &mut (), params: Vec<Value>) -> Result<Vec<Value>, HaltExecutionError> {
 ///     host_function_wrapper(params, |(x, y): (u32, i32)| -> Result<u32, HaltExecutionError> {
 ///         let _user_data = user_data;
@@ -282,8 +35,8 @@ impl<'b, T: Config> RuntimeInstance<'b, T> {
 ///     })
 /// }
 /// fn main() {
-///     let mut instance = RuntimeInstance::new(());
-///     let foo_bar = instance.add_host_function_typed::<(u32,i32), u32>("foo", "bar", my_wrapped_host_func).unwrap();
+///     let mut store = Store::new(());
+///     let foo_bar = store.func_alloc_typed::<(u32, i32), u32>(my_wrapped_host_func);
 /// }
 /// ```
 pub fn host_function_wrapper<Params: InteropValueList, Results: InteropValueList>(

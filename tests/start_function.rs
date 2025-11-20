@@ -1,11 +1,10 @@
 //! The WASM program stores 42 into linear memory upon instantiation through a start function.
 //! Then it reads the same value and checks its value.
 
-use wasm::DEFAULT_MODULE;
+use wasm::{validate, Store};
+
 #[test_log::test]
 fn start_function() {
-    use wasm::{validate, RuntimeInstance};
-
     let wat = r#"
     (module
         (memory 1)
@@ -25,18 +24,16 @@ fn start_function() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut store = Store::new(());
+    let module = store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
 
-    assert_eq!(
-        42,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "load_num")
-                    .unwrap(),
-                ()
-            )
-            .unwrap()
-    );
+    let load_num = store
+        .instance_export(module, "load_num")
+        .unwrap()
+        .as_func()
+        .unwrap();
+
+    assert_eq!(42, store.invoke_typed_without_fuel(load_num, ()).unwrap());
 }
