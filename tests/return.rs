@@ -24,32 +24,17 @@ fn return_valid() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
+        .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let add = store
-        .instance_export_unchecked(module, "add")
+        .instance_export(module, "add")
         .unwrap()
         .as_func()
         .unwrap();
 
-    assert_eq!(
-        12,
-        store
-            .invoke_typed_without_fuel_unchecked(add, (10, 2))
-            .unwrap()
-    );
-    assert_eq!(
-        2,
-        store
-            .invoke_typed_without_fuel_unchecked(add, (0, 2))
-            .unwrap()
-    );
-    assert_eq!(
-        -4,
-        store
-            .invoke_typed_without_fuel_unchecked(add, (-6, 2))
-            .unwrap()
-    );
+    assert_eq!(12, store.invoke_typed_without_fuel(add, (10, 2)).unwrap());
+    assert_eq!(2, store.invoke_typed_without_fuel(add, (0, 2)).unwrap());
+    assert_eq!(-4, store.invoke_typed_without_fuel(add, (-6, 2)).unwrap());
 }

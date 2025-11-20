@@ -51,189 +51,102 @@ fn table_init_1_test() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
+        .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let test = store
-        .instance_export_unchecked(module, "test")
+        .instance_export(module, "test")
         .unwrap()
         .as_func()
         .unwrap();
     let check = store
-        .instance_export_unchecked(module, "check")
+        .instance_export(module, "check")
         .unwrap()
         .as_func()
         .unwrap();
 
-    store
-        .invoke_typed_without_fuel_unchecked::<(), ()>(test, ())
-        .unwrap();
+    store.invoke_typed_without_fuel::<(), ()>(test, ()).unwrap();
 
     assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 0)
-            .err(),
+        store.invoke_typed_without_fuel::<i32, i32>(check, 0).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 1)
-            .err(),
+        store.invoke_typed_without_fuel::<i32, i32>(check, 1).err(),
+        Some(RuntimeError::Trap(TrapError::UninitializedElement))
+    );
+    assert_eq!(3, store.invoke_typed_without_fuel(check, 2).unwrap());
+    assert_eq!(1, store.invoke_typed_without_fuel(check, 3).unwrap());
+    assert_eq!(4, store.invoke_typed_without_fuel(check, 4).unwrap());
+    assert_eq!(1, store.invoke_typed_without_fuel(check, 5).unwrap());
+    assert_eq!(
+        store.invoke_typed_without_fuel::<i32, i32>(check, 6).err(),
+        Some(RuntimeError::Trap(TrapError::UninitializedElement))
+    );
+    assert_eq!(2, store.invoke_typed_without_fuel(check, 7).unwrap());
+    assert_eq!(7, store.invoke_typed_without_fuel(check, 8).unwrap());
+    assert_eq!(1, store.invoke_typed_without_fuel(check, 9).unwrap());
+    assert_eq!(8, store.invoke_typed_without_fuel(check, 10).unwrap());
+    assert_eq!(
+        store.invoke_typed_without_fuel::<i32, i32>(check, 11).err(),
+        Some(RuntimeError::Trap(TrapError::UninitializedElement))
+    );
+    assert_eq!(7, store.invoke_typed_without_fuel(check, 12).unwrap());
+    assert_eq!(5, store.invoke_typed_without_fuel(check, 13).unwrap());
+    assert_eq!(2, store.invoke_typed_without_fuel(check, 14).unwrap());
+    assert_eq!(3, store.invoke_typed_without_fuel(check, 15).unwrap());
+    assert_eq!(6, store.invoke_typed_without_fuel(check, 16).unwrap());
+    assert_eq!(
+        store.invoke_typed_without_fuel::<i32, i32>(check, 17).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        3,
-        store.invoke_typed_without_fuel_unchecked(check, 2).unwrap()
-    );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel_unchecked(check, 3).unwrap()
-    );
-    assert_eq!(
-        4,
-        store.invoke_typed_without_fuel_unchecked(check, 4).unwrap()
-    );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel_unchecked(check, 5).unwrap()
-    );
-    assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 6)
-            .err(),
+        store.invoke_typed_without_fuel::<i32, i32>(check, 18).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        2,
-        store.invoke_typed_without_fuel_unchecked(check, 7).unwrap()
-    );
-    assert_eq!(
-        7,
-        store.invoke_typed_without_fuel_unchecked(check, 8).unwrap()
-    );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel_unchecked(check, 9).unwrap()
-    );
-    assert_eq!(
-        8,
-        store
-            .invoke_typed_without_fuel_unchecked(check, 10)
-            .unwrap()
-    );
-    assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 11)
-            .err(),
+        store.invoke_typed_without_fuel::<i32, i32>(check, 19).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        7,
-        store
-            .invoke_typed_without_fuel_unchecked(check, 12)
-            .unwrap()
-    );
-    assert_eq!(
-        5,
-        store
-            .invoke_typed_without_fuel_unchecked(check, 13)
-            .unwrap()
-    );
-    assert_eq!(
-        2,
-        store
-            .invoke_typed_without_fuel_unchecked(check, 14)
-            .unwrap()
-    );
-    assert_eq!(
-        3,
-        store
-            .invoke_typed_without_fuel_unchecked(check, 15)
-            .unwrap()
-    );
-    assert_eq!(
-        6,
-        store
-            .invoke_typed_without_fuel_unchecked(check, 16)
-            .unwrap()
-    );
-    assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 17)
-            .err(),
+        store.invoke_typed_without_fuel::<i32, i32>(check, 20).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 18)
-            .err(),
+        store.invoke_typed_without_fuel::<i32, i32>(check, 21).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 19)
-            .err(),
+        store.invoke_typed_without_fuel::<i32, i32>(check, 22).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 20)
-            .err(),
+        store.invoke_typed_without_fuel::<i32, i32>(check, 23).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 21)
-            .err(),
+        store.invoke_typed_without_fuel::<i32, i32>(check, 24).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 22)
-            .err(),
+        store.invoke_typed_without_fuel::<i32, i32>(check, 25).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 23)
-            .err(),
+        store.invoke_typed_without_fuel::<i32, i32>(check, 26).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 24)
-            .err(),
+        store.invoke_typed_without_fuel::<i32, i32>(check, 27).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 25)
-            .err(),
+        store.invoke_typed_without_fuel::<i32, i32>(check, 28).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 26)
-            .err(),
-        Some(RuntimeError::Trap(TrapError::UninitializedElement))
-    );
-    assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 27)
-            .err(),
-        Some(RuntimeError::Trap(TrapError::UninitializedElement))
-    );
-    assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 28)
-            .err(),
-        Some(RuntimeError::Trap(TrapError::UninitializedElement))
-    );
-    assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 29)
-            .err(),
+        store.invoke_typed_without_fuel::<i32, i32>(check, 29).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
 }
@@ -276,195 +189,111 @@ fn table_init_2_test() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
+        .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let test = store
-        .instance_export_unchecked(module, "test")
+        .instance_export(module, "test")
         .unwrap()
         .as_func()
         .unwrap();
     let check = store
-        .instance_export_unchecked(module, "check")
+        .instance_export(module, "check")
         .unwrap()
         .as_func()
         .unwrap();
 
-    store
-        .invoke_typed_without_fuel_unchecked::<(), ()>(test, ())
-        .unwrap();
+    store.invoke_typed_without_fuel::<(), ()>(test, ()).unwrap();
 
     assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 0)
-            .err(),
+        store.invoke_typed_without_fuel::<i32, i32>(check, 0).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 1)
-            .err(),
+        store.invoke_typed_without_fuel::<i32, i32>(check, 1).err(),
+        Some(RuntimeError::Trap(TrapError::UninitializedElement))
+    );
+    assert_eq!(3, store.invoke_typed_without_fuel(check, 2).unwrap());
+    assert_eq!(1, store.invoke_typed_without_fuel(check, 3).unwrap());
+    assert_eq!(4, store.invoke_typed_without_fuel(check, 4).unwrap());
+    assert_eq!(1, store.invoke_typed_without_fuel(check, 5).unwrap());
+    assert_eq!(
+        store.invoke_typed_without_fuel::<i32, i32>(check, 6).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        3,
-        store.invoke_typed_without_fuel_unchecked(check, 2).unwrap()
-    );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel_unchecked(check, 3).unwrap()
-    );
-    assert_eq!(
-        4,
-        store.invoke_typed_without_fuel_unchecked(check, 4).unwrap()
-    );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel_unchecked(check, 5).unwrap()
-    );
-    assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 6)
-            .err(),
+        store.invoke_typed_without_fuel::<i32, i32>(check, 7).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 7)
-            .err(),
+        store.invoke_typed_without_fuel::<i32, i32>(check, 8).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 8)
-            .err(),
+        store.invoke_typed_without_fuel::<i32, i32>(check, 9).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 9)
-            .err(),
+        store.invoke_typed_without_fuel::<i32, i32>(check, 10).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 10)
-            .err(),
+        store.invoke_typed_without_fuel::<i32, i32>(check, 11).err(),
+        Some(RuntimeError::Trap(TrapError::UninitializedElement))
+    );
+    assert_eq!(7, store.invoke_typed_without_fuel(check, 12).unwrap());
+    assert_eq!(5, store.invoke_typed_without_fuel(check, 13).unwrap());
+    assert_eq!(2, store.invoke_typed_without_fuel(check, 14).unwrap());
+    assert_eq!(9, store.invoke_typed_without_fuel(check, 15).unwrap());
+    assert_eq!(2, store.invoke_typed_without_fuel(check, 16).unwrap());
+    assert_eq!(7, store.invoke_typed_without_fuel(check, 17).unwrap());
+    assert_eq!(
+        store.invoke_typed_without_fuel::<i32, i32>(check, 18).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 11)
-            .err(),
+        store.invoke_typed_without_fuel::<i32, i32>(check, 19).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        7,
-        store
-            .invoke_typed_without_fuel_unchecked(check, 12)
-            .unwrap()
-    );
-    assert_eq!(
-        5,
-        store
-            .invoke_typed_without_fuel_unchecked(check, 13)
-            .unwrap()
-    );
-    assert_eq!(
-        2,
-        store
-            .invoke_typed_without_fuel_unchecked(check, 14)
-            .unwrap()
-    );
-    assert_eq!(
-        9,
-        store
-            .invoke_typed_without_fuel_unchecked(check, 15)
-            .unwrap()
-    );
-    assert_eq!(
-        2,
-        store
-            .invoke_typed_without_fuel_unchecked(check, 16)
-            .unwrap()
-    );
-    assert_eq!(
-        7,
-        store
-            .invoke_typed_without_fuel_unchecked(check, 17)
-            .unwrap()
-    );
-    assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 18)
-            .err(),
+        store.invoke_typed_without_fuel::<i32, i32>(check, 20).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 19)
-            .err(),
+        store.invoke_typed_without_fuel::<i32, i32>(check, 21).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 20)
-            .err(),
+        store.invoke_typed_without_fuel::<i32, i32>(check, 22).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 21)
-            .err(),
+        store.invoke_typed_without_fuel::<i32, i32>(check, 23).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 22)
-            .err(),
+        store.invoke_typed_without_fuel::<i32, i32>(check, 24).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 23)
-            .err(),
+        store.invoke_typed_without_fuel::<i32, i32>(check, 25).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 24)
-            .err(),
+        store.invoke_typed_without_fuel::<i32, i32>(check, 26).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 25)
-            .err(),
+        store.invoke_typed_without_fuel::<i32, i32>(check, 27).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 26)
-            .err(),
+        store.invoke_typed_without_fuel::<i32, i32>(check, 28).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 27)
-            .err(),
-        Some(RuntimeError::Trap(TrapError::UninitializedElement))
-    );
-    assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 28)
-            .err(),
-        Some(RuntimeError::Trap(TrapError::UninitializedElement))
-    );
-    assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 29)
-            .err(),
+        store.invoke_typed_without_fuel::<i32, i32>(check, 29).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
 }
@@ -511,189 +340,90 @@ fn table_init_3_test() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
+        .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let test = store
-        .instance_export_unchecked(module, "test")
+        .instance_export(module, "test")
         .unwrap()
         .as_func()
         .unwrap();
     let check = store
-        .instance_export_unchecked(module, "check")
+        .instance_export(module, "check")
         .unwrap()
         .as_func()
         .unwrap();
 
-    store
-        .invoke_typed_without_fuel_unchecked::<(), ()>(test, ())
-        .unwrap();
+    store.invoke_typed_without_fuel::<(), ()>(test, ()).unwrap();
 
     assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 0)
-            .err(),
+        store.invoke_typed_without_fuel::<i32, i32>(check, 0).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 1)
-            .err(),
+        store.invoke_typed_without_fuel::<i32, i32>(check, 1).err(),
+        Some(RuntimeError::Trap(TrapError::UninitializedElement))
+    );
+    assert_eq!(3, store.invoke_typed_without_fuel(check, 2).unwrap());
+    assert_eq!(1, store.invoke_typed_without_fuel(check, 3).unwrap());
+    assert_eq!(4, store.invoke_typed_without_fuel(check, 4).unwrap());
+    assert_eq!(1, store.invoke_typed_without_fuel(check, 5).unwrap());
+    assert_eq!(
+        store.invoke_typed_without_fuel::<i32, i32>(check, 6).err(),
+        Some(RuntimeError::Trap(TrapError::UninitializedElement))
+    );
+    assert_eq!(2, store.invoke_typed_without_fuel(check, 7).unwrap());
+    assert_eq!(7, store.invoke_typed_without_fuel(check, 8).unwrap());
+    assert_eq!(1, store.invoke_typed_without_fuel(check, 9).unwrap());
+    assert_eq!(8, store.invoke_typed_without_fuel(check, 10).unwrap());
+    assert_eq!(
+        store.invoke_typed_without_fuel::<i32, i32>(check, 11).err(),
+        Some(RuntimeError::Trap(TrapError::UninitializedElement))
+    );
+    assert_eq!(7, store.invoke_typed_without_fuel(check, 12).unwrap());
+    assert_eq!(
+        store.invoke_typed_without_fuel::<i32, i32>(check, 13).err(),
+        Some(RuntimeError::Trap(TrapError::UninitializedElement))
+    );
+    assert_eq!(7, store.invoke_typed_without_fuel(check, 14).unwrap());
+    assert_eq!(5, store.invoke_typed_without_fuel(check, 15).unwrap());
+    assert_eq!(2, store.invoke_typed_without_fuel(check, 16).unwrap());
+    assert_eq!(7, store.invoke_typed_without_fuel(check, 17).unwrap());
+    assert_eq!(
+        store.invoke_typed_without_fuel::<i32, i32>(check, 18).err(),
+        Some(RuntimeError::Trap(TrapError::UninitializedElement))
+    );
+    assert_eq!(9, store.invoke_typed_without_fuel(check, 19).unwrap());
+    assert_eq!(
+        store.invoke_typed_without_fuel::<i32, i32>(check, 20).err(),
+        Some(RuntimeError::Trap(TrapError::UninitializedElement))
+    );
+    assert_eq!(7, store.invoke_typed_without_fuel(check, 21).unwrap());
+    assert_eq!(
+        store.invoke_typed_without_fuel::<i32, i32>(check, 22).err(),
+        Some(RuntimeError::Trap(TrapError::UninitializedElement))
+    );
+    assert_eq!(8, store.invoke_typed_without_fuel(check, 23).unwrap());
+    assert_eq!(8, store.invoke_typed_without_fuel(check, 24).unwrap());
+    assert_eq!(
+        store.invoke_typed_without_fuel::<i32, i32>(check, 25).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        3,
-        store.invoke_typed_without_fuel_unchecked(check, 2).unwrap()
-    );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel_unchecked(check, 3).unwrap()
-    );
-    assert_eq!(
-        4,
-        store.invoke_typed_without_fuel_unchecked(check, 4).unwrap()
-    );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel_unchecked(check, 5).unwrap()
-    );
-    assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 6)
-            .err(),
+        store.invoke_typed_without_fuel::<i32, i32>(check, 26).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        2,
-        store.invoke_typed_without_fuel_unchecked(check, 7).unwrap()
-    );
-    assert_eq!(
-        7,
-        store.invoke_typed_without_fuel_unchecked(check, 8).unwrap()
-    );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel_unchecked(check, 9).unwrap()
-    );
-    assert_eq!(
-        8,
-        store
-            .invoke_typed_without_fuel_unchecked(check, 10)
-            .unwrap()
-    );
-    assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 11)
-            .err(),
+        store.invoke_typed_without_fuel::<i32, i32>(check, 27).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        7,
-        store
-            .invoke_typed_without_fuel_unchecked(check, 12)
-            .unwrap()
-    );
-    assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 13)
-            .err(),
+        store.invoke_typed_without_fuel::<i32, i32>(check, 28).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        7,
-        store
-            .invoke_typed_without_fuel_unchecked(check, 14)
-            .unwrap()
-    );
-    assert_eq!(
-        5,
-        store
-            .invoke_typed_without_fuel_unchecked(check, 15)
-            .unwrap()
-    );
-    assert_eq!(
-        2,
-        store
-            .invoke_typed_without_fuel_unchecked(check, 16)
-            .unwrap()
-    );
-    assert_eq!(
-        7,
-        store
-            .invoke_typed_without_fuel_unchecked(check, 17)
-            .unwrap()
-    );
-    assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 18)
-            .err(),
-        Some(RuntimeError::Trap(TrapError::UninitializedElement))
-    );
-    assert_eq!(
-        9,
-        store
-            .invoke_typed_without_fuel_unchecked(check, 19)
-            .unwrap()
-    );
-    assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 20)
-            .err(),
-        Some(RuntimeError::Trap(TrapError::UninitializedElement))
-    );
-    assert_eq!(
-        7,
-        store
-            .invoke_typed_without_fuel_unchecked(check, 21)
-            .unwrap()
-    );
-    assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 22)
-            .err(),
-        Some(RuntimeError::Trap(TrapError::UninitializedElement))
-    );
-    assert_eq!(
-        8,
-        store
-            .invoke_typed_without_fuel_unchecked(check, 23)
-            .unwrap()
-    );
-    assert_eq!(
-        8,
-        store
-            .invoke_typed_without_fuel_unchecked(check, 24)
-            .unwrap()
-    );
-    assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 25)
-            .err(),
-        Some(RuntimeError::Trap(TrapError::UninitializedElement))
-    );
-    assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 26)
-            .err(),
-        Some(RuntimeError::Trap(TrapError::UninitializedElement))
-    );
-    assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 27)
-            .err(),
-        Some(RuntimeError::Trap(TrapError::UninitializedElement))
-    );
-    assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 28)
-            .err(),
-        Some(RuntimeError::Trap(TrapError::UninitializedElement))
-    );
-    assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 29)
-            .err(),
+        store.invoke_typed_without_fuel::<i32, i32>(check, 29).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
 }
@@ -732,197 +462,113 @@ fn table_init_4_test() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
+        .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let test = store
-        .instance_export_unchecked(module, "test")
+        .instance_export(module, "test")
         .unwrap()
         .as_func()
         .unwrap();
     let check = store
-        .instance_export_unchecked(module, "check")
+        .instance_export(module, "check")
         .unwrap()
         .as_func()
         .unwrap();
 
-    store
-        .invoke_typed_without_fuel_unchecked::<(), ()>(test, ())
-        .unwrap();
+    store.invoke_typed_without_fuel::<(), ()>(test, ()).unwrap();
 
     // println!("{:#?}", i.modules[0].store.tables[1]);
 
     assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 0)
-            .err(),
+        store.invoke_typed_without_fuel::<i32, i32>(check, 0).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 1)
-            .err(),
+        store.invoke_typed_without_fuel::<i32, i32>(check, 1).err(),
+        Some(RuntimeError::Trap(TrapError::UninitializedElement))
+    );
+    assert_eq!(3, store.invoke_typed_without_fuel(check, 2).unwrap());
+    assert_eq!(1, store.invoke_typed_without_fuel(check, 3).unwrap());
+    assert_eq!(4, store.invoke_typed_without_fuel(check, 4).unwrap());
+    assert_eq!(1, store.invoke_typed_without_fuel(check, 5).unwrap());
+    assert_eq!(
+        store.invoke_typed_without_fuel::<i32, i32>(check, 6).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        3,
-        store.invoke_typed_without_fuel_unchecked(check, 2).unwrap()
-    );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel_unchecked(check, 3).unwrap()
-    );
-    assert_eq!(
-        4,
-        store.invoke_typed_without_fuel_unchecked(check, 4).unwrap()
-    );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel_unchecked(check, 5).unwrap()
-    );
-    assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 6)
-            .err(),
+        store.invoke_typed_without_fuel::<i32, i32>(check, 7).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 7)
-            .err(),
+        store.invoke_typed_without_fuel::<i32, i32>(check, 8).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 8)
-            .err(),
+        store.invoke_typed_without_fuel::<i32, i32>(check, 9).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 9)
-            .err(),
+        store.invoke_typed_without_fuel::<i32, i32>(check, 10).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 10)
-            .err(),
+        store.invoke_typed_without_fuel::<i32, i32>(check, 11).err(),
+        Some(RuntimeError::Trap(TrapError::UninitializedElement))
+    );
+    assert_eq!(7, store.invoke_typed_without_fuel(check, 12).unwrap());
+    assert_eq!(5, store.invoke_typed_without_fuel(check, 13).unwrap());
+    assert_eq!(2, store.invoke_typed_without_fuel(check, 14).unwrap());
+    assert_eq!(9, store.invoke_typed_without_fuel(check, 15).unwrap());
+    assert_eq!(2, store.invoke_typed_without_fuel(check, 16).unwrap());
+    assert_eq!(7, store.invoke_typed_without_fuel(check, 17).unwrap());
+    assert_eq!(
+        store.invoke_typed_without_fuel::<i32, i32>(check, 18).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 11)
-            .err(),
+        store.invoke_typed_without_fuel::<i32, i32>(check, 19).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        7,
-        store
-            .invoke_typed_without_fuel_unchecked(check, 12)
-            .unwrap()
-    );
-    assert_eq!(
-        5,
-        store
-            .invoke_typed_without_fuel_unchecked(check, 13)
-            .unwrap()
-    );
-    assert_eq!(
-        2,
-        store
-            .invoke_typed_without_fuel_unchecked(check, 14)
-            .unwrap()
-    );
-    assert_eq!(
-        9,
-        store
-            .invoke_typed_without_fuel_unchecked(check, 15)
-            .unwrap()
-    );
-    assert_eq!(
-        2,
-        store
-            .invoke_typed_without_fuel_unchecked(check, 16)
-            .unwrap()
-    );
-    assert_eq!(
-        7,
-        store
-            .invoke_typed_without_fuel_unchecked(check, 17)
-            .unwrap()
-    );
-    assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 18)
-            .err(),
+        store.invoke_typed_without_fuel::<i32, i32>(check, 20).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 19)
-            .err(),
+        store.invoke_typed_without_fuel::<i32, i32>(check, 21).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 20)
-            .err(),
+        store.invoke_typed_without_fuel::<i32, i32>(check, 22).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 21)
-            .err(),
+        store.invoke_typed_without_fuel::<i32, i32>(check, 23).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 22)
-            .err(),
+        store.invoke_typed_without_fuel::<i32, i32>(check, 24).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 23)
-            .err(),
+        store.invoke_typed_without_fuel::<i32, i32>(check, 25).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 24)
-            .err(),
+        store.invoke_typed_without_fuel::<i32, i32>(check, 26).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 25)
-            .err(),
+        store.invoke_typed_without_fuel::<i32, i32>(check, 27).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 26)
-            .err(),
+        store.invoke_typed_without_fuel::<i32, i32>(check, 28).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 27)
-            .err(),
-        Some(RuntimeError::Trap(TrapError::UninitializedElement))
-    );
-    assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 28)
-            .err(),
-        Some(RuntimeError::Trap(TrapError::UninitializedElement))
-    );
-    assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 29)
-            .err(),
+        store.invoke_typed_without_fuel::<i32, i32>(check, 29).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
 }
@@ -969,189 +615,90 @@ fn table_init_5_test() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
+        .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let test = store
-        .instance_export_unchecked(module, "test")
+        .instance_export(module, "test")
         .unwrap()
         .as_func()
         .unwrap();
     let check = store
-        .instance_export_unchecked(module, "check")
+        .instance_export(module, "check")
         .unwrap()
         .as_func()
         .unwrap();
 
-    store
-        .invoke_typed_without_fuel_unchecked::<(), ()>(test, ())
-        .unwrap();
+    store.invoke_typed_without_fuel::<(), ()>(test, ()).unwrap();
 
     assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 0)
-            .err(),
+        store.invoke_typed_without_fuel::<i32, i32>(check, 0).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 1)
-            .err(),
+        store.invoke_typed_without_fuel::<i32, i32>(check, 1).err(),
+        Some(RuntimeError::Trap(TrapError::UninitializedElement))
+    );
+    assert_eq!(3, store.invoke_typed_without_fuel(check, 2).unwrap());
+    assert_eq!(1, store.invoke_typed_without_fuel(check, 3).unwrap());
+    assert_eq!(4, store.invoke_typed_without_fuel(check, 4).unwrap());
+    assert_eq!(1, store.invoke_typed_without_fuel(check, 5).unwrap());
+    assert_eq!(
+        store.invoke_typed_without_fuel::<i32, i32>(check, 6).err(),
+        Some(RuntimeError::Trap(TrapError::UninitializedElement))
+    );
+    assert_eq!(2, store.invoke_typed_without_fuel(check, 7).unwrap());
+    assert_eq!(7, store.invoke_typed_without_fuel(check, 8).unwrap());
+    assert_eq!(1, store.invoke_typed_without_fuel(check, 9).unwrap());
+    assert_eq!(8, store.invoke_typed_without_fuel(check, 10).unwrap());
+    assert_eq!(
+        store.invoke_typed_without_fuel::<i32, i32>(check, 11).err(),
+        Some(RuntimeError::Trap(TrapError::UninitializedElement))
+    );
+    assert_eq!(7, store.invoke_typed_without_fuel(check, 12).unwrap());
+    assert_eq!(
+        store.invoke_typed_without_fuel::<i32, i32>(check, 13).err(),
+        Some(RuntimeError::Trap(TrapError::UninitializedElement))
+    );
+    assert_eq!(7, store.invoke_typed_without_fuel(check, 14).unwrap());
+    assert_eq!(5, store.invoke_typed_without_fuel(check, 15).unwrap());
+    assert_eq!(2, store.invoke_typed_without_fuel(check, 16).unwrap());
+    assert_eq!(7, store.invoke_typed_without_fuel(check, 17).unwrap());
+    assert_eq!(
+        store.invoke_typed_without_fuel::<i32, i32>(check, 18).err(),
+        Some(RuntimeError::Trap(TrapError::UninitializedElement))
+    );
+    assert_eq!(9, store.invoke_typed_without_fuel(check, 19).unwrap());
+    assert_eq!(
+        store.invoke_typed_without_fuel::<i32, i32>(check, 20).err(),
+        Some(RuntimeError::Trap(TrapError::UninitializedElement))
+    );
+    assert_eq!(7, store.invoke_typed_without_fuel(check, 21).unwrap());
+    assert_eq!(
+        store.invoke_typed_without_fuel::<i32, i32>(check, 22).err(),
+        Some(RuntimeError::Trap(TrapError::UninitializedElement))
+    );
+    assert_eq!(8, store.invoke_typed_without_fuel(check, 23).unwrap());
+    assert_eq!(8, store.invoke_typed_without_fuel(check, 24).unwrap());
+    assert_eq!(
+        store.invoke_typed_without_fuel::<i32, i32>(check, 25).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        3,
-        store.invoke_typed_without_fuel_unchecked(check, 2).unwrap()
-    );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel_unchecked(check, 3).unwrap()
-    );
-    assert_eq!(
-        4,
-        store.invoke_typed_without_fuel_unchecked(check, 4).unwrap()
-    );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel_unchecked(check, 5).unwrap()
-    );
-    assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 6)
-            .err(),
+        store.invoke_typed_without_fuel::<i32, i32>(check, 26).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        2,
-        store.invoke_typed_without_fuel_unchecked(check, 7).unwrap()
-    );
-    assert_eq!(
-        7,
-        store.invoke_typed_without_fuel_unchecked(check, 8).unwrap()
-    );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel_unchecked(check, 9).unwrap()
-    );
-    assert_eq!(
-        8,
-        store
-            .invoke_typed_without_fuel_unchecked(check, 10)
-            .unwrap()
-    );
-    assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 11)
-            .err(),
+        store.invoke_typed_without_fuel::<i32, i32>(check, 27).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        7,
-        store
-            .invoke_typed_without_fuel_unchecked(check, 12)
-            .unwrap()
-    );
-    assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 13)
-            .err(),
+        store.invoke_typed_without_fuel::<i32, i32>(check, 28).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
     assert_eq!(
-        7,
-        store
-            .invoke_typed_without_fuel_unchecked(check, 14)
-            .unwrap()
-    );
-    assert_eq!(
-        5,
-        store
-            .invoke_typed_without_fuel_unchecked(check, 15)
-            .unwrap()
-    );
-    assert_eq!(
-        2,
-        store
-            .invoke_typed_without_fuel_unchecked(check, 16)
-            .unwrap()
-    );
-    assert_eq!(
-        7,
-        store
-            .invoke_typed_without_fuel_unchecked(check, 17)
-            .unwrap()
-    );
-    assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 18)
-            .err(),
-        Some(RuntimeError::Trap(TrapError::UninitializedElement))
-    );
-    assert_eq!(
-        9,
-        store
-            .invoke_typed_without_fuel_unchecked(check, 19)
-            .unwrap()
-    );
-    assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 20)
-            .err(),
-        Some(RuntimeError::Trap(TrapError::UninitializedElement))
-    );
-    assert_eq!(
-        7,
-        store
-            .invoke_typed_without_fuel_unchecked(check, 21)
-            .unwrap()
-    );
-    assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 22)
-            .err(),
-        Some(RuntimeError::Trap(TrapError::UninitializedElement))
-    );
-    assert_eq!(
-        8,
-        store
-            .invoke_typed_without_fuel_unchecked(check, 23)
-            .unwrap()
-    );
-    assert_eq!(
-        8,
-        store
-            .invoke_typed_without_fuel_unchecked(check, 24)
-            .unwrap()
-    );
-    assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 25)
-            .err(),
-        Some(RuntimeError::Trap(TrapError::UninitializedElement))
-    );
-    assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 26)
-            .err(),
-        Some(RuntimeError::Trap(TrapError::UninitializedElement))
-    );
-    assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 27)
-            .err(),
-        Some(RuntimeError::Trap(TrapError::UninitializedElement))
-    );
-    assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 28)
-            .err(),
-        Some(RuntimeError::Trap(TrapError::UninitializedElement))
-    );
-    assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<i32, i32>(check, 29)
-            .err(),
+        store.invoke_typed_without_fuel::<i32, i32>(check, 29).err(),
         Some(RuntimeError::Trap(TrapError::UninitializedElement))
     );
 }
@@ -1251,19 +798,17 @@ fn table_init_10_test() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
+        .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let test = store
-        .instance_export_unchecked(module, "test")
+        .instance_export(module, "test")
         .unwrap()
         .as_func()
         .unwrap();
 
-    store
-        .invoke_typed_without_fuel_unchecked::<(), ()>(test, ())
-        .unwrap();
+    store.invoke_typed_without_fuel::<(), ()>(test, ()).unwrap();
 }
 
 #[test_log::test]
@@ -1297,20 +842,18 @@ fn table_init_11_test() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
+        .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let test = store
-        .instance_export_unchecked(module, "test")
+        .instance_export(module, "test")
         .unwrap()
         .as_func()
         .unwrap();
 
     assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<(), ()>(test, ())
-            .err(),
+        store.invoke_typed_without_fuel::<(), ()>(test, ()).err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
         ))
@@ -1348,19 +891,17 @@ fn table_init_12_test() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
+        .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let test = store
-        .instance_export_unchecked(module, "test")
+        .instance_export(module, "test")
         .unwrap()
         .as_func()
         .unwrap();
 
-    store
-        .invoke_typed_without_fuel_unchecked::<(), ()>(test, ())
-        .unwrap();
+    store.invoke_typed_without_fuel::<(), ()>(test, ()).unwrap();
 }
 
 #[test_log::test]
@@ -1394,19 +935,17 @@ fn table_init_13_test() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
+        .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let test = store
-        .instance_export_unchecked(module, "test")
+        .instance_export(module, "test")
         .unwrap()
         .as_func()
         .unwrap();
 
-    store
-        .invoke_typed_without_fuel_unchecked::<(), ()>(test, ())
-        .unwrap();
+    store.invoke_typed_without_fuel::<(), ()>(test, ()).unwrap();
 }
 
 #[test_log::test]
@@ -1440,20 +979,18 @@ fn table_init_14_test() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
+        .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let test = store
-        .instance_export_unchecked(module, "test")
+        .instance_export(module, "test")
         .unwrap()
         .as_func()
         .unwrap();
 
     assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<(), ()>(test, ())
-            .err(),
+        store.invoke_typed_without_fuel::<(), ()>(test, ()).err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
         ))
@@ -1491,20 +1028,18 @@ fn table_init_15_test() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
+        .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let test = store
-        .instance_export_unchecked(module, "test")
+        .instance_export(module, "test")
         .unwrap()
         .as_func()
         .unwrap();
 
     assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<(), ()>(test, ())
-            .err(),
+        store.invoke_typed_without_fuel::<(), ()>(test, ()).err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
         ))
@@ -1542,20 +1077,18 @@ fn table_init_16_test() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
+        .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let test = store
-        .instance_export_unchecked(module, "test")
+        .instance_export(module, "test")
         .unwrap()
         .as_func()
         .unwrap();
 
     assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<(), ()>(test, ())
-            .err(),
+        store.invoke_typed_without_fuel::<(), ()>(test, ()).err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
         ))
@@ -1593,20 +1126,18 @@ fn table_init_17_test() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
+        .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let test = store
-        .instance_export_unchecked(module, "test")
+        .instance_export(module, "test")
         .unwrap()
         .as_func()
         .unwrap();
 
     assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<(), ()>(test, ())
-            .err(),
+        store.invoke_typed_without_fuel::<(), ()>(test, ()).err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
         ))
@@ -1644,19 +1175,17 @@ fn table_init_18_test() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
+        .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let test = store
-        .instance_export_unchecked(module, "test")
+        .instance_export(module, "test")
         .unwrap()
         .as_func()
         .unwrap();
 
-    store
-        .invoke_typed_without_fuel_unchecked::<(), ()>(test, ())
-        .unwrap();
+    store.invoke_typed_without_fuel::<(), ()>(test, ()).unwrap();
 }
 
 #[test_log::test]
@@ -1690,20 +1219,18 @@ fn table_init_19_test() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
+        .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let test = store
-        .instance_export_unchecked(module, "test")
+        .instance_export(module, "test")
         .unwrap()
         .as_func()
         .unwrap();
 
     assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<(), ()>(test, ())
-            .err(),
+        store.invoke_typed_without_fuel::<(), ()>(test, ()).err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
         ))
@@ -1741,19 +1268,17 @@ fn table_init_20_test() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
+        .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let test = store
-        .instance_export_unchecked(module, "test")
+        .instance_export(module, "test")
         .unwrap()
         .as_func()
         .unwrap();
 
-    store
-        .invoke_typed_without_fuel_unchecked::<(), ()>(test, ())
-        .unwrap();
+    store.invoke_typed_without_fuel::<(), ()>(test, ()).unwrap();
 }
 
 #[test_log::test]
@@ -1787,20 +1312,18 @@ fn table_init_21_test() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
+        .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let test = store
-        .instance_export_unchecked(module, "test")
+        .instance_export(module, "test")
         .unwrap()
         .as_func()
         .unwrap();
 
     assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<(), ()>(test, ())
-            .err(),
+        store.invoke_typed_without_fuel::<(), ()>(test, ()).err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
         ))
@@ -1838,19 +1361,17 @@ fn table_init_22_test() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
+        .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let test = store
-        .instance_export_unchecked(module, "test")
+        .instance_export(module, "test")
         .unwrap()
         .as_func()
         .unwrap();
 
-    store
-        .invoke_typed_without_fuel_unchecked::<(), ()>(test, ())
-        .unwrap();
+    store.invoke_typed_without_fuel::<(), ()>(test, ()).unwrap();
 }
 
 #[test_log::test]
@@ -1884,20 +1405,18 @@ fn table_init_23_test() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
+        .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let test = store
-        .instance_export_unchecked(module, "test")
+        .instance_export(module, "test")
         .unwrap()
         .as_func()
         .unwrap();
 
     assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<(), ()>(test, ())
-            .err(),
+        store.invoke_typed_without_fuel::<(), ()>(test, ()).err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
         ))
@@ -1935,20 +1454,18 @@ fn table_init_24_test() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
+        .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let test = store
-        .instance_export_unchecked(module, "test")
+        .instance_export(module, "test")
         .unwrap()
         .as_func()
         .unwrap();
 
     assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<(), ()>(test, ())
-            .err(),
+        store.invoke_typed_without_fuel::<(), ()>(test, ()).err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
         ))
@@ -1986,19 +1503,17 @@ fn table_init_25_test() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
+        .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let test = store
-        .instance_export_unchecked(module, "test")
+        .instance_export(module, "test")
         .unwrap()
         .as_func()
         .unwrap();
 
-    store
-        .invoke_typed_without_fuel_unchecked::<(), ()>(test, ())
-        .unwrap();
+    store.invoke_typed_without_fuel::<(), ()>(test, ()).unwrap();
 }
 
 #[test_log::test]
@@ -2032,20 +1547,18 @@ fn table_init_26_test() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
+        .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let test = store
-        .instance_export_unchecked(module, "test")
+        .instance_export(module, "test")
         .unwrap()
         .as_func()
         .unwrap();
 
     assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<(), ()>(test, ())
-            .err(),
+        store.invoke_typed_without_fuel::<(), ()>(test, ()).err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
         ))
@@ -2083,19 +1596,17 @@ fn table_init_27_test() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
+        .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let test = store
-        .instance_export_unchecked(module, "test")
+        .instance_export(module, "test")
         .unwrap()
         .as_func()
         .unwrap();
 
-    store
-        .invoke_typed_without_fuel_unchecked::<(), ()>(test, ())
-        .unwrap();
+    store.invoke_typed_without_fuel::<(), ()>(test, ()).unwrap();
 }
 
 #[test_log::test]
@@ -2129,20 +1640,18 @@ fn table_init_28_test() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
+        .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let test = store
-        .instance_export_unchecked(module, "test")
+        .instance_export(module, "test")
         .unwrap()
         .as_func()
         .unwrap();
 
     assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<(), ()>(test, ())
-            .err(),
+        store.invoke_typed_without_fuel::<(), ()>(test, ()).err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
         ))
@@ -2180,19 +1689,17 @@ fn table_init_29_test() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
+        .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let test = store
-        .instance_export_unchecked(module, "test")
+        .instance_export(module, "test")
         .unwrap()
         .as_func()
         .unwrap();
 
-    store
-        .invoke_typed_without_fuel_unchecked::<(), ()>(test, ())
-        .unwrap();
+    store.invoke_typed_without_fuel::<(), ()>(test, ()).unwrap();
 }
 
 #[test_log::test]
@@ -2226,20 +1733,18 @@ fn table_init_30_test() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
+        .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let test = store
-        .instance_export_unchecked(module, "test")
+        .instance_export(module, "test")
         .unwrap()
         .as_func()
         .unwrap();
 
     assert_eq!(
-        store
-            .invoke_typed_without_fuel_unchecked::<(), ()>(test, ())
-            .err(),
+        store.invoke_typed_without_fuel::<(), ()>(test, ()).err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
         ))
@@ -3417,23 +2922,23 @@ fn table_init_94_test() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
+        .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let run = store
-        .instance_export_unchecked(module, "run")
+        .instance_export(module, "run")
         .unwrap()
         .as_func()
         .unwrap();
     let test = store
-        .instance_export_unchecked(module, "test")
+        .instance_export(module, "test")
         .unwrap()
         .as_func()
         .unwrap();
     assert_eq!(
         store
-            .invoke_typed_without_fuel_unchecked::<(i32, i32), ()>(run, (24, 16))
+            .invoke_typed_without_fuel::<(i32, i32), ()>(run, (24, 16))
             .err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
@@ -3441,9 +2946,7 @@ fn table_init_94_test() {
     );
     for i in 0..32 {
         assert_eq!(
-            store
-                .invoke_typed_without_fuel_unchecked::<i32, i32>(test, i)
-                .err(),
+            store.invoke_typed_without_fuel::<i32, i32>(test, i).err(),
             Some(RuntimeError::Trap(TrapError::UninitializedElement))
         );
     }
@@ -3486,23 +2989,23 @@ fn table_init_95_test() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
+        .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let run = store
-        .instance_export_unchecked(module, "run")
+        .instance_export(module, "run")
         .unwrap()
         .as_func()
         .unwrap();
     let test = store
-        .instance_export_unchecked(module, "test")
+        .instance_export(module, "test")
         .unwrap()
         .as_func()
         .unwrap();
     assert_eq!(
         store
-            .invoke_typed_without_fuel_unchecked::<(i32, i32), ()>(run, (25, 16))
+            .invoke_typed_without_fuel::<(i32, i32), ()>(run, (25, 16))
             .err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
@@ -3510,9 +3013,7 @@ fn table_init_95_test() {
     );
     for i in 0..32 {
         assert_eq!(
-            store
-                .invoke_typed_without_fuel_unchecked::<i32, i32>(test, i)
-                .err(),
+            store.invoke_typed_without_fuel::<i32, i32>(test, i).err(),
             Some(RuntimeError::Trap(TrapError::UninitializedElement))
         );
     }
@@ -3555,23 +3056,23 @@ fn table_init_96_test() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
+        .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let run = store
-        .instance_export_unchecked(module, "run")
+        .instance_export(module, "run")
         .unwrap()
         .as_func()
         .unwrap();
     let test = store
-        .instance_export_unchecked(module, "test")
+        .instance_export(module, "test")
         .unwrap()
         .as_func()
         .unwrap();
     assert_eq!(
         store
-            .invoke_typed_without_fuel_unchecked::<(i32, i32), ()>(run, (96, 32))
+            .invoke_typed_without_fuel::<(i32, i32), ()>(run, (96, 32))
             .err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
@@ -3579,9 +3080,7 @@ fn table_init_96_test() {
     );
     for i in 0..160 {
         assert_eq!(
-            store
-                .invoke_typed_without_fuel_unchecked::<i32, i32>(test, i)
-                .err(),
+            store.invoke_typed_without_fuel::<i32, i32>(test, i).err(),
             Some(RuntimeError::Trap(TrapError::UninitializedElement))
         );
     }
@@ -3624,23 +3123,23 @@ fn table_init_97_test() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
+        .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let run = store
-        .instance_export_unchecked(module, "run")
+        .instance_export(module, "run")
         .unwrap()
         .as_func()
         .unwrap();
     let test = store
-        .instance_export_unchecked(module, "test")
+        .instance_export(module, "test")
         .unwrap()
         .as_func()
         .unwrap();
     assert_eq!(
         store
-            .invoke_typed_without_fuel_unchecked::<(i32, i32), ()>(run, (97, 31))
+            .invoke_typed_without_fuel::<(i32, i32), ()>(run, (97, 31))
             .err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
@@ -3648,9 +3147,7 @@ fn table_init_97_test() {
     );
     for i in 0..160 {
         assert_eq!(
-            store
-                .invoke_typed_without_fuel_unchecked::<i32, i32>(test, i)
-                .err(),
+            store.invoke_typed_without_fuel::<i32, i32>(test, i).err(),
             Some(RuntimeError::Trap(TrapError::UninitializedElement))
         );
     }
@@ -3693,24 +3190,24 @@ fn table_init_98_test() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
+        .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let run = store
-        .instance_export_unchecked(module, "run")
+        .instance_export(module, "run")
         .unwrap()
         .as_func()
         .unwrap();
     let test = store
-        .instance_export_unchecked(module, "test")
+        .instance_export(module, "test")
         .unwrap()
         .as_func()
         .unwrap();
 
     assert_eq!(
         store
-            .invoke_typed_without_fuel_unchecked::<(i32, u32), ()>(run, (48, 4294967280_u32))
+            .invoke_typed_without_fuel::<(i32, u32), ()>(run, (48, 4294967280_u32))
             .err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
@@ -3718,9 +3215,7 @@ fn table_init_98_test() {
     );
     for i in 0..64 {
         assert_eq!(
-            store
-                .invoke_typed_without_fuel_unchecked::<i32, i32>(test, i)
-                .err(),
+            store.invoke_typed_without_fuel::<i32, i32>(test, i).err(),
             Some(RuntimeError::Trap(TrapError::UninitializedElement))
         );
     }
@@ -3763,23 +3258,23 @@ fn table_init_99_test() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
+        .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let run = store
-        .instance_export_unchecked(module, "run")
+        .instance_export(module, "run")
         .unwrap()
         .as_func()
         .unwrap();
     let test = store
-        .instance_export_unchecked(module, "test")
+        .instance_export(module, "test")
         .unwrap()
         .as_func()
         .unwrap();
     assert_eq!(
         store
-            .invoke_typed_without_fuel_unchecked::<(i32, i32), ()>(run, (0, 4294967292_u32 as i32))
+            .invoke_typed_without_fuel::<(i32, i32), ()>(run, (0, 4294967292_u32 as i32))
             .err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
@@ -3787,9 +3282,7 @@ fn table_init_99_test() {
     );
     for i in 0..16 {
         assert_eq!(
-            store
-                .invoke_typed_without_fuel_unchecked::<i32, i32>(test, i)
-                .err(),
+            store.invoke_typed_without_fuel::<i32, i32>(test, i).err(),
             Some(RuntimeError::Trap(TrapError::UninitializedElement))
         );
     }
@@ -3826,7 +3319,7 @@ fn table_init_100_test() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
     let _module = store
-        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
+        .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 }

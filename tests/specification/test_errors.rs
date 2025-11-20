@@ -18,8 +18,9 @@
 use std::error::Error;
 
 use wasm::{
-    value::{Ref, F32, F64},
-    RefType, Value,
+    checked::{StoredRef, StoredValue},
+    value::{F32, F64},
+    RefType,
 };
 use wast::core::{AbstractHeapType, HeapType, NanPattern, V128Const, WastRetCore};
 
@@ -29,7 +30,10 @@ pub struct AssertEqError {
     right: String,
 }
 
-pub fn assert_eq(actual: Vec<Value>, expected: Vec<WastRetCore>) -> Result<(), AssertEqError> {
+pub fn assert_eq(
+    actual: Vec<StoredValue>,
+    expected: Vec<WastRetCore>,
+) -> Result<(), AssertEqError> {
     if actual.len() != expected.len() {
         return Err(AssertEqError {
             left: format!("Arr<len: {}>", actual.len()),
@@ -42,11 +46,19 @@ pub fn assert_eq(actual: Vec<Value>, expected: Vec<WastRetCore>) -> Result<(), A
         .zip(expected)
         .try_for_each(|(actual, expected)| {
             let values_equal = match (actual, &expected) {
-                (Value::I32(actual), WastRetCore::I32(expected)) => actual == *expected as u32,
-                (Value::I64(actual), WastRetCore::I64(expected)) => actual == *expected as u64,
-                (Value::F32(actual), WastRetCore::F32(expected)) => match_f32(actual, *expected),
-                (Value::F64(actual), WastRetCore::F64(expected)) => match_f64(actual, *expected),
-                (Value::V128(actual), WastRetCore::V128(expected)) => match expected {
+                (StoredValue::I32(actual), WastRetCore::I32(expected)) => {
+                    actual == *expected as u32
+                }
+                (StoredValue::I64(actual), WastRetCore::I64(expected)) => {
+                    actual == *expected as u64
+                }
+                (StoredValue::F32(actual), WastRetCore::F32(expected)) => {
+                    match_f32(actual, *expected)
+                }
+                (StoredValue::F64(actual), WastRetCore::F64(expected)) => {
+                    match_f64(actual, *expected)
+                }
+                (StoredValue::V128(actual), WastRetCore::V128(expected)) => match expected {
                     wast::core::V128Pattern::I8x16(expected) => {
                         actual == V128Const::I8x16(*expected).to_le_bytes()
                     }
@@ -72,21 +84,21 @@ pub fn assert_eq(actual: Vec<Value>, expected: Vec<WastRetCore>) -> Result<(), A
                         })
                     }
                 },
-                (Value::Ref(Ref::Extern(actual)), WastRetCore::RefExtern(expected)) => {
+                (StoredValue::Ref(StoredRef::Extern(actual)), WastRetCore::RefExtern(expected)) => {
                     Some(actual.0) == expected.map(|x| x as usize)
                 }
-                (Value::Ref(Ref::Func(_actual)), WastRetCore::RefFunc(_expected)) => {
+                (StoredValue::Ref(StoredRef::Func(_actual)), WastRetCore::RefFunc(_expected)) => {
                     todo!("implement funcref types")
                 }
                 (
-                    Value::Ref(Ref::Null(RefType::ExternRef)),
+                    StoredValue::Ref(StoredRef::Null(RefType::ExternRef)),
                     WastRetCore::RefNull(Some(HeapType::Abstract {
                         ty: AbstractHeapType::Extern,
                         ..
                     })),
                 ) => true,
                 (
-                    Value::Ref(Ref::Null(RefType::FuncRef)),
+                    StoredValue::Ref(StoredRef::Null(RefType::FuncRef)),
                     WastRetCore::RefNull(Some(HeapType::Abstract {
                         ty: AbstractHeapType::Func,
                         ..

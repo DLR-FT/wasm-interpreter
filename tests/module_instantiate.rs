@@ -16,7 +16,7 @@ fn use_incorrect_number_of_extern_vals() {
 
     assert_eq!(
         store
-            .module_instantiate_unchecked(&validation_info, Vec::new(), None)
+            .module_instantiate(&validation_info, Vec::new(), None)
             .err(),
         Some(RuntimeError::ExternValsLenMismatch)
     );

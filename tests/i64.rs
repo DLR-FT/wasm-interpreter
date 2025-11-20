@@ -43,22 +43,17 @@ pub fn i64_eqz_panic() {
 
     let mut store = Store::new(());
     let module = store
-        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
+        .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let i64_eqz = store
-        .instance_export_unchecked(module, "i64_eqz")
+        .instance_export(module, "i64_eqz")
         .unwrap()
         .as_func()
         .unwrap();
 
-    assert_eq!(
-        1,
-        store
-            .invoke_typed_without_fuel_unchecked(i64_eqz, ())
-            .unwrap()
-    );
+    assert_eq!(1, store.invoke_typed_without_fuel(i64_eqz, ()).unwrap());
 }
 
 #[test_log::test]
@@ -78,44 +73,34 @@ pub fn i64_eqz() {
 
     let mut store = Store::new(());
     let module = store
-        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
+        .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let i64_eqz = store
-        .instance_export_unchecked(module, "i64_eqz")
+        .instance_export(module, "i64_eqz")
         .unwrap()
         .as_func()
         .unwrap();
 
+    assert_eq!(1, store.invoke_typed_without_fuel(i64_eqz, 0_i64).unwrap());
+    assert_eq!(0, store.invoke_typed_without_fuel(i64_eqz, 1_i64).unwrap());
     assert_eq!(
-        1,
+        0,
         store
-            .invoke_typed_without_fuel_unchecked(i64_eqz, 0_i64)
+            .invoke_typed_without_fuel(i64_eqz, 0x8000000000000000u64 as i64)
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(i64_eqz, 1_i64)
+            .invoke_typed_without_fuel(i64_eqz, 0x7fffffffffffffffu64 as i64)
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(i64_eqz, 0x8000000000000000u64 as i64)
-            .unwrap()
-    );
-    assert_eq!(
-        0,
-        store
-            .invoke_typed_without_fuel_unchecked(i64_eqz, 0x7fffffffffffffffu64 as i64)
-            .unwrap()
-    );
-    assert_eq!(
-        0,
-        store
-            .invoke_typed_without_fuel_unchecked(i64_eqz, 0xffffffffffffffffu64 as i64)
+            .invoke_typed_without_fuel(i64_eqz, 0xffffffffffffffffu64 as i64)
             .unwrap()
     );
 }
@@ -139,22 +124,17 @@ pub fn i64_eq_panic_first_arg() {
 
     let mut store = Store::new(());
     let module = store
-        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
+        .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let i64_eq = store
-        .instance_export_unchecked(module, "i64_eq")
+        .instance_export(module, "i64_eq")
         .unwrap()
         .as_func()
         .unwrap();
 
-    assert_eq!(
-        1,
-        store
-            .invoke_typed_without_fuel_unchecked(i64_eq, ())
-            .unwrap()
-    );
+    assert_eq!(1, store.invoke_typed_without_fuel(i64_eq, ()).unwrap());
 }
 
 #[should_panic]
@@ -176,22 +156,17 @@ pub fn i64_eq_panic_second_arg() {
 
     let mut store = Store::new(());
     let module = store
-        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
+        .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let i64_eq = store
-        .instance_export_unchecked(module, "i64_eq")
+        .instance_export(module, "i64_eq")
         .unwrap()
         .as_func()
         .unwrap();
 
-    assert_eq!(
-        1,
-        store
-            .invoke_typed_without_fuel_unchecked(i64_eq, ())
-            .unwrap()
-    );
+    assert_eq!(1, store.invoke_typed_without_fuel(i64_eq, ()).unwrap());
 }
 
 /// A function to test the i64.eq implementation using the [WASM TestSuite](https://github.com/WebAssembly/testsuite/blob/5741d6c5172866174fde27c6b5447af757528d1a/i64.wast#L304)
@@ -202,12 +177,12 @@ pub fn i64_eq() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
+        .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export_unchecked(module, "i64_eq")
+        .instance_export(module, "i64_eq")
         .unwrap()
         .as_func()
         .unwrap();
@@ -215,25 +190,25 @@ pub fn i64_eq() {
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(function, (0_i64, 0_i64))
+            .invoke_typed_without_fuel(function, (0_i64, 0_i64))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(function, (1_i64, 1_i64))
+            .invoke_typed_without_fuel(function, (1_i64, 1_i64))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(function, (-1_i64, 1_i64))
+            .invoke_typed_without_fuel(function, (-1_i64, 1_i64))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(
+            .invoke_typed_without_fuel(
                 function,
                 (0x8000000000000000u64 as i64, 0x8000000000000000u64 as i64)
             )
@@ -242,7 +217,7 @@ pub fn i64_eq() {
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(
+            .invoke_typed_without_fuel(
                 function,
                 (0x7fffffffffffffffu64 as i64, 0x7fffffffffffffffu64 as i64)
             )
@@ -251,49 +226,49 @@ pub fn i64_eq() {
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(function, (-1_i64, -1_i64))
+            .invoke_typed_without_fuel(function, (-1_i64, -1_i64))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(function, (1_i64, 0_i64))
+            .invoke_typed_without_fuel(function, (1_i64, 0_i64))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(function, (0_i64, 1_i64))
+            .invoke_typed_without_fuel(function, (0_i64, 1_i64))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(function, (0x8000000000000000u64 as i64, 0_i64))
+            .invoke_typed_without_fuel(function, (0x8000000000000000u64 as i64, 0_i64))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(function, (0_i64, 0x8000000000000000u64 as i64))
+            .invoke_typed_without_fuel(function, (0_i64, 0x8000000000000000u64 as i64))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(function, (0x8000000000000000u64 as i64, -1_i64))
+            .invoke_typed_without_fuel(function, (0x8000000000000000u64 as i64, -1_i64))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(function, (-1_i64, 0x8000000000000000u64 as i64))
+            .invoke_typed_without_fuel(function, (-1_i64, 0x8000000000000000u64 as i64))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(
+            .invoke_typed_without_fuel(
                 function,
                 (0x8000000000000000u64 as i64, 0x7fffffffffffffffu64 as i64)
             )
@@ -302,7 +277,7 @@ pub fn i64_eq() {
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(
+            .invoke_typed_without_fuel(
                 function,
                 (0x7fffffffffffffffu64 as i64, 0x8000000000000000u64 as i64)
             )
@@ -318,12 +293,12 @@ pub fn i64_ne() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
+        .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export_unchecked(module, "i64_ne")
+        .instance_export(module, "i64_ne")
         .unwrap()
         .as_func()
         .unwrap();
@@ -331,25 +306,25 @@ pub fn i64_ne() {
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(function, (0_i64, 0_i64))
+            .invoke_typed_without_fuel(function, (0_i64, 0_i64))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(function, (1_i64, 1_i64))
+            .invoke_typed_without_fuel(function, (1_i64, 1_i64))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(function, (-1_i64, 1_i64))
+            .invoke_typed_without_fuel(function, (-1_i64, 1_i64))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(
+            .invoke_typed_without_fuel(
                 function,
                 (0x8000000000000000u64 as i64, 0x8000000000000000u64 as i64)
             )
@@ -358,7 +333,7 @@ pub fn i64_ne() {
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(
+            .invoke_typed_without_fuel(
                 function,
                 (0x7fffffffffffffffu64 as i64, 0x7fffffffffffffffu64 as i64)
             )
@@ -367,49 +342,49 @@ pub fn i64_ne() {
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(function, (-1_i64, -1_i64))
+            .invoke_typed_without_fuel(function, (-1_i64, -1_i64))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(function, (1_i64, 0_i64))
+            .invoke_typed_without_fuel(function, (1_i64, 0_i64))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(function, (0_i64, 1_i64))
+            .invoke_typed_without_fuel(function, (0_i64, 1_i64))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(function, (0x8000000000000000u64 as i64, 0_i64))
+            .invoke_typed_without_fuel(function, (0x8000000000000000u64 as i64, 0_i64))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(function, (0_i64, 0x8000000000000000u64 as i64))
+            .invoke_typed_without_fuel(function, (0_i64, 0x8000000000000000u64 as i64))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(function, (0x8000000000000000u64 as i64, -1_i64))
+            .invoke_typed_without_fuel(function, (0x8000000000000000u64 as i64, -1_i64))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(function, (-1_i64, 0x8000000000000000u64 as i64))
+            .invoke_typed_without_fuel(function, (-1_i64, 0x8000000000000000u64 as i64))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(
+            .invoke_typed_without_fuel(
                 function,
                 (0x8000000000000000u64 as i64, 0x7fffffffffffffffu64 as i64)
             )
@@ -418,7 +393,7 @@ pub fn i64_ne() {
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(
+            .invoke_typed_without_fuel(
                 function,
                 (0x7fffffffffffffffu64 as i64, 0x8000000000000000u64 as i64)
             )
@@ -434,12 +409,12 @@ pub fn i64_lt_s() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
+        .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export_unchecked(module, "i64_lt_s")
+        .instance_export(module, "i64_lt_s")
         .unwrap()
         .as_func()
         .unwrap();
@@ -447,25 +422,25 @@ pub fn i64_lt_s() {
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(function, (0_i64, 0_i64))
+            .invoke_typed_without_fuel(function, (0_i64, 0_i64))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(function, (1_i64, 1_i64))
+            .invoke_typed_without_fuel(function, (1_i64, 1_i64))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(function, (-1_i64, 1_i64))
+            .invoke_typed_without_fuel(function, (-1_i64, 1_i64))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(
+            .invoke_typed_without_fuel(
                 function,
                 (0x8000000000000000u64 as i64, 0x8000000000000000u64 as i64)
             )
@@ -474,7 +449,7 @@ pub fn i64_lt_s() {
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(
+            .invoke_typed_without_fuel(
                 function,
                 (0x7fffffffffffffffu64 as i64, 0x7fffffffffffffffu64 as i64)
             )
@@ -483,49 +458,49 @@ pub fn i64_lt_s() {
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(function, (-1_i64, -1_i64))
+            .invoke_typed_without_fuel(function, (-1_i64, -1_i64))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(function, (1_i64, 0_i64))
+            .invoke_typed_without_fuel(function, (1_i64, 0_i64))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(function, (0_i64, 1_i64))
+            .invoke_typed_without_fuel(function, (0_i64, 1_i64))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(function, (0x8000000000000000u64 as i64, 0_i64))
+            .invoke_typed_without_fuel(function, (0x8000000000000000u64 as i64, 0_i64))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(function, (0_i64, 0x8000000000000000u64 as i64))
+            .invoke_typed_without_fuel(function, (0_i64, 0x8000000000000000u64 as i64))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(function, (0x8000000000000000u64 as i64, -1_i64))
+            .invoke_typed_without_fuel(function, (0x8000000000000000u64 as i64, -1_i64))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(function, (-1_i64, 0x8000000000000000u64 as i64))
+            .invoke_typed_without_fuel(function, (-1_i64, 0x8000000000000000u64 as i64))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(
+            .invoke_typed_without_fuel(
                 function,
                 (0x8000000000000000u64 as i64, 0x7fffffffffffffffu64 as i64)
             )
@@ -534,7 +509,7 @@ pub fn i64_lt_s() {
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(
+            .invoke_typed_without_fuel(
                 function,
                 (0x7fffffffffffffffu64 as i64, 0x8000000000000000u64 as i64)
             )
@@ -550,12 +525,12 @@ pub fn i64_lt_u() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
+        .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export_unchecked(module, "i64_lt_u")
+        .instance_export(module, "i64_lt_u")
         .unwrap()
         .as_func()
         .unwrap();
@@ -563,25 +538,25 @@ pub fn i64_lt_u() {
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(function, (0_i64, 0_i64))
+            .invoke_typed_without_fuel(function, (0_i64, 0_i64))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(function, (1_i64, 1_i64))
+            .invoke_typed_without_fuel(function, (1_i64, 1_i64))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(function, (-1_i64, 1_i64))
+            .invoke_typed_without_fuel(function, (-1_i64, 1_i64))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(
+            .invoke_typed_without_fuel(
                 function,
                 (0x8000000000000000u64 as i64, 0x8000000000000000u64 as i64)
             )
@@ -590,7 +565,7 @@ pub fn i64_lt_u() {
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(
+            .invoke_typed_without_fuel(
                 function,
                 (0x7fffffffffffffffu64 as i64, 0x7fffffffffffffffu64 as i64)
             )
@@ -599,49 +574,49 @@ pub fn i64_lt_u() {
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(function, (-1_i64, -1_i64))
+            .invoke_typed_without_fuel(function, (-1_i64, -1_i64))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(function, (1_i64, 0_i64))
+            .invoke_typed_without_fuel(function, (1_i64, 0_i64))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(function, (0_i64, 1_i64))
+            .invoke_typed_without_fuel(function, (0_i64, 1_i64))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(function, (0x8000000000000000u64 as i64, 0_i64))
+            .invoke_typed_without_fuel(function, (0x8000000000000000u64 as i64, 0_i64))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(function, (0_i64, 0x8000000000000000u64 as i64))
+            .invoke_typed_without_fuel(function, (0_i64, 0x8000000000000000u64 as i64))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(function, (0x8000000000000000u64 as i64, -1_i64))
+            .invoke_typed_without_fuel(function, (0x8000000000000000u64 as i64, -1_i64))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(function, (-1_i64, 0x8000000000000000u64 as i64))
+            .invoke_typed_without_fuel(function, (-1_i64, 0x8000000000000000u64 as i64))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(
+            .invoke_typed_without_fuel(
                 function,
                 (0x8000000000000000u64 as i64, 0x7fffffffffffffffu64 as i64)
             )
@@ -650,7 +625,7 @@ pub fn i64_lt_u() {
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(
+            .invoke_typed_without_fuel(
                 function,
                 (0x7fffffffffffffffu64 as i64, 0x8000000000000000u64 as i64)
             )
@@ -666,12 +641,12 @@ pub fn i64_gt_s() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
+        .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export_unchecked(module, "i64_gt_s")
+        .instance_export(module, "i64_gt_s")
         .unwrap()
         .as_func()
         .unwrap();
@@ -679,25 +654,25 @@ pub fn i64_gt_s() {
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(function, (0_i64, 0_i64))
+            .invoke_typed_without_fuel(function, (0_i64, 0_i64))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(function, (1_i64, 1_i64))
+            .invoke_typed_without_fuel(function, (1_i64, 1_i64))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(function, (-1_i64, 1_i64))
+            .invoke_typed_without_fuel(function, (-1_i64, 1_i64))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(
+            .invoke_typed_without_fuel(
                 function,
                 (0x8000000000000000u64 as i64, 0x8000000000000000u64 as i64)
             )
@@ -706,7 +681,7 @@ pub fn i64_gt_s() {
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(
+            .invoke_typed_without_fuel(
                 function,
                 (0x7fffffffffffffffu64 as i64, 0x7fffffffffffffffu64 as i64)
             )
@@ -715,49 +690,49 @@ pub fn i64_gt_s() {
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(function, (-1_i64, -1_i64))
+            .invoke_typed_without_fuel(function, (-1_i64, -1_i64))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(function, (1_i64, 0_i64))
+            .invoke_typed_without_fuel(function, (1_i64, 0_i64))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(function, (0_i64, 1_i64))
+            .invoke_typed_without_fuel(function, (0_i64, 1_i64))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(function, (0x8000000000000000u64 as i64, 0_i64))
+            .invoke_typed_without_fuel(function, (0x8000000000000000u64 as i64, 0_i64))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(function, (0_i64, 0x8000000000000000u64 as i64))
+            .invoke_typed_without_fuel(function, (0_i64, 0x8000000000000000u64 as i64))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(function, (0x8000000000000000u64 as i64, -1_i64))
+            .invoke_typed_without_fuel(function, (0x8000000000000000u64 as i64, -1_i64))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(function, (-1_i64, 0x8000000000000000u64 as i64))
+            .invoke_typed_without_fuel(function, (-1_i64, 0x8000000000000000u64 as i64))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(
+            .invoke_typed_without_fuel(
                 function,
                 (0x8000000000000000u64 as i64, 0x7fffffffffffffffu64 as i64)
             )
@@ -766,7 +741,7 @@ pub fn i64_gt_s() {
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(
+            .invoke_typed_without_fuel(
                 function,
                 (0x7fffffffffffffffu64 as i64, 0x8000000000000000u64 as i64)
             )
@@ -782,12 +757,12 @@ pub fn i64_gt_u() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
+        .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export_unchecked(module, "i64_gt_u")
+        .instance_export(module, "i64_gt_u")
         .unwrap()
         .as_func()
         .unwrap();
@@ -795,25 +770,25 @@ pub fn i64_gt_u() {
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(function, (0_i64, 0_i64))
+            .invoke_typed_without_fuel(function, (0_i64, 0_i64))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(function, (1_i64, 1_i64))
+            .invoke_typed_without_fuel(function, (1_i64, 1_i64))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(function, (-1_i64, 1_i64))
+            .invoke_typed_without_fuel(function, (-1_i64, 1_i64))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(
+            .invoke_typed_without_fuel(
                 function,
                 (0x8000000000000000u64 as i64, 0x8000000000000000u64 as i64)
             )
@@ -822,7 +797,7 @@ pub fn i64_gt_u() {
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(
+            .invoke_typed_without_fuel(
                 function,
                 (0x7fffffffffffffffu64 as i64, 0x7fffffffffffffffu64 as i64)
             )
@@ -831,49 +806,49 @@ pub fn i64_gt_u() {
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(function, (-1_i64, -1_i64))
+            .invoke_typed_without_fuel(function, (-1_i64, -1_i64))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(function, (1_i64, 0_i64))
+            .invoke_typed_without_fuel(function, (1_i64, 0_i64))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(function, (0_i64, 1_i64))
+            .invoke_typed_without_fuel(function, (0_i64, 1_i64))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(function, (0x8000000000000000u64 as i64, 0_i64))
+            .invoke_typed_without_fuel(function, (0x8000000000000000u64 as i64, 0_i64))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(function, (0_i64, 0x8000000000000000u64 as i64))
+            .invoke_typed_without_fuel(function, (0_i64, 0x8000000000000000u64 as i64))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(function, (0x8000000000000000u64 as i64, -1_i64))
+            .invoke_typed_without_fuel(function, (0x8000000000000000u64 as i64, -1_i64))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(function, (-1_i64, 0x8000000000000000u64 as i64))
+            .invoke_typed_without_fuel(function, (-1_i64, 0x8000000000000000u64 as i64))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(
+            .invoke_typed_without_fuel(
                 function,
                 (0x8000000000000000u64 as i64, 0x7fffffffffffffffu64 as i64)
             )
@@ -882,7 +857,7 @@ pub fn i64_gt_u() {
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(
+            .invoke_typed_without_fuel(
                 function,
                 (0x7fffffffffffffffu64 as i64, 0x8000000000000000u64 as i64)
             )
@@ -898,12 +873,12 @@ pub fn i64_le_s() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
+        .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export_unchecked(module, "i64_le_s")
+        .instance_export(module, "i64_le_s")
         .unwrap()
         .as_func()
         .unwrap();
@@ -911,25 +886,25 @@ pub fn i64_le_s() {
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(function, (0_i64, 0_i64))
+            .invoke_typed_without_fuel(function, (0_i64, 0_i64))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(function, (1_i64, 1_i64))
+            .invoke_typed_without_fuel(function, (1_i64, 1_i64))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(function, (-1_i64, 1_i64))
+            .invoke_typed_without_fuel(function, (-1_i64, 1_i64))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(
+            .invoke_typed_without_fuel(
                 function,
                 (0x8000000000000000u64 as i64, 0x8000000000000000u64 as i64)
             )
@@ -938,7 +913,7 @@ pub fn i64_le_s() {
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(
+            .invoke_typed_without_fuel(
                 function,
                 (0x7fffffffffffffffu64 as i64, 0x7fffffffffffffffu64 as i64)
             )
@@ -947,49 +922,49 @@ pub fn i64_le_s() {
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(function, (-1_i64, -1_i64))
+            .invoke_typed_without_fuel(function, (-1_i64, -1_i64))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(function, (1_i64, 0_i64))
+            .invoke_typed_without_fuel(function, (1_i64, 0_i64))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(function, (0_i64, 1_i64))
+            .invoke_typed_without_fuel(function, (0_i64, 1_i64))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(function, (0x8000000000000000u64 as i64, 0_i64))
+            .invoke_typed_without_fuel(function, (0x8000000000000000u64 as i64, 0_i64))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(function, (0_i64, 0x8000000000000000u64 as i64))
+            .invoke_typed_without_fuel(function, (0_i64, 0x8000000000000000u64 as i64))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(function, (0x8000000000000000u64 as i64, -1_i64))
+            .invoke_typed_without_fuel(function, (0x8000000000000000u64 as i64, -1_i64))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(function, (-1_i64, 0x8000000000000000u64 as i64))
+            .invoke_typed_without_fuel(function, (-1_i64, 0x8000000000000000u64 as i64))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(
+            .invoke_typed_without_fuel(
                 function,
                 (0x8000000000000000u64 as i64, 0x7fffffffffffffffu64 as i64)
             )
@@ -998,7 +973,7 @@ pub fn i64_le_s() {
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(
+            .invoke_typed_without_fuel(
                 function,
                 (0x7fffffffffffffffu64 as i64, 0x8000000000000000u64 as i64)
             )
@@ -1015,12 +990,12 @@ pub fn i64_le_u() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
+        .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export_unchecked(module, "i64_le_u")
+        .instance_export(module, "i64_le_u")
         .unwrap()
         .as_func()
         .unwrap();
@@ -1028,25 +1003,25 @@ pub fn i64_le_u() {
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(function, (0_i64, 0_i64))
+            .invoke_typed_without_fuel(function, (0_i64, 0_i64))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(function, (1_i64, 1_i64))
+            .invoke_typed_without_fuel(function, (1_i64, 1_i64))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(function, (-1_i64, 1_i64))
+            .invoke_typed_without_fuel(function, (-1_i64, 1_i64))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(
+            .invoke_typed_without_fuel(
                 function,
                 (0x8000000000000000u64 as i64, 0x8000000000000000u64 as i64)
             )
@@ -1055,7 +1030,7 @@ pub fn i64_le_u() {
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(
+            .invoke_typed_without_fuel(
                 function,
                 (0x7fffffffffffffffu64 as i64, 0x7fffffffffffffffu64 as i64)
             )
@@ -1064,49 +1039,49 @@ pub fn i64_le_u() {
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(function, (-1_i64, -1_i64))
+            .invoke_typed_without_fuel(function, (-1_i64, -1_i64))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(function, (1_i64, 0_i64))
+            .invoke_typed_without_fuel(function, (1_i64, 0_i64))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(function, (0_i64, 1_i64))
+            .invoke_typed_without_fuel(function, (0_i64, 1_i64))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(function, (0x8000000000000000u64 as i64, 0_i64))
+            .invoke_typed_without_fuel(function, (0x8000000000000000u64 as i64, 0_i64))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(function, (0_i64, 0x8000000000000000u64 as i64))
+            .invoke_typed_without_fuel(function, (0_i64, 0x8000000000000000u64 as i64))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(function, (0x8000000000000000u64 as i64, -1_i64))
+            .invoke_typed_without_fuel(function, (0x8000000000000000u64 as i64, -1_i64))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(function, (-1_i64, 0x8000000000000000u64 as i64))
+            .invoke_typed_without_fuel(function, (-1_i64, 0x8000000000000000u64 as i64))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(
+            .invoke_typed_without_fuel(
                 function,
                 (0x8000000000000000u64 as i64, 0x7fffffffffffffffu64 as i64)
             )
@@ -1115,7 +1090,7 @@ pub fn i64_le_u() {
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(
+            .invoke_typed_without_fuel(
                 function,
                 (0x7fffffffffffffffu64 as i64, 0x8000000000000000u64 as i64)
             )
@@ -1131,12 +1106,12 @@ pub fn i64_ge_s() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
+        .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export_unchecked(module, "i64_ge_s")
+        .instance_export(module, "i64_ge_s")
         .unwrap()
         .as_func()
         .unwrap();
@@ -1144,25 +1119,25 @@ pub fn i64_ge_s() {
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(function, (0_i64, 0_i64))
+            .invoke_typed_without_fuel(function, (0_i64, 0_i64))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(function, (1_i64, 1_i64))
+            .invoke_typed_without_fuel(function, (1_i64, 1_i64))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(function, (-1_i64, 1_i64))
+            .invoke_typed_without_fuel(function, (-1_i64, 1_i64))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(
+            .invoke_typed_without_fuel(
                 function,
                 (0x8000000000000000u64 as i64, 0x8000000000000000u64 as i64)
             )
@@ -1171,7 +1146,7 @@ pub fn i64_ge_s() {
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(
+            .invoke_typed_without_fuel(
                 function,
                 (0x7fffffffffffffffu64 as i64, 0x7fffffffffffffffu64 as i64)
             )
@@ -1180,49 +1155,49 @@ pub fn i64_ge_s() {
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(function, (-1_i64, -1_i64))
+            .invoke_typed_without_fuel(function, (-1_i64, -1_i64))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(function, (1_i64, 0_i64))
+            .invoke_typed_without_fuel(function, (1_i64, 0_i64))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(function, (0_i64, 1_i64))
+            .invoke_typed_without_fuel(function, (0_i64, 1_i64))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(function, (0x8000000000000000u64 as i64, 0_i64))
+            .invoke_typed_without_fuel(function, (0x8000000000000000u64 as i64, 0_i64))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(function, (0_i64, 0x8000000000000000u64 as i64))
+            .invoke_typed_without_fuel(function, (0_i64, 0x8000000000000000u64 as i64))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(function, (0x8000000000000000u64 as i64, -1_i64))
+            .invoke_typed_without_fuel(function, (0x8000000000000000u64 as i64, -1_i64))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(function, (-1_i64, 0x8000000000000000u64 as i64))
+            .invoke_typed_without_fuel(function, (-1_i64, 0x8000000000000000u64 as i64))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(
+            .invoke_typed_without_fuel(
                 function,
                 (0x8000000000000000u64 as i64, 0x7fffffffffffffffu64 as i64)
             )
@@ -1231,7 +1206,7 @@ pub fn i64_ge_s() {
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(
+            .invoke_typed_without_fuel(
                 function,
                 (0x7fffffffffffffffu64 as i64, 0x8000000000000000u64 as i64)
             )
@@ -1247,12 +1222,12 @@ pub fn i64_ge_u() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
+        .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export_unchecked(module, "i64_ge_u")
+        .instance_export(module, "i64_ge_u")
         .unwrap()
         .as_func()
         .unwrap();
@@ -1260,25 +1235,25 @@ pub fn i64_ge_u() {
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(function, (0_i64, 0_i64))
+            .invoke_typed_without_fuel(function, (0_i64, 0_i64))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(function, (1_i64, 1_i64))
+            .invoke_typed_without_fuel(function, (1_i64, 1_i64))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(function, (-1_i64, 1_i64))
+            .invoke_typed_without_fuel(function, (-1_i64, 1_i64))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(
+            .invoke_typed_without_fuel(
                 function,
                 (0x8000000000000000u64 as i64, 0x8000000000000000u64 as i64)
             )
@@ -1287,7 +1262,7 @@ pub fn i64_ge_u() {
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(
+            .invoke_typed_without_fuel(
                 function,
                 (0x7fffffffffffffffu64 as i64, 0x7fffffffffffffffu64 as i64)
             )
@@ -1296,49 +1271,49 @@ pub fn i64_ge_u() {
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(function, (-1_i64, -1_i64))
+            .invoke_typed_without_fuel(function, (-1_i64, -1_i64))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(function, (1_i64, 0_i64))
+            .invoke_typed_without_fuel(function, (1_i64, 0_i64))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(function, (0_i64, 1_i64))
+            .invoke_typed_without_fuel(function, (0_i64, 1_i64))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(function, (0x8000000000000000u64 as i64, 0_i64))
+            .invoke_typed_without_fuel(function, (0x8000000000000000u64 as i64, 0_i64))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(function, (0_i64, 0x8000000000000000u64 as i64))
+            .invoke_typed_without_fuel(function, (0_i64, 0x8000000000000000u64 as i64))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(function, (0x8000000000000000u64 as i64, -1_i64))
+            .invoke_typed_without_fuel(function, (0x8000000000000000u64 as i64, -1_i64))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(function, (-1_i64, 0x8000000000000000u64 as i64))
+            .invoke_typed_without_fuel(function, (-1_i64, 0x8000000000000000u64 as i64))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel_unchecked(
+            .invoke_typed_without_fuel(
                 function,
                 (0x8000000000000000u64 as i64, 0x7fffffffffffffffu64 as i64)
             )
@@ -1347,7 +1322,7 @@ pub fn i64_ge_u() {
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(
+            .invoke_typed_without_fuel(
                 function,
                 (0x7fffffffffffffffu64 as i64, 0x8000000000000000u64 as i64)
             )

@@ -30,12 +30,12 @@ pub fn i32_division_signed_simple() {
 
     let mut store = Store::new(());
     let module = store
-        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
+        .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let signed_division = store
-        .instance_export_unchecked(module, "signed_division")
+        .instance_export(module, "signed_division")
         .unwrap()
         .as_func()
         .unwrap();
@@ -43,61 +43,61 @@ pub fn i32_division_signed_simple() {
     assert_eq!(
         10,
         store
-            .invoke_typed_without_fuel_unchecked(signed_division, (20, 2))
+            .invoke_typed_without_fuel(signed_division, (20, 2))
             .unwrap()
     );
     assert_eq!(
         9_001,
         store
-            .invoke_typed_without_fuel_unchecked(signed_division, (81_018_001, 9_001))
+            .invoke_typed_without_fuel(signed_division, (81_018_001, 9_001))
             .unwrap()
     );
     assert_eq!(
         -10,
         store
-            .invoke_typed_without_fuel_unchecked(signed_division, (20, -2))
+            .invoke_typed_without_fuel(signed_division, (20, -2))
             .unwrap()
     );
     assert_eq!(
         10,
         store
-            .invoke_typed_without_fuel_unchecked(signed_division, (-20, -2))
+            .invoke_typed_without_fuel(signed_division, (-20, -2))
             .unwrap()
     );
     assert_eq!(
         -10,
         store
-            .invoke_typed_without_fuel_unchecked(signed_division, (-20, 2))
+            .invoke_typed_without_fuel(signed_division, (-20, 2))
             .unwrap()
     );
     assert_eq!(
         10,
         store
-            .invoke_typed_without_fuel_unchecked(signed_division, (20, 2))
+            .invoke_typed_without_fuel(signed_division, (20, 2))
             .unwrap()
     );
     assert_eq!(
         9_001,
         store
-            .invoke_typed_without_fuel_unchecked(signed_division, (81_018_001, 9_001))
+            .invoke_typed_without_fuel(signed_division, (81_018_001, 9_001))
             .unwrap()
     );
     assert_eq!(
         -10,
         store
-            .invoke_typed_without_fuel_unchecked(signed_division, (20, -2))
+            .invoke_typed_without_fuel(signed_division, (20, -2))
             .unwrap()
     );
     assert_eq!(
         10,
         store
-            .invoke_typed_without_fuel_unchecked(signed_division, (-20, -2))
+            .invoke_typed_without_fuel(signed_division, (-20, -2))
             .unwrap()
     );
     assert_eq!(
         -10,
         store
-            .invoke_typed_without_fuel_unchecked(signed_division, (-20, 2))
+            .invoke_typed_without_fuel(signed_division, (-20, 2))
             .unwrap()
     );
 }
@@ -113,18 +113,17 @@ pub fn i32_division_signed_panic_dividend_0() {
 
     let mut store = Store::new(());
     let module = store
-        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
+        .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let signed_division = store
-        .instance_export_unchecked(module, "signed_division")
+        .instance_export(module, "signed_division")
         .unwrap()
         .as_func()
         .unwrap();
 
-    let result =
-        store.invoke_typed_without_fuel_unchecked::<(i32, i32), i32>(signed_division, (222, 0));
+    let result = store.invoke_typed_without_fuel::<(i32, i32), i32>(signed_division, (222, 0));
 
     assert_eq!(
         result.unwrap_err(),
@@ -143,18 +142,18 @@ pub fn i32_division_signed_panic_result_unrepresentable() {
 
     let mut store = Store::new(());
     let module = store
-        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
+        .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let signed_division = store
-        .instance_export_unchecked(module, "signed_division")
+        .instance_export(module, "signed_division")
         .unwrap()
         .as_func()
         .unwrap();
 
-    let result = store
-        .invoke_typed_without_fuel_unchecked::<(i32, i32), i32>(signed_division, (i32::MIN, -1));
+    let result =
+        store.invoke_typed_without_fuel::<(i32, i32), i32>(signed_division, (i32::MIN, -1));
 
     assert_eq!(
         result.unwrap_err(),
@@ -173,12 +172,12 @@ pub fn i32_division_unsigned_simple() {
 
     let mut store = Store::new(());
     let module = store
-        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
+        .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let unsigned_division = store
-        .instance_export_unchecked(module, "unsigned_division")
+        .instance_export(module, "unsigned_division")
         .unwrap()
         .as_func()
         .unwrap();
@@ -186,50 +185,50 @@ pub fn i32_division_unsigned_simple() {
     assert_eq!(
         10,
         store
-            .invoke_typed_without_fuel_unchecked(unsigned_division, (20, 2))
+            .invoke_typed_without_fuel(unsigned_division, (20, 2))
             .unwrap()
     );
     assert_eq!(
         9_001,
         store
-            .invoke_typed_without_fuel_unchecked(unsigned_division, (81_018_001, 9_001))
+            .invoke_typed_without_fuel(unsigned_division, (81_018_001, 9_001))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(unsigned_division, (i32::MIN, -1))
+            .invoke_typed_without_fuel(unsigned_division, (i32::MIN, -1))
             .unwrap()
     );
 
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel_unchecked(unsigned_division, (i32::MIN, -1))
+            .invoke_typed_without_fuel(unsigned_division, (i32::MIN, -1))
             .unwrap()
     );
     assert_eq!(
         -20,
         store
-            .invoke_typed_without_fuel_unchecked(unsigned_division, (-20, 1))
+            .invoke_typed_without_fuel(unsigned_division, (-20, 1))
             .unwrap()
     );
     assert_eq!(
         2147483638,
         store
-            .invoke_typed_without_fuel_unchecked(unsigned_division, (-20, 2))
+            .invoke_typed_without_fuel(unsigned_division, (-20, 2))
             .unwrap()
     );
     assert_eq!(
         1431655758,
         store
-            .invoke_typed_without_fuel_unchecked(unsigned_division, (-20, 3))
+            .invoke_typed_without_fuel(unsigned_division, (-20, 3))
             .unwrap()
     );
     assert_eq!(
         1073741819,
         store
-            .invoke_typed_without_fuel_unchecked(unsigned_division, (-20, 4))
+            .invoke_typed_without_fuel(unsigned_division, (-20, 4))
             .unwrap()
     );
 }
@@ -245,18 +244,17 @@ pub fn i32_division_unsigned_panic_dividend_0() {
 
     let mut store = Store::new(());
     let module = store
-        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
+        .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let unsigned_division = store
-        .instance_export_unchecked(module, "unsigned_division")
+        .instance_export(module, "unsigned_division")
         .unwrap()
         .as_func()
         .unwrap();
 
-    let result =
-        store.invoke_typed_without_fuel_unchecked::<(i32, i32), i32>(unsigned_division, (222, 0));
+    let result = store.invoke_typed_without_fuel::<(i32, i32), i32>(unsigned_division, (222, 0));
 
     assert_eq!(
         result.unwrap_err(),
@@ -275,12 +273,12 @@ pub fn i64_division_signed_simple() {
 
     let mut store = Store::new(());
     let module = store
-        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
+        .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let signed_division = store
-        .instance_export_unchecked(module, "signed_division")
+        .instance_export(module, "signed_division")
         .unwrap()
         .as_func()
         .unwrap();
@@ -288,31 +286,31 @@ pub fn i64_division_signed_simple() {
     assert_eq!(
         10_i64,
         store
-            .invoke_typed_without_fuel_unchecked(signed_division, (20_i64, 2_i64))
+            .invoke_typed_without_fuel(signed_division, (20_i64, 2_i64))
             .unwrap()
     );
     assert_eq!(
         9_001_i64,
         store
-            .invoke_typed_without_fuel_unchecked(signed_division, (81_018_001_i64, 9_001_i64))
+            .invoke_typed_without_fuel(signed_division, (81_018_001_i64, 9_001_i64))
             .unwrap()
     );
     assert_eq!(
         -10_i64,
         store
-            .invoke_typed_without_fuel_unchecked(signed_division, (20_i64, -2_i64))
+            .invoke_typed_without_fuel(signed_division, (20_i64, -2_i64))
             .unwrap()
     );
     assert_eq!(
         10_i64,
         store
-            .invoke_typed_without_fuel_unchecked(signed_division, (-20_i64, -2_i64))
+            .invoke_typed_without_fuel(signed_division, (-20_i64, -2_i64))
             .unwrap()
     );
     assert_eq!(
         -10_i64,
         store
-            .invoke_typed_without_fuel_unchecked(signed_division, (-20_i64, 2_i64))
+            .invoke_typed_without_fuel(signed_division, (-20_i64, 2_i64))
             .unwrap()
     );
 }
