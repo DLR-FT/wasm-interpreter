@@ -39,40 +39,20 @@ fn polymorphic_select_test() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
+        .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let select_test = store
-        .instance_export_unchecked(module, "select_test")
+        .instance_export(module, "select_test")
         .unwrap()
         .as_func()
         .unwrap();
 
-    assert_eq!(
-        4,
-        store
-            .invoke_typed_without_fuel_unchecked(select_test, 0)
-            .unwrap()
-    );
-    assert_eq!(
-        8,
-        store
-            .invoke_typed_without_fuel_unchecked(select_test, 1)
-            .unwrap()
-    );
-    assert_eq!(
-        15,
-        store
-            .invoke_typed_without_fuel_unchecked(select_test, 2)
-            .unwrap()
-    );
-    assert_eq!(
-        16,
-        store
-            .invoke_typed_without_fuel_unchecked(select_test, 3)
-            .unwrap()
-    );
+    assert_eq!(4, store.invoke_typed_without_fuel(select_test, 0).unwrap());
+    assert_eq!(8, store.invoke_typed_without_fuel(select_test, 1).unwrap());
+    assert_eq!(15, store.invoke_typed_without_fuel(select_test, 2).unwrap());
+    assert_eq!(16, store.invoke_typed_without_fuel(select_test, 3).unwrap());
 }
 
 #[test_log::test]
@@ -86,38 +66,18 @@ fn typed_select_test() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
+        .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let select_test = store
-        .instance_export_unchecked(module, "select_test")
+        .instance_export(module, "select_test")
         .unwrap()
         .as_func()
         .unwrap();
 
-    assert_eq!(
-        4,
-        store
-            .invoke_typed_without_fuel_unchecked(select_test, 0)
-            .unwrap()
-    );
-    assert_eq!(
-        8,
-        store
-            .invoke_typed_without_fuel_unchecked(select_test, 1)
-            .unwrap()
-    );
-    assert_eq!(
-        15,
-        store
-            .invoke_typed_without_fuel_unchecked(select_test, 2)
-            .unwrap()
-    );
-    assert_eq!(
-        16,
-        store
-            .invoke_typed_without_fuel_unchecked(select_test, 3)
-            .unwrap()
-    );
+    assert_eq!(4, store.invoke_typed_without_fuel(select_test, 0).unwrap());
+    assert_eq!(8, store.invoke_typed_without_fuel(select_test, 1).unwrap());
+    assert_eq!(15, store.invoke_typed_without_fuel(select_test, 2).unwrap());
+    assert_eq!(16, store.invoke_typed_without_fuel(select_test, 3).unwrap());
 }

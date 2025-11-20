@@ -31,6 +31,8 @@ pub fn host_func_call_within_module() {
     }
 
     let mut store = Store::new(());
+    // Safety: The host function hello does not have any parameter and return
+    // types. Therefore it cannot use invalid addresses.
     let hello = store.func_alloc_typed_unchecked::<(), ()>(hello);
     let importing_mod = store
         .module_instantiate_unchecked(&validation_info, vec![ExternVal::Func(hello)], None)

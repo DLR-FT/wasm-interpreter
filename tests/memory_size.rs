@@ -30,28 +30,28 @@ fn memory_size_1() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
+        .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let size = store
-        .instance_export_unchecked(module, "size")
+        .instance_export(module, "size")
         .unwrap()
         .as_func()
         .unwrap();
     let grow = store
-        .instance_export_unchecked(module, "grow")
+        .instance_export(module, "grow")
         .unwrap()
         .as_func()
         .unwrap();
 
-    assert_eq!(store.invoke_typed_without_fuel_unchecked(size, ()), Ok(0));
-    assert_eq!(store.invoke_typed_without_fuel_unchecked(grow, 1), Ok(()));
-    assert_eq!(store.invoke_typed_without_fuel_unchecked(size, ()), Ok(1));
-    assert_eq!(store.invoke_typed_without_fuel_unchecked(grow, 4), Ok(()));
-    assert_eq!(store.invoke_typed_without_fuel_unchecked(size, ()), Ok(5));
-    assert_eq!(store.invoke_typed_without_fuel_unchecked(grow, 0), Ok(()));
-    assert_eq!(store.invoke_typed_without_fuel_unchecked(size, ()), Ok(5));
+    assert_eq!(store.invoke_typed_without_fuel(size, ()), Ok(0));
+    assert_eq!(store.invoke_typed_without_fuel(grow, 1), Ok(()));
+    assert_eq!(store.invoke_typed_without_fuel(size, ()), Ok(1));
+    assert_eq!(store.invoke_typed_without_fuel(grow, 4), Ok(()));
+    assert_eq!(store.invoke_typed_without_fuel(size, ()), Ok(5));
+    assert_eq!(store.invoke_typed_without_fuel(grow, 0), Ok(()));
+    assert_eq!(store.invoke_typed_without_fuel(size, ()), Ok(5));
 }
 
 #[test_log::test]
@@ -67,28 +67,28 @@ fn memory_size_2() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
+        .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let size = store
-        .instance_export_unchecked(module, "size")
+        .instance_export(module, "size")
         .unwrap()
         .as_func()
         .unwrap();
     let grow = store
-        .instance_export_unchecked(module, "grow")
+        .instance_export(module, "grow")
         .unwrap()
         .as_func()
         .unwrap();
 
-    assert_eq!(store.invoke_typed_without_fuel_unchecked(size, ()), Ok(1));
-    assert_eq!(store.invoke_typed_without_fuel_unchecked(grow, 1), Ok(()));
-    assert_eq!(store.invoke_typed_without_fuel_unchecked(size, ()), Ok(2));
-    assert_eq!(store.invoke_typed_without_fuel_unchecked(grow, 4), Ok(()));
-    assert_eq!(store.invoke_typed_without_fuel_unchecked(size, ()), Ok(6));
-    assert_eq!(store.invoke_typed_without_fuel_unchecked(grow, 0), Ok(()));
-    assert_eq!(store.invoke_typed_without_fuel_unchecked(size, ()), Ok(6));
+    assert_eq!(store.invoke_typed_without_fuel(size, ()), Ok(1));
+    assert_eq!(store.invoke_typed_without_fuel(grow, 1), Ok(()));
+    assert_eq!(store.invoke_typed_without_fuel(size, ()), Ok(2));
+    assert_eq!(store.invoke_typed_without_fuel(grow, 4), Ok(()));
+    assert_eq!(store.invoke_typed_without_fuel(size, ()), Ok(6));
+    assert_eq!(store.invoke_typed_without_fuel(grow, 0), Ok(()));
+    assert_eq!(store.invoke_typed_without_fuel(size, ()), Ok(6));
 }
 
 #[test_log::test]
@@ -104,32 +104,32 @@ fn memory_size_3() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
+        .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let size = store
-        .instance_export_unchecked(module, "size")
+        .instance_export(module, "size")
         .unwrap()
         .as_func()
         .unwrap();
     let grow = store
-        .instance_export_unchecked(module, "grow")
+        .instance_export(module, "grow")
         .unwrap()
         .as_func()
         .unwrap();
 
-    assert_eq!(store.invoke_typed_without_fuel_unchecked(size, ()), Ok(0));
-    assert_eq!(store.invoke_typed_without_fuel_unchecked(grow, 3), Ok(()));
-    assert_eq!(store.invoke_typed_without_fuel_unchecked(size, ()), Ok(0));
-    assert_eq!(store.invoke_typed_without_fuel_unchecked(grow, 1), Ok(()));
-    assert_eq!(store.invoke_typed_without_fuel_unchecked(size, ()), Ok(1));
-    assert_eq!(store.invoke_typed_without_fuel_unchecked(grow, 0), Ok(()));
-    assert_eq!(store.invoke_typed_without_fuel_unchecked(size, ()), Ok(1));
-    assert_eq!(store.invoke_typed_without_fuel_unchecked(grow, 4), Ok(()));
-    assert_eq!(store.invoke_typed_without_fuel_unchecked(size, ()), Ok(1));
-    assert_eq!(store.invoke_typed_without_fuel_unchecked(grow, 1), Ok(()));
-    assert_eq!(store.invoke_typed_without_fuel_unchecked(size, ()), Ok(2));
+    assert_eq!(store.invoke_typed_without_fuel(size, ()), Ok(0));
+    assert_eq!(store.invoke_typed_without_fuel(grow, 3), Ok(()));
+    assert_eq!(store.invoke_typed_without_fuel(size, ()), Ok(0));
+    assert_eq!(store.invoke_typed_without_fuel(grow, 1), Ok(()));
+    assert_eq!(store.invoke_typed_without_fuel(size, ()), Ok(1));
+    assert_eq!(store.invoke_typed_without_fuel(grow, 0), Ok(()));
+    assert_eq!(store.invoke_typed_without_fuel(size, ()), Ok(1));
+    assert_eq!(store.invoke_typed_without_fuel(grow, 4), Ok(()));
+    assert_eq!(store.invoke_typed_without_fuel(size, ()), Ok(1));
+    assert_eq!(store.invoke_typed_without_fuel(grow, 1), Ok(()));
+    assert_eq!(store.invoke_typed_without_fuel(size, ()), Ok(2));
 }
 
 #[test_log::test]
@@ -145,32 +145,32 @@ fn memory_size_4() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
+        .module_instantiate(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let size = store
-        .instance_export_unchecked(module, "size")
+        .instance_export(module, "size")
         .unwrap()
         .as_func()
         .unwrap();
     let grow = store
-        .instance_export_unchecked(module, "grow")
+        .instance_export(module, "grow")
         .unwrap()
         .as_func()
         .unwrap();
 
-    assert_eq!(store.invoke_typed_without_fuel_unchecked(size, ()), Ok(3));
-    assert_eq!(store.invoke_typed_without_fuel_unchecked(grow, 1), Ok(()));
-    assert_eq!(store.invoke_typed_without_fuel_unchecked(size, ()), Ok(4));
-    assert_eq!(store.invoke_typed_without_fuel_unchecked(grow, 3), Ok(()));
-    assert_eq!(store.invoke_typed_without_fuel_unchecked(size, ()), Ok(7));
-    assert_eq!(store.invoke_typed_without_fuel_unchecked(grow, 0), Ok(()));
-    assert_eq!(store.invoke_typed_without_fuel_unchecked(size, ()), Ok(7));
-    assert_eq!(store.invoke_typed_without_fuel_unchecked(grow, 2), Ok(()));
-    assert_eq!(store.invoke_typed_without_fuel_unchecked(size, ()), Ok(7));
-    assert_eq!(store.invoke_typed_without_fuel_unchecked(grow, 1), Ok(()));
-    assert_eq!(store.invoke_typed_without_fuel_unchecked(size, ()), Ok(8));
+    assert_eq!(store.invoke_typed_without_fuel(size, ()), Ok(3));
+    assert_eq!(store.invoke_typed_without_fuel(grow, 1), Ok(()));
+    assert_eq!(store.invoke_typed_without_fuel(size, ()), Ok(4));
+    assert_eq!(store.invoke_typed_without_fuel(grow, 3), Ok(()));
+    assert_eq!(store.invoke_typed_without_fuel(size, ()), Ok(7));
+    assert_eq!(store.invoke_typed_without_fuel(grow, 0), Ok(()));
+    assert_eq!(store.invoke_typed_without_fuel(size, ()), Ok(7));
+    assert_eq!(store.invoke_typed_without_fuel(grow, 2), Ok(()));
+    assert_eq!(store.invoke_typed_without_fuel(size, ()), Ok(7));
+    assert_eq!(store.invoke_typed_without_fuel(grow, 1), Ok(()));
+    assert_eq!(store.invoke_typed_without_fuel(size, ()), Ok(8));
 }
 
 #[test_log::test]
