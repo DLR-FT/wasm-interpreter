@@ -10,7 +10,6 @@ use crate::core::reader::types::data::{DataModeActive, DataSegment};
 use crate::core::reader::types::element::{ActiveElem, ElemItems, ElemMode, ElemType};
 use crate::core::reader::types::export::{Export, ExportDesc};
 use crate::core::reader::types::global::{Global, GlobalType};
-use crate::core::reader::types::import::Import;
 use crate::core::reader::types::{
     ExternType, FuncType, ImportSubTypeRelation, MemType, ResultType, TableType,
 };
@@ -18,12 +17,10 @@ use crate::core::reader::WasmReader;
 use crate::execution::interpreter_loop::{self, memory_init, table_init};
 use crate::execution::value::{Ref, Value};
 use crate::execution::{run_const_span, Stack};
-use crate::registry::Registry;
 use crate::resumable::{
     Dormitory, FreshResumableRef, InvokedResumableRef, Resumable, ResumableRef, RunState,
 };
 use crate::{RefType, RuntimeError, ValidationInfo};
-use alloc::borrow::ToOwned;
 use alloc::collections::btree_map::BTreeMap;
 use alloc::string::String;
 use alloc::sync::Arc;
@@ -66,9 +63,6 @@ pub struct Store<'b, T: Config> {
     /// space along with a `ModuleAddr` index type.
     pub(crate) modules: AddrVec<ModuleAddr, ModuleInst<'b>>,
 
-    // all visible exports and entities added by hand or module instantiation by the interpreter
-    // currently, all of the exports of an instantiated module is made visible (this is outside of spec)
-    pub registry: Registry,
     pub user_data: T,
 
     // data structure holding all resumable objects that belong to this store
@@ -90,7 +84,6 @@ impl<'b, T: Config> Store<'b, T> {
             elements: AddrVec::default(),
             data: AddrVec::default(),
             modules: AddrVec::default(),
-            registry: Registry::default(),
             dormitory: Dormitory::default(),
             user_data,
         }
@@ -437,61 +430,6 @@ impl<'b, T: Config> Store<'b, T> {
             module_addr,
             maybe_remaining_fuel,
         })
-    }
-
-    /// instantiates a validated module with `validation_info` as validation evidence with name `name`
-    /// with the steps in <https://webassembly.github.io/spec/core/exec/modules.html#instantiation>
-    /// this method roughly matches the suggested embedder function`module_instantiate`
-    /// <https://webassembly.github.io/spec/core/appendix/embedding.html#modules>
-    /// except external values for module instantiation are retrieved from `self`.
-    /// Returns the module addr of the new module instance
-    pub fn add_module(
-        &mut self,
-        name: &str,
-        validation_info: &ValidationInfo<'b>,
-        maybe_fuel: Option<u32>,
-    ) -> Result<InstantiationOutcome, RuntimeError> {
-        debug!("adding module with name {:?}", name);
-        let mut extern_vals = Vec::new();
-
-        for Import {
-            module_name: exporting_module_name,
-            name: import_name,
-            desc: import_desc,
-        } in &validation_info.imports
-        {
-            trace!(
-                "trying to import from exporting module instance named {:?}, the entity with name {:?} with desc: {:?}",
-                exporting_module_name,
-                import_name,
-                import_desc
-            );
-            let import_extern_type = import_desc.extern_type(validation_info);
-            let export_extern_val_candidate = *self.registry.lookup(
-                exporting_module_name.clone().into(),
-                import_name.clone().into(),
-            )?;
-            trace!("export candidate found: {:?}", export_extern_val_candidate);
-            if !export_extern_val_candidate
-                .extern_type(self)
-                .is_subtype_of(&import_extern_type)
-            {
-                return Err(RuntimeError::InvalidImportType);
-            }
-            trace!("import and export matches. Adding to externvals");
-            extern_vals.push(export_extern_val_candidate)
-        }
-
-        let instantiation_outcome =
-            self.module_instantiate(validation_info, extern_vals, maybe_fuel)?;
-
-        self.registry.register_module(
-            name.to_owned().into(),
-            self.modules.get(instantiation_outcome.module_addr),
-            instantiation_outcome.module_addr,
-        )?;
-
-        Ok(instantiation_outcome)
     }
 
     /// Gets an export of a specific module instance by its name
@@ -926,26 +864,6 @@ impl<'b, T: Config> Store<'b, T> {
         };
 
         self.data.insert(data_inst)
-    }
-
-    /// This function allows an already instantiated module to be reregistered
-    /// under a different name. All previous registers of this module are not
-    /// affected.
-    ///
-    /// Note: This method exists as a temporary solution because our suboptimal registry
-    /// design. Because [`Store::add_module`] automatically registers all
-    /// modules directly after instantiation, we still need to provide some way
-    /// for only registering a module.
-    pub fn reregister_module(
-        &mut self,
-        module_addr: ModuleAddr,
-        name: &str,
-    ) -> Result<(), RuntimeError> {
-        self.registry.register_module(
-            name.to_owned().into(),
-            self.modules.get(module_addr),
-            module_addr,
-        )
     }
 
     /// Creates a new resumable, which when resumed for the first time invokes the function `function_ref` is associated
