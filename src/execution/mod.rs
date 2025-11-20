@@ -16,7 +16,6 @@ pub mod interop;
 mod interpreter_loop;
 pub mod linker;
 pub(crate) mod little_endian;
-pub mod registry;
 pub mod resumable;
 pub mod store;
 pub mod value;
