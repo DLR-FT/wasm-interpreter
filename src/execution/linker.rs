@@ -145,7 +145,7 @@ impl Linker {
     /// It must be guaranteed that this [`Linker`] is only ever used with one
     /// specific [`Store`].
     pub fn module_instantiate<'b, T: Config>(
-        &mut self,
+        &self,
         store: &mut Store<'b, T>,
         validation_info: &ValidationInfo<'b>,
         maybe_fuel: Option<u32>,

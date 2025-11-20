@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 */
-use wasm::{validate, RuntimeError, RuntimeInstance, TrapError, DEFAULT_MODULE};
+use wasm::{validate, RuntimeError, Store, TrapError};
 
 #[test_log::test]
 fn memory_copy_test_1() {
@@ -32,18 +32,32 @@ fn memory_copy_test_1() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut store = Store::new(());
+    let module = store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap()
+        .module_addr;
 
-    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
-    i.invoke_typed::<(), ()>(test, ()).unwrap();
+    let test = store
+        .instance_export(module, "test")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    store.invoke_typed_without_fuel::<(), ()>(test, ()).unwrap();
 
-    let load8_u = i.get_function_by_name(DEFAULT_MODULE, "load8_u").unwrap();
+    let load8_u = store
+        .instance_export(module, "load8_u")
+        .unwrap()
+        .as_func()
+        .unwrap();
     let results = Vec::from([
         0, 0, 3, 1, 4, 1, 0, 0, 0, 0, 0, 0, 7, 5, 2, 3, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     ]);
     for (j, result) in results.into_iter().enumerate() {
-        assert_eq!(i.invoke_typed(load8_u, j as i32), Ok(result));
+        assert_eq!(
+            store.invoke_typed_without_fuel(load8_u, j as i32),
+            Ok(result)
+        );
     }
 }
 
@@ -64,18 +78,32 @@ fn memory_copy_test_2() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut store = Store::new(());
+    let module = store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap()
+        .module_addr;
 
-    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
-    i.invoke_typed::<(), ()>(test, ()).unwrap();
+    let test = store
+        .instance_export(module, "test")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    store.invoke_typed_without_fuel::<(), ()>(test, ()).unwrap();
 
-    let load8_u = i.get_function_by_name(DEFAULT_MODULE, "load8_u").unwrap();
+    let load8_u = store
+        .instance_export(module, "load8_u")
+        .unwrap()
+        .as_func()
+        .unwrap();
     let results = Vec::from([
         0, 0, 3, 1, 4, 1, 0, 0, 0, 0, 0, 0, 7, 3, 1, 4, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     ]);
     for (j, result) in results.into_iter().enumerate() {
-        assert_eq!(i.invoke_typed(load8_u, j as i32), Ok(result));
+        assert_eq!(
+            store.invoke_typed_without_fuel(load8_u, j as i32),
+            Ok(result)
+        );
     }
 }
 
@@ -96,13 +124,24 @@ fn memory_copy_test_3() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut store = Store::new(());
+    let module = store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap()
+        .module_addr;
 
-    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
-    i.invoke_typed::<(), ()>(test, ()).unwrap();
+    let test = store
+        .instance_export(module, "test")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    store.invoke_typed_without_fuel::<(), ()>(test, ()).unwrap();
 
-    let load8_u = i.get_function_by_name(DEFAULT_MODULE, "load8_u").unwrap();
+    let load8_u = store
+        .instance_export(module, "load8_u")
+        .unwrap()
+        .as_func()
+        .unwrap();
     let offsets = Vec::from([
         0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
         25, 26, 27, 28, 29,
@@ -111,7 +150,10 @@ fn memory_copy_test_3() {
         0, 0, 3, 1, 4, 1, 0, 0, 0, 0, 0, 0, 7, 5, 2, 3, 6, 0, 0, 0, 0, 0, 0, 0, 0, 3, 6, 0, 0, 0,
     ]);
     for j in 0..offsets.len() {
-        assert_eq!(i.invoke_typed(load8_u, offsets[j]), Ok(results[j]));
+        assert_eq!(
+            store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            Ok(results[j])
+        );
     }
 }
 
@@ -132,13 +174,24 @@ fn memory_copy_test_4() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut store = Store::new(());
+    let module = store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap()
+        .module_addr;
 
-    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
-    i.invoke_typed::<(), ()>(test, ()).unwrap();
+    let test = store
+        .instance_export(module, "test")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    store.invoke_typed_without_fuel::<(), ()>(test, ()).unwrap();
 
-    let load8_u = i.get_function_by_name(DEFAULT_MODULE, "load8_u").unwrap();
+    let load8_u = store
+        .instance_export(module, "load8_u")
+        .unwrap()
+        .as_func()
+        .unwrap();
     let offsets = Vec::from([
         0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
         25, 26, 27, 28, 29,
@@ -147,7 +200,10 @@ fn memory_copy_test_4() {
         0, 0, 3, 1, 4, 1, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     ]);
     for j in 0..offsets.len() {
-        assert_eq!(i.invoke_typed(load8_u, offsets[j]), Ok(results[j]));
+        assert_eq!(
+            store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            Ok(results[j])
+        );
     }
 }
 
@@ -168,13 +224,24 @@ fn memory_copy_test_5() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut store = Store::new(());
+    let module = store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap()
+        .module_addr;
 
-    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
-    i.invoke_typed::<(), ()>(test, ()).unwrap();
+    let test = store
+        .instance_export(module, "test")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    store.invoke_typed_without_fuel::<(), ()>(test, ()).unwrap();
 
-    let load8_u = i.get_function_by_name(DEFAULT_MODULE, "load8_u").unwrap();
+    let load8_u = store
+        .instance_export(module, "load8_u")
+        .unwrap()
+        .as_func()
+        .unwrap();
     let offsets = Vec::from([
         0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
         25, 26, 27, 28, 29,
@@ -183,7 +250,10 @@ fn memory_copy_test_5() {
         0, 0, 3, 1, 4, 1, 0, 0, 0, 0, 7, 5, 2, 3, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     ]);
     for j in 0..offsets.len() {
-        assert_eq!(i.invoke_typed(load8_u, offsets[j]), Ok(results[j]));
+        assert_eq!(
+            store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            Ok(results[j])
+        );
     }
 }
 
@@ -203,17 +273,28 @@ fn memory_copy_test_6() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut store = Store::new(());
+    let module = store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap()
+        .module_addr;
 
-    let run = i.get_function_by_name(DEFAULT_MODULE, "run").unwrap();
-    let result = i.invoke_typed::<(i32, i32, i32), ()>(run, (65516, 0, 40));
+    let run = store
+        .instance_export(module, "run")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    let result = store.invoke_typed_without_fuel::<(i32, i32, i32), ()>(run, (65516, 0, 40));
     assert_eq!(
         result.err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds)),
     );
 
-    let load8_u = i.get_function_by_name(DEFAULT_MODULE, "load8_u").unwrap();
+    let load8_u = store
+        .instance_export(module, "load8_u")
+        .unwrap()
+        .as_func()
+        .unwrap();
     let offsets = Vec::from([
         0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 218, 417, 616, 815,
         1014, 1213, 1412, 1611, 1810, 2009, 2208, 2407, 2606, 2805, 3004, 3203, 3402, 3601, 3800,
@@ -257,7 +338,10 @@ fn memory_copy_test_6() {
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     ]);
     for j in 0..offsets.len() {
-        assert_eq!(i.invoke_typed(load8_u, offsets[j]), Ok(results[j]));
+        assert_eq!(
+            store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            Ok(results[j])
+        );
     }
 }
 
@@ -277,17 +361,28 @@ fn memory_copy_test_7() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut store = Store::new(());
+    let module = store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap()
+        .module_addr;
 
-    let run = i.get_function_by_name(DEFAULT_MODULE, "run").unwrap();
-    let result = i.invoke_typed::<(i32, i32, i32), ()>(run, (65515, 0, 39));
+    let run = store
+        .instance_export(module, "run")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    let result = store.invoke_typed_without_fuel::<(i32, i32, i32), ()>(run, (65515, 0, 39));
     assert_eq!(
         result.err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
     );
 
-    let load8_u = i.get_function_by_name(DEFAULT_MODULE, "load8_u").unwrap();
+    let load8_u = store
+        .instance_export(module, "load8_u")
+        .unwrap()
+        .as_func()
+        .unwrap();
     let offsets = Vec::from([
         0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 219, 418, 617,
         816, 1015, 1214, 1413, 1612, 1811, 2010, 2209, 2408, 2607, 2806, 3005, 3204, 3403, 3602,
@@ -331,7 +426,10 @@ fn memory_copy_test_7() {
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     ]);
     for j in 0..offsets.len() {
-        assert_eq!(i.invoke_typed(load8_u, offsets[j]), Ok(results[j]));
+        assert_eq!(
+            store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            Ok(results[j])
+        );
     }
 }
 
@@ -351,17 +449,28 @@ fn memory_copy_test_8() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut store = Store::new(());
+    let module = store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap()
+        .module_addr;
 
-    let run = i.get_function_by_name(DEFAULT_MODULE, "run").unwrap();
-    let result = i.invoke_typed::<(i32, i32, i32), ()>(run, (65515, 0, 39));
+    let run = store
+        .instance_export(module, "run")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    let result = store.invoke_typed_without_fuel::<(i32, i32, i32), ()>(run, (65515, 0, 39));
     assert_eq!(
         result.err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
     );
 
-    let load8_u = i.get_function_by_name(DEFAULT_MODULE, "load8_u").unwrap();
+    let load8_u = store
+        .instance_export(module, "load8_u")
+        .unwrap()
+        .as_func()
+        .unwrap();
     let offsets = Vec::from([
         0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 219, 418, 617,
         816, 1015, 1214, 1413, 1612, 1811, 2010, 2209, 2408, 2607, 2806, 3005, 3204, 3403, 3602,
@@ -405,7 +514,10 @@ fn memory_copy_test_8() {
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     ]);
     for j in 0..offsets.len() {
-        assert_eq!(i.invoke_typed(load8_u, offsets[j]), Ok(results[j]));
+        assert_eq!(
+            store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            Ok(results[j])
+        );
     }
 }
 
@@ -425,17 +537,28 @@ fn memory_copy_test_9() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut store = Store::new(());
+    let module = store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap()
+        .module_addr;
 
-    let run = i.get_function_by_name(DEFAULT_MODULE, "run").unwrap();
-    let result = i.invoke_typed::<(i32, i32, i32), ()>(run, (0, 65516, 40));
+    let run = store
+        .instance_export(module, "run")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    let result = store.invoke_typed_without_fuel::<(i32, i32, i32), ()>(run, (0, 65516, 40));
     assert_eq!(
         result.err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
     );
 
-    let load8_u = i.get_function_by_name(DEFAULT_MODULE, "load8_u").unwrap();
+    let load8_u = store
+        .instance_export(module, "load8_u")
+        .unwrap()
+        .as_func()
+        .unwrap();
     let offsets = Vec::from([
         198, 397, 596, 795, 994, 1193, 1392, 1591, 1790, 1989, 2188, 2387, 2586, 2785, 2984, 3183,
         3382, 3581, 3780, 3979, 4178, 4377, 4576, 4775, 4974, 5173, 5372, 5571, 5770, 5969, 6168,
@@ -480,7 +603,10 @@ fn memory_copy_test_9() {
         1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
     ]);
     for j in 0..offsets.len() {
-        assert_eq!(i.invoke_typed(load8_u, offsets[j]), Ok(results[j]));
+        assert_eq!(
+            store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            Ok(results[j])
+        );
     }
 }
 
@@ -500,17 +626,28 @@ fn memory_copy_test_10() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut store = Store::new(());
+    let module = store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap()
+        .module_addr;
 
-    let run = i.get_function_by_name(DEFAULT_MODULE, "run").unwrap();
-    let result = i.invoke_typed::<(i32, i32, i32), ()>(run, (0, 65515, 39));
+    let run = store
+        .instance_export(module, "run")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    let result = store.invoke_typed_without_fuel::<(i32, i32, i32), ()>(run, (0, 65515, 39));
     assert_eq!(
         result.err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
     );
 
-    let load8_u = i.get_function_by_name(DEFAULT_MODULE, "load8_u").unwrap();
+    let load8_u = store
+        .instance_export(module, "load8_u")
+        .unwrap()
+        .as_func()
+        .unwrap();
     let offsets = Vec::from([
         198, 397, 596, 795, 994, 1193, 1392, 1591, 1790, 1989, 2188, 2387, 2586, 2785, 2984, 3183,
         3382, 3581, 3780, 3979, 4178, 4377, 4576, 4775, 4974, 5173, 5372, 5571, 5770, 5969, 6168,
@@ -555,7 +692,10 @@ fn memory_copy_test_10() {
         1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
     ]);
     for j in 0..offsets.len() {
-        assert_eq!(i.invoke_typed(load8_u, offsets[j]), Ok(results[j]));
+        assert_eq!(
+            store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            Ok(results[j])
+        );
     }
 }
 
@@ -575,17 +715,28 @@ fn memory_copy_test_11() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut store = Store::new(());
+    let module = store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap()
+        .module_addr;
 
-    let run = i.get_function_by_name(DEFAULT_MODULE, "run").unwrap();
-    let result = i.invoke_typed::<(i32, i32, i32), ()>(run, (65516, 65486, 40));
+    let run = store
+        .instance_export(module, "run")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    let result = store.invoke_typed_without_fuel::<(i32, i32, i32), ()>(run, (65516, 65486, 40));
     assert_eq!(
         result.err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
     );
 
-    let load8_u = i.get_function_by_name(DEFAULT_MODULE, "load8_u").unwrap();
+    let load8_u = store
+        .instance_export(module, "load8_u")
+        .unwrap()
+        .as_func()
+        .unwrap();
     let offsets = Vec::from([
         198, 397, 596, 795, 994, 1193, 1392, 1591, 1790, 1989, 2188, 2387, 2586, 2785, 2984, 3183,
         3382, 3581, 3780, 3979, 4178, 4377, 4576, 4775, 4974, 5173, 5372, 5571, 5770, 5969, 6168,
@@ -630,7 +781,10 @@ fn memory_copy_test_11() {
         1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
     ]);
     for j in 0..offsets.len() {
-        assert_eq!(i.invoke_typed(load8_u, offsets[j]), Ok(results[j]));
+        assert_eq!(
+            store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            Ok(results[j])
+        );
     }
 }
 
@@ -650,17 +804,28 @@ fn memory_copy_test_12() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut store = Store::new(());
+    let module = store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap()
+        .module_addr;
 
-    let run = i.get_function_by_name(DEFAULT_MODULE, "run").unwrap();
-    let result = i.invoke_typed::<(i32, i32, i32), ()>(run, (65486, 65516, 40));
+    let run = store
+        .instance_export(module, "run")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    let result = store.invoke_typed_without_fuel::<(i32, i32, i32), ()>(run, (65486, 65516, 40));
     assert_eq!(
         result.err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
     );
 
-    let load8_u = i.get_function_by_name(DEFAULT_MODULE, "load8_u").unwrap();
+    let load8_u = store
+        .instance_export(module, "load8_u")
+        .unwrap()
+        .as_func()
+        .unwrap();
     let offsets = Vec::from([
         198, 397, 596, 795, 994, 1193, 1392, 1591, 1790, 1989, 2188, 2387, 2586, 2785, 2984, 3183,
         3382, 3581, 3780, 3979, 4178, 4377, 4576, 4775, 4974, 5173, 5372, 5571, 5770, 5969, 6168,
@@ -705,7 +870,10 @@ fn memory_copy_test_12() {
         1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
     ]);
     for j in 0..offsets.len() {
-        assert_eq!(i.invoke_typed(load8_u, offsets[j]), Ok(results[j]));
+        assert_eq!(
+            store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            Ok(results[j])
+        );
     }
 }
 
@@ -725,17 +893,28 @@ fn memory_copy_test_13() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut store = Store::new(());
+    let module = store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap()
+        .module_addr;
 
-    let run = i.get_function_by_name(DEFAULT_MODULE, "run").unwrap();
-    let result = i.invoke_typed::<(i32, i32, i32), ()>(run, (65516, 65506, 40));
+    let run = store
+        .instance_export(module, "run")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    let result = store.invoke_typed_without_fuel::<(i32, i32, i32), ()>(run, (65516, 65506, 40));
     assert_eq!(
         result.err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
     );
 
-    let load8_u = i.get_function_by_name(DEFAULT_MODULE, "load8_u").unwrap();
+    let load8_u = store
+        .instance_export(module, "load8_u")
+        .unwrap()
+        .as_func()
+        .unwrap();
     let offsets = Vec::from([
         198, 397, 596, 795, 994, 1193, 1392, 1591, 1790, 1989, 2188, 2387, 2586, 2785, 2984, 3183,
         3382, 3581, 3780, 3979, 4178, 4377, 4576, 4775, 4974, 5173, 5372, 5571, 5770, 5969, 6168,
@@ -780,7 +959,10 @@ fn memory_copy_test_13() {
         1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
     ]);
     for j in 0..offsets.len() {
-        assert_eq!(i.invoke_typed(load8_u, offsets[j]), Ok(results[j]));
+        assert_eq!(
+            store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            Ok(results[j])
+        );
     }
 }
 
@@ -800,17 +982,28 @@ fn memory_copy_test_14() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut store = Store::new(());
+    let module = store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap()
+        .module_addr;
 
-    let run = i.get_function_by_name(DEFAULT_MODULE, "run").unwrap();
-    let result = i.invoke_typed::<(i32, i32, i32), ()>(run, (65506, 65516, 40));
+    let run = store
+        .instance_export(module, "run")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    let result = store.invoke_typed_without_fuel::<(i32, i32, i32), ()>(run, (65506, 65516, 40));
     assert_eq!(
         result.err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
     );
 
-    let load8_u = i.get_function_by_name(DEFAULT_MODULE, "load8_u").unwrap();
+    let load8_u = store
+        .instance_export(module, "load8_u")
+        .unwrap()
+        .as_func()
+        .unwrap();
     let offsets = Vec::from([
         198, 397, 596, 795, 994, 1193, 1392, 1591, 1790, 1989, 2188, 2387, 2586, 2785, 2984, 3183,
         3382, 3581, 3780, 3979, 4178, 4377, 4576, 4775, 4974, 5173, 5372, 5571, 5770, 5969, 6168,
@@ -855,7 +1048,10 @@ fn memory_copy_test_14() {
         1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
     ]);
     for j in 0..offsets.len() {
-        assert_eq!(i.invoke_typed(load8_u, offsets[j]), Ok(results[j]));
+        assert_eq!(
+            store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            Ok(results[j])
+        );
     }
 }
 
@@ -875,17 +1071,28 @@ fn memory_copy_test_15() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut store = Store::new(());
+    let module = store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap()
+        .module_addr;
 
-    let run = i.get_function_by_name(DEFAULT_MODULE, "run").unwrap();
-    let result = i.invoke_typed::<(i32, i32, i32), ()>(run, (65516, 65516, 40));
+    let run = store
+        .instance_export(module, "run")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    let result = store.invoke_typed_without_fuel::<(i32, i32, i32), ()>(run, (65516, 65516, 40));
     assert_eq!(
         result.err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
     );
 
-    let load8_u = i.get_function_by_name(DEFAULT_MODULE, "load8_u").unwrap();
+    let load8_u = store
+        .instance_export(module, "load8_u")
+        .unwrap()
+        .as_func()
+        .unwrap();
     let offsets = Vec::from([
         198, 397, 596, 795, 994, 1193, 1392, 1591, 1790, 1989, 2188, 2387, 2586, 2785, 2984, 3183,
         3382, 3581, 3780, 3979, 4178, 4377, 4576, 4775, 4974, 5173, 5372, 5571, 5770, 5969, 6168,
@@ -930,7 +1137,10 @@ fn memory_copy_test_15() {
         1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
     ]);
     for j in 0..offsets.len() {
-        assert_eq!(i.invoke_typed(load8_u, offsets[j]), Ok(results[j]));
+        assert_eq!(
+            store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            Ok(results[j])
+        );
     }
 }
 
@@ -950,17 +1160,29 @@ fn memory_copy_test_16() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut store = Store::new(());
+    let module = store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap()
+        .module_addr;
 
-    let run = i.get_function_by_name(DEFAULT_MODULE, "run").unwrap();
-    let result = i.invoke_typed::<(i32, i32, i32), ()>(run, (0, 65516, 4294963200_u32 as i32));
+    let run = store
+        .instance_export(module, "run")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    let result = store
+        .invoke_typed_without_fuel::<(i32, i32, i32), ()>(run, (0, 65516, 4294963200_u32 as i32));
     assert_eq!(
         result.err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
     );
 
-    let load8_u = i.get_function_by_name(DEFAULT_MODULE, "load8_u").unwrap();
+    let load8_u = store
+        .instance_export(module, "load8_u")
+        .unwrap()
+        .as_func()
+        .unwrap();
     let offsets = Vec::from([
         198, 397, 596, 795, 994, 1193, 1392, 1591, 1790, 1989, 2188, 2387, 2586, 2785, 2984, 3183,
         3382, 3581, 3780, 3979, 4178, 4377, 4576, 4775, 4974, 5173, 5372, 5571, 5770, 5969, 6168,
@@ -1005,7 +1227,10 @@ fn memory_copy_test_16() {
         1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
     ]);
     for j in 0..offsets.len() {
-        assert_eq!(i.invoke_typed(load8_u, offsets[j]), Ok(results[j]));
+        assert_eq!(
+            store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            Ok(results[j])
+        );
     }
 }
 
@@ -1025,17 +1250,31 @@ fn memory_copy_test_17() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut store = Store::new(());
+    let module = store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap()
+        .module_addr;
 
-    let run = i.get_function_by_name(DEFAULT_MODULE, "run").unwrap();
-    let result = i.invoke_typed::<(i32, i32, i32), ()>(run, (65516, 61440, 4294967040_u32 as i32));
+    let run = store
+        .instance_export(module, "run")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    let result = store.invoke_typed_without_fuel::<(i32, i32, i32), ()>(
+        run,
+        (65516, 61440, 4294967040_u32 as i32),
+    );
     assert_eq!(
         result.err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
     );
 
-    let load8_u = i.get_function_by_name(DEFAULT_MODULE, "load8_u").unwrap();
+    let load8_u = store
+        .instance_export(module, "load8_u")
+        .unwrap()
+        .as_func()
+        .unwrap();
     let offsets = Vec::from([
         198, 397, 596, 795, 994, 1193, 1392, 1591, 1790, 1989, 2188, 2387, 2586, 2785, 2984, 3183,
         3382, 3581, 3780, 3979, 4178, 4377, 4576, 4775, 4974, 5173, 5372, 5571, 5770, 5969, 6168,
@@ -1080,6 +1319,9 @@ fn memory_copy_test_17() {
         19, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     ]);
     for j in 0..offsets.len() {
-        assert_eq!(i.invoke_typed(load8_u, offsets[j]), Ok(results[j]));
+        assert_eq!(
+            store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            Ok(results[j])
+        );
     }
 }

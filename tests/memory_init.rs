@@ -14,8 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 */
-use wasm::{validate, RuntimeError, RuntimeInstance, TrapError};
-use wasm::{ValidationError, DEFAULT_MODULE};
+use wasm::ValidationError;
+use wasm::{validate, RuntimeError, Store, TrapError};
 
 #[test_log::test]
 fn memory_init_test_1() {
@@ -33,12 +33,24 @@ fn memory_init_test_1() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
-    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
-    i.invoke_typed::<(), ()>(test, ()).unwrap();
+    let mut store = Store::new(());
+    let module = store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap()
+        .module_addr;
 
-    let load8_u = i.get_function_by_name(DEFAULT_MODULE, "load8_u").unwrap();
+    let test = store
+        .instance_export(module, "test")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    store.invoke_typed_without_fuel::<(), ()>(test, ()).unwrap();
+
+    let load8_u = store
+        .instance_export(module, "load8_u")
+        .unwrap()
+        .as_func()
+        .unwrap();
 
     let offsets = Vec::from([
         0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
@@ -48,7 +60,10 @@ fn memory_init_test_1() {
         0, 0, 3, 1, 4, 1, 0, 0, 0, 0, 0, 0, 7, 5, 2, 3, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     ]);
     for j in 0..offsets.len() {
-        assert_eq!(i.invoke_typed(load8_u, offsets[j]), Ok(results[j]));
+        assert_eq!(
+            store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            Ok(results[j])
+        );
     }
 }
 
@@ -68,12 +83,24 @@ fn memory_init_test_2() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
-    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
-    i.invoke_typed::<(), ()>(test, ()).unwrap();
+    let mut store = Store::new(());
+    let module = store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap()
+        .module_addr;
 
-    let load8_u = i.get_function_by_name(DEFAULT_MODULE, "load8_u").unwrap();
+    let test = store
+        .instance_export(module, "test")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    store.invoke_typed_without_fuel::<(), ()>(test, ()).unwrap();
+
+    let load8_u = store
+        .instance_export(module, "load8_u")
+        .unwrap()
+        .as_func()
+        .unwrap();
 
     let offsets = Vec::from([
         0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
@@ -83,7 +110,10 @@ fn memory_init_test_2() {
         0, 0, 3, 1, 4, 1, 0, 2, 7, 1, 8, 0, 7, 5, 2, 3, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     ]);
     for j in 0..offsets.len() {
-        assert_eq!(i.invoke_typed(load8_u, offsets[j]), Ok(results[j]));
+        assert_eq!(
+            store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            Ok(results[j])
+        );
     }
 }
 
@@ -103,12 +133,24 @@ fn memory_init_test_3() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
-    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
-    i.invoke_typed::<(), ()>(test, ()).unwrap();
+    let mut store = Store::new(());
+    let module = store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap()
+        .module_addr;
 
-    let load8_u = i.get_function_by_name(DEFAULT_MODULE, "load8_u").unwrap();
+    let test = store
+        .instance_export(module, "test")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    store.invoke_typed_without_fuel::<(), ()>(test, ()).unwrap();
+
+    let load8_u = store
+        .instance_export(module, "load8_u")
+        .unwrap()
+        .as_func()
+        .unwrap();
 
     let offsets = Vec::from([
         0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
@@ -118,7 +160,10 @@ fn memory_init_test_3() {
         0, 0, 3, 1, 4, 1, 0, 0, 0, 0, 0, 0, 7, 5, 2, 9, 2, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     ]);
     for j in 0..offsets.len() {
-        assert_eq!(i.invoke_typed(load8_u, offsets[j]), Ok(results[j]));
+        assert_eq!(
+            store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            Ok(results[j])
+        );
     }
 }
 
@@ -146,12 +191,24 @@ fn memory_init_test_4() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
-    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
-    i.invoke_typed::<(), ()>(test, ()).unwrap();
+    let mut store = Store::new(());
+    let module = store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap()
+        .module_addr;
 
-    let load8_u = i.get_function_by_name(DEFAULT_MODULE, "load8_u").unwrap();
+    let test = store
+        .instance_export(module, "test")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    store.invoke_typed_without_fuel::<(), ()>(test, ()).unwrap();
+
+    let load8_u = store
+        .instance_export(module, "load8_u")
+        .unwrap()
+        .as_func()
+        .unwrap();
 
     let offsets = Vec::from([
         0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
@@ -161,7 +218,10 @@ fn memory_init_test_4() {
         0, 0, 3, 1, 4, 1, 0, 2, 7, 1, 8, 0, 7, 0, 7, 5, 2, 7, 0, 9, 0, 7, 0, 8, 8, 0, 0, 0, 0, 0,
     ]);
     for j in 0..offsets.len() {
-        assert_eq!(i.invoke_typed(load8_u, offsets[j]), Ok(results[j]));
+        assert_eq!(
+            store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            Ok(results[j])
+        );
     }
 }
 
@@ -204,10 +264,18 @@ fn memory_init_test_7() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
-    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
-    i.invoke_typed::<(), ()>(test, ()).unwrap();
+    let mut store = Store::new(());
+    let module = store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap()
+        .module_addr;
+
+    let test = store
+        .instance_export(module, "test")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    store.invoke_typed_without_fuel::<(), ()>(test, ()).unwrap();
 }
 
 #[test_log::test]
@@ -222,11 +290,19 @@ fn memory_init_test_8() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
-    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
+    let mut store = Store::new(());
+    let module = store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap()
+        .module_addr;
+
+    let test = store
+        .instance_export(module, "test")
+        .unwrap()
+        .as_func()
+        .unwrap();
     assert_eq!(
-        i.invoke_typed::<(), ()>(test, ()).err(),
+        store.invoke_typed_without_fuel::<(), ()>(test, ()).err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
     );
 }
@@ -242,11 +318,19 @@ fn memory_init_test_9() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
-    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
+    let mut store = Store::new(());
+    let module = store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap()
+        .module_addr;
+
+    let test = store
+        .instance_export(module, "test")
+        .unwrap()
+        .as_func()
+        .unwrap();
     assert_eq!(
-        i.invoke_typed::<(), ()>(test, ()).err(),
+        store.invoke_typed_without_fuel::<(), ()>(test, ()).err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
     );
 }
@@ -291,10 +375,18 @@ fn memory_init_test_12() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
-    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
-    i.invoke_typed::<(), ()>(test, ()).unwrap();
+    let mut store = Store::new(());
+    let module = store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap()
+        .module_addr;
+
+    let test = store
+        .instance_export(module, "test")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    store.invoke_typed_without_fuel::<(), ()>(test, ()).unwrap();
 }
 
 #[test_log::test]
@@ -308,11 +400,19 @@ fn memory_init_test_13() {
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
-    let test = i.get_function_by_name(DEFAULT_MODULE, "test").unwrap();
+    let mut store = Store::new(());
+    let module = store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap()
+        .module_addr;
+
+    let test = store
+        .instance_export(module, "test")
+        .unwrap()
+        .as_func()
+        .unwrap();
     assert_eq!(
-        i.invoke_typed::<(), ()>(test, ()).err(),
+        store.invoke_typed_without_fuel::<(), ()>(test, ()).err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
     );
 }

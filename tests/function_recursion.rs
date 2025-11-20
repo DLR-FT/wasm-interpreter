@@ -1,4 +1,4 @@
-use wasm::{validate, RuntimeInstance, DEFAULT_MODULE};
+use wasm::{validate, Store};
 
 const FUNCTION_CALL: &str = r#"
     (module
@@ -19,18 +19,22 @@ fn simple_function_call() {
     let wasm_bytes = wat::parse_str(FUNCTION_CALL).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut store = Store::new(());
+    let module = store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap()
+        .module_addr;
+
+    let simple_caller = store
+        .instance_export(module, "simple_caller")
+        .unwrap()
+        .as_func()
+        .unwrap();
 
     assert_eq!(
         3 * 7 + 13,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "simple_caller")
-                    .unwrap(),
-                (3, 7)
-            )
+        store
+            .invoke_typed_without_fuel(simple_caller, (3, 7))
             .unwrap()
     );
 }
@@ -38,7 +42,7 @@ fn simple_function_call() {
 /// A simple function to add 2 to an i32 using a recusive call to "add_one" and return the result
 #[test_log::test]
 fn recursion_valid() {
-    use wasm::{validate, RuntimeInstance};
+    use wasm::{validate, Store};
 
     let wat = r#"
     (module
@@ -57,42 +61,21 @@ fn recursion_valid() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut store = Store::new(());
+    let module = store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap()
+        .module_addr;
 
-    assert_eq!(
-        12,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "add_two")
-                    .unwrap(),
-                10
-            )
-            .unwrap()
-    );
-    assert_eq!(
-        2,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "add_two")
-                    .unwrap(),
-                0
-            )
-            .unwrap()
-    );
-    assert_eq!(
-        -4,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "add_two")
-                    .unwrap(),
-                -6
-            )
-            .unwrap()
-    );
+    let add_two = store
+        .instance_export(module, "add_two")
+        .unwrap()
+        .as_func()
+        .unwrap();
+
+    assert_eq!(12, store.invoke_typed_without_fuel(add_two, 10).unwrap());
+    assert_eq!(2, store.invoke_typed_without_fuel(add_two, 0).unwrap());
+    assert_eq!(-4, store.invoke_typed_without_fuel(add_two, -6).unwrap());
 }
 
 #[test_log::test]
@@ -144,17 +127,22 @@ fn multivalue_call() {
     "#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut store = Store::new(());
+    let module = store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap()
+        .module_addr;
 
-    let foo_fn = instance
-        .get_function_by_name(DEFAULT_MODULE, "bar")
+    let foo = store
+        .instance_export(module, "bar")
+        .unwrap()
+        .as_func()
         .unwrap();
 
     assert_eq!(
         (10, 42.0, 5),
-        instance
-            .invoke_typed::<(), (i32, f32, i64)>(foo_fn, ())
+        store
+            .invoke_typed_without_fuel::<(), (i32, f32, i64)>(foo, ())
             .unwrap()
     );
 }

@@ -16,7 +16,7 @@
 */
 use wasm::interop::RefExtern;
 use wasm::value::ExternAddr;
-use wasm::{validate, RuntimeError, RuntimeInstance, TrapError, DEFAULT_MODULE};
+use wasm::{validate, RuntimeError, Store, TrapError};
 
 #[test_log::test]
 fn table_grow_test() {
@@ -37,105 +37,156 @@ fn table_grow_test() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut store = Store::new(());
+    let module = store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap()
+        .module_addr;
 
-    let get = i.get_function_by_name(DEFAULT_MODULE, "get").unwrap();
-    let set = i.get_function_by_name(DEFAULT_MODULE, "set").unwrap();
-    let grow = i.get_function_by_name(DEFAULT_MODULE, "grow").unwrap();
-    let grow_abbrev = i
-        .get_function_by_name(DEFAULT_MODULE, "grow-abbrev")
+    let get = store
+        .instance_export(module, "get")
+        .unwrap()
+        .as_func()
         .unwrap();
-    let size = i.get_function_by_name(DEFAULT_MODULE, "size").unwrap();
+    let set = store
+        .instance_export(module, "set")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    let grow = store
+        .instance_export(module, "grow")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    let grow_abbrev = store
+        .instance_export(module, "grow-abbrev")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    let size = store
+        .instance_export(module, "size")
+        .unwrap()
+        .as_func()
+        .unwrap();
 
-    assert_eq!(i.invoke_typed::<(), i32>(size, ()), Ok(0));
+    assert_eq!(store.invoke_typed_without_fuel::<(), i32>(size, ()), Ok(0));
     assert_eq!(
-        i.invoke_typed::<(i32, RefExtern), ()>(set, (0, RefExtern(Some(ExternAddr(2)))))
+        store
+            .invoke_typed_without_fuel::<(i32, RefExtern), ()>(
+                set,
+                (0, RefExtern(Some(ExternAddr(2))))
+            )
             .err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
         ))
     );
     assert_eq!(
-        i.invoke_typed::<i32, RefExtern>(get, 0).err(),
+        store
+            .invoke_typed_without_fuel::<i32, RefExtern>(get, 0)
+            .err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
         ))
     );
 
     assert_eq!(
-        i.invoke_typed::<(i32, RefExtern), i32>(grow, (1, RefExtern(None))),
+        store.invoke_typed_without_fuel::<(i32, RefExtern), i32>(grow, (1, RefExtern(None))),
         Ok(0)
     );
-    assert_eq!(i.invoke_typed::<(), i32>(size, ()), Ok(1));
+    assert_eq!(store.invoke_typed_without_fuel::<(), i32>(size, ()), Ok(1));
     assert_eq!(
-        i.invoke_typed::<i32, RefExtern>(get, 0),
+        store.invoke_typed_without_fuel::<i32, RefExtern>(get, 0),
         Ok(RefExtern(None))
     );
     assert_eq!(
-        i.invoke_typed::<(i32, RefExtern), ()>(set, (0, RefExtern(Some(ExternAddr(2))))),
+        store.invoke_typed_without_fuel::<(i32, RefExtern), ()>(
+            set,
+            (0, RefExtern(Some(ExternAddr(2))))
+        ),
         Ok(())
     );
     assert_eq!(
-        i.invoke_typed::<i32, RefExtern>(get, 0),
+        store.invoke_typed_without_fuel::<i32, RefExtern>(get, 0),
         Ok(RefExtern(Some(ExternAddr(2))))
     );
     assert_eq!(
-        i.invoke_typed::<(i32, RefExtern), ()>(set, (1, RefExtern(Some(ExternAddr(2)))))
+        store
+            .invoke_typed_without_fuel::<(i32, RefExtern), ()>(
+                set,
+                (1, RefExtern(Some(ExternAddr(2))))
+            )
             .err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
         ))
     );
     assert_eq!(
-        i.invoke_typed::<i32, RefExtern>(get, 1).err(),
+        store
+            .invoke_typed_without_fuel::<i32, RefExtern>(get, 1)
+            .err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
         ))
     );
 
     assert_eq!(
-        i.invoke_typed::<(i32, RefExtern), i32>(grow_abbrev, (4, RefExtern(Some(ExternAddr(3))))),
+        store.invoke_typed_without_fuel::<(i32, RefExtern), i32>(
+            grow_abbrev,
+            (4, RefExtern(Some(ExternAddr(3))))
+        ),
         Ok(1)
     );
-    assert_eq!(i.invoke_typed::<(), i32>(size, ()), Ok(5));
+    assert_eq!(store.invoke_typed_without_fuel::<(), i32>(size, ()), Ok(5));
     assert_eq!(
-        i.invoke_typed::<i32, RefExtern>(get, 0),
+        store.invoke_typed_without_fuel::<i32, RefExtern>(get, 0),
         Ok(RefExtern(Some(ExternAddr(2))))
     );
     assert_eq!(
-        i.invoke_typed::<(i32, RefExtern), ()>(set, (0, RefExtern(Some(ExternAddr(2))))),
+        store.invoke_typed_without_fuel::<(i32, RefExtern), ()>(
+            set,
+            (0, RefExtern(Some(ExternAddr(2))))
+        ),
         Ok(())
     );
     assert_eq!(
-        i.invoke_typed::<i32, RefExtern>(get, 0),
+        store.invoke_typed_without_fuel::<i32, RefExtern>(get, 0),
         Ok(RefExtern(Some(ExternAddr(2))))
     );
     assert_eq!(
-        i.invoke_typed::<i32, RefExtern>(get, 1),
+        store.invoke_typed_without_fuel::<i32, RefExtern>(get, 1),
         Ok(RefExtern(Some(ExternAddr(3))))
     );
     assert_eq!(
-        i.invoke_typed::<i32, RefExtern>(get, 4),
+        store.invoke_typed_without_fuel::<i32, RefExtern>(get, 4),
         Ok(RefExtern(Some(ExternAddr(3))))
     );
     assert_eq!(
-        i.invoke_typed::<(i32, RefExtern), ()>(set, (4, RefExtern(Some(ExternAddr(4))))),
+        store.invoke_typed_without_fuel::<(i32, RefExtern), ()>(
+            set,
+            (4, RefExtern(Some(ExternAddr(4))))
+        ),
         Ok(())
     );
     assert_eq!(
-        i.invoke_typed::<i32, RefExtern>(get, 4),
+        store.invoke_typed_without_fuel::<i32, RefExtern>(get, 4),
         Ok(RefExtern(Some(ExternAddr(4))))
     );
     assert_eq!(
-        i.invoke_typed::<(i32, RefExtern), ()>(set, (5, RefExtern(Some(ExternAddr(2)))))
+        store
+            .invoke_typed_without_fuel::<(i32, RefExtern), ()>(
+                set,
+                (5, RefExtern(Some(ExternAddr(2))))
+            )
             .err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
         ))
     );
     assert_eq!(
-        i.invoke_typed::<i32, RefExtern>(get, 5).err(),
+        store
+            .invoke_typed_without_fuel::<i32, RefExtern>(get, 5)
+            .err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
         ))
@@ -158,11 +209,23 @@ fn table_grow_outside_i32_range() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut store = Store::new(());
+    let module = store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap()
+        .module_addr;
 
-    let grow = i.get_function_by_name(DEFAULT_MODULE, "grow").unwrap();
-    assert_eq!(i.invoke_typed::<(), i32>(grow, ()).unwrap(), -1);
+    let grow = store
+        .instance_export(module, "grow")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    assert_eq!(
+        store
+            .invoke_typed_without_fuel::<(), i32>(grow, ())
+            .unwrap(),
+        -1
+    );
 }
 
 #[test_log::test]
@@ -178,15 +241,22 @@ fn table_grow_unlimited() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut store = Store::new(());
+    let module = store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap()
+        .module_addr;
 
-    let grow = i.get_function_by_name(DEFAULT_MODULE, "grow").unwrap();
-    assert_eq!(i.invoke_typed(grow, 0), Ok(0));
-    assert_eq!(i.invoke_typed(grow, 1), Ok(0));
-    assert_eq!(i.invoke_typed(grow, 0), Ok(1));
-    assert_eq!(i.invoke_typed(grow, 2), Ok(1));
-    assert_eq!(i.invoke_typed(grow, 800), Ok(3));
+    let grow = store
+        .instance_export(module, "grow")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    assert_eq!(store.invoke_typed_without_fuel(grow, 0), Ok(0));
+    assert_eq!(store.invoke_typed_without_fuel(grow, 1), Ok(0));
+    assert_eq!(store.invoke_typed_without_fuel(grow, 0), Ok(1));
+    assert_eq!(store.invoke_typed_without_fuel(grow, 2), Ok(1));
+    assert_eq!(store.invoke_typed_without_fuel(grow, 800), Ok(3));
 }
 
 #[test_log::test]
@@ -202,18 +272,25 @@ fn table_grow_with_max() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut store = Store::new(());
+    let module = store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap()
+        .module_addr;
 
-    let grow = i.get_function_by_name(DEFAULT_MODULE, "grow").unwrap();
-    assert_eq!(i.invoke_typed(grow, 0), Ok(0));
-    assert_eq!(i.invoke_typed(grow, 1), Ok(0));
-    assert_eq!(i.invoke_typed(grow, 1), Ok(1));
-    assert_eq!(i.invoke_typed(grow, 2), Ok(2));
-    assert_eq!(i.invoke_typed(grow, 6), Ok(4));
-    assert_eq!(i.invoke_typed(grow, 0), Ok(10));
-    assert_eq!(i.invoke_typed(grow, 1), Ok(-1));
-    assert_eq!(i.invoke_typed(grow, 0x10000), Ok(-1));
+    let grow = store
+        .instance_export(module, "grow")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    assert_eq!(store.invoke_typed_without_fuel(grow, 0), Ok(0));
+    assert_eq!(store.invoke_typed_without_fuel(grow, 1), Ok(0));
+    assert_eq!(store.invoke_typed_without_fuel(grow, 1), Ok(1));
+    assert_eq!(store.invoke_typed_without_fuel(grow, 2), Ok(2));
+    assert_eq!(store.invoke_typed_without_fuel(grow, 6), Ok(4));
+    assert_eq!(store.invoke_typed_without_fuel(grow, 0), Ok(10));
+    assert_eq!(store.invoke_typed_without_fuel(grow, 1), Ok(-1));
+    assert_eq!(store.invoke_typed_without_fuel(grow, 0x10000), Ok(-1));
 }
 
 #[ignore = "control flow not yet implemented"]
@@ -245,22 +322,33 @@ fn table_grow_check_null() {
 
     let wasm_bytes = wat::parse_str(w).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut i, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut store = Store::new(());
+    let module = store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap()
+        .module_addr;
 
-    let grow = i.get_function_by_name(DEFAULT_MODULE, "grow").unwrap();
-    let check_table_null = i
-        .get_function_by_name(DEFAULT_MODULE, "check-table-null")
+    let grow = store
+        .instance_export(module, "grow")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    let check_table_null = store
+        .instance_export(module, "check-table-null")
+        .unwrap()
+        .as_func()
         .unwrap();
 
     assert_eq!(
-        i.invoke_typed::<(i32, i32), RefExtern>(check_table_null, (0, 9))
+        store
+            .invoke_typed_without_fuel::<(i32, i32), RefExtern>(check_table_null, (0, 9))
             .unwrap(),
         RefExtern(None)
     );
-    assert_eq!(i.invoke_typed(grow, 10), Ok(10));
+    assert_eq!(store.invoke_typed_without_fuel(grow, 10), Ok(10));
     assert_eq!(
-        i.invoke_typed::<(i32, i32), RefExtern>(check_table_null, (0, 19))
+        store
+            .invoke_typed_without_fuel::<(i32, i32), RefExtern>(check_table_null, (0, 19))
             .unwrap(),
         RefExtern(None)
     );
@@ -280,14 +368,18 @@ fn table_grow_with_exported_table_test() {
 
     let wasm_bytes = wat::parse_str(target_wat).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
-    let (mut target_instance, _module) =
-        RuntimeInstance::new_with_default_module((), &validation_info)
-            .expect("target instantiation failed");
+    let mut store = Store::new(());
+    let module = store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap()
+        .module_addr;
 
-    let grow = target_instance
-        .get_function_by_name(DEFAULT_MODULE, "grow")
+    let grow = store
+        .instance_export(module, "grow")
+        .unwrap()
+        .as_func()
         .unwrap();
-    assert_eq!(target_instance.invoke_typed(grow, ()), Ok(1));
+    assert_eq!(store.invoke_typed_without_fuel(grow, ()), Ok(1));
 }
 
 // #[test_log::test]
@@ -305,8 +397,8 @@ fn table_grow_with_exported_table_test() {
 //     let validation_info = validate(&wasm_bytes).unwrap();
 //     let mut import1_instance = RuntimeInstance::new(&validation_info).expect("import1 instantiation failed");
 
-//     let grow = import1_instance.get_function_by_name(DEFAULT_MODULE, "grow").unwrap();
-//     assert_eq!(import1_instance.invoke_typed( grow,  ()), Ok( 2));
+//     let grow = import1_store.instance_export(module, "grow").unwrap().as_func().unwrap();
+//     assert_eq!(import1_store.invoke_typed_without_fuel( grow,  ()), Ok( 2));
 // }
 
 // #[ignore = "table exports not yet implemented"]
@@ -325,8 +417,8 @@ fn table_grow_with_exported_table_test() {
 //     let validation_info = validate(&wasm_bytes).unwrap();
 //     let mut import2_instance = RuntimeInstance::new(&validation_info).expect("import2 instantiation failed");
 
-//     let size = import2_instance.get_function_by_name(DEFAULT_MODULE, "size").unwrap();
-//     assert_eq!(import2_instance.invoke_typed( size,  ()), Ok( 3));
+//     let size = import2_store.instance_export(module, "size").unwrap().as_func().unwrap();
+//     assert_eq!(import2_store.invoke_typed_without_fuel( size,  ()), Ok( 3));
 // }
 
 // TODO: we can NOT run this test yet because ???

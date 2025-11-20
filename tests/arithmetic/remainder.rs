@@ -1,5 +1,5 @@
-use wasm::{validate, RuntimeInstance};
-use wasm::{RuntimeError, TrapError, DEFAULT_MODULE};
+use wasm::{validate, Store};
+use wasm::{RuntimeError, TrapError};
 const REM_S_WAT: &str = r#"
     (module
         (func (export "rem_s") (param $divisor {{TYPE}}) (param $dividend {{TYPE}}) (result {{TYPE}})
@@ -24,79 +24,64 @@ pub fn i64_remainder_signed_simple() {
     let wat = String::from(REM_S_WAT).replace("{{TYPE}}", "i64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut store = Store::new(());
+    let module = store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap()
+        .module_addr;
+
+    let rem_s = store
+        .instance_export(module, "rem_s")
+        .unwrap()
+        .as_func()
+        .unwrap();
 
     assert_eq!(
         0_i64,
-        instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (20_i64, 2_i64)
-            )
+        store
+            .invoke_typed_without_fuel(rem_s, (20_i64, 2_i64))
             .unwrap()
     );
     assert_eq!(
         999_i64,
-        instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (10_000_i64, 9_001_i64)
-            )
+        store
+            .invoke_typed_without_fuel(rem_s, (10_000_i64, 9_001_i64))
             .unwrap()
     );
     assert_eq!(
         -2_i64,
-        instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (-20_i64, 3_i64)
-            )
+        store
+            .invoke_typed_without_fuel(rem_s, (-20_i64, 3_i64))
             .unwrap()
     );
     assert_eq!(
         -2_i64,
-        instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (-20_i64, -3_i64)
-            )
+        store
+            .invoke_typed_without_fuel(rem_s, (-20_i64, -3_i64))
             .unwrap()
     );
     assert_eq!(
         2_i64,
-        instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (20_i64, -3_i64)
-            )
+        store
+            .invoke_typed_without_fuel(rem_s, (20_i64, -3_i64))
             .unwrap()
     );
     assert_eq!(
         2_i64,
-        instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (20_i64, 3_i64)
-            )
+        store
+            .invoke_typed_without_fuel(rem_s, (20_i64, 3_i64))
             .unwrap()
     );
     assert_eq!(
         0_i64,
-        instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (i64::MIN, -1_i64)
-            )
+        store
+            .invoke_typed_without_fuel(rem_s, (i64::MIN, -1_i64))
             .unwrap()
     );
     assert_eq!(
         0_i64,
-        instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (i64::MIN, 2_i64)
-            )
+        store
+            .invoke_typed_without_fuel(rem_s, (i64::MIN, 2_i64))
             .unwrap()
     );
 }
@@ -107,13 +92,19 @@ pub fn i64_remainder_signed_panic_dividend_0() {
     let wat = String::from(REM_S_WAT).replace("{{TYPE}}", "i64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut store = Store::new(());
+    let module = store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap()
+        .module_addr;
 
-    let result = instance.invoke_typed::<(i64, i64), i64>(
-        instance.get_function_by_index(module, 0).unwrap(),
-        (222_i64, 0_i64),
-    );
+    let rem_s = store
+        .instance_export(module, "rem_s")
+        .unwrap()
+        .as_func()
+        .unwrap();
+
+    let result = store.invoke_typed_without_fuel::<(i64, i64), i64>(rem_s, (222_i64, 0_i64));
 
     assert_eq!(
         result.unwrap_err(),
@@ -127,116 +118,89 @@ pub fn i64_remainder_unsigned_simple() {
     let wat = String::from(REM_U_WAT).replace("{{TYPE}}", "i64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut store = Store::new(());
+    let module = store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap()
+        .module_addr;
+
+    let rem_u = store
+        .instance_export(module, "rem_u")
+        .unwrap()
+        .as_func()
+        .unwrap();
 
     assert_eq!(
         0_i64,
-        instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (i64::MIN, 2_i64)
-            )
+        store
+            .invoke_typed_without_fuel(rem_u, (i64::MIN, 2_i64))
             .unwrap()
     );
     assert_eq!(
         i64::MIN,
-        instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (i64::MIN, -2_i64)
-            )
+        store
+            .invoke_typed_without_fuel(rem_u, (i64::MIN, -2_i64))
             .unwrap()
     );
     assert_eq!(
         (i64::MAX - 1),
-        instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (-2_i64, i64::MIN)
-            )
+        store
+            .invoke_typed_without_fuel(rem_u, (-2_i64, i64::MIN))
             .unwrap()
     );
     assert_eq!(
         2_i64,
-        instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (2_i64, i64::MIN)
-            )
+        store
+            .invoke_typed_without_fuel(rem_u, (2_i64, i64::MIN))
             .unwrap()
     );
 
     assert_eq!(
         0_i64,
-        instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (20_i64, 2_i64)
-            )
+        store
+            .invoke_typed_without_fuel(rem_u, (20_i64, 2_i64))
             .unwrap()
     );
     assert_eq!(
         999_i64,
-        instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (10_000_i64, 9_001_i64)
-            )
+        store
+            .invoke_typed_without_fuel(rem_u, (10_000_i64, 9_001_i64))
             .unwrap()
     );
     assert_eq!(
         2_i64,
-        instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (-20_i64, 3_i64)
-            )
+        store
+            .invoke_typed_without_fuel(rem_u, (-20_i64, 3_i64))
             .unwrap()
     );
     assert_eq!(
         -20_i64,
-        instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (-20_i64, -3_i64)
-            )
+        store
+            .invoke_typed_without_fuel(rem_u, (-20_i64, -3_i64))
             .unwrap()
     );
     assert_eq!(
         20_i64,
-        instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (20_i64, -3_i64)
-            )
+        store
+            .invoke_typed_without_fuel(rem_u, (20_i64, -3_i64))
             .unwrap()
     );
     assert_eq!(
         2_i64,
-        instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (20_i64, 3_i64)
-            )
+        store
+            .invoke_typed_without_fuel(rem_u, (20_i64, 3_i64))
             .unwrap()
     );
     assert_eq!(
         i64::MIN,
-        instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (i64::MIN, -1_i64)
-            )
+        store
+            .invoke_typed_without_fuel(rem_u, (i64::MIN, -1_i64))
             .unwrap()
     );
     assert_eq!(
         0_i64,
-        instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (i64::MIN, 2_i64)
-            )
+        store
+            .invoke_typed_without_fuel(rem_u, (i64::MIN, 2_i64))
             .unwrap()
     );
 }
@@ -247,13 +211,19 @@ pub fn i64_remainder_unsigned_panic_dividend_0() {
     let wat = String::from(REM_U_WAT).replace("{{TYPE}}", "i64");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut store = Store::new(());
+    let module = store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap()
+        .module_addr;
 
-    let result = instance.invoke_typed::<(i64, i64), i64>(
-        instance.get_function_by_index(module, 0).unwrap(),
-        (222, 0),
-    );
+    let rem_u = store
+        .instance_export(module, "rem_u")
+        .unwrap()
+        .as_func()
+        .unwrap();
+
+    let result = store.invoke_typed_without_fuel::<(i64, i64), i64>(rem_u, (222, 0));
 
     assert_eq!(
         result.unwrap_err(),
@@ -267,95 +237,45 @@ pub fn i32_remainder_signed_simple() {
     let wat = String::from(REM_S_WAT).replace("{{TYPE}}", "i32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut store = Store::new(());
+    let module = store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap()
+        .module_addr;
 
-    assert_eq!(
-        0,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "rem_s")
-                    .unwrap(),
-                (20, 2)
-            )
-            .unwrap()
-    );
+    let rem_s = store
+        .instance_export(module, "rem_s")
+        .unwrap()
+        .as_func()
+        .unwrap();
+
+    assert_eq!(0, store.invoke_typed_without_fuel(rem_s, (20, 2)).unwrap());
     assert_eq!(
         999,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "rem_s")
-                    .unwrap(),
-                (10_000, 9_001)
-            )
+        store
+            .invoke_typed_without_fuel(rem_s, (10_000, 9_001))
             .unwrap()
     );
     assert_eq!(
         -2,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "rem_s")
-                    .unwrap(),
-                (-20, 3)
-            )
-            .unwrap()
+        store.invoke_typed_without_fuel(rem_s, (-20, 3)).unwrap()
     );
     assert_eq!(
         -2,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "rem_s")
-                    .unwrap(),
-                (-20, -3)
-            )
-            .unwrap()
+        store.invoke_typed_without_fuel(rem_s, (-20, -3)).unwrap()
     );
+    assert_eq!(2, store.invoke_typed_without_fuel(rem_s, (20, -3)).unwrap());
+    assert_eq!(2, store.invoke_typed_without_fuel(rem_s, (20, 3)).unwrap());
     assert_eq!(
-        2,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "rem_s")
-                    .unwrap(),
-                (20, -3)
-            )
-            .unwrap()
-    );
-    assert_eq!(
-        2,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "rem_s")
-                    .unwrap(),
-                (20, 3)
-            )
+        0,
+        store
+            .invoke_typed_without_fuel(rem_s, (i32::MIN, -1))
             .unwrap()
     );
     assert_eq!(
         0,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "rem_s")
-                    .unwrap(),
-                (i32::MIN, -1)
-            )
-            .unwrap()
-    );
-    assert_eq!(
-        0,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "rem_s")
-                    .unwrap(),
-                (i32::MIN, 2)
-            )
+        store
+            .invoke_typed_without_fuel(rem_s, (i32::MIN, 2))
             .unwrap()
     );
 }
@@ -366,15 +286,19 @@ pub fn remainder_signed_panic_dividend_0() {
     let wat = String::from(REM_S_WAT).replace("{{TYPE}}", "i32");
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut store = Store::new(());
+    let module = store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap()
+        .module_addr;
 
-    let result = instance.invoke_typed::<(i32, i32), i32>(
-        instance
-            .get_function_by_name(DEFAULT_MODULE, "rem_s")
-            .unwrap(),
-        (222, 0),
-    );
+    let rem_s = store
+        .instance_export(module, "rem_s")
+        .unwrap()
+        .as_func()
+        .unwrap();
+
+    let result = store.invoke_typed_without_fuel::<(i32, i32), i32>(rem_s, (222, 0));
 
     assert_eq!(
         result.unwrap_err(),
@@ -389,151 +313,76 @@ pub fn i32_remainder_unsigned_simple() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut store = Store::new(());
+    let module = store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap()
+        .module_addr;
+
+    let rem_u = store
+        .instance_export(module, "rem_u")
+        .unwrap()
+        .as_func()
+        .unwrap();
 
     assert_eq!(
         0,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "rem_u")
-                    .unwrap(),
-                (i32::MIN, 2)
-            )
+        store
+            .invoke_typed_without_fuel(rem_u, (i32::MIN, 2))
             .unwrap()
     );
     assert_eq!(
         i32::MIN,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "rem_u")
-                    .unwrap(),
-                (i32::MIN, -2)
-            )
+        store
+            .invoke_typed_without_fuel(rem_u, (i32::MIN, -2))
             .unwrap()
     );
     assert_eq!(
         -(i32::MIN + 2),
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "rem_u")
-                    .unwrap(),
-                (-2, i32::MIN)
-            )
+        store
+            .invoke_typed_without_fuel(rem_u, (-2, i32::MIN))
             .unwrap()
     );
     assert_eq!(
         2,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "rem_u")
-                    .unwrap(),
-                (2, i32::MIN)
-            )
+        store
+            .invoke_typed_without_fuel(rem_u, (2, i32::MIN))
             .unwrap()
     );
     assert_eq!(
         i32::MAX,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "rem_u")
-                    .unwrap(),
-                (i32::MAX, i32::MIN)
-            )
+        store
+            .invoke_typed_without_fuel(rem_u, (i32::MAX, i32::MIN))
             .unwrap()
     );
 
-    assert_eq!(
-        0,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "rem_u")
-                    .unwrap(),
-                (20, 2)
-            )
-            .unwrap()
-    );
+    assert_eq!(0, store.invoke_typed_without_fuel(rem_u, (20, 2)).unwrap());
     assert_eq!(
         999,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "rem_u")
-                    .unwrap(),
-                (10_000, 9_001)
-            )
+        store
+            .invoke_typed_without_fuel(rem_u, (10_000, 9_001))
             .unwrap()
     );
-    assert_eq!(
-        2,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "rem_u")
-                    .unwrap(),
-                (-20, 3)
-            )
-            .unwrap()
-    );
+    assert_eq!(2, store.invoke_typed_without_fuel(rem_u, (-20, 3)).unwrap());
     assert_eq!(
         -20,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "rem_u")
-                    .unwrap(),
-                (-20, -3)
-            )
-            .unwrap()
+        store.invoke_typed_without_fuel(rem_u, (-20, -3)).unwrap()
     );
     assert_eq!(
         20,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "rem_u")
-                    .unwrap(),
-                (20, -3)
-            )
-            .unwrap()
+        store.invoke_typed_without_fuel(rem_u, (20, -3)).unwrap()
     );
-    assert_eq!(
-        2,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "rem_u")
-                    .unwrap(),
-                (20, 3)
-            )
-            .unwrap()
-    );
+    assert_eq!(2, store.invoke_typed_without_fuel(rem_u, (20, 3)).unwrap());
     assert_eq!(
         i32::MIN,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "rem_u")
-                    .unwrap(),
-                (i32::MIN, -1)
-            )
+        store
+            .invoke_typed_without_fuel(rem_u, (i32::MIN, -1))
             .unwrap()
     );
     assert_eq!(
         0,
-        instance
-            .invoke_typed(
-                instance
-                    .get_function_by_name(DEFAULT_MODULE, "rem_u")
-                    .unwrap(),
-                (i32::MIN, 2)
-            )
+        store
+            .invoke_typed_without_fuel(rem_u, (i32::MIN, 2))
             .unwrap()
     );
 }
@@ -545,15 +394,19 @@ pub fn i32_remainder_unsigned_panic_dividend_0() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, _module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut store = Store::new(());
+    let module = store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap()
+        .module_addr;
 
-    let result = instance.invoke_typed::<(i32, i32), i32>(
-        instance
-            .get_function_by_name(DEFAULT_MODULE, "rem_u")
-            .unwrap(),
-        (222, 0),
-    );
+    let rem_u = store
+        .instance_export(module, "rem_u")
+        .unwrap()
+        .as_func()
+        .unwrap();
+
+    let result = store.invoke_typed_without_fuel::<(i32, i32), i32>(rem_u, (222, 0));
 
     assert_eq!(
         result.unwrap_err(),

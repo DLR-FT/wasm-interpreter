@@ -1,6 +1,6 @@
 use std::sync::mpsc::Sender;
 
-use wasm::{config::Config, HaltExecutionError, RuntimeInstance, Value};
+use wasm::{config::Config, HaltExecutionError, Store, Value};
 
 #[test_log::test]
 fn counter() {
@@ -17,20 +17,16 @@ fn counter() {
         Ok(Vec::new())
     }
 
-    let mut instance = RuntimeInstance::new(MyCounter(0));
-    instance
-        .add_host_function_typed::<(), ()>("host", "add_one", add_one)
-        .unwrap();
-
-    let add_one_func_ref = instance.get_function_by_name("host", "add_one").unwrap();
+    let mut store = Store::new(MyCounter(0));
+    let add_one = store.func_alloc_typed::<(), ()>(add_one);
 
     for _ in 0..5 {
-        instance
-            .invoke_typed::<(), ()>(add_one_func_ref, ())
+        store
+            .invoke_typed_without_fuel::<(), ()>(add_one, ())
             .unwrap();
     }
 
-    assert_eq!(*instance.user_data(), MyCounter(5));
+    assert_eq!(store.user_data, MyCounter(5));
 }
 
 #[test_log::test]
@@ -53,16 +49,11 @@ fn channels() {
             Ok(Vec::new())
         }
 
-        let mut instance = RuntimeInstance::new(MySender(tx));
-        instance
-            .add_host_function_typed::<(), ()>("host", "send_message", send_message)
-            .unwrap();
+        let mut store = Store::new(MySender(tx));
+        let send_message = store.func_alloc_typed::<(), ()>(send_message);
 
-        let send_message_func_ref = instance
-            .get_function_by_name("host", "send_message")
-            .unwrap();
-        instance
-            .invoke_typed::<(), ()>(send_message_func_ref, ())
+        store
+            .invoke_typed_without_fuel::<(), ()>(send_message, ())
             .unwrap();
     });
 
