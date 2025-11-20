@@ -1,4 +1,4 @@
-use wasm::{linker::Linker, resumable::RunState, validate, RuntimeError, Store, Value};
+use wasm::{checked::StoredValue, linker::Linker, validate, RuntimeError, Store};
 
 const SIMPLE_IMPORT_BASE: &str = r#"
 (module
@@ -30,12 +30,12 @@ pub fn compile_simple_import() {
 
     // First instantiate the addon module
     let addon = linker
-        .module_instantiate(&mut store, &validation_info_addon, None)
+        .module_instantiate_checked(&mut store, &validation_info_addon, None)
         .unwrap();
     // We also want to define all of its exports, to makes them discoverable for
     // linking of the base module.
     linker
-        .define_module_instance(&store, "addon".to_owned(), addon)
+        .define_module_instance_checked(&store, "addon".to_owned(), addon)
         .unwrap();
 
     // Now we link and instantiate the base module. We can also perform linking
@@ -44,33 +44,30 @@ pub fn compile_simple_import() {
     // values in between.
 
     // 1. Perform linking
-    let linked_base_imports = linker.instantiate_pre(&validation_info_base).unwrap();
+    let linked_base_imports = linker
+        .instantiate_pre_checked(&validation_info_base)
+        .unwrap();
 
     // 1.5 Freely inspect the linked extern values
     assert_eq!(
-        &linked_base_imports,
-        &[store.instance_export(addon, "get_one").unwrap()]
+        &*linked_base_imports,
+        &[store.instance_export_checked(addon, "get_one").unwrap()]
     );
 
     // 2. Perform the actual instantiation directly on the `Store`
     let base = store
-        .module_instantiate(&validation_info_base, linked_base_imports, None)
+        .module_instantiate_checked(&validation_info_base, linked_base_imports, None)
         .unwrap();
 
     let get_three = store
-        .instance_export(base, "get_three")
+        .instance_export_checked(base, "get_three")
         .unwrap()
         .as_func()
         .unwrap();
 
     // Perform a call to see if everything works as expected
-    let get_three_result = store
-        .invoke(get_three, Vec::new(), None)
-        .map(|rs| match rs {
-            RunState::Finished(values) => values,
-            _ => unreachable!("fuel is disabled"),
-        });
-    assert_eq!(get_three_result.unwrap(), &[Value::I32(3)],);
+    let get_three_result = store.invoke_without_fuel_checked(get_three, Vec::new());
+    assert_eq!(get_three_result.unwrap(), &[StoredValue::I32(3)],);
 }
 
 #[test_log::test]
@@ -82,49 +79,49 @@ fn define_duplicate_extern_value() {
     let mut store = Store::new(());
 
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_checked(&validation_info, Vec::new(), None)
         .unwrap();
 
-    let foo_function = store.instance_export(module, "foo").unwrap();
+    let foo_function = store.instance_export_checked(module, "foo").unwrap();
 
     {
         let mut linker = Linker::new();
 
         linker
-            .define_module_instance(&store, "bar".to_owned(), module)
+            .define_module_instance_checked(&store, "bar".to_owned(), module)
             .unwrap();
         assert_eq!(
-            linker.define_module_instance(&store, "bar".to_owned(), module),
+            linker.define_module_instance_checked(&store, "bar".to_owned(), module),
             Err(RuntimeError::DuplicateExternDefinition)
         );
     }
     {
         let mut linker = Linker::new();
         linker
-            .define_module_instance(&store, "bar".to_owned(), module)
+            .define_module_instance_checked(&store, "bar".to_owned(), module)
             .unwrap();
         assert_eq!(
-            linker.define("bar".to_owned(), "foo".to_owned(), foo_function),
+            linker.define_checked("bar".to_owned(), "foo".to_owned(), foo_function),
             Err(RuntimeError::DuplicateExternDefinition)
         );
     }
     {
         let mut linker = Linker::new();
         linker
-            .define("bar".to_owned(), "foo".to_owned(), foo_function)
+            .define_checked("bar".to_owned(), "foo".to_owned(), foo_function)
             .unwrap();
         assert_eq!(
-            linker.define("bar".to_owned(), "foo".to_owned(), foo_function),
+            linker.define_checked("bar".to_owned(), "foo".to_owned(), foo_function),
             Err(RuntimeError::DuplicateExternDefinition)
         );
     }
     {
         let mut linker = Linker::new();
         linker
-            .define("bar".to_owned(), "foo".to_owned(), foo_function)
+            .define_checked("bar".to_owned(), "foo".to_owned(), foo_function)
             .unwrap();
         assert_eq!(
-            linker.define_module_instance(&store, "bar".to_owned(), module),
+            linker.define_module_instance_checked(&store, "bar".to_owned(), module),
             Err(RuntimeError::DuplicateExternDefinition)
         );
     }

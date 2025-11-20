@@ -21,20 +21,30 @@ fn same_type_fn() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_checked(&validation_info, Vec::new(), None)
         .unwrap();
 
     let add_one = store
-        .instance_export(module, "add_one")
+        .instance_export_checked(module, "add_one")
         .unwrap()
         .as_func()
         .unwrap();
     let add_two = store
-        .instance_export(module, "add_two")
+        .instance_export_checked(module, "add_two")
         .unwrap()
         .as_func()
         .unwrap();
 
-    assert_eq!(-5, store.invoke_typed_without_fuel(add_one, -6).unwrap());
-    assert_eq!(-4, store.invoke_typed_without_fuel(add_two, -6).unwrap());
+    assert_eq!(
+        -5,
+        store
+            .invoke_typed_without_fuel_checked(add_one, -6)
+            .unwrap()
+    );
+    assert_eq!(
+        -4,
+        store
+            .invoke_typed_without_fuel_checked(add_two, -6)
+            .unwrap()
+    );
 }

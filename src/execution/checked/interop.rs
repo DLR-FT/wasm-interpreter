@@ -1,5 +1,9 @@
 use crate::{
-    NumType, RefType, ValType, addrs::FuncAddr, checked::{Stored, StoredRef, StoredValue}, interop::RefExtern, value::{F32, F64, ValueTypeMismatchError}
+    addrs::FuncAddr,
+    checked::{Stored, StoredRef, StoredValue},
+    interop::RefExtern,
+    value::{ValueTypeMismatchError, F32, F64},
+    NumType, RefType, ValType,
 };
 
 use alloc::{fmt::Debug, vec, vec::Vec};

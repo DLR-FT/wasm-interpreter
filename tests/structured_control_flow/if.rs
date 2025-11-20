@@ -24,19 +24,19 @@ fn odd_with_if_else() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_checked(&validation_info, Vec::new(), None)
         .unwrap();
 
     let odd = store
-        .instance_export(module, "odd")
+        .instance_export_checked(module, "odd")
         .unwrap()
         .as_func()
         .unwrap();
 
-    assert_eq!(1, store.invoke_typed_without_fuel(odd, -5).unwrap());
-    assert_eq!(0, store.invoke_typed_without_fuel(odd, 0).unwrap());
-    assert_eq!(1, store.invoke_typed_without_fuel(odd, 3).unwrap());
-    assert_eq!(0, store.invoke_typed_without_fuel(odd, 4).unwrap());
+    assert_eq!(1, store.invoke_typed_without_fuel_checked(odd, -5).unwrap());
+    assert_eq!(0, store.invoke_typed_without_fuel_checked(odd, 0).unwrap());
+    assert_eq!(1, store.invoke_typed_without_fuel_checked(odd, 3).unwrap());
+    assert_eq!(0, store.invoke_typed_without_fuel_checked(odd, 4).unwrap());
 }
 
 #[test_log::test]
@@ -61,19 +61,19 @@ fn odd_with_if() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_checked(&validation_info, Vec::new(), None)
         .unwrap();
 
     let odd = store
-        .instance_export(module, "odd")
+        .instance_export_checked(module, "odd")
         .unwrap()
         .as_func()
         .unwrap();
 
-    assert_eq!(1, store.invoke_typed_without_fuel(odd, -5).unwrap());
-    assert_eq!(0, store.invoke_typed_without_fuel(odd, 0).unwrap());
-    assert_eq!(1, store.invoke_typed_without_fuel(odd, 3).unwrap());
-    assert_eq!(0, store.invoke_typed_without_fuel(odd, 4).unwrap());
+    assert_eq!(1, store.invoke_typed_without_fuel_checked(odd, -5).unwrap());
+    assert_eq!(0, store.invoke_typed_without_fuel_checked(odd, 0).unwrap());
+    assert_eq!(1, store.invoke_typed_without_fuel_checked(odd, 3).unwrap());
+    assert_eq!(0, store.invoke_typed_without_fuel_checked(odd, 4).unwrap());
 }
 
 #[test_log::test]
@@ -120,19 +120,39 @@ fn odd_with_if_else_recursive() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_checked(&validation_info, Vec::new(), None)
         .unwrap();
 
     let even_odd_fn = store
-        .instance_export(module, "odd")
+        .instance_export_checked(module, "odd")
         .unwrap()
         .as_func()
         .unwrap();
 
-    assert_eq!(1, store.invoke_typed_without_fuel(even_odd_fn, 1).unwrap());
-    assert_eq!(0, store.invoke_typed_without_fuel(even_odd_fn, 0).unwrap());
-    assert_eq!(1, store.invoke_typed_without_fuel(even_odd_fn, 3).unwrap());
-    assert_eq!(0, store.invoke_typed_without_fuel(even_odd_fn, 4).unwrap());
+    assert_eq!(
+        1,
+        store
+            .invoke_typed_without_fuel_checked(even_odd_fn, 1)
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        store
+            .invoke_typed_without_fuel_checked(even_odd_fn, 0)
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        store
+            .invoke_typed_without_fuel_checked(even_odd_fn, 3)
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        store
+            .invoke_typed_without_fuel_checked(even_odd_fn, 4)
+            .unwrap()
+    );
 }
 
 #[test_log::test]
@@ -169,25 +189,57 @@ fn recursive_fibonacci_if_else() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_checked(&validation_info, Vec::new(), None)
         .unwrap();
 
     let fibonacci_fn = store
-        .instance_export(module, "fibonacci")
+        .instance_export_checked(module, "fibonacci")
         .unwrap()
         .as_func()
         .unwrap();
 
     assert_eq!(
         1,
-        store.invoke_typed_without_fuel(fibonacci_fn, -5).unwrap()
+        store
+            .invoke_typed_without_fuel_checked(fibonacci_fn, -5)
+            .unwrap()
     );
-    assert_eq!(1, store.invoke_typed_without_fuel(fibonacci_fn, 0).unwrap());
-    assert_eq!(1, store.invoke_typed_without_fuel(fibonacci_fn, 1).unwrap());
-    assert_eq!(2, store.invoke_typed_without_fuel(fibonacci_fn, 2).unwrap());
-    assert_eq!(3, store.invoke_typed_without_fuel(fibonacci_fn, 3).unwrap());
-    assert_eq!(5, store.invoke_typed_without_fuel(fibonacci_fn, 4).unwrap());
-    assert_eq!(8, store.invoke_typed_without_fuel(fibonacci_fn, 5).unwrap());
+    assert_eq!(
+        1,
+        store
+            .invoke_typed_without_fuel_checked(fibonacci_fn, 0)
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        store
+            .invoke_typed_without_fuel_checked(fibonacci_fn, 1)
+            .unwrap()
+    );
+    assert_eq!(
+        2,
+        store
+            .invoke_typed_without_fuel_checked(fibonacci_fn, 2)
+            .unwrap()
+    );
+    assert_eq!(
+        3,
+        store
+            .invoke_typed_without_fuel_checked(fibonacci_fn, 3)
+            .unwrap()
+    );
+    assert_eq!(
+        5,
+        store
+            .invoke_typed_without_fuel_checked(fibonacci_fn, 4)
+            .unwrap()
+    );
+    assert_eq!(
+        8,
+        store
+            .invoke_typed_without_fuel_checked(fibonacci_fn, 5)
+            .unwrap()
+    );
 }
 
 #[test_log::test]
@@ -204,20 +256,20 @@ fn if_without_else_type_check1() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_checked(&validation_info, Vec::new(), None)
         .unwrap();
 
     let empty_fn = store
-        .instance_export(module, "empty")
+        .instance_export_checked(module, "empty")
         .unwrap()
         .as_func()
         .unwrap();
 
     store
-        .invoke_typed_without_fuel::<i32, ()>(empty_fn, 1)
+        .invoke_typed_without_fuel_checked::<i32, ()>(empty_fn, 1)
         .unwrap();
     store
-        .invoke_typed_without_fuel::<i32, ()>(empty_fn, 0)
+        .invoke_typed_without_fuel_checked::<i32, ()>(empty_fn, 0)
         .unwrap();
 }
 
@@ -256,11 +308,11 @@ fn if_without_else_type_check3() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_checked(&validation_info, Vec::new(), None)
         .unwrap();
 
     let add_one_if_true_fn = store
-        .instance_export(module, "add_one_if_true")
+        .instance_export_checked(module, "add_one_if_true")
         .unwrap()
         .as_func()
         .unwrap();
@@ -268,13 +320,13 @@ fn if_without_else_type_check3() {
     assert_eq!(
         7,
         store
-            .invoke_typed_without_fuel(add_one_if_true_fn, 1)
+            .invoke_typed_without_fuel_checked(add_one_if_true_fn, 1)
             .unwrap()
     );
     assert_eq!(
         5,
         store
-            .invoke_typed_without_fuel(add_one_if_true_fn, 0)
+            .invoke_typed_without_fuel_checked(add_one_if_true_fn, 0)
             .unwrap()
     );
 }
@@ -295,24 +347,24 @@ fn if_without_else_type_check4() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_checked(&validation_info, Vec::new(), None)
         .unwrap();
 
     let add_one_if_true_fn = store
-        .instance_export(module, "do_stuff_if_true")
+        .instance_export_checked(module, "do_stuff_if_true")
         .unwrap()
         .as_func()
         .unwrap();
     assert_eq!(
         (7, 42),
         store
-            .invoke_typed_without_fuel::<i32, (i32, i64)>(add_one_if_true_fn, 1)
+            .invoke_typed_without_fuel_checked::<i32, (i32, i64)>(add_one_if_true_fn, 1)
             .unwrap()
     );
     assert_eq!(
         (5, 20),
         store
-            .invoke_typed_without_fuel::<i32, (i32, i64)>(add_one_if_true_fn, 0)
+            .invoke_typed_without_fuel_checked::<i32, (i32, i64)>(add_one_if_true_fn, 0)
             .unwrap()
     );
 }

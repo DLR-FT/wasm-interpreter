@@ -38,16 +38,21 @@ pub fn i32_trunc_sat_f32_s_let_it_die() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_checked(&validation_info, Vec::new(), None)
         .unwrap();
 
     let function = store
-        .instance_export(module, "i32.trunc_sat_f32_s")
+        .instance_export_checked(module, "i32.trunc_sat_f32_s")
         .unwrap()
         .as_func()
         .unwrap();
 
-    assert_eq!(-1, store.invoke_typed_without_fuel(function, -1).unwrap());
+    assert_eq!(
+        -1,
+        store
+            .invoke_typed_without_fuel_checked(function, -1)
+            .unwrap()
+    );
 }
 
 #[test_log::test]
@@ -60,116 +65,134 @@ pub fn i32_trunc_sat_f32_s() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_checked(&validation_info, Vec::new(), None)
         .unwrap();
 
     let function = store
-        .instance_export(module, "i32.trunc_sat_f32_s")
+        .instance_export_checked(module, "i32.trunc_sat_f32_s")
         .unwrap()
         .as_func()
         .unwrap();
 
     assert_eq!(
         0,
-        store.invoke_typed_without_fuel(function, 0.0_f32).unwrap()
-    );
-    assert_eq!(
-        0,
-        store.invoke_typed_without_fuel(function, -0.0_f32).unwrap()
-    );
-    assert_eq!(
-        0,
         store
-            .invoke_typed_without_fuel(function, hexf32!("0x1p-149"))
+            .invoke_typed_without_fuel_checked(function, 0.0_f32)
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, hexf32!("-0x1p-149"))
+            .invoke_typed_without_fuel_checked(function, -0.0_f32)
             .unwrap()
     );
     assert_eq!(
-        1,
-        store.invoke_typed_without_fuel(function, 1.0_f32).unwrap()
+        0,
+        store
+            .invoke_typed_without_fuel_checked(function, hexf32!("0x1p-149"))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        store
+            .invoke_typed_without_fuel_checked(function, hexf32!("-0x1p-149"))
+            .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, hexf32!("0x1.19999ap+0"))
+            .invoke_typed_without_fuel_checked(function, 1.0_f32)
             .unwrap()
     );
     assert_eq!(
         1,
-        store.invoke_typed_without_fuel(function, 1.5_f32).unwrap()
-    );
-    assert_eq!(
-        -1,
-        store.invoke_typed_without_fuel(function, -1.0_f32).unwrap()
-    );
-    assert_eq!(
-        -1,
         store
-            .invoke_typed_without_fuel(function, hexf32!("-0x1.19999ap+0"))
+            .invoke_typed_without_fuel_checked(function, hexf32!("0x1.19999ap+0"))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        store
+            .invoke_typed_without_fuel_checked(function, 1.5_f32)
             .unwrap()
     );
     assert_eq!(
         -1,
-        store.invoke_typed_without_fuel(function, -1.5_f32).unwrap()
+        store
+            .invoke_typed_without_fuel_checked(function, -1.0_f32)
+            .unwrap()
     );
     assert_eq!(
         -1,
-        store.invoke_typed_without_fuel(function, -1.9_f32).unwrap()
+        store
+            .invoke_typed_without_fuel_checked(function, hexf32!("-0x1.19999ap+0"))
+            .unwrap()
+    );
+    assert_eq!(
+        -1,
+        store
+            .invoke_typed_without_fuel_checked(function, -1.5_f32)
+            .unwrap()
+    );
+    assert_eq!(
+        -1,
+        store
+            .invoke_typed_without_fuel_checked(function, -1.9_f32)
+            .unwrap()
     );
     assert_eq!(
         -2,
-        store.invoke_typed_without_fuel(function, -2.0_f32).unwrap()
+        store
+            .invoke_typed_without_fuel_checked(function, -2.0_f32)
+            .unwrap()
     );
     assert_eq!(
         2147483520,
         store
-            .invoke_typed_without_fuel(function, 2147483520.0_f32)
+            .invoke_typed_without_fuel_checked(function, 2147483520.0_f32)
             .unwrap()
     );
     assert_eq!(
         -2147483648,
         store
-            .invoke_typed_without_fuel(function, -2147483648.0_f32)
+            .invoke_typed_without_fuel_checked(function, -2147483648.0_f32)
             .unwrap()
     );
     assert_eq!(
         0x7fffffff,
         store
-            .invoke_typed_without_fuel(function, 2147483648.0_f32)
+            .invoke_typed_without_fuel_checked(function, 2147483648.0_f32)
             .unwrap()
     );
     assert_eq!(
         0x80000000_u32 as i32,
         store
-            .invoke_typed_without_fuel(function, -2147483904.0_f32)
+            .invoke_typed_without_fuel_checked(function, -2147483904.0_f32)
             .unwrap()
     );
     assert_eq!(
         0x7fffffff,
         store
-            .invoke_typed_without_fuel(function, f32::INFINITY)
+            .invoke_typed_without_fuel_checked(function, f32::INFINITY)
             .unwrap()
     );
     assert_eq!(
         0x80000000_u32 as i32,
         store
-            .invoke_typed_without_fuel(function, -f32::INFINITY)
+            .invoke_typed_without_fuel_checked(function, -f32::INFINITY)
             .unwrap()
     );
     assert_eq!(
         0,
-        store.invoke_typed_without_fuel(function, f32::NAN).unwrap()
+        store
+            .invoke_typed_without_fuel_checked(function, f32::NAN)
+            .unwrap()
     );
     // (assert_return (invoke "i32.trunc_sat_f32_s" (f32.const nan:0x200000)) (i32.const 0))
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, -f32::NAN)
+            .invoke_typed_without_fuel_checked(function, -f32::NAN)
             .unwrap()
     );
     // (assert_return (invoke "i32.trunc_sat_f32_s" (f32.const -nan:0x200000)) (i32.const 0))
@@ -186,16 +209,21 @@ pub fn i32_trunc_sat_f32_u_let_it_die() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_checked(&validation_info, Vec::new(), None)
         .unwrap();
 
     let function = store
-        .instance_export(module, "i32.trunc_sat_f32_u")
+        .instance_export_checked(module, "i32.trunc_sat_f32_u")
         .unwrap()
         .as_func()
         .unwrap();
 
-    assert_eq!(-1, store.invoke_typed_without_fuel(function, -1).unwrap());
+    assert_eq!(
+        -1,
+        store
+            .invoke_typed_without_fuel_checked(function, -1)
+            .unwrap()
+    );
 }
 
 #[test_log::test]
@@ -208,112 +236,128 @@ pub fn i32_trunc_sat_f32_u() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_checked(&validation_info, Vec::new(), None)
         .unwrap();
 
     let function = store
-        .instance_export(module, "i32.trunc_sat_f32_u")
+        .instance_export_checked(module, "i32.trunc_sat_f32_u")
         .unwrap()
         .as_func()
         .unwrap();
 
     assert_eq!(
         0,
-        store.invoke_typed_without_fuel(function, 0.0_f32).unwrap()
-    );
-    assert_eq!(
-        0,
-        store.invoke_typed_without_fuel(function, -0.0_f32).unwrap()
-    );
-    assert_eq!(
-        0,
         store
-            .invoke_typed_without_fuel(function, hexf32!("0x1p-149"))
+            .invoke_typed_without_fuel_checked(function, 0.0_f32)
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, hexf32!("-0x1p-149"))
+            .invoke_typed_without_fuel_checked(function, -0.0_f32)
             .unwrap()
     );
     assert_eq!(
-        1,
-        store.invoke_typed_without_fuel(function, 1.0_f32).unwrap()
+        0,
+        store
+            .invoke_typed_without_fuel_checked(function, hexf32!("0x1p-149"))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        store
+            .invoke_typed_without_fuel_checked(function, hexf32!("-0x1p-149"))
+            .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, hexf32!("0x1.19999ap+0"))
+            .invoke_typed_without_fuel_checked(function, 1.0_f32)
             .unwrap()
     );
     assert_eq!(
         1,
-        store.invoke_typed_without_fuel(function, 1.5_f32).unwrap()
+        store
+            .invoke_typed_without_fuel_checked(function, hexf32!("0x1.19999ap+0"))
+            .unwrap()
     );
     assert_eq!(
         1,
-        store.invoke_typed_without_fuel(function, 1.9_f32).unwrap()
+        store
+            .invoke_typed_without_fuel_checked(function, 1.5_f32)
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        store
+            .invoke_typed_without_fuel_checked(function, 1.9_f32)
+            .unwrap()
     );
     assert_eq!(
         2,
-        store.invoke_typed_without_fuel(function, 2.0_f32).unwrap()
+        store
+            .invoke_typed_without_fuel_checked(function, 2.0_f32)
+            .unwrap()
     );
     assert_eq!(
         -2147483648,
         store
-            .invoke_typed_without_fuel(function, 2147483648_f32)
+            .invoke_typed_without_fuel_checked(function, 2147483648_f32)
             .unwrap()
     );
     assert_eq!(
         -256,
         store
-            .invoke_typed_without_fuel(function, 4294967040.0_f32)
+            .invoke_typed_without_fuel_checked(function, 4294967040.0_f32)
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, hexf32!("-0x1.ccccccp-1"))
+            .invoke_typed_without_fuel_checked(function, hexf32!("-0x1.ccccccp-1"))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, hexf32!("-0x1.fffffep-1"))
+            .invoke_typed_without_fuel_checked(function, hexf32!("-0x1.fffffep-1"))
             .unwrap()
     );
     assert_eq!(
         0xffffffff_u32 as i32,
         store
-            .invoke_typed_without_fuel(function, 4294967296.0_f32)
+            .invoke_typed_without_fuel_checked(function, 4294967296.0_f32)
             .unwrap()
     );
     assert_eq!(
         0x00000000,
-        store.invoke_typed_without_fuel(function, -1_f32).unwrap()
+        store
+            .invoke_typed_without_fuel_checked(function, -1_f32)
+            .unwrap()
     );
     assert_eq!(
         0xffffffff_u32 as i32,
         store
-            .invoke_typed_without_fuel(function, f32::INFINITY)
+            .invoke_typed_without_fuel_checked(function, f32::INFINITY)
             .unwrap()
     );
     assert_eq!(
         0x00000000,
         store
-            .invoke_typed_without_fuel(function, f32::NEG_INFINITY)
+            .invoke_typed_without_fuel_checked(function, f32::NEG_INFINITY)
             .unwrap()
     );
     assert_eq!(
         0,
-        store.invoke_typed_without_fuel(function, f32::NAN).unwrap()
+        store
+            .invoke_typed_without_fuel_checked(function, f32::NAN)
+            .unwrap()
     );
     // (assert_return (invoke "i32.trunc_sat_f32_u" (f32.const nan:0x200000)) (i32.const 0))
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, -f32::NAN)
+            .invoke_typed_without_fuel_checked(function, -f32::NAN)
             .unwrap()
     );
     // (assert_return (invoke "i32.trunc_sat_f32_u" (f32.const -nan:0x200000)) (i32.const 0))
@@ -330,16 +374,21 @@ pub fn i32_trunc_sat_f64_s_let_it_die() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_checked(&validation_info, Vec::new(), None)
         .unwrap();
 
     let function = store
-        .instance_export(module, "i32.trunc_sat_f64_s")
+        .instance_export_checked(module, "i32.trunc_sat_f64_s")
         .unwrap()
         .as_func()
         .unwrap();
 
-    assert_eq!(-1, store.invoke_typed_without_fuel(function, -1).unwrap());
+    assert_eq!(
+        -1,
+        store
+            .invoke_typed_without_fuel_checked(function, -1)
+            .unwrap()
+    );
 }
 
 #[test_log::test]
@@ -352,92 +401,134 @@ pub fn i32_trunc_sat_f64_s() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_checked(&validation_info, Vec::new(), None)
         .unwrap();
 
     let function = store
-        .instance_export(module, "i32.trunc_sat_f64_s")
+        .instance_export_checked(module, "i32.trunc_sat_f64_s")
         .unwrap()
         .as_func()
         .unwrap();
 
-    assert_eq!(0, store.invoke_typed_without_fuel(function, 0.0).unwrap());
-    assert_eq!(0, store.invoke_typed_without_fuel(function, -0.0).unwrap());
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, hexf64!("0x0.0000000000001p-1022"))
+            .invoke_typed_without_fuel_checked(function, 0.0)
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, hexf64!("-0x0.0000000000001p-1022"))
+            .invoke_typed_without_fuel_checked(function, -0.0)
             .unwrap()
     );
-    assert_eq!(1, store.invoke_typed_without_fuel(function, 1.0).unwrap());
+    assert_eq!(
+        0,
+        store
+            .invoke_typed_without_fuel_checked(function, hexf64!("0x0.0000000000001p-1022"))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        store
+            .invoke_typed_without_fuel_checked(function, hexf64!("-0x0.0000000000001p-1022"))
+            .unwrap()
+    );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, hexf64!("0x1.199999999999ap+0"))
+            .invoke_typed_without_fuel_checked(function, 1.0)
             .unwrap()
     );
-    assert_eq!(1, store.invoke_typed_without_fuel(function, 1.5).unwrap());
-    assert_eq!(-1, store.invoke_typed_without_fuel(function, -1.0).unwrap());
+    assert_eq!(
+        1,
+        store
+            .invoke_typed_without_fuel_checked(function, hexf64!("0x1.199999999999ap+0"))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        store
+            .invoke_typed_without_fuel_checked(function, 1.5)
+            .unwrap()
+    );
     assert_eq!(
         -1,
         store
-            .invoke_typed_without_fuel(function, hexf64!("-0x1.199999999999ap+0"))
+            .invoke_typed_without_fuel_checked(function, -1.0)
             .unwrap()
     );
-    assert_eq!(-1, store.invoke_typed_without_fuel(function, -1.5).unwrap());
-    assert_eq!(-1, store.invoke_typed_without_fuel(function, -1.9).unwrap());
-    assert_eq!(-2, store.invoke_typed_without_fuel(function, -2.0).unwrap());
+    assert_eq!(
+        -1,
+        store
+            .invoke_typed_without_fuel_checked(function, hexf64!("-0x1.199999999999ap+0"))
+            .unwrap()
+    );
+    assert_eq!(
+        -1,
+        store
+            .invoke_typed_without_fuel_checked(function, -1.5)
+            .unwrap()
+    );
+    assert_eq!(
+        -1,
+        store
+            .invoke_typed_without_fuel_checked(function, -1.9)
+            .unwrap()
+    );
+    assert_eq!(
+        -2,
+        store
+            .invoke_typed_without_fuel_checked(function, -2.0)
+            .unwrap()
+    );
     assert_eq!(
         2147483647,
         store
-            .invoke_typed_without_fuel(function, 2147483647.0)
+            .invoke_typed_without_fuel_checked(function, 2147483647.0)
             .unwrap()
     );
     assert_eq!(
         -2147483648,
         store
-            .invoke_typed_without_fuel(function, -2147483648.0)
+            .invoke_typed_without_fuel_checked(function, -2147483648.0)
             .unwrap()
     );
     assert_eq!(
         0x7fffffff,
         store
-            .invoke_typed_without_fuel(function, 2147483648.0)
+            .invoke_typed_without_fuel_checked(function, 2147483648.0)
             .unwrap()
     );
     assert_eq!(
         0x80000000_u32 as i32,
         store
-            .invoke_typed_without_fuel(function, -2147483649.0)
+            .invoke_typed_without_fuel_checked(function, -2147483649.0)
             .unwrap()
     );
     assert_eq!(
         0x7fffffff,
         store
-            .invoke_typed_without_fuel(function, f64::INFINITY)
+            .invoke_typed_without_fuel_checked(function, f64::INFINITY)
             .unwrap()
     );
     assert_eq!(
         0x80000000_u32 as i32,
         store
-            .invoke_typed_without_fuel(function, -f64::INFINITY)
+            .invoke_typed_without_fuel_checked(function, -f64::INFINITY)
             .unwrap()
     );
     assert_eq!(
         0,
-        store.invoke_typed_without_fuel(function, f64::NAN).unwrap()
+        store
+            .invoke_typed_without_fuel_checked(function, f64::NAN)
+            .unwrap()
     );
     // (assert_return (invoke "i32.trunc_sat_s" (f32.const nan:0x200000)) (i32.const 0))
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, -f64::NAN)
+            .invoke_typed_without_fuel_checked(function, -f64::NAN)
             .unwrap()
     );
     // (assert_return (invoke "i32.trunc_sat_s" (f32.const -nan:0x200000)) (i32.const 0))
@@ -454,16 +545,21 @@ pub fn i32_trunc_sat_f64_u_let_it_die() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_checked(&validation_info, Vec::new(), None)
         .unwrap();
 
     let function = store
-        .instance_export(module, "i32.trunc_sat_f64_u")
+        .instance_export_checked(module, "i32.trunc_sat_f64_u")
         .unwrap()
         .as_func()
         .unwrap();
 
-    assert_eq!(-1, store.invoke_typed_without_fuel(function, -1).unwrap());
+    assert_eq!(
+        -1,
+        store
+            .invoke_typed_without_fuel_checked(function, -1)
+            .unwrap()
+    );
 }
 
 #[test_log::test]
@@ -476,112 +572,152 @@ pub fn i32_trunc_sat_f64_u() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_checked(&validation_info, Vec::new(), None)
         .unwrap();
 
     let function = store
-        .instance_export(module, "i32.trunc_sat_f64_u")
+        .instance_export_checked(module, "i32.trunc_sat_f64_u")
         .unwrap()
         .as_func()
         .unwrap();
 
-    assert_eq!(0, store.invoke_typed_without_fuel(function, 0.0).unwrap());
-    assert_eq!(0, store.invoke_typed_without_fuel(function, -0.0).unwrap());
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, hexf64!("0x0.0000000000001p-1022"))
+            .invoke_typed_without_fuel_checked(function, 0.0)
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, hexf64!("-0x0.0000000000001p-1022"))
+            .invoke_typed_without_fuel_checked(function, -0.0)
             .unwrap()
     );
-    assert_eq!(1, store.invoke_typed_without_fuel(function, 1.0).unwrap());
+    assert_eq!(
+        0,
+        store
+            .invoke_typed_without_fuel_checked(function, hexf64!("0x0.0000000000001p-1022"))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        store
+            .invoke_typed_without_fuel_checked(function, hexf64!("-0x0.0000000000001p-1022"))
+            .unwrap()
+    );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, hexf64!("0x1.199999999999ap+0"))
+            .invoke_typed_without_fuel_checked(function, 1.0)
             .unwrap()
     );
-    assert_eq!(1, store.invoke_typed_without_fuel(function, 1.5).unwrap());
-    assert_eq!(1, store.invoke_typed_without_fuel(function, 1.9).unwrap());
-    assert_eq!(2, store.invoke_typed_without_fuel(function, 2.0).unwrap());
+    assert_eq!(
+        1,
+        store
+            .invoke_typed_without_fuel_checked(function, hexf64!("0x1.199999999999ap+0"))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        store
+            .invoke_typed_without_fuel_checked(function, 1.5)
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        store
+            .invoke_typed_without_fuel_checked(function, 1.9)
+            .unwrap()
+    );
+    assert_eq!(
+        2,
+        store
+            .invoke_typed_without_fuel_checked(function, 2.0)
+            .unwrap()
+    );
     assert_eq!(
         -2147483648,
         store
-            .invoke_typed_without_fuel(function, 2147483648_f64)
+            .invoke_typed_without_fuel_checked(function, 2147483648_f64)
             .unwrap()
     );
     assert_eq!(
         -1,
         store
-            .invoke_typed_without_fuel(function, 4294967295.0)
+            .invoke_typed_without_fuel_checked(function, 4294967295.0)
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, hexf64!("-0x1.ccccccccccccdp-1"))
+            .invoke_typed_without_fuel_checked(function, hexf64!("-0x1.ccccccccccccdp-1"))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, hexf64!("-0x1.fffffffffffffp-1"))
+            .invoke_typed_without_fuel_checked(function, hexf64!("-0x1.fffffffffffffp-1"))
             .unwrap()
     );
     assert_eq!(
         100000000,
-        store.invoke_typed_without_fuel(function, 1e8_f64).unwrap()
-    );
-    assert_eq!(
-        0xffffffff_u32 as i32,
         store
-            .invoke_typed_without_fuel(function, 4294967296.0)
-            .unwrap()
-    );
-    assert_eq!(
-        0x00000000,
-        store.invoke_typed_without_fuel(function, -1.0).unwrap()
-    );
-    assert_eq!(
-        0xffffffff_u32 as i32,
-        store.invoke_typed_without_fuel(function, 1e16_f64).unwrap()
-    );
-    assert_eq!(
-        0xffffffff_u32 as i32,
-        store.invoke_typed_without_fuel(function, 1e30_f64).unwrap()
-    );
-    assert_eq!(
-        0xffffffff_u32 as i32,
-        store
-            .invoke_typed_without_fuel(function, 9223372036854775808_f64)
+            .invoke_typed_without_fuel_checked(function, 1e8_f64)
             .unwrap()
     );
     assert_eq!(
         0xffffffff_u32 as i32,
         store
-            .invoke_typed_without_fuel(function, f64::INFINITY)
+            .invoke_typed_without_fuel_checked(function, 4294967296.0)
             .unwrap()
     );
     assert_eq!(
         0x00000000,
         store
-            .invoke_typed_without_fuel(function, f64::NEG_INFINITY)
+            .invoke_typed_without_fuel_checked(function, -1.0)
+            .unwrap()
+    );
+    assert_eq!(
+        0xffffffff_u32 as i32,
+        store
+            .invoke_typed_without_fuel_checked(function, 1e16_f64)
+            .unwrap()
+    );
+    assert_eq!(
+        0xffffffff_u32 as i32,
+        store
+            .invoke_typed_without_fuel_checked(function, 1e30_f64)
+            .unwrap()
+    );
+    assert_eq!(
+        0xffffffff_u32 as i32,
+        store
+            .invoke_typed_without_fuel_checked(function, 9223372036854775808_f64)
+            .unwrap()
+    );
+    assert_eq!(
+        0xffffffff_u32 as i32,
+        store
+            .invoke_typed_without_fuel_checked(function, f64::INFINITY)
+            .unwrap()
+    );
+    assert_eq!(
+        0x00000000,
+        store
+            .invoke_typed_without_fuel_checked(function, f64::NEG_INFINITY)
             .unwrap()
     );
     assert_eq!(
         0,
-        store.invoke_typed_without_fuel(function, f64::NAN).unwrap()
+        store
+            .invoke_typed_without_fuel_checked(function, f64::NAN)
+            .unwrap()
     );
     // (assert_return (invoke "i32.trunc_sat_f64_u" (f64.const nan:0x4000000000000)) (i32.const 0))
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, -f64::NAN)
+            .invoke_typed_without_fuel_checked(function, -f64::NAN)
             .unwrap()
     );
     // (assert_return (invoke "i32.trunc_sat_f64_u" (f64.const -nan:0x4000000000000)) (i32.const 0))
@@ -598,16 +734,21 @@ pub fn i64_trunc_sat_f32_s_let_it_die() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_checked(&validation_info, Vec::new(), None)
         .unwrap();
 
     let function = store
-        .instance_export(module, "i64.trunc_sat_f32_s")
+        .instance_export_checked(module, "i64.trunc_sat_f32_s")
         .unwrap()
         .as_func()
         .unwrap();
 
-    assert_eq!(-1, store.invoke_typed_without_fuel(function, -1).unwrap());
+    assert_eq!(
+        -1,
+        store
+            .invoke_typed_without_fuel_checked(function, -1)
+            .unwrap()
+    );
 }
 
 #[test_log::test]
@@ -620,128 +761,146 @@ pub fn i64_trunc_sat_f32_s() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_checked(&validation_info, Vec::new(), None)
         .unwrap();
 
     let function = store
-        .instance_export(module, "i64.trunc_sat_f32_s")
+        .instance_export_checked(module, "i64.trunc_sat_f32_s")
         .unwrap()
         .as_func()
         .unwrap();
 
     assert_eq!(
         0_i64,
-        store.invoke_typed_without_fuel(function, 0.0_f32).unwrap()
-    );
-    assert_eq!(
-        0_i64,
-        store.invoke_typed_without_fuel(function, -0.0_f32).unwrap()
-    );
-    assert_eq!(
-        0_i64,
         store
-            .invoke_typed_without_fuel(function, hexf32!("0x1p-149"))
+            .invoke_typed_without_fuel_checked(function, 0.0_f32)
             .unwrap()
     );
     assert_eq!(
         0_i64,
         store
-            .invoke_typed_without_fuel(function, hexf32!("-0x1p-149"))
+            .invoke_typed_without_fuel_checked(function, -0.0_f32)
             .unwrap()
     );
     assert_eq!(
-        1_i64,
-        store.invoke_typed_without_fuel(function, 1.0_f32).unwrap()
+        0_i64,
+        store
+            .invoke_typed_without_fuel_checked(function, hexf32!("0x1p-149"))
+            .unwrap()
+    );
+    assert_eq!(
+        0_i64,
+        store
+            .invoke_typed_without_fuel_checked(function, hexf32!("-0x1p-149"))
+            .unwrap()
     );
     assert_eq!(
         1_i64,
         store
-            .invoke_typed_without_fuel(function, hexf32!("0x1.19999ap+0"))
+            .invoke_typed_without_fuel_checked(function, 1.0_f32)
             .unwrap()
     );
     assert_eq!(
         1_i64,
-        store.invoke_typed_without_fuel(function, 1.5_f32).unwrap()
-    );
-    assert_eq!(
-        -1_i64,
-        store.invoke_typed_without_fuel(function, -1.0_f32).unwrap()
-    );
-    assert_eq!(
-        -1_i64,
         store
-            .invoke_typed_without_fuel(function, hexf32!("-0x1.19999ap+0"))
+            .invoke_typed_without_fuel_checked(function, hexf32!("0x1.19999ap+0"))
+            .unwrap()
+    );
+    assert_eq!(
+        1_i64,
+        store
+            .invoke_typed_without_fuel_checked(function, 1.5_f32)
             .unwrap()
     );
     assert_eq!(
         -1_i64,
-        store.invoke_typed_without_fuel(function, -1.5_f32).unwrap()
+        store
+            .invoke_typed_without_fuel_checked(function, -1.0_f32)
+            .unwrap()
     );
     assert_eq!(
         -1_i64,
-        store.invoke_typed_without_fuel(function, -1.9_f32).unwrap()
+        store
+            .invoke_typed_without_fuel_checked(function, hexf32!("-0x1.19999ap+0"))
+            .unwrap()
+    );
+    assert_eq!(
+        -1_i64,
+        store
+            .invoke_typed_without_fuel_checked(function, -1.5_f32)
+            .unwrap()
+    );
+    assert_eq!(
+        -1_i64,
+        store
+            .invoke_typed_without_fuel_checked(function, -1.9_f32)
+            .unwrap()
     );
     assert_eq!(
         -2_i64,
-        store.invoke_typed_without_fuel(function, -2.0_f32).unwrap()
+        store
+            .invoke_typed_without_fuel_checked(function, -2.0_f32)
+            .unwrap()
     );
     assert_eq!(
         4294967296_i64,
         store
-            .invoke_typed_without_fuel(function, 4294967296_f32)
+            .invoke_typed_without_fuel_checked(function, 4294967296_f32)
             .unwrap()
     );
     assert_eq!(
         -4294967296_i64,
         store
-            .invoke_typed_without_fuel(function, -4294967296_f32)
+            .invoke_typed_without_fuel_checked(function, -4294967296_f32)
             .unwrap()
     );
     assert_eq!(
         9223371487098961920_i64,
         store
-            .invoke_typed_without_fuel(function, 9223371487098961920.0_f32)
+            .invoke_typed_without_fuel_checked(function, 9223371487098961920.0_f32)
             .unwrap()
     );
     assert_eq!(
         -9223372036854775808_i64,
         store
-            .invoke_typed_without_fuel(function, -9223372036854775808.0_f32)
+            .invoke_typed_without_fuel_checked(function, -9223372036854775808.0_f32)
             .unwrap()
     );
     assert_eq!(
         0x7fffffffffffffff_i64,
         store
-            .invoke_typed_without_fuel(function, 9223372036854775808.0_f32)
+            .invoke_typed_without_fuel_checked(function, 9223372036854775808.0_f32)
             .unwrap()
     );
     assert_eq!(
         0x8000000000000000_u64 as i64,
         store
-            .invoke_typed_without_fuel(function, -9223373136366403584.0_f32)
+            .invoke_typed_without_fuel_checked(function, -9223373136366403584.0_f32)
             .unwrap()
     );
     assert_eq!(
         0x7fffffffffffffff_i64,
         store
-            .invoke_typed_without_fuel(function, f32::INFINITY)
+            .invoke_typed_without_fuel_checked(function, f32::INFINITY)
             .unwrap()
     );
     assert_eq!(
         0x8000000000000000_u64 as i64,
         store
-            .invoke_typed_without_fuel(function, -f32::INFINITY)
+            .invoke_typed_without_fuel_checked(function, -f32::INFINITY)
             .unwrap()
     );
     assert_eq!(
         0_i64,
-        store.invoke_typed_without_fuel(function, f32::NAN).unwrap()
+        store
+            .invoke_typed_without_fuel_checked(function, f32::NAN)
+            .unwrap()
     );
     // (assert_return (invoke "i64.trunc_sat_f32_s" (f32.const nan:0x200000)) (i64.const 0))
     assert_eq!(
         0_i64,
         store
-            .invoke_typed_without_fuel(function, -f32::NAN)
+            .invoke_typed_without_fuel_checked(function, -f32::NAN)
             .unwrap()
     );
     // (assert_return (invoke "i64.trunc_sat_f32_s" (f32.const -nan:0x200000)) (i64.const 0))
@@ -758,16 +917,21 @@ pub fn i64_trunc_sat_f32_u_let_it_die() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_checked(&validation_info, Vec::new(), None)
         .unwrap();
 
     let function = store
-        .instance_export(module, "i64.trunc_sat_f32_u")
+        .instance_export_checked(module, "i64.trunc_sat_f32_u")
         .unwrap()
         .as_func()
         .unwrap();
 
-    assert_eq!(-1, store.invoke_typed_without_fuel(function, -1).unwrap());
+    assert_eq!(
+        -1,
+        store
+            .invoke_typed_without_fuel_checked(function, -1)
+            .unwrap()
+    );
 }
 
 #[test_log::test]
@@ -780,104 +944,116 @@ pub fn i64_trunc_sat_f32_u() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_checked(&validation_info, Vec::new(), None)
         .unwrap();
 
     let function = store
-        .instance_export(module, "i64.trunc_sat_f32_u")
+        .instance_export_checked(module, "i64.trunc_sat_f32_u")
         .unwrap()
         .as_func()
         .unwrap();
 
     assert_eq!(
         0_i64,
-        store.invoke_typed_without_fuel(function, 0.0_f32).unwrap()
-    );
-    assert_eq!(
-        0_i64,
-        store.invoke_typed_without_fuel(function, -0.0_f32).unwrap()
-    );
-    assert_eq!(
-        0_i64,
         store
-            .invoke_typed_without_fuel(function, hexf32!("0x1p-149"))
+            .invoke_typed_without_fuel_checked(function, 0.0_f32)
             .unwrap()
     );
     assert_eq!(
         0_i64,
         store
-            .invoke_typed_without_fuel(function, hexf32!("-0x1p-149"))
+            .invoke_typed_without_fuel_checked(function, -0.0_f32)
             .unwrap()
     );
     assert_eq!(
-        1_i64,
-        store.invoke_typed_without_fuel(function, 1.0_f32).unwrap()
+        0_i64,
+        store
+            .invoke_typed_without_fuel_checked(function, hexf32!("0x1p-149"))
+            .unwrap()
+    );
+    assert_eq!(
+        0_i64,
+        store
+            .invoke_typed_without_fuel_checked(function, hexf32!("-0x1p-149"))
+            .unwrap()
     );
     assert_eq!(
         1_i64,
         store
-            .invoke_typed_without_fuel(function, hexf32!("0x1.19999ap+0"))
+            .invoke_typed_without_fuel_checked(function, 1.0_f32)
             .unwrap()
     );
     assert_eq!(
         1_i64,
-        store.invoke_typed_without_fuel(function, 1.5_f32).unwrap()
+        store
+            .invoke_typed_without_fuel_checked(function, hexf32!("0x1.19999ap+0"))
+            .unwrap()
+    );
+    assert_eq!(
+        1_i64,
+        store
+            .invoke_typed_without_fuel_checked(function, 1.5_f32)
+            .unwrap()
     );
     assert_eq!(
         4294967296_i64,
         store
-            .invoke_typed_without_fuel(function, 4294967296_f32)
+            .invoke_typed_without_fuel_checked(function, 4294967296_f32)
             .unwrap()
     );
     assert_eq!(
         -1099511627776_i64,
         store
-            .invoke_typed_without_fuel(function, 18446742974197923840.0_f32)
+            .invoke_typed_without_fuel_checked(function, 18446742974197923840.0_f32)
             .unwrap()
     );
     assert_eq!(
         0_i64,
         store
-            .invoke_typed_without_fuel(function, hexf32!("-0x1.ccccccp-1"))
+            .invoke_typed_without_fuel_checked(function, hexf32!("-0x1.ccccccp-1"))
             .unwrap()
     );
     assert_eq!(
         0_i64,
         store
-            .invoke_typed_without_fuel(function, hexf32!("-0x1.fffffep-1"))
+            .invoke_typed_without_fuel_checked(function, hexf32!("-0x1.fffffep-1"))
             .unwrap()
     );
     assert_eq!(
         0xffffffffffffffff_u64 as i64,
         store
-            .invoke_typed_without_fuel(function, 18446744073709551616.0_f32)
+            .invoke_typed_without_fuel_checked(function, 18446744073709551616.0_f32)
             .unwrap()
     );
     assert_eq!(
         0x0000000000000000_i64,
-        store.invoke_typed_without_fuel(function, -1.0_f32).unwrap()
+        store
+            .invoke_typed_without_fuel_checked(function, -1.0_f32)
+            .unwrap()
     );
     assert_eq!(
         0xffffffffffffffff_u64 as i64,
         store
-            .invoke_typed_without_fuel(function, f32::INFINITY)
+            .invoke_typed_without_fuel_checked(function, f32::INFINITY)
             .unwrap()
     );
     assert_eq!(
         0x0000000000000000_i64,
         store
-            .invoke_typed_without_fuel(function, f32::NEG_INFINITY)
+            .invoke_typed_without_fuel_checked(function, f32::NEG_INFINITY)
             .unwrap()
     );
     assert_eq!(
         0_i64,
-        store.invoke_typed_without_fuel(function, f32::NAN).unwrap()
+        store
+            .invoke_typed_without_fuel_checked(function, f32::NAN)
+            .unwrap()
     );
     // (assert_return (invoke "i64.trunc_sat_f32_u" (f32.const nan:0x200000)) (i64.const 0))
     assert_eq!(
         0_i64,
         store
-            .invoke_typed_without_fuel(function, -f32::NAN)
+            .invoke_typed_without_fuel_checked(function, -f32::NAN)
             .unwrap()
     );
     // (assert_return (invoke "i64.trunc_sat_f32_u" (f32.const -nan:0x200000)) (i64.const 0))
@@ -894,16 +1070,21 @@ pub fn i64_trunc_sat_f64_s_let_it_die() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_checked(&validation_info, Vec::new(), None)
         .unwrap();
 
     let function = store
-        .instance_export(module, "i64.trunc_sat_f64_s")
+        .instance_export_checked(module, "i64.trunc_sat_f64_s")
         .unwrap()
         .as_func()
         .unwrap();
 
-    assert_eq!(-1, store.invoke_typed_without_fuel(function, -1).unwrap());
+    assert_eq!(
+        -1,
+        store
+            .invoke_typed_without_fuel_checked(function, -1)
+            .unwrap()
+    );
 }
 
 #[test_log::test]
@@ -916,128 +1097,146 @@ pub fn i64_trunc_sat_f64_s() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_checked(&validation_info, Vec::new(), None)
         .unwrap();
 
     let function = store
-        .instance_export(module, "i64.trunc_sat_f64_s")
+        .instance_export_checked(module, "i64.trunc_sat_f64_s")
         .unwrap()
         .as_func()
         .unwrap();
 
     assert_eq!(
         0_i64,
-        store.invoke_typed_without_fuel(function, 0.0).unwrap()
-    );
-    assert_eq!(
-        0_i64,
-        store.invoke_typed_without_fuel(function, -0.0).unwrap()
-    );
-    assert_eq!(
-        0_i64,
         store
-            .invoke_typed_without_fuel(function, hexf64!("0x0.0000000000001p-1022"))
+            .invoke_typed_without_fuel_checked(function, 0.0)
             .unwrap()
     );
     assert_eq!(
         0_i64,
         store
-            .invoke_typed_without_fuel(function, hexf64!("-0x0.0000000000001p-1022"))
+            .invoke_typed_without_fuel_checked(function, -0.0)
             .unwrap()
     );
     assert_eq!(
-        1_i64,
-        store.invoke_typed_without_fuel(function, 1.0).unwrap()
+        0_i64,
+        store
+            .invoke_typed_without_fuel_checked(function, hexf64!("0x0.0000000000001p-1022"))
+            .unwrap()
+    );
+    assert_eq!(
+        0_i64,
+        store
+            .invoke_typed_without_fuel_checked(function, hexf64!("-0x0.0000000000001p-1022"))
+            .unwrap()
     );
     assert_eq!(
         1_i64,
         store
-            .invoke_typed_without_fuel(function, hexf64!("0x1.199999999999ap+0"))
+            .invoke_typed_without_fuel_checked(function, 1.0)
             .unwrap()
     );
     assert_eq!(
         1_i64,
-        store.invoke_typed_without_fuel(function, 1.5).unwrap()
-    );
-    assert_eq!(
-        -1_i64,
-        store.invoke_typed_without_fuel(function, -1.0).unwrap()
-    );
-    assert_eq!(
-        -1_i64,
         store
-            .invoke_typed_without_fuel(function, hexf64!("-0x1.199999999999ap+0"))
+            .invoke_typed_without_fuel_checked(function, hexf64!("0x1.199999999999ap+0"))
+            .unwrap()
+    );
+    assert_eq!(
+        1_i64,
+        store
+            .invoke_typed_without_fuel_checked(function, 1.5)
             .unwrap()
     );
     assert_eq!(
         -1_i64,
-        store.invoke_typed_without_fuel(function, -1.5).unwrap()
+        store
+            .invoke_typed_without_fuel_checked(function, -1.0)
+            .unwrap()
     );
     assert_eq!(
         -1_i64,
-        store.invoke_typed_without_fuel(function, -1.9).unwrap()
+        store
+            .invoke_typed_without_fuel_checked(function, hexf64!("-0x1.199999999999ap+0"))
+            .unwrap()
+    );
+    assert_eq!(
+        -1_i64,
+        store
+            .invoke_typed_without_fuel_checked(function, -1.5)
+            .unwrap()
+    );
+    assert_eq!(
+        -1_i64,
+        store
+            .invoke_typed_without_fuel_checked(function, -1.9)
+            .unwrap()
     );
     assert_eq!(
         -2_i64,
-        store.invoke_typed_without_fuel(function, -2.0).unwrap()
+        store
+            .invoke_typed_without_fuel_checked(function, -2.0)
+            .unwrap()
     );
     assert_eq!(
         4294967296_i64,
         store
-            .invoke_typed_without_fuel(function, 4294967296_f64)
+            .invoke_typed_without_fuel_checked(function, 4294967296_f64)
             .unwrap()
     );
     assert_eq!(
         -4294967296_i64,
         store
-            .invoke_typed_without_fuel(function, -4294967296_f64)
+            .invoke_typed_without_fuel_checked(function, -4294967296_f64)
             .unwrap()
     );
     assert_eq!(
         9223372036854774784_i64,
         store
-            .invoke_typed_without_fuel(function, 9223372036854774784.0)
+            .invoke_typed_without_fuel_checked(function, 9223372036854774784.0)
             .unwrap()
     );
     assert_eq!(
         -9223372036854775808_i64,
         store
-            .invoke_typed_without_fuel(function, -9223372036854775808.0)
+            .invoke_typed_without_fuel_checked(function, -9223372036854775808.0)
             .unwrap()
     );
     assert_eq!(
         0x7fffffffffffffff_i64,
         store
-            .invoke_typed_without_fuel(function, 9223372036854775808.0)
+            .invoke_typed_without_fuel_checked(function, 9223372036854775808.0)
             .unwrap()
     );
     assert_eq!(
         0x8000000000000000_u64 as i64,
         store
-            .invoke_typed_without_fuel(function, -9223372036854777856.0)
+            .invoke_typed_without_fuel_checked(function, -9223372036854777856.0)
             .unwrap()
     );
     assert_eq!(
         0x7fffffffffffffff_i64,
         store
-            .invoke_typed_without_fuel(function, f64::INFINITY)
+            .invoke_typed_without_fuel_checked(function, f64::INFINITY)
             .unwrap()
     );
     assert_eq!(
         0x8000000000000000_u64 as i64,
         store
-            .invoke_typed_without_fuel(function, -f64::INFINITY)
+            .invoke_typed_without_fuel_checked(function, -f64::INFINITY)
             .unwrap()
     );
     assert_eq!(
         0_i64,
-        store.invoke_typed_without_fuel(function, f64::NAN).unwrap()
+        store
+            .invoke_typed_without_fuel_checked(function, f64::NAN)
+            .unwrap()
     );
     // (assert_return (invoke "i64.trunc_sat_f64_s" (f64.const nan:0x4000000000000)) (i64.const 0))
     assert_eq!(
         0_i64,
         store
-            .invoke_typed_without_fuel(function, -f64::NAN)
+            .invoke_typed_without_fuel_checked(function, -f64::NAN)
             .unwrap()
     );
     // (assert_return (invoke "i64.trunc_sat_f64_s" (f64.const -nan:0x4000000000000)) (i64.const 0))
@@ -1054,16 +1253,21 @@ pub fn i64_trunc_sat_f64_u_let_it_die() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_checked(&validation_info, Vec::new(), None)
         .unwrap();
 
     let function = store
-        .instance_export(module, "i64.trunc_sat_f64_u")
+        .instance_export_checked(module, "i64.trunc_sat_f64_u")
         .unwrap()
         .as_func()
         .unwrap();
 
-    assert_eq!(-1, store.invoke_typed_without_fuel(function, -1).unwrap());
+    assert_eq!(
+        -1,
+        store
+            .invoke_typed_without_fuel_checked(function, -1)
+            .unwrap()
+    );
 }
 
 #[test_log::test]
@@ -1076,128 +1280,146 @@ pub fn i64_trunc_sat_f64_u() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_checked(&validation_info, Vec::new(), None)
         .unwrap();
 
     let function = store
-        .instance_export(module, "i64.trunc_sat_f64_u")
+        .instance_export_checked(module, "i64.trunc_sat_f64_u")
         .unwrap()
         .as_func()
         .unwrap();
 
     assert_eq!(
         0_i64,
-        store.invoke_typed_without_fuel(function, 0.0).unwrap()
-    );
-    assert_eq!(
-        0_i64,
-        store.invoke_typed_without_fuel(function, -0.0).unwrap()
-    );
-    assert_eq!(
-        0_i64,
         store
-            .invoke_typed_without_fuel(function, hexf64!("0x0.0000000000001p-1022"))
+            .invoke_typed_without_fuel_checked(function, 0.0)
             .unwrap()
     );
     assert_eq!(
         0_i64,
         store
-            .invoke_typed_without_fuel(function, hexf64!("-0x0.0000000000001p-1022"))
+            .invoke_typed_without_fuel_checked(function, -0.0)
             .unwrap()
     );
     assert_eq!(
-        1_i64,
-        store.invoke_typed_without_fuel(function, 1.0).unwrap()
+        0_i64,
+        store
+            .invoke_typed_without_fuel_checked(function, hexf64!("0x0.0000000000001p-1022"))
+            .unwrap()
+    );
+    assert_eq!(
+        0_i64,
+        store
+            .invoke_typed_without_fuel_checked(function, hexf64!("-0x0.0000000000001p-1022"))
+            .unwrap()
     );
     assert_eq!(
         1_i64,
         store
-            .invoke_typed_without_fuel(function, hexf64!("0x1.199999999999ap+0"))
+            .invoke_typed_without_fuel_checked(function, 1.0)
             .unwrap()
     );
     assert_eq!(
         1_i64,
-        store.invoke_typed_without_fuel(function, 1.5).unwrap()
+        store
+            .invoke_typed_without_fuel_checked(function, hexf64!("0x1.199999999999ap+0"))
+            .unwrap()
     );
     assert_eq!(
         1_i64,
-        store.invoke_typed_without_fuel(function, 1.9).unwrap()
+        store
+            .invoke_typed_without_fuel_checked(function, 1.5)
+            .unwrap()
+    );
+    assert_eq!(
+        1_i64,
+        store
+            .invoke_typed_without_fuel_checked(function, 1.9)
+            .unwrap()
     );
     assert_eq!(
         0xffffffff_i64,
         store
-            .invoke_typed_without_fuel(function, 4294967295_f64)
+            .invoke_typed_without_fuel_checked(function, 4294967295_f64)
             .unwrap()
     );
     assert_eq!(
         0x100000000_i64,
         store
-            .invoke_typed_without_fuel(function, 4294967296_f64)
+            .invoke_typed_without_fuel_checked(function, 4294967296_f64)
             .unwrap()
     );
     assert_eq!(
         -2048_i64,
         store
-            .invoke_typed_without_fuel(function, 18446744073709549568.0)
+            .invoke_typed_without_fuel_checked(function, 18446744073709549568.0)
             .unwrap()
     );
     assert_eq!(
         0_i64,
         store
-            .invoke_typed_without_fuel(function, hexf64!("-0x1.ccccccccccccdp-1"))
+            .invoke_typed_without_fuel_checked(function, hexf64!("-0x1.ccccccccccccdp-1"))
             .unwrap()
     );
     assert_eq!(
         0_i64,
         store
-            .invoke_typed_without_fuel(function, hexf64!("-0x1.fffffffffffffp-1"))
+            .invoke_typed_without_fuel_checked(function, hexf64!("-0x1.fffffffffffffp-1"))
             .unwrap()
     );
     assert_eq!(
         100000000_i64,
-        store.invoke_typed_without_fuel(function, 1e8_f64).unwrap()
+        store
+            .invoke_typed_without_fuel_checked(function, 1e8_f64)
+            .unwrap()
     );
     assert_eq!(
         10000000000000000_i64,
-        store.invoke_typed_without_fuel(function, 1e16_f64).unwrap()
+        store
+            .invoke_typed_without_fuel_checked(function, 1e16_f64)
+            .unwrap()
     );
     assert_eq!(
         -9223372036854775808_i64,
         store
-            .invoke_typed_without_fuel(function, 9223372036854775808_f64)
+            .invoke_typed_without_fuel_checked(function, 9223372036854775808_f64)
             .unwrap()
     );
     assert_eq!(
         0xffffffffffffffff_u64 as i64,
         store
-            .invoke_typed_without_fuel(function, 18446744073709551616.0_f64)
+            .invoke_typed_without_fuel_checked(function, 18446744073709551616.0_f64)
             .unwrap()
     );
     assert_eq!(
         0x0000000000000000_i64,
-        store.invoke_typed_without_fuel(function, -1.0).unwrap()
+        store
+            .invoke_typed_without_fuel_checked(function, -1.0)
+            .unwrap()
     );
     assert_eq!(
         0xffffffffffffffff_u64 as i64,
         store
-            .invoke_typed_without_fuel(function, f64::INFINITY)
+            .invoke_typed_without_fuel_checked(function, f64::INFINITY)
             .unwrap()
     );
     assert_eq!(
         0x0000000000000000_i64,
         store
-            .invoke_typed_without_fuel(function, f64::NEG_INFINITY)
+            .invoke_typed_without_fuel_checked(function, f64::NEG_INFINITY)
             .unwrap()
     );
     assert_eq!(
         0_i64,
-        store.invoke_typed_without_fuel(function, f64::NAN).unwrap()
+        store
+            .invoke_typed_without_fuel_checked(function, f64::NAN)
+            .unwrap()
     );
     // (assert_return (invoke "i64.trunc_sat_f64_u" (f64.const nan:0x4000000000000)) (i64.const 0))
     assert_eq!(
         0_i64,
         store
-            .invoke_typed_without_fuel(function, -f64::NAN)
+            .invoke_typed_without_fuel_checked(function, -f64::NAN)
             .unwrap()
     );
     // (assert_return (invoke "i64.trunc_sat_f64_u" (f64.const -nan:0x4000000000000)) (i64.const 0))

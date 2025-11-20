@@ -21,11 +21,11 @@ pub fn i64_subtract() {
 
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_checked(&validation_info, Vec::new(), None)
         .unwrap();
 
     let subtract = store
-        .instance_export(module, "subtract")
+        .instance_export_checked(module, "subtract")
         .unwrap()
         .as_func()
         .unwrap();
@@ -33,32 +33,32 @@ pub fn i64_subtract() {
     assert_eq!(
         -10_i64,
         store
-            .invoke_typed_without_fuel(subtract, (1_i64, 11_i64))
+            .invoke_typed_without_fuel_checked(subtract, (1_i64, 11_i64))
             .unwrap()
     );
     assert_eq!(
         0_i64,
         store
-            .invoke_typed_without_fuel(subtract, (0_i64, 0_i64))
+            .invoke_typed_without_fuel_checked(subtract, (0_i64, 0_i64))
             .unwrap()
     );
     assert_eq!(
         10_i64,
         store
-            .invoke_typed_without_fuel(subtract, (-10_i64, -20_i64))
+            .invoke_typed_without_fuel_checked(subtract, (-10_i64, -20_i64))
             .unwrap()
     );
 
     assert_eq!(
         i64::MAX - 1,
         store
-            .invoke_typed_without_fuel(subtract, (i64::MAX - 1, 0_i64))
+            .invoke_typed_without_fuel_checked(subtract, (i64::MAX - 1, 0_i64))
             .unwrap()
     );
     assert_eq!(
         i64::MIN + 3,
         store
-            .invoke_typed_without_fuel(subtract, (i64::MIN + 3, 0_i64))
+            .invoke_typed_without_fuel_checked(subtract, (i64::MIN + 3, 0_i64))
             .unwrap()
     );
 }
