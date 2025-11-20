@@ -1,4 +1,4 @@
-use wasm::{validate, RuntimeInstance};
+use wasm::{validate, Store};
 
 const WAT_SUBTRACT_TEMPLATE: &str = r#"
     (module
@@ -19,53 +19,46 @@ pub fn i64_subtract() {
 
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    let (mut instance, module) = RuntimeInstance::new_with_default_module((), &validation_info)
-        .expect("instantiation failed");
+    let mut store = Store::new(());
+    let module = store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
+
+    let subtract = store
+        .instance_export(module, "subtract")
+        .unwrap()
+        .as_func()
+        .unwrap();
 
     assert_eq!(
         -10_i64,
-        instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (1_i64, 11_i64)
-            )
+        store
+            .invoke_typed_without_fuel(subtract, (1_i64, 11_i64))
             .unwrap()
     );
     assert_eq!(
         0_i64,
-        instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (0_i64, 0_i64)
-            )
+        store
+            .invoke_typed_without_fuel(subtract, (0_i64, 0_i64))
             .unwrap()
     );
     assert_eq!(
         10_i64,
-        instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (-10_i64, -20_i64)
-            )
+        store
+            .invoke_typed_without_fuel(subtract, (-10_i64, -20_i64))
             .unwrap()
     );
 
     assert_eq!(
         i64::MAX - 1,
-        instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (i64::MAX - 1, 0_i64)
-            )
+        store
+            .invoke_typed_without_fuel(subtract, (i64::MAX - 1, 0_i64))
             .unwrap()
     );
     assert_eq!(
         i64::MIN + 3,
-        instance
-            .invoke_typed(
-                instance.get_function_by_index(module, 0).unwrap(),
-                (i64::MIN + 3, 0_i64)
-            )
+        store
+            .invoke_typed_without_fuel(subtract, (i64::MIN + 3, 0_i64))
             .unwrap()
     );
 }

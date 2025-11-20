@@ -1,4 +1,4 @@
-use wasm::{validate, RuntimeInstance};
+use wasm::{validate, Store};
 
 const _UNMET_IMPORTS: &str = r#"
 (module
@@ -73,7 +73,7 @@ pub fn unmet_imports() {
     // assert_eq!(
     //     RuntimeError::UnmetImport,
     //     instance
-    //         .invoke_typed::<(), i32>(&get_three, ())
+    //         .store.invoke_typed_without_fuel::<(), i32>(&get_three, ())
     //         .expect_err("Expected invoke to fail due to unmet imports")
     // );
 }
@@ -82,13 +82,17 @@ pub fn unmet_imports() {
 pub fn compile_simple_import() {
     let wasm_bytes = wat::parse_str(SIMPLE_IMPORT_ADDON).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, _module_env) =
-        RuntimeInstance::new_named((), "env", &validation_info).expect("instantiation failed");
+    let mut store = Store::new(());
+    let module_env = store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
+
+    let get_one = store.instance_export(module_env, "get_one").unwrap();
 
     let wasm_bytes = wat::parse_str(SIMPLE_IMPORT_BASE).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let _module_base = instance
-        .add_module("base", &validation_info, None)
+    let _module_base = store
+        .module_instantiate(&validation_info, vec![get_one], None)
         .expect("Successful instantiation");
 
     // assert_eq!((), instance.invoke_typed_named("print_three", ()).unwrap());
@@ -100,38 +104,60 @@ pub fn compile_simple_import() {
 pub fn run_simple_import() {
     let wasm_bytes = wat::parse_str(SIMPLE_IMPORT_ADDON).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, _module_env) =
-        RuntimeInstance::new_named((), "env", &validation_info).expect("instantiation failed");
+    let mut store = Store::new(());
+    let module_env = store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
+
+    let get_one = store.instance_export(module_env, "get_one").unwrap();
 
     let wasm_bytes = wat::parse_str(SIMPLE_IMPORT_BASE).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let module_base = instance
-        .add_module("base", &validation_info, None)
-        .expect("instantiation failed");
+    let module_base = store
+        .module_instantiate(&validation_info, vec![get_one], None)
+        .unwrap();
 
-    let get_three = instance.get_function_by_name("base", "get_three").unwrap();
-    assert_eq!(3, instance.invoke_typed(get_three, ()).unwrap());
+    let get_three = store
+        .instance_export(module_base, "get_three")
+        .unwrap()
+        .as_func()
+        .unwrap();
+
+    assert_eq!(3, store.invoke_typed_without_fuel(get_three, ()).unwrap());
 
     // Function 0 should be the imported function
-    let get_three = instance.get_function_by_index(module_base, 1).unwrap();
-    assert_eq!(3, instance.invoke_typed(get_three, ()).unwrap());
+    let get_three = store
+        .instance_export(module_base, "get_three")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    assert_eq!(3, store.invoke_typed_without_fuel(get_three, ()).unwrap());
 }
 
 #[test_log::test]
 pub fn run_call_indirect() {
     let wasm_bytes = wat::parse_str(SIMPLE_IMPORT_ADDON).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let (mut instance, _module_env) =
-        RuntimeInstance::new_named((), "env", &validation_info).expect("instantiation failed");
+    let mut store = Store::new(());
+    let module_env = store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap();
+
+    let get_one = store.instance_export(module_env, "get_one").unwrap();
 
     let wasm_bytes = wat::parse_str(CALL_INDIRECT_BASE).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
-    let _module_base = instance
-        .add_module("base", &validation_info, None)
+    let module_base = store
+        .module_instantiate(&validation_info, vec![get_one], None)
         .expect("Successful instantiation");
 
-    let run = instance.get_function_by_name("base", "run").unwrap();
-    assert_eq!((1, 3), instance.invoke_typed(run, ()).unwrap());
+    let run = store
+        .instance_export(module_base, "run")
+        .unwrap()
+        .as_func()
+        .unwrap();
+
+    assert_eq!((1, 3), store.invoke_typed_without_fuel(run, ()).unwrap());
 }
 
 // #[test_log::test]
@@ -139,16 +165,16 @@ pub fn run_call_indirect() {
 //     let wasm_bytes = wat::parse_str(CYCLICAL_IMPORT).unwrap();
 //     let validation_info = validate(&wasm_bytes).expect("validation failed");
 //     let mut instance =
-//         RuntimeInstance::new_named((), "env", &validation_info).expect("instantiation failed");
+//         RuntimeInstance::new_named((), "env", &validation_info)
 
 //     let wasm_bytes = wat::parse_str(SIMPLE_IMPORT_BASE).unwrap();
 //     let validation_info = validate(&wasm_bytes).expect("validation failed");
 //     instance
-//         .add_module("base", &validation_info)
+//         .store.module_instantiate( &validation_info, Vec::new(), None)
 //         .expect("Successful instantiation");
 
 //     // let run = instance.get_function_by_name("base", "get_three").unwrap();
 //     // Unmet import since we can't have cyclical imports
 //     // Currently, this passes since we don't allow chained imports.
-//     // assert!(instance.invoke_typed::<(), i32>(&run, ()).unwrap_err() == wasm::RuntimeError::UnmetImport);
+//     // assert!(store.invoke_typed_without_fuel::<(), i32>(&run, ()).unwrap_err() == wasm::RuntimeError::UnmetImport);
 // }
