@@ -35,7 +35,7 @@ pub mod value_stack;
 /// }
 /// fn main() {
 ///     let mut store = Store::new(());
-///     let foo_bar = store.func_alloc_typed::<(u32, i32), u32>(my_wrapped_host_func);
+///     let foo_bar = store.func_alloc_typed_unchecked::<(u32, i32), u32>(my_wrapped_host_func);
 /// }
 /// ```
 pub fn host_function_wrapper<Params: InteropValueList, Results: InteropValueList>(

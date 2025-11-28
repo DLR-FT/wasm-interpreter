@@ -31,18 +31,18 @@ pub fn host_func_call_within_module() {
     }
 
     let mut store = Store::new(());
-    let hello = store.func_alloc_typed::<(), ()>(hello);
+    let hello = store.func_alloc_typed_unchecked::<(), ()>(hello);
     let importing_mod = store
-        .module_instantiate(&validation_info, vec![ExternVal::Func(hello)], None)
+        .module_instantiate_unchecked(&validation_info, vec![ExternVal::Func(hello)], None)
         .unwrap()
         .module_addr;
     let function_ref = store
-        .instance_export(importing_mod, "hello_caller")
+        .instance_export_unchecked(importing_mod, "hello_caller")
         .unwrap()
         .as_func()
         .unwrap();
     let result = store
-        .invoke_typed_without_fuel::<i32, i32>(function_ref, 2)
+        .invoke_typed_without_fuel_unchecked::<i32, i32>(function_ref, 2)
         .expect("wasm function invocation failed");
     assert_eq!(4, result);
 }
@@ -50,8 +50,8 @@ pub fn host_func_call_within_module() {
 #[test_log::test]
 pub fn host_func_call_as_first_func() {
     let mut store = Store::new(());
-    let hello = store.func_alloc_typed::<(), ()>(hello);
-    let result = store.invoke_typed_without_fuel::<(), ()>(hello, ());
+    let hello = store.func_alloc_typed_unchecked::<(), ()>(hello);
+    let result = store.invoke_typed_without_fuel_unchecked::<(), ()>(hello, ());
     assert_eq!(Ok(()), result);
 }
 
@@ -64,9 +64,9 @@ pub fn host_func_call_as_start_func() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
     let mut store = Store::new(());
-    let hello = store.func_alloc_typed::<(), ()>(hello);
+    let hello = store.func_alloc_typed_unchecked::<(), ()>(hello);
     let _module_addr = store
-        .module_instantiate(
+        .module_instantiate_unchecked(
             &validate(&wasm_bytes).unwrap(),
             vec![ExternVal::Func(hello)],
             None,
@@ -89,9 +89,9 @@ pub fn host_func_call_within_start_func() {
 )"#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let mut store = Store::new(());
-    let hello = store.func_alloc_typed::<(), ()>(hello);
+    let hello = store.func_alloc_typed_unchecked::<(), ()>(hello);
     let _module_addr = store
-        .module_instantiate(
+        .module_instantiate_unchecked(
             &validate(&wasm_bytes).expect("validation failed"),
             vec![ExternVal::Func(hello)],
             None,
@@ -126,9 +126,9 @@ pub fn simple_multivariate_host_func_within_module() {
     let wasm_bytes = wat::parse_str(SIMPLE_MULTIVARIATE_MODULE_EXAMPLE).unwrap();
 
     let mut store = Store::new(());
-    let fancy_add_mult = store.func_alloc_typed::<(i32, f64), (f64, i32)>(fancy_add_mult);
+    let fancy_add_mult = store.func_alloc_typed_unchecked::<(i32, f64), (f64, i32)>(fancy_add_mult);
     let importing_mod = store
-        .module_instantiate(
+        .module_instantiate_unchecked(
             &validate(&wasm_bytes).expect("validation failed"),
             vec![ExternVal::Func(fancy_add_mult)],
             None,
@@ -137,12 +137,12 @@ pub fn simple_multivariate_host_func_within_module() {
         .module_addr;
 
     let function_ref = store
-        .instance_export(importing_mod, "fancy_add_mult_caller")
+        .instance_export_unchecked(importing_mod, "fancy_add_mult_caller")
         .unwrap()
         .as_func()
         .unwrap();
     let result = store
-        .invoke_typed_without_fuel::<(), (f64, i32, i64)>(function_ref, ())
+        .invoke_typed_without_fuel_unchecked::<(), (f64, i32, i64)>(function_ref, ())
         .expect("wasm function invocation failed");
     assert_eq!((8.0, 6, 5), result);
 }
@@ -161,9 +161,10 @@ pub fn simple_multivariate_host_func_with_host_func_wrapper() {
     }
 
     let mut store = Store::new(());
-    let wrapped_add_mult = store.func_alloc_typed::<(i32, f64), (f64, i32)>(wrapped_add_mult);
+    let wrapped_add_mult =
+        store.func_alloc_typed_unchecked::<(i32, f64), (f64, i32)>(wrapped_add_mult);
     let importing_mod = store
-        .module_instantiate(
+        .module_instantiate_unchecked(
             &validate(&wasm_bytes).expect("validation failed"),
             vec![ExternVal::Func(wrapped_add_mult)],
             None,
@@ -172,12 +173,12 @@ pub fn simple_multivariate_host_func_with_host_func_wrapper() {
         .module_addr;
 
     let function_ref = store
-        .instance_export(importing_mod, "fancy_add_mult_caller")
+        .instance_export_unchecked(importing_mod, "fancy_add_mult_caller")
         .unwrap()
         .as_func()
         .unwrap();
     let result = store
-        .invoke_typed_without_fuel::<(), (f64, i32, i64)>(function_ref, ())
+        .invoke_typed_without_fuel_unchecked::<(), (f64, i32, i64)>(function_ref, ())
         .expect("wasm function invocation failed");
     assert_eq!((6.0, 8, 5), result);
 }
@@ -185,10 +186,10 @@ pub fn simple_multivariate_host_func_with_host_func_wrapper() {
 #[test_log::test]
 pub fn simple_multivariate_host_func_as_first_func() {
     let mut store = Store::new(());
-    let fancy_add_mult = store.func_alloc_typed::<(i32, f64), (f64, i32)>(fancy_add_mult);
+    let fancy_add_mult = store.func_alloc_typed_unchecked::<(i32, f64), (f64, i32)>(fancy_add_mult);
 
     let result = store
-        .invoke_typed_without_fuel::<(i32, f64), (f64, i32)>(fancy_add_mult, (3, 5.0))
+        .invoke_typed_without_fuel_unchecked::<(i32, f64), (f64, i32)>(fancy_add_mult, (3, 5.0))
         .expect("wasm function invocation failed");
     assert_eq!((15.0, 8), result);
 }
@@ -223,11 +224,11 @@ pub fn weird_multi_typed_host_func() {
 
     let mut store = Store::new(());
 
-    let weird_mult = store.func_alloc_typed::<i32, f64>(weird_add_mult);
-    let weird_add = store.func_alloc_typed::<f32, i64>(weird_add_mult);
+    let weird_mult = store.func_alloc_typed_unchecked::<i32, f64>(weird_add_mult);
+    let weird_add = store.func_alloc_typed_unchecked::<f32, i64>(weird_add_mult);
 
     let importing_mod = store
-        .module_instantiate(
+        .module_instantiate_unchecked(
             &validation_info,
             vec![ExternVal::Func(weird_mult), ExternVal::Func(weird_add)],
             None,
@@ -236,13 +237,13 @@ pub fn weird_multi_typed_host_func() {
         .module_addr;
 
     let function_ref = store
-        .instance_export(importing_mod, "weird_add_mult_caller")
+        .instance_export_unchecked(importing_mod, "weird_add_mult_caller")
         .unwrap()
         .as_func()
         .unwrap();
 
     let result = store
-        .invoke_typed_without_fuel::<(), (f64, i64)>(function_ref, ())
+        .invoke_typed_without_fuel_unchecked::<(), (f64, i64)>(function_ref, ())
         .expect("wasm function invocation failed");
     assert_eq!((10.0, 6), result);
 }
@@ -267,16 +268,16 @@ pub fn host_func_runtime_error() {
     }
 
     let mut store = Store::new(());
-    let mult3 = store.func_alloc_typed::<i32, i32>(mult3);
+    let mult3 = store.func_alloc_typed_unchecked::<i32, i32>(mult3);
     let importing_mod = store
-        .module_instantiate(&validation_info, vec![ExternVal::Func(mult3)], None)
+        .module_instantiate_unchecked(&validation_info, vec![ExternVal::Func(mult3)], None)
         .unwrap()
         .module_addr;
     let function_ref = store
-        .instance_export(importing_mod, "mult3_caller")
+        .instance_export_unchecked(importing_mod, "mult3_caller")
         .unwrap()
         .as_func()
         .unwrap();
-    let result = store.invoke_typed_without_fuel::<(), (f64, i64)>(function_ref, ());
+    let result = store.invoke_typed_without_fuel_unchecked::<(), (f64, i64)>(function_ref, ());
     assert_eq!(Err(RuntimeError::HostFunctionSignatureMismatch), result);
 }

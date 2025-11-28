@@ -40,7 +40,7 @@ fn table_basic() {
         let validation_info = validate(&wasm_bytes).expect("validation failed");
         let mut store = Store::new(());
         store
-            .module_instantiate(&validation_info, Vec::new(), None)
+            .module_instantiate_unchecked(&validation_info, Vec::new(), None)
             .unwrap();
     });
 }
@@ -129,27 +129,27 @@ fn table_elem_test() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let f1 = store
-        .instance_export(module, "f1")
+        .instance_export_unchecked(module, "f1")
         .unwrap()
         .as_func()
         .unwrap();
     let f3 = store
-        .instance_export(module, "f3")
+        .instance_export_unchecked(module, "f3")
         .unwrap()
         .as_func()
         .unwrap();
 
-    let Ok(ExternVal::Table(table)) = store.instance_export(module, "tab") else {
+    let Ok(ExternVal::Table(table)) = store.instance_export_unchecked(module, "tab") else {
         panic!("expected a table to be exported")
     };
 
-    assert_eq!(store.table_read(table, 0), Ok(Ref::Func(f1)));
-    assert_eq!(store.table_read(table, 1), Ok(Ref::Func(f3)));
+    assert_eq!(store.table_read_unchecked(table, 0), Ok(Ref::Func(f1)));
+    assert_eq!(store.table_read_unchecked(table, 1), Ok(Ref::Func(f3)));
 }
 
 #[test_log::test]
@@ -173,17 +173,17 @@ fn table_get_set_test() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let get_funcref = store
-        .instance_export(module, "get-funcref")
+        .instance_export_unchecked(module, "get-funcref")
         .unwrap()
         .as_func()
         .unwrap();
     let init = store
-        .instance_export(module, "init")
+        .instance_export_unchecked(module, "init")
         .unwrap()
         .as_func()
         .unwrap();
@@ -191,7 +191,7 @@ fn table_get_set_test() {
     // assert the function at index 1 is a FuncRef and is NOT null
     {
         let funcref = store
-            .invoke_typed_without_fuel::<i32, RefFunc>(get_funcref, 1)
+            .invoke_typed_without_fuel_unchecked::<i32, RefFunc>(get_funcref, 1)
             .unwrap();
 
         assert!(funcref.0.is_some());
@@ -200,18 +200,20 @@ fn table_get_set_test() {
     // assert the function at index 2 is a FuncRef and is null
     {
         let funcref = store
-            .invoke_typed_without_fuel::<i32, RefFunc>(get_funcref, 2)
+            .invoke_typed_without_fuel_unchecked::<i32, RefFunc>(get_funcref, 2)
             .unwrap();
 
         assert!(funcref.0.is_none());
     }
 
     // set the function at index 2 the same as the one at index 1
-    store.invoke_typed_without_fuel::<(), ()>(init, ()).unwrap();
+    store
+        .invoke_typed_without_fuel_unchecked::<(), ()>(init, ())
+        .unwrap();
     // assert the function at index 2 is a FuncRef and is NOT null
     {
         let funcref = store
-            .invoke_typed_without_fuel::<i32, RefFunc>(get_funcref, 2)
+            .invoke_typed_without_fuel_unchecked::<i32, RefFunc>(get_funcref, 2)
             .unwrap();
 
         assert!(funcref.0.is_some());
@@ -255,12 +257,12 @@ fn call_indirect_type_check() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let call_fn = store
-        .instance_export(module, "call_function")
+        .instance_export_unchecked(module, "call_function")
         .unwrap()
         .as_func()
         .unwrap();
@@ -268,25 +270,25 @@ fn call_indirect_type_check() {
     assert_eq!(
         4,
         store
-            .invoke_typed_without_fuel::<(i32, i32), i32>(call_fn, (3, 0))
+            .invoke_typed_without_fuel_unchecked::<(i32, i32), i32>(call_fn, (3, 0))
             .unwrap()
     );
     assert_eq!(
         6,
         store
-            .invoke_typed_without_fuel::<(i32, i32), i32>(call_fn, (5, 0))
+            .invoke_typed_without_fuel_unchecked::<(i32, i32), i32>(call_fn, (5, 0))
             .unwrap()
     );
     assert_eq!(
         6,
         store
-            .invoke_typed_without_fuel::<(i32, i32), i32>(call_fn, (3, 1))
+            .invoke_typed_without_fuel_unchecked::<(i32, i32), i32>(call_fn, (3, 1))
             .unwrap()
     );
     assert_eq!(
         10,
         store
-            .invoke_typed_without_fuel::<(i32, i32), i32>(call_fn, (5, 1))
+            .invoke_typed_without_fuel_unchecked::<(i32, i32), i32>(call_fn, (5, 1))
             .unwrap()
     );
 }

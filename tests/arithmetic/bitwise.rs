@@ -27,34 +27,38 @@ pub fn i32_bitwise_and() {
 
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export(module, "template")
+        .instance_export_unchecked(module, "template")
         .unwrap()
         .as_func()
         .unwrap();
 
     assert_eq!(
         1,
-        store.invoke_typed_without_fuel(function, (33, 11)).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, (33, 11))
+            .unwrap()
     );
     assert_eq!(
         5,
-        store.invoke_typed_without_fuel(function, (77, 23)).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, (77, 23))
+            .unwrap()
     );
     assert_eq!(
         180244,
         store
-            .invoke_typed_without_fuel(function, (192534, 1231412))
+            .invoke_typed_without_fuel_unchecked(function, (192534, 1231412))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (i32::MIN, i32::MAX))
+            .invoke_typed_without_fuel_unchecked(function, (i32::MIN, i32::MAX))
             .unwrap()
     );
 }
@@ -70,34 +74,38 @@ pub fn i32_bitwise_or() {
 
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export(module, "template")
+        .instance_export_unchecked(module, "template")
         .unwrap()
         .as_func()
         .unwrap();
 
     assert_eq!(
         43,
-        store.invoke_typed_without_fuel(function, (33, 11)).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, (33, 11))
+            .unwrap()
     );
     assert_eq!(
         95,
-        store.invoke_typed_without_fuel(function, (77, 23)).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, (77, 23))
+            .unwrap()
     );
     assert_eq!(
         1243702,
         store
-            .invoke_typed_without_fuel(function, (192534, 1231412))
+            .invoke_typed_without_fuel_unchecked(function, (192534, 1231412))
             .unwrap()
     );
     assert_eq!(
         -1,
         store
-            .invoke_typed_without_fuel(function, (i32::MIN, i32::MAX))
+            .invoke_typed_without_fuel_unchecked(function, (i32::MIN, i32::MAX))
             .unwrap()
     );
 }
@@ -113,34 +121,38 @@ pub fn i32_bitwise_xor() {
 
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export(module, "template")
+        .instance_export_unchecked(module, "template")
         .unwrap()
         .as_func()
         .unwrap();
 
     assert_eq!(
         42,
-        store.invoke_typed_without_fuel(function, (33, 11)).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, (33, 11))
+            .unwrap()
     );
     assert_eq!(
         90,
-        store.invoke_typed_without_fuel(function, (77, 23)).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, (77, 23))
+            .unwrap()
     );
     assert_eq!(
         1063458,
         store
-            .invoke_typed_without_fuel(function, (192534, 1231412))
+            .invoke_typed_without_fuel_unchecked(function, (192534, 1231412))
             .unwrap()
     );
     assert_eq!(
         -1,
         store
-            .invoke_typed_without_fuel(function, (i32::MIN, i32::MAX))
+            .invoke_typed_without_fuel_unchecked(function, (i32::MIN, i32::MAX))
             .unwrap()
     );
 }
@@ -156,34 +168,38 @@ pub fn i32_bitwise_shl() {
 
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export(module, "template")
+        .instance_export_unchecked(module, "template")
         .unwrap()
         .as_func()
         .unwrap();
 
     assert_eq!(
         67584,
-        store.invoke_typed_without_fuel(function, (33, 11)).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, (33, 11))
+            .unwrap()
     );
     assert_eq!(
         645922816,
-        store.invoke_typed_without_fuel(function, (77, 23)).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, (77, 23))
+            .unwrap()
     );
     assert_eq!(
         23068672,
         store
-            .invoke_typed_without_fuel(function, (192534, 1231412))
+            .invoke_typed_without_fuel_unchecked(function, (192534, 1231412))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (i32::MIN, i32::MAX))
+            .invoke_typed_without_fuel_unchecked(function, (i32::MIN, i32::MAX))
             .unwrap()
     );
 }
@@ -199,12 +215,12 @@ pub fn i32_bitwise_shr_s() {
 
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export(module, "template")
+        .instance_export_unchecked(module, "template")
         .unwrap()
         .as_func()
         .unwrap();
@@ -212,91 +228,107 @@ pub fn i32_bitwise_shr_s() {
     assert_eq!(
         8881445,
         store
-            .invoke_typed_without_fuel(function, (142_103_123, 4))
+            .invoke_typed_without_fuel_unchecked(function, (142_103_123, 4))
             .unwrap()
     );
     assert_eq!(
         23879,
         store
-            .invoke_typed_without_fuel(function, (391_248_921, 14))
+            .invoke_typed_without_fuel_unchecked(function, (391_248_921, 14))
             .unwrap()
     );
     assert_eq!(
         601955006,
         store
-            .invoke_typed_without_fuel(function, (1_203_910_012, 33))
+            .invoke_typed_without_fuel_unchecked(function, (1_203_910_012, 33))
             .unwrap()
     );
     assert_eq!(
         1056594615,
         store
-            .invoke_typed_without_fuel(function, (2_113_189_231, 33))
+            .invoke_typed_without_fuel_unchecked(function, (2_113_189_231, 33))
             .unwrap()
     );
     assert_eq!(
         -1,
         store
-            .invoke_typed_without_fuel(function, (i32::MIN, i32::MAX))
+            .invoke_typed_without_fuel_unchecked(function, (i32::MIN, i32::MAX))
             .unwrap()
     );
 
     // Basic positive number
     assert_eq!(
         4,
-        store.invoke_typed_without_fuel(function, (8, 1)).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, (8, 1))
+            .unwrap()
     );
 
     // Shifting by 0 (no shift)
     assert_eq!(
         -1,
-        store.invoke_typed_without_fuel(function, (-1, 0)).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, (-1, 0))
+            .unwrap()
     );
     assert_eq!(
         1,
-        store.invoke_typed_without_fuel(function, (1, 0)).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, (1, 0))
+            .unwrap()
     );
 
     // Shifting negative numbers
     assert_eq!(
         -4,
-        store.invoke_typed_without_fuel(function, (-8, 1)).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, (-8, 1))
+            .unwrap()
     );
     assert_eq!(
         -1,
-        store.invoke_typed_without_fuel(function, (-1, 1)).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, (-1, 1))
+            .unwrap()
     );
 
     // Shifting by 31 (maximum shift for 32-bit int)
     assert_eq!(
         -1,
-        store.invoke_typed_without_fuel(function, (-1, 31)).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, (-1, 31))
+            .unwrap()
     );
     assert_eq!(
         -1,
         store
-            .invoke_typed_without_fuel(function, (i32::MIN, 31))
+            .invoke_typed_without_fuel_unchecked(function, (i32::MIN, 31))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (i32::MAX, 31))
+            .invoke_typed_without_fuel_unchecked(function, (i32::MAX, 31))
             .unwrap()
     );
 
     // Shifting by more than 31
     assert_eq!(
         -1,
-        store.invoke_typed_without_fuel(function, (-1, 32)).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, (-1, 32))
+            .unwrap()
     );
     assert_eq!(
         1,
-        store.invoke_typed_without_fuel(function, (1, 32)).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, (1, 32))
+            .unwrap()
     );
     assert_eq!(
         -1,
         store
-            .invoke_typed_without_fuel(function, (-1, 100))
+            .invoke_typed_without_fuel_unchecked(function, (-1, 100))
             .unwrap()
     );
 
@@ -304,13 +336,13 @@ pub fn i32_bitwise_shr_s() {
     assert_eq!(
         i32::MIN / 2,
         store
-            .invoke_typed_without_fuel(function, (i32::MIN, 1))
+            .invoke_typed_without_fuel_unchecked(function, (i32::MIN, 1))
             .unwrap()
     );
     assert_eq!(
         i32::MAX / 2,
         store
-            .invoke_typed_without_fuel(function, (i32::MAX, 1))
+            .invoke_typed_without_fuel_unchecked(function, (i32::MAX, 1))
             .unwrap()
     );
 
@@ -318,13 +350,13 @@ pub fn i32_bitwise_shr_s() {
     assert_eq!(
         -2,
         store
-            .invoke_typed_without_fuel(function, (i32::MIN, 30))
+            .invoke_typed_without_fuel_unchecked(function, (i32::MIN, 30))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (i32::MAX, 30))
+            .invoke_typed_without_fuel_unchecked(function, (i32::MAX, 30))
             .unwrap()
     );
 }
@@ -340,12 +372,12 @@ pub fn i32_bitwise_shr_u() {
 
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export(module, "template")
+        .instance_export_unchecked(module, "template")
         .unwrap()
         .as_func()
         .unwrap();
@@ -353,91 +385,107 @@ pub fn i32_bitwise_shr_u() {
     assert_eq!(
         8881445,
         store
-            .invoke_typed_without_fuel(function, (142_103_123, 4))
+            .invoke_typed_without_fuel_unchecked(function, (142_103_123, 4))
             .unwrap()
     );
     assert_eq!(
         23879,
         store
-            .invoke_typed_without_fuel(function, (391_248_921, 14))
+            .invoke_typed_without_fuel_unchecked(function, (391_248_921, 14))
             .unwrap()
     );
     assert_eq!(
         601955006,
         store
-            .invoke_typed_without_fuel(function, (1_203_910_012, 33))
+            .invoke_typed_without_fuel_unchecked(function, (1_203_910_012, 33))
             .unwrap()
     );
     assert_eq!(
         1056594615,
         store
-            .invoke_typed_without_fuel(function, (2_113_189_231, 33))
+            .invoke_typed_without_fuel_unchecked(function, (2_113_189_231, 33))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (i32::MIN, i32::MAX))
+            .invoke_typed_without_fuel_unchecked(function, (i32::MIN, i32::MAX))
             .unwrap()
     );
 
     // Basic positive number
     assert_eq!(
         4,
-        store.invoke_typed_without_fuel(function, (8, 1)).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, (8, 1))
+            .unwrap()
     );
 
     // Shifting by 0 (no shift)
     assert_eq!(
         -1,
-        store.invoke_typed_without_fuel(function, (-1, 0)).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, (-1, 0))
+            .unwrap()
     );
     assert_eq!(
         1,
-        store.invoke_typed_without_fuel(function, (1, 0)).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, (1, 0))
+            .unwrap()
     );
 
     // Shifting negative numbers
     assert_eq!(
         i32::MAX - 3,
-        store.invoke_typed_without_fuel(function, (-8, 1)).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, (-8, 1))
+            .unwrap()
     );
     assert_eq!(
         i32::MAX,
-        store.invoke_typed_without_fuel(function, (-1, 1)).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, (-1, 1))
+            .unwrap()
     );
 
     // Shifting by 31 (maximum shift for 32-bit int)
     assert_eq!(
         1,
-        store.invoke_typed_without_fuel(function, (-1, 31)).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, (-1, 31))
+            .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (i32::MIN, 31))
+            .invoke_typed_without_fuel_unchecked(function, (i32::MIN, 31))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (i32::MAX, 31))
+            .invoke_typed_without_fuel_unchecked(function, (i32::MAX, 31))
             .unwrap()
     );
 
     // Shifting by more than 31
     assert_eq!(
         -1,
-        store.invoke_typed_without_fuel(function, (-1, 32)).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, (-1, 32))
+            .unwrap()
     );
     assert_eq!(
         1,
-        store.invoke_typed_without_fuel(function, (1, 32)).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, (1, 32))
+            .unwrap()
     );
     assert_eq!(
         268435455,
         store
-            .invoke_typed_without_fuel(function, (-1, 100))
+            .invoke_typed_without_fuel_unchecked(function, (-1, 100))
             .unwrap()
     );
 
@@ -445,13 +493,13 @@ pub fn i32_bitwise_shr_u() {
     assert_eq!(
         -(i32::MIN / 2),
         store
-            .invoke_typed_without_fuel(function, (i32::MIN, 1))
+            .invoke_typed_without_fuel_unchecked(function, (i32::MIN, 1))
             .unwrap()
     );
     assert_eq!(
         i32::MAX / 2,
         store
-            .invoke_typed_without_fuel(function, (i32::MAX, 1))
+            .invoke_typed_without_fuel_unchecked(function, (i32::MAX, 1))
             .unwrap()
     );
 
@@ -459,13 +507,13 @@ pub fn i32_bitwise_shr_u() {
     assert_eq!(
         2,
         store
-            .invoke_typed_without_fuel(function, (i32::MIN, 30))
+            .invoke_typed_without_fuel_unchecked(function, (i32::MIN, 30))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (i32::MAX, 30))
+            .invoke_typed_without_fuel_unchecked(function, (i32::MAX, 30))
             .unwrap()
     );
 }
@@ -481,12 +529,12 @@ pub fn i32_bitwise_rotl() {
 
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export(module, "template")
+        .instance_export_unchecked(module, "template")
         .unwrap()
         .as_func()
         .unwrap();
@@ -494,91 +542,107 @@ pub fn i32_bitwise_rotl() {
     assert_eq!(
         -2021317328,
         store
-            .invoke_typed_without_fuel(function, (142_103_123, 4))
+            .invoke_typed_without_fuel_unchecked(function, (142_103_123, 4))
             .unwrap()
     );
     assert_eq!(
         2131117524,
         store
-            .invoke_typed_without_fuel(function, (391_248_921, 14))
+            .invoke_typed_without_fuel_unchecked(function, (391_248_921, 14))
             .unwrap()
     );
     assert_eq!(
         -1887147272,
         store
-            .invoke_typed_without_fuel(function, (1_203_910_012, 33))
+            .invoke_typed_without_fuel_unchecked(function, (1_203_910_012, 33))
             .unwrap()
     );
     assert_eq!(
         -68588834,
         store
-            .invoke_typed_without_fuel(function, (2_113_189_231, 33))
+            .invoke_typed_without_fuel_unchecked(function, (2_113_189_231, 33))
             .unwrap()
     );
     assert_eq!(
         1073741824,
         store
-            .invoke_typed_without_fuel(function, (i32::MIN, i32::MAX))
+            .invoke_typed_without_fuel_unchecked(function, (i32::MIN, i32::MAX))
             .unwrap()
     );
 
     // Basic positive number
     assert_eq!(
         16,
-        store.invoke_typed_without_fuel(function, (8, 1)).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, (8, 1))
+            .unwrap()
     );
 
     // Rotating by 0 (no shift)
     assert_eq!(
         -1,
-        store.invoke_typed_without_fuel(function, (-1, 0)).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, (-1, 0))
+            .unwrap()
     );
     assert_eq!(
         1,
-        store.invoke_typed_without_fuel(function, (1, 0)).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, (1, 0))
+            .unwrap()
     );
 
     // Shifting negative numbers
     assert_eq!(
         -15,
-        store.invoke_typed_without_fuel(function, (-8, 1)).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, (-8, 1))
+            .unwrap()
     );
     assert_eq!(
         -1,
-        store.invoke_typed_without_fuel(function, (-1, 1)).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, (-1, 1))
+            .unwrap()
     );
 
     // Rotating by 31
     assert_eq!(
         -1,
-        store.invoke_typed_without_fuel(function, (-1, 31)).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, (-1, 31))
+            .unwrap()
     );
     assert_eq!(
         i32::MAX / 2 + 1,
         store
-            .invoke_typed_without_fuel(function, (i32::MIN, 31))
+            .invoke_typed_without_fuel_unchecked(function, (i32::MIN, 31))
             .unwrap()
     );
     assert_eq!(
         i32::MIN / 2 - 1,
         store
-            .invoke_typed_without_fuel(function, (i32::MAX, 31))
+            .invoke_typed_without_fuel_unchecked(function, (i32::MAX, 31))
             .unwrap()
     );
 
     // Rotating by more than 31
     assert_eq!(
         -1,
-        store.invoke_typed_without_fuel(function, (-1, 32)).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, (-1, 32))
+            .unwrap()
     );
     assert_eq!(
         1,
-        store.invoke_typed_without_fuel(function, (1, 32)).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, (1, 32))
+            .unwrap()
     );
     assert_eq!(
         -1,
         store
-            .invoke_typed_without_fuel(function, (-1, 100))
+            .invoke_typed_without_fuel_unchecked(function, (-1, 100))
             .unwrap()
     );
 
@@ -586,13 +650,13 @@ pub fn i32_bitwise_rotl() {
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (i32::MIN, 1))
+            .invoke_typed_without_fuel_unchecked(function, (i32::MIN, 1))
             .unwrap()
     );
     assert_eq!(
         -2,
         store
-            .invoke_typed_without_fuel(function, (i32::MAX, 1))
+            .invoke_typed_without_fuel_unchecked(function, (i32::MAX, 1))
             .unwrap()
     );
 
@@ -600,13 +664,13 @@ pub fn i32_bitwise_rotl() {
     assert_eq!(
         i32::MAX / 4 + 1,
         store
-            .invoke_typed_without_fuel(function, (i32::MIN, 30))
+            .invoke_typed_without_fuel_unchecked(function, (i32::MIN, 30))
             .unwrap()
     );
     assert_eq!(
         i32::MIN / 4 - 1,
         store
-            .invoke_typed_without_fuel(function, (i32::MAX, 30))
+            .invoke_typed_without_fuel_unchecked(function, (i32::MAX, 30))
             .unwrap()
     );
 }
@@ -622,12 +686,12 @@ pub fn i32_bitwise_rotr() {
 
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export(module, "template")
+        .instance_export_unchecked(module, "template")
         .unwrap()
         .as_func()
         .unwrap();
@@ -635,91 +699,107 @@ pub fn i32_bitwise_rotr() {
     assert_eq!(
         814187813,
         store
-            .invoke_typed_without_fuel(function, (142_103_123, 4))
+            .invoke_typed_without_fuel_unchecked(function, (142_103_123, 4))
             .unwrap()
     );
     assert_eq!(
         -261857977,
         store
-            .invoke_typed_without_fuel(function, (391_248_921, 14))
+            .invoke_typed_without_fuel_unchecked(function, (391_248_921, 14))
             .unwrap()
     );
     assert_eq!(
         601955006,
         store
-            .invoke_typed_without_fuel(function, (1_203_910_012, 33))
+            .invoke_typed_without_fuel_unchecked(function, (1_203_910_012, 33))
             .unwrap()
     );
     assert_eq!(
         -1090889033,
         store
-            .invoke_typed_without_fuel(function, (2_113_189_231, 33))
+            .invoke_typed_without_fuel_unchecked(function, (2_113_189_231, 33))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (i32::MIN, i32::MAX))
+            .invoke_typed_without_fuel_unchecked(function, (i32::MIN, i32::MAX))
             .unwrap()
     );
 
     // Basic positive number
     assert_eq!(
         4,
-        store.invoke_typed_without_fuel(function, (8, 1)).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, (8, 1))
+            .unwrap()
     );
 
     // Rotating by 0 (no shift)
     assert_eq!(
         -1,
-        store.invoke_typed_without_fuel(function, (-1, 0)).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, (-1, 0))
+            .unwrap()
     );
     assert_eq!(
         1,
-        store.invoke_typed_without_fuel(function, (1, 0)).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, (1, 0))
+            .unwrap()
     );
 
     // Shifting negative numbers
     assert_eq!(
         i32::MAX - 3,
-        store.invoke_typed_without_fuel(function, (-8, 1)).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, (-8, 1))
+            .unwrap()
     );
     assert_eq!(
         -1,
-        store.invoke_typed_without_fuel(function, (-1, 1)).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, (-1, 1))
+            .unwrap()
     );
 
     // Rotating by 31
     assert_eq!(
         -1,
-        store.invoke_typed_without_fuel(function, (-1, 31)).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, (-1, 31))
+            .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (i32::MIN, 31))
+            .invoke_typed_without_fuel_unchecked(function, (i32::MIN, 31))
             .unwrap()
     );
     assert_eq!(
         -2,
         store
-            .invoke_typed_without_fuel(function, (i32::MAX, 31))
+            .invoke_typed_without_fuel_unchecked(function, (i32::MAX, 31))
             .unwrap()
     );
 
     // Rotating by more than 31
     assert_eq!(
         -1,
-        store.invoke_typed_without_fuel(function, (-1, 32)).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, (-1, 32))
+            .unwrap()
     );
     assert_eq!(
         1,
-        store.invoke_typed_without_fuel(function, (1, 32)).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, (1, 32))
+            .unwrap()
     );
     assert_eq!(
         -1,
         store
-            .invoke_typed_without_fuel(function, (-1, 100))
+            .invoke_typed_without_fuel_unchecked(function, (-1, 100))
             .unwrap()
     );
 
@@ -727,13 +807,13 @@ pub fn i32_bitwise_rotr() {
     assert_eq!(
         i32::MAX / 2 + 1,
         store
-            .invoke_typed_without_fuel(function, (i32::MIN, 1))
+            .invoke_typed_without_fuel_unchecked(function, (i32::MIN, 1))
             .unwrap()
     );
     assert_eq!(
         i32::MIN / 2 - 1,
         store
-            .invoke_typed_without_fuel(function, (i32::MAX, 1))
+            .invoke_typed_without_fuel_unchecked(function, (i32::MAX, 1))
             .unwrap()
     );
 
@@ -741,13 +821,13 @@ pub fn i32_bitwise_rotr() {
     assert_eq!(
         2,
         store
-            .invoke_typed_without_fuel(function, (i32::MIN, 30))
+            .invoke_typed_without_fuel_unchecked(function, (i32::MIN, 30))
             .unwrap()
     );
     assert_eq!(
         -3,
         store
-            .invoke_typed_without_fuel(function, (i32::MAX, 30))
+            .invoke_typed_without_fuel_unchecked(function, (i32::MAX, 30))
             .unwrap()
     );
 }
@@ -763,31 +843,52 @@ pub fn i32_bitwise_clz() {
 
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export(module, "template")
+        .instance_export_unchecked(module, "template")
         .unwrap()
         .as_func()
         .unwrap();
 
-    assert_eq!(26, store.invoke_typed_without_fuel(function, 33).unwrap());
-    assert_eq!(25, store.invoke_typed_without_fuel(function, 77).unwrap());
+    assert_eq!(
+        26,
+        store
+            .invoke_typed_without_fuel_unchecked(function, 33)
+            .unwrap()
+    );
+    assert_eq!(
+        25,
+        store
+            .invoke_typed_without_fuel_unchecked(function, 77)
+            .unwrap()
+    );
     assert_eq!(
         14,
-        store.invoke_typed_without_fuel(function, 192534).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, 192534)
+            .unwrap()
     );
     assert_eq!(
         0,
-        store.invoke_typed_without_fuel(function, i32::MIN).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, i32::MIN)
+            .unwrap()
     );
     assert_eq!(
         1,
-        store.invoke_typed_without_fuel(function, i32::MAX).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, i32::MAX)
+            .unwrap()
     );
-    assert_eq!(32, store.invoke_typed_without_fuel(function, 0).unwrap());
+    assert_eq!(
+        32,
+        store
+            .invoke_typed_without_fuel_unchecked(function, 0)
+            .unwrap()
+    );
 }
 
 /// A simple function to test the i32.ctz bitwise operation
@@ -801,31 +902,52 @@ pub fn i32_bitwise_ctz() {
 
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export(module, "template")
+        .instance_export_unchecked(module, "template")
         .unwrap()
         .as_func()
         .unwrap();
 
-    assert_eq!(0, store.invoke_typed_without_fuel(function, 33).unwrap());
-    assert_eq!(0, store.invoke_typed_without_fuel(function, 77).unwrap());
     assert_eq!(
-        1,
-        store.invoke_typed_without_fuel(function, 192534).unwrap()
-    );
-    assert_eq!(
-        31,
-        store.invoke_typed_without_fuel(function, i32::MIN).unwrap()
+        0,
+        store
+            .invoke_typed_without_fuel_unchecked(function, 33)
+            .unwrap()
     );
     assert_eq!(
         0,
-        store.invoke_typed_without_fuel(function, i32::MAX).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, 77)
+            .unwrap()
     );
-    assert_eq!(32, store.invoke_typed_without_fuel(function, 0).unwrap());
+    assert_eq!(
+        1,
+        store
+            .invoke_typed_without_fuel_unchecked(function, 192534)
+            .unwrap()
+    );
+    assert_eq!(
+        31,
+        store
+            .invoke_typed_without_fuel_unchecked(function, i32::MIN)
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        store
+            .invoke_typed_without_fuel_unchecked(function, i32::MAX)
+            .unwrap()
+    );
+    assert_eq!(
+        32,
+        store
+            .invoke_typed_without_fuel_unchecked(function, 0)
+            .unwrap()
+    );
 }
 
 /// A simple function to test the i32.popcnt bitwise operation
@@ -839,31 +961,52 @@ pub fn i32_bitwise_popcnt() {
 
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export(module, "template")
+        .instance_export_unchecked(module, "template")
         .unwrap()
         .as_func()
         .unwrap();
 
-    assert_eq!(2, store.invoke_typed_without_fuel(function, 33).unwrap());
-    assert_eq!(4, store.invoke_typed_without_fuel(function, 77).unwrap());
+    assert_eq!(
+        2,
+        store
+            .invoke_typed_without_fuel_unchecked(function, 33)
+            .unwrap()
+    );
+    assert_eq!(
+        4,
+        store
+            .invoke_typed_without_fuel_unchecked(function, 77)
+            .unwrap()
+    );
     assert_eq!(
         8,
-        store.invoke_typed_without_fuel(function, 192534).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, 192534)
+            .unwrap()
     );
     assert_eq!(
         1,
-        store.invoke_typed_without_fuel(function, i32::MIN).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, i32::MIN)
+            .unwrap()
     );
     assert_eq!(
         31,
-        store.invoke_typed_without_fuel(function, i32::MAX).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, i32::MAX)
+            .unwrap()
     );
-    assert_eq!(0, store.invoke_typed_without_fuel(function, 0).unwrap());
+    assert_eq!(
+        0,
+        store
+            .invoke_typed_without_fuel_unchecked(function, 0)
+            .unwrap()
+    );
 }
 
 const I64_BASE_WAT: &str = r#"
@@ -894,12 +1037,12 @@ pub fn i64_bitwise_and() {
 
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export(module, "template")
+        .instance_export_unchecked(module, "template")
         .unwrap()
         .as_func()
         .unwrap();
@@ -907,25 +1050,25 @@ pub fn i64_bitwise_and() {
     assert_eq!(
         1_i64,
         store
-            .invoke_typed_without_fuel(function, (33_i64, 11_i64))
+            .invoke_typed_without_fuel_unchecked(function, (33_i64, 11_i64))
             .unwrap()
     );
     assert_eq!(
         5_i64,
         store
-            .invoke_typed_without_fuel(function, (77_i64, 23_i64))
+            .invoke_typed_without_fuel_unchecked(function, (77_i64, 23_i64))
             .unwrap()
     );
     assert_eq!(
         180244_i64,
         store
-            .invoke_typed_without_fuel(function, (192534_i64, 1231412_i64))
+            .invoke_typed_without_fuel_unchecked(function, (192534_i64, 1231412_i64))
             .unwrap()
     );
     assert_eq!(
         0_i64,
         store
-            .invoke_typed_without_fuel(function, (i64::MIN, i64::MAX))
+            .invoke_typed_without_fuel_unchecked(function, (i64::MIN, i64::MAX))
             .unwrap()
     );
 }
@@ -941,12 +1084,12 @@ pub fn i64_bitwise_or() {
 
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export(module, "template")
+        .instance_export_unchecked(module, "template")
         .unwrap()
         .as_func()
         .unwrap();
@@ -954,25 +1097,25 @@ pub fn i64_bitwise_or() {
     assert_eq!(
         43_i64,
         store
-            .invoke_typed_without_fuel(function, (33_i64, 11_i64))
+            .invoke_typed_without_fuel_unchecked(function, (33_i64, 11_i64))
             .unwrap()
     );
     assert_eq!(
         95_i64,
         store
-            .invoke_typed_without_fuel(function, (77_i64, 23_i64))
+            .invoke_typed_without_fuel_unchecked(function, (77_i64, 23_i64))
             .unwrap()
     );
     assert_eq!(
         1243702_i64,
         store
-            .invoke_typed_without_fuel(function, (192534_i64, 1231412_i64))
+            .invoke_typed_without_fuel_unchecked(function, (192534_i64, 1231412_i64))
             .unwrap()
     );
     assert_eq!(
         -1_i64,
         store
-            .invoke_typed_without_fuel(function, (i64::MIN, i64::MAX))
+            .invoke_typed_without_fuel_unchecked(function, (i64::MIN, i64::MAX))
             .unwrap()
     );
 }
@@ -988,12 +1131,12 @@ pub fn i64_bitwise_xor() {
 
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export(module, "template")
+        .instance_export_unchecked(module, "template")
         .unwrap()
         .as_func()
         .unwrap();
@@ -1001,25 +1144,25 @@ pub fn i64_bitwise_xor() {
     assert_eq!(
         42_i64,
         store
-            .invoke_typed_without_fuel(function, (33_i64, 11_i64))
+            .invoke_typed_without_fuel_unchecked(function, (33_i64, 11_i64))
             .unwrap()
     );
     assert_eq!(
         90_i64,
         store
-            .invoke_typed_without_fuel(function, (77_i64, 23_i64))
+            .invoke_typed_without_fuel_unchecked(function, (77_i64, 23_i64))
             .unwrap()
     );
     assert_eq!(
         1063458_i64,
         store
-            .invoke_typed_without_fuel(function, (192534_i64, 1231412_i64))
+            .invoke_typed_without_fuel_unchecked(function, (192534_i64, 1231412_i64))
             .unwrap()
     );
     assert_eq!(
         -1_i64,
         store
-            .invoke_typed_without_fuel(function, (i64::MIN, i64::MAX))
+            .invoke_typed_without_fuel_unchecked(function, (i64::MIN, i64::MAX))
             .unwrap()
     );
 }
@@ -1035,12 +1178,12 @@ pub fn i64_bitwise_shl() {
 
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export(module, "template")
+        .instance_export_unchecked(module, "template")
         .unwrap()
         .as_func()
         .unwrap();
@@ -1048,25 +1191,25 @@ pub fn i64_bitwise_shl() {
     assert_eq!(
         67584_i64,
         store
-            .invoke_typed_without_fuel(function, (33_i64, 11_i64))
+            .invoke_typed_without_fuel_unchecked(function, (33_i64, 11_i64))
             .unwrap()
     );
     assert_eq!(
         645922816_i64,
         store
-            .invoke_typed_without_fuel(function, (77_i64, 23_i64))
+            .invoke_typed_without_fuel_unchecked(function, (77_i64, 23_i64))
             .unwrap()
     );
     assert_eq!(
         99079191802150912_i64,
         store
-            .invoke_typed_without_fuel(function, (192534_i64, 1231412_i64))
+            .invoke_typed_without_fuel_unchecked(function, (192534_i64, 1231412_i64))
             .unwrap()
     );
     assert_eq!(
         0_i64,
         store
-            .invoke_typed_without_fuel(function, (i64::MIN, i64::MAX))
+            .invoke_typed_without_fuel_unchecked(function, (i64::MIN, i64::MAX))
             .unwrap()
     );
 }
@@ -1082,12 +1225,12 @@ pub fn i64_bitwise_shr_s() {
 
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export(module, "template")
+        .instance_export_unchecked(module, "template")
         .unwrap()
         .as_func()
         .unwrap();
@@ -1095,31 +1238,31 @@ pub fn i64_bitwise_shr_s() {
     assert_eq!(
         8881445_i64,
         store
-            .invoke_typed_without_fuel(function, (142_103_123_i64, 4_i64))
+            .invoke_typed_without_fuel_unchecked(function, (142_103_123_i64, 4_i64))
             .unwrap()
     );
     assert_eq!(
         23879_i64,
         store
-            .invoke_typed_without_fuel(function, (391_248_921_i64, 14_i64))
+            .invoke_typed_without_fuel_unchecked(function, (391_248_921_i64, 14_i64))
             .unwrap()
     );
     assert_eq!(
         0_i64,
         store
-            .invoke_typed_without_fuel(function, (1_203_910_012_i64, 33_i64))
+            .invoke_typed_without_fuel_unchecked(function, (1_203_910_012_i64, 33_i64))
             .unwrap()
     );
     assert_eq!(
         0_i64,
         store
-            .invoke_typed_without_fuel(function, (2_113_189_231_i64, 33_i64))
+            .invoke_typed_without_fuel_unchecked(function, (2_113_189_231_i64, 33_i64))
             .unwrap()
     );
     assert_eq!(
         -1_i64,
         store
-            .invoke_typed_without_fuel(function, (i64::MIN, i64::MAX))
+            .invoke_typed_without_fuel_unchecked(function, (i64::MIN, i64::MAX))
             .unwrap()
     );
 
@@ -1127,7 +1270,7 @@ pub fn i64_bitwise_shr_s() {
     assert_eq!(
         4_i64,
         store
-            .invoke_typed_without_fuel(function, (8_i64, 1_i64))
+            .invoke_typed_without_fuel_unchecked(function, (8_i64, 1_i64))
             .unwrap()
     );
 
@@ -1135,13 +1278,13 @@ pub fn i64_bitwise_shr_s() {
     assert_eq!(
         -1_i64,
         store
-            .invoke_typed_without_fuel(function, (-1_i64, 0_i64))
+            .invoke_typed_without_fuel_unchecked(function, (-1_i64, 0_i64))
             .unwrap()
     );
     assert_eq!(
         1_i64,
         store
-            .invoke_typed_without_fuel(function, (1_i64, 0_i64))
+            .invoke_typed_without_fuel_unchecked(function, (1_i64, 0_i64))
             .unwrap()
     );
 
@@ -1149,13 +1292,13 @@ pub fn i64_bitwise_shr_s() {
     assert_eq!(
         -4_i64,
         store
-            .invoke_typed_without_fuel(function, (-8_i64, 1_i64))
+            .invoke_typed_without_fuel_unchecked(function, (-8_i64, 1_i64))
             .unwrap()
     );
     assert_eq!(
         -1_i64,
         store
-            .invoke_typed_without_fuel(function, (-1_i64, 1_i64))
+            .invoke_typed_without_fuel_unchecked(function, (-1_i64, 1_i64))
             .unwrap()
     );
 
@@ -1163,19 +1306,19 @@ pub fn i64_bitwise_shr_s() {
     assert_eq!(
         -1_i64,
         store
-            .invoke_typed_without_fuel(function, (-1_i64, 31_i64))
+            .invoke_typed_without_fuel_unchecked(function, (-1_i64, 31_i64))
             .unwrap()
     );
     assert_eq!(
         -4294967296_i64,
         store
-            .invoke_typed_without_fuel(function, (i64::MIN, 31_i64))
+            .invoke_typed_without_fuel_unchecked(function, (i64::MIN, 31_i64))
             .unwrap()
     );
     assert_eq!(
         4294967295_i64,
         store
-            .invoke_typed_without_fuel(function, (i64::MAX, 31_i64))
+            .invoke_typed_without_fuel_unchecked(function, (i64::MAX, 31_i64))
             .unwrap()
     );
 
@@ -1183,19 +1326,19 @@ pub fn i64_bitwise_shr_s() {
     assert_eq!(
         -1_i64,
         store
-            .invoke_typed_without_fuel(function, (-1_i64, 32_i64))
+            .invoke_typed_without_fuel_unchecked(function, (-1_i64, 32_i64))
             .unwrap()
     );
     assert_eq!(
         0_i64,
         store
-            .invoke_typed_without_fuel(function, (1_i64, 32_i64))
+            .invoke_typed_without_fuel_unchecked(function, (1_i64, 32_i64))
             .unwrap()
     );
     assert_eq!(
         -1_i64,
         store
-            .invoke_typed_without_fuel(function, (-1_i64, 100_i64))
+            .invoke_typed_without_fuel_unchecked(function, (-1_i64, 100_i64))
             .unwrap()
     );
 
@@ -1203,13 +1346,13 @@ pub fn i64_bitwise_shr_s() {
     assert_eq!(
         i64::MIN / 2,
         store
-            .invoke_typed_without_fuel(function, (i64::MIN, 1_i64))
+            .invoke_typed_without_fuel_unchecked(function, (i64::MIN, 1_i64))
             .unwrap()
     );
     assert_eq!(
         i64::MAX / 2,
         store
-            .invoke_typed_without_fuel(function, (i64::MAX, 1_i64))
+            .invoke_typed_without_fuel_unchecked(function, (i64::MAX, 1_i64))
             .unwrap()
     );
 
@@ -1217,13 +1360,13 @@ pub fn i64_bitwise_shr_s() {
     assert_eq!(
         -8589934592_i64,
         store
-            .invoke_typed_without_fuel(function, (i64::MIN, 30_i64))
+            .invoke_typed_without_fuel_unchecked(function, (i64::MIN, 30_i64))
             .unwrap()
     );
     assert_eq!(
         8589934591_i64,
         store
-            .invoke_typed_without_fuel(function, (i64::MAX, 30_i64))
+            .invoke_typed_without_fuel_unchecked(function, (i64::MAX, 30_i64))
             .unwrap()
     );
 }
@@ -1239,12 +1382,12 @@ pub fn i64_bitwise_shr_u() {
 
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export(module, "template")
+        .instance_export_unchecked(module, "template")
         .unwrap()
         .as_func()
         .unwrap();
@@ -1252,31 +1395,31 @@ pub fn i64_bitwise_shr_u() {
     assert_eq!(
         8881445_i64,
         store
-            .invoke_typed_without_fuel(function, (142_103_123_i64, 4_i64))
+            .invoke_typed_without_fuel_unchecked(function, (142_103_123_i64, 4_i64))
             .unwrap()
     );
     assert_eq!(
         23879_i64,
         store
-            .invoke_typed_without_fuel(function, (391_248_921_i64, 14_i64))
+            .invoke_typed_without_fuel_unchecked(function, (391_248_921_i64, 14_i64))
             .unwrap()
     );
     assert_eq!(
         0_i64,
         store
-            .invoke_typed_without_fuel(function, (1_203_910_012_i64, 33_i64))
+            .invoke_typed_without_fuel_unchecked(function, (1_203_910_012_i64, 33_i64))
             .unwrap()
     );
     assert_eq!(
         0_i64,
         store
-            .invoke_typed_without_fuel(function, (2_113_189_231_i64, 33_i64))
+            .invoke_typed_without_fuel_unchecked(function, (2_113_189_231_i64, 33_i64))
             .unwrap()
     );
     assert_eq!(
         1_i64,
         store
-            .invoke_typed_without_fuel(function, (i64::MIN, i64::MAX))
+            .invoke_typed_without_fuel_unchecked(function, (i64::MIN, i64::MAX))
             .unwrap()
     );
 
@@ -1284,7 +1427,7 @@ pub fn i64_bitwise_shr_u() {
     assert_eq!(
         4_i64,
         store
-            .invoke_typed_without_fuel(function, (8_i64, 1_i64))
+            .invoke_typed_without_fuel_unchecked(function, (8_i64, 1_i64))
             .unwrap()
     );
 
@@ -1292,13 +1435,13 @@ pub fn i64_bitwise_shr_u() {
     assert_eq!(
         -1_i64,
         store
-            .invoke_typed_without_fuel(function, (-1_i64, 0_i64))
+            .invoke_typed_without_fuel_unchecked(function, (-1_i64, 0_i64))
             .unwrap()
     );
     assert_eq!(
         1_i64,
         store
-            .invoke_typed_without_fuel(function, (1_i64, 0_i64))
+            .invoke_typed_without_fuel_unchecked(function, (1_i64, 0_i64))
             .unwrap()
     );
 
@@ -1306,13 +1449,13 @@ pub fn i64_bitwise_shr_u() {
     assert_eq!(
         i64::MAX - 3,
         store
-            .invoke_typed_without_fuel(function, (-8_i64, 1_i64))
+            .invoke_typed_without_fuel_unchecked(function, (-8_i64, 1_i64))
             .unwrap()
     );
     assert_eq!(
         i64::MAX,
         store
-            .invoke_typed_without_fuel(function, (-1_i64, 1_i64))
+            .invoke_typed_without_fuel_unchecked(function, (-1_i64, 1_i64))
             .unwrap()
     );
 
@@ -1320,19 +1463,19 @@ pub fn i64_bitwise_shr_u() {
     assert_eq!(
         8589934591_i64,
         store
-            .invoke_typed_without_fuel(function, (-1_i64, 31_i64))
+            .invoke_typed_without_fuel_unchecked(function, (-1_i64, 31_i64))
             .unwrap()
     );
     assert_eq!(
         4294967296_i64,
         store
-            .invoke_typed_without_fuel(function, (i64::MIN, 31_i64))
+            .invoke_typed_without_fuel_unchecked(function, (i64::MIN, 31_i64))
             .unwrap()
     );
     assert_eq!(
         4294967295_i64,
         store
-            .invoke_typed_without_fuel(function, (i64::MAX, 31_i64))
+            .invoke_typed_without_fuel_unchecked(function, (i64::MAX, 31_i64))
             .unwrap()
     );
 
@@ -1340,19 +1483,19 @@ pub fn i64_bitwise_shr_u() {
     assert_eq!(
         4294967295_i64,
         store
-            .invoke_typed_without_fuel(function, (-1_i64, 32_i64))
+            .invoke_typed_without_fuel_unchecked(function, (-1_i64, 32_i64))
             .unwrap()
     );
     assert_eq!(
         0_i64,
         store
-            .invoke_typed_without_fuel(function, (1_i64, 32_i64))
+            .invoke_typed_without_fuel_unchecked(function, (1_i64, 32_i64))
             .unwrap()
     );
     assert_eq!(
         268435455_i64,
         store
-            .invoke_typed_without_fuel(function, (-1_i64, 100_i64))
+            .invoke_typed_without_fuel_unchecked(function, (-1_i64, 100_i64))
             .unwrap()
     );
 
@@ -1360,13 +1503,13 @@ pub fn i64_bitwise_shr_u() {
     assert_eq!(
         -(i64::MIN / 2),
         store
-            .invoke_typed_without_fuel(function, (i64::MIN, 1_i64))
+            .invoke_typed_without_fuel_unchecked(function, (i64::MIN, 1_i64))
             .unwrap()
     );
     assert_eq!(
         i64::MAX / 2,
         store
-            .invoke_typed_without_fuel(function, (i64::MAX, 1_i64))
+            .invoke_typed_without_fuel_unchecked(function, (i64::MAX, 1_i64))
             .unwrap()
     );
 
@@ -1374,13 +1517,13 @@ pub fn i64_bitwise_shr_u() {
     assert_eq!(
         8589934592_i64,
         store
-            .invoke_typed_without_fuel(function, (i64::MIN, 30_i64))
+            .invoke_typed_without_fuel_unchecked(function, (i64::MIN, 30_i64))
             .unwrap()
     );
     assert_eq!(
         8589934591_i64,
         store
-            .invoke_typed_without_fuel(function, (i64::MAX, 30_i64))
+            .invoke_typed_without_fuel_unchecked(function, (i64::MAX, 30_i64))
             .unwrap()
     );
 }
@@ -1396,12 +1539,12 @@ pub fn i64_bitwise_rotl() {
 
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export(module, "template")
+        .instance_export_unchecked(module, "template")
         .unwrap()
         .as_func()
         .unwrap();
@@ -1409,31 +1552,31 @@ pub fn i64_bitwise_rotl() {
     assert_eq!(
         2273649968_i64,
         store
-            .invoke_typed_without_fuel(function, (142_103_123_i64, 4_i64))
+            .invoke_typed_without_fuel_unchecked(function, (142_103_123_i64, 4_i64))
             .unwrap()
     );
     assert_eq!(
         6410222321664_i64,
         store
-            .invoke_typed_without_fuel(function, (391_248_921_i64, 14_i64))
+            .invoke_typed_without_fuel_unchecked(function, (391_248_921_i64, 14_i64))
             .unwrap()
     );
     assert_eq!(
         -8105235815975616512_i64,
         store
-            .invoke_typed_without_fuel(function, (1_203_910_012_i64, 33_i64))
+            .invoke_typed_without_fuel_unchecked(function, (1_203_910_012_i64, 33_i64))
             .unwrap()
     );
     assert_eq!(
         -294586798900772864_i64,
         store
-            .invoke_typed_without_fuel(function, (2_113_189_231_i64, 33_i64))
+            .invoke_typed_without_fuel_unchecked(function, (2_113_189_231_i64, 33_i64))
             .unwrap()
     );
     assert_eq!(
         4611686018427387904_i64,
         store
-            .invoke_typed_without_fuel(function, (i64::MIN, i64::MAX))
+            .invoke_typed_without_fuel_unchecked(function, (i64::MIN, i64::MAX))
             .unwrap()
     );
 
@@ -1441,7 +1584,7 @@ pub fn i64_bitwise_rotl() {
     assert_eq!(
         16_i64,
         store
-            .invoke_typed_without_fuel(function, (8_i64, 1_i64))
+            .invoke_typed_without_fuel_unchecked(function, (8_i64, 1_i64))
             .unwrap()
     );
 
@@ -1449,13 +1592,13 @@ pub fn i64_bitwise_rotl() {
     assert_eq!(
         -1_i64,
         store
-            .invoke_typed_without_fuel(function, (-1_i64, 0_i64))
+            .invoke_typed_without_fuel_unchecked(function, (-1_i64, 0_i64))
             .unwrap()
     );
     assert_eq!(
         1_i64,
         store
-            .invoke_typed_without_fuel(function, (1_i64, 0_i64))
+            .invoke_typed_without_fuel_unchecked(function, (1_i64, 0_i64))
             .unwrap()
     );
 
@@ -1463,13 +1606,13 @@ pub fn i64_bitwise_rotl() {
     assert_eq!(
         -15_i64,
         store
-            .invoke_typed_without_fuel(function, (-8_i64, 1_i64))
+            .invoke_typed_without_fuel_unchecked(function, (-8_i64, 1_i64))
             .unwrap()
     );
     assert_eq!(
         -1_i64,
         store
-            .invoke_typed_without_fuel(function, (-1_i64, 1_i64))
+            .invoke_typed_without_fuel_unchecked(function, (-1_i64, 1_i64))
             .unwrap()
     );
 
@@ -1477,19 +1620,19 @@ pub fn i64_bitwise_rotl() {
     assert_eq!(
         -1_i64,
         store
-            .invoke_typed_without_fuel(function, (-1_i64, 31_i64))
+            .invoke_typed_without_fuel_unchecked(function, (-1_i64, 31_i64))
             .unwrap()
     );
     assert_eq!(
         1073741824_i64,
         store
-            .invoke_typed_without_fuel(function, (i64::MIN, 31_i64))
+            .invoke_typed_without_fuel_unchecked(function, (i64::MIN, 31_i64))
             .unwrap()
     );
     assert_eq!(
         -1073741825_i64,
         store
-            .invoke_typed_without_fuel(function, (i64::MAX, 31_i64))
+            .invoke_typed_without_fuel_unchecked(function, (i64::MAX, 31_i64))
             .unwrap()
     );
 
@@ -1497,19 +1640,19 @@ pub fn i64_bitwise_rotl() {
     assert_eq!(
         -1_i64,
         store
-            .invoke_typed_without_fuel(function, (-1_i64, 32_i64))
+            .invoke_typed_without_fuel_unchecked(function, (-1_i64, 32_i64))
             .unwrap()
     );
     assert_eq!(
         4294967296_i64,
         store
-            .invoke_typed_without_fuel(function, (1_i64, 32_i64))
+            .invoke_typed_without_fuel_unchecked(function, (1_i64, 32_i64))
             .unwrap()
     );
     assert_eq!(
         -1_i64,
         store
-            .invoke_typed_without_fuel(function, (-1_i64, 100_i64))
+            .invoke_typed_without_fuel_unchecked(function, (-1_i64, 100_i64))
             .unwrap()
     );
 
@@ -1517,13 +1660,13 @@ pub fn i64_bitwise_rotl() {
     assert_eq!(
         1_i64,
         store
-            .invoke_typed_without_fuel(function, (i64::MIN, 1_i64))
+            .invoke_typed_without_fuel_unchecked(function, (i64::MIN, 1_i64))
             .unwrap()
     );
     assert_eq!(
         -2_i64,
         store
-            .invoke_typed_without_fuel(function, (i64::MAX, 1_i64))
+            .invoke_typed_without_fuel_unchecked(function, (i64::MAX, 1_i64))
             .unwrap()
     );
 
@@ -1531,13 +1674,13 @@ pub fn i64_bitwise_rotl() {
     assert_eq!(
         536870912_i64,
         store
-            .invoke_typed_without_fuel(function, (i64::MIN, 30_i64))
+            .invoke_typed_without_fuel_unchecked(function, (i64::MIN, 30_i64))
             .unwrap()
     );
     assert_eq!(
         -536870913_i64,
         store
-            .invoke_typed_without_fuel(function, (i64::MAX, 30_i64))
+            .invoke_typed_without_fuel_unchecked(function, (i64::MAX, 30_i64))
             .unwrap()
     );
 }
@@ -1553,12 +1696,12 @@ pub fn i64_bitwise_rotr() {
 
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export(module, "template")
+        .instance_export_unchecked(module, "template")
         .unwrap()
         .as_func()
         .unwrap();
@@ -1566,31 +1709,31 @@ pub fn i64_bitwise_rotr() {
     assert_eq!(
         3458764513829422373_i64,
         store
-            .invoke_typed_without_fuel(function, (142_103_123_i64, 4_i64))
+            .invoke_typed_without_fuel_unchecked(function, (142_103_123_i64, 4_i64))
             .unwrap()
     );
     assert_eq!(
         -1124774006935757497_i64,
         store
-            .invoke_typed_without_fuel(function, (391_248_921_i64, 14_i64))
+            .invoke_typed_without_fuel_unchecked(function, (391_248_921_i64, 14_i64))
             .unwrap()
     );
     assert_eq!(
         2585377064433483776_i64,
         store
-            .invoke_typed_without_fuel(function, (1_203_910_012_i64, 33_i64))
+            .invoke_typed_without_fuel_unchecked(function, (1_203_910_012_i64, 33_i64))
             .unwrap()
     );
     assert_eq!(
         4538039318702194688_i64,
         store
-            .invoke_typed_without_fuel(function, (2_113_189_231_i64, 33_i64))
+            .invoke_typed_without_fuel_unchecked(function, (2_113_189_231_i64, 33_i64))
             .unwrap()
     );
     assert_eq!(
         1_i64,
         store
-            .invoke_typed_without_fuel(function, (i64::MIN, i64::MAX))
+            .invoke_typed_without_fuel_unchecked(function, (i64::MIN, i64::MAX))
             .unwrap()
     );
 
@@ -1598,7 +1741,7 @@ pub fn i64_bitwise_rotr() {
     assert_eq!(
         4_i64,
         store
-            .invoke_typed_without_fuel(function, (8_i64, 1_i64))
+            .invoke_typed_without_fuel_unchecked(function, (8_i64, 1_i64))
             .unwrap()
     );
 
@@ -1606,13 +1749,13 @@ pub fn i64_bitwise_rotr() {
     assert_eq!(
         -1_i64,
         store
-            .invoke_typed_without_fuel(function, (-1_i64, 0_i64))
+            .invoke_typed_without_fuel_unchecked(function, (-1_i64, 0_i64))
             .unwrap()
     );
     assert_eq!(
         1_i64,
         store
-            .invoke_typed_without_fuel(function, (1_i64, 0_i64))
+            .invoke_typed_without_fuel_unchecked(function, (1_i64, 0_i64))
             .unwrap()
     );
 
@@ -1620,13 +1763,13 @@ pub fn i64_bitwise_rotr() {
     assert_eq!(
         i64::MAX - 3,
         store
-            .invoke_typed_without_fuel(function, (-8_i64, 1_i64))
+            .invoke_typed_without_fuel_unchecked(function, (-8_i64, 1_i64))
             .unwrap()
     );
     assert_eq!(
         -1_i64,
         store
-            .invoke_typed_without_fuel(function, (-1_i64, 1_i64))
+            .invoke_typed_without_fuel_unchecked(function, (-1_i64, 1_i64))
             .unwrap()
     );
 
@@ -1634,19 +1777,19 @@ pub fn i64_bitwise_rotr() {
     assert_eq!(
         -1_i64,
         store
-            .invoke_typed_without_fuel(function, (-1_i64, 31_i64))
+            .invoke_typed_without_fuel_unchecked(function, (-1_i64, 31_i64))
             .unwrap()
     );
     assert_eq!(
         4294967296_i64,
         store
-            .invoke_typed_without_fuel(function, (i64::MIN, 31_i64))
+            .invoke_typed_without_fuel_unchecked(function, (i64::MIN, 31_i64))
             .unwrap()
     );
     assert_eq!(
         -4294967297_i64,
         store
-            .invoke_typed_without_fuel(function, (i64::MAX, 31_i64))
+            .invoke_typed_without_fuel_unchecked(function, (i64::MAX, 31_i64))
             .unwrap()
     );
 
@@ -1654,19 +1797,19 @@ pub fn i64_bitwise_rotr() {
     assert_eq!(
         -1_i64,
         store
-            .invoke_typed_without_fuel(function, (-1_i64, 32_i64))
+            .invoke_typed_without_fuel_unchecked(function, (-1_i64, 32_i64))
             .unwrap()
     );
     assert_eq!(
         4294967296_i64,
         store
-            .invoke_typed_without_fuel(function, (1_i64, 32_i64))
+            .invoke_typed_without_fuel_unchecked(function, (1_i64, 32_i64))
             .unwrap()
     );
     assert_eq!(
         -1_i64,
         store
-            .invoke_typed_without_fuel(function, (-1_i64, 100_i64))
+            .invoke_typed_without_fuel_unchecked(function, (-1_i64, 100_i64))
             .unwrap()
     );
 
@@ -1674,13 +1817,13 @@ pub fn i64_bitwise_rotr() {
     assert_eq!(
         i64::MAX / 2 + 1,
         store
-            .invoke_typed_without_fuel(function, (i64::MIN, 1_i64))
+            .invoke_typed_without_fuel_unchecked(function, (i64::MIN, 1_i64))
             .unwrap()
     );
     assert_eq!(
         i64::MIN / 2 - 1,
         store
-            .invoke_typed_without_fuel(function, (i64::MAX, 1_i64))
+            .invoke_typed_without_fuel_unchecked(function, (i64::MAX, 1_i64))
             .unwrap()
     );
 
@@ -1688,13 +1831,13 @@ pub fn i64_bitwise_rotr() {
     assert_eq!(
         8589934592_i64,
         store
-            .invoke_typed_without_fuel(function, (i64::MIN, 30_i64))
+            .invoke_typed_without_fuel_unchecked(function, (i64::MIN, 30_i64))
             .unwrap()
     );
     assert_eq!(
         -8589934593_i64,
         store
-            .invoke_typed_without_fuel(function, (i64::MAX, 30_i64))
+            .invoke_typed_without_fuel_unchecked(function, (i64::MAX, 30_i64))
             .unwrap()
     );
 }
@@ -1710,41 +1853,51 @@ pub fn i64_bitwise_clz() {
 
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export(module, "template")
+        .instance_export_unchecked(module, "template")
         .unwrap()
         .as_func()
         .unwrap();
 
     assert_eq!(
         58_i64,
-        store.invoke_typed_without_fuel(function, 33_i64).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, 33_i64)
+            .unwrap()
     );
     assert_eq!(
         57_i64,
-        store.invoke_typed_without_fuel(function, 77_i64).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, 77_i64)
+            .unwrap()
     );
     assert_eq!(
         46_i64,
         store
-            .invoke_typed_without_fuel(function, 192534_i64)
+            .invoke_typed_without_fuel_unchecked(function, 192534_i64)
             .unwrap()
     );
     assert_eq!(
         0_i64,
-        store.invoke_typed_without_fuel(function, i64::MIN).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, i64::MIN)
+            .unwrap()
     );
     assert_eq!(
         1_i64,
-        store.invoke_typed_without_fuel(function, i64::MAX).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, i64::MAX)
+            .unwrap()
     );
     assert_eq!(
         64_i64,
-        store.invoke_typed_without_fuel(function, 0_i64).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, 0_i64)
+            .unwrap()
     );
 }
 
@@ -1759,41 +1912,51 @@ pub fn i64_bitwise_ctz() {
 
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export(module, "template")
+        .instance_export_unchecked(module, "template")
         .unwrap()
         .as_func()
         .unwrap();
 
     assert_eq!(
         0_i64,
-        store.invoke_typed_without_fuel(function, 33_i64).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, 33_i64)
+            .unwrap()
     );
     assert_eq!(
         0_i64,
-        store.invoke_typed_without_fuel(function, 77_i64).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, 77_i64)
+            .unwrap()
     );
     assert_eq!(
         1_i64,
         store
-            .invoke_typed_without_fuel(function, 192534_i64)
+            .invoke_typed_without_fuel_unchecked(function, 192534_i64)
             .unwrap()
     );
     assert_eq!(
         63_i64,
-        store.invoke_typed_without_fuel(function, i64::MIN).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, i64::MIN)
+            .unwrap()
     );
     assert_eq!(
         0_i64,
-        store.invoke_typed_without_fuel(function, i64::MAX).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, i64::MAX)
+            .unwrap()
     );
     assert_eq!(
         64_i64,
-        store.invoke_typed_without_fuel(function, 0_i64).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, 0_i64)
+            .unwrap()
     );
 }
 
@@ -1808,40 +1971,50 @@ pub fn i64_bitwise_popcnt() {
 
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export(module, "template")
+        .instance_export_unchecked(module, "template")
         .unwrap()
         .as_func()
         .unwrap();
 
     assert_eq!(
         2_i64,
-        store.invoke_typed_without_fuel(function, 33_i64).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, 33_i64)
+            .unwrap()
     );
     assert_eq!(
         4_i64,
-        store.invoke_typed_without_fuel(function, 77_i64).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, 77_i64)
+            .unwrap()
     );
     assert_eq!(
         8_i64,
         store
-            .invoke_typed_without_fuel(function, 192534_i64)
+            .invoke_typed_without_fuel_unchecked(function, 192534_i64)
             .unwrap()
     );
     assert_eq!(
         1_i64,
-        store.invoke_typed_without_fuel(function, i64::MIN).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, i64::MIN)
+            .unwrap()
     );
     assert_eq!(
         63_i64,
-        store.invoke_typed_without_fuel(function, i64::MAX).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, i64::MAX)
+            .unwrap()
     );
     assert_eq!(
         0_i64,
-        store.invoke_typed_without_fuel(function, 0_i64).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, 0_i64)
+            .unwrap()
     );
 }
