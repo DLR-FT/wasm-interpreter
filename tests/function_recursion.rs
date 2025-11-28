@@ -21,12 +21,12 @@ fn simple_function_call() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let simple_caller = store
-        .instance_export(module, "simple_caller")
+        .instance_export_unchecked(module, "simple_caller")
         .unwrap()
         .as_func()
         .unwrap();
@@ -34,7 +34,7 @@ fn simple_function_call() {
     assert_eq!(
         3 * 7 + 13,
         store
-            .invoke_typed_without_fuel(simple_caller, (3, 7))
+            .invoke_typed_without_fuel_unchecked(simple_caller, (3, 7))
             .unwrap()
     );
 }
@@ -63,19 +63,34 @@ fn recursion_valid() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let add_two = store
-        .instance_export(module, "add_two")
+        .instance_export_unchecked(module, "add_two")
         .unwrap()
         .as_func()
         .unwrap();
 
-    assert_eq!(12, store.invoke_typed_without_fuel(add_two, 10).unwrap());
-    assert_eq!(2, store.invoke_typed_without_fuel(add_two, 0).unwrap());
-    assert_eq!(-4, store.invoke_typed_without_fuel(add_two, -6).unwrap());
+    assert_eq!(
+        12,
+        store
+            .invoke_typed_without_fuel_unchecked(add_two, 10)
+            .unwrap()
+    );
+    assert_eq!(
+        2,
+        store
+            .invoke_typed_without_fuel_unchecked(add_two, 0)
+            .unwrap()
+    );
+    assert_eq!(
+        -4,
+        store
+            .invoke_typed_without_fuel_unchecked(add_two, -6)
+            .unwrap()
+    );
 }
 
 #[test_log::test]
@@ -129,12 +144,12 @@ fn multivalue_call() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let foo = store
-        .instance_export(module, "bar")
+        .instance_export_unchecked(module, "bar")
         .unwrap()
         .as_func()
         .unwrap();
@@ -142,7 +157,7 @@ fn multivalue_call() {
     assert_eq!(
         (10, 42.0, 5),
         store
-            .invoke_typed_without_fuel::<(), (i32, f32, i64)>(foo, ())
+            .invoke_typed_without_fuel_unchecked::<(), (i32, f32, i64)>(foo, ())
             .unwrap()
     );
 }

@@ -34,19 +34,21 @@ fn memory_copy_test_1() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let test = store
-        .instance_export(module, "test")
+        .instance_export_unchecked(module, "test")
         .unwrap()
         .as_func()
         .unwrap();
-    store.invoke_typed_without_fuel::<(), ()>(test, ()).unwrap();
+    store
+        .invoke_typed_without_fuel_unchecked::<(), ()>(test, ())
+        .unwrap();
 
     let load8_u = store
-        .instance_export(module, "load8_u")
+        .instance_export_unchecked(module, "load8_u")
         .unwrap()
         .as_func()
         .unwrap();
@@ -55,7 +57,7 @@ fn memory_copy_test_1() {
     ]);
     for (j, result) in results.into_iter().enumerate() {
         assert_eq!(
-            store.invoke_typed_without_fuel(load8_u, j as i32),
+            store.invoke_typed_without_fuel_unchecked(load8_u, j as i32),
             Ok(result)
         );
     }
@@ -80,19 +82,21 @@ fn memory_copy_test_2() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let test = store
-        .instance_export(module, "test")
+        .instance_export_unchecked(module, "test")
         .unwrap()
         .as_func()
         .unwrap();
-    store.invoke_typed_without_fuel::<(), ()>(test, ()).unwrap();
+    store
+        .invoke_typed_without_fuel_unchecked::<(), ()>(test, ())
+        .unwrap();
 
     let load8_u = store
-        .instance_export(module, "load8_u")
+        .instance_export_unchecked(module, "load8_u")
         .unwrap()
         .as_func()
         .unwrap();
@@ -101,7 +105,7 @@ fn memory_copy_test_2() {
     ]);
     for (j, result) in results.into_iter().enumerate() {
         assert_eq!(
-            store.invoke_typed_without_fuel(load8_u, j as i32),
+            store.invoke_typed_without_fuel_unchecked(load8_u, j as i32),
             Ok(result)
         );
     }
@@ -126,19 +130,21 @@ fn memory_copy_test_3() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let test = store
-        .instance_export(module, "test")
+        .instance_export_unchecked(module, "test")
         .unwrap()
         .as_func()
         .unwrap();
-    store.invoke_typed_without_fuel::<(), ()>(test, ()).unwrap();
+    store
+        .invoke_typed_without_fuel_unchecked::<(), ()>(test, ())
+        .unwrap();
 
     let load8_u = store
-        .instance_export(module, "load8_u")
+        .instance_export_unchecked(module, "load8_u")
         .unwrap()
         .as_func()
         .unwrap();
@@ -151,7 +157,7 @@ fn memory_copy_test_3() {
     ]);
     for j in 0..offsets.len() {
         assert_eq!(
-            store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            store.invoke_typed_without_fuel_unchecked(load8_u, offsets[j]),
             Ok(results[j])
         );
     }
@@ -176,19 +182,21 @@ fn memory_copy_test_4() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let test = store
-        .instance_export(module, "test")
+        .instance_export_unchecked(module, "test")
         .unwrap()
         .as_func()
         .unwrap();
-    store.invoke_typed_without_fuel::<(), ()>(test, ()).unwrap();
+    store
+        .invoke_typed_without_fuel_unchecked::<(), ()>(test, ())
+        .unwrap();
 
     let load8_u = store
-        .instance_export(module, "load8_u")
+        .instance_export_unchecked(module, "load8_u")
         .unwrap()
         .as_func()
         .unwrap();
@@ -201,7 +209,7 @@ fn memory_copy_test_4() {
     ]);
     for j in 0..offsets.len() {
         assert_eq!(
-            store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            store.invoke_typed_without_fuel_unchecked(load8_u, offsets[j]),
             Ok(results[j])
         );
     }
@@ -226,19 +234,21 @@ fn memory_copy_test_5() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let test = store
-        .instance_export(module, "test")
+        .instance_export_unchecked(module, "test")
         .unwrap()
         .as_func()
         .unwrap();
-    store.invoke_typed_without_fuel::<(), ()>(test, ()).unwrap();
+    store
+        .invoke_typed_without_fuel_unchecked::<(), ()>(test, ())
+        .unwrap();
 
     let load8_u = store
-        .instance_export(module, "load8_u")
+        .instance_export_unchecked(module, "load8_u")
         .unwrap()
         .as_func()
         .unwrap();
@@ -251,7 +261,7 @@ fn memory_copy_test_5() {
     ]);
     for j in 0..offsets.len() {
         assert_eq!(
-            store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            store.invoke_typed_without_fuel_unchecked(load8_u, offsets[j]),
             Ok(results[j])
         );
     }
@@ -275,23 +285,24 @@ fn memory_copy_test_6() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let run = store
-        .instance_export(module, "run")
+        .instance_export_unchecked(module, "run")
         .unwrap()
         .as_func()
         .unwrap();
-    let result = store.invoke_typed_without_fuel::<(i32, i32, i32), ()>(run, (65516, 0, 40));
+    let result =
+        store.invoke_typed_without_fuel_unchecked::<(i32, i32, i32), ()>(run, (65516, 0, 40));
     assert_eq!(
         result.err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds)),
     );
 
     let load8_u = store
-        .instance_export(module, "load8_u")
+        .instance_export_unchecked(module, "load8_u")
         .unwrap()
         .as_func()
         .unwrap();
@@ -339,7 +350,7 @@ fn memory_copy_test_6() {
     ]);
     for j in 0..offsets.len() {
         assert_eq!(
-            store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            store.invoke_typed_without_fuel_unchecked(load8_u, offsets[j]),
             Ok(results[j])
         );
     }
@@ -363,23 +374,24 @@ fn memory_copy_test_7() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let run = store
-        .instance_export(module, "run")
+        .instance_export_unchecked(module, "run")
         .unwrap()
         .as_func()
         .unwrap();
-    let result = store.invoke_typed_without_fuel::<(i32, i32, i32), ()>(run, (65515, 0, 39));
+    let result =
+        store.invoke_typed_without_fuel_unchecked::<(i32, i32, i32), ()>(run, (65515, 0, 39));
     assert_eq!(
         result.err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
     );
 
     let load8_u = store
-        .instance_export(module, "load8_u")
+        .instance_export_unchecked(module, "load8_u")
         .unwrap()
         .as_func()
         .unwrap();
@@ -427,7 +439,7 @@ fn memory_copy_test_7() {
     ]);
     for j in 0..offsets.len() {
         assert_eq!(
-            store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            store.invoke_typed_without_fuel_unchecked(load8_u, offsets[j]),
             Ok(results[j])
         );
     }
@@ -451,23 +463,24 @@ fn memory_copy_test_8() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let run = store
-        .instance_export(module, "run")
+        .instance_export_unchecked(module, "run")
         .unwrap()
         .as_func()
         .unwrap();
-    let result = store.invoke_typed_without_fuel::<(i32, i32, i32), ()>(run, (65515, 0, 39));
+    let result =
+        store.invoke_typed_without_fuel_unchecked::<(i32, i32, i32), ()>(run, (65515, 0, 39));
     assert_eq!(
         result.err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
     );
 
     let load8_u = store
-        .instance_export(module, "load8_u")
+        .instance_export_unchecked(module, "load8_u")
         .unwrap()
         .as_func()
         .unwrap();
@@ -515,7 +528,7 @@ fn memory_copy_test_8() {
     ]);
     for j in 0..offsets.len() {
         assert_eq!(
-            store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            store.invoke_typed_without_fuel_unchecked(load8_u, offsets[j]),
             Ok(results[j])
         );
     }
@@ -539,23 +552,24 @@ fn memory_copy_test_9() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let run = store
-        .instance_export(module, "run")
+        .instance_export_unchecked(module, "run")
         .unwrap()
         .as_func()
         .unwrap();
-    let result = store.invoke_typed_without_fuel::<(i32, i32, i32), ()>(run, (0, 65516, 40));
+    let result =
+        store.invoke_typed_without_fuel_unchecked::<(i32, i32, i32), ()>(run, (0, 65516, 40));
     assert_eq!(
         result.err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
     );
 
     let load8_u = store
-        .instance_export(module, "load8_u")
+        .instance_export_unchecked(module, "load8_u")
         .unwrap()
         .as_func()
         .unwrap();
@@ -604,7 +618,7 @@ fn memory_copy_test_9() {
     ]);
     for j in 0..offsets.len() {
         assert_eq!(
-            store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            store.invoke_typed_without_fuel_unchecked(load8_u, offsets[j]),
             Ok(results[j])
         );
     }
@@ -628,23 +642,24 @@ fn memory_copy_test_10() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let run = store
-        .instance_export(module, "run")
+        .instance_export_unchecked(module, "run")
         .unwrap()
         .as_func()
         .unwrap();
-    let result = store.invoke_typed_without_fuel::<(i32, i32, i32), ()>(run, (0, 65515, 39));
+    let result =
+        store.invoke_typed_without_fuel_unchecked::<(i32, i32, i32), ()>(run, (0, 65515, 39));
     assert_eq!(
         result.err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
     );
 
     let load8_u = store
-        .instance_export(module, "load8_u")
+        .instance_export_unchecked(module, "load8_u")
         .unwrap()
         .as_func()
         .unwrap();
@@ -693,7 +708,7 @@ fn memory_copy_test_10() {
     ]);
     for j in 0..offsets.len() {
         assert_eq!(
-            store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            store.invoke_typed_without_fuel_unchecked(load8_u, offsets[j]),
             Ok(results[j])
         );
     }
@@ -717,23 +732,24 @@ fn memory_copy_test_11() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let run = store
-        .instance_export(module, "run")
+        .instance_export_unchecked(module, "run")
         .unwrap()
         .as_func()
         .unwrap();
-    let result = store.invoke_typed_without_fuel::<(i32, i32, i32), ()>(run, (65516, 65486, 40));
+    let result =
+        store.invoke_typed_without_fuel_unchecked::<(i32, i32, i32), ()>(run, (65516, 65486, 40));
     assert_eq!(
         result.err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
     );
 
     let load8_u = store
-        .instance_export(module, "load8_u")
+        .instance_export_unchecked(module, "load8_u")
         .unwrap()
         .as_func()
         .unwrap();
@@ -782,7 +798,7 @@ fn memory_copy_test_11() {
     ]);
     for j in 0..offsets.len() {
         assert_eq!(
-            store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            store.invoke_typed_without_fuel_unchecked(load8_u, offsets[j]),
             Ok(results[j])
         );
     }
@@ -806,23 +822,24 @@ fn memory_copy_test_12() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let run = store
-        .instance_export(module, "run")
+        .instance_export_unchecked(module, "run")
         .unwrap()
         .as_func()
         .unwrap();
-    let result = store.invoke_typed_without_fuel::<(i32, i32, i32), ()>(run, (65486, 65516, 40));
+    let result =
+        store.invoke_typed_without_fuel_unchecked::<(i32, i32, i32), ()>(run, (65486, 65516, 40));
     assert_eq!(
         result.err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
     );
 
     let load8_u = store
-        .instance_export(module, "load8_u")
+        .instance_export_unchecked(module, "load8_u")
         .unwrap()
         .as_func()
         .unwrap();
@@ -871,7 +888,7 @@ fn memory_copy_test_12() {
     ]);
     for j in 0..offsets.len() {
         assert_eq!(
-            store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            store.invoke_typed_without_fuel_unchecked(load8_u, offsets[j]),
             Ok(results[j])
         );
     }
@@ -895,23 +912,24 @@ fn memory_copy_test_13() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let run = store
-        .instance_export(module, "run")
+        .instance_export_unchecked(module, "run")
         .unwrap()
         .as_func()
         .unwrap();
-    let result = store.invoke_typed_without_fuel::<(i32, i32, i32), ()>(run, (65516, 65506, 40));
+    let result =
+        store.invoke_typed_without_fuel_unchecked::<(i32, i32, i32), ()>(run, (65516, 65506, 40));
     assert_eq!(
         result.err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
     );
 
     let load8_u = store
-        .instance_export(module, "load8_u")
+        .instance_export_unchecked(module, "load8_u")
         .unwrap()
         .as_func()
         .unwrap();
@@ -960,7 +978,7 @@ fn memory_copy_test_13() {
     ]);
     for j in 0..offsets.len() {
         assert_eq!(
-            store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            store.invoke_typed_without_fuel_unchecked(load8_u, offsets[j]),
             Ok(results[j])
         );
     }
@@ -984,23 +1002,24 @@ fn memory_copy_test_14() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let run = store
-        .instance_export(module, "run")
+        .instance_export_unchecked(module, "run")
         .unwrap()
         .as_func()
         .unwrap();
-    let result = store.invoke_typed_without_fuel::<(i32, i32, i32), ()>(run, (65506, 65516, 40));
+    let result =
+        store.invoke_typed_without_fuel_unchecked::<(i32, i32, i32), ()>(run, (65506, 65516, 40));
     assert_eq!(
         result.err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
     );
 
     let load8_u = store
-        .instance_export(module, "load8_u")
+        .instance_export_unchecked(module, "load8_u")
         .unwrap()
         .as_func()
         .unwrap();
@@ -1049,7 +1068,7 @@ fn memory_copy_test_14() {
     ]);
     for j in 0..offsets.len() {
         assert_eq!(
-            store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            store.invoke_typed_without_fuel_unchecked(load8_u, offsets[j]),
             Ok(results[j])
         );
     }
@@ -1073,23 +1092,24 @@ fn memory_copy_test_15() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let run = store
-        .instance_export(module, "run")
+        .instance_export_unchecked(module, "run")
         .unwrap()
         .as_func()
         .unwrap();
-    let result = store.invoke_typed_without_fuel::<(i32, i32, i32), ()>(run, (65516, 65516, 40));
+    let result =
+        store.invoke_typed_without_fuel_unchecked::<(i32, i32, i32), ()>(run, (65516, 65516, 40));
     assert_eq!(
         result.err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
     );
 
     let load8_u = store
-        .instance_export(module, "load8_u")
+        .instance_export_unchecked(module, "load8_u")
         .unwrap()
         .as_func()
         .unwrap();
@@ -1138,7 +1158,7 @@ fn memory_copy_test_15() {
     ]);
     for j in 0..offsets.len() {
         assert_eq!(
-            store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            store.invoke_typed_without_fuel_unchecked(load8_u, offsets[j]),
             Ok(results[j])
         );
     }
@@ -1162,24 +1182,26 @@ fn memory_copy_test_16() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let run = store
-        .instance_export(module, "run")
+        .instance_export_unchecked(module, "run")
         .unwrap()
         .as_func()
         .unwrap();
-    let result = store
-        .invoke_typed_without_fuel::<(i32, i32, i32), ()>(run, (0, 65516, 4294963200_u32 as i32));
+    let result = store.invoke_typed_without_fuel_unchecked::<(i32, i32, i32), ()>(
+        run,
+        (0, 65516, 4294963200_u32 as i32),
+    );
     assert_eq!(
         result.err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
     );
 
     let load8_u = store
-        .instance_export(module, "load8_u")
+        .instance_export_unchecked(module, "load8_u")
         .unwrap()
         .as_func()
         .unwrap();
@@ -1228,7 +1250,7 @@ fn memory_copy_test_16() {
     ]);
     for j in 0..offsets.len() {
         assert_eq!(
-            store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            store.invoke_typed_without_fuel_unchecked(load8_u, offsets[j]),
             Ok(results[j])
         );
     }
@@ -1252,16 +1274,16 @@ fn memory_copy_test_17() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let run = store
-        .instance_export(module, "run")
+        .instance_export_unchecked(module, "run")
         .unwrap()
         .as_func()
         .unwrap();
-    let result = store.invoke_typed_without_fuel::<(i32, i32, i32), ()>(
+    let result = store.invoke_typed_without_fuel_unchecked::<(i32, i32, i32), ()>(
         run,
         (65516, 61440, 4294967040_u32 as i32),
     );
@@ -1271,7 +1293,7 @@ fn memory_copy_test_17() {
     );
 
     let load8_u = store
-        .instance_export(module, "load8_u")
+        .instance_export_unchecked(module, "load8_u")
         .unwrap()
         .as_func()
         .unwrap();
@@ -1320,7 +1342,7 @@ fn memory_copy_test_17() {
     ]);
     for j in 0..offsets.len() {
         assert_eq!(
-            store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            store.invoke_typed_without_fuel_unchecked(load8_u, offsets[j]),
             Ok(results[j])
         );
     }

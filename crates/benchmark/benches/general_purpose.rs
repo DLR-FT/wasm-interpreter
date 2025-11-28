@@ -49,8 +49,8 @@ macro_rules! bench_wasm {
             // Our interpreter
             let our_validation_info = validate(&wasm_bytes).unwrap();
             let mut store = Store::new(());
-            let module = store.module_instantiate(&our_validation_info, Vec::new(), None).unwrap().module_addr;
-            let our_fn = store.instance_export(module, $entry_function)
+            let module = store.module_instantiate_unchecked(&our_validation_info, Vec::new(), None).unwrap().module_addr;
+            let our_fn = store.instance_export_unchecked(module, $entry_function)
                 .unwrap()
                 .as_func()
                 .unwrap();
@@ -123,7 +123,7 @@ macro_rules! bench_wasm {
                 let bid = BenchmarkId::new("our", n);
                 group.bench_with_input(bid, &n, |b, &s| {
                     b.iter(|| {
-                        store.invoke_typed_without_fuel::<$arg_type, $return_type>(our_fn, s).unwrap();
+                        store.invoke_typed_without_fuel_unchecked::<$arg_type, $return_type>(our_fn, s).unwrap();
                     })
                 });
             }

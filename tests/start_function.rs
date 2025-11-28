@@ -26,15 +26,20 @@ fn start_function() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let load_num = store
-        .instance_export(module, "load_num")
+        .instance_export_unchecked(module, "load_num")
         .unwrap()
         .as_func()
         .unwrap();
 
-    assert_eq!(42, store.invoke_typed_without_fuel(load_num, ()).unwrap());
+    assert_eq!(
+        42,
+        store
+            .invoke_typed_without_fuel_unchecked(load_num, ())
+            .unwrap()
+    );
 }

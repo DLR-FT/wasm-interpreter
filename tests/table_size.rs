@@ -49,93 +49,204 @@ fn table_size_test() {
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
-    // let get_funcref = store.instance_export(module, "get-funcref").unwrap().as_func().unwrap();
-    // let init = store.instance_export(module, "init").unwrap().as_func().unwrap();
+    // let get_funcref = store.instance_export_unchecked(module, "get-funcref").unwrap().as_func().unwrap();
+    // let init = store.instance_export_unchecked(module, "init").unwrap().as_func().unwrap();
     let size_t0 = store
-        .instance_export(module, "size-t0")
+        .instance_export_unchecked(module, "size-t0")
         .unwrap()
         .as_func()
         .unwrap();
     let size_t1 = store
-        .instance_export(module, "size-t1")
+        .instance_export_unchecked(module, "size-t1")
         .unwrap()
         .as_func()
         .unwrap();
     let size_t2 = store
-        .instance_export(module, "size-t2")
+        .instance_export_unchecked(module, "size-t2")
         .unwrap()
         .as_func()
         .unwrap();
     let size_t3 = store
-        .instance_export(module, "size-t3")
+        .instance_export_unchecked(module, "size-t3")
         .unwrap()
         .as_func()
         .unwrap();
     let grow_t0 = store
-        .instance_export(module, "grow-t0")
+        .instance_export_unchecked(module, "grow-t0")
         .unwrap()
         .as_func()
         .unwrap();
     let grow_t1 = store
-        .instance_export(module, "grow-t1")
+        .instance_export_unchecked(module, "grow-t1")
         .unwrap()
         .as_func()
         .unwrap();
     let grow_t2 = store
-        .instance_export(module, "grow-t2")
+        .instance_export_unchecked(module, "grow-t2")
         .unwrap()
         .as_func()
         .unwrap();
     let grow_t3 = store
-        .instance_export(module, "grow-t3")
+        .instance_export_unchecked(module, "grow-t3")
         .unwrap()
         .as_func()
         .unwrap();
 
-    assert_eq!(store.invoke_typed_without_fuel(size_t0, ()), Ok(0));
-    assert_eq!(store.invoke_typed_without_fuel(size_t0, ()), Ok(0));
-    assert_eq!(store.invoke_typed_without_fuel(grow_t0, 1), Ok(()));
-    assert_eq!(store.invoke_typed_without_fuel(size_t0, ()), Ok(1));
-    assert_eq!(store.invoke_typed_without_fuel(grow_t0, 4), Ok(()));
-    assert_eq!(store.invoke_typed_without_fuel(size_t0, ()), Ok(5));
-    assert_eq!(store.invoke_typed_without_fuel(grow_t0, 0), Ok(()));
-    assert_eq!(store.invoke_typed_without_fuel(size_t0, ()), Ok(5));
+    assert_eq!(
+        store.invoke_typed_without_fuel_unchecked(size_t0, ()),
+        Ok(0)
+    );
+    assert_eq!(
+        store.invoke_typed_without_fuel_unchecked(size_t0, ()),
+        Ok(0)
+    );
+    assert_eq!(
+        store.invoke_typed_without_fuel_unchecked(grow_t0, 1),
+        Ok(())
+    );
+    assert_eq!(
+        store.invoke_typed_without_fuel_unchecked(size_t0, ()),
+        Ok(1)
+    );
+    assert_eq!(
+        store.invoke_typed_without_fuel_unchecked(grow_t0, 4),
+        Ok(())
+    );
+    assert_eq!(
+        store.invoke_typed_without_fuel_unchecked(size_t0, ()),
+        Ok(5)
+    );
+    assert_eq!(
+        store.invoke_typed_without_fuel_unchecked(grow_t0, 0),
+        Ok(())
+    );
+    assert_eq!(
+        store.invoke_typed_without_fuel_unchecked(size_t0, ()),
+        Ok(5)
+    );
 
-    assert_eq!(store.invoke_typed_without_fuel(size_t1, ()), Ok(1));
-    assert_eq!(store.invoke_typed_without_fuel(grow_t1, 1), Ok(()));
-    assert_eq!(store.invoke_typed_without_fuel(size_t1, ()), Ok(2));
-    assert_eq!(store.invoke_typed_without_fuel(grow_t1, 4), Ok(()));
-    assert_eq!(store.invoke_typed_without_fuel(size_t1, ()), Ok(6));
-    assert_eq!(store.invoke_typed_without_fuel(grow_t1, 0), Ok(()));
-    assert_eq!(store.invoke_typed_without_fuel(size_t1, ()), Ok(6));
+    assert_eq!(
+        store.invoke_typed_without_fuel_unchecked(size_t1, ()),
+        Ok(1)
+    );
+    assert_eq!(
+        store.invoke_typed_without_fuel_unchecked(grow_t1, 1),
+        Ok(())
+    );
+    assert_eq!(
+        store.invoke_typed_without_fuel_unchecked(size_t1, ()),
+        Ok(2)
+    );
+    assert_eq!(
+        store.invoke_typed_without_fuel_unchecked(grow_t1, 4),
+        Ok(())
+    );
+    assert_eq!(
+        store.invoke_typed_without_fuel_unchecked(size_t1, ()),
+        Ok(6)
+    );
+    assert_eq!(
+        store.invoke_typed_without_fuel_unchecked(grow_t1, 0),
+        Ok(())
+    );
+    assert_eq!(
+        store.invoke_typed_without_fuel_unchecked(size_t1, ()),
+        Ok(6)
+    );
 
-    assert_eq!(store.invoke_typed_without_fuel(size_t2, ()), Ok(0));
-    assert_eq!(store.invoke_typed_without_fuel(grow_t2, 3), Ok(()));
-    assert_eq!(store.invoke_typed_without_fuel(size_t2, ()), Ok(0));
-    assert_eq!(store.invoke_typed_without_fuel(grow_t2, 1), Ok(()));
-    assert_eq!(store.invoke_typed_without_fuel(size_t2, ()), Ok(1));
-    assert_eq!(store.invoke_typed_without_fuel(grow_t2, 0), Ok(()));
-    assert_eq!(store.invoke_typed_without_fuel(size_t2, ()), Ok(1));
-    assert_eq!(store.invoke_typed_without_fuel(grow_t2, 4), Ok(()));
-    assert_eq!(store.invoke_typed_without_fuel(size_t2, ()), Ok(1));
-    assert_eq!(store.invoke_typed_without_fuel(grow_t2, 1), Ok(()));
-    assert_eq!(store.invoke_typed_without_fuel(size_t2, ()), Ok(2));
+    assert_eq!(
+        store.invoke_typed_without_fuel_unchecked(size_t2, ()),
+        Ok(0)
+    );
+    assert_eq!(
+        store.invoke_typed_without_fuel_unchecked(grow_t2, 3),
+        Ok(())
+    );
+    assert_eq!(
+        store.invoke_typed_without_fuel_unchecked(size_t2, ()),
+        Ok(0)
+    );
+    assert_eq!(
+        store.invoke_typed_without_fuel_unchecked(grow_t2, 1),
+        Ok(())
+    );
+    assert_eq!(
+        store.invoke_typed_without_fuel_unchecked(size_t2, ()),
+        Ok(1)
+    );
+    assert_eq!(
+        store.invoke_typed_without_fuel_unchecked(grow_t2, 0),
+        Ok(())
+    );
+    assert_eq!(
+        store.invoke_typed_without_fuel_unchecked(size_t2, ()),
+        Ok(1)
+    );
+    assert_eq!(
+        store.invoke_typed_without_fuel_unchecked(grow_t2, 4),
+        Ok(())
+    );
+    assert_eq!(
+        store.invoke_typed_without_fuel_unchecked(size_t2, ()),
+        Ok(1)
+    );
+    assert_eq!(
+        store.invoke_typed_without_fuel_unchecked(grow_t2, 1),
+        Ok(())
+    );
+    assert_eq!(
+        store.invoke_typed_without_fuel_unchecked(size_t2, ()),
+        Ok(2)
+    );
 
-    assert_eq!(store.invoke_typed_without_fuel(size_t3, ()), Ok(3));
-    assert_eq!(store.invoke_typed_without_fuel(grow_t3, 1), Ok(()));
-    assert_eq!(store.invoke_typed_without_fuel(size_t3, ()), Ok(4));
-    assert_eq!(store.invoke_typed_without_fuel(grow_t3, 3), Ok(()));
-    assert_eq!(store.invoke_typed_without_fuel(size_t3, ()), Ok(7));
-    assert_eq!(store.invoke_typed_without_fuel(grow_t3, 0), Ok(()));
-    assert_eq!(store.invoke_typed_without_fuel(size_t3, ()), Ok(7));
-    assert_eq!(store.invoke_typed_without_fuel(grow_t3, 2), Ok(()));
-    assert_eq!(store.invoke_typed_without_fuel(size_t3, ()), Ok(7));
-    assert_eq!(store.invoke_typed_without_fuel(grow_t3, 1), Ok(()));
-    assert_eq!(store.invoke_typed_without_fuel(size_t3, ()), Ok(8));
+    assert_eq!(
+        store.invoke_typed_without_fuel_unchecked(size_t3, ()),
+        Ok(3)
+    );
+    assert_eq!(
+        store.invoke_typed_without_fuel_unchecked(grow_t3, 1),
+        Ok(())
+    );
+    assert_eq!(
+        store.invoke_typed_without_fuel_unchecked(size_t3, ()),
+        Ok(4)
+    );
+    assert_eq!(
+        store.invoke_typed_without_fuel_unchecked(grow_t3, 3),
+        Ok(())
+    );
+    assert_eq!(
+        store.invoke_typed_without_fuel_unchecked(size_t3, ()),
+        Ok(7)
+    );
+    assert_eq!(
+        store.invoke_typed_without_fuel_unchecked(grow_t3, 0),
+        Ok(())
+    );
+    assert_eq!(
+        store.invoke_typed_without_fuel_unchecked(size_t3, ()),
+        Ok(7)
+    );
+    assert_eq!(
+        store.invoke_typed_without_fuel_unchecked(grow_t3, 2),
+        Ok(())
+    );
+    assert_eq!(
+        store.invoke_typed_without_fuel_unchecked(size_t3, ()),
+        Ok(7)
+    );
+    assert_eq!(
+        store.invoke_typed_without_fuel_unchecked(grow_t3, 1),
+        Ok(())
+    );
+    assert_eq!(
+        store.invoke_typed_without_fuel_unchecked(size_t3, ()),
+        Ok(8)
+    );
 }
 
 //   ;; Type errors

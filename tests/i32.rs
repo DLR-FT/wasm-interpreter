@@ -33,31 +33,39 @@ pub fn i32_add() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export(module, "i32_add")
+        .instance_export_unchecked(module, "i32_add")
         .unwrap()
         .as_func()
         .unwrap();
 
     assert_eq!(
         2,
-        store.invoke_typed_without_fuel(function, (1, 1)).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, (1, 1))
+            .unwrap()
     );
     assert_eq!(
         1,
-        store.invoke_typed_without_fuel(function, (1, 0)).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, (1, 0))
+            .unwrap()
     );
     assert_eq!(
         -2,
-        store.invoke_typed_without_fuel(function, (-1, -1)).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, (-1, -1))
+            .unwrap()
     );
     assert_eq!(
         0,
-        store.invoke_typed_without_fuel(function, (-1, 1)).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, (-1, 1))
+            .unwrap()
     );
     // Chaned the following value from the spec:
     // - 0x80000000 to -2147483648 = (0x80000000 as u32) as i32
@@ -66,25 +74,25 @@ pub fn i32_add() {
     assert_eq!(
         i32_min,
         store
-            .invoke_typed_without_fuel(function, (0x7fffffff, 1))
+            .invoke_typed_without_fuel_unchecked(function, (0x7fffffff, 1))
             .unwrap()
     );
     assert_eq!(
         0x7fffffff,
         store
-            .invoke_typed_without_fuel(function, (i32_min, -1))
+            .invoke_typed_without_fuel_unchecked(function, (i32_min, -1))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (i32_min, i32_min))
+            .invoke_typed_without_fuel_unchecked(function, (i32_min, i32_min))
             .unwrap()
     );
     assert_eq!(
         0x40000000,
         store
-            .invoke_typed_without_fuel(function, (0x3fffffff, 1))
+            .invoke_typed_without_fuel_unchecked(function, (0x3fffffff, 1))
             .unwrap()
     );
 }
@@ -97,27 +105,33 @@ pub fn i32_sub() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export(module, "i32_sub")
+        .instance_export_unchecked(module, "i32_sub")
         .unwrap()
         .as_func()
         .unwrap();
 
     assert_eq!(
         0,
-        store.invoke_typed_without_fuel(function, (1, 1)).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, (1, 1))
+            .unwrap()
     );
     assert_eq!(
         1,
-        store.invoke_typed_without_fuel(function, (1, 0)).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, (1, 0))
+            .unwrap()
     );
     assert_eq!(
         0,
-        store.invoke_typed_without_fuel(function, (-1, -1)).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, (-1, -1))
+            .unwrap()
     );
     // Chaned the following value from the spec:
     // - 0x80000000 to -2147483648 = (0x80000000 as u32) as i32
@@ -126,25 +140,25 @@ pub fn i32_sub() {
     assert_eq!(
         i32_min,
         store
-            .invoke_typed_without_fuel(function, (0x7fffffff, -1))
+            .invoke_typed_without_fuel_unchecked(function, (0x7fffffff, -1))
             .unwrap()
     );
     assert_eq!(
         0x7fffffff,
         store
-            .invoke_typed_without_fuel(function, (i32_min, 1))
+            .invoke_typed_without_fuel_unchecked(function, (i32_min, 1))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (i32_min, i32_min))
+            .invoke_typed_without_fuel_unchecked(function, (i32_min, i32_min))
             .unwrap()
     );
     assert_eq!(
         0x40000000,
         store
-            .invoke_typed_without_fuel(function, (0x3fffffff, -1))
+            .invoke_typed_without_fuel_unchecked(function, (0x3fffffff, -1))
             .unwrap()
     );
 }
@@ -167,17 +181,22 @@ pub fn i32_eqz_panic() {
 
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let i32_eqz = store
-        .instance_export(module, "i32_eqz")
+        .instance_export_unchecked(module, "i32_eqz")
         .unwrap()
         .as_func()
         .unwrap();
 
-    assert_eq!(1, store.invoke_typed_without_fuel(i32_eqz, ()).unwrap());
+    assert_eq!(
+        1,
+        store
+            .invoke_typed_without_fuel_unchecked(i32_eqz, ())
+            .unwrap()
+    );
 }
 
 /// A function to test the i32.eqz implementation using the [WASM TestSuite](https://github.com/WebAssembly/testsuite/blob/5741d6c5172866174fde27c6b5447af757528d1a/i32.wast#L286)
@@ -198,34 +217,44 @@ pub fn i32_eqz() {
 
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let i32_eqz = store
-        .instance_export(module, "i32_eqz")
+        .instance_export_unchecked(module, "i32_eqz")
         .unwrap()
         .as_func()
         .unwrap();
 
-    assert_eq!(1, store.invoke_typed_without_fuel(i32_eqz, 0).unwrap());
-    assert_eq!(0, store.invoke_typed_without_fuel(i32_eqz, 1).unwrap());
     assert_eq!(
-        0,
+        1,
         store
-            .invoke_typed_without_fuel(i32_eqz, 0x80000000u32 as i32)
+            .invoke_typed_without_fuel_unchecked(i32_eqz, 0)
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(i32_eqz, 0x7fffffff)
+            .invoke_typed_without_fuel_unchecked(i32_eqz, 1)
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(i32_eqz, 0xffffffffu32 as i32)
+            .invoke_typed_without_fuel_unchecked(i32_eqz, 0x80000000u32 as i32)
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        store
+            .invoke_typed_without_fuel_unchecked(i32_eqz, 0x7fffffff)
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        store
+            .invoke_typed_without_fuel_unchecked(i32_eqz, 0xffffffffu32 as i32)
             .unwrap()
     );
 }
@@ -249,17 +278,22 @@ pub fn i32_eq_panic_first_arg() {
 
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let i32_eq = store
-        .instance_export(module, "i32_eq")
+        .instance_export_unchecked(module, "i32_eq")
         .unwrap()
         .as_func()
         .unwrap();
 
-    assert_eq!(1, store.invoke_typed_without_fuel(i32_eq, ()).unwrap());
+    assert_eq!(
+        1,
+        store
+            .invoke_typed_without_fuel_unchecked(i32_eq, ())
+            .unwrap()
+    );
 }
 
 #[should_panic]
@@ -281,17 +315,22 @@ pub fn i32_eq_panic_second_arg() {
 
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let i32_eq = store
-        .instance_export(module, "i32_eq")
+        .instance_export_unchecked(module, "i32_eq")
         .unwrap()
         .as_func()
         .unwrap();
 
-    assert_eq!(1, store.invoke_typed_without_fuel(i32_eq, ()).unwrap());
+    assert_eq!(
+        1,
+        store
+            .invoke_typed_without_fuel_unchecked(i32_eq, ())
+            .unwrap()
+    );
 }
 
 /// A function to test the i32.eq implementation using the [WASM TestSuite](https://github.com/WebAssembly/testsuite/blob/5741d6c5172866174fde27c6b5447af757528d1a/i32.wast#L292)
@@ -302,86 +341,101 @@ pub fn i32_eq() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export(module, "i32_eq")
+        .instance_export_unchecked(module, "i32_eq")
         .unwrap()
         .as_func()
         .unwrap();
 
     assert_eq!(
         1,
-        store.invoke_typed_without_fuel(function, (0, 0)).unwrap()
-    );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel(function, (1, 1)).unwrap()
-    );
-    assert_eq!(
-        0,
-        store.invoke_typed_without_fuel(function, (-1, 1)).unwrap()
-    );
-    assert_eq!(
-        1,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, 0x80000000u32 as i32))
+            .invoke_typed_without_fuel_unchecked(function, (0, 0))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (0x7fffffff, 0x7fffffff))
+            .invoke_typed_without_fuel_unchecked(function, (1, 1))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (-1, 1))
             .unwrap()
     );
     assert_eq!(
         1,
-        store.invoke_typed_without_fuel(function, (-1, -1)).unwrap()
-    );
-    assert_eq!(
-        0,
-        store.invoke_typed_without_fuel(function, (1, 0)).unwrap()
-    );
-    assert_eq!(
-        0,
-        store.invoke_typed_without_fuel(function, (0, 1)).unwrap()
-    );
-    assert_eq!(
-        0,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, 0))
+            .invoke_typed_without_fuel_unchecked(
+                function,
+                (0x80000000u32 as i32, 0x80000000u32 as i32)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (0x7fffffff, 0x7fffffff))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (-1, -1))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (0, 0x80000000u32 as i32))
+            .invoke_typed_without_fuel_unchecked(function, (1, 0))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, -1))
+            .invoke_typed_without_fuel_unchecked(function, (0, 1))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (-1, 0x80000000u32 as i32))
+            .invoke_typed_without_fuel_unchecked(function, (0x80000000u32 as i32, 0))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, 0x7fffffff))
+            .invoke_typed_without_fuel_unchecked(function, (0, 0x80000000u32 as i32))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (0x7fffffff, 0x80000000u32 as i32))
+            .invoke_typed_without_fuel_unchecked(function, (0x80000000u32 as i32, -1))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (-1, 0x80000000u32 as i32))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (0x80000000u32 as i32, 0x7fffffff))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (0x7fffffff, 0x80000000u32 as i32))
             .unwrap()
     );
 }
@@ -394,86 +448,101 @@ pub fn i32_ne() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export(module, "i32_ne")
+        .instance_export_unchecked(module, "i32_ne")
         .unwrap()
         .as_func()
         .unwrap();
 
     assert_eq!(
         0,
-        store.invoke_typed_without_fuel(function, (0, 0)).unwrap()
-    );
-    assert_eq!(
-        0,
-        store.invoke_typed_without_fuel(function, (1, 1)).unwrap()
-    );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel(function, (-1, 1)).unwrap()
-    );
-    assert_eq!(
-        0,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, 0x80000000u32 as i32))
+            .invoke_typed_without_fuel_unchecked(function, (0, 0))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (0x7fffffff, 0x7fffffff))
+            .invoke_typed_without_fuel_unchecked(function, (1, 1))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (-1, 1))
             .unwrap()
     );
     assert_eq!(
         0,
-        store.invoke_typed_without_fuel(function, (-1, -1)).unwrap()
-    );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel(function, (1, 0)).unwrap()
-    );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel(function, (0, 1)).unwrap()
-    );
-    assert_eq!(
-        1,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, 0))
+            .invoke_typed_without_fuel_unchecked(
+                function,
+                (0x80000000u32 as i32, 0x80000000u32 as i32)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (0x7fffffff, 0x7fffffff))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (-1, -1))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (0, 0x80000000u32 as i32))
+            .invoke_typed_without_fuel_unchecked(function, (1, 0))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, -1))
+            .invoke_typed_without_fuel_unchecked(function, (0, 1))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (-1, 0x80000000u32 as i32))
+            .invoke_typed_without_fuel_unchecked(function, (0x80000000u32 as i32, 0))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, 0x7fffffff))
+            .invoke_typed_without_fuel_unchecked(function, (0, 0x80000000u32 as i32))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (0x7fffffff, 0x80000000u32 as i32))
+            .invoke_typed_without_fuel_unchecked(function, (0x80000000u32 as i32, -1))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (-1, 0x80000000u32 as i32))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (0x80000000u32 as i32, 0x7fffffff))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (0x7fffffff, 0x80000000u32 as i32))
             .unwrap()
     );
 }
@@ -486,86 +555,101 @@ pub fn i32_lt_s() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export(module, "i32_lt_s")
+        .instance_export_unchecked(module, "i32_lt_s")
         .unwrap()
         .as_func()
         .unwrap();
 
     assert_eq!(
         0,
-        store.invoke_typed_without_fuel(function, (0, 0)).unwrap()
-    );
-    assert_eq!(
-        0,
-        store.invoke_typed_without_fuel(function, (1, 1)).unwrap()
-    );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel(function, (-1, 1)).unwrap()
-    );
-    assert_eq!(
-        0,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, 0x80000000u32 as i32))
+            .invoke_typed_without_fuel_unchecked(function, (0, 0))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (0x7fffffff, 0x7fffffff))
-            .unwrap()
-    );
-    assert_eq!(
-        0,
-        store.invoke_typed_without_fuel(function, (-1, -1)).unwrap()
-    );
-    assert_eq!(
-        0,
-        store.invoke_typed_without_fuel(function, (1, 0)).unwrap()
-    );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel(function, (0, 1)).unwrap()
-    );
-    assert_eq!(
-        1,
-        store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, 0))
-            .unwrap()
-    );
-    assert_eq!(
-        0,
-        store
-            .invoke_typed_without_fuel(function, (0, 0x80000000u32 as i32))
+            .invoke_typed_without_fuel_unchecked(function, (1, 1))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, -1))
+            .invoke_typed_without_fuel_unchecked(function, (-1, 1))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (-1, 0x80000000u32 as i32))
+            .invoke_typed_without_fuel_unchecked(
+                function,
+                (0x80000000u32 as i32, 0x80000000u32 as i32)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (0x7fffffff, 0x7fffffff))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (-1, -1))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (1, 0))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, 0x7fffffff))
+            .invoke_typed_without_fuel_unchecked(function, (0, 1))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (0x80000000u32 as i32, 0))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (0x7fffffff, 0x80000000u32 as i32))
+            .invoke_typed_without_fuel_unchecked(function, (0, 0x80000000u32 as i32))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (0x80000000u32 as i32, -1))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (-1, 0x80000000u32 as i32))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (0x80000000u32 as i32, 0x7fffffff))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (0x7fffffff, 0x80000000u32 as i32))
             .unwrap()
     );
 }
@@ -578,86 +662,101 @@ pub fn i32_lt_u() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export(module, "i32_lt_u")
+        .instance_export_unchecked(module, "i32_lt_u")
         .unwrap()
         .as_func()
         .unwrap();
 
     assert_eq!(
         0,
-        store.invoke_typed_without_fuel(function, (0, 0)).unwrap()
-    );
-    assert_eq!(
-        0,
-        store.invoke_typed_without_fuel(function, (1, 1)).unwrap()
-    );
-    assert_eq!(
-        0,
-        store.invoke_typed_without_fuel(function, (-1, 1)).unwrap()
-    );
-    assert_eq!(
-        0,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, 0x80000000u32 as i32))
+            .invoke_typed_without_fuel_unchecked(function, (0, 0))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (0x7fffffff, 0x7fffffff))
-            .unwrap()
-    );
-    assert_eq!(
-        0,
-        store.invoke_typed_without_fuel(function, (-1, -1)).unwrap()
-    );
-    assert_eq!(
-        0,
-        store.invoke_typed_without_fuel(function, (1, 0)).unwrap()
-    );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel(function, (0, 1)).unwrap()
-    );
-    assert_eq!(
-        0,
-        store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, 0))
-            .unwrap()
-    );
-    assert_eq!(
-        1,
-        store
-            .invoke_typed_without_fuel(function, (0, 0x80000000u32 as i32))
-            .unwrap()
-    );
-    assert_eq!(
-        1,
-        store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, -1))
+            .invoke_typed_without_fuel_unchecked(function, (1, 1))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (-1, 0x80000000u32 as i32))
+            .invoke_typed_without_fuel_unchecked(function, (-1, 1))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, 0x7fffffff))
+            .invoke_typed_without_fuel_unchecked(
+                function,
+                (0x80000000u32 as i32, 0x80000000u32 as i32)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (0x7fffffff, 0x7fffffff))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (-1, -1))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (1, 0))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (0x7fffffff, 0x80000000u32 as i32))
+            .invoke_typed_without_fuel_unchecked(function, (0, 1))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (0x80000000u32 as i32, 0))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (0, 0x80000000u32 as i32))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (0x80000000u32 as i32, -1))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (-1, 0x80000000u32 as i32))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (0x80000000u32 as i32, 0x7fffffff))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (0x7fffffff, 0x80000000u32 as i32))
             .unwrap()
     );
 }
@@ -670,86 +769,101 @@ pub fn i32_gt_s() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export(module, "i32_gt_s")
+        .instance_export_unchecked(module, "i32_gt_s")
         .unwrap()
         .as_func()
         .unwrap();
 
     assert_eq!(
         0,
-        store.invoke_typed_without_fuel(function, (0, 0)).unwrap()
-    );
-    assert_eq!(
-        0,
-        store.invoke_typed_without_fuel(function, (1, 1)).unwrap()
-    );
-    assert_eq!(
-        0,
-        store.invoke_typed_without_fuel(function, (-1, 1)).unwrap()
-    );
-    assert_eq!(
-        0,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, 0x80000000u32 as i32))
+            .invoke_typed_without_fuel_unchecked(function, (0, 0))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (0x7fffffff, 0x7fffffff))
-            .unwrap()
-    );
-    assert_eq!(
-        0,
-        store.invoke_typed_without_fuel(function, (-1, -1)).unwrap()
-    );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel(function, (1, 0)).unwrap()
-    );
-    assert_eq!(
-        0,
-        store.invoke_typed_without_fuel(function, (0, 1)).unwrap()
-    );
-    assert_eq!(
-        0,
-        store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, 0))
-            .unwrap()
-    );
-    assert_eq!(
-        1,
-        store
-            .invoke_typed_without_fuel(function, (0, 0x80000000u32 as i32))
+            .invoke_typed_without_fuel_unchecked(function, (1, 1))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, -1))
+            .invoke_typed_without_fuel_unchecked(function, (-1, 1))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        store
+            .invoke_typed_without_fuel_unchecked(
+                function,
+                (0x80000000u32 as i32, 0x80000000u32 as i32)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (0x7fffffff, 0x7fffffff))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (-1, -1))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (-1, 0x80000000u32 as i32))
+            .invoke_typed_without_fuel_unchecked(function, (1, 0))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, 0x7fffffff))
+            .invoke_typed_without_fuel_unchecked(function, (0, 1))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (0x80000000u32 as i32, 0))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (0x7fffffff, 0x80000000u32 as i32))
+            .invoke_typed_without_fuel_unchecked(function, (0, 0x80000000u32 as i32))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (0x80000000u32 as i32, -1))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (-1, 0x80000000u32 as i32))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (0x80000000u32 as i32, 0x7fffffff))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (0x7fffffff, 0x80000000u32 as i32))
             .unwrap()
     );
 }
@@ -762,86 +876,101 @@ pub fn i32_gt_u() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export(module, "i32_gt_u")
+        .instance_export_unchecked(module, "i32_gt_u")
         .unwrap()
         .as_func()
         .unwrap();
 
     assert_eq!(
         0,
-        store.invoke_typed_without_fuel(function, (0, 0)).unwrap()
-    );
-    assert_eq!(
-        0,
-        store.invoke_typed_without_fuel(function, (1, 1)).unwrap()
-    );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel(function, (-1, 1)).unwrap()
-    );
-    assert_eq!(
-        0,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, 0x80000000u32 as i32))
+            .invoke_typed_without_fuel_unchecked(function, (0, 0))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (0x7fffffff, 0x7fffffff))
-            .unwrap()
-    );
-    assert_eq!(
-        0,
-        store.invoke_typed_without_fuel(function, (-1, -1)).unwrap()
-    );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel(function, (1, 0)).unwrap()
-    );
-    assert_eq!(
-        0,
-        store.invoke_typed_without_fuel(function, (0, 1)).unwrap()
-    );
-    assert_eq!(
-        1,
-        store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, 0))
-            .unwrap()
-    );
-    assert_eq!(
-        0,
-        store
-            .invoke_typed_without_fuel(function, (0, 0x80000000u32 as i32))
-            .unwrap()
-    );
-    assert_eq!(
-        0,
-        store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, -1))
+            .invoke_typed_without_fuel_unchecked(function, (1, 1))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (-1, 0x80000000u32 as i32))
-            .unwrap()
-    );
-    assert_eq!(
-        1,
-        store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, 0x7fffffff))
+            .invoke_typed_without_fuel_unchecked(function, (-1, 1))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (0x7fffffff, 0x80000000u32 as i32))
+            .invoke_typed_without_fuel_unchecked(
+                function,
+                (0x80000000u32 as i32, 0x80000000u32 as i32)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (0x7fffffff, 0x7fffffff))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (-1, -1))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (1, 0))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (0, 1))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (0x80000000u32 as i32, 0))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (0, 0x80000000u32 as i32))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (0x80000000u32 as i32, -1))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (-1, 0x80000000u32 as i32))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (0x80000000u32 as i32, 0x7fffffff))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (0x7fffffff, 0x80000000u32 as i32))
             .unwrap()
     );
 }
@@ -854,86 +983,101 @@ pub fn i32_le_s() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export(module, "i32_le_s")
+        .instance_export_unchecked(module, "i32_le_s")
         .unwrap()
         .as_func()
         .unwrap();
 
     assert_eq!(
         1,
-        store.invoke_typed_without_fuel(function, (0, 0)).unwrap()
-    );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel(function, (1, 1)).unwrap()
-    );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel(function, (-1, 1)).unwrap()
-    );
-    assert_eq!(
-        1,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, 0x80000000u32 as i32))
+            .invoke_typed_without_fuel_unchecked(function, (0, 0))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (0x7fffffff, 0x7fffffff))
-            .unwrap()
-    );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel(function, (-1, -1)).unwrap()
-    );
-    assert_eq!(
-        0,
-        store.invoke_typed_without_fuel(function, (1, 0)).unwrap()
-    );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel(function, (0, 1)).unwrap()
-    );
-    assert_eq!(
-        1,
-        store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, 0))
-            .unwrap()
-    );
-    assert_eq!(
-        0,
-        store
-            .invoke_typed_without_fuel(function, (0, 0x80000000u32 as i32))
+            .invoke_typed_without_fuel_unchecked(function, (1, 1))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, -1))
+            .invoke_typed_without_fuel_unchecked(function, (-1, 1))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        store
+            .invoke_typed_without_fuel_unchecked(
+                function,
+                (0x80000000u32 as i32, 0x80000000u32 as i32)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (0x7fffffff, 0x7fffffff))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (-1, -1))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (-1, 0x80000000u32 as i32))
+            .invoke_typed_without_fuel_unchecked(function, (1, 0))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, 0x7fffffff))
+            .invoke_typed_without_fuel_unchecked(function, (0, 1))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (0x80000000u32 as i32, 0))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (0x7fffffff, 0x80000000u32 as i32))
+            .invoke_typed_without_fuel_unchecked(function, (0, 0x80000000u32 as i32))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (0x80000000u32 as i32, -1))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (-1, 0x80000000u32 as i32))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (0x80000000u32 as i32, 0x7fffffff))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (0x7fffffff, 0x80000000u32 as i32))
             .unwrap()
     );
 }
@@ -947,86 +1091,101 @@ pub fn i32_le_u() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export(module, "i32_le_u")
+        .instance_export_unchecked(module, "i32_le_u")
         .unwrap()
         .as_func()
         .unwrap();
 
     assert_eq!(
         1,
-        store.invoke_typed_without_fuel(function, (0, 0)).unwrap()
-    );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel(function, (1, 1)).unwrap()
-    );
-    assert_eq!(
-        0,
-        store.invoke_typed_without_fuel(function, (-1, 1)).unwrap()
-    );
-    assert_eq!(
-        1,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, 0x80000000u32 as i32))
+            .invoke_typed_without_fuel_unchecked(function, (0, 0))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (0x7fffffff, 0x7fffffff))
-            .unwrap()
-    );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel(function, (-1, -1)).unwrap()
-    );
-    assert_eq!(
-        0,
-        store.invoke_typed_without_fuel(function, (1, 0)).unwrap()
-    );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel(function, (0, 1)).unwrap()
-    );
-    assert_eq!(
-        0,
-        store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, 0))
-            .unwrap()
-    );
-    assert_eq!(
-        1,
-        store
-            .invoke_typed_without_fuel(function, (0, 0x80000000u32 as i32))
-            .unwrap()
-    );
-    assert_eq!(
-        1,
-        store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, -1))
+            .invoke_typed_without_fuel_unchecked(function, (1, 1))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (-1, 0x80000000u32 as i32))
-            .unwrap()
-    );
-    assert_eq!(
-        0,
-        store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, 0x7fffffff))
+            .invoke_typed_without_fuel_unchecked(function, (-1, 1))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (0x7fffffff, 0x80000000u32 as i32))
+            .invoke_typed_without_fuel_unchecked(
+                function,
+                (0x80000000u32 as i32, 0x80000000u32 as i32)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (0x7fffffff, 0x7fffffff))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (-1, -1))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (1, 0))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (0, 1))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (0x80000000u32 as i32, 0))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (0, 0x80000000u32 as i32))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (0x80000000u32 as i32, -1))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (-1, 0x80000000u32 as i32))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (0x80000000u32 as i32, 0x7fffffff))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (0x7fffffff, 0x80000000u32 as i32))
             .unwrap()
     );
 }
@@ -1039,86 +1198,101 @@ pub fn i32_ge_s() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export(module, "i32_ge_s")
+        .instance_export_unchecked(module, "i32_ge_s")
         .unwrap()
         .as_func()
         .unwrap();
 
     assert_eq!(
         1,
-        store.invoke_typed_without_fuel(function, (0, 0)).unwrap()
-    );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel(function, (1, 1)).unwrap()
-    );
-    assert_eq!(
-        0,
-        store.invoke_typed_without_fuel(function, (-1, 1)).unwrap()
-    );
-    assert_eq!(
-        1,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, 0x80000000u32 as i32))
+            .invoke_typed_without_fuel_unchecked(function, (0, 0))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (0x7fffffff, 0x7fffffff))
-            .unwrap()
-    );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel(function, (-1, -1)).unwrap()
-    );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel(function, (1, 0)).unwrap()
-    );
-    assert_eq!(
-        0,
-        store.invoke_typed_without_fuel(function, (0, 1)).unwrap()
-    );
-    assert_eq!(
-        0,
-        store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, 0))
-            .unwrap()
-    );
-    assert_eq!(
-        1,
-        store
-            .invoke_typed_without_fuel(function, (0, 0x80000000u32 as i32))
+            .invoke_typed_without_fuel_unchecked(function, (1, 1))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, -1))
+            .invoke_typed_without_fuel_unchecked(function, (-1, 1))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (-1, 0x80000000u32 as i32))
+            .invoke_typed_without_fuel_unchecked(
+                function,
+                (0x80000000u32 as i32, 0x80000000u32 as i32)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (0x7fffffff, 0x7fffffff))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (-1, -1))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (1, 0))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, 0x7fffffff))
+            .invoke_typed_without_fuel_unchecked(function, (0, 1))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (0x80000000u32 as i32, 0))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (0x7fffffff, 0x80000000u32 as i32))
+            .invoke_typed_without_fuel_unchecked(function, (0, 0x80000000u32 as i32))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (0x80000000u32 as i32, -1))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (-1, 0x80000000u32 as i32))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (0x80000000u32 as i32, 0x7fffffff))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (0x7fffffff, 0x80000000u32 as i32))
             .unwrap()
     );
 }
@@ -1131,86 +1305,101 @@ pub fn i32_ge_u() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export(module, "i32_ge_u")
+        .instance_export_unchecked(module, "i32_ge_u")
         .unwrap()
         .as_func()
         .unwrap();
 
     assert_eq!(
         1,
-        store.invoke_typed_without_fuel(function, (0, 0)).unwrap()
-    );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel(function, (1, 1)).unwrap()
-    );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel(function, (-1, 1)).unwrap()
-    );
-    assert_eq!(
-        1,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, 0x80000000u32 as i32))
+            .invoke_typed_without_fuel_unchecked(function, (0, 0))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (0x7fffffff, 0x7fffffff))
-            .unwrap()
-    );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel(function, (-1, -1)).unwrap()
-    );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel(function, (1, 0)).unwrap()
-    );
-    assert_eq!(
-        0,
-        store.invoke_typed_without_fuel(function, (0, 1)).unwrap()
-    );
-    assert_eq!(
-        1,
-        store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, 0))
-            .unwrap()
-    );
-    assert_eq!(
-        0,
-        store
-            .invoke_typed_without_fuel(function, (0, 0x80000000u32 as i32))
-            .unwrap()
-    );
-    assert_eq!(
-        0,
-        store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, -1))
+            .invoke_typed_without_fuel_unchecked(function, (1, 1))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (-1, 0x80000000u32 as i32))
+            .invoke_typed_without_fuel_unchecked(function, (-1, 1))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, 0x7fffffff))
+            .invoke_typed_without_fuel_unchecked(
+                function,
+                (0x80000000u32 as i32, 0x80000000u32 as i32)
+            )
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (0x7fffffff, 0x7fffffff))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (-1, -1))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (1, 0))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (0x7fffffff, 0x80000000u32 as i32))
+            .invoke_typed_without_fuel_unchecked(function, (0, 1))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (0x80000000u32 as i32, 0))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (0, 0x80000000u32 as i32))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (0x80000000u32 as i32, -1))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (-1, 0x80000000u32 as i32))
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (0x80000000u32 as i32, 0x7fffffff))
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        store
+            .invoke_typed_without_fuel_unchecked(function, (0x7fffffff, 0x80000000u32 as i32))
             .unwrap()
     );
 }

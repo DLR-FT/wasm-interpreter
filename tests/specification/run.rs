@@ -124,7 +124,7 @@ fn validate_instantiate<'a, 'b: 'a>(
         catch_unwind_and_suppress_panic_handler(|| validate(bytes)).map_err(WastError::Panic)??;
 
     let module = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
-        linker.module_instantiate(store, &validation_info, None)
+        linker.module_instantiate_unchecked(store, &validation_info, None)
     }))
     .map_err(WastError::Panic)??
     .module_addr;
@@ -172,7 +172,7 @@ pub fn run_spec_test(filepath: &str) -> Result<AssertReport, ScriptError> {
     let mut store = catch_unwind_and_suppress_panic_handler(|| Store::new(())).unwrap();
 
     let spectest_module = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
-        store.module_instantiate(&spectest_validation_info, Vec::new(), None)
+        store.module_instantiate_unchecked(&spectest_validation_info, Vec::new(), None)
     }))
     .unwrap()
     .unwrap()
@@ -186,7 +186,7 @@ pub fn run_spec_test(filepath: &str) -> Result<AssertReport, ScriptError> {
     // instantiation.
     let mut linker = Linker::new();
     linker
-        .define_module_instance(&store, "spectest".to_owned(), spectest_module)
+        .define_module_instance_unchecked(&store, "spectest".to_owned(), spectest_module)
         .unwrap();
 
     // Because the linker only links imports and exports and does not keep track
@@ -391,7 +391,7 @@ fn run_directive<'a>(
             ))?;
 
             linker
-                .define_module_instance(store, name.to_owned(), module)
+                .define_module_instance_unchecked(store, name.to_owned(), module)
                 .map_err(|runtime_error| {
                     ScriptError::new(
                         filepath,
@@ -488,7 +488,7 @@ fn run_directive<'a>(
 
             let func_addr = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
                 store
-                    .instance_export(module, invoke.name)
+                    .instance_export_unchecked(module, invoke.name)
                     .map_err(WastError::WasmRuntimeError)
                     .and_then(|extern_val| match extern_val {
                         ExternVal::Func(func) => Ok(func),
@@ -515,7 +515,7 @@ fn run_directive<'a>(
             })??;
 
             catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
-                store.invoke_without_fuel(func_addr, args)
+                store.invoke_without_fuel_unchecked(func_addr, args)
             }))
             .map_err(|panic_error| {
                 ScriptError::new(
@@ -584,7 +584,7 @@ fn execute_assert_return(
 
             let func_addr = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
                 store
-                    .instance_export(module, invoke_info.name)
+                    .instance_export_unchecked(module, invoke_info.name)
                     .map_err(WastError::WasmRuntimeError)
                     .and_then(|extern_val| match extern_val {
                         ExternVal::Func(func) => Ok(func),
@@ -594,7 +594,7 @@ fn execute_assert_return(
             .map_err(WastError::Panic)??;
 
             let actual = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
-                store.invoke_without_fuel(func_addr, args)
+                store.invoke_without_fuel_unchecked(func_addr, args)
             }))
             .map_err(WastError::Panic)??;
 
@@ -624,14 +624,14 @@ fn execute_assert_return(
 
             let actual = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
                 let global_addr = store
-                    .instance_export(module, global)
+                    .instance_export_unchecked(module, global)
                     .map_err(WastError::WasmRuntimeError)
                     .and_then(|extern_val| match extern_val {
                         ExternVal::Global(global) => Ok(global),
                         _ => Err(WastError::UnknownGlobalReferenced),
                     })?;
 
-                Ok::<Value, WastError>(store.global_read(global_addr))
+                Ok::<Value, WastError>(store.global_read_unchecked(global_addr))
             }))
             .map_err(WastError::Panic)??;
 
@@ -666,7 +666,7 @@ fn execute<'a>(
 
             let func_addr = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
                 store
-                    .instance_export(module, invoke_info.name)
+                    .instance_export_unchecked(module, invoke_info.name)
                     .map_err(WastError::WasmRuntimeError)
                     .and_then(|extern_val| match extern_val {
                         ExternVal::Func(func) => Ok(func),
@@ -676,7 +676,7 @@ fn execute<'a>(
             .map_err(WastError::Panic)??;
 
             catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
-                store.invoke_without_fuel(func_addr, args)
+                store.invoke_without_fuel_unchecked(func_addr, args)
             }))
             .map_err(WastError::Panic)??;
 

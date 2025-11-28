@@ -19,24 +19,29 @@ fn basic_memory() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let store_num = store
-        .instance_export(module, "store_num")
+        .instance_export_unchecked(module, "store_num")
         .unwrap()
         .as_func()
         .unwrap();
 
     let load_num = store
-        .instance_export(module, "load_num")
+        .instance_export_unchecked(module, "load_num")
         .unwrap()
         .as_func()
         .unwrap();
 
-    let _ = store.invoke_typed_without_fuel::<i32, ()>(store_num, 42);
-    assert_eq!(42, store.invoke_typed_without_fuel(load_num, ()).unwrap());
+    let _ = store.invoke_typed_without_fuel_unchecked::<i32, ()>(store_num, 42);
+    assert_eq!(
+        42,
+        store
+            .invoke_typed_without_fuel_unchecked(load_num, ())
+            .unwrap()
+    );
 }
 
 /// Two simple methods for storing and loading an f32 from the first slot in linear memory.
@@ -48,27 +53,29 @@ fn f32_basic_memory() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let store_num = store
-        .instance_export(module, "store_num")
+        .instance_export_unchecked(module, "store_num")
         .unwrap()
         .as_func()
         .unwrap();
 
     let load_num = store
-        .instance_export(module, "load_num")
+        .instance_export_unchecked(module, "load_num")
         .unwrap()
         .as_func()
         .unwrap();
 
     store
-        .invoke_typed_without_fuel::<f32, ()>(store_num, 133.7_f32)
+        .invoke_typed_without_fuel_unchecked::<f32, ()>(store_num, 133.7_f32)
         .unwrap();
     assert_eq!(
         133.7_f32,
-        store.invoke_typed_without_fuel(load_num, ()).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(load_num, ())
+            .unwrap()
     );
 }
