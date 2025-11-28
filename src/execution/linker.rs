@@ -16,7 +16,7 @@ use super::config::Config;
 /// # Manual Instantiation vs. Instantiation through [`Linker`]
 ///
 /// Traditionally, module instances are instantiated via the method
-/// [`Store::module_instantiate`], which is part of the official Embedder API
+/// [`Store::module_instantiate_unchecked`], which is part of the official Embedder API
 /// defined by the specification. However, this method accepts a list of extern
 /// values as an argument. Therefore, if the user wants to manually perform
 /// linking they have to figure out the imports of their module, then gather the
@@ -24,7 +24,7 @@ use super::config::Config;
 ///
 /// This process of manual linking is very tedious and error-prone, which is why
 /// the [`Linker`] exists. It builds on top of the original instantiation method
-/// with [`Linker::module_instantiate`]. Internally this method performs name
+/// with [`Linker::module_instantiate_unchecked`]. Internally this method performs name
 /// resolution and then calls the original instantiation. Name resolution is
 /// performed on all extern values which were previously defined in the current
 /// context.
@@ -34,8 +34,8 @@ use super::config::Config;
 /// An extern value is represented as a [`ExternVal`]. It contains an address to
 /// some store-allocated instance. In a linker context, every external value is
 /// stored in map with a unique key `(module name, name)`. To define new extern
-/// value in some linker context, use [`Linker::define`] or
-/// [`Linker::define_module_instance`].
+/// value in some linker context, use [`Linker::define_unchecked`] or
+/// [`Linker::define_module_instance_unchecked`].
 ///
 /// # Relationship with [`Store`]
 ///
@@ -65,7 +65,7 @@ impl Linker {
     /// # Safety
     /// It must be made sure that this [`Linker`] is only used with one specific
     /// [`Store`] and addresses that belong to that store.
-    pub fn define(
+    pub fn define_unchecked(
         &mut self,
         module_name: String,
         name: String,
@@ -87,7 +87,7 @@ impl Linker {
     /// It must be guaranteed that this [`Linker`] is only ever used with one
     /// specific [`Store`] and that the given [`ModuleAddr`] belongs to this
     /// store.
-    pub fn define_module_instance<T: Config>(
+    pub fn define_module_instance_unchecked<T: Config>(
         &mut self,
         store: &Store<T>,
         module_name: String,
@@ -95,7 +95,7 @@ impl Linker {
     ) -> Result<(), RuntimeError> {
         let module = store.modules.get(module);
         for export in &module.exports {
-            self.define(module_name.clone(), export.0.clone(), *export.1)?;
+            self.define_unchecked(module_name.clone(), export.0.clone(), *export.1)?;
         }
 
         Ok(())
@@ -105,14 +105,14 @@ impl Linker {
     ///
     /// It is guaranteed that the address contained by the returned
     /// [`ExternVal`] is part of the [`Store`] used with this [`Linker`].
-    pub fn get(&self, module_name: String, name: String) -> Option<ExternVal> {
+    pub fn get_unchecked(&self, module_name: String, name: String) -> Option<ExternVal> {
         self.extern_vals
             .get(&ImportKey { module_name, name })
             .copied()
     }
 
     /// Performs initial linking of a [`ValidationInfo`]'s imports producing a
-    /// list of extern values usable with [`Store::module_instantiate`].
+    /// list of extern values usable with [`Store::module_instantiate_unchecked`].
     ///
     /// # A note on type checking
     ///
@@ -124,7 +124,7 @@ impl Linker {
     /// It must be guaranteed that this [`Linker`] is only ever used with one
     /// specific [`Store`].
     // TODO find a better name for this method? Maybe something like `link`?
-    pub fn instantiate_pre(
+    pub fn instantiate_pre_unchecked(
         &self,
         validation_info: &ValidationInfo,
     ) -> Result<Vec<ExternVal>, RuntimeError> {
@@ -132,27 +132,27 @@ impl Linker {
             .imports
             .iter()
             .map(|import| {
-                self.get(import.module_name.clone(), import.name.clone())
+                self.get_unchecked(import.module_name.clone(), import.name.clone())
                     .ok_or(RuntimeError::UnableToResolveImport)
             })
             .collect()
     }
 
-    /// Variant of [`Store::module_instantiate`] with automatic name resolution
+    /// Variant of [`Store::module_instantiate_unchecked`] with automatic name resolution
     /// in the current [`Linker`] context.
     ///
     /// # Safety
     /// It must be guaranteed that this [`Linker`] is only ever used with one
     /// specific [`Store`].
-    pub fn module_instantiate<'b, T: Config>(
+    pub fn module_instantiate_unchecked<'b, T: Config>(
         &self,
         store: &mut Store<'b, T>,
         validation_info: &ValidationInfo<'b>,
         maybe_fuel: Option<u32>,
     ) -> Result<InstantiationOutcome, RuntimeError> {
-        store.module_instantiate(
+        store.module_instantiate_unchecked(
             validation_info,
-            self.instantiate_pre(validation_info)?,
+            self.instantiate_pre_unchecked(validation_info)?,
             maybe_fuel,
         )
     }

@@ -84,16 +84,18 @@ pub fn compile_simple_import() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module_env = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
-    let get_one = store.instance_export(module_env, "get_one").unwrap();
+    let get_one = store
+        .instance_export_unchecked(module_env, "get_one")
+        .unwrap();
 
     let wasm_bytes = wat::parse_str(SIMPLE_IMPORT_BASE).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let _module_base = store
-        .module_instantiate(&validation_info, vec![get_one], None)
+        .module_instantiate_unchecked(&validation_info, vec![get_one], None)
         .expect("Successful instantiation");
 
     // assert_eq!((), instance.invoke_typed_named("print_three", ()).unwrap());
@@ -107,34 +109,46 @@ pub fn run_simple_import() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module_env = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
-    let get_one = store.instance_export(module_env, "get_one").unwrap();
+    let get_one = store
+        .instance_export_unchecked(module_env, "get_one")
+        .unwrap();
 
     let wasm_bytes = wat::parse_str(SIMPLE_IMPORT_BASE).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let module_base = store
-        .module_instantiate(&validation_info, vec![get_one], None)
+        .module_instantiate_unchecked(&validation_info, vec![get_one], None)
         .unwrap()
         .module_addr;
 
     let get_three = store
-        .instance_export(module_base, "get_three")
+        .instance_export_unchecked(module_base, "get_three")
         .unwrap()
         .as_func()
         .unwrap();
 
-    assert_eq!(3, store.invoke_typed_without_fuel(get_three, ()).unwrap());
+    assert_eq!(
+        3,
+        store
+            .invoke_typed_without_fuel_unchecked(get_three, ())
+            .unwrap()
+    );
 
     // Function 0 should be the imported function
     let get_three = store
-        .instance_export(module_base, "get_three")
+        .instance_export_unchecked(module_base, "get_three")
         .unwrap()
         .as_func()
         .unwrap();
-    assert_eq!(3, store.invoke_typed_without_fuel(get_three, ()).unwrap());
+    assert_eq!(
+        3,
+        store
+            .invoke_typed_without_fuel_unchecked(get_three, ())
+            .unwrap()
+    );
 }
 
 #[test_log::test]
@@ -143,26 +157,31 @@ pub fn run_call_indirect() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module_env = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
-    let get_one = store.instance_export(module_env, "get_one").unwrap();
+    let get_one = store
+        .instance_export_unchecked(module_env, "get_one")
+        .unwrap();
 
     let wasm_bytes = wat::parse_str(CALL_INDIRECT_BASE).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let module_base = store
-        .module_instantiate(&validation_info, vec![get_one], None)
+        .module_instantiate_unchecked(&validation_info, vec![get_one], None)
         .expect("Successful instantiation")
         .module_addr;
 
     let run = store
-        .instance_export(module_base, "run")
+        .instance_export_unchecked(module_base, "run")
         .unwrap()
         .as_func()
         .unwrap();
 
-    assert_eq!((1, 3), store.invoke_typed_without_fuel(run, ()).unwrap());
+    assert_eq!(
+        (1, 3),
+        store.invoke_typed_without_fuel_unchecked(run, ()).unwrap()
+    );
 }
 
 // #[test_log::test]
@@ -175,7 +194,7 @@ pub fn run_call_indirect() {
 //     let wasm_bytes = wat::parse_str(SIMPLE_IMPORT_BASE).unwrap();
 //     let validation_info = validate(&wasm_bytes).expect("validation failed");
 //     instance
-//         .store.module_instantiate( &validation_info, Vec::new(), None)
+//         .store.module_instantiate_unchecked( &validation_info, Vec::new(), None)
 //         .expect("Successful instantiation");
 
 //     // let run = instance.get_function_by_name("base", "get_three").unwrap();

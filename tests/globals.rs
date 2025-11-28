@@ -30,27 +30,33 @@ fn valid_global() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let set = store
-        .instance_export(module, "set")
+        .instance_export_unchecked(module, "set")
         .unwrap()
         .as_func()
         .unwrap();
 
     let get = store
-        .instance_export(module, "get")
+        .instance_export_unchecked(module, "get")
         .unwrap()
         .as_func()
         .unwrap();
 
     // Set global to 17. 5 is returned as previous (default) value.
-    assert_eq!(5, store.invoke_typed_without_fuel(set, 17).unwrap());
+    assert_eq!(
+        5,
+        store.invoke_typed_without_fuel_unchecked(set, 17).unwrap()
+    );
 
     // Now 17 will be returned when getting the global
-    assert_eq!(17, store.invoke_typed_without_fuel(get, ()).unwrap());
+    assert_eq!(
+        17,
+        store.invoke_typed_without_fuel_unchecked(get, ()).unwrap()
+    );
 }
 
 #[test_log::test]
@@ -102,27 +108,33 @@ fn imported_globals() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let set = store
-        .instance_export(module, "set")
+        .instance_export_unchecked(module, "set")
         .unwrap()
         .as_func()
         .unwrap();
 
     let get = store
-        .instance_export(module, "get")
+        .instance_export_unchecked(module, "get")
         .unwrap()
         .as_func()
         .unwrap();
 
     // Set global to 17. 3 is returned as previous (default) value.
-    assert_eq!(3, store.invoke_typed_without_fuel(set, 17).unwrap());
+    assert_eq!(
+        3,
+        store.invoke_typed_without_fuel_unchecked(set, 17).unwrap()
+    );
 
     // Now 17 will be returned when getting the global
-    assert_eq!(17, store.invoke_typed_without_fuel(get, ()).unwrap());
+    assert_eq!(
+        17,
+        store.invoke_typed_without_fuel_unchecked(get, ()).unwrap()
+    );
 }
 
 #[test_log::test]
@@ -166,31 +178,34 @@ fn embedder_interface() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let global_0 = store
-        .instance_export(module, "global_0")
+        .instance_export_unchecked(module, "global_0")
         .unwrap()
         .as_global()
         .expect("global");
     let global_1 = store
-        .instance_export(module, "global_1")
+        .instance_export_unchecked(module, "global_1")
         .unwrap()
         .as_global()
         .expect("global");
 
-    assert_eq!(store.global_read(global_0), Value::I32(1));
-    assert_eq!(store.global_read(global_1), Value::I64(3));
-
-    assert_eq!(store.global_write(global_0, Value::I32(33)), Ok(()));
-
-    assert_eq!(store.global_read(global_0), Value::I32(33));
-    assert_eq!(store.global_read(global_1), Value::I64(3));
+    assert_eq!(store.global_read_unchecked(global_0), Value::I32(1));
+    assert_eq!(store.global_read_unchecked(global_1), Value::I64(3));
 
     assert_eq!(
-        store.global_type(global_0),
+        store.global_write_unchecked(global_0, Value::I32(33)),
+        Ok(())
+    );
+
+    assert_eq!(store.global_read_unchecked(global_0), Value::I32(33));
+    assert_eq!(store.global_read_unchecked(global_1), Value::I64(3));
+
+    assert_eq!(
+        store.global_type_unchecked(global_0),
         GlobalType {
             ty: ValType::NumType(NumType::I32),
             is_mut: true,
@@ -198,7 +213,7 @@ fn embedder_interface() {
     );
 
     assert_eq!(
-        store.global_type(global_1),
+        store.global_type_unchecked(global_1),
         GlobalType {
             ty: ValType::NumType(NumType::I64),
             is_mut: true,

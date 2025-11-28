@@ -20,19 +20,21 @@ pub fn f64_const() {
 
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export(module, "get_f64_const")
+        .instance_export_unchecked(module, "get_f64_const")
         .unwrap()
         .as_func()
         .unwrap();
 
     assert_eq!(
         3.14159265359_f64,
-        store.invoke_typed_without_fuel(function, ()).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, ())
+            .unwrap()
     );
 }
 
@@ -55,12 +57,12 @@ pub fn f64_eq() {
 
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export(module, "f64_eq")
+        .instance_export_unchecked(module, "f64_eq")
         .unwrap()
         .as_func()
         .unwrap();
@@ -68,13 +70,13 @@ pub fn f64_eq() {
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (1.1_f64, 1.1_f64))
+            .invoke_typed_without_fuel_unchecked(function, (1.1_f64, 1.1_f64))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (1.1_f64, 1.2_f64))
+            .invoke_typed_without_fuel_unchecked(function, (1.1_f64, 1.2_f64))
             .unwrap()
     );
 }
@@ -96,12 +98,12 @@ pub fn f64_ne() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export(module, "f64_ne")
+        .instance_export_unchecked(module, "f64_ne")
         .unwrap()
         .as_func()
         .unwrap();
@@ -109,19 +111,19 @@ pub fn f64_ne() {
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (1.1_f64, 1.1_f64))
+            .invoke_typed_without_fuel_unchecked(function, (1.1_f64, 1.1_f64))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (1.1_f64, 1.2_f64))
+            .invoke_typed_without_fuel_unchecked(function, (1.1_f64, 1.2_f64))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (0.0_f64, -0.0_f64))
+            .invoke_typed_without_fuel_unchecked(function, (0.0_f64, -0.0_f64))
             .unwrap()
     );
 }
@@ -143,12 +145,12 @@ pub fn f64_lt() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export(module, "f64_lt")
+        .instance_export_unchecked(module, "f64_lt")
         .unwrap()
         .as_func()
         .unwrap();
@@ -156,19 +158,19 @@ pub fn f64_lt() {
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (1.0_f64, 2.0_f64))
+            .invoke_typed_without_fuel_unchecked(function, (1.0_f64, 2.0_f64))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (2.0_f64, 1.0_f64))
+            .invoke_typed_without_fuel_unchecked(function, (2.0_f64, 1.0_f64))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (1.0_f64, 1.0_f64))
+            .invoke_typed_without_fuel_unchecked(function, (1.0_f64, 1.0_f64))
             .unwrap()
     );
 }
@@ -190,12 +192,12 @@ pub fn f64_gt() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export(module, "f64_gt")
+        .instance_export_unchecked(module, "f64_gt")
         .unwrap()
         .as_func()
         .unwrap();
@@ -203,19 +205,19 @@ pub fn f64_gt() {
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (1.0_f64, 2.0_f64))
+            .invoke_typed_without_fuel_unchecked(function, (1.0_f64, 2.0_f64))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (2.0_f64, 1.0_f64))
+            .invoke_typed_without_fuel_unchecked(function, (2.0_f64, 1.0_f64))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (1.0_f64, 1.0_f64))
+            .invoke_typed_without_fuel_unchecked(function, (1.0_f64, 1.0_f64))
             .unwrap()
     );
 }
@@ -237,12 +239,12 @@ pub fn f64_le() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export(module, "f64_le")
+        .instance_export_unchecked(module, "f64_le")
         .unwrap()
         .as_func()
         .unwrap();
@@ -250,19 +252,19 @@ pub fn f64_le() {
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (1.0_f64, 2.0_f64))
+            .invoke_typed_without_fuel_unchecked(function, (1.0_f64, 2.0_f64))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (2.0_f64, 1.0_f64))
+            .invoke_typed_without_fuel_unchecked(function, (2.0_f64, 1.0_f64))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (1.0_f64, 1.0_f64))
+            .invoke_typed_without_fuel_unchecked(function, (1.0_f64, 1.0_f64))
             .unwrap()
     );
 }
@@ -284,12 +286,12 @@ pub fn f64_ge() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export(module, "f64_ge")
+        .instance_export_unchecked(module, "f64_ge")
         .unwrap()
         .as_func()
         .unwrap();
@@ -297,19 +299,19 @@ pub fn f64_ge() {
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (1.0_f64, 2.0_f64))
+            .invoke_typed_without_fuel_unchecked(function, (1.0_f64, 2.0_f64))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (2.0_f64, 1.0_f64))
+            .invoke_typed_without_fuel_unchecked(function, (2.0_f64, 1.0_f64))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (1.0_f64, 1.0_f64))
+            .invoke_typed_without_fuel_unchecked(function, (1.0_f64, 1.0_f64))
             .unwrap()
     );
 }
@@ -330,59 +332,67 @@ pub fn f64_abs() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export(module, "f64_abs")
+        .instance_export_unchecked(module, "f64_abs")
         .unwrap()
         .as_func()
         .unwrap();
 
     {
         let result = store
-            .invoke_typed_without_fuel::<f64, f64>(function, -f64::NAN)
+            .invoke_typed_without_fuel_unchecked::<f64, f64>(function, -f64::NAN)
             .unwrap();
         assert!(result.is_nan());
         assert!(result.is_sign_positive());
     }
     {
         let result = store
-            .invoke_typed_without_fuel::<f64, f64>(function, f64::NAN)
+            .invoke_typed_without_fuel_unchecked::<f64, f64>(function, f64::NAN)
             .unwrap();
         assert!(result.is_nan());
         assert!(result.is_sign_positive());
     }
     {
         let result = store
-            .invoke_typed_without_fuel::<f64, f64>(function, f64::NEG_INFINITY)
+            .invoke_typed_without_fuel_unchecked::<f64, f64>(function, f64::NEG_INFINITY)
             .unwrap();
         assert!(result.is_infinite());
         assert!(result.is_sign_positive());
     }
     {
         let result = store
-            .invoke_typed_without_fuel::<f64, f64>(function, f64::INFINITY)
+            .invoke_typed_without_fuel_unchecked::<f64, f64>(function, f64::INFINITY)
             .unwrap();
         assert!(result.is_infinite());
         assert!(result.is_sign_positive());
     }
     assert_eq!(
         1.5_f64,
-        store.invoke_typed_without_fuel(function, 1.5_f64).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, 1.5_f64)
+            .unwrap()
     );
     assert_eq!(
         1.5_f64,
-        store.invoke_typed_without_fuel(function, -1.5_f64).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, -1.5_f64)
+            .unwrap()
     );
     assert_eq!(
         0.0_f64,
-        store.invoke_typed_without_fuel(function, 0.0_f64).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, 0.0_f64)
+            .unwrap()
     );
     assert_eq!(
         0.0_f64,
-        store.invoke_typed_without_fuel(function, -0.0_f64).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, -0.0_f64)
+            .unwrap()
     );
 }
 
@@ -402,59 +412,67 @@ pub fn f64_neg() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export(module, "f64_neg")
+        .instance_export_unchecked(module, "f64_neg")
         .unwrap()
         .as_func()
         .unwrap();
 
     {
         let result = store
-            .invoke_typed_without_fuel::<f64, f64>(function, -f64::NAN)
+            .invoke_typed_without_fuel_unchecked::<f64, f64>(function, -f64::NAN)
             .unwrap();
         assert!(result.is_nan());
         assert!(result.is_sign_positive());
     }
     {
         let result = store
-            .invoke_typed_without_fuel::<f64, f64>(function, f64::NAN)
+            .invoke_typed_without_fuel_unchecked::<f64, f64>(function, f64::NAN)
             .unwrap();
         assert!(result.is_nan());
         assert!(result.is_sign_negative());
     }
     {
         let result = store
-            .invoke_typed_without_fuel::<f64, f64>(function, f64::NEG_INFINITY)
+            .invoke_typed_without_fuel_unchecked::<f64, f64>(function, f64::NEG_INFINITY)
             .unwrap();
         assert!(result.is_infinite());
         assert!(result.is_sign_positive());
     }
     {
         let result = store
-            .invoke_typed_without_fuel::<f64, f64>(function, f64::INFINITY)
+            .invoke_typed_without_fuel_unchecked::<f64, f64>(function, f64::INFINITY)
             .unwrap();
         assert!(result.is_infinite());
         assert!(result.is_sign_negative());
     }
     assert_eq!(
         -1.5_f64,
-        store.invoke_typed_without_fuel(function, 1.5_f64).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, 1.5_f64)
+            .unwrap()
     );
     assert_eq!(
         1.5_f64,
-        store.invoke_typed_without_fuel(function, -1.5_f64).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, -1.5_f64)
+            .unwrap()
     );
     assert_eq!(
         -0.0_f64,
-        store.invoke_typed_without_fuel(function, 0.0_f64).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, 0.0_f64)
+            .unwrap()
     );
     assert_eq!(
         0.0_f64,
-        store.invoke_typed_without_fuel(function, -0.0_f64).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, -0.0_f64)
+            .unwrap()
     );
 }
 
@@ -474,27 +492,33 @@ pub fn f64_ceil() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export(module, "f64_ceil")
+        .instance_export_unchecked(module, "f64_ceil")
         .unwrap()
         .as_func()
         .unwrap();
 
     assert_eq!(
         2.0_f64,
-        store.invoke_typed_without_fuel(function, 1.5_f64).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, 1.5_f64)
+            .unwrap()
     );
     assert_eq!(
         -1.0_f64,
-        store.invoke_typed_without_fuel(function, -1.5_f64).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, -1.5_f64)
+            .unwrap()
     );
     assert_eq!(
         0.0_f64,
-        store.invoke_typed_without_fuel(function, -0.1_f64).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, -0.1_f64)
+            .unwrap()
     );
 }
 
@@ -514,27 +538,33 @@ pub fn f64_floor() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export(module, "f64_floor")
+        .instance_export_unchecked(module, "f64_floor")
         .unwrap()
         .as_func()
         .unwrap();
 
     assert_eq!(
         1.0_f64,
-        store.invoke_typed_without_fuel(function, 1.5_f64).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, 1.5_f64)
+            .unwrap()
     );
     assert_eq!(
         -2.0_f64,
-        store.invoke_typed_without_fuel(function, -1.5_f64).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, -1.5_f64)
+            .unwrap()
     );
     assert_eq!(
         -1.0_f64,
-        store.invoke_typed_without_fuel(function, -0.1_f64).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, -0.1_f64)
+            .unwrap()
     );
 }
 
@@ -554,27 +584,33 @@ pub fn f64_trunc() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export(module, "f64_trunc")
+        .instance_export_unchecked(module, "f64_trunc")
         .unwrap()
         .as_func()
         .unwrap();
 
     assert_eq!(
         1.0_f64,
-        store.invoke_typed_without_fuel(function, 1.5_f64).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, 1.5_f64)
+            .unwrap()
     );
     assert_eq!(
         -1.0_f64,
-        store.invoke_typed_without_fuel(function, -1.5_f64).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, -1.5_f64)
+            .unwrap()
     );
     assert_eq!(
         0.0_f64,
-        store.invoke_typed_without_fuel(function, 0.9_f64).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, 0.9_f64)
+            .unwrap()
     );
 }
 
@@ -594,31 +630,39 @@ pub fn f64_nearest() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export(module, "f64_nearest")
+        .instance_export_unchecked(module, "f64_nearest")
         .unwrap()
         .as_func()
         .unwrap();
 
     assert_eq!(
         2.0_f64,
-        store.invoke_typed_without_fuel(function, 1.5_f64).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, 1.5_f64)
+            .unwrap()
     );
     assert_eq!(
         -2.0_f64,
-        store.invoke_typed_without_fuel(function, -1.5_f64).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, -1.5_f64)
+            .unwrap()
     );
     assert_eq!(
         1.0_f64,
-        store.invoke_typed_without_fuel(function, 0.6_f64).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, 0.6_f64)
+            .unwrap()
     );
     assert_eq!(
         0.0_f64,
-        store.invoke_typed_without_fuel(function, 0.4_f64).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, 0.4_f64)
+            .unwrap()
     );
 }
 
@@ -639,26 +683,30 @@ pub fn f64_sqrt() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export(module, "f64_sqrt")
+        .instance_export_unchecked(module, "f64_sqrt")
         .unwrap()
         .as_func()
         .unwrap();
 
     assert_eq!(
         2.0_f64,
-        store.invoke_typed_without_fuel(function, 4.0_f64).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, 4.0_f64)
+            .unwrap()
     );
     assert_eq!(
         1.4142135623730951_f64,
-        store.invoke_typed_without_fuel(function, 2.0_f64).unwrap()
+        store
+            .invoke_typed_without_fuel_unchecked(function, 2.0_f64)
+            .unwrap()
     );
     assert!(store
-        .invoke_typed_without_fuel::<f64, f64>(function, -f64::NAN)
+        .invoke_typed_without_fuel_unchecked::<f64, f64>(function, -f64::NAN)
         .unwrap()
         .is_nan());
 }
@@ -680,12 +728,12 @@ pub fn f64_add() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export(module, "f64_add")
+        .instance_export_unchecked(module, "f64_add")
         .unwrap()
         .as_func()
         .unwrap();
@@ -693,19 +741,19 @@ pub fn f64_add() {
     assert_eq!(
         3.0_f64,
         store
-            .invoke_typed_without_fuel(function, (1.5_f64, 1.5_f64))
+            .invoke_typed_without_fuel_unchecked(function, (1.5_f64, 1.5_f64))
             .unwrap()
     );
     assert_eq!(
         -1.0_f64,
         store
-            .invoke_typed_without_fuel(function, (1.0_f64, -2.0_f64))
+            .invoke_typed_without_fuel_unchecked(function, (1.0_f64, -2.0_f64))
             .unwrap()
     );
     assert_eq!(
         0.0_f64,
         store
-            .invoke_typed_without_fuel(function, (0.1_f64, -0.1_f64))
+            .invoke_typed_without_fuel_unchecked(function, (0.1_f64, -0.1_f64))
             .unwrap()
     );
 }
@@ -727,12 +775,12 @@ pub fn f64_sub() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export(module, "f64_sub")
+        .instance_export_unchecked(module, "f64_sub")
         .unwrap()
         .as_func()
         .unwrap();
@@ -740,19 +788,19 @@ pub fn f64_sub() {
     assert_eq!(
         0.0_f64,
         store
-            .invoke_typed_without_fuel(function, (1.5_f64, 1.5_f64))
+            .invoke_typed_without_fuel_unchecked(function, (1.5_f64, 1.5_f64))
             .unwrap()
     );
     assert_eq!(
         3.0_f64,
         store
-            .invoke_typed_without_fuel(function, (1.0_f64, -2.0_f64))
+            .invoke_typed_without_fuel_unchecked(function, (1.0_f64, -2.0_f64))
             .unwrap()
     );
     assert_eq!(
         0.2_f64,
         store
-            .invoke_typed_without_fuel(function, (0.1_f64, -0.1_f64))
+            .invoke_typed_without_fuel_unchecked(function, (0.1_f64, -0.1_f64))
             .unwrap()
     );
 }
@@ -774,12 +822,12 @@ pub fn f64_mul() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export(module, "f64_mul")
+        .instance_export_unchecked(module, "f64_mul")
         .unwrap()
         .as_func()
         .unwrap();
@@ -787,19 +835,19 @@ pub fn f64_mul() {
     assert_eq!(
         6.0_f64,
         store
-            .invoke_typed_without_fuel(function, (2.0_f64, 3.0_f64))
+            .invoke_typed_without_fuel_unchecked(function, (2.0_f64, 3.0_f64))
             .unwrap()
     );
     assert_eq!(
         -4.0_f64,
         store
-            .invoke_typed_without_fuel(function, (2.0_f64, -2.0_f64))
+            .invoke_typed_without_fuel_unchecked(function, (2.0_f64, -2.0_f64))
             .unwrap()
     );
     assert_eq!(
         0.0_f64,
         store
-            .invoke_typed_without_fuel(function, (0.0_f64, 5.0_f64))
+            .invoke_typed_without_fuel_unchecked(function, (0.0_f64, 5.0_f64))
             .unwrap()
     );
 }
@@ -821,12 +869,12 @@ pub fn f64_div() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export(module, "f64_div")
+        .instance_export_unchecked(module, "f64_div")
         .unwrap()
         .as_func()
         .unwrap();
@@ -834,21 +882,21 @@ pub fn f64_div() {
     assert_eq!(
         2.0_f64,
         store
-            .invoke_typed_without_fuel(function, (6.0_f64, 3.0_f64))
+            .invoke_typed_without_fuel_unchecked(function, (6.0_f64, 3.0_f64))
             .unwrap()
     );
     assert_eq!(
         -1.0_f64,
         store
-            .invoke_typed_without_fuel(function, (2.0_f64, -2.0_f64))
+            .invoke_typed_without_fuel_unchecked(function, (2.0_f64, -2.0_f64))
             .unwrap()
     );
     assert!(store
-        .invoke_typed_without_fuel::<(f64, f64), f64>(function, (1.0_f64, 0.0_f64))
+        .invoke_typed_without_fuel_unchecked::<(f64, f64), f64>(function, (1.0_f64, 0.0_f64))
         .unwrap()
         .is_infinite());
     assert!(store
-        .invoke_typed_without_fuel::<(f64, f64), f64>(function, (0.0_f64, 0.0_f64))
+        .invoke_typed_without_fuel_unchecked::<(f64, f64), f64>(function, (0.0_f64, 0.0_f64))
         .unwrap()
         .is_nan());
 }
@@ -870,32 +918,32 @@ pub fn f64_min() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export(module, "f64_min")
+        .instance_export_unchecked(module, "f64_min")
         .unwrap()
         .as_func()
         .unwrap();
 
     {
         let result = store
-            .invoke_typed_without_fuel::<(f64, f64), f64>(function, (f64::NAN, -f64::NAN))
+            .invoke_typed_without_fuel_unchecked::<(f64, f64), f64>(function, (f64::NAN, -f64::NAN))
             .unwrap();
         assert!(result.is_nan());
     }
     {
         let result = store
-            .invoke_typed_without_fuel::<(f64, f64), f64>(function, (f64::NAN, f64::NAN))
+            .invoke_typed_without_fuel_unchecked::<(f64, f64), f64>(function, (f64::NAN, f64::NAN))
             .unwrap();
         assert!(result.is_nan());
         assert!(result.is_sign_positive());
     }
     {
         let result = store
-            .invoke_typed_without_fuel::<(f64, f64), f64>(
+            .invoke_typed_without_fuel_unchecked::<(f64, f64), f64>(
                 function,
                 (f64::INFINITY, f64::NEG_INFINITY),
             )
@@ -906,35 +954,35 @@ pub fn f64_min() {
     assert_eq!(
         42_f64,
         store
-            .invoke_typed_without_fuel(function, (f64::INFINITY, 42_f64))
+            .invoke_typed_without_fuel_unchecked(function, (f64::INFINITY, 42_f64))
             .unwrap()
     );
     assert_eq!(
         -0_f64,
         store
-            .invoke_typed_without_fuel(function, (-0_f64, 0_f64))
+            .invoke_typed_without_fuel_unchecked(function, (-0_f64, 0_f64))
             .unwrap()
     );
     assert_eq!(
         1.0_f64,
         store
-            .invoke_typed_without_fuel(function, (1.0_f64, 2.0_f64))
+            .invoke_typed_without_fuel_unchecked(function, (1.0_f64, 2.0_f64))
             .unwrap()
     );
     assert_eq!(
         -2.0_f64,
         store
-            .invoke_typed_without_fuel(function, (-1.0_f64, -2.0_f64))
+            .invoke_typed_without_fuel_unchecked(function, (-1.0_f64, -2.0_f64))
             .unwrap()
     );
     assert_eq!(
         -0.0_f64,
         store
-            .invoke_typed_without_fuel(function, (0.0_f64, -0.0_f64))
+            .invoke_typed_without_fuel_unchecked(function, (0.0_f64, -0.0_f64))
             .unwrap()
     );
     assert!(store
-        .invoke_typed_without_fuel::<(f64, f64), f64>(function, (f64::NAN, 1.0_f64))
+        .invoke_typed_without_fuel_unchecked::<(f64, f64), f64>(function, (f64::NAN, 1.0_f64))
         .unwrap()
         .is_nan());
 }
@@ -956,32 +1004,32 @@ pub fn f64_max() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export(module, "f64_max")
+        .instance_export_unchecked(module, "f64_max")
         .unwrap()
         .as_func()
         .unwrap();
 
     {
         let result = store
-            .invoke_typed_without_fuel::<(f64, f64), f64>(function, (f64::NAN, -f64::NAN))
+            .invoke_typed_without_fuel_unchecked::<(f64, f64), f64>(function, (f64::NAN, -f64::NAN))
             .unwrap();
         assert!(result.is_nan());
     }
     {
         let result = store
-            .invoke_typed_without_fuel::<(f64, f64), f64>(function, (f64::NAN, f64::NAN))
+            .invoke_typed_without_fuel_unchecked::<(f64, f64), f64>(function, (f64::NAN, f64::NAN))
             .unwrap();
         assert!(result.is_nan());
         assert!(result.is_sign_positive());
     }
     {
         let result = store
-            .invoke_typed_without_fuel::<(f64, f64), f64>(
+            .invoke_typed_without_fuel_unchecked::<(f64, f64), f64>(
                 function,
                 (f64::INFINITY, f64::NEG_INFINITY),
             )
@@ -992,36 +1040,36 @@ pub fn f64_max() {
     assert_eq!(
         42_f64,
         store
-            .invoke_typed_without_fuel(function, (f64::NEG_INFINITY, 42_f64))
+            .invoke_typed_without_fuel_unchecked(function, (f64::NEG_INFINITY, 42_f64))
             .unwrap()
     );
     assert_eq!(
         0_f64,
         store
-            .invoke_typed_without_fuel(function, (-0_f64, 0_f64))
+            .invoke_typed_without_fuel_unchecked(function, (-0_f64, 0_f64))
             .unwrap()
     );
 
     assert_eq!(
         2.0_f64,
         store
-            .invoke_typed_without_fuel(function, (1.0_f64, 2.0_f64))
+            .invoke_typed_without_fuel_unchecked(function, (1.0_f64, 2.0_f64))
             .unwrap()
     );
     assert_eq!(
         -1.0_f64,
         store
-            .invoke_typed_without_fuel(function, (-1.0_f64, -2.0_f64))
+            .invoke_typed_without_fuel_unchecked(function, (-1.0_f64, -2.0_f64))
             .unwrap()
     );
     assert_eq!(
         0.0_f64,
         store
-            .invoke_typed_without_fuel(function, (0.0_f64, -0.0_f64))
+            .invoke_typed_without_fuel_unchecked(function, (0.0_f64, -0.0_f64))
             .unwrap()
     );
     assert!(store
-        .invoke_typed_without_fuel::<(f64, f64), f64>(function, (f64::NAN, 1.0_f64))
+        .invoke_typed_without_fuel_unchecked::<(f64, f64), f64>(function, (f64::NAN, 1.0_f64))
         .unwrap()
         .is_nan());
 }
@@ -1043,12 +1091,12 @@ pub fn f64_copysign() {
     let validation_info = validate(&wasm_bytes).expect("validation failed");
     let mut store = Store::new(());
     let module = store
-        .module_instantiate(&validation_info, Vec::new(), None)
+        .module_instantiate_unchecked(&validation_info, Vec::new(), None)
         .unwrap()
         .module_addr;
 
     let function = store
-        .instance_export(module, "f64_copysign")
+        .instance_export_unchecked(module, "f64_copysign")
         .unwrap()
         .as_func()
         .unwrap();
@@ -1056,25 +1104,25 @@ pub fn f64_copysign() {
     assert_eq!(
         1.5_f64,
         store
-            .invoke_typed_without_fuel(function, (1.5_f64, 2.0_f64))
+            .invoke_typed_without_fuel_unchecked(function, (1.5_f64, 2.0_f64))
             .unwrap()
     );
     assert_eq!(
         -1.5_f64,
         store
-            .invoke_typed_without_fuel(function, (1.5_f64, -2.0_f64))
+            .invoke_typed_without_fuel_unchecked(function, (1.5_f64, -2.0_f64))
             .unwrap()
     );
     assert_eq!(
         -1.5_f64,
         store
-            .invoke_typed_without_fuel(function, (-1.5_f64, -0.0_f64))
+            .invoke_typed_without_fuel_unchecked(function, (-1.5_f64, -0.0_f64))
             .unwrap()
     );
     assert_eq!(
         1.5_f64,
         store
-            .invoke_typed_without_fuel(function, (-1.5_f64, 0.0_f64))
+            .invoke_typed_without_fuel_unchecked(function, (-1.5_f64, 0.0_f64))
             .unwrap()
     );
 }
