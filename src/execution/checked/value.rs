@@ -1,9 +1,10 @@
 use crate::{
     addrs::FuncAddr,
-    checked::Stored,
-    value::{ExternAddr, ValueTypeMismatchError, F32, F64},
-    RefType,
+    value::{ExternAddr, Ref, ValueTypeMismatchError, F32, F64},
+    RefType, Value,
 };
+
+use super::{AbstractStored, Stored};
 
 /// A stored variant of [`Value`](crate::execution::value::Value)
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -16,6 +17,39 @@ pub enum StoredValue {
     Ref(StoredRef),
 }
 
+impl AbstractStored for StoredValue {
+    type BareTy = Value;
+
+    unsafe fn from_bare(bare_value: Self::BareTy, id: crate::StoreId) -> Self {
+        match bare_value {
+            Value::I32(x) => Self::I32(x),
+            Value::I64(x) => Self::I64(x),
+            Value::F32(x) => Self::F32(x),
+            Value::F64(x) => Self::F64(x),
+            Value::V128(x) => Self::V128(x),
+            Value::Ref(r#ref) => Self::Ref(StoredRef::from_bare(r#ref, id)),
+        }
+    }
+
+    fn id(&self) -> Option<crate::StoreId> {
+        match self {
+            Self::Ref(r#ref) => r#ref.id(),
+            _ => None,
+        }
+    }
+
+    fn into_bare(self) -> Self::BareTy {
+        match self {
+            Self::I32(x) => Value::I32(x),
+            Self::I64(x) => Value::I64(x),
+            Self::F32(x) => Value::F32(x),
+            Self::F64(x) => Value::F64(x),
+            Self::V128(x) => Value::V128(x),
+            Self::Ref(stored_ref) => Value::Ref(stored_ref.into_bare()),
+        }
+    }
+}
+
 /// A stored variant of [`Ref`](crate::execution::value::Ref)
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum StoredRef {
@@ -24,6 +58,33 @@ pub enum StoredRef {
     /// We do not wrap [`ExternAddr`]s in a [`Stored`] object because they are
     /// not stored in the [`Store`](crate::Store).
     Extern(ExternAddr),
+}
+
+impl AbstractStored for StoredRef {
+    type BareTy = Ref;
+
+    unsafe fn from_bare(bare_value: Self::BareTy, id: crate::StoreId) -> Self {
+        match bare_value {
+            Ref::Null(ref_type) => Self::Null(ref_type),
+            Ref::Func(func_addr) => Self::Func(Stored::from_bare(func_addr, id)),
+            Ref::Extern(extern_addr) => Self::Extern(extern_addr),
+        }
+    }
+
+    fn id(&self) -> Option<crate::StoreId> {
+        match self {
+            StoredRef::Func(stored_func_addr) => stored_func_addr.id(),
+            StoredRef::Null(_) | StoredRef::Extern(_) => None,
+        }
+    }
+
+    fn into_bare(self) -> Self::BareTy {
+        match self {
+            Self::Null(ref_type) => Ref::Null(ref_type),
+            Self::Func(stored_func_addr) => Ref::Func(stored_func_addr.into_bare()),
+            Self::Extern(extern_addr) => Ref::Extern(extern_addr),
+        }
+    }
 }
 
 impl From<u32> for StoredValue {

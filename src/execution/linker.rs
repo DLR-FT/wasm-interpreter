@@ -5,8 +5,8 @@ use alloc::{
 };
 
 use crate::{
-    addrs::ModuleAddr, checked::StoreId, store::InstantiationOutcome, ExternVal, RuntimeError,
-    Store, ValidationInfo,
+    addrs::ModuleAddr, store::InstantiationOutcome, ExternVal, RuntimeError, Store, StoreId,
+    ValidationInfo,
 };
 
 use super::config::Config;
@@ -54,8 +54,8 @@ pub struct Linker {
     /// same [`Store`].
     extern_vals: BTreeMap<ImportKey, ExternVal>,
 
-    /// This is for the safe/checked methods which make sure that all objects
-    /// used originate from the same [`Store`].
+    /// This is for the checked API which make sure that all objects used
+    /// originate from the same [`Store`].
     ///
     /// Initially the store id is `None`. Only when a store-specific object or a
     /// [`Store`] itself is used with a checked method, is this field set.  Once
