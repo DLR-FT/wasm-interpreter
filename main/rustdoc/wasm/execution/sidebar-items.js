@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["DEFAULT_MODULE"],"fn":["host_function_wrapper"],"mod":["assert_validated","config","const_interpreter_loop","error","interop","interpreter_loop","linker","little_endian","registry","resumable","store","value","value_stack"],"struct":["RuntimeInstance"]};
+window.SIDEBAR_ITEMS = {"fn":["host_function_wrapper"],"mod":["assert_validated","config","const_interpreter_loop","error","interop","interpreter_loop","linker","little_endian","resumable","store","value","value_stack"]};
