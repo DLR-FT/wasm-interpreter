@@ -9,6 +9,7 @@ use crate::execution::value::Value;
 use crate::interop::InteropValueList;
 
 pub(crate) mod assert_validated;
+pub mod checked;
 pub mod config;
 pub mod const_interpreter_loop;
 pub mod error;
@@ -35,7 +36,7 @@ pub mod value_stack;
 /// }
 /// fn main() {
 ///     let mut store = Store::new(());
-///     let foo_bar = store.func_alloc_typed::<(u32, i32), u32>(my_wrapped_host_func);
+///     let foo_bar = store.func_alloc_typed_unchecked::<(u32, i32), u32>(my_wrapped_host_func);
 /// }
 /// ```
 pub fn host_function_wrapper<Params: InteropValueList, Results: InteropValueList>(

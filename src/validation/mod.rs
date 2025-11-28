@@ -32,8 +32,9 @@ pub(crate) struct ImportsLength {
 ///
 /// This can be used to instantiate a new module instance in some
 /// [`Store`](crate::Store) either through
-/// [`Store::module_instantiate`](crate::Store::module_instantiate) or
-/// [`Linker::module_instantiate`](crate::execution::linker::Linker::module_instantiate).
+/// [`Store::module_instantiate_unchecked`](crate::Store::module_instantiate_unchecked)
+/// or
+/// [`Linker::module_instantiate_unchecked`](crate::execution::linker::Linker::module_instantiate_unchecked).
 #[derive(Clone, Debug)]
 pub struct ValidationInfo<'bytecode> {
     pub(crate) wasm: &'bytecode [u8],

@@ -1,4 +1,4 @@
-use wasm::{GlobalType, NumType, ValType, Value};
+use wasm::{checked::StoredValue, GlobalType, NumType, ValType};
 
 /// The WASM program has one mutable global initialized with a constant 3.
 /// It exports two methods:
@@ -181,27 +181,27 @@ fn embedder_interface() {
         .as_global()
         .expect("global");
 
-    assert_eq!(store.global_read(global_0), Value::I32(1));
-    assert_eq!(store.global_read(global_1), Value::I64(3));
+    assert_eq!(store.global_read(global_0), Ok(StoredValue::I32(1)));
+    assert_eq!(store.global_read(global_1), Ok(StoredValue::I64(3)));
 
-    assert_eq!(store.global_write(global_0, Value::I32(33)), Ok(()));
+    assert_eq!(store.global_write(global_0, StoredValue::I32(33)), Ok(()));
 
-    assert_eq!(store.global_read(global_0), Value::I32(33));
-    assert_eq!(store.global_read(global_1), Value::I64(3));
+    assert_eq!(store.global_read(global_0), Ok(StoredValue::I32(33)));
+    assert_eq!(store.global_read(global_1), Ok(StoredValue::I64(3)));
 
     assert_eq!(
         store.global_type(global_0),
-        GlobalType {
+        Ok(GlobalType {
             ty: ValType::NumType(NumType::I32),
             is_mut: true,
-        }
+        })
     );
 
     assert_eq!(
         store.global_type(global_1),
-        GlobalType {
+        Ok(GlobalType {
             ty: ValType::NumType(NumType::I64),
             is_mut: true,
-        }
+        })
     );
 }

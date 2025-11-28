@@ -18,11 +18,11 @@ fn counter() {
     }
 
     let mut store = Store::new(MyCounter(0));
-    let add_one = store.func_alloc_typed::<(), ()>(add_one);
+    let add_one = store.func_alloc_typed_unchecked::<(), ()>(add_one);
 
     for _ in 0..5 {
         store
-            .invoke_typed_without_fuel::<(), ()>(add_one, ())
+            .invoke_typed_without_fuel_unchecked::<(), ()>(add_one, ())
             .unwrap();
     }
 
@@ -50,10 +50,10 @@ fn channels() {
         }
 
         let mut store = Store::new(MySender(tx));
-        let send_message = store.func_alloc_typed::<(), ()>(send_message);
+        let send_message = store.func_alloc_typed_unchecked::<(), ()>(send_message);
 
         store
-            .invoke_typed_without_fuel::<(), ()>(send_message, ())
+            .invoke_typed_without_fuel_unchecked::<(), ()>(send_message, ())
             .unwrap();
     });
 

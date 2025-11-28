@@ -1,4 +1,5 @@
 use core::mem;
+use core::sync::atomic::{AtomicU64, Ordering};
 
 use crate::addrs::{
     AddrVec, DataAddr, ElemAddr, FuncAddr, GlobalAddr, MemAddr, ModuleAddr, TableAddr,
@@ -63,6 +64,9 @@ pub struct Store<'b, T: Config> {
     /// space along with a `ModuleAddr` index type.
     pub(crate) modules: AddrVec<ModuleAddr, ModuleInst<'b>>,
 
+    /// A unique identifier for this store. This is used to verify that
+    /// stored objects belong to the current [`Store`].
+    pub(crate) id: StoreId,
     pub user_data: T,
 
     // data structure holding all resumable objects that belong to this store
@@ -84,6 +88,7 @@ impl<'b, T: Config> Store<'b, T> {
             elements: AddrVec::default(),
             data: AddrVec::default(),
             modules: AddrVec::default(),
+            id: StoreId::new(),
             dormitory: Dormitory::default(),
             user_data,
         }
@@ -95,7 +100,11 @@ impl<'b, T: Config> Store<'b, T> {
     /// operations to have unexpected results.
     ///
     /// See: WebAssembly Specification 2.0 - 7.1.5 - module_instantiate
-    pub fn module_instantiate(
+    ///
+    /// # Safety
+    /// The caller has to guarantee that any address values contained in the
+    /// [`ExternVal`]s came from the current [`Store`] object.
+    pub fn module_instantiate_unchecked(
         &mut self,
         validation_info: &ValidationInfo<'b>,
         extern_vals: Vec<ExternVal>,
@@ -417,7 +426,7 @@ impl<'b, T: Config> Store<'b, T> {
             let RunState::Finished {
                 maybe_remaining_fuel,
                 ..
-            } = self.invoke(func_addr, Vec::new(), maybe_fuel)?
+            } = self.invoke_unchecked(func_addr, Vec::new(), maybe_fuel)?
             else {
                 return Err(RuntimeError::OutOfFuel);
             };
@@ -435,7 +444,11 @@ impl<'b, T: Config> Store<'b, T> {
     /// Gets an export of a specific module instance by its name
     ///
     /// See: WebAssembly Specification 2.0 - 7.1.6 - instance_export
-    pub fn instance_export(
+    ///
+    /// # Safety
+    /// The caller has to guarantee that the [`ModuleAddr`] came from the
+    /// current [`Store`] object.
+    pub fn instance_export_unchecked(
         &self,
         module_addr: ModuleAddr,
         name: &str,
@@ -470,7 +483,12 @@ impl<'b, T: Config> Store<'b, T> {
     ///
     /// See: <https://webassembly.github.io/spec/core/exec/modules.html#host-functions>
     /// See: WebAssembly Specification 2.0 - 7.1.7 - func_alloc
-    pub fn func_alloc(
+    ///
+    /// # Safety
+    /// The caller has to guarantee that if the [`Value`]s returned from the
+    /// given host function are references, their addresses came either from the
+    /// host function arguments or from the current [`Store`] object.
+    pub fn func_alloc_unchecked(
         &mut self,
         func_type: FuncType,
         host_func: fn(&mut T, Vec<Value>) -> Result<Vec<Value>, HaltExecutionError>,
@@ -491,7 +509,11 @@ impl<'b, T: Config> Store<'b, T> {
     /// Gets the type of a function by its addr.
     ///
     /// See: WebAssembly Specification 2.0 - 7.1.7 - func_type
-    pub fn func_type(&self, func_addr: FuncAddr) -> FuncType {
+    ///
+    /// # Safety
+    /// The caller has to guarantee that the [`FuncAddr`] came from the current
+    /// [`Store`] object.
+    pub fn func_type_unchecked(&self, func_addr: FuncAddr) -> FuncType {
         // 1. Return `S.funcs[a].type`.
         self.functions.get(func_addr).ty()
 
@@ -499,19 +521,28 @@ impl<'b, T: Config> Store<'b, T> {
     }
 
     /// See: WebAssembly Specification 2.0 - 7.1.7 - func_invoke
-    pub fn invoke(
+    ///
+    /// # Safety
+    /// The caller has to guarantee that the given [`FuncAddr`] or any
+    /// [`FuncAddr`] or [`ExternAddr`](crate::execution::value::ExternAddr) values contained in the parameter values
+    /// came from the current [`Store`] object.
+    pub fn invoke_unchecked(
         &mut self,
         func_addr: FuncAddr,
         params: Vec<Value>,
         maybe_fuel: Option<u32>,
     ) -> Result<RunState, RuntimeError> {
-        self.resume(self.create_resumable(func_addr, params, maybe_fuel)?)
+        self.resume_unchecked(self.create_resumable_unchecked(func_addr, params, maybe_fuel)?)
     }
 
     /// Allocates a new table with some table type and an initialization value `ref` and returns its table address.
     ///
     /// See: WebAssembly Specification 2.0 - 7.1.8 - table_alloc
-    pub fn table_alloc(
+    ///
+    /// # Safety
+    /// The caller has to guarantee that any [`FuncAddr`] or [`ExternAddr`](crate::execution::value::ExternAddr)
+    /// values contained in `r#ref` came from the current [`Store`] object.
+    pub fn table_alloc_unchecked(
         &mut self,
         table_type: TableType,
         r#ref: Ref,
@@ -536,7 +567,11 @@ impl<'b, T: Config> Store<'b, T> {
     /// Gets the type of some table by its addr.
     ///
     /// See: WebAssembly Specification 2.0 - 7.1.8 - table_type
-    pub fn table_type(&self, table_addr: TableAddr) -> TableType {
+    ///
+    /// # Safety
+    /// The caller has to guarantee that the given [`TableAddr`] came from
+    /// the current [`Store`] object.
+    pub fn table_type_unchecked(&self, table_addr: TableAddr) -> TableType {
         // 1. Return `S.tables[a].type`.
         self.tables.get(table_addr).ty
 
@@ -546,7 +581,11 @@ impl<'b, T: Config> Store<'b, T> {
     /// Reads a single reference from a table by its table address and an index into the table.
     ///
     /// See: WebAssembly Specification 2.0 - 7.1.8 - table_read
-    pub fn table_read(&self, table_addr: TableAddr, i: u32) -> Result<Ref, RuntimeError> {
+    ///
+    /// # Safety
+    /// The caller has to guarantee that the given [`TableAddr`] must come from
+    /// the current [`Store`] object.
+    pub fn table_read_unchecked(&self, table_addr: TableAddr, i: u32) -> Result<Ref, RuntimeError> {
         // Convert `i` to usize for indexing
         let i = usize::try_from(i).expect("the architecture to be at least 32-bit");
 
@@ -564,7 +603,13 @@ impl<'b, T: Config> Store<'b, T> {
     /// Writes a single reference into a table by its table address and an index into the table.
     ///
     /// See: WebAssembly Specification 2.0 - 7.1.8 - table_write
-    pub fn table_write(
+    ///
+    /// # Safety
+    /// The caller has to guarantee that the given [`TableAddr`] and any
+    /// [`FuncAddr`] or [`ExternAddr`](crate::execution::value::ExternAddr)
+    /// values contained in the [`Ref`] must come from the current [`Store`]
+    /// object.
+    pub fn table_write_unchecked(
         &mut self,
         table_addr: TableAddr,
         i: u32,
@@ -596,7 +641,11 @@ impl<'b, T: Config> Store<'b, T> {
     /// Gets the current size of a table by its table address.
     ///
     /// See: WebAssembly Specification 2.0 - 7.1.8 - table_size
-    pub fn table_size(&self, table_addr: TableAddr) -> u32 {
+    ///
+    /// # Safety
+    /// The caller has to guarantee that the given [`TableAddr`] must come from
+    /// the current [`Store`] object.
+    pub fn table_size_unchecked(&self, table_addr: TableAddr) -> u32 {
         // 1. Return the length of `store.tables[tableaddr].elem`.
         let len = self.tables.get(table_addr).elem.len();
 
@@ -609,7 +658,13 @@ impl<'b, T: Config> Store<'b, T> {
     /// Grows a table referenced by its table address by `n` elements.
     ///
     /// See: WebAssembly Specification 2.0 - 7.1.8 - table_grow
-    pub fn table_grow(
+    ///
+    /// # Safety
+    /// The caller has to guarantee that the given [`TableAddr`] and any
+    /// [`FuncAddr`] or [`ExternAddr`](crate::execution::value::ExternAddr)
+    /// values contained in the [`Ref`] must come from the current [`Store`]
+    /// object.
+    pub fn table_grow_unchecked(
         &mut self,
         table_addr: TableAddr,
         n: u32,
@@ -626,7 +681,14 @@ impl<'b, T: Config> Store<'b, T> {
     /// Allocates a new linear memory and returns its memory address.
     ///
     /// See: WebAssembly Specification 2.0 - 7.1.9 - mem_alloc
-    pub fn mem_alloc(&mut self, mem_type: MemType) -> MemAddr {
+    ///
+    /// # A Note About Safety
+    ///
+    /// This method is always safe. However it returns a [`MemAddr`], which can
+    /// only be used with other unchecked methods. Consider using the safe and
+    /// stored [`Store::mem_alloc`] variant instead, which returns a
+    /// [`Stored<MemAddr>`](crate::execution::checked::Stored).
+    pub fn mem_alloc_unchecked(&mut self, mem_type: MemType) -> MemAddr {
         // 1. Pre-condition: `memtype` is valid.
 
         // 2. Let `memaddr` be the result of allocating a memory in `store` with memory type `memtype`.
@@ -639,7 +701,11 @@ impl<'b, T: Config> Store<'b, T> {
     /// Gets the memory type of some memory by its memory address
     ///
     /// See: WebAssemblySpecification 2.0 - 7.1.9 - mem_type
-    pub fn mem_type(&self, mem_addr: MemAddr) -> MemType {
+    ///
+    /// # Safety
+    /// The caller has to guarantee that the given [`MemAddr`] came from the
+    /// current [`Store`] object.
+    pub fn mem_type_unchecked(&self, mem_addr: MemAddr) -> MemType {
         // 1. Return `S.mems[a].type`.
         self.memories.get(mem_addr).ty
 
@@ -649,7 +715,11 @@ impl<'b, T: Config> Store<'b, T> {
     /// Reads a byte from some memory by its memory address and an index into the memory
     ///
     /// See: WebAssemblySpecification 2.0 - 7.1.9 - mem_read
-    pub fn mem_read(&self, mem_addr: MemAddr, i: u32) -> Result<u8, RuntimeError> {
+    ///
+    /// # Safety
+    /// The caller has to guarantee that the given [`MemAddr`] came from the
+    /// current [`Store`] object.
+    pub fn mem_read_unchecked(&self, mem_addr: MemAddr, i: u32) -> Result<u8, RuntimeError> {
         // Convert the index type
         let i = usize::try_from(i).expect("the architecture to be at least 32-bit");
 
@@ -664,7 +734,16 @@ impl<'b, T: Config> Store<'b, T> {
     /// Writes a byte into some memory by its memory address and an index into the memory
     ///
     /// See: WebAssemblySpecification 2.0 - 7.1.9 - mem_write
-    pub fn mem_write(&self, mem_addr: MemAddr, i: u32, byte: u8) -> Result<(), RuntimeError> {
+    ///
+    /// # Safety
+    /// The caller has to guarantee that the given [`MemAddr`] came from the
+    /// current [`Store`] object.
+    pub fn mem_write_unchecked(
+        &self,
+        mem_addr: MemAddr,
+        i: u32,
+        byte: u8,
+    ) -> Result<(), RuntimeError> {
         // Convert the index type
         let i = usize::try_from(i).expect("the architecture to be at least 32-bit");
 
@@ -677,7 +756,11 @@ impl<'b, T: Config> Store<'b, T> {
     /// Gets the size of some memory by its memory address in pages.
     ///
     /// See: WebAssemblySpecification 2.0 - 7.1.9 - mem_size
-    pub fn mem_size(&self, mem_addr: MemAddr) -> u32 {
+    ///
+    /// # Safety
+    /// The caller has to guarantee that the given [`MemAddr`] came from the
+    /// current [`Store`] object.
+    pub fn mem_size_unchecked(&self, mem_addr: MemAddr) -> u32 {
         // 1. Return the length of `store.mems[memaddr].data` divided by the page size.
         let length = self.memories.get(mem_addr).size();
 
@@ -689,7 +772,11 @@ impl<'b, T: Config> Store<'b, T> {
     /// Grows some memory by its memory address by `n` pages.
     ///
     /// See: WebAssemblySpecification 2.0 - 7.1.9 - mem_grow
-    pub fn mem_grow(&mut self, mem_addr: MemAddr, n: u32) -> Result<(), RuntimeError> {
+    ///
+    /// # Safety
+    /// The caller has to guarantee that the given [`MemAddr`] came from the
+    /// current [`Store`] object.
+    pub fn mem_grow_unchecked(&mut self, mem_addr: MemAddr, n: u32) -> Result<(), RuntimeError> {
         // 1. Try growing the memory instance `store.mems[memaddr]` by `n` pages:
         //   a. If it succeeds, then return the updated store.
         //   b. Else, return `error`.
@@ -701,7 +788,12 @@ impl<'b, T: Config> Store<'b, T> {
     /// Allocates a new global and returns its global address.
     ///
     /// See: WebAssemblySpecification 2.0 - 7.1.10 - global_alloc
-    pub fn global_alloc(
+    ///
+    /// # Safety
+    /// The caller has to guarantee that any [`FuncAddr`] or
+    /// [`ExternAddr`](crate::execution::value::ExternAddr) values contained in
+    /// the [`Value`] came from the current [`Store`] object.
+    pub fn global_alloc_unchecked(
         &mut self,
         global_type: GlobalType,
         val: Value,
@@ -725,7 +817,11 @@ impl<'b, T: Config> Store<'b, T> {
     /// Returns the global type of some global instance by its addr.
     ///
     /// See: WebAssembly Specification 2.0 - 7.1.10 - global_type
-    pub fn global_type(&self, global_addr: GlobalAddr) -> GlobalType {
+    ///
+    /// # Safety
+    /// The caller has to guarantee that the given [`GlobalAddr`] came from the
+    /// current [`Store`] object.
+    pub fn global_type_unchecked(&self, global_addr: GlobalAddr) -> GlobalType {
         // 1. Return `S.globals[a].type`.
         self.globals.get(global_addr).ty
         // 2. Post-condition: the returned global type is valid
@@ -734,7 +830,11 @@ impl<'b, T: Config> Store<'b, T> {
     /// Returns the current value of some global instance by its addr.
     ///
     /// See: WebAssembly Specification 2.0 - 7.1.10 - global_read
-    pub fn global_read(&self, global_addr: GlobalAddr) -> Value {
+    ///
+    /// # Safety
+    /// The caller has to guarantee that the given [`GlobalAddr`] came from the
+    /// current [`Store`] object.
+    pub fn global_read_unchecked(&self, global_addr: GlobalAddr) -> Value {
         // 1. Let `gi` be the global instance `store.globals[globaladdr].
         let gi = self.globals.get(global_addr);
 
@@ -749,7 +849,13 @@ impl<'b, T: Config> Store<'b, T> {
     /// - [` RuntimeError::GlobalTypeMismatch`]
     ///
     /// See: WebAssembly Specification 2.0 - 7.1.10 - global_write
-    pub fn global_write(
+    ///
+    /// # Safety
+    /// The caller has to guarantee that the given [`GlobalAddr`] and any
+    /// [`FuncAddr`] or [`ExternAddr`](crate::execution::value::ExternAddr)
+    /// values contained in the [`Value`] came from the current [`Store`]
+    /// object.
+    pub fn global_write_unchecked(
         &mut self,
         global_addr: GlobalAddr,
         val: Value,
@@ -783,8 +889,11 @@ impl<'b, T: Config> Store<'b, T> {
     }
 
     /// roughly matches <https://webassembly.github.io/spec/core/exec/modules.html#functions> with the addition of sidetable pointer to the input signature
+    ///
+    /// # Safety
+    /// The caller has to guarantee that the given [`ModuleAddr`] came from the
+    /// current [`Store`] object.
     // TODO refactor the type of func
-    // TODO module_addr
     fn alloc_func(&mut self, func: (TypeIdx, (Span, usize)), module_addr: ModuleAddr) -> FuncAddr {
         let (ty, (span, stp)) = func;
 
@@ -816,6 +925,11 @@ impl<'b, T: Config> Store<'b, T> {
     }
 
     /// <https://webassembly.github.io/spec/core/exec/modules.html#tables>
+    ///
+    /// # Safety
+    /// The caller has to guarantee that any [`FuncAddr`] or
+    /// [`ExternAddr`](crate::execution::value::ExternAddr) values contained in
+    /// the [`Ref`] came from the current [`Store`] object.
     fn alloc_table(&mut self, table_type: TableType, reff: Ref) -> TableAddr {
         let table_inst = TableInst {
             ty: table_type,
@@ -838,6 +952,11 @@ impl<'b, T: Config> Store<'b, T> {
     }
 
     /// <https://webassembly.github.io/spec/core/exec/modules.html#globals>
+    ///
+    /// # Safety
+    /// The caller has to guarantee that any [`FuncAddr`] or
+    /// [`ExternAddr`](crate::execution::value::ExternAddr) values contained in
+    /// the [`Value`] came from the current [`Store`] object.
     fn alloc_global(&mut self, global_type: GlobalType, val: Value) -> GlobalAddr {
         let global_inst = GlobalInst {
             ty: global_type,
@@ -848,6 +967,11 @@ impl<'b, T: Config> Store<'b, T> {
     }
 
     /// <https://webassembly.github.io/spec/core/exec/modules.html#element-segments>
+    ///
+    /// # Safety
+    /// The caller has to guarantee that any [`FuncAddr`] or
+    /// [`ExternAddr`](crate::execution::value::ExternAddr) values contained in
+    /// the [`Ref`]s came from the current [`Store`] object.
     fn alloc_elem(&mut self, ref_type: RefType, refs: Vec<Ref>) -> ElemAddr {
         let elem_inst = ElemInst {
             _ty: ref_type,
@@ -869,7 +993,12 @@ impl<'b, T: Config> Store<'b, T> {
     /// Creates a new resumable, which when resumed for the first time invokes the function `function_ref` is associated
     /// to, with the arguments `params`. The newly created resumable initially stores `fuel` units of fuel. Returns a
     /// `[ResumableRef]` associated to the newly created resumable on success.
-    pub fn create_resumable(
+    ///
+    /// # Safety
+    /// The caller has to guarantee that the [`FuncAddr`] and any [`FuncAddr`]
+    /// or [`ExternAddr`](crate::execution::value::ExternAddr) values contained
+    /// in the parameter values came from the current [`Store`] object.
+    pub fn create_resumable_unchecked(
         &self,
         func_addr: FuncAddr,
         params: Vec<Value>,
@@ -888,7 +1017,7 @@ impl<'b, T: Config> Store<'b, T> {
                 func_ty.params.valtypes.len(),
                 param_types.len()
             );
-            panic!("Invalid parameters for function");
+            return Err(RuntimeError::FunctionInvocationSignatureMismatch);
         }
 
         Ok(ResumableRef::Fresh(FreshResumableRef {
@@ -900,7 +1029,14 @@ impl<'b, T: Config> Store<'b, T> {
 
     /// resumes the resumable associated to `resumable_ref`. Returns a [`RunState`] associated to this resumable if the
     /// resumable ran out of fuel or completely executed.
-    pub fn resume(&mut self, mut resumable_ref: ResumableRef) -> Result<RunState, RuntimeError> {
+    ///
+    /// # Safety
+    /// The caller has to guarantee that the [`ResumableRef`] came from the
+    /// current [`Store`] object.
+    pub fn resume_unchecked(
+        &mut self,
+        mut resumable_ref: ResumableRef,
+    ) -> Result<RunState, RuntimeError> {
         match resumable_ref {
             ResumableRef::Fresh(FreshResumableRef {
                 func_addr,
@@ -1054,12 +1190,16 @@ impl<'b, T: Config> Store<'b, T> {
     /// let validation_info = validate(&wasm).unwrap();
     ///
     /// let mut store = Store::new(());
-    /// let module = store.module_instantiate(&validation_info, Vec::new(), None).unwrap().module_addr;
-    /// let func_addr = store.instance_export(module, "loops").unwrap().as_func().unwrap();
-    /// let mut resumable_ref = store.create_resumable(func_addr, Vec::new(), Some(0)).unwrap();
-    /// store.access_fuel_mut(&mut resumable_ref, |x| { assert_eq!(*x, Some(0)); *x = None; }).unwrap();
+    /// let module = store.module_instantiate_unchecked(&validation_info, Vec::new(), None).unwrap().module_addr;
+    /// let func_addr = store.instance_export_unchecked(module, "loops").unwrap().as_func().unwrap();
+    /// let mut resumable_ref = store.create_resumable_unchecked(func_addr, Vec::new(), Some(0)).unwrap();
+    /// store.access_fuel_mut_unchecked(&mut resumable_ref, |x| { assert_eq!(*x, Some(0)); *x = None; }).unwrap();
     /// ```
-    pub fn access_fuel_mut<R>(
+    ///
+    /// # Safety
+    /// The caller has to guarantee that the [`ResumableRef`] came from the
+    /// current [`Store`] object.
+    pub fn access_fuel_mut_unchecked<R>(
         &mut self,
         resumable_ref: &mut ResumableRef,
         f: impl FnOnce(&mut Option<u32>) -> R,
@@ -1090,11 +1230,12 @@ impl<'b, T: Config> Store<'b, T> {
 
     /// Allocates a new function with a statically known type signature with some host code.
     ///
-    /// This function is simply syntactic sugar for calling [`Store::func_alloc`].
+    /// This function is simply syntactic sugar for calling
+    /// [`Store::func_alloc_unchecked`] with statically know types.
     ///
     /// # Panics & Unexpected Behavior
-    /// Same as [`Store::func_alloc`].
-    pub fn func_alloc_typed<Params: InteropValueList, Returns: InteropValueList>(
+    /// Same as [`Store::func_alloc_unchecked`].
+    pub fn func_alloc_typed_unchecked<Params: InteropValueList, Returns: InteropValueList>(
         &mut self,
         host_func: fn(&mut T, Vec<Value>) -> Result<Vec<Value>, HaltExecutionError>,
     ) -> FuncAddr {
@@ -1106,18 +1247,26 @@ impl<'b, T: Config> Store<'b, T> {
                 valtypes: Vec::from(Returns::TYS),
             },
         };
-        self.func_alloc(func_type, host_func)
+        self.func_alloc_unchecked(func_type, host_func)
     }
 
     /// Invokes a function without fuel.
     ///
-    /// This is a wrapper around [`Store::invoke`].
-    pub fn invoke_without_fuel(
+    /// This function is simply syntactic sugar for calling
+    /// [`Store::invoke_unchecked`] without any fuel and destructuring the
+    /// resulting [`RunState`].
+    ///
+    /// # Safety
+    /// The caller has to guarantee that the given [`FuncAddr`] or any
+    /// [`FuncAddr`] or [`ExternAddr`](crate::execution::value::ExternAddr)
+    /// values contained in the parameter values came from the current [`Store`]
+    /// object.
+    pub fn invoke_without_fuel_unchecked(
         &mut self,
         function: FuncAddr,
         params: Vec<Value>,
     ) -> Result<Vec<Value>, RuntimeError> {
-        self.invoke(function, params, None)
+        self.invoke_unchecked(function, params, None)
             .map(|run_state| match run_state {
                 RunState::Finished {
                     values,
@@ -1129,17 +1278,49 @@ impl<'b, T: Config> Store<'b, T> {
 
     /// Invokes a function with a statically known type signature without fuel.
     ///
-    /// This is a wrapper around [`Store::invoke`].
-    pub fn invoke_typed_without_fuel<Params: InteropValueList, Returns: InteropValueList>(
+    /// This function is simply syntactic sugar for calling
+    /// [`Store::invoke_unchecked`] without any fuel and destructuring the
+    /// resulting [`RunState`] with statically known types.
+    ///
+    /// # Safety
+    /// The caller has to guarantee that the given [`FuncAddr`] or any
+    /// [`FuncAddr`] or [`ExternAddr`](crate::execution::value::ExternAddr)
+    /// values contained in the parameter values came from the current [`Store`]
+    /// object.
+    pub fn invoke_typed_without_fuel_unchecked<
+        Params: InteropValueList,
+        Returns: InteropValueList,
+    >(
         &mut self,
         function: FuncAddr,
         params: Params,
     ) -> Result<Returns, RuntimeError> {
-        self.invoke_without_fuel(function, params.into_values())
+        self.invoke_without_fuel_unchecked(function, params.into_values())
             .and_then(|values| {
-                Returns::try_from_values(values.into_iter())
-                    .map_err(|ValueTypeMismatchError| todo!("throw correct error here"))
+                Returns::try_from_values(values.into_iter()).map_err(|ValueTypeMismatchError| {
+                    RuntimeError::FunctionInvocationSignatureMismatch
+                })
             })
+    }
+}
+
+/// A unique identifier for a specific [`Store`]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub struct StoreId(u64);
+
+impl StoreId {
+    /// Creates a new unique [`StoreId`]
+    #[allow(clippy::new_without_default)] // reason = "StoreId::default() might be misunderstood to be some
+                                          // default value. However, a default value does not exist in that
+                                          // sense because every newly created StoreId must be unique. Also
+                                          // we don't want to allow the user to create new instances of
+                                          // this object."
+    pub(crate) fn new() -> Self {
+        static NEXT_STORE_ID: AtomicU64 = AtomicU64::new(0);
+
+        // TODO find a fix for the default wrapping behavior of `fetch_add`.
+        // Maybe we could return a `RuntimeError` here?
+        Self(NEXT_STORE_ID.fetch_add(1, Ordering::SeqCst))
     }
 }
 
@@ -1159,8 +1340,9 @@ impl ExternVal {
     /// returns the external type of `self` according to typing relation,
     /// taking `store` as context S.
     ///
-    /// Note: This method may panic if self does not come from the given [`Store`].
-    ///<https://webassembly.github.io/spec/core/valid/modules.html#imports>
+    /// # Safety
+    /// The caller has to guarantee that `self` came from the same [`Store`] which
+    /// is passed now as a reference.
     pub fn extern_type<T: Config>(&self, store: &Store<T>) -> ExternType {
         match self {
             // TODO: fix ugly clone in function types

@@ -1,6 +1,9 @@
 use core::panic;
 use log::info;
-use wasm::{resumable::RunState, validate, Store};
+use wasm::{
+    checked::{StoredRunState, StoredValue},
+    validate, Store,
+};
 
 #[test_log::test]
 
@@ -26,7 +29,7 @@ fn out_of_fuel() {
         .unwrap();
     assert!(matches!(
         store.resume(resumable_ref).unwrap(),
-        RunState::Resumable { .. }
+        StoredRunState::Resumable { .. }
     ));
 }
 #[test_log::test]
@@ -109,8 +112,8 @@ fn resumable() {
 
     for _ in 0..20 {
         run_state_mult = match run_state_mult {
-            RunState::Finished { .. } => panic!("should not terminate"),
-            RunState::Resumable {
+            StoredRunState::Finished { .. } => panic!("should not terminate"),
+            StoredRunState::Resumable {
                 mut resumable_ref, ..
             } => {
                 store
@@ -127,8 +130,8 @@ fn resumable() {
         );
 
         run_state_add = match run_state_add {
-            RunState::Finished { .. } => panic!("should not terminate"),
-            RunState::Resumable {
+            StoredRunState::Finished { .. } => panic!("should not terminate"),
+            StoredRunState::Resumable {
                 mut resumable_ref, ..
             } => {
                 store
@@ -193,19 +196,22 @@ fn resumable_internal_state() {
     let resumable_ref_add = store
         .create_resumable(add_global_0, vec![], Some(4))
         .unwrap();
-    assert_eq!(store.global_read(global_0), wasm::Value::I32(expected[0]));
+    assert_eq!(
+        store.global_read(global_0),
+        Ok(StoredValue::I32(expected[0]))
+    );
     let mut run_state_add = store.resume(resumable_ref_add).unwrap();
     let increment = |maybe_fuel: &mut Option<u32>| *maybe_fuel = maybe_fuel.map(|fuel| fuel + 4);
     for expected in expected.into_iter().take(4).skip(1) {
         run_state_add = match run_state_add {
-            RunState::Finished { .. } => {
-                assert_eq!(store.global_read(global_0), wasm::Value::I32(expected));
+            StoredRunState::Finished { .. } => {
+                assert_eq!(store.global_read(global_0), Ok(StoredValue::I32(expected)));
                 return;
             }
-            RunState::Resumable {
+            StoredRunState::Resumable {
                 mut resumable_ref, ..
             } => {
-                assert_eq!(store.global_read(global_0), wasm::Value::I32(expected));
+                assert_eq!(store.global_read(global_0), Ok(StoredValue::I32(expected)));
                 store
                     .access_fuel_mut(&mut resumable_ref, increment)
                     .unwrap();
@@ -242,13 +248,13 @@ fn resumable_drop() {
             .unwrap();
         assert!(matches!(
             store.resume(resumable_ref).unwrap(),
-            RunState::Resumable { .. }
+            StoredRunState::Resumable { .. }
         ));
         // now drop it, the other resumable should still be able to access the dormitory in store
     }
     assert!(matches!(
         store.resume(resumable_ref).unwrap(),
-        RunState::Resumable { .. }
+        StoredRunState::Resumable { .. }
     ));
 }
 

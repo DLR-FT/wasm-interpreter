@@ -1,5 +1,3 @@
-use wasm::interop::RefFunc;
-use wasm::value::Ref;
 /*
 # This file incorporates code from the WebAssembly testsuite, originally
 # available at https://github.com/WebAssembly/testsuite.
@@ -16,8 +14,9 @@ use wasm::value::Ref;
 # See the License for the specific language governing permissions and
 # limitations under the License.
 */
+use wasm::checked::{StoredExternVal, StoredRef, StoredRefFunc};
+use wasm::ValidationError;
 use wasm::{validate, Store};
-use wasm::{ExternVal, ValidationError};
 
 #[test_log::test]
 fn table_basic() {
@@ -144,12 +143,12 @@ fn table_elem_test() {
         .as_func()
         .unwrap();
 
-    let Ok(ExternVal::Table(table)) = store.instance_export(module, "tab") else {
+    let Ok(StoredExternVal::Table(table)) = store.instance_export(module, "tab") else {
         panic!("expected a table to be exported")
     };
 
-    assert_eq!(store.table_read(table, 0), Ok(Ref::Func(f1)));
-    assert_eq!(store.table_read(table, 1), Ok(Ref::Func(f3)));
+    assert_eq!(store.table_read(table, 0), Ok(StoredRef::Func(f1)));
+    assert_eq!(store.table_read(table, 1), Ok(StoredRef::Func(f3)));
 }
 
 #[test_log::test]
@@ -191,7 +190,7 @@ fn table_get_set_test() {
     // assert the function at index 1 is a FuncRef and is NOT null
     {
         let funcref = store
-            .invoke_typed_without_fuel::<i32, RefFunc>(get_funcref, 1)
+            .invoke_typed_without_fuel::<i32, StoredRefFunc>(get_funcref, 1)
             .unwrap();
 
         assert!(funcref.0.is_some());
@@ -200,7 +199,7 @@ fn table_get_set_test() {
     // assert the function at index 2 is a FuncRef and is null
     {
         let funcref = store
-            .invoke_typed_without_fuel::<i32, RefFunc>(get_funcref, 2)
+            .invoke_typed_without_fuel::<i32, StoredRefFunc>(get_funcref, 2)
             .unwrap();
 
         assert!(funcref.0.is_none());
@@ -211,7 +210,7 @@ fn table_get_set_test() {
     // assert the function at index 2 is a FuncRef and is NOT null
     {
         let funcref = store
-            .invoke_typed_without_fuel::<i32, RefFunc>(get_funcref, 2)
+            .invoke_typed_without_fuel::<i32, StoredRefFunc>(get_funcref, 2)
             .unwrap();
 
         assert!(funcref.0.is_some());

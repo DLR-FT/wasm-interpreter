@@ -1,4 +1,4 @@
-use wasm::{linker::Linker, resumable::RunState, validate, RuntimeError, Store, Value};
+use wasm::{checked::StoredValue, linker::Linker, validate, RuntimeError, Store};
 
 const SIMPLE_IMPORT_BASE: &str = r#"
 (module
@@ -49,7 +49,7 @@ pub fn compile_simple_import() {
 
     // 1.5 Freely inspect the linked extern values
     assert_eq!(
-        &linked_base_imports,
+        &*linked_base_imports,
         &[store.instance_export(addon, "get_one").unwrap()]
     );
 
@@ -66,13 +66,8 @@ pub fn compile_simple_import() {
         .unwrap();
 
     // Perform a call to see if everything works as expected
-    let get_three_result = store
-        .invoke(get_three, Vec::new(), None)
-        .map(|rs| match rs {
-            RunState::Finished { values, .. } => values,
-            _ => unreachable!("fuel is disabled"),
-        });
-    assert_eq!(get_three_result.unwrap(), &[Value::I32(3)],);
+    let get_three_result = store.invoke_without_fuel(get_three, Vec::new()).unwrap();
+    assert_eq!(get_three_result, &[StoredValue::I32(3)],);
 }
 
 #[test_log::test]

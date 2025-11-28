@@ -7,12 +7,14 @@ use bumpalo::Bump;
 use itertools::enumerate;
 use log::debug;
 use wasm::addrs::ModuleAddr;
+use wasm::checked::Stored;
+use wasm::checked::StoredExternVal;
+use wasm::checked::StoredRef;
+use wasm::checked::StoredValue;
 use wasm::linker::Linker;
-use wasm::ExternVal;
 use wasm::RefType;
 use wasm::RuntimeError;
 use wasm::TrapError;
-use wasm::Value;
 use wasm::{validate, Store};
 use wast::core::WastArgCore;
 use wast::core::WastRetCore;
@@ -117,9 +119,9 @@ fn encode(modulee: &mut wast::QuoteWat) -> Result<Vec<u8>, WastError> {
 fn validate_instantiate<'a, 'b: 'a>(
     store: &'a mut Store<'b, ()>,
     bytes: &'b [u8],
-    linker: &Linker,
-    last_instantiated_module: &mut Option<ModuleAddr>,
-) -> Result<ModuleAddr, WastError> {
+    linker: &mut Linker,
+    last_instantiated_module: &mut Option<Stored<ModuleAddr>>,
+) -> Result<Stored<ModuleAddr>, WastError> {
     let validation_info =
         catch_unwind_and_suppress_panic_handler(|| validate(bytes)).map_err(WastError::Panic)??;
 
@@ -180,7 +182,7 @@ pub fn run_spec_test(filepath: &str) -> Result<AssertReport, ScriptError> {
 
     // The last instantiated module is used implicitly whenever a module id
     // parameter is missing.
-    let mut last_instantiated_module: Option<ModuleAddr> = None;
+    let mut last_instantiated_module: Option<Stored<ModuleAddr>> = None;
 
     // The linker is used to perform automatic linking prior to every module
     // instantiation.
@@ -222,8 +224,8 @@ fn run_directive<'a>(
     store: &mut Store<'a, ()>,
     contents: &str,
     filepath: &str,
-    visible_modules: &mut HashMap<String, ModuleAddr>,
-    last_instantiated_module: &mut Option<ModuleAddr>,
+    visible_modules: &mut HashMap<String, Stored<ModuleAddr>>,
+    last_instantiated_module: &mut Option<Stored<ModuleAddr>>,
     linker: &mut Linker,
 ) -> Result<Option<AssertOutcome>, ScriptError> {
     match wast_directive {
@@ -422,7 +424,7 @@ fn run_directive<'a>(
                     RuntimeError::ModuleNotFound
                     | RuntimeError::UnknownImport
                     | RuntimeError::InvalidImportType
-                    | RuntimeError::UnableToResolveImport,
+                    | RuntimeError::UnableToResolveExternLookup,
                 )) => Ok(()),
                 _ => Err(WastError::AssertUnlinkableButLinked),
             };
@@ -471,7 +473,7 @@ fn run_directive<'a>(
             }))
         }
         wast::WastDirective::Invoke(invoke) => {
-            let args: Vec<Value> = invoke.args.into_iter().map(arg_to_value).collect();
+            let args: Vec<StoredValue> = invoke.args.into_iter().map(arg_to_value).collect();
 
             // spec tests tells us to use the last defined module if module name is not specified
             let module = match invoke.module {
@@ -491,7 +493,7 @@ fn run_directive<'a>(
                     .instance_export(module, invoke.name)
                     .map_err(WastError::WasmRuntimeError)
                     .and_then(|extern_val| match extern_val {
-                        ExternVal::Func(func) => Ok(func),
+                        StoredExternVal::Func(func) => Ok(func),
                         _ => Err(WastError::UnknownFunctionReferenced),
                     })
                     .map_err(|err| {
@@ -551,11 +553,11 @@ fn run_directive<'a>(
 }
 
 fn execute_assert_return(
-    visible_modules: &HashMap<String, ModuleAddr>,
+    visible_modules: &HashMap<String, Stored<ModuleAddr>>,
     store: &mut Store<()>,
     exec: wast::WastExecute,
     results: Vec<wast::WastRet>,
-    last_instantiated_module: &mut Option<ModuleAddr>,
+    last_instantiated_module: &mut Option<Stored<ModuleAddr>>,
 ) -> Result<(), WastError> {
     match exec {
         wast::WastExecute::Invoke(invoke_info) => {
@@ -587,7 +589,7 @@ fn execute_assert_return(
                     .instance_export(module, invoke_info.name)
                     .map_err(WastError::WasmRuntimeError)
                     .and_then(|extern_val| match extern_val {
-                        ExternVal::Func(func) => Ok(func),
+                        StoredExternVal::Func(func) => Ok(func),
                         _ => Err(WastError::UnknownFunctionReferenced),
                     })
             }))
@@ -627,11 +629,15 @@ fn execute_assert_return(
                     .instance_export(module, global)
                     .map_err(WastError::WasmRuntimeError)
                     .and_then(|extern_val| match extern_val {
-                        ExternVal::Global(global) => Ok(global),
+                        StoredExternVal::Global(global) => Ok(global),
                         _ => Err(WastError::UnknownGlobalReferenced),
                     })?;
 
-                Ok::<Value, WastError>(store.global_read(global_addr))
+                Ok::<StoredValue, WastError>(
+                    store
+                        .global_read(global_addr)
+                        .expect("store ids to be correct"),
+                )
             }))
             .map_err(WastError::Panic)??;
 
@@ -643,10 +649,10 @@ fn execute_assert_return(
 
 fn execute<'a>(
     arena: &'a bumpalo::Bump,
-    visible_modules: &HashMap<String, ModuleAddr>,
+    visible_modules: &HashMap<String, Stored<ModuleAddr>>,
     store: &mut Store<'a, ()>,
     exec: wast::WastExecute,
-    last_instantiated_module: &mut Option<ModuleAddr>,
+    last_instantiated_module: &mut Option<Stored<ModuleAddr>>,
     linker: &mut Linker,
 ) -> Result<(), WastError> {
     match exec {
@@ -669,7 +675,7 @@ fn execute<'a>(
                     .instance_export(module, invoke_info.name)
                     .map_err(WastError::WasmRuntimeError)
                     .and_then(|extern_val| match extern_val {
-                        ExternVal::Func(func) => Ok(func),
+                        StoredExternVal::Func(func) => Ok(func),
                         _ => Err(WastError::UnknownFunctionReferenced),
                     })
             }))
@@ -698,31 +704,30 @@ fn execute<'a>(
     }
 }
 
-pub fn arg_to_value(arg: WastArg) -> Value {
+pub fn arg_to_value(arg: WastArg) -> StoredValue {
     match arg {
         WastArg::Core(core_arg) => match core_arg {
-            WastArgCore::I32(val) => Value::I32(val as u32),
-            WastArgCore::I64(val) => Value::I64(val as u64),
-            WastArgCore::F32(val) => Value::F32(wasm::value::F32(f32::from_bits(val.bits))),
-            WastArgCore::F64(val) => Value::F64(wasm::value::F64(f64::from_bits(val.bits))),
-            WastArgCore::V128(val) => Value::V128(val.to_le_bytes()),
+            WastArgCore::I32(val) => StoredValue::I32(val as u32),
+            WastArgCore::I64(val) => StoredValue::I64(val as u64),
+            WastArgCore::F32(val) => StoredValue::F32(wasm::value::F32(f32::from_bits(val.bits))),
+            WastArgCore::F64(val) => StoredValue::F64(wasm::value::F64(f64::from_bits(val.bits))),
+            WastArgCore::V128(val) => StoredValue::V128(val.to_le_bytes()),
             WastArgCore::RefNull(rref) => match rref {
                 wast::core::HeapType::Concrete(_) => {
                     unreachable!("Null refs don't point to any specific reference")
                 }
                 wast::core::HeapType::Abstract { shared: _, ty } => {
-                    use wasm::value::*;
                     use wast::core::AbstractHeapType::*;
                     match ty {
-                        Func => Value::Ref(Ref::Null(RefType::FuncRef)),
-                        Extern => Value::Ref(Ref::Null(RefType::ExternRef)),
+                        Func => StoredValue::Ref(StoredRef::Null(RefType::FuncRef)),
+                        Extern => StoredValue::Ref(StoredRef::Null(RefType::ExternRef)),
                         _ => todo!("`GC` proposal"),
                     }
                 }
             },
-            WastArgCore::RefExtern(index) => wasm::value::Value::Ref(wasm::value::Ref::Extern(
-                wasm::value::ExternAddr(index as usize),
-            )),
+            WastArgCore::RefExtern(index) => {
+                StoredValue::Ref(StoredRef::Extern(wasm::value::ExternAddr(index as usize)))
+            }
             WastArgCore::RefHost(_) => {
                 todo!("`RefHost` value arguments")
             }
