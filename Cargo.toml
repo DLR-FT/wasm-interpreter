@@ -19,7 +19,7 @@ wat = "1.0.83"
 
 [package]
 name = "wasm-interpreter"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 rust-version = "1.76.0" # Keep this in sync with the requirements!
 description = """
