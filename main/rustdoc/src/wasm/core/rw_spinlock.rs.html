@@ -154,7 +154,7 @@
 <a href=#154 id=154 data-nosnippet>154</a><span class="kw">impl</span>&lt;T&gt; Deref <span class="kw">for </span>WriteLockGuard&lt;<span class="lifetime">'_</span>, T&gt; {
 <a href=#155 id=155 data-nosnippet>155</a>    <span class="kw">type </span>Target = T;
 <a href=#156 id=156 data-nosnippet>156</a>    <span class="kw">fn </span>deref(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>T {
-<a href=#157 id=157 data-nosnippet>157</a>        <span class="comment">// SAFETY: For as long as a `WriteLockGuard` exists, it can derefence to a shared reference
+<a href=#157 id=157 data-nosnippet>157</a>        <span class="comment">// SAFETY: For as long as a `WriteLockGuard` exists, it can dereference to a shared reference
 <a href=#158 id=158 data-nosnippet>158</a>        // to the inner data
 <a href=#159 id=159 data-nosnippet>159</a>        </span><span class="kw">unsafe </span>{ <span class="kw-2">&amp;*</span><span class="self">self</span>.lock.inner.get() }
 <a href=#160 id=160 data-nosnippet>160</a>    }
@@ -162,7 +162,7 @@
 <a href=#162 id=162 data-nosnippet>162</a>
 <a href=#163 id=163 data-nosnippet>163</a><span class="kw">impl</span>&lt;T&gt; DerefMut <span class="kw">for </span>WriteLockGuard&lt;<span class="lifetime">'_</span>, T&gt; {
 <a href=#164 id=164 data-nosnippet>164</a>    <span class="kw">fn </span>deref_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>T {
-<a href=#165 id=165 data-nosnippet>165</a>        <span class="comment">// SAFETY: For as long as a `WriteLockGuard` exists, it can derefence to a mutable
+<a href=#165 id=165 data-nosnippet>165</a>        <span class="comment">// SAFETY: For as long as a `WriteLockGuard` exists, it can dereference to a mutable
 <a href=#166 id=166 data-nosnippet>166</a>        // references to the inner data
 <a href=#167 id=167 data-nosnippet>167</a>        </span><span class="kw">unsafe </span>{ <span class="kw-2">&amp;mut *</span><span class="self">self</span>.lock.inner.get() }
 <a href=#168 id=168 data-nosnippet>168</a>    }
