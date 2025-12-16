@@ -154,7 +154,7 @@ pub struct WriteLockGuard<'a, T> {
 impl<T> Deref for WriteLockGuard<'_, T> {
     type Target = T;
     fn deref(&self) -> &T {
-        // SAFETY: For as long as a `WriteLockGuard` exists, it can derefence to a shared reference
+        // SAFETY: For as long as a `WriteLockGuard` exists, it can dereference to a shared reference
         // to the inner data
         unsafe { &*self.lock.inner.get() }
     }
@@ -162,7 +162,7 @@ impl<T> Deref for WriteLockGuard<'_, T> {
 
 impl<T> DerefMut for WriteLockGuard<'_, T> {
     fn deref_mut(&mut self) -> &mut T {
-        // SAFETY: For as long as a `WriteLockGuard` exists, it can derefence to a mutable
+        // SAFETY: For as long as a `WriteLockGuard` exists, it can dereference to a mutable
         // references to the inner data
         unsafe { &mut *self.lock.inner.get() }
     }
