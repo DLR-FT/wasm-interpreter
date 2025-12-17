@@ -811,10 +811,26 @@ impl AbstractStored for StoredExternVal {
 
     unsafe fn from_bare(bare_value: Self::BareTy, id: StoreId) -> Self {
         match bare_value {
-            ExternVal::Func(func_addr) => Self::Func(Stored::from_bare(func_addr, id)),
-            ExternVal::Table(table_addr) => Self::Table(Stored::from_bare(table_addr, id)),
-            ExternVal::Mem(mem_addr) => Self::Mem(Stored::from_bare(mem_addr, id)),
-            ExternVal::Global(global_addr) => Self::Global(Stored::from_bare(global_addr, id)),
+            ExternVal::Func(func_addr) => {
+                // Safety: Upheld by the caller
+                let stored_func_addr = unsafe { Stored::from_bare(func_addr, id) };
+                Self::Func(stored_func_addr)
+            }
+            ExternVal::Table(table_addr) => {
+                // Safety: Upheld by the caller
+                let stored_table_addr = unsafe { Stored::from_bare(table_addr, id) };
+                Self::Table(stored_table_addr)
+            }
+            ExternVal::Mem(mem_addr) => {
+                // Safety: Upheld by the caller
+                let stored_mem_addr = unsafe { Stored::from_bare(mem_addr, id) };
+                Self::Mem(stored_mem_addr)
+            }
+            ExternVal::Global(global_addr) => {
+                // Safety: Upheld by the caller
+                let stored_global_addr = unsafe { Stored::from_bare(global_addr, id) };
+                Self::Global(stored_global_addr)
+            }
         }
     }
 
@@ -894,14 +910,16 @@ impl AbstractStored for StoredRunState {
                 values,
                 maybe_remaining_fuel,
             } => Self::Finished {
-                values: wrap_vec_elements(values, id),
+                // Safety: Upheld by the caller
+                values: unsafe { wrap_vec_elements(values, id) },
                 maybe_remaining_fuel,
             },
             RunState::Resumable {
                 resumable_ref,
                 required_fuel,
             } => Self::Resumable {
-                resumable_ref: Stored::from_bare(resumable_ref, id),
+                // Safety: Upheld by the caller
+                resumable_ref: unsafe { Stored::from_bare(resumable_ref, id) },
                 required_fuel,
             },
         }
@@ -927,7 +945,8 @@ impl AbstractStored for StoredInstantiationOutcome {
 
     unsafe fn from_bare(bare_value: Self::BareTy, id: StoreId) -> Self {
         Self {
-            module_addr: Stored::from_bare(bare_value.module_addr, id),
+            // Safety: Upheld by the caller
+            module_addr: unsafe { Stored::from_bare(bare_value.module_addr, id) },
             maybe_remaining_fuel: bare_value.maybe_remaining_fuel,
         }
     }
