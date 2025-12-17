@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["host_function_wrapper"],"mod":["assert_validated","config","const_interpreter_loop","error","interop","interpreter_loop","linker","little_endian","resumable","store","value","value_stack"]};
+window.SIDEBAR_ITEMS = {"fn":["host_function_wrapper"],"mod":["assert_validated","checked","config","const_interpreter_loop","error","interop","interpreter_loop","linker","little_endian","resumable","store","value","value_stack"]};

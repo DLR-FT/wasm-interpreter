@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["StoredExternVal","StoredRunState"],"fn":["try_unwrap_values","wrap_vec_elements"],"mod":["interop","value"],"struct":["Stored","StoredInstantiationOutcome"],"trait":["AbstractStored"]};
