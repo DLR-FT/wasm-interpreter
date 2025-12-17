@@ -6,7 +6,7 @@ use alloc::vec::Vec;
 use core::fmt::{Debug, Formatter};
 use global::GlobalType;
 
-use crate::core::indices::TypeIdx;
+use crate::core::indices::{Idx, IdxVec, TypeIdx};
 use crate::core::reader::WasmReader;
 use crate::execution::assert_validated::UnwrapValidatedExt;
 use crate::ValidationError;
@@ -158,11 +158,14 @@ impl FuncType {
 pub enum BlockType {
     Empty,
     Returns(ValType),
-    Type(u32),
+    Type(TypeIdx),
 }
 
 impl BlockType {
-    pub fn read(wasm: &mut WasmReader) -> Result<Self, ValidationError> {
+    pub fn read_and_validate(
+        wasm: &mut WasmReader,
+        c_types: &IdxVec<TypeIdx, FuncType>,
+    ) -> Result<Self, ValidationError> {
         if wasm.peek_u8()? as i8 == 0x40 {
             // Empty block type
             let _ = wasm.read_u8().unwrap_validated();
@@ -172,13 +175,50 @@ impl BlockType {
             Ok(BlockType::Returns(val_ty))
         } else {
             // An index to a function type
-            wasm.read_var_i33_as_u32().map(BlockType::Type)
+            let index = wasm.read_var_i33_as_u32()?;
+            TypeIdx::validate(index, c_types).map(BlockType::Type)
+        }
+    }
+
+    /// # Safety
+    ///
+    /// The caller must ensure that there is a valid block type to be read in
+    /// the given [`WasmReader`].
+    pub unsafe fn read_unchecked(wasm: &mut WasmReader) -> Self {
+        if wasm.peek_u8().unwrap() as i8 == 0x40 {
+            // Empty block type
+            let _ = wasm.read_u8().unwrap();
+            BlockType::Empty
+        } else if let Ok(val_ty) = wasm.handle_transaction(|wasm| ValType::read(wasm)) {
+            // No parameters and given valtype as the result
+            BlockType::Returns(val_ty)
+        } else {
+            // An index to a function type
+            let index = wasm.read_var_i33_as_u32().unwrap();
+            // SAFETY: The caller guarantees a valid block type to be present in
+            // the `WasmReader`. Because the block type was not the empty type
+            // or a simple valtype, there must be a valid type index then.
+            BlockType::Type(unsafe { TypeIdx::new_unchecked(index) })
         }
     }
 }
 
 impl BlockType {
-    pub fn as_func_type(&self, func_types: &[FuncType]) -> Result<FuncType, ValidationError> {
+    /// Converts this block type to a specific [`FuncType`].
+    ///
+    /// A vector of function types is required, in case the current block type
+    /// stores a type index.
+    ///
+    /// # Safety
+    ///
+    /// The function types vector must be the same one used to validate this
+    /// block type through [`BlockType::read_and_validate`].
+    // TODO maybe make this function return a `Cow<'a, FuncType>`. This could
+    // prevent one allocation per call.
+    pub unsafe fn as_func_type(
+        &self,
+        func_types: &IdxVec<TypeIdx, FuncType>,
+    ) -> Result<FuncType, ValidationError> {
         match self {
             BlockType::Empty => Ok(FuncType {
                 params: ResultType {
@@ -198,10 +238,9 @@ impl BlockType {
             }),
             BlockType::Type(type_idx) => {
                 let type_idx = *type_idx as TypeIdx;
-                func_types
-                    .get(type_idx)
-                    .cloned()
-                    .ok_or(ValidationError::InvalidTypeIdx(type_idx))
+                // Safety: Upheld by the caller
+                let func_type = unsafe { func_types.get(type_idx) };
+                Ok(func_type.clone())
             }
         }
     }

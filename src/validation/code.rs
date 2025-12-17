@@ -3,7 +3,7 @@ use alloc::vec::Vec;
 use core::iter;
 
 use crate::core::indices::{
-    DataIdx, ElemIdx, FuncIdx, GlobalIdx, LabelIdx, LocalIdx, MemIdx, TableIdx, TypeIdx,
+    DataIdx, ElemIdx, FuncIdx, GlobalIdx, IdxVec, LabelIdx, LocalIdx, MemIdx, TableIdx, TypeIdx,
 };
 use crate::core::reader::section_header::{SectionHeader, SectionTy};
 use crate::core::reader::span::Span;
@@ -16,12 +16,16 @@ use crate::core::sidetable::{Sidetable, SidetableEntry};
 use crate::validation_stack::{LabelInfo, ValidationStack};
 use crate::{RefType, ValidationError};
 
+/// # Safety
+///
+/// The caller must ensure that all [`TypeIdx`] objects passed to this function
+/// belong to the [`IdxVec<TypeIdx, FuncType>`] vector that is also passed.
 #[allow(clippy::too_many_arguments)]
-pub fn validate_code_section(
+pub unsafe fn validate_code_section(
     wasm: &mut WasmReader,
     section_header: SectionHeader,
-    fn_types: &[FuncType],
-    type_idx_of_fn: &[usize],
+    fn_types: &IdxVec<TypeIdx, FuncType>,
+    type_idx_of_fn: &[TypeIdx],
     num_imported_funcs: usize,
     globals: &[Global],
     memories: &[MemType],
@@ -39,7 +43,10 @@ pub fn validate_code_section(
         let ty_idx = *type_idx_of_fn
             .get(idx + num_imported_funcs)
             .ok_or(ValidationError::FunctionAndCodeSectionsHaveDifferentLengths)?;
-        let func_ty = fn_types[ty_idx].clone();
+
+        // SAFETY: The caller guarantees that all all `TypeIdx` objects,
+        // including `ty_idx`, comes from the `fn_types` vector.
+        let func_ty: FuncType = unsafe { fn_types.get(ty_idx).clone() };
 
         let func_size = wasm.read_var_u32()?;
         let func_block = wasm.make_span(func_size as usize)?;
@@ -54,20 +61,24 @@ pub fn validate_code_section(
         let mut stack = ValidationStack::new_for_func(func_ty);
         let stp = sidetable.len();
 
-        read_instructions(
-            wasm,
-            &mut stack,
-            sidetable,
-            &locals,
-            globals,
-            fn_types,
-            type_idx_of_fn,
-            memories,
-            data_count,
-            tables,
-            elements,
-            validation_context_refs,
-        )?;
+        // SAFETY: The caller ensures equal safety requirements and no new
+        // `TypeIdx` objects were created.
+        unsafe {
+            read_instructions(
+                wasm,
+                &mut stack,
+                sidetable,
+                &locals,
+                globals,
+                fn_types,
+                type_idx_of_fn,
+                memories,
+                data_count,
+                tables,
+                elements,
+                validation_context_refs,
+            )
+        }?;
 
         // Check if there were unread trailing instructions after the last END
         if previous_pc + func_size as usize != wasm.pc {
@@ -185,15 +196,19 @@ fn validate_branch_and_generate_sidetable_entry(
     Ok(())
 }
 
+/// # Safety
+///
+/// The caller must ensure that all [`TypeIdx`] objects passed to this function
+/// belong to the [`IdxVec<TypeIdx, FuncType>`] vector that is also passed.
 #[allow(clippy::too_many_arguments)]
-fn read_instructions(
+unsafe fn read_instructions(
     wasm: &mut WasmReader,
     stack: &mut ValidationStack,
     sidetable: &mut Sidetable,
     locals: &[ValType],
     globals: &[Global],
-    fn_types: &[FuncType],
-    type_idx_of_fn: &[usize],
+    fn_types: &IdxVec<TypeIdx, FuncType>,
+    type_idx_of_fn: &[TypeIdx],
     memories: &[MemType],
     data_count: &Option<u32>,
     tables: &[TableType],
@@ -218,7 +233,12 @@ fn read_instructions(
             NOP => {}
             // block: [] -> [t*2]
             BLOCK => {
-                let block_ty = BlockType::read(wasm)?.as_func_type(fn_types)?;
+                let block_ty = {
+                    let block_ty = BlockType::read_and_validate(wasm, fn_types)?;
+                    // SAFETY: The block type was just validated using the same
+                    // function types.
+                    unsafe { block_ty.as_func_type(fn_types) }?
+                };
                 let label_info = LabelInfo::Block {
                     stps_to_backpatch: Vec::new(),
                 };
@@ -228,7 +248,12 @@ fn read_instructions(
                 stack.assert_push_ctrl(label_info, block_ty, true)?;
             }
             LOOP => {
-                let block_ty = BlockType::read(wasm)?.as_func_type(fn_types)?;
+                let block_ty = {
+                    let block_ty = BlockType::read_and_validate(wasm, fn_types)?;
+                    // SAFETY: The block type was just validated using the same
+                    // function types.
+                    unsafe { block_ty.as_func_type(fn_types) }?
+                };
                 let label_info = LabelInfo::Loop {
                     ip: wasm.pc,
                     stp: sidetable.len(),
@@ -239,7 +264,12 @@ fn read_instructions(
                 stack.assert_push_ctrl(label_info, block_ty, true)?;
             }
             IF => {
-                let block_ty = BlockType::read(wasm)?.as_func_type(fn_types)?;
+                let block_ty = {
+                    let block_ty = BlockType::read_and_validate(wasm, fn_types)?;
+                    // SAFETY: The block type was just validated using the same
+                    // function types.
+                    unsafe { block_ty.as_func_type(fn_types) }?
+                };
 
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
 
@@ -430,7 +460,8 @@ fn read_instructions(
                 let type_idx = *type_idx_of_fn
                     .get(func_idx)
                     .ok_or(ValidationError::InvalidFuncIdx(func_idx))?;
-                let func_ty = &fn_types[type_idx];
+                // Safety: Upheld by the caller
+                let func_ty = unsafe { fn_types.get(type_idx) };
 
                 for typ in func_ty.params.valtypes.iter().rev() {
                     stack.assert_pop_val_type(*typ)?;
@@ -441,7 +472,7 @@ fn read_instructions(
                 }
             }
             CALL_INDIRECT => {
-                let type_idx = wasm.read_var_u32()? as TypeIdx;
+                let type_idx = TypeIdx::read_and_validate(wasm, fn_types)?;
 
                 let table_idx = wasm.read_var_u32()? as TableIdx;
 
@@ -453,9 +484,8 @@ fn read_instructions(
                     return Err(ValidationError::IndirectCallToNonFuncRefTable(tab.et));
                 }
 
-                let func_ty = fn_types
-                    .get(type_idx)
-                    .ok_or(ValidationError::InvalidTypeIdx(type_idx))?;
+                // Safety: Upheld by the caller
+                let func_ty = unsafe { fn_types.get(type_idx) };
 
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
 
