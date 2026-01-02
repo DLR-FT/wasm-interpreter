@@ -183,7 +183,9 @@ fn memory_init_test_4() {
     let results = Vec::from([
         0, 0, 3, 1, 4, 1, 0, 2, 7, 1, 8, 0, 7, 0, 7, 5, 2, 7, 0, 9, 0, 7, 0, 8, 8, 0, 0, 0, 0, 0,
     ]);
+    println!("{:?}", i.store.memories.first().unwrap().mem);
     for j in 0..offsets.len() {
+        println!("{j}");
         assert_result!(i, load8_u, offsets[j], results[j]);
     }
 }
