@@ -25,5 +25,5 @@
     edition = (lib.importTOML ./Cargo.toml).package.edition;
   };
   programs.taplo.enable = true; # formats TOML files
-  programs.typstfmt.enable = true;
+  programs.typstyle.enable = true;
 }
