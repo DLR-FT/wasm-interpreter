@@ -2,7 +2,7 @@
   description = "a minimal WASM interpreter";
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-25.05";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-25.11";
     typix = {
       url = "github:loqusion/typix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -64,7 +64,7 @@
             treefmtEval = treefmt-nix.lib.evalModule pkgs ./treefmt.nix;
 
             # rust target name of the `system`
-            rust-target = pkgs.pkgsStatic.targetPlatform.rust.rustcTarget;
+            rust-target = pkgs.pkgsStatic.stdenv.targetPlatform.rust.rustcTarget;
 
             # parsed contents of Cargo.toml
             cargoToml = lib.trivial.importTOML ./Cargo.toml;
