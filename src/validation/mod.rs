@@ -373,8 +373,8 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
         handle_section(&mut wasm, &mut header, SectionTy::DataCount, |wasm, _| {
             wasm.read_var_u32()
         })?;
-    if data_count.is_some() {
-        trace!("data count: {}", data_count.unwrap());
+    if let Some(dc) = data_count {
+        trace!("data count: {dc}");
     }
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
