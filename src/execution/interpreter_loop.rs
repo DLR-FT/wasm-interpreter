@@ -5091,9 +5091,7 @@ pub(super) fn run<T: Config>(
                         let data: [u8; 16] = stack.pop_value().try_into().unwrap_validated();
                         let lanes: [F32; 4] = to_lanes(data);
                         let result = lanes.map(|lane| {
-                            if lane.is_nan() {
-                                0
-                            } else if lane.is_negative_infinity() {
+                            if lane.is_nan() || lane.is_negative_infinity() {
                                 u32::MIN
                             } else if lane.is_infinity() {
                                 u32::MAX
@@ -5131,9 +5129,7 @@ pub(super) fn run<T: Config>(
                         let data: [u8; 16] = stack.pop_value().try_into().unwrap_validated();
                         let lanes: [F64; 2] = to_lanes(data);
                         let result = lanes.map(|lane| {
-                            if lane.is_nan() {
-                                0
-                            } else if lane.is_negative_infinity() {
+                            if lane.is_nan() || lane.is_negative_infinity() {
                                 u32::MIN
                             } else if lane.is_infinity() {
                                 u32::MAX
