@@ -5,7 +5,8 @@
 #show: setup_template.with(
   title: [WASM Interpreter for Safety -- White Paper],
   /* TODO make this multi-author capable */
-  author: "Wanja Zaeske", keywords: ("WebAssembly", "Safety-Critical"),
+  author: "Wanja Zaeske",
+  keywords: ("WebAssembly", "Safety-Critical"),
   /* TODO set affiliation per author (or for multiple authors at once) */
   affiliation: [
     Department Safety Critical Systems & Systems Engineering \
@@ -14,11 +15,17 @@
   ],
 )
 
-#init-acronyms(
-  (
-    "AOT": ("Ahead-of-time"), "DAL": ("Design Assurance Level"), "DARPA": ("Defense Advanced Research Projects Agency"), "IR": ("Intermediate Representation"), "JIT": ("Just-in-time"), "SBOM": ("Software Bill of Materials"), "TQL": ("Tool Qualification Level"), "TRACTOR": ("Translating All C to Rust"), "WASM": ("WebAssembly"),
-  ),
-)
+#init-acronyms((
+  "AOT": "Ahead-of-time",
+  "DAL": "Design Assurance Level",
+  "DARPA": "Defense Advanced Research Projects Agency",
+  "IR": "Intermediate Representation",
+  "JIT": "Just-in-time",
+  "SBOM": "Software Bill of Materials",
+  "TQL": "Tool Qualification Level",
+  "TRACTOR": "Translating All C to Rust",
+  "WASM": "WebAssembly",
+))
 
 = Introduction
 This white paper provides an overview over our WebAssembly interpreter
