@@ -1,4 +1,7 @@
-use core::{cell::UnsafeCell, iter, ptr};
+use core::{
+    iter,
+    sync::atomic::{AtomicU8, Ordering},
+};
 
 use alloc::vec::Vec;
 
@@ -14,17 +17,25 @@ use crate::{
 /// Implements the base for the instructions described in
 /// <https://webassembly.github.io/spec/core/exec/instructions.html#memory-instructions>.
 ///
-/// This linear memory implementation internally relies on a `Vec<UnsafeCell<u8>>`. Thus, the atomic
-/// unit of information for it is a byte (`u8`). All access to the linear memory internally occurs
-/// through pointers, avoiding the creation of shared and mut refs to the internal data completely.
-/// This avoids undefined behavior, except for the race-condition inherent to concurrent writes.
-/// Because of this, the [`LinearMemory::store`] function does not require `&mut self` -- `&self`
-/// suffices.
+/// This linear memory implementation internally relies on a [`Vec<AtomicU8>`]. Thus, the atomic unit
+/// of information for it is a byte (`u8`). All access to the linear memory internally occur through
+/// [`AtomicU8::load`] and [`AtomicU8::store`], avoiding the creation of shared and `mut ref`s to
+/// the internal data completely. This avoids undefined behavior. Racy multibyte writes to the same
+/// data however may tear (e.g. for any number of concurrent writes to a given byte, only one is
+/// effectively written). Because of this, the [`LinearMemory::store`] function does not require
+/// `&mut self` -- `&self` suffices.
+///
+/// The implementation of atomic stores to multibyte values requires a global write lock. Rust's
+/// memory model considers partially overlapping atomic operations involving a write as undefined
+/// behavior. As there is no way to predict if an atomic multibyte store operation might overlap
+/// with another store or load operation, only a lock at runtime can avoid this cause of undefined
+/// behavior.
+// TODO does it pay of to have more fine-granular locking for multibyte stores than a single global write lock?
 ///
 /// # Notes on overflowing
 ///
 /// All operations that rely on accessing `n` bytes starting at `index` in the linear memory have to
-/// perform bounds checking. Thus they always have to ensure that `n + index < linear_memory.len()`
+/// perform bounds checking. Thus, they always have to ensure that `n + index < linear_memory.len()`
 /// holds true (e.g. `n + index - 1` must be a valid index into `linear_memory`). However,
 /// writing that check as is bears the danger of an overflow, assuming that `n`, `index` and
 /// `linear_memory.len()` are the same given integer type, `n + index` can overflow, resulting in
@@ -44,27 +55,29 @@ use crate::{
 /// overflow or underflow, provided that `n`, `index` and `linear_memory.len()` are of the same
 /// integer type.
 ///
+/// In addition, the Wasm specification requires a certain order of checks. For example, when a
+/// `copy` instruction is emitted with a `count` of zero (i.e. no bytes to be copied), an out of
+/// bounds index still has to cause a trap. To control the order of checks manually, use of slice
+/// indexing is avoided altogether.
+///
 /// # Notes on locking
 ///
 /// The internal data vector of the [`LinearMemory`] is wrapped in a [`RwSpinLock`]. Despite the
-/// name, writes to the linear memory do not require an acquisition of a write lock. Writes are
-/// implemented through a shared ref to the internal vector, with an `UnsafeCell` to achieve
-/// interior mutability.
+/// name, writes to the linear memory do not require an acquisition of a write lock. Non-atomic
+/// or atomic single-byte writes are implemented through a shared ref to the internal vector, with
+/// [`AtomicU8`] to achieve interior mutability without undefined behavior.
 ///
-/// However, linear memory can grow. As the linear memory is implemented via a [`Vec`], a grow can
-/// result in the vector's internal data buffer to be copied over to a bigger, fresh allocation.
-/// The old buffer is then freed. Combined with concurrent mutable access, this can cause
-/// use-after-free. To avoid this, a grow operation of the linear memory acquires a write lock,
-/// blocking all read/write to the linear memory inbetween.
+/// However, linear memory can grow. As the linear memory is implemented via a [`Vec`], a `grow`
+/// can result in the vector's internal data buffer to be copied over to a bigger, fresh allocation.
+/// The old buffer is then freed. Combined with concurrent access, this can cause use-after-free.
+/// To avoid this, a `grow` operation of the linear memory acquires a write lock, blocking all
+/// read/write to the linear memory in between.
 ///
 /// # Unsafe Note
 ///
-/// Raw pointer access it required, because concurent mutation of the linear memory might happen
-/// (consider the threading proposal for WASM, where mutliple WASM threads access the same linear
-/// memory at the same time). The inherent race condition results in UB w/r/t the state of the `u8`s
-/// in the inner data. However, this is tolerable, e.g. avoiding race conditions on the state of the
-/// linear memory can not be the task of the interpreter, but has to be fulfilled by the interpreted
-/// bytecode itself.
+/// As the manual index checking assures all indices to be valid, there is no need to re-check.
+/// Therefore [`slice::get_unchecked`] is used access the internal [`AtomicU8`] in the vector
+/// backing a [`LinearMemory`], implicating the use of `unsafe`.
 ///
 /// To gain some confidence in the correctness of the unsafe code in this module, run `miri`:
 ///
@@ -74,7 +87,7 @@ use crate::{
 /// ```
 // TODO if a memmap like operation is available, the linear memory implementation can be optimized brutally. Out-of-bound access can be mapped to userspace handled page-faults, e.g. the MMU takes over that responsibility of catching out of bounds. Grow can happen without copying of data, by mapping new pages consecutively after the current final page of the linear memory.
 pub struct LinearMemory<const PAGE_SIZE: usize = { crate::Limits::MEM_PAGE_SIZE as usize }> {
-    inner_data: RwSpinLock<Vec<UnsafeCell<u8>>>,
+    inner_data: RwSpinLock<Vec<AtomicU8>>,
 }
 
 /// Type to express the page count
@@ -98,7 +111,7 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
     pub fn new_with_initial_pages(pages: PageCountTy) -> Self {
         let size_bytes = Self::PAGE_SIZE * pages as usize;
         let mut data = Vec::with_capacity(size_bytes);
-        data.resize_with(size_bytes, || UnsafeCell::new(0));
+        data.resize_with(size_bytes, || AtomicU8::new(0));
 
         Self {
             inner_data: RwSpinLock::new(data),
@@ -110,7 +123,7 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
         let mut lock_guard = self.inner_data.write();
         let prior_length_bytes = lock_guard.len();
         let new_length_bytes = prior_length_bytes + Self::PAGE_SIZE * pages_to_add as usize;
-        lock_guard.resize_with(new_length_bytes, || UnsafeCell::new(0));
+        lock_guard.resize_with(new_length_bytes, || AtomicU8::new(0));
     }
 
     /// Get the number of pages currently allocated to this [`LinearMemory`]
@@ -158,24 +171,20 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
             return Err(TrapError::MemoryOrDataAccessOutOfBounds.into());
         }
 
-        /* gather pointers */
-        let src_ptr = bytes.as_ptr();
-        let dst_ptr = UnsafeCell::raw_get(lock_guard.as_ptr());
-
-        /* write `value` to this `LinearMemory` */
-
-        // SAFETY:
-        // - nonoverlapping is guaranteed, because `src_ptr` is a pointer to a stack allocated
-        //   array, while `dst_ptr` points to a heap allocated `Vec`
-        // - the first if statement in this function guarantees that a `T` can fit into
-        //   `LinearMemory` behind the `dst_ptr`
-        // - the second if statement in this function guarantees that even with the offset
-        //   `index`, writing all of `src_ptr`'s bytes does not extend beyond the `dst_ptr`'s last
-        //   `UnsafeCell<u8>`
-        // - the use of `UnsafeCell` avoids any `&` or `&mut` to ever be created on any of the `u8`s
-        //   contained in the `UnsafeCell`s, so no UB is created through the existence of unsound
-        //   references
-        unsafe { ptr::copy_nonoverlapping(src_ptr, dst_ptr.add(index), bytes.len()) };
+        /* do the store */
+        for (i, byte) in bytes.into_iter().enumerate() {
+            // SAFETY:
+            // The safety of this `unsafe` block depends on the index being valid, which it is
+            // because:
+            //
+            // - the first if statement in this function guarantees that a `T` can fit into the
+            //   `LinearMemory` `&self`
+            // - the second if statement in this function guarantees that even with the offset
+            //   `index`, writing all of `value`'s bytes does not extend beyond the last byte in
+            //   the `LinearMemory` `&self`
+            let dst = unsafe { lock_guard.get_unchecked(i + index) };
+            dst.store(byte, Ordering::Relaxed);
+        }
 
         Ok(())
     }
@@ -211,22 +220,20 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
 
         let mut bytes = [0; N];
 
-        /* gather pointers */
-        let src_ptr = UnsafeCell::raw_get(lock_guard.as_ptr());
-        let dst_ptr = bytes.as_mut_ptr();
-
-        /* read `value` from this `LinearMemory` */
-        // SAFETY:
-        // - nonoverlapping is guaranteed, because `dst_ptr` is a pointer to a stack allocated
-        //   array, while the source is heap allocated Vec
-        // - the first if statement in this function guarantees that a `T` can fit into the linear
-        //   memory behind the `src_ptr`
-        // - the second if statement in this function guarantees that even with the offset `index`,
-        //   reading all of `T`s bytes does not extend beyond the `src_ptrs`'s last `UnsafeCell<u8>`
-        // - the use of `UnsafeCell` avoids any `&` or `&mut` to ever be created on any of the `u8`s
-        //   contained in the `UnsafeCell`s, so no UB is created through the existence of unsound
-        //   references
-        unsafe { ptr::copy_nonoverlapping(src_ptr.add(index), dst_ptr, bytes.len()) };
+        /* do the load */
+        for (i, byte) in bytes.iter_mut().enumerate() {
+            // SAFETY:
+            // The safety of this `unsafe` block depends on the index being valid, which it is
+            // because:
+            //
+            // - the first if statement in this function guarantees that a `T` can fit into the
+            //   `LinearMemory` `&self`
+            // - the second if statement in this function guarantees that even with the offset
+            //   `index`, reading all `N` bytes does not extend beyond the last byte in
+            //   the `LinearMemory` `&self`
+            let src = unsafe { lock_guard.get_unchecked(i + index) };
+            *byte = src.load(Ordering::Relaxed);
+        }
 
         Ok(bytes)
     }
@@ -259,23 +266,21 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
             return Ok(());
         }
 
-        /* gather pointer */
-        let dst_ptr = UnsafeCell::raw_get(lock_guard.as_ptr());
-
-        /* write the `data_byte` to this `LinearMemory` */
-
-        // SAFETY:
-        // - the first if statement of this function guarantees that count fits into this
-        //   `LinearMemory`
-        // - the second if statement of this function guarantees that even with the offset `index`,
-        //   `count` many bytes can be written to this `LinearMemory` without extending beyond its
-        //   last `UnsafeCell<u8>`
-        // - the use of `UnsafeCell` avoids any `&` or `&mut` to ever be created on any of the `u8`s
-        //   contained in the `UnsafeCell`s, so no UB is created through the existence of unsound
-        //   references
-
+        /* do the fill */
         // Specification step 14-21.
-        unsafe { dst_ptr.add(index).write_bytes(data_byte, count) };
+        for i in index..(index + count) {
+            // SAFETY:
+            // The safety of this `unsafe` block depends on the index being valid, which it is
+            // because:
+            //
+            // - the first if statement in this function guarantees that `count` elements can fit
+            //   into the `LinearMemory` `&self`
+            // - the second if statement in this function guarantees that even with the offset
+            //   `index`, writing all `count`'s bytes does not extend beyond the last byte in
+            //   the `LinearMemory` `&self`
+            let lin_mem_byte = unsafe { lock_guard.get_unchecked(i) };
+            lin_mem_byte.store(data_byte, Ordering::Relaxed);
+        }
 
         Ok(())
     }
@@ -333,37 +338,47 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
             return Ok(());
         }
 
-        /* gather pointers */
-        let src_ptr = UnsafeCell::raw_get(lock_guard_other.as_ptr());
-        let dst_ptr = UnsafeCell::raw_get(lock_guard_self.as_ptr());
+        /* do the copy */
+        let copy_one_byte = move |i| {
+            // SAFETY:
+            // The safety of this `unsafe` block depends on the index being valid, which it is
+            // because:
+            //
+            // - the first if statement in this function guarantees that `count` elements can fit
+            //   into the `LinearMemory` `&source_mem`
+            // - the second if statement in this function guarantees that even with the offset
+            //   `source_index`, writing all `count`'s bytes does not extend beyond the last byte in
+            let src_byte: &AtomicU8 = unsafe { lock_guard_other.get_unchecked(i + source_index) };
 
-        /* write from `source_mem` to `self` */
+            // SAFETY:
+            // The safety of this `unsafe` block depends on the index being valid, which it is
+            // because:
+            //
+            // - the third if statement in this function guarantees that `count` elements can fit
+            //   into the `LinearMemory` `&self`
+            // - the fourth if statement in this function guarantees that even with the offset
+            //   `destination_index`, writing all `count`'s bytes does not extend beyond the last byte in
+            //   the `LinearMemory` `&self`
+            let dst_byte: &AtomicU8 =
+                unsafe { lock_guard_self.get_unchecked(i + destination_index) };
 
-        // SAFETY:
-        // - the first two if statements above guarantee that starting from `source_index`,
-        //   there are at least `count` further `UnsafeCell<u8>`s in the other `LinearMemory`
-        // - the third and fourth if statement above guarantee that starting from
-        //   `destination_index`, there are at least `count` further `UnsafeCell<u8>`s in this
-        //   `LinearMemory`
-        // - the use of `UnsafeCell` avoids any `&` or `&mut` to ever be created on any of the `u8`s
-        //   contained in the `UnsafeCell`s, so no UB is created through the existence of unsound
-        //   references
-        // - as per the other statements above, both `*_ptr` are valid, and have at least `count`
-        //   further values after them in their respective `LinearMemory`s
-        // - the use of `UnsafeCell` avoids any `&` or `&mut` to ever be created on any of the `u8`s
-        //   contained in the `UnsafeCell`s, so no UB is created through the existence of unsound
-        //   references
+            let byte = src_byte.load(Ordering::Relaxed);
+            dst_byte.store(byte, Ordering::Relaxed);
+        };
 
-        // Specification step 14-15.
-        // TODO investigate if it is worth to use a conditional `copy_from_nonoverlapping`
-        // if the non-overlapping can be confirmed (and the count is bigger than a certain
-        // threshold).
-        unsafe {
-            ptr::copy(
-                src_ptr.add(source_index),
-                dst_ptr.add(destination_index),
-                count,
-            )
+        // TODO investigate if it is worth to only do reverse order copy if there is actual overlap
+
+        // Specification step 14.
+        if destination_index <= source_index {
+            // if source index is bigger than or equal to destination index, forward processing copy
+            // handles overlaps just fine
+            (0..count).for_each(copy_one_byte)
+        }
+        // Specification step 15.
+        else {
+            // if source index is smaller than destination index, backward processing is required to
+            // avoid data loss on overlaps
+            (0..count).rev().for_each(copy_one_byte)
         }
 
         Ok(())
@@ -416,28 +431,30 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
             return Ok(());
         }
 
-        /* copy the data to this `LinearMemory` */
-
+        /* do the init */
         // Specification step 18-27.
         for i in 0..count {
-            // SAFETY: this is sound, as the two if statements above guarantee that starting from
-            // `source_index`, there are at least `count` further `u8`s in `source_data`
-            let src_ptr = unsafe { source_data.get_unchecked(source_index + i) };
-
-            // SAFETY: this is sound, as the two if statements above guarantee that starting from
-            // `destination_index`, there are at least `count` further `UnsafeCell<u8>`s in this
-            // `LinearMemory`
-            let dst_ptr = unsafe { lock_guard_self.get_unchecked(destination_index + i) }.get();
+            // SAFETY:
+            // The safety of this `unsafe` block depends on the index being valid, which it is
+            // because:
+            //
+            // - the first if statement in this function guarantees that `count` elements can fit
+            //   into the `LinearMemory` `&source_mem`
+            // - the second if statement in this function guarantees that even with the offset
+            //   `source_index`, writing all `count`'s bytes does not extend beyond the last byte in
+            let src_byte = unsafe { source_data.get_unchecked(i + source_index) };
 
             // SAFETY:
-            // - as per the other SAFETY statements in this function, both `*_ptr` are valid, and
-            //   have at least `count` further values after them in them respectively
-            // - the use of `UnsafeCell` avoids any `&` or `&mut` to ever be created on any of the
-            //   `u8`s contained in the `UnsafeCell`s, so no UB is created through the existence of
-            //   unsound references
-            unsafe {
-                ptr::copy(src_ptr, dst_ptr, 1);
-            }
+            // The safety of this `unsafe` block depends on the index being valid, which it is
+            // because:
+            //
+            // - the third if statement in this function guarantees that `count` elements can fit
+            //   into the `LinearMemory` `&self`
+            // - the fourth if statement in this function guarantees that even with the offset
+            //   `destination_index`, writing all `count`'s bytes does not extend beyond the last byte in
+            //   the `LinearMemory` `&self`
+            let dst_byte = unsafe { lock_guard_self.get_unchecked(i + destination_index) };
+            dst_byte.store(*src_byte, Ordering::Relaxed);
         }
 
         Ok(())
@@ -448,7 +465,7 @@ impl<const PAGE_SIZE: usize> core::fmt::Debug for LinearMemory<PAGE_SIZE> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         /// A helper struct for formatting a [`Vec<UnsafeCell<u8>>`] which is guarded by a [`ReadLockGuard`].
         /// This formatter is able to detect and format byte repetitions in a compact way.
-        struct RepetitionDetectingMemoryWriter<'a>(ReadLockGuard<'a, Vec<UnsafeCell<u8>>>);
+        struct RepetitionDetectingMemoryWriter<'a>(ReadLockGuard<'a, Vec<AtomicU8>>);
         impl core::fmt::Debug for RepetitionDetectingMemoryWriter<'_> {
             fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
                 /// The number of repetitions required for successive elements to be grouped
@@ -456,11 +473,7 @@ impl<const PAGE_SIZE: usize> core::fmt::Debug for LinearMemory<PAGE_SIZE> {
                 const MIN_REPETITIONS_FOR_GROUP: usize = 8;
 
                 // First we create an iterator over all bytes
-                let mut bytes = self.0.iter().map(|x| {
-                    // SAFETY: The [`ReadLockGuard`] stored in `self` prevents a resize/realloc of
-                    // its data, so access to the value inside each [`UnsafeCell`] is safe.
-                    unsafe { *x.get() }
-                });
+                let mut bytes = self.0.iter().map(|x| x.load(Ordering::Relaxed));
 
                 // Then we iterate over all bytes and deduplicate repetitions. This produces an
                 // iterator of pairs, consisting of the number of repetitions and the repeated byte
