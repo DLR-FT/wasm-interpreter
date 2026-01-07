@@ -1,0 +1,3 @@
+<div class="document">
+<p>Logging is an essential tool to make a system observable, and aid in debugging. Bespoke crate is widely used in the Rust ecosystem and can be attached to any (or no) logging backend. Using conditional compilation, all of the <tt class="docutils literal">log</tt> crate's footprint in the WASM interpreter (foremost the <tt class="docutils literal">debug</tt>, <tt class="docutils literal">error</tt>, <tt class="docutils literal">info</tt>, <tt class="docutils literal">trace</tt> and <tt class="docutils literal">warn</tt> macro) can be expanded to empty statements to avoid <strong>any</strong> run-time impact when opting out of the dependency on <tt class="docutils literal">log</tt>.</p>
+</div>

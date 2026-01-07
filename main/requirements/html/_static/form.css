@@ -165,7 +165,6 @@ sdoc-form-row-main {
   display: flex;
   flex-direction: column;
   position: relative;
-  z-index: 2;
 }
 
 sdoc-form-row-aside {
@@ -227,7 +226,10 @@ sdoc-form-grid {
   padding:
           calc(var(--base-rhythm)*4)
           calc(var(--base-rhythm)*3); /* (4-1) related to column gap */
-  overflow-x: hidden; /* related to field_action::before */
+
+  overflow-x: clip; /* Prevents overflow issues affecting:
+                       - field_action::before (highlight visibility on delete) and
+                       - autocompletable (dropdown visibility) */
 
   /* content container has no padding-block */
   margin-top: calc(var(--base-rhythm)*2);
@@ -306,13 +308,41 @@ sdoc-form-field-group:focus-within::before {
  * sdoc-contenteditable
  */
 
-sdoc-contenteditable {
+sdoc-contenteditable,
+sdoc-autocompletable {
   display: block;
   position: relative;
 }
 
-sdoc-contenteditable[contenteditable="false"] {
+sdoc-contenteditable[contenteditable="false"],
+sdoc-autocompletable[contenteditable="false"] {
   color: var(--color-fg-secondary);
+}
+
+.autocomplete-items {
+  position: absolute;
+  border: 1px solid var(--color-action);
+  background-color: var(--color-bg-contrast);
+  top: 100%;
+  left: 0;
+  right: 0;
+  width: 33vw;
+  max-height: 60vh;
+  overflow-y: auto;
+  z-index: 999;
+}
+
+.autocomplete-active {
+  /*when navigating through the items using the arrow keys:*/
+  background-color: var(--color-highlight) !important;
+}
+
+.autocompletable-result-item {
+  position:relative;
+  display:block;
+  padding:.25rem 0.25rem;
+  margin-bottom:-1px;
+  border:1px solid rgba(0,0,0,.125)
 }
 
 .monospace {
@@ -329,7 +359,8 @@ sdoc-contenteditable[contenteditable="false"] {
 /* todo: Join sdoc-contenteditable with sdoc-form-field */
 
 sdoc-form-field label,
-sdoc-contenteditable::before {
+sdoc-contenteditable::before,
+sdoc-autocompletable::before {
   /* for contenteditable */
   content: attr(data-field-label);
   /* for all */
@@ -346,7 +377,8 @@ sdoc-contenteditable::before {
 }
 
 sdoc-form-field:focus-within label,
-sdoc-contenteditable:focus::before {
+sdoc-contenteditable:focus::before,
+sdoc-autocompletable:focus::before {
   color: var(--color-fg-accent);
 }
 
@@ -397,7 +429,8 @@ sdoc-form-field select::-ms-expand {
   color: rgba(242, 100, 42,.2);
 }
 
-sdoc-contenteditable[data-field-suffix]:not(:empty)::after {
+sdoc-contenteditable[data-field-suffix]:not(:empty)::after,
+sdoc-autocompletable[data-field-suffix]:not(:empty)::after {
   content: attr(data-field-suffix);
   color: var(--color-fg-accent);
   margin-left: 4px;
@@ -430,96 +463,7 @@ sdoc-contenteditable[data-field-suffix]:not(:empty)::after {
   font-family: var(--code-font-family);
 }
 
-/* tabs */
 
-sdoc-tab-content {
-  display: none;
-}
-sdoc-tab-content[active] {
-  display: contents;
-}
-
-sdoc-tabs {
-  grid-column: 1 / -1;
-
-  /* compensate top padding for sdoc-form-grid: */
-  /* margin-top: calc(var(--base-rhythm)*(-4)); */
-  padding: calc(var(--base-rhythm)*(1)) calc(var(--base-rhythm)*(2)) 0;
-
-  background-color: var(--color-bg-main);
-  border-radius: 4px;
-
-  display: flex;
-}
-
-sdoc-tab {
-  font-size: var(--font-size-xsm);
-  font-weight: 600;
-  text-align: left;
-  text-decoration: none;
-  white-space: nowrap;
-  position: relative;
-  display: inline-flex;
-
-  align-items: center;
-  justify-content: center;
-  -webkit-box-align: center;
-  -webkit-box-pack: center;
-
-  border: 1px solid transparent;
-  border-bottom: none;
-  border-radius: 4px 4px 0 0;
-
-  user-select: none;
-  cursor: pointer;
-  appearance: none;
-
-  /* 1.5 column-gap is compensated by SVG negative margin */
-  /* column-gap: calc(var(--base-rhythm)*1.5); */
-
-  min-height: calc(var(--base-rhythm)*4);
-  padding-left: calc(var(--base-rhythm)*1.5);
-  padding-right: calc(var(--base-rhythm)*1.5);
-
-  color: rgba(0, 0, 0, 0.5);
-  background-color: rgba(255, 255, 255, 0);
-  background-clip: padding-box;
-
-  transition: 0.2s;
-}
-
-sdoc-tab:hover {
-  background-color: rgba(255, 255, 255, 0.5);
-}
-
-sdoc-tab[active] {
-  color: var(--color-hover);
-  background-color: rgba(255, 255, 255, 1);
-  cursor: default;
-}
-
-sdoc-tab[data-errors] {
-  color: var(--color-danger);
-  border-color: var(--color-danger);
-}
-
-sdoc-tab[data-errors]::after {
-  content: attr(data-errors);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background-color: var(--color-danger);
-  color: var(--color-bg-contrast);
-  font-size: var(--font-size-xsm);
-  height: calc(var(--font-size-xsm)*1.75);
-  width: calc(var(--font-size-xsm)*1.75);
-  aspect-ratio: 1;
-  border-radius: 50%;
-
-  /* parent column-gap == 0 */
-  position: relative;
-  right: calc(var(--base-rhythm)*(-1));
-}
 
 form[data-controller~="scroll_into_view"] {
   /* fix on 1px border and smth unruly */
@@ -616,8 +560,10 @@ sdoc-form-error + sdoc-form-field-group {
 
 sdoc-form-field-group[errors]::before, /* Grammar -> label for group of fields */
 sdoc-contenteditable[errors]::before, /* inside contenteditable errors block does not affected */
+sdoc-autocompletable[errors]::before,
 sdoc-form-error + sdoc-form-field > label, /* Grammar -> relation field ; File filed */
-sdoc-form-error + sdoc-form-field > sdoc-contenteditable::before {
+sdoc-form-error + sdoc-form-field > sdoc-contenteditable::before,
+sdoc-form-error + sdoc-form-field > sdoc-autocompletable::before {
   color: var(--color-danger);
 }
 

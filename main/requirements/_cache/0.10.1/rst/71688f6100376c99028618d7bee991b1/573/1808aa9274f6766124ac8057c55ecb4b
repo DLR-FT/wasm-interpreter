@@ -1,0 +1,4 @@
+<div class="document">
+<p>Fuel is a mechanism to limit the amount of bytecode operations conducted when calling the interpreter. Each bytecode instruction is associated with a specific amount of fuel consumed when executing it. The interpreter is provided a finite amount of fuel, that is deplete during execution, until the amount of fuel is insufficient to conduct further bytecode operations. At this point, the interpreter yields back the control flow. Later on, the execution may be resumed.</p>
+<p>Further information: <a class="reference external" href="https://docs.rs/wasmtime/latest/wasmtime/struct.Config.html#method.consume_fuel">https://docs.rs/wasmtime/latest/wasmtime/struct.Config.html#method.consume_fuel</a></p>
+</div>

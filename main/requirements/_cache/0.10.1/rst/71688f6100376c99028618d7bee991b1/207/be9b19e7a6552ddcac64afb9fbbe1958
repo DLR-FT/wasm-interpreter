@@ -1,0 +1,4 @@
+<div class="document">
+<p>Operation with fuel or other implementations of bounded run-time requires that the interpreter can be halted.
+Conversely, later on the interpreter may be resumed, as if it was not halted in the first place.</p>
+</div>

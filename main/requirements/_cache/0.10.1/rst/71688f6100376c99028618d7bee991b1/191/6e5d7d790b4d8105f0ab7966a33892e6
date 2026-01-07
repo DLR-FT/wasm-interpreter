@@ -1,0 +1,3 @@
+<div class="document">
+<p>No reliance on any specific functionality from the provided execution environment is acceptable, as the interpreter shall be ready for embedding to any environment that Rust can compile for.</p>
+</div>

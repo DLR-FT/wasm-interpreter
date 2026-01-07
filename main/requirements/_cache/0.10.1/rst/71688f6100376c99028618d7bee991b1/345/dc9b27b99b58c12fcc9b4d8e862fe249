@@ -1,0 +1,15 @@
+<div class="document">
+<p>This requirement constraints the usage and introduction of normal dependencies, but not Dev Dependencies <a class="footnote-reference" href="#footnote-1" id="footnote-reference-1">[1]</a> and not Build Dependencies <a class="footnote-reference" href="#footnote-2" id="footnote-reference-2">[2]</a> .</p>
+<table class="docutils footnote" frame="void" id="footnote-1" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#footnote-reference-1">[1]</a></td><td><a class="reference external" href="https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#development-dependencies">https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#development-dependencies</a></td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="footnote-2" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#footnote-reference-2">[2]</a></td><td><a class="reference external" href="https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#build-dependencies">https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#build-dependencies</a></td></tr>
+</tbody>
+</table>
+</div>

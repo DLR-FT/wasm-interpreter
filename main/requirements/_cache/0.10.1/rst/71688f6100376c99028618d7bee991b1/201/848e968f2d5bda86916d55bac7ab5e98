@@ -1,0 +1,3 @@
+<div class="document">
+<p>If the interpreter state can be serialized to and deserialized from a canonical representation, migration to other computers as well as check-point/lock-step like execution become simple to implement.</p>
+</div>

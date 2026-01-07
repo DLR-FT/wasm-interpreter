@@ -1,0 +1,3 @@
+<div class="document">
+<p>Reliance on alloc is allowable, as an allocator can be implemented without further reliance on the execution environment.</p>
+</div>

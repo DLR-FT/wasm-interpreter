@@ -1,1 +1,0 @@
-searchState.loadedDescShard("log_wrapper", 0, "Logs a message at the debug level.\nLogs a message at the error level.\nLogs a message at the info level.\nLogs a message at the trace level.\nLogs a message at the warn level.")

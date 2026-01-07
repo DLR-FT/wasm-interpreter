@@ -1,0 +1,13 @@
+<div class="document">
+<p>Rust does not expose all floating point operations in a bare-metal (as in <tt class="docutils literal">no_std</tt>) target, as to not introduce any dependency on the C standard library's <tt class="docutils literal">libm</tt> (respective PR: <a class="reference external" href="https://github.com/rust-lang/rust/pull/27823">https://github.com/rust-lang/rust/pull/27823</a>). However, we identified at least the following operations to be required for WASM interpretation while unavailable in <tt class="docutils literal">no_std</tt>:</p>
+<ul class="simple">
+<li><tt class="docutils literal">abs</tt></li>
+<li><tt class="docutils literal">ceil</tt></li>
+<li><tt class="docutils literal">floor</tt></li>
+<li><tt class="docutils literal">trunc</tt></li>
+<li><tt class="docutils literal">round</tt></li>
+<li><tt class="docutils literal">sqrt</tt></li>
+<li><tt class="docutils literal">copysign</tt></li>
+</ul>
+<p>In order use these operations, having the <tt class="docutils literal">libm</tt> crate as dependencies of the WASM interpreter is an acceptable trade-off.</p>
+</div>

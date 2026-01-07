@@ -1,0 +1,3 @@
+<div class="document">
+<p>All requirements that allow a dependency must specify the exact version of the dependency (at least major, minor and patch release)</p>
+</div>

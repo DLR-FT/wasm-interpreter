@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/build/cargo-vendor-dir/libm-0.2.15/src/math/rem_pio2.rs`."><title>rem_pio2.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-6c3ea77c.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="libm" data-themes="" data-resource-suffix="" data-rustdoc-version="1.86.0 (05f9846f8 2025-03-31) (built from a source tarball)" data-channel="1.86.0" data-search-js="search-581efc7a.js" data-settings-js="settings-6dad6058.js" ><script src="../../../static.files/storage-3a5871a4.js"></script><script defer src="../../../static.files/src-script-b8d3f215.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-4d63596a.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">libm/math/</div>rem_pio2.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="comment">// origin: FreeBSD /usr/src/lib/msun/src/e_rem_pio2.c
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/build/cargo-vendor-dir/libm-0.2.8/src/math/rem_pio2.rs`."><title>rem_pio2.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-e56847b5.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="libm" data-themes="" data-resource-suffix="" data-rustdoc-version="1.91.1 (ed61e7d7e 2025-11-07) (built from a source tarball)" data-channel="1.91.1" data-search-js="search-e256b49e.js" data-stringdex-js="stringdex-c3e638e9.js" data-settings-js="settings-c38705f0.js" ><script src="../../../static.files/storage-e2aeef58.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-6dc2a7f3.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-263c88ec.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">libm/math/</div>rem_pio2.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="comment">// origin: FreeBSD /usr/src/lib/msun/src/e_rem_pio2.c
 <a href=#2 id=2 data-nosnippet>2</a>//
 <a href=#3 id=3 data-nosnippet>3</a>// ====================================================
 <a href=#4 id=4 data-nosnippet>4</a>// Copyright (C) 1993 by Sun Microsystems, Inc. All rights reserved.
@@ -50,7 +50,7 @@
 <a href=#50 id=50 data-nosnippet>50</a>
 <a href=#51 id=51 data-nosnippet>51</a>    <span class="kw">fn </span>medium(x: f64, ix: u32) -&gt; (i32, f64, f64) {
 <a href=#52 id=52 data-nosnippet>52</a>        <span class="comment">/* rint(x/(pi/2)), Assume round-to-nearest. */
-<a href=#53 id=53 data-nosnippet>53</a>        </span><span class="kw">let </span>tmp = x * INV_PIO2 + TO_INT;
+<a href=#53 id=53 data-nosnippet>53</a>        </span><span class="kw">let </span>tmp = x <span class="kw">as </span>f64 * INV_PIO2 + TO_INT;
 <a href=#54 id=54 data-nosnippet>54</a>        <span class="comment">// force rounding of tmp to it's storage format on x87 to avoid
 <a href=#55 id=55 data-nosnippet>55</a>        // excess precision issues.
 <a href=#56 id=56 data-nosnippet>56</a>        </span><span class="attr">#[cfg(all(target_arch = <span class="string">"x86"</span>, not(target_feature = <span class="string">"sse2"</span>)))]
@@ -194,42 +194,40 @@
 <a href=#194 id=194 data-nosnippet>194</a>    <span class="kw">use </span><span class="kw">super</span>::rem_pio2;
 <a href=#195 id=195 data-nosnippet>195</a>
 <a href=#196 id=196 data-nosnippet>196</a>    <span class="attr">#[test]
-<a href=#197 id=197 data-nosnippet>197</a>    </span><span class="comment">// FIXME(correctness): inaccurate results on i586
-<a href=#198 id=198 data-nosnippet>198</a>    </span><span class="attr">#[cfg_attr(all(target_arch = <span class="string">"x86"</span>, not(target_feature = <span class="string">"sse"</span>)), ignore)]
-<a href=#199 id=199 data-nosnippet>199</a>    </span><span class="kw">fn </span>test_near_pi() {
-<a href=#200 id=200 data-nosnippet>200</a>        <span class="kw">let </span>arg = <span class="number">3.141592025756836</span>;
-<a href=#201 id=201 data-nosnippet>201</a>        <span class="kw">let </span>arg = <span class="macro">force_eval!</span>(arg);
-<a href=#202 id=202 data-nosnippet>202</a>        <span class="macro">assert_eq!</span>(
-<a href=#203 id=203 data-nosnippet>203</a>            rem_pio2(arg),
-<a href=#204 id=204 data-nosnippet>204</a>            (<span class="number">2</span>, -<span class="number">6.278329573009626e-7</span>, -<span class="number">2.1125998133974653e-23</span>)
-<a href=#205 id=205 data-nosnippet>205</a>        );
-<a href=#206 id=206 data-nosnippet>206</a>        <span class="kw">let </span>arg = <span class="number">3.141592033207416</span>;
-<a href=#207 id=207 data-nosnippet>207</a>        <span class="kw">let </span>arg = <span class="macro">force_eval!</span>(arg);
-<a href=#208 id=208 data-nosnippet>208</a>        <span class="macro">assert_eq!</span>(
-<a href=#209 id=209 data-nosnippet>209</a>            rem_pio2(arg),
-<a href=#210 id=210 data-nosnippet>210</a>            (<span class="number">2</span>, -<span class="number">6.20382377148128e-7</span>, -<span class="number">2.1125998133974653e-23</span>)
-<a href=#211 id=211 data-nosnippet>211</a>        );
-<a href=#212 id=212 data-nosnippet>212</a>        <span class="kw">let </span>arg = <span class="number">3.141592144966125</span>;
-<a href=#213 id=213 data-nosnippet>213</a>        <span class="kw">let </span>arg = <span class="macro">force_eval!</span>(arg);
-<a href=#214 id=214 data-nosnippet>214</a>        <span class="macro">assert_eq!</span>(
-<a href=#215 id=215 data-nosnippet>215</a>            rem_pio2(arg),
-<a href=#216 id=216 data-nosnippet>216</a>            (<span class="number">2</span>, -<span class="number">5.086236681942706e-7</span>, -<span class="number">2.1125998133974653e-23</span>)
-<a href=#217 id=217 data-nosnippet>217</a>        );
-<a href=#218 id=218 data-nosnippet>218</a>        <span class="kw">let </span>arg = <span class="number">3.141592979431152</span>;
-<a href=#219 id=219 data-nosnippet>219</a>        <span class="kw">let </span>arg = <span class="macro">force_eval!</span>(arg);
-<a href=#220 id=220 data-nosnippet>220</a>        <span class="macro">assert_eq!</span>(
-<a href=#221 id=221 data-nosnippet>221</a>            rem_pio2(arg),
-<a href=#222 id=222 data-nosnippet>222</a>            (<span class="number">2</span>, <span class="number">3.2584135866119817e-7</span>, -<span class="number">2.1125998133974653e-23</span>)
-<a href=#223 id=223 data-nosnippet>223</a>        );
-<a href=#224 id=224 data-nosnippet>224</a>    }
-<a href=#225 id=225 data-nosnippet>225</a>
-<a href=#226 id=226 data-nosnippet>226</a>    <span class="attr">#[test]
-<a href=#227 id=227 data-nosnippet>227</a>    </span><span class="kw">fn </span>test_overflow_b9b847() {
-<a href=#228 id=228 data-nosnippet>228</a>        <span class="kw">let _ </span>= rem_pio2(-<span class="number">3054214.5490637687</span>);
-<a href=#229 id=229 data-nosnippet>229</a>    }
-<a href=#230 id=230 data-nosnippet>230</a>
-<a href=#231 id=231 data-nosnippet>231</a>    <span class="attr">#[test]
-<a href=#232 id=232 data-nosnippet>232</a>    </span><span class="kw">fn </span>test_overflow_4747b9() {
-<a href=#233 id=233 data-nosnippet>233</a>        <span class="kw">let _ </span>= rem_pio2(<span class="number">917340800458.2274</span>);
-<a href=#234 id=234 data-nosnippet>234</a>    }
-<a href=#235 id=235 data-nosnippet>235</a>}</code></pre></div></section></main></body></html>
+<a href=#197 id=197 data-nosnippet>197</a>    </span><span class="kw">fn </span>test_near_pi() {
+<a href=#198 id=198 data-nosnippet>198</a>        <span class="kw">let </span>arg = <span class="number">3.141592025756836</span>;
+<a href=#199 id=199 data-nosnippet>199</a>        <span class="kw">let </span>arg = <span class="macro">force_eval!</span>(arg);
+<a href=#200 id=200 data-nosnippet>200</a>        <span class="macro">assert_eq!</span>(
+<a href=#201 id=201 data-nosnippet>201</a>            rem_pio2(arg),
+<a href=#202 id=202 data-nosnippet>202</a>            (<span class="number">2</span>, -<span class="number">6.278329573009626e-7</span>, -<span class="number">2.1125998133974653e-23</span>)
+<a href=#203 id=203 data-nosnippet>203</a>        );
+<a href=#204 id=204 data-nosnippet>204</a>        <span class="kw">let </span>arg = <span class="number">3.141592033207416</span>;
+<a href=#205 id=205 data-nosnippet>205</a>        <span class="kw">let </span>arg = <span class="macro">force_eval!</span>(arg);
+<a href=#206 id=206 data-nosnippet>206</a>        <span class="macro">assert_eq!</span>(
+<a href=#207 id=207 data-nosnippet>207</a>            rem_pio2(arg),
+<a href=#208 id=208 data-nosnippet>208</a>            (<span class="number">2</span>, -<span class="number">6.20382377148128e-7</span>, -<span class="number">2.1125998133974653e-23</span>)
+<a href=#209 id=209 data-nosnippet>209</a>        );
+<a href=#210 id=210 data-nosnippet>210</a>        <span class="kw">let </span>arg = <span class="number">3.141592144966125</span>;
+<a href=#211 id=211 data-nosnippet>211</a>        <span class="kw">let </span>arg = <span class="macro">force_eval!</span>(arg);
+<a href=#212 id=212 data-nosnippet>212</a>        <span class="macro">assert_eq!</span>(
+<a href=#213 id=213 data-nosnippet>213</a>            rem_pio2(arg),
+<a href=#214 id=214 data-nosnippet>214</a>            (<span class="number">2</span>, -<span class="number">5.086236681942706e-7</span>, -<span class="number">2.1125998133974653e-23</span>)
+<a href=#215 id=215 data-nosnippet>215</a>        );
+<a href=#216 id=216 data-nosnippet>216</a>        <span class="kw">let </span>arg = <span class="number">3.141592979431152</span>;
+<a href=#217 id=217 data-nosnippet>217</a>        <span class="kw">let </span>arg = <span class="macro">force_eval!</span>(arg);
+<a href=#218 id=218 data-nosnippet>218</a>        <span class="macro">assert_eq!</span>(
+<a href=#219 id=219 data-nosnippet>219</a>            rem_pio2(arg),
+<a href=#220 id=220 data-nosnippet>220</a>            (<span class="number">2</span>, <span class="number">3.2584135866119817e-7</span>, -<span class="number">2.1125998133974653e-23</span>)
+<a href=#221 id=221 data-nosnippet>221</a>        );
+<a href=#222 id=222 data-nosnippet>222</a>    }
+<a href=#223 id=223 data-nosnippet>223</a>
+<a href=#224 id=224 data-nosnippet>224</a>    <span class="attr">#[test]
+<a href=#225 id=225 data-nosnippet>225</a>    </span><span class="kw">fn </span>test_overflow_b9b847() {
+<a href=#226 id=226 data-nosnippet>226</a>        <span class="kw">let _ </span>= rem_pio2(-<span class="number">3054214.5490637687</span>);
+<a href=#227 id=227 data-nosnippet>227</a>    }
+<a href=#228 id=228 data-nosnippet>228</a>
+<a href=#229 id=229 data-nosnippet>229</a>    <span class="attr">#[test]
+<a href=#230 id=230 data-nosnippet>230</a>    </span><span class="kw">fn </span>test_overflow_4747b9() {
+<a href=#231 id=231 data-nosnippet>231</a>        <span class="kw">let _ </span>= rem_pio2(<span class="number">917340800458.2274</span>);
+<a href=#232 id=232 data-nosnippet>232</a>    }
+<a href=#233 id=233 data-nosnippet>233</a>}</code></pre></div></section></main></body></html>

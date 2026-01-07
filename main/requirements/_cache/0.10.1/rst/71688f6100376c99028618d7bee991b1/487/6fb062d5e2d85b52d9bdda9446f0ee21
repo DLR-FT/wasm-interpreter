@@ -1,0 +1,4 @@
+<div class="document">
+<p>A stackless interpreter is one that does not use function calls in the host environment to implement function calls inside the interpreter. Instead, the stack of the interpreted bytecode is stored in a traditional data structure (such as a Vec&lt;u8&gt;). Interpretation can be interrupted between any two virtual instructions of the bytecode, and crucially so resumed from there.</p>
+<p>Further information: <a class="reference external" href="https://kyju.org/blog/piccolo-a-stackless-lua-interpreter/#a-stackless-interpreter-design">https://kyju.org/blog/piccolo-a-stackless-lua-interpreter/#a-stackless-interpreter-design</a></p>
+</div>

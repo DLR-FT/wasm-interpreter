@@ -2,8 +2,8 @@
     "_COMMENT": "Fields with _ are metadata. Fields without _ are the actual document/section/requirement/other content.",
     "DOCUMENTS": [
         {
+            "_NODE_TYPE": "DOCUMENT",
             "TITLE": "WASM Interpreter for Safety - Requirements",
-            "REQ_PREFIX": null,
             "GRAMMAR": {
                 "ELEMENTS": [
                     {
@@ -11,12 +11,12 @@
                         "FIELDS": [
                             {
                                 "TITLE": "UID",
-                                "REQUIRED": false,
+                                "REQUIRED": "False",
                                 "TYPE": "String"
                             },
                             {
                                 "TITLE": "STATEMENT",
-                                "REQUIRED": true,
+                                "REQUIRED": "True",
                                 "TYPE": "String"
                             }
                         ],
@@ -27,42 +27,42 @@
                         "FIELDS": [
                             {
                                 "TITLE": "UID",
-                                "REQUIRED": false,
+                                "REQUIRED": "False",
                                 "TYPE": "String"
                             },
                             {
                                 "TITLE": "LEVEL",
-                                "REQUIRED": false,
+                                "REQUIRED": "False",
                                 "TYPE": "String"
                             },
                             {
                                 "TITLE": "STATUS",
-                                "REQUIRED": false,
+                                "REQUIRED": "False",
                                 "TYPE": "String"
                             },
                             {
                                 "TITLE": "TAGS",
-                                "REQUIRED": false,
+                                "REQUIRED": "False",
                                 "TYPE": "String"
                             },
                             {
                                 "TITLE": "TITLE",
-                                "REQUIRED": false,
+                                "REQUIRED": "False",
                                 "TYPE": "String"
                             },
                             {
                                 "TITLE": "STATEMENT",
-                                "REQUIRED": false,
+                                "REQUIRED": "False",
                                 "TYPE": "String"
                             },
                             {
                                 "TITLE": "RATIONALE",
-                                "REQUIRED": false,
+                                "REQUIRED": "False",
                                 "TYPE": "String"
                             },
                             {
                                 "TITLE": "COMMENT",
-                                "REQUIRED": false,
+                                "REQUIRED": "False",
                                 "TYPE": "String"
                             }
                         ],
@@ -77,16 +77,15 @@
                     }
                 ]
             },
-            "_OPTIONS": {},
             "NODES": [
                 {
                     "_TOC": "1",
-                    "TYPE": "SECTION",
+                    "_NODE_TYPE": "SECTION",
                     "TITLE": "Functional Requirements",
                     "NODES": [
                         {
                             "_TOC": "1.1",
-                            "TYPE": "REQUIREMENT",
+                            "_NODE_TYPE": "REQUIREMENT",
                             "UID": "REQ-1",
                             "TITLE": "Resumable",
                             "STATEMENT": "The interpreter shall be resumable\n",
@@ -94,7 +93,7 @@
                         },
                         {
                             "_TOC": "1.2",
-                            "TYPE": "REQUIREMENT",
+                            "_NODE_TYPE": "REQUIREMENT",
                             "UID": "REQ-3",
                             "TITLE": "Baremetal",
                             "STATEMENT": "The interpreter shall be executable on bare-metal environments\n",
@@ -102,7 +101,7 @@
                         },
                         {
                             "_TOC": "1.3",
-                            "TYPE": "REQUIREMENT",
+                            "_NODE_TYPE": "REQUIREMENT",
                             "UID": "REQ-5",
                             "TITLE": "Bounded execution",
                             "STATEMENT": "The interpreter shall yield back control flow eventually\n",
@@ -111,7 +110,7 @@
                         },
                         {
                             "_TOC": "1.4",
-                            "TYPE": "REQUIREMENT",
+                            "_NODE_TYPE": "REQUIREMENT",
                             "UID": "REQ-12",
                             "TITLE": "Migrateable",
                             "STATEMENT": "The interpreter state shall be able to halt on one computer and continue execution on another\n",
@@ -119,7 +118,7 @@
                         },
                         {
                             "_TOC": "1.5",
-                            "TYPE": "REQUIREMENT",
+                            "_NODE_TYPE": "REQUIREMENT",
                             "UID": "REQ-14",
                             "TITLE": "No Dependencies",
                             "STATEMENT": "No dependencies but those explicitly allowed by a requirement shall be used\n",
@@ -128,12 +127,12 @@
                         },
                         {
                             "_TOC": "1.6",
-                            "TYPE": "SECTION",
+                            "_NODE_TYPE": "SECTION",
                             "TITLE": "Low-Level Functional Requirements",
                             "NODES": [
                                 {
                                     "_TOC": "1.6.1",
-                                    "TYPE": "REQUIREMENT",
+                                    "_NODE_TYPE": "REQUIREMENT",
                                     "UID": "REQ-2",
                                     "TITLE": "Stackless",
                                     "STATEMENT": "The interpreter shall be stackless\n",
@@ -147,7 +146,7 @@
                                 },
                                 {
                                     "_TOC": "1.6.2",
-                                    "TYPE": "REQUIREMENT",
+                                    "_NODE_TYPE": "REQUIREMENT",
                                     "UID": "REQ-4",
                                     "TITLE": "no_std",
                                     "STATEMENT": "The interpreter shall be implemented in no_std Rust\n",
@@ -162,7 +161,7 @@
                                 },
                                 {
                                     "_TOC": "1.6.3",
-                                    "TYPE": "REQUIREMENT",
+                                    "_NODE_TYPE": "REQUIREMENT",
                                     "UID": "REQ-6",
                                     "TITLE": "Fuel",
                                     "STATEMENT": "The interpreter shall support fuel bounded execution\n",
@@ -176,7 +175,7 @@
                                 },
                                 {
                                     "_TOC": "1.6.4",
-                                    "TYPE": "REQUIREMENT",
+                                    "_NODE_TYPE": "REQUIREMENT",
                                     "UID": "REQ-13",
                                     "TITLE": "De-/Serializable",
                                     "STATEMENT": "The interpreter state shall be de-/serializable\n",
@@ -190,7 +189,7 @@
                                 },
                                 {
                                     "_TOC": "1.6.5",
-                                    "TYPE": "REQUIREMENT",
+                                    "_NODE_TYPE": "REQUIREMENT",
                                     "UID": "REQ-15",
                                     "TITLE": "Allow log dependency",
                                     "STATEMENT": "The interpreter shall have an optional dependency on the ``log`` crate version ``0.4.22``\n",
@@ -204,7 +203,7 @@
                                 },
                                 {
                                     "_TOC": "1.6.6",
-                                    "TYPE": "REQUIREMENT",
+                                    "_NODE_TYPE": "REQUIREMENT",
                                     "UID": "REQ-16",
                                     "TITLE": "Allow libm dependency",
                                     "STATEMENT": "The interpreter may depend on the ``libm`` crate version ``0.2.8``\n",
@@ -218,7 +217,7 @@
                                 },
                                 {
                                     "_TOC": "1.6.7",
-                                    "TYPE": "REQUIREMENT",
+                                    "_NODE_TYPE": "REQUIREMENT",
                                     "UID": "REQ-17",
                                     "TITLE": "Minimum Supported Rust Version (MSRV)",
                                     "STATEMENT": "The interpreter shall compile on Rust ``1.76.0`` and later versions\n",
@@ -230,12 +229,12 @@
                 },
                 {
                     "_TOC": "2",
-                    "TYPE": "SECTION",
+                    "_NODE_TYPE": "SECTION",
                     "TITLE": "Observability Requirements",
                     "NODES": [
                         {
                             "_TOC": "2.1",
-                            "TYPE": "REQUIREMENT",
+                            "_NODE_TYPE": "REQUIREMENT",
                             "UID": "REQ-7",
                             "TITLE": "Instrumentation",
                             "STATEMENT": "The interpreter shall implement means for instrumentation\n",
@@ -243,12 +242,12 @@
                         },
                         {
                             "_TOC": "2.2",
-                            "TYPE": "SECTION",
+                            "_NODE_TYPE": "SECTION",
                             "TITLE": "Low-Level Observability Requirements",
                             "NODES": [
                                 {
                                     "_TOC": "2.2.1",
-                                    "TYPE": "REQUIREMENT",
+                                    "_NODE_TYPE": "REQUIREMENT",
                                     "UID": "REQ-8",
                                     "TITLE": "Statement Coverage",
                                     "STATEMENT": "The instrumentation shall enable the measurement of statement coverage\n",
@@ -266,7 +265,7 @@
                                 },
                                 {
                                     "_TOC": "2.2.2",
-                                    "TYPE": "REQUIREMENT",
+                                    "_NODE_TYPE": "REQUIREMENT",
                                     "UID": "REQ-9",
                                     "TITLE": "Decision Coverage",
                                     "STATEMENT": "The instrumentation shall enable the measurement of decision coverage\n",
@@ -284,7 +283,7 @@
                                 },
                                 {
                                     "_TOC": "2.2.3",
-                                    "TYPE": "REQUIREMENT",
+                                    "_NODE_TYPE": "REQUIREMENT",
                                     "UID": "REQ-10",
                                     "TITLE": "Modified Condition/Decision Coverage",
                                     "STATEMENT": "The instrumentation shall enable the measurement of modified condition/decision coverage\n",
@@ -302,7 +301,7 @@
                                 },
                                 {
                                     "_TOC": "2.2.4",
-                                    "TYPE": "REQUIREMENT",
+                                    "_NODE_TYPE": "REQUIREMENT",
                                     "UID": "REQ-11",
                                     "TITLE": "Certification Evidence",
                                     "STATEMENT": "The interpreter shall support the generation of certification evidence\n"

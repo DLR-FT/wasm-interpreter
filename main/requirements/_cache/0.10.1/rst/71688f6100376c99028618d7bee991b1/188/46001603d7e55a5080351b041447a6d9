@@ -1,0 +1,3 @@
+<div class="document">
+<p>This enables various workflows in deployments of multiple computers. For load-balancing or redundancy purposes, running applications can be migrated to other computers without disruption.</p>
+</div>

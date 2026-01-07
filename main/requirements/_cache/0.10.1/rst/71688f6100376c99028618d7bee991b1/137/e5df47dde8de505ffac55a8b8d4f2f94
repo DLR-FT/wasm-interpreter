@@ -1,0 +1,3 @@
+<div class="document">
+<p>Only relying on the functionality that is provided by no_std enables execution on bare environments where operating system is available.</p>
+</div>

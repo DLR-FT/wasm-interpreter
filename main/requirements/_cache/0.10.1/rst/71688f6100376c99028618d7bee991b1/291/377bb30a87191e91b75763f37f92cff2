@@ -1,0 +1,3 @@
+<div class="document">
+<p>A user shall be able to call the interpreter with a bound, expecting a result in a finite amount of time or bytecode operations. Even if the bytecode itself does never finish execution (i.e. due to a infinite loop), the interpreter shall yield eventually, by pausing the bytecode execution.</p>
+</div>
