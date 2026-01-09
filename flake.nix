@@ -257,7 +257,7 @@
             #
             #
             # Run this to find unsafe `unsafe`:
-            # cargo miri test
+            # cargo miri nextest run
             #
             #
             # Run this to find unused dependencies:
@@ -274,6 +274,7 @@
                 })
                 cargo-llvm-cov
                 cargo-udeps
+                cargo-nextest
               ];
               env = { inherit (pkgs.cargo-llvm-cov) LLVM_COV LLVM_PROFDATA; };
             };
