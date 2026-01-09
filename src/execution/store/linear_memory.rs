@@ -459,6 +459,27 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
 
         Ok(())
     }
+
+    /// Allows a given closure to temporarily access the entire memory as a
+    /// `&mut [u8]`.
+    ///
+    /// # Note on locking
+    ///
+    /// This operation exclusively locks the entire linear memory for the
+    /// duration of this function call. To acquire the lock, this function may
+    /// also block until the lock is available.
+    pub fn access_mut_slice<R>(&self, accessor: impl FnOnce(&mut [u8]) -> R) -> R {
+        let mut write_lock = self.inner_data.write();
+        let atomic_slice: &mut [AtomicU8] = &mut write_lock;
+
+        // This is essentially `AtomicU8::get_mut_slice` from the
+        // `atomic_from_mut` unstable feature
+        //
+        // SAFETY: the mutable reference guarantees unique ownership.
+        let non_atomic_slice = unsafe { &mut *(atomic_slice as *mut [AtomicU8] as *mut [u8]) };
+
+        accessor(non_atomic_slice)
+    }
 }
 
 impl<const PAGE_SIZE: usize> core::fmt::Debug for LinearMemory<PAGE_SIZE> {
