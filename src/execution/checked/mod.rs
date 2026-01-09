@@ -438,6 +438,22 @@ impl<'b, T: Config> Store<'b, T> {
             .map_err(|_| RuntimeError::FunctionInvocationSignatureMismatch)?;
         Ok(stored_returns)
     }
+
+    /// This is a safe variant of [`Store::mem_access_mut_slice`].
+    pub fn mem_access_mut_slice<R>(
+        &self,
+        memory: Stored<MemAddr>,
+        accessor: impl FnOnce(&mut [u8]) -> R,
+    ) -> Result<R, RuntimeError> {
+        // 1. try unwrap
+        let memory = memory.try_unwrap_into_bare(self.id)?;
+        // 2. call
+        let returns = self.mem_access_mut_slice_unchecked(memory, accessor);
+        // 3. rewrap
+        // result is generic
+        // 4. return
+        Ok(returns)
+    }
 }
 
 // All functions in this impl block must occur in the same order as they are

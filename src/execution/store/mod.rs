@@ -1302,6 +1302,20 @@ impl<'b, T: Config> Store<'b, T> {
                 })
             })
     }
+
+    /// Allows a given closure to temporarily access the entire memory as a
+    /// `&mut [u8]`.
+    ///
+    /// # Safety
+    /// The caller has to guarantee that the given [`MemAddr`] came from the
+    /// current [`Store`] object.
+    pub fn mem_access_mut_slice_unchecked<R>(
+        &self,
+        memory: MemAddr,
+        accessor: impl FnOnce(&mut [u8]) -> R,
+    ) -> R {
+        self.memories.get(memory).mem.access_mut_slice(accessor)
+    }
 }
 
 /// A unique identifier for a specific [`Store`]

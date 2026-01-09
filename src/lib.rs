@@ -7,7 +7,7 @@ extern crate log_wrapper;
 
 pub use core::error::ValidationError;
 pub use core::reader::types::{
-    export::ExportDesc, global::GlobalType, Limits, NumType, RefType, ValType,
+    export::ExportDesc, global::GlobalType, Limits, MemType, NumType, RefType, ValType,
 };
 pub use core::rw_spinlock;
 pub use execution::error::{RuntimeError, TrapError};
