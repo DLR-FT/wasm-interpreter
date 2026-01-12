@@ -23,7 +23,7 @@
 //! # Reference
 //!
 //! - Core / Syntax / Instructions / Control Instructions, WASM Spec,
-//!   <https://webassembly.github.io/spec/core/syntax/instructions.html#control-instructions>
+//!   <https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#control-instructions%E2%91%A0>
 //! - "A fast in-place interpreter for WebAssembly", Ben L. Titzer,
 //!   <https://arxiv.org/abs/2205.01183>
 

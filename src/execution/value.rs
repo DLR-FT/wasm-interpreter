@@ -303,7 +303,7 @@ impl F64 {
 
 /// A value at runtime. This is essentially a duplicate of [ValType] just with additional values.
 ///
-/// See <https://webassembly.github.io/spec/core/exec/runtime.html#values>
+/// See <https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#values%E2%91%A2>
 // TODO implement missing variants
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Value {

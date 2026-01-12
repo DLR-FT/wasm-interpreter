@@ -107,7 +107,7 @@ pub(super) fn validate_data_section(
                 // this hasn't been yet implemented in wasm
                 // as per docs:
 
-                // https://webassembly.github.io/spec/core/binary/modules.html#data-section
+                // https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#data-section%E2%91%A0
                 // The initial integer can be interpreted as a bitfield. Bit 0 indicates a passive segment, bit 1 indicates the presence of an explicit memory index for an active segment.
                 // In the current version of WebAssembly, at most one memory may be defined or imported in a single module, so all valid active data segments have a memory value of 0
             }

@@ -124,14 +124,14 @@ fn get_imports_length(imports: &Vec<Import>) -> ImportsLength {
 pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
     let mut wasm = WasmReader::new(wasm);
 
-    // represents C.refs in https://webassembly.github.io/spec/core/valid/conventions.html#context
+    // represents C.refs in https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#contexts%E2%91%A0
     // A func.ref instruction is onlv valid if it has an immediate that is a member of C.refs.
     // this list holds all the func_idx's occurring in the module, except in its functions or start function.
     // I make an exception here by not including func_idx's occuring within data segments in C.refs as well, so that single pass validation is possible.
     // If there is a func_idx within the data segment, this would ultimately mean that data segment cannot be validated,
     // therefore this hack is acceptable.
-    // https://webassembly.github.io/spec/core/valid/modules.html#data-segments
-    // https://webassembly.github.io/spec/core/valid/modules.html#valid-module
+    // https://www.w3.org/TR/wasm-core/#data-segments%E2%91%A2
+    // https://www.w3.org/TR/wasm-core/#modules%E2%91%A3
 
     let mut validation_context_refs: BTreeSet<FuncIdx> = BTreeSet::new();
 
@@ -329,7 +329,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
     let start = handle_section(&mut wasm, &mut header, SectionTy::Start, |wasm, _| {
         let func_idx = wasm.read_var_u32().map(|idx| idx as FuncIdx)?;
         // start function signature must be [] -> []
-        // https://webassembly.github.io/spec/core/valid/modules.html#start-function
+        // https://www.w3.org/TR/wasm-core/#start-function%E2%91%A2
         let type_idx = *all_functions
             .get(func_idx)
             .ok_or(ValidationError::InvalidFuncIdx(func_idx))?;
@@ -365,7 +365,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
-    // https://webassembly.github.io/spec/core/binary/modules.html#data-count-section
+    // https://www.w3.org/TR/wasm-core/#data-count-section%E2%91%A0
     // As per the official documentation:
     //
     // The data count section is used to simplify single-pass validation. Since the data section occurs after the code section, the `memory.init` and `data.drop` and instructions would not be able to check whether the data segment index is valid until the data section is read. The data count section occurs before the code section, so a single-pass validator can use this count instead of deferring validation.
@@ -416,7 +416,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
     })?
     .unwrap_or_default();
 
-    // https://webassembly.github.io/spec/core/binary/modules.html#data-count-section
+    // https://www.w3.org/TR/wasm-core/#data-count-section%E2%91%A0
     if let (Some(data_count), data_len) = (data_count, data_section.len()) {
         if data_count as usize != data_len {
             return Err(ValidationError::DataCountAndDataSectionsLengthAreDifferent);

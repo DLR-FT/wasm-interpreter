@@ -2322,7 +2322,7 @@ pub(super) fn run<T: Config>(
                 trace!("Instruction: ref.is_null [{}] -> [{}]", rref, res);
                 stack.push_value::<T>(Value::I32(res))?;
             }
-            // https://webassembly.github.io/spec/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-ref-mathsf-ref-func-x
+            // https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#-hrefsyntax-instr-refmathsfreffuncx%E2%91%A0
             REF_FUNC => {
                 decrement_fuel!(T::get_flat_cost(REF_FUNC));
                 let func_idx = wasm.read_var_u32().unwrap_validated() as FuncIdx;
@@ -2476,7 +2476,7 @@ pub(super) fn run<T: Config>(
                         trace!("Instruction: i64.trunc_sat_f64_u [{v1}] -> [{res}]");
                         stack.push_value::<T>(res.into())?;
                     }
-                    // See https://webassembly.github.io/bulk-memory-operations/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-init-x
+                    // See https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#-hrefsyntax-instr-memorymathsfmemoryinitx%E2%91%A0
                     // Copy a region from a data segment into memory
                     MEMORY_INIT => {
                         //  mappings:
@@ -2522,7 +2522,7 @@ pub(super) fn run<T: Config>(
                         let data_idx = wasm.read_var_u32().unwrap_validated() as DataIdx;
                         data_drop(&store.modules, &mut store.data, current_module, data_idx)?;
                     }
-                    // See https://webassembly.github.io/bulk-memory-operations/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-copy
+                    // See https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#-hrefsyntax-instr-memorymathsfmemorycopy%E2%91%A0
                     MEMORY_COPY => {
                         //  mappings:
                         //      n => number of bytes to copy
@@ -2573,7 +2573,7 @@ pub(super) fn run<T: Config>(
                             .copy(d as MemIdx, &src_mem.mem, s as MemIdx, n as MemIdx)?;
                         trace!("Instruction: memory.copy");
                     }
-                    // See https://webassembly.github.io/bulk-memory-operations/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-fill
+                    // See https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#-hrefsyntax-instr-memorymathsfmemoryfill%E2%91%A0
                     MEMORY_FILL => {
                         //  mappings:
                         //      n => number of bytes to update
@@ -2616,8 +2616,9 @@ pub(super) fn run<T: Config>(
 
                         trace!("Instruction: memory.fill");
                     }
-                    // https://webassembly.github.io/spec/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-table-mathsf-table-init-x-y
-                    // https://webassembly.github.io/spec/core/binary/instructions.html#table-instructions
+                    // https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#-hrefsyntax-instr-tablemathsftableinitxy%E2%91%A0
+
+                    // TODO https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#table-instructions%E2%91%A6
                     // in binary format it seems that elemidx is first ???????
                     // this is ONLY for passive elements
                     TABLE_INIT => {
@@ -2665,7 +2666,7 @@ pub(super) fn run<T: Config>(
                             elem_idx,
                         )?;
                     }
-                    // https://webassembly.github.io/spec/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-table-mathsf-table-copy-x-y
+                    // https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#-hrefsyntax-instr-tablemathsftablecopyxy%E2%91%A0
                     TABLE_COPY => {
                         decrement_fuel!(T::get_fc_extension_flat_cost(TABLE_COPY));
                         let table_x_idx = wasm.read_var_u32().unwrap_validated() as usize;
@@ -3428,14 +3429,14 @@ pub(super) fn run<T: Config>(
                         stack.push_value::<T>(Value::V128(data))?;
                     }
 
-                    // vvunop <https://webassembly.github.io/spec/core/syntax/instructions.html#syntax-vvunop>
+                    // vvunop https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#-hrefsyntax-valtypemathsfv128mathsfhrefsyntax-vvunopmathitvvunop%E2%91%A0
                     V128_NOT => {
                         decrement_fuel!(T::get_fd_extension_flat_cost(V128_NOT));
                         let data: [u8; 16] = stack.pop_value().try_into().unwrap_validated();
                         stack.push_value::<T>(Value::V128(data.map(|byte| !byte)))?;
                     }
 
-                    // vvbinop <https://webassembly.github.io/spec/core/syntax/instructions.html#syntax-vvbinop>
+                    // vvbinop https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#-hrefsyntax-valtypemathsfv128mathsfhrefsyntax-vvbinopmathitvvbinop%E2%91%A0
                     V128_AND => {
                         decrement_fuel!(T::get_fd_extension_flat_cost(V128_AND));
                         let data2: [u8; 16] = stack.pop_value().try_into().unwrap_validated();
@@ -3465,7 +3466,7 @@ pub(super) fn run<T: Config>(
                         stack.push_value::<T>(Value::V128(result))?;
                     }
 
-                    // vvternop <https://webassembly.github.io/spec/core/syntax/instructions.html#syntax-vvternop>
+                    // vvternop https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#-hrefsyntax-valtypemathsfv128mathsfhrefsyntax-vvternopmathitvvternop%E2%91%A0
                     V128_BITSELECT => {
                         decrement_fuel!(T::get_fd_extension_flat_cost(V128_BITSELECT));
                         let data3: [u8; 16] = stack.pop_value().try_into().unwrap_validated();
@@ -3476,7 +3477,7 @@ pub(super) fn run<T: Config>(
                         stack.push_value::<T>(Value::V128(result))?;
                     }
 
-                    // vvtestop <https://webassembly.github.io/spec/core/syntax/instructions.html#syntax-vvtestop>
+                    // vvtestop https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#-hrefsyntax-valtypemathsfv128mathsfhrefsyntax-instr-vecmathsfany_true
                     V128_ANY_TRUE => {
                         decrement_fuel!(T::get_fd_extension_flat_cost(V128_ANY_TRUE));
                         let data: [u8; 16] = stack.pop_value().try_into().unwrap_validated();
@@ -3675,7 +3676,7 @@ pub(super) fn run<T: Config>(
                         stack.push_value::<T>(Value::V128(from_lanes(lanes)))?;
                     }
 
-                    // Group vunop <https://webassembly.github.io/spec/core/syntax/instructions.html#syntax-vunop>
+                    // Group vunop https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#-hrefsyntax-valtypemathsfv128mathsfhrefsyntax-vvunopmathitvvunop%E2%91%A0
                     // viunop
                     I8X16_ABS => {
                         decrement_fuel!(T::get_fd_extension_flat_cost(I8X16_ABS));
@@ -3841,7 +3842,7 @@ pub(super) fn run<T: Config>(
                         stack.push_value::<T>(Value::V128(from_lanes(result)))?;
                     }
 
-                    // Group vbinop <https://webassembly.github.io/spec/core/syntax/instructions.html#syntax-vbinop>
+                    // Group vbinop https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#memory-instructions%E2%91%A0
                     // vibinop
                     I8X16_ADD => {
                         decrement_fuel!(T::get_fd_extension_flat_cost(I8X16_ADD));
@@ -4358,7 +4359,7 @@ pub(super) fn run<T: Config>(
                         stack.push_value::<T>(Value::V128(from_lanes(result)))?;
                     }
 
-                    // Group vrelop <https://webassembly.github.io/spec/core/syntax/instructions.html#syntax-vrelop>
+                    // Group vrelop https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#memory-instructions%E2%91%A0
                     // virelop
                     I8X16_EQ => {
                         decrement_fuel!(T::get_fd_extension_flat_cost(I8X16_EQ));
@@ -4941,7 +4942,7 @@ pub(super) fn run<T: Config>(
                         stack.push_value::<T>(Value::V128(from_lanes(result)))?;
                     }
 
-                    // Group vtestop <https://webassembly.github.io/spec/core/syntax/instructions.html#syntax-vtestop>
+                    // Group vtestop https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#memory-instructions%E2%91%A0
                     // vitestop
                     I8X16_ALL_TRUE => {
                         decrement_fuel!(T::get_fd_extension_flat_cost(I8X16_ALL_TRUE));
@@ -4972,7 +4973,7 @@ pub(super) fn run<T: Config>(
                         stack.push_value::<T>(Value::I32(all_true as u32))?;
                     }
 
-                    // Group vcvtop <https://webassembly.github.io/spec/core/syntax/instructions.html#syntax-vcvtop>
+                    // Group vcvtop https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#memory-instructions%E2%91%A0
                     I16X8_EXTEND_HIGH_I8X16_S => {
                         decrement_fuel!(T::get_fd_extension_flat_cost(I16X8_EXTEND_HIGH_I8X16_S));
                         let data: [u8; 16] = stack.pop_value().try_into().unwrap_validated();
@@ -5613,7 +5614,7 @@ fn calculate_mem_address(memarg: &MemArg, relative_address: u32) -> Result<usize
         // The spec states that this should be a 33 bit integer, e.g. it is not legal to wrap if the
         // sum of offset and relative_address exceeds u32::MAX. To emulate this behavior, we use a
         // checked addition.
-        // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
+        // See: https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#memory-instructions%E2%91%A0
         .checked_add(relative_address)
         .ok_or(TrapError::MemoryOrDataAccessOutOfBounds)?
         .try_into()

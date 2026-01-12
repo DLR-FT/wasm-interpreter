@@ -223,7 +223,7 @@ fn read_instructions(
                     stps_to_backpatch: Vec::new(),
                 };
                 // The types are explicitly popped and pushed in
-                // https://webassembly.github.io/spec/core/appendix/algorithm.html
+                // https://www.w3.org/TR/wasm-core/#a3-validation-algorithm
                 // therefore types on the stack might change.
                 stack.assert_push_ctrl(label_info, block_ty, true)?;
             }
@@ -234,7 +234,7 @@ fn read_instructions(
                     stp: sidetable.len(),
                 };
                 // The types are explicitly popped and pushed in
-                // https://webassembly.github.io/spec/core/appendix/algorithm.html
+                // https://www.w3.org/TR/wasm-core/#a3-validation-algorithm
                 // therefore types on the stack might change.
                 stack.assert_push_ctrl(label_info, block_ty, true)?;
             }
@@ -256,7 +256,7 @@ fn read_instructions(
                     stps_to_backpatch: Vec::new(),
                 };
                 // The types are explicitly popped and pushed in
-                // https://webassembly.github.io/spec/core/appendix/algorithm.html
+                // https://www.w3.org/TR/wasm-core/#a3-validation-algorithm
                 // therefore types on the stack might change.
                 stack.assert_push_ctrl(label_info, block_ty, true)?;
             }
@@ -294,7 +294,7 @@ fn read_instructions(
                         stack.push_valtype(*valtype);
                     }
                     // The types are explicitly popped and pushed in
-                    // https://webassembly.github.io/spec/core/appendix/algorithm.html
+                    // https://www.w3.org/TR/wasm-core/#a3-validation-algorithm
                     // therefore types on the stack might change.
                     stack.assert_push_ctrl(label_info, block_ty, true)?;
                 } else {
@@ -312,7 +312,7 @@ fn read_instructions(
                 let label_idx = wasm.read_var_u32()? as LabelIdx;
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 // The types are explicitly popped and pushed in
-                // https://webassembly.github.io/spec/core/appendix/algorithm.html
+                // https://www.w3.org/TR/wasm-core/#a3-validation-algorithm
                 // therefore types on the stack might change.
                 validate_branch_and_generate_sidetable_entry(
                     wasm, label_idx, stack, sidetable, true,
@@ -364,7 +364,7 @@ fn read_instructions(
             }
             END => {
                 // The types are explicitly popped and pushed in
-                // https://webassembly.github.io/spec/core/appendix/algorithm.html
+                // https://www.w3.org/TR/wasm-core/#a3-validation-algorithm
                 // therefore types on the stack might change.
                 let (label_info, block_ty) = stack.assert_pop_ctrl(true)?;
                 let stp_here = sidetable.len();
@@ -1109,7 +1109,7 @@ fn read_instructions(
                 }
 
                 // check whether func_idx is in C.refs
-                // https://webassembly.github.io/spec/core/valid/conventions.html#context
+                // https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#contexts%E2%91%A0
                 if !validation_context_refs.contains(&func_idx) {
                     return Err(ValidationError::ReferencingAnUnreferencedFunction(func_idx));
                 }
@@ -1584,20 +1584,20 @@ fn read_instructions(
                         stack.push_valtype(ValType::VecType);
                     }
 
-                    // vvunop <https://webassembly.github.io/spec/core/syntax/instructions.html#syntax-vvunop>
+                    // vvunop https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#syntax-vvunop
                     V128_NOT => {
                         stack.assert_pop_val_type(ValType::VecType)?;
                         stack.push_valtype(ValType::VecType);
                     }
 
-                    // vvbinop <https://webassembly.github.io/spec/core/syntax/instructions.html#syntax-vvbinop>
+                    // vvbinop https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#syntax-vvbinop
                     V128_AND | V128_ANDNOT | V128_OR | V128_XOR => {
                         stack.assert_pop_val_type(ValType::VecType)?;
                         stack.assert_pop_val_type(ValType::VecType)?;
                         stack.push_valtype(ValType::VecType);
                     }
 
-                    // vvternop <https://webassembly.github.io/spec/core/syntax/instructions.html#syntax-vvternop>
+                    // vvternop https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#syntax-vvternop
                     V128_BITSELECT => {
                         stack.assert_pop_val_type(ValType::VecType)?;
                         stack.assert_pop_val_type(ValType::VecType)?;
@@ -1605,7 +1605,7 @@ fn read_instructions(
                         stack.push_valtype(ValType::VecType);
                     }
 
-                    // vvtestop <https://webassembly.github.io/spec/core/syntax/instructions.html#syntax-vvtestop>
+                    // vvtestop https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#syntax-vvtestop
                     V128_ANY_TRUE => {
                         stack.assert_pop_val_type(ValType::VecType)?;
                         stack.push_valtype(ValType::NumType(NumType::I32));
@@ -1751,7 +1751,7 @@ fn read_instructions(
                         stack.push_valtype(ValType::VecType);
                     }
 
-                    // Group vunop <https://webassembly.github.io/spec/core/syntax/instructions.html#syntax-vunop>
+                    // Group vunop https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#syntax-vvunop
                     // viunop
                     I8X16_ABS | I16X8_ABS | I32X4_ABS | I64X2_ABS
                     | I8X16_NEG | I16X8_NEG | I32X4_NEG | I64X2_NEG
@@ -1770,7 +1770,7 @@ fn read_instructions(
                         stack.push_valtype(ValType::VecType);
                     }
 
-                    // Group vbinop <https://webassembly.github.io/spec/core/syntax/instructions.html#syntax-vbinop>
+                    // Group vbinop https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#syntax-vvbinop
                     // vibinop
                     I8X16_ADD | I16X8_ADD | I32X4_ADD | I64X2_ADD
                     | I8X16_SUB | I16X8_SUB | I32X4_SUB | I64X2_SUB
@@ -1803,7 +1803,7 @@ fn read_instructions(
                         stack.push_valtype(ValType::VecType);
                     }
 
-                    // Group vrelop <https://webassembly.github.io/spec/core/syntax/instructions.html#syntax-vrelop>
+                    // Group vrelop https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#syntax-vrelop
                     // virelop
                     I8X16_EQ | I16X8_EQ | I32X4_EQ | I64X2_EQ
                     | I8X16_NE | I16X8_NE | I32X4_NE | I64X2_NE
@@ -1837,7 +1837,7 @@ fn read_instructions(
                         stack.push_valtype(ValType::VecType);
                     }
 
-                    // Group vtestop <https://webassembly.github.io/spec/core/syntax/instructions.html#syntax-vtestop>
+                    // Group vtestop https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#syntax-vvtestop
                     // vitestop
                     I8X16_ALL_TRUE | I16X8_ALL_TRUE | I32X4_ALL_TRUE | I64X2_ALL_TRUE
                     => {
@@ -1845,7 +1845,7 @@ fn read_instructions(
                         stack.push_valtype(ValType::NumType(NumType::I32));
                     }
 
-                    // Group vcvtop <https://webassembly.github.io/spec/core/syntax/instructions.html#syntax-vcvtop>
+                    // Group vcvtop https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#syntax-vcvtop
                     I16X8_EXTEND_HIGH_I8X16_S | I16X8_EXTEND_HIGH_I8X16_U | I16X8_EXTEND_LOW_I8X16_S | I16X8_EXTEND_LOW_I8X16_U
                     | I32X4_EXTEND_HIGH_I16X8_S | I32X4_EXTEND_HIGH_I16X8_U | I32X4_EXTEND_LOW_I16X8_S | I32X4_EXTEND_LOW_I16X8_U
                     | I64X2_EXTEND_HIGH_I32X4_S | I64X2_EXTEND_HIGH_I32X4_U | I64X2_EXTEND_LOW_I32X4_S | I64X2_EXTEND_LOW_I32X4_U

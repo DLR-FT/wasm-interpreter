@@ -17,7 +17,7 @@ use super::validation_stack::ValidationStack;
 /// and nothing more.
 ///
 /// Valid constant instructions are:
-/// - Core: <https://webassembly.github.io/spec/core/valid/instructions.html#valid-constant>
+/// - Core: <https://www.w3.org/TR/wasm-core/#expressions%E2%91%A2>
 /// - Extended Proposal: <https://webassembly.github.io/extended-const/core/valid/instructions.html#valid-constant>
 ///
 /// # The Wonders of `global.get`
@@ -88,7 +88,7 @@ pub fn read_constant_expression(
     wasm: &mut WasmReader,
     stack: &mut ValidationStack,
     // The globals slice should contain ONLY imported globals IF AND ONLY IF we are calling `read_constant_expression` for local globals instantiation
-    // As per https://webassembly.github.io/spec/core/valid/modules.html (bottom of the page):
+    // As per https://www.w3.org/TR/wasm-core/#modules%E2%91%A3 (bottom of the page):
     //
     //  Globals, however, are not recursive and not accessible within constant expressions when they are defined locally. The effect of defining the limited context C'
     //   for validating certain definitions is that they can only access functions and imported globals and nothing else.
