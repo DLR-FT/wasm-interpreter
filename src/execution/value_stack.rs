@@ -13,7 +13,7 @@ use crate::RuntimeError;
 /// 2. Labels
 /// 3. Activations
 ///
-/// See <https://webassembly.github.io/spec/core/exec/runtime.html#stack>
+/// See <https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#stack%E2%91%A0>
 #[derive(Default, Debug)]
 pub(crate) struct Stack {
     /// WASM values on the stack, i.e. the actual data that instructions operate on
@@ -200,7 +200,7 @@ impl Stack {
     }
 }
 
-/// The [WASM spec](https://webassembly.github.io/spec/core/exec/runtime.html#stack) calls this `Activations`, however it refers to the call frames of functions.
+/// The [WASM spec](https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#stack%E2%91%A0) calls this `Activations`, however it refers to the call frames of functions.
 #[derive(Debug)]
 pub(crate) struct CallFrame {
     /// Store address of the function that called this [`CallFrame`]'s function

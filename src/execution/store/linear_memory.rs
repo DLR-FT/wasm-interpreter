@@ -15,7 +15,7 @@ use crate::{
 /// Implementation of the linear memory suitable for concurrent access
 ///
 /// Implements the base for the instructions described in
-/// <https://webassembly.github.io/spec/core/exec/instructions.html#memory-instructions>.
+/// <https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#memory-instructions%E2%91%A4>.
 ///
 /// This linear memory implementation internally relies on a [`Vec<AtomicU8>`]. Thus, the atomic unit
 /// of information for it is a byte (`u8`). All access to the linear memory internally occur through
@@ -97,7 +97,7 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
     /// Size of a page in the linear memory, measured in bytes
     ///
     /// The WASM specification demands a page size of 64 KiB, that is `65536` bytes:
-    /// <https://webassembly.github.io/spec/core/exec/runtime.html?highlight=page#memory-instances>
+    /// <https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#memory-instances%E2%91%A0>
     const PAGE_SIZE: usize = PAGE_SIZE;
 
     /// Create a new, empty [`LinearMemory`]
@@ -239,11 +239,9 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
     }
 
     /// Implementation of the behavior described in
-    /// <https://webassembly.github.io/spec/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-fill>.
+    /// <https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#-hrefsyntax-instr-memorymathsfmemoryfill%E2%91%A0>.
     /// Note, that the WASM spec defines the behavior by recursion, while our implementation uses
     /// the memset like [`core::ptr::write_bytes`].
-    ///
-    /// <https://webassembly.github.io/spec/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-fill>
     pub fn fill(&self, index: MemIdx, data_byte: u8, count: MemIdx) -> Result<(), RuntimeError> {
         let lock_guard = self.inner_data.read();
 
@@ -292,7 +290,7 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
     /// - Copies the `count` bytes starting from `source_index`, overwriting the `count` bytes
     ///   starting from `destination_index`
     ///
-    /// <https://webassembly.github.io/spec/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-copy>
+    /// <https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#-hrefsyntax-instr-memorymathsfmemorycopy%E2%91%A0>
     pub fn copy(
         &self,
         destination_index: MemIdx,
@@ -387,7 +385,7 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
     // Rationale behind having `source_index` and `count` when the callsite could also just create a
     // subslice for `source_data`? Have all the index error checks in one place.
     //
-    // <https://webassembly.github.io/spec/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-init-x>
+    // <https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#-hrefsyntax-instr-memorymathsfmemoryinitx%E2%91%A0>
     pub fn init(
         &self,
         destination_index: MemIdx,
