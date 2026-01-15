@@ -108,7 +108,7 @@ fn resumable() {
     let mut run_state_mult = store.resume(resumable_ref_mult).unwrap();
     let mut run_state_add = store.resume(resumable_ref_add).unwrap();
 
-    let increment = |maybe_fuel: &mut Option<u32>| *maybe_fuel = maybe_fuel.map(|fuel| fuel + 2);
+    let increment = |maybe_fuel: &mut Option<u64>| *maybe_fuel = maybe_fuel.map(|fuel| fuel + 2);
 
     for _ in 0..20 {
         run_state_mult = match run_state_mult {
@@ -201,7 +201,7 @@ fn resumable_internal_state() {
         Ok(StoredValue::I32(expected[0]))
     );
     let mut run_state_add = store.resume(resumable_ref_add).unwrap();
-    let increment = |maybe_fuel: &mut Option<u32>| *maybe_fuel = maybe_fuel.map(|fuel| fuel + 4);
+    let increment = |maybe_fuel: &mut Option<u64>| *maybe_fuel = maybe_fuel.map(|fuel| fuel + 4);
     for expected in expected.into_iter().take(4).skip(1) {
         run_state_add = match run_state_add {
             StoredRunState::Finished { .. } => {

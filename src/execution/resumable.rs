@@ -1,4 +1,4 @@
-use core::num::NonZeroU32;
+use core::num::NonZeroU64;
 
 use alloc::{
     sync::{Arc, Weak},
@@ -19,7 +19,7 @@ pub(crate) struct Resumable {
     pub(crate) pc: usize,
     pub(crate) stp: usize,
     pub(crate) current_func_addr: FuncAddr,
-    pub(crate) maybe_fuel: Option<u32>,
+    pub(crate) maybe_fuel: Option<u64>,
 }
 
 #[derive(Default)]
@@ -49,7 +49,7 @@ pub struct InvokedResumableRef {
 pub struct FreshResumableRef {
     pub(crate) func_addr: FuncAddr,
     pub(crate) params: Vec<Value>,
-    pub(crate) maybe_fuel: Option<u32>,
+    pub(crate) maybe_fuel: Option<u64>,
 }
 
 /// An object associated to a resumable that is held internally.
@@ -78,13 +78,13 @@ pub enum RunState {
     /// `maybe_remaining_fuel` (has `Some(remaining_fuel)` for fuel-metered operations and `None` otherwise)
     Finished {
         values: Vec<Value>,
-        maybe_remaining_fuel: Option<u32>,
+        maybe_remaining_fuel: Option<u64>,
     },
     /// represents a resumable that has ran out of fuel during execution, missing at least `required_fuel` units of fuel
     /// to continue further execution.
     Resumable {
         resumable_ref: ResumableRef,
-        required_fuel: NonZeroU32,
+        required_fuel: NonZeroU64,
     },
 }
 
