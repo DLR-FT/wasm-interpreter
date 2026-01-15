@@ -108,7 +108,7 @@ impl<'b, T: Config> Store<'b, T> {
         &mut self,
         validation_info: &ValidationInfo<'b>,
         extern_vals: Vec<ExternVal>,
-        maybe_fuel: Option<u32>,
+        maybe_fuel: Option<u64>,
     ) -> Result<InstantiationOutcome, RuntimeError> {
         // instantiation: step 1
         // The module is guaranteed to be valid, because only validation can
@@ -530,7 +530,7 @@ impl<'b, T: Config> Store<'b, T> {
         &mut self,
         func_addr: FuncAddr,
         params: Vec<Value>,
-        maybe_fuel: Option<u32>,
+        maybe_fuel: Option<u64>,
     ) -> Result<RunState, RuntimeError> {
         self.resume_unchecked(self.create_resumable_unchecked(func_addr, params, maybe_fuel)?)
     }
@@ -1002,7 +1002,7 @@ impl<'b, T: Config> Store<'b, T> {
         &self,
         func_addr: FuncAddr,
         params: Vec<Value>,
-        maybe_fuel: Option<u32>,
+        maybe_fuel: Option<u64>,
     ) -> Result<ResumableRef, RuntimeError> {
         let func_inst = self.functions.get(func_addr);
 
@@ -1202,7 +1202,7 @@ impl<'b, T: Config> Store<'b, T> {
     pub fn access_fuel_mut_unchecked<R>(
         &mut self,
         resumable_ref: &mut ResumableRef,
-        f: impl FnOnce(&mut Option<u32>) -> R,
+        f: impl FnOnce(&mut Option<u64>) -> R,
     ) -> Result<R, RuntimeError> {
         match resumable_ref {
             ResumableRef::Fresh(FreshResumableRef { maybe_fuel, .. }) => Ok(f(maybe_fuel)),
@@ -1438,5 +1438,5 @@ pub struct InstantiationOutcome {
     /// contains the store address of the module that has successfully instantiated.
     pub module_addr: ModuleAddr,
     /// contains `Some(remaining_fuel)` if instantiation was fuel-metered and `None` otherwise.
-    pub maybe_remaining_fuel: Option<u32>,
+    pub maybe_remaining_fuel: Option<u64>,
 }
