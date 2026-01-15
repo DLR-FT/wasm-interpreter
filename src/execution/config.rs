@@ -24,7 +24,7 @@ pub trait Config {
     // It must always be checked that the calls to this method fold into a constant if it is just a match statement that
     // yields constants.
     #[inline(always)]
-    fn get_flat_cost(_instr: u8) -> u32 {
+    fn get_flat_cost(_instr: u8) -> u64 {
         1
     }
 
@@ -35,7 +35,7 @@ pub trait Config {
     // It must always be checked that the calls to this method fold into a constant if it is just a match statement that
     // yields constants.
     #[inline(always)]
-    fn get_fc_extension_flat_cost(_instr: u32) -> u32 {
+    fn get_fc_extension_flat_cost(_instr: u32) -> u64 {
         1
     }
 
@@ -46,7 +46,7 @@ pub trait Config {
     // It must always be checked that the calls to this method fold into a constant if it is just a match statement that
     // yields constants.
     #[inline(always)]
-    fn get_fd_extension_flat_cost(_instr: u32) -> u32 {
+    fn get_fd_extension_flat_cost(_instr: u32) -> u64 {
         1
     }
 
@@ -62,7 +62,7 @@ pub trait Config {
     // It must always be checked that the calls to this method fold into a constant if it is just a match statement that
     // yields constants.
     #[inline(always)]
-    fn get_cost_per_element(_instr: u8) -> u32 {
+    fn get_cost_per_element(_instr: u8) -> u64 {
         0
     }
 
@@ -87,7 +87,7 @@ pub trait Config {
     // It must always be checked that the calls to this method fold into a constant if it is just a match statement that
     // yields constants.
     #[inline(always)]
-    fn get_fc_extension_cost_per_element(_instr: u32) -> u32 {
+    fn get_fc_extension_cost_per_element(_instr: u32) -> u64 {
         0
     }
 }
