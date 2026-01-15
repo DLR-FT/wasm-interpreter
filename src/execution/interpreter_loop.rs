@@ -7,7 +7,7 @@
 //! 2. This module must only use [`RuntimeError`] and never [`Error`](crate::core::error::ValidationError).
 
 use core::{
-    num::NonZeroU32,
+    num::NonZeroU64,
     {
         array,
         iter::zip,
@@ -46,7 +46,7 @@ use super::{little_endian::LittleEndianBytes, store::Store};
 pub(super) fn run<T: Config>(
     resumable: &mut Resumable,
     store: &mut Store<T>,
-) -> Result<Option<NonZeroU32>, RuntimeError> {
+) -> Result<Option<NonZeroU64>, RuntimeError> {
     let stack = &mut resumable.stack;
     let mut current_func_addr = resumable.current_func_addr;
     let pc = resumable.pc;
@@ -89,7 +89,7 @@ pub(super) fn run<T: Config>(
                         resumable.current_func_addr = current_func_addr;
                         resumable.pc = prev_pc; // the instruction was fetched already, we roll this back
                         resumable.stp = stp;
-                        return Ok(NonZeroU32::new($cost-*fuel));
+                        return Ok(NonZeroU64::new($cost-*fuel));
                     }
                 }
             }
@@ -997,7 +997,8 @@ pub(super) fn run<T: Config>(
 
                 let n: u32 = stack.pop_value().try_into().unwrap_validated();
                 // decrement fuel, but push n back if it fails
-                let cost = T::get_flat_cost(MEMORY_GROW) + n * T::get_cost_per_element(MEMORY_GROW);
+                let cost = T::get_flat_cost(MEMORY_GROW)
+                    + u64::from(n) * T::get_cost_per_element(MEMORY_GROW);
                 if let Some(fuel) = &mut resumable.maybe_fuel {
                     if *fuel >= cost {
                         *fuel -= cost;
@@ -1006,7 +1007,7 @@ pub(super) fn run<T: Config>(
                         resumable.current_func_addr = current_func_addr;
                         resumable.pc = wasm.pc - prev_pc; // the instruction was fetched already, we roll this back
                         resumable.stp = stp;
-                        return Ok(NonZeroU32::new(cost - *fuel));
+                        return Ok(NonZeroU64::new(cost - *fuel));
                     }
                 }
 
@@ -2489,7 +2490,7 @@ pub(super) fn run<T: Config>(
                         let n: u32 = stack.pop_value().try_into().unwrap_validated();
                         // decrement fuel, but push n back if it fails
                         let cost = T::get_fc_extension_flat_cost(MEMORY_INIT)
-                            + n * T::get_fc_extension_cost_per_element(MEMORY_INIT);
+                            + u64::from(n) * T::get_fc_extension_cost_per_element(MEMORY_INIT);
                         if let Some(fuel) = &mut resumable.maybe_fuel {
                             if *fuel >= cost {
                                 *fuel -= cost;
@@ -2498,7 +2499,7 @@ pub(super) fn run<T: Config>(
                                 resumable.current_func_addr = current_func_addr;
                                 resumable.pc = wasm.pc - prev_pc; // the instruction was fetched already, we roll this back
                                 resumable.stp = stp;
-                                return Ok(NonZeroU32::new(cost - *fuel));
+                                return Ok(NonZeroU64::new(cost - *fuel));
                             }
                         }
 
@@ -2536,7 +2537,7 @@ pub(super) fn run<T: Config>(
                         let n: u32 = stack.pop_value().try_into().unwrap_validated();
                         // decrement fuel, but push n back if it fails
                         let cost = T::get_fc_extension_flat_cost(MEMORY_COPY)
-                            + n * T::get_fc_extension_cost_per_element(MEMORY_COPY);
+                            + u64::from(n) * T::get_fc_extension_cost_per_element(MEMORY_COPY);
                         if let Some(fuel) = &mut resumable.maybe_fuel {
                             if *fuel >= cost {
                                 *fuel -= cost;
@@ -2545,7 +2546,7 @@ pub(super) fn run<T: Config>(
                                 resumable.current_func_addr = current_func_addr;
                                 resumable.pc = wasm.pc - prev_pc; // the instruction was fetched already, we roll this back
                                 resumable.stp = stp;
-                                return Ok(NonZeroU32::new(cost - *fuel));
+                                return Ok(NonZeroU64::new(cost - *fuel));
                             }
                         }
 
@@ -2591,7 +2592,7 @@ pub(super) fn run<T: Config>(
                         let n: u32 = stack.pop_value().try_into().unwrap_validated();
                         // decrement fuel, but push n back if it fails
                         let cost = T::get_fc_extension_flat_cost(MEMORY_FILL)
-                            + n * T::get_fc_extension_cost_per_element(MEMORY_FILL);
+                            + u64::from(n) * T::get_fc_extension_cost_per_element(MEMORY_FILL);
                         if let Some(fuel) = &mut resumable.maybe_fuel {
                             if *fuel >= cost {
                                 *fuel -= cost;
@@ -2600,7 +2601,7 @@ pub(super) fn run<T: Config>(
                                 resumable.current_func_addr = current_func_addr;
                                 resumable.pc = wasm.pc - prev_pc; // the instruction was fetched already, we roll this back
                                 resumable.stp = stp;
-                                return Ok(NonZeroU32::new(cost - *fuel));
+                                return Ok(NonZeroU64::new(cost - *fuel));
                             }
                         }
 
@@ -2626,7 +2627,7 @@ pub(super) fn run<T: Config>(
 
                         let n: u32 = stack.pop_value().try_into().unwrap_validated(); // size
                         let cost = T::get_fc_extension_flat_cost(TABLE_INIT)
-                            + n * T::get_fc_extension_cost_per_element(TABLE_INIT);
+                            + u64::from(n) * T::get_fc_extension_cost_per_element(TABLE_INIT);
                         if let Some(fuel) = &mut resumable.maybe_fuel {
                             if *fuel >= cost {
                                 *fuel -= cost;
@@ -2635,7 +2636,7 @@ pub(super) fn run<T: Config>(
                                 resumable.current_func_addr = current_func_addr;
                                 resumable.pc = wasm.pc - prev_pc; // the instruction was fetched already, we roll this back
                                 resumable.stp = stp;
-                                return Ok(NonZeroU32::new(cost - *fuel));
+                                return Ok(NonZeroU64::new(cost - *fuel));
                             }
                         }
 
@@ -2684,7 +2685,7 @@ pub(super) fn run<T: Config>(
 
                         let n: u32 = stack.pop_value().try_into().unwrap_validated(); // size
                         let cost = T::get_fc_extension_flat_cost(TABLE_COPY)
-                            + n * T::get_fc_extension_cost_per_element(TABLE_COPY);
+                            + u64::from(n) * T::get_fc_extension_cost_per_element(TABLE_COPY);
                         if let Some(fuel) = &mut resumable.maybe_fuel {
                             if *fuel >= cost {
                                 *fuel -= cost;
@@ -2693,7 +2694,7 @@ pub(super) fn run<T: Config>(
                                 resumable.current_func_addr = current_func_addr;
                                 resumable.pc = wasm.pc - prev_pc; // the instruction was fetched already, we roll this back
                                 resumable.stp = stp;
-                                return Ok(NonZeroU32::new(cost - *fuel));
+                                return Ok(NonZeroU64::new(cost - *fuel));
                             }
                         }
 
@@ -2781,7 +2782,7 @@ pub(super) fn run<T: Config>(
 
                         let n: u32 = stack.pop_value().try_into().unwrap_validated();
                         let cost = T::get_fc_extension_flat_cost(TABLE_GROW)
-                            + n * T::get_fc_extension_cost_per_element(TABLE_GROW);
+                            + u64::from(n) * T::get_fc_extension_cost_per_element(TABLE_GROW);
                         if let Some(fuel) = &mut resumable.maybe_fuel {
                             if *fuel >= cost {
                                 *fuel -= cost;
@@ -2790,7 +2791,7 @@ pub(super) fn run<T: Config>(
                                 resumable.current_func_addr = current_func_addr;
                                 resumable.pc = wasm.pc - prev_pc; // the instruction was fetched already, we roll this back
                                 resumable.stp = stp;
-                                return Ok(NonZeroU32::new(cost - *fuel));
+                                return Ok(NonZeroU64::new(cost - *fuel));
                             }
                         }
 
@@ -2838,7 +2839,7 @@ pub(super) fn run<T: Config>(
 
                         let len: u32 = stack.pop_value().try_into().unwrap_validated();
                         let cost = T::get_fc_extension_flat_cost(TABLE_FILL)
-                            + len * T::get_fc_extension_cost_per_element(TABLE_FILL);
+                            + u64::from(len) * T::get_fc_extension_cost_per_element(TABLE_FILL);
                         if let Some(fuel) = &mut resumable.maybe_fuel {
                             if *fuel >= cost {
                                 *fuel -= cost;
@@ -2847,7 +2848,7 @@ pub(super) fn run<T: Config>(
                                 resumable.current_func_addr = current_func_addr;
                                 resumable.pc = wasm.pc - prev_pc; // the instruction was fetched already, we roll this back
                                 resumable.stp = stp;
-                                return Ok(NonZeroU32::new(cost - *fuel));
+                                return Ok(NonZeroU64::new(cost - *fuel));
                             }
                         }
 

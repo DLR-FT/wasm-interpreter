@@ -19,7 +19,7 @@
 //! this enum, the entire enum has to be re-defined. The result is a completely
 //! new type [`StoredValue`].
 
-use core::num::NonZeroU32;
+use core::num::NonZeroU64;
 
 use crate::{
     addrs::{FuncAddr, GlobalAddr, MemAddr, ModuleAddr, TableAddr},
@@ -56,7 +56,7 @@ impl<'b, T: Config> Store<'b, T> {
         &mut self,
         validation_info: &ValidationInfo<'b>,
         extern_vals: Vec<StoredExternVal>,
-        maybe_fuel: Option<u32>,
+        maybe_fuel: Option<u64>,
     ) -> Result<StoredInstantiationOutcome, RuntimeError> {
         // 1. try unwrap
         let extern_vals = extern_vals
@@ -139,7 +139,7 @@ impl<'b, T: Config> Store<'b, T> {
         &mut self,
         func_addr: Stored<FuncAddr>,
         params: Vec<StoredValue>,
-        maybe_fuel: Option<u32>,
+        maybe_fuel: Option<u64>,
     ) -> Result<StoredRunState, RuntimeError> {
         // 1. try unwrap
         let func_addr = func_addr.try_unwrap_into_bare(self.id)?;
@@ -375,7 +375,7 @@ impl<'b, T: Config> Store<'b, T> {
         &self,
         func_addr: Stored<FuncAddr>,
         params: Vec<StoredValue>,
-        maybe_fuel: Option<u32>,
+        maybe_fuel: Option<u64>,
     ) -> Result<Stored<ResumableRef>, RuntimeError> {
         // 1. try unwrap
         let func_addr = func_addr.try_unwrap_into_bare(self.id)?;
@@ -411,7 +411,7 @@ impl<'b, T: Config> Store<'b, T> {
     pub fn access_fuel_mut<R>(
         &mut self,
         resumable_ref: &mut Stored<ResumableRef>,
-        f: impl FnOnce(&mut Option<u32>) -> R,
+        f: impl FnOnce(&mut Option<u64>) -> R,
     ) -> Result<R, RuntimeError> {
         // 1. try unwrap
         let resumable_ref = resumable_ref.as_mut().try_unwrap_into_bare(self.id)?;
@@ -666,7 +666,7 @@ impl Linker {
         &mut self,
         store: &mut Store<'b, T>,
         validation_info: &ValidationInfo<'b>,
-        maybe_fuel: Option<u32>,
+        maybe_fuel: Option<u64>,
     ) -> Result<StoredInstantiationOutcome, RuntimeError> {
         // 1. get or insert `StoreId`
         let linker_store_id = *self.store_id.get_or_insert(store.id);
@@ -877,11 +877,11 @@ impl StoredExternVal {
 pub enum StoredRunState {
     Finished {
         values: Vec<StoredValue>,
-        maybe_remaining_fuel: Option<u32>,
+        maybe_remaining_fuel: Option<u64>,
     },
     Resumable {
         resumable_ref: Stored<ResumableRef>,
-        required_fuel: NonZeroU32,
+        required_fuel: NonZeroU64,
     },
 }
 
@@ -919,7 +919,7 @@ impl AbstractStored for StoredRunState {
 /// A stored variant of [`InstantiationOutcome`]
 pub struct StoredInstantiationOutcome {
     pub module_addr: Stored<ModuleAddr>,
-    pub maybe_remaining_fuel: Option<u32>,
+    pub maybe_remaining_fuel: Option<u64>,
 }
 
 impl AbstractStored for StoredInstantiationOutcome {
