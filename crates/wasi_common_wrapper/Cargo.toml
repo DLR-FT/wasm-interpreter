@@ -1,0 +1,10 @@
+[package]
+name = "wasi_common_wrapper"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+wiggle = "^21.0.0"
+wasm-interpreter = { path = "../..", default-features = false }
+wasi-common = "^21.0.0"
+wat = { workspace = true }

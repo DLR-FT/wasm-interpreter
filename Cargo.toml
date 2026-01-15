@@ -4,6 +4,7 @@ members = [
   "crates/benchmark",
   "crates/compare-testsuite-rs",
   "crates/log_wrapper",
+  "crates/wasi_common_wrapper",
 ]
 resolver = "2"
 
