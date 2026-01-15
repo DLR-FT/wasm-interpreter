@@ -3,7 +3,7 @@ use crate::{
     assert_validated::UnwrapValidatedExt,
     config::Config,
     core::{
-        indices::GlobalIdx,
+        indices::{FuncIdx, GlobalIdx},
         reader::{span::Span, WasmReader},
     },
     unreachable_validated,
@@ -85,15 +85,13 @@ pub(crate) fn run_const<T: Config>(
                 trace!("Instruction: ref.null '{:?}' -> [{:?}]", reftype, reftype);
             }
             REF_FUNC => {
-                // we already checked for the func_idx to be in bounds during validation
-                let func_idx = wasm.read_var_u32().unwrap_validated() as usize;
-                let func_addr = *store
-                    .modules
-                    .get(module)
-                    .func_addrs
-                    .get(func_idx)
-                    .unwrap_validated();
-                stack.push_value::<T>(Value::Ref(Ref::Func(func_addr)))?;
+                // SAFETY: Validation guarantees there to be a valid function
+                // index next.
+                let func_idx = unsafe { FuncIdx::read_unchecked(wasm) };
+                // SAFETY: Validation guarantees the function index to be valid
+                // for the current module.
+                let func_addr = unsafe { store.modules.get(module).func_addrs.get(func_idx) };
+                stack.push_value::<T>(Value::Ref(Ref::Func(*func_addr)))?;
             }
 
             FD_EXTENSIONS => {

@@ -2,7 +2,7 @@ use alloc::vec::Vec;
 
 use crate::{
     core::{
-        indices::MemIdx,
+        indices::{ExtendedIdxVec, FuncIdx, MemIdx, TypeIdx},
         reader::{
             section_header::{SectionHeader, SectionTy},
             types::{
@@ -23,7 +23,7 @@ pub(super) fn validate_data_section(
     section_header: SectionHeader,
     imported_global_types: &[GlobalType],
     no_of_total_memories: usize,
-    num_funcs: usize,
+    c_funcs: &ExtendedIdxVec<FuncIdx, TypeIdx>,
 ) -> Result<Vec<DataSegment>, ValidationError> {
     assert_eq!(section_header.ty, SectionTy::Data);
 
@@ -45,7 +45,7 @@ pub(super) fn validate_data_section(
                         wasm,
                         &mut valid_stack,
                         imported_global_types,
-                        num_funcs,
+                        c_funcs,
                     )?
                 };
 
@@ -88,7 +88,7 @@ pub(super) fn validate_data_section(
                         wasm,
                         &mut valid_stack,
                         imported_global_types,
-                        num_funcs,
+                        c_funcs,
                     )?
                 };
 
