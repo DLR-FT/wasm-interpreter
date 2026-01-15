@@ -41,6 +41,10 @@ pub struct ValidationInfo<'bytecode> {
     pub(crate) types: IdxVec<TypeIdx, FuncType>,
     pub(crate) imports: Vec<Import>,
     pub(crate) functions: Vec<TypeIdx>,
+    // TODO this is redundant information. Find out how to get rid of this
+    // without invalidating the safety requirements for accesses during runtime
+    // on the `IdxVec<FuncIdx, FuncAddr>`.
+    pub(crate) all_functions: IdxVec<FuncIdx, TypeIdx>,
     pub(crate) tables: Vec<TableType>,
     pub(crate) memories: Vec<MemType>,
     pub(crate) globals: Vec<Global>,
@@ -67,13 +71,8 @@ fn validate_exports(validation_info: &ValidationInfo) -> Result<(), ValidationEr
         }
         found_export_names.insert(export.name.as_str());
         match export.desc {
-            FuncIdx(func_idx) => {
-                if validation_info.functions.len()
-                    + validation_info.imports_length.imported_functions
-                    <= func_idx
-                {
-                    return Err(ValidationError::InvalidFuncIdx(func_idx));
-                }
+            FuncIdx(_) => {
+                // Function indices are already validated upon creation
             }
             TableIdx(table_idx) => {
                 if validation_info.tables.len() + validation_info.imports_length.imported_tables
@@ -209,10 +208,15 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
         _ => None,
     });
 
-    let all_functions = imported_functions
-        .clone()
-        .chain(local_functions.iter().cloned())
-        .collect::<Vec<TypeIdx>>();
+    // TODO Reduce overhead from cloning all functions (imported/local).
+    // Instead just clone the imported functions and implement a new struct that
+    // acts as view into the imported functions and local functions vectors.
+    let all_functions = IdxVec::new(
+        imported_functions
+            .clone()
+            .chain(local_functions.iter().cloned())
+            .collect::<Vec<TypeIdx>>(),
+    );
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
@@ -275,7 +279,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
             h,
             &imported_global_types,
             &mut validation_context_refs,
-            all_functions.len(),
+            &all_functions,
         )
     })?
     .unwrap_or_default();
@@ -293,7 +297,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
     let exports = handle_section(&mut wasm, &mut header, SectionTy::Export, |wasm, _| {
-        wasm.read_vec(Export::read)
+        wasm.read_vec(|wasm| Export::read_and_validate(wasm, &all_functions))
     })?
     .unwrap_or_default();
     validation_context_refs.extend(exports.iter().filter_map(
@@ -306,17 +310,18 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
     let start = handle_section(&mut wasm, &mut header, SectionTy::Start, |wasm, _| {
-        let func_idx = wasm.read_var_u32().map(|idx| idx as FuncIdx)?;
+        let func_idx = FuncIdx::read_and_validate(wasm, &all_functions)?;
+
         // start function signature must be [] -> []
         // https://webassembly.github.io/spec/core/valid/modules.html#start-function
-        let type_idx = *all_functions
-            .get(func_idx)
-            .ok_or(ValidationError::InvalidFuncIdx(func_idx))?;
+        // SAFETY: We just validated this function index using the same
+        // `IdxVec`.
+        let type_idx = unsafe { all_functions.get(func_idx) };
 
         // Safety: There exists only one `IdxVec<TypeIdx, FuncType>` in the
         // current function. Therefore, this has to be the same one used to
         // create and validate this `TypeIdx`.
-        let func_type = unsafe { types.get(type_idx) };
+        let func_type = unsafe { types.get(*type_idx) };
         if func_type
             != &(FuncType {
                 params: ResultType {
@@ -402,7 +407,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
             h,
             &imported_global_types,
             all_memories.len(),
-            all_functions.len(),
+            &all_functions,
         )
     })?
     .unwrap_or_default();
@@ -427,6 +432,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
         types,
         imports,
         functions: local_functions,
+        all_functions,
         tables,
         memories,
         globals,

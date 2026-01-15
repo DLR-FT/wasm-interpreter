@@ -46,7 +46,7 @@ use crate::{
 /// A trait for all index types.
 ///
 /// This is used by [`IdxVec`] to create and read index types.
-pub(crate) trait Idx: Copy + core::fmt::Debug + core::fmt::Display + Eq {
+pub trait Idx: Copy + core::fmt::Debug + core::fmt::Display + Eq {
     /// # Safety
     ///
     /// The caller must ensure that the given index is valid for some
@@ -60,7 +60,7 @@ pub(crate) trait Idx: Copy + core::fmt::Debug + core::fmt::Display + Eq {
 /// An immutable vector that can only be indexed by type-safe indices.
 ///
 /// Use [`IdxVec::new`] or [`IdxVec::default`] to create a new instance.
-pub(crate) struct IdxVec<I: Idx, T> {
+pub struct IdxVec<I: Idx, T> {
     inner: Box<[T]>,
     _phantom: PhantomData<I>,
 }
@@ -122,6 +122,10 @@ impl<I: Idx, T> IdxVec<I, T> {
         self.inner
             .get(index)
             .expect("this to be a valid index due to the safety guarantees made by the caller")
+    }
+
+    pub fn iter(&self) -> core::slice::Iter<'_, T> {
+        self.inner.iter()
     }
 }
 
@@ -195,7 +199,54 @@ impl TypeIdx {
     }
 }
 
-pub type FuncIdx = usize;
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct FuncIdx(u32);
+
+impl core::fmt::Display for FuncIdx {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "function index {}", self.0)
+    }
+}
+
+impl Idx for FuncIdx {
+    unsafe fn new_unchecked(index: u32) -> Self {
+        Self(index)
+    }
+
+    fn into_inner(self) -> u32 {
+        self.0
+    }
+}
+
+impl FuncIdx {
+    /// Reads a function index from Wasm code and validates that it is a valid
+    /// index for a given functions vector.
+    pub fn read_and_validate(
+        wasm: &mut WasmReader,
+        c_funcs: &IdxVec<FuncIdx, TypeIdx>,
+    ) -> Result<Self, ValidationError> {
+        let index = wasm.read_var_u32()?;
+        c_funcs
+            .validate_index(index)
+            .ok_or(ValidationError::InvalidFuncIdx(index))
+    }
+
+    /// Reads a function index from Wasm code without validating it.
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure that there is a valid function index in the
+    /// [`WasmReader`] and that this index is valid for a specific [`IdxVec`]
+    /// through [`Self::read_and_validate`].
+    pub unsafe fn read_unchecked(wasm: &mut WasmReader) -> Self {
+        let index = wasm.read_var_u32().unwrap();
+
+        // SAFETY: The caller guarantees that the index that was just read is
+        // valid.
+        unsafe { Self::new_unchecked(index) }
+    }
+}
+
 pub type TableIdx = usize;
 pub type MemIdx = usize;
 pub type GlobalIdx = usize;
