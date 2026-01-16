@@ -9,17 +9,15 @@
 //!
 //! All extension methods defined in this module use special _stored_ objects.
 //! These objects are essentially normal objects like [`FuncAddr`], [`RunState`]
-//! or [`Value`](crate::execution::Value). However, they also contain an
-//! additional field of type [`StoreId`] as a tag to know to which [`Store`]
-//! they belong to.
+//! or [`Value`]. However, they also contain an additional field of type
+//! [`StoreId`] as a tag to know to which [`Store`] they belong to.
 //!
 //! While this is easy for address types like [`FuncAddr`] or [`MemAddr`], some
 //! types are enums and their variants are visible to the user. For example,
-//! consider the [`Value`](crate::execution::Value) enum, where users have full
-//! access to all of its variants. To be able to attach a tag only to the
-//! [`Value::Ref`](crate::execution::Value::Ref) variant of this enum, the
-//! entire enum has to be re-defined. The result is a completely new type
-//! [`StoredValue`].
+//! consider the [`Value`] enum, where users have full access to all of its
+//! variants. To be able to attach a tag only to the [`Value::Ref`] variant of
+//! this enum, the entire enum has to be re-defined. The result is a completely
+//! new type [`StoredValue`].
 
 use core::num::NonZeroU32;
 
@@ -27,9 +25,11 @@ use crate::{
     addrs::{FuncAddr, GlobalAddr, MemAddr, ModuleAddr, TableAddr},
     config::Config,
     core::reader::types::{FuncType, MemType, TableType},
+    interop::InteropValueList,
     linker::Linker,
     resumable::{ResumableRef, RunState},
-    ExternVal, GlobalType, InstantiationOutcome, RuntimeError, Store, StoreId, ValidationInfo,
+    ExternVal, GlobalType, HaltExecutionError, InstantiationOutcome, RuntimeError, Store, StoreId,
+    ValidationInfo, Value,
 };
 use alloc::{string::String, vec::Vec};
 
@@ -91,8 +91,36 @@ impl<'b, T: Config> Store<'b, T> {
         Ok(stored_extern_val)
     }
 
-    // `fn func_alloc` is missing, because it would require changes in the core
-    // interpreter.
+    /// This is a safer variant of [`Store::func_alloc_unchecked`]. It is
+    /// functionally equal, with the only difference being that this function
+    /// returns a [`Stored<FuncAddr>`].
+    ///
+    /// # Safety
+    ///
+    /// The caller has to guarantee that if the [`Value`]s returned from the
+    /// given host function are references, their addresses came either from the
+    /// host function arguments or from the current [`Store`] object.
+    ///
+    /// See [`Store::func_alloc`] for more information.
+    #[allow(clippy::let_and_return)] // reason = "to follow the 1234 structure"
+    pub unsafe fn func_alloc(
+        &mut self,
+        func_type: FuncType,
+        host_func: fn(&mut T, Vec<Value>) -> Result<Vec<Value>, HaltExecutionError>,
+    ) -> Stored<FuncAddr> {
+        // 1. try unwrap
+        // no stored parameters
+        // 2. call
+        // SAFETY: The caller ensures that if the host function returns
+        // references, they originate either from the arguments or the current
+        // store.
+        let func_addr = self.func_alloc_unchecked(func_type, host_func);
+        // 3. rewrap
+        // SAFETY: The function address just came from the current store.
+        let func_addr = unsafe { Stored::from_bare(func_addr, self.id) };
+        // 4. return
+        func_addr
+    }
 
     /// This is a safe variant of [`Store::func_type_unchecked`].
     pub fn func_type(&self, func_addr: Stored<FuncAddr>) -> Result<FuncType, RuntimeError> {
@@ -395,8 +423,35 @@ impl<'b, T: Config> Store<'b, T> {
         Ok(r)
     }
 
-    // `fn func_alloc_typed` is missing because of the same reason why `fn
-    // func_alloc` is missing.
+    /// This is a safer variant of [`Store::func_alloc_typed_unchecked`]. It is
+    /// functionally equal, with the only difference being that this function
+    /// returns a [`Stored<FuncAddr>`].
+    ///
+    /// # Safety
+    ///
+    /// The caller has to guarantee that if the [`Value`]s returned from the
+    /// given host function are references, their addresses came either from the
+    /// host function arguments or from the current [`Store`] object.
+    ///
+    /// See: [`Store::func_alloc_typed_unchecked`] for more information.
+    #[allow(clippy::let_and_return)] // reason = "to follow the 1234 structure"
+    pub fn func_alloc_typed<Params: InteropValueList, Returns: InteropValueList>(
+        &mut self,
+        host_func: fn(&mut T, Vec<Value>) -> Result<Vec<Value>, HaltExecutionError>,
+    ) -> Stored<FuncAddr> {
+        // 1. try unwrap
+        // no stored parameters
+        // 2. call
+        // SAFETY: The caller ensures that if the host function returns
+        // references, they originate either from the arguments or the current
+        // store.
+        let func_addr = self.func_alloc_typed_unchecked::<Params, Returns>(host_func);
+        // 3. rewrap
+        // SAFETY: The function address just came from the current store.
+        let func_addr = unsafe { Stored::from_bare(func_addr, self.id) };
+        // 4. return
+        func_addr
+    }
 
     /// This is a safe variant of [`Store::invoke_without_fuel_unchecked`].
     pub fn invoke_without_fuel(
@@ -404,7 +459,7 @@ impl<'b, T: Config> Store<'b, T> {
         func_addr: Stored<FuncAddr>,
         params: Vec<StoredValue>,
     ) -> Result<Vec<StoredValue>, RuntimeError> {
-        // 1 try unwrap
+        // 1. try unwrap
         let func_addr = func_addr.try_unwrap_into_bare(self.id)?;
         let params = try_unwrap_values(params, self.id)?;
         // 2. call
@@ -891,7 +946,7 @@ unsafe fn wrap_vec_elements<S: AbstractStored>(values: Vec<S::BareTy>, id: Store
         .collect()
 }
 
-/// Helper method for checking if all [`Value`](crate::execution::Value)s in a slice have the given
+/// Helper method for checking if all [`Value`]s in a slice have the given
 /// [`StoreId`] and then, if the check was true, converting them to a
 /// [`Vec<Value>`].
 ///
