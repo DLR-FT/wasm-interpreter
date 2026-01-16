@@ -2,6 +2,7 @@ use alloc::borrow::ToOwned;
 use alloc::string::String;
 
 use crate::core::indices::{FuncIdx, GlobalIdx, MemIdx, TableIdx};
+use crate::core::reader::types::import::ImportDesc;
 use crate::core::reader::WasmReader;
 use crate::{ValidationError, ValidationInfo};
 
@@ -44,38 +45,84 @@ impl ExportDesc {
     /// Note: This method may panic if `self` does not come from the given [`ValidationInfo`].
     /// <https://webassembly.github.io/spec/core/valid/modules.html#exports>
     pub fn extern_type(&self, validation_info: &ValidationInfo) -> ExternType {
+        // TODO clean up logic for checking if an exported definition is an
+        // import
         match self {
             ExportDesc::FuncIdx(func_idx) => {
-                let type_idx = validation_info
-                    .functions
-                    .get(*func_idx)
-                    .expect("func indices to always be valid if the validation info is correct");
+                let type_idx = match func_idx
+                    .checked_sub(validation_info.imports_length.imported_functions)
+                {
+                    Some(local_func_idx) => *validation_info.functions.get(local_func_idx).unwrap(),
+                    None => validation_info
+                        .imports
+                        .iter()
+                        .filter_map(|import| match import.desc {
+                            ImportDesc::Func(type_idx) => Some(type_idx),
+                            _ => None,
+                        })
+                        .nth(*func_idx)
+                        .unwrap(),
+                };
                 let func_type = validation_info
                     .types
-                    .get(*type_idx)
+                    .get(type_idx)
                     .expect("type indices to always be valid if the validation info is correct");
                 // TODO ugly clone that should disappear when types are directly parsed from bytecode instead of vector copies
                 ExternType::Func(func_type.clone())
             }
-            ExportDesc::TableIdx(table_idx) => ExternType::Table(
-                *validation_info
-                    .tables
-                    .get(*table_idx)
-                    .expect("table indices to always be valid if the validation info is correct"),
-            ),
-            ExportDesc::MemIdx(mem_idx) => ExternType::Mem(
-                *validation_info
-                    .memories
-                    .get(*mem_idx)
-                    .expect("mem indices to always be valid if the validation info is correct"),
-            ),
-            ExportDesc::GlobalIdx(global_idx) => ExternType::Global(
-                validation_info
-                    .globals
-                    .get(*global_idx)
-                    .expect("global indices to always be valid if the validation info is correct")
-                    .ty,
-            ),
+            ExportDesc::TableIdx(table_idx) => {
+                let table_type = match table_idx
+                    .checked_sub(validation_info.imports_length.imported_tables)
+                {
+                    Some(local_table_idx) => *validation_info.tables.get(local_table_idx).unwrap(),
+                    None => validation_info
+                        .imports
+                        .iter()
+                        .filter_map(|import| match import.desc {
+                            ImportDesc::Table(table_type) => Some(table_type),
+                            _ => None,
+                        })
+                        .nth(*table_idx)
+                        .unwrap(),
+                };
+                ExternType::Table(table_type)
+            }
+            ExportDesc::MemIdx(mem_idx) => {
+                let mem_type = match mem_idx
+                    .checked_sub(validation_info.imports_length.imported_memories)
+                {
+                    Some(local_mem_idx) => *validation_info.memories.get(local_mem_idx).unwrap(),
+                    None => validation_info
+                        .imports
+                        .iter()
+                        .filter_map(|import| match import.desc {
+                            ImportDesc::Mem(mem_type) => Some(mem_type),
+                            _ => None,
+                        })
+                        .nth(*mem_idx)
+                        .unwrap(),
+                };
+                ExternType::Mem(mem_type)
+            }
+            ExportDesc::GlobalIdx(global_idx) => {
+                let global_type =
+                    match global_idx.checked_sub(validation_info.imports_length.imported_globals) {
+                        Some(local_global_idx) => {
+                            validation_info.globals.get(local_global_idx).unwrap().ty
+                        }
+                        None => validation_info
+                            .imports
+                            .iter()
+                            .filter_map(|import| match import.desc {
+                                ImportDesc::Global(global_type) => Some(global_type),
+                                _ => None,
+                            })
+                            .nth(*global_idx)
+                            .unwrap(),
+                    };
+
+                ExternType::Global(global_type)
+            }
         }
     }
 
