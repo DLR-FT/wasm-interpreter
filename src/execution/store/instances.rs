@@ -2,7 +2,7 @@ use alloc::{collections::btree_map::BTreeMap, string::String, vec, vec::Vec};
 
 use crate::{
     core::{
-        indices::TypeIdx,
+        indices::{ExtendedIdxVec, FuncIdx, IdxVec, TypeIdx},
         reader::{
             span::Span,
             types::{FuncType, MemType, TableType},
@@ -176,8 +176,11 @@ impl core::fmt::Debug for DataInst {
 ///<https://webassembly.github.io/spec/core/exec/runtime.html#module-instances>
 #[derive(Debug)]
 pub struct ModuleInst<'b> {
-    pub types: Vec<FuncType>,
-    pub func_addrs: Vec<FuncAddr>,
+    pub types: IdxVec<TypeIdx, FuncType>,
+    // TODO All accesses to this IdxVec during execution are technically unsound
+    // with the current safety requirements. That is because only accesses on
+    // `IdxVec<FuncIdx, TypeIdx>` were checked during validation.
+    pub func_addrs: ExtendedIdxVec<FuncIdx, FuncAddr>,
     pub table_addrs: Vec<TableAddr>,
     pub mem_addrs: Vec<MemAddr>,
     pub global_addrs: Vec<GlobalAddr>,

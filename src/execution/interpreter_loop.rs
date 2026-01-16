@@ -22,7 +22,7 @@ use crate::{
         indices::{DataIdx, FuncIdx, GlobalIdx, LabelIdx, LocalIdx, MemIdx, TableIdx, TypeIdx},
         reader::{
             types::{memarg::MemArg, BlockType},
-            WasmReadable, WasmReader,
+            WasmReader,
         },
         sidetable::Sidetable,
     },
@@ -201,11 +201,15 @@ pub(super) fn run<T: Config>(
             }
             BLOCK => {
                 decrement_fuel!(T::get_flat_cost(BLOCK));
-                BlockType::read(wasm).unwrap_validated();
+                // Safety: Because the Wasm code is valid, there must be a valid
+                // block type next.
+                let _ = unsafe { BlockType::read_unchecked(wasm) };
             }
             LOOP => {
                 decrement_fuel!(T::get_flat_cost(LOOP));
-                BlockType::read(wasm).unwrap_validated();
+                // Safety: Because the Wasm code is valid, there must be a valid
+                // block type next.
+                let _ = unsafe { BlockType::read_unchecked(wasm) };
             }
             RETURN => {
                 decrement_fuel!(T::get_flat_cost(RETURN));
@@ -214,23 +218,29 @@ pub(super) fn run<T: Config>(
             }
             CALL => {
                 decrement_fuel!(T::get_flat_cost(CALL));
-                let local_func_idx = wasm.read_var_u32().unwrap_validated() as FuncIdx;
+                // SAFETY: Validation guarantees there to be a valid function
+                // index next.
+                let func_idx = unsafe { FuncIdx::read_unchecked(wasm) };
                 let FuncInst::WasmFunc(current_wasm_func_inst) =
                     store.functions.get(current_func_addr)
                 else {
                     unreachable!()
                 };
 
-                let func_to_call_addr = store
-                    .modules
-                    .get(current_wasm_func_inst.module_addr)
-                    .func_addrs[local_func_idx];
+                let func_to_call_addr = {
+                    let current_module = store.modules.get(current_wasm_func_inst.module_addr);
+                    // SAFETY: Validation guarantees this function index to be valid
+                    // within the current module. Therefore, it must also be valid
+                    // for the `IdxVec<FuncIdx, FuncAddr>` of the current module
+                    // instance.
+                    unsafe { current_module.func_addrs.get(func_idx) }
+                };
 
-                let func_to_call_ty = store.functions.get(func_to_call_addr).ty();
+                let func_to_call_ty = store.functions.get(*func_to_call_addr).ty();
 
                 trace!("Instruction: call [{func_to_call_addr:?}]");
 
-                match store.functions.get(func_to_call_addr) {
+                match store.functions.get(*func_to_call_addr) {
                     FuncInst::HostFunc(host_func_to_call_inst) => {
                         let params = stack
                             .pop_tail_iter(func_to_call_ty.params.valtypes.len())
@@ -265,7 +275,7 @@ pub(super) fn run<T: Config>(
                             stp,
                         )?;
 
-                        current_func_addr = func_to_call_addr;
+                        current_func_addr = *func_to_call_addr;
                         current_module = wasm_func_to_call_inst.module_addr;
                         wasm.full_wasm_binary = store.modules.get(current_module).wasm_bytecode;
                         wasm.move_start_to(wasm_func_to_call_inst.code_expr)
@@ -283,7 +293,9 @@ pub(super) fn run<T: Config>(
             // TODO: fix push_call_frame, because the func idx that you get from the table is global func idx
             CALL_INDIRECT => {
                 decrement_fuel!(T::get_flat_cost(CALL_INDIRECT));
-                let given_type_idx = wasm.read_var_u32().unwrap_validated() as TypeIdx;
+                // SAFETY: the Wasm code is valid and therefore the following
+                // bytes must encode a valid type index.
+                let given_type_idx = unsafe { TypeIdx::read_unchecked(wasm) };
                 let table_idx = wasm.read_var_u32().unwrap_validated() as TableIdx;
 
                 let table_addr = *store
@@ -293,12 +305,10 @@ pub(super) fn run<T: Config>(
                     .get(table_idx)
                     .unwrap_validated();
                 let tab = store.tables.get(table_addr);
-                let func_ty = store
-                    .modules
-                    .get(current_module)
-                    .types
-                    .get(given_type_idx)
-                    .unwrap_validated();
+                let module = store.modules.get(current_module);
+                // SAFETY: The module that is used now is the same one from
+                // which the type index was just read.
+                let func_ty = unsafe { module.types.get(given_type_idx) };
 
                 let i: u32 = stack.pop_value().try_into().unwrap_validated();
 
@@ -2325,14 +2335,15 @@ pub(super) fn run<T: Config>(
             // https://webassembly.github.io/spec/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-ref-mathsf-ref-func-x
             REF_FUNC => {
                 decrement_fuel!(T::get_flat_cost(REF_FUNC));
-                let func_idx = wasm.read_var_u32().unwrap_validated() as FuncIdx;
-                let func_addr = *store
-                    .modules
-                    .get(current_module)
-                    .func_addrs
-                    .get(func_idx)
-                    .unwrap_validated();
-                stack.push_value::<T>(Value::Ref(Ref::Func(func_addr)))?;
+                // SAFETY: Validation guarantees a valid function index to be
+                // next.
+                let func_idx = unsafe { FuncIdx::read_unchecked(wasm) };
+                let current_module = store.modules.get(current_module);
+                // SAFETY: Validation guarantees the function index to be valid
+                // in the current module. Therefore, it must also be valid in
+                // the funcs index space of the current module instance.
+                let func_addr = unsafe { current_module.func_addrs.get(func_idx) };
+                stack.push_value::<T>(Value::Ref(Ref::Func(*func_addr)))?;
             }
             FC_EXTENSIONS => {
                 // Should we call instruction hook here as well? Multibyte instruction

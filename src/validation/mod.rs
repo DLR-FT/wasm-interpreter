@@ -1,7 +1,7 @@
 use alloc::collections::btree_set::{self, BTreeSet};
 use alloc::vec::Vec;
 
-use crate::core::indices::{FuncIdx, TypeIdx};
+use crate::core::indices::{ExtendedIdxVec, FuncIdx, IdxVec, TypeIdx};
 use crate::core::reader::section_header::{SectionHeader, SectionTy};
 use crate::core::reader::span::Span;
 use crate::core::reader::types::data::DataSegment;
@@ -10,7 +10,7 @@ use crate::core::reader::types::export::Export;
 use crate::core::reader::types::global::{Global, GlobalType};
 use crate::core::reader::types::import::{Import, ImportDesc};
 use crate::core::reader::types::{FuncType, MemType, ResultType, TableType};
-use crate::core::reader::{WasmReadable, WasmReader};
+use crate::core::reader::WasmReader;
 use crate::core::sidetable::Sidetable;
 use crate::{ExportDesc, ValidationError};
 
@@ -38,9 +38,9 @@ pub(crate) struct ImportsLength {
 #[derive(Clone, Debug)]
 pub struct ValidationInfo<'bytecode> {
     pub(crate) wasm: &'bytecode [u8],
-    pub(crate) types: Vec<FuncType>,
+    pub(crate) types: IdxVec<TypeIdx, FuncType>,
     pub(crate) imports: Vec<Import>,
-    pub(crate) functions: Vec<TypeIdx>,
+    pub(crate) functions: ExtendedIdxVec<FuncIdx, TypeIdx>,
     pub(crate) tables: Vec<TableType>,
     pub(crate) memories: Vec<MemType>,
     pub(crate) globals: Vec<Global>,
@@ -67,13 +67,8 @@ fn validate_exports(validation_info: &ValidationInfo) -> Result<(), ValidationEr
         }
         found_export_names.insert(export.name.as_str());
         match export.desc {
-            FuncIdx(func_idx) => {
-                if validation_info.functions.len()
-                    + validation_info.imports_length.imported_functions
-                    <= func_idx
-                {
-                    return Err(ValidationError::InvalidFuncIdx(func_idx));
-                }
+            FuncIdx(_) => {
+                // Function indices are already validated upon creation
             }
             TableIdx(table_idx) => {
                 if validation_info.tables.len() + validation_info.imports_length.imported_tables
@@ -178,29 +173,14 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
     let types = handle_section(&mut wasm, &mut header, SectionTy::Type, |wasm, _| {
-        wasm.read_vec(FuncType::read)
+        wasm.read_vec(FuncType::read).map(IdxVec::new)
     })?
     .unwrap_or_default();
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
     let imports = handle_section(&mut wasm, &mut header, SectionTy::Import, |wasm, _| {
-        wasm.read_vec(|wasm| {
-            let import = Import::read(wasm)?;
-
-            match import.desc {
-                ImportDesc::Func(type_idx) => {
-                    types
-                        .get(type_idx)
-                        .ok_or(ValidationError::InvalidTypeIdx(type_idx))?;
-                }
-                ImportDesc::Table(_table_type) => {}
-                ImportDesc::Mem(_mem_type) => {}
-                ImportDesc::Global(_global_type) => {}
-            }
-
-            Ok(import)
-        })
+        wasm.read_vec(|wasm| Import::read_and_validate(wasm, &types))
     })?
     .unwrap_or_default();
     let imports_length = get_imports_length(&imports);
@@ -215,13 +195,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
     // only after that do the local functions get assigned their indices.
     let local_functions =
         handle_section(&mut wasm, &mut header, SectionTy::Function, |wasm, _| {
-            wasm.read_vec(|wasm| {
-                let type_idx = wasm.read_var_u32()? as usize;
-                types
-                    .get(type_idx)
-                    .ok_or(ValidationError::InvalidTypeIdx(type_idx))?;
-                Ok(type_idx)
-            })
+            wasm.read_vec(|wasm| TypeIdx::read_and_validate(wasm, &types))
         })?
         .unwrap_or_default();
 
@@ -230,10 +204,15 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
         _ => None,
     });
 
-    let all_functions = imported_functions
-        .clone()
-        .chain(local_functions.iter().cloned())
-        .collect::<Vec<TypeIdx>>();
+    // TODO Reduce overhead from cloning all functions (imported/local).
+    // Instead just clone the imported functions and implement a new struct that
+    // acts as view into the imported functions and local functions vectors.
+    let all_functions = IdxVec::new(
+        imported_functions
+            .clone()
+            .chain(local_functions.iter().cloned())
+            .collect::<Vec<TypeIdx>>(),
+    );
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
@@ -296,7 +275,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
             h,
             &imported_global_types,
             &mut validation_context_refs,
-            all_functions.len(),
+            &all_functions,
         )
     })?
     .unwrap_or_default();
@@ -314,7 +293,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
     let exports = handle_section(&mut wasm, &mut header, SectionTy::Export, |wasm, _| {
-        wasm.read_vec(Export::read)
+        wasm.read_vec(|wasm| Export::read_and_validate(wasm, &all_functions))
     })?
     .unwrap_or_default();
     validation_context_refs.extend(exports.iter().filter_map(
@@ -327,14 +306,20 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
     let start = handle_section(&mut wasm, &mut header, SectionTy::Start, |wasm, _| {
-        let func_idx = wasm.read_var_u32().map(|idx| idx as FuncIdx)?;
+        let func_idx = FuncIdx::read_and_validate(wasm, &all_functions)?;
+
         // start function signature must be [] -> []
         // https://webassembly.github.io/spec/core/valid/modules.html#start-function
-        let type_idx = *all_functions
-            .get(func_idx)
-            .ok_or(ValidationError::InvalidFuncIdx(func_idx))?;
-        if types[type_idx]
-            != (FuncType {
+        // SAFETY: We just validated this function index using the same
+        // `IdxVec`.
+        let type_idx = unsafe { all_functions.get(func_idx) };
+
+        // Safety: There exists only one `IdxVec<TypeIdx, FuncType>` in the
+        // current function. Therefore, this has to be the same one used to
+        // create and validate this `TypeIdx`.
+        let func_type = unsafe { types.get(*type_idx) };
+        if func_type
+            != &(FuncType {
                 params: ResultType {
                     valtypes: Vec::new(),
                 },
@@ -381,20 +366,27 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
 
     let mut sidetable = Sidetable::new();
     let func_blocks_stps = handle_section(&mut wasm, &mut header, SectionTy::Code, |wasm, h| {
-        code::validate_code_section(
-            wasm,
-            h,
-            &types,
-            &all_functions,
-            imported_functions.count(),
-            &all_globals,
-            &all_memories,
-            &data_count,
-            &all_tables,
-            &elements,
-            &validation_context_refs,
-            &mut sidetable,
-        )
+        // SAFETY: It is required that all passed index values are valid in all
+        // passed `IdxVec`s. The current function does not take any index types
+        // as arguments and every `IdxVec<..., ...>` is unique, i.e. uses
+        // different generics. Therefore, all index types must be valid in their
+        // relevant `IdxVec`s.
+        unsafe {
+            code::validate_code_section(
+                wasm,
+                h,
+                &types,
+                &all_functions,
+                imported_functions.count(),
+                &all_globals,
+                &all_memories,
+                &data_count,
+                &all_tables,
+                &elements,
+                &validation_context_refs,
+                &mut sidetable,
+            )
+        }
     })?
     .unwrap_or_default();
 
@@ -411,7 +403,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
             h,
             &imported_global_types,
             all_memories.len(),
-            all_functions.len(),
+            &all_functions,
         )
     })?
     .unwrap_or_default();
@@ -436,6 +428,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
         types,
         imports,
         functions: local_functions,
+        functions: all_functions,
         tables,
         memories,
         globals,
