@@ -1,7 +1,7 @@
 use alloc::collections::btree_set::{self, BTreeSet};
 use alloc::vec::Vec;
 
-use crate::core::indices::{FuncIdx, IdxVec, TypeIdx};
+use crate::core::indices::{ExtendedIdxVec, FuncIdx, IdxVec, TypeIdx};
 use crate::core::reader::section_header::{SectionHeader, SectionTy};
 use crate::core::reader::span::Span;
 use crate::core::reader::types::data::DataSegment;
@@ -40,11 +40,7 @@ pub struct ValidationInfo<'bytecode> {
     pub(crate) wasm: &'bytecode [u8],
     pub(crate) types: IdxVec<TypeIdx, FuncType>,
     pub(crate) imports: Vec<Import>,
-    pub(crate) functions: Vec<TypeIdx>,
-    // TODO this is redundant information. Find out how to get rid of this
-    // without invalidating the safety requirements for accesses during runtime
-    // on the `IdxVec<FuncIdx, FuncAddr>`.
-    pub(crate) all_functions: IdxVec<FuncIdx, TypeIdx>,
+    pub(crate) functions: ExtendedIdxVec<FuncIdx, TypeIdx>,
     pub(crate) tables: Vec<TableType>,
     pub(crate) memories: Vec<MemType>,
     pub(crate) globals: Vec<Global>,
@@ -432,7 +428,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
         types,
         imports,
         functions: local_functions,
-        all_functions,
+        functions: all_functions,
         tables,
         memories,
         globals,

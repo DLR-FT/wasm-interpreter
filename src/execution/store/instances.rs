@@ -2,7 +2,7 @@ use alloc::{collections::btree_map::BTreeMap, string::String, vec, vec::Vec};
 
 use crate::{
     core::{
-        indices::{FuncIdx, IdxVec, TypeIdx},
+        indices::{ExtendedIdxVec, FuncIdx, IdxVec, TypeIdx},
         reader::{
             span::Span,
             types::{FuncType, MemType, TableType},
@@ -180,7 +180,7 @@ pub struct ModuleInst<'b> {
     // TODO All accesses to this IdxVec during execution are technically unsound
     // with the current safety requirements. That is because only accesses on
     // `IdxVec<FuncIdx, TypeIdx>` were checked during validation.
-    pub func_addrs: IdxVec<FuncIdx, FuncAddr>,
+    pub func_addrs: ExtendedIdxVec<FuncIdx, FuncAddr>,
     pub table_addrs: Vec<TableAddr>,
     pub mem_addrs: Vec<MemAddr>,
     pub global_addrs: Vec<GlobalAddr>,

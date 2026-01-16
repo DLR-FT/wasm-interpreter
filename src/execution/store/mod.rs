@@ -5,7 +5,7 @@ use crate::addrs::{
     AddrVec, DataAddr, ElemAddr, FuncAddr, GlobalAddr, MemAddr, ModuleAddr, TableAddr,
 };
 use crate::config::Config;
-use crate::core::indices::{IdxVec, TypeIdx};
+use crate::core::indices::{ExtendedIdxVec, IdxVec, TypeIdx};
 use crate::core::reader::span::Span;
 use crate::core::reader::types::data::{DataModeActive, DataSegment};
 use crate::core::reader::types::element::{ActiveElem, ElemItems, ElemMode, ElemType};
@@ -144,7 +144,7 @@ impl<'b, T: Config> Store<'b, T> {
         // https://github.com/WebAssembly/spec/blob/8d6792e3d6709e8d3e90828f9c8468253287f7ed/interpreter/exec/eval.ml#L789
         let module_inst = ModuleInst {
             types: validation_info.types.clone(),
-            func_addrs: IdxVec::default(),
+            func_addrs: ExtendedIdxVec::default(),
             table_addrs: Vec::new(),
             mem_addrs: Vec::new(),
             global_addrs: extern_vals.iter().globals().collect(),
@@ -156,10 +156,8 @@ impl<'b, T: Config> Store<'b, T> {
         };
         let module_addr = self.modules.insert(module_inst);
 
-        // TODO rewrite this part
-        // <https://webassembly.github.io/spec/core/exec/modules.html#functions>
-        let imported_functions = extern_vals.iter().funcs();
-        let local_func_addrs: Vec<FuncAddr> = validation_info
+        let mut imported_functions = extern_vals.iter().funcs();
+        let local_func_addrs = validation_info
             .functions
             .iter()
             .zip(validation_info.func_blocks_stps.iter())
@@ -169,10 +167,10 @@ impl<'b, T: Config> Store<'b, T> {
                 // that same module because it came from that module's
                 // `ValidationInfo`.
                 unsafe { self.alloc_func((*ty_idx, (*span, *stp)), module_addr) }
-            })
-            .collect();
-        self.modules.get_mut(module_addr).func_addrs =
-            IdxVec::new(imported_functions.chain(local_func_addrs).collect());
+            });
+        self.modules.get_mut(module_addr).func_addrs = validation_info
+            .functions
+            .map(imported_functions, local_func_addrs);
 
         // instantiation: this roughly matches step 6,7,8
         // validation guarantees these will evaluate without errors.
