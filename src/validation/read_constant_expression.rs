@@ -1,9 +1,10 @@
 use alloc::vec::Vec;
 
-use crate::core::indices::{FuncIdx, GlobalIdx};
+use crate::core::indices::FuncIdx;
 use crate::core::reader::span::Span;
 use crate::core::reader::types::global::GlobalType;
 use crate::core::reader::WasmReader;
+use crate::core::utils::ToUsizeExt;
 use crate::{NumType, RefType, ValType, ValidationError};
 
 use super::validation_stack::ValidationStack;
@@ -119,7 +120,7 @@ pub fn read_constant_expression(
                 return Ok((Span::new(start_pc, wasm.pc - start_pc), seen_func_idxs));
             }
             GLOBAL_GET => {
-                let global_idx = wasm.read_var_u32()? as GlobalIdx;
+                let global_idx = wasm.read_var_u32()?.into_usize();
                 trace!("{:?}", globals_ty);
                 let global = globals_ty
                     .get(global_idx)
@@ -148,7 +149,7 @@ pub fn read_constant_expression(
                 stack.push_valtype(ValType::RefType(RefType::read(wasm)?));
             }
             REF_FUNC => {
-                let func_idx = wasm.read_var_u32()? as usize;
+                let func_idx = wasm.read_var_u32()?.into_usize();
 
                 // checking for existence suffices for checking whether this function has a valid type.
                 if num_funcs <= func_idx {

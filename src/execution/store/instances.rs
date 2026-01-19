@@ -8,6 +8,7 @@ use crate::{
             types::{FuncType, MemType, TableType},
         },
         sidetable::Sidetable,
+        utils::ToUsizeExt,
     },
     linear_memory::LinearMemory,
     value::Ref,
@@ -100,7 +101,7 @@ impl TableInst {
             max: self.ty.lim.max,
         };
 
-        self.elem.extend(vec![reff; n as usize]);
+        self.elem.extend(vec![reff; n.into_usize()]);
 
         self.ty.lim = limits_prime;
         Ok(())
@@ -147,7 +148,7 @@ impl MemInst {
 
     /// Can never be bigger than 65,356 pages
     pub fn size(&self) -> usize {
-        self.mem.len() / (crate::Limits::MEM_PAGE_SIZE as usize)
+        self.mem.len() / (crate::Limits::MEM_PAGE_SIZE.into_usize())
     }
 }
 

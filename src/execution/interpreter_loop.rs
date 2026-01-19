@@ -19,12 +19,12 @@ use crate::{
     addrs::{AddrVec, DataAddr, ElemAddr, MemAddr, ModuleAddr, TableAddr},
     assert_validated::UnwrapValidatedExt,
     core::{
-        indices::{DataIdx, FuncIdx, GlobalIdx, LabelIdx, LocalIdx, TableIdx, TypeIdx},
         reader::{
             types::{memarg::MemArg, BlockType},
             WasmReader,
         },
         sidetable::Sidetable,
+        utils::ToUsizeExt,
     },
     instances::{DataInst, ElemInst, FuncInst, MemInst, ModuleInst, TableInst},
     resumable::Resumable,
@@ -176,13 +176,13 @@ pub(super) fn run<T: Config>(
             BR_TABLE => {
                 decrement_fuel!(T::get_flat_cost(BR_TABLE));
                 let label_vec = wasm
-                    .read_vec(|wasm| wasm.read_var_u32().map(|v| v as LabelIdx))
+                    .read_vec(|wasm| wasm.read_var_u32().map(|v| v.into_usize()))
                     .unwrap_validated();
                 wasm.read_var_u32().unwrap_validated();
 
                 // TODO is this correct?
                 let case_val_i32: i32 = stack.pop_value().try_into().unwrap_validated();
-                let case_val = case_val_i32 as usize;
+                let case_val = case_val_i32.cast_unsigned().into_usize();
 
                 if case_val >= label_vec.len() {
                     stp += label_vec.len();
@@ -213,7 +213,7 @@ pub(super) fn run<T: Config>(
             }
             CALL => {
                 decrement_fuel!(T::get_flat_cost(CALL));
-                let local_func_idx = wasm.read_var_u32().unwrap_validated() as FuncIdx;
+                let local_func_idx = wasm.read_var_u32().unwrap_validated().into_usize();
                 let FuncInst::WasmFunc(current_wasm_func_inst) =
                     store.functions.get(current_func_addr)
                 else {
@@ -289,8 +289,8 @@ pub(super) fn run<T: Config>(
             // TODO: fix push_call_frame, because the func idx that you get from the table is global func idx
             CALL_INDIRECT => {
                 decrement_fuel!(T::get_flat_cost(CALL_INDIRECT));
-                let given_type_idx = wasm.read_var_u32().unwrap_validated() as TypeIdx;
-                let table_idx = wasm.read_var_u32().unwrap_validated() as TableIdx;
+                let given_type_idx = wasm.read_var_u32().unwrap_validated().into_usize();
+                let table_idx = wasm.read_var_u32().unwrap_validated().into_usize();
 
                 let table_addr = *store
                     .modules
@@ -310,7 +310,7 @@ pub(super) fn run<T: Config>(
 
                 let r = tab
                     .elem
-                    .get(i as usize)
+                    .get(i.into_usize())
                     .ok_or(TrapError::TableAccessOutOfBounds)
                     .and_then(|r| {
                         if matches!(r, Ref::Null(_)) {
@@ -423,28 +423,28 @@ pub(super) fn run<T: Config>(
             }
             LOCAL_GET => {
                 decrement_fuel!(T::get_flat_cost(LOCAL_GET));
-                let local_idx = wasm.read_var_u32().unwrap_validated() as LocalIdx;
+                let local_idx = wasm.read_var_u32().unwrap_validated().into_usize();
                 let value = *stack.get_local(local_idx);
                 stack.push_value::<T>(value)?;
                 trace!("Instruction: local.get {} [] -> [t]", local_idx);
             }
             LOCAL_SET => {
                 decrement_fuel!(T::get_flat_cost(LOCAL_SET));
-                let local_idx = wasm.read_var_u32().unwrap_validated() as LocalIdx;
+                let local_idx = wasm.read_var_u32().unwrap_validated().into_usize();
                 let value = stack.pop_value();
                 *stack.get_local_mut(local_idx) = value;
                 trace!("Instruction: local.set {} [t] -> []", local_idx);
             }
             LOCAL_TEE => {
                 decrement_fuel!(T::get_flat_cost(LOCAL_TEE));
-                let local_idx = wasm.read_var_u32().unwrap_validated() as LocalIdx;
+                let local_idx = wasm.read_var_u32().unwrap_validated().into_usize();
                 let value = stack.peek_value().unwrap_validated();
                 *stack.get_local_mut(local_idx) = value;
                 trace!("Instruction: local.tee {} [t] -> [t]", local_idx);
             }
             GLOBAL_GET => {
                 decrement_fuel!(T::get_flat_cost(GLOBAL_GET));
-                let global_idx = wasm.read_var_u32().unwrap_validated() as GlobalIdx;
+                let global_idx = wasm.read_var_u32().unwrap_validated().into_usize();
                 let global_addr = *store
                     .modules
                     .get(current_module)
@@ -463,7 +463,7 @@ pub(super) fn run<T: Config>(
             }
             GLOBAL_SET => {
                 decrement_fuel!(T::get_flat_cost(GLOBAL_SET));
-                let global_idx = wasm.read_var_u32().unwrap_validated() as GlobalIdx;
+                let global_idx = wasm.read_var_u32().unwrap_validated().into_usize();
                 let global_addr = *store
                     .modules
                     .get(current_module)
@@ -476,7 +476,7 @@ pub(super) fn run<T: Config>(
             }
             TABLE_GET => {
                 decrement_fuel!(T::get_flat_cost(TABLE_GET));
-                let table_idx = wasm.read_var_u32().unwrap_validated() as TableIdx;
+                let table_idx = wasm.read_var_u32().unwrap_validated().into_usize();
                 let table_addr = *store
                     .modules
                     .get(current_module)
@@ -489,7 +489,7 @@ pub(super) fn run<T: Config>(
 
                 let val = tab
                     .elem
-                    .get(i as usize)
+                    .get(i.cast_unsigned().into_usize())
                     .ok_or(TrapError::TableOrElementAccessOutOfBounds)?;
 
                 stack.push_value::<T>((*val).into())?;
@@ -502,7 +502,7 @@ pub(super) fn run<T: Config>(
             }
             TABLE_SET => {
                 decrement_fuel!(T::get_flat_cost(TABLE_SET));
-                let table_idx = wasm.read_var_u32().unwrap_validated() as TableIdx;
+                let table_idx = wasm.read_var_u32().unwrap_validated().into_usize();
                 let table_addr = *store
                     .modules
                     .get(current_module)
@@ -515,7 +515,7 @@ pub(super) fn run<T: Config>(
                 let i: i32 = stack.pop_value().try_into().unwrap_validated();
 
                 tab.elem
-                    .get_mut(i as usize)
+                    .get_mut(i.cast_unsigned().into_usize())
                     .ok_or(TrapError::TableOrElementAccessOutOfBounds)
                     .map(|r| *r = val)?;
                 trace!(
@@ -986,7 +986,7 @@ pub(super) fn run<T: Config>(
             }
             MEMORY_SIZE => {
                 decrement_fuel!(T::get_flat_cost(MEMORY_SIZE));
-                let mem_idx = wasm.read_u8().unwrap_validated() as usize;
+                let mem_idx = usize::from(wasm.read_u8().unwrap_validated());
                 let mem_addr = *store
                     .modules
                     .get(current_module)
@@ -999,7 +999,7 @@ pub(super) fn run<T: Config>(
                 trace!("Instruction: memory.size [] -> [{}]", size);
             }
             MEMORY_GROW => {
-                let mem_idx = wasm.read_u8().unwrap_validated() as usize;
+                let mem_idx = usize::from(wasm.read_u8().unwrap_validated());
                 let mem_addr = *store
                     .modules
                     .get(current_module)
@@ -2340,7 +2340,7 @@ pub(super) fn run<T: Config>(
             // https://webassembly.github.io/spec/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-ref-mathsf-ref-func-x
             REF_FUNC => {
                 decrement_fuel!(T::get_flat_cost(REF_FUNC));
-                let func_idx = wasm.read_var_u32().unwrap_validated() as FuncIdx;
+                let func_idx = wasm.read_var_u32().unwrap_validated().into_usize();
                 let func_addr = *store
                     .modules
                     .get(current_module)
@@ -2498,8 +2498,8 @@ pub(super) fn run<T: Config>(
                         //      n => number of bytes to copy
                         //      s => starting pointer in the data segment
                         //      d => destination address to copy to
-                        let data_idx = wasm.read_var_u32().unwrap_validated() as DataIdx;
-                        let mem_idx = wasm.read_u8().unwrap_validated() as usize;
+                        let data_idx = wasm.read_var_u32().unwrap_validated().into_usize();
+                        let mem_idx = usize::from(wasm.read_u8().unwrap_validated());
 
                         let n: u32 = stack.pop_value().try_into().unwrap_validated();
                         // decrement fuel, but push n back if it fails
@@ -2534,7 +2534,7 @@ pub(super) fn run<T: Config>(
                     }
                     DATA_DROP => {
                         decrement_fuel!(T::get_fc_extension_flat_cost(DATA_DROP));
-                        let data_idx = wasm.read_var_u32().unwrap_validated() as DataIdx;
+                        let data_idx = wasm.read_var_u32().unwrap_validated().into_usize();
                         data_drop(&store.modules, &mut store.data, current_module, data_idx);
                     }
                     // See https://webassembly.github.io/bulk-memory-operations/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-copy
@@ -2544,8 +2544,8 @@ pub(super) fn run<T: Config>(
                         //      s => source address to copy from
                         //      d => destination address to copy to
                         let (dst_idx, src_idx) = (
-                            wasm.read_u8().unwrap_validated() as usize,
-                            wasm.read_u8().unwrap_validated() as usize,
+                            usize::from(wasm.read_u8().unwrap_validated()),
+                            usize::from(wasm.read_u8().unwrap_validated()),
                         );
 
                         let n: u32 = stack.pop_value().try_into().unwrap_validated();
@@ -2583,9 +2583,12 @@ pub(super) fn run<T: Config>(
                         let src_mem = store.memories.get(src_addr);
                         let dest_mem = store.memories.get(dst_addr);
 
-                        dest_mem
-                            .mem
-                            .copy(d as usize, &src_mem.mem, s as usize, n as usize)?;
+                        dest_mem.mem.copy(
+                            d.cast_unsigned().into_usize(),
+                            &src_mem.mem,
+                            s.cast_unsigned().into_usize(),
+                            n.into_usize(),
+                        )?;
                         trace!("Instruction: memory.copy");
                     }
                     // See https://webassembly.github.io/bulk-memory-operations/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-fill
@@ -2594,7 +2597,7 @@ pub(super) fn run<T: Config>(
                         //      n => number of bytes to update
                         //      val => the value to set each byte to (must be < 256)
                         //      d => the pointer to the region to update
-                        let mem_idx = wasm.read_u8().unwrap_validated() as usize;
+                        let mem_idx = usize::from(wasm.read_u8().unwrap_validated());
                         let mem_addr = *store
                             .modules
                             .get(current_module)
@@ -2627,7 +2630,8 @@ pub(super) fn run<T: Config>(
 
                         let d: i32 = stack.pop_value().try_into().unwrap_validated();
 
-                        mem.mem.fill(d as usize, val as u8, n as usize)?;
+                        mem.mem
+                            .fill(d.cast_unsigned().into_usize(), val as u8, n.into_usize())?;
 
                         trace!("Instruction: memory.fill");
                     }
@@ -2636,8 +2640,8 @@ pub(super) fn run<T: Config>(
                     // in binary format it seems that elemidx is first ???????
                     // this is ONLY for passive elements
                     TABLE_INIT => {
-                        let elem_idx = wasm.read_var_u32().unwrap_validated() as usize;
-                        let table_idx = wasm.read_var_u32().unwrap_validated() as usize;
+                        let elem_idx = wasm.read_var_u32().unwrap_validated().into_usize();
+                        let table_idx = wasm.read_var_u32().unwrap_validated().into_usize();
 
                         let n: u32 = stack.pop_value().try_into().unwrap_validated(); // size
                         let cost = T::get_fc_extension_flat_cost(TABLE_INIT)
@@ -2671,7 +2675,7 @@ pub(super) fn run<T: Config>(
                     }
                     ELEM_DROP => {
                         decrement_fuel!(T::get_fc_extension_flat_cost(ELEM_DROP));
-                        let elem_idx = wasm.read_var_u32().unwrap_validated() as usize;
+                        let elem_idx = wasm.read_var_u32().unwrap_validated().into_usize();
 
                         elem_drop(
                             &store.modules,
@@ -2683,8 +2687,8 @@ pub(super) fn run<T: Config>(
                     // https://webassembly.github.io/spec/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-table-mathsf-table-copy-x-y
                     TABLE_COPY => {
                         decrement_fuel!(T::get_fc_extension_flat_cost(TABLE_COPY));
-                        let table_x_idx = wasm.read_var_u32().unwrap_validated() as usize;
-                        let table_y_idx = wasm.read_var_u32().unwrap_validated() as usize;
+                        let table_x_idx = wasm.read_var_u32().unwrap_validated().into_usize();
+                        let table_y_idx = wasm.read_var_u32().unwrap_validated().into_usize();
 
                         let tab_x_elem_len = store
                             .tables
@@ -2720,7 +2724,7 @@ pub(super) fn run<T: Config>(
                                 if res > tab_y_elem_len as u32 {
                                     return Err(TrapError::TableOrElementAccessOutOfBounds.into());
                                 } else {
-                                    res as usize
+                                    res.into_usize()
                                 }
                             }
                             _ => return Err(TrapError::TableOrElementAccessOutOfBounds.into()),
@@ -2731,7 +2735,7 @@ pub(super) fn run<T: Config>(
                                 if res > tab_x_elem_len as u32 {
                                     return Err(TrapError::TableOrElementAccessOutOfBounds.into());
                                 } else {
-                                    res as usize
+                                    res.into_usize()
                                 }
                             }
                             _ => return Err(TrapError::TableOrElementAccessOutOfBounds.into()),
@@ -2748,7 +2752,9 @@ pub(super) fn run<T: Config>(
                                 .get(table_x_idx)
                                 .unwrap_validated();
                             let table = store.tables.get_mut(table_addr);
-                            table.elem.copy_within(s as usize..src_res, d as usize);
+                            table
+                                .elem
+                                .copy_within(s.into_usize()..src_res, d.into_usize());
                         } else {
                             let src_addr = *store
                                 .modules
@@ -2768,8 +2774,8 @@ pub(super) fn run<T: Config>(
                                 .get_two_mut(src_addr, dst_addr)
                                 .expect("both addrs to never be equal");
 
-                            dst_table.elem[d as usize..dst_res]
-                                .copy_from_slice(&src_table.elem[s as usize..src_res]);
+                            dst_table.elem[d.into_usize()..dst_res]
+                                .copy_from_slice(&src_table.elem[s.into_usize()..src_res]);
                         }
 
                         trace!(
@@ -2783,7 +2789,7 @@ pub(super) fn run<T: Config>(
                     }
                     TABLE_GROW => {
                         decrement_fuel!(T::get_fc_extension_flat_cost(TABLE_GROW));
-                        let table_idx = wasm.read_var_u32().unwrap_validated() as usize;
+                        let table_idx = wasm.read_var_u32().unwrap_validated().into_usize();
                         let table_addr = *store
                             .modules
                             .get(current_module)
@@ -2825,7 +2831,7 @@ pub(super) fn run<T: Config>(
                     }
                     TABLE_SIZE => {
                         decrement_fuel!(T::get_fc_extension_flat_cost(TABLE_SIZE));
-                        let table_idx = wasm.read_var_u32().unwrap_validated() as usize;
+                        let table_idx = wasm.read_var_u32().unwrap_validated().into_usize();
                         let table_addr = *store
                             .modules
                             .get(current_module)
@@ -2842,7 +2848,7 @@ pub(super) fn run<T: Config>(
                     }
                     TABLE_FILL => {
                         decrement_fuel!(T::get_fc_extension_flat_cost(TABLE_FILL));
-                        let table_idx = wasm.read_var_u32().unwrap_validated() as usize;
+                        let table_idx = wasm.read_var_u32().unwrap_validated().into_usize();
                         let table_addr = *store
                             .modules
                             .get(current_module)
@@ -2869,12 +2875,12 @@ pub(super) fn run<T: Config>(
                         let val: Ref = stack.pop_value().try_into().unwrap_validated();
                         let dst: u32 = stack.pop_value().try_into().unwrap_validated();
 
-                        let end = (dst as usize)
-                            .checked_add(len as usize)
+                        let end = (dst.into_usize())
+                            .checked_add(len.into_usize())
                             .ok_or(TrapError::TableOrElementAccessOutOfBounds)?;
 
                         tab.elem
-                            .get_mut(dst as usize..end)
+                            .get_mut(dst.into_usize()..end)
                             .ok_or(TrapError::TableOrElementAccessOutOfBounds)?
                             .fill(val);
 
@@ -3290,7 +3296,7 @@ pub(super) fn run<T: Config>(
                             .unwrap_validated();
                         let memory = store.memories.get(mem_addr);
                         let idx = calculate_mem_address(&memarg, relative_address)?;
-                        let lane_idx = wasm.read_u8().unwrap_validated() as usize;
+                        let lane_idx = usize::from(wasm.read_u8().unwrap_validated());
                         let mut lanes: [u8; 16] = to_lanes(data);
                         *lanes.get_mut(lane_idx).unwrap_validated() =
                             memory.mem.load::<1, u8>(idx)?;
@@ -3310,7 +3316,7 @@ pub(super) fn run<T: Config>(
                             .unwrap_validated();
                         let memory = store.memories.get(mem_addr);
                         let idx = calculate_mem_address(&memarg, relative_address)?;
-                        let lane_idx = wasm.read_u8().unwrap_validated() as usize;
+                        let lane_idx = usize::from(wasm.read_u8().unwrap_validated());
                         let mut lanes: [u16; 8] = to_lanes(data);
                         *lanes.get_mut(lane_idx).unwrap_validated() =
                             memory.mem.load::<2, u16>(idx)?;
@@ -3329,7 +3335,7 @@ pub(super) fn run<T: Config>(
                             .unwrap_validated();
                         let memory = store.memories.get(mem_addr);
                         let idx = calculate_mem_address(&memarg, relative_address)?;
-                        let lane_idx = wasm.read_u8().unwrap_validated() as usize;
+                        let lane_idx = usize::from(wasm.read_u8().unwrap_validated());
                         let mut lanes: [u32; 4] = to_lanes(data);
                         *lanes.get_mut(lane_idx).unwrap_validated() =
                             memory.mem.load::<4, u32>(idx)?;
@@ -3348,7 +3354,7 @@ pub(super) fn run<T: Config>(
                             .unwrap_validated();
                         let memory = store.memories.get(mem_addr);
                         let idx = calculate_mem_address(&memarg, relative_address)?;
-                        let lane_idx = wasm.read_u8().unwrap_validated() as usize;
+                        let lane_idx = usize::from(wasm.read_u8().unwrap_validated());
                         let mut lanes: [u64; 2] = to_lanes(data);
                         *lanes.get_mut(lane_idx).unwrap_validated() =
                             memory.mem.load::<8, u64>(idx)?;
@@ -3369,7 +3375,7 @@ pub(super) fn run<T: Config>(
                             .unwrap_validated();
                         let memory = store.memories.get(mem_addr);
                         let idx = calculate_mem_address(&memarg, relative_address)?;
-                        let lane_idx = wasm.read_u8().unwrap_validated() as usize;
+                        let lane_idx = usize::from(wasm.read_u8().unwrap_validated());
 
                         let lane = *to_lanes::<1, 16, u8>(data).get(lane_idx).unwrap_validated();
 
@@ -3388,7 +3394,7 @@ pub(super) fn run<T: Config>(
                             .unwrap_validated();
                         let memory = store.memories.get(mem_addr);
                         let idx = calculate_mem_address(&memarg, relative_address)?;
-                        let lane_idx = wasm.read_u8().unwrap_validated() as usize;
+                        let lane_idx = usize::from(wasm.read_u8().unwrap_validated());
 
                         let lane = *to_lanes::<2, 8, u16>(data).get(lane_idx).unwrap_validated();
 
@@ -3407,7 +3413,7 @@ pub(super) fn run<T: Config>(
                             .unwrap_validated();
                         let memory = store.memories.get(mem_addr);
                         let idx = calculate_mem_address(&memarg, relative_address)?;
-                        let lane_idx = wasm.read_u8().unwrap_validated() as usize;
+                        let lane_idx = usize::from(wasm.read_u8().unwrap_validated());
 
                         let lane = *to_lanes::<4, 4, u32>(data).get(lane_idx).unwrap_validated();
 
@@ -3426,7 +3432,7 @@ pub(super) fn run<T: Config>(
                             .unwrap_validated();
                         let memory = store.memories.get(mem_addr);
                         let idx = calculate_mem_address(&memarg, relative_address)?;
-                        let lane_idx = wasm.read_u8().unwrap_validated() as usize;
+                        let lane_idx = usize::from(wasm.read_u8().unwrap_validated());
 
                         let lane = *to_lanes::<8, 2, u64>(data).get(lane_idx).unwrap_validated();
 
@@ -3504,7 +3510,7 @@ pub(super) fn run<T: Config>(
                         let data2: [u8; 16] = stack.pop_value().try_into().unwrap_validated();
                         let data1: [u8; 16] = stack.pop_value().try_into().unwrap_validated();
                         let result =
-                            array::from_fn(|i| *data1.get(data2[i] as usize).unwrap_or(&0));
+                            array::from_fn(|i| *data1.get(usize::from(data2[i])).unwrap_or(&0));
                         stack.push_value::<T>(Value::V128(result))?;
                     }
 
@@ -3518,8 +3524,8 @@ pub(super) fn run<T: Config>(
 
                         let result = lane_selector_indices.map(|i| {
                             *data1
-                                .get(i as usize)
-                                .or_else(|| data2.get(i as usize - 16))
+                                .get(usize::from(i))
+                                .or_else(|| data2.get(usize::from(i) - 16))
                                 .unwrap_validated()
                         });
 
@@ -3569,7 +3575,7 @@ pub(super) fn run<T: Config>(
                     // shape.extract_lane
                     I8X16_EXTRACT_LANE_S => {
                         decrement_fuel!(T::get_fd_extension_flat_cost(I8X16_EXTRACT_LANE_S));
-                        let lane_idx = wasm.read_u8().unwrap_validated() as usize;
+                        let lane_idx = usize::from(wasm.read_u8().unwrap_validated());
                         let data: [u8; 16] = stack.pop_value().try_into().unwrap_validated();
                         let lanes: [i8; 16] = to_lanes(data);
                         let lane = *lanes.get(lane_idx).unwrap_validated();
@@ -3577,7 +3583,7 @@ pub(super) fn run<T: Config>(
                     }
                     I8X16_EXTRACT_LANE_U => {
                         decrement_fuel!(T::get_fd_extension_flat_cost(I8X16_EXTRACT_LANE_U));
-                        let lane_idx = wasm.read_u8().unwrap_validated() as usize;
+                        let lane_idx = usize::from(wasm.read_u8().unwrap_validated());
                         let data: [u8; 16] = stack.pop_value().try_into().unwrap_validated();
                         let lanes: [u8; 16] = to_lanes(data);
                         let lane = *lanes.get(lane_idx).unwrap_validated();
@@ -3585,7 +3591,7 @@ pub(super) fn run<T: Config>(
                     }
                     I16X8_EXTRACT_LANE_S => {
                         decrement_fuel!(T::get_fd_extension_flat_cost(I16X8_EXTRACT_LANE_S));
-                        let lane_idx = wasm.read_u8().unwrap_validated() as usize;
+                        let lane_idx = usize::from(wasm.read_u8().unwrap_validated());
                         let data: [u8; 16] = stack.pop_value().try_into().unwrap_validated();
                         let lanes: [i16; 8] = to_lanes(data);
                         let lane = *lanes.get(lane_idx).unwrap_validated();
@@ -3593,7 +3599,7 @@ pub(super) fn run<T: Config>(
                     }
                     I16X8_EXTRACT_LANE_U => {
                         decrement_fuel!(T::get_fd_extension_flat_cost(I16X8_EXTRACT_LANE_U));
-                        let lane_idx = wasm.read_u8().unwrap_validated() as usize;
+                        let lane_idx = usize::from(wasm.read_u8().unwrap_validated());
                         let data: [u8; 16] = stack.pop_value().try_into().unwrap_validated();
                         let lanes: [u16; 8] = to_lanes(data);
                         let lane = *lanes.get(lane_idx).unwrap_validated();
@@ -3601,7 +3607,7 @@ pub(super) fn run<T: Config>(
                     }
                     I32X4_EXTRACT_LANE => {
                         decrement_fuel!(T::get_fd_extension_flat_cost(I32X4_EXTRACT_LANE));
-                        let lane_idx = wasm.read_u8().unwrap_validated() as usize;
+                        let lane_idx = usize::from(wasm.read_u8().unwrap_validated());
                         let data: [u8; 16] = stack.pop_value().try_into().unwrap_validated();
                         let lanes: [u32; 4] = to_lanes(data);
                         let lane = *lanes.get(lane_idx).unwrap_validated();
@@ -3609,7 +3615,7 @@ pub(super) fn run<T: Config>(
                     }
                     I64X2_EXTRACT_LANE => {
                         decrement_fuel!(T::get_fd_extension_flat_cost(I64X2_EXTRACT_LANE));
-                        let lane_idx = wasm.read_u8().unwrap_validated() as usize;
+                        let lane_idx = usize::from(wasm.read_u8().unwrap_validated());
                         let data: [u8; 16] = stack.pop_value().try_into().unwrap_validated();
                         let lanes: [u64; 2] = to_lanes(data);
                         let lane = *lanes.get(lane_idx).unwrap_validated();
@@ -3617,7 +3623,7 @@ pub(super) fn run<T: Config>(
                     }
                     F32X4_EXTRACT_LANE => {
                         decrement_fuel!(T::get_fd_extension_flat_cost(F32X4_EXTRACT_LANE));
-                        let lane_idx = wasm.read_u8().unwrap_validated() as usize;
+                        let lane_idx = usize::from(wasm.read_u8().unwrap_validated());
                         let data: [u8; 16] = stack.pop_value().try_into().unwrap_validated();
                         let lanes: [F32; 4] = to_lanes(data);
                         let lane = *lanes.get(lane_idx).unwrap_validated();
@@ -3625,7 +3631,7 @@ pub(super) fn run<T: Config>(
                     }
                     F64X2_EXTRACT_LANE => {
                         decrement_fuel!(T::get_fd_extension_flat_cost(F64X2_EXTRACT_LANE));
-                        let lane_idx = wasm.read_u8().unwrap_validated() as usize;
+                        let lane_idx = usize::from(wasm.read_u8().unwrap_validated());
                         let data: [u8; 16] = stack.pop_value().try_into().unwrap_validated();
                         let lanes: [F64; 2] = to_lanes(data);
                         let lane = *lanes.get(lane_idx).unwrap_validated();
@@ -3635,7 +3641,7 @@ pub(super) fn run<T: Config>(
                     // shape.replace_lane
                     I8X16_REPLACE_LANE => {
                         decrement_fuel!(T::get_fd_extension_flat_cost(I8X16_REPLACE_LANE));
-                        let lane_idx = wasm.read_u8().unwrap_validated() as usize;
+                        let lane_idx = usize::from(wasm.read_u8().unwrap_validated());
                         let value: u32 = stack.pop_value().try_into().unwrap_validated();
                         let new_lane = value as u8;
                         let data: [u8; 16] = stack.pop_value().try_into().unwrap_validated();
@@ -3645,7 +3651,7 @@ pub(super) fn run<T: Config>(
                     }
                     I16X8_REPLACE_LANE => {
                         decrement_fuel!(T::get_fd_extension_flat_cost(I16X8_REPLACE_LANE));
-                        let lane_idx = wasm.read_u8().unwrap_validated() as usize;
+                        let lane_idx = usize::from(wasm.read_u8().unwrap_validated());
                         let value: u32 = stack.pop_value().try_into().unwrap_validated();
                         let new_lane = value as u16;
                         let data: [u8; 16] = stack.pop_value().try_into().unwrap_validated();
@@ -3655,7 +3661,7 @@ pub(super) fn run<T: Config>(
                     }
                     I32X4_REPLACE_LANE => {
                         decrement_fuel!(T::get_fd_extension_flat_cost(I32X4_REPLACE_LANE));
-                        let lane_idx = wasm.read_u8().unwrap_validated() as usize;
+                        let lane_idx = usize::from(wasm.read_u8().unwrap_validated());
                         let new_lane: u32 = stack.pop_value().try_into().unwrap_validated();
                         let data: [u8; 16] = stack.pop_value().try_into().unwrap_validated();
                         let mut lanes: [u32; 4] = to_lanes(data);
@@ -3664,7 +3670,7 @@ pub(super) fn run<T: Config>(
                     }
                     I64X2_REPLACE_LANE => {
                         decrement_fuel!(T::get_fd_extension_flat_cost(I64X2_REPLACE_LANE));
-                        let lane_idx = wasm.read_u8().unwrap_validated() as usize;
+                        let lane_idx = usize::from(wasm.read_u8().unwrap_validated());
                         let new_lane: u64 = stack.pop_value().try_into().unwrap_validated();
                         let data: [u8; 16] = stack.pop_value().try_into().unwrap_validated();
                         let mut lanes: [u64; 2] = to_lanes(data);
@@ -3673,7 +3679,7 @@ pub(super) fn run<T: Config>(
                     }
                     F32X4_REPLACE_LANE => {
                         decrement_fuel!(T::get_fd_extension_flat_cost(F32X4_REPLACE_LANE));
-                        let lane_idx = wasm.read_u8().unwrap_validated() as usize;
+                        let lane_idx = usize::from(wasm.read_u8().unwrap_validated());
                         let new_lane: F32 = stack.pop_value().try_into().unwrap_validated();
                         let data: [u8; 16] = stack.pop_value().try_into().unwrap_validated();
                         let mut lanes: [F32; 4] = to_lanes(data);
@@ -3682,7 +3688,7 @@ pub(super) fn run<T: Config>(
                     }
                     F64X2_REPLACE_LANE => {
                         decrement_fuel!(T::get_fd_extension_flat_cost(F64X2_REPLACE_LANE));
-                        let lane_idx = wasm.read_u8().unwrap_validated() as usize;
+                        let lane_idx = usize::from(wasm.read_u8().unwrap_validated());
                         let new_lane: F64 = stack.pop_value().try_into().unwrap_validated();
                         let data: [u8; 16] = stack.pop_value().try_into().unwrap_validated();
                         let mut lanes: [F64; 2] = to_lanes(data);
@@ -5615,8 +5621,10 @@ fn do_sidetable_control_transfer(
 
     stack.remove_in_between(sidetable_entry.popcnt, sidetable_entry.valcnt);
 
-    *current_stp = (*current_stp as isize + sidetable_entry.delta_stp) as usize;
-    wasm.pc = (wasm.pc as isize + sidetable_entry.delta_pc) as usize;
+    *current_stp = current_stp.checked_add_signed(sidetable_entry.delta_stp)
+        .expect("that adding the delta stp never causes the stp to go out of bounds unless there is a bug in the sidetable generation");
+    wasm.pc = wasm.pc.checked_add_signed(sidetable_entry.delta_pc)
+    .expect("that adding the delta pc never causes the pc to go out of bounds unless there is a bug in the sidetable generation");
 
     Ok(())
 }
@@ -5649,6 +5657,10 @@ pub(super) fn table_init(
     s: i32,
     d: i32,
 ) -> Result<(), RuntimeError> {
+    let n = n.into_usize();
+    let s = s.cast_unsigned().into_usize();
+    let d = d.cast_unsigned().into_usize();
+
     let tab_addr = *store_modules
         .get(current_module)
         .table_addrs
@@ -5673,21 +5685,17 @@ pub(super) fn table_init(
         n
     );
 
-    let final_src_offset = (s as usize)
-        .checked_add(n as usize)
+    let final_src_offset = s
+        .checked_add(n)
         .filter(|&res| res <= elem.len())
         .ok_or(TrapError::TableOrElementAccessOutOfBounds)?;
 
-    if (d as usize)
-        .checked_add(n as usize)
-        .filter(|&res| res <= tab.len())
-        .is_none()
-    {
+    if d.checked_add(n).filter(|&res| res <= tab.len()).is_none() {
         return Err(TrapError::TableOrElementAccessOutOfBounds.into());
     }
 
-    let dest = &mut tab.elem[d as usize..];
-    let src = &elem.references[s as usize..final_src_offset];
+    let dest = &mut tab.elem[d..];
+    let src = &elem.references[s..final_src_offset];
     dest[..src.len()].copy_from_slice(src);
     Ok(())
 }
@@ -5721,9 +5729,9 @@ pub(super) fn memory_init(
     s: u32,
     d: u32,
 ) -> Result<(), RuntimeError> {
-    let n = usize::try_from(n).expect("pointer width to be at least 32 bits wide");
-    let s = usize::try_from(s).expect("pointer width to be at least 32 bits wide");
-    let d = usize::try_from(d).expect("pointer width to be at least 32 bits wide");
+    let n = n.into_usize();
+    let s = s.into_usize();
+    let d = d.into_usize();
 
     let mem_addr = *store_modules
         .get(current_module)
