@@ -271,6 +271,36 @@ where
     }
 }
 
+impl<A, B, C, D> InteropValueList for (A, B, C, D)
+where
+    A: InteropValue,
+    B: InteropValue,
+    C: InteropValue,
+    D: InteropValue,
+    Value: From<A> + From<B> + From<C> + From<D>,
+{
+    const TYS: &'static [ValType] = &[A::TY, B::TY, C::TY, D::TY];
+
+    fn into_values(self) -> Vec<Value> {
+        vec![self.0.into(), self.1.into(), self.2.into(), self.3.into()]
+    }
+
+    fn try_from_values(
+        mut values: impl ExactSizeIterator<Item = Value>,
+    ) -> Result<Self, ValueTypeMismatchError> {
+        if values.len() != Self::TYS.len() {
+            return Err(ValueTypeMismatchError);
+        }
+
+        Ok((
+            A::try_from(values.next().unwrap())?,
+            B::try_from(values.next().unwrap())?,
+            C::try_from(values.next().unwrap())?,
+            D::try_from(values.next().unwrap())?
+        ))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::addrs::FuncAddr;
