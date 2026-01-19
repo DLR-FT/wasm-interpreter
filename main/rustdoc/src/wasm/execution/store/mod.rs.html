@@ -1302,127 +1302,141 @@
 <a href=#1302 id=1302 data-nosnippet>1302</a>                })
 <a href=#1303 id=1303 data-nosnippet>1303</a>            })
 <a href=#1304 id=1304 data-nosnippet>1304</a>    }
-<a href=#1305 id=1305 data-nosnippet>1305</a>}
-<a href=#1306 id=1306 data-nosnippet>1306</a>
-<a href=#1307 id=1307 data-nosnippet>1307</a><span class="doccomment">/// A unique identifier for a specific [`Store`]
-<a href=#1308 id=1308 data-nosnippet>1308</a></span><span class="attr">#[derive(Copy, Clone, Debug, PartialEq, Eq)]
-<a href=#1309 id=1309 data-nosnippet>1309</a></span><span class="kw">pub struct </span>StoreId(u64);
-<a href=#1310 id=1310 data-nosnippet>1310</a>
-<a href=#1311 id=1311 data-nosnippet>1311</a><span class="kw">impl </span>StoreId {
-<a href=#1312 id=1312 data-nosnippet>1312</a>    <span class="doccomment">/// Creates a new unique [`StoreId`]
-<a href=#1313 id=1313 data-nosnippet>1313</a>    </span><span class="attr">#[allow(clippy::new_without_default)] </span><span class="comment">// reason = "StoreId::default() might be misunderstood to be some
-<a href=#1314 id=1314 data-nosnippet>1314</a>                                          // default value. However, a default value does not exist in that
-<a href=#1315 id=1315 data-nosnippet>1315</a>                                          // sense because every newly created StoreId must be unique. Also
-<a href=#1316 id=1316 data-nosnippet>1316</a>                                          // we don't want to allow the user to create new instances of
-<a href=#1317 id=1317 data-nosnippet>1317</a>                                          // this object."
-<a href=#1318 id=1318 data-nosnippet>1318</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>new() -&gt; <span class="self">Self </span>{
-<a href=#1319 id=1319 data-nosnippet>1319</a>        <span class="kw">static </span>NEXT_STORE_ID: AtomicU64 = AtomicU64::new(<span class="number">0</span>);
+<a href=#1305 id=1305 data-nosnippet>1305</a>
+<a href=#1306 id=1306 data-nosnippet>1306</a>    <span class="doccomment">/// Allows a given closure to temporarily access the entire memory as a
+<a href=#1307 id=1307 data-nosnippet>1307</a>    /// `&amp;mut [u8]`.
+<a href=#1308 id=1308 data-nosnippet>1308</a>    ///
+<a href=#1309 id=1309 data-nosnippet>1309</a>    /// # Safety
+<a href=#1310 id=1310 data-nosnippet>1310</a>    /// The caller has to guarantee that the given [`MemAddr`] came from the
+<a href=#1311 id=1311 data-nosnippet>1311</a>    /// current [`Store`] object.
+<a href=#1312 id=1312 data-nosnippet>1312</a>    </span><span class="kw">pub fn </span>mem_access_mut_slice_unchecked&lt;R&gt;(
+<a href=#1313 id=1313 data-nosnippet>1313</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
+<a href=#1314 id=1314 data-nosnippet>1314</a>        memory: MemAddr,
+<a href=#1315 id=1315 data-nosnippet>1315</a>        accessor: <span class="kw">impl </span>FnOnce(<span class="kw-2">&amp;mut </span>[u8]) -&gt; R,
+<a href=#1316 id=1316 data-nosnippet>1316</a>    ) -&gt; R {
+<a href=#1317 id=1317 data-nosnippet>1317</a>        <span class="self">self</span>.memories.get(memory).mem.access_mut_slice(accessor)
+<a href=#1318 id=1318 data-nosnippet>1318</a>    }
+<a href=#1319 id=1319 data-nosnippet>1319</a>}
 <a href=#1320 id=1320 data-nosnippet>1320</a>
-<a href=#1321 id=1321 data-nosnippet>1321</a>        <span class="comment">// TODO find a fix for the default wrapping behavior of `fetch_add`.
-<a href=#1322 id=1322 data-nosnippet>1322</a>        // Maybe we could return a `RuntimeError` here?
-<a href=#1323 id=1323 data-nosnippet>1323</a>        </span><span class="self">Self</span>(NEXT_STORE_ID.fetch_add(<span class="number">1</span>, Ordering::SeqCst))
-<a href=#1324 id=1324 data-nosnippet>1324</a>    }
-<a href=#1325 id=1325 data-nosnippet>1325</a>}
-<a href=#1326 id=1326 data-nosnippet>1326</a>
-<a href=#1327 id=1327 data-nosnippet>1327</a><span class="doccomment">/// A marker error for host functions to return, in case they want execution to be halted.
-<a href=#1328 id=1328 data-nosnippet>1328</a></span><span class="kw">pub struct </span>HaltExecutionError;
-<a href=#1329 id=1329 data-nosnippet>1329</a>
-<a href=#1330 id=1330 data-nosnippet>1330</a><span class="doccomment">///&lt;https://webassembly.github.io/spec/core/exec/runtime.html#external-values&gt;
-<a href=#1331 id=1331 data-nosnippet>1331</a></span><span class="attr">#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-<a href=#1332 id=1332 data-nosnippet>1332</a></span><span class="kw">pub enum </span>ExternVal {
-<a href=#1333 id=1333 data-nosnippet>1333</a>    Func(FuncAddr),
-<a href=#1334 id=1334 data-nosnippet>1334</a>    Table(TableAddr),
-<a href=#1335 id=1335 data-nosnippet>1335</a>    Mem(MemAddr),
-<a href=#1336 id=1336 data-nosnippet>1336</a>    Global(GlobalAddr),
-<a href=#1337 id=1337 data-nosnippet>1337</a>}
-<a href=#1338 id=1338 data-nosnippet>1338</a>
-<a href=#1339 id=1339 data-nosnippet>1339</a><span class="kw">impl </span>ExternVal {
-<a href=#1340 id=1340 data-nosnippet>1340</a>    <span class="doccomment">/// returns the external type of `self` according to typing relation,
-<a href=#1341 id=1341 data-nosnippet>1341</a>    /// taking `store` as context S.
-<a href=#1342 id=1342 data-nosnippet>1342</a>    ///
-<a href=#1343 id=1343 data-nosnippet>1343</a>    /// # Safety
-<a href=#1344 id=1344 data-nosnippet>1344</a>    /// The caller has to guarantee that `self` came from the same [`Store`] which
-<a href=#1345 id=1345 data-nosnippet>1345</a>    /// is passed now as a reference.
-<a href=#1346 id=1346 data-nosnippet>1346</a>    </span><span class="kw">pub fn </span>extern_type&lt;T: Config&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, store: <span class="kw-2">&amp;</span>Store&lt;T&gt;) -&gt; ExternType {
-<a href=#1347 id=1347 data-nosnippet>1347</a>        <span class="kw">match </span><span class="self">self </span>{
-<a href=#1348 id=1348 data-nosnippet>1348</a>            <span class="comment">// TODO: fix ugly clone in function types
-<a href=#1349 id=1349 data-nosnippet>1349</a>            </span>ExternVal::Func(func_addr) =&gt; ExternType::Func(store.functions.get(<span class="kw-2">*</span>func_addr).ty()),
-<a href=#1350 id=1350 data-nosnippet>1350</a>            ExternVal::Table(table_addr) =&gt; ExternType::Table(store.tables.get(<span class="kw-2">*</span>table_addr).ty),
-<a href=#1351 id=1351 data-nosnippet>1351</a>            ExternVal::Mem(mem_addr) =&gt; ExternType::Mem(store.memories.get(<span class="kw-2">*</span>mem_addr).ty),
-<a href=#1352 id=1352 data-nosnippet>1352</a>            ExternVal::Global(global_addr) =&gt; {
-<a href=#1353 id=1353 data-nosnippet>1353</a>                ExternType::Global(store.globals.get(<span class="kw-2">*</span>global_addr).ty)
-<a href=#1354 id=1354 data-nosnippet>1354</a>            }
-<a href=#1355 id=1355 data-nosnippet>1355</a>        }
-<a href=#1356 id=1356 data-nosnippet>1356</a>    }
-<a href=#1357 id=1357 data-nosnippet>1357</a>}
-<a href=#1358 id=1358 data-nosnippet>1358</a>
-<a href=#1359 id=1359 data-nosnippet>1359</a><span class="kw">impl </span>ExternVal {
-<a href=#1360 id=1360 data-nosnippet>1360</a>    <span class="kw">pub fn </span>as_func(<span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;FuncAddr&gt; {
+<a href=#1321 id=1321 data-nosnippet>1321</a><span class="doccomment">/// A unique identifier for a specific [`Store`]
+<a href=#1322 id=1322 data-nosnippet>1322</a></span><span class="attr">#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+<a href=#1323 id=1323 data-nosnippet>1323</a></span><span class="kw">pub struct </span>StoreId(u64);
+<a href=#1324 id=1324 data-nosnippet>1324</a>
+<a href=#1325 id=1325 data-nosnippet>1325</a><span class="kw">impl </span>StoreId {
+<a href=#1326 id=1326 data-nosnippet>1326</a>    <span class="doccomment">/// Creates a new unique [`StoreId`]
+<a href=#1327 id=1327 data-nosnippet>1327</a>    </span><span class="attr">#[allow(clippy::new_without_default)] </span><span class="comment">// reason = "StoreId::default() might be misunderstood to be some
+<a href=#1328 id=1328 data-nosnippet>1328</a>                                          // default value. However, a default value does not exist in that
+<a href=#1329 id=1329 data-nosnippet>1329</a>                                          // sense because every newly created StoreId must be unique. Also
+<a href=#1330 id=1330 data-nosnippet>1330</a>                                          // we don't want to allow the user to create new instances of
+<a href=#1331 id=1331 data-nosnippet>1331</a>                                          // this object."
+<a href=#1332 id=1332 data-nosnippet>1332</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>new() -&gt; <span class="self">Self </span>{
+<a href=#1333 id=1333 data-nosnippet>1333</a>        <span class="kw">static </span>NEXT_STORE_ID: AtomicU64 = AtomicU64::new(<span class="number">0</span>);
+<a href=#1334 id=1334 data-nosnippet>1334</a>
+<a href=#1335 id=1335 data-nosnippet>1335</a>        <span class="comment">// TODO find a fix for the default wrapping behavior of `fetch_add`.
+<a href=#1336 id=1336 data-nosnippet>1336</a>        // Maybe we could return a `RuntimeError` here?
+<a href=#1337 id=1337 data-nosnippet>1337</a>        </span><span class="self">Self</span>(NEXT_STORE_ID.fetch_add(<span class="number">1</span>, Ordering::SeqCst))
+<a href=#1338 id=1338 data-nosnippet>1338</a>    }
+<a href=#1339 id=1339 data-nosnippet>1339</a>}
+<a href=#1340 id=1340 data-nosnippet>1340</a>
+<a href=#1341 id=1341 data-nosnippet>1341</a><span class="doccomment">/// A marker error for host functions to return, in case they want execution to be halted.
+<a href=#1342 id=1342 data-nosnippet>1342</a></span><span class="kw">pub struct </span>HaltExecutionError;
+<a href=#1343 id=1343 data-nosnippet>1343</a>
+<a href=#1344 id=1344 data-nosnippet>1344</a><span class="doccomment">///&lt;https://webassembly.github.io/spec/core/exec/runtime.html#external-values&gt;
+<a href=#1345 id=1345 data-nosnippet>1345</a></span><span class="attr">#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+<a href=#1346 id=1346 data-nosnippet>1346</a></span><span class="kw">pub enum </span>ExternVal {
+<a href=#1347 id=1347 data-nosnippet>1347</a>    Func(FuncAddr),
+<a href=#1348 id=1348 data-nosnippet>1348</a>    Table(TableAddr),
+<a href=#1349 id=1349 data-nosnippet>1349</a>    Mem(MemAddr),
+<a href=#1350 id=1350 data-nosnippet>1350</a>    Global(GlobalAddr),
+<a href=#1351 id=1351 data-nosnippet>1351</a>}
+<a href=#1352 id=1352 data-nosnippet>1352</a>
+<a href=#1353 id=1353 data-nosnippet>1353</a><span class="kw">impl </span>ExternVal {
+<a href=#1354 id=1354 data-nosnippet>1354</a>    <span class="doccomment">/// returns the external type of `self` according to typing relation,
+<a href=#1355 id=1355 data-nosnippet>1355</a>    /// taking `store` as context S.
+<a href=#1356 id=1356 data-nosnippet>1356</a>    ///
+<a href=#1357 id=1357 data-nosnippet>1357</a>    /// # Safety
+<a href=#1358 id=1358 data-nosnippet>1358</a>    /// The caller has to guarantee that `self` came from the same [`Store`] which
+<a href=#1359 id=1359 data-nosnippet>1359</a>    /// is passed now as a reference.
+<a href=#1360 id=1360 data-nosnippet>1360</a>    </span><span class="kw">pub fn </span>extern_type&lt;T: Config&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, store: <span class="kw-2">&amp;</span>Store&lt;T&gt;) -&gt; ExternType {
 <a href=#1361 id=1361 data-nosnippet>1361</a>        <span class="kw">match </span><span class="self">self </span>{
-<a href=#1362 id=1362 data-nosnippet>1362</a>            ExternVal::Func(func_addr) =&gt; <span class="prelude-val">Some</span>(func_addr),
-<a href=#1363 id=1363 data-nosnippet>1363</a>            <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
-<a href=#1364 id=1364 data-nosnippet>1364</a>        }
-<a href=#1365 id=1365 data-nosnippet>1365</a>    }
-<a href=#1366 id=1366 data-nosnippet>1366</a>
-<a href=#1367 id=1367 data-nosnippet>1367</a>    <span class="kw">pub fn </span>as_table(<span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;TableAddr&gt; {
-<a href=#1368 id=1368 data-nosnippet>1368</a>        <span class="kw">match </span><span class="self">self </span>{
-<a href=#1369 id=1369 data-nosnippet>1369</a>            ExternVal::Table(table_addr) =&gt; <span class="prelude-val">Some</span>(table_addr),
-<a href=#1370 id=1370 data-nosnippet>1370</a>            <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
-<a href=#1371 id=1371 data-nosnippet>1371</a>        }
-<a href=#1372 id=1372 data-nosnippet>1372</a>    }
-<a href=#1373 id=1373 data-nosnippet>1373</a>
-<a href=#1374 id=1374 data-nosnippet>1374</a>    <span class="kw">pub fn </span>as_mem(<span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;MemAddr&gt; {
+<a href=#1362 id=1362 data-nosnippet>1362</a>            <span class="comment">// TODO: fix ugly clone in function types
+<a href=#1363 id=1363 data-nosnippet>1363</a>            </span>ExternVal::Func(func_addr) =&gt; ExternType::Func(store.functions.get(<span class="kw-2">*</span>func_addr).ty()),
+<a href=#1364 id=1364 data-nosnippet>1364</a>            ExternVal::Table(table_addr) =&gt; ExternType::Table(store.tables.get(<span class="kw-2">*</span>table_addr).ty),
+<a href=#1365 id=1365 data-nosnippet>1365</a>            ExternVal::Mem(mem_addr) =&gt; ExternType::Mem(store.memories.get(<span class="kw-2">*</span>mem_addr).ty),
+<a href=#1366 id=1366 data-nosnippet>1366</a>            ExternVal::Global(global_addr) =&gt; {
+<a href=#1367 id=1367 data-nosnippet>1367</a>                ExternType::Global(store.globals.get(<span class="kw-2">*</span>global_addr).ty)
+<a href=#1368 id=1368 data-nosnippet>1368</a>            }
+<a href=#1369 id=1369 data-nosnippet>1369</a>        }
+<a href=#1370 id=1370 data-nosnippet>1370</a>    }
+<a href=#1371 id=1371 data-nosnippet>1371</a>}
+<a href=#1372 id=1372 data-nosnippet>1372</a>
+<a href=#1373 id=1373 data-nosnippet>1373</a><span class="kw">impl </span>ExternVal {
+<a href=#1374 id=1374 data-nosnippet>1374</a>    <span class="kw">pub fn </span>as_func(<span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;FuncAddr&gt; {
 <a href=#1375 id=1375 data-nosnippet>1375</a>        <span class="kw">match </span><span class="self">self </span>{
-<a href=#1376 id=1376 data-nosnippet>1376</a>            ExternVal::Mem(mem_addr) =&gt; <span class="prelude-val">Some</span>(mem_addr),
+<a href=#1376 id=1376 data-nosnippet>1376</a>            ExternVal::Func(func_addr) =&gt; <span class="prelude-val">Some</span>(func_addr),
 <a href=#1377 id=1377 data-nosnippet>1377</a>            <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
 <a href=#1378 id=1378 data-nosnippet>1378</a>        }
 <a href=#1379 id=1379 data-nosnippet>1379</a>    }
 <a href=#1380 id=1380 data-nosnippet>1380</a>
-<a href=#1381 id=1381 data-nosnippet>1381</a>    <span class="kw">pub fn </span>as_global(<span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;GlobalAddr&gt; {
+<a href=#1381 id=1381 data-nosnippet>1381</a>    <span class="kw">pub fn </span>as_table(<span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;TableAddr&gt; {
 <a href=#1382 id=1382 data-nosnippet>1382</a>        <span class="kw">match </span><span class="self">self </span>{
-<a href=#1383 id=1383 data-nosnippet>1383</a>            ExternVal::Global(global_addr) =&gt; <span class="prelude-val">Some</span>(global_addr),
+<a href=#1383 id=1383 data-nosnippet>1383</a>            ExternVal::Table(table_addr) =&gt; <span class="prelude-val">Some</span>(table_addr),
 <a href=#1384 id=1384 data-nosnippet>1384</a>            <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
 <a href=#1385 id=1385 data-nosnippet>1385</a>        }
 <a href=#1386 id=1386 data-nosnippet>1386</a>    }
-<a href=#1387 id=1387 data-nosnippet>1387</a>}
-<a href=#1388 id=1388 data-nosnippet>1388</a>
-<a href=#1389 id=1389 data-nosnippet>1389</a><span class="doccomment">/// common convention functions defined for lists of ExternVals, ExternTypes, Exports
-<a href=#1390 id=1390 data-nosnippet>1390</a>/// &lt;https://webassembly.github.io/spec/core/exec/runtime.html#conventions&gt;
-<a href=#1391 id=1391 data-nosnippet>1391</a>/// &lt;https://webassembly.github.io/spec/core/syntax/types.html#id3&gt;
-<a href=#1392 id=1392 data-nosnippet>1392</a>/// &lt;https://webassembly.github.io/spec/core/syntax/modules.html?highlight=convention#id1&gt;
-<a href=#1393 id=1393 data-nosnippet>1393</a></span><span class="comment">// TODO implement this trait for ExternType lists Export lists
-<a href=#1394 id=1394 data-nosnippet>1394</a></span><span class="kw">pub trait </span>ExternFilterable {
-<a href=#1395 id=1395 data-nosnippet>1395</a>    <span class="kw">fn </span>funcs(<span class="self">self</span>) -&gt; <span class="kw">impl </span>Iterator&lt;Item = FuncAddr&gt;;
-<a href=#1396 id=1396 data-nosnippet>1396</a>    <span class="kw">fn </span>tables(<span class="self">self</span>) -&gt; <span class="kw">impl </span>Iterator&lt;Item = TableAddr&gt;;
-<a href=#1397 id=1397 data-nosnippet>1397</a>    <span class="kw">fn </span>mems(<span class="self">self</span>) -&gt; <span class="kw">impl </span>Iterator&lt;Item = MemAddr&gt;;
-<a href=#1398 id=1398 data-nosnippet>1398</a>    <span class="kw">fn </span>globals(<span class="self">self</span>) -&gt; <span class="kw">impl </span>Iterator&lt;Item = GlobalAddr&gt;;
-<a href=#1399 id=1399 data-nosnippet>1399</a>}
-<a href=#1400 id=1400 data-nosnippet>1400</a>
-<a href=#1401 id=1401 data-nosnippet>1401</a><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, I&gt; ExternFilterable <span class="kw">for </span>I
-<a href=#1402 id=1402 data-nosnippet>1402</a><span class="kw">where
-<a href=#1403 id=1403 data-nosnippet>1403</a>    </span>I: Iterator&lt;Item = <span class="kw-2">&amp;</span><span class="lifetime">'a </span>ExternVal&gt;,
-<a href=#1404 id=1404 data-nosnippet>1404</a>{
-<a href=#1405 id=1405 data-nosnippet>1405</a>    <span class="kw">fn </span>funcs(<span class="self">self</span>) -&gt; <span class="kw">impl </span>Iterator&lt;Item = FuncAddr&gt; {
-<a href=#1406 id=1406 data-nosnippet>1406</a>        <span class="self">self</span>.filter_map(|extern_val| extern_val.as_func())
-<a href=#1407 id=1407 data-nosnippet>1407</a>    }
-<a href=#1408 id=1408 data-nosnippet>1408</a>
-<a href=#1409 id=1409 data-nosnippet>1409</a>    <span class="kw">fn </span>tables(<span class="self">self</span>) -&gt; <span class="kw">impl </span>Iterator&lt;Item = TableAddr&gt; {
-<a href=#1410 id=1410 data-nosnippet>1410</a>        <span class="self">self</span>.filter_map(|extern_val| extern_val.as_table())
-<a href=#1411 id=1411 data-nosnippet>1411</a>    }
-<a href=#1412 id=1412 data-nosnippet>1412</a>
-<a href=#1413 id=1413 data-nosnippet>1413</a>    <span class="kw">fn </span>mems(<span class="self">self</span>) -&gt; <span class="kw">impl </span>Iterator&lt;Item = MemAddr&gt; {
-<a href=#1414 id=1414 data-nosnippet>1414</a>        <span class="self">self</span>.filter_map(|extern_val| extern_val.as_mem())
-<a href=#1415 id=1415 data-nosnippet>1415</a>    }
-<a href=#1416 id=1416 data-nosnippet>1416</a>
-<a href=#1417 id=1417 data-nosnippet>1417</a>    <span class="kw">fn </span>globals(<span class="self">self</span>) -&gt; <span class="kw">impl </span>Iterator&lt;Item = GlobalAddr&gt; {
-<a href=#1418 id=1418 data-nosnippet>1418</a>        <span class="self">self</span>.filter_map(|extern_val| extern_val.as_global())
-<a href=#1419 id=1419 data-nosnippet>1419</a>    }
-<a href=#1420 id=1420 data-nosnippet>1420</a>}
-<a href=#1421 id=1421 data-nosnippet>1421</a>
-<a href=#1422 id=1422 data-nosnippet>1422</a><span class="doccomment">/// Represents a successful, possibly fueled instantiation of a module.
-<a href=#1423 id=1423 data-nosnippet>1423</a></span><span class="kw">pub struct </span>InstantiationOutcome {
-<a href=#1424 id=1424 data-nosnippet>1424</a>    <span class="doccomment">/// contains the store address of the module that has successfully instantiated.
-<a href=#1425 id=1425 data-nosnippet>1425</a>    </span><span class="kw">pub </span>module_addr: ModuleAddr,
-<a href=#1426 id=1426 data-nosnippet>1426</a>    <span class="doccomment">/// contains `Some(remaining_fuel)` if instantiation was fuel-metered and `None` otherwise.
-<a href=#1427 id=1427 data-nosnippet>1427</a>    </span><span class="kw">pub </span>maybe_remaining_fuel: <span class="prelude-ty">Option</span>&lt;u32&gt;,
-<a href=#1428 id=1428 data-nosnippet>1428</a>}</code></pre></div></section></main></body></html>
+<a href=#1387 id=1387 data-nosnippet>1387</a>
+<a href=#1388 id=1388 data-nosnippet>1388</a>    <span class="kw">pub fn </span>as_mem(<span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;MemAddr&gt; {
+<a href=#1389 id=1389 data-nosnippet>1389</a>        <span class="kw">match </span><span class="self">self </span>{
+<a href=#1390 id=1390 data-nosnippet>1390</a>            ExternVal::Mem(mem_addr) =&gt; <span class="prelude-val">Some</span>(mem_addr),
+<a href=#1391 id=1391 data-nosnippet>1391</a>            <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
+<a href=#1392 id=1392 data-nosnippet>1392</a>        }
+<a href=#1393 id=1393 data-nosnippet>1393</a>    }
+<a href=#1394 id=1394 data-nosnippet>1394</a>
+<a href=#1395 id=1395 data-nosnippet>1395</a>    <span class="kw">pub fn </span>as_global(<span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;GlobalAddr&gt; {
+<a href=#1396 id=1396 data-nosnippet>1396</a>        <span class="kw">match </span><span class="self">self </span>{
+<a href=#1397 id=1397 data-nosnippet>1397</a>            ExternVal::Global(global_addr) =&gt; <span class="prelude-val">Some</span>(global_addr),
+<a href=#1398 id=1398 data-nosnippet>1398</a>            <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
+<a href=#1399 id=1399 data-nosnippet>1399</a>        }
+<a href=#1400 id=1400 data-nosnippet>1400</a>    }
+<a href=#1401 id=1401 data-nosnippet>1401</a>}
+<a href=#1402 id=1402 data-nosnippet>1402</a>
+<a href=#1403 id=1403 data-nosnippet>1403</a><span class="doccomment">/// common convention functions defined for lists of ExternVals, ExternTypes, Exports
+<a href=#1404 id=1404 data-nosnippet>1404</a>/// &lt;https://webassembly.github.io/spec/core/exec/runtime.html#conventions&gt;
+<a href=#1405 id=1405 data-nosnippet>1405</a>/// &lt;https://webassembly.github.io/spec/core/syntax/types.html#id3&gt;
+<a href=#1406 id=1406 data-nosnippet>1406</a>/// &lt;https://webassembly.github.io/spec/core/syntax/modules.html?highlight=convention#id1&gt;
+<a href=#1407 id=1407 data-nosnippet>1407</a></span><span class="comment">// TODO implement this trait for ExternType lists Export lists
+<a href=#1408 id=1408 data-nosnippet>1408</a></span><span class="kw">pub trait </span>ExternFilterable {
+<a href=#1409 id=1409 data-nosnippet>1409</a>    <span class="kw">fn </span>funcs(<span class="self">self</span>) -&gt; <span class="kw">impl </span>Iterator&lt;Item = FuncAddr&gt;;
+<a href=#1410 id=1410 data-nosnippet>1410</a>    <span class="kw">fn </span>tables(<span class="self">self</span>) -&gt; <span class="kw">impl </span>Iterator&lt;Item = TableAddr&gt;;
+<a href=#1411 id=1411 data-nosnippet>1411</a>    <span class="kw">fn </span>mems(<span class="self">self</span>) -&gt; <span class="kw">impl </span>Iterator&lt;Item = MemAddr&gt;;
+<a href=#1412 id=1412 data-nosnippet>1412</a>    <span class="kw">fn </span>globals(<span class="self">self</span>) -&gt; <span class="kw">impl </span>Iterator&lt;Item = GlobalAddr&gt;;
+<a href=#1413 id=1413 data-nosnippet>1413</a>}
+<a href=#1414 id=1414 data-nosnippet>1414</a>
+<a href=#1415 id=1415 data-nosnippet>1415</a><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, I&gt; ExternFilterable <span class="kw">for </span>I
+<a href=#1416 id=1416 data-nosnippet>1416</a><span class="kw">where
+<a href=#1417 id=1417 data-nosnippet>1417</a>    </span>I: Iterator&lt;Item = <span class="kw-2">&amp;</span><span class="lifetime">'a </span>ExternVal&gt;,
+<a href=#1418 id=1418 data-nosnippet>1418</a>{
+<a href=#1419 id=1419 data-nosnippet>1419</a>    <span class="kw">fn </span>funcs(<span class="self">self</span>) -&gt; <span class="kw">impl </span>Iterator&lt;Item = FuncAddr&gt; {
+<a href=#1420 id=1420 data-nosnippet>1420</a>        <span class="self">self</span>.filter_map(|extern_val| extern_val.as_func())
+<a href=#1421 id=1421 data-nosnippet>1421</a>    }
+<a href=#1422 id=1422 data-nosnippet>1422</a>
+<a href=#1423 id=1423 data-nosnippet>1423</a>    <span class="kw">fn </span>tables(<span class="self">self</span>) -&gt; <span class="kw">impl </span>Iterator&lt;Item = TableAddr&gt; {
+<a href=#1424 id=1424 data-nosnippet>1424</a>        <span class="self">self</span>.filter_map(|extern_val| extern_val.as_table())
+<a href=#1425 id=1425 data-nosnippet>1425</a>    }
+<a href=#1426 id=1426 data-nosnippet>1426</a>
+<a href=#1427 id=1427 data-nosnippet>1427</a>    <span class="kw">fn </span>mems(<span class="self">self</span>) -&gt; <span class="kw">impl </span>Iterator&lt;Item = MemAddr&gt; {
+<a href=#1428 id=1428 data-nosnippet>1428</a>        <span class="self">self</span>.filter_map(|extern_val| extern_val.as_mem())
+<a href=#1429 id=1429 data-nosnippet>1429</a>    }
+<a href=#1430 id=1430 data-nosnippet>1430</a>
+<a href=#1431 id=1431 data-nosnippet>1431</a>    <span class="kw">fn </span>globals(<span class="self">self</span>) -&gt; <span class="kw">impl </span>Iterator&lt;Item = GlobalAddr&gt; {
+<a href=#1432 id=1432 data-nosnippet>1432</a>        <span class="self">self</span>.filter_map(|extern_val| extern_val.as_global())
+<a href=#1433 id=1433 data-nosnippet>1433</a>    }
+<a href=#1434 id=1434 data-nosnippet>1434</a>}
+<a href=#1435 id=1435 data-nosnippet>1435</a>
+<a href=#1436 id=1436 data-nosnippet>1436</a><span class="doccomment">/// Represents a successful, possibly fueled instantiation of a module.
+<a href=#1437 id=1437 data-nosnippet>1437</a></span><span class="kw">pub struct </span>InstantiationOutcome {
+<a href=#1438 id=1438 data-nosnippet>1438</a>    <span class="doccomment">/// contains the store address of the module that has successfully instantiated.
+<a href=#1439 id=1439 data-nosnippet>1439</a>    </span><span class="kw">pub </span>module_addr: ModuleAddr,
+<a href=#1440 id=1440 data-nosnippet>1440</a>    <span class="doccomment">/// contains `Some(remaining_fuel)` if instantiation was fuel-metered and `None` otherwise.
+<a href=#1441 id=1441 data-nosnippet>1441</a>    </span><span class="kw">pub </span>maybe_remaining_fuel: <span class="prelude-ty">Option</span>&lt;u32&gt;,
+<a href=#1442 id=1442 data-nosnippet>1442</a>}</code></pre></div></section></main></body></html>

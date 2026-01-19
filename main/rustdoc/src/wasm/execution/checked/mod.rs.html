@@ -493,471 +493,487 @@
 <a href=#493 id=493 data-nosnippet>493</a>            .map_err(|<span class="kw">_</span>| RuntimeError::FunctionInvocationSignatureMismatch)<span class="question-mark">?</span>;
 <a href=#494 id=494 data-nosnippet>494</a>        <span class="prelude-val">Ok</span>(stored_returns)
 <a href=#495 id=495 data-nosnippet>495</a>    }
-<a href=#496 id=496 data-nosnippet>496</a>}
-<a href=#497 id=497 data-nosnippet>497</a>
-<a href=#498 id=498 data-nosnippet>498</a><span class="comment">// All functions in this impl block must occur in the same order as they are
-<a href=#499 id=499 data-nosnippet>499</a>// defined in for the unchecked [`Linker`] methods. Also all functions must
-<a href=#500 id=500 data-nosnippet>500</a>// follow the same implementation scheme to make sure they are only light
-<a href=#501 id=501 data-nosnippet>501</a>// wrappers:
-<a href=#502 id=502 data-nosnippet>502</a>//
-<a href=#503 id=503 data-nosnippet>503</a>// 1. get or insert the `StoreId` [of the store associated with the current `Linker`]
-<a href=#504 id=504 data-nosnippet>504</a>// 2. try unwrap [stored parameter objects]
-<a href=#505 id=505 data-nosnippet>505</a>// 3. call [unchecked method]
-<a href=#506 id=506 data-nosnippet>506</a>// 4. rewrap [results into stored objects]
-<a href=#507 id=507 data-nosnippet>507</a>// 5. return [stored result objects]
-<a href=#508 id=508 data-nosnippet>508</a></span><span class="kw">impl </span>Linker {
-<a href=#509 id=509 data-nosnippet>509</a>    <span class="doccomment">/// This is a safe variant of [`Linker::define_unchecked`].
-<a href=#510 id=510 data-nosnippet>510</a>    </span><span class="kw">pub fn </span>define(
-<a href=#511 id=511 data-nosnippet>511</a>        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-<a href=#512 id=512 data-nosnippet>512</a>        module_name: String,
-<a href=#513 id=513 data-nosnippet>513</a>        name: String,
-<a href=#514 id=514 data-nosnippet>514</a>        extern_val: StoredExternVal,
-<a href=#515 id=515 data-nosnippet>515</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), RuntimeError&gt; {
-<a href=#516 id=516 data-nosnippet>516</a>        <span class="comment">// 1. get or insert the `StoreId`
-<a href=#517 id=517 data-nosnippet>517</a>        </span><span class="kw">let </span>extern_val_store_id = extern_val
-<a href=#518 id=518 data-nosnippet>518</a>            .id()
-<a href=#519 id=519 data-nosnippet>519</a>            .expect(<span class="string">"this type to always contain a StoreId"</span>);
-<a href=#520 id=520 data-nosnippet>520</a>        <span class="kw">let </span>linker_store_id = <span class="kw-2">*</span><span class="self">self</span>.store_id.get_or_insert(extern_val_store_id);
-<a href=#521 id=521 data-nosnippet>521</a>        <span class="kw">if </span>linker_store_id != extern_val_store_id {
-<a href=#522 id=522 data-nosnippet>522</a>            <span class="kw">return </span><span class="prelude-val">Err</span>(RuntimeError::StoreIdMismatch);
-<a href=#523 id=523 data-nosnippet>523</a>        }
-<a href=#524 id=524 data-nosnippet>524</a>        <span class="comment">// 2. try unwrap
-<a href=#525 id=525 data-nosnippet>525</a>        </span><span class="kw">let </span>extern_val = extern_val.try_unwrap_into_bare(linker_store_id)<span class="question-mark">?</span>;
-<a href=#526 id=526 data-nosnippet>526</a>        <span class="comment">// 3. call
-<a href=#527 id=527 data-nosnippet>527</a>        </span><span class="self">self</span>.define_unchecked(module_name, name, extern_val)<span class="question-mark">?</span>;
-<a href=#528 id=528 data-nosnippet>528</a>        <span class="comment">// 4. rewrap
-<a href=#529 id=529 data-nosnippet>529</a>        // result is the unit type.
-<a href=#530 id=530 data-nosnippet>530</a>        // 5. return
-<a href=#531 id=531 data-nosnippet>531</a>        </span><span class="prelude-val">Ok</span>(())
-<a href=#532 id=532 data-nosnippet>532</a>    }
-<a href=#533 id=533 data-nosnippet>533</a>
-<a href=#534 id=534 data-nosnippet>534</a>    <span class="doccomment">/// This is a safe variant of [`Linker::define_module_instance_unchecked`].
-<a href=#535 id=535 data-nosnippet>535</a>    </span><span class="kw">pub fn </span>define_module_instance&lt;T: Config&gt;(
-<a href=#536 id=536 data-nosnippet>536</a>        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-<a href=#537 id=537 data-nosnippet>537</a>        store: <span class="kw-2">&amp;</span>Store&lt;T&gt;,
-<a href=#538 id=538 data-nosnippet>538</a>        module_name: String,
-<a href=#539 id=539 data-nosnippet>539</a>        module: Stored&lt;ModuleAddr&gt;,
-<a href=#540 id=540 data-nosnippet>540</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), RuntimeError&gt; {
-<a href=#541 id=541 data-nosnippet>541</a>        <span class="comment">// 1. get or insert the `StoreId`
-<a href=#542 id=542 data-nosnippet>542</a>        </span><span class="kw">let </span>module_store_id = module.id().expect(<span class="string">"this type to always contain a StoreId"</span>);
-<a href=#543 id=543 data-nosnippet>543</a>        <span class="kw">let </span>linker_store_id = <span class="kw-2">*</span><span class="self">self</span>.store_id.get_or_insert(module_store_id);
-<a href=#544 id=544 data-nosnippet>544</a>        <span class="kw">if </span>linker_store_id != module_store_id {
-<a href=#545 id=545 data-nosnippet>545</a>            <span class="kw">return </span><span class="prelude-val">Err</span>(RuntimeError::StoreIdMismatch);
-<a href=#546 id=546 data-nosnippet>546</a>        }
-<a href=#547 id=547 data-nosnippet>547</a>        <span class="comment">// 2. try unwrap
-<a href=#548 id=548 data-nosnippet>548</a>        </span><span class="kw">let </span>module = module.try_unwrap_into_bare(linker_store_id)<span class="question-mark">?</span>;
-<a href=#549 id=549 data-nosnippet>549</a>        <span class="comment">// 3. call
-<a href=#550 id=550 data-nosnippet>550</a>        </span><span class="self">self</span>.define_module_instance_unchecked(store, module_name, module)<span class="question-mark">?</span>;
-<a href=#551 id=551 data-nosnippet>551</a>        <span class="comment">// 4. rewrap
-<a href=#552 id=552 data-nosnippet>552</a>        // result is the unit type.
-<a href=#553 id=553 data-nosnippet>553</a>        // 5. return
-<a href=#554 id=554 data-nosnippet>554</a>        </span><span class="prelude-val">Ok</span>(())
-<a href=#555 id=555 data-nosnippet>555</a>    }
-<a href=#556 id=556 data-nosnippet>556</a>
-<a href=#557 id=557 data-nosnippet>557</a>    <span class="doccomment">/// This is a safe variant of [`Linker::get_unchecked`].
-<a href=#558 id=558 data-nosnippet>558</a>    ///
-<a href=#559 id=559 data-nosnippet>559</a>    /// # Interaction with unchecked API
-<a href=#560 id=560 data-nosnippet>560</a>    ///
-<a href=#561 id=561 data-nosnippet>561</a>    /// This method is able to find externs defined through the unchecked
-<a href=#562 id=562 data-nosnippet>562</a>    /// `define` methods.  However, for this to work, at least one of the
-<a href=#563 id=563 data-nosnippet>563</a>    /// following methods must have been called successfully:
-<a href=#564 id=564 data-nosnippet>564</a>    /// [`Linker::define`], [`Linker::define_module_instance`],
-<a href=#565 id=565 data-nosnippet>565</a>    /// [`Linker::module_instantiate`]. Otherwise, this method may spuriously
-<a href=#566 id=566 data-nosnippet>566</a>    /// return an error.
-<a href=#567 id=567 data-nosnippet>567</a>    ///
-<a href=#568 id=568 data-nosnippet>568</a>    /// Therefore, it is advised against to mix the unchecked and checked API
-<a href=#569 id=569 data-nosnippet>569</a>    /// for a single [`Linker`] instance.
-<a href=#570 id=570 data-nosnippet>570</a>    ///
-<a href=#571 id=571 data-nosnippet>571</a>    /// # Errors
-<a href=#572 id=572 data-nosnippet>572</a>    ///
-<a href=#573 id=573 data-nosnippet>573</a>    /// - [`RuntimeError::LinkerNotYetAssociatedWithStoreId`]
-<a href=#574 id=574 data-nosnippet>574</a>    /// - [`RuntimeError::UnableToResolveExternLookup`]
-<a href=#575 id=575 data-nosnippet>575</a>    </span><span class="kw">pub fn </span>get(<span class="kw-2">&amp;</span><span class="self">self</span>, module_name: String, name: String) -&gt; <span class="prelude-ty">Result</span>&lt;StoredExternVal, RuntimeError&gt; {
-<a href=#576 id=576 data-nosnippet>576</a>        <span class="comment">// 1. get or insert the `StoreId`
-<a href=#577 id=577 data-nosnippet>577</a>        // TODO docs are not consistent
-<a href=#578 id=578 data-nosnippet>578</a>        </span><span class="kw">let </span><span class="prelude-val">Some</span>(linker_store_id) = <span class="self">self</span>.store_id <span class="kw">else </span>{
-<a href=#579 id=579 data-nosnippet>579</a>            <span class="comment">// At this point we have no way to set the current store id, because
-<a href=#580 id=580 data-nosnippet>580</a>            // the parameters are all non-stored types.
-<a href=#581 id=581 data-nosnippet>581</a>
-<a href=#582 id=582 data-nosnippet>582</a>            // We also know that nothing was defined in this linker context through
-<a href=#583 id=583 data-nosnippet>583</a>            // the checked methods yet, because `self.store_id` has not been set
-<a href=#584 id=584 data-nosnippet>584</a>            // yet. Therefore, a get would always return `None`.
-<a href=#585 id=585 data-nosnippet>585</a>
-<a href=#586 id=586 data-nosnippet>586</a>            // However, when an unchecked `define` method was used before, we
-<a href=#587 id=587 data-nosnippet>587</a>            // also have to return `None` here, because even if the lookup for
-<a href=#588 id=588 data-nosnippet>588</a>            // `module_name` and `name` returns something, we cannot attach a
-<a href=#589 id=589 data-nosnippet>589</a>            // store id to it.
-<a href=#590 id=590 data-nosnippet>590</a>
-<a href=#591 id=591 data-nosnippet>591</a>            </span><span class="kw">return </span><span class="prelude-val">Err</span>(RuntimeError::LinkerNotYetAssociatedWithStoreId);
-<a href=#592 id=592 data-nosnippet>592</a>        };
-<a href=#593 id=593 data-nosnippet>593</a>        <span class="comment">// 2. try unwrap
-<a href=#594 id=594 data-nosnippet>594</a>        // no stored parameters
-<a href=#595 id=595 data-nosnippet>595</a>        // 3. call
-<a href=#596 id=596 data-nosnippet>596</a>        </span><span class="kw">let </span>extern_val = <span class="self">self
-<a href=#597 id=597 data-nosnippet>597</a>            </span>.get_unchecked(module_name, name)
-<a href=#598 id=598 data-nosnippet>598</a>            .ok_or(RuntimeError::UnableToResolveExternLookup)<span class="question-mark">?</span>;
-<a href=#599 id=599 data-nosnippet>599</a>        <span class="comment">// 4. rewrap
-<a href=#600 id=600 data-nosnippet>600</a>        // Safety: The `ExternVal` just came from the current `Linker`. Because
-<a href=#601 id=601 data-nosnippet>601</a>        // a `Linker` can always be used with only one unique `Store`, this
-<a href=#602 id=602 data-nosnippet>602</a>        // `ExternVal` must be from the current Linker's store.
-<a href=#603 id=603 data-nosnippet>603</a>        </span><span class="kw">let </span>stored_extern_val = <span class="kw">unsafe </span>{ StoredExternVal::from_bare(extern_val, linker_store_id) };
-<a href=#604 id=604 data-nosnippet>604</a>        <span class="comment">// 5. return
-<a href=#605 id=605 data-nosnippet>605</a>        </span><span class="prelude-val">Ok</span>(stored_extern_val)
-<a href=#606 id=606 data-nosnippet>606</a>    }
-<a href=#607 id=607 data-nosnippet>607</a>
-<a href=#608 id=608 data-nosnippet>608</a>    <span class="doccomment">/// This is a safe variant of [`Linker::instantiate_pre_unchecked`].
-<a href=#609 id=609 data-nosnippet>609</a>    ///
-<a href=#610 id=610 data-nosnippet>610</a>    /// # Interaction with unchecked API
-<a href=#611 id=611 data-nosnippet>611</a>    ///
-<a href=#612 id=612 data-nosnippet>612</a>    /// See [`Linker::get`]
-<a href=#613 id=613 data-nosnippet>613</a>    ///
-<a href=#614 id=614 data-nosnippet>614</a>    /// # Errors
-<a href=#615 id=615 data-nosnippet>615</a>    ///
-<a href=#616 id=616 data-nosnippet>616</a>    /// - [`RuntimeError::LinkerNotYetAssociatedWithStoreId`]
-<a href=#617 id=617 data-nosnippet>617</a>    /// - [`RuntimeError::UnableToResolveExternLookup`]
-<a href=#618 id=618 data-nosnippet>618</a>    </span><span class="kw">pub fn </span>instantiate_pre(
-<a href=#619 id=619 data-nosnippet>619</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
-<a href=#620 id=620 data-nosnippet>620</a>        validation_info: <span class="kw-2">&amp;</span>ValidationInfo,
-<a href=#621 id=621 data-nosnippet>621</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;StoredExternVal&gt;, RuntimeError&gt; {
-<a href=#622 id=622 data-nosnippet>622</a>        <span class="comment">// Special case: If the module has no imports, we don't perform any
-<a href=#623 id=623 data-nosnippet>623</a>        // linking. We need this special case, so that a `Linker`, that has not
-<a href=#624 id=624 data-nosnippet>624</a>        // yet been associated with some `Store`, can still be used to
-<a href=#625 id=625 data-nosnippet>625</a>        // pre-instantiate modules.
-<a href=#626 id=626 data-nosnippet>626</a>        </span><span class="kw">if </span>validation_info.imports.is_empty() {
-<a href=#627 id=627 data-nosnippet>627</a>            <span class="kw">return </span><span class="prelude-val">Ok</span>(Vec::new());
-<a href=#628 id=628 data-nosnippet>628</a>        }
-<a href=#629 id=629 data-nosnippet>629</a>        <span class="comment">// 1. get or insert `StoreId`
-<a href=#630 id=630 data-nosnippet>630</a>        </span><span class="kw">let </span><span class="prelude-val">Some</span>(linker_store_id) = <span class="self">self</span>.store_id <span class="kw">else </span>{
-<a href=#631 id=631 data-nosnippet>631</a>            <span class="comment">// We are not able to perform safe linking (see this method's and
-<a href=#632 id=632 data-nosnippet>632</a>            // `Linker::get`'s documentations).
-<a href=#633 id=633 data-nosnippet>633</a>            </span><span class="kw">return </span><span class="prelude-val">Err</span>(RuntimeError::LinkerNotYetAssociatedWithStoreId);
-<a href=#634 id=634 data-nosnippet>634</a>        };
-<a href=#635 id=635 data-nosnippet>635</a>        <span class="comment">// 2. try unwrap
-<a href=#636 id=636 data-nosnippet>636</a>        // no stored parameters
-<a href=#637 id=637 data-nosnippet>637</a>        // 3. call
-<a href=#638 id=638 data-nosnippet>638</a>        </span><span class="kw">let </span>extern_vals = <span class="self">self</span>.instantiate_pre_unchecked(validation_info)<span class="question-mark">?</span>;
-<a href=#639 id=639 data-nosnippet>639</a>        <span class="comment">// 4. rewrap
-<a href=#640 id=640 data-nosnippet>640</a>        // Safety: All `ExternVal`s just came from the current `Linker`. Because
-<a href=#641 id=641 data-nosnippet>641</a>        // a Linker can always be used with only one unique `Store`, all
-<a href=#642 id=642 data-nosnippet>642</a>        // `ExternVal`s must be from the current Linker's store.
-<a href=#643 id=643 data-nosnippet>643</a>        </span><span class="kw">let </span>stored_extern_vals = <span class="kw">unsafe </span>{ wrap_vec_elements(extern_vals, linker_store_id) };
-<a href=#644 id=644 data-nosnippet>644</a>        <span class="comment">// 5. retur
-<a href=#645 id=645 data-nosnippet>645</a>        </span><span class="prelude-val">Ok</span>(stored_extern_vals)
-<a href=#646 id=646 data-nosnippet>646</a>    }
-<a href=#647 id=647 data-nosnippet>647</a>
-<a href=#648 id=648 data-nosnippet>648</a>    <span class="doccomment">/// This is a safe variant of [`Linker::module_instantiate_unchecked`].
-<a href=#649 id=649 data-nosnippet>649</a>    </span><span class="kw">pub fn </span>module_instantiate&lt;<span class="lifetime">'b</span>, T: Config&gt;(
-<a href=#650 id=650 data-nosnippet>650</a>        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-<a href=#651 id=651 data-nosnippet>651</a>        store: <span class="kw-2">&amp;mut </span>Store&lt;<span class="lifetime">'b</span>, T&gt;,
-<a href=#652 id=652 data-nosnippet>652</a>        validation_info: <span class="kw-2">&amp;</span>ValidationInfo&lt;<span class="lifetime">'b</span>&gt;,
-<a href=#653 id=653 data-nosnippet>653</a>        maybe_fuel: <span class="prelude-ty">Option</span>&lt;u32&gt;,
-<a href=#654 id=654 data-nosnippet>654</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;StoredInstantiationOutcome, RuntimeError&gt; {
-<a href=#655 id=655 data-nosnippet>655</a>        <span class="comment">// 1. get or insert `StoreId`
-<a href=#656 id=656 data-nosnippet>656</a>        </span><span class="kw">let </span>linker_store_id = <span class="kw-2">*</span><span class="self">self</span>.store_id.get_or_insert(store.id);
-<a href=#657 id=657 data-nosnippet>657</a>        <span class="kw">if </span>linker_store_id != store.id {
-<a href=#658 id=658 data-nosnippet>658</a>            <span class="kw">return </span><span class="prelude-val">Err</span>(RuntimeError::StoreIdMismatch);
-<a href=#659 id=659 data-nosnippet>659</a>        }
-<a href=#660 id=660 data-nosnippet>660</a>        <span class="comment">// 2. try unwrap
-<a href=#661 id=661 data-nosnippet>661</a>        // no stored parameters
-<a href=#662 id=662 data-nosnippet>662</a>        // 3. call
-<a href=#663 id=663 data-nosnippet>663</a>        </span><span class="kw">let </span>instantiation_outcome =
-<a href=#664 id=664 data-nosnippet>664</a>            <span class="self">self</span>.module_instantiate_unchecked(store, validation_info, maybe_fuel)<span class="question-mark">?</span>;
-<a href=#665 id=665 data-nosnippet>665</a>        <span class="comment">// 4. rewrap
-<a href=#666 id=666 data-nosnippet>666</a>        // Safety: The `InstantiationOutcome` just came from the current
-<a href=#667 id=667 data-nosnippet>667</a>        // `Linker`. Because a linker can always be used with only one unique
-<a href=#668 id=668 data-nosnippet>668</a>        // `Store`, the `InstantiationOutcome` must be from the current Linker's
-<a href=#669 id=669 data-nosnippet>669</a>        // store.
-<a href=#670 id=670 data-nosnippet>670</a>        </span><span class="kw">let </span>stored_instantiation_outcome = <span class="kw">unsafe </span>{
-<a href=#671 id=671 data-nosnippet>671</a>            StoredInstantiationOutcome::from_bare(instantiation_outcome, linker_store_id)
-<a href=#672 id=672 data-nosnippet>672</a>        };
-<a href=#673 id=673 data-nosnippet>673</a>        <span class="comment">// 5. return
-<a href=#674 id=674 data-nosnippet>674</a>        </span><span class="prelude-val">Ok</span>(stored_instantiation_outcome)
-<a href=#675 id=675 data-nosnippet>675</a>    }
-<a href=#676 id=676 data-nosnippet>676</a>}
-<a href=#677 id=677 data-nosnippet>677</a>
-<a href=#678 id=678 data-nosnippet>678</a><span class="doccomment">/// A trait for types that might have a [`StoreId`] attached to them, so-called
-<a href=#679 id=679 data-nosnippet>679</a>/// _stored_ types.
-<a href=#680 id=680 data-nosnippet>680</a></span><span class="kw">trait </span>AbstractStored: Sized {
-<a href=#681 id=681 data-nosnippet>681</a>    <span class="kw">type </span>BareTy: Sized;
-<a href=#682 id=682 data-nosnippet>682</a>
-<a href=#683 id=683 data-nosnippet>683</a>    <span class="doccomment">/// Creates a new stored object
-<a href=#684 id=684 data-nosnippet>684</a>    ///
-<a href=#685 id=685 data-nosnippet>685</a>    /// # Safety
-<a href=#686 id=686 data-nosnippet>686</a>    /// The caller has to guarantee that the bare value comes from a [`Store`]
-<a href=#687 id=687 data-nosnippet>687</a>    /// with the given [`StoreId`].
-<a href=#688 id=688 data-nosnippet>688</a>    </span><span class="kw">unsafe fn </span>from_bare(bare_value: <span class="self">Self</span>::BareTy, id: StoreId) -&gt; <span class="self">Self</span>;
-<a href=#689 id=689 data-nosnippet>689</a>
-<a href=#690 id=690 data-nosnippet>690</a>    <span class="doccomment">/// Gets the id of this stored object
-<a href=#691 id=691 data-nosnippet>691</a>    ///
-<a href=#692 id=692 data-nosnippet>692</a>    /// Not all stored objects require to have an id attached to them.
-<a href=#693 id=693 data-nosnippet>693</a>    </span><span class="kw">fn </span>id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;StoreId&gt;;
-<a href=#694 id=694 data-nosnippet>694</a>
-<a href=#695 id=695 data-nosnippet>695</a>    <span class="doccomment">/// Converts this stored object into its bare form that does not have any [`StoreId`] attached to it.
-<a href=#696 id=696 data-nosnippet>696</a>    </span><span class="kw">fn </span>into_bare(<span class="self">self</span>) -&gt; <span class="self">Self</span>::BareTy;
-<a href=#697 id=697 data-nosnippet>697</a>
-<a href=#698 id=698 data-nosnippet>698</a>    <span class="doccomment">/// Checks if this stored object comes from a specific store by its
-<a href=#699 id=699 data-nosnippet>699</a>    /// [`StoreId`]. If true, it converts self into its bare form, otherwise an
-<a href=#700 id=700 data-nosnippet>700</a>    /// error is returned.
-<a href=#701 id=701 data-nosnippet>701</a>    ///
-<a href=#702 id=702 data-nosnippet>702</a>    /// # Errors
-<a href=#703 id=703 data-nosnippet>703</a>    /// - [`RuntimeError::StoreIdMismatch`]
-<a href=#704 id=704 data-nosnippet>704</a>    </span><span class="kw">fn </span>try_unwrap_into_bare(
-<a href=#705 id=705 data-nosnippet>705</a>        <span class="self">self</span>,
-<a href=#706 id=706 data-nosnippet>706</a>        expected_store_id: StoreId,
-<a href=#707 id=707 data-nosnippet>707</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::BareTy, RuntimeError&gt; {
-<a href=#708 id=708 data-nosnippet>708</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>(id) = <span class="self">self</span>.id() {
-<a href=#709 id=709 data-nosnippet>709</a>            <span class="kw">if </span>id != expected_store_id {
-<a href=#710 id=710 data-nosnippet>710</a>                <span class="kw">return </span><span class="prelude-val">Err</span>(RuntimeError::StoreIdMismatch);
-<a href=#711 id=711 data-nosnippet>711</a>            }
-<a href=#712 id=712 data-nosnippet>712</a>        }
+<a href=#496 id=496 data-nosnippet>496</a>
+<a href=#497 id=497 data-nosnippet>497</a>    <span class="doccomment">/// This is a safe variant of [`Store::mem_access_mut_slice`].
+<a href=#498 id=498 data-nosnippet>498</a>    </span><span class="kw">pub fn </span>mem_access_mut_slice&lt;R&gt;(
+<a href=#499 id=499 data-nosnippet>499</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
+<a href=#500 id=500 data-nosnippet>500</a>        memory: Stored&lt;MemAddr&gt;,
+<a href=#501 id=501 data-nosnippet>501</a>        accessor: <span class="kw">impl </span>FnOnce(<span class="kw-2">&amp;mut </span>[u8]) -&gt; R,
+<a href=#502 id=502 data-nosnippet>502</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;R, RuntimeError&gt; {
+<a href=#503 id=503 data-nosnippet>503</a>        <span class="comment">// 1. try unwrap
+<a href=#504 id=504 data-nosnippet>504</a>        </span><span class="kw">let </span>memory = memory.try_unwrap_into_bare(<span class="self">self</span>.id)<span class="question-mark">?</span>;
+<a href=#505 id=505 data-nosnippet>505</a>        <span class="comment">// 2. call
+<a href=#506 id=506 data-nosnippet>506</a>        </span><span class="kw">let </span>returns = <span class="self">self</span>.mem_access_mut_slice_unchecked(memory, accessor);
+<a href=#507 id=507 data-nosnippet>507</a>        <span class="comment">// 3. rewrap
+<a href=#508 id=508 data-nosnippet>508</a>        // result is generic
+<a href=#509 id=509 data-nosnippet>509</a>        // 4. return
+<a href=#510 id=510 data-nosnippet>510</a>        </span><span class="prelude-val">Ok</span>(returns)
+<a href=#511 id=511 data-nosnippet>511</a>    }
+<a href=#512 id=512 data-nosnippet>512</a>}
+<a href=#513 id=513 data-nosnippet>513</a>
+<a href=#514 id=514 data-nosnippet>514</a><span class="comment">// All functions in this impl block must occur in the same order as they are
+<a href=#515 id=515 data-nosnippet>515</a>// defined in for the unchecked [`Linker`] methods. Also all functions must
+<a href=#516 id=516 data-nosnippet>516</a>// follow the same implementation scheme to make sure they are only light
+<a href=#517 id=517 data-nosnippet>517</a>// wrappers:
+<a href=#518 id=518 data-nosnippet>518</a>//
+<a href=#519 id=519 data-nosnippet>519</a>// 1. get or insert the `StoreId` [of the store associated with the current `Linker`]
+<a href=#520 id=520 data-nosnippet>520</a>// 2. try unwrap [stored parameter objects]
+<a href=#521 id=521 data-nosnippet>521</a>// 3. call [unchecked method]
+<a href=#522 id=522 data-nosnippet>522</a>// 4. rewrap [results into stored objects]
+<a href=#523 id=523 data-nosnippet>523</a>// 5. return [stored result objects]
+<a href=#524 id=524 data-nosnippet>524</a></span><span class="kw">impl </span>Linker {
+<a href=#525 id=525 data-nosnippet>525</a>    <span class="doccomment">/// This is a safe variant of [`Linker::define_unchecked`].
+<a href=#526 id=526 data-nosnippet>526</a>    </span><span class="kw">pub fn </span>define(
+<a href=#527 id=527 data-nosnippet>527</a>        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+<a href=#528 id=528 data-nosnippet>528</a>        module_name: String,
+<a href=#529 id=529 data-nosnippet>529</a>        name: String,
+<a href=#530 id=530 data-nosnippet>530</a>        extern_val: StoredExternVal,
+<a href=#531 id=531 data-nosnippet>531</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), RuntimeError&gt; {
+<a href=#532 id=532 data-nosnippet>532</a>        <span class="comment">// 1. get or insert the `StoreId`
+<a href=#533 id=533 data-nosnippet>533</a>        </span><span class="kw">let </span>extern_val_store_id = extern_val
+<a href=#534 id=534 data-nosnippet>534</a>            .id()
+<a href=#535 id=535 data-nosnippet>535</a>            .expect(<span class="string">"this type to always contain a StoreId"</span>);
+<a href=#536 id=536 data-nosnippet>536</a>        <span class="kw">let </span>linker_store_id = <span class="kw-2">*</span><span class="self">self</span>.store_id.get_or_insert(extern_val_store_id);
+<a href=#537 id=537 data-nosnippet>537</a>        <span class="kw">if </span>linker_store_id != extern_val_store_id {
+<a href=#538 id=538 data-nosnippet>538</a>            <span class="kw">return </span><span class="prelude-val">Err</span>(RuntimeError::StoreIdMismatch);
+<a href=#539 id=539 data-nosnippet>539</a>        }
+<a href=#540 id=540 data-nosnippet>540</a>        <span class="comment">// 2. try unwrap
+<a href=#541 id=541 data-nosnippet>541</a>        </span><span class="kw">let </span>extern_val = extern_val.try_unwrap_into_bare(linker_store_id)<span class="question-mark">?</span>;
+<a href=#542 id=542 data-nosnippet>542</a>        <span class="comment">// 3. call
+<a href=#543 id=543 data-nosnippet>543</a>        </span><span class="self">self</span>.define_unchecked(module_name, name, extern_val)<span class="question-mark">?</span>;
+<a href=#544 id=544 data-nosnippet>544</a>        <span class="comment">// 4. rewrap
+<a href=#545 id=545 data-nosnippet>545</a>        // result is the unit type.
+<a href=#546 id=546 data-nosnippet>546</a>        // 5. return
+<a href=#547 id=547 data-nosnippet>547</a>        </span><span class="prelude-val">Ok</span>(())
+<a href=#548 id=548 data-nosnippet>548</a>    }
+<a href=#549 id=549 data-nosnippet>549</a>
+<a href=#550 id=550 data-nosnippet>550</a>    <span class="doccomment">/// This is a safe variant of [`Linker::define_module_instance_unchecked`].
+<a href=#551 id=551 data-nosnippet>551</a>    </span><span class="kw">pub fn </span>define_module_instance&lt;T: Config&gt;(
+<a href=#552 id=552 data-nosnippet>552</a>        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+<a href=#553 id=553 data-nosnippet>553</a>        store: <span class="kw-2">&amp;</span>Store&lt;T&gt;,
+<a href=#554 id=554 data-nosnippet>554</a>        module_name: String,
+<a href=#555 id=555 data-nosnippet>555</a>        module: Stored&lt;ModuleAddr&gt;,
+<a href=#556 id=556 data-nosnippet>556</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), RuntimeError&gt; {
+<a href=#557 id=557 data-nosnippet>557</a>        <span class="comment">// 1. get or insert the `StoreId`
+<a href=#558 id=558 data-nosnippet>558</a>        </span><span class="kw">let </span>module_store_id = module.id().expect(<span class="string">"this type to always contain a StoreId"</span>);
+<a href=#559 id=559 data-nosnippet>559</a>        <span class="kw">let </span>linker_store_id = <span class="kw-2">*</span><span class="self">self</span>.store_id.get_or_insert(module_store_id);
+<a href=#560 id=560 data-nosnippet>560</a>        <span class="kw">if </span>linker_store_id != module_store_id {
+<a href=#561 id=561 data-nosnippet>561</a>            <span class="kw">return </span><span class="prelude-val">Err</span>(RuntimeError::StoreIdMismatch);
+<a href=#562 id=562 data-nosnippet>562</a>        }
+<a href=#563 id=563 data-nosnippet>563</a>        <span class="comment">// 2. try unwrap
+<a href=#564 id=564 data-nosnippet>564</a>        </span><span class="kw">let </span>module = module.try_unwrap_into_bare(linker_store_id)<span class="question-mark">?</span>;
+<a href=#565 id=565 data-nosnippet>565</a>        <span class="comment">// 3. call
+<a href=#566 id=566 data-nosnippet>566</a>        </span><span class="self">self</span>.define_module_instance_unchecked(store, module_name, module)<span class="question-mark">?</span>;
+<a href=#567 id=567 data-nosnippet>567</a>        <span class="comment">// 4. rewrap
+<a href=#568 id=568 data-nosnippet>568</a>        // result is the unit type.
+<a href=#569 id=569 data-nosnippet>569</a>        // 5. return
+<a href=#570 id=570 data-nosnippet>570</a>        </span><span class="prelude-val">Ok</span>(())
+<a href=#571 id=571 data-nosnippet>571</a>    }
+<a href=#572 id=572 data-nosnippet>572</a>
+<a href=#573 id=573 data-nosnippet>573</a>    <span class="doccomment">/// This is a safe variant of [`Linker::get_unchecked`].
+<a href=#574 id=574 data-nosnippet>574</a>    ///
+<a href=#575 id=575 data-nosnippet>575</a>    /// # Interaction with unchecked API
+<a href=#576 id=576 data-nosnippet>576</a>    ///
+<a href=#577 id=577 data-nosnippet>577</a>    /// This method is able to find externs defined through the unchecked
+<a href=#578 id=578 data-nosnippet>578</a>    /// `define` methods.  However, for this to work, at least one of the
+<a href=#579 id=579 data-nosnippet>579</a>    /// following methods must have been called successfully:
+<a href=#580 id=580 data-nosnippet>580</a>    /// [`Linker::define`], [`Linker::define_module_instance`],
+<a href=#581 id=581 data-nosnippet>581</a>    /// [`Linker::module_instantiate`]. Otherwise, this method may spuriously
+<a href=#582 id=582 data-nosnippet>582</a>    /// return an error.
+<a href=#583 id=583 data-nosnippet>583</a>    ///
+<a href=#584 id=584 data-nosnippet>584</a>    /// Therefore, it is advised against to mix the unchecked and checked API
+<a href=#585 id=585 data-nosnippet>585</a>    /// for a single [`Linker`] instance.
+<a href=#586 id=586 data-nosnippet>586</a>    ///
+<a href=#587 id=587 data-nosnippet>587</a>    /// # Errors
+<a href=#588 id=588 data-nosnippet>588</a>    ///
+<a href=#589 id=589 data-nosnippet>589</a>    /// - [`RuntimeError::LinkerNotYetAssociatedWithStoreId`]
+<a href=#590 id=590 data-nosnippet>590</a>    /// - [`RuntimeError::UnableToResolveExternLookup`]
+<a href=#591 id=591 data-nosnippet>591</a>    </span><span class="kw">pub fn </span>get(<span class="kw-2">&amp;</span><span class="self">self</span>, module_name: String, name: String) -&gt; <span class="prelude-ty">Result</span>&lt;StoredExternVal, RuntimeError&gt; {
+<a href=#592 id=592 data-nosnippet>592</a>        <span class="comment">// 1. get or insert the `StoreId`
+<a href=#593 id=593 data-nosnippet>593</a>        // TODO docs are not consistent
+<a href=#594 id=594 data-nosnippet>594</a>        </span><span class="kw">let </span><span class="prelude-val">Some</span>(linker_store_id) = <span class="self">self</span>.store_id <span class="kw">else </span>{
+<a href=#595 id=595 data-nosnippet>595</a>            <span class="comment">// At this point we have no way to set the current store id, because
+<a href=#596 id=596 data-nosnippet>596</a>            // the parameters are all non-stored types.
+<a href=#597 id=597 data-nosnippet>597</a>
+<a href=#598 id=598 data-nosnippet>598</a>            // We also know that nothing was defined in this linker context through
+<a href=#599 id=599 data-nosnippet>599</a>            // the checked methods yet, because `self.store_id` has not been set
+<a href=#600 id=600 data-nosnippet>600</a>            // yet. Therefore, a get would always return `None`.
+<a href=#601 id=601 data-nosnippet>601</a>
+<a href=#602 id=602 data-nosnippet>602</a>            // However, when an unchecked `define` method was used before, we
+<a href=#603 id=603 data-nosnippet>603</a>            // also have to return `None` here, because even if the lookup for
+<a href=#604 id=604 data-nosnippet>604</a>            // `module_name` and `name` returns something, we cannot attach a
+<a href=#605 id=605 data-nosnippet>605</a>            // store id to it.
+<a href=#606 id=606 data-nosnippet>606</a>
+<a href=#607 id=607 data-nosnippet>607</a>            </span><span class="kw">return </span><span class="prelude-val">Err</span>(RuntimeError::LinkerNotYetAssociatedWithStoreId);
+<a href=#608 id=608 data-nosnippet>608</a>        };
+<a href=#609 id=609 data-nosnippet>609</a>        <span class="comment">// 2. try unwrap
+<a href=#610 id=610 data-nosnippet>610</a>        // no stored parameters
+<a href=#611 id=611 data-nosnippet>611</a>        // 3. call
+<a href=#612 id=612 data-nosnippet>612</a>        </span><span class="kw">let </span>extern_val = <span class="self">self
+<a href=#613 id=613 data-nosnippet>613</a>            </span>.get_unchecked(module_name, name)
+<a href=#614 id=614 data-nosnippet>614</a>            .ok_or(RuntimeError::UnableToResolveExternLookup)<span class="question-mark">?</span>;
+<a href=#615 id=615 data-nosnippet>615</a>        <span class="comment">// 4. rewrap
+<a href=#616 id=616 data-nosnippet>616</a>        // Safety: The `ExternVal` just came from the current `Linker`. Because
+<a href=#617 id=617 data-nosnippet>617</a>        // a `Linker` can always be used with only one unique `Store`, this
+<a href=#618 id=618 data-nosnippet>618</a>        // `ExternVal` must be from the current Linker's store.
+<a href=#619 id=619 data-nosnippet>619</a>        </span><span class="kw">let </span>stored_extern_val = <span class="kw">unsafe </span>{ StoredExternVal::from_bare(extern_val, linker_store_id) };
+<a href=#620 id=620 data-nosnippet>620</a>        <span class="comment">// 5. return
+<a href=#621 id=621 data-nosnippet>621</a>        </span><span class="prelude-val">Ok</span>(stored_extern_val)
+<a href=#622 id=622 data-nosnippet>622</a>    }
+<a href=#623 id=623 data-nosnippet>623</a>
+<a href=#624 id=624 data-nosnippet>624</a>    <span class="doccomment">/// This is a safe variant of [`Linker::instantiate_pre_unchecked`].
+<a href=#625 id=625 data-nosnippet>625</a>    ///
+<a href=#626 id=626 data-nosnippet>626</a>    /// # Interaction with unchecked API
+<a href=#627 id=627 data-nosnippet>627</a>    ///
+<a href=#628 id=628 data-nosnippet>628</a>    /// See [`Linker::get`]
+<a href=#629 id=629 data-nosnippet>629</a>    ///
+<a href=#630 id=630 data-nosnippet>630</a>    /// # Errors
+<a href=#631 id=631 data-nosnippet>631</a>    ///
+<a href=#632 id=632 data-nosnippet>632</a>    /// - [`RuntimeError::LinkerNotYetAssociatedWithStoreId`]
+<a href=#633 id=633 data-nosnippet>633</a>    /// - [`RuntimeError::UnableToResolveExternLookup`]
+<a href=#634 id=634 data-nosnippet>634</a>    </span><span class="kw">pub fn </span>instantiate_pre(
+<a href=#635 id=635 data-nosnippet>635</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
+<a href=#636 id=636 data-nosnippet>636</a>        validation_info: <span class="kw-2">&amp;</span>ValidationInfo,
+<a href=#637 id=637 data-nosnippet>637</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;StoredExternVal&gt;, RuntimeError&gt; {
+<a href=#638 id=638 data-nosnippet>638</a>        <span class="comment">// Special case: If the module has no imports, we don't perform any
+<a href=#639 id=639 data-nosnippet>639</a>        // linking. We need this special case, so that a `Linker`, that has not
+<a href=#640 id=640 data-nosnippet>640</a>        // yet been associated with some `Store`, can still be used to
+<a href=#641 id=641 data-nosnippet>641</a>        // pre-instantiate modules.
+<a href=#642 id=642 data-nosnippet>642</a>        </span><span class="kw">if </span>validation_info.imports.is_empty() {
+<a href=#643 id=643 data-nosnippet>643</a>            <span class="kw">return </span><span class="prelude-val">Ok</span>(Vec::new());
+<a href=#644 id=644 data-nosnippet>644</a>        }
+<a href=#645 id=645 data-nosnippet>645</a>        <span class="comment">// 1. get or insert `StoreId`
+<a href=#646 id=646 data-nosnippet>646</a>        </span><span class="kw">let </span><span class="prelude-val">Some</span>(linker_store_id) = <span class="self">self</span>.store_id <span class="kw">else </span>{
+<a href=#647 id=647 data-nosnippet>647</a>            <span class="comment">// We are not able to perform safe linking (see this method's and
+<a href=#648 id=648 data-nosnippet>648</a>            // `Linker::get`'s documentations).
+<a href=#649 id=649 data-nosnippet>649</a>            </span><span class="kw">return </span><span class="prelude-val">Err</span>(RuntimeError::LinkerNotYetAssociatedWithStoreId);
+<a href=#650 id=650 data-nosnippet>650</a>        };
+<a href=#651 id=651 data-nosnippet>651</a>        <span class="comment">// 2. try unwrap
+<a href=#652 id=652 data-nosnippet>652</a>        // no stored parameters
+<a href=#653 id=653 data-nosnippet>653</a>        // 3. call
+<a href=#654 id=654 data-nosnippet>654</a>        </span><span class="kw">let </span>extern_vals = <span class="self">self</span>.instantiate_pre_unchecked(validation_info)<span class="question-mark">?</span>;
+<a href=#655 id=655 data-nosnippet>655</a>        <span class="comment">// 4. rewrap
+<a href=#656 id=656 data-nosnippet>656</a>        // Safety: All `ExternVal`s just came from the current `Linker`. Because
+<a href=#657 id=657 data-nosnippet>657</a>        // a Linker can always be used with only one unique `Store`, all
+<a href=#658 id=658 data-nosnippet>658</a>        // `ExternVal`s must be from the current Linker's store.
+<a href=#659 id=659 data-nosnippet>659</a>        </span><span class="kw">let </span>stored_extern_vals = <span class="kw">unsafe </span>{ wrap_vec_elements(extern_vals, linker_store_id) };
+<a href=#660 id=660 data-nosnippet>660</a>        <span class="comment">// 5. retur
+<a href=#661 id=661 data-nosnippet>661</a>        </span><span class="prelude-val">Ok</span>(stored_extern_vals)
+<a href=#662 id=662 data-nosnippet>662</a>    }
+<a href=#663 id=663 data-nosnippet>663</a>
+<a href=#664 id=664 data-nosnippet>664</a>    <span class="doccomment">/// This is a safe variant of [`Linker::module_instantiate_unchecked`].
+<a href=#665 id=665 data-nosnippet>665</a>    </span><span class="kw">pub fn </span>module_instantiate&lt;<span class="lifetime">'b</span>, T: Config&gt;(
+<a href=#666 id=666 data-nosnippet>666</a>        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+<a href=#667 id=667 data-nosnippet>667</a>        store: <span class="kw-2">&amp;mut </span>Store&lt;<span class="lifetime">'b</span>, T&gt;,
+<a href=#668 id=668 data-nosnippet>668</a>        validation_info: <span class="kw-2">&amp;</span>ValidationInfo&lt;<span class="lifetime">'b</span>&gt;,
+<a href=#669 id=669 data-nosnippet>669</a>        maybe_fuel: <span class="prelude-ty">Option</span>&lt;u32&gt;,
+<a href=#670 id=670 data-nosnippet>670</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;StoredInstantiationOutcome, RuntimeError&gt; {
+<a href=#671 id=671 data-nosnippet>671</a>        <span class="comment">// 1. get or insert `StoreId`
+<a href=#672 id=672 data-nosnippet>672</a>        </span><span class="kw">let </span>linker_store_id = <span class="kw-2">*</span><span class="self">self</span>.store_id.get_or_insert(store.id);
+<a href=#673 id=673 data-nosnippet>673</a>        <span class="kw">if </span>linker_store_id != store.id {
+<a href=#674 id=674 data-nosnippet>674</a>            <span class="kw">return </span><span class="prelude-val">Err</span>(RuntimeError::StoreIdMismatch);
+<a href=#675 id=675 data-nosnippet>675</a>        }
+<a href=#676 id=676 data-nosnippet>676</a>        <span class="comment">// 2. try unwrap
+<a href=#677 id=677 data-nosnippet>677</a>        // no stored parameters
+<a href=#678 id=678 data-nosnippet>678</a>        // 3. call
+<a href=#679 id=679 data-nosnippet>679</a>        </span><span class="kw">let </span>instantiation_outcome =
+<a href=#680 id=680 data-nosnippet>680</a>            <span class="self">self</span>.module_instantiate_unchecked(store, validation_info, maybe_fuel)<span class="question-mark">?</span>;
+<a href=#681 id=681 data-nosnippet>681</a>        <span class="comment">// 4. rewrap
+<a href=#682 id=682 data-nosnippet>682</a>        // Safety: The `InstantiationOutcome` just came from the current
+<a href=#683 id=683 data-nosnippet>683</a>        // `Linker`. Because a linker can always be used with only one unique
+<a href=#684 id=684 data-nosnippet>684</a>        // `Store`, the `InstantiationOutcome` must be from the current Linker's
+<a href=#685 id=685 data-nosnippet>685</a>        // store.
+<a href=#686 id=686 data-nosnippet>686</a>        </span><span class="kw">let </span>stored_instantiation_outcome = <span class="kw">unsafe </span>{
+<a href=#687 id=687 data-nosnippet>687</a>            StoredInstantiationOutcome::from_bare(instantiation_outcome, linker_store_id)
+<a href=#688 id=688 data-nosnippet>688</a>        };
+<a href=#689 id=689 data-nosnippet>689</a>        <span class="comment">// 5. return
+<a href=#690 id=690 data-nosnippet>690</a>        </span><span class="prelude-val">Ok</span>(stored_instantiation_outcome)
+<a href=#691 id=691 data-nosnippet>691</a>    }
+<a href=#692 id=692 data-nosnippet>692</a>}
+<a href=#693 id=693 data-nosnippet>693</a>
+<a href=#694 id=694 data-nosnippet>694</a><span class="doccomment">/// A trait for types that might have a [`StoreId`] attached to them, so-called
+<a href=#695 id=695 data-nosnippet>695</a>/// _stored_ types.
+<a href=#696 id=696 data-nosnippet>696</a></span><span class="kw">trait </span>AbstractStored: Sized {
+<a href=#697 id=697 data-nosnippet>697</a>    <span class="kw">type </span>BareTy: Sized;
+<a href=#698 id=698 data-nosnippet>698</a>
+<a href=#699 id=699 data-nosnippet>699</a>    <span class="doccomment">/// Creates a new stored object
+<a href=#700 id=700 data-nosnippet>700</a>    ///
+<a href=#701 id=701 data-nosnippet>701</a>    /// # Safety
+<a href=#702 id=702 data-nosnippet>702</a>    /// The caller has to guarantee that the bare value comes from a [`Store`]
+<a href=#703 id=703 data-nosnippet>703</a>    /// with the given [`StoreId`].
+<a href=#704 id=704 data-nosnippet>704</a>    </span><span class="kw">unsafe fn </span>from_bare(bare_value: <span class="self">Self</span>::BareTy, id: StoreId) -&gt; <span class="self">Self</span>;
+<a href=#705 id=705 data-nosnippet>705</a>
+<a href=#706 id=706 data-nosnippet>706</a>    <span class="doccomment">/// Gets the id of this stored object
+<a href=#707 id=707 data-nosnippet>707</a>    ///
+<a href=#708 id=708 data-nosnippet>708</a>    /// Not all stored objects require to have an id attached to them.
+<a href=#709 id=709 data-nosnippet>709</a>    </span><span class="kw">fn </span>id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;StoreId&gt;;
+<a href=#710 id=710 data-nosnippet>710</a>
+<a href=#711 id=711 data-nosnippet>711</a>    <span class="doccomment">/// Converts this stored object into its bare form that does not have any [`StoreId`] attached to it.
+<a href=#712 id=712 data-nosnippet>712</a>    </span><span class="kw">fn </span>into_bare(<span class="self">self</span>) -&gt; <span class="self">Self</span>::BareTy;
 <a href=#713 id=713 data-nosnippet>713</a>
-<a href=#714 id=714 data-nosnippet>714</a>        <span class="prelude-val">Ok</span>(<span class="self">self</span>.into_bare())
-<a href=#715 id=715 data-nosnippet>715</a>    }
-<a href=#716 id=716 data-nosnippet>716</a>}
-<a href=#717 id=717 data-nosnippet>717</a>
-<a href=#718 id=718 data-nosnippet>718</a><span class="doccomment">/// A generic stored wrapper. This is used to wrap `struct` types such as
-<a href=#719 id=719 data-nosnippet>719</a>/// [`FuncAddr`], [`MemAddr`], etc.
-<a href=#720 id=720 data-nosnippet>720</a></span><span class="kw">pub struct </span>Stored&lt;T&gt; {
-<a href=#721 id=721 data-nosnippet>721</a>    id: StoreId,
-<a href=#722 id=722 data-nosnippet>722</a>    inner: T,
-<a href=#723 id=723 data-nosnippet>723</a>}
-<a href=#724 id=724 data-nosnippet>724</a>
-<a href=#725 id=725 data-nosnippet>725</a><span class="kw">impl</span>&lt;T&gt; AbstractStored <span class="kw">for </span>Stored&lt;T&gt; {
-<a href=#726 id=726 data-nosnippet>726</a>    <span class="kw">type </span>BareTy = T;
-<a href=#727 id=727 data-nosnippet>727</a>
-<a href=#728 id=728 data-nosnippet>728</a>    <span class="kw">unsafe fn </span>from_bare(bare_value: <span class="self">Self</span>::BareTy, id: StoreId) -&gt; <span class="self">Self </span>{
-<a href=#729 id=729 data-nosnippet>729</a>        <span class="self">Self </span>{
-<a href=#730 id=730 data-nosnippet>730</a>            inner: bare_value,
-<a href=#731 id=731 data-nosnippet>731</a>            id,
-<a href=#732 id=732 data-nosnippet>732</a>        }
-<a href=#733 id=733 data-nosnippet>733</a>    }
-<a href=#734 id=734 data-nosnippet>734</a>
-<a href=#735 id=735 data-nosnippet>735</a>    <span class="kw">fn </span>id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;StoreId&gt; {
-<a href=#736 id=736 data-nosnippet>736</a>        <span class="prelude-val">Some</span>(<span class="self">self</span>.id)
-<a href=#737 id=737 data-nosnippet>737</a>    }
-<a href=#738 id=738 data-nosnippet>738</a>
-<a href=#739 id=739 data-nosnippet>739</a>    <span class="kw">fn </span>into_bare(<span class="self">self</span>) -&gt; <span class="self">Self</span>::BareTy {
-<a href=#740 id=740 data-nosnippet>740</a>        <span class="self">self</span>.inner
-<a href=#741 id=741 data-nosnippet>741</a>    }
-<a href=#742 id=742 data-nosnippet>742</a>}
+<a href=#714 id=714 data-nosnippet>714</a>    <span class="doccomment">/// Checks if this stored object comes from a specific store by its
+<a href=#715 id=715 data-nosnippet>715</a>    /// [`StoreId`]. If true, it converts self into its bare form, otherwise an
+<a href=#716 id=716 data-nosnippet>716</a>    /// error is returned.
+<a href=#717 id=717 data-nosnippet>717</a>    ///
+<a href=#718 id=718 data-nosnippet>718</a>    /// # Errors
+<a href=#719 id=719 data-nosnippet>719</a>    /// - [`RuntimeError::StoreIdMismatch`]
+<a href=#720 id=720 data-nosnippet>720</a>    </span><span class="kw">fn </span>try_unwrap_into_bare(
+<a href=#721 id=721 data-nosnippet>721</a>        <span class="self">self</span>,
+<a href=#722 id=722 data-nosnippet>722</a>        expected_store_id: StoreId,
+<a href=#723 id=723 data-nosnippet>723</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::BareTy, RuntimeError&gt; {
+<a href=#724 id=724 data-nosnippet>724</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>(id) = <span class="self">self</span>.id() {
+<a href=#725 id=725 data-nosnippet>725</a>            <span class="kw">if </span>id != expected_store_id {
+<a href=#726 id=726 data-nosnippet>726</a>                <span class="kw">return </span><span class="prelude-val">Err</span>(RuntimeError::StoreIdMismatch);
+<a href=#727 id=727 data-nosnippet>727</a>            }
+<a href=#728 id=728 data-nosnippet>728</a>        }
+<a href=#729 id=729 data-nosnippet>729</a>
+<a href=#730 id=730 data-nosnippet>730</a>        <span class="prelude-val">Ok</span>(<span class="self">self</span>.into_bare())
+<a href=#731 id=731 data-nosnippet>731</a>    }
+<a href=#732 id=732 data-nosnippet>732</a>}
+<a href=#733 id=733 data-nosnippet>733</a>
+<a href=#734 id=734 data-nosnippet>734</a><span class="doccomment">/// A generic stored wrapper. This is used to wrap `struct` types such as
+<a href=#735 id=735 data-nosnippet>735</a>/// [`FuncAddr`], [`MemAddr`], etc.
+<a href=#736 id=736 data-nosnippet>736</a></span><span class="kw">pub struct </span>Stored&lt;T&gt; {
+<a href=#737 id=737 data-nosnippet>737</a>    id: StoreId,
+<a href=#738 id=738 data-nosnippet>738</a>    inner: T,
+<a href=#739 id=739 data-nosnippet>739</a>}
+<a href=#740 id=740 data-nosnippet>740</a>
+<a href=#741 id=741 data-nosnippet>741</a><span class="kw">impl</span>&lt;T&gt; AbstractStored <span class="kw">for </span>Stored&lt;T&gt; {
+<a href=#742 id=742 data-nosnippet>742</a>    <span class="kw">type </span>BareTy = T;
 <a href=#743 id=743 data-nosnippet>743</a>
-<a href=#744 id=744 data-nosnippet>744</a><span class="kw">impl</span>&lt;T: Clone&gt; Clone <span class="kw">for </span>Stored&lt;T&gt; {
-<a href=#745 id=745 data-nosnippet>745</a>    <span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self </span>{
-<a href=#746 id=746 data-nosnippet>746</a>        <span class="self">Self </span>{
-<a href=#747 id=747 data-nosnippet>747</a>            id: <span class="self">self</span>.id,
-<a href=#748 id=748 data-nosnippet>748</a>            inner: <span class="self">self</span>.inner.clone(),
-<a href=#749 id=749 data-nosnippet>749</a>        }
-<a href=#750 id=750 data-nosnippet>750</a>    }
-<a href=#751 id=751 data-nosnippet>751</a>}
-<a href=#752 id=752 data-nosnippet>752</a>
-<a href=#753 id=753 data-nosnippet>753</a><span class="kw">impl</span>&lt;T: Copy&gt; Copy <span class="kw">for </span>Stored&lt;T&gt; {}
+<a href=#744 id=744 data-nosnippet>744</a>    <span class="kw">unsafe fn </span>from_bare(bare_value: <span class="self">Self</span>::BareTy, id: StoreId) -&gt; <span class="self">Self </span>{
+<a href=#745 id=745 data-nosnippet>745</a>        <span class="self">Self </span>{
+<a href=#746 id=746 data-nosnippet>746</a>            inner: bare_value,
+<a href=#747 id=747 data-nosnippet>747</a>            id,
+<a href=#748 id=748 data-nosnippet>748</a>        }
+<a href=#749 id=749 data-nosnippet>749</a>    }
+<a href=#750 id=750 data-nosnippet>750</a>
+<a href=#751 id=751 data-nosnippet>751</a>    <span class="kw">fn </span>id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;StoreId&gt; {
+<a href=#752 id=752 data-nosnippet>752</a>        <span class="prelude-val">Some</span>(<span class="self">self</span>.id)
+<a href=#753 id=753 data-nosnippet>753</a>    }
 <a href=#754 id=754 data-nosnippet>754</a>
-<a href=#755 id=755 data-nosnippet>755</a><span class="kw">impl</span>&lt;T: core::fmt::Debug&gt; core::fmt::Debug <span class="kw">for </span>Stored&lt;T&gt; {
-<a href=#756 id=756 data-nosnippet>756</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>core::fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; core::fmt::Result {
-<a href=#757 id=757 data-nosnippet>757</a>        f.debug_struct(<span class="string">"Stored"</span>)
-<a href=#758 id=758 data-nosnippet>758</a>            .field(<span class="string">"inner"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>)
-<a href=#759 id=759 data-nosnippet>759</a>            .field(<span class="string">"id"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.id)
-<a href=#760 id=760 data-nosnippet>760</a>            .finish()
-<a href=#761 id=761 data-nosnippet>761</a>    }
-<a href=#762 id=762 data-nosnippet>762</a>}
-<a href=#763 id=763 data-nosnippet>763</a>
-<a href=#764 id=764 data-nosnippet>764</a><span class="kw">impl</span>&lt;T: PartialEq&gt; PartialEq <span class="kw">for </span>Stored&lt;T&gt; {
-<a href=#765 id=765 data-nosnippet>765</a>    <span class="kw">fn </span>eq(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; bool {
-<a href=#766 id=766 data-nosnippet>766</a>        <span class="self">self</span>.id.eq(<span class="kw-2">&amp;</span>other.id) &amp;&amp; <span class="self">self</span>.inner.eq(<span class="kw-2">&amp;</span>other.inner)
-<a href=#767 id=767 data-nosnippet>767</a>    }
-<a href=#768 id=768 data-nosnippet>768</a>}
-<a href=#769 id=769 data-nosnippet>769</a>
-<a href=#770 id=770 data-nosnippet>770</a><span class="kw">impl</span>&lt;T: Eq&gt; Eq <span class="kw">for </span>Stored&lt;T&gt; {}
-<a href=#771 id=771 data-nosnippet>771</a>
-<a href=#772 id=772 data-nosnippet>772</a><span class="kw">impl</span>&lt;T&gt; Stored&lt;T&gt; {
-<a href=#773 id=773 data-nosnippet>773</a>    <span class="comment">// TODO remove this after the `ResumableRef` rework. Currently
-<a href=#774 id=774 data-nosnippet>774</a>    // `ResumableRef` can store data, however it should merely be an addr type
-<a href=#775 id=775 data-nosnippet>775</a>    // into the store in the future.
-<a href=#776 id=776 data-nosnippet>776</a>    </span><span class="kw">fn </span>as_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; Stored&lt;<span class="kw-2">&amp;mut </span>T&gt; {
-<a href=#777 id=777 data-nosnippet>777</a>        Stored {
-<a href=#778 id=778 data-nosnippet>778</a>            id: <span class="self">self</span>.id,
-<a href=#779 id=779 data-nosnippet>779</a>            inner: <span class="kw-2">&amp;mut </span><span class="self">self</span>.inner,
-<a href=#780 id=780 data-nosnippet>780</a>        }
-<a href=#781 id=781 data-nosnippet>781</a>    }
-<a href=#782 id=782 data-nosnippet>782</a>}
-<a href=#783 id=783 data-nosnippet>783</a>
-<a href=#784 id=784 data-nosnippet>784</a><span class="doccomment">/// A stored variant of [`ExternVal`]
-<a href=#785 id=785 data-nosnippet>785</a></span><span class="attr">#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-<a href=#786 id=786 data-nosnippet>786</a></span><span class="kw">pub enum </span>StoredExternVal {
-<a href=#787 id=787 data-nosnippet>787</a>    Func(Stored&lt;FuncAddr&gt;),
-<a href=#788 id=788 data-nosnippet>788</a>    Table(Stored&lt;TableAddr&gt;),
-<a href=#789 id=789 data-nosnippet>789</a>    Mem(Stored&lt;MemAddr&gt;),
-<a href=#790 id=790 data-nosnippet>790</a>    Global(Stored&lt;GlobalAddr&gt;),
-<a href=#791 id=791 data-nosnippet>791</a>}
-<a href=#792 id=792 data-nosnippet>792</a>
-<a href=#793 id=793 data-nosnippet>793</a><span class="kw">impl </span>AbstractStored <span class="kw">for </span>StoredExternVal {
-<a href=#794 id=794 data-nosnippet>794</a>    <span class="kw">type </span>BareTy = ExternVal;
-<a href=#795 id=795 data-nosnippet>795</a>
-<a href=#796 id=796 data-nosnippet>796</a>    <span class="kw">unsafe fn </span>from_bare(bare_value: <span class="self">Self</span>::BareTy, id: StoreId) -&gt; <span class="self">Self </span>{
-<a href=#797 id=797 data-nosnippet>797</a>        <span class="kw">match </span>bare_value {
-<a href=#798 id=798 data-nosnippet>798</a>            ExternVal::Func(func_addr) =&gt; <span class="self">Self</span>::Func(Stored::from_bare(func_addr, id)),
-<a href=#799 id=799 data-nosnippet>799</a>            ExternVal::Table(table_addr) =&gt; <span class="self">Self</span>::Table(Stored::from_bare(table_addr, id)),
-<a href=#800 id=800 data-nosnippet>800</a>            ExternVal::Mem(mem_addr) =&gt; <span class="self">Self</span>::Mem(Stored::from_bare(mem_addr, id)),
-<a href=#801 id=801 data-nosnippet>801</a>            ExternVal::Global(global_addr) =&gt; <span class="self">Self</span>::Global(Stored::from_bare(global_addr, id)),
-<a href=#802 id=802 data-nosnippet>802</a>        }
-<a href=#803 id=803 data-nosnippet>803</a>    }
-<a href=#804 id=804 data-nosnippet>804</a>
-<a href=#805 id=805 data-nosnippet>805</a>    <span class="kw">fn </span>id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;StoreId&gt; {
-<a href=#806 id=806 data-nosnippet>806</a>        <span class="kw">match </span><span class="self">self </span>{
-<a href=#807 id=807 data-nosnippet>807</a>            StoredExternVal::Func(stored_func_addr) =&gt; stored_func_addr.id(),
-<a href=#808 id=808 data-nosnippet>808</a>            StoredExternVal::Table(stored_table_addr) =&gt; stored_table_addr.id(),
-<a href=#809 id=809 data-nosnippet>809</a>            StoredExternVal::Mem(stored_mem_addr) =&gt; stored_mem_addr.id(),
-<a href=#810 id=810 data-nosnippet>810</a>            StoredExternVal::Global(stored_global_addr) =&gt; stored_global_addr.id(),
-<a href=#811 id=811 data-nosnippet>811</a>        }
-<a href=#812 id=812 data-nosnippet>812</a>    }
-<a href=#813 id=813 data-nosnippet>813</a>
-<a href=#814 id=814 data-nosnippet>814</a>    <span class="kw">fn </span>into_bare(<span class="self">self</span>) -&gt; <span class="self">Self</span>::BareTy {
-<a href=#815 id=815 data-nosnippet>815</a>        <span class="kw">match </span><span class="self">self </span>{
-<a href=#816 id=816 data-nosnippet>816</a>            StoredExternVal::Func(stored_func_addr) =&gt; {
-<a href=#817 id=817 data-nosnippet>817</a>                ExternVal::Func(stored_func_addr.into_bare())
-<a href=#818 id=818 data-nosnippet>818</a>            }
-<a href=#819 id=819 data-nosnippet>819</a>            StoredExternVal::Table(stored_table_addr) =&gt; {
-<a href=#820 id=820 data-nosnippet>820</a>                ExternVal::Table(stored_table_addr.into_bare())
-<a href=#821 id=821 data-nosnippet>821</a>            }
-<a href=#822 id=822 data-nosnippet>822</a>            StoredExternVal::Mem(stored_mem_addr) =&gt; ExternVal::Mem(stored_mem_addr.into_bare()),
-<a href=#823 id=823 data-nosnippet>823</a>            StoredExternVal::Global(stored_global_addr) =&gt; {
-<a href=#824 id=824 data-nosnippet>824</a>                ExternVal::Global(stored_global_addr.into_bare())
-<a href=#825 id=825 data-nosnippet>825</a>            }
-<a href=#826 id=826 data-nosnippet>826</a>        }
-<a href=#827 id=827 data-nosnippet>827</a>    }
-<a href=#828 id=828 data-nosnippet>828</a>}
+<a href=#755 id=755 data-nosnippet>755</a>    <span class="kw">fn </span>into_bare(<span class="self">self</span>) -&gt; <span class="self">Self</span>::BareTy {
+<a href=#756 id=756 data-nosnippet>756</a>        <span class="self">self</span>.inner
+<a href=#757 id=757 data-nosnippet>757</a>    }
+<a href=#758 id=758 data-nosnippet>758</a>}
+<a href=#759 id=759 data-nosnippet>759</a>
+<a href=#760 id=760 data-nosnippet>760</a><span class="kw">impl</span>&lt;T: Clone&gt; Clone <span class="kw">for </span>Stored&lt;T&gt; {
+<a href=#761 id=761 data-nosnippet>761</a>    <span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self </span>{
+<a href=#762 id=762 data-nosnippet>762</a>        <span class="self">Self </span>{
+<a href=#763 id=763 data-nosnippet>763</a>            id: <span class="self">self</span>.id,
+<a href=#764 id=764 data-nosnippet>764</a>            inner: <span class="self">self</span>.inner.clone(),
+<a href=#765 id=765 data-nosnippet>765</a>        }
+<a href=#766 id=766 data-nosnippet>766</a>    }
+<a href=#767 id=767 data-nosnippet>767</a>}
+<a href=#768 id=768 data-nosnippet>768</a>
+<a href=#769 id=769 data-nosnippet>769</a><span class="kw">impl</span>&lt;T: Copy&gt; Copy <span class="kw">for </span>Stored&lt;T&gt; {}
+<a href=#770 id=770 data-nosnippet>770</a>
+<a href=#771 id=771 data-nosnippet>771</a><span class="kw">impl</span>&lt;T: core::fmt::Debug&gt; core::fmt::Debug <span class="kw">for </span>Stored&lt;T&gt; {
+<a href=#772 id=772 data-nosnippet>772</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>core::fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; core::fmt::Result {
+<a href=#773 id=773 data-nosnippet>773</a>        f.debug_struct(<span class="string">"Stored"</span>)
+<a href=#774 id=774 data-nosnippet>774</a>            .field(<span class="string">"inner"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>)
+<a href=#775 id=775 data-nosnippet>775</a>            .field(<span class="string">"id"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.id)
+<a href=#776 id=776 data-nosnippet>776</a>            .finish()
+<a href=#777 id=777 data-nosnippet>777</a>    }
+<a href=#778 id=778 data-nosnippet>778</a>}
+<a href=#779 id=779 data-nosnippet>779</a>
+<a href=#780 id=780 data-nosnippet>780</a><span class="kw">impl</span>&lt;T: PartialEq&gt; PartialEq <span class="kw">for </span>Stored&lt;T&gt; {
+<a href=#781 id=781 data-nosnippet>781</a>    <span class="kw">fn </span>eq(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; bool {
+<a href=#782 id=782 data-nosnippet>782</a>        <span class="self">self</span>.id.eq(<span class="kw-2">&amp;</span>other.id) &amp;&amp; <span class="self">self</span>.inner.eq(<span class="kw-2">&amp;</span>other.inner)
+<a href=#783 id=783 data-nosnippet>783</a>    }
+<a href=#784 id=784 data-nosnippet>784</a>}
+<a href=#785 id=785 data-nosnippet>785</a>
+<a href=#786 id=786 data-nosnippet>786</a><span class="kw">impl</span>&lt;T: Eq&gt; Eq <span class="kw">for </span>Stored&lt;T&gt; {}
+<a href=#787 id=787 data-nosnippet>787</a>
+<a href=#788 id=788 data-nosnippet>788</a><span class="kw">impl</span>&lt;T&gt; Stored&lt;T&gt; {
+<a href=#789 id=789 data-nosnippet>789</a>    <span class="comment">// TODO remove this after the `ResumableRef` rework. Currently
+<a href=#790 id=790 data-nosnippet>790</a>    // `ResumableRef` can store data, however it should merely be an addr type
+<a href=#791 id=791 data-nosnippet>791</a>    // into the store in the future.
+<a href=#792 id=792 data-nosnippet>792</a>    </span><span class="kw">fn </span>as_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; Stored&lt;<span class="kw-2">&amp;mut </span>T&gt; {
+<a href=#793 id=793 data-nosnippet>793</a>        Stored {
+<a href=#794 id=794 data-nosnippet>794</a>            id: <span class="self">self</span>.id,
+<a href=#795 id=795 data-nosnippet>795</a>            inner: <span class="kw-2">&amp;mut </span><span class="self">self</span>.inner,
+<a href=#796 id=796 data-nosnippet>796</a>        }
+<a href=#797 id=797 data-nosnippet>797</a>    }
+<a href=#798 id=798 data-nosnippet>798</a>}
+<a href=#799 id=799 data-nosnippet>799</a>
+<a href=#800 id=800 data-nosnippet>800</a><span class="doccomment">/// A stored variant of [`ExternVal`]
+<a href=#801 id=801 data-nosnippet>801</a></span><span class="attr">#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+<a href=#802 id=802 data-nosnippet>802</a></span><span class="kw">pub enum </span>StoredExternVal {
+<a href=#803 id=803 data-nosnippet>803</a>    Func(Stored&lt;FuncAddr&gt;),
+<a href=#804 id=804 data-nosnippet>804</a>    Table(Stored&lt;TableAddr&gt;),
+<a href=#805 id=805 data-nosnippet>805</a>    Mem(Stored&lt;MemAddr&gt;),
+<a href=#806 id=806 data-nosnippet>806</a>    Global(Stored&lt;GlobalAddr&gt;),
+<a href=#807 id=807 data-nosnippet>807</a>}
+<a href=#808 id=808 data-nosnippet>808</a>
+<a href=#809 id=809 data-nosnippet>809</a><span class="kw">impl </span>AbstractStored <span class="kw">for </span>StoredExternVal {
+<a href=#810 id=810 data-nosnippet>810</a>    <span class="kw">type </span>BareTy = ExternVal;
+<a href=#811 id=811 data-nosnippet>811</a>
+<a href=#812 id=812 data-nosnippet>812</a>    <span class="kw">unsafe fn </span>from_bare(bare_value: <span class="self">Self</span>::BareTy, id: StoreId) -&gt; <span class="self">Self </span>{
+<a href=#813 id=813 data-nosnippet>813</a>        <span class="kw">match </span>bare_value {
+<a href=#814 id=814 data-nosnippet>814</a>            ExternVal::Func(func_addr) =&gt; <span class="self">Self</span>::Func(Stored::from_bare(func_addr, id)),
+<a href=#815 id=815 data-nosnippet>815</a>            ExternVal::Table(table_addr) =&gt; <span class="self">Self</span>::Table(Stored::from_bare(table_addr, id)),
+<a href=#816 id=816 data-nosnippet>816</a>            ExternVal::Mem(mem_addr) =&gt; <span class="self">Self</span>::Mem(Stored::from_bare(mem_addr, id)),
+<a href=#817 id=817 data-nosnippet>817</a>            ExternVal::Global(global_addr) =&gt; <span class="self">Self</span>::Global(Stored::from_bare(global_addr, id)),
+<a href=#818 id=818 data-nosnippet>818</a>        }
+<a href=#819 id=819 data-nosnippet>819</a>    }
+<a href=#820 id=820 data-nosnippet>820</a>
+<a href=#821 id=821 data-nosnippet>821</a>    <span class="kw">fn </span>id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;StoreId&gt; {
+<a href=#822 id=822 data-nosnippet>822</a>        <span class="kw">match </span><span class="self">self </span>{
+<a href=#823 id=823 data-nosnippet>823</a>            StoredExternVal::Func(stored_func_addr) =&gt; stored_func_addr.id(),
+<a href=#824 id=824 data-nosnippet>824</a>            StoredExternVal::Table(stored_table_addr) =&gt; stored_table_addr.id(),
+<a href=#825 id=825 data-nosnippet>825</a>            StoredExternVal::Mem(stored_mem_addr) =&gt; stored_mem_addr.id(),
+<a href=#826 id=826 data-nosnippet>826</a>            StoredExternVal::Global(stored_global_addr) =&gt; stored_global_addr.id(),
+<a href=#827 id=827 data-nosnippet>827</a>        }
+<a href=#828 id=828 data-nosnippet>828</a>    }
 <a href=#829 id=829 data-nosnippet>829</a>
-<a href=#830 id=830 data-nosnippet>830</a><span class="kw">impl </span>StoredExternVal {
-<a href=#831 id=831 data-nosnippet>831</a>    <span class="kw">pub fn </span>as_func(<span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;Stored&lt;FuncAddr&gt;&gt; {
-<a href=#832 id=832 data-nosnippet>832</a>        <span class="kw">match </span><span class="self">self </span>{
-<a href=#833 id=833 data-nosnippet>833</a>            StoredExternVal::Func(func_addr) =&gt; <span class="prelude-val">Some</span>(func_addr),
-<a href=#834 id=834 data-nosnippet>834</a>            <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
-<a href=#835 id=835 data-nosnippet>835</a>        }
-<a href=#836 id=836 data-nosnippet>836</a>    }
-<a href=#837 id=837 data-nosnippet>837</a>
-<a href=#838 id=838 data-nosnippet>838</a>    <span class="kw">pub fn </span>as_table(<span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;Stored&lt;TableAddr&gt;&gt; {
-<a href=#839 id=839 data-nosnippet>839</a>        <span class="kw">match </span><span class="self">self </span>{
-<a href=#840 id=840 data-nosnippet>840</a>            StoredExternVal::Table(table_addr) =&gt; <span class="prelude-val">Some</span>(table_addr),
-<a href=#841 id=841 data-nosnippet>841</a>            <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
+<a href=#830 id=830 data-nosnippet>830</a>    <span class="kw">fn </span>into_bare(<span class="self">self</span>) -&gt; <span class="self">Self</span>::BareTy {
+<a href=#831 id=831 data-nosnippet>831</a>        <span class="kw">match </span><span class="self">self </span>{
+<a href=#832 id=832 data-nosnippet>832</a>            StoredExternVal::Func(stored_func_addr) =&gt; {
+<a href=#833 id=833 data-nosnippet>833</a>                ExternVal::Func(stored_func_addr.into_bare())
+<a href=#834 id=834 data-nosnippet>834</a>            }
+<a href=#835 id=835 data-nosnippet>835</a>            StoredExternVal::Table(stored_table_addr) =&gt; {
+<a href=#836 id=836 data-nosnippet>836</a>                ExternVal::Table(stored_table_addr.into_bare())
+<a href=#837 id=837 data-nosnippet>837</a>            }
+<a href=#838 id=838 data-nosnippet>838</a>            StoredExternVal::Mem(stored_mem_addr) =&gt; ExternVal::Mem(stored_mem_addr.into_bare()),
+<a href=#839 id=839 data-nosnippet>839</a>            StoredExternVal::Global(stored_global_addr) =&gt; {
+<a href=#840 id=840 data-nosnippet>840</a>                ExternVal::Global(stored_global_addr.into_bare())
+<a href=#841 id=841 data-nosnippet>841</a>            }
 <a href=#842 id=842 data-nosnippet>842</a>        }
 <a href=#843 id=843 data-nosnippet>843</a>    }
-<a href=#844 id=844 data-nosnippet>844</a>
-<a href=#845 id=845 data-nosnippet>845</a>    <span class="kw">pub fn </span>as_mem(<span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;Stored&lt;MemAddr&gt;&gt; {
-<a href=#846 id=846 data-nosnippet>846</a>        <span class="kw">match </span><span class="self">self </span>{
-<a href=#847 id=847 data-nosnippet>847</a>            StoredExternVal::Mem(mem_addr) =&gt; <span class="prelude-val">Some</span>(mem_addr),
-<a href=#848 id=848 data-nosnippet>848</a>            <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
-<a href=#849 id=849 data-nosnippet>849</a>        }
-<a href=#850 id=850 data-nosnippet>850</a>    }
-<a href=#851 id=851 data-nosnippet>851</a>
-<a href=#852 id=852 data-nosnippet>852</a>    <span class="kw">pub fn </span>as_global(<span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;Stored&lt;GlobalAddr&gt;&gt; {
-<a href=#853 id=853 data-nosnippet>853</a>        <span class="kw">match </span><span class="self">self </span>{
-<a href=#854 id=854 data-nosnippet>854</a>            StoredExternVal::Global(global_addr) =&gt; <span class="prelude-val">Some</span>(global_addr),
-<a href=#855 id=855 data-nosnippet>855</a>            <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
-<a href=#856 id=856 data-nosnippet>856</a>        }
-<a href=#857 id=857 data-nosnippet>857</a>    }
-<a href=#858 id=858 data-nosnippet>858</a>}
-<a href=#859 id=859 data-nosnippet>859</a>
-<a href=#860 id=860 data-nosnippet>860</a><span class="doccomment">/// A stored variant of [`RunState`]
-<a href=#861 id=861 data-nosnippet>861</a></span><span class="kw">pub enum </span>StoredRunState {
-<a href=#862 id=862 data-nosnippet>862</a>    Finished {
-<a href=#863 id=863 data-nosnippet>863</a>        values: Vec&lt;StoredValue&gt;,
-<a href=#864 id=864 data-nosnippet>864</a>        maybe_remaining_fuel: <span class="prelude-ty">Option</span>&lt;u32&gt;,
-<a href=#865 id=865 data-nosnippet>865</a>    },
-<a href=#866 id=866 data-nosnippet>866</a>    Resumable {
-<a href=#867 id=867 data-nosnippet>867</a>        resumable_ref: Stored&lt;ResumableRef&gt;,
-<a href=#868 id=868 data-nosnippet>868</a>        required_fuel: NonZeroU32,
-<a href=#869 id=869 data-nosnippet>869</a>    },
-<a href=#870 id=870 data-nosnippet>870</a>}
-<a href=#871 id=871 data-nosnippet>871</a>
-<a href=#872 id=872 data-nosnippet>872</a><span class="kw">impl </span>AbstractStored <span class="kw">for </span>StoredRunState {
-<a href=#873 id=873 data-nosnippet>873</a>    <span class="kw">type </span>BareTy = RunState;
-<a href=#874 id=874 data-nosnippet>874</a>
-<a href=#875 id=875 data-nosnippet>875</a>    <span class="kw">unsafe fn </span>from_bare(bare_value: <span class="self">Self</span>::BareTy, id: StoreId) -&gt; <span class="self">Self </span>{
-<a href=#876 id=876 data-nosnippet>876</a>        <span class="kw">match </span>bare_value {
-<a href=#877 id=877 data-nosnippet>877</a>            RunState::Finished {
-<a href=#878 id=878 data-nosnippet>878</a>                values,
-<a href=#879 id=879 data-nosnippet>879</a>                maybe_remaining_fuel,
-<a href=#880 id=880 data-nosnippet>880</a>            } =&gt; <span class="self">Self</span>::Finished {
-<a href=#881 id=881 data-nosnippet>881</a>                values: wrap_vec_elements(values, id),
-<a href=#882 id=882 data-nosnippet>882</a>                maybe_remaining_fuel,
-<a href=#883 id=883 data-nosnippet>883</a>            },
-<a href=#884 id=884 data-nosnippet>884</a>            RunState::Resumable {
-<a href=#885 id=885 data-nosnippet>885</a>                resumable_ref,
-<a href=#886 id=886 data-nosnippet>886</a>                required_fuel,
-<a href=#887 id=887 data-nosnippet>887</a>            } =&gt; <span class="self">Self</span>::Resumable {
-<a href=#888 id=888 data-nosnippet>888</a>                resumable_ref: Stored::from_bare(resumable_ref, id),
-<a href=#889 id=889 data-nosnippet>889</a>                required_fuel,
-<a href=#890 id=890 data-nosnippet>890</a>            },
-<a href=#891 id=891 data-nosnippet>891</a>        }
-<a href=#892 id=892 data-nosnippet>892</a>    }
-<a href=#893 id=893 data-nosnippet>893</a>
-<a href=#894 id=894 data-nosnippet>894</a>    <span class="kw">fn </span>id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;StoreId&gt; {
-<a href=#895 id=895 data-nosnippet>895</a>        <span class="macro">todo!</span>()
-<a href=#896 id=896 data-nosnippet>896</a>    }
-<a href=#897 id=897 data-nosnippet>897</a>
-<a href=#898 id=898 data-nosnippet>898</a>    <span class="kw">fn </span>into_bare(<span class="self">self</span>) -&gt; <span class="self">Self</span>::BareTy {
-<a href=#899 id=899 data-nosnippet>899</a>        <span class="macro">todo!</span>()
-<a href=#900 id=900 data-nosnippet>900</a>    }
-<a href=#901 id=901 data-nosnippet>901</a>}
-<a href=#902 id=902 data-nosnippet>902</a>
-<a href=#903 id=903 data-nosnippet>903</a><span class="doccomment">/// A stored variant of [`InstantiationOutcome`]
-<a href=#904 id=904 data-nosnippet>904</a></span><span class="kw">pub struct </span>StoredInstantiationOutcome {
-<a href=#905 id=905 data-nosnippet>905</a>    <span class="kw">pub </span>module_addr: Stored&lt;ModuleAddr&gt;,
-<a href=#906 id=906 data-nosnippet>906</a>    <span class="kw">pub </span>maybe_remaining_fuel: <span class="prelude-ty">Option</span>&lt;u32&gt;,
-<a href=#907 id=907 data-nosnippet>907</a>}
-<a href=#908 id=908 data-nosnippet>908</a>
-<a href=#909 id=909 data-nosnippet>909</a><span class="kw">impl </span>AbstractStored <span class="kw">for </span>StoredInstantiationOutcome {
-<a href=#910 id=910 data-nosnippet>910</a>    <span class="kw">type </span>BareTy = InstantiationOutcome;
-<a href=#911 id=911 data-nosnippet>911</a>
-<a href=#912 id=912 data-nosnippet>912</a>    <span class="kw">unsafe fn </span>from_bare(bare_value: <span class="self">Self</span>::BareTy, id: StoreId) -&gt; <span class="self">Self </span>{
-<a href=#913 id=913 data-nosnippet>913</a>        <span class="self">Self </span>{
-<a href=#914 id=914 data-nosnippet>914</a>            module_addr: Stored::from_bare(bare_value.module_addr, id),
-<a href=#915 id=915 data-nosnippet>915</a>            maybe_remaining_fuel: bare_value.maybe_remaining_fuel,
-<a href=#916 id=916 data-nosnippet>916</a>        }
-<a href=#917 id=917 data-nosnippet>917</a>    }
+<a href=#844 id=844 data-nosnippet>844</a>}
+<a href=#845 id=845 data-nosnippet>845</a>
+<a href=#846 id=846 data-nosnippet>846</a><span class="kw">impl </span>StoredExternVal {
+<a href=#847 id=847 data-nosnippet>847</a>    <span class="kw">pub fn </span>as_func(<span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;Stored&lt;FuncAddr&gt;&gt; {
+<a href=#848 id=848 data-nosnippet>848</a>        <span class="kw">match </span><span class="self">self </span>{
+<a href=#849 id=849 data-nosnippet>849</a>            StoredExternVal::Func(func_addr) =&gt; <span class="prelude-val">Some</span>(func_addr),
+<a href=#850 id=850 data-nosnippet>850</a>            <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
+<a href=#851 id=851 data-nosnippet>851</a>        }
+<a href=#852 id=852 data-nosnippet>852</a>    }
+<a href=#853 id=853 data-nosnippet>853</a>
+<a href=#854 id=854 data-nosnippet>854</a>    <span class="kw">pub fn </span>as_table(<span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;Stored&lt;TableAddr&gt;&gt; {
+<a href=#855 id=855 data-nosnippet>855</a>        <span class="kw">match </span><span class="self">self </span>{
+<a href=#856 id=856 data-nosnippet>856</a>            StoredExternVal::Table(table_addr) =&gt; <span class="prelude-val">Some</span>(table_addr),
+<a href=#857 id=857 data-nosnippet>857</a>            <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
+<a href=#858 id=858 data-nosnippet>858</a>        }
+<a href=#859 id=859 data-nosnippet>859</a>    }
+<a href=#860 id=860 data-nosnippet>860</a>
+<a href=#861 id=861 data-nosnippet>861</a>    <span class="kw">pub fn </span>as_mem(<span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;Stored&lt;MemAddr&gt;&gt; {
+<a href=#862 id=862 data-nosnippet>862</a>        <span class="kw">match </span><span class="self">self </span>{
+<a href=#863 id=863 data-nosnippet>863</a>            StoredExternVal::Mem(mem_addr) =&gt; <span class="prelude-val">Some</span>(mem_addr),
+<a href=#864 id=864 data-nosnippet>864</a>            <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
+<a href=#865 id=865 data-nosnippet>865</a>        }
+<a href=#866 id=866 data-nosnippet>866</a>    }
+<a href=#867 id=867 data-nosnippet>867</a>
+<a href=#868 id=868 data-nosnippet>868</a>    <span class="kw">pub fn </span>as_global(<span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;Stored&lt;GlobalAddr&gt;&gt; {
+<a href=#869 id=869 data-nosnippet>869</a>        <span class="kw">match </span><span class="self">self </span>{
+<a href=#870 id=870 data-nosnippet>870</a>            StoredExternVal::Global(global_addr) =&gt; <span class="prelude-val">Some</span>(global_addr),
+<a href=#871 id=871 data-nosnippet>871</a>            <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
+<a href=#872 id=872 data-nosnippet>872</a>        }
+<a href=#873 id=873 data-nosnippet>873</a>    }
+<a href=#874 id=874 data-nosnippet>874</a>}
+<a href=#875 id=875 data-nosnippet>875</a>
+<a href=#876 id=876 data-nosnippet>876</a><span class="doccomment">/// A stored variant of [`RunState`]
+<a href=#877 id=877 data-nosnippet>877</a></span><span class="kw">pub enum </span>StoredRunState {
+<a href=#878 id=878 data-nosnippet>878</a>    Finished {
+<a href=#879 id=879 data-nosnippet>879</a>        values: Vec&lt;StoredValue&gt;,
+<a href=#880 id=880 data-nosnippet>880</a>        maybe_remaining_fuel: <span class="prelude-ty">Option</span>&lt;u32&gt;,
+<a href=#881 id=881 data-nosnippet>881</a>    },
+<a href=#882 id=882 data-nosnippet>882</a>    Resumable {
+<a href=#883 id=883 data-nosnippet>883</a>        resumable_ref: Stored&lt;ResumableRef&gt;,
+<a href=#884 id=884 data-nosnippet>884</a>        required_fuel: NonZeroU32,
+<a href=#885 id=885 data-nosnippet>885</a>    },
+<a href=#886 id=886 data-nosnippet>886</a>}
+<a href=#887 id=887 data-nosnippet>887</a>
+<a href=#888 id=888 data-nosnippet>888</a><span class="kw">impl </span>AbstractStored <span class="kw">for </span>StoredRunState {
+<a href=#889 id=889 data-nosnippet>889</a>    <span class="kw">type </span>BareTy = RunState;
+<a href=#890 id=890 data-nosnippet>890</a>
+<a href=#891 id=891 data-nosnippet>891</a>    <span class="kw">unsafe fn </span>from_bare(bare_value: <span class="self">Self</span>::BareTy, id: StoreId) -&gt; <span class="self">Self </span>{
+<a href=#892 id=892 data-nosnippet>892</a>        <span class="kw">match </span>bare_value {
+<a href=#893 id=893 data-nosnippet>893</a>            RunState::Finished {
+<a href=#894 id=894 data-nosnippet>894</a>                values,
+<a href=#895 id=895 data-nosnippet>895</a>                maybe_remaining_fuel,
+<a href=#896 id=896 data-nosnippet>896</a>            } =&gt; <span class="self">Self</span>::Finished {
+<a href=#897 id=897 data-nosnippet>897</a>                values: wrap_vec_elements(values, id),
+<a href=#898 id=898 data-nosnippet>898</a>                maybe_remaining_fuel,
+<a href=#899 id=899 data-nosnippet>899</a>            },
+<a href=#900 id=900 data-nosnippet>900</a>            RunState::Resumable {
+<a href=#901 id=901 data-nosnippet>901</a>                resumable_ref,
+<a href=#902 id=902 data-nosnippet>902</a>                required_fuel,
+<a href=#903 id=903 data-nosnippet>903</a>            } =&gt; <span class="self">Self</span>::Resumable {
+<a href=#904 id=904 data-nosnippet>904</a>                resumable_ref: Stored::from_bare(resumable_ref, id),
+<a href=#905 id=905 data-nosnippet>905</a>                required_fuel,
+<a href=#906 id=906 data-nosnippet>906</a>            },
+<a href=#907 id=907 data-nosnippet>907</a>        }
+<a href=#908 id=908 data-nosnippet>908</a>    }
+<a href=#909 id=909 data-nosnippet>909</a>
+<a href=#910 id=910 data-nosnippet>910</a>    <span class="kw">fn </span>id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;StoreId&gt; {
+<a href=#911 id=911 data-nosnippet>911</a>        <span class="macro">todo!</span>()
+<a href=#912 id=912 data-nosnippet>912</a>    }
+<a href=#913 id=913 data-nosnippet>913</a>
+<a href=#914 id=914 data-nosnippet>914</a>    <span class="kw">fn </span>into_bare(<span class="self">self</span>) -&gt; <span class="self">Self</span>::BareTy {
+<a href=#915 id=915 data-nosnippet>915</a>        <span class="macro">todo!</span>()
+<a href=#916 id=916 data-nosnippet>916</a>    }
+<a href=#917 id=917 data-nosnippet>917</a>}
 <a href=#918 id=918 data-nosnippet>918</a>
-<a href=#919 id=919 data-nosnippet>919</a>    <span class="kw">fn </span>id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;StoreId&gt; {
-<a href=#920 id=920 data-nosnippet>920</a>        <span class="self">self</span>.module_addr.id()
-<a href=#921 id=921 data-nosnippet>921</a>    }
-<a href=#922 id=922 data-nosnippet>922</a>
-<a href=#923 id=923 data-nosnippet>923</a>    <span class="kw">fn </span>into_bare(<span class="self">self</span>) -&gt; <span class="self">Self</span>::BareTy {
-<a href=#924 id=924 data-nosnippet>924</a>        InstantiationOutcome {
-<a href=#925 id=925 data-nosnippet>925</a>            module_addr: <span class="self">self</span>.module_addr.into_bare(),
-<a href=#926 id=926 data-nosnippet>926</a>            maybe_remaining_fuel: <span class="self">self</span>.maybe_remaining_fuel,
-<a href=#927 id=927 data-nosnippet>927</a>        }
-<a href=#928 id=928 data-nosnippet>928</a>    }
-<a href=#929 id=929 data-nosnippet>929</a>}
-<a href=#930 id=930 data-nosnippet>930</a>
-<a href=#931 id=931 data-nosnippet>931</a><span class="doccomment">/// Helper method for associating every element in a [`Vec`] with a [`StoreId`].
-<a href=#932 id=932 data-nosnippet>932</a>///
-<a href=#933 id=933 data-nosnippet>933</a>/// # Safety
-<a href=#934 id=934 data-nosnippet>934</a>///
-<a href=#935 id=935 data-nosnippet>935</a>/// It must be guaranteed that all given elements come from the [`Store`] with
-<a href=#936 id=936 data-nosnippet>936</a>/// the given [`StoreId`].
-<a href=#937 id=937 data-nosnippet>937</a></span><span class="kw">unsafe fn </span>wrap_vec_elements&lt;S: AbstractStored&gt;(values: Vec&lt;S::BareTy&gt;, id: StoreId) -&gt; Vec&lt;S&gt; {
-<a href=#938 id=938 data-nosnippet>938</a>    values
-<a href=#939 id=939 data-nosnippet>939</a>        .into_iter()
-<a href=#940 id=940 data-nosnippet>940</a>        .map(|value| {
-<a href=#941 id=941 data-nosnippet>941</a>            <span class="comment">// Safety: The caller guarantees that all values in this Vec come
-<a href=#942 id=942 data-nosnippet>942</a>            // from the store with given id. Therefore, this is also true for
-<a href=#943 id=943 data-nosnippet>943</a>            // this specific `Value`.
-<a href=#944 id=944 data-nosnippet>944</a>            </span><span class="kw">unsafe </span>{ S::from_bare(value, id) }
-<a href=#945 id=945 data-nosnippet>945</a>        })
-<a href=#946 id=946 data-nosnippet>946</a>        .collect()
-<a href=#947 id=947 data-nosnippet>947</a>}
-<a href=#948 id=948 data-nosnippet>948</a>
-<a href=#949 id=949 data-nosnippet>949</a><span class="doccomment">/// Helper method for checking if all [`Value`]s in a slice have the given
-<a href=#950 id=950 data-nosnippet>950</a>/// [`StoreId`] and then, if the check was true, converting them to a
-<a href=#951 id=951 data-nosnippet>951</a>/// [`Vec&lt;Value&gt;`].
-<a href=#952 id=952 data-nosnippet>952</a>///
-<a href=#953 id=953 data-nosnippet>953</a>/// # Errors
-<a href=#954 id=954 data-nosnippet>954</a>/// - [`RuntimeError::StoreIdMismatch`]
-<a href=#955 id=955 data-nosnippet>955</a></span><span class="kw">fn </span>try_unwrap_values&lt;S: AbstractStored&gt;(
-<a href=#956 id=956 data-nosnippet>956</a>    stored_values: Vec&lt;S&gt;,
-<a href=#957 id=957 data-nosnippet>957</a>    expected_store_id: StoreId,
-<a href=#958 id=958 data-nosnippet>958</a>) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;S::BareTy&gt;, RuntimeError&gt; {
-<a href=#959 id=959 data-nosnippet>959</a>    stored_values
-<a href=#960 id=960 data-nosnippet>960</a>        .into_iter()
-<a href=#961 id=961 data-nosnippet>961</a>        .map(|stored_value| stored_value.try_unwrap_into_bare(expected_store_id))
+<a href=#919 id=919 data-nosnippet>919</a><span class="doccomment">/// A stored variant of [`InstantiationOutcome`]
+<a href=#920 id=920 data-nosnippet>920</a></span><span class="kw">pub struct </span>StoredInstantiationOutcome {
+<a href=#921 id=921 data-nosnippet>921</a>    <span class="kw">pub </span>module_addr: Stored&lt;ModuleAddr&gt;,
+<a href=#922 id=922 data-nosnippet>922</a>    <span class="kw">pub </span>maybe_remaining_fuel: <span class="prelude-ty">Option</span>&lt;u32&gt;,
+<a href=#923 id=923 data-nosnippet>923</a>}
+<a href=#924 id=924 data-nosnippet>924</a>
+<a href=#925 id=925 data-nosnippet>925</a><span class="kw">impl </span>AbstractStored <span class="kw">for </span>StoredInstantiationOutcome {
+<a href=#926 id=926 data-nosnippet>926</a>    <span class="kw">type </span>BareTy = InstantiationOutcome;
+<a href=#927 id=927 data-nosnippet>927</a>
+<a href=#928 id=928 data-nosnippet>928</a>    <span class="kw">unsafe fn </span>from_bare(bare_value: <span class="self">Self</span>::BareTy, id: StoreId) -&gt; <span class="self">Self </span>{
+<a href=#929 id=929 data-nosnippet>929</a>        <span class="self">Self </span>{
+<a href=#930 id=930 data-nosnippet>930</a>            module_addr: Stored::from_bare(bare_value.module_addr, id),
+<a href=#931 id=931 data-nosnippet>931</a>            maybe_remaining_fuel: bare_value.maybe_remaining_fuel,
+<a href=#932 id=932 data-nosnippet>932</a>        }
+<a href=#933 id=933 data-nosnippet>933</a>    }
+<a href=#934 id=934 data-nosnippet>934</a>
+<a href=#935 id=935 data-nosnippet>935</a>    <span class="kw">fn </span>id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;StoreId&gt; {
+<a href=#936 id=936 data-nosnippet>936</a>        <span class="self">self</span>.module_addr.id()
+<a href=#937 id=937 data-nosnippet>937</a>    }
+<a href=#938 id=938 data-nosnippet>938</a>
+<a href=#939 id=939 data-nosnippet>939</a>    <span class="kw">fn </span>into_bare(<span class="self">self</span>) -&gt; <span class="self">Self</span>::BareTy {
+<a href=#940 id=940 data-nosnippet>940</a>        InstantiationOutcome {
+<a href=#941 id=941 data-nosnippet>941</a>            module_addr: <span class="self">self</span>.module_addr.into_bare(),
+<a href=#942 id=942 data-nosnippet>942</a>            maybe_remaining_fuel: <span class="self">self</span>.maybe_remaining_fuel,
+<a href=#943 id=943 data-nosnippet>943</a>        }
+<a href=#944 id=944 data-nosnippet>944</a>    }
+<a href=#945 id=945 data-nosnippet>945</a>}
+<a href=#946 id=946 data-nosnippet>946</a>
+<a href=#947 id=947 data-nosnippet>947</a><span class="doccomment">/// Helper method for associating every element in a [`Vec`] with a [`StoreId`].
+<a href=#948 id=948 data-nosnippet>948</a>///
+<a href=#949 id=949 data-nosnippet>949</a>/// # Safety
+<a href=#950 id=950 data-nosnippet>950</a>///
+<a href=#951 id=951 data-nosnippet>951</a>/// It must be guaranteed that all given elements come from the [`Store`] with
+<a href=#952 id=952 data-nosnippet>952</a>/// the given [`StoreId`].
+<a href=#953 id=953 data-nosnippet>953</a></span><span class="kw">unsafe fn </span>wrap_vec_elements&lt;S: AbstractStored&gt;(values: Vec&lt;S::BareTy&gt;, id: StoreId) -&gt; Vec&lt;S&gt; {
+<a href=#954 id=954 data-nosnippet>954</a>    values
+<a href=#955 id=955 data-nosnippet>955</a>        .into_iter()
+<a href=#956 id=956 data-nosnippet>956</a>        .map(|value| {
+<a href=#957 id=957 data-nosnippet>957</a>            <span class="comment">// Safety: The caller guarantees that all values in this Vec come
+<a href=#958 id=958 data-nosnippet>958</a>            // from the store with given id. Therefore, this is also true for
+<a href=#959 id=959 data-nosnippet>959</a>            // this specific `Value`.
+<a href=#960 id=960 data-nosnippet>960</a>            </span><span class="kw">unsafe </span>{ S::from_bare(value, id) }
+<a href=#961 id=961 data-nosnippet>961</a>        })
 <a href=#962 id=962 data-nosnippet>962</a>        .collect()
-<a href=#963 id=963 data-nosnippet>963</a>}</code></pre></div></section></main></body></html>
+<a href=#963 id=963 data-nosnippet>963</a>}
+<a href=#964 id=964 data-nosnippet>964</a>
+<a href=#965 id=965 data-nosnippet>965</a><span class="doccomment">/// Helper method for checking if all [`Value`]s in a slice have the given
+<a href=#966 id=966 data-nosnippet>966</a>/// [`StoreId`] and then, if the check was true, converting them to a
+<a href=#967 id=967 data-nosnippet>967</a>/// [`Vec&lt;Value&gt;`].
+<a href=#968 id=968 data-nosnippet>968</a>///
+<a href=#969 id=969 data-nosnippet>969</a>/// # Errors
+<a href=#970 id=970 data-nosnippet>970</a>/// - [`RuntimeError::StoreIdMismatch`]
+<a href=#971 id=971 data-nosnippet>971</a></span><span class="kw">fn </span>try_unwrap_values&lt;S: AbstractStored&gt;(
+<a href=#972 id=972 data-nosnippet>972</a>    stored_values: Vec&lt;S&gt;,
+<a href=#973 id=973 data-nosnippet>973</a>    expected_store_id: StoreId,
+<a href=#974 id=974 data-nosnippet>974</a>) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;S::BareTy&gt;, RuntimeError&gt; {
+<a href=#975 id=975 data-nosnippet>975</a>    stored_values
+<a href=#976 id=976 data-nosnippet>976</a>        .into_iter()
+<a href=#977 id=977 data-nosnippet>977</a>        .map(|stored_value| stored_value.try_unwrap_into_bare(expected_store_id))
+<a href=#978 id=978 data-nosnippet>978</a>        .collect()
+<a href=#979 id=979 data-nosnippet>979</a>}</code></pre></div></section></main></body></html>
