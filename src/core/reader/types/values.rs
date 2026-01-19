@@ -8,6 +8,7 @@
 use alloc::vec::Vec;
 
 use crate::core::reader::WasmReader;
+use crate::core::utils::ToUsizeExt;
 use crate::ValidationError;
 
 /// Wasm encodes integers according to the LEB128 format, which specifies that
@@ -352,7 +353,7 @@ impl<'wasm> WasmReader<'wasm> {
 
     /// Note: If `Err`, the [WasmReader] object is no longer guaranteed to be in a valid state
     pub fn read_name(&mut self) -> Result<&'wasm str, ValidationError> {
-        let len = self.read_var_u32()? as usize;
+        let len = self.read_var_u32()?.into_usize();
 
         let utf8_str = &self
             .full_wasm_binary
@@ -388,7 +389,7 @@ impl<'wasm> WasmReader<'wasm> {
     {
         let len = self.read_var_u32()?;
         core::iter::repeat_with(|| read_element(self))
-            .take(len as usize)
+            .take(len.into_usize())
             .collect()
     }
 }

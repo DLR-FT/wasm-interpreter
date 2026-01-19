@@ -5,12 +5,12 @@ use crate::{
     assert_validated::UnwrapValidatedExt,
     config::Config,
     core::{
-        indices::GlobalIdx,
         reader::{
             span::Span,
             types::{FuncType, ResultType},
             WasmReader,
         },
+        utils::ToUsizeExt,
     },
     unreachable_validated,
     value::{self, Ref},
@@ -51,7 +51,7 @@ pub(crate) fn run_const<T: Config>(
                 break;
             }
             GLOBAL_GET => {
-                let global_idx = wasm.read_var_u32().unwrap_validated() as GlobalIdx;
+                let global_idx = wasm.read_var_u32().unwrap_validated().into_usize();
 
                 //TODO replace double indirection
                 let global = store
@@ -92,7 +92,7 @@ pub(crate) fn run_const<T: Config>(
             }
             REF_FUNC => {
                 // we already checked for the func_idx to be in bounds during validation
-                let func_idx = wasm.read_var_u32().unwrap_validated() as usize;
+                let func_idx = wasm.read_var_u32().unwrap_validated().into_usize();
                 let func_addr = *store
                     .modules
                     .get(module)
