@@ -523,7 +523,7 @@ impl<const PAGE_SIZE: usize> core::fmt::Debug for LinearMemory<PAGE_SIZE> {
                 let mut list = f.debug_list();
                 deduplicated_with_count.for_each(|(count, value)| {
                     if count < MIN_REPETITIONS_FOR_GROUP {
-                        list.entries(iter::repeat(value).take(count));
+                        list.entries(iter::repeat_n(value, count));
                     } else {
                         list.entry(&format_args!("#{count} × {value}"));
                     }

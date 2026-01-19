@@ -22,7 +22,7 @@ wat = "1.0.83"
 name = "wasm-interpreter"
 version = "0.2.0"
 edition = "2021"
-rust-version = "1.81.0" # Keep this in sync with the requirements!
+rust-version = "1.87.0" # Keep this in sync with the requirements!
 description = """
 A WASM interpreter tailored for safety use-cases, such as automotive and avionics applications
 """
