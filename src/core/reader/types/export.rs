@@ -3,6 +3,7 @@ use alloc::string::String;
 
 use crate::core::indices::{FuncIdx, GlobalIdx, MemIdx, TableIdx};
 use crate::core::reader::{WasmReadable, WasmReader};
+use crate::core::utils::ToUsizeExt;
 use crate::{ValidationError, ValidationInfo};
 
 use super::ExternType;
@@ -111,7 +112,7 @@ impl ExportDesc {
 impl WasmReadable for ExportDesc {
     fn read(wasm: &mut WasmReader) -> Result<Self, ValidationError> {
         let desc_id = wasm.read_u8()?;
-        let desc_idx = wasm.read_var_u32()? as usize;
+        let desc_idx = wasm.read_var_u32()?.into_usize();
 
         let desc = match desc_id {
             0x00 => ExportDesc::FuncIdx(desc_idx),
