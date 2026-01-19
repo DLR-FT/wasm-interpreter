@@ -1,17 +1,14 @@
 use alloc::{collections::btree_map::BTreeMap, string::String, vec, vec::Vec};
 
 use crate::{
-    core::{
+    GlobalType, Limits, RefType, RuntimeError, Store, TrapError, ValType, Value, config::Config, core::{
         indices::TypeIdx,
         reader::{
             span::Span,
             types::{FuncType, MemType, TableType},
         },
         sidetable::Sidetable,
-    },
-    linear_memory::LinearMemory,
-    value::Ref,
-    GlobalType, Limits, RefType, RuntimeError, TrapError, ValType, Value,
+    }, linear_memory::LinearMemory, value::Ref
 };
 
 use super::{
@@ -21,7 +18,7 @@ use super::{
 
 #[derive(Debug)]
 // TODO does not match the spec FuncInst
-pub enum FuncInst<T> {
+pub enum FuncInst<T: Config> {
     WasmFunc(WasmFuncInst),
     HostFunc(HostFuncInst<T>),
 }
@@ -41,12 +38,12 @@ pub struct WasmFuncInst {
 }
 
 #[derive(Debug)]
-pub struct HostFuncInst<T> {
+pub struct HostFuncInst<T: Config> {
     pub function_type: FuncType,
-    pub hostcode: fn(&mut T, Vec<Value>) -> Result<Vec<Value>, HaltExecutionError>,
+    pub hostcode: fn(&mut Store<T>, Vec<Value>) -> Result<Vec<Value>, HaltExecutionError>,
 }
 
-impl<T> FuncInst<T> {
+impl<T: Config> FuncInst<T> {
     pub fn ty(&self) -> FuncType {
         match self {
             FuncInst::WasmFunc(wasm_func_inst) => wasm_func_inst.function_type.clone(),

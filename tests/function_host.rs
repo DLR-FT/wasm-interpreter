@@ -6,7 +6,7 @@ use wasm::{
     ExternVal, HaltExecutionError, RuntimeError, Store, Value,
 };
 
-fn hello(_: &mut (), _values: Vec<Value>) -> Result<Vec<Value>, HaltExecutionError> {
+fn hello(_: &mut Store<()>, _values: Vec<Value>) -> Result<Vec<Value>, HaltExecutionError> {
     info!("Host function says hello from wasm!");
     Ok(Vec::new())
 }
@@ -25,7 +25,7 @@ pub fn host_func_call_within_module() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    fn hello(_: &mut (), _values: Vec<Value>) -> Result<Vec<Value>, HaltExecutionError> {
+    fn hello(_: &mut Store<()>, _values: Vec<Value>) -> Result<Vec<Value>, HaltExecutionError> {
         info!("Host function says hello from wasm!");
         Ok(Vec::new())
     }
@@ -101,7 +101,7 @@ pub fn host_func_call_within_start_func() {
         .expect("instantiation to be successful");
 }
 
-fn fancy_add_mult(_: &mut (), values: Vec<Value>) -> Result<Vec<Value>, HaltExecutionError> {
+fn fancy_add_mult(_: &mut Store<()>, values: Vec<Value>) -> Result<Vec<Value>, HaltExecutionError> {
     let x: u32 = values[0].try_into().unwrap();
     let y: f64 = values[1].try_into().unwrap();
 
@@ -153,7 +153,7 @@ pub fn simple_multivariate_host_func_within_module() {
 pub fn simple_multivariate_host_func_with_host_func_wrapper() {
     let wasm_bytes = wat::parse_str(SIMPLE_MULTIVARIATE_MODULE_EXAMPLE).unwrap();
 
-    fn wrapped_add_mult(_: &mut (), params: Vec<Value>) -> Result<Vec<Value>, HaltExecutionError> {
+    fn wrapped_add_mult(_: &mut Store<()>, params: Vec<Value>) -> Result<Vec<Value>, HaltExecutionError> {
         host_function_wrapper(
             params,
             |(x, y): (i32, f64)| -> Result<(f64, i32), HaltExecutionError> {
@@ -210,7 +210,7 @@ pub fn weird_multi_typed_host_func() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
 
-    fn weird_add_mult(_: &mut (), values: Vec<Value>) -> Result<Vec<Value>, HaltExecutionError> {
+    fn weird_add_mult(_: &mut Store<()>, values: Vec<Value>) -> Result<Vec<Value>, HaltExecutionError> {
         Ok(Vec::from([match values[0] {
             Value::I32(val) => {
                 info!("host function saw I32");
@@ -263,7 +263,7 @@ pub fn host_func_runtime_error() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    fn mult3(_: &mut (), values: Vec<Value>) -> Result<Vec<Value>, HaltExecutionError> {
+    fn mult3(_: &mut Store<()>, values: Vec<Value>) -> Result<Vec<Value>, HaltExecutionError> {
         let val: i32 = values[0].try_into().unwrap();
         info!("careless host function making type errors...");
         Ok(Vec::from([Value::I64((val * 3) as u64)]))

@@ -28,7 +28,7 @@ pub mod value_stack;
 /// # Example
 /// ```
 /// use wasm::{validate,  Store, host_function_wrapper, Value, HaltExecutionError};
-/// fn my_wrapped_host_func(user_data: &mut (), params: Vec<Value>) -> Result<Vec<Value>, HaltExecutionError> {
+/// fn my_wrapped_host_func(user_data: &mut Store<()>, params: Vec<Value>) -> Result<Vec<Value>, HaltExecutionError> {
 ///     host_function_wrapper(params, |(x, y): (u32, i32)| -> Result<u32, HaltExecutionError> {
 ///         let _user_data = user_data;
 ///         Ok(x + (y as u32))

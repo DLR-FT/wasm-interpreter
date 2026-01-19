@@ -62,8 +62,6 @@ pub(super) fn run<T: Config>(
     // Start reading the function's instructions
     let wasm = &mut WasmReader::new(store.modules.get(current_module).wasm_bytecode);
 
-    let mut current_sidetable: &Sidetable = &store.modules.get(current_module).sidetable;
-
     // local variable for holding where the function code ends (last END instr address + 1) to avoid lookup at every END instr
     let mut current_function_end_marker =
         wasm_func_inst.code_expr.from() + wasm_func_inst.code_expr.len();
@@ -137,8 +135,6 @@ pub(super) fn run<T: Config>(
                 wasm.pc = maybe_return_address;
                 stp = maybe_return_stp;
 
-                current_sidetable = &store.modules.get(current_module).sidetable;
-
                 current_function_end_marker = current_wasm_func_inst.code_expr.from()
                     + current_wasm_func_inst.code_expr.len();
 
@@ -153,13 +149,13 @@ pub(super) fn run<T: Config>(
                 if test_val != 0 {
                     stp += 1;
                 } else {
-                    do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable)?;
+                    do_sidetable_control_transfer(wasm, stack, &mut stp, &store.modules.get(current_module).sidetable)?;
                 }
                 trace!("Instruction: IF");
             }
             ELSE => {
                 decrement_fuel!(T::get_flat_cost(ELSE));
-                do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable)?;
+                do_sidetable_control_transfer(wasm, stack, &mut stp, &store.modules.get(current_module).sidetable)?;
             }
             BR_IF => {
                 decrement_fuel!(T::get_flat_cost(BR_IF));
@@ -168,7 +164,7 @@ pub(super) fn run<T: Config>(
                 let test_val: i32 = stack.pop_value().try_into().unwrap_validated();
 
                 if test_val != 0 {
-                    do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable)?;
+                    do_sidetable_control_transfer(wasm, stack, &mut stp, &store.modules.get(current_module).sidetable)?;
                 } else {
                     stp += 1;
                 }
@@ -191,13 +187,13 @@ pub(super) fn run<T: Config>(
                     stp += case_val;
                 }
 
-                do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable)?;
+                do_sidetable_control_transfer(wasm, stack, &mut stp, &store.modules.get(current_module).sidetable)?;
             }
             BR => {
                 decrement_fuel!(T::get_flat_cost(BR));
                 //skip n of BR n
                 wasm.read_var_u32().unwrap_validated();
-                do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable)?;
+                do_sidetable_control_transfer(wasm, stack, &mut stp, &store.modules.get(current_module).sidetable)?;
             }
             BLOCK => {
                 decrement_fuel!(T::get_flat_cost(BLOCK));
@@ -210,7 +206,7 @@ pub(super) fn run<T: Config>(
             RETURN => {
                 decrement_fuel!(T::get_flat_cost(RETURN));
                 //same as BR, except no need to skip n of BR n
-                do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable)?;
+                do_sidetable_control_transfer(wasm, stack, &mut stp, &store.modules.get(current_module).sidetable)?;
             }
             CALL => {
                 decrement_fuel!(T::get_flat_cost(CALL));
@@ -236,7 +232,7 @@ pub(super) fn run<T: Config>(
                             .pop_tail_iter(func_to_call_ty.params.valtypes.len())
                             .collect();
                         let returns =
-                            (host_func_to_call_inst.hostcode)(&mut store.user_data, params);
+                            (host_func_to_call_inst.hostcode)(store, params);
 
                         let returns = returns.map_err(|HaltExecutionError| {
                             RuntimeError::HostFunctionHaltedExecution
@@ -272,7 +268,6 @@ pub(super) fn run<T: Config>(
                             .expect("code expression spans to always be valid");
 
                         stp = wasm_func_to_call_inst.stp;
-                        current_sidetable = &store.modules.get(current_module).sidetable;
                         current_function_end_marker = wasm_func_to_call_inst.code_expr.from()
                             + wasm_func_to_call_inst.code_expr.len();
                     }
@@ -334,7 +329,7 @@ pub(super) fn run<T: Config>(
                             .pop_tail_iter(func_to_call_ty.params.valtypes.len())
                             .collect();
                         let returns =
-                            (host_func_to_call_inst.hostcode)(&mut store.user_data, params);
+                            (host_func_to_call_inst.hostcode)(store, params);
 
                         let returns = returns.map_err(|HaltExecutionError| {
                             RuntimeError::HostFunctionHaltedExecution
@@ -370,7 +365,6 @@ pub(super) fn run<T: Config>(
                             .expect("code expression spans to always be valid");
 
                         stp = wasm_func_to_call_inst.stp;
-                        current_sidetable = &store.modules.get(current_module).sidetable;
                         current_function_end_marker = wasm_func_to_call_inst.code_expr.from()
                             + wasm_func_to_call_inst.code_expr.len();
                     }

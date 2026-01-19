@@ -53,9 +53,9 @@ fn main() {
     builder.inherit_stdout();
     let mut store = Store::new(MyWasiCtx(builder.build()));
 
-    fn wrapped_fd_write(ctx: &mut MyWasiCtx, params: Vec<Value>) -> Result<Vec<Value>, HaltExecutionError> {
+    fn wrapped_fd_write(ctx: &mut Store<MyWasiCtx>, params: Vec<Value>) -> Result<Vec<Value>, HaltExecutionError> {
      host_function_wrapper(params, |(arg0, arg1, arg2, arg3): (i32,i32,i32,i32)| {
-         let _user_data = &ctx.0;
+         let _user_data = &ctx.user_data.0;
          println!("Hello World simple!");
          Ok(0)
      })

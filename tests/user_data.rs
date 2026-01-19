@@ -9,10 +9,10 @@ fn counter() {
     impl Config for MyCounter {}
 
     fn add_one(
-        user_data: &mut MyCounter,
+        user_data: &mut Store<MyCounter>,
         _params: Vec<Value>,
     ) -> Result<Vec<Value>, HaltExecutionError> {
-        user_data.0 += 1;
+        user_data.user_data.0 += 1;
 
         Ok(Vec::new())
     }
@@ -38,10 +38,10 @@ fn channels() {
 
     std::thread::spawn(|| {
         fn send_message(
-            user_data: &mut MySender,
+            user_data: &mut Store<MySender>,
             _params: Vec<Value>,
         ) -> Result<Vec<Value>, HaltExecutionError> {
-            user_data
+            user_data.user_data
                 .0
                 .send("Hello from host function!".to_owned())
                 .unwrap();

@@ -491,7 +491,7 @@ impl<'b, T: Config> Store<'b, T> {
     pub fn func_alloc_unchecked(
         &mut self,
         func_type: FuncType,
-        host_func: fn(&mut T, Vec<Value>) -> Result<Vec<Value>, HaltExecutionError>,
+        host_func: fn(&mut Store<T>, Vec<Value>) -> Result<Vec<Value>, HaltExecutionError>,
     ) -> FuncAddr {
         // 1. Pre-condition: `functype` is valid.
 
@@ -1047,26 +1047,29 @@ impl<'b, T: Config> Store<'b, T> {
 
                 match func_inst {
                     FuncInst::HostFunc(host_func_inst) => {
-                        let returns = (host_func_inst.hostcode)(&mut self.user_data, params);
+                        // clone host_func_type because it entails an implicit ref to store which will make
+                        // borrow checker complain about host function type.
+                        let host_func_type = host_func_inst.function_type.clone();
+                        let returns = (host_func_inst.hostcode)(self, params);
 
-                        debug!("Successfully invoked function");
+                    debug!("Successfully invoked function");
 
-                        let returns = returns.map_err(|HaltExecutionError| {
-                            RuntimeError::HostFunctionHaltedExecution
-                        })?;
+                    let returns = returns.map_err(|HaltExecutionError| {
+                        RuntimeError::HostFunctionHaltedExecution
+                    })?;
 
-                        // Verify that the return parameters match the host function parameters
-                        // since we have no validation guarantees for host functions
+                    // Verify that the return parameters match the host function parameters
+                    // since we have no validation guarantees for host functions
 
-                        let return_types = returns.iter().map(|v| v.to_ty()).collect::<Vec<_>>();
-                        if host_func_inst.function_type.returns.valtypes != return_types {
-                            trace!(
-                                "Func return types len: {}; returned args len: {}",
-                                host_func_inst.function_type.returns.valtypes.len(),
-                                return_types.len()
-                            );
-                            return Err(RuntimeError::HostFunctionSignatureMismatch);
-                        }
+                    let return_types = returns.iter().map(|v| v.to_ty()).collect::<Vec<_>>();
+                        if host_func_type.returns.valtypes != return_types {
+                        trace!(
+                            "Func return types len: {}; returned args len: {}",
+                                host_func_type.returns.valtypes.len(),
+                            return_types.len()
+                        );
+                        return Err(RuntimeError::HostFunctionSignatureMismatch);
+                    }                    
 
                         Ok(RunState::Finished {
                             values: returns,
@@ -1237,7 +1240,7 @@ impl<'b, T: Config> Store<'b, T> {
     /// Same as [`Store::func_alloc_unchecked`].
     pub fn func_alloc_typed_unchecked<Params: InteropValueList, Returns: InteropValueList>(
         &mut self,
-        host_func: fn(&mut T, Vec<Value>) -> Result<Vec<Value>, HaltExecutionError>,
+        host_func: fn(&mut Store<T>, Vec<Value>) -> Result<Vec<Value>, HaltExecutionError>,
     ) -> FuncAddr {
         let func_type = FuncType {
             params: ResultType {
