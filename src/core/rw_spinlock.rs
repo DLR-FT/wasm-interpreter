@@ -54,7 +54,7 @@ impl<T> RwSpinLock<T> {
         loop {
             // s is even, so there are maybe active readers but no active or waiting writer
             // -> reader can acquire read guard (as long as an overflow is avoided)
-            if s % 2 == 0 && s < u32::MAX - 2 {
+            if s.is_multiple_of(2) && s < u32::MAX - 2 {
                 match self.state.compare_exchange_weak(
                     s,
                     s + 2,
@@ -95,7 +95,7 @@ impl<T> RwSpinLock<T> {
             }
 
             // announce that a writer is waiting if this is not yet announced
-            if s % 2 == 0 {
+            if s.is_multiple_of(2) {
                 match self
                     .state
                     // ordering by the book

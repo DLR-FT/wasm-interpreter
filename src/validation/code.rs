@@ -1,6 +1,7 @@
+use core::iter;
+
 use alloc::collections::btree_set::BTreeSet;
 use alloc::vec::Vec;
-use core::iter;
 
 use crate::core::indices::{
     DataIdx, ElemIdx, FuncIdx, GlobalIdx, LabelIdx, LocalIdx, MemIdx, TableIdx, TypeIdx,
@@ -116,7 +117,7 @@ pub fn read_declared_locals(wasm: &mut WasmReader) -> Result<Vec<ValType>, Valid
     // Flatten local types for easier representation where n > 1
     let locals = locals
         .into_iter()
-        .flat_map(|entry| iter::repeat(entry.1).take(entry.0))
+        .flat_map(|entry| iter::repeat_n(entry.1, entry.0))
         .collect::<Vec<ValType>>();
 
     Ok(locals)
