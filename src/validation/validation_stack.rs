@@ -178,8 +178,10 @@ impl ValidationStack {
                     } else {
                         stack.splice(
                             stack_len - i..stack_len - i,
-                            iter::repeat(ValidationStackEntry::Bottom)
-                                .take(expected_val_types.len() - i),
+                            iter::repeat_n(
+                                ValidationStackEntry::Bottom,
+                                expected_val_types.len() - i,
+                            ),
                         );
                     }
                     return Ok(());
