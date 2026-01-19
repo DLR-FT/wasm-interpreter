@@ -108,7 +108,7 @@
 <a href=#108 id=108 data-nosnippet>108</a>        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
 <a href=#109 id=109 data-nosnippet>109</a>        validation_info: <span class="kw-2">&amp;</span>ValidationInfo&lt;<span class="lifetime">'b</span>&gt;,
 <a href=#110 id=110 data-nosnippet>110</a>        extern_vals: Vec&lt;ExternVal&gt;,
-<a href=#111 id=111 data-nosnippet>111</a>        maybe_fuel: <span class="prelude-ty">Option</span>&lt;u32&gt;,
+<a href=#111 id=111 data-nosnippet>111</a>        maybe_fuel: <span class="prelude-ty">Option</span>&lt;u64&gt;,
 <a href=#112 id=112 data-nosnippet>112</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;InstantiationOutcome, RuntimeError&gt; {
 <a href=#113 id=113 data-nosnippet>113</a>        <span class="comment">// instantiation: step 1
 <a href=#114 id=114 data-nosnippet>114</a>        // The module is guaranteed to be valid, because only validation can
@@ -530,7 +530,7 @@
 <a href=#530 id=530 data-nosnippet>530</a>        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
 <a href=#531 id=531 data-nosnippet>531</a>        func_addr: FuncAddr,
 <a href=#532 id=532 data-nosnippet>532</a>        params: Vec&lt;Value&gt;,
-<a href=#533 id=533 data-nosnippet>533</a>        maybe_fuel: <span class="prelude-ty">Option</span>&lt;u32&gt;,
+<a href=#533 id=533 data-nosnippet>533</a>        maybe_fuel: <span class="prelude-ty">Option</span>&lt;u64&gt;,
 <a href=#534 id=534 data-nosnippet>534</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;RunState, RuntimeError&gt; {
 <a href=#535 id=535 data-nosnippet>535</a>        <span class="self">self</span>.resume_unchecked(<span class="self">self</span>.create_resumable_unchecked(func_addr, params, maybe_fuel)<span class="question-mark">?</span>)
 <a href=#536 id=536 data-nosnippet>536</a>    }
@@ -1002,7 +1002,7 @@
 <a href=#1002 id=1002 data-nosnippet>1002</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
 <a href=#1003 id=1003 data-nosnippet>1003</a>        func_addr: FuncAddr,
 <a href=#1004 id=1004 data-nosnippet>1004</a>        params: Vec&lt;Value&gt;,
-<a href=#1005 id=1005 data-nosnippet>1005</a>        maybe_fuel: <span class="prelude-ty">Option</span>&lt;u32&gt;,
+<a href=#1005 id=1005 data-nosnippet>1005</a>        maybe_fuel: <span class="prelude-ty">Option</span>&lt;u64&gt;,
 <a href=#1006 id=1006 data-nosnippet>1006</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;ResumableRef, RuntimeError&gt; {
 <a href=#1007 id=1007 data-nosnippet>1007</a>        <span class="kw">let </span>func_inst = <span class="self">self</span>.functions.get(func_addr);
 <a href=#1008 id=1008 data-nosnippet>1008</a>
@@ -1202,7 +1202,7 @@
 <a href=#1202 id=1202 data-nosnippet>1202</a>    </span><span class="kw">pub fn </span>access_fuel_mut_unchecked&lt;R&gt;(
 <a href=#1203 id=1203 data-nosnippet>1203</a>        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
 <a href=#1204 id=1204 data-nosnippet>1204</a>        resumable_ref: <span class="kw-2">&amp;mut </span>ResumableRef,
-<a href=#1205 id=1205 data-nosnippet>1205</a>        f: <span class="kw">impl </span>FnOnce(<span class="kw-2">&amp;mut </span><span class="prelude-ty">Option</span>&lt;u32&gt;) -&gt; R,
+<a href=#1205 id=1205 data-nosnippet>1205</a>        f: <span class="kw">impl </span>FnOnce(<span class="kw-2">&amp;mut </span><span class="prelude-ty">Option</span>&lt;u64&gt;) -&gt; R,
 <a href=#1206 id=1206 data-nosnippet>1206</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;R, RuntimeError&gt; {
 <a href=#1207 id=1207 data-nosnippet>1207</a>        <span class="kw">match </span>resumable_ref {
 <a href=#1208 id=1208 data-nosnippet>1208</a>            ResumableRef::Fresh(FreshResumableRef { maybe_fuel, .. }) =&gt; <span class="prelude-val">Ok</span>(f(maybe_fuel)),
@@ -1438,5 +1438,5 @@
 <a href=#1438 id=1438 data-nosnippet>1438</a>    <span class="doccomment">/// contains the store address of the module that has successfully instantiated.
 <a href=#1439 id=1439 data-nosnippet>1439</a>    </span><span class="kw">pub </span>module_addr: ModuleAddr,
 <a href=#1440 id=1440 data-nosnippet>1440</a>    <span class="doccomment">/// contains `Some(remaining_fuel)` if instantiation was fuel-metered and `None` otherwise.
-<a href=#1441 id=1441 data-nosnippet>1441</a>    </span><span class="kw">pub </span>maybe_remaining_fuel: <span class="prelude-ty">Option</span>&lt;u32&gt;,
+<a href=#1441 id=1441 data-nosnippet>1441</a>    </span><span class="kw">pub </span>maybe_remaining_fuel: <span class="prelude-ty">Option</span>&lt;u64&gt;,
 <a href=#1442 id=1442 data-nosnippet>1442</a>}</code></pre></div></section></main></body></html>
