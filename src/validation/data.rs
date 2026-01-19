@@ -2,7 +2,6 @@ use alloc::vec::Vec;
 
 use crate::{
     core::{
-        indices::MemIdx,
         reader::{
             section_header::{SectionHeader, SectionTy},
             types::{
@@ -11,6 +10,7 @@ use crate::{
             },
             WasmReader,
         },
+        utils::ToUsizeExt,
     },
     read_constant_expression::read_constant_expression,
     validation_stack::ValidationStack,
@@ -73,7 +73,7 @@ pub(super) fn validate_data_section(
             }
             2 => {
                 trace!("Data section: active {{ memory x, offset e }}");
-                let mem_idx = wasm.read_var_u32()? as MemIdx;
+                let mem_idx = wasm.read_var_u32()?.into_usize();
                 if mem_idx >= no_of_total_memories {
                     return Err(crate::ValidationError::InvalidMemIdx(mem_idx));
                 }

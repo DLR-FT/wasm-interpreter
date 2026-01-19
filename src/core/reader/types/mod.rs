@@ -6,8 +6,8 @@ use alloc::vec::Vec;
 use core::fmt::{Debug, Formatter};
 use global::GlobalType;
 
-use crate::core::indices::TypeIdx;
 use crate::core::reader::WasmReader;
+use crate::core::utils::ToUsizeExt;
 use crate::execution::assert_validated::UnwrapValidatedExt;
 use crate::ValidationError;
 
@@ -163,7 +163,7 @@ pub enum BlockType {
 
 impl BlockType {
     pub fn read(wasm: &mut WasmReader) -> Result<Self, ValidationError> {
-        if wasm.peek_u8()? as i8 == 0x40 {
+        if wasm.peek_u8()? == 0x40 {
             // Empty block type
             let _ = wasm.read_u8().unwrap_validated();
             Ok(BlockType::Empty)
@@ -197,7 +197,7 @@ impl BlockType {
                 },
             }),
             BlockType::Type(type_idx) => {
-                let type_idx = *type_idx as TypeIdx;
+                let type_idx = type_idx.into_usize();
                 func_types
                     .get(type_idx)
                     .cloned()

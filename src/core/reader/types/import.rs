@@ -3,6 +3,7 @@ use alloc::string::String;
 
 use crate::core::indices::TypeIdx;
 use crate::core::reader::WasmReader;
+use crate::core::utils::ToUsizeExt;
 use crate::{ValidationError, ValidationInfo};
 
 use super::global::GlobalType;
@@ -43,7 +44,7 @@ pub enum ImportDesc {
 impl ImportDesc {
     pub fn read(wasm: &mut WasmReader) -> Result<Self, ValidationError> {
         let desc = match wasm.read_u8()? {
-            0x00 => Self::Func(wasm.read_var_u32()? as TypeIdx),
+            0x00 => Self::Func(wasm.read_var_u32()?.into_usize()),
             // https://webassembly.github.io/spec/core/binary/types.html#table-types
             0x01 => Self::Table(TableType::read(wasm)?),
             0x02 => Self::Mem(MemType::read(wasm)?),
