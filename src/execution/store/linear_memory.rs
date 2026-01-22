@@ -6,7 +6,6 @@ use core::{
 use alloc::vec::Vec;
 
 use crate::{
-    core::indices::MemIdx,
     execution::little_endian::LittleEndianBytes,
     rw_spinlock::{ReadLockGuard, RwSpinLock},
     RuntimeError, TrapError,
@@ -140,7 +139,7 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
     /// At a given index, store a datum in the [`LinearMemory`]
     pub fn store<const N: usize, T: LittleEndianBytes<N>>(
         &self,
-        index: MemIdx,
+        index: usize,
         value: T,
     ) -> Result<(), RuntimeError> {
         self.store_bytes::<N>(index, value.to_le_bytes())
@@ -149,7 +148,7 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
     /// At a given index, store a number of bytes `N` in the [`LinearMemory`]
     pub fn store_bytes<const N: usize>(
         &self,
-        index: MemIdx,
+        index: usize,
         bytes: [u8; N],
     ) -> Result<(), RuntimeError> {
         let lock_guard = self.inner_data.read();
@@ -192,13 +191,13 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
     /// From a given index, load a datum from the [`LinearMemory`]
     pub fn load<const N: usize, T: LittleEndianBytes<N>>(
         &self,
-        index: MemIdx,
+        index: usize,
     ) -> Result<T, RuntimeError> {
         self.load_bytes::<N>(index).map(T::from_le_bytes)
     }
 
     /// From a given index, load a number of bytes `N` from the [`LinearMemory`]
-    pub fn load_bytes<const N: usize>(&self, index: MemIdx) -> Result<[u8; N], RuntimeError> {
+    pub fn load_bytes<const N: usize>(&self, index: usize) -> Result<[u8; N], RuntimeError> {
         let lock_guard = self.inner_data.read();
 
         /* check source for out of bounds access */
@@ -244,7 +243,7 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
     /// the memset like [`core::ptr::write_bytes`].
     ///
     /// <https://webassembly.github.io/spec/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-fill>
-    pub fn fill(&self, index: MemIdx, data_byte: u8, count: MemIdx) -> Result<(), RuntimeError> {
+    pub fn fill(&self, index: usize, data_byte: u8, count: usize) -> Result<(), RuntimeError> {
         let lock_guard = self.inner_data.read();
 
         /* check destination for out of bounds access */
@@ -295,10 +294,10 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
     /// <https://webassembly.github.io/spec/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-copy>
     pub fn copy(
         &self,
-        destination_index: MemIdx,
+        destination_index: usize,
         source_mem: &Self,
-        source_index: MemIdx,
-        count: MemIdx,
+        source_index: usize,
+        count: usize,
     ) -> Result<(), RuntimeError> {
         // self is the destination
         let lock_guard_self = self.inner_data.read();
@@ -390,10 +389,10 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
     // <https://webassembly.github.io/spec/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-init-x>
     pub fn init(
         &self,
-        destination_index: MemIdx,
+        destination_index: usize,
         source_data: &[u8],
-        source_index: MemIdx,
-        count: MemIdx,
+        source_index: usize,
+        count: usize,
     ) -> Result<(), RuntimeError> {
         // self is the destination
         let lock_guard_self = self.inner_data.read();
@@ -619,7 +618,7 @@ mod test {
     fn roundtrip_normal_range_i8_neg127() {
         let x: i8 = -127;
         let highest_legal_offset = PAGE_SIZE - mem::size_of::<i8>();
-        for offset in 0..MemIdx::try_from(highest_legal_offset).unwrap() {
+        for offset in 0..highest_legal_offset {
             let lin_mem = LinearMemory::<PAGE_SIZE>::new_with_initial_pages(PAGES);
 
             lin_mem.store(offset, x).unwrap();
@@ -638,7 +637,7 @@ mod test {
     fn roundtrip_normal_range_f32_13() {
         let x = F32(13.0);
         let highest_legal_offset = PAGE_SIZE - mem::size_of::<F32>();
-        for offset in 0..MemIdx::try_from(highest_legal_offset).unwrap() {
+        for offset in 0..highest_legal_offset {
             let lin_mem = LinearMemory::<PAGE_SIZE>::new_with_initial_pages(PAGES);
 
             lin_mem.store(offset, x).unwrap();
@@ -657,7 +656,7 @@ mod test {
     fn roundtrip_normal_range_f64_min() {
         let x = F64(f64::MIN);
         let highest_legal_offset = PAGE_SIZE - mem::size_of::<F64>();
-        for offset in 0..MemIdx::try_from(highest_legal_offset).unwrap() {
+        for offset in 0..highest_legal_offset {
             let lin_mem = LinearMemory::<PAGE_SIZE>::new_with_initial_pages(PAGES);
 
             lin_mem.store(offset, x).unwrap();
@@ -676,7 +675,7 @@ mod test {
     fn roundtrip_normal_range_f64_nan() {
         let x = F64(f64::NAN);
         let highest_legal_offset = PAGE_SIZE - mem::size_of::<f64>();
-        for offset in 0..MemIdx::try_from(highest_legal_offset).unwrap() {
+        for offset in 0..highest_legal_offset {
             let lin_mem = LinearMemory::<PAGE_SIZE>::new_with_initial_pages(PAGES);
 
             lin_mem.store(offset, x).unwrap();
@@ -699,7 +698,6 @@ mod test {
         let x: u128 = u128::MAX;
         let pages = 1;
         let lowest_illegal_offset = PAGE_SIZE - mem::size_of::<u128>() + 1;
-        let lowest_illegal_offset = MemIdx::try_from(lowest_illegal_offset).unwrap();
         let lin_mem = LinearMemory::<PAGE_SIZE>::new_with_initial_pages(pages);
 
         lin_mem.store(lowest_illegal_offset, x).unwrap();
@@ -713,7 +711,6 @@ mod test {
         let x: u8 = u8::MAX;
         let pages = 0;
         let lowest_illegal_offset = PAGE_SIZE - mem::size_of::<u8>() + 1;
-        let lowest_illegal_offset = MemIdx::try_from(lowest_illegal_offset).unwrap();
         let lin_mem = LinearMemory::<PAGE_SIZE>::new_with_initial_pages(pages);
 
         lin_mem.store(lowest_illegal_offset, x).unwrap();
@@ -726,7 +723,6 @@ mod test {
     fn load_out_of_range_u128_max() {
         let pages = 1;
         let lowest_illegal_offset = PAGE_SIZE - mem::size_of::<u128>() + 1;
-        let lowest_illegal_offset = MemIdx::try_from(lowest_illegal_offset).unwrap();
         let lin_mem = LinearMemory::<PAGE_SIZE>::new_with_initial_pages(pages);
 
         let _x: u128 = lin_mem.load(lowest_illegal_offset).unwrap();
@@ -739,7 +735,6 @@ mod test {
     fn load_empty_lineaer_memory_u8() {
         let pages = 0;
         let lowest_illegal_offset = PAGE_SIZE - mem::size_of::<u8>() + 1;
-        let lowest_illegal_offset = MemIdx::try_from(lowest_illegal_offset).unwrap();
         let lin_mem = LinearMemory::<PAGE_SIZE>::new_with_initial_pages(pages);
 
         let _x: u8 = lin_mem.load(lowest_illegal_offset).unwrap();
