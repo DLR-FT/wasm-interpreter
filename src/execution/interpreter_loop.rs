@@ -19,7 +19,7 @@ use crate::{
     addrs::{AddrVec, DataAddr, ElemAddr, MemAddr, ModuleAddr, TableAddr},
     assert_validated::UnwrapValidatedExt,
     core::{
-        indices::{DataIdx, FuncIdx, GlobalIdx, LabelIdx, LocalIdx, MemIdx, TableIdx, TypeIdx},
+        indices::{DataIdx, FuncIdx, GlobalIdx, LabelIdx, LocalIdx, TableIdx, TypeIdx},
         reader::{
             types::{memarg::MemArg, BlockType},
             WasmReadable, WasmReader,
@@ -2571,7 +2571,7 @@ pub(super) fn run<T: Config>(
 
                         dest_mem
                             .mem
-                            .copy(d as MemIdx, &src_mem.mem, s as MemIdx, n as MemIdx)?;
+                            .copy(d as usize, &src_mem.mem, s as usize, n as usize)?;
                         trace!("Instruction: memory.copy");
                     }
                     // See https://webassembly.github.io/bulk-memory-operations/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-fill
@@ -5708,6 +5708,10 @@ pub(super) fn memory_init(
     s: u32,
     d: u32,
 ) -> Result<(), RuntimeError> {
+    let n = usize::try_from(n).expect("pointer width to be at least 32 bits wide");
+    let s = usize::try_from(s).expect("pointer width to be at least 32 bits wide");
+    let d = usize::try_from(d).expect("pointer width to be at least 32 bits wide");
+
     let mem_addr = *store_modules
         .get(current_module)
         .mem_addrs
@@ -5716,12 +5720,12 @@ pub(super) fn memory_init(
     let mem = store_memories.get(mem_addr);
 
     mem.mem.init(
-        d as MemIdx,
+        d,
         &store_data
             .get(store_modules.get(current_module).data_addrs[data_idx])
             .data,
-        s as MemIdx,
-        n as MemIdx,
+        s,
+        n,
     )?;
 
     trace!("Instruction: memory.init");
