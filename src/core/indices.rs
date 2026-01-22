@@ -405,7 +405,62 @@ impl FuncIdx {
     }
 }
 
-pub type TableIdx = usize;
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct TableIdx(u32);
+
+impl core::fmt::Display for TableIdx {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "table index {}", self.0)
+    }
+}
+
+impl Idx for TableIdx {
+    fn new(index: u32) -> Self {
+        Self(index)
+    }
+
+    fn into_inner(self) -> u32 {
+        self.0
+    }
+}
+
+impl TableIdx {
+    /// Validates that a given index is a valid table index.
+    ///
+    /// On success a new [`TableIdx`] is returned, otherwise a
+    /// [`ValidationError`] is returned.
+    pub fn validate<T>(
+        index: u32,
+        c_tables: &ExtendedIdxVec<TableIdx, T>,
+    ) -> Result<Self, ValidationError> {
+        c_tables
+            .validate_index(index)
+            .ok_or(ValidationError::InvalidTableIdx(index))
+    }
+
+    /// Reads a table index from Wasm code and validates that it is a valid
+    /// index for a given tables vector.
+    pub fn read_and_validate<T>(
+        wasm: &mut WasmReader,
+        c_tables: &ExtendedIdxVec<TableIdx, T>,
+    ) -> Result<Self, ValidationError> {
+        let index = wasm.read_var_u32()?;
+        Self::validate(index, c_tables)
+    }
+
+    /// Reads a table index from Wasm code without validating it.
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure that there is a valid table index in the
+    /// [`WasmReader`] and that this index is valid for a specific [`ExtendedIdxVec`]
+    /// through [`Self::read_and_validate`].
+    pub unsafe fn read_unchecked(wasm: &mut WasmReader) -> Self {
+        let index = wasm.read_var_u32().unwrap();
+        Self::new(index)
+    }
+}
+
 pub type MemIdx = usize;
 pub type GlobalIdx = usize;
 #[allow(dead_code)]
