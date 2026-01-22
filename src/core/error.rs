@@ -4,7 +4,7 @@ use crate::RefType;
 use core::fmt::{Display, Formatter};
 use core::str::Utf8Error;
 
-use super::indices::{DataIdx, ElemIdx, FuncIdx, LabelIdx, LocalIdx, MemIdx};
+use super::indices::{DataIdx, ElemIdx, FuncIdx, LabelIdx, LocalIdx};
 use crate::core::reader::section_header::SectionTy;
 use crate::core::reader::types::ValType;
 
@@ -58,7 +58,7 @@ pub enum ValidationError {
     /// An index for a table is invalid.
     InvalidTableIdx(u32),
     /// An index for a memory is invalid.
-    InvalidMemIdx(MemIdx),
+    InvalidMemIdx(u32),
     /// An index for a global is invalid.
     InvalidGlobalIdx(GlobalIdx),
     /// An index for an element segment is invalid.
@@ -158,6 +158,9 @@ pub enum ValidationError {
     /// The module contains too many tables, i.e. imported or locally-defined
     /// tables. The maximum number of tables is `u32::MAX`.
     TooManyTables,
+    /// The module contains too many memories, i.e. imported or locally-defined
+    /// memories. The maximum number of memories is `u32::MAX`.
+    TooManyMemories,
 }
 
 impl Display for ValidationError {
@@ -231,6 +234,7 @@ impl Display for ValidationError {
             ValidationError::InvalidElementMode(mode) => write!(f, "The mode of an element was invalid (only 0..=7 is allowed): {mode}"),
             ValidationError::TooManyFunctions => f.write_str("The module contains too many functions. The maximum number of functions (either imported or locally-defined) is 2^32 - 1"),
             ValidationError::TooManyTables => f.write_str("The module contains too many tables. The maximum number of tables (either imported or locally-defined) is 2^32 - 1"),
+            ValidationError::TooManyMemories => f.write_str("The module contains too many memories. The maximum number of memories (either imported or locally-defined) is 2^32 - 1"),
         }
     }
 }

@@ -35,7 +35,7 @@ pub unsafe fn validate_code_section(
     fn_types: &IdxVec<TypeIdx, FuncType>,
     c_funcs: &ExtendedIdxVec<FuncIdx, TypeIdx>,
     globals: &[Global],
-    memories: &[MemType],
+    c_mems: &ExtendedIdxVec<MemIdx, MemType>,
     data_count: &Option<u32>,
     c_tables: &ExtendedIdxVec<TableIdx, TableType>,
     elements: &[ElemType],
@@ -80,7 +80,7 @@ pub unsafe fn validate_code_section(
                 globals,
                 fn_types,
                 c_funcs,
-                memories,
+                c_mems,
                 data_count,
                 c_tables,
                 elements,
@@ -224,7 +224,7 @@ unsafe fn read_instructions(
     globals: &[Global],
     fn_types: &IdxVec<TypeIdx, FuncType>,
     c_funcs: &ExtendedIdxVec<FuncIdx, TypeIdx>,
-    memories: &[MemType],
+    c_mems: &ExtendedIdxVec<MemIdx, MemType>,
     data_count: &Option<u32>,
     c_tables: &ExtendedIdxVec<TableIdx, TableType>,
     elements: &[ElemType],
@@ -612,9 +612,7 @@ unsafe fn read_instructions(
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
             }
             I32_LOAD => {
-                if memories.is_empty() {
-                    return Err(ValidationError::InvalidMemIdx(0));
-                }
+                let _mem_idx = MemIdx::validate(0, c_mems)?;
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 2 {
                     return Err(ValidationError::ErroneousAlignment {
@@ -626,9 +624,7 @@ unsafe fn read_instructions(
                 stack.push_valtype(ValType::NumType(NumType::I32));
             }
             I64_LOAD => {
-                if memories.is_empty() {
-                    return Err(ValidationError::InvalidMemIdx(0));
-                }
+                let _mem_idx = MemIdx::validate(0, c_mems)?;
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 3 {
                     return Err(ValidationError::ErroneousAlignment {
@@ -640,9 +636,7 @@ unsafe fn read_instructions(
                 stack.push_valtype(ValType::NumType(NumType::I64));
             }
             F32_LOAD => {
-                if memories.is_empty() {
-                    return Err(ValidationError::InvalidMemIdx(0));
-                }
+                let _mem_idx = MemIdx::validate(0, c_mems)?;
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 2 {
                     return Err(ValidationError::ErroneousAlignment {
@@ -654,9 +648,7 @@ unsafe fn read_instructions(
                 stack.push_valtype(ValType::NumType(NumType::F32));
             }
             F64_LOAD => {
-                if memories.is_empty() {
-                    return Err(ValidationError::InvalidMemIdx(0));
-                }
+                let _mem_idx = MemIdx::validate(0, c_mems)?;
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 3 {
                     return Err(ValidationError::ErroneousAlignment {
@@ -668,9 +660,7 @@ unsafe fn read_instructions(
                 stack.push_valtype(ValType::NumType(NumType::F64));
             }
             I32_LOAD8_S => {
-                if memories.is_empty() {
-                    return Err(ValidationError::InvalidMemIdx(0));
-                }
+                let _mem_idx = MemIdx::validate(0, c_mems)?;
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 0 {
                     return Err(ValidationError::ErroneousAlignment {
@@ -682,9 +672,7 @@ unsafe fn read_instructions(
                 stack.push_valtype(ValType::NumType(NumType::I32));
             }
             I32_LOAD8_U => {
-                if memories.is_empty() {
-                    return Err(ValidationError::InvalidMemIdx(0));
-                }
+                let _mem_idx = MemIdx::validate(0, c_mems)?;
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 0 {
                     return Err(ValidationError::ErroneousAlignment {
@@ -696,9 +684,7 @@ unsafe fn read_instructions(
                 stack.push_valtype(ValType::NumType(NumType::I32));
             }
             I32_LOAD16_S => {
-                if memories.is_empty() {
-                    return Err(ValidationError::InvalidMemIdx(0));
-                }
+                let _mem_idx = MemIdx::validate(0, c_mems)?;
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 1 {
                     return Err(ValidationError::ErroneousAlignment {
@@ -710,9 +696,7 @@ unsafe fn read_instructions(
                 stack.push_valtype(ValType::NumType(NumType::I32));
             }
             I32_LOAD16_U => {
-                if memories.is_empty() {
-                    return Err(ValidationError::InvalidMemIdx(0));
-                }
+                let _mem_idx = MemIdx::validate(0, c_mems)?;
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 1 {
                     return Err(ValidationError::ErroneousAlignment {
@@ -724,9 +708,7 @@ unsafe fn read_instructions(
                 stack.push_valtype(ValType::NumType(NumType::I32));
             }
             I64_LOAD8_S => {
-                if memories.is_empty() {
-                    return Err(ValidationError::InvalidMemIdx(0));
-                }
+                let _mem_idx = MemIdx::validate(0, c_mems)?;
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 0 {
                     return Err(ValidationError::ErroneousAlignment {
@@ -738,9 +720,7 @@ unsafe fn read_instructions(
                 stack.push_valtype(ValType::NumType(NumType::I64));
             }
             I64_LOAD8_U => {
-                if memories.is_empty() {
-                    return Err(ValidationError::InvalidMemIdx(0));
-                }
+                let _mem_idx = MemIdx::validate(0, c_mems)?;
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 0 {
                     return Err(ValidationError::ErroneousAlignment {
@@ -752,9 +732,7 @@ unsafe fn read_instructions(
                 stack.push_valtype(ValType::NumType(NumType::I64));
             }
             I64_LOAD16_S => {
-                if memories.is_empty() {
-                    return Err(ValidationError::InvalidMemIdx(0));
-                }
+                let _mem_idx = MemIdx::validate(0, c_mems)?;
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 1 {
                     return Err(ValidationError::ErroneousAlignment {
@@ -766,9 +744,7 @@ unsafe fn read_instructions(
                 stack.push_valtype(ValType::NumType(NumType::I64));
             }
             I64_LOAD16_U => {
-                if memories.is_empty() {
-                    return Err(ValidationError::InvalidMemIdx(0));
-                }
+                let _mem_idx = MemIdx::validate(0, c_mems)?;
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 1 {
                     return Err(ValidationError::ErroneousAlignment {
@@ -780,9 +756,7 @@ unsafe fn read_instructions(
                 stack.push_valtype(ValType::NumType(NumType::I64));
             }
             I64_LOAD32_S => {
-                if memories.is_empty() {
-                    return Err(ValidationError::InvalidMemIdx(0));
-                }
+                let _mem_idx = MemIdx::validate(0, c_mems)?;
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 2 {
                     return Err(ValidationError::ErroneousAlignment {
@@ -794,9 +768,7 @@ unsafe fn read_instructions(
                 stack.push_valtype(ValType::NumType(NumType::I64));
             }
             I64_LOAD32_U => {
-                if memories.is_empty() {
-                    return Err(ValidationError::InvalidMemIdx(0));
-                }
+                let _mem_idx = MemIdx::validate(0, c_mems)?;
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 2 {
                     return Err(ValidationError::ErroneousAlignment {
@@ -808,9 +780,7 @@ unsafe fn read_instructions(
                 stack.push_valtype(ValType::NumType(NumType::I64));
             }
             I32_STORE => {
-                if memories.is_empty() {
-                    return Err(ValidationError::InvalidMemIdx(0));
-                }
+                let _mem_idx = MemIdx::validate(0, c_mems)?;
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 2 {
                     return Err(ValidationError::ErroneousAlignment {
@@ -822,9 +792,7 @@ unsafe fn read_instructions(
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
             }
             I64_STORE => {
-                if memories.is_empty() {
-                    return Err(ValidationError::InvalidMemIdx(0));
-                }
+                let _mem_idx = MemIdx::validate(0, c_mems)?;
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 3 {
                     return Err(ValidationError::ErroneousAlignment {
@@ -836,9 +804,7 @@ unsafe fn read_instructions(
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
             }
             F32_STORE => {
-                if memories.is_empty() {
-                    return Err(ValidationError::InvalidMemIdx(0));
-                }
+                let _mem_idx = MemIdx::validate(0, c_mems)?;
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 2 {
                     return Err(ValidationError::ErroneousAlignment {
@@ -850,9 +816,7 @@ unsafe fn read_instructions(
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
             }
             F64_STORE => {
-                if memories.is_empty() {
-                    return Err(ValidationError::InvalidMemIdx(0));
-                }
+                let _mem_idx = MemIdx::validate(0, c_mems)?;
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 3 {
                     return Err(ValidationError::ErroneousAlignment {
@@ -864,9 +828,7 @@ unsafe fn read_instructions(
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
             }
             I32_STORE8 => {
-                if memories.is_empty() {
-                    return Err(ValidationError::InvalidMemIdx(0));
-                }
+                let _mem_idx = MemIdx::validate(0, c_mems)?;
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 0 {
                     return Err(ValidationError::ErroneousAlignment {
@@ -878,9 +840,7 @@ unsafe fn read_instructions(
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
             }
             I32_STORE16 => {
-                if memories.is_empty() {
-                    return Err(ValidationError::InvalidMemIdx(0));
-                }
+                let _mem_idx = MemIdx::validate(0, c_mems)?;
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 1 {
                     return Err(ValidationError::ErroneousAlignment {
@@ -892,9 +852,7 @@ unsafe fn read_instructions(
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
             }
             I64_STORE8 => {
-                if memories.is_empty() {
-                    return Err(ValidationError::InvalidMemIdx(0));
-                }
+                let _mem_idx = MemIdx::validate(0, c_mems)?;
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 0 {
                     return Err(ValidationError::ErroneousAlignment {
@@ -906,9 +864,7 @@ unsafe fn read_instructions(
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
             }
             I64_STORE16 => {
-                if memories.is_empty() {
-                    return Err(ValidationError::InvalidMemIdx(0));
-                }
+                let _mem_idx = MemIdx::validate(0, c_mems)?;
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 1 {
                     return Err(ValidationError::ErroneousAlignment {
@@ -920,9 +876,7 @@ unsafe fn read_instructions(
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
             }
             I64_STORE32 => {
-                if memories.is_empty() {
-                    return Err(ValidationError::InvalidMemIdx(0));
-                }
+                let _mem_idx = MemIdx::validate(0, c_mems)?;
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 2 {
                     return Err(ValidationError::ErroneousAlignment {
@@ -934,23 +888,25 @@ unsafe fn read_instructions(
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
             }
             MEMORY_SIZE => {
-                let mem_idx = wasm.read_u8()? as MemIdx;
-                if mem_idx != 0 {
+                // Note: This zero byte is reserved for the multiple
+                // memories proposal.
+                let zero = wasm.read_u8()?;
+                if zero != 0 {
                     return Err(ValidationError::UnsupportedMultipleMemoriesProposal);
                 }
-                if memories.len() <= mem_idx {
-                    return Err(ValidationError::InvalidMemIdx(mem_idx));
-                }
+                let _mem_idx = MemIdx::validate(0, c_mems)?;
+
                 stack.push_valtype(ValType::NumType(NumType::I32));
             }
             MEMORY_GROW => {
-                let mem_idx = wasm.read_u8()? as MemIdx;
-                if mem_idx != 0 {
+                // Note: This zero byte is reserved for the multiple
+                // memories proposal.
+                let zero = wasm.read_u8()?;
+                if zero != 0 {
                     return Err(ValidationError::UnsupportedMultipleMemoriesProposal);
                 }
-                if memories.len() <= mem_idx {
-                    return Err(ValidationError::InvalidMemIdx(mem_idx));
-                }
+                let _mem_idx = MemIdx::validate(0, c_mems)?;
+
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.push_valtype(ValType::NumType(NumType::I32));
             }
@@ -1209,12 +1165,14 @@ unsafe fn read_instructions(
                     }
                     MEMORY_INIT => {
                         let data_idx = wasm.read_var_u32()? as DataIdx;
-                        let mem_idx = wasm.read_u8()? as MemIdx;
-                        if mem_idx != 0 {
+                        // Note: This zero byte is reserved for the multiple
+                        // memories proposal.
+                        let zero = wasm.read_u8()?;
+                        if zero != 0 {
                             return Err(ValidationError::UnsupportedMultipleMemoriesProposal);
                         }
-                        if memories.len() <= mem_idx {
-                            return Err(ValidationError::InvalidMemIdx(mem_idx));
+                        if c_mems.len() == 0 {
+                            return Err(ValidationError::InvalidMemIdx(0));
                         }
                         if data_count.ok_or(ValidationError::MissingDataCountSection)? as usize
                             <= data_idx
@@ -1235,25 +1193,27 @@ unsafe fn read_instructions(
                         }
                     }
                     MEMORY_COPY => {
-                        let (dst, src) = (wasm.read_u8()? as usize, wasm.read_u8()? as usize);
-                        if dst != 0 || src != 0 {
+                        // Note: These zero bytes are reserved for the multiple
+                        // memories proposal.
+                        let zeros = (wasm.read_u8()?, wasm.read_u8()?);
+                        if zeros != (0, 0) {
                             return Err(ValidationError::UnsupportedMultipleMemoriesProposal);
                         }
-                        if memories.is_empty() {
-                            return Err(ValidationError::InvalidMemIdx(0));
-                        }
+                        let _mem_idx = MemIdx::validate(0, c_mems)?;
+
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                     }
                     MEMORY_FILL => {
-                        let mem_idx = wasm.read_u8()? as MemIdx;
-                        if mem_idx != 0 {
+                        // Note: This zero byte is reserved for the multiple
+                        // memories proposal.
+                        let zero = wasm.read_u8()?;
+                        if zero != 0 {
                             return Err(ValidationError::UnsupportedMultipleMemoriesProposal);
                         }
-                        if memories.len() <= mem_idx {
-                            return Err(ValidationError::InvalidMemIdx(mem_idx));
-                        }
+                        let _mem_idx = MemIdx::validate(0, c_mems)?;
+
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
@@ -1401,9 +1361,7 @@ unsafe fn read_instructions(
 
                 match second_instr {
                     V128_LOAD => {
-                        if memories.is_empty() {
-                            return Err(ValidationError::InvalidMemIdx(0));
-                        }
+                        let _mem_idx = MemIdx::validate(0, c_mems)?;
                         let memarg = MemArg::read(wasm)?;
                         if memarg.align > 4 {
                             return Err(ValidationError::ErroneousAlignment {
@@ -1415,9 +1373,7 @@ unsafe fn read_instructions(
                         stack.push_valtype(ValType::VecType);
                     }
                     V128_STORE => {
-                        if memories.is_empty() {
-                            return Err(ValidationError::InvalidMemIdx(0));
-                        }
+                        let _mem_idx = MemIdx::validate(0, c_mems)?;
                         let memarg = MemArg::read(wasm)?;
                         if memarg.align > 4 {
                             return Err(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: 4 });
@@ -1431,9 +1387,7 @@ unsafe fn read_instructions(
                     | V128_LOAD16X4_S | V128_LOAD16X4_U
                     | V128_LOAD32X2_S | V128_LOAD32X2_U
                     => {
-                        if memories.is_empty() {
-                            return Err(ValidationError::InvalidMemIdx(0));
-                        }
+let _mem_idx = MemIdx::validate(0, c_mems)?;
                         let memarg = MemArg::read(wasm)?;
                         if memarg.align > 3 {
                             return Err(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: 3 });
@@ -1444,9 +1398,7 @@ unsafe fn read_instructions(
 
                     // v128.loadN_splat + v128.loadN_zero
                     V128_LOAD8_SPLAT => {
-                        if memories.is_empty() {
-                            return Err(ValidationError::InvalidMemIdx(0));
-                        }
+let _mem_idx = MemIdx::validate(0, c_mems)?;
                         let memarg = MemArg::read(wasm)?;
                         if memarg.align > 0 {
                             return Err(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: 0 });
@@ -1455,9 +1407,7 @@ unsafe fn read_instructions(
                         stack.push_valtype(ValType::VecType);
                     }
                     V128_LOAD16_SPLAT => {
-                        if memories.is_empty() {
-                            return Err(ValidationError::InvalidMemIdx(0));
-                        }
+let _mem_idx = MemIdx::validate(0, c_mems)?;
                         let memarg = MemArg::read(wasm)?;
                         if memarg.align > 1 {
                             return Err(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: 1 });
@@ -1466,9 +1416,7 @@ unsafe fn read_instructions(
                         stack.push_valtype(ValType::VecType);
                     }
                     V128_LOAD32_SPLAT | V128_LOAD32_ZERO => {
-                        if memories.is_empty() {
-                            return Err(ValidationError::InvalidMemIdx(0));
-                        }
+let _mem_idx = MemIdx::validate(0, c_mems)?;
                         let memarg = MemArg::read(wasm)?;
                         if memarg.align > 2 {
                             return Err(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: 2 });
@@ -1477,9 +1425,7 @@ unsafe fn read_instructions(
                         stack.push_valtype(ValType::VecType);
                     }
                     V128_LOAD64_SPLAT | V128_LOAD64_ZERO => {
-                        if memories.is_empty() {
-                            return Err(ValidationError::InvalidMemIdx(0));
-                        }
+let _mem_idx = MemIdx::validate(0, c_mems)?;
                         let memarg = MemArg::read(wasm)?;
                         if memarg.align > 3 {
                             return Err(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: 3 });
@@ -1495,9 +1441,7 @@ unsafe fn read_instructions(
                         if lane_idx >= 16 {
                             return Err(ValidationError::InvalidLaneIdx(lane_idx));
                         }
-                        if memories.is_empty() {
-                            return Err(ValidationError::InvalidMemIdx(0));
-                        }
+let _mem_idx = MemIdx::validate(0, c_mems)?;
                         if memarg.align > 0 {
                             return Err(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: 0 });
                         }
@@ -1511,9 +1455,7 @@ unsafe fn read_instructions(
                         if lane_idx >= 8 {
                             return Err(ValidationError::InvalidLaneIdx(lane_idx));
                         }
-                        if memories.is_empty() {
-                            return Err(ValidationError::InvalidMemIdx(0));
-                        }
+let _mem_idx = MemIdx::validate(0, c_mems)?;
                         if memarg.align > 1 {
                             return Err(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: 1 });
                         }
@@ -1527,9 +1469,7 @@ unsafe fn read_instructions(
                         if lane_idx >= 4 {
                             return Err(ValidationError::InvalidLaneIdx(lane_idx));
                         }
-                        if memories.is_empty() {
-                            return Err(ValidationError::InvalidMemIdx(0));
-                        }
+let _mem_idx = MemIdx::validate(0, c_mems)?;
                         if memarg.align > 2 {
                             return Err(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: 2 });
                         }
@@ -1543,9 +1483,7 @@ unsafe fn read_instructions(
                         if lane_idx >= 2 {
                             return Err(ValidationError::InvalidLaneIdx(lane_idx));
                         }
-                        if memories.is_empty() {
-                            return Err(ValidationError::InvalidMemIdx(0));
-                        }
+let _mem_idx = MemIdx::validate(0, c_mems)?;
                         if memarg.align > 3 {
                             return Err(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: 3 });
                         }
@@ -1561,9 +1499,7 @@ unsafe fn read_instructions(
                         if lane_idx >= 16 {
                             return Err(ValidationError::InvalidLaneIdx(lane_idx));
                         }
-                        if memories.is_empty() {
-                            return Err(ValidationError::InvalidMemIdx(0));
-                        }
+let _mem_idx = MemIdx::validate(0, c_mems)?;
                         if memarg.align > 0 {
                             return Err(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: 0 });
                         }
@@ -1576,9 +1512,7 @@ unsafe fn read_instructions(
                         if lane_idx >= 8 {
                             return Err(ValidationError::InvalidLaneIdx(lane_idx));
                         }
-                        if memories.is_empty() {
-                            return Err(ValidationError::InvalidMemIdx(0));
-                        }
+let _mem_idx = MemIdx::validate(0, c_mems)?;
                         if memarg.align > 1 {
                             return Err(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: 1 });
                         }
@@ -1591,9 +1525,7 @@ unsafe fn read_instructions(
                         if lane_idx >= 4 {
                             return Err(ValidationError::InvalidLaneIdx(lane_idx));
                         }
-                        if memories.is_empty() {
-                            return Err(ValidationError::InvalidMemIdx(0));
-                        }
+let _mem_idx = MemIdx::validate(0, c_mems)?;
                         if memarg.align > 2 {
                             return Err(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: 2 });
                         }
@@ -1606,9 +1538,7 @@ unsafe fn read_instructions(
                         if lane_idx >= 2 {
                             return Err(ValidationError::InvalidLaneIdx(lane_idx));
                         }
-                        if memories.is_empty() {
-                            return Err(ValidationError::InvalidMemIdx(0));
-                        }
+let _mem_idx = MemIdx::validate(0, c_mems)?;
                         if memarg.align > 3 {
                             return Err(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: 3 });
                         }
