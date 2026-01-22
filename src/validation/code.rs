@@ -27,6 +27,7 @@ use crate::{RefType, ValidationError};
 /// | ----- | -------- |
 /// | [`TypeIdx`] | [`IdxVec<TypeIdx, FuncType>`] |
 /// | [`FuncIdx`] | [`ExtendedIdxVec<FuncIdx, TypeIdx>`] |
+/// | [`TableIdx`] | [`ExtendedIdxVec<TableIdx, TableType>`] |
 #[allow(clippy::too_many_arguments)]
 pub unsafe fn validate_code_section(
     wasm: &mut WasmReader,
@@ -36,7 +37,7 @@ pub unsafe fn validate_code_section(
     globals: &[Global],
     memories: &[MemType],
     data_count: &Option<u32>,
-    tables: &[TableType],
+    c_tables: &ExtendedIdxVec<TableIdx, TableType>,
     elements: &[ElemType],
     validation_context_refs: &BTreeSet<FuncIdx>,
     sidetable: &mut Sidetable,
@@ -81,7 +82,7 @@ pub unsafe fn validate_code_section(
                 c_funcs,
                 memories,
                 data_count,
-                tables,
+                c_tables,
                 elements,
                 validation_context_refs,
             )
@@ -213,6 +214,7 @@ fn validate_branch_and_generate_sidetable_entry(
 /// |-------|----------|
 /// | [`TypeIdx`] | [`IdxVec<TypeIdx, FuncType>`] |
 /// | [`FuncIdx`] | [`ExtendedIdxVec<FuncIdx, TypeIdx>`] |
+/// | [`TableIdx`] | [`ExtendedIdxVec<TableIdx, TableType>`] |
 #[allow(clippy::too_many_arguments)]
 unsafe fn read_instructions(
     wasm: &mut WasmReader,
@@ -224,7 +226,7 @@ unsafe fn read_instructions(
     c_funcs: &ExtendedIdxVec<FuncIdx, TypeIdx>,
     memories: &[MemType],
     data_count: &Option<u32>,
-    tables: &[TableType],
+    c_tables: &ExtendedIdxVec<TableIdx, TableType>,
     elements: &[ElemType],
     validation_context_refs: &BTreeSet<FuncIdx>,
 ) -> Result<(), ValidationError> {
@@ -489,11 +491,11 @@ unsafe fn read_instructions(
             CALL_INDIRECT => {
                 let type_idx = TypeIdx::read_and_validate(wasm, fn_types)?;
 
-                let table_idx = wasm.read_var_u32()? as TableIdx;
+                let table_idx = TableIdx::read_and_validate(wasm, c_tables)?;
 
-                let tab = tables
-                    .get(table_idx)
-                    .ok_or(ValidationError::InvalidTableIdx(table_idx))?;
+                // SAFETY: We just validated that this is a valid `TableIdx` in
+                // this `ExtendedIdxVec<TableIdx, TableType>`.
+                let tab = unsafe { c_tables.get(table_idx) };
 
                 if tab.et != RefType::FuncRef {
                     return Err(ValidationError::IndirectCallToNonFuncRefTable(tab.et));
@@ -588,25 +590,23 @@ unsafe fn read_instructions(
                 stack.assert_pop_val_type(global.ty.ty)?;
             }
             TABLE_GET => {
-                let table_idx = wasm.read_var_u32()? as TableIdx;
+                let table_idx = TableIdx::read_and_validate(wasm, c_tables)?;
 
-                if tables.len() <= table_idx {
-                    return Err(ValidationError::InvalidTableIdx(table_idx));
-                }
-
-                let t = tables.get(table_idx).unwrap().et;
+                // SAFETY: We just validated that this is a valid `TableIdx` in
+                // this `ExtendedIdxVec<TableIdx, TableType>`.
+                let table = unsafe { c_tables.get(table_idx) };
+                let t = table.et;
 
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.push_valtype(ValType::RefType(t));
             }
             TABLE_SET => {
-                let table_idx = wasm.read_var_u32()? as TableIdx;
+                let table_idx = TableIdx::read_and_validate(wasm, c_tables)?;
 
-                if tables.len() <= table_idx {
-                    return Err(ValidationError::InvalidTableIdx(table_idx));
-                }
-
-                let t = tables.get(table_idx).unwrap().et;
+                // SAFETY: We just validated that this is a valid `TableIdx` in
+                // this `ExtendedIdxVec<TableIdx, TableType>`.
+                let table = unsafe { c_tables.get(table_idx) };
+                let t = table.et;
 
                 stack.assert_pop_ref_type(Some(t))?;
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
@@ -1260,13 +1260,13 @@ unsafe fn read_instructions(
                     }
                     TABLE_INIT => {
                         let elem_idx = wasm.read_var_u32()? as ElemIdx;
-                        let table_idx = wasm.read_var_u32()? as TableIdx;
 
-                        if tables.len() <= table_idx {
-                            return Err(ValidationError::InvalidTableIdx(table_idx));
-                        }
+                        let table_idx = TableIdx::read_and_validate(wasm, c_tables)?;
 
-                        let t1 = tables[table_idx].et;
+                        // SAFETY: We just validated that this is a valid `TableIdx` in
+                        // this `ExtendedIdxVec<TableIdx, TableType>`.
+                        let table1 = unsafe { c_tables.get(table_idx) };
+                        let t1 = table1.et;
 
                         if elements.len() <= elem_idx {
                             return Err(ValidationError::InvalidElemIdx(elem_idx));
@@ -1293,19 +1293,18 @@ unsafe fn read_instructions(
                         }
                     }
                     TABLE_COPY => {
-                        let table_x_idx = wasm.read_var_u32()? as TableIdx;
-                        let table_y_idx = wasm.read_var_u32()? as TableIdx;
+                        let table_x_idx = TableIdx::read_and_validate(wasm, c_tables)?;
+                        let table_y_idx = TableIdx::read_and_validate(wasm, c_tables)?;
 
-                        if tables.len() <= table_x_idx {
-                            return Err(ValidationError::InvalidTableIdx(table_x_idx));
-                        }
+                        // SAFETY: We just validated that this is a valid `TableIdx` in
+                        // this `ExtendedIdxVec<TableIdx, TableType>`.
+                        let table1 = unsafe { c_tables.get(table_x_idx) };
+                        // SAFETY: We just validated that this is a valid `TableIdx` in
+                        // this `ExtendedIdxVec<TableIdx, TableType>`.
+                        let table2 = unsafe { c_tables.get(table_y_idx) };
 
-                        if tables.len() <= table_y_idx {
-                            return Err(ValidationError::InvalidTableIdx(table_y_idx));
-                        }
-
-                        let t1 = tables[table_x_idx].et;
-                        let t2 = tables[table_y_idx].et;
+                        let t1 = table1.et;
+                        let t2 = table2.et;
 
                         if t1 != t2 {
                             return Err(ValidationError::MismatchedRefTypesDuringTableCopy {
@@ -1319,13 +1318,12 @@ unsafe fn read_instructions(
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                     }
                     TABLE_GROW => {
-                        let table_idx = wasm.read_var_u32()? as TableIdx;
+                        let table_idx = TableIdx::read_and_validate(wasm, c_tables)?;
 
-                        if tables.len() <= table_idx {
-                            return Err(ValidationError::InvalidTableIdx(table_idx));
-                        }
-
-                        let t = tables[table_idx].et;
+                        // SAFETY: We just validated that this is a valid `TableIdx` in
+                        // this `ExtendedIdxVec<TableIdx, TableType>`.
+                        let table = unsafe { c_tables.get(table_idx) };
+                        let t = table.et;
 
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                         stack.assert_pop_ref_type(Some(t))?;
@@ -1333,22 +1331,17 @@ unsafe fn read_instructions(
                         stack.push_valtype(ValType::NumType(NumType::I32));
                     }
                     TABLE_SIZE => {
-                        let table_idx = wasm.read_var_u32()? as TableIdx;
-
-                        if tables.len() <= table_idx {
-                            return Err(ValidationError::InvalidTableIdx(table_idx));
-                        }
+                        let _table_idx = TableIdx::read_and_validate(wasm, c_tables)?;
 
                         stack.push_valtype(ValType::NumType(NumType::I32));
                     }
                     TABLE_FILL => {
-                        let table_idx = wasm.read_var_u32()? as TableIdx;
+                        let table_idx = TableIdx::read_and_validate(wasm, c_tables)?;
 
-                        if tables.len() <= table_idx {
-                            return Err(ValidationError::InvalidTableIdx(table_idx));
-                        }
-
-                        let t = tables[table_idx].et;
+                        // SAFETY: We just validated that this is a valid `TableIdx` in
+                        // this `ExtendedIdxVec<TableIdx, TableType>`.
+                        let table = unsafe { c_tables.get(table_idx) };
+                        let t = table.et;
 
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                         stack.assert_pop_ref_type(Some(t))?;
