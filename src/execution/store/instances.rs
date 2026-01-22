@@ -2,7 +2,7 @@ use alloc::{collections::btree_map::BTreeMap, string::String, vec, vec::Vec};
 
 use crate::{
     core::{
-        indices::{ExtendedIdxVec, FuncIdx, IdxVec, TableIdx, TypeIdx},
+        indices::{ExtendedIdxVec, FuncIdx, IdxVec, MemIdx, TableIdx, TypeIdx},
         reader::{
             span::Span,
             types::{FuncType, MemType, TableType},
@@ -182,7 +182,7 @@ pub struct ModuleInst<'b> {
     // `IdxVec<FuncIdx, TypeIdx>` were checked during validation.
     pub func_addrs: ExtendedIdxVec<FuncIdx, FuncAddr>,
     pub table_addrs: ExtendedIdxVec<TableIdx, TableAddr>,
-    pub mem_addrs: Vec<MemAddr>,
+    pub mem_addrs: ExtendedIdxVec<MemIdx, MemAddr>,
     pub global_addrs: Vec<GlobalAddr>,
     pub elem_addrs: Vec<ElemAddr>,
     pub data_addrs: Vec<DataAddr>,
