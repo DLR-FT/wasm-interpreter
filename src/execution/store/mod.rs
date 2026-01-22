@@ -147,7 +147,7 @@ impl<'b, T: Config> Store<'b, T> {
         let module_inst = ModuleInst {
             types: validation_info.types.clone(),
             func_addrs: IdxVec::default(),
-            table_addrs: Vec::new(),
+            table_addrs: IdxVec::default(),
             mem_addrs: Vec::new(),
             global_addrs: extern_vals.iter().globals().collect(),
             elem_addrs: Vec::new(),
@@ -245,9 +245,9 @@ impl<'b, T: Config> Store<'b, T> {
         // allocation: skip step 2 as it was done in instantiation step 5
 
         // allocation: step 3-13
-        let table_addrs: Vec<TableAddr> = module
+        let table_addrs_local: Vec<TableAddr> = module
             .tables
-            .iter()
+            .iter_local_definitions()
             .map(|table_type| self.alloc_table(*table_type, Ref::Null(table_type.et)))
             .collect();
         let mem_addrs: Vec<MemAddr> = module
@@ -283,8 +283,17 @@ impl<'b, T: Config> Store<'b, T> {
         // allocation: skip step 14 as it was done in instantiation step 5
 
         // allocation: step 15,16
-        let mut table_addrs_mod: Vec<TableAddr> = extern_vals.iter().tables().collect();
-        table_addrs_mod.extend(table_addrs);
+        let table_addrs = validation_info
+            .tables
+            .map(extern_vals.iter().tables().collect(), table_addrs_local)
+            .expect(
+                "that the numbers of imported and local tables always \
+                match the respective numbers in the validation info. Step 3 and 4 \
+                check if the number of imported tables is correct and the number \
+                of local tables is produced by iterating through all table \
+                definitions and performing one-to-one mapping on each one.",
+            )
+            .into_inner();
 
         let mut mem_addrs_mod: Vec<MemAddr> = extern_vals.iter().mems().collect();
         mem_addrs_mod.extend(mem_addrs);
@@ -310,7 +319,14 @@ impl<'b, T: Config> Store<'b, T> {
                         let func_addr = unsafe { module_inst.func_addrs.get(func_idx) };
                         ExternVal::Func(*func_addr)
                     }
-                    ExportDesc::Table(table_idx) => ExternVal::Table(table_addrs_mod[table_idx]),
+                    ExportDesc::Table(table_idx) => {
+                        // SAFETY: Both the table index and the tables `IdxVec`
+                        // come from the same module instance. Because all
+                        // indices are valid in their specific module instance,
+                        // this is sound.
+                        let table_addr = unsafe { table_addrs.get(table_idx) };
+                        ExternVal::Table(*table_addr)
+                    }
                     ExportDesc::Mem(mem_idx) => ExternVal::Mem(mem_addrs_mod[mem_idx]),
                     ExportDesc::Global(global_idx) => {
                         ExternVal::Global(module_inst.global_addrs[global_idx])
@@ -322,7 +338,7 @@ impl<'b, T: Config> Store<'b, T> {
 
         // allocation: step 20,21 initialize module (except functions and globals due to instantiation step 5, allocation step 14,17)
         let module_inst = self.modules.get_mut(module_addr);
-        module_inst.table_addrs = table_addrs_mod;
+        module_inst.table_addrs = table_addrs;
         module_inst.mem_addrs = mem_addrs_mod;
         module_inst.elem_addrs = elem_addrs;
         module_inst.data_addrs = data_addrs;
@@ -363,17 +379,23 @@ impl<'b, T: Config> Store<'b, T> {
                         .unwrap_validated(); // return value has correct type
 
                     let s = 0;
-                    table_init(
-                        &self.modules,
-                        &mut self.tables,
-                        &self.elements,
-                        module_addr,
-                        i,
-                        table_idx_i.into_usize(),
-                        n,
-                        s,
-                        d,
-                    )?;
+                    // SAFETY: The passed table index comes from the validation
+                    // info, that was just used to allocate a new module
+                    // instance with address `module_addr` in `self.modules`.
+                    // Therefore it must be safe to use to for accessing its referenced table.
+                    unsafe {
+                        table_init(
+                            &self.modules,
+                            &mut self.tables,
+                            &self.elements,
+                            module_addr,
+                            i,
+                            *table_idx_i,
+                            n,
+                            s,
+                            d,
+                        )?
+                    };
                     elem_drop(&self.modules, &mut self.elements, module_addr, i);
                 }
                 ElemMode::Declarative => {
