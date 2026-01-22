@@ -1,10 +1,9 @@
 use super::global::GlobalType;
 use super::RefType;
-use crate::core::indices::{ExtendedIdxVec, FuncIdx, TypeIdx};
+use crate::core::indices::{FuncIdx, IdxVec, TableIdx, TypeIdx};
 use crate::core::reader::span::Span;
 use crate::core::reader::types::TableType;
 use crate::core::reader::WasmReader;
-use crate::core::utils::ToUsizeExt;
 use crate::read_constant_expression::read_constant_expression;
 use crate::validation_stack::ValidationStack;
 use crate::{NumType, ValType, ValidationError};
@@ -54,7 +53,7 @@ impl ElemType {
         wasm: &mut WasmReader,
         c_funcs: &IdxVec<FuncIdx, TypeIdx>,
         validation_context_refs: &mut BTreeSet<FuncIdx>,
-        tables: &[TableType],
+        c_tables: &IdxVec<TableIdx, TableType>,
         imported_global_types: &[GlobalType],
     ) -> Result<Vec<Self>, ValidationError> {
         wasm.read_vec(|wasm| {
@@ -77,7 +76,7 @@ impl ElemType {
                         validation_context_refs,
                     )?;
                     let mode = ElemMode::Active(ActiveElem {
-                        table_idx: 0,
+                        table_idx: TableIdx::validate(0, c_tables)?,
                         init_expr: e,
                     });
                     ElemType { init, mode }
@@ -99,7 +98,7 @@ impl ElemType {
                     // binary format is: 2:u32 x:tableidx e:expr et:elemkind y*:vec(funcidx)
                     // should parse to spec struct {type et, init ((ref.func y) end)*, mode active {table x, offset e}}
                     // which reflects to ElemType{init: ElemItems::RefFuncs(y*), mode: ElemMode::Active{x, e}} here
-                    let x = wasm.read_var_u32()?;
+                    let x = TableIdx::read_and_validate(wasm, c_tables)?;
                     let e = parse_validate_active_segment_offset_expr(
                         wasm,
                         imported_global_types,
@@ -149,7 +148,7 @@ impl ElemType {
                         validation_context_refs,
                     )?;
                     let mode = ElemMode::Active(ActiveElem {
-                        table_idx: 0,
+                        table_idx: TableIdx::validate(0, c_tables)?,
                         init_expr: e,
                     });
                     ElemType { init, mode }
@@ -173,7 +172,7 @@ impl ElemType {
                     // binary format is 6:u32 x:table_idx e:expr et:reftype el*:vec(expr)
                     // should parse to spec struct {type et, init el*, mode passive}
                     // which is equivalent to ElemType{init: Exprs(et, el*), mode: ElemMode::Active{table x, offset e}} here
-                    let x = wasm.read_var_u32()?;
+                    let x = TableIdx::read_and_validate(wasm, c_tables)?;
                     let e = parse_validate_active_segment_offset_expr(
                         wasm,
                         imported_global_types,
@@ -227,11 +226,10 @@ impl ElemType {
                 }) => {
                     // start validating elemmode of form active {table x, offset expr}
                     // 1-2. C.tables[x] must be defined with type: limits t
-                    let table_type = tables
-                        .get(x.into_usize())
-                        .ok_or(ValidationError::InvalidTableIdx(x.into_usize()))?
-                        .et;
-                    if table_type != t {
+                    // SAFETY: The `ActiveElem` that is being deconstructed was
+                    // created and also validated in this function.
+                    let table_type = unsafe { c_tables.get(x) };
+                    if table_type.et != t {
                         return Err(ValidationError::ActiveElementSegmentTypeMismatch);
                     }
                     // 3-4. _expr must be valid with type I32 and be const: already checked during the parse of initializer expressions above.
@@ -280,7 +278,7 @@ pub enum ElemMode {
 
 #[derive(Debug, Clone)]
 pub struct ActiveElem {
-    pub table_idx: u32,
+    pub table_idx: TableIdx,
     pub init_expr: Span,
 }
 
