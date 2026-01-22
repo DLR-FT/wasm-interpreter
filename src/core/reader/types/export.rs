@@ -4,7 +4,7 @@ use alloc::string::String;
 use crate::core::indices::{ExtendedIdxVec, FuncIdx, GlobalIdx, MemIdx, TableIdx, TypeIdx};
 use crate::core::reader::types::import::ImportDesc;
 use crate::core::reader::WasmReader;
-use crate::{ValidationError, ValidationInfo};
+use crate::{TableType, ValidationError, ValidationInfo};
 
 use super::ExternType;
 
@@ -20,9 +20,10 @@ impl Export {
     pub fn read_and_validate(
         wasm: &mut WasmReader,
         c_funcs: &ExtendedIdxVec<FuncIdx, TypeIdx>,
+        c_tables: &ExtendedIdxVec<TableIdx, TableType>,
     ) -> Result<Self, ValidationError> {
         let name = wasm.read_name()?.to_owned();
-        let desc = ExportDesc::read_and_validate(wasm, c_funcs)?;
+        let desc = ExportDesc::read_and_validate(wasm, c_funcs, c_tables)?;
         Ok(Export { name, desc })
     }
 }
@@ -68,21 +69,13 @@ impl ExportDesc {
                 ExternType::Func(func_type.clone())
             }
             ExportDesc::TableIdx(table_idx) => {
-                let table_type = match table_idx
-                    .checked_sub(validation_info.imports_length.imported_tables)
-                {
-                    Some(local_table_idx) => *validation_info.tables.get(local_table_idx).unwrap(),
-                    None => validation_info
-                        .imports
-                        .iter()
-                        .filter_map(|import| match import.desc {
-                            ImportDesc::Table(table_type) => Some(table_type),
-                            _ => None,
-                        })
-                        .nth(*table_idx)
-                        .unwrap(),
-                };
-                ExternType::Table(table_type)
+                // SAFETY: The caller ensures that the current `ExportDesc`
+                // comes from the same `ValidationInfo` that is passed into the
+                // current function. Therefore, the table index stored in `self`
+                // must be valid in the given `ValidationInfo`.
+                let table_type = unsafe { validation_info.tables.get(*table_idx) };
+
+                ExternType::Table(*table_type)
             }
             ExportDesc::MemIdx(mem_idx) => {
                 let mem_type = match mem_idx
@@ -156,15 +149,13 @@ impl ExportDesc {
     pub fn read_and_validate(
         wasm: &mut WasmReader,
         c_functions: &ExtendedIdxVec<FuncIdx, TypeIdx>,
+        c_tables: &ExtendedIdxVec<TableIdx, TableType>,
     ) -> Result<Self, ValidationError> {
         let desc_id = wasm.read_u8()?;
 
         let desc = match desc_id {
             0x00 => ExportDesc::FuncIdx(FuncIdx::read_and_validate(wasm, c_functions)?),
-            0x01 => {
-                let desc_idx = wasm.read_var_u32()? as usize;
-                ExportDesc::TableIdx(desc_idx)
-            }
+            0x01 => ExportDesc::TableIdx(TableIdx::read_and_validate(wasm, c_tables)?),
             0x02 => {
                 let desc_idx = wasm.read_var_u32()? as usize;
                 ExportDesc::MemIdx(desc_idx)

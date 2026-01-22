@@ -1,7 +1,7 @@
 use alloc::collections::btree_set::{self, BTreeSet};
 use alloc::vec::Vec;
 
-use crate::core::indices::{ExtendedIdxVec, FuncIdx, IdxVec, TypeIdx};
+use crate::core::indices::{ExtendedIdxVec, FuncIdx, IdxVec, TableIdx, TypeIdx};
 use crate::core::reader::section_header::{SectionHeader, SectionTy};
 use crate::core::reader::span::Span;
 use crate::core::reader::types::data::DataSegment;
@@ -41,7 +41,7 @@ pub struct ValidationInfo<'bytecode> {
     pub(crate) types: IdxVec<TypeIdx, FuncType>,
     pub(crate) imports: Vec<Import>,
     pub(crate) functions: ExtendedIdxVec<FuncIdx, TypeIdx>,
-    pub(crate) tables: Vec<TableType>,
+    pub(crate) tables: ExtendedIdxVec<TableIdx, TableType>,
     pub(crate) memories: Vec<MemType>,
     pub(crate) globals: Vec<Global>,
     #[allow(dead_code)]
@@ -70,12 +70,8 @@ fn validate_exports(validation_info: &ValidationInfo) -> Result<(), ValidationEr
             FuncIdx(_) => {
                 // Function indices are already validated upon creation
             }
-            TableIdx(table_idx) => {
-                if validation_info.tables.len() + validation_info.imports_length.imported_tables
-                    <= table_idx
-                {
-                    return Err(ValidationError::InvalidTableIdx(table_idx));
-                }
+            TableIdx(_) => {
+                // Table indices are already validated upon creation
             }
             MemIdx(mem_idx) => {
                 if validation_info.memories.len() + validation_info.imports_length.imported_memories
@@ -211,23 +207,16 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
-    let imported_tables = imports
-        .iter()
-        .filter_map(|m| match m.desc {
-            ImportDesc::Table(table) => Some(table),
-            _ => None,
-        })
-        .collect::<Vec<TableType>>();
-    let tables = handle_section(&mut wasm, &mut header, SectionTy::Table, |wasm, _| {
+    let imported_tables = imports.iter().filter_map(|m| match m.desc {
+        ImportDesc::Table(table) => Some(table),
+        _ => None,
+    });
+    let local_tables = handle_section(&mut wasm, &mut header, SectionTy::Table, |wasm, _| {
         wasm.read_vec(TableType::read)
     })?
     .unwrap_or_default();
 
-    let all_tables = {
-        let mut temp = imported_tables;
-        temp.extend(tables.clone());
-        temp
-    };
+    let tables = ExtendedIdxVec::new(imported_tables.collect(), local_tables);
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
@@ -288,7 +277,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
     let exports = handle_section(&mut wasm, &mut header, SectionTy::Export, |wasm, _| {
-        wasm.read_vec(|wasm| Export::read_and_validate(wasm, &functions))
+        wasm.read_vec(|wasm| Export::read_and_validate(wasm, &functions, &tables))
     })?
     .unwrap_or_default();
     validation_context_refs.extend(exports.iter().filter_map(
@@ -337,7 +326,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
                 wasm,
                 &functions,
                 &mut validation_context_refs,
-                &all_tables,
+                &tables,
                 &imported_global_types,
             )
         })?
@@ -375,7 +364,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
                 &all_globals,
                 &all_memories,
                 &data_count,
-                &all_tables,
+                &tables,
                 &elements,
                 &validation_context_refs,
                 &mut sidetable,
