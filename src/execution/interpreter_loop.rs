@@ -19,7 +19,7 @@ use crate::{
     addrs::{AddrVec, DataAddr, ElemAddr, MemAddr, ModuleAddr, TableAddr},
     assert_validated::UnwrapValidatedExt,
     core::{
-        indices::{FuncIdx, TypeIdx},
+        indices::{FuncIdx, TableIdx, TypeIdx},
         reader::{
             types::{memarg::MemArg, BlockType},
             WasmReader,
@@ -303,16 +303,16 @@ pub(super) fn run<T: Config>(
                 // SAFETY: the Wasm code is valid and therefore the following
                 // bytes must encode a valid type index.
                 let given_type_idx = unsafe { TypeIdx::read_unchecked(wasm) };
-                let table_idx = wasm.read_var_u32().unwrap_validated().into_usize();
+                // SAFETY: The Wasm code is valid and therefore the following
+                // bytes must encode a valid table index.
+                let table_idx = unsafe { TableIdx::read_unchecked(wasm) };
 
-                let table_addr = *store
-                    .modules
-                    .get(current_module)
-                    .table_addrs
-                    .get(table_idx)
-                    .unwrap_validated();
-                let tab = store.tables.get(table_addr);
                 let module = store.modules.get(current_module);
+
+                // SAFETY: The module that is used now is the same one from
+                // which the table index was just read.
+                let table_addr = unsafe { module.table_addrs.get(table_idx) };
+                let tab = store.tables.get(*table_addr);
                 // SAFETY: The module that is used now is the same one from
                 // which the type index was just read.
                 let func_ty = unsafe { module.types.get(given_type_idx) };
@@ -487,13 +487,13 @@ pub(super) fn run<T: Config>(
             }
             TABLE_GET => {
                 decrement_fuel!(T::get_flat_cost(TABLE_GET));
-                let table_idx = wasm.read_var_u32().unwrap_validated().into_usize();
-                let table_addr = *store
-                    .modules
-                    .get(current_module)
-                    .table_addrs
-                    .get(table_idx)
-                    .unwrap_validated();
+                // SAFETY: The Wasm code is valid and therefore the following
+                // bytes must encode a valid table index.
+                let table_idx = unsafe { TableIdx::read_unchecked(wasm) };
+                let module = store.modules.get(current_module);
+                // SAFETY: The module that is used now is the same one from
+                // which the table index was just read.
+                let table_addr = *unsafe { module.table_addrs.get(table_idx) };
                 let tab = store.tables.get(table_addr);
 
                 let i: i32 = stack.pop_value().try_into().unwrap_validated();
@@ -513,13 +513,13 @@ pub(super) fn run<T: Config>(
             }
             TABLE_SET => {
                 decrement_fuel!(T::get_flat_cost(TABLE_SET));
-                let table_idx = wasm.read_var_u32().unwrap_validated().into_usize();
-                let table_addr = *store
-                    .modules
-                    .get(current_module)
-                    .table_addrs
-                    .get(table_idx)
-                    .unwrap_validated();
+                // SAFETY: The Wasm code is valid and therefore the following
+                // bytes must encode a valid table index.
+                let table_idx = unsafe { TableIdx::read_unchecked(wasm) };
+                let module = store.modules.get(current_module);
+                // SAFETY: The module that is used now is the same one from
+                // which the table index was just read.
+                let table_addr = *unsafe { module.table_addrs.get(table_idx) };
                 let tab = store.tables.get_mut(table_addr);
 
                 let val: Ref = stack.pop_value().try_into().unwrap_validated();
@@ -2653,7 +2653,9 @@ pub(super) fn run<T: Config>(
                     // this is ONLY for passive elements
                     TABLE_INIT => {
                         let elem_idx = wasm.read_var_u32().unwrap_validated().into_usize();
-                        let table_idx = wasm.read_var_u32().unwrap_validated().into_usize();
+                        // SAFETY: The Wasm code is valid and therefore the
+                        // following bytes must encode a valid table index.
+                        let table_idx = unsafe { TableIdx::read_unchecked(wasm) };
 
                         let n: u32 = stack.pop_value().try_into().unwrap_validated(); // size
                         let cost = T::get_fc_extension_flat_cost(TABLE_INIT)
@@ -2673,17 +2675,21 @@ pub(super) fn run<T: Config>(
                         let s: i32 = stack.pop_value().try_into().unwrap_validated(); // offset
                         let d: i32 = stack.pop_value().try_into().unwrap_validated(); // dst
 
-                        table_init(
-                            &store.modules,
-                            &mut store.tables,
-                            &store.elements,
-                            current_module,
-                            elem_idx,
-                            table_idx,
-                            n,
-                            s,
-                            d,
-                        )?;
+                        // SAFETY: The passed table index is valid in the
+                        // current module, whose module address is also passed.
+                        unsafe {
+                            table_init(
+                                &store.modules,
+                                &mut store.tables,
+                                &store.elements,
+                                current_module,
+                                elem_idx,
+                                table_idx,
+                                n,
+                                s,
+                                d,
+                            )?
+                        };
                     }
                     ELEM_DROP => {
                         decrement_fuel!(T::get_fc_extension_flat_cost(ELEM_DROP));
@@ -2699,19 +2705,24 @@ pub(super) fn run<T: Config>(
                     // https://webassembly.github.io/spec/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-table-mathsf-table-copy-x-y
                     TABLE_COPY => {
                         decrement_fuel!(T::get_fc_extension_flat_cost(TABLE_COPY));
-                        let table_x_idx = wasm.read_var_u32().unwrap_validated().into_usize();
-                        let table_y_idx = wasm.read_var_u32().unwrap_validated().into_usize();
+                        // SAFETY: The Wasm code is valid and therefore the
+                        // following bytes must encode a valid table index.
+                        let table_x_idx = unsafe { TableIdx::read_unchecked(wasm) };
+                        // SAFETY: The Wasm code is valid and therefore the
+                        // following bytes must encode a valid table index.
+                        let table_y_idx = unsafe { TableIdx::read_unchecked(wasm) };
 
-                        let tab_x_elem_len = store
-                            .tables
-                            .get(store.modules.get(current_module).table_addrs[table_x_idx])
-                            .elem
-                            .len();
-                        let tab_y_elem_len = store
-                            .tables
-                            .get(store.modules.get(current_module).table_addrs[table_y_idx])
-                            .elem
-                            .len();
+                        let module = store.modules.get(current_module);
+
+                        // SAFETY: The module that is used now is the same one from
+                        // which the table index was just read.
+                        let table_addr_x = *unsafe { module.table_addrs.get(table_x_idx) };
+                        // SAFETY: The module that is used now is the same one from
+                        // which the table index was just read.
+                        let table_addr_y = *unsafe { module.table_addrs.get(table_y_idx) };
+
+                        let tab_x_elem_len = store.tables.get(table_addr_x).elem.len();
+                        let tab_y_elem_len = store.tables.get(table_addr_y).elem.len();
 
                         let n: u32 = stack.pop_value().try_into().unwrap_validated(); // size
                         let cost = T::get_fc_extension_flat_cost(TABLE_COPY)
@@ -2753,33 +2764,13 @@ pub(super) fn run<T: Config>(
                             _ => return Err(TrapError::TableOrElementAccessOutOfBounds.into()),
                         };
 
-                        let dst = table_x_idx;
-                        let src = table_y_idx;
+                        if table_addr_x == table_addr_y {
+                            let table = store.tables.get_mut(table_addr_x);
 
-                        if table_x_idx == table_y_idx {
-                            let table_addr = *store
-                                .modules
-                                .get(current_module)
-                                .table_addrs
-                                .get(table_x_idx)
-                                .unwrap_validated();
-                            let table = store.tables.get_mut(table_addr);
-                            table
-                                .elem
-                                .copy_within(s.into_usize()..src_res, d.into_usize());
+                            table.elem.copy_within(s as usize..src_res, d as usize);
                         } else {
-                            let src_addr = *store
-                                .modules
-                                .get(current_module)
-                                .table_addrs
-                                .get(src)
-                                .unwrap_validated();
-                            let dst_addr = *store
-                                .modules
-                                .get(current_module)
-                                .table_addrs
-                                .get(dst)
-                                .unwrap_validated();
+                            let dst_addr = table_addr_x;
+                            let src_addr = table_addr_y;
 
                             let (src_table, dst_table) = store
                                 .tables
@@ -2801,14 +2792,15 @@ pub(super) fn run<T: Config>(
                     }
                     TABLE_GROW => {
                         decrement_fuel!(T::get_fc_extension_flat_cost(TABLE_GROW));
-                        let table_idx = wasm.read_var_u32().unwrap_validated().into_usize();
-                        let table_addr = *store
-                            .modules
-                            .get(current_module)
-                            .table_addrs
-                            .get(table_idx)
-                            .unwrap_validated();
-                        let tab = &mut store.tables.get_mut(table_addr);
+                        // SAFETY: The Wasm code is valid and therefore the
+                        // following bytes must encode a valid table index.
+                        let table_idx = unsafe { TableIdx::read_unchecked(wasm) };
+
+                        let module = store.modules.get(current_module);
+                        // SAFETY: The module that is used now is the same one from
+                        // which the table index was just read.
+                        let table_addr = *unsafe { module.table_addrs.get(table_idx) };
+                        let tab = store.tables.get_mut(table_addr);
 
                         let sz = tab.elem.len() as u32;
 
@@ -2843,14 +2835,15 @@ pub(super) fn run<T: Config>(
                     }
                     TABLE_SIZE => {
                         decrement_fuel!(T::get_fc_extension_flat_cost(TABLE_SIZE));
-                        let table_idx = wasm.read_var_u32().unwrap_validated().into_usize();
-                        let table_addr = *store
-                            .modules
-                            .get(current_module)
-                            .table_addrs
-                            .get(table_idx)
-                            .unwrap_validated();
-                        let tab = store.tables.get(table_addr);
+                        // SAFETY: The Wasm code is valid and therefore the
+                        // following bytes must encode a valid table index.
+                        let table_idx = unsafe { TableIdx::read_unchecked(wasm) };
+
+                        let module = store.modules.get(current_module);
+                        // SAFETY: The module that is used now is the same one from
+                        // which the table index was just read.
+                        let table_addr = *unsafe { module.table_addrs.get(table_idx) };
+                        let tab = store.tables.get_mut(table_addr);
 
                         let sz = tab.elem.len() as u32;
 
@@ -2860,13 +2853,14 @@ pub(super) fn run<T: Config>(
                     }
                     TABLE_FILL => {
                         decrement_fuel!(T::get_fc_extension_flat_cost(TABLE_FILL));
-                        let table_idx = wasm.read_var_u32().unwrap_validated().into_usize();
-                        let table_addr = *store
-                            .modules
-                            .get(current_module)
-                            .table_addrs
-                            .get(table_idx)
-                            .unwrap_validated();
+                        // SAFETY: The Wasm code is valid and therefore the
+                        // following bytes must encode a valid table index.
+                        let table_idx = unsafe { TableIdx::read_unchecked(wasm) };
+
+                        let module = store.modules.get(current_module);
+                        // SAFETY: The module that is used now is the same one from
+                        // which the table index was just read.
+                        let table_addr = *unsafe { module.table_addrs.get(table_idx) };
                         let tab = store.tables.get_mut(table_addr);
 
                         let len: u32 = stack.pop_value().try_into().unwrap_validated();
@@ -5656,15 +5650,21 @@ fn calculate_mem_address(memarg: &MemArg, relative_address: u32) -> Result<usize
 }
 
 //helpers for avoiding code duplication during module instantiation
+/// # Safety
+///
+/// The caller must ensure that the given table index is valid in
+/// `store_modules.get(current_module).table_addrs`.
+// TODO instead of passing all module instances and the current module addr
+// separately, directly pass a `&ModuleInst`.
 #[inline(always)]
 #[allow(clippy::too_many_arguments)]
-pub(super) fn table_init(
+pub(super) unsafe fn table_init(
     store_modules: &AddrVec<ModuleAddr, ModuleInst>,
     store_tables: &mut AddrVec<TableAddr, TableInst>,
     store_elements: &AddrVec<ElemAddr, ElemInst>,
     current_module: ModuleAddr,
     elem_idx: usize,
-    table_idx: usize,
+    table_idx: TableIdx,
     n: u32,
     s: i32,
     d: i32,
@@ -5673,18 +5673,15 @@ pub(super) fn table_init(
     let s = s.cast_unsigned().into_usize();
     let d = d.cast_unsigned().into_usize();
 
-    let tab_addr = *store_modules
-        .get(current_module)
-        .table_addrs
-        .get(table_idx)
-        .unwrap_validated();
-    let elem_addr = *store_modules
-        .get(current_module)
-        .elem_addrs
-        .get(elem_idx)
-        .unwrap_validated();
+    let current_module = store_modules.get(current_module);
 
-    let tab = store_tables.get_mut(tab_addr);
+    // SAFETY: The caller ensures that `table_idx` is valid for this specific
+    // `IdxVec`.
+    let table_addr = *unsafe { current_module.table_addrs.get(table_idx) };
+
+    let elem_addr = *current_module.elem_addrs.get(elem_idx).unwrap_validated();
+
+    let tab = store_tables.get_mut(table_addr);
 
     let elem = store_elements.get(elem_addr);
 
