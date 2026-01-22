@@ -2,7 +2,7 @@ use alloc::collections::btree_set::{self, BTreeSet};
 use alloc::vec::Vec;
 
 use crate::core::indices::{
-    ExtendedIdxVec, FuncIdx, IdxVec, IdxVecOverflowError, TableIdx, TypeIdx,
+    ExtendedIdxVec, FuncIdx, IdxVec, IdxVecOverflowError, MemIdx, TableIdx, TypeIdx,
 };
 use crate::core::reader::section_header::{SectionHeader, SectionTy};
 use crate::core::reader::span::Span;
@@ -44,7 +44,7 @@ pub struct ValidationInfo<'bytecode> {
     pub(crate) imports: Vec<Import>,
     pub(crate) functions: ExtendedIdxVec<FuncIdx, TypeIdx>,
     pub(crate) tables: ExtendedIdxVec<TableIdx, TableType>,
-    pub(crate) memories: Vec<MemType>,
+    pub(crate) memories: ExtendedIdxVec<MemIdx, MemType>,
     pub(crate) globals: Vec<Global>,
     pub(crate) exports: Vec<Export>,
     /// Each block contains the validated code section and the stp corresponding to
@@ -74,12 +74,8 @@ fn validate_exports(validation_info: &ValidationInfo) -> Result<(), ValidationEr
             Table(_) => {
                 // Table indices are already validated upon creation
             }
-            Mem(mem_idx) => {
-                if validation_info.memories.len() + validation_info.imports_length.imported_memories
-                    <= mem_idx
-                {
-                    return Err(ValidationError::InvalidMemIdx(mem_idx));
-                }
+            Mem(_) => {
+                // Memory indices are already validated upon creation
             }
             Global(global_idx) => {
                 if validation_info.globals.len() + validation_info.imports_length.imported_globals
@@ -220,34 +216,21 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
-    let imported_memories = imports
-        .iter()
-        .filter_map(|m| match m.desc {
-            ImportDesc::Mem(mem) => Some(mem),
-            _ => None,
-        })
-        .collect::<Vec<MemType>>();
+    let imported_memories = imports.iter().filter_map(|m| match m.desc {
+        ImportDesc::Mem(mem) => Some(mem),
+        _ => None,
+    });
     // let imported_memories_length = imported_memories.len();
-    let memories = handle_section(&mut wasm, &mut header, SectionTy::Memory, |wasm, _| {
+    let local_memories = handle_section(&mut wasm, &mut header, SectionTy::Memory, |wasm, _| {
         wasm.read_vec(MemType::read)
     })?
     .unwrap_or_default();
 
-    let all_memories = {
-        let mut temp = imported_memories;
-        temp.extend(memories.clone());
-        temp
-    };
+    let memories = ExtendedIdxVec::new(imported_memories.collect(), local_memories)
+        .map_err(|IdxVecOverflowError| ValidationError::TooManyMemories)?;
 
-    if all_memories.len() > 1 {
+    if memories.len() > 1 {
         return Err(ValidationError::UnsupportedMultipleMemoriesProposal);
-    }
-
-    // Note: Without the multiple memory proposal, this is dead code due to the previous check.
-    // All memories need to be addressable by a u32
-    if all_memories.len() > usize::try_from(u32::MAX).expect("pointer width to be at least 32 bits")
-    {
-        return Err(ValidationError::TooManyMemories);
     }
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
@@ -291,7 +274,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
     let exports = handle_section(&mut wasm, &mut header, SectionTy::Export, |wasm, _| {
-        wasm.read_vec(|wasm| Export::read_and_validate(wasm, &functions, &tables))
+        wasm.read_vec(|wasm| Export::read_and_validate(wasm, &functions, &tables, &memories))
     })?
     .unwrap_or_default();
     validation_context_refs.extend(exports.iter().filter_map(
@@ -376,7 +359,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
                 &types,
                 &functions,
                 &all_globals,
-                &all_memories,
+                &memories,
                 &data_count,
                 &tables,
                 &elements,
@@ -398,13 +381,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
 
     let data_section = handle_section(&mut wasm, &mut header, SectionTy::Data, |wasm, h| {
         // wasm.read_vec(DataSegment::read)
-        data::validate_data_section(
-            wasm,
-            h,
-            &imported_global_types,
-            all_memories.len(),
-            &functions,
-        )
+        data::validate_data_section(wasm, h, &imported_global_types, &memories, &functions)
     })?
     .unwrap_or_default();
 

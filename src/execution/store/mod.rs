@@ -146,7 +146,7 @@ impl<'b, T: Config> Store<'b, T> {
             types: validation_info.types.clone(),
             func_addrs: ExtendedIdxVec::default(),
             table_addrs: ExtendedIdxVec::default(),
-            mem_addrs: Vec::new(),
+            mem_addrs: ExtendedIdxVec::default(),
             global_addrs: extern_vals.iter().globals().collect(),
             elem_addrs: Vec::new(),
             data_addrs: Vec::new(),
@@ -247,9 +247,9 @@ impl<'b, T: Config> Store<'b, T> {
             .iter_local_definitions()
             .map(|table_type| self.alloc_table(*table_type, Ref::Null(table_type.et)))
             .collect();
-        let mem_addrs: Vec<MemAddr> = module
+        let mem_addrs_local: Vec<MemAddr> = module
             .memories
-            .iter()
+            .iter_local_definitions()
             .map(|mem_type| self.alloc_mem(*mem_type))
             .collect();
         let global_addrs: Vec<GlobalAddr> = module
@@ -279,7 +279,7 @@ impl<'b, T: Config> Store<'b, T> {
 
         // allocation: skip step 14 as it was done in instantiation step 5
 
-        // allocation: step 15,16
+        // allocation: step 15
         let table_addrs = validation_info
             .tables
             .map(extern_vals.iter().tables().collect(), table_addrs_local)
@@ -291,8 +291,17 @@ impl<'b, T: Config> Store<'b, T> {
                 definitions and performing one-to-one mapping on each one.",
             );
 
-        let mut mem_addrs_mod: Vec<MemAddr> = extern_vals.iter().mems().collect();
-        mem_addrs_mod.extend(mem_addrs);
+        // allocation: step 16
+        let mem_addrs = validation_info
+            .memories
+            .map(extern_vals.iter().mems().collect(), mem_addrs_local)
+            .expect(
+                "that the number of imported and local memories always \
+            match the respective numbers in the validation info. Step 3 and 4 \
+            check if the number of imported memories is correct and the number \
+            of local memories is produced by iterating through all memory \
+            definitions and performing one-to-one mapping on each one.",
+            );
 
         // skipping step 17 partially as it was partially done in instantiation step
         self.modules
@@ -323,7 +332,15 @@ impl<'b, T: Config> Store<'b, T> {
                         let table_addr = unsafe { table_addrs.get(*table_idx) };
                         ExternVal::Table(*table_addr)
                     }
-                    ExportDesc::Mem(mem_idx) => ExternVal::Mem(mem_addrs_mod[*mem_idx]),
+                    ExportDesc::Mem(mem_idx) => {
+                        // SAFETY: Both the memory index and the memories
+                        // `ExtendedIdxVec` come from the same module instance.
+                        // Because all indices are valid in their specific
+                        // module instance, this is sound.
+                        let mem_addr = unsafe { mem_addrs.get(*mem_idx) };
+
+                        ExternVal::Mem(*mem_addr)
+                    }
                     ExportDesc::Global(global_idx) => {
                         ExternVal::Global(module_inst.global_addrs[*global_idx])
                     }
@@ -335,7 +352,7 @@ impl<'b, T: Config> Store<'b, T> {
         // allocation: step 20,21 initialize module (except functions and globals due to instantiation step 5, allocation step 14,17)
         let module_inst = self.modules.get_mut(module_addr);
         module_inst.table_addrs = table_addrs;
-        module_inst.mem_addrs = mem_addrs_mod;
+        module_inst.mem_addrs = mem_addrs;
         module_inst.elem_addrs = elem_addrs;
         module_inst.data_addrs = data_addrs;
         module_inst.exports = export_insts;
@@ -414,11 +431,6 @@ impl<'b, T: Config> Store<'b, T> {
                     offset: dinstr_i,
                 }) => {
                     let n = init.len() as u32;
-                    // assert: mem_idx is 0
-                    if *memory_idx != 0 {
-                        // TODO fix error
-                        return Err(RuntimeError::MoreThanOneMemory);
-                    }
 
                     // TODO (for now, we are doing hopefully what is equivalent to it)
                     // execute:
@@ -433,17 +445,24 @@ impl<'b, T: Config> Store<'b, T> {
                         .unwrap_validated(); // return value has the correct type
 
                     let s = 0;
-                    memory_init(
-                        &self.modules,
-                        &mut self.memories,
-                        &self.data,
-                        module_addr,
-                        i,
-                        0,
-                        n,
-                        s,
-                        d,
-                    )?;
+                    // SAFETY: The passed memory index comes from the validation
+                    // info, that was just used to allocate a new module
+                    // instance with address `module_addr` in `self.modules`.
+                    // Therefore, it must be safe to use to for accessing its
+                    // referenced memory.
+                    unsafe {
+                        memory_init(
+                            &self.modules,
+                            &mut self.memories,
+                            &self.data,
+                            module_addr,
+                            i,
+                            *memory_idx,
+                            n,
+                            s,
+                            d,
+                        )?
+                    };
                     data_drop(&self.modules, &mut self.data, module_addr, i)?;
                 }
                 crate::core::reader::types::data::DataMode::Passive => (),

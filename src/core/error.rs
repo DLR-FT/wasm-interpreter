@@ -4,7 +4,7 @@ use crate::RefType;
 use core::fmt::{Display, Formatter};
 use core::str::Utf8Error;
 
-use super::indices::{DataIdx, ElemIdx, FuncIdx, LabelIdx, LocalIdx, MemIdx};
+use super::indices::{DataIdx, ElemIdx, FuncIdx, LabelIdx, LocalIdx};
 use crate::core::reader::section_header::SectionTy;
 use crate::core::reader::types::ValType;
 
@@ -58,7 +58,7 @@ pub enum ValidationError {
     /// An index for a table is invalid.
     InvalidTableIdx(u32),
     /// An index for a memory is invalid.
-    InvalidMemIdx(MemIdx),
+    InvalidMemIdx(u32),
     /// An index for a global is invalid.
     InvalidGlobalIdx(GlobalIdx),
     /// An index for an element segment is invalid.

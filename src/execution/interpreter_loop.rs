@@ -19,7 +19,9 @@ use crate::{
     addrs::{AddrVec, DataAddr, ElemAddr, MemAddr, ModuleAddr, TableAddr},
     assert_validated::UnwrapValidatedExt,
     core::{
-        indices::{DataIdx, FuncIdx, GlobalIdx, LabelIdx, LocalIdx, TableIdx, TypeIdx},
+        indices::{
+            DataIdx, FuncIdx, GlobalIdx, Idx, LabelIdx, LocalIdx, MemIdx, TableIdx, TypeIdx,
+        },
         reader::{
             types::{memarg::MemArg, BlockType},
             WasmReader,
@@ -529,12 +531,9 @@ pub(super) fn run<T: Config>(
                 let memarg = MemArg::read(wasm).unwrap_validated();
                 let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
 
-                let mem_addr = *store
-                    .modules
-                    .get(current_module)
-                    .mem_addrs
-                    .first()
-                    .unwrap_validated();
+                let module = store.modules.get(current_module);
+                // SAFETY: Validation guarantees at least one memory to exist.
+                let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                 let mem_inst = store.memories.get(mem_addr);
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -548,12 +547,9 @@ pub(super) fn run<T: Config>(
                 let memarg = MemArg::read(wasm).unwrap_validated();
                 let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
 
-                let mem_addr = *store
-                    .modules
-                    .get(current_module)
-                    .mem_addrs
-                    .first()
-                    .unwrap_validated();
+                let module = store.modules.get(current_module);
+                // SAFETY: Validation guarantees at least one memory to exist.
+                let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                 let mem = store.memories.get(mem_addr);
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -567,12 +563,9 @@ pub(super) fn run<T: Config>(
                 let memarg = MemArg::read(wasm).unwrap_validated();
                 let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
 
-                let mem_addr = *store
-                    .modules
-                    .get(current_module)
-                    .mem_addrs
-                    .first()
-                    .unwrap_validated();
+                let module = store.modules.get(current_module);
+                // SAFETY: Validation guarantees at least one memory to exist.
+                let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                 let mem = store.memories.get(mem_addr);
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -586,12 +579,9 @@ pub(super) fn run<T: Config>(
                 let memarg = MemArg::read(wasm).unwrap_validated();
                 let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
 
-                let mem_addr = *store
-                    .modules
-                    .get(current_module)
-                    .mem_addrs
-                    .first()
-                    .unwrap_validated();
+                let module = store.modules.get(current_module);
+                // SAFETY: Validation guarantees at least one memory to exist.
+                let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                 let mem = store.memories.get(mem_addr);
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -605,12 +595,9 @@ pub(super) fn run<T: Config>(
                 let memarg = MemArg::read(wasm).unwrap_validated();
                 let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
 
-                let mem_addr = *store
-                    .modules
-                    .get(current_module)
-                    .mem_addrs
-                    .first()
-                    .unwrap_validated();
+                let module = store.modules.get(current_module);
+                // SAFETY: Validation guarantees at least one memory to exist.
+                let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                 let mem = store.memories.get(mem_addr);
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -624,12 +611,9 @@ pub(super) fn run<T: Config>(
                 let memarg = MemArg::read(wasm).unwrap_validated();
                 let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
 
-                let mem_addr = *store
-                    .modules
-                    .get(current_module)
-                    .mem_addrs
-                    .first()
-                    .unwrap_validated();
+                let module = store.modules.get(current_module);
+                // SAFETY: Validation guarantees at least one memory to exist.
+                let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                 let mem = store.memories.get(mem_addr);
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -643,12 +627,9 @@ pub(super) fn run<T: Config>(
                 let memarg = MemArg::read(wasm).unwrap_validated();
                 let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
 
-                let mem_addr = *store
-                    .modules
-                    .get(current_module)
-                    .mem_addrs
-                    .first()
-                    .unwrap_validated();
+                let module = store.modules.get(current_module);
+                // SAFETY: Validation guarantees at least one memory to exist.
+                let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                 let mem = store.memories.get(mem_addr);
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -662,12 +643,9 @@ pub(super) fn run<T: Config>(
                 let memarg = MemArg::read(wasm).unwrap_validated();
                 let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
 
-                let mem_addr = *store
-                    .modules
-                    .get(current_module)
-                    .mem_addrs
-                    .first()
-                    .unwrap_validated();
+                let module = store.modules.get(current_module);
+                // SAFETY: Validation guarantees at least one memory to exist.
+                let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                 let mem = store.memories.get(mem_addr);
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -681,12 +659,9 @@ pub(super) fn run<T: Config>(
                 let memarg = MemArg::read(wasm).unwrap_validated();
                 let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
 
-                let mem_addr = *store
-                    .modules
-                    .get(current_module)
-                    .mem_addrs
-                    .first()
-                    .unwrap_validated();
+                let module = store.modules.get(current_module);
+                // SAFETY: Validation guarantees at least one memory to exist.
+                let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                 let mem = store.memories.get(mem_addr);
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -700,12 +675,9 @@ pub(super) fn run<T: Config>(
                 let memarg = MemArg::read(wasm).unwrap_validated();
                 let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
 
-                let mem_addr = *store
-                    .modules
-                    .get(current_module)
-                    .mem_addrs
-                    .first()
-                    .unwrap_validated();
+                let module = store.modules.get(current_module);
+                // SAFETY: Validation guarantees at least one memory to exist.
+                let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                 let mem = store.memories.get(mem_addr);
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -719,12 +691,9 @@ pub(super) fn run<T: Config>(
                 let memarg = MemArg::read(wasm).unwrap_validated();
                 let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
 
-                let mem_addr = *store
-                    .modules
-                    .get(current_module)
-                    .mem_addrs
-                    .first()
-                    .unwrap_validated();
+                let module = store.modules.get(current_module);
+                // SAFETY: Validation guarantees at least one memory to exist.
+                let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                 let mem = store.memories.get(mem_addr);
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -738,12 +707,9 @@ pub(super) fn run<T: Config>(
                 let memarg = MemArg::read(wasm).unwrap_validated();
                 let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
 
-                let mem_addr = *store
-                    .modules
-                    .get(current_module)
-                    .mem_addrs
-                    .first()
-                    .unwrap_validated();
+                let module = store.modules.get(current_module);
+                // SAFETY: Validation guarantees at least one memory to exist.
+                let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                 let mem = store.memories.get(mem_addr);
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -757,12 +723,9 @@ pub(super) fn run<T: Config>(
                 let memarg = MemArg::read(wasm).unwrap_validated();
                 let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
 
-                let mem_addr = *store
-                    .modules
-                    .get(current_module)
-                    .mem_addrs
-                    .first()
-                    .unwrap_validated();
+                let module = store.modules.get(current_module);
+                // SAFETY: Validation guarantees at least one memory to exist.
+                let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                 let mem = store.memories.get(mem_addr);
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -776,12 +739,9 @@ pub(super) fn run<T: Config>(
                 let memarg = MemArg::read(wasm).unwrap_validated();
                 let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
 
-                let mem_addr = *store
-                    .modules
-                    .get(current_module)
-                    .mem_addrs
-                    .first()
-                    .unwrap_validated();
+                let module = store.modules.get(current_module);
+                // SAFETY: Validation guarantees at least one memory to exist.
+                let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                 let mem = store.memories.get(mem_addr);
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -797,12 +757,9 @@ pub(super) fn run<T: Config>(
                 let data_to_store: u32 = stack.pop_value().try_into().unwrap_validated();
                 let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
 
-                let mem_addr = *store
-                    .modules
-                    .get(current_module)
-                    .mem_addrs
-                    .first()
-                    .unwrap_validated();
+                let module = store.modules.get(current_module);
+                // SAFETY: Validation guarantees at least one memory to exist.
+                let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                 let mem = store.memories.get(mem_addr);
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -817,12 +774,9 @@ pub(super) fn run<T: Config>(
                 let data_to_store: u64 = stack.pop_value().try_into().unwrap_validated();
                 let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
 
-                let mem_addr = *store
-                    .modules
-                    .get(current_module)
-                    .mem_addrs
-                    .first()
-                    .unwrap_validated();
+                let module = store.modules.get(current_module);
+                // SAFETY: Validation guarantees at least one memory to exist.
+                let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                 let mem = store.memories.get(mem_addr);
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -837,12 +791,9 @@ pub(super) fn run<T: Config>(
                 let data_to_store: F32 = stack.pop_value().try_into().unwrap_validated();
                 let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
 
-                let mem_addr = *store
-                    .modules
-                    .get(current_module)
-                    .mem_addrs
-                    .first()
-                    .unwrap_validated();
+                let module = store.modules.get(current_module);
+                // SAFETY: Validation guarantees at least one memory to exist.
+                let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                 let mem = store.memories.get(mem_addr);
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -857,12 +808,9 @@ pub(super) fn run<T: Config>(
                 let data_to_store: F64 = stack.pop_value().try_into().unwrap_validated();
                 let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
 
-                let mem_addr = *store
-                    .modules
-                    .get(current_module)
-                    .mem_addrs
-                    .first()
-                    .unwrap_validated();
+                let module = store.modules.get(current_module);
+                // SAFETY: Validation guarantees at least one memory to exist.
+                let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                 let mem = store.memories.get(mem_addr);
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -879,12 +827,9 @@ pub(super) fn run<T: Config>(
 
                 let wrapped_data = data_to_store as i8;
 
-                let mem_addr = *store
-                    .modules
-                    .get(current_module)
-                    .mem_addrs
-                    .first()
-                    .unwrap_validated();
+                let module = store.modules.get(current_module);
+                // SAFETY: Validation guarantees at least one memory to exist.
+                let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                 let mem = store.memories.get(mem_addr);
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -901,12 +846,9 @@ pub(super) fn run<T: Config>(
 
                 let wrapped_data = data_to_store as i16;
 
-                let mem_addr = *store
-                    .modules
-                    .get(current_module)
-                    .mem_addrs
-                    .first()
-                    .unwrap_validated();
+                let module = store.modules.get(current_module);
+                // SAFETY: Validation guarantees at least one memory to exist.
+                let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                 let mem = store.memories.get(mem_addr);
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -923,12 +865,9 @@ pub(super) fn run<T: Config>(
 
                 let wrapped_data = data_to_store as i8;
 
-                let mem_addr = *store
-                    .modules
-                    .get(current_module)
-                    .mem_addrs
-                    .first()
-                    .unwrap_validated();
+                let module = store.modules.get(current_module);
+                // SAFETY: Validation guarantees at least one memory to exist.
+                let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                 let mem = store.memories.get(mem_addr);
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -945,12 +884,9 @@ pub(super) fn run<T: Config>(
 
                 let wrapped_data = data_to_store as i16;
 
-                let mem_addr = *store
-                    .modules
-                    .get(current_module)
-                    .mem_addrs
-                    .first()
-                    .unwrap_validated();
+                let module = store.modules.get(current_module);
+                // SAFETY: Validation guarantees at least one memory to exist.
+                let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                 let mem = store.memories.get(mem_addr);
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -967,12 +903,9 @@ pub(super) fn run<T: Config>(
 
                 let wrapped_data = data_to_store as i32;
 
-                let mem_addr = *store
-                    .modules
-                    .get(current_module)
-                    .mem_addrs
-                    .first()
-                    .unwrap_validated();
+                let module = store.modules.get(current_module);
+                // SAFETY: Validation guarantees at least one memory to exist.
+                let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                 let mem = store.memories.get(mem_addr);
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -982,27 +915,26 @@ pub(super) fn run<T: Config>(
             }
             MEMORY_SIZE => {
                 decrement_fuel!(T::get_flat_cost(MEMORY_SIZE));
-                let mem_idx = wasm.read_u8().unwrap_validated() as usize;
-                let mem_addr = *store
-                    .modules
-                    .get(current_module)
-                    .mem_addrs
-                    .get(mem_idx)
-                    .unwrap_validated();
+                // Note: This zero byte is reserved for the multiple memories
+                // proposal.
+                let _zero = wasm.read_u8().unwrap_validated();
+                let module = store.modules.get(current_module);
+                // SAFETY: Validation guarantees at least one memory to exist.
+                let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                 let mem = store.memories.get(mem_addr);
                 let size = mem.size() as u32;
                 stack.push_value::<T>(Value::I32(size))?;
                 trace!("Instruction: memory.size [] -> [{}]", size);
             }
             MEMORY_GROW => {
-                let mem_idx = wasm.read_u8().unwrap_validated() as usize;
-                let mem_addr = *store
-                    .modules
-                    .get(current_module)
-                    .mem_addrs
-                    .get(mem_idx)
-                    .unwrap_validated();
+                // Note: This zero byte is reserved for the multiple memories
+                // proposal.
+                let _zero = wasm.read_u8().unwrap_validated();
+                let module = store.modules.get(current_module);
+                // SAFETY: Validation guarantees at least one memory to exist.
+                let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                 let mem = store.memories.get_mut(mem_addr);
+
                 let sz: u32 = mem.size() as u32;
 
                 let n: u32 = stack.pop_value().try_into().unwrap_validated();
@@ -2496,7 +2428,10 @@ pub(super) fn run<T: Config>(
                         //      s => starting pointer in the data segment
                         //      d => destination address to copy to
                         let data_idx = wasm.read_var_u32().unwrap_validated() as DataIdx;
-                        let mem_idx = wasm.read_u8().unwrap_validated() as usize;
+
+                        // Note: This zero byte is reserved for the multiple memories
+                        // proposal.
+                        let _zero = wasm.read_u8().unwrap_validated();
 
                         let n: u32 = stack.pop_value().try_into().unwrap_validated();
                         // decrement fuel, but push n back if it fails
@@ -2517,17 +2452,21 @@ pub(super) fn run<T: Config>(
                         let s: u32 = stack.pop_value().try_into().unwrap_validated();
                         let d: u32 = stack.pop_value().try_into().unwrap_validated();
 
-                        memory_init(
-                            &store.modules,
-                            &mut store.memories,
-                            &store.data,
-                            current_module,
-                            data_idx,
-                            mem_idx,
-                            n,
-                            s,
-                            d,
-                        )?;
+                        // SAFETY: Validation guarantees a memory with index 0
+                        // to exist in the current module.
+                        unsafe {
+                            memory_init(
+                                &store.modules,
+                                &mut store.memories,
+                                &store.data,
+                                current_module,
+                                data_idx,
+                                MemIdx::new(0),
+                                n,
+                                s,
+                                d,
+                            )?
+                        };
                     }
                     DATA_DROP => {
                         decrement_fuel!(T::get_fc_extension_flat_cost(DATA_DROP));
@@ -2540,10 +2479,17 @@ pub(super) fn run<T: Config>(
                         //      n => number of bytes to copy
                         //      s => source address to copy from
                         //      d => destination address to copy to
-                        let (dst_idx, src_idx) = (
-                            wasm.read_u8().unwrap_validated() as usize,
-                            wasm.read_u8().unwrap_validated() as usize,
-                        );
+                        // Note: These zero bytes are reserved for the multiple
+                        // memories proposal.
+                        let _zero = wasm.read_u8().unwrap_validated();
+                        let _zero = wasm.read_u8().unwrap_validated();
+
+                        let module = store.modules.get(current_module);
+
+                        // SAFETY: Validation guarantees that a memory with index 0 exists.
+                        let src_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
+                        // SAFETY: Validation guarantees that a memory with index 0 exists.
+                        let dst_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
 
                         let n: u32 = stack.pop_value().try_into().unwrap_validated();
                         // decrement fuel, but push n back if it fails
@@ -2564,19 +2510,6 @@ pub(super) fn run<T: Config>(
                         let s: i32 = stack.pop_value().try_into().unwrap_validated();
                         let d: i32 = stack.pop_value().try_into().unwrap_validated();
 
-                        let src_addr = *store
-                            .modules
-                            .get(current_module)
-                            .mem_addrs
-                            .get(src_idx)
-                            .unwrap_validated();
-                        let dst_addr = *store
-                            .modules
-                            .get(current_module)
-                            .mem_addrs
-                            .get(dst_idx)
-                            .unwrap_validated();
-
                         let src_mem = store.memories.get(src_addr);
                         let dest_mem = store.memories.get(dst_addr);
 
@@ -2591,13 +2524,14 @@ pub(super) fn run<T: Config>(
                         //      n => number of bytes to update
                         //      val => the value to set each byte to (must be < 256)
                         //      d => the pointer to the region to update
-                        let mem_idx = wasm.read_u8().unwrap_validated() as usize;
-                        let mem_addr = *store
-                            .modules
-                            .get(current_module)
-                            .mem_addrs
-                            .get(mem_idx)
-                            .unwrap_validated();
+
+                        // Note: This zero byte is reserved for the multiple
+                        // memories proposal.
+                        let _zero = wasm.read_u8().unwrap_validated() as usize;
+
+                        let module = store.modules.get(current_module);
+                        // SAFETY: Validation guarantees at least one memory to exist.
+                        let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                         let mem = store.memories.get(mem_addr);
 
                         let n: u32 = stack.pop_value().try_into().unwrap_validated();
@@ -2983,12 +2917,10 @@ pub(super) fn run<T: Config>(
                     V128_LOAD => {
                         decrement_fuel!(T::get_fd_extension_flat_cost(V128_LOAD));
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let mem_addr = *store
-                            .modules
-                            .get(current_module)
-                            .mem_addrs
-                            .first()
-                            .unwrap_validated();
+                        let module = store.modules.get(current_module);
+                        // SAFETY: Validation guarantees there to be at least
+                        // one memory
+                        let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                         let memory = store.memories.get(mem_addr);
 
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
@@ -3000,12 +2932,9 @@ pub(super) fn run<T: Config>(
                     V128_STORE => {
                         decrement_fuel!(T::get_fd_extension_flat_cost(V128_STORE));
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let mem_addr = *store
-                            .modules
-                            .get(current_module)
-                            .mem_addrs
-                            .first()
-                            .unwrap_validated();
+                        let module = store.modules.get(current_module);
+                        // SAFETY: Validation guarantees at least one memory to exist.
+                        let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                         let memory = store.memories.get(mem_addr);
 
                         let data: [u8; 16] = stack.pop_value().try_into().unwrap_validated();
@@ -3019,12 +2948,9 @@ pub(super) fn run<T: Config>(
                     V128_LOAD8X8_S => {
                         decrement_fuel!(T::get_fd_extension_flat_cost(V128_LOAD8X8_S));
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let mem_addr = *store
-                            .modules
-                            .get(current_module)
-                            .mem_addrs
-                            .first()
-                            .unwrap_validated();
+                        let module = store.modules.get(current_module);
+                        // SAFETY: Validation guarantees at least one memory to exist.
+                        let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                         let memory = store.memories.get(mem_addr);
 
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
@@ -3044,12 +2970,9 @@ pub(super) fn run<T: Config>(
                     V128_LOAD8X8_U => {
                         decrement_fuel!(T::get_fd_extension_flat_cost(V128_LOAD8X8_U));
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let mem_addr = *store
-                            .modules
-                            .get(current_module)
-                            .mem_addrs
-                            .first()
-                            .unwrap_validated();
+                        let module = store.modules.get(current_module);
+                        // SAFETY: Validation guarantees at least one memory to exist.
+                        let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                         let memory = store.memories.get(mem_addr);
 
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
@@ -3069,12 +2992,9 @@ pub(super) fn run<T: Config>(
                     V128_LOAD16X4_S => {
                         decrement_fuel!(T::get_fd_extension_flat_cost(V128_LOAD16X4_S));
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let mem_addr = *store
-                            .modules
-                            .get(current_module)
-                            .mem_addrs
-                            .first()
-                            .unwrap_validated();
+                        let module = store.modules.get(current_module);
+                        // SAFETY: Validation guarantees at least one memory to exist.
+                        let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                         let memory = store.memories.get(mem_addr);
 
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
@@ -3094,12 +3014,9 @@ pub(super) fn run<T: Config>(
                     V128_LOAD16X4_U => {
                         decrement_fuel!(T::get_fd_extension_flat_cost(V128_LOAD16X4_U));
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let mem_addr = *store
-                            .modules
-                            .get(current_module)
-                            .mem_addrs
-                            .first()
-                            .unwrap_validated();
+                        let module = store.modules.get(current_module);
+                        // SAFETY: Validation guarantees at least one memory to exist.
+                        let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                         let memory = store.memories.get(mem_addr);
 
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
@@ -3119,12 +3036,9 @@ pub(super) fn run<T: Config>(
                     V128_LOAD32X2_S => {
                         decrement_fuel!(T::get_fd_extension_flat_cost(V128_LOAD32X2_S));
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let mem_addr = *store
-                            .modules
-                            .get(current_module)
-                            .mem_addrs
-                            .first()
-                            .unwrap_validated();
+                        let module = store.modules.get(current_module);
+                        // SAFETY: Validation guarantees at least one memory to exist.
+                        let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                         let memory = store.memories.get(mem_addr);
 
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
@@ -3144,12 +3058,9 @@ pub(super) fn run<T: Config>(
                     V128_LOAD32X2_U => {
                         decrement_fuel!(T::get_fd_extension_flat_cost(V128_LOAD32X2_U));
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let mem_addr = *store
-                            .modules
-                            .get(current_module)
-                            .mem_addrs
-                            .first()
-                            .unwrap_validated();
+                        let module = store.modules.get(current_module);
+                        // SAFETY: Validation guarantees at least one memory to exist.
+                        let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                         let memory = store.memories.get(mem_addr);
 
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
@@ -3171,12 +3082,9 @@ pub(super) fn run<T: Config>(
                     V128_LOAD8_SPLAT => {
                         decrement_fuel!(T::get_fd_extension_flat_cost(V128_LOAD8_SPLAT));
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let mem_addr = *store
-                            .modules
-                            .get(current_module)
-                            .mem_addrs
-                            .first()
-                            .unwrap_validated();
+                        let module = store.modules.get(current_module);
+                        // SAFETY: Validation guarantees at least one memory to exist.
+                        let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                         let memory = store.memories.get(mem_addr);
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -3187,12 +3095,9 @@ pub(super) fn run<T: Config>(
                     V128_LOAD16_SPLAT => {
                         decrement_fuel!(T::get_fd_extension_flat_cost(V128_LOAD16_SPLAT));
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let mem_addr = *store
-                            .modules
-                            .get(current_module)
-                            .mem_addrs
-                            .first()
-                            .unwrap_validated();
+                        let module = store.modules.get(current_module);
+                        // SAFETY: Validation guarantees at least one memory to exist.
+                        let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                         let memory = store.memories.get(mem_addr);
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -3203,12 +3108,9 @@ pub(super) fn run<T: Config>(
                     V128_LOAD32_SPLAT => {
                         decrement_fuel!(T::get_fd_extension_flat_cost(V128_LOAD32_SPLAT));
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let mem_addr = *store
-                            .modules
-                            .get(current_module)
-                            .mem_addrs
-                            .first()
-                            .unwrap_validated();
+                        let module = store.modules.get(current_module);
+                        // SAFETY: Validation guarantees at least one memory to exist.
+                        let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                         let memory = store.memories.get(mem_addr);
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -3219,12 +3121,9 @@ pub(super) fn run<T: Config>(
                     V128_LOAD64_SPLAT => {
                         decrement_fuel!(T::get_fd_extension_flat_cost(V128_LOAD64_SPLAT));
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let mem_addr = *store
-                            .modules
-                            .get(current_module)
-                            .mem_addrs
-                            .first()
-                            .unwrap_validated();
+                        let module = store.modules.get(current_module);
+                        // SAFETY: Validation guarantees at least one memory to exist.
+                        let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                         let memory = store.memories.get(mem_addr);
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -3237,12 +3136,10 @@ pub(super) fn run<T: Config>(
                     V128_LOAD32_ZERO => {
                         decrement_fuel!(T::get_fd_extension_flat_cost(V128_LOAD32_ZERO));
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let mem_addr = *store
-                            .modules
-                            .get(current_module)
-                            .mem_addrs
-                            .first()
-                            .unwrap_validated();
+
+                        let module = store.modules.get(current_module);
+                        // SAFETY: Validation guarantees at least one memory to exist.
+                        let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                         let memory = store.memories.get(mem_addr);
 
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
@@ -3254,12 +3151,9 @@ pub(super) fn run<T: Config>(
                     V128_LOAD64_ZERO => {
                         decrement_fuel!(T::get_fd_extension_flat_cost(V128_LOAD64_ZERO));
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let mem_addr = *store
-                            .modules
-                            .get(current_module)
-                            .mem_addrs
-                            .first()
-                            .unwrap_validated();
+                        let module = store.modules.get(current_module);
+                        // SAFETY: Validation guarantees at least one memory to exist.
+                        let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                         let memory = store.memories.get(mem_addr);
 
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
@@ -3275,12 +3169,9 @@ pub(super) fn run<T: Config>(
                         let data: [u8; 16] = stack.pop_value().try_into().unwrap_validated();
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let mem_addr = *store
-                            .modules
-                            .get(current_module)
-                            .mem_addrs
-                            .first()
-                            .unwrap_validated();
+                        let module = store.modules.get(current_module);
+                        // SAFETY: Validation guarantees at least one memory to exist.
+                        let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                         let memory = store.memories.get(mem_addr);
                         let idx = calculate_mem_address(&memarg, relative_address)?;
                         let lane_idx = wasm.read_u8().unwrap_validated() as usize;
@@ -3295,12 +3186,9 @@ pub(super) fn run<T: Config>(
                         let data: [u8; 16] = stack.pop_value().try_into().unwrap_validated();
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let mem_addr = *store
-                            .modules
-                            .get(current_module)
-                            .mem_addrs
-                            .first()
-                            .unwrap_validated();
+                        let module = store.modules.get(current_module);
+                        // SAFETY: Validation guarantees at least one memory to exist.
+                        let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                         let memory = store.memories.get(mem_addr);
                         let idx = calculate_mem_address(&memarg, relative_address)?;
                         let lane_idx = wasm.read_u8().unwrap_validated() as usize;
@@ -3314,12 +3202,9 @@ pub(super) fn run<T: Config>(
                         let data: [u8; 16] = stack.pop_value().try_into().unwrap_validated();
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let mem_addr = *store
-                            .modules
-                            .get(current_module)
-                            .mem_addrs
-                            .first()
-                            .unwrap_validated();
+                        let module = store.modules.get(current_module);
+                        // SAFETY: Validation guarantees at least one memory to exist.
+                        let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                         let memory = store.memories.get(mem_addr);
                         let idx = calculate_mem_address(&memarg, relative_address)?;
                         let lane_idx = wasm.read_u8().unwrap_validated() as usize;
@@ -3333,12 +3218,9 @@ pub(super) fn run<T: Config>(
                         let data: [u8; 16] = stack.pop_value().try_into().unwrap_validated();
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let mem_addr = *store
-                            .modules
-                            .get(current_module)
-                            .mem_addrs
-                            .first()
-                            .unwrap_validated();
+                        let module = store.modules.get(current_module);
+                        // SAFETY: Validation guarantees at least one memory to exist.
+                        let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                         let memory = store.memories.get(mem_addr);
                         let idx = calculate_mem_address(&memarg, relative_address)?;
                         let lane_idx = wasm.read_u8().unwrap_validated() as usize;
@@ -3354,12 +3236,9 @@ pub(super) fn run<T: Config>(
                         let data: [u8; 16] = stack.pop_value().try_into().unwrap_validated();
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let mem_addr = *store
-                            .modules
-                            .get(current_module)
-                            .mem_addrs
-                            .first()
-                            .unwrap_validated();
+                        let module = store.modules.get(current_module);
+                        // SAFETY: Validation guarantees at least one memory to exist.
+                        let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                         let memory = store.memories.get(mem_addr);
                         let idx = calculate_mem_address(&memarg, relative_address)?;
                         let lane_idx = wasm.read_u8().unwrap_validated() as usize;
@@ -3373,12 +3252,9 @@ pub(super) fn run<T: Config>(
                         let data: [u8; 16] = stack.pop_value().try_into().unwrap_validated();
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let mem_addr = *store
-                            .modules
-                            .get(current_module)
-                            .mem_addrs
-                            .first()
-                            .unwrap_validated();
+                        let module = store.modules.get(current_module);
+                        // SAFETY: Validation guarantees at least one memory to exist.
+                        let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                         let memory = store.memories.get(mem_addr);
                         let idx = calculate_mem_address(&memarg, relative_address)?;
                         let lane_idx = wasm.read_u8().unwrap_validated() as usize;
@@ -3392,12 +3268,9 @@ pub(super) fn run<T: Config>(
                         let data: [u8; 16] = stack.pop_value().try_into().unwrap_validated();
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let mem_addr = *store
-                            .modules
-                            .get(current_module)
-                            .mem_addrs
-                            .first()
-                            .unwrap_validated();
+                        let module = store.modules.get(current_module);
+                        // SAFETY: Validation guarantees at least one memory to exist.
+                        let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                         let memory = store.memories.get(mem_addr);
                         let idx = calculate_mem_address(&memarg, relative_address)?;
                         let lane_idx = wasm.read_u8().unwrap_validated() as usize;
@@ -3411,12 +3284,9 @@ pub(super) fn run<T: Config>(
                         let data: [u8; 16] = stack.pop_value().try_into().unwrap_validated();
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let mem_addr = *store
-                            .modules
-                            .get(current_module)
-                            .mem_addrs
-                            .first()
-                            .unwrap_validated();
+                        let module = store.modules.get(current_module);
+                        // SAFETY: Validation guarantees at least one memory to exist.
+                        let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                         let memory = store.memories.get(mem_addr);
                         let idx = calculate_mem_address(&memarg, relative_address)?;
                         let lane_idx = wasm.read_u8().unwrap_validated() as usize;
@@ -5705,15 +5575,19 @@ pub(super) fn elem_drop(
     Ok(())
 }
 
+/// # Safety
+///
+/// The caller must ensure that the given memory index is valid in
+/// `store_modules.get(current_module).mem_addrs`.
 #[inline(always)]
 #[allow(clippy::too_many_arguments)]
-pub(super) fn memory_init(
+pub(super) unsafe fn memory_init(
     store_modules: &AddrVec<ModuleAddr, ModuleInst>,
     store_memories: &mut AddrVec<MemAddr, MemInst>,
     store_data: &AddrVec<DataAddr, DataInst>,
     current_module: ModuleAddr,
     data_idx: usize,
-    mem_idx: usize,
+    mem_idx: MemIdx,
     n: u32,
     s: u32,
     d: u32,
@@ -5722,18 +5596,15 @@ pub(super) fn memory_init(
     let s = usize::try_from(s).expect("pointer width to be at least 32 bits wide");
     let d = usize::try_from(d).expect("pointer width to be at least 32 bits wide");
 
-    let mem_addr = *store_modules
-        .get(current_module)
-        .mem_addrs
-        .get(mem_idx)
-        .unwrap_validated();
+    let current_module = store_modules.get(current_module);
+    // SAFETY: The caller ensures that `mem_idx` is valid for this specific
+    // `ExtendedIdxVec`.
+    let mem_addr = *unsafe { current_module.mem_addrs.get(mem_idx) };
     let mem = store_memories.get(mem_addr);
 
     mem.mem.init(
         d,
-        &store_data
-            .get(store_modules.get(current_module).data_addrs[data_idx])
-            .data,
+        &store_data.get(current_module.data_addrs[data_idx]).data,
         s,
         n,
     )?;

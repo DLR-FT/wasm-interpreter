@@ -461,7 +461,63 @@ impl TableIdx {
     }
 }
 
-pub type MemIdx = usize;
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct MemIdx(u32);
+
+impl core::fmt::Display for MemIdx {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "memory index {}", self.0)
+    }
+}
+
+impl Idx for MemIdx {
+    fn new(index: u32) -> Self {
+        Self(index)
+    }
+
+    fn into_inner(self) -> u32 {
+        self.0
+    }
+}
+
+impl MemIdx {
+    /// Validates that a given index is a valid memory index.
+    ///
+    /// On success a new [`MemIdx`] is returned, otherwise a [`ValidationError`]
+    /// is returned.
+    pub fn validate<T>(
+        index: u32,
+        c_mems: &ExtendedIdxVec<MemIdx, T>,
+    ) -> Result<Self, ValidationError> {
+        c_mems
+            .validate_index(index)
+            .ok_or(ValidationError::InvalidMemIdx(index))
+    }
+
+    /// Reads a memory index from Wasm code and validates that it is a valid
+    /// index for a given memories vector.
+    pub fn read_and_validate<T>(
+        wasm: &mut WasmReader,
+        c_mems: &ExtendedIdxVec<MemIdx, T>,
+    ) -> Result<Self, ValidationError> {
+        let index = wasm.read_var_u32()?;
+        Self::validate(index, c_mems)
+    }
+
+    /// Reads a memory index from Wasm code without validating it.
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure that there is a valid memory index in the
+    /// [`WasmReader`] and that this index is valid for a specific [`ExtendedIdxVec`]
+    /// through [`Self::read_and_validate`].
+    #[allow(unused)] // reason = "unused until multiple memories proposal is implemented"
+    pub unsafe fn read_unchecked(wasm: &mut WasmReader) -> Self {
+        let index = wasm.read_var_u32().unwrap();
+        Self::new(index)
+    }
+}
+
 pub type GlobalIdx = usize;
 #[allow(dead_code)]
 pub type ElemIdx = usize;
