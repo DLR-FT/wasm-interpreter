@@ -2503,8 +2503,8 @@ pub(super) fn run<T: Config>(
                             }
                         }
 
-                        let s: i32 = stack.pop_value().try_into().unwrap_validated();
-                        let d: i32 = stack.pop_value().try_into().unwrap_validated();
+                        let s: u32 = stack.pop_value().try_into().unwrap_validated();
+                        let d: u32 = stack.pop_value().try_into().unwrap_validated();
 
                         memory_init(
                             &store.modules,
@@ -5705,8 +5705,8 @@ pub(super) fn memory_init(
     data_idx: usize,
     mem_idx: usize,
     n: u32,
-    s: i32,
-    d: i32,
+    s: u32,
+    d: u32,
 ) -> Result<(), RuntimeError> {
     let mem_addr = *store_modules
         .get(current_module)

@@ -394,7 +394,7 @@ impl<'b, T: Config> Store<'b, T> {
                     //   i32.const n
                     //   memory.init i
                     //   data.drop i
-                    let d: i32 = run_const_span(validation_info.wasm, dinstr_i, module_addr, self)?
+                    let d: u32 = run_const_span(validation_info.wasm, dinstr_i, module_addr, self)?
                         .unwrap_validated() // there is a return value
                         .try_into()
                         .unwrap_validated(); // return value has the correct type
