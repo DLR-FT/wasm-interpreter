@@ -567,7 +567,7 @@ fn read_instructions(
             }
             I32_LOAD => {
                 if memories.is_empty() {
-                    return Err(ValidationError::InvalidMemIndex(0));
+                    return Err(ValidationError::InvalidMemIdx(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 2 {
@@ -581,7 +581,7 @@ fn read_instructions(
             }
             I64_LOAD => {
                 if memories.is_empty() {
-                    return Err(ValidationError::InvalidMemIndex(0));
+                    return Err(ValidationError::InvalidMemIdx(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 3 {
@@ -595,7 +595,7 @@ fn read_instructions(
             }
             F32_LOAD => {
                 if memories.is_empty() {
-                    return Err(ValidationError::InvalidMemIndex(0));
+                    return Err(ValidationError::InvalidMemIdx(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 2 {
@@ -609,7 +609,7 @@ fn read_instructions(
             }
             F64_LOAD => {
                 if memories.is_empty() {
-                    return Err(ValidationError::InvalidMemIndex(0));
+                    return Err(ValidationError::InvalidMemIdx(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 3 {
@@ -623,7 +623,7 @@ fn read_instructions(
             }
             I32_LOAD8_S => {
                 if memories.is_empty() {
-                    return Err(ValidationError::InvalidMemIndex(0));
+                    return Err(ValidationError::InvalidMemIdx(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 0 {
@@ -637,7 +637,7 @@ fn read_instructions(
             }
             I32_LOAD8_U => {
                 if memories.is_empty() {
-                    return Err(ValidationError::InvalidMemIndex(0));
+                    return Err(ValidationError::InvalidMemIdx(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 0 {
@@ -651,7 +651,7 @@ fn read_instructions(
             }
             I32_LOAD16_S => {
                 if memories.is_empty() {
-                    return Err(ValidationError::InvalidMemIndex(0));
+                    return Err(ValidationError::InvalidMemIdx(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 1 {
@@ -665,7 +665,7 @@ fn read_instructions(
             }
             I32_LOAD16_U => {
                 if memories.is_empty() {
-                    return Err(ValidationError::InvalidMemIndex(0));
+                    return Err(ValidationError::InvalidMemIdx(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 1 {
@@ -679,7 +679,7 @@ fn read_instructions(
             }
             I64_LOAD8_S => {
                 if memories.is_empty() {
-                    return Err(ValidationError::InvalidMemIndex(0));
+                    return Err(ValidationError::InvalidMemIdx(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 0 {
@@ -693,7 +693,7 @@ fn read_instructions(
             }
             I64_LOAD8_U => {
                 if memories.is_empty() {
-                    return Err(ValidationError::InvalidMemIndex(0));
+                    return Err(ValidationError::InvalidMemIdx(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 0 {
@@ -707,7 +707,7 @@ fn read_instructions(
             }
             I64_LOAD16_S => {
                 if memories.is_empty() {
-                    return Err(ValidationError::InvalidMemIndex(0));
+                    return Err(ValidationError::InvalidMemIdx(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 1 {
@@ -721,7 +721,7 @@ fn read_instructions(
             }
             I64_LOAD16_U => {
                 if memories.is_empty() {
-                    return Err(ValidationError::InvalidMemIndex(0));
+                    return Err(ValidationError::InvalidMemIdx(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 1 {
@@ -735,7 +735,7 @@ fn read_instructions(
             }
             I64_LOAD32_S => {
                 if memories.is_empty() {
-                    return Err(ValidationError::InvalidMemIndex(0));
+                    return Err(ValidationError::InvalidMemIdx(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 2 {
@@ -749,7 +749,7 @@ fn read_instructions(
             }
             I64_LOAD32_U => {
                 if memories.is_empty() {
-                    return Err(ValidationError::InvalidMemIndex(0));
+                    return Err(ValidationError::InvalidMemIdx(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 2 {
@@ -763,7 +763,7 @@ fn read_instructions(
             }
             I32_STORE => {
                 if memories.is_empty() {
-                    return Err(ValidationError::InvalidMemIndex(0));
+                    return Err(ValidationError::InvalidMemIdx(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 2 {
@@ -777,7 +777,7 @@ fn read_instructions(
             }
             I64_STORE => {
                 if memories.is_empty() {
-                    return Err(ValidationError::InvalidMemIndex(0));
+                    return Err(ValidationError::InvalidMemIdx(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 3 {
@@ -791,7 +791,7 @@ fn read_instructions(
             }
             F32_STORE => {
                 if memories.is_empty() {
-                    return Err(ValidationError::InvalidMemIndex(0));
+                    return Err(ValidationError::InvalidMemIdx(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 2 {
@@ -805,7 +805,7 @@ fn read_instructions(
             }
             F64_STORE => {
                 if memories.is_empty() {
-                    return Err(ValidationError::InvalidMemIndex(0));
+                    return Err(ValidationError::InvalidMemIdx(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 3 {
@@ -819,7 +819,7 @@ fn read_instructions(
             }
             I32_STORE8 => {
                 if memories.is_empty() {
-                    return Err(ValidationError::InvalidMemIndex(0));
+                    return Err(ValidationError::InvalidMemIdx(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 0 {
@@ -833,7 +833,7 @@ fn read_instructions(
             }
             I32_STORE16 => {
                 if memories.is_empty() {
-                    return Err(ValidationError::InvalidMemIndex(0));
+                    return Err(ValidationError::InvalidMemIdx(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 1 {
@@ -847,7 +847,7 @@ fn read_instructions(
             }
             I64_STORE8 => {
                 if memories.is_empty() {
-                    return Err(ValidationError::InvalidMemIndex(0));
+                    return Err(ValidationError::InvalidMemIdx(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 0 {
@@ -861,7 +861,7 @@ fn read_instructions(
             }
             I64_STORE16 => {
                 if memories.is_empty() {
-                    return Err(ValidationError::InvalidMemIndex(0));
+                    return Err(ValidationError::InvalidMemIdx(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 1 {
@@ -875,7 +875,7 @@ fn read_instructions(
             }
             I64_STORE32 => {
                 if memories.is_empty() {
-                    return Err(ValidationError::InvalidMemIndex(0));
+                    return Err(ValidationError::InvalidMemIdx(0));
                 }
                 let memarg = MemArg::read(wasm)?;
                 if memarg.align > 2 {
@@ -893,7 +893,7 @@ fn read_instructions(
                     return Err(ValidationError::UnsupportedMultipleMemoriesProposal);
                 }
                 if memories.len() <= mem_idx {
-                    return Err(ValidationError::InvalidMemIndex(mem_idx));
+                    return Err(ValidationError::InvalidMemIdx(mem_idx));
                 }
                 stack.push_valtype(ValType::NumType(NumType::I32));
             }
@@ -903,7 +903,7 @@ fn read_instructions(
                     return Err(ValidationError::UnsupportedMultipleMemoriesProposal);
                 }
                 if memories.len() <= mem_idx {
-                    return Err(ValidationError::InvalidMemIndex(mem_idx));
+                    return Err(ValidationError::InvalidMemIdx(mem_idx));
                 }
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 stack.push_valtype(ValType::NumType(NumType::I32));
@@ -1173,7 +1173,7 @@ fn read_instructions(
                             return Err(ValidationError::UnsupportedMultipleMemoriesProposal);
                         }
                         if memories.len() <= mem_idx {
-                            return Err(ValidationError::InvalidMemIndex(mem_idx));
+                            return Err(ValidationError::InvalidMemIdx(mem_idx));
                         }
                         if data_count.unwrap_or(0) as usize <= data_idx {
                             return Err(ValidationError::InvalidDataIdx(data_idx));
@@ -1194,7 +1194,7 @@ fn read_instructions(
                             return Err(ValidationError::UnsupportedMultipleMemoriesProposal);
                         }
                         if memories.is_empty() {
-                            return Err(ValidationError::InvalidMemIndex(0));
+                            return Err(ValidationError::InvalidMemIdx(0));
                         }
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
@@ -1206,7 +1206,7 @@ fn read_instructions(
                             return Err(ValidationError::UnsupportedMultipleMemoriesProposal);
                         }
                         if memories.len() <= mem_idx {
-                            return Err(ValidationError::InvalidMemIndex(mem_idx));
+                            return Err(ValidationError::InvalidMemIdx(mem_idx));
                         }
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
@@ -1363,7 +1363,7 @@ fn read_instructions(
                 match second_instr {
                     V128_LOAD => {
                         if memories.is_empty() {
-                            return Err(ValidationError::InvalidMemIndex(0));
+                            return Err(ValidationError::InvalidMemIdx(0));
                         }
                         let memarg = MemArg::read(wasm)?;
                         if memarg.align > 4 {
@@ -1377,7 +1377,7 @@ fn read_instructions(
                     }
                     V128_STORE => {
                         if memories.is_empty() {
-                            return Err(ValidationError::InvalidMemIndex(0));
+                            return Err(ValidationError::InvalidMemIdx(0));
                         }
                         let memarg = MemArg::read(wasm)?;
                         if memarg.align > 4 {
@@ -1393,7 +1393,7 @@ fn read_instructions(
                     | V128_LOAD32X2_S | V128_LOAD32X2_U
                     => {
                         if memories.is_empty() {
-                            return Err(ValidationError::InvalidMemIndex(0));
+                            return Err(ValidationError::InvalidMemIdx(0));
                         }
                         let memarg = MemArg::read(wasm)?;
                         if memarg.align > 3 {
@@ -1406,7 +1406,7 @@ fn read_instructions(
                     // v128.loadN_splat + v128.loadN_zero
                     V128_LOAD8_SPLAT => {
                         if memories.is_empty() {
-                            return Err(ValidationError::InvalidMemIndex(0));
+                            return Err(ValidationError::InvalidMemIdx(0));
                         }
                         let memarg = MemArg::read(wasm)?;
                         if memarg.align > 0 {
@@ -1417,7 +1417,7 @@ fn read_instructions(
                     }
                     V128_LOAD16_SPLAT => {
                         if memories.is_empty() {
-                            return Err(ValidationError::InvalidMemIndex(0));
+                            return Err(ValidationError::InvalidMemIdx(0));
                         }
                         let memarg = MemArg::read(wasm)?;
                         if memarg.align > 1 {
@@ -1428,7 +1428,7 @@ fn read_instructions(
                     }
                     V128_LOAD32_SPLAT | V128_LOAD32_ZERO => {
                         if memories.is_empty() {
-                            return Err(ValidationError::InvalidMemIndex(0));
+                            return Err(ValidationError::InvalidMemIdx(0));
                         }
                         let memarg = MemArg::read(wasm)?;
                         if memarg.align > 2 {
@@ -1439,7 +1439,7 @@ fn read_instructions(
                     }
                     V128_LOAD64_SPLAT | V128_LOAD64_ZERO => {
                         if memories.is_empty() {
-                            return Err(ValidationError::InvalidMemIndex(0));
+                            return Err(ValidationError::InvalidMemIdx(0));
                         }
                         let memarg = MemArg::read(wasm)?;
                         if memarg.align > 3 {
@@ -1457,7 +1457,7 @@ fn read_instructions(
                             return Err(ValidationError::InvalidLaneIdx(lane_idx));
                         }
                         if memories.is_empty() {
-                            return Err(ValidationError::InvalidMemIndex(0));
+                            return Err(ValidationError::InvalidMemIdx(0));
                         }
                         if memarg.align > 0 {
                             return Err(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: 0 });
@@ -1473,7 +1473,7 @@ fn read_instructions(
                             return Err(ValidationError::InvalidLaneIdx(lane_idx));
                         }
                         if memories.is_empty() {
-                            return Err(ValidationError::InvalidMemIndex(0));
+                            return Err(ValidationError::InvalidMemIdx(0));
                         }
                         if memarg.align > 1 {
                             return Err(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: 1 });
@@ -1489,7 +1489,7 @@ fn read_instructions(
                             return Err(ValidationError::InvalidLaneIdx(lane_idx));
                         }
                         if memories.is_empty() {
-                            return Err(ValidationError::InvalidMemIndex(0));
+                            return Err(ValidationError::InvalidMemIdx(0));
                         }
                         if memarg.align > 2 {
                             return Err(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: 2 });
@@ -1505,7 +1505,7 @@ fn read_instructions(
                             return Err(ValidationError::InvalidLaneIdx(lane_idx));
                         }
                         if memories.is_empty() {
-                            return Err(ValidationError::InvalidMemIndex(0));
+                            return Err(ValidationError::InvalidMemIdx(0));
                         }
                         if memarg.align > 3 {
                             return Err(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: 3 });
@@ -1523,7 +1523,7 @@ fn read_instructions(
                             return Err(ValidationError::InvalidLaneIdx(lane_idx));
                         }
                         if memories.is_empty() {
-                            return Err(ValidationError::InvalidMemIndex(0));
+                            return Err(ValidationError::InvalidMemIdx(0));
                         }
                         if memarg.align > 0 {
                             return Err(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: 0 });
@@ -1538,7 +1538,7 @@ fn read_instructions(
                             return Err(ValidationError::InvalidLaneIdx(lane_idx));
                         }
                         if memories.is_empty() {
-                            return Err(ValidationError::InvalidMemIndex(0));
+                            return Err(ValidationError::InvalidMemIdx(0));
                         }
                         if memarg.align > 1 {
                             return Err(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: 1 });
@@ -1553,7 +1553,7 @@ fn read_instructions(
                             return Err(ValidationError::InvalidLaneIdx(lane_idx));
                         }
                         if memories.is_empty() {
-                            return Err(ValidationError::InvalidMemIndex(0));
+                            return Err(ValidationError::InvalidMemIdx(0));
                         }
                         if memarg.align > 2 {
                             return Err(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: 2 });
@@ -1568,7 +1568,7 @@ fn read_instructions(
                             return Err(ValidationError::InvalidLaneIdx(lane_idx));
                         }
                         if memories.is_empty() {
-                            return Err(ValidationError::InvalidMemIndex(0));
+                            return Err(ValidationError::InvalidMemIdx(0));
                         }
                         if memarg.align > 3 {
                             return Err(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: 3 });

@@ -86,7 +86,7 @@ fn validate_exports(validation_info: &ValidationInfo) -> Result<(), ValidationEr
                 if validation_info.memories.len() + validation_info.imports_length.imported_memories
                     <= mem_idx
                 {
-                    return Err(ValidationError::InvalidMemIndex(mem_idx));
+                    return Err(ValidationError::InvalidMemIdx(mem_idx));
                 }
             }
             GlobalIdx(global_idx) => {
