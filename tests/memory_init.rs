@@ -345,7 +345,7 @@ fn memory_init_test_10() {
     let wasm_bytes = wat::parse_str(w).unwrap();
 
     let res = validate(&wasm_bytes);
-    assert_eq!(res.err(), Some(ValidationError::InvalidMemIndex(0)));
+    assert_eq!(res.err(), Some(ValidationError::InvalidMemIdx(0)));
 }
 
 #[test_log::test]

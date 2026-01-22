@@ -36,7 +36,7 @@ pub(super) fn validate_data_section(
                 trace!("Data section: active {{ memory 0, offset e }}");
 
                 if no_of_total_memories == 0 {
-                    return Err(ValidationError::InvalidMemIndex(0));
+                    return Err(ValidationError::InvalidMemIdx(0));
                 }
 
                 let mut valid_stack = ValidationStack::new();
@@ -75,7 +75,7 @@ pub(super) fn validate_data_section(
                 trace!("Data section: active {{ memory x, offset e }}");
                 let mem_idx = wasm.read_var_u32()? as MemIdx;
                 if mem_idx >= no_of_total_memories {
-                    return Err(crate::ValidationError::InvalidMemIndex(mem_idx));
+                    return Err(crate::ValidationError::InvalidMemIdx(mem_idx));
                 }
                 assert!(
                     mem_idx == 0,

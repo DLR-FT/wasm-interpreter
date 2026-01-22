@@ -59,7 +59,7 @@ pub enum ValidationError {
     /// An index for a table is invalid.
     InvalidTableIdx(TableIdx),
     /// An index for a memory is invalid.
-    InvalidMemIndex(MemIdx),
+    InvalidMemIdx(MemIdx),
     /// An index for a global is invalid.
     InvalidGlobalIdx(GlobalIdx),
     /// An index for an element segment is invalid.
@@ -172,7 +172,7 @@ impl Display for ValidationError {
             ValidationError::InvalidTypeIdx(idx) => write!(f, "The type index {idx} is invalid"),
             ValidationError::InvalidFuncIdx(idx) => write!(f, "The function index {idx} is invalid"),
             ValidationError::InvalidTableIdx(idx) => write!(f, "The table index {idx} is invalid"),
-            ValidationError::InvalidMemIndex(idx) => write!(f, "The memory index {idx} is invalid"),
+            ValidationError::InvalidMemIdx(idx) => write!(f, "The memory index {idx} is invalid"),
             ValidationError::InvalidGlobalIdx(idx) => write!(f, "The global index {idx} is invalid"),
             ValidationError::InvalidElemIdx(idx) => write!(f, "The element segment index {idx} is invalid"),
             ValidationError::InvalidDataIdx(idx) => write!(f, "The data segment index {idx} is invalid"),
