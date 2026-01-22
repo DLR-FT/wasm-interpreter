@@ -1,9 +1,9 @@
 // /// This macro defines index types. Currently (2024-06-10) all indices are [`u32`].
-// /// See <https://webassembly.github.io/spec/core/binary/modules.html#indices> for more information.
+// /// See <https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#indices%E2%91%A2> for more information.
 // macro_rules! def_idx_types {
 //     ($($name:ident),*) => {
 //         $(
-//             /// <https://webassembly.github.io/spec/core/binary/modules.html#indices>
+//             /// <https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#indices%E2%91%A2>
 //             pub type $name = usize;
 //         )*
 //     };

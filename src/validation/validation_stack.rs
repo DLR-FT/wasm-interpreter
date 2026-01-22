@@ -397,7 +397,7 @@ impl ValidationStack {
     }
 }
 
-/// corresponds to `opdtype` <https://webassembly.github.io/spec/core/valid/instructions.html#instructions>
+/// corresponds to `opdtype` <https://www.w3.org/TR/wasm-core/#instructions%E2%91%A2>
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ValidationStackEntry {
     Val(ValType),
@@ -405,7 +405,7 @@ pub enum ValidationStackEntry {
 }
 
 impl ValidationStackEntry {
-    /// corresponds to whether `(self, other)` is a member of "matches" (<=) relation defined in <https://webassembly.github.io/spec/core/valid/instructions.html#instructions>
+    /// corresponds to whether `(self, other)` is a member of "matches" (<=) relation defined in <https://www.w3.org/TR/wasm-core/#instructions%E2%91%A2>
     fn unifies_to(&self, other: &ValidationStackEntry) -> bool {
         match self {
             ValidationStackEntry::Bottom => true,

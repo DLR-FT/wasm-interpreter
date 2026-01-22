@@ -46,7 +46,7 @@ pub(crate) mod linear_memory;
 /// consists of the runtime representation of all instances of functions, tables, memories, and
 /// globals, element segments, and data segments that have been allocated during the life time of
 /// the abstract machine.
-/// <https://webassembly.github.io/spec/core/exec/runtime.html#store>
+/// <https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#store%E2%91%A0>
 pub struct Store<'b, T: Config> {
     pub(crate) functions: AddrVec<FuncAddr, FuncInst<T>>,
     pub(crate) tables: AddrVec<TableAddr, TableInst>,
@@ -157,7 +157,7 @@ impl<'b, T: Config> Store<'b, T> {
         let module_addr = self.modules.insert(module_inst);
 
         // TODO rewrite this part
-        // <https://webassembly.github.io/spec/core/exec/modules.html#functions>
+        // <https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#functions%E2%91%A6>
         let func_addrs: Vec<FuncAddr> = validation_info
             .functions
             .iter()
@@ -220,7 +220,7 @@ impl<'b, T: Config> Store<'b, T> {
         }
 
         // instantiation: step 11 - module allocation (except function allocation - which was made in step 5)
-        // https://webassembly.github.io/spec/core/exec/modules.html#alloc-module
+        // https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#modules%E2%91%A6
 
         // allocation: begin
 
@@ -481,7 +481,7 @@ impl<'b, T: Config> Store<'b, T> {
     /// Therefore, all "invalid" host functions (e.g. those which return incorrect return values)
     /// can cause the interpreter to panic or behave unexpectedly.
     ///
-    /// See: <https://webassembly.github.io/spec/core/exec/modules.html#host-functions>
+    /// See: <https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#host-functions%E2%91%A2>
     /// See: WebAssembly Specification 2.0 - 7.1.7 - func_alloc
     ///
     /// # Safety
@@ -888,7 +888,7 @@ impl<'b, T: Config> Store<'b, T> {
         Ok(())
     }
 
-    /// roughly matches <https://webassembly.github.io/spec/core/exec/modules.html#functions> with the addition of sidetable pointer to the input signature
+    /// roughly matches <https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#functions%E2%91%A6> with the addition of sidetable pointer to the input signature
     ///
     /// # Safety
     /// The caller has to guarantee that the given [`ModuleAddr`] came from the
@@ -924,7 +924,7 @@ impl<'b, T: Config> Store<'b, T> {
         self.functions.insert(func_inst)
     }
 
-    /// <https://webassembly.github.io/spec/core/exec/modules.html#tables>
+    /// <https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#tables%E2%91%A6>
     ///
     /// # Safety
     /// The caller has to guarantee that any [`FuncAddr`] or
@@ -939,7 +939,7 @@ impl<'b, T: Config> Store<'b, T> {
         self.tables.insert(table_inst)
     }
 
-    /// <https://webassembly.github.io/spec/core/exec/modules.html#memories>
+    /// <https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#memories%E2%91%A6>
     fn alloc_mem(&mut self, mem_type: MemType) -> MemAddr {
         let mem_inst = MemInst {
             ty: mem_type,
@@ -951,7 +951,7 @@ impl<'b, T: Config> Store<'b, T> {
         self.memories.insert(mem_inst)
     }
 
-    /// <https://webassembly.github.io/spec/core/exec/modules.html#globals>
+    /// <https://www.w3.org/TR/2025/CRD-wasm-core-2-20250616/#globals%E2%91%A6>
     ///
     /// # Safety
     /// The caller has to guarantee that any [`FuncAddr`] or
