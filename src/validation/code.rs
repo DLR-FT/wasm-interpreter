@@ -3,7 +3,9 @@ use core::iter;
 use alloc::collections::btree_set::BTreeSet;
 use alloc::vec::Vec;
 
-use crate::core::indices::{DataIdx, ExtendedIdxVec, FuncIdx, IdxVec, MemIdx, TableIdx, TypeIdx};
+use crate::core::indices::{
+    DataIdx, ExtendedIdxVec, FuncIdx, GlobalIdx, IdxVec, MemIdx, TableIdx, TypeIdx,
+};
 use crate::core::reader::section_header::{SectionHeader, SectionTy};
 use crate::core::reader::span::Span;
 use crate::core::reader::types::element::ElemType;
@@ -33,7 +35,7 @@ pub unsafe fn validate_code_section(
     section_header: SectionHeader,
     fn_types: &IdxVec<TypeIdx, FuncType>,
     c_funcs: &ExtendedIdxVec<FuncIdx, TypeIdx>,
-    globals: &[Global],
+    c_globals: &ExtendedIdxVec<GlobalIdx, Global>,
     c_mems: &ExtendedIdxVec<MemIdx, MemType>,
     data_count: &Option<u32>,
     c_tables: &ExtendedIdxVec<TableIdx, TableType>,
@@ -76,7 +78,7 @@ pub unsafe fn validate_code_section(
                 &mut stack,
                 sidetable,
                 &locals,
-                globals,
+                c_globals,
                 fn_types,
                 c_funcs.inner(),
                 c_mems,
@@ -220,7 +222,7 @@ unsafe fn read_instructions(
     stack: &mut ValidationStack,
     sidetable: &mut Sidetable,
     locals: &[ValType],
-    globals: &[Global],
+    c_globals: &IdxVec<GlobalIdx, Global>,
     fn_types: &IdxVec<TypeIdx, FuncType>,
     c_funcs: &ExtendedIdxVec<FuncIdx, TypeIdx>,
     c_mems: &ExtendedIdxVec<MemIdx, MemType>,
@@ -563,10 +565,10 @@ unsafe fn read_instructions(
             }
             // global.get [] -> [t]
             GLOBAL_GET => {
-                let global_idx = wasm.read_var_u32()?.into_usize();
-                let global = globals
-                    .get(global_idx)
-                    .ok_or(ValidationError::InvalidGlobalIdx(global_idx))?;
+                let global_idx = GlobalIdx::read_and_validate(wasm, c_globals)?;
+                // SAFETY: We just validated that this is a valid `TypeIdx` in
+                // this vector.
+                let global = unsafe { c_globals.get(global_idx) };
 
                 stack.push_valtype(global.ty.ty);
                 trace!(
@@ -578,10 +580,10 @@ unsafe fn read_instructions(
             }
             // global.set [t] -> []
             GLOBAL_SET => {
-                let global_idx = wasm.read_var_u32()?.into_usize();
-                let global = globals
-                    .get(global_idx)
-                    .ok_or(ValidationError::InvalidGlobalIdx(global_idx))?;
+                let global_idx = GlobalIdx::read_and_validate(wasm, c_globals)?;
+                // SAFETY: We just validated that this is a valid `TypeIdx` in
+                // this vector.
+                let global = unsafe { c_globals.get(global_idx) };
 
                 if !global.ty.is_mut {
                     return Err(ValidationError::MutationOfConstGlobal);
