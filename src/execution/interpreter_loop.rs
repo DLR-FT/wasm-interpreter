@@ -19,7 +19,7 @@ use crate::{
     addrs::{AddrVec, DataAddr, ElemAddr, MemAddr, ModuleAddr, TableAddr},
     assert_validated::UnwrapValidatedExt,
     core::{
-        indices::{ElemIdx, FuncIdx, GlobalIdx, Idx, MemIdx, TableIdx, TypeIdx},
+        indices::{DataIdx, ElemIdx, FuncIdx, GlobalIdx, Idx, MemIdx, TableIdx, TypeIdx},
         reader::{
             types::{memarg::MemArg, BlockType},
             WasmReader,
@@ -2441,7 +2441,9 @@ pub(super) fn run<T: Config>(
                         //      n => number of bytes to copy
                         //      s => starting pointer in the data segment
                         //      d => destination address to copy to
-                        let data_idx = wasm.read_var_u32().unwrap_validated().into_usize();
+                        // SAFETY: Validation guarantees there to be a valid
+                        // data index next.
+                        let data_idx = unsafe { DataIdx::read_unchecked(wasm) };
 
                         // Note: This zero byte is reserved for the multiple memories
                         // proposal.
@@ -2484,8 +2486,14 @@ pub(super) fn run<T: Config>(
                     }
                     DATA_DROP => {
                         decrement_fuel!(T::get_fc_extension_flat_cost(DATA_DROP));
-                        let data_idx = wasm.read_var_u32().unwrap_validated().into_usize();
-                        data_drop(&store.modules, &mut store.data, current_module, data_idx);
+                        // SAFETY: Validation guarantees there to be a valid
+                        // data index next.
+                        let data_idx = unsafe { DataIdx::read_unchecked(wasm) };
+                        // SAFETY: The passed data index is valid in the current
+                        // module, whose module address is also passed.
+                        unsafe {
+                            data_drop(&store.modules, &mut store.data, current_module, data_idx)
+                        };
                     }
                     // See https://webassembly.github.io/bulk-memory-operations/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-copy
                     MEMORY_COPY => {
@@ -5614,8 +5622,10 @@ pub(super) unsafe fn elem_drop(
 
 /// # Safety
 ///
-/// The caller must ensure that the given memory index is valid in
-/// `store_modules.get(current_module).mem_addrs`.
+/// - The caller must ensure that the given memory index is valid in
+///   `store_modules.get(current_module).mem_addrs`.
+/// - The caller must ensure that the given data index is alid in
+///   `store_modules.get(current_module).data_addrs`.
 #[inline(always)]
 #[allow(clippy::too_many_arguments)]
 pub(super) unsafe fn memory_init(
@@ -5623,7 +5633,7 @@ pub(super) unsafe fn memory_init(
     store_memories: &mut AddrVec<MemAddr, MemInst>,
     store_data: &AddrVec<DataAddr, DataInst>,
     current_module: ModuleAddr,
-    data_idx: usize,
+    data_idx: DataIdx,
     mem_idx: MemIdx,
     n: u32,
     s: u32,
@@ -5639,23 +5649,27 @@ pub(super) unsafe fn memory_init(
     let mem_addr = *unsafe { current_module.mem_addrs.get(mem_idx) };
     let mem = store_memories.get(mem_addr);
 
-    mem.mem.init(
-        d,
-        &store_data.get(current_module.data_addrs[data_idx]).data,
-        s,
-        n,
-    )?;
+    // SAFETY: The caller ensures that `data_idx` is valid for this specific
+    // `IdxVec`.
+    let data_addr = *unsafe { current_module.data_addrs.get(data_idx) };
+    let data = store_data.get(data_addr);
+
+    mem.mem.init(d, &data.data, s, n)?;
 
     trace!("Instruction: memory.init");
     Ok(())
 }
 
+/// # Safety
+///
+/// The caller must ensure that the given data index is alid in
+/// `store_modules.get(current_module).data_addrs`.
 #[inline(always)]
-pub(super) fn data_drop(
+pub(super) unsafe fn data_drop(
     store_modules: &AddrVec<ModuleAddr, ModuleInst>,
     store_data: &mut AddrVec<DataAddr, DataInst>,
     current_module: ModuleAddr,
-    data_idx: usize,
+    data_idx: DataIdx,
 ) {
     // Here is debatable
     // If we were to be on par with the spec we'd have to use a DataInst struct
@@ -5664,11 +5678,11 @@ pub(super) fn data_drop(
     // data segment is passive or active
 
     // Also, we should set data to null here (empty), which we do by clearing it
-    let data_addr = *store_modules
-        .get(current_module)
-        .data_addrs
-        .get(data_idx)
-        .unwrap_validated();
+    let module = store_modules.get(current_module);
+    // SAFETY: The caller ensures that `data_idx` is valid for this specific
+    // `IdxVec`.
+    let data_addr = *unsafe { module.data_addrs.get(data_idx) };
+
     store_data.get_mut(data_addr).data.clear();
 }
 
