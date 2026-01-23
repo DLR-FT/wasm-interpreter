@@ -4,7 +4,8 @@ use alloc::collections::btree_set::{self, BTreeSet};
 use alloc::vec::Vec;
 
 use crate::core::indices::{
-    ExtendedIdxVec, FuncIdx, GlobalIdx, IdxVec, IdxVecOverflowError, MemIdx, TableIdx, TypeIdx,
+    ElemIdx, ExtendedIdxVec, FuncIdx, GlobalIdx, IdxVec, IdxVecOverflowError, MemIdx, TableIdx,
+    TypeIdx,
 };
 use crate::core::reader::section_header::{SectionHeader, SectionTy};
 use crate::core::reader::span::Span;
@@ -42,6 +43,7 @@ pub struct ValidationInfo<'bytecode> {
     pub(crate) memories: ExtendedIdxVec<MemIdx, MemType>,
     pub(crate) globals: ExtendedIdxVec<GlobalIdx, Global>,
     pub(crate) exports: Vec<Export<'bytecode>>,
+    pub(crate) elements: IdxVec<ElemIdx, ElemType>,
     /// Each block contains the validated code section and the stp corresponding to
     /// the beginning of that code section
     pub(crate) func_blocks_stps: Vec<(Span, usize)>,
@@ -49,7 +51,6 @@ pub struct ValidationInfo<'bytecode> {
     pub(crate) data: Vec<DataSegment>,
     /// The start function which is automatically executed during instantiation
     pub(crate) start: Option<FuncIdx>,
-    pub(crate) elements: Vec<ElemType>,
     // pub(crate) exports_length: Exported,
 }
 
@@ -270,17 +271,17 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
-    let elements: Vec<ElemType> =
-        handle_section(&mut wasm, &mut header, SectionTy::Element, |wasm, _| {
-            ElemType::read_from_wasm(
-                wasm,
-                functions.inner(),
-                &mut validation_context_refs,
-                tables.inner(),
-                &imported_global_types,
-            )
-        })?
-        .unwrap_or_default();
+    let elements = handle_section(&mut wasm, &mut header, SectionTy::Element, |wasm, _| {
+        ElemType::read_and_validate(
+            wasm,
+            functions.inner(),
+            &mut validation_context_refs,
+            tables.inner(),
+            &imported_global_types,
+        )
+        .map(|elements| IdxVec::new(elements).expect("that index space creation never fails because the length of the elements vector is encoded as a 32-bit integer in the bytecode"))
+    })?
+    .unwrap_or_default();
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
