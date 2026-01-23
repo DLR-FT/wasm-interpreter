@@ -2,7 +2,7 @@ use alloc::{collections::btree_map::BTreeMap, string::String, vec, vec::Vec};
 
 use crate::{
     core::{
-        indices::{FuncIdx, GlobalIdx, IdxVec, MemIdx, TableIdx, TypeIdx},
+        indices::{ElemIdx, FuncIdx, GlobalIdx, IdxVec, MemIdx, TableIdx, TypeIdx},
         reader::{
             span::Span,
             types::{FuncType, MemType, TableType},
@@ -182,7 +182,7 @@ pub struct ModuleInst<'b> {
     pub table_addrs: IdxVec<TableIdx, TableAddr>,
     pub mem_addrs: IdxVec<MemIdx, MemAddr>,
     pub global_addrs: IdxVec<GlobalIdx, GlobalAddr>,
-    pub elem_addrs: Vec<ElemAddr>,
+    pub elem_addrs: IdxVec<ElemIdx, ElemAddr>,
     pub data_addrs: Vec<DataAddr>,
     ///<https://webassembly.github.io/spec/core/exec/runtime.html#export-instances>
     /// matches the list of ExportInst structs in the spec, however the spec never uses the name attribute
