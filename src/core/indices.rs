@@ -152,6 +152,12 @@ impl<I: Idx, T> IdxVec<I, T> {
             _phantom: PhantomData,
         })
     }
+
+    pub fn len(&self) -> u32 {
+        u32::try_from(self.inner.len()).expect(
+            "this to never be larger than u32::MAX, because this was checked for in Self::new",
+        )
+    }
 }
 
 /// Index space for definitions that consist of imports and locals.
@@ -653,6 +659,58 @@ impl ElemIdx {
     }
 }
 
-pub type DataIdx = usize;
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct DataIdx(u32);
+
+impl core::fmt::Display for DataIdx {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "data index {}", self.0)
+    }
+}
+
+impl Idx for DataIdx {
+    fn new(index: u32) -> Self {
+        Self(index)
+    }
+
+    fn into_inner(self) -> u32 {
+        self.0
+    }
+}
+
+impl DataIdx {
+    /// Validates that a given index is a valid data index.
+    ///
+    /// On success a new [`DataIdx`] is returned, otherwise a
+    /// [`ValidationError`] is returned.
+    pub fn validate(index: u32, data_count: u32) -> Result<Self, ValidationError> {
+        (index < data_count)
+            .then_some(Self(index))
+            .ok_or(ValidationError::InvalidDataIdx(index))
+    }
+
+    /// Reads a data index from Wasm code and validates that it is a valid
+    /// by comparing it to the total number of data segments.
+    pub fn read_and_validate(
+        wasm: &mut WasmReader,
+        data_count: u32,
+    ) -> Result<Self, ValidationError> {
+        let index = wasm.read_var_u32()?;
+        Self::validate(index, data_count)
+    }
+
+    /// Reads a data index from Wasm code without validating it.
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure that there is a valid data index in the
+    /// [`WasmReader`] and that this index is valid for a specific [`IdxVec`]
+    /// through [`Self::read_and_validate`] or [`Self::validate`].
+    pub unsafe fn read_unchecked(wasm: &mut WasmReader) -> Self {
+        let index = wasm.read_var_u32().unwrap();
+        Self::new(index)
+    }
+}
+
 pub type LocalIdx = usize;
 pub type LabelIdx = usize;

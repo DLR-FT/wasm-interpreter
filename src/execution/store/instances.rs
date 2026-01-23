@@ -2,7 +2,9 @@ use alloc::{collections::btree_map::BTreeMap, string::String, vec, vec::Vec};
 
 use crate::{
     core::{
-        indices::{ElemIdx, ExtendedIdxVec, FuncIdx, GlobalIdx, IdxVec, MemIdx, TableIdx, TypeIdx},
+        indices::{
+            DataIdx, ElemIdx, ExtendedIdxVec, FuncIdx, GlobalIdx, IdxVec, MemIdx, TableIdx, TypeIdx,
+        },
         reader::{
             span::Span,
             types::{FuncType, MemType, TableType},
@@ -182,7 +184,7 @@ pub struct ModuleInst<'b> {
     pub mem_addrs: ExtendedIdxVec<MemIdx, MemAddr>,
     pub global_addrs: ExtendedIdxVec<GlobalIdx, GlobalAddr>,
     pub elem_addrs: IdxVec<ElemIdx, ElemAddr>,
-    pub data_addrs: Vec<DataAddr>,
+    pub data_addrs: IdxVec<DataIdx, DataAddr>,
     ///<https://webassembly.github.io/spec/core/exec/runtime.html#export-instances>
     /// matches the list of ExportInst structs in the spec, however the spec never uses the name attribute
     /// except during linking, which is up to the embedder to implement.

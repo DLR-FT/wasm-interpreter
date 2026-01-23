@@ -3,7 +3,7 @@ use crate::RefType;
 use core::fmt::{Display, Formatter};
 use core::str::Utf8Error;
 
-use super::indices::{DataIdx, FuncIdx, LabelIdx, LocalIdx};
+use super::indices::{FuncIdx, LabelIdx, LocalIdx};
 use crate::core::reader::section_header::SectionTy;
 use crate::core::reader::types::ValType;
 
@@ -63,7 +63,7 @@ pub enum ValidationError {
     /// An index for an element segment is invalid.
     InvalidElemIdx(u32),
     /// An index for a data segment is invalid.
-    InvalidDataIdx(DataIdx),
+    InvalidDataIdx(u32),
     /// An index for a local is invalid.
     InvalidLocalIdx(LocalIdx),
     /// An index for a label is invalid.
