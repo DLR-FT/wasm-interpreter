@@ -36,7 +36,7 @@ pub unsafe fn validate_code_section(
     c_funcs: &ExtendedIdxVec<FuncIdx, TypeIdx>,
     c_globals: &ExtendedIdxVec<GlobalIdx, Global>,
     c_mems: &ExtendedIdxVec<MemIdx, MemType>,
-    data_count: &Option<u32>,
+    data_count: Option<u32>,
     c_tables: &ExtendedIdxVec<TableIdx, TableType>,
     c_elems: &IdxVec<ElemIdx, ElemType>,
     validation_context_refs: &BTreeSet<FuncIdx>,
@@ -225,7 +225,7 @@ unsafe fn read_instructions(
     fn_types: &IdxVec<TypeIdx, FuncType>,
     c_funcs: &ExtendedIdxVec<FuncIdx, TypeIdx>,
     c_mems: &ExtendedIdxVec<MemIdx, MemType>,
-    data_count: &Option<u32>,
+    data_count: Option<u32>,
     c_tables: &ExtendedIdxVec<TableIdx, TableType>,
     c_elems: &IdxVec<ElemIdx, ElemType>,
     validation_context_refs: &BTreeSet<FuncIdx>,
@@ -1164,9 +1164,10 @@ unsafe fn read_instructions(
                         stack.push_valtype(ValType::NumType(NumType::I64));
                     }
                     MEMORY_INIT => {
-                        let data_idx = wasm.read_var_u32()? as DataIdx;
-                        // TODO for multiple memory support: be careful with the
-                        // order of validation of both indices. see table.init
+                        let data_idx = DataIdx::read_and_validate(
+                            wasm,
+                            data_count.ok_or(ValidationError::MissingDataCountSection)?,
+                        );
                         // Note: This zero byte is reserved for the multiple
                         // memories proposal.
                         let zero = wasm.read_u8()?;
@@ -1176,23 +1177,18 @@ unsafe fn read_instructions(
                         if c_mems.len() == 0 {
                             return Err(ValidationError::InvalidMemIdx(0));
                         }
-                        if data_count.ok_or(ValidationError::MissingDataCountSection)? as usize
-                            <= data_idx
-                        {
-                            return Err(ValidationError::InvalidDataIdx(data_idx));
-                        }
+                        // Validate data index after memory index
+                        let _data_idx = data_idx?;
+
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                     }
                     DATA_DROP => {
-                        let data_idx = wasm.read_var_u32()? as DataIdx;
-
-                        if data_count.ok_or(ValidationError::MissingDataCountSection)? as usize
-                            <= data_idx
-                        {
-                            return Err(ValidationError::InvalidDataIdx(data_idx));
-                        }
+                        let _data_idx = DataIdx::read_and_validate(
+                            wasm,
+                            data_count.ok_or(ValidationError::MissingDataCountSection)?,
+                        )?;
                     }
                     MEMORY_COPY => {
                         // Note: These zero bytes are reserved for the multiple
