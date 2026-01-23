@@ -1,6 +1,6 @@
 use alloc::vec::Vec;
 
-use crate::core::indices::{ExtendedIdxVec, FuncIdx, GlobalIdx, TypeIdx};
+use crate::core::indices::{ExtendedIdxVec, FuncIdx, TypeIdx};
 use crate::core::reader::span::Span;
 use crate::core::reader::types::global::GlobalType;
 use crate::core::reader::WasmReader;
@@ -92,7 +92,7 @@ pub fn read_constant_expression(
     //
     //  Globals, however, are not recursive and not accessible within constant expressions when they are defined locally. The effect of defining the limited context C'
     //   for validating certain definitions is that they can only access functions and imported globals and nothing else.
-    globals_ty: &[GlobalType],
+    imported_globals: &[GlobalType],
     c_funcs: &ExtendedIdxVec<FuncIdx, TypeIdx>,
 ) -> Result<(Span, Vec<FuncIdx>), ValidationError> {
     let start_pc = wasm.pc;
@@ -119,13 +119,19 @@ pub fn read_constant_expression(
                 return Ok((Span::new(start_pc, wasm.pc - start_pc), seen_func_idxs));
             }
             GLOBAL_GET => {
-                let global_idx = wasm.read_var_u32()? as GlobalIdx;
-                trace!("{:?}", globals_ty);
-                let global = globals_ty
-                    .get(global_idx)
-                    .ok_or(ValidationError::InvalidGlobalIdx(global_idx))?;
+                // Unfortunately, we cannot use the GlobalIdx type yet, because
+                // constant expressions may only access imported globals.  Wasm
+                // specifies that only imported globals may be accessed (see
+                // comment on `imported_globals` parameter).
+                let imported_global_idx = wasm.read_var_u32()?;
 
-                trace!("{:?}", global.ty);
+                let global = imported_globals
+                    .get(
+                        usize::try_from(imported_global_idx)
+                            .expect("pointer width to be at least 32 bits"),
+                    )
+                    .ok_or(ValidationError::InvalidGlobalIdx(imported_global_idx))?;
+
                 stack.push_valtype(global.ty);
             }
             I32_CONST => {
