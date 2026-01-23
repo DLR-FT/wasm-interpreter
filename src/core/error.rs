@@ -1,4 +1,3 @@
-use crate::core::indices::GlobalIdx;
 use crate::validation_stack::ValidationStackEntry;
 use crate::RefType;
 use core::fmt::{Display, Formatter};
@@ -60,7 +59,7 @@ pub enum ValidationError {
     /// An index for a memory is invalid.
     InvalidMemIdx(u32),
     /// An index for a global is invalid.
-    InvalidGlobalIdx(GlobalIdx),
+    InvalidGlobalIdx(u32),
     /// An index for an element segment is invalid.
     InvalidElemIdx(ElemIdx),
     /// An index for a data segment is invalid.
