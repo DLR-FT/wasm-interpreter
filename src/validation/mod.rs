@@ -4,8 +4,8 @@ use alloc::collections::btree_set::{self, BTreeSet};
 use alloc::vec::Vec;
 
 use crate::core::indices::{
-    ElemIdx, ExtendedIdxVec, FuncIdx, GlobalIdx, IdxVec, IdxVecOverflowError, MemIdx, TableIdx,
-    TypeIdx,
+    DataIdx, ElemIdx, ExtendedIdxVec, FuncIdx, GlobalIdx, IdxVec, IdxVecOverflowError, MemIdx,
+    TableIdx, TypeIdx,
 };
 use crate::core::reader::section_header::{SectionHeader, SectionTy};
 use crate::core::reader::span::Span;
@@ -17,7 +17,6 @@ use crate::core::reader::types::import::{Import, ImportDesc};
 use crate::core::reader::types::{ExternType, FuncType, MemType, ResultType, TableType};
 use crate::core::reader::WasmReader;
 use crate::core::sidetable::Sidetable;
-use crate::core::utils::ToUsizeExt;
 use crate::ValidationError;
 
 pub(crate) mod code;
@@ -44,11 +43,11 @@ pub struct ValidationInfo<'bytecode> {
     pub(crate) globals: ExtendedIdxVec<GlobalIdx, Global>,
     pub(crate) exports: Vec<Export<'bytecode>>,
     pub(crate) elements: IdxVec<ElemIdx, ElemType>,
+    pub(crate) data: IdxVec<DataIdx, DataSegment>,
     /// Each block contains the validated code section and the stp corresponding to
     /// the beginning of that code section
     pub(crate) func_blocks_stps: Vec<(Span, usize)>,
     pub(crate) sidetable: Sidetable,
-    pub(crate) data: Vec<DataSegment>,
     /// The start function which is automatically executed during instantiation
     pub(crate) start: Option<FuncIdx>,
     // pub(crate) exports_length: Exported,
@@ -312,10 +311,10 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
                 h,
                 &types,
                 &functions,
-                &globals,
-                &memories,
-                &data_count,
-                &tables,
+                globals.inner(),
+                memories.inner(),
+                data_count,
+                tables.inner(),
                 &elements,
                 &validation_context_refs,
                 &mut sidetable,
@@ -335,13 +334,14 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
 
     let data_section = handle_section(&mut wasm, &mut header, SectionTy::Data, |wasm, h| {
         // wasm.read_vec(DataSegment::read)
-        data::validate_data_section(wasm, h, &imported_global_types, &memories, &functions)
+        data::validate_data_section(wasm, h, &imported_global_types, memories.inner(), functions.inner())
+            .map(|data_segments| IdxVec::new(data_segments).expect("that index space creation never fails because the length of the data segments vector is encoded as a 32-bit integer in the bytecode"))
     })?
     .unwrap_or_default();
 
     // https://webassembly.github.io/spec/core/binary/modules.html#data-count-section
-    if let (Some(data_count), data_len) = (data_count, data_section.len()) {
-        if data_count.into_usize() != data_len {
+    if let Some(data_count) = data_count {
+        if data_count != data_section.len() {
             return Err(ValidationError::DataCountAndDataSectionsLengthAreDifferent);
         }
     }
