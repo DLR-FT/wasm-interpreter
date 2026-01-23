@@ -11,7 +11,7 @@
 <a href=#11 id=11 data-nosnippet>11</a><span class="kw">use </span><span class="kw">crate</span>::core::reader::types::global::Global;
 <a href=#12 id=12 data-nosnippet>12</a><span class="kw">use </span><span class="kw">crate</span>::core::reader::types::memarg::MemArg;
 <a href=#13 id=13 data-nosnippet>13</a><span class="kw">use </span><span class="kw">crate</span>::core::reader::types::{BlockType, FuncType, MemType, NumType, TableType, ValType};
-<a href=#14 id=14 data-nosnippet>14</a><span class="kw">use </span><span class="kw">crate</span>::core::reader::{WasmReadable, WasmReader};
+<a href=#14 id=14 data-nosnippet>14</a><span class="kw">use </span><span class="kw">crate</span>::core::reader::WasmReader;
 <a href=#15 id=15 data-nosnippet>15</a><span class="kw">use </span><span class="kw">crate</span>::core::sidetable::{Sidetable, SidetableEntry};
 <a href=#16 id=16 data-nosnippet>16</a><span class="kw">use </span><span class="kw">crate</span>::validation_stack::{LabelInfo, ValidationStack};
 <a href=#17 id=17 data-nosnippet>17</a><span class="kw">use crate</span>::{RefType, ValidationError};
@@ -567,7 +567,7 @@
 <a href=#567 id=567 data-nosnippet>567</a>            }
 <a href=#568 id=568 data-nosnippet>568</a>            I32_LOAD =&gt; {
 <a href=#569 id=569 data-nosnippet>569</a>                <span class="kw">if </span>memories.is_empty() {
-<a href=#570 id=570 data-nosnippet>570</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIndex(<span class="number">0</span>));
+<a href=#570 id=570 data-nosnippet>570</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIdx(<span class="number">0</span>));
 <a href=#571 id=571 data-nosnippet>571</a>                }
 <a href=#572 id=572 data-nosnippet>572</a>                <span class="kw">let </span>memarg = MemArg::read(wasm)<span class="question-mark">?</span>;
 <a href=#573 id=573 data-nosnippet>573</a>                <span class="kw">if </span>memarg.align &gt; <span class="number">2 </span>{
@@ -581,7 +581,7 @@
 <a href=#581 id=581 data-nosnippet>581</a>            }
 <a href=#582 id=582 data-nosnippet>582</a>            I64_LOAD =&gt; {
 <a href=#583 id=583 data-nosnippet>583</a>                <span class="kw">if </span>memories.is_empty() {
-<a href=#584 id=584 data-nosnippet>584</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIndex(<span class="number">0</span>));
+<a href=#584 id=584 data-nosnippet>584</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIdx(<span class="number">0</span>));
 <a href=#585 id=585 data-nosnippet>585</a>                }
 <a href=#586 id=586 data-nosnippet>586</a>                <span class="kw">let </span>memarg = MemArg::read(wasm)<span class="question-mark">?</span>;
 <a href=#587 id=587 data-nosnippet>587</a>                <span class="kw">if </span>memarg.align &gt; <span class="number">3 </span>{
@@ -595,7 +595,7 @@
 <a href=#595 id=595 data-nosnippet>595</a>            }
 <a href=#596 id=596 data-nosnippet>596</a>            F32_LOAD =&gt; {
 <a href=#597 id=597 data-nosnippet>597</a>                <span class="kw">if </span>memories.is_empty() {
-<a href=#598 id=598 data-nosnippet>598</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIndex(<span class="number">0</span>));
+<a href=#598 id=598 data-nosnippet>598</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIdx(<span class="number">0</span>));
 <a href=#599 id=599 data-nosnippet>599</a>                }
 <a href=#600 id=600 data-nosnippet>600</a>                <span class="kw">let </span>memarg = MemArg::read(wasm)<span class="question-mark">?</span>;
 <a href=#601 id=601 data-nosnippet>601</a>                <span class="kw">if </span>memarg.align &gt; <span class="number">2 </span>{
@@ -609,7 +609,7 @@
 <a href=#609 id=609 data-nosnippet>609</a>            }
 <a href=#610 id=610 data-nosnippet>610</a>            F64_LOAD =&gt; {
 <a href=#611 id=611 data-nosnippet>611</a>                <span class="kw">if </span>memories.is_empty() {
-<a href=#612 id=612 data-nosnippet>612</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIndex(<span class="number">0</span>));
+<a href=#612 id=612 data-nosnippet>612</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIdx(<span class="number">0</span>));
 <a href=#613 id=613 data-nosnippet>613</a>                }
 <a href=#614 id=614 data-nosnippet>614</a>                <span class="kw">let </span>memarg = MemArg::read(wasm)<span class="question-mark">?</span>;
 <a href=#615 id=615 data-nosnippet>615</a>                <span class="kw">if </span>memarg.align &gt; <span class="number">3 </span>{
@@ -623,7 +623,7 @@
 <a href=#623 id=623 data-nosnippet>623</a>            }
 <a href=#624 id=624 data-nosnippet>624</a>            I32_LOAD8_S =&gt; {
 <a href=#625 id=625 data-nosnippet>625</a>                <span class="kw">if </span>memories.is_empty() {
-<a href=#626 id=626 data-nosnippet>626</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIndex(<span class="number">0</span>));
+<a href=#626 id=626 data-nosnippet>626</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIdx(<span class="number">0</span>));
 <a href=#627 id=627 data-nosnippet>627</a>                }
 <a href=#628 id=628 data-nosnippet>628</a>                <span class="kw">let </span>memarg = MemArg::read(wasm)<span class="question-mark">?</span>;
 <a href=#629 id=629 data-nosnippet>629</a>                <span class="kw">if </span>memarg.align &gt; <span class="number">0 </span>{
@@ -637,7 +637,7 @@
 <a href=#637 id=637 data-nosnippet>637</a>            }
 <a href=#638 id=638 data-nosnippet>638</a>            I32_LOAD8_U =&gt; {
 <a href=#639 id=639 data-nosnippet>639</a>                <span class="kw">if </span>memories.is_empty() {
-<a href=#640 id=640 data-nosnippet>640</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIndex(<span class="number">0</span>));
+<a href=#640 id=640 data-nosnippet>640</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIdx(<span class="number">0</span>));
 <a href=#641 id=641 data-nosnippet>641</a>                }
 <a href=#642 id=642 data-nosnippet>642</a>                <span class="kw">let </span>memarg = MemArg::read(wasm)<span class="question-mark">?</span>;
 <a href=#643 id=643 data-nosnippet>643</a>                <span class="kw">if </span>memarg.align &gt; <span class="number">0 </span>{
@@ -651,7 +651,7 @@
 <a href=#651 id=651 data-nosnippet>651</a>            }
 <a href=#652 id=652 data-nosnippet>652</a>            I32_LOAD16_S =&gt; {
 <a href=#653 id=653 data-nosnippet>653</a>                <span class="kw">if </span>memories.is_empty() {
-<a href=#654 id=654 data-nosnippet>654</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIndex(<span class="number">0</span>));
+<a href=#654 id=654 data-nosnippet>654</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIdx(<span class="number">0</span>));
 <a href=#655 id=655 data-nosnippet>655</a>                }
 <a href=#656 id=656 data-nosnippet>656</a>                <span class="kw">let </span>memarg = MemArg::read(wasm)<span class="question-mark">?</span>;
 <a href=#657 id=657 data-nosnippet>657</a>                <span class="kw">if </span>memarg.align &gt; <span class="number">1 </span>{
@@ -665,7 +665,7 @@
 <a href=#665 id=665 data-nosnippet>665</a>            }
 <a href=#666 id=666 data-nosnippet>666</a>            I32_LOAD16_U =&gt; {
 <a href=#667 id=667 data-nosnippet>667</a>                <span class="kw">if </span>memories.is_empty() {
-<a href=#668 id=668 data-nosnippet>668</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIndex(<span class="number">0</span>));
+<a href=#668 id=668 data-nosnippet>668</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIdx(<span class="number">0</span>));
 <a href=#669 id=669 data-nosnippet>669</a>                }
 <a href=#670 id=670 data-nosnippet>670</a>                <span class="kw">let </span>memarg = MemArg::read(wasm)<span class="question-mark">?</span>;
 <a href=#671 id=671 data-nosnippet>671</a>                <span class="kw">if </span>memarg.align &gt; <span class="number">1 </span>{
@@ -679,7 +679,7 @@
 <a href=#679 id=679 data-nosnippet>679</a>            }
 <a href=#680 id=680 data-nosnippet>680</a>            I64_LOAD8_S =&gt; {
 <a href=#681 id=681 data-nosnippet>681</a>                <span class="kw">if </span>memories.is_empty() {
-<a href=#682 id=682 data-nosnippet>682</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIndex(<span class="number">0</span>));
+<a href=#682 id=682 data-nosnippet>682</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIdx(<span class="number">0</span>));
 <a href=#683 id=683 data-nosnippet>683</a>                }
 <a href=#684 id=684 data-nosnippet>684</a>                <span class="kw">let </span>memarg = MemArg::read(wasm)<span class="question-mark">?</span>;
 <a href=#685 id=685 data-nosnippet>685</a>                <span class="kw">if </span>memarg.align &gt; <span class="number">0 </span>{
@@ -693,7 +693,7 @@
 <a href=#693 id=693 data-nosnippet>693</a>            }
 <a href=#694 id=694 data-nosnippet>694</a>            I64_LOAD8_U =&gt; {
 <a href=#695 id=695 data-nosnippet>695</a>                <span class="kw">if </span>memories.is_empty() {
-<a href=#696 id=696 data-nosnippet>696</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIndex(<span class="number">0</span>));
+<a href=#696 id=696 data-nosnippet>696</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIdx(<span class="number">0</span>));
 <a href=#697 id=697 data-nosnippet>697</a>                }
 <a href=#698 id=698 data-nosnippet>698</a>                <span class="kw">let </span>memarg = MemArg::read(wasm)<span class="question-mark">?</span>;
 <a href=#699 id=699 data-nosnippet>699</a>                <span class="kw">if </span>memarg.align &gt; <span class="number">0 </span>{
@@ -707,7 +707,7 @@
 <a href=#707 id=707 data-nosnippet>707</a>            }
 <a href=#708 id=708 data-nosnippet>708</a>            I64_LOAD16_S =&gt; {
 <a href=#709 id=709 data-nosnippet>709</a>                <span class="kw">if </span>memories.is_empty() {
-<a href=#710 id=710 data-nosnippet>710</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIndex(<span class="number">0</span>));
+<a href=#710 id=710 data-nosnippet>710</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIdx(<span class="number">0</span>));
 <a href=#711 id=711 data-nosnippet>711</a>                }
 <a href=#712 id=712 data-nosnippet>712</a>                <span class="kw">let </span>memarg = MemArg::read(wasm)<span class="question-mark">?</span>;
 <a href=#713 id=713 data-nosnippet>713</a>                <span class="kw">if </span>memarg.align &gt; <span class="number">1 </span>{
@@ -721,7 +721,7 @@
 <a href=#721 id=721 data-nosnippet>721</a>            }
 <a href=#722 id=722 data-nosnippet>722</a>            I64_LOAD16_U =&gt; {
 <a href=#723 id=723 data-nosnippet>723</a>                <span class="kw">if </span>memories.is_empty() {
-<a href=#724 id=724 data-nosnippet>724</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIndex(<span class="number">0</span>));
+<a href=#724 id=724 data-nosnippet>724</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIdx(<span class="number">0</span>));
 <a href=#725 id=725 data-nosnippet>725</a>                }
 <a href=#726 id=726 data-nosnippet>726</a>                <span class="kw">let </span>memarg = MemArg::read(wasm)<span class="question-mark">?</span>;
 <a href=#727 id=727 data-nosnippet>727</a>                <span class="kw">if </span>memarg.align &gt; <span class="number">1 </span>{
@@ -735,7 +735,7 @@
 <a href=#735 id=735 data-nosnippet>735</a>            }
 <a href=#736 id=736 data-nosnippet>736</a>            I64_LOAD32_S =&gt; {
 <a href=#737 id=737 data-nosnippet>737</a>                <span class="kw">if </span>memories.is_empty() {
-<a href=#738 id=738 data-nosnippet>738</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIndex(<span class="number">0</span>));
+<a href=#738 id=738 data-nosnippet>738</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIdx(<span class="number">0</span>));
 <a href=#739 id=739 data-nosnippet>739</a>                }
 <a href=#740 id=740 data-nosnippet>740</a>                <span class="kw">let </span>memarg = MemArg::read(wasm)<span class="question-mark">?</span>;
 <a href=#741 id=741 data-nosnippet>741</a>                <span class="kw">if </span>memarg.align &gt; <span class="number">2 </span>{
@@ -749,7 +749,7 @@
 <a href=#749 id=749 data-nosnippet>749</a>            }
 <a href=#750 id=750 data-nosnippet>750</a>            I64_LOAD32_U =&gt; {
 <a href=#751 id=751 data-nosnippet>751</a>                <span class="kw">if </span>memories.is_empty() {
-<a href=#752 id=752 data-nosnippet>752</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIndex(<span class="number">0</span>));
+<a href=#752 id=752 data-nosnippet>752</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIdx(<span class="number">0</span>));
 <a href=#753 id=753 data-nosnippet>753</a>                }
 <a href=#754 id=754 data-nosnippet>754</a>                <span class="kw">let </span>memarg = MemArg::read(wasm)<span class="question-mark">?</span>;
 <a href=#755 id=755 data-nosnippet>755</a>                <span class="kw">if </span>memarg.align &gt; <span class="number">2 </span>{
@@ -763,7 +763,7 @@
 <a href=#763 id=763 data-nosnippet>763</a>            }
 <a href=#764 id=764 data-nosnippet>764</a>            I32_STORE =&gt; {
 <a href=#765 id=765 data-nosnippet>765</a>                <span class="kw">if </span>memories.is_empty() {
-<a href=#766 id=766 data-nosnippet>766</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIndex(<span class="number">0</span>));
+<a href=#766 id=766 data-nosnippet>766</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIdx(<span class="number">0</span>));
 <a href=#767 id=767 data-nosnippet>767</a>                }
 <a href=#768 id=768 data-nosnippet>768</a>                <span class="kw">let </span>memarg = MemArg::read(wasm)<span class="question-mark">?</span>;
 <a href=#769 id=769 data-nosnippet>769</a>                <span class="kw">if </span>memarg.align &gt; <span class="number">2 </span>{
@@ -777,7 +777,7 @@
 <a href=#777 id=777 data-nosnippet>777</a>            }
 <a href=#778 id=778 data-nosnippet>778</a>            I64_STORE =&gt; {
 <a href=#779 id=779 data-nosnippet>779</a>                <span class="kw">if </span>memories.is_empty() {
-<a href=#780 id=780 data-nosnippet>780</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIndex(<span class="number">0</span>));
+<a href=#780 id=780 data-nosnippet>780</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIdx(<span class="number">0</span>));
 <a href=#781 id=781 data-nosnippet>781</a>                }
 <a href=#782 id=782 data-nosnippet>782</a>                <span class="kw">let </span>memarg = MemArg::read(wasm)<span class="question-mark">?</span>;
 <a href=#783 id=783 data-nosnippet>783</a>                <span class="kw">if </span>memarg.align &gt; <span class="number">3 </span>{
@@ -791,7 +791,7 @@
 <a href=#791 id=791 data-nosnippet>791</a>            }
 <a href=#792 id=792 data-nosnippet>792</a>            F32_STORE =&gt; {
 <a href=#793 id=793 data-nosnippet>793</a>                <span class="kw">if </span>memories.is_empty() {
-<a href=#794 id=794 data-nosnippet>794</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIndex(<span class="number">0</span>));
+<a href=#794 id=794 data-nosnippet>794</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIdx(<span class="number">0</span>));
 <a href=#795 id=795 data-nosnippet>795</a>                }
 <a href=#796 id=796 data-nosnippet>796</a>                <span class="kw">let </span>memarg = MemArg::read(wasm)<span class="question-mark">?</span>;
 <a href=#797 id=797 data-nosnippet>797</a>                <span class="kw">if </span>memarg.align &gt; <span class="number">2 </span>{
@@ -805,7 +805,7 @@
 <a href=#805 id=805 data-nosnippet>805</a>            }
 <a href=#806 id=806 data-nosnippet>806</a>            F64_STORE =&gt; {
 <a href=#807 id=807 data-nosnippet>807</a>                <span class="kw">if </span>memories.is_empty() {
-<a href=#808 id=808 data-nosnippet>808</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIndex(<span class="number">0</span>));
+<a href=#808 id=808 data-nosnippet>808</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIdx(<span class="number">0</span>));
 <a href=#809 id=809 data-nosnippet>809</a>                }
 <a href=#810 id=810 data-nosnippet>810</a>                <span class="kw">let </span>memarg = MemArg::read(wasm)<span class="question-mark">?</span>;
 <a href=#811 id=811 data-nosnippet>811</a>                <span class="kw">if </span>memarg.align &gt; <span class="number">3 </span>{
@@ -819,7 +819,7 @@
 <a href=#819 id=819 data-nosnippet>819</a>            }
 <a href=#820 id=820 data-nosnippet>820</a>            I32_STORE8 =&gt; {
 <a href=#821 id=821 data-nosnippet>821</a>                <span class="kw">if </span>memories.is_empty() {
-<a href=#822 id=822 data-nosnippet>822</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIndex(<span class="number">0</span>));
+<a href=#822 id=822 data-nosnippet>822</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIdx(<span class="number">0</span>));
 <a href=#823 id=823 data-nosnippet>823</a>                }
 <a href=#824 id=824 data-nosnippet>824</a>                <span class="kw">let </span>memarg = MemArg::read(wasm)<span class="question-mark">?</span>;
 <a href=#825 id=825 data-nosnippet>825</a>                <span class="kw">if </span>memarg.align &gt; <span class="number">0 </span>{
@@ -833,7 +833,7 @@
 <a href=#833 id=833 data-nosnippet>833</a>            }
 <a href=#834 id=834 data-nosnippet>834</a>            I32_STORE16 =&gt; {
 <a href=#835 id=835 data-nosnippet>835</a>                <span class="kw">if </span>memories.is_empty() {
-<a href=#836 id=836 data-nosnippet>836</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIndex(<span class="number">0</span>));
+<a href=#836 id=836 data-nosnippet>836</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIdx(<span class="number">0</span>));
 <a href=#837 id=837 data-nosnippet>837</a>                }
 <a href=#838 id=838 data-nosnippet>838</a>                <span class="kw">let </span>memarg = MemArg::read(wasm)<span class="question-mark">?</span>;
 <a href=#839 id=839 data-nosnippet>839</a>                <span class="kw">if </span>memarg.align &gt; <span class="number">1 </span>{
@@ -847,7 +847,7 @@
 <a href=#847 id=847 data-nosnippet>847</a>            }
 <a href=#848 id=848 data-nosnippet>848</a>            I64_STORE8 =&gt; {
 <a href=#849 id=849 data-nosnippet>849</a>                <span class="kw">if </span>memories.is_empty() {
-<a href=#850 id=850 data-nosnippet>850</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIndex(<span class="number">0</span>));
+<a href=#850 id=850 data-nosnippet>850</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIdx(<span class="number">0</span>));
 <a href=#851 id=851 data-nosnippet>851</a>                }
 <a href=#852 id=852 data-nosnippet>852</a>                <span class="kw">let </span>memarg = MemArg::read(wasm)<span class="question-mark">?</span>;
 <a href=#853 id=853 data-nosnippet>853</a>                <span class="kw">if </span>memarg.align &gt; <span class="number">0 </span>{
@@ -861,7 +861,7 @@
 <a href=#861 id=861 data-nosnippet>861</a>            }
 <a href=#862 id=862 data-nosnippet>862</a>            I64_STORE16 =&gt; {
 <a href=#863 id=863 data-nosnippet>863</a>                <span class="kw">if </span>memories.is_empty() {
-<a href=#864 id=864 data-nosnippet>864</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIndex(<span class="number">0</span>));
+<a href=#864 id=864 data-nosnippet>864</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIdx(<span class="number">0</span>));
 <a href=#865 id=865 data-nosnippet>865</a>                }
 <a href=#866 id=866 data-nosnippet>866</a>                <span class="kw">let </span>memarg = MemArg::read(wasm)<span class="question-mark">?</span>;
 <a href=#867 id=867 data-nosnippet>867</a>                <span class="kw">if </span>memarg.align &gt; <span class="number">1 </span>{
@@ -875,7 +875,7 @@
 <a href=#875 id=875 data-nosnippet>875</a>            }
 <a href=#876 id=876 data-nosnippet>876</a>            I64_STORE32 =&gt; {
 <a href=#877 id=877 data-nosnippet>877</a>                <span class="kw">if </span>memories.is_empty() {
-<a href=#878 id=878 data-nosnippet>878</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIndex(<span class="number">0</span>));
+<a href=#878 id=878 data-nosnippet>878</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIdx(<span class="number">0</span>));
 <a href=#879 id=879 data-nosnippet>879</a>                }
 <a href=#880 id=880 data-nosnippet>880</a>                <span class="kw">let </span>memarg = MemArg::read(wasm)<span class="question-mark">?</span>;
 <a href=#881 id=881 data-nosnippet>881</a>                <span class="kw">if </span>memarg.align &gt; <span class="number">2 </span>{
@@ -893,7 +893,7 @@
 <a href=#893 id=893 data-nosnippet>893</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::UnsupportedMultipleMemoriesProposal);
 <a href=#894 id=894 data-nosnippet>894</a>                }
 <a href=#895 id=895 data-nosnippet>895</a>                <span class="kw">if </span>memories.len() &lt;= mem_idx {
-<a href=#896 id=896 data-nosnippet>896</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIndex(mem_idx));
+<a href=#896 id=896 data-nosnippet>896</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIdx(mem_idx));
 <a href=#897 id=897 data-nosnippet>897</a>                }
 <a href=#898 id=898 data-nosnippet>898</a>                stack.push_valtype(ValType::NumType(NumType::I32));
 <a href=#899 id=899 data-nosnippet>899</a>            }
@@ -903,7 +903,7 @@
 <a href=#903 id=903 data-nosnippet>903</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::UnsupportedMultipleMemoriesProposal);
 <a href=#904 id=904 data-nosnippet>904</a>                }
 <a href=#905 id=905 data-nosnippet>905</a>                <span class="kw">if </span>memories.len() &lt;= mem_idx {
-<a href=#906 id=906 data-nosnippet>906</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIndex(mem_idx));
+<a href=#906 id=906 data-nosnippet>906</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIdx(mem_idx));
 <a href=#907 id=907 data-nosnippet>907</a>                }
 <a href=#908 id=908 data-nosnippet>908</a>                stack.assert_pop_val_type(ValType::NumType(NumType::I32))<span class="question-mark">?</span>;
 <a href=#909 id=909 data-nosnippet>909</a>                stack.push_valtype(ValType::NumType(NumType::I32));
@@ -1173,7 +1173,7 @@
 <a href=#1173 id=1173 data-nosnippet>1173</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::UnsupportedMultipleMemoriesProposal);
 <a href=#1174 id=1174 data-nosnippet>1174</a>                        }
 <a href=#1175 id=1175 data-nosnippet>1175</a>                        <span class="kw">if </span>memories.len() &lt;= mem_idx {
-<a href=#1176 id=1176 data-nosnippet>1176</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIndex(mem_idx));
+<a href=#1176 id=1176 data-nosnippet>1176</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIdx(mem_idx));
 <a href=#1177 id=1177 data-nosnippet>1177</a>                        }
 <a href=#1178 id=1178 data-nosnippet>1178</a>                        <span class="kw">if </span>data_count.unwrap_or(<span class="number">0</span>) <span class="kw">as </span>usize &lt;= data_idx {
 <a href=#1179 id=1179 data-nosnippet>1179</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidDataIdx(data_idx));
@@ -1194,7 +1194,7 @@
 <a href=#1194 id=1194 data-nosnippet>1194</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::UnsupportedMultipleMemoriesProposal);
 <a href=#1195 id=1195 data-nosnippet>1195</a>                        }
 <a href=#1196 id=1196 data-nosnippet>1196</a>                        <span class="kw">if </span>memories.is_empty() {
-<a href=#1197 id=1197 data-nosnippet>1197</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIndex(<span class="number">0</span>));
+<a href=#1197 id=1197 data-nosnippet>1197</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIdx(<span class="number">0</span>));
 <a href=#1198 id=1198 data-nosnippet>1198</a>                        }
 <a href=#1199 id=1199 data-nosnippet>1199</a>                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))<span class="question-mark">?</span>;
 <a href=#1200 id=1200 data-nosnippet>1200</a>                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))<span class="question-mark">?</span>;
@@ -1206,7 +1206,7 @@
 <a href=#1206 id=1206 data-nosnippet>1206</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::UnsupportedMultipleMemoriesProposal);
 <a href=#1207 id=1207 data-nosnippet>1207</a>                        }
 <a href=#1208 id=1208 data-nosnippet>1208</a>                        <span class="kw">if </span>memories.len() &lt;= mem_idx {
-<a href=#1209 id=1209 data-nosnippet>1209</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIndex(mem_idx));
+<a href=#1209 id=1209 data-nosnippet>1209</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIdx(mem_idx));
 <a href=#1210 id=1210 data-nosnippet>1210</a>                        }
 <a href=#1211 id=1211 data-nosnippet>1211</a>                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))<span class="question-mark">?</span>;
 <a href=#1212 id=1212 data-nosnippet>1212</a>                        stack.assert_pop_val_type(ValType::NumType(NumType::I32))<span class="question-mark">?</span>;
@@ -1363,7 +1363,7 @@
 <a href=#1363 id=1363 data-nosnippet>1363</a>                <span class="kw">match </span>second_instr {
 <a href=#1364 id=1364 data-nosnippet>1364</a>                    V128_LOAD =&gt; {
 <a href=#1365 id=1365 data-nosnippet>1365</a>                        <span class="kw">if </span>memories.is_empty() {
-<a href=#1366 id=1366 data-nosnippet>1366</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIndex(<span class="number">0</span>));
+<a href=#1366 id=1366 data-nosnippet>1366</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIdx(<span class="number">0</span>));
 <a href=#1367 id=1367 data-nosnippet>1367</a>                        }
 <a href=#1368 id=1368 data-nosnippet>1368</a>                        <span class="kw">let </span>memarg = MemArg::read(wasm)<span class="question-mark">?</span>;
 <a href=#1369 id=1369 data-nosnippet>1369</a>                        <span class="kw">if </span>memarg.align &gt; <span class="number">4 </span>{
@@ -1377,7 +1377,7 @@
 <a href=#1377 id=1377 data-nosnippet>1377</a>                    }
 <a href=#1378 id=1378 data-nosnippet>1378</a>                    V128_STORE =&gt; {
 <a href=#1379 id=1379 data-nosnippet>1379</a>                        <span class="kw">if </span>memories.is_empty() {
-<a href=#1380 id=1380 data-nosnippet>1380</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIndex(<span class="number">0</span>));
+<a href=#1380 id=1380 data-nosnippet>1380</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIdx(<span class="number">0</span>));
 <a href=#1381 id=1381 data-nosnippet>1381</a>                        }
 <a href=#1382 id=1382 data-nosnippet>1382</a>                        <span class="kw">let </span>memarg = MemArg::read(wasm)<span class="question-mark">?</span>;
 <a href=#1383 id=1383 data-nosnippet>1383</a>                        <span class="kw">if </span>memarg.align &gt; <span class="number">4 </span>{
@@ -1393,7 +1393,7 @@
 <a href=#1393 id=1393 data-nosnippet>1393</a>                    | V128_LOAD32X2_S | V128_LOAD32X2_U
 <a href=#1394 id=1394 data-nosnippet>1394</a>                    =&gt; {
 <a href=#1395 id=1395 data-nosnippet>1395</a>                        <span class="kw">if </span>memories.is_empty() {
-<a href=#1396 id=1396 data-nosnippet>1396</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIndex(<span class="number">0</span>));
+<a href=#1396 id=1396 data-nosnippet>1396</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIdx(<span class="number">0</span>));
 <a href=#1397 id=1397 data-nosnippet>1397</a>                        }
 <a href=#1398 id=1398 data-nosnippet>1398</a>                        <span class="kw">let </span>memarg = MemArg::read(wasm)<span class="question-mark">?</span>;
 <a href=#1399 id=1399 data-nosnippet>1399</a>                        <span class="kw">if </span>memarg.align &gt; <span class="number">3 </span>{
@@ -1406,7 +1406,7 @@
 <a href=#1406 id=1406 data-nosnippet>1406</a>                    <span class="comment">// v128.loadN_splat + v128.loadN_zero
 <a href=#1407 id=1407 data-nosnippet>1407</a>                    </span>V128_LOAD8_SPLAT =&gt; {
 <a href=#1408 id=1408 data-nosnippet>1408</a>                        <span class="kw">if </span>memories.is_empty() {
-<a href=#1409 id=1409 data-nosnippet>1409</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIndex(<span class="number">0</span>));
+<a href=#1409 id=1409 data-nosnippet>1409</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIdx(<span class="number">0</span>));
 <a href=#1410 id=1410 data-nosnippet>1410</a>                        }
 <a href=#1411 id=1411 data-nosnippet>1411</a>                        <span class="kw">let </span>memarg = MemArg::read(wasm)<span class="question-mark">?</span>;
 <a href=#1412 id=1412 data-nosnippet>1412</a>                        <span class="kw">if </span>memarg.align &gt; <span class="number">0 </span>{
@@ -1417,7 +1417,7 @@
 <a href=#1417 id=1417 data-nosnippet>1417</a>                    }
 <a href=#1418 id=1418 data-nosnippet>1418</a>                    V128_LOAD16_SPLAT =&gt; {
 <a href=#1419 id=1419 data-nosnippet>1419</a>                        <span class="kw">if </span>memories.is_empty() {
-<a href=#1420 id=1420 data-nosnippet>1420</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIndex(<span class="number">0</span>));
+<a href=#1420 id=1420 data-nosnippet>1420</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIdx(<span class="number">0</span>));
 <a href=#1421 id=1421 data-nosnippet>1421</a>                        }
 <a href=#1422 id=1422 data-nosnippet>1422</a>                        <span class="kw">let </span>memarg = MemArg::read(wasm)<span class="question-mark">?</span>;
 <a href=#1423 id=1423 data-nosnippet>1423</a>                        <span class="kw">if </span>memarg.align &gt; <span class="number">1 </span>{
@@ -1428,7 +1428,7 @@
 <a href=#1428 id=1428 data-nosnippet>1428</a>                    }
 <a href=#1429 id=1429 data-nosnippet>1429</a>                    V128_LOAD32_SPLAT | V128_LOAD32_ZERO =&gt; {
 <a href=#1430 id=1430 data-nosnippet>1430</a>                        <span class="kw">if </span>memories.is_empty() {
-<a href=#1431 id=1431 data-nosnippet>1431</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIndex(<span class="number">0</span>));
+<a href=#1431 id=1431 data-nosnippet>1431</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIdx(<span class="number">0</span>));
 <a href=#1432 id=1432 data-nosnippet>1432</a>                        }
 <a href=#1433 id=1433 data-nosnippet>1433</a>                        <span class="kw">let </span>memarg = MemArg::read(wasm)<span class="question-mark">?</span>;
 <a href=#1434 id=1434 data-nosnippet>1434</a>                        <span class="kw">if </span>memarg.align &gt; <span class="number">2 </span>{
@@ -1439,7 +1439,7 @@
 <a href=#1439 id=1439 data-nosnippet>1439</a>                    }
 <a href=#1440 id=1440 data-nosnippet>1440</a>                    V128_LOAD64_SPLAT | V128_LOAD64_ZERO =&gt; {
 <a href=#1441 id=1441 data-nosnippet>1441</a>                        <span class="kw">if </span>memories.is_empty() {
-<a href=#1442 id=1442 data-nosnippet>1442</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIndex(<span class="number">0</span>));
+<a href=#1442 id=1442 data-nosnippet>1442</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIdx(<span class="number">0</span>));
 <a href=#1443 id=1443 data-nosnippet>1443</a>                        }
 <a href=#1444 id=1444 data-nosnippet>1444</a>                        <span class="kw">let </span>memarg = MemArg::read(wasm)<span class="question-mark">?</span>;
 <a href=#1445 id=1445 data-nosnippet>1445</a>                        <span class="kw">if </span>memarg.align &gt; <span class="number">3 </span>{
@@ -1457,7 +1457,7 @@
 <a href=#1457 id=1457 data-nosnippet>1457</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidLaneIdx(lane_idx));
 <a href=#1458 id=1458 data-nosnippet>1458</a>                        }
 <a href=#1459 id=1459 data-nosnippet>1459</a>                        <span class="kw">if </span>memories.is_empty() {
-<a href=#1460 id=1460 data-nosnippet>1460</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIndex(<span class="number">0</span>));
+<a href=#1460 id=1460 data-nosnippet>1460</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIdx(<span class="number">0</span>));
 <a href=#1461 id=1461 data-nosnippet>1461</a>                        }
 <a href=#1462 id=1462 data-nosnippet>1462</a>                        <span class="kw">if </span>memarg.align &gt; <span class="number">0 </span>{
 <a href=#1463 id=1463 data-nosnippet>1463</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: <span class="number">0 </span>});
@@ -1473,7 +1473,7 @@
 <a href=#1473 id=1473 data-nosnippet>1473</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidLaneIdx(lane_idx));
 <a href=#1474 id=1474 data-nosnippet>1474</a>                        }
 <a href=#1475 id=1475 data-nosnippet>1475</a>                        <span class="kw">if </span>memories.is_empty() {
-<a href=#1476 id=1476 data-nosnippet>1476</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIndex(<span class="number">0</span>));
+<a href=#1476 id=1476 data-nosnippet>1476</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIdx(<span class="number">0</span>));
 <a href=#1477 id=1477 data-nosnippet>1477</a>                        }
 <a href=#1478 id=1478 data-nosnippet>1478</a>                        <span class="kw">if </span>memarg.align &gt; <span class="number">1 </span>{
 <a href=#1479 id=1479 data-nosnippet>1479</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: <span class="number">1 </span>});
@@ -1489,7 +1489,7 @@
 <a href=#1489 id=1489 data-nosnippet>1489</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidLaneIdx(lane_idx));
 <a href=#1490 id=1490 data-nosnippet>1490</a>                        }
 <a href=#1491 id=1491 data-nosnippet>1491</a>                        <span class="kw">if </span>memories.is_empty() {
-<a href=#1492 id=1492 data-nosnippet>1492</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIndex(<span class="number">0</span>));
+<a href=#1492 id=1492 data-nosnippet>1492</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIdx(<span class="number">0</span>));
 <a href=#1493 id=1493 data-nosnippet>1493</a>                        }
 <a href=#1494 id=1494 data-nosnippet>1494</a>                        <span class="kw">if </span>memarg.align &gt; <span class="number">2 </span>{
 <a href=#1495 id=1495 data-nosnippet>1495</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: <span class="number">2 </span>});
@@ -1505,7 +1505,7 @@
 <a href=#1505 id=1505 data-nosnippet>1505</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidLaneIdx(lane_idx));
 <a href=#1506 id=1506 data-nosnippet>1506</a>                        }
 <a href=#1507 id=1507 data-nosnippet>1507</a>                        <span class="kw">if </span>memories.is_empty() {
-<a href=#1508 id=1508 data-nosnippet>1508</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIndex(<span class="number">0</span>));
+<a href=#1508 id=1508 data-nosnippet>1508</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIdx(<span class="number">0</span>));
 <a href=#1509 id=1509 data-nosnippet>1509</a>                        }
 <a href=#1510 id=1510 data-nosnippet>1510</a>                        <span class="kw">if </span>memarg.align &gt; <span class="number">3 </span>{
 <a href=#1511 id=1511 data-nosnippet>1511</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: <span class="number">3 </span>});
@@ -1523,7 +1523,7 @@
 <a href=#1523 id=1523 data-nosnippet>1523</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidLaneIdx(lane_idx));
 <a href=#1524 id=1524 data-nosnippet>1524</a>                        }
 <a href=#1525 id=1525 data-nosnippet>1525</a>                        <span class="kw">if </span>memories.is_empty() {
-<a href=#1526 id=1526 data-nosnippet>1526</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIndex(<span class="number">0</span>));
+<a href=#1526 id=1526 data-nosnippet>1526</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIdx(<span class="number">0</span>));
 <a href=#1527 id=1527 data-nosnippet>1527</a>                        }
 <a href=#1528 id=1528 data-nosnippet>1528</a>                        <span class="kw">if </span>memarg.align &gt; <span class="number">0 </span>{
 <a href=#1529 id=1529 data-nosnippet>1529</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: <span class="number">0 </span>});
@@ -1538,7 +1538,7 @@
 <a href=#1538 id=1538 data-nosnippet>1538</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidLaneIdx(lane_idx));
 <a href=#1539 id=1539 data-nosnippet>1539</a>                        }
 <a href=#1540 id=1540 data-nosnippet>1540</a>                        <span class="kw">if </span>memories.is_empty() {
-<a href=#1541 id=1541 data-nosnippet>1541</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIndex(<span class="number">0</span>));
+<a href=#1541 id=1541 data-nosnippet>1541</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIdx(<span class="number">0</span>));
 <a href=#1542 id=1542 data-nosnippet>1542</a>                        }
 <a href=#1543 id=1543 data-nosnippet>1543</a>                        <span class="kw">if </span>memarg.align &gt; <span class="number">1 </span>{
 <a href=#1544 id=1544 data-nosnippet>1544</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: <span class="number">1 </span>});
@@ -1553,7 +1553,7 @@
 <a href=#1553 id=1553 data-nosnippet>1553</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidLaneIdx(lane_idx));
 <a href=#1554 id=1554 data-nosnippet>1554</a>                        }
 <a href=#1555 id=1555 data-nosnippet>1555</a>                        <span class="kw">if </span>memories.is_empty() {
-<a href=#1556 id=1556 data-nosnippet>1556</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIndex(<span class="number">0</span>));
+<a href=#1556 id=1556 data-nosnippet>1556</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIdx(<span class="number">0</span>));
 <a href=#1557 id=1557 data-nosnippet>1557</a>                        }
 <a href=#1558 id=1558 data-nosnippet>1558</a>                        <span class="kw">if </span>memarg.align &gt; <span class="number">2 </span>{
 <a href=#1559 id=1559 data-nosnippet>1559</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: <span class="number">2 </span>});
@@ -1568,7 +1568,7 @@
 <a href=#1568 id=1568 data-nosnippet>1568</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidLaneIdx(lane_idx));
 <a href=#1569 id=1569 data-nosnippet>1569</a>                        }
 <a href=#1570 id=1570 data-nosnippet>1570</a>                        <span class="kw">if </span>memories.is_empty() {
-<a href=#1571 id=1571 data-nosnippet>1571</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIndex(<span class="number">0</span>));
+<a href=#1571 id=1571 data-nosnippet>1571</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIdx(<span class="number">0</span>));
 <a href=#1572 id=1572 data-nosnippet>1572</a>                        }
 <a href=#1573 id=1573 data-nosnippet>1573</a>                        <span class="kw">if </span>memarg.align &gt; <span class="number">3 </span>{
 <a href=#1574 id=1574 data-nosnippet>1574</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: <span class="number">3 </span>});

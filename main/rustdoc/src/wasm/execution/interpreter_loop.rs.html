@@ -19,10 +19,10 @@
 <a href=#19 id=19 data-nosnippet>19</a>    addrs::{AddrVec, DataAddr, ElemAddr, MemAddr, ModuleAddr, TableAddr},
 <a href=#20 id=20 data-nosnippet>20</a>    assert_validated::UnwrapValidatedExt,
 <a href=#21 id=21 data-nosnippet>21</a>    core::{
-<a href=#22 id=22 data-nosnippet>22</a>        indices::{DataIdx, FuncIdx, GlobalIdx, LabelIdx, LocalIdx, MemIdx, TableIdx, TypeIdx},
+<a href=#22 id=22 data-nosnippet>22</a>        indices::{DataIdx, FuncIdx, GlobalIdx, LabelIdx, LocalIdx, TableIdx, TypeIdx},
 <a href=#23 id=23 data-nosnippet>23</a>        reader::{
 <a href=#24 id=24 data-nosnippet>24</a>            types::{memarg::MemArg, BlockType},
-<a href=#25 id=25 data-nosnippet>25</a>            WasmReadable, WasmReader,
+<a href=#25 id=25 data-nosnippet>25</a>            WasmReader,
 <a href=#26 id=26 data-nosnippet>26</a>        },
 <a href=#27 id=27 data-nosnippet>27</a>        sidetable::Sidetable,
 <a href=#28 id=28 data-nosnippet>28</a>    },
@@ -2503,8 +2503,8 @@
 <a href=#2503 id=2503 data-nosnippet>2503</a>                            }
 <a href=#2504 id=2504 data-nosnippet>2504</a>                        }
 <a href=#2505 id=2505 data-nosnippet>2505</a>
-<a href=#2506 id=2506 data-nosnippet>2506</a>                        <span class="kw">let </span>s: i32 = stack.pop_value().try_into().unwrap_validated();
-<a href=#2507 id=2507 data-nosnippet>2507</a>                        <span class="kw">let </span>d: i32 = stack.pop_value().try_into().unwrap_validated();
+<a href=#2506 id=2506 data-nosnippet>2506</a>                        <span class="kw">let </span>s: u32 = stack.pop_value().try_into().unwrap_validated();
+<a href=#2507 id=2507 data-nosnippet>2507</a>                        <span class="kw">let </span>d: u32 = stack.pop_value().try_into().unwrap_validated();
 <a href=#2508 id=2508 data-nosnippet>2508</a>
 <a href=#2509 id=2509 data-nosnippet>2509</a>                        memory_init(
 <a href=#2510 id=2510 data-nosnippet>2510</a>                            <span class="kw-2">&amp;</span>store.modules,
@@ -2571,7 +2571,7 @@
 <a href=#2571 id=2571 data-nosnippet>2571</a>
 <a href=#2572 id=2572 data-nosnippet>2572</a>                        dest_mem
 <a href=#2573 id=2573 data-nosnippet>2573</a>                            .mem
-<a href=#2574 id=2574 data-nosnippet>2574</a>                            .copy(d <span class="kw">as </span>MemIdx, <span class="kw-2">&amp;</span>src_mem.mem, s <span class="kw">as </span>MemIdx, n <span class="kw">as </span>MemIdx)<span class="question-mark">?</span>;
+<a href=#2574 id=2574 data-nosnippet>2574</a>                            .copy(d <span class="kw">as </span>usize, <span class="kw-2">&amp;</span>src_mem.mem, s <span class="kw">as </span>usize, n <span class="kw">as </span>usize)<span class="question-mark">?</span>;
 <a href=#2575 id=2575 data-nosnippet>2575</a>                        <span class="macro">trace!</span>(<span class="string">"Instruction: memory.copy"</span>);
 <a href=#2576 id=2576 data-nosnippet>2576</a>                    }
 <a href=#2577 id=2577 data-nosnippet>2577</a>                    <span class="comment">// See https://webassembly.github.io/bulk-memory-operations/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-fill
@@ -5705,66 +5705,70 @@
 <a href=#5705 id=5705 data-nosnippet>5705</a>    data_idx: usize,
 <a href=#5706 id=5706 data-nosnippet>5706</a>    mem_idx: usize,
 <a href=#5707 id=5707 data-nosnippet>5707</a>    n: u32,
-<a href=#5708 id=5708 data-nosnippet>5708</a>    s: i32,
-<a href=#5709 id=5709 data-nosnippet>5709</a>    d: i32,
+<a href=#5708 id=5708 data-nosnippet>5708</a>    s: u32,
+<a href=#5709 id=5709 data-nosnippet>5709</a>    d: u32,
 <a href=#5710 id=5710 data-nosnippet>5710</a>) -&gt; <span class="prelude-ty">Result</span>&lt;(), RuntimeError&gt; {
-<a href=#5711 id=5711 data-nosnippet>5711</a>    <span class="kw">let </span>mem_addr = <span class="kw-2">*</span>store_modules
-<a href=#5712 id=5712 data-nosnippet>5712</a>        .get(current_module)
-<a href=#5713 id=5713 data-nosnippet>5713</a>        .mem_addrs
-<a href=#5714 id=5714 data-nosnippet>5714</a>        .get(mem_idx)
-<a href=#5715 id=5715 data-nosnippet>5715</a>        .unwrap_validated();
-<a href=#5716 id=5716 data-nosnippet>5716</a>    <span class="kw">let </span>mem = store_memories.get(mem_addr);
-<a href=#5717 id=5717 data-nosnippet>5717</a>
-<a href=#5718 id=5718 data-nosnippet>5718</a>    mem.mem.init(
-<a href=#5719 id=5719 data-nosnippet>5719</a>        d <span class="kw">as </span>MemIdx,
-<a href=#5720 id=5720 data-nosnippet>5720</a>        <span class="kw-2">&amp;</span>store_data
-<a href=#5721 id=5721 data-nosnippet>5721</a>            .get(store_modules.get(current_module).data_addrs[data_idx])
-<a href=#5722 id=5722 data-nosnippet>5722</a>            .data,
-<a href=#5723 id=5723 data-nosnippet>5723</a>        s <span class="kw">as </span>MemIdx,
-<a href=#5724 id=5724 data-nosnippet>5724</a>        n <span class="kw">as </span>MemIdx,
-<a href=#5725 id=5725 data-nosnippet>5725</a>    )<span class="question-mark">?</span>;
-<a href=#5726 id=5726 data-nosnippet>5726</a>
-<a href=#5727 id=5727 data-nosnippet>5727</a>    <span class="macro">trace!</span>(<span class="string">"Instruction: memory.init"</span>);
-<a href=#5728 id=5728 data-nosnippet>5728</a>    <span class="prelude-val">Ok</span>(())
-<a href=#5729 id=5729 data-nosnippet>5729</a>}
+<a href=#5711 id=5711 data-nosnippet>5711</a>    <span class="kw">let </span>n = usize::try_from(n).expect(<span class="string">"pointer width to be at least 32 bits wide"</span>);
+<a href=#5712 id=5712 data-nosnippet>5712</a>    <span class="kw">let </span>s = usize::try_from(s).expect(<span class="string">"pointer width to be at least 32 bits wide"</span>);
+<a href=#5713 id=5713 data-nosnippet>5713</a>    <span class="kw">let </span>d = usize::try_from(d).expect(<span class="string">"pointer width to be at least 32 bits wide"</span>);
+<a href=#5714 id=5714 data-nosnippet>5714</a>
+<a href=#5715 id=5715 data-nosnippet>5715</a>    <span class="kw">let </span>mem_addr = <span class="kw-2">*</span>store_modules
+<a href=#5716 id=5716 data-nosnippet>5716</a>        .get(current_module)
+<a href=#5717 id=5717 data-nosnippet>5717</a>        .mem_addrs
+<a href=#5718 id=5718 data-nosnippet>5718</a>        .get(mem_idx)
+<a href=#5719 id=5719 data-nosnippet>5719</a>        .unwrap_validated();
+<a href=#5720 id=5720 data-nosnippet>5720</a>    <span class="kw">let </span>mem = store_memories.get(mem_addr);
+<a href=#5721 id=5721 data-nosnippet>5721</a>
+<a href=#5722 id=5722 data-nosnippet>5722</a>    mem.mem.init(
+<a href=#5723 id=5723 data-nosnippet>5723</a>        d,
+<a href=#5724 id=5724 data-nosnippet>5724</a>        <span class="kw-2">&amp;</span>store_data
+<a href=#5725 id=5725 data-nosnippet>5725</a>            .get(store_modules.get(current_module).data_addrs[data_idx])
+<a href=#5726 id=5726 data-nosnippet>5726</a>            .data,
+<a href=#5727 id=5727 data-nosnippet>5727</a>        s,
+<a href=#5728 id=5728 data-nosnippet>5728</a>        n,
+<a href=#5729 id=5729 data-nosnippet>5729</a>    )<span class="question-mark">?</span>;
 <a href=#5730 id=5730 data-nosnippet>5730</a>
-<a href=#5731 id=5731 data-nosnippet>5731</a><span class="attr">#[inline(always)]
-<a href=#5732 id=5732 data-nosnippet>5732</a></span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>data_drop(
-<a href=#5733 id=5733 data-nosnippet>5733</a>    store_modules: <span class="kw-2">&amp;</span>AddrVec&lt;ModuleAddr, ModuleInst&gt;,
-<a href=#5734 id=5734 data-nosnippet>5734</a>    store_data: <span class="kw-2">&amp;mut </span>AddrVec&lt;DataAddr, DataInst&gt;,
-<a href=#5735 id=5735 data-nosnippet>5735</a>    current_module: ModuleAddr,
-<a href=#5736 id=5736 data-nosnippet>5736</a>    data_idx: usize,
-<a href=#5737 id=5737 data-nosnippet>5737</a>) -&gt; <span class="prelude-ty">Result</span>&lt;(), RuntimeError&gt; {
-<a href=#5738 id=5738 data-nosnippet>5738</a>    <span class="comment">// Here is debatable
-<a href=#5739 id=5739 data-nosnippet>5739</a>    // If we were to be on par with the spec we'd have to use a DataInst struct
-<a href=#5740 id=5740 data-nosnippet>5740</a>    // But since memory.init is specifically made for Passive data segments
-<a href=#5741 id=5741 data-nosnippet>5741</a>    // I thought that using DataMode would be better because we can see if the
-<a href=#5742 id=5742 data-nosnippet>5742</a>    // data segment is passive or active
-<a href=#5743 id=5743 data-nosnippet>5743</a>
-<a href=#5744 id=5744 data-nosnippet>5744</a>    // Also, we should set data to null here (empty), which we do by clearing it
-<a href=#5745 id=5745 data-nosnippet>5745</a>    </span><span class="kw">let </span>data_addr = <span class="kw-2">*</span>store_modules
-<a href=#5746 id=5746 data-nosnippet>5746</a>        .get(current_module)
-<a href=#5747 id=5747 data-nosnippet>5747</a>        .data_addrs
-<a href=#5748 id=5748 data-nosnippet>5748</a>        .get(data_idx)
-<a href=#5749 id=5749 data-nosnippet>5749</a>        .unwrap_validated();
-<a href=#5750 id=5750 data-nosnippet>5750</a>    store_data.get_mut(data_addr).data.clear();
-<a href=#5751 id=5751 data-nosnippet>5751</a>    <span class="prelude-val">Ok</span>(())
-<a href=#5752 id=5752 data-nosnippet>5752</a>}
-<a href=#5753 id=5753 data-nosnippet>5753</a>
-<a href=#5754 id=5754 data-nosnippet>5754</a><span class="attr">#[inline(always)]
-<a href=#5755 id=5755 data-nosnippet>5755</a></span><span class="kw">fn </span>to_lanes&lt;<span class="kw">const </span>M: usize, <span class="kw">const </span>N: usize, T: LittleEndianBytes&lt;M&gt;&gt;(data: [u8; <span class="number">16</span>]) -&gt; [T; N] {
-<a href=#5756 id=5756 data-nosnippet>5756</a>    <span class="macro">assert_eq!</span>(M * N, <span class="number">16</span>);
+<a href=#5731 id=5731 data-nosnippet>5731</a>    <span class="macro">trace!</span>(<span class="string">"Instruction: memory.init"</span>);
+<a href=#5732 id=5732 data-nosnippet>5732</a>    <span class="prelude-val">Ok</span>(())
+<a href=#5733 id=5733 data-nosnippet>5733</a>}
+<a href=#5734 id=5734 data-nosnippet>5734</a>
+<a href=#5735 id=5735 data-nosnippet>5735</a><span class="attr">#[inline(always)]
+<a href=#5736 id=5736 data-nosnippet>5736</a></span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>data_drop(
+<a href=#5737 id=5737 data-nosnippet>5737</a>    store_modules: <span class="kw-2">&amp;</span>AddrVec&lt;ModuleAddr, ModuleInst&gt;,
+<a href=#5738 id=5738 data-nosnippet>5738</a>    store_data: <span class="kw-2">&amp;mut </span>AddrVec&lt;DataAddr, DataInst&gt;,
+<a href=#5739 id=5739 data-nosnippet>5739</a>    current_module: ModuleAddr,
+<a href=#5740 id=5740 data-nosnippet>5740</a>    data_idx: usize,
+<a href=#5741 id=5741 data-nosnippet>5741</a>) -&gt; <span class="prelude-ty">Result</span>&lt;(), RuntimeError&gt; {
+<a href=#5742 id=5742 data-nosnippet>5742</a>    <span class="comment">// Here is debatable
+<a href=#5743 id=5743 data-nosnippet>5743</a>    // If we were to be on par with the spec we'd have to use a DataInst struct
+<a href=#5744 id=5744 data-nosnippet>5744</a>    // But since memory.init is specifically made for Passive data segments
+<a href=#5745 id=5745 data-nosnippet>5745</a>    // I thought that using DataMode would be better because we can see if the
+<a href=#5746 id=5746 data-nosnippet>5746</a>    // data segment is passive or active
+<a href=#5747 id=5747 data-nosnippet>5747</a>
+<a href=#5748 id=5748 data-nosnippet>5748</a>    // Also, we should set data to null here (empty), which we do by clearing it
+<a href=#5749 id=5749 data-nosnippet>5749</a>    </span><span class="kw">let </span>data_addr = <span class="kw-2">*</span>store_modules
+<a href=#5750 id=5750 data-nosnippet>5750</a>        .get(current_module)
+<a href=#5751 id=5751 data-nosnippet>5751</a>        .data_addrs
+<a href=#5752 id=5752 data-nosnippet>5752</a>        .get(data_idx)
+<a href=#5753 id=5753 data-nosnippet>5753</a>        .unwrap_validated();
+<a href=#5754 id=5754 data-nosnippet>5754</a>    store_data.get_mut(data_addr).data.clear();
+<a href=#5755 id=5755 data-nosnippet>5755</a>    <span class="prelude-val">Ok</span>(())
+<a href=#5756 id=5756 data-nosnippet>5756</a>}
 <a href=#5757 id=5757 data-nosnippet>5757</a>
-<a href=#5758 id=5758 data-nosnippet>5758</a>    <span class="kw">let </span><span class="kw-2">mut </span>lanes = data
-<a href=#5759 id=5759 data-nosnippet>5759</a>        .chunks(M)
-<a href=#5760 id=5760 data-nosnippet>5760</a>        .map(|chunk| T::from_le_bytes(chunk.try_into().unwrap()));
-<a href=#5761 id=5761 data-nosnippet>5761</a>    array::from_fn(|<span class="kw">_</span>| lanes.next().unwrap())
-<a href=#5762 id=5762 data-nosnippet>5762</a>}
-<a href=#5763 id=5763 data-nosnippet>5763</a>
-<a href=#5764 id=5764 data-nosnippet>5764</a><span class="attr">#[inline(always)]
-<a href=#5765 id=5765 data-nosnippet>5765</a></span><span class="kw">fn </span>from_lanes&lt;<span class="kw">const </span>M: usize, <span class="kw">const </span>N: usize, T: LittleEndianBytes&lt;M&gt;&gt;(lanes: [T; N]) -&gt; [u8; <span class="number">16</span>] {
-<a href=#5766 id=5766 data-nosnippet>5766</a>    <span class="macro">assert_eq!</span>(M * N, <span class="number">16</span>);
+<a href=#5758 id=5758 data-nosnippet>5758</a><span class="attr">#[inline(always)]
+<a href=#5759 id=5759 data-nosnippet>5759</a></span><span class="kw">fn </span>to_lanes&lt;<span class="kw">const </span>M: usize, <span class="kw">const </span>N: usize, T: LittleEndianBytes&lt;M&gt;&gt;(data: [u8; <span class="number">16</span>]) -&gt; [T; N] {
+<a href=#5760 id=5760 data-nosnippet>5760</a>    <span class="macro">assert_eq!</span>(M * N, <span class="number">16</span>);
+<a href=#5761 id=5761 data-nosnippet>5761</a>
+<a href=#5762 id=5762 data-nosnippet>5762</a>    <span class="kw">let </span><span class="kw-2">mut </span>lanes = data
+<a href=#5763 id=5763 data-nosnippet>5763</a>        .chunks(M)
+<a href=#5764 id=5764 data-nosnippet>5764</a>        .map(|chunk| T::from_le_bytes(chunk.try_into().unwrap()));
+<a href=#5765 id=5765 data-nosnippet>5765</a>    array::from_fn(|<span class="kw">_</span>| lanes.next().unwrap())
+<a href=#5766 id=5766 data-nosnippet>5766</a>}
 <a href=#5767 id=5767 data-nosnippet>5767</a>
-<a href=#5768 id=5768 data-nosnippet>5768</a>    <span class="kw">let </span><span class="kw-2">mut </span>bytes = lanes.into_iter().flat_map(T::to_le_bytes);
-<a href=#5769 id=5769 data-nosnippet>5769</a>    array::from_fn(|<span class="kw">_</span>| bytes.next().unwrap())
-<a href=#5770 id=5770 data-nosnippet>5770</a>}</code></pre></div></section></main></body></html>
+<a href=#5768 id=5768 data-nosnippet>5768</a><span class="attr">#[inline(always)]
+<a href=#5769 id=5769 data-nosnippet>5769</a></span><span class="kw">fn </span>from_lanes&lt;<span class="kw">const </span>M: usize, <span class="kw">const </span>N: usize, T: LittleEndianBytes&lt;M&gt;&gt;(lanes: [T; N]) -&gt; [u8; <span class="number">16</span>] {
+<a href=#5770 id=5770 data-nosnippet>5770</a>    <span class="macro">assert_eq!</span>(M * N, <span class="number">16</span>);
+<a href=#5771 id=5771 data-nosnippet>5771</a>
+<a href=#5772 id=5772 data-nosnippet>5772</a>    <span class="kw">let </span><span class="kw-2">mut </span>bytes = lanes.into_iter().flat_map(T::to_le_bytes);
+<a href=#5773 id=5773 data-nosnippet>5773</a>    array::from_fn(|<span class="kw">_</span>| bytes.next().unwrap())
+<a href=#5774 id=5774 data-nosnippet>5774</a>}</code></pre></div></section></main></body></html>

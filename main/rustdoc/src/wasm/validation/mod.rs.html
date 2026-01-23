@@ -10,7 +10,7 @@
 <a href=#10 id=10 data-nosnippet>10</a><span class="kw">use </span><span class="kw">crate</span>::core::reader::types::global::{Global, GlobalType};
 <a href=#11 id=11 data-nosnippet>11</a><span class="kw">use </span><span class="kw">crate</span>::core::reader::types::import::{Import, ImportDesc};
 <a href=#12 id=12 data-nosnippet>12</a><span class="kw">use </span><span class="kw">crate</span>::core::reader::types::{FuncType, MemType, ResultType, TableType};
-<a href=#13 id=13 data-nosnippet>13</a><span class="kw">use </span><span class="kw">crate</span>::core::reader::{WasmReadable, WasmReader};
+<a href=#13 id=13 data-nosnippet>13</a><span class="kw">use </span><span class="kw">crate</span>::core::reader::WasmReader;
 <a href=#14 id=14 data-nosnippet>14</a><span class="kw">use </span><span class="kw">crate</span>::core::sidetable::Sidetable;
 <a href=#15 id=15 data-nosnippet>15</a><span class="kw">use crate</span>::{ExportDesc, ValidationError};
 <a href=#16 id=16 data-nosnippet>16</a>
@@ -86,7 +86,7 @@
 <a href=#86 id=86 data-nosnippet>86</a>                <span class="kw">if </span>validation_info.memories.len() + validation_info.imports_length.imported_memories
 <a href=#87 id=87 data-nosnippet>87</a>                    &lt;= mem_idx
 <a href=#88 id=88 data-nosnippet>88</a>                {
-<a href=#89 id=89 data-nosnippet>89</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIndex(mem_idx));
+<a href=#89 id=89 data-nosnippet>89</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidMemIdx(mem_idx));
 <a href=#90 id=90 data-nosnippet>90</a>                }
 <a href=#91 id=91 data-nosnippet>91</a>            }
 <a href=#92 id=92 data-nosnippet>92</a>            GlobalIdx(global_idx) =&gt; {

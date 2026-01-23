@@ -59,7 +59,7 @@
 <a href=#59 id=59 data-nosnippet>59</a>    <span class="doccomment">/// An index for a table is invalid.
 <a href=#60 id=60 data-nosnippet>60</a>    </span>InvalidTableIdx(TableIdx),
 <a href=#61 id=61 data-nosnippet>61</a>    <span class="doccomment">/// An index for a memory is invalid.
-<a href=#62 id=62 data-nosnippet>62</a>    </span>InvalidMemIndex(MemIdx),
+<a href=#62 id=62 data-nosnippet>62</a>    </span>InvalidMemIdx(MemIdx),
 <a href=#63 id=63 data-nosnippet>63</a>    <span class="doccomment">/// An index for a global is invalid.
 <a href=#64 id=64 data-nosnippet>64</a>    </span>InvalidGlobalIdx(GlobalIdx),
 <a href=#65 id=65 data-nosnippet>65</a>    <span class="doccomment">/// An index for an element segment is invalid.
@@ -172,7 +172,7 @@
 <a href=#172 id=172 data-nosnippet>172</a>            ValidationError::InvalidTypeIdx(idx) =&gt; <span class="macro">write!</span>(f, <span class="string">"The type index {idx} is invalid"</span>),
 <a href=#173 id=173 data-nosnippet>173</a>            ValidationError::InvalidFuncIdx(idx) =&gt; <span class="macro">write!</span>(f, <span class="string">"The function index {idx} is invalid"</span>),
 <a href=#174 id=174 data-nosnippet>174</a>            ValidationError::InvalidTableIdx(idx) =&gt; <span class="macro">write!</span>(f, <span class="string">"The table index {idx} is invalid"</span>),
-<a href=#175 id=175 data-nosnippet>175</a>            ValidationError::InvalidMemIndex(idx) =&gt; <span class="macro">write!</span>(f, <span class="string">"The memory index {idx} is invalid"</span>),
+<a href=#175 id=175 data-nosnippet>175</a>            ValidationError::InvalidMemIdx(idx) =&gt; <span class="macro">write!</span>(f, <span class="string">"The memory index {idx} is invalid"</span>),
 <a href=#176 id=176 data-nosnippet>176</a>            ValidationError::InvalidGlobalIdx(idx) =&gt; <span class="macro">write!</span>(f, <span class="string">"The global index {idx} is invalid"</span>),
 <a href=#177 id=177 data-nosnippet>177</a>            ValidationError::InvalidElemIdx(idx) =&gt; <span class="macro">write!</span>(f, <span class="string">"The element segment index {idx} is invalid"</span>),
 <a href=#178 id=178 data-nosnippet>178</a>            ValidationError::InvalidDataIdx(idx) =&gt; <span class="macro">write!</span>(f, <span class="string">"The data segment index {idx} is invalid"</span>),

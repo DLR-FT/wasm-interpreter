@@ -394,7 +394,7 @@
 <a href=#394 id=394 data-nosnippet>394</a>                    //   i32.const n
 <a href=#395 id=395 data-nosnippet>395</a>                    //   memory.init i
 <a href=#396 id=396 data-nosnippet>396</a>                    //   data.drop i
-<a href=#397 id=397 data-nosnippet>397</a>                    </span><span class="kw">let </span>d: i32 = run_const_span(validation_info.wasm, dinstr_i, module_addr, <span class="self">self</span>)<span class="question-mark">?
+<a href=#397 id=397 data-nosnippet>397</a>                    </span><span class="kw">let </span>d: u32 = run_const_span(validation_info.wasm, dinstr_i, module_addr, <span class="self">self</span>)<span class="question-mark">?
 <a href=#398 id=398 data-nosnippet>398</a>                        </span>.unwrap_validated() <span class="comment">// there is a return value
 <a href=#399 id=399 data-nosnippet>399</a>                        </span>.try_into()
 <a href=#400 id=400 data-nosnippet>400</a>                        .unwrap_validated(); <span class="comment">// return value has the correct type
