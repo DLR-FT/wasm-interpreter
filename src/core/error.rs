@@ -1,4 +1,3 @@
-use crate::core::indices::GlobalIdx;
 use crate::validation_stack::ValidationStackEntry;
 use crate::RefType;
 use core::fmt::{Display, Formatter};
@@ -60,7 +59,7 @@ pub enum ValidationError {
     /// An index for a memory is invalid.
     InvalidMemIdx(u32),
     /// An index for a global is invalid.
-    InvalidGlobalIdx(GlobalIdx),
+    InvalidGlobalIdx(u32),
     /// An index for an element segment is invalid.
     InvalidElemIdx(ElemIdx),
     /// An index for a data segment is invalid.
@@ -161,6 +160,9 @@ pub enum ValidationError {
     /// The module contains too many memories, i.e. imported or locally-defined
     /// memories. The maximum number of memories is `u32::MAX`.
     TooManyMemories,
+    /// The module contains too many globals, i.e. imported or locally-defined
+    /// memories. The maximum number of memories is [`u32::MAX`].
+    TooManyGlobals,
 }
 
 impl Display for ValidationError {
@@ -235,6 +237,7 @@ impl Display for ValidationError {
             ValidationError::TooManyFunctions => f.write_str("The module contains too many functions. The maximum number of functions (either imported or locally-defined) is 2^32 - 1"),
             ValidationError::TooManyTables => f.write_str("The module contains too many tables. The maximum number of tables (either imported or locally-defined) is 2^32 - 1"),
             ValidationError::TooManyMemories => f.write_str("The module contains too many memories. The maximum number of memories (either imported or locally-defined) is 2^32 - 1"),
+            ValidationError::TooManyGlobals => f.write_str("The module contains too many globals. The maximum number of globals (either imported or locally-defined) is 2^32 - 1"),
         }
     }
 }
