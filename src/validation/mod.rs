@@ -2,7 +2,7 @@ use alloc::collections::btree_set::{self, BTreeSet};
 use alloc::vec::Vec;
 
 use crate::core::indices::{
-    ElemIdx, ExtendedIdxVec, FuncIdx, GlobalIdx, IdxVec, MemIdx, TableIdx, TypeIdx,
+    DataIdx, ElemIdx, ExtendedIdxVec, FuncIdx, GlobalIdx, IdxVec, MemIdx, TableIdx, TypeIdx,
 };
 use crate::core::reader::section_header::{SectionHeader, SectionTy};
 use crate::core::reader::span::Span;
@@ -39,13 +39,13 @@ pub struct ValidationInfo<'bytecode> {
     pub(crate) memories: ExtendedIdxVec<MemIdx, MemType>,
     pub(crate) globals: ExtendedIdxVec<GlobalIdx, Global>,
     pub(crate) elements: IdxVec<ElemIdx, ElemType>,
+    pub(crate) data: IdxVec<DataIdx, DataSegment>,
     #[allow(dead_code)]
     pub(crate) exports: Vec<Export>,
     /// Each block contains the validated code section and the stp corresponding to
     /// the beginning of that code section
     pub(crate) func_blocks_stps: Vec<(Span, usize)>,
     pub(crate) sidetable: Sidetable,
-    pub(crate) data: Vec<DataSegment>,
     /// The start function which is automatically executed during instantiation
     pub(crate) start: Option<FuncIdx>,
     // pub(crate) exports_length: Exported,
@@ -303,7 +303,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
                 &functions,
                 &globals,
                 &memories,
-                &data_count,
+                data_count,
                 &tables,
                 &elements,
                 &validation_context_refs,
@@ -325,12 +325,13 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
     let data_section = handle_section(&mut wasm, &mut header, SectionTy::Data, |wasm, h| {
         // wasm.read_vec(DataSegment::read)
         data::validate_data_section(wasm, h, &imported_global_types, &memories, &functions)
+            .map(IdxVec::new)
     })?
     .unwrap_or_default();
 
     // https://webassembly.github.io/spec/core/binary/modules.html#data-count-section
     if let (Some(data_count), data_len) = (data_count, data_section.len()) {
-        if data_count as usize != data_len {
+        if data_count != data_len {
             return Err(ValidationError::DataCountAndDataSectionsLengthAreDifferent);
         }
     }

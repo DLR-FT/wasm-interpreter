@@ -1,3 +1,4 @@
+use core::convert::Infallible;
 use core::mem;
 use core::sync::atomic::{AtomicU64, Ordering};
 
@@ -153,7 +154,7 @@ impl<'b, T: Config> Store<'b, T> {
             // imports can be populated at this point.
             global_addrs: ExtendedIdxVec::new(extern_vals.iter().globals().collect(), Vec::new()),
             elem_addrs: IdxVec::default(),
-            data_addrs: Vec::new(),
+            data_addrs: IdxVec::default(),
             exports: BTreeMap::new(),
             wasm_bytecode: validation_info.wasm,
             sidetable: validation_info.sidetable.clone(),
@@ -269,9 +270,8 @@ impl<'b, T: Config> Store<'b, T> {
         // allocation: step 7, 13
         let data_addrs = module
             .data
-            .iter()
-            .map(|DataSegment { init: bytes, .. }| self.alloc_data(bytes))
-            .collect();
+            .map::<DataAddr, Infallible>(|data_segment| Ok(self.alloc_data(&data_segment.init)))
+            .expect("infallible error type to never be constructed");
 
         // allocation: skip step 14 as it was done in instantiation step 5
 
@@ -449,7 +449,7 @@ impl<'b, T: Config> Store<'b, T> {
 
         // instantiation: step 16
         // TODO have to stray away from the spec a bit since our codebase does not lend itself well to freely executing instructions by themselves
-        for (i, DataSegment { init, mode }) in validation_info.data.iter().enumerate() {
+        for (i, DataSegment { init, mode }) in validation_info.data.iter_enumerated() {
             match mode {
                 crate::core::reader::types::data::DataMode::Active(DataModeActive {
                     memory_idx,
@@ -488,7 +488,13 @@ impl<'b, T: Config> Store<'b, T> {
                             d,
                         )?
                     };
-                    data_drop(&self.modules, &mut self.data, module_addr, i)?;
+
+                    // SAFETY: The passed data index comes from the validation
+                    // info, that was just used to allocate a new module
+                    // instance with address `module_addr` in `self.modules`.
+                    // Therefore, it must be safe to use it for accessing its
+                    // referenced memory.
+                    unsafe { data_drop(&self.modules, &mut self.data, module_addr, i)? };
                 }
                 crate::core::reader::types::data::DataMode::Passive => (),
             }
