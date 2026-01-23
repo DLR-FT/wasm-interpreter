@@ -1,7 +1,9 @@
 use alloc::collections::btree_set::{self, BTreeSet};
 use alloc::vec::Vec;
 
-use crate::core::indices::{ExtendedIdxVec, FuncIdx, GlobalIdx, IdxVec, MemIdx, TableIdx, TypeIdx};
+use crate::core::indices::{
+    ElemIdx, ExtendedIdxVec, FuncIdx, GlobalIdx, IdxVec, MemIdx, TableIdx, TypeIdx,
+};
 use crate::core::reader::section_header::{SectionHeader, SectionTy};
 use crate::core::reader::span::Span;
 use crate::core::reader::types::data::DataSegment;
@@ -36,6 +38,7 @@ pub struct ValidationInfo<'bytecode> {
     pub(crate) tables: ExtendedIdxVec<TableIdx, TableType>,
     pub(crate) memories: ExtendedIdxVec<MemIdx, MemType>,
     pub(crate) globals: ExtendedIdxVec<GlobalIdx, Global>,
+    pub(crate) elements: IdxVec<ElemIdx, ElemType>,
     #[allow(dead_code)]
     pub(crate) exports: Vec<Export>,
     /// Each block contains the validated code section and the stp corresponding to
@@ -45,7 +48,6 @@ pub struct ValidationInfo<'bytecode> {
     pub(crate) data: Vec<DataSegment>,
     /// The start function which is automatically executed during instantiation
     pub(crate) start: Option<FuncIdx>,
-    pub(crate) elements: Vec<ElemType>,
     // pub(crate) exports_length: Exported,
 }
 
@@ -258,17 +260,17 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
-    let elements: Vec<ElemType> =
-        handle_section(&mut wasm, &mut header, SectionTy::Element, |wasm, _| {
-            ElemType::read_from_wasm(
-                wasm,
-                &functions,
-                &mut validation_context_refs,
-                &tables,
-                &imported_global_types,
-            )
-        })?
-        .unwrap_or_default();
+    let elements = handle_section(&mut wasm, &mut header, SectionTy::Element, |wasm, _| {
+        ElemType::read_from_wasm(
+            wasm,
+            &functions,
+            &mut validation_context_refs,
+            &tables,
+            &imported_global_types,
+        )
+        .map(IdxVec::new)
+    })?
+    .unwrap_or_default();
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
