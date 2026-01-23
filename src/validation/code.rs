@@ -38,7 +38,7 @@ pub unsafe fn validate_code_section(
     c_mems: &ExtendedIdxVec<MemIdx, MemType>,
     data_count: &Option<u32>,
     c_tables: &ExtendedIdxVec<TableIdx, TableType>,
-    elements: &[ElemType],
+    c_elems: &IdxVec<ElemIdx, ElemType>,
     validation_context_refs: &BTreeSet<FuncIdx>,
     sidetable: &mut Sidetable,
 ) -> Result<Vec<(Span, usize)>, ValidationError> {
@@ -83,7 +83,7 @@ pub unsafe fn validate_code_section(
                 c_mems,
                 data_count,
                 c_tables,
-                elements,
+                c_elems,
                 validation_context_refs,
             )
         }?;
@@ -227,7 +227,7 @@ unsafe fn read_instructions(
     c_mems: &ExtendedIdxVec<MemIdx, MemType>,
     data_count: &Option<u32>,
     c_tables: &ExtendedIdxVec<TableIdx, TableType>,
-    elements: &[ElemType],
+    c_elems: &IdxVec<ElemIdx, ElemType>,
     validation_context_refs: &BTreeSet<FuncIdx>,
 ) -> Result<(), ValidationError> {
     loop {
@@ -1165,6 +1165,8 @@ unsafe fn read_instructions(
                     }
                     MEMORY_INIT => {
                         let data_idx = wasm.read_var_u32()? as DataIdx;
+                        // TODO for multiple memory support: be careful with the
+                        // order of validation of both indices. see table.init
                         // Note: This zero byte is reserved for the multiple
                         // memories proposal.
                         let zero = wasm.read_u8()?;
@@ -1219,25 +1221,33 @@ unsafe fn read_instructions(
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                     }
                     TABLE_INIT => {
-                        let elem_idx = wasm.read_var_u32()? as ElemIdx;
-
-                        let table_idx = TableIdx::read_and_validate(wasm, c_tables)?;
+                        // Validation requires us to validate the table index
+                        // before the element index -- even though these are
+                        // encoded the other way around.
+                        let elem_idx = ElemIdx::read_and_validate(wasm, c_elems);
+                        let table_idx = TableIdx::read_and_validate(wasm, c_tables);
+                        if let Err(invalid_table_idx @ ValidationError::InvalidTableIdx(_)) =
+                            table_idx
+                        {
+                            return Err(invalid_table_idx);
+                        }
+                        let elem_idx = elem_idx?;
+                        let table_idx = table_idx?;
 
                         // SAFETY: We just validated that this is a valid `TableIdx` in
                         // this `ExtendedIdxVec<TableIdx, TableType>`.
                         let table1 = unsafe { c_tables.get(table_idx) };
-                        let t1 = table1.et;
+                        let table_type = table1.et;
 
-                        if elements.len() <= elem_idx {
-                            return Err(ValidationError::InvalidElemIdx(elem_idx));
-                        }
+                        // SAFETY: We just validated that this is a valid
+                        // `ElemIdx` in this `IdxVec`.
+                        let element = unsafe { c_elems.get(elem_idx) };
+                        let element_type = element.to_ref_type();
 
-                        let t2 = elements[elem_idx].to_ref_type();
-
-                        if t1 != t2 {
+                        if table_type != element_type {
                             return Err(ValidationError::MismatchedRefTypesDuringTableInit {
-                                table_ty: t1,
-                                elem_ty: t2,
+                                table_ty: table_type,
+                                elem_ty: element_type,
                             });
                         }
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
@@ -1246,11 +1256,7 @@ unsafe fn read_instructions(
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                     }
                     ELEM_DROP => {
-                        let elem_idx = wasm.read_var_u32()? as ElemIdx;
-
-                        if elements.len() <= elem_idx {
-                            return Err(ValidationError::InvalidElemIdx(elem_idx));
-                        }
+                        let _elem_idx = ElemIdx::read_and_validate(wasm, c_elems)?;
                     }
                     TABLE_COPY => {
                         let table_x_idx = TableIdx::read_and_validate(wasm, c_tables)?;
