@@ -127,6 +127,31 @@ impl<I: Idx, T> IdxVec<I, T> {
             .get(index)
             .expect("this to be a valid index due to the safety guarantees made by the caller")
     }
+
+    pub fn iter_enumerated(&self) -> impl Iterator<Item = (I, &T)> {
+        self.inner.iter().enumerate().map(|(index, t)| {
+            (
+                I::new(
+                    u32::try_from(index)
+                        .expect("this vector to contain a maximum of 2^32-1 elements"),
+                ),
+                t,
+            )
+        })
+    }
+
+    /// Creates an equivalent index space for one that already exists while
+    /// allowing elements to be mapped.
+    pub fn map<R, E>(&self, mapper: impl FnMut(&T) -> Result<R, E>) -> Result<IdxVec<I, R>, E> {
+        Ok(IdxVec {
+            inner: self
+                .inner
+                .iter()
+                .map(mapper)
+                .collect::<Result<Box<[R]>, E>>()?,
+            _phantom: PhantomData,
+        })
+    }
 }
 
 /// Index space for definitions that consist of imports and locals.
@@ -575,8 +600,59 @@ impl GlobalIdx {
     }
 }
 
-#[allow(dead_code)]
-pub type ElemIdx = usize;
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct ElemIdx(u32);
+
+impl core::fmt::Display for ElemIdx {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "element index {}", self.0)
+    }
+}
+
+impl Idx for ElemIdx {
+    fn new(index: u32) -> Self {
+        Self(index)
+    }
+
+    fn into_inner(self) -> u32 {
+        self.0
+    }
+}
+
+impl ElemIdx {
+    /// Validates that a given index is a valid element index.
+    ///
+    /// On success a new [`ElemIdx`] is returned, otherwise a
+    /// [`ValidationError`] is returned.
+    pub fn validate<T>(index: u32, c_elems: &IdxVec<ElemIdx, T>) -> Result<Self, ValidationError> {
+        c_elems
+            .validate_index(index)
+            .ok_or(ValidationError::InvalidElemIdx(index))
+    }
+
+    /// Reads an element index from Wasm code and validates that it is a valid
+    /// index for a given elements vector.
+    pub fn read_and_validate<T>(
+        wasm: &mut WasmReader,
+        c_elems: &IdxVec<ElemIdx, T>,
+    ) -> Result<Self, ValidationError> {
+        let index = wasm.read_var_u32()?;
+        Self::validate(index, c_elems)
+    }
+
+    /// Reads an element index from Wasm code without validating it.
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure that there is a valid element index in the
+    /// [`WasmReader`] and that this index is valid for a specific [`IdxVec`]
+    /// through [`Self::read_and_validate`] or [`Self::validate`].
+    pub unsafe fn read_unchecked(wasm: &mut WasmReader) -> Self {
+        let index = wasm.read_var_u32().unwrap();
+        Self::new(index)
+    }
+}
+
 pub type DataIdx = usize;
 pub type LocalIdx = usize;
 pub type LabelIdx = usize;

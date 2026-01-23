@@ -20,7 +20,8 @@ use crate::{
     assert_validated::UnwrapValidatedExt,
     core::{
         indices::{
-            DataIdx, FuncIdx, GlobalIdx, Idx, LabelIdx, LocalIdx, MemIdx, TableIdx, TypeIdx,
+            DataIdx, ElemIdx, FuncIdx, GlobalIdx, Idx, LabelIdx, LocalIdx, MemIdx, TableIdx,
+            TypeIdx,
         },
         reader::{
             types::{memarg::MemArg, BlockType},
@@ -2568,7 +2569,9 @@ pub(super) fn run<T: Config>(
                     // in binary format it seems that elemidx is first ???????
                     // this is ONLY for passive elements
                     TABLE_INIT => {
-                        let elem_idx = wasm.read_var_u32().unwrap_validated() as usize;
+                        // SAFETY: Validation guarantees there to be a valid
+                        // element index next.
+                        let elem_idx = unsafe { ElemIdx::read_unchecked(wasm) };
                         // SAFETY: The Wasm code is valid and therefore the
                         // following bytes must encode a valid table index.
                         let table_idx = unsafe { TableIdx::read_unchecked(wasm) };
@@ -2609,14 +2612,20 @@ pub(super) fn run<T: Config>(
                     }
                     ELEM_DROP => {
                         decrement_fuel!(T::get_fc_extension_flat_cost(ELEM_DROP));
-                        let elem_idx = wasm.read_var_u32().unwrap_validated() as usize;
+                        // SAFETY: Validation guarantees there a valid element
+                        // index next.
+                        let elem_idx = unsafe { ElemIdx::read_unchecked(wasm) };
 
-                        elem_drop(
-                            &store.modules,
-                            &mut store.elements,
-                            current_module,
-                            elem_idx,
-                        )?;
+                        // SAFETY: The passed element index is valid in the
+                        // current module, whose module address is also passed.
+                        unsafe {
+                            elem_drop(
+                                &store.modules,
+                                &mut store.elements,
+                                current_module,
+                                elem_idx,
+                            )?
+                        };
                     }
                     // https://webassembly.github.io/spec/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-table-mathsf-table-copy-x-y
                     TABLE_COPY => {
@@ -5502,8 +5511,10 @@ fn calculate_mem_address(memarg: &MemArg, relative_address: u32) -> Result<usize
 //helpers for avoiding code duplication during module instantiation
 /// # Safety
 ///
-/// The caller must ensure that the given table index is valid in
-/// `store_modules.get(current_module).table_addrs`.
+/// - The caller must ensure that the given table index is valid in
+///   `store_modules.get(current_module).table_addrs`.
+/// - The caller must ensure that the given element index is valid in
+///   `store_modules.get(current_module).elem_addrs`.
 // TODO instead of passing all module instances and the current module addr
 // separately, directly pass a `&ModuleInst`.
 #[inline(always)]
@@ -5513,7 +5524,7 @@ pub(super) unsafe fn table_init(
     store_tables: &mut AddrVec<TableAddr, TableInst>,
     store_elements: &AddrVec<ElemAddr, ElemInst>,
     current_module: ModuleAddr,
-    elem_idx: usize,
+    elem_idx: ElemIdx,
     table_idx: TableIdx,
     n: u32,
     s: i32,
@@ -5525,7 +5536,9 @@ pub(super) unsafe fn table_init(
     // `ExtendedIdxVec`.
     let table_addr = *unsafe { current_module.table_addrs.get(table_idx) };
 
-    let elem_addr = *current_module.elem_addrs.get(elem_idx).unwrap_validated();
+    // SAFETY: The caller ensures that `elem_idx` is valid for this specific
+    // `IdxVec`.
+    let elem_addr = *unsafe { current_module.elem_addrs.get(elem_idx) };
 
     let tab = store_tables.get_mut(table_addr);
 
@@ -5559,19 +5572,25 @@ pub(super) unsafe fn table_init(
     Ok(())
 }
 
+/// # Safety
+///
+/// The caller must ensure that the given element index is valid in
+/// `store_modules.get(current_module).elem_addrs`.
 #[inline(always)]
-pub(super) fn elem_drop(
+pub(super) unsafe fn elem_drop(
     store_modules: &AddrVec<ModuleAddr, ModuleInst>,
     store_elements: &mut AddrVec<ElemAddr, ElemInst>,
     current_module: ModuleAddr,
-    elem_idx: usize,
+    elem_idx: ElemIdx,
 ) -> Result<(), RuntimeError> {
     // WARN: i'm not sure if this is okay or not
-    let elem_addr = *store_modules
-        .get(current_module)
-        .elem_addrs
-        .get(elem_idx)
-        .unwrap_validated();
+
+    let module = store_modules.get(current_module);
+
+    // SAFETY: The caller ensures that `elem_idx` is valid for this specific
+    // `IdxVec`.
+    let elem_addr = *unsafe { module.elem_addrs.get(elem_idx) };
+
     store_elements.get_mut(elem_addr).references.clear();
     Ok(())
 }

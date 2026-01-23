@@ -49,7 +49,7 @@ impl ElemType {
     /// This comes in handy later on when we are validating the actual code of
     /// the functions so that we can make sure we are not referencing invalid
     /// functions
-    pub fn read_from_wasm(
+    pub fn read_and_validate(
         wasm: &mut WasmReader,
         c_funcs: &ExtendedIdxVec<FuncIdx, TypeIdx>,
         validation_context_refs: &mut BTreeSet<FuncIdx>,

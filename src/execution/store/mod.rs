@@ -5,7 +5,7 @@ use crate::addrs::{
     AddrVec, DataAddr, ElemAddr, FuncAddr, GlobalAddr, MemAddr, ModuleAddr, TableAddr,
 };
 use crate::config::Config;
-use crate::core::indices::{ExtendedIdxVec, TypeIdx};
+use crate::core::indices::{ElemIdx, ExtendedIdxVec, IdxVec, TypeIdx};
 use crate::core::reader::span::Span;
 use crate::core::reader::types::data::{DataModeActive, DataSegment};
 use crate::core::reader::types::element::{ActiveElem, ElemItems, ElemMode, ElemType};
@@ -155,7 +155,7 @@ impl<'b, T: Config> Store<'b, T> {
                 .expect(
                     "that the number of imports and therefore also the number of imported globals is <= u32::MAX",
                 ),
-            elem_addrs: Vec::new(),
+            elem_addrs: IdxVec::default(),
             data_addrs: Vec::new(),
             exports: BTreeMap::new(),
             wasm_bytecode: validation_info.wasm,
@@ -198,41 +198,38 @@ impl<'b, T: Config> Store<'b, T> {
             })
             .collect::<Result<Vec<Value>, _>>()?;
 
-        // instantiation: this roughly matches step 9,10
-
-        let mut element_init_ref_lists: Vec<Vec<Ref>> =
-            Vec::with_capacity(validation_info.elements.len());
-
-        for elem in &validation_info.elements {
-            let mut new_list = Vec::new();
-            match &elem.init {
+        // instantiation: this roughly matches step 9,10 and performs allocation
+        // step 6,12 already
+        let elem_addrs: IdxVec<ElemIdx, ElemAddr> = validation_info.elements.map(|elem| {
+            let refs = match &elem.init {
                 // shortcut of evaluation of "ref.func <func_idx>; end;"
                 // validation guarantees corresponding func_idx's existence
                 ElemItems::RefFuncs(ref_funcs) => {
-                    for func_idx in ref_funcs {
-                        // SAFETY: Both the function index and the module
-                        // instance's `func_addrs` come from the same
-                        // `ValidationInfo`, i.e. the one passed into this
-                        // function.
-                        let func_addr =
-                            unsafe { self.modules.get(module_addr).func_addrs.get(*func_idx) };
+                    ref_funcs
+                        .iter()
+                        .map(|func_idx| {
+                            let module = self.modules.get(module_addr);
+                            // SAFETY: Both the function index and the module
+                            // instance's `func_addrs` come from the same
+                            // `ValidationInfo`, i.e. the one passed into this
+                            // function.
+                            let func_addr = unsafe { module.func_addrs.get(*func_idx) };
 
-                        new_list.push(Ref::Func(*func_addr));
-                    }
+                            Ref::Func(*func_addr)
+                        })
+                        .collect()
                 }
-                ElemItems::Exprs(_, exprs) => {
-                    for expr in exprs {
-                        new_list.push(
-                            run_const_span(validation_info.wasm, expr, module_addr, self)?
-                                .unwrap_validated() // there is a return value
-                                .try_into()
-                                .unwrap_validated(), // return value has the correct type
-                        )
-                    }
-                }
-            }
-            element_init_ref_lists.push(new_list);
-        }
+                ElemItems::Exprs(_, exprs) => exprs
+                    .iter()
+                    .map(|expr| {
+                        run_const_span(validation_info.wasm, expr, module_addr, self)
+                            .map(|res| res.unwrap_validated().try_into().unwrap_validated())
+                    })
+                    .collect::<Result<Vec<Ref>, RuntimeError>>()?,
+            };
+
+            Ok::<_, RuntimeError>(self.alloc_elem(elem.ty(), refs))
+        })?;
 
         // instantiation: step 11 - module allocation (except function allocation - which was made in step 5)
         // https://webassembly.github.io/spec/core/exec/modules.html#alloc-module
@@ -242,21 +239,21 @@ impl<'b, T: Config> Store<'b, T> {
         // allocation: step 1
         let module = validation_info;
 
-        let ref_lists = element_init_ref_lists;
+        // allocation: skip step 2 & 8 as it was done in instantiation step 5
 
-        // allocation: skip step 2 as it was done in instantiation step 5
-
-        // allocation: step 3-13
+        // allocation: step 3, 9
         let table_addrs_local: Vec<TableAddr> = module
             .tables
             .iter_local_definitions()
             .map(|table_type| self.alloc_table(*table_type, Ref::Null(table_type.et)))
             .collect();
+        // allocation: step 4, 10
         let mem_addrs_local: Vec<MemAddr> = module
             .memories
             .iter_local_definitions()
             .map(|mem_type| self.alloc_mem(*mem_type))
             .collect();
+        // allocation: step 5, 11
         let global_addrs_local: Vec<GlobalAddr> = module
             .globals
             .iter_local_definitions()
@@ -270,12 +267,9 @@ impl<'b, T: Config> Store<'b, T> {
                 )| self.alloc_global(*global_type, val),
             )
             .collect();
-        let elem_addrs = module
-            .elements
-            .iter()
-            .zip(ref_lists)
-            .map(|(elem, refs)| self.alloc_elem(elem.ty(), refs))
-            .collect();
+        // allocation: skip step 6, 12 as it was done in instantiation step 9, 10
+
+        // allocation: step 7, 13
         let data_addrs = module
             .data
             .iter()
@@ -382,12 +376,12 @@ impl<'b, T: Config> Store<'b, T> {
         // instantiation: step 12-15
         // TODO have to stray away from the spec a bit since our codebase does not lend itself well to freely executing instructions by themselves
         for (
-            i,
+            element_idx,
             ElemType {
                 init: elem_items,
                 mode,
             },
-        ) in validation_info.elements.iter().enumerate()
+        ) in validation_info.elements.iter_enumerated()
         {
             match mode {
                 ElemMode::Active(ActiveElem {
@@ -410,31 +404,47 @@ impl<'b, T: Config> Store<'b, T> {
                         .unwrap_validated(); // return value has correct type
 
                     let s = 0;
-                    // SAFETY: The passed table index comes from the validation
-                    // info, that was just used to allocate a new module
-                    // instance with address `module_addr` in `self.modules`.
-                    // Therefore it must be safe to use to for accessing its referenced table.
+                    // SAFETY: The passed table and element indices come from
+                    // the validation info, that was just used to allocate a new
+                    // module instance with address `module_addr` in
+                    // `self.modules`. Therefore they must be safe to use for
+                    // accessing the referenced table and element.
                     unsafe {
                         table_init(
                             &self.modules,
                             &mut self.tables,
                             &self.elements,
                             module_addr,
-                            i,
+                            element_idx,
                             *table_idx_i,
                             n,
                             s,
                             d,
                         )?
                     };
-                    elem_drop(&self.modules, &mut self.elements, module_addr, i)?;
+                    // SAFETY: The passed element index comes from the
+                    // validation info, that was just used to allocate a new
+                    // module instance with address `module_addr` in
+                    // `self.modules`. Therefore, it must be safe to use for
+                    // accessing the referenced element.
+                    unsafe {
+                        elem_drop(&self.modules, &mut self.elements, module_addr, element_idx)?
+                    };
                 }
                 ElemMode::Declarative => {
                     // instantiation step 15:
                     // TODO (for now, we are doing hopefully what is equivalent to it)
                     // execute:
                     //   elem.drop i
-                    elem_drop(&self.modules, &mut self.elements, module_addr, i)?;
+
+                    // SAFETY: The passed element index comes from the
+                    // validation info, that was just used to allocate a new
+                    // module instance with address `module_addr` in
+                    // `self.modules`. Therefore, it must be safe to use for
+                    // accessing the referenced element.
+                    unsafe {
+                        elem_drop(&self.modules, &mut self.elements, module_addr, element_idx)?
+                    };
                 }
                 ElemMode::Passive => (),
             }
