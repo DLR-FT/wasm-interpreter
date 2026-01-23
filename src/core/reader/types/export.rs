@@ -2,7 +2,7 @@ use alloc::borrow::ToOwned;
 use alloc::string::String;
 
 use crate::core::indices::{ExtendedIdxVec, FuncIdx, GlobalIdx, MemIdx, TableIdx, TypeIdx};
-use crate::core::reader::types::import::ImportDesc;
+use crate::core::reader::types::global::Global;
 use crate::core::reader::WasmReader;
 use crate::{MemType, TableType, ValidationError, ValidationInfo};
 
@@ -20,9 +20,10 @@ impl Export {
         c_funcs: &ExtendedIdxVec<FuncIdx, TypeIdx>,
         c_tables: &ExtendedIdxVec<TableIdx, TableType>,
         c_mems: &ExtendedIdxVec<MemIdx, MemType>,
+        c_globals: &ExtendedIdxVec<GlobalIdx, Global>,
     ) -> Result<Self, ValidationError> {
         let name = wasm.read_name()?.to_owned();
-        let desc = ExportDesc::read_and_validate(wasm, c_funcs, c_tables, c_mems)?;
+        let desc = ExportDesc::read_and_validate(wasm, c_funcs, c_tables, c_mems, c_globals)?;
         Ok(Export { name, desc })
     }
 }
@@ -82,23 +83,13 @@ impl ExportDesc {
                 ExternType::Mem(*mem_type)
             }
             ExportDesc::Global(global_idx) => {
-                let global_type =
-                    match global_idx.checked_sub(validation_info.imports_length.imported_globals) {
-                        Some(local_global_idx) => {
-                            validation_info.globals.get(local_global_idx).unwrap().ty
-                        }
-                        None => validation_info
-                            .imports
-                            .iter()
-                            .filter_map(|import| match import.desc {
-                                ImportDesc::Global(global_type) => Some(global_type),
-                                _ => None,
-                            })
-                            .nth(*global_idx)
-                            .unwrap(),
-                    };
+                // SAFETY: The caller ensures that the current `ExportDesc`
+                // comes from the same `ValidationInfo` that is passed into the
+                // current function. Therefore, the global index stored in
+                // `self` must be valid in the given `ValidationInfo`.
+                let global = unsafe { validation_info.globals.get(*global_idx) };
 
-                ExternType::Global(global_type)
+                ExternType::Global(global.ty)
             }
         }
     }
@@ -110,6 +101,7 @@ impl ExportDesc {
         c_functions: &ExtendedIdxVec<FuncIdx, TypeIdx>,
         c_tables: &ExtendedIdxVec<TableIdx, TableType>,
         c_mems: &ExtendedIdxVec<MemIdx, MemType>,
+        c_globals: &ExtendedIdxVec<GlobalIdx, Global>,
     ) -> Result<Self, ValidationError> {
         let desc_id = wasm.read_u8()?;
 
@@ -117,10 +109,7 @@ impl ExportDesc {
             0x00 => ExportDesc::Func(FuncIdx::read_and_validate(wasm, c_functions)?),
             0x01 => ExportDesc::Table(TableIdx::read_and_validate(wasm, c_tables)?),
             0x02 => ExportDesc::Mem(MemIdx::read_and_validate(wasm, c_mems)?),
-            0x03 => {
-                let desc_idx = wasm.read_var_u32()? as usize;
-                ExportDesc::Global(desc_idx)
-            }
+            0x03 => ExportDesc::Global(GlobalIdx::read_and_validate(wasm, c_globals)?),
             other => return Err(ValidationError::MalformedExportDescDiscriminator(other)),
         };
         Ok(desc)

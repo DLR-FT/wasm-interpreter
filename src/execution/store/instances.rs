@@ -2,7 +2,7 @@ use alloc::{collections::btree_map::BTreeMap, string::String, vec, vec::Vec};
 
 use crate::{
     core::{
-        indices::{ExtendedIdxVec, FuncIdx, IdxVec, MemIdx, TableIdx, TypeIdx},
+        indices::{ExtendedIdxVec, FuncIdx, GlobalIdx, IdxVec, MemIdx, TableIdx, TypeIdx},
         reader::{
             span::Span,
             types::{FuncType, MemType, TableType},
@@ -180,7 +180,7 @@ pub struct ModuleInst<'b> {
     pub func_addrs: ExtendedIdxVec<FuncIdx, FuncAddr>,
     pub table_addrs: ExtendedIdxVec<TableIdx, TableAddr>,
     pub mem_addrs: ExtendedIdxVec<MemIdx, MemAddr>,
-    pub global_addrs: Vec<GlobalAddr>,
+    pub global_addrs: ExtendedIdxVec<GlobalIdx, GlobalAddr>,
     pub elem_addrs: Vec<ElemAddr>,
     pub data_addrs: Vec<DataAddr>,
     ///<https://webassembly.github.io/spec/core/exec/runtime.html#export-instances>

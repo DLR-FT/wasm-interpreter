@@ -2,7 +2,7 @@ use alloc::collections::btree_set::{self, BTreeSet};
 use alloc::vec::Vec;
 
 use crate::core::indices::{
-    ExtendedIdxVec, FuncIdx, IdxVec, IdxVecOverflowError, MemIdx, TableIdx, TypeIdx,
+    ExtendedIdxVec, FuncIdx, GlobalIdx, IdxVec, IdxVecOverflowError, MemIdx, TableIdx, TypeIdx,
 };
 use crate::core::reader::section_header::{SectionHeader, SectionTy};
 use crate::core::reader::span::Span;
@@ -22,14 +22,6 @@ pub(crate) mod globals;
 pub(crate) mod read_constant_expression;
 pub(crate) mod validation_stack;
 
-#[derive(Clone, Debug)]
-pub(crate) struct ImportsLength {
-    pub imported_functions: usize,
-    pub imported_globals: usize,
-    pub imported_memories: usize,
-    pub imported_tables: usize,
-}
-
 /// Information collected from validating a module.
 ///
 /// This can be used to instantiate a new module instance in some
@@ -45,7 +37,7 @@ pub struct ValidationInfo<'bytecode> {
     pub(crate) functions: ExtendedIdxVec<FuncIdx, TypeIdx>,
     pub(crate) tables: ExtendedIdxVec<TableIdx, TableType>,
     pub(crate) memories: ExtendedIdxVec<MemIdx, MemType>,
-    pub(crate) globals: Vec<Global>,
+    pub(crate) globals: ExtendedIdxVec<GlobalIdx, Global>,
     pub(crate) exports: Vec<Export>,
     /// Each block contains the validated code section and the stp corresponding to
     /// the beginning of that code section
@@ -55,58 +47,18 @@ pub struct ValidationInfo<'bytecode> {
     /// The start function which is automatically executed during instantiation
     pub(crate) start: Option<FuncIdx>,
     pub(crate) elements: Vec<ElemType>,
-    pub(crate) imports_length: ImportsLength,
     // pub(crate) exports_length: Exported,
 }
 
-fn validate_exports(validation_info: &ValidationInfo) -> Result<(), ValidationError> {
+fn validate_no_duplicate_exports(validation_info: &ValidationInfo) -> Result<(), ValidationError> {
     let mut found_export_names: btree_set::BTreeSet<&str> = btree_set::BTreeSet::new();
-    use crate::core::reader::types::export::ExportDesc::*;
     for export in &validation_info.exports {
         if found_export_names.contains(export.name.as_str()) {
             return Err(ValidationError::DuplicateExportName);
         }
         found_export_names.insert(export.name.as_str());
-        match export.desc {
-            Func(_) => {
-                // Function indices are already validated upon creation
-            }
-            Table(_) => {
-                // Table indices are already validated upon creation
-            }
-            Mem(_) => {
-                // Memory indices are already validated upon creation
-            }
-            Global(global_idx) => {
-                if validation_info.globals.len() + validation_info.imports_length.imported_globals
-                    <= global_idx
-                {
-                    return Err(ValidationError::InvalidGlobalIdx(global_idx));
-                }
-            }
-        }
     }
     Ok(())
-}
-
-fn get_imports_length(imports: &Vec<Import>) -> ImportsLength {
-    let mut imports_length = ImportsLength {
-        imported_functions: 0,
-        imported_globals: 0,
-        imported_memories: 0,
-        imported_tables: 0,
-    };
-
-    for import in imports {
-        match import.desc {
-            ImportDesc::Func(_) => imports_length.imported_functions += 1,
-            ImportDesc::Global(_) => imports_length.imported_globals += 1,
-            ImportDesc::Mem(_) => imports_length.imported_memories += 1,
-            ImportDesc::Table(_) => imports_length.imported_tables += 1,
-        }
-    }
-
-    imports_length
 }
 
 pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
@@ -176,7 +128,6 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
         wasm.read_vec(|wasm| Import::read_and_validate(wasm, &types))
     })?
     .unwrap_or_default();
-    let imports_length = get_imports_length(&imports);
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
@@ -235,16 +186,14 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
-    // we start off with the imported globals
-    let /* mut */ imported_global_types = imports
+    let imported_global_types: Vec<GlobalType> = imports
         .iter()
         .filter_map(|m| match m.desc {
             ImportDesc::Global(global) => Some(global),
             _ => None,
         })
-        .collect::<Vec<GlobalType>>();
-    let imported_global_types_len = imported_global_types.len();
-    let globals = handle_section(&mut wasm, &mut header, SectionTy::Global, |wasm, h| {
+        .collect();
+    let local_globals = handle_section(&mut wasm, &mut header, SectionTy::Global, |wasm, h| {
         globals::validate_global_section(
             wasm,
             h,
@@ -254,27 +203,22 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
         )
     })?
     .unwrap_or_default();
-    let mut all_globals = Vec::new();
-    for item in imported_global_types.iter().take(imported_global_types_len) {
-        all_globals.push(Global {
-            init_expr: Span::new(usize::MAX, 0),
-            ty: *item,
-        })
-    }
-    for item in &globals {
-        all_globals.push(*item)
-    }
 
-    // All globals need to be addressable by a u32
-    if all_globals.len() > usize::try_from(u32::MAX).expect("pointer width to be at least 32 bits")
-    {
-        return Err(ValidationError::TooManyGlobals);
-    }
+    let imported_globals = imported_global_types.iter().map(|ty| Global {
+        // TODO using a default MAX value for spans that are never executed is
+        // not really safe. Maybe opt for an Option instead.
+        init_expr: Span::new(usize::MAX, 0),
+        ty: *ty,
+    });
+    let globals = ExtendedIdxVec::new(imported_globals.collect(), local_globals)
+        .map_err(|IdxVecOverflowError| ValidationError::TooManyGlobals)?;
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
     let exports = handle_section(&mut wasm, &mut header, SectionTy::Export, |wasm, _| {
-        wasm.read_vec(|wasm| Export::read_and_validate(wasm, &functions, &tables, &memories))
+        wasm.read_vec(|wasm| {
+            Export::read_and_validate(wasm, &functions, &tables, &memories, &globals)
+        })
     })?
     .unwrap_or_default();
     validation_context_refs.extend(exports.iter().filter_map(
@@ -358,7 +302,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
                 h,
                 &types,
                 &functions,
-                &all_globals,
+                &globals,
                 &memories,
                 &data_count,
                 &tables,
@@ -414,9 +358,8 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
         data: data_section,
         start,
         elements,
-        imports_length,
     };
-    validate_exports(&validation_info)?;
+    validate_no_duplicate_exports(&validation_info)?;
 
     Ok(validation_info)
 }

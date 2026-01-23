@@ -147,7 +147,14 @@ impl<'b, T: Config> Store<'b, T> {
             func_addrs: ExtendedIdxVec::default(),
             table_addrs: ExtendedIdxVec::default(),
             mem_addrs: ExtendedIdxVec::default(),
-            global_addrs: extern_vals.iter().globals().collect(),
+            // TODO This is weird hack with soundness holes.  Wasm defines a
+            // special `moduleinst_init`. Here, we want to use the
+            // `ExtendedIdxVec` type safety, but at the same time only the
+            // imports can be populated at this point.
+            global_addrs: ExtendedIdxVec::new(extern_vals.iter().globals().collect(), Vec::new())
+                .expect(
+                    "that the number of imports and therefore also the number of imported globals is <= u32::MAX",
+                ),
             elem_addrs: Vec::new(),
             data_addrs: Vec::new(),
             exports: BTreeMap::new(),
@@ -181,16 +188,15 @@ impl<'b, T: Config> Store<'b, T> {
 
         // instantiation: this roughly matches step 6,7,8
         // validation guarantees these will evaluate without errors.
-        let maybe_global_init_vals: Result<Vec<Value>, _> = validation_info
+        let local_globals_init_vals: Vec<Value> = validation_info
             .globals
-            .iter()
+            .iter_local_definitions()
             .map(|global| {
                 run_const_span(validation_info.wasm, &global.init_expr, module_addr, self)
                     .transpose()
                     .unwrap_validated()
             })
-            .collect();
-        let global_init_vals = maybe_global_init_vals?;
+            .collect::<Result<Vec<Value>, _>>()?;
 
         // instantiation: this roughly matches step 9,10
 
@@ -236,7 +242,6 @@ impl<'b, T: Config> Store<'b, T> {
         // allocation: step 1
         let module = validation_info;
 
-        let vals = global_init_vals;
         let ref_lists = element_init_ref_lists;
 
         // allocation: skip step 2 as it was done in instantiation step 5
@@ -252,10 +257,10 @@ impl<'b, T: Config> Store<'b, T> {
             .iter_local_definitions()
             .map(|mem_type| self.alloc_mem(*mem_type))
             .collect();
-        let global_addrs: Vec<GlobalAddr> = module
+        let global_addrs_local: Vec<GlobalAddr> = module
             .globals
-            .iter()
-            .zip(vals)
+            .iter_local_definitions()
+            .zip(local_globals_init_vals)
             .map(
                 |(
                     Global {
@@ -303,11 +308,17 @@ impl<'b, T: Config> Store<'b, T> {
             definitions and performing one-to-one mapping on each one.",
             );
 
-        // skipping step 17 partially as it was partially done in instantiation step
-        self.modules
-            .get_mut(module_addr)
-            .global_addrs
-            .extend(global_addrs);
+        // allocation step 17
+        let global_addrs = validation_info
+            .globals
+            .map(extern_vals.iter().globals().collect(), global_addrs_local)
+            .expect(
+                "that the number of imported and local globals always \
+            match the respective numbers in the validation info. Step 3 and 4 \
+            check if the number of imported globals is correct and the number \
+            of local globals is produced by iterating through all global \
+            definitions and performing one-to-one mapping on each one.",
+            );
 
         // allocation: step 18,19
         let export_insts: BTreeMap<String, ExternVal> = module
@@ -342,17 +353,24 @@ impl<'b, T: Config> Store<'b, T> {
                         ExternVal::Mem(*mem_addr)
                     }
                     ExportDesc::Global(global_idx) => {
-                        ExternVal::Global(module_inst.global_addrs[*global_idx])
+                        // SAFETY: Both the global index and the globals
+                        // `ExtendedIdxVec` come from the same module instance.
+                        // Because all indices are valid in their specific
+                        // module instance, this is sound.
+                        let global_addr = unsafe { global_addrs.get(*global_idx) };
+
+                        ExternVal::Global(*global_addr)
                     }
                 };
                 (String::from(name), value)
             })
             .collect();
 
-        // allocation: step 20,21 initialize module (except functions and globals due to instantiation step 5, allocation step 14,17)
+        // allocation: step 20,21 initialize module (except functions to instantiation step 5, allocation step 14)
         let module_inst = self.modules.get_mut(module_addr);
         module_inst.table_addrs = table_addrs;
         module_inst.mem_addrs = mem_addrs;
+        module_inst.global_addrs = global_addrs;
         module_inst.elem_addrs = elem_addrs;
         module_inst.data_addrs = data_addrs;
         module_inst.exports = export_insts;

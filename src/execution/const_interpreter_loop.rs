@@ -45,12 +45,17 @@ pub(crate) fn run_const<T: Config>(
                 break;
             }
             GLOBAL_GET => {
-                let global_idx = wasm.read_var_u32().unwrap_validated() as GlobalIdx;
+                // SAFETY: Validation guarantees there to be a valid global
+                // index next.
+                let global_idx = unsafe { GlobalIdx::read_unchecked(wasm) };
 
-                //TODO replace double indirection
-                let global = store
-                    .globals
-                    .get(store.modules.get(module).global_addrs[global_idx]);
+                let module_instance = store.modules.get(module);
+
+                // SAFETY: Validation guarantees the global index to be valid
+                // for the current module.
+                let global_addr = *unsafe { module_instance.global_addrs.get(global_idx) };
+
+                let global = store.globals.get(global_addr);
 
                 trace!(
                     "Constant instruction: global.get [{global_idx}] -> [{:?}]",

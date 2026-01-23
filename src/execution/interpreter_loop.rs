@@ -442,13 +442,13 @@ pub(super) fn run<T: Config>(
             }
             GLOBAL_GET => {
                 decrement_fuel!(T::get_flat_cost(GLOBAL_GET));
-                let global_idx = wasm.read_var_u32().unwrap_validated() as GlobalIdx;
-                let global_addr = *store
-                    .modules
-                    .get(current_module)
-                    .global_addrs
-                    .get(global_idx)
-                    .unwrap_validated();
+                // SAFETY: Validation guarantees there to be a valid global
+                // index next.
+                let global_idx = unsafe { GlobalIdx::read_unchecked(wasm) };
+                let module = store.modules.get(current_module);
+                // SAFETY: Validation guarantees the global index to be valid in
+                // the current module.
+                let global_addr = *unsafe { module.global_addrs.get(global_idx) };
                 let global = store.globals.get(global_addr);
 
                 stack.push_value::<T>(global.value)?;
@@ -461,14 +461,15 @@ pub(super) fn run<T: Config>(
             }
             GLOBAL_SET => {
                 decrement_fuel!(T::get_flat_cost(GLOBAL_SET));
-                let global_idx = wasm.read_var_u32().unwrap_validated() as GlobalIdx;
-                let global_addr = *store
-                    .modules
-                    .get(current_module)
-                    .global_addrs
-                    .get(global_idx)
-                    .unwrap_validated();
+                // SAFETY: Validation guarantees there to be a valid global
+                // index next.
+                let global_idx = unsafe { GlobalIdx::read_unchecked(wasm) };
+                let module = store.modules.get(current_module);
+                // SAFETY: Validation guarantees the global index to be valid in
+                // the current module.
+                let global_addr = *unsafe { module.global_addrs.get(global_idx) };
                 let global = store.globals.get_mut(global_addr);
+
                 global.value = stack.pop_value();
                 trace!("Instruction: GLOBAL_SET");
             }
