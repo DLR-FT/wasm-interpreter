@@ -2,7 +2,7 @@ use alloc::vec::Vec;
 
 use crate::{
     core::{
-        indices::MemIdx,
+        indices::{ExtendedIdxVec, FuncIdx, MemIdx, TypeIdx},
         reader::{
             section_header::{SectionHeader, SectionTy},
             types::{
@@ -14,7 +14,7 @@ use crate::{
     },
     read_constant_expression::read_constant_expression,
     validation_stack::ValidationStack,
-    ValidationError,
+    MemType, ValidationError,
 };
 
 /// Validate the data section.
@@ -22,8 +22,8 @@ pub(super) fn validate_data_section(
     wasm: &mut WasmReader,
     section_header: SectionHeader,
     imported_global_types: &[GlobalType],
-    no_of_total_memories: usize,
-    num_funcs: usize,
+    c_mems: &ExtendedIdxVec<MemIdx, MemType>,
+    c_funcs: &ExtendedIdxVec<FuncIdx, TypeIdx>,
 ) -> Result<Vec<DataSegment>, ValidationError> {
     assert_eq!(section_header.ty, SectionTy::Data);
 
@@ -35,9 +35,7 @@ pub(super) fn validate_data_section(
                 // active { memory 0, offset e }
                 trace!("Data section: active {{ memory 0, offset e }}");
 
-                if no_of_total_memories == 0 {
-                    return Err(ValidationError::InvalidMemIdx(0));
-                }
+                let _mem_idx = MemIdx::validate(0, c_mems)?;
 
                 let mut valid_stack = ValidationStack::new();
                 let (offset, _) = {
@@ -45,7 +43,7 @@ pub(super) fn validate_data_section(
                         wasm,
                         &mut valid_stack,
                         imported_global_types,
-                        num_funcs,
+                        c_funcs,
                     )?
                 };
 
@@ -56,7 +54,7 @@ pub(super) fn validate_data_section(
                 // WARN: we currently don't take into consideration how we act when we are dealing with globals here
                 DataSegment {
                     mode: DataMode::Active(DataModeActive {
-                        memory_idx: 0,
+                        memory_idx: MemIdx::validate(0, c_mems)?,
                         offset,
                     }),
                     init: byte_vec,
@@ -73,14 +71,7 @@ pub(super) fn validate_data_section(
             }
             2 => {
                 trace!("Data section: active {{ memory x, offset e }}");
-                let mem_idx = wasm.read_var_u32()? as MemIdx;
-                if mem_idx >= no_of_total_memories {
-                    return Err(crate::ValidationError::InvalidMemIdx(mem_idx));
-                }
-                assert!(
-                    mem_idx == 0,
-                    "Memory index is not 0 - it's {mem_idx}! Multiple memories are NOT supported"
-                );
+                let mem_idx = MemIdx::read_and_validate(wasm, c_mems)?;
 
                 let mut valid_stack = ValidationStack::new();
                 let (offset, _) = {
@@ -88,7 +79,7 @@ pub(super) fn validate_data_section(
                         wasm,
                         &mut valid_stack,
                         imported_global_types,
-                        num_funcs,
+                        c_funcs,
                     )?
                 };
 
@@ -98,7 +89,7 @@ pub(super) fn validate_data_section(
 
                 DataSegment {
                     mode: DataMode::Active(DataModeActive {
-                        memory_idx: 0,
+                        memory_idx: mem_idx,
                         offset,
                     }),
                     init: byte_vec,

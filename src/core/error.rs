@@ -1,13 +1,11 @@
-use crate::core::indices::GlobalIdx;
 use crate::validation_stack::ValidationStackEntry;
 use crate::RefType;
 use core::fmt::{Display, Formatter};
 use core::str::Utf8Error;
 
+use super::indices::{FuncIdx, LabelIdx, LocalIdx};
 use crate::core::reader::section_header::SectionTy;
 use crate::core::reader::types::ValType;
-
-use super::indices::{DataIdx, ElemIdx, FuncIdx, LabelIdx, LocalIdx, MemIdx, TableIdx, TypeIdx};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum ValidationError {
@@ -53,19 +51,19 @@ pub enum ValidationError {
     MalformedElemKindDiscriminator(u8),
 
     /// An index for a type is invalid.
-    InvalidTypeIdx(TypeIdx),
+    InvalidTypeIdx(u32),
     /// An index for a function is invalid.
-    InvalidFuncIdx(FuncIdx),
+    InvalidFuncIdx(u32),
     /// An index for a table is invalid.
-    InvalidTableIdx(TableIdx),
+    InvalidTableIdx(u32),
     /// An index for a memory is invalid.
-    InvalidMemIdx(MemIdx),
+    InvalidMemIdx(u32),
     /// An index for a global is invalid.
-    InvalidGlobalIdx(GlobalIdx),
+    InvalidGlobalIdx(u32),
     /// An index for an element segment is invalid.
-    InvalidElemIdx(ElemIdx),
+    InvalidElemIdx(u32),
     /// An index for a data segment is invalid.
-    InvalidDataIdx(DataIdx),
+    InvalidDataIdx(u32),
     /// An index for a local is invalid.
     InvalidLocalIdx(LocalIdx),
     /// An index for a label is invalid.
@@ -144,6 +142,9 @@ pub enum ValidationError {
     /// integers to prevent collisions between bit patterns of different types.
     /// Therefore, 33-bit signed integers may never be negative.
     I33IsNegative,
+    /// The data count section is required, if there are instructions that use
+    /// data indices.
+    MissingDataCountSection,
 }
 
 impl Display for ValidationError {
@@ -211,7 +212,8 @@ impl Display for ValidationError {
             ValidationError::DataCountAndDataSectionsLengthAreDifferent => write!(f,"The data count section specifies a different length than there are data segments in the data section"),
             ValidationError::InvalidImportType => f.write_str("Invalid import type"),
             ValidationError::InvalidStartFunctionSignature => write!(f,"The start function has parameters or return types which it is not allowed to have"),
-            ValidationError::I33IsNegative => f.write_str("An i33 type is negative which is not allowed")
+            ValidationError::I33IsNegative => f.write_str("An i33 type is negative which is not allowed"),
+            ValidationError::MissingDataCountSection => f.write_str("Some instructions could not be validated because the data count section is missing"),
         }
     }
 }
