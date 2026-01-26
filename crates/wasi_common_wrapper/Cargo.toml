@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-wiggle = "^21.0.0"
+wiggle = "41.0.0"
 wasm-interpreter = { path = "../..", default-features = false }
-wasi-common = "^21.0.0"
+wasi-common = "41.0.0"
 wat = { workspace = true }
