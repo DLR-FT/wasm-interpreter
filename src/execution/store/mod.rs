@@ -1052,24 +1052,24 @@ impl<'b, T: Config> Store<'b, T> {
                         let host_func_type = host_func_inst.function_type.clone();
                         let returns = (host_func_inst.hostcode)(self, params);
 
-                    debug!("Successfully invoked function");
+                        debug!("Successfully invoked function");
 
-                    let returns = returns.map_err(|HaltExecutionError| {
-                        RuntimeError::HostFunctionHaltedExecution
-                    })?;
+                        let returns = returns.map_err(|HaltExecutionError| {
+                            RuntimeError::HostFunctionHaltedExecution
+                        })?;
 
-                    // Verify that the return parameters match the host function parameters
-                    // since we have no validation guarantees for host functions
+                        // Verify that the return parameters match the host function parameters
+                        // since we have no validation guarantees for host functions
 
-                    let return_types = returns.iter().map(|v| v.to_ty()).collect::<Vec<_>>();
+                        let return_types = returns.iter().map(|v| v.to_ty()).collect::<Vec<_>>();
                         if host_func_type.returns.valtypes != return_types {
-                        trace!(
-                            "Func return types len: {}; returned args len: {}",
+                            trace!(
+                                "Func return types len: {}; returned args len: {}",
                                 host_func_type.returns.valtypes.len(),
-                            return_types.len()
-                        );
-                        return Err(RuntimeError::HostFunctionSignatureMismatch);
-                    }                    
+                                return_types.len()
+                            );
+                            return Err(RuntimeError::HostFunctionSignatureMismatch);
+                        }
 
                         Ok(RunState::Finished {
                             values: returns,

@@ -153,7 +153,10 @@ pub fn simple_multivariate_host_func_within_module() {
 pub fn simple_multivariate_host_func_with_host_func_wrapper() {
     let wasm_bytes = wat::parse_str(SIMPLE_MULTIVARIATE_MODULE_EXAMPLE).unwrap();
 
-    fn wrapped_add_mult(_: &mut Store<()>, params: Vec<Value>) -> Result<Vec<Value>, HaltExecutionError> {
+    fn wrapped_add_mult(
+        _: &mut Store<()>,
+        params: Vec<Value>,
+    ) -> Result<Vec<Value>, HaltExecutionError> {
         host_function_wrapper(
             params,
             |(x, y): (i32, f64)| -> Result<(f64, i32), HaltExecutionError> {
@@ -210,7 +213,10 @@ pub fn weird_multi_typed_host_func() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
 
-    fn weird_add_mult(_: &mut Store<()>, values: Vec<Value>) -> Result<Vec<Value>, HaltExecutionError> {
+    fn weird_add_mult(
+        _: &mut Store<()>,
+        values: Vec<Value>,
+    ) -> Result<Vec<Value>, HaltExecutionError> {
         Ok(Vec::from([match values[0] {
             Value::I32(val) => {
                 info!("host function saw I32");

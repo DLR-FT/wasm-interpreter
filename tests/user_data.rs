@@ -41,7 +41,8 @@ fn channels() {
             user_data: &mut Store<MySender>,
             _params: Vec<Value>,
         ) -> Result<Vec<Value>, HaltExecutionError> {
-            user_data.user_data
+            user_data
+                .user_data
                 .0
                 .send("Hello from host function!".to_owned())
                 .unwrap();

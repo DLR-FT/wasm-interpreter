@@ -296,7 +296,7 @@ where
             A::try_from(values.next().unwrap())?,
             B::try_from(values.next().unwrap())?,
             C::try_from(values.next().unwrap())?,
-            D::try_from(values.next().unwrap())?
+            D::try_from(values.next().unwrap())?,
         ))
     }
 }

@@ -1,14 +1,18 @@
 use alloc::{collections::btree_map::BTreeMap, string::String, vec, vec::Vec};
 
 use crate::{
-    GlobalType, Limits, RefType, RuntimeError, Store, TrapError, ValType, Value, config::Config, core::{
+    config::Config,
+    core::{
         indices::TypeIdx,
         reader::{
             span::Span,
             types::{FuncType, MemType, TableType},
         },
         sidetable::Sidetable,
-    }, linear_memory::LinearMemory, value::Ref
+    },
+    linear_memory::LinearMemory,
+    value::Ref,
+    GlobalType, Limits, RefType, RuntimeError, Store, TrapError, ValType, Value,
 };
 
 use super::{

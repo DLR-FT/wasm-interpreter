@@ -149,13 +149,23 @@ pub(super) fn run<T: Config>(
                 if test_val != 0 {
                     stp += 1;
                 } else {
-                    do_sidetable_control_transfer(wasm, stack, &mut stp, &store.modules.get(current_module).sidetable)?;
+                    do_sidetable_control_transfer(
+                        wasm,
+                        stack,
+                        &mut stp,
+                        &store.modules.get(current_module).sidetable,
+                    )?;
                 }
                 trace!("Instruction: IF");
             }
             ELSE => {
                 decrement_fuel!(T::get_flat_cost(ELSE));
-                do_sidetable_control_transfer(wasm, stack, &mut stp, &store.modules.get(current_module).sidetable)?;
+                do_sidetable_control_transfer(
+                    wasm,
+                    stack,
+                    &mut stp,
+                    &store.modules.get(current_module).sidetable,
+                )?;
             }
             BR_IF => {
                 decrement_fuel!(T::get_flat_cost(BR_IF));
@@ -164,7 +174,12 @@ pub(super) fn run<T: Config>(
                 let test_val: i32 = stack.pop_value().try_into().unwrap_validated();
 
                 if test_val != 0 {
-                    do_sidetable_control_transfer(wasm, stack, &mut stp, &store.modules.get(current_module).sidetable)?;
+                    do_sidetable_control_transfer(
+                        wasm,
+                        stack,
+                        &mut stp,
+                        &store.modules.get(current_module).sidetable,
+                    )?;
                 } else {
                     stp += 1;
                 }
@@ -187,13 +202,23 @@ pub(super) fn run<T: Config>(
                     stp += case_val;
                 }
 
-                do_sidetable_control_transfer(wasm, stack, &mut stp, &store.modules.get(current_module).sidetable)?;
+                do_sidetable_control_transfer(
+                    wasm,
+                    stack,
+                    &mut stp,
+                    &store.modules.get(current_module).sidetable,
+                )?;
             }
             BR => {
                 decrement_fuel!(T::get_flat_cost(BR));
                 //skip n of BR n
                 wasm.read_var_u32().unwrap_validated();
-                do_sidetable_control_transfer(wasm, stack, &mut stp, &store.modules.get(current_module).sidetable)?;
+                do_sidetable_control_transfer(
+                    wasm,
+                    stack,
+                    &mut stp,
+                    &store.modules.get(current_module).sidetable,
+                )?;
             }
             BLOCK => {
                 decrement_fuel!(T::get_flat_cost(BLOCK));
@@ -206,7 +231,12 @@ pub(super) fn run<T: Config>(
             RETURN => {
                 decrement_fuel!(T::get_flat_cost(RETURN));
                 //same as BR, except no need to skip n of BR n
-                do_sidetable_control_transfer(wasm, stack, &mut stp, &store.modules.get(current_module).sidetable)?;
+                do_sidetable_control_transfer(
+                    wasm,
+                    stack,
+                    &mut stp,
+                    &store.modules.get(current_module).sidetable,
+                )?;
             }
             CALL => {
                 decrement_fuel!(T::get_flat_cost(CALL));
@@ -231,8 +261,7 @@ pub(super) fn run<T: Config>(
                         let params = stack
                             .pop_tail_iter(func_to_call_ty.params.valtypes.len())
                             .collect();
-                        let returns =
-                            (host_func_to_call_inst.hostcode)(store, params);
+                        let returns = (host_func_to_call_inst.hostcode)(store, params);
 
                         let returns = returns.map_err(|HaltExecutionError| {
                             RuntimeError::HostFunctionHaltedExecution
@@ -328,8 +357,7 @@ pub(super) fn run<T: Config>(
                         let params = stack
                             .pop_tail_iter(func_to_call_ty.params.valtypes.len())
                             .collect();
-                        let returns =
-                            (host_func_to_call_inst.hostcode)(store, params);
+                        let returns = (host_func_to_call_inst.hostcode)(store, params);
 
                         let returns = returns.map_err(|HaltExecutionError| {
                             RuntimeError::HostFunctionHaltedExecution
