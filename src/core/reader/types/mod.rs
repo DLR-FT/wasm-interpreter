@@ -310,7 +310,7 @@ pub struct MemType {
 
 impl MemType {
     pub fn read(wasm: &mut WasmReader) -> Result<Self, ValidationError> {
-        let mut limit = Limits::read(wasm)?;
+        let limit = Limits::read(wasm)?;
         // Memory can only grow to 65536 pages of 64kb size (4GiB)
         if limit.min > (1 << 16) {
             return Err(ValidationError::MemoryTooLarge);
@@ -319,8 +319,6 @@ impl MemType {
             if max_limit > (1 << 16) {
                 return Err(ValidationError::MemoryTooLarge);
             }
-        } else {
-            limit.max = Some(1 << 16);
         }
 
         Ok(Self { limits: limit })
