@@ -129,6 +129,166 @@ impl<I: Idx, T> IdxVec<I, T> {
     }
 }
 
+/// Index space for definitions that consist of imports and locals.
+#[allow(unused)] // reason = "temporary until used by new index types"
+pub struct ExtendedIdxVec<I: Idx, T> {
+    inner: Box<[T]>,
+    num_imports: usize,
+    _phantom: PhantomData<I>,
+}
+
+impl<I: Idx, T> Default for ExtendedIdxVec<I, T> {
+    fn default() -> Self {
+        Self {
+            inner: Box::default(),
+            num_imports: 0,
+            _phantom: PhantomData,
+        }
+    }
+}
+
+impl<I: Idx, T: Clone> Clone for ExtendedIdxVec<I, T> {
+    fn clone(&self) -> Self {
+        Self {
+            inner: self.inner.clone(),
+            num_imports: self.num_imports,
+            _phantom: PhantomData,
+        }
+    }
+}
+
+impl<I: Idx, T: core::fmt::Debug> core::fmt::Debug for ExtendedIdxVec<I, T> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_list().entries(&*self.inner).finish()
+    }
+}
+
+impl<I: Idx, T> ExtendedIdxVec<I, T> {
+    /// Creates a new [`IdxVec`] with the given imported and local elements in
+    /// it.
+    ///
+    /// If the number of total elements is larger than what can be addressed by
+    /// a `u32`, i.e. `u32::MAX` elements, an error is returned instead.
+    #[allow(unused)] // reason = "temporary until used by new index types"
+    pub fn new(mut imports: Vec<T>, locals: Vec<T>) -> Result<Self, IdxVecOverflowError> {
+        let imports_len = u32::try_from(imports.len()).map_err(|_| IdxVecOverflowError)?;
+        let locals_len = u32::try_from(locals.len()).map_err(|_| IdxVecOverflowError)?;
+        if imports_len.checked_add(locals_len).is_none() {
+            return Err(IdxVecOverflowError);
+        }
+
+        let num_imports = imports.len();
+        imports.extend(locals);
+
+        Ok(Self {
+            inner: imports.into_boxed_slice(),
+            num_imports,
+            _phantom: PhantomData,
+        })
+    }
+
+    #[allow(unused)] // reason = "temporary until used by new index types"
+    pub fn validate_index(&self, index: u32) -> Option<I> {
+        let index_as_usize = usize::try_from(index).expect("architecture to be at least 32 bits");
+
+        let _element = self.inner.get(index_as_usize)?;
+
+        Some(I::new(index))
+    }
+
+    /// Gets an element from this vector by its index.
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure that the index object was validated using the
+    /// same vector as `self` or a different vector that was used to create
+    /// `self` through [`ExtendedIdxVec::map`].
+    #[allow(unused)] // reason = "temporary until used by new index types"
+    pub unsafe fn get(&self, index: I) -> &T {
+        let index =
+            usize::try_from(index.into_inner()).expect("architecture to be at least 32 bits");
+
+        // TODO use `unwrap_unchecked` when we are sure everything is sound and
+        // our validation is properly tested
+        self.inner
+            .get(index)
+            .expect("this to be a valid index due to the safety guarantees made by the caller")
+    }
+
+    /// Returns the length of this index space
+    #[allow(unused)] // reason = "temporary until used by new index types"
+    pub fn len(&self) -> u32 {
+        u32::try_from(self.inner.len()).expect(
+            "this to never be larger than u32::MAX because this was checked for in Self::new",
+        )
+    }
+
+    /// Returns the length of the imported definitions part of this index space
+    #[allow(unused)] // reason = "temporary until used by new index types"
+    pub fn len_imported_definitions(&self) -> u32 {
+        u32::try_from(self.num_imports).expect(
+            "this to never be larger than u32::MAX, because this was checked for in Self::new",
+        )
+    }
+
+    /// Returns the length of the locally-defined definitions part of this index
+    /// space
+    #[allow(unused)] // reason = "temporary until used by new index types"
+    pub fn len_local_definitions(&self) -> u32 {
+        self.len()
+            .checked_sub(self.len_imported_definitions())
+            .expect("that the number of imports is never larger than the total length of self")
+    }
+
+    /// Creates an equivalent index space for one that already exists while
+    /// allowing elements to be mapped.
+    ///
+    /// Returns `None` if lengths do not match.
+    // TODO maybe make this method take iterators instead of vectors
+    #[allow(unused)] // reason = "temporary until used by new index types"
+    pub fn map<R>(
+        &self,
+        new_imported_definitions: Vec<R>,
+        new_local_definitions: Vec<R>,
+    ) -> Option<ExtendedIdxVec<I, R>> {
+        if u32::try_from(new_imported_definitions.len()).ok()? != self.len_imported_definitions()
+            || u32::try_from(new_local_definitions.len()).ok()? != self.len_local_definitions()
+        {
+            return None;
+        }
+
+        let mut concatenated_definitions = new_imported_definitions;
+        concatenated_definitions.extend(new_local_definitions);
+
+        Some(ExtendedIdxVec {
+            inner: concatenated_definitions.into_boxed_slice(),
+            num_imports: self.num_imports,
+            _phantom: PhantomData,
+        })
+    }
+
+    #[allow(unused)] // reason = "temporary until used by new index types"
+    pub fn iter(&self) -> core::slice::Iter<'_, T> {
+        self.inner.iter()
+    }
+
+    #[allow(unused)] // reason = "temporary until used by new index types"
+    pub fn iter_imported_definitions(&self) -> core::slice::Iter<'_, T> {
+        self.inner
+            .get(..self.num_imports)
+            .expect("the imports length to never be larger than the total length")
+            .iter()
+    }
+
+    #[allow(unused)] // reason = "temporary until used by new index types"
+    pub fn iter_local_definitions(&self) -> core::slice::Iter<'_, T> {
+        self.inner
+            .get(self.num_imports..)
+            .expect("the imports length to never be larger than the total length")
+            .iter()
+    }
+}
+
 /// A type index that is used to index into the types index space of some Wasm
 /// module or module instance.
 ///
