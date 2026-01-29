@@ -12,6 +12,9 @@
 //! This module defines one newtype index type per definition class (e.g.
 //! [`TypeIdx`], [`FuncIdx`], [`GlobalIdx`]) and an index space [`IdxVec`].
 //!
+//! Additionally, the [`ExtendedIdxVec`] type is defined as to provide more
+//! methods on an [`IdxVec`] that consists of imported and locally-defined
+//! objects, i.e. functions, globals, tables and memories.
 //!
 //! # What this module is not
 //!
@@ -128,6 +131,103 @@ impl<I: Idx, T> IdxVec<I, T> {
         u32::try_from(self.inner.len()).expect(
             "this to never be larger than u32::MAX, because this was checked for in Self::new",
         )
+    }
+}
+
+/// Index space for definitions that consist of imports and locals.
+#[allow(unused)] // reason = "temporary until used by new index types"
+pub struct ExtendedIdxVec<I: Idx, T> {
+    inner: IdxVec<I, T>,
+    num_imports: u32,
+}
+
+impl<I: Idx, T> Default for ExtendedIdxVec<I, T> {
+    fn default() -> Self {
+        Self {
+            inner: IdxVec::default(),
+            num_imports: 0,
+        }
+    }
+}
+
+impl<I: Idx, T: Clone> Clone for ExtendedIdxVec<I, T> {
+    fn clone(&self) -> Self {
+        Self {
+            inner: self.inner.clone(),
+            num_imports: self.num_imports,
+        }
+    }
+}
+
+impl<I: Idx, T> ExtendedIdxVec<I, T> {
+    /// Creates a new [`IdxVec`] with the given imported and local elements in
+    /// it.
+    ///
+    /// If the number of total elements is larger than what can be addressed by
+    /// a `u32`, i.e. `u32::MAX` elements, an error is returned instead.
+    #[allow(unused)] // reason = "temporary until used by new index types"
+    pub fn new(imports: Vec<T>, locals: Vec<T>) -> Result<Self, IdxVecOverflowError> {
+        let num_imports = u32::try_from(imports.len()).map_err(|_| IdxVecOverflowError)?;
+
+        let mut combined = imports;
+        combined.extend(locals);
+
+        Ok(Self {
+            inner: IdxVec::new(combined)?,
+            num_imports,
+        })
+    }
+
+    /// Returns the length of the locally-defined definitions part of this index
+    /// space
+    #[allow(unused)] // reason = "temporary until used by new index types"
+    pub fn len_local_definitions(&self) -> u32 {
+        self.inner
+            .len()
+            .checked_sub(self.num_imports)
+            .expect("that the number of imports is never larger than the total length of self")
+    }
+
+    /// Creates an equivalent index space for one that already exists while
+    /// allowing elements to be mapped.
+    ///
+    /// Returns `None` if lengths do not match.
+    // TODO maybe make this method take iterators instead of vectors
+    #[allow(unused)] // reason = "temporary until used by new index types"
+    pub fn map<R>(
+        &self,
+        new_imported_definitions: Vec<R>,
+        new_local_definitions: Vec<R>,
+    ) -> Option<ExtendedIdxVec<I, R>> {
+        if new_imported_definitions.len() != self.num_imports.into_usize()
+            || u32::try_from(new_local_definitions.len()).ok()? != self.len_local_definitions()
+        {
+            return None;
+        }
+
+        Some(
+            ExtendedIdxVec::new(new_imported_definitions, new_local_definitions)
+                .expect("no overflow can happen because the length did not change"),
+        )
+    }
+
+    #[allow(unused)] // reason = "temporary until used by new index types"
+    pub fn iter_local_definitions(&self) -> core::slice::Iter<'_, T> {
+        self.inner
+            .inner
+            .get(self.num_imports.into_usize()..)
+            .expect("the imports length to never be larger than the total length")
+            .iter()
+    }
+
+    #[allow(unused)] // reason = "temporary until used by new index types"
+    pub fn inner(&self) -> &IdxVec<I, T> {
+        &self.inner
+    }
+
+    #[allow(unused)] // reason = "temporary until used by new index types"
+    pub fn into_inner(self) -> IdxVec<I, T> {
+        self.inner
     }
 }
 
