@@ -54,7 +54,7 @@ pub enum ValidationError {
     /// An index for a type is invalid.
     InvalidTypeIdx(u32),
     /// An index for a function is invalid.
-    InvalidFuncIdx(FuncIdx),
+    InvalidFuncIdx(u32),
     /// An index for a table is invalid.
     InvalidTableIdx(TableIdx),
     /// An index for a memory is invalid.
@@ -152,6 +152,9 @@ pub enum ValidationError {
     /// The mode of an element was invalid. Only values in the range 0..=7 are
     /// allowed.
     InvalidElementMode(u32),
+    /// The module contains too many functions, i.e. imported or locally-defined
+    /// functions. The maximum number of functions is `u32::MAX`.
+    TooManyFunctions,
 }
 
 impl Display for ValidationError {
@@ -223,6 +226,7 @@ impl Display for ValidationError {
             ValidationError::MissingDataCountSection => f.write_str("Some instructions could not be validated because the data count section is missing"),
             ValidationError::InvalidDataSegmentMode(mode) => write!(f, "The mode of a data segment was invalid (only 0..=2 is allowed): {mode}"),
             ValidationError::InvalidElementMode(mode) => write!(f, "The mode of an element was invalid (only 0..=7 is allowed): {mode}"),
+            ValidationError::TooManyFunctions => f.write_str("The module contains too many functions. The maximum number of functions (either imported or locally-defined) is 2^32 - 1"),
         }
     }
 }
