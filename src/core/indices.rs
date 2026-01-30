@@ -135,7 +135,7 @@ impl<I: Idx, T> IdxVec<I, T> {
 }
 
 /// Index space for definitions that consist of imports and locals.
-#[allow(unused)] // reason = "temporary until used by new index types"
+#[derive(Debug)]
 pub struct ExtendedIdxVec<I: Idx, T> {
     inner: IdxVec<I, T>,
     num_imports: u32,
@@ -165,7 +165,6 @@ impl<I: Idx, T> ExtendedIdxVec<I, T> {
     ///
     /// If the number of total elements is larger than what can be addressed by
     /// a `u32`, i.e. `u32::MAX` elements, an error is returned instead.
-    #[allow(unused)] // reason = "temporary until used by new index types"
     pub fn new(imports: Vec<T>, locals: Vec<T>) -> Result<Self, IdxVecOverflowError> {
         let num_imports = u32::try_from(imports.len()).map_err(|_| IdxVecOverflowError)?;
 
@@ -180,7 +179,6 @@ impl<I: Idx, T> ExtendedIdxVec<I, T> {
 
     /// Returns the length of the locally-defined definitions part of this index
     /// space
-    #[allow(unused)] // reason = "temporary until used by new index types"
     pub fn len_local_definitions(&self) -> u32 {
         self.inner
             .len()
@@ -193,7 +191,6 @@ impl<I: Idx, T> ExtendedIdxVec<I, T> {
     ///
     /// Returns `None` if lengths do not match.
     // TODO maybe make this method take iterators instead of vectors
-    #[allow(unused)] // reason = "temporary until used by new index types"
     pub fn map<R>(
         &self,
         new_imported_definitions: Vec<R>,
@@ -211,7 +208,6 @@ impl<I: Idx, T> ExtendedIdxVec<I, T> {
         )
     }
 
-    #[allow(unused)] // reason = "temporary until used by new index types"
     pub fn iter_local_definitions(&self) -> core::slice::Iter<'_, T> {
         self.inner
             .inner
@@ -220,12 +216,10 @@ impl<I: Idx, T> ExtendedIdxVec<I, T> {
             .iter()
     }
 
-    #[allow(unused)] // reason = "temporary until used by new index types"
     pub fn inner(&self) -> &IdxVec<I, T> {
         &self.inner
     }
 
-    #[allow(unused)] // reason = "temporary until used by new index types"
     pub fn into_inner(self) -> IdxVec<I, T> {
         self.inner
     }
@@ -302,7 +296,59 @@ impl TypeIdx {
     }
 }
 
-pub type FuncIdx = usize;
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct FuncIdx(u32);
+
+impl core::fmt::Display for FuncIdx {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "function index {}", self.0)
+    }
+}
+
+impl Idx for FuncIdx {
+    fn new(index: u32) -> Self {
+        Self(index)
+    }
+
+    fn into_inner(self) -> u32 {
+        self.0
+    }
+}
+
+impl FuncIdx {
+    /// Validates that a given index is a valid function index.
+    ///
+    /// On success a new [`FuncIdx`] is returned, otherwise a
+    /// [`ValidationError`] is returned.
+    pub fn validate<T>(index: u32, c_funcs: &IdxVec<FuncIdx, T>) -> Result<Self, ValidationError> {
+        c_funcs
+            .validate_index(index)
+            .ok_or(ValidationError::InvalidFuncIdx(index))
+    }
+
+    /// Reads a function index from Wasm code and validates that it is a valid
+    /// index for a given functions vector.
+    pub fn read_and_validate<T>(
+        wasm: &mut WasmReader,
+        c_funcs: &IdxVec<FuncIdx, T>,
+    ) -> Result<Self, ValidationError> {
+        let index = wasm.read_var_u32()?;
+        Self::validate(index, c_funcs)
+    }
+
+    /// Reads a function index from Wasm code without validating it.
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure that there is a valid function index in the
+    /// [`WasmReader`] and that this index is valid for a specific [`IdxVec`]
+    /// through [`Self::read_and_validate`].
+    pub unsafe fn read_unchecked(wasm: &mut WasmReader) -> Self {
+        let index = wasm.read_var_u32().unwrap();
+        Self::new(index)
+    }
+}
+
 pub type TableIdx = usize;
 pub type MemIdx = usize;
 pub type GlobalIdx = usize;
