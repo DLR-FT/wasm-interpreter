@@ -132,7 +132,7 @@ impl<I: Idx, T> IdxVec<I, T> {
 }
 
 /// Index space for definitions that consist of imports and locals.
-#[allow(unused)] // reason = "temporary until used by new index types"
+#[derive(Debug)]
 pub struct ExtendedIdxVec<I: Idx, T> {
     inner: IdxVec<I, T>,
     num_imports: u32,
@@ -162,13 +162,8 @@ impl<I: Idx, T> ExtendedIdxVec<I, T> {
     ///
     /// If the number of total elements is larger than what can be addressed by
     /// a `u32`, i.e. `u32::MAX` elements, an error is returned instead.
-    #[allow(unused)] // reason = "temporary until used by new index types"
-    pub fn new(mut imports: Vec<T>, locals: Vec<T>) -> Result<Self, IdxVecOverflowError> {
-        let imports_len = u32::try_from(imports.len()).map_err(|_| IdxVecOverflowError)?;
-        let locals_len = u32::try_from(locals.len()).map_err(|_| IdxVecOverflowError)?;
-        if imports_len.checked_add(locals_len).is_none() {
-            return Err(IdxVecOverflowError);
-        }
+    pub fn new(imports: Vec<T>, locals: Vec<T>) -> Result<Self, IdxVecOverflowError> {
+        let num_imports = u32::try_from(imports.len()).map_err(|_| IdxVecOverflowError)?;
 
         let mut combined = imports;
         combined.extend(locals);
@@ -179,53 +174,8 @@ impl<I: Idx, T> ExtendedIdxVec<I, T> {
         })
     }
 
-    #[allow(unused)] // reason = "temporary until used by new index types"
-    pub fn validate_index(&self, index: u32) -> Option<I> {
-        let index_as_usize = usize::try_from(index).expect("architecture to be at least 32 bits");
-
-        let _element = self.inner.get(index_as_usize)?;
-
-        Some(I::new(index))
-    }
-
-    /// Gets an element from this vector by its index.
-    ///
-    /// # Safety
-    ///
-    /// The caller must ensure that the index object was validated using the
-    /// same vector as `self` or a different vector that was used to create
-    /// `self` through [`ExtendedIdxVec::map`].
-    #[allow(unused)] // reason = "temporary until used by new index types"
-    pub unsafe fn get(&self, index: I) -> &T {
-        let index =
-            usize::try_from(index.into_inner()).expect("architecture to be at least 32 bits");
-
-        // TODO use `unwrap_unchecked` when we are sure everything is sound and
-        // our validation is properly tested
-        self.inner
-            .get(index)
-            .expect("this to be a valid index due to the safety guarantees made by the caller")
-    }
-
-    /// Returns the length of this index space
-    #[allow(unused)] // reason = "temporary until used by new index types"
-    pub fn len(&self) -> u32 {
-        u32::try_from(self.inner.len()).expect(
-            "this to never be larger than u32::MAX because this was checked for in Self::new",
-        )
-    }
-
-    /// Returns the length of the imported definitions part of this index space
-    #[allow(unused)] // reason = "temporary until used by new index types"
-    pub fn len_imported_definitions(&self) -> u32 {
-        u32::try_from(self.num_imports).expect(
-            "this to never be larger than u32::MAX, because this was checked for in Self::new",
-        )
-    }
-
     /// Returns the length of the locally-defined definitions part of this index
     /// space
-    #[allow(unused)] // reason = "temporary until used by new index types"
     pub fn len_local_definitions(&self) -> u32 {
         self.len()
             .checked_sub(self.num_imports)
@@ -237,7 +187,6 @@ impl<I: Idx, T> ExtendedIdxVec<I, T> {
     ///
     /// Returns `None` if lengths do not match.
     // TODO maybe make this method take iterators instead of vectors
-    #[allow(unused)] // reason = "temporary until used by new index types"
     pub fn map<R>(
         &self,
         new_imported_definitions: Vec<R>,
@@ -255,24 +204,10 @@ impl<I: Idx, T> ExtendedIdxVec<I, T> {
         )
     }
 
-    #[allow(unused)] // reason = "temporary until used by new index types"
-    pub fn iter(&self) -> core::slice::Iter<'_, T> {
-        self.inner.inner.iter()
-    }
-
-    #[allow(unused)] // reason = "temporary until used by new index types"
-    pub fn iter_imported_definitions(&self) -> core::slice::Iter<'_, T> {
-        self.inner
-            .inner
-            .get(..self.num_imports.into_usize())
-            .expect("the imports length to never be larger than the total length")
-            .iter()
-    }
-
-    #[allow(unused)] // reason = "temporary until used by new index types"
     pub fn iter_local_definitions(&self) -> core::slice::Iter<'_, T> {
         self.inner
-            .get(self.num_imports..)
+            .inner
+            .get(self.num_imports.into_usize()..)
             .expect("the imports length to never be larger than the total length")
             .iter()
     }
@@ -353,7 +288,59 @@ impl TypeIdx {
     }
 }
 
-pub type FuncIdx = usize;
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct FuncIdx(u32);
+
+impl core::fmt::Display for FuncIdx {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "function index {}", self.0)
+    }
+}
+
+impl Idx for FuncIdx {
+    fn new(index: u32) -> Self {
+        Self(index)
+    }
+
+    fn into_inner(self) -> u32 {
+        self.0
+    }
+}
+
+impl FuncIdx {
+    /// Validates that a given index is a valid function index.
+    ///
+    /// On success a new [`FuncIdx`] is returned, otherwise a
+    /// [`ValidationError`] is returned.
+    pub fn validate<T>(index: u32, c_funcs: &IdxVec<FuncIdx, T>) -> Result<Self, ValidationError> {
+        c_funcs
+            .validate_index(index)
+            .ok_or(ValidationError::InvalidFuncIdx(index))
+    }
+
+    /// Reads a function index from Wasm code and validates that it is a valid
+    /// index for a given functions vector.
+    pub fn read_and_validate<T>(
+        wasm: &mut WasmReader,
+        c_funcs: &IdxVec<FuncIdx, T>,
+    ) -> Result<Self, ValidationError> {
+        let index = wasm.read_var_u32()?;
+        Self::validate(index, c_funcs)
+    }
+
+    /// Reads a function index from Wasm code without validating it.
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure that there is a valid function index in the
+    /// [`WasmReader`] and that this index is valid for a specific [`IdxVec`]
+    /// through [`Self::read_and_validate`].
+    pub unsafe fn read_unchecked(wasm: &mut WasmReader) -> Self {
+        let index = wasm.read_var_u32().unwrap();
+        Self::new(index)
+    }
+}
+
 pub type TableIdx = usize;
 pub type MemIdx = usize;
 pub type GlobalIdx = usize;
