@@ -1,7 +1,7 @@
 use alloc::borrow::ToOwned;
 use alloc::string::String;
 
-use crate::core::indices::{FuncIdx, GlobalIdx, MemIdx, TableIdx};
+use crate::core::indices::{ExtendedIdxVec, FuncIdx, GlobalIdx, MemIdx, TableIdx, TypeIdx};
 use crate::core::reader::types::import::ImportDesc;
 use crate::core::reader::WasmReader;
 use crate::{ValidationError, ValidationInfo};
@@ -15,9 +15,12 @@ pub struct Export {
 }
 
 impl Export {
-    pub fn read(wasm: &mut WasmReader) -> Result<Self, ValidationError> {
+    pub fn read_and_validate(
+        wasm: &mut WasmReader,
+        c_funcs: &ExtendedIdxVec<FuncIdx, TypeIdx>,
+    ) -> Result<Self, ValidationError> {
         let name = wasm.read_name()?.to_owned();
-        let desc = ExportDesc::read(wasm)?;
+        let desc = ExportDesc::read_and_validate(wasm, c_funcs)?;
         Ok(Export { name, desc })
     }
 }
@@ -45,25 +48,16 @@ impl ExportDesc {
         // import
         match self {
             ExportDesc::Func(func_idx) => {
-                let type_idx = match func_idx
-                    .checked_sub(validation_info.imports_length.imported_functions)
-                {
-                    Some(local_func_idx) => *validation_info.functions.get(local_func_idx).unwrap(),
-                    None => validation_info
-                        .imports
-                        .iter()
-                        .filter_map(|import| match import.desc {
-                            ImportDesc::Func(type_idx) => Some(type_idx),
-                            _ => None,
-                        })
-                        .nth(*func_idx)
-                        .unwrap(),
-                };
-                // Safety: The caller ensures that the current `ExportDesc`
-                // comes from the same `ValidationInfo`. The `ValidationInfo`
-                // struct guarantees that all indices contained by it are valid
-                // as a result of prior validation.
-                let func_type = unsafe { validation_info.types.get(type_idx) };
+                // SAFETY: The caller ensures that the current `ExportDesc`
+                // comes from the same `ValidationInfo` that is passed into the
+                // current function. Therefore, the function index stored in
+                // `self` must be valid in the given `ValidationInfo`.
+                let type_idx = unsafe { validation_info.functions.get(*func_idx) };
+                // SAFETY: The type index was just read from the passed
+                // `ValidationInfo`.  Because the `ValidationInfo` struct
+                // guarantees that all indices contained in it are valid for all
+                // other `IdxVec` vectors in it, this is sound.
+                let func_type = unsafe { validation_info.types.get(*type_idx) };
                 // TODO ugly clone that should disappear when types are directly parsed from bytecode instead of vector copies
                 ExternType::Func(func_type.clone())
             }
@@ -125,15 +119,26 @@ impl ExportDesc {
 }
 
 impl ExportDesc {
-    pub fn read(wasm: &mut WasmReader) -> Result<Self, ValidationError> {
+    pub fn read_and_validate(
+        wasm: &mut WasmReader,
+        c_functions: &ExtendedIdxVec<FuncIdx, TypeIdx>,
+    ) -> Result<Self, ValidationError> {
         let desc_id = wasm.read_u8()?;
-        let desc_idx = wasm.read_var_u32()? as usize;
 
         let desc = match desc_id {
-            0x00 => ExportDesc::Func(desc_idx),
-            0x01 => ExportDesc::Table(desc_idx),
-            0x02 => ExportDesc::Mem(desc_idx),
-            0x03 => ExportDesc::Global(desc_idx),
+            0x00 => ExportDesc::Func(FuncIdx::read_and_validate(wasm, c_functions)?),
+            0x01 => {
+                let desc_idx = wasm.read_var_u32()? as usize;
+                ExportDesc::Table(desc_idx)
+            }
+            0x02 => {
+                let desc_idx = wasm.read_var_u32()? as usize;
+                ExportDesc::Mem(desc_idx)
+            }
+            0x03 => {
+                let desc_idx = wasm.read_var_u32()? as usize;
+                ExportDesc::Global(desc_idx)
+            }
             other => return Err(ValidationError::MalformedExportDescDiscriminator(other)),
         };
         Ok(desc)

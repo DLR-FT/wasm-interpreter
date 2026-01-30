@@ -1,6 +1,6 @@
 use alloc::vec::Vec;
 
-use crate::core::indices::{FuncIdx, GlobalIdx};
+use crate::core::indices::{ExtendedIdxVec, FuncIdx, GlobalIdx, TypeIdx};
 use crate::core::reader::span::Span;
 use crate::core::reader::types::global::GlobalType;
 use crate::core::reader::WasmReader;
@@ -93,7 +93,7 @@ pub fn read_constant_expression(
     //  Globals, however, are not recursive and not accessible within constant expressions when they are defined locally. The effect of defining the limited context C'
     //   for validating certain definitions is that they can only access functions and imported globals and nothing else.
     globals_ty: &[GlobalType],
-    num_funcs: usize,
+    c_funcs: &ExtendedIdxVec<FuncIdx, TypeIdx>,
 ) -> Result<(Span, Vec<FuncIdx>), ValidationError> {
     let start_pc = wasm.pc;
     let mut seen_func_idxs: Vec<FuncIdx> = Vec::new();
@@ -148,12 +148,7 @@ pub fn read_constant_expression(
                 stack.push_valtype(ValType::RefType(RefType::read(wasm)?));
             }
             REF_FUNC => {
-                let func_idx = wasm.read_var_u32()? as usize;
-
-                // checking for existence suffices for checking whether this function has a valid type.
-                if num_funcs <= func_idx {
-                    return Err(ValidationError::InvalidFuncIdx(func_idx));
-                }
+                let func_idx = FuncIdx::read_and_validate(wasm, c_funcs)?;
 
                 // This func_idx is automatically in C.refs. No need to check.
                 // as we are single pass validating, add it to C.refs set.

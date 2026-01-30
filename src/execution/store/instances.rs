@@ -2,7 +2,7 @@ use alloc::{collections::btree_map::BTreeMap, string::String, vec, vec::Vec};
 
 use crate::{
     core::{
-        indices::{IdxVec, TypeIdx},
+        indices::{ExtendedIdxVec, FuncIdx, IdxVec, TypeIdx},
         reader::{
             span::Span,
             types::{FuncType, MemType, TableType},
@@ -177,7 +177,7 @@ impl core::fmt::Debug for DataInst {
 #[derive(Debug)]
 pub struct ModuleInst<'b> {
     pub types: IdxVec<TypeIdx, FuncType>,
-    pub func_addrs: Vec<FuncAddr>,
+    pub func_addrs: ExtendedIdxVec<FuncIdx, FuncAddr>,
     pub table_addrs: Vec<TableAddr>,
     pub mem_addrs: Vec<MemAddr>,
     pub global_addrs: Vec<GlobalAddr>,

@@ -3,7 +3,8 @@ use alloc::vec::Vec;
 use core::iter;
 
 use crate::core::indices::{
-    DataIdx, ElemIdx, FuncIdx, GlobalIdx, IdxVec, LabelIdx, LocalIdx, MemIdx, TableIdx, TypeIdx,
+    DataIdx, ElemIdx, ExtendedIdxVec, FuncIdx, GlobalIdx, IdxVec, LabelIdx, LocalIdx, MemIdx,
+    TableIdx, TypeIdx,
 };
 use crate::core::reader::section_header::{SectionHeader, SectionTy};
 use crate::core::reader::span::Span;
@@ -25,13 +26,13 @@ use crate::{RefType, ValidationError};
 /// | Index | `IdxVec` |
 /// | ----- | -------- |
 /// | [`TypeIdx`] | [`IdxVec<TypeIdx, FuncType>`] |
+/// | [`FuncIdx`] | [`ExtendedIdxVec<FuncIdx, TypeIdx>`] |
 #[allow(clippy::too_many_arguments)]
 pub unsafe fn validate_code_section(
     wasm: &mut WasmReader,
     section_header: SectionHeader,
     fn_types: &IdxVec<TypeIdx, FuncType>,
-    type_idx_of_fn: &[TypeIdx],
-    num_imported_funcs: usize,
+    c_funcs: &ExtendedIdxVec<FuncIdx, TypeIdx>,
     globals: &[Global],
     memories: &[MemType],
     data_count: &Option<u32>,
@@ -45,13 +46,14 @@ pub unsafe fn validate_code_section(
         // We need to offset the index by the number of functions that were
         // imported. Imported functions always live at the start of the index
         // space.
-        let ty_idx = *type_idx_of_fn
-            .get(idx + num_imported_funcs)
+        let ty_idx = c_funcs
+            .iter_local_definitions()
+            .nth(idx)
             .ok_or(ValidationError::FunctionAndCodeSectionsHaveDifferentLengths)?;
 
         // SAFETY: The caller ensures that all passed `TypeIdx` values,
         // including this one, are valid in this `IdxVec<TypeIdx, FuncType>`.
-        let func_ty: FuncType = unsafe { fn_types.get(ty_idx).clone() };
+        let func_ty: FuncType = unsafe { fn_types.get(*ty_idx).clone() };
 
         let func_size = wasm.read_var_u32()?;
         let func_block = wasm.make_span(func_size as usize)?;
@@ -66,8 +68,8 @@ pub unsafe fn validate_code_section(
         let mut stack = ValidationStack::new_for_func(func_ty);
         let stp = sidetable.len();
 
-        // SAFETY: The caller ensures the same safety requirements for index
-        // values. Also, no new index values are created in this function.
+        // SAFETY: The caller ensures the same safety requirements for the same
+        // unmodified index values.
         unsafe {
             read_instructions(
                 wasm,
@@ -76,7 +78,7 @@ pub unsafe fn validate_code_section(
                 &locals,
                 globals,
                 fn_types,
-                type_idx_of_fn,
+                c_funcs,
                 memories,
                 data_count,
                 tables,
@@ -210,6 +212,7 @@ fn validate_branch_and_generate_sidetable_entry(
 /// | Index | `IdxVec` |
 /// |-------|----------|
 /// | [`TypeIdx`] | [`IdxVec<TypeIdx, FuncType>`] |
+/// | [`FuncIdx`] | [`ExtendedIdxVec<FuncIdx, TypeIdx>`] |
 #[allow(clippy::too_many_arguments)]
 unsafe fn read_instructions(
     wasm: &mut WasmReader,
@@ -218,7 +221,7 @@ unsafe fn read_instructions(
     locals: &[ValType],
     globals: &[Global],
     fn_types: &IdxVec<TypeIdx, FuncType>,
-    type_idx_of_fn: &[TypeIdx],
+    c_funcs: &ExtendedIdxVec<FuncIdx, TypeIdx>,
     memories: &[MemType],
     data_count: &Option<u32>,
     tables: &[TableType],
@@ -466,10 +469,10 @@ unsafe fn read_instructions(
             }
             // call [t1*] -> [t2*]
             CALL => {
-                let func_idx = wasm.read_var_u32()? as FuncIdx;
-                let type_idx = *type_idx_of_fn
-                    .get(func_idx)
-                    .ok_or(ValidationError::InvalidFuncIdx(func_idx))?;
+                let func_idx = FuncIdx::read_and_validate(wasm, c_funcs)?;
+                // SAFETY: We just validated this function index with the same
+                // `IdxVec`.
+                let type_idx = *unsafe { c_funcs.get(func_idx) };
                 // SAFETY: The caller ensures that all passed `TypeIdx` values,
                 // including this one, are valid in this `IdxVec<TypeIdx,
                 // FuncType>`.
@@ -1144,12 +1147,7 @@ unsafe fn read_instructions(
             }
 
             REF_FUNC => {
-                let func_idx = wasm.read_var_u32()? as FuncIdx;
-
-                // checking for existence suffices for checking whether this function has a valid type.
-                if type_idx_of_fn.len() <= func_idx {
-                    return Err(ValidationError::InvalidFuncIdx(func_idx));
-                }
+                let func_idx = FuncIdx::read_and_validate(wasm, c_funcs)?;
 
                 // check whether func_idx is in C.refs
                 // https://webassembly.github.io/spec/core/valid/conventions.html#context

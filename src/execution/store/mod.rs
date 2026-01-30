@@ -5,7 +5,7 @@ use crate::addrs::{
     AddrVec, DataAddr, ElemAddr, FuncAddr, GlobalAddr, MemAddr, ModuleAddr, TableAddr,
 };
 use crate::config::Config;
-use crate::core::indices::TypeIdx;
+use crate::core::indices::{ExtendedIdxVec, TypeIdx};
 use crate::core::reader::span::Span;
 use crate::core::reader::types::data::{DataModeActive, DataSegment};
 use crate::core::reader::types::element::{ActiveElem, ElemItems, ElemMode, ElemType};
@@ -144,7 +144,7 @@ impl<'b, T: Config> Store<'b, T> {
         // https://github.com/WebAssembly/spec/blob/8d6792e3d6709e8d3e90828f9c8468253287f7ed/interpreter/exec/eval.ml#L789
         let module_inst = ModuleInst {
             types: validation_info.types.clone(),
-            func_addrs: extern_vals.iter().funcs().collect(),
+            func_addrs: ExtendedIdxVec::default(),
             table_addrs: Vec::new(),
             mem_addrs: Vec::new(),
             global_addrs: extern_vals.iter().globals().collect(),
@@ -156,11 +156,10 @@ impl<'b, T: Config> Store<'b, T> {
         };
         let module_addr = self.modules.insert(module_inst);
 
-        // TODO rewrite this part
-        // <https://webassembly.github.io/spec/core/exec/modules.html#functions>
-        let func_addrs: Vec<FuncAddr> = validation_info
+        let imported_functions = extern_vals.iter().funcs();
+        let local_func_addrs = validation_info
             .functions
-            .iter()
+            .iter_local_definitions()
             .zip(validation_info.func_blocks_stps.iter())
             .map(|(ty_idx, (span, stp))| {
                 // SAFETY: The module address is valid for the current store,
@@ -168,13 +167,17 @@ impl<'b, T: Config> Store<'b, T> {
                 // that same module because it came from that module's
                 // `ValidationInfo`.
                 unsafe { self.alloc_func((*ty_idx, (*span, *stp)), module_addr) }
-            })
-            .collect();
-
-        self.modules
-            .get_mut(module_addr)
-            .func_addrs
-            .extend(func_addrs);
+            });
+        self.modules.get_mut(module_addr).func_addrs = validation_info
+            .functions
+            .map(imported_functions.collect(), local_func_addrs.collect())
+            .expect(
+                "that the numbers of imported and local functions always \
+                match the respective numbers in the validation info. Step 3 and 4 \
+                check if the number of imported functions is correct and the number \
+                of local functions is a direct one-to-one mapping of \
+                `validation_info.func_blocks_stps`",
+            );
 
         // instantiation: this roughly matches step 6,7,8
         // validation guarantees these will evaluate without errors.
@@ -201,14 +204,14 @@ impl<'b, T: Config> Store<'b, T> {
                 // validation guarantees corresponding func_idx's existence
                 ElemItems::RefFuncs(ref_funcs) => {
                     for func_idx in ref_funcs {
-                        let func_addr = *self
-                            .modules
-                            .get(module_addr)
-                            .func_addrs
-                            .get(*func_idx as usize)
-                            .unwrap_validated();
+                        // SAFETY: Both the function index and the module
+                        // instance's `func_addrs` come from the same
+                        // `ValidationInfo`, i.e. the one passed into this
+                        // function.
+                        let func_addr =
+                            unsafe { self.modules.get(module_addr).func_addrs.get(*func_idx) };
 
-                        new_list.push(Ref::Func(func_addr));
+                        new_list.push(Ref::Func(*func_addr));
                     }
                 }
                 ElemItems::Exprs(_, exprs) => {
@@ -297,7 +300,12 @@ impl<'b, T: Config> Store<'b, T> {
                 let module_inst = self.modules.get(module_addr);
                 let value = match desc {
                     ExportDesc::Func(func_idx) => {
-                        ExternVal::Func(module_inst.func_addrs[*func_idx])
+                        // SAFETY: Both the function index and the functions
+                        // `ExtendedIdxVec` come from the same module instance.
+                        // Because all indices are valid in their specific
+                        // module instance, this is sound.
+                        let func_addr = unsafe { module_inst.func_addrs.get(*func_idx) };
+                        ExternVal::Func(*func_addr)
                     }
                     ExportDesc::Table(table_idx) => ExternVal::Table(table_addrs_mod[*table_idx]),
                     ExportDesc::Mem(mem_idx) => ExternVal::Mem(mem_addrs_mod[*mem_idx]),
@@ -426,11 +434,17 @@ impl<'b, T: Config> Store<'b, T> {
             // TODO (for now, we are doing hopefully what is equivalent to it)
             // execute
             //   call func_ifx
-            let func_addr = self.modules.get(module_addr).func_addrs[func_idx];
+
+            let module = self.modules.get(module_addr);
+            // SAFETY: The function index comes from the passed `ValidationInfo`
+            // and the `IdxVec<FuncIdx, FuncAddr>` comes from the module
+            // instance that originated from that same `ValidationInfo`.
+            // Therefore, this is sound.
+            let func_addr = unsafe { module.func_addrs.get(func_idx) };
             let RunState::Finished {
                 maybe_remaining_fuel,
                 ..
-            } = self.invoke_unchecked(func_addr, Vec::new(), maybe_fuel)?
+            } = self.invoke_unchecked(*func_addr, Vec::new(), maybe_fuel)?
             else {
                 return Err(RuntimeError::OutOfFuel);
             };

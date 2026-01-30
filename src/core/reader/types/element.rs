@@ -1,6 +1,6 @@
 use super::global::GlobalType;
 use super::RefType;
-use crate::core::indices::{FuncIdx, TableIdx, TypeIdx};
+use crate::core::indices::{ExtendedIdxVec, FuncIdx, TableIdx, TypeIdx};
 use crate::core::reader::span::Span;
 use crate::core::reader::types::TableType;
 use crate::core::reader::WasmReader;
@@ -51,16 +51,13 @@ impl ElemType {
     /// functions
     pub fn read_from_wasm(
         wasm: &mut WasmReader,
-        functions: &[TypeIdx],
+        c_funcs: &ExtendedIdxVec<FuncIdx, TypeIdx>,
         validation_context_refs: &mut BTreeSet<FuncIdx>,
         tables: &[TableType],
         imported_global_types: &[GlobalType],
     ) -> Result<Vec<Self>, ValidationError> {
         wasm.read_vec(|wasm| {
             let prop = wasm.read_var_u32()?;
-
-            // hack to assert that C.funcs[...] exists
-            let num_funcs = functions.len();
 
             let elem = match prop {
                 0 => {
@@ -70,12 +67,12 @@ impl ElemType {
                     let e = parse_validate_active_segment_offset_expr(
                         wasm,
                         imported_global_types,
-                        num_funcs,
+                        c_funcs,
                         validation_context_refs,
                     )?;
                     let init = parse_validate_shortened_initializer_list(
                         wasm,
-                        num_funcs,
+                        c_funcs,
                         validation_context_refs,
                     )?;
                     let mode = ElemMode::Active(ActiveElem {
@@ -91,7 +88,7 @@ impl ElemType {
                     let _et = parse_elemkind(wasm)?;
                     let init = parse_validate_shortened_initializer_list(
                         wasm,
-                        num_funcs,
+                        c_funcs,
                         validation_context_refs,
                     )?;
                     let mode = ElemMode::Passive;
@@ -105,13 +102,13 @@ impl ElemType {
                     let e = parse_validate_active_segment_offset_expr(
                         wasm,
                         imported_global_types,
-                        num_funcs,
+                        c_funcs,
                         validation_context_refs,
                     )?;
                     let _et = parse_elemkind(wasm)?;
                     let init = parse_validate_shortened_initializer_list(
                         wasm,
-                        num_funcs,
+                        c_funcs,
                         validation_context_refs,
                     )?;
                     let mode = ElemMode::Active(ActiveElem {
@@ -127,7 +124,7 @@ impl ElemType {
                     let _et = parse_elemkind(wasm)?;
                     let init = parse_validate_shortened_initializer_list(
                         wasm,
-                        num_funcs,
+                        c_funcs,
                         validation_context_refs,
                     )?;
                     let mode = ElemMode::Declarative;
@@ -140,14 +137,14 @@ impl ElemType {
                     let e = parse_validate_active_segment_offset_expr(
                         wasm,
                         imported_global_types,
-                        num_funcs,
+                        c_funcs,
                         validation_context_refs,
                     )?;
                     let init = parse_validate_generic_initializer_list(
                         wasm,
                         RefType::FuncRef,
                         imported_global_types,
-                        num_funcs,
+                        c_funcs,
                         validation_context_refs,
                     )?;
                     let mode = ElemMode::Active(ActiveElem {
@@ -165,7 +162,7 @@ impl ElemType {
                         wasm,
                         et,
                         imported_global_types,
-                        num_funcs,
+                        c_funcs,
                         validation_context_refs,
                     )?;
                     let mode = ElemMode::Passive;
@@ -179,7 +176,7 @@ impl ElemType {
                     let e = parse_validate_active_segment_offset_expr(
                         wasm,
                         imported_global_types,
-                        num_funcs,
+                        c_funcs,
                         validation_context_refs,
                     )?;
                     let et = RefType::read(wasm)?;
@@ -187,7 +184,7 @@ impl ElemType {
                         wasm,
                         et,
                         imported_global_types,
-                        num_funcs,
+                        c_funcs,
                         validation_context_refs,
                     )?;
                     let mode = ElemMode::Active(ActiveElem {
@@ -205,7 +202,7 @@ impl ElemType {
                         wasm,
                         et,
                         imported_global_types,
-                        num_funcs,
+                        c_funcs,
                         validation_context_refs,
                     )?;
                     let mode = ElemMode::Declarative;
@@ -250,7 +247,7 @@ impl ElemType {
 
 #[derive(Debug, Clone)]
 pub enum ElemItems {
-    RefFuncs(Vec<u32>),
+    RefFuncs(Vec<FuncIdx>),
     Exprs(RefType, Vec<Span>),
 }
 
@@ -299,12 +296,12 @@ pub struct ActiveElem {
 fn parse_validate_active_segment_offset_expr(
     wasm: &mut WasmReader,
     imported_global_types: &[GlobalType],
-    num_funcs: usize,
+    c_funcs: &ExtendedIdxVec<FuncIdx, TypeIdx>,
     validation_context_refs: &mut BTreeSet<FuncIdx>,
 ) -> Result<Span, ValidationError> {
     let mut valid_stack = ValidationStack::new();
     let (span, seen_func_refs) =
-        read_constant_expression(wasm, &mut valid_stack, imported_global_types, num_funcs)?;
+        read_constant_expression(wasm, &mut valid_stack, imported_global_types, c_funcs)?;
     validation_context_refs.extend(seen_func_refs);
     valid_stack.assert_val_types(&[ValType::NumType(NumType::I32)], true)?;
     Ok(span)
@@ -320,16 +317,12 @@ fn parse_validate_active_segment_offset_expr(
 /// - `Ok(ElemItems::RefFuncs(_))` corresponding to the parsed list if parsing & validating succeeds, `Err(_)` otherwise.
 fn parse_validate_shortened_initializer_list(
     wasm: &mut WasmReader,
-    num_funcs: usize,
+    c_funcs: &ExtendedIdxVec<FuncIdx, TypeIdx>,
     validation_context_refs: &mut BTreeSet<FuncIdx>,
 ) -> Result<ElemItems, ValidationError> {
     wasm.read_vec(|w| {
-        let func_idx = w.read_var_u32()?;
-        if num_funcs <= func_idx as usize {
-            // TODO fix error
-            return Err(ValidationError::InvalidFuncIdx(func_idx as usize));
-        }
-        validation_context_refs.insert(func_idx as FuncIdx);
+        let func_idx = FuncIdx::read_and_validate(w, c_funcs)?;
+        validation_context_refs.insert(func_idx);
         Ok(func_idx)
     })
     .map(ElemItems::RefFuncs)
@@ -347,13 +340,13 @@ fn parse_validate_generic_initializer_list(
     wasm: &mut WasmReader,
     expected_type: RefType,
     imported_global_types: &[GlobalType],
-    num_funcs: usize,
+    c_funcs: &ExtendedIdxVec<FuncIdx, TypeIdx>,
     validation_context_refs: &mut BTreeSet<FuncIdx>,
 ) -> Result<ElemItems, ValidationError> {
     wasm.read_vec(|w| {
         let mut valid_stack = ValidationStack::new();
         let (span, seen_func_refs) =
-            read_constant_expression(w, &mut valid_stack, imported_global_types, num_funcs)?;
+            read_constant_expression(w, &mut valid_stack, imported_global_types, c_funcs)?;
         validation_context_refs.extend(seen_func_refs);
         valid_stack.assert_val_types(&[ValType::RefType(expected_type)], true)?;
         Ok(span)

@@ -1,7 +1,7 @@
 use alloc::collections::btree_set::{self, BTreeSet};
 use alloc::vec::Vec;
 
-use crate::core::indices::{FuncIdx, IdxVec, TypeIdx};
+use crate::core::indices::{ExtendedIdxVec, FuncIdx, IdxVec, IdxVecOverflowError, TypeIdx};
 use crate::core::reader::section_header::{SectionHeader, SectionTy};
 use crate::core::reader::span::Span;
 use crate::core::reader::types::data::DataSegment;
@@ -40,7 +40,7 @@ pub struct ValidationInfo<'bytecode> {
     pub(crate) wasm: &'bytecode [u8],
     pub(crate) types: IdxVec<TypeIdx, FuncType>,
     pub(crate) imports: Vec<Import>,
-    pub(crate) functions: Vec<TypeIdx>,
+    pub(crate) functions: ExtendedIdxVec<FuncIdx, TypeIdx>,
     pub(crate) tables: Vec<TableType>,
     pub(crate) memories: Vec<MemType>,
     pub(crate) globals: Vec<Global>,
@@ -66,13 +66,8 @@ fn validate_exports(validation_info: &ValidationInfo) -> Result<(), ValidationEr
         }
         found_export_names.insert(export.name.as_str());
         match export.desc {
-            Func(func_idx) => {
-                if validation_info.functions.len()
-                    + validation_info.imports_length.imported_functions
-                    <= func_idx
-                {
-                    return Err(ValidationError::InvalidFuncIdx(func_idx));
-                }
+            Func(_) => {
+                // Function indices are already validated upon creation
             }
             Table(table_idx) => {
                 if validation_info.tables.len() + validation_info.imports_length.imported_tables
@@ -208,17 +203,8 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
         _ => None,
     });
 
-    let all_functions = imported_functions
-        .clone()
-        .chain(local_functions.iter().cloned())
-        .collect::<Vec<TypeIdx>>();
-
-    // All functions need to be addressable by a u32
-    if all_functions.len()
-        > usize::try_from(u32::MAX).expect("pointer width to be at least 32 bits")
-    {
-        return Err(ValidationError::TooManyFunctions);
-    }
+    let functions = ExtendedIdxVec::new(imported_functions.collect(), local_functions)
+        .map_err(|IdxVecOverflowError| ValidationError::TooManyFunctions)?;
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
@@ -294,7 +280,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
             h,
             &imported_global_types,
             &mut validation_context_refs,
-            all_functions.len(),
+            &functions,
         )
     })?
     .unwrap_or_default();
@@ -318,7 +304,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
     let exports = handle_section(&mut wasm, &mut header, SectionTy::Export, |wasm, _| {
-        wasm.read_vec(Export::read)
+        wasm.read_vec(|wasm| Export::read_and_validate(wasm, &functions))
     })?
     .unwrap_or_default();
     validation_context_refs.extend(exports.iter().filter_map(
@@ -331,17 +317,18 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
     let start = handle_section(&mut wasm, &mut header, SectionTy::Start, |wasm, _| {
-        let func_idx = wasm.read_var_u32().map(|idx| idx as FuncIdx)?;
+        let func_idx = FuncIdx::read_and_validate(wasm, &functions)?;
+
         // start function signature must be [] -> []
         // https://webassembly.github.io/spec/core/valid/modules.html#start-function
-        let type_idx = *all_functions
-            .get(func_idx)
-            .ok_or(ValidationError::InvalidFuncIdx(func_idx))?;
+        // SAFETY: We just validated this function index using the same
+        // `IdxVec`.
+        let type_idx = unsafe { functions.get(func_idx) };
 
         // SAFETY: There exists only one `IdxVec<TypeIdx, FuncType>` in the
         // current function. Therefore, this has to be the same one used to
         // create and validate this `TypeIdx`.
-        let func_type = unsafe { types.get(type_idx) };
+        let func_type = unsafe { types.get(*type_idx) };
         if func_type
             != &(FuncType {
                 params: ResultType {
@@ -364,7 +351,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
         handle_section(&mut wasm, &mut header, SectionTy::Element, |wasm, _| {
             ElemType::read_from_wasm(
                 wasm,
-                &all_functions,
+                &functions,
                 &mut validation_context_refs,
                 &all_tables,
                 &imported_global_types,
@@ -400,8 +387,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
                 wasm,
                 h,
                 &types,
-                &all_functions,
-                imported_functions.count(),
+                &functions,
                 &all_globals,
                 &all_memories,
                 &data_count,
@@ -414,7 +400,10 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
     })?
     .unwrap_or_default();
 
-    if func_blocks_stps.len() != local_functions.len() {
+    if func_blocks_stps.len()
+        != usize::try_from(functions.len_local_definitions())
+            .expect("architecture to be at least 32 bits")
+    {
         return Err(ValidationError::FunctionAndCodeSectionsHaveDifferentLengths);
     }
 
@@ -427,7 +416,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
             h,
             &imported_global_types,
             all_memories.len(),
-            all_functions.len(),
+            &functions,
         )
     })?
     .unwrap_or_default();
@@ -451,7 +440,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
         wasm: wasm.into_inner(),
         types,
         imports,
-        functions: local_functions,
+        functions,
         tables,
         memories,
         globals,
