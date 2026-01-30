@@ -4,10 +4,9 @@ use crate::RefType;
 use core::fmt::{Display, Formatter};
 use core::str::Utf8Error;
 
+use super::indices::{DataIdx, ElemIdx, FuncIdx, LabelIdx, LocalIdx, MemIdx, TableIdx};
 use crate::core::reader::section_header::SectionTy;
 use crate::core::reader::types::ValType;
-
-use super::indices::{DataIdx, ElemIdx, FuncIdx, LabelIdx, LocalIdx, MemIdx, TableIdx, TypeIdx};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum ValidationError {
@@ -53,7 +52,7 @@ pub enum ValidationError {
     MalformedElemKindDiscriminator(u8),
 
     /// An index for a type is invalid.
-    InvalidTypeIdx(TypeIdx),
+    InvalidTypeIdx(u32),
     /// An index for a function is invalid.
     InvalidFuncIdx(FuncIdx),
     /// An index for a table is invalid.
