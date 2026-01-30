@@ -201,11 +201,15 @@ pub(super) fn run<T: Config>(
             }
             BLOCK => {
                 decrement_fuel!(T::get_flat_cost(BLOCK));
-                BlockType::read(wasm).unwrap_validated();
+                // SAFETY: Because the Wasm code is valid, there must be a valid
+                // block type next.
+                let _ = unsafe { BlockType::read_unchecked(wasm) };
             }
             LOOP => {
                 decrement_fuel!(T::get_flat_cost(LOOP));
-                BlockType::read(wasm).unwrap_validated();
+                // SAFETY: Because the Wasm code is valid, there must be a valid
+                // block type next.
+                let _ = unsafe { BlockType::read_unchecked(wasm) };
             }
             RETURN => {
                 decrement_fuel!(T::get_flat_cost(RETURN));
@@ -283,7 +287,9 @@ pub(super) fn run<T: Config>(
             // TODO: fix push_call_frame, because the func idx that you get from the table is global func idx
             CALL_INDIRECT => {
                 decrement_fuel!(T::get_flat_cost(CALL_INDIRECT));
-                let given_type_idx = wasm.read_var_u32().unwrap_validated() as TypeIdx;
+                // SAFETY: the Wasm code is valid and therefore the following
+                // bytes must encode a valid type index.
+                let given_type_idx = unsafe { TypeIdx::read_unchecked(wasm) };
                 let table_idx = wasm.read_var_u32().unwrap_validated() as TableIdx;
 
                 let table_addr = *store
@@ -293,12 +299,10 @@ pub(super) fn run<T: Config>(
                     .get(table_idx)
                     .unwrap_validated();
                 let tab = store.tables.get(table_addr);
-                let func_ty = store
-                    .modules
-                    .get(current_module)
-                    .types
-                    .get(given_type_idx)
-                    .unwrap_validated();
+                let module = store.modules.get(current_module);
+                // SAFETY: The module that is used now is the same one from
+                // which the type index was just read.
+                let func_ty = unsafe { module.types.get(given_type_idx) };
 
                 let i: u32 = stack.pop_value().try_into().unwrap_validated();
 

@@ -35,10 +35,12 @@ impl ExportDesc {
     /// returns the external type of `self` according to typing relation,
     /// taking `validation_info` as validation context C
     ///
-    /// Note: This method may panic if `self` does not come from the given [`ValidationInfo`].
-    /// <https://webassembly.github.io/spec/core/valid/modules.html#exports>
+    /// # Safety
+    ///
+    /// The caller must ensure that `self` comes from the same
+    /// [`ValidationInfo`] that is passed as an argument here.
     #[allow(unused)] // reason = "this function is analogous to ImportDesc::extern_type, however it is not yet clear if it is needed in the future"
-    pub fn extern_type(&self, validation_info: &ValidationInfo) -> ExternType {
+    pub unsafe fn extern_type(&self, validation_info: &ValidationInfo) -> ExternType {
         // TODO clean up logic for checking if an exported definition is an
         // import
         match self {
@@ -57,10 +59,11 @@ impl ExportDesc {
                         .nth(*func_idx)
                         .unwrap(),
                 };
-                let func_type = validation_info
-                    .types
-                    .get(type_idx)
-                    .expect("type indices to always be valid if the validation info is correct");
+                // Safety: The caller ensures that the current `ExportDesc`
+                // comes from the same `ValidationInfo`. The `ValidationInfo`
+                // struct guarantees that all indices contained by it are valid
+                // as a result of prior validation.
+                let func_type = unsafe { validation_info.types.get(type_idx) };
                 // TODO ugly clone that should disappear when types are directly parsed from bytecode instead of vector copies
                 ExternType::Func(func_type.clone())
             }

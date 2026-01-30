@@ -1,6 +1,6 @@
 use super::global::GlobalType;
 use super::RefType;
-use crate::core::indices::{FuncIdx, TableIdx};
+use crate::core::indices::{FuncIdx, TableIdx, TypeIdx};
 use crate::core::reader::span::Span;
 use crate::core::reader::types::TableType;
 use crate::core::reader::WasmReader;
@@ -51,7 +51,7 @@ impl ElemType {
     /// functions
     pub fn read_from_wasm(
         wasm: &mut WasmReader,
-        functions: &[usize],
+        functions: &[TypeIdx],
         validation_context_refs: &mut BTreeSet<FuncIdx>,
         tables: &[TableType],
         imported_global_types: &[GlobalType],

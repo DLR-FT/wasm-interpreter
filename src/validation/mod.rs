@@ -1,7 +1,7 @@
 use alloc::collections::btree_set::{self, BTreeSet};
 use alloc::vec::Vec;
 
-use crate::core::indices::{FuncIdx, TypeIdx};
+use crate::core::indices::{FuncIdx, IdxVec, TypeIdx};
 use crate::core::reader::section_header::{SectionHeader, SectionTy};
 use crate::core::reader::span::Span;
 use crate::core::reader::types::data::DataSegment;
@@ -38,7 +38,7 @@ pub(crate) struct ImportsLength {
 #[derive(Clone, Debug)]
 pub struct ValidationInfo<'bytecode> {
     pub(crate) wasm: &'bytecode [u8],
-    pub(crate) types: Vec<FuncType>,
+    pub(crate) types: IdxVec<TypeIdx, FuncType>,
     pub(crate) imports: Vec<Import>,
     pub(crate) functions: Vec<TypeIdx>,
     pub(crate) tables: Vec<TableType>,
@@ -177,29 +177,14 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
     let types = handle_section(&mut wasm, &mut header, SectionTy::Type, |wasm, _| {
-        wasm.read_vec(FuncType::read)
+        wasm.read_vec(FuncType::read).map(|types| IdxVec::new(types).expect("that index space creation never fails because the length of the types vector is encoded as a 32-bit integer in the bytecode"))
     })?
     .unwrap_or_default();
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
     let imports = handle_section(&mut wasm, &mut header, SectionTy::Import, |wasm, _| {
-        wasm.read_vec(|wasm| {
-            let import = Import::read(wasm)?;
-
-            match import.desc {
-                ImportDesc::Func(type_idx) => {
-                    types
-                        .get(type_idx)
-                        .ok_or(ValidationError::InvalidTypeIdx(type_idx))?;
-                }
-                ImportDesc::Table(_table_type) => {}
-                ImportDesc::Mem(_mem_type) => {}
-                ImportDesc::Global(_global_type) => {}
-            }
-
-            Ok(import)
-        })
+        wasm.read_vec(|wasm| Import::read_and_validate(wasm, &types))
     })?
     .unwrap_or_default();
     let imports_length = get_imports_length(&imports);
@@ -214,13 +199,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
     // only after that do the local functions get assigned their indices.
     let local_functions =
         handle_section(&mut wasm, &mut header, SectionTy::Function, |wasm, _| {
-            wasm.read_vec(|wasm| {
-                let type_idx = wasm.read_var_u32()? as usize;
-                types
-                    .get(type_idx)
-                    .ok_or(ValidationError::InvalidTypeIdx(type_idx))?;
-                Ok(type_idx)
-            })
+            wasm.read_vec(|wasm| TypeIdx::read_and_validate(wasm, &types))
         })?
         .unwrap_or_default();
 
@@ -358,8 +337,13 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
         let type_idx = *all_functions
             .get(func_idx)
             .ok_or(ValidationError::InvalidFuncIdx(func_idx))?;
-        if types[type_idx]
-            != (FuncType {
+
+        // SAFETY: There exists only one `IdxVec<TypeIdx, FuncType>` in the
+        // current function. Therefore, this has to be the same one used to
+        // create and validate this `TypeIdx`.
+        let func_type = unsafe { types.get(type_idx) };
+        if func_type
+            != &(FuncType {
                 params: ResultType {
                     valtypes: Vec::new(),
                 },
@@ -406,20 +390,27 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
 
     let mut sidetable = Sidetable::new();
     let func_blocks_stps = handle_section(&mut wasm, &mut header, SectionTy::Code, |wasm, h| {
-        code::validate_code_section(
-            wasm,
-            h,
-            &types,
-            &all_functions,
-            imported_functions.count(),
-            &all_globals,
-            &all_memories,
-            &data_count,
-            &all_tables,
-            &elements,
-            &validation_context_refs,
-            &mut sidetable,
-        )
+        // SAFETY: It is required that all passed index values are valid in all
+        // passed `IdxVec`s. The current function does not take any index types
+        // as arguments and every `IdxVec<..., ...>` is unique, i.e. uses
+        // different generics. Therefore, all index types must be valid in their
+        // relevant `IdxVec`s.
+        unsafe {
+            code::validate_code_section(
+                wasm,
+                h,
+                &types,
+                &all_functions,
+                imported_functions.count(),
+                &all_globals,
+                &all_memories,
+                &data_count,
+                &all_tables,
+                &elements,
+                &validation_context_refs,
+                &mut sidetable,
+            )
+        }
     })?
     .unwrap_or_default();
 

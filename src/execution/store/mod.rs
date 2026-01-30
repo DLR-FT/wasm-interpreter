@@ -120,10 +120,10 @@ impl<'b, T: Config> Store<'b, T> {
         }
 
         // instantiation: step 4
-        let imports_as_extern_types = validation_info
-            .imports
-            .iter()
-            .map(|import| import.desc.extern_type(validation_info));
+        let imports_as_extern_types = validation_info.imports.iter().map(|import| {
+            // SAFETY: `import` is part of `validation_info`.
+            unsafe { import.desc.extern_type(validation_info) }
+        });
         for (extern_val, import_as_extern_type) in extern_vals.iter().zip(imports_as_extern_types) {
             // instantiation: step 4a
             // check that extern_val is valid in this Store, which should be guaranteed by the caller through a safety constraint in the future.
@@ -162,7 +162,13 @@ impl<'b, T: Config> Store<'b, T> {
             .functions
             .iter()
             .zip(validation_info.func_blocks_stps.iter())
-            .map(|(ty_idx, (span, stp))| self.alloc_func((*ty_idx, (*span, *stp)), module_addr))
+            .map(|(ty_idx, (span, stp))| {
+                // SAFETY: The module address is valid for the current store,
+                // because it was just created and the type index is valid for
+                // that same module because it came from that module's
+                // `ValidationInfo`.
+                unsafe { self.alloc_func((*ty_idx, (*span, *stp)), module_addr) }
+            })
             .collect();
 
         self.modules
@@ -889,10 +895,16 @@ impl<'b, T: Config> Store<'b, T> {
     /// roughly matches <https://webassembly.github.io/spec/core/exec/modules.html#functions> with the addition of sidetable pointer to the input signature
     ///
     /// # Safety
-    /// The caller has to guarantee that the given [`ModuleAddr`] came from the
-    /// current [`Store`] object.
+    ///
+    /// The caller has to guarantee that
+    /// - the given [`ModuleAddr`] came from the current [`Store`] object.
+    /// - the given [`TypeIdx`] is valid in the module for the given [`ModuleAddr`].
     // TODO refactor the type of func
-    fn alloc_func(&mut self, func: (TypeIdx, (Span, usize)), module_addr: ModuleAddr) -> FuncAddr {
+    unsafe fn alloc_func(
+        &mut self,
+        func: (TypeIdx, (Span, usize)),
+        module_addr: ModuleAddr,
+    ) -> FuncAddr {
         let (ty, (span, stp)) = func;
 
         // TODO rewrite this huge chunk of parsing after generic way to re-parse(?) structs lands
@@ -911,8 +923,11 @@ impl<'b, T: Config> Store<'b, T> {
 
         // validation guarantees func_ty_idx exists within module_inst.types
         // TODO fix clone
+        let module = self.modules.get(module_addr);
         let func_inst = FuncInst::WasmFunc(WasmFuncInst {
-            function_type: self.modules.get(module_addr).types[ty].clone(),
+            // SAFETY: The caller guarantees that the type index is valid for
+            // this module.
+            function_type: unsafe { module.types.get(ty).clone() },
             _ty: ty,
             locals,
             code_expr,

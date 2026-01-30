@@ -38,10 +38,14 @@ use core::marker::PhantomData;
 
 use alloc::{boxed::Box, vec::Vec};
 
+use crate::{
+    core::reader::{types::FuncType, WasmReader},
+    ValidationError,
+};
+
 /// A trait for all index types.
 ///
 /// This is used by [`IdxVec`] to create and read index types.
-#[allow(unused)] // reason = "temporary until used by new index types"
 pub trait Idx: Copy + core::fmt::Debug + core::fmt::Display + Eq {
     fn new(index: u32) -> Self;
 
@@ -51,7 +55,6 @@ pub trait Idx: Copy + core::fmt::Debug + core::fmt::Display + Eq {
 /// An immutable vector that can only be indexed by type-safe 32-bit indices.
 ///
 /// Use [`IdxVec::new`] or [`IdxVec::default`] to create a new instance.
-#[allow(unused)] // reason = "temporary until used by new index types"
 pub struct IdxVec<I: Idx, T> {
     inner: Box<[T]>,
     _phantom: PhantomData<I>,
@@ -90,7 +93,6 @@ impl<I: Idx, T> IdxVec<I, T> {
     ///
     /// If the number of elements is larger than what can be addressed by a
     /// `u32`, i.e. `u32::MAX`, an error is returned instead.
-    #[allow(unused)] // reason = "temporary until used by new index types"
     pub fn new(elements: Vec<T>) -> Result<Self, IdxVecOverflowError> {
         if u32::try_from(elements.len()).is_err() {
             return Err(IdxVecOverflowError);
@@ -102,7 +104,6 @@ impl<I: Idx, T> IdxVec<I, T> {
         })
     }
 
-    #[allow(unused)] // reason = "temporary until used by new index types"
     fn validate_index(&self, index: u32) -> Option<I> {
         let index_as_usize = usize::try_from(index).expect("architecture to be at least 32 bits");
         let _element = self.inner.get(index_as_usize)?;
@@ -116,7 +117,6 @@ impl<I: Idx, T> IdxVec<I, T> {
     /// The caller must ensure that the index object was validated using the
     /// same vector as `self` or a different vector used to create `self`
     /// through [`IdxVec::map`].
-    #[allow(unused)] // reason = "temporary until used by new index types"
     pub unsafe fn get(&self, index: I) -> &T {
         let index =
             usize::try_from(index.into_inner()).expect("architecture to be at least 32 bits");
@@ -129,7 +129,77 @@ impl<I: Idx, T> IdxVec<I, T> {
     }
 }
 
-pub type TypeIdx = usize;
+/// A type index that is used to index into the types index space of some Wasm
+/// module or module instance.
+///
+/// All Wasm indices, including this one, follow a type-state pattern. Refer to
+/// [`indices`](crate::core::indices) for more information on this topic.
+///
+/// See: WebAssembly Specification 2.0 - 2.5.1 - Indices
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub struct TypeIdx(u32);
+
+impl core::fmt::Display for TypeIdx {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "type index {}", self.0)
+    }
+}
+
+impl Idx for TypeIdx {
+    fn new(index: u32) -> Self {
+        Self(index)
+    }
+
+    fn into_inner(self) -> u32 {
+        self.0
+    }
+}
+
+impl TypeIdx {
+    /// Creates a new type index directly from some index.
+    ///
+    /// Note: This constructor is only available for type indices, since these
+    /// are the only indices that can be encoded using special 33-bit integers.
+    pub fn new(index: u32) -> Self {
+        Self(index)
+    }
+
+    /// Validates that a given index is a valid type index.
+    ///
+    /// On success a new [`TypeIdx`] is returned, otherwise a
+    /// [`ValidationError`] is returned.
+    pub fn validate(
+        index: u32,
+        c_types: &IdxVec<TypeIdx, FuncType>,
+    ) -> Result<Self, ValidationError> {
+        c_types
+            .validate_index(index)
+            .ok_or(ValidationError::InvalidTypeIdx(index))
+    }
+
+    /// Reads a type index from Wasm code and validates that it is a valid index
+    /// for a given types vector.
+    pub fn read_and_validate(
+        wasm: &mut WasmReader,
+        c_types: &IdxVec<TypeIdx, FuncType>,
+    ) -> Result<Self, ValidationError> {
+        let index = wasm.read_var_u32()?;
+        Self::validate(index, c_types)
+    }
+
+    /// Reads a type index from Wasm code without validating it. Using the
+    /// returned type requires some other form of validation to be done.
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure that there is a valid type index in the
+    /// [`WasmReader`].
+    pub unsafe fn read_unchecked(wasm: &mut WasmReader) -> Self {
+        let index = wasm.read_var_u32().unwrap();
+        Self::new(index)
+    }
+}
+
 pub type FuncIdx = usize;
 pub type TableIdx = usize;
 pub type MemIdx = usize;
