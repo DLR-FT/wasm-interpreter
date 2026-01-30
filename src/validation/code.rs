@@ -1175,7 +1175,9 @@ fn read_instructions(
                         if memories.len() <= mem_idx {
                             return Err(ValidationError::InvalidMemIdx(mem_idx));
                         }
-                        if data_count.unwrap_or(0) as usize <= data_idx {
+                        if data_count.ok_or(ValidationError::MissingDataCountSection)? as usize
+                            <= data_idx
+                        {
                             return Err(ValidationError::InvalidDataIdx(data_idx));
                         }
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
@@ -1184,7 +1186,10 @@ fn read_instructions(
                     }
                     DATA_DROP => {
                         let data_idx = wasm.read_var_u32()? as DataIdx;
-                        if data_count.unwrap_or(0) as usize <= data_idx {
+
+                        if data_count.ok_or(ValidationError::MissingDataCountSection)? as usize
+                            <= data_idx
+                        {
                             return Err(ValidationError::InvalidDataIdx(data_idx));
                         }
                     }

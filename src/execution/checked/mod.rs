@@ -67,7 +67,7 @@ impl<'b, T: Config> Store<'b, T> {
         let instantiation_outcome =
             self.module_instantiate_unchecked(validation_info, extern_vals, maybe_fuel)?;
         // 3. rewrap
-        // Safety: The `InstantiationOutcome` just came from the current store.
+        // SAFETY: The `InstantiationOutcome` just came from the current store.
         let stored_instantiation_outcome =
             unsafe { StoredInstantiationOutcome::from_bare(instantiation_outcome, self.id) };
         // 4. return
@@ -85,7 +85,7 @@ impl<'b, T: Config> Store<'b, T> {
         // 2. call
         let extern_val = self.instance_export_unchecked(module_addr, name)?;
         // 3. rewrap
-        // Safety: The `ExternVal` just came from the current store.
+        // SAFETY: The `ExternVal` just came from the current store.
         let stored_extern_val = unsafe { StoredExternVal::from_bare(extern_val, self.id) };
         // 4. return
         Ok(stored_extern_val)
@@ -147,7 +147,7 @@ impl<'b, T: Config> Store<'b, T> {
         // 2. call
         let run_state = self.invoke_unchecked(func_addr, params, maybe_fuel)?;
         // 3. rewrap
-        // Safety: The `RunState` just came from the current store.
+        // SAFETY: The `RunState` just came from the current store.
         let stored_run_state = unsafe { StoredRunState::from_bare(run_state, self.id) };
         // 4. return
         Ok(stored_run_state)
@@ -164,7 +164,7 @@ impl<'b, T: Config> Store<'b, T> {
         // 2. call
         let table_addr = self.table_alloc_unchecked(table_type, r#ref)?;
         // 3. rewrap
-        // Safety: The `TableAddr` just came from the current store.
+        // SAFETY: The `TableAddr` just came from the current store.
         let stored_table_addr = unsafe { Stored::from_bare(table_addr, self.id) };
         // 4. return
         Ok(stored_table_addr)
@@ -193,7 +193,7 @@ impl<'b, T: Config> Store<'b, T> {
         // 2. call
         let r#ref = self.table_read_unchecked(table_addr, i)?;
         // 3. rewrap
-        // Safety: The `Ref` ust came from the current store.
+        // SAFETY: The `Ref` ust came from the current store.
         let stored_ref = unsafe { StoredRef::from_bare(r#ref, self.id) };
         // 4. return
         Ok(stored_ref)
@@ -237,7 +237,7 @@ impl<'b, T: Config> Store<'b, T> {
         // 2. call
         let mem_addr = self.mem_alloc_unchecked(mem_type);
         // 3. rewrap
-        // Safety: The `MemAddr` just came from the current store.
+        // SAFETY: The `MemAddr` just came from the current store.
         let stored_mem_addr = unsafe { Stored::from_bare(mem_addr, self.id) };
         // 4. return
         stored_mem_addr
@@ -319,7 +319,7 @@ impl<'b, T: Config> Store<'b, T> {
         // 2. call
         let global_addr = self.global_alloc_unchecked(global_type, val)?;
         // 3. rewrap
-        // Safety: The `GlobalAddr` just came from the current store.
+        // SAFETY: The `GlobalAddr` just came from the current store.
         let stored_global_addr = unsafe { Stored::from_bare(global_addr, self.id) };
         // 4. return
         Ok(stored_global_addr)
@@ -347,7 +347,7 @@ impl<'b, T: Config> Store<'b, T> {
         // 2. call
         let value = self.global_read_unchecked(global_addr);
         // 3. rewrap
-        // Safety: The `Value` just came from the current store.
+        // SAFETY: The `Value` just came from the current store.
         let stored_value = unsafe { StoredValue::from_bare(value, self.id) };
         // 4. return
         Ok(stored_value)
@@ -383,7 +383,7 @@ impl<'b, T: Config> Store<'b, T> {
         // 2. call
         let resumable_ref = self.create_resumable_unchecked(func_addr, params, maybe_fuel)?;
         // 3. rewrap
-        // Safety: The `ResumableRef` just came from the current store.
+        // SAFETY: The `ResumableRef` just came from the current store.
         let stored_resumable_ref = unsafe { Stored::from_bare(resumable_ref, self.id) };
         // 4. return
         Ok(stored_resumable_ref)
@@ -399,7 +399,7 @@ impl<'b, T: Config> Store<'b, T> {
         // 2. call
         let run_state = self.resume_unchecked(resumable_ref)?;
         // 3. rewrap
-        // Safety: The `RunState` just came from the current store.
+        // SAFETY: The `RunState` just came from the current store.
         let stored_run_state = unsafe { StoredRunState::from_bare(run_state, self.id) };
         // 4. return
         Ok(stored_run_state)
@@ -465,7 +465,7 @@ impl<'b, T: Config> Store<'b, T> {
         // 2. call
         let returns = self.invoke_without_fuel_unchecked(func_addr, params)?;
         // 3. rewrap
-        // Safety: All `Value`s just came from the current store.
+        // SAFETY: All `Value`s just came from the current store.
         let returns = unsafe { wrap_vec_elements(returns, self.id) };
         // 4. return
         Ok(returns)
@@ -486,7 +486,7 @@ impl<'b, T: Config> Store<'b, T> {
         // 2. call
         let returns = self.invoke_without_fuel_unchecked(function, params)?;
         // 3. rewrap
-        // Safety: All `Value`s just came from the current store.
+        // SAFETY: All `Value`s just came from the current store.
         let stored_returns = unsafe { wrap_vec_elements(returns, self.id) };
         // 4. return
         let stored_returns = Returns::try_from_values(stored_returns.into_iter())
@@ -613,7 +613,7 @@ impl Linker {
             .get_unchecked(module_name, name)
             .ok_or(RuntimeError::UnableToResolveExternLookup)?;
         // 4. rewrap
-        // Safety: The `ExternVal` just came from the current `Linker`. Because
+        // SAFETY: The `ExternVal` just came from the current `Linker`. Because
         // a `Linker` can always be used with only one unique `Store`, this
         // `ExternVal` must be from the current Linker's store.
         let stored_extern_val = unsafe { StoredExternVal::from_bare(extern_val, linker_store_id) };
@@ -653,7 +653,7 @@ impl Linker {
         // 3. call
         let extern_vals = self.instantiate_pre_unchecked(validation_info)?;
         // 4. rewrap
-        // Safety: All `ExternVal`s just came from the current `Linker`. Because
+        // SAFETY: All `ExternVal`s just came from the current `Linker`. Because
         // a Linker can always be used with only one unique `Store`, all
         // `ExternVal`s must be from the current Linker's store.
         let stored_extern_vals = unsafe { wrap_vec_elements(extern_vals, linker_store_id) };
@@ -679,7 +679,7 @@ impl Linker {
         let instantiation_outcome =
             self.module_instantiate_unchecked(store, validation_info, maybe_fuel)?;
         // 4. rewrap
-        // Safety: The `InstantiationOutcome` just came from the current
+        // SAFETY: The `InstantiationOutcome` just came from the current
         // `Linker`. Because a linker can always be used with only one unique
         // `Store`, the `InstantiationOutcome` must be from the current Linker's
         // store.
@@ -812,22 +812,22 @@ impl AbstractStored for StoredExternVal {
     unsafe fn from_bare(bare_value: Self::BareTy, id: StoreId) -> Self {
         match bare_value {
             ExternVal::Func(func_addr) => {
-                // Safety: Upheld by the caller
+                // SAFETY: Upheld by the caller
                 let stored_func_addr = unsafe { Stored::from_bare(func_addr, id) };
                 Self::Func(stored_func_addr)
             }
             ExternVal::Table(table_addr) => {
-                // Safety: Upheld by the caller
+                // SAFETY: Upheld by the caller
                 let stored_table_addr = unsafe { Stored::from_bare(table_addr, id) };
                 Self::Table(stored_table_addr)
             }
             ExternVal::Mem(mem_addr) => {
-                // Safety: Upheld by the caller
+                // SAFETY: Upheld by the caller
                 let stored_mem_addr = unsafe { Stored::from_bare(mem_addr, id) };
                 Self::Mem(stored_mem_addr)
             }
             ExternVal::Global(global_addr) => {
-                // Safety: Upheld by the caller
+                // SAFETY: Upheld by the caller
                 let stored_global_addr = unsafe { Stored::from_bare(global_addr, id) };
                 Self::Global(stored_global_addr)
             }
@@ -910,7 +910,7 @@ impl AbstractStored for StoredRunState {
                 values,
                 maybe_remaining_fuel,
             } => Self::Finished {
-                // Safety: Upheld by the caller
+                // SAFETY: Upheld by the caller
                 values: unsafe { wrap_vec_elements(values, id) },
                 maybe_remaining_fuel,
             },
@@ -918,7 +918,7 @@ impl AbstractStored for StoredRunState {
                 resumable_ref,
                 required_fuel,
             } => Self::Resumable {
-                // Safety: Upheld by the caller
+                // SAFETY: Upheld by the caller
                 resumable_ref: unsafe { Stored::from_bare(resumable_ref, id) },
                 required_fuel,
             },
@@ -945,7 +945,7 @@ impl AbstractStored for StoredInstantiationOutcome {
 
     unsafe fn from_bare(bare_value: Self::BareTy, id: StoreId) -> Self {
         Self {
-            // Safety: Upheld by the caller
+            // SAFETY: Upheld by the caller
             module_addr: unsafe { Stored::from_bare(bare_value.module_addr, id) },
             maybe_remaining_fuel: bare_value.maybe_remaining_fuel,
         }
@@ -973,7 +973,7 @@ unsafe fn wrap_vec_elements<S: AbstractStored>(values: Vec<S::BareTy>, id: Store
     values
         .into_iter()
         .map(|value| {
-            // Safety: The caller guarantees that all values in this Vec come
+            // SAFETY: The caller guarantees that all values in this Vec come
             // from the store with given id. Therefore, this is also true for
             // this specific `Value`.
             unsafe { S::from_bare(value, id) }

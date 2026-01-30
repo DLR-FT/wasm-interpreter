@@ -144,6 +144,15 @@ pub enum ValidationError {
     /// integers to prevent collisions between bit patterns of different types.
     /// Therefore, 33-bit signed integers may never be negative.
     I33IsNegative,
+    /// The data count section is required, if there are instructions that use
+    /// data indices.
+    MissingDataCountSection,
+    /// The mode of a data segment was invalid. Only values in the range 0..=2
+    /// are allowed.
+    InvalidDataSegmentMode(u32),
+    /// The mode of an element was invalid. Only values in the range 0..=7 are
+    /// allowed.
+    InvalidElementMode(u32),
 }
 
 impl Display for ValidationError {
@@ -211,7 +220,10 @@ impl Display for ValidationError {
             ValidationError::DataCountAndDataSectionsLengthAreDifferent => write!(f,"The data count section specifies a different length than there are data segments in the data section"),
             ValidationError::InvalidImportType => f.write_str("Invalid import type"),
             ValidationError::InvalidStartFunctionSignature => write!(f,"The start function has parameters or return types which it is not allowed to have"),
-            ValidationError::I33IsNegative => f.write_str("An i33 type is negative which is not allowed")
+            ValidationError::I33IsNegative => f.write_str("An i33 type is negative which is not allowed"),
+            ValidationError::MissingDataCountSection => f.write_str("Some instructions could not be validated because the data count section is missing"),
+            ValidationError::InvalidDataSegmentMode(mode) => write!(f, "The mode of a data segment was invalid (only 0..=2 is allowed): {mode}"),
+            ValidationError::InvalidElementMode(mode) => write!(f, "The mode of an element was invalid (only 0..=7 is allowed): {mode}"),
         }
     }
 }

@@ -111,7 +111,9 @@ pub(super) fn validate_data_section(
                 // The initial integer can be interpreted as a bitfield. Bit 0 indicates a passive segment, bit 1 indicates the presence of an explicit memory index for an active segment.
                 // In the current version of WebAssembly, at most one memory may be defined or imported in a single module, so all valid active data segments have a memory value of 0
             }
-            _ => unreachable!(),
+            invalid_mode @ 3.. => {
+                return Err(ValidationError::InvalidDataSegmentMode(invalid_mode))
+            }
         };
 
         trace!("{:?}", data_sec.init);

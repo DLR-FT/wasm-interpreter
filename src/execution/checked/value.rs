@@ -28,7 +28,7 @@ impl AbstractStored for StoredValue {
             Value::F64(x) => Self::F64(x),
             Value::V128(x) => Self::V128(x),
             Value::Ref(r#ref) => {
-                // Safety: Upheld by the caller
+                // SAFETY: Upheld by the caller
                 let stored_ref = unsafe { StoredRef::from_bare(r#ref, id) };
                 Self::Ref(stored_ref)
             }
@@ -71,7 +71,7 @@ impl AbstractStored for StoredRef {
         match bare_value {
             Ref::Null(ref_type) => Self::Null(ref_type),
             Ref::Func(func_addr) => {
-                // Safety: Upheld by the caller
+                // SAFETY: Upheld by the caller
                 let stored_func_addr = unsafe { Stored::from_bare(func_addr, id) };
                 Self::Func(stored_func_addr)
             }
