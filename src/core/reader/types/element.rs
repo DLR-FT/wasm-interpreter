@@ -211,9 +211,8 @@ impl ElemType {
                     let mode = ElemMode::Declarative;
                     ElemType { init, mode }
                 }
-                8.. => {
-                    // TODO fix error
-                    return Err(ValidationError::InvalidBinaryFormatVersion);
+                invalid_mode @ 8.. => {
+                    return Err(ValidationError::InvalidElementMode(invalid_mode));
                 }
             };
 

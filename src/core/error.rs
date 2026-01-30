@@ -150,6 +150,9 @@ pub enum ValidationError {
     /// The mode of a data segment was invalid. Only values in the range 0..=2
     /// are allowed.
     InvalidDataSegmentMode(u32),
+    /// The mode of an element was invalid. Only values in the range 0..=7 are
+    /// allowed.
+    InvalidElementMode(u32),
 }
 
 impl Display for ValidationError {
@@ -220,6 +223,7 @@ impl Display for ValidationError {
             ValidationError::I33IsNegative => f.write_str("An i33 type is negative which is not allowed"),
             ValidationError::MissingDataCountSection => f.write_str("Some instructions could not be validated because the data count section is missing"),
             ValidationError::InvalidDataSegmentMode(mode) => write!(f, "The mode of a data segment was invalid (only 0..=2 is allowed): {mode}"),
+            ValidationError::InvalidElementMode(mode) => write!(f, "The mode of an element was invalid (only 0..=7 is allowed): {mode}"),
         }
     }
 }
