@@ -54,7 +54,7 @@ pub enum ValidationError {
     /// An index for a type is invalid.
     InvalidTypeIdx(u32),
     /// An index for a function is invalid.
-    InvalidFuncIdx(FuncIdx),
+    InvalidFuncIdx(u32),
     /// An index for a table is invalid.
     InvalidTableIdx(TableIdx),
     /// An index for a memory is invalid.
