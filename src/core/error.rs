@@ -147,6 +147,9 @@ pub enum ValidationError {
     /// The data count section is required, if there are instructions that use
     /// data indices.
     MissingDataCountSection,
+    /// The mode of a data segment was invalid. Only values in the range 0..=2
+    /// are allowed.
+    InvalidDataSegmentMode(u32),
 }
 
 impl Display for ValidationError {
@@ -216,6 +219,7 @@ impl Display for ValidationError {
             ValidationError::InvalidStartFunctionSignature => write!(f,"The start function has parameters or return types which it is not allowed to have"),
             ValidationError::I33IsNegative => f.write_str("An i33 type is negative which is not allowed"),
             ValidationError::MissingDataCountSection => f.write_str("Some instructions could not be validated because the data count section is missing"),
+            ValidationError::InvalidDataSegmentMode(mode) => write!(f, "The mode of a data segment was invalid (only 0..=2 is allowed): {mode}"),
         }
     }
 }
