@@ -28,7 +28,7 @@
 <a href=#28 id=28 data-nosnippet>28</a>            Value::F64(x) =&gt; <span class="self">Self</span>::F64(x),
 <a href=#29 id=29 data-nosnippet>29</a>            Value::V128(x) =&gt; <span class="self">Self</span>::V128(x),
 <a href=#30 id=30 data-nosnippet>30</a>            Value::Ref(r#ref) =&gt; {
-<a href=#31 id=31 data-nosnippet>31</a>                <span class="comment">// Safety: Upheld by the caller
+<a href=#31 id=31 data-nosnippet>31</a>                <span class="comment">// SAFETY: Upheld by the caller
 <a href=#32 id=32 data-nosnippet>32</a>                </span><span class="kw">let </span>stored_ref = <span class="kw">unsafe </span>{ StoredRef::from_bare(r#ref, id) };
 <a href=#33 id=33 data-nosnippet>33</a>                <span class="self">Self</span>::Ref(stored_ref)
 <a href=#34 id=34 data-nosnippet>34</a>            }
@@ -71,7 +71,7 @@
 <a href=#71 id=71 data-nosnippet>71</a>        <span class="kw">match </span>bare_value {
 <a href=#72 id=72 data-nosnippet>72</a>            Ref::Null(ref_type) =&gt; <span class="self">Self</span>::Null(ref_type),
 <a href=#73 id=73 data-nosnippet>73</a>            Ref::Func(func_addr) =&gt; {
-<a href=#74 id=74 data-nosnippet>74</a>                <span class="comment">// Safety: Upheld by the caller
+<a href=#74 id=74 data-nosnippet>74</a>                <span class="comment">// SAFETY: Upheld by the caller
 <a href=#75 id=75 data-nosnippet>75</a>                </span><span class="kw">let </span>stored_func_addr = <span class="kw">unsafe </span>{ Stored::from_bare(func_addr, id) };
 <a href=#76 id=76 data-nosnippet>76</a>                <span class="self">Self</span>::Func(stored_func_addr)
 <a href=#77 id=77 data-nosnippet>77</a>            }
