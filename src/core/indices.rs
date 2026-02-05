@@ -753,4 +753,18 @@ impl LocalIdx {
     }
 }
 
-pub type LabelIdx = usize;
+/// Reads a label index from Wasm code without validating it.
+pub fn read_label_idx(wasm: &mut WasmReader) -> Result<u32, ValidationError> {
+    wasm.read_var_u32()
+}
+
+/// Reads a label index from Wasm code without validating it.
+///
+/// # Safety
+///
+/// The caller must ensure that there is a valid label index in the
+/// [`WasmReader`].
+pub unsafe fn read_label_idx_unchecked(wasm: &mut WasmReader) -> u32 {
+    // TODO use `unwrap_unchecked` instead
+    wasm.read_var_u32().unwrap()
+}

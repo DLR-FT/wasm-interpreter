@@ -20,8 +20,8 @@ use crate::{
     assert_validated::UnwrapValidatedExt,
     core::{
         indices::{
-            DataIdx, ElemIdx, FuncIdx, GlobalIdx, Idx, LabelIdx, LocalIdx, MemIdx, TableIdx,
-            TypeIdx,
+            read_label_idx_unchecked, DataIdx, ElemIdx, FuncIdx, GlobalIdx, Idx, LocalIdx, MemIdx,
+            TableIdx, TypeIdx,
         },
         reader::{
             types::{memarg::MemArg, BlockType},
@@ -166,7 +166,10 @@ pub(super) fn run<T: Config>(
             }
             BR_IF => {
                 decrement_fuel!(T::get_flat_cost(BR_IF));
-                wasm.read_var_u32().unwrap_validated();
+
+                // SAFETY: Validation guarantees there to be a valid label index
+                // next.
+                let _label_idx = unsafe { read_label_idx_unchecked(wasm) };
 
                 let test_val: i32 = stack.pop_value().try_into().unwrap_validated();
 
@@ -180,9 +183,16 @@ pub(super) fn run<T: Config>(
             BR_TABLE => {
                 decrement_fuel!(T::get_flat_cost(BR_TABLE));
                 let label_vec = wasm
-                    .read_vec(|wasm| wasm.read_var_u32().map(|v| v as LabelIdx))
+                    .read_vec(|wasm| {
+                        // SAFETY: Validation guarantees that there is a
+                        // valid vec of label indices.
+                        Ok(unsafe { read_label_idx_unchecked(wasm) })
+                    })
                     .unwrap_validated();
-                wasm.read_var_u32().unwrap_validated();
+
+                // SAFETY: Validation guarantees there to be another label index
+                // for the default case.
+                let _default_label_idx = unsafe { read_label_idx_unchecked(wasm) };
 
                 // TODO is this correct?
                 let case_val_i32: i32 = stack.pop_value().try_into().unwrap_validated();
@@ -198,8 +208,9 @@ pub(super) fn run<T: Config>(
             }
             BR => {
                 decrement_fuel!(T::get_flat_cost(BR));
-                //skip n of BR n
-                wasm.read_var_u32().unwrap_validated();
+                // SAFETY: Validation guarantees there to be a valid label index
+                // next.
+                let _label_idx = unsafe { read_label_idx_unchecked(wasm) };
                 do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable)?;
             }
             BLOCK => {
@@ -216,7 +227,7 @@ pub(super) fn run<T: Config>(
             }
             RETURN => {
                 decrement_fuel!(T::get_flat_cost(RETURN));
-                //same as BR, except no need to skip n of BR n
+                // same as BR
                 do_sidetable_control_transfer(wasm, stack, &mut stp, current_sidetable)?;
             }
             CALL => {
