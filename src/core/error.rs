@@ -153,6 +153,18 @@ pub enum ValidationError {
     /// The mode of an element was invalid. Only values in the range 0..=7 are
     /// allowed.
     InvalidElementMode(u32),
+    /// The module contains too many functions, i.e. imported or locally-defined
+    /// functions. The maximum number of functions is [`u32::MAX`].
+    TooManyFunctions,
+    /// The module contains too many tables, i.e. imported or locally-defined
+    /// tables. The maximum number of tables is [`u32::MAX`].
+    TooManyTables,
+    /// The module contains too many memories, i.e. imported or locally-defined
+    /// memories. The maximum number of memories is [`u32::MAX`].
+    TooManyMemories,
+    /// The module contains too many globals, i.e. imported or locally-defined
+    /// globals. The maximum number of memories is [`u32::MAX`].
+    TooManyGlobals,
 }
 
 impl core::error::Error for ValidationError {}
@@ -226,6 +238,10 @@ impl Display for ValidationError {
             ValidationError::MissingDataCountSection => f.write_str("Some instructions could not be validated because the data count section is missing"),
             ValidationError::InvalidDataSegmentMode(mode) => write!(f, "The mode of a data segment was invalid (only 0..=2 is allowed): {mode}"),
             ValidationError::InvalidElementMode(mode) => write!(f, "The mode of an element was invalid (only 0..=7 is allowed): {mode}"),
+            ValidationError::TooManyFunctions => f.write_str("The module contains too many functions. The maximum number of functions (either imported or locally-defined) is 2^32 - 1"),
+            ValidationError::TooManyTables => f.write_str("The module contains too many tables. The maximum number of tables (either imported or locally-defined) is 2^32 - 1"),
+            ValidationError::TooManyMemories => f.write_str("The module contains too many memories. The maximum number of memories (either imported or locally-defined) is 2^32 - 1"),
+            ValidationError::TooManyGlobals => f.write_str("The module contains too many globals. The maximum number of globals (either imported or locally-defined) is 2^32 - 1"),
         }
     }
 }
