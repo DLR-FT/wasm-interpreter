@@ -290,14 +290,12 @@ impl<'b, T: Config> Store<'b, T> {
             .map(|Export { name, desc }| {
                 let module_inst = self.modules.get(module_addr);
                 let value = match desc {
-                    ExportDesc::FuncIdx(func_idx) => {
+                    ExportDesc::Func(func_idx) => {
                         ExternVal::Func(module_inst.func_addrs[*func_idx])
                     }
-                    ExportDesc::TableIdx(table_idx) => {
-                        ExternVal::Table(table_addrs_mod[*table_idx])
-                    }
-                    ExportDesc::MemIdx(mem_idx) => ExternVal::Mem(mem_addrs_mod[*mem_idx]),
-                    ExportDesc::GlobalIdx(global_idx) => {
+                    ExportDesc::Table(table_idx) => ExternVal::Table(table_addrs_mod[*table_idx]),
+                    ExportDesc::Mem(mem_idx) => ExternVal::Mem(mem_addrs_mod[*mem_idx]),
+                    ExportDesc::Global(global_idx) => {
                         ExternVal::Global(module_inst.global_addrs[*global_idx])
                     }
                 };
