@@ -67,7 +67,7 @@ fn validate_exports(validation_info: &ValidationInfo) -> Result<(), ValidationEr
         }
         found_export_names.insert(export.name.as_str());
         match export.desc {
-            FuncIdx(func_idx) => {
+            Func(func_idx) => {
                 if validation_info.functions.len()
                     + validation_info.imports_length.imported_functions
                     <= func_idx
@@ -75,21 +75,21 @@ fn validate_exports(validation_info: &ValidationInfo) -> Result<(), ValidationEr
                     return Err(ValidationError::InvalidFuncIdx(func_idx));
                 }
             }
-            TableIdx(table_idx) => {
+            Table(table_idx) => {
                 if validation_info.tables.len() + validation_info.imports_length.imported_tables
                     <= table_idx
                 {
                     return Err(ValidationError::InvalidTableIdx(table_idx));
                 }
             }
-            MemIdx(mem_idx) => {
+            Mem(mem_idx) => {
                 if validation_info.memories.len() + validation_info.imports_length.imported_memories
                     <= mem_idx
                 {
                     return Err(ValidationError::InvalidMemIdx(mem_idx));
                 }
             }
-            GlobalIdx(global_idx) => {
+            Global(global_idx) => {
                 if validation_info.globals.len() + validation_info.imports_length.imported_globals
                     <= global_idx
                 {
@@ -345,7 +345,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
     .unwrap_or_default();
     validation_context_refs.extend(exports.iter().filter_map(
         |Export { name: _, desc }| match *desc {
-            ExportDesc::FuncIdx(func_idx) => Some(func_idx),
+            ExportDesc::Func(func_idx) => Some(func_idx),
             _ => None,
         },
     ));
