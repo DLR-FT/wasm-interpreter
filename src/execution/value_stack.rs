@@ -6,6 +6,7 @@ use crate::addrs::FuncAddr;
 use crate::config::Config;
 use crate::core::indices::LocalIdx;
 use crate::core::reader::types::{FuncType, ValType};
+use crate::core::utils::ToUsizeExt;
 use crate::execution::assert_validated::UnwrapValidatedExt;
 use crate::execution::value::Value;
 use crate::RuntimeError;
@@ -116,6 +117,7 @@ impl Stack {
 
     /// Returns a shared reference to a specific local by its index in the current call frame.
     pub fn get_local(&self, idx: LocalIdx) -> &Value {
+        let idx = idx.into_inner().into_usize();
         let call_frame_base_idx = self.current_call_frame().call_frame_base_idx;
         self.values
             .get(call_frame_base_idx + idx)
@@ -124,6 +126,7 @@ impl Stack {
 
     /// Returns a mutable reference to a specific local by its index in the current call frame.
     pub fn get_local_mut(&mut self, idx: LocalIdx) -> &mut Value {
+        let idx = idx.into_inner().into_usize();
         let call_frame_base_idx = self.current_call_frame().call_frame_base_idx;
         self.values
             .get_mut(call_frame_base_idx + idx)
