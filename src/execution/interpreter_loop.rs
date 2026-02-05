@@ -19,7 +19,7 @@ use crate::{
     addrs::{AddrVec, DataAddr, ElemAddr, MemAddr, ModuleAddr, TableAddr},
     assert_validated::UnwrapValidatedExt,
     core::{
-        indices::{DataIdx, ElemIdx, FuncIdx, GlobalIdx, Idx, MemIdx, TableIdx, TypeIdx},
+        indices::{DataIdx, ElemIdx, FuncIdx, GlobalIdx, Idx, LocalIdx, MemIdx, TableIdx, TypeIdx},
         reader::{
             types::{memarg::MemArg, BlockType},
             WasmReader,
@@ -434,21 +434,27 @@ pub(super) fn run<T: Config>(
             }
             LOCAL_GET => {
                 decrement_fuel!(T::get_flat_cost(LOCAL_GET));
-                let local_idx = wasm.read_var_u32().unwrap_validated().into_usize();
+                // SAFETY: Validation guarantees there to be a valid local index
+                // next.
+                let local_idx = unsafe { LocalIdx::read_unchecked(wasm) };
                 let value = *stack.get_local(local_idx);
                 stack.push_value::<T>(value)?;
                 trace!("Instruction: local.get {} [] -> [t]", local_idx);
             }
             LOCAL_SET => {
                 decrement_fuel!(T::get_flat_cost(LOCAL_SET));
-                let local_idx = wasm.read_var_u32().unwrap_validated().into_usize();
+                // SAFETY: Validation guarantees there to be a valid local index
+                // next.
+                let local_idx = unsafe { LocalIdx::read_unchecked(wasm) };
                 let value = stack.pop_value();
                 *stack.get_local_mut(local_idx) = value;
                 trace!("Instruction: local.set {} [t] -> []", local_idx);
             }
             LOCAL_TEE => {
                 decrement_fuel!(T::get_flat_cost(LOCAL_TEE));
-                let local_idx = wasm.read_var_u32().unwrap_validated().into_usize();
+                // SAFETY: Validation guarantees there to be a valid local index
+                // next.
+                let local_idx = unsafe { LocalIdx::read_unchecked(wasm) };
                 let value = stack.peek_value().unwrap_validated();
                 *stack.get_local_mut(local_idx) = value;
                 trace!("Instruction: local.tee {} [t] -> [t]", local_idx);
