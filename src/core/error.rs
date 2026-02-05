@@ -3,7 +3,7 @@ use crate::RefType;
 use core::fmt::{Display, Formatter};
 use core::str::Utf8Error;
 
-use super::indices::{FuncIdx, LabelIdx};
+use super::indices::FuncIdx;
 use crate::core::reader::section_header::SectionTy;
 use crate::core::reader::types::ValType;
 
@@ -67,7 +67,7 @@ pub enum ValidationError {
     /// An index for a local is invalid.
     InvalidLocalIdx(u32),
     /// An index for a label is invalid.
-    InvalidLabelIdx(LabelIdx),
+    InvalidLabelIdx(u32),
     /// An index for a lane of some vector type is invalid.
     InvalidLaneIdx(u8),
 
