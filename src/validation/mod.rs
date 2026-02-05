@@ -235,6 +235,13 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
         .chain(local_functions.iter().cloned())
         .collect::<Vec<TypeIdx>>();
 
+    // All functions need to be addressable by a u32
+    if all_functions.len()
+        > usize::try_from(u32::MAX).expect("pointer width to be at least 32 bits")
+    {
+        return Err(ValidationError::TooManyFunctions);
+    }
+
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
     let imported_tables = imports
@@ -254,6 +261,11 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
         temp.extend(tables.clone());
         temp
     };
+
+    // All tables need to be addressable by a u32
+    if all_tables.len() > usize::try_from(u32::MAX).expect("pointer width to be at least 32 bits") {
+        return Err(ValidationError::TooManyTables);
+    }
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
@@ -275,8 +287,16 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
         temp.extend(memories.clone());
         temp
     };
+
     if all_memories.len() > 1 {
         return Err(ValidationError::UnsupportedMultipleMemoriesProposal);
+    }
+
+    // Note: Without the multiple memory proposal, this is dead code due to the previous check.
+    // All memories need to be addressable by a u32
+    if all_memories.len() > usize::try_from(u32::MAX).expect("pointer width to be at least 32 bits")
+    {
+        return Err(ValidationError::TooManyMemories);
     }
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
@@ -309,6 +329,12 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
     }
     for item in &globals {
         all_globals.push(*item)
+    }
+
+    // All globals need to be addressable by a u32
+    if all_globals.len() > usize::try_from(u32::MAX).expect("pointer width to be at least 32 bits")
+    {
+        return Err(ValidationError::TooManyGlobals);
     }
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
