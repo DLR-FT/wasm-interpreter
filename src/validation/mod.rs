@@ -44,7 +44,6 @@ pub struct ValidationInfo<'bytecode> {
     pub(crate) tables: Vec<TableType>,
     pub(crate) memories: Vec<MemType>,
     pub(crate) globals: Vec<Global>,
-    #[allow(dead_code)]
     pub(crate) exports: Vec<Export>,
     /// Each block contains the validated code section and the stp corresponding to
     /// the beginning of that code section

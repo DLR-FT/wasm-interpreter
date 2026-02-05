@@ -148,9 +148,7 @@ pub struct ScriptError {
     /// Boxed because of struct size
     pub error: Box<WastError>,
     pub context: String,
-    #[allow(unused)]
     pub line_number: Option<u32>,
-    #[allow(unused)]
     pub command: Option<String>,
 }
 
