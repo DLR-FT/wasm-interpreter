@@ -40,7 +40,7 @@ use alloc::{boxed::Box, vec::Vec};
 
 use crate::{
     core::reader::{types::FuncType, WasmReader},
-    ValidationError,
+    ValType, ValidationError,
 };
 
 /// A trait for all index types.
@@ -712,5 +712,45 @@ impl DataIdx {
     }
 }
 
-pub type LocalIdx = usize;
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct LocalIdx(u32);
+
+impl core::fmt::Display for LocalIdx {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "local index {}", self.0)
+    }
+}
+
+impl LocalIdx {
+    pub fn into_inner(self) -> u32 {
+        self.0
+    }
+
+    /// Reads a local index from Wasm code and validates that it is valid for a
+    /// given slice of locals.
+    pub fn read_and_validate(
+        wasm: &mut WasmReader,
+        locals_of_current_function: &[ValType],
+    ) -> Result<Self, ValidationError> {
+        let index = wasm.read_var_u32()?;
+        let index_as_usize = usize::try_from(index).expect("architecture to be at least 32 bits");
+
+        match locals_of_current_function.get(index_as_usize) {
+            Some(_local) => Ok(Self(index)),
+            None => Err(ValidationError::InvalidLocalIdx(index)),
+        }
+    }
+
+    /// Reads a local index from Wasm code without validating it.
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure that there is a valid local index in the
+    /// [`WasmReader`].
+    pub unsafe fn read_unchecked(wasm: &mut WasmReader) -> Self {
+        let index = wasm.read_var_u32().unwrap();
+        Self(index)
+    }
+}
+
 pub type LabelIdx = usize;

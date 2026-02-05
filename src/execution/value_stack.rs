@@ -79,6 +79,7 @@ impl Stack {
 
     /// Returns a shared reference to a specific local by its index in the current call frame.
     pub fn get_local(&self, idx: LocalIdx) -> &Value {
+        let idx = usize::try_from(idx.into_inner()).expect("architecture to be at least 32 bits");
         let call_frame_base_idx = self.current_call_frame().call_frame_base_idx;
         self.values
             .get(call_frame_base_idx + idx)
@@ -87,6 +88,7 @@ impl Stack {
 
     /// Returns a mutable reference to a specific local by its index in the current call frame.
     pub fn get_local_mut(&mut self, idx: LocalIdx) -> &mut Value {
+        let idx = usize::try_from(idx.into_inner()).expect("architecture to be at least 32 bits");
         let call_frame_base_idx = self.current_call_frame().call_frame_base_idx;
         self.values
             .get_mut(call_frame_base_idx + idx)

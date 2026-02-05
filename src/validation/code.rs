@@ -539,26 +539,35 @@ unsafe fn read_instructions(
             }
             // local.get: [] -> [t]
             LOCAL_GET => {
-                let local_idx = wasm.read_var_u32()? as LocalIdx;
+                let local_idx = LocalIdx::read_and_validate(wasm, locals)?;
                 let local_ty = locals
-                    .get(local_idx)
-                    .ok_or(ValidationError::InvalidLocalIdx(local_idx))?;
+                    .get(
+                        usize::try_from(local_idx.into_inner())
+                            .expect("architecture to be at least 32 bits"),
+                    )
+                    .expect("the local index to be valid as this was just checked");
                 stack.push_valtype(*local_ty);
             }
             // local.set [t] -> []
             LOCAL_SET => {
-                let local_idx = wasm.read_var_u32()? as LocalIdx;
+                let local_idx = LocalIdx::read_and_validate(wasm, locals)?;
                 let local_ty = locals
-                    .get(local_idx)
-                    .ok_or(ValidationError::InvalidLocalIdx(local_idx))?;
+                    .get(
+                        usize::try_from(local_idx.into_inner())
+                            .expect("architecture to be at least 32 bits"),
+                    )
+                    .expect("the local index to be valid as this was just checked");
                 stack.assert_pop_val_type(*local_ty)?;
             }
             // local.set [t] -> [t]
             LOCAL_TEE => {
-                let local_idx = wasm.read_var_u32()? as LocalIdx;
+                let local_idx = LocalIdx::read_and_validate(wasm, locals)?;
                 let local_ty = locals
-                    .get(local_idx)
-                    .ok_or(ValidationError::InvalidLocalIdx(local_idx))?;
+                    .get(
+                        usize::try_from(local_idx.into_inner())
+                            .expect("architecture to be at least 32 bits"),
+                    )
+                    .expect("the local index to be valid as this was just checked");
                 stack.assert_val_types_on_top(&[*local_ty], true)?;
             }
             // global.get [] -> [t]
