@@ -68,7 +68,7 @@ impl<T> SlotMap<T> {
         }
     }
 
-    #[allow(unused)]
+    #[allow(unused)] // reason = "this function might be used in the future"
     pub fn get(&self, key: &SlotMapKey<T>) -> Option<&T> {
         let slot = self.slots.get(key.index)?;
         if slot.generation != key.generation {

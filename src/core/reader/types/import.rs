@@ -10,11 +10,8 @@ use super::{ExternType, MemType, TableType};
 
 #[derive(Debug, Clone)]
 pub struct Import {
-    #[allow(warnings)]
     pub module_name: String,
-    #[allow(warnings)]
     pub name: String,
-    #[allow(warnings)]
     pub desc: ImportDesc,
 }
 

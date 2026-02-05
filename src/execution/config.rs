@@ -15,9 +15,8 @@ pub trait Config {
     ///
     /// This allows the most intricate insight into the interpreters behavior, at the cost of a
     /// hefty performance penalty
-    #[allow(unused_variables)]
     #[inline(always)]
-    fn instruction_hook(&mut self, bytecode: &[u8], pc: usize) {}
+    fn instruction_hook(&mut self, _bytecode: &[u8], _pc: usize) {}
 
     /// Amount of fuel to be deducted when a single byte `instr` is hit. The cost corresponding to `UNREACHABLE` and
     /// `END` instructions and other bytes that do not correspond to any Wasm instruction are ignored.

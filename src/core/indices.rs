@@ -24,5 +24,4 @@ pub type GlobalIdx = usize;
 pub type ElemIdx = usize;
 pub type DataIdx = usize;
 pub type LocalIdx = usize;
-#[allow(dead_code)]
 pub type LabelIdx = usize;

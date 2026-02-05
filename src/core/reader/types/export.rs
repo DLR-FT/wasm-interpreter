@@ -10,9 +10,7 @@ use super::ExternType;
 
 #[derive(Debug, Clone)]
 pub struct Export {
-    #[allow(dead_code)]
     pub name: String,
-    #[allow(dead_code)]
     pub desc: ExportDesc,
 }
 
@@ -25,15 +23,10 @@ impl Export {
 }
 
 #[derive(Debug, Clone)]
-#[allow(clippy::all)]
 pub enum ExportDesc {
-    #[allow(warnings)]
     Func(FuncIdx),
-    #[allow(warnings)]
     Table(TableIdx),
-    #[allow(warnings)]
     Mem(MemIdx),
-    #[allow(warnings)]
     Global(GlobalIdx),
 }
 
