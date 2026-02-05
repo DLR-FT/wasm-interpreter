@@ -8,13 +8,13 @@ use crate::core::reader::section_header::{SectionHeader, SectionTy};
 use crate::core::reader::span::Span;
 use crate::core::reader::types::data::DataSegment;
 use crate::core::reader::types::element::ElemType;
-use crate::core::reader::types::export::Export;
+use crate::core::reader::types::export::{Export, ExportDesc};
 use crate::core::reader::types::global::{Global, GlobalType};
 use crate::core::reader::types::import::{Import, ImportDesc};
 use crate::core::reader::types::{ExternType, FuncType, MemType, ResultType, TableType};
 use crate::core::reader::WasmReader;
 use crate::core::sidetable::Sidetable;
-use crate::{ExportDesc, ValidationError};
+use crate::ValidationError;
 
 pub(crate) mod code;
 pub(crate) mod data;
