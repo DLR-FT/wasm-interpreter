@@ -26,16 +26,15 @@ impl Export {
 
 #[derive(Debug, Clone)]
 #[allow(clippy::all)]
-// TODO: change enum labels from FuncIdx -> Func
 pub enum ExportDesc {
     #[allow(warnings)]
-    FuncIdx(FuncIdx),
+    Func(FuncIdx),
     #[allow(warnings)]
-    TableIdx(TableIdx),
+    Table(TableIdx),
     #[allow(warnings)]
-    MemIdx(MemIdx),
+    Mem(MemIdx),
     #[allow(warnings)]
-    GlobalIdx(GlobalIdx),
+    Global(GlobalIdx),
 }
 
 impl ExportDesc {
@@ -49,7 +48,7 @@ impl ExportDesc {
         // TODO clean up logic for checking if an exported definition is an
         // import
         match self {
-            ExportDesc::FuncIdx(func_idx) => {
+            ExportDesc::Func(func_idx) => {
                 let type_idx = match func_idx
                     .checked_sub(validation_info.imports_length.imported_functions)
                 {
@@ -71,7 +70,7 @@ impl ExportDesc {
                 // TODO ugly clone that should disappear when types are directly parsed from bytecode instead of vector copies
                 ExternType::Func(func_type.clone())
             }
-            ExportDesc::TableIdx(table_idx) => {
+            ExportDesc::Table(table_idx) => {
                 let table_type = match table_idx
                     .checked_sub(validation_info.imports_length.imported_tables)
                 {
@@ -88,7 +87,7 @@ impl ExportDesc {
                 };
                 ExternType::Table(table_type)
             }
-            ExportDesc::MemIdx(mem_idx) => {
+            ExportDesc::Mem(mem_idx) => {
                 let mem_type = match mem_idx
                     .checked_sub(validation_info.imports_length.imported_memories)
                 {
@@ -105,7 +104,7 @@ impl ExportDesc {
                 };
                 ExternType::Mem(mem_type)
             }
-            ExportDesc::GlobalIdx(global_idx) => {
+            ExportDesc::Global(global_idx) => {
                 let global_type =
                     match global_idx.checked_sub(validation_info.imports_length.imported_globals) {
                         Some(local_global_idx) => {
@@ -134,10 +133,10 @@ impl ExportDesc {
         let desc_idx = wasm.read_var_u32()? as usize;
 
         let desc = match desc_id {
-            0x00 => ExportDesc::FuncIdx(desc_idx),
-            0x01 => ExportDesc::TableIdx(desc_idx),
-            0x02 => ExportDesc::MemIdx(desc_idx),
-            0x03 => ExportDesc::GlobalIdx(desc_idx),
+            0x00 => ExportDesc::Func(desc_idx),
+            0x01 => ExportDesc::Table(desc_idx),
+            0x02 => ExportDesc::Mem(desc_idx),
+            0x03 => ExportDesc::Global(desc_idx),
             other => return Err(ValidationError::MalformedExportDescDiscriminator(other)),
         };
         Ok(desc)
