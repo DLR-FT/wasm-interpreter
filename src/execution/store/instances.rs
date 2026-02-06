@@ -11,7 +11,7 @@ use crate::{
     },
     linear_memory::LinearMemory,
     value::Ref,
-    GlobalType, Limits, RefType, RuntimeError, TrapError, ValType, Value,
+    GlobalType, Limits, RefType, RuntimeError, ValType, Value,
 };
 
 use super::{
@@ -87,13 +87,13 @@ impl TableInst {
         // TODO refactor error, the spec Table.grow raises Table.{SizeOverflow, SizeLimit, OutOfMemory}
         let len = n
             .checked_add(self.elem.len() as u32)
-            .ok_or(TrapError::TableOrElementAccessOutOfBounds)?;
+            .ok_or(RuntimeError::TableGrowOverflowed)?;
 
         // roughly matches step 4,5,6
         // checks limits_prime.valid() for limits_prime := { min: len, max: self.ty.lim.max }
         // https://webassembly.github.io/spec/core/valid/types.html#limits
         if self.ty.lim.max.map(|max| len > max).unwrap_or(false) {
-            return Err(TrapError::TableOrElementAccessOutOfBounds.into());
+            return Err(RuntimeError::TableGrowExceededLimit);
         }
         let limits_prime = Limits {
             min: len,

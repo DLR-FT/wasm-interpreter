@@ -54,6 +54,12 @@ pub enum RuntimeError {
     /// A memory grow operation failed because the new size would have exceeded
     /// its upper limit.
     MemoryGrowExceededLimit,
+    /// A table grow operation failed because its new size would have overflowed
+    /// by being over 2^16
+    TableGrowOverflowed,
+    /// A table grow operation failed because the new size would have exceeded
+    /// its upper limit.
+    TableGrowExceededLimit,
 }
 
 impl Display for RuntimeError {
@@ -114,6 +120,8 @@ impl Display for RuntimeError {
             RuntimeError::LinkerNotYetAssociatedWithStoreId => f.write_str("A checked method of a linker was used, even though that linker has not yet been associated to any store through its id"),
             RuntimeError::MemoryGrowOverflowed => f.write_str("A memory grow operation failed with an overflow"),
             RuntimeError::MemoryGrowExceededLimit => f.write_str("A memory grow operation failed due to exceeding its upper limit"),
+            RuntimeError::TableGrowOverflowed => f.write_str("A table grow operation failed with an overflow"),
+            RuntimeError::TableGrowExceededLimit => f.write_str("A table grow operation failed due to exceeding its upper limit"),
         }
     }
 }

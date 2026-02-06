@@ -2807,9 +2807,10 @@ pub(super) fn run<T: Config>(
                             Ok(_) => {
                                 stack.push_value::<T>(Value::I32(sz))?;
                             }
-                            Err(_) => {
+                            Err(RuntimeError::TableGrowOverflowed | RuntimeError::TableGrowExceededLimit) => {
                                 stack.push_value::<T>(Value::I32(u32::MAX))?;
                             }
+                            Err(_) => unreachable!("table grow operation cannot produce any other errors"),
                         }
                     }
                     TABLE_SIZE => {
