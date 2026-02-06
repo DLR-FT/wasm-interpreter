@@ -125,14 +125,14 @@ impl MemInst {
         // TODO refactor error, the spec Table.grow raises Memory.{SizeOverflow, SizeLimit, OutOfMemory}
         let len = n + self.mem.pages() as u32;
         if len > Limits::MAX_MEM_PAGES {
-            return Err(TrapError::MemoryOrDataAccessOutOfBounds.into());
+            return Err(RuntimeError::MemoryGrowOverflowed);
         }
 
         // roughly matches step 4,5,6
         // checks limits_prime.valid() for limits_prime := { min: len, max: self.ty.lim.max }
         // https://webassembly.github.io/spec/core/valid/types.html#limits
         if self.ty.limits.max.map(|max| len > max).unwrap_or(false) {
-            return Err(TrapError::MemoryOrDataAccessOutOfBounds.into());
+            return Err(RuntimeError::MemoryGrowExceededLimit);
         }
         let limits_prime = Limits {
             min: len,

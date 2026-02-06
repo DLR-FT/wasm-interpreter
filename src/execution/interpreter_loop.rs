@@ -1016,7 +1016,10 @@ pub(super) fn run<T: Config>(
                 // if the grow operation fails, err := Value::I32(2^32-1) is pushed to the stack per spec
                 let pushed_value = match mem.grow(n) {
                     Ok(_) => sz,
-                    Err(_) => u32::MAX,
+                    Err(
+                        RuntimeError::MemoryGrowOverflowed | RuntimeError::MemoryGrowExceededLimit,
+                    ) => u32::MAX,
+                    Err(_) => unreachable!("growing memory cannot return any other errors"),
                 };
                 stack.push_value::<T>(Value::I32(pushed_value))?;
                 trace!("Instruction: memory.grow [{}] -> [{}]", n, pushed_value);

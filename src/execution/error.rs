@@ -47,6 +47,13 @@ pub enum RuntimeError {
     /// used, even though that [`Linker`](crate::execution::linker::Linker) has
     /// not yet been associated to any store through its id.
     LinkerNotYetAssociatedWithStoreId,
+
+    /// A memory grow operation failed because its new size would have
+    /// overflowed by being over 2^16
+    MemoryGrowOverflowed,
+    /// A memory grow operation failed because the new size would have exceeded
+    /// its upper limit.
+    MemoryGrowExceededLimit,
 }
 
 impl Display for RuntimeError {
@@ -105,6 +112,8 @@ impl Display for RuntimeError {
             }
             RuntimeError::StoreIdMismatch => f.write_str( "The identifier of a stored object did not match the store it was used with"),
             RuntimeError::LinkerNotYetAssociatedWithStoreId => f.write_str("A checked method of a linker was used, even though that linker has not yet been associated to any store through its id"),
+            RuntimeError::MemoryGrowOverflowed => f.write_str("A memory grow operation failed with an overflow"),
+            RuntimeError::MemoryGrowExceededLimit => f.write_str("A memory grow operation failed due to exceeding its upper limit"),
         }
     }
 }
