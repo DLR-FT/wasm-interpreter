@@ -1,4 +1,4 @@
-use crate::{core::utils::ToUsizeExt, Limits, MemType, RuntimeError, TrapError};
+use crate::{core::utils::ToUsizeExt, Limits, MemType, RuntimeError};
 
 pub mod linear_memory;
 
@@ -17,17 +17,16 @@ impl core::fmt::Debug for MemInst {
 impl MemInst {
     /// <https://webassembly.github.io/spec/core/exec/modules.html#growing-memories>
     pub fn grow(&mut self, n: u32) -> Result<(), RuntimeError> {
-        // TODO refactor error, the spec Table.grow raises Memory.{SizeOverflow, SizeLimit, OutOfMemory}
         let len = n + self.mem.pages() as u32;
         if len > Limits::MAX_MEM_PAGES {
-            return Err(TrapError::MemoryOrDataAccessOutOfBounds.into());
+            return Err(RuntimeError::MemoryGrowOverflowed);
         }
 
         // roughly matches step 4,5,6
         // checks limits_prime.valid() for limits_prime := { min: len, max: self.ty.lim.max }
         // https://webassembly.github.io/spec/core/valid/types.html#limits
-        if self.ty.limits.max.map(|max| len > max).unwrap_or(false) {
-            return Err(TrapError::MemoryOrDataAccessOutOfBounds.into());
+        if self.ty.limits.max.is_some_and(|max| len > max) {
+            return Err(RuntimeError::MemoryGrowExceededLimit);
         }
         let limits_prime = Limits {
             min: len,
