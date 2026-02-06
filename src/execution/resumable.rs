@@ -48,7 +48,7 @@ impl Dormitory {
 ///
 /// Dropping a resumable ref does not deallocate the resumable anymore. It is up
 /// to the user to implement such garbage collection algorithms by using
-/// [`Store::drop_resumable`] to prevent memory leaks.
+/// [`Store::drop_resumable`] to prevent unnecessary memory usage.
 pub struct InvokedResumableRef {
     pub(crate) key: SlotMapKey<Resumable>,
 }

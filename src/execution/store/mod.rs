@@ -17,7 +17,9 @@ use crate::core::reader::WasmReader;
 use crate::execution::interpreter_loop::{self, memory_init, table_init};
 use crate::execution::value::{Ref, Value};
 use crate::execution::{run_const_span, Stack};
-use crate::resumable::{Dormitory, FreshResumableRef, Resumable, ResumableRef, RunState};
+use crate::resumable::{
+    Dormitory, FreshResumableRef, InvokedResumableRef, Resumable, ResumableRef, RunState,
+};
 use crate::{RefType, RuntimeError, ValidationInfo};
 use alloc::collections::btree_map::BTreeMap;
 use alloc::string::String;
@@ -1285,6 +1287,17 @@ impl<'b, T: Config> Store<'b, T> {
         accessor: impl FnOnce(&mut [u8]) -> R,
     ) -> R {
         self.memories.get(memory).mem.access_mut_slice(accessor)
+    }
+
+    /// Drops a resumable from this store.
+    ///
+    /// This method may be called multiple times on the same reference.
+    ///
+    /// # Safety
+    /// The caller has to guarantee that the [`InvokedResumableRef`] came from the
+    /// current [`Store`] object.
+    pub fn drop_resumable(&mut self, resumable_ref: InvokedResumableRef) {
+        let _maybe_resumable = self.dormitory.remove(resumable_ref);
     }
 }
 
