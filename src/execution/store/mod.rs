@@ -357,14 +357,14 @@ impl<'b, T: Config> Store<'b, T> {
                         s,
                         d,
                     )?;
-                    elem_drop(&self.modules, &mut self.elements, module_addr, i)?;
+                    elem_drop(&self.modules, &mut self.elements, module_addr, i);
                 }
                 ElemMode::Declarative => {
                     // instantiation step 15:
                     // TODO (for now, we are doing hopefully what is equivalent to it)
                     // execute:
                     //   elem.drop i
-                    elem_drop(&self.modules, &mut self.elements, module_addr, i)?;
+                    elem_drop(&self.modules, &mut self.elements, module_addr, i);
                 }
                 ElemMode::Passive => (),
             }
@@ -409,7 +409,7 @@ impl<'b, T: Config> Store<'b, T> {
                         s,
                         d,
                     )?;
-                    data_drop(&self.modules, &mut self.data, module_addr, i)?;
+                    data_drop(&self.modules, &mut self.data, module_addr, i);
                 }
                 crate::core::reader::types::data::DataMode::Passive => (),
             }
