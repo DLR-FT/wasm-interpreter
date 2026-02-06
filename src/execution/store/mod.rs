@@ -1135,8 +1135,10 @@ impl<'b, T: Config> Store<'b, T> {
     /// resumable ran out of fuel or completely executed.
     ///
     /// # Safety
+    ///
     /// The caller has to guarantee that the [`ResumableRef`] came from the
-    /// current [`Store`] object.
+    /// current [`Store`] object and that it has not been dropped via
+    /// [`Store::drop_resumable`] yet.
     pub fn resume_unchecked(
         &mut self,
         resumable_ref: ResumableRef,
@@ -1389,6 +1391,24 @@ impl<'b, T: Config> Store<'b, T> {
         accessor: impl FnOnce(&mut [u8]) -> R,
     ) -> R {
         self.memories.get(memory).mem.access_mut_slice(accessor)
+    }
+
+    /// Drops a resumable from this store.
+    ///
+    /// Note: Although [`ResumableRef`]s cannot be cloned at this time, this
+    /// method is an idempotent operation.
+    ///
+    /// # Safety
+    ///
+    /// The caller has to guarantee that the [`ResumableRef`] came from the
+    /// current [`Store`] object.
+    pub unsafe fn drop_resumable_unchecked(&mut self, resumable_ref: ResumableRef) {
+        match resumable_ref {
+            ResumableRef::Fresh(_) => {}
+            ResumableRef::Invoked(invoked_resumable_ref) => {
+                let _maybe_resumable = self.dormitory.remove(invoked_resumable_ref);
+            }
+        }
     }
 }
 

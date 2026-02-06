@@ -246,12 +246,16 @@ fn resumable_drop() {
         let resumable_ref = store
             .create_resumable(func_addr, Vec::new(), Some(40))
             .unwrap();
-        assert!(matches!(
-            store.resume(resumable_ref).unwrap(),
-            StoredRunState::Resumable { .. }
-        ));
-        // now drop it, the other resumable should still be able to access the dormitory in store
+
+        let StoredRunState::Resumable { resumable_ref, .. } = store.resume(resumable_ref).unwrap()
+        else {
+            panic!("expected unfinished resumable");
+        };
+
+        store.drop_resumable(resumable_ref).unwrap();
     }
+
+    // the outer resumable should still be able to access the dormitory in store
     assert!(matches!(
         store.resume(resumable_ref).unwrap(),
         StoredRunState::Resumable { .. }
