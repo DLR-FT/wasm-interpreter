@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 */
-use wasm::{validate, RuntimeError, Store, TrapError};
+use wasm::{validate, Limits, MemType, RuntimeError, Store, TrapError};
 
 #[test_log::test]
 fn memory_grow_test_1() {
@@ -198,4 +198,28 @@ fn memory_grow_test_3() {
     assert_eq!(store.invoke_typed_without_fuel(grow, 0), Ok(10));
     assert_eq!(store.invoke_typed_without_fuel(grow, 1), Ok(-1));
     assert_eq!(store.invoke_typed_without_fuel(grow, 0x10000), Ok(-1));
+}
+
+#[test_log::test]
+fn try_grow_past_limit() {
+    let mut store = Store::new(());
+
+    let mem = store.mem_alloc(MemType {
+        limits: Limits {
+            min: 1,
+            max: Some(3),
+        },
+    });
+
+    assert_eq!(store.mem_grow(mem, 1), Ok(()));
+    assert_eq!(store.mem_grow(mem, 1), Ok(()));
+    assert_eq!(
+        store.mem_grow(mem, 1),
+        Err(RuntimeError::MemoryGrowExceededLimit)
+    );
+
+    assert_eq!(
+        store.mem_grow(mem, 1 << 17),
+        Err(RuntimeError::MemoryGrowOverflowed)
+    );
 }
