@@ -113,11 +113,6 @@ impl<A: Addr, Inst> AddrVec<A, Inst> {
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct FuncAddr(usize);
 
-impl FuncAddr {
-    // This is unfortunately needed as a default value for the base `CallFrame` in every call stack.
-    pub(crate) const INVALID: Self = FuncAddr(usize::MAX);
-}
-
 impl core::fmt::Display for FuncAddr {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "function address {}", self.0)

@@ -90,7 +90,13 @@ pub enum RunState {
 
 #[cfg(test)]
 mod test {
-    use crate::{addrs::FuncAddr, value_stack::Stack};
+    use alloc::vec::Vec;
+
+    use crate::{
+        addrs::{Addr, FuncAddr},
+        core::reader::types::{FuncType, ResultType},
+        value_stack::Stack,
+    };
 
     use super::{Dormitory, Resumable};
 
@@ -99,11 +105,25 @@ mod test {
     fn dormitory_constructor() {
         let dorm = Dormitory::new();
 
+        let empty_stack = Stack::new::<()>(
+            Vec::new(),
+            &FuncType {
+                params: ResultType {
+                    valtypes: Vec::new(),
+                },
+                returns: ResultType {
+                    valtypes: Vec::new(),
+                },
+            },
+            &[],
+        )
+        .unwrap();
+
         let resumable = Resumable {
-            stack: Stack::new(),
+            stack: empty_stack,
             pc: 11,
             stp: 13,
-            current_func_addr: FuncAddr::INVALID,
+            current_func_addr: FuncAddr::new_unchecked(0),
             maybe_fuel: None,
         };
 

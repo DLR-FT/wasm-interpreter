@@ -1,3 +1,5 @@
+use core::mem::MaybeUninit;
+
 use alloc::vec::{Drain, Vec};
 
 use crate::addrs::FuncAddr;
@@ -14,7 +16,7 @@ use crate::RuntimeError;
 /// 3. Activations
 ///
 /// See <https://webassembly.github.io/spec/core/exec/runtime.html#stack>
-#[derive(Default, Debug)]
+#[derive(Debug)]
 pub(crate) struct Stack {
     /// WASM values on the stack, i.e. the actual data that instructions operate on
     values: Vec<Value>,
@@ -26,15 +28,50 @@ pub(crate) struct Stack {
 }
 
 impl Stack {
-    pub fn new() -> Self {
-        Self::default()
-    }
+    pub fn new<T: Config>(
+        params_to_base_call_frame: Vec<Value>,
+        base_call_frame_func_ty: &FuncType,
+        base_call_frame_remaining_locals: &[ValType],
+    ) -> Result<Self, RuntimeError> {
+        let mut stack = Self {
+            values: params_to_base_call_frame,
+            frames: Vec::new(),
+        };
 
-    pub fn new_with_values(values: Vec<Value>) -> Self {
-        Self {
-            values,
-            ..Self::default()
+        // The following is a copy of `Stack::push_call_frame` except that it
+        // only partially initializes the call frame's fields.
+
+        if stack.call_frame_count() > T::MAX_CALL_STACK_SIZE {
+            return Err(RuntimeError::StackExhaustion);
         }
+
+        debug_assert!(
+            stack.values.len() >= base_call_frame_func_ty.params.valtypes.len(),
+            "when pushing a new call frame, at least as many values need to be on the stack as required by the new call frames's function"
+        );
+
+        // the topmost `param_count` values are transferred into/consumed by this new call frame
+        let param_count = base_call_frame_func_ty.params.valtypes.len();
+        let call_frame_base_idx = stack.values.len() - param_count;
+
+        // after the params, put the additional locals
+        for local in base_call_frame_remaining_locals {
+            stack.values.push(Value::default_from_ty(*local));
+        }
+
+        // now that the locals are all populated, the actual stack section of this call frame begins
+        let value_stack_base_idx = stack.values.len();
+
+        stack.frames.push(CallFrame {
+            return_func_addr: MaybeUninit::uninit(),
+            return_addr: MaybeUninit::uninit(),
+            value_stack_base_idx,
+            call_frame_base_idx,
+            return_value_count: base_call_frame_func_ty.returns.valtypes.len(),
+            return_stp: MaybeUninit::uninit(),
+        });
+
+        Ok(stack)
     }
 
     pub(super) fn into_values(self) -> Vec<Value> {
@@ -99,7 +136,10 @@ impl Stack {
     }
 
     /// Pop a [`CallFrame`] from the call stack, returning the caller function store address, return address, and the return stp
-    pub fn pop_call_frame(&mut self) -> (FuncAddr, usize, usize) {
+    ///
+    /// Returns `None` if the base call frame was popped. Its information cannot
+    /// be retrieved.
+    pub fn pop_call_frame(&mut self) -> Option<(FuncAddr, usize, usize)> {
         let CallFrame {
             return_func_addr,
             return_addr,
@@ -119,7 +159,21 @@ impl Stack {
             "after a function call finished, the stack must have exactly as many values as it had before calling the function plus the number of function return values"
         );
 
-        (return_func_addr, return_addr, return_stp)
+        // If this was the base call frame, do not return its uninitialized fields
+        if self.call_frame_count() == 0 {
+            None
+        } else {
+            // SAFETY: This is safe, because we just checked that the call frame
+            // which we just popped is not the base call frame and only the base
+            // call frame can contain uninitialized fields.
+            unsafe {
+                Some((
+                    return_func_addr.assume_init(),
+                    return_addr.assume_init(),
+                    return_stp.assume_init(),
+                ))
+            }
+        }
     }
 
     /// Push a call frame to the call stack
@@ -156,12 +210,12 @@ impl Stack {
         let value_stack_base_idx = self.values.len();
 
         self.frames.push(CallFrame {
-            return_func_addr,
-            return_addr,
+            return_func_addr: MaybeUninit::new(return_func_addr),
+            return_addr: MaybeUninit::new(return_addr),
             value_stack_base_idx,
             call_frame_base_idx,
             return_value_count: func_ty.returns.valtypes.len(),
-            return_stp,
+            return_stp: MaybeUninit::new(return_stp),
         });
 
         Ok(())
@@ -204,10 +258,16 @@ impl Stack {
 #[derive(Debug)]
 pub(crate) struct CallFrame {
     /// Store address of the function that called this [`CallFrame`]'s function
-    pub return_func_addr: FuncAddr,
+    ///
+    /// This is always uninitialized for the base call frame and initialized for
+    /// all other call frames.
+    pub return_func_addr: MaybeUninit<FuncAddr>,
 
     /// Value that the PC has to be set to when this function returns
-    pub return_addr: usize,
+    ///
+    /// This is always uninitialized for the base call frame and initialized for
+    /// all other call frames.
+    pub return_addr: MaybeUninit<usize>,
 
     /// The index to the lowermost value in [`Stack::values`] belonging to this [`CallFrame`]'s
     /// stack
@@ -227,6 +287,9 @@ pub(crate) struct CallFrame {
     /// Number of return values to retain on [`Stack::values`] when unwinding/popping a [`CallFrame`]
     pub return_value_count: usize,
 
-    // Value that the stp has to be set to when this function returns
-    pub return_stp: usize,
+    /// Value that the stp has to be set to when this function returns
+    ///
+    /// This is always uninitialized for the base call frame and initialized for
+    /// all other call frames.
+    pub return_stp: MaybeUninit<usize>,
 }

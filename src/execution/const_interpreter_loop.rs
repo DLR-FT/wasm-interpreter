@@ -1,10 +1,16 @@
+use alloc::vec::Vec;
+
 use crate::{
     addrs::ModuleAddr,
     assert_validated::UnwrapValidatedExt,
     config::Config,
     core::{
         indices::GlobalIdx,
-        reader::{span::Span, WasmReader},
+        reader::{
+            span::Span,
+            types::{FuncType, ResultType},
+            WasmReader,
+        },
     },
     unreachable_validated,
     value::{self, Ref},
@@ -137,7 +143,18 @@ pub(crate) fn run_const_span<T: Config>(
 
     wasm.move_start_to(*span).unwrap_validated();
 
-    let mut stack = Stack::new();
+    let mut stack = Stack::new::<T>(
+        Vec::new(),
+        &FuncType {
+            params: ResultType {
+                valtypes: Vec::new(),
+            },
+            returns: ResultType {
+                valtypes: Vec::new(),
+            },
+        },
+        &[],
+    )?;
     run_const(&mut wasm, &mut stack, module, store)?;
 
     Ok(stack.peek_value())

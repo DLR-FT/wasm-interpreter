@@ -115,15 +115,14 @@ pub(super) fn run<T: Config>(
                     continue;
                 }
 
-                let (maybe_return_func_addr, maybe_return_address, maybe_return_stp) =
-                    stack.pop_call_frame();
-
-                // We finished this entire invocation if there is no call frame left. If there are
-                // one or more call frames, we need to continue from where the callee was called
-                // from.
-                if stack.call_frame_count() == 0 {
+                let Some((maybe_return_func_addr, maybe_return_address, maybe_return_stp)) =
+                    stack.pop_call_frame()
+                else {
+                    // We finished this entire invocation if this was the base call frame.
                     break;
-                }
+                };
+                // If there are one or more call frames, we need to continue
+                // from where the callee was called from.
 
                 trace!("end of function reached, returning to previous call frame");
                 current_func_addr = maybe_return_func_addr;
