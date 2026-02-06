@@ -229,7 +229,8 @@ impl<'b, T: Config> Store<'b, T> {
         Ok(table_size)
     }
 
-    /// This is a safe variant of [`Store::mem_alloc_unchecked`].
+    /// This is a variant of [`Store::mem_alloc_unchecked`] that returns a
+    /// stored object.
     #[allow(clippy::let_and_return)] // reason = "to follow the 1234 structure"
     pub fn mem_alloc(&mut self, mem_type: MemType) -> Stored<MemAddr> {
         // 1. try unwrap
@@ -508,6 +509,23 @@ impl<'b, T: Config> Store<'b, T> {
         // result is generic
         // 4. return
         Ok(returns)
+    }
+
+    /// This is a safe variant of [`Store::drop_resumable_unchecked`]
+    pub fn drop_resumable(
+        &mut self,
+        resumable_ref: Stored<ResumableRef>,
+    ) -> Result<(), RuntimeError> {
+        // 1. try unwrap
+        let resumable_ref = resumable_ref.try_unwrap_into_bare(self.id)?;
+        // 2. call
+        // SAFETY: It was just checked that this resumable ref comes from the
+        // current store.
+        unsafe { self.drop_resumable_unchecked(resumable_ref) };
+        // 3. rewrap
+        // result is unit type
+        // 4. return
+        Ok(())
     }
 }
 
