@@ -1,4 +1,3 @@
-use core::mem;
 use core::sync::atomic::{AtomicU64, Ordering};
 
 use crate::addrs::{
@@ -24,7 +23,6 @@ use crate::resumable::{
 use crate::{RefType, RuntimeError, ValidationInfo};
 use alloc::collections::btree_map::BTreeMap;
 use alloc::string::String;
-use alloc::sync::Arc;
 use alloc::vec;
 use alloc::vec::Vec;
 use instances::{
@@ -1035,7 +1033,7 @@ impl<'b, T: Config> Store<'b, T> {
     /// current [`Store`] object.
     pub fn resume_unchecked(
         &mut self,
-        mut resumable_ref: ResumableRef,
+        resumable_ref: ResumableRef,
     ) -> Result<RunState, RuntimeError> {
         match resumable_ref {
             ResumableRef::Fresh(FreshResumableRef {
@@ -1099,6 +1097,7 @@ impl<'b, T: Config> Store<'b, T> {
                         match result {
                             None => {
                                 debug!("Successfully invoked function");
+
                                 let maybe_remaining_fuel = resumable.maybe_fuel;
                                 let values = resumable.stack.into_values();
                                 Ok(RunState::Finished {
@@ -1108,10 +1107,9 @@ impl<'b, T: Config> Store<'b, T> {
                             }
                             Some(required_fuel) => {
                                 debug!("Successfully invoked function, but ran out of fuel");
+                                let resumable_ref = self.dormitory.insert(resumable);
                                 Ok(RunState::Resumable {
-                                    resumable_ref: ResumableRef::Invoked(
-                                        self.dormitory.insert(resumable),
-                                    ),
+                                    resumable_ref: ResumableRef::Invoked(resumable_ref),
                                     required_fuel,
                                 })
                             }
@@ -1119,40 +1117,19 @@ impl<'b, T: Config> Store<'b, T> {
                     }
                 }
             }
-            ResumableRef::Invoked(InvokedResumableRef {
-                dormitory: ref mut dormitory_weak,
-                ref key,
-            }) => {
-                // Resuming requires `self`'s dormitory to still be alive
-                let Some(dormitory) = dormitory_weak.upgrade() else {
-                    return Err(RuntimeError::ResumableNotFound);
-                };
-
-                // Check the given `RuntimeInstance` is the same one used to create `self`
-                if !Arc::ptr_eq(&dormitory, &self.dormitory.0) {
-                    return Err(RuntimeError::ResumableNotFound);
-                }
-
-                // Obtain a write lock to the `Dormitory`
-                let mut dormitory = dormitory.write();
-
-                // TODO We might want to remove the `Resumable` here already and later reinsert it.
-                // This would prevent holding the lock across the interpreter loop.
-                let resumable = dormitory
-                    .get_mut(key)
-                    .expect("the key to always be valid as self was not dropped yet");
+            ResumableRef::Invoked(invoked_resumable_ref) => {
+                // Temporarily remove resumable from the dormitory, as we cannot
+                // hold a `&mut self` over the interpreter loop.
+                let mut resumable = self
+                    .dormitory
+                    .remove(invoked_resumable_ref)
+                    .expect("the resumable ref to be valid as guaranteed by the caller");
 
                 // Resume execution
-                let result = interpreter_loop::run(resumable, self)?;
+                let result = interpreter_loop::run(&mut resumable, self)?;
 
                 match result {
                     None => {
-                        let resumable = dormitory.remove(key)
-                            .expect("that the resumable could not have been removed already, because then this self could not exist");
-
-                        // Take the `Weak` pointing to the dormitory out of `self` and replace it with a default `Weak`.
-                        // This causes the `Drop` impl of `self` to directly quit preventing it from unnecessarily locking the dormitory.
-                        let _dormitory = mem::take(dormitory_weak);
                         let maybe_remaining_fuel = resumable.maybe_fuel;
                         let values = resumable.stack.into_values();
                         Ok(RunState::Finished {
@@ -1160,10 +1137,16 @@ impl<'b, T: Config> Store<'b, T> {
                             maybe_remaining_fuel,
                         })
                     }
-                    Some(required_fuel) => Ok(RunState::Resumable {
-                        resumable_ref,
-                        required_fuel,
-                    }),
+                    Some(required_fuel) => {
+                        // Reinsert the resumable in case execution has not
+                        // finished
+                        let invoked_resumable_ref = self.dormitory.insert(resumable);
+
+                        Ok(RunState::Resumable {
+                            resumable_ref: ResumableRef::Invoked(invoked_resumable_ref),
+                            required_fuel,
+                        })
+                    }
                 }
             }
         }
@@ -1207,21 +1190,10 @@ impl<'b, T: Config> Store<'b, T> {
         match resumable_ref {
             ResumableRef::Fresh(FreshResumableRef { maybe_fuel, .. }) => Ok(f(maybe_fuel)),
             ResumableRef::Invoked(resumable_ref) => {
-                // Resuming requires `self`'s dormitory to still be alive
-                let Some(dormitory) = resumable_ref.dormitory.upgrade() else {
-                    return Err(RuntimeError::ResumableNotFound);
-                };
-
-                // Check the given `RuntimeInstance` is the same one used to create `self`
-                if !Arc::ptr_eq(&dormitory, &self.dormitory.0) {
-                    return Err(RuntimeError::ResumableNotFound);
-                }
-
-                let mut dormitory = dormitory.write();
-
-                let resumable = dormitory
-                    .get_mut(&resumable_ref.key)
-                    .expect("the key to always be valid as self was not dropped yet");
+                let resumable = self
+                    .dormitory
+                    .get_mut(resumable_ref)
+                    .expect("the resumable ref to be valid as guaranteed by the caller");
 
                 Ok(f(&mut resumable.maybe_fuel))
             }
@@ -1315,6 +1287,17 @@ impl<'b, T: Config> Store<'b, T> {
         accessor: impl FnOnce(&mut [u8]) -> R,
     ) -> R {
         self.memories.get(memory).mem.access_mut_slice(accessor)
+    }
+
+    /// Drops a resumable from this store.
+    ///
+    /// This method may be called multiple times on the same reference.
+    ///
+    /// # Safety
+    /// The caller has to guarantee that the [`InvokedResumableRef`] came from the
+    /// current [`Store`] object.
+    pub fn drop_resumable(&mut self, resumable_ref: InvokedResumableRef) {
+        let _maybe_resumable = self.dormitory.remove(resumable_ref);
     }
 }
 

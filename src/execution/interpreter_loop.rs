@@ -43,6 +43,10 @@ use super::{little_endian::LittleEndianBytes, store::Store};
 /// Returns `Ok(None)` in case execution successfully terminates, `Ok(Some(required_fuel))` if execution
 /// terminates due to insufficient fuel, indicating how much fuel is required to resume with `required_fuel`,
 /// and `[Error::RuntimeError]` otherwise.
+///
+/// # Safety
+///
+/// The given resumable ref must be valid in the given [`Store`].
 pub(super) fn run<T: Config>(
     resumable: &mut Resumable,
     store: &mut Store<T>,
