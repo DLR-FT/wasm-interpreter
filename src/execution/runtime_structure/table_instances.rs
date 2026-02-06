@@ -1,6 +1,6 @@
 use alloc::{vec, vec::Vec};
 
-use crate::{core::utils::ToUsizeExt, Limits, Ref, RuntimeError, TableType, TrapError};
+use crate::{core::utils::ToUsizeExt, Limits, Ref, RuntimeError, TableType};
 
 #[derive(Debug)]
 pub struct TableInst {
@@ -15,17 +15,17 @@ impl TableInst {
 
     /// <https://webassembly.github.io/spec/core/exec/modules.html#growing-tables>
     pub fn grow(&mut self, n: u32, reff: Ref) -> Result<(), RuntimeError> {
-        // TODO refactor error, the spec Table.grow raises Table.{SizeOverflow, SizeLimit, OutOfMemory}
         let len = n
             .checked_add(self.elem.len() as u32)
-            .ok_or(TrapError::TableOrElementAccessOutOfBounds)?;
+            .ok_or(RuntimeError::TableGrowOverflowed)?;
 
         // roughly matches step 4,5,6
         // checks limits_prime.valid() for limits_prime := { min: len, max: self.ty.lim.max }
         // https://webassembly.github.io/spec/core/valid/types.html#limits
-        if self.ty.lim.max.map(|max| len > max).unwrap_or(false) {
-            return Err(TrapError::TableOrElementAccessOutOfBounds.into());
+        if self.ty.lim.max.is_some_and(|max| len > max) {
+            return Err(RuntimeError::TableGrowExceededLimit);
         }
+
         let limits_prime = Limits {
             min: len,
             max: self.ty.lim.max,

@@ -44,6 +44,11 @@ pub enum RuntimeError {
     /// A memory grow operation failed because the new size would have exceeded
     /// its upper limit.
     MemoryGrowExceededLimit,
+    /// A table grow operation failed because its new size would have overflowed by being over 2^32
+    TableGrowOverflowed,
+    /// A table grow operation failed because the new size would have exceeded
+    /// its upper limit.
+    TableGrowExceededLimit,
 }
 
 impl fmt::Display for RuntimeError {
@@ -96,6 +101,8 @@ impl fmt::Display for RuntimeError {
             RuntimeError::UnsupportedHostCallDuringInstantiation => f.write_str("A host function was called from a start function during module instantiation"),
             RuntimeError::MemoryGrowOverflowed => f.write_str("A memory grow operation failed with an overflow"),
             RuntimeError::MemoryGrowExceededLimit => f.write_str("A memory grow operation failed due to exceeding its upper limit"),
+            RuntimeError::TableGrowOverflowed => f.write_str("A table grow operation failed with an overflow"),
+            RuntimeError::TableGrowExceededLimit => f.write_str("A table grow operation failed due to exceeding its upper limit"),
         }
     }
 }
