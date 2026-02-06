@@ -16,7 +16,7 @@ use crate::{
             to_lanes, Args, InterpreterLoopOutcome,
         },
     },
-    Value, F32, F64,
+    RuntimeError, Value, F32, F64,
 };
 
 // t.load
@@ -1765,10 +1765,13 @@ define_instruction_fn! {
 
         // TODO this instruction is non-deterministic w.r.t. spec, and can fail if the embedder wills it.
         // for now we execute it always according to the following match expr.
-        // if the grow operation fails, err := Value::I32(2^32-1) is pushed to the resumable.stack per spec
+        // if the grow operation fails, err := Value::I32(2^32-1) is pushed to the stack per spec
         let pushed_value = match mem.grow(n) {
             Ok(_) => sz,
-            Err(_) => u32::MAX,
+            Err(
+                RuntimeError::MemoryGrowOverflowed | RuntimeError::MemoryGrowExceededLimit,
+            ) => u32::MAX,
+            Err(_) => unreachable!("growing memory cannot return any other errors"),
         };
         resumable.stack.push_value(Value::I32(pushed_value))?;
         trace!("Instruction: memory.grow [{}] -> [{}]", n, pushed_value);
