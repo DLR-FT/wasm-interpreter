@@ -1075,14 +1075,10 @@ impl<'b, T: Config> Store<'b, T> {
                     }
                     FuncInst::WasmFunc(wasm_func_inst) => {
                         // Prepare a new stack with the locals for the entry function
-                        let mut stack = Stack::new_with_values(params);
-
-                        stack.push_call_frame::<T>(
-                            FuncAddr::INVALID, // TODO using a default value like this is dangerous
+                        let stack = Stack::new::<T>(
+                            params,
                             &wasm_func_inst.function_type,
                             &wasm_func_inst.locals,
-                            usize::MAX,
-                            usize::MAX,
                         )?;
 
                         let mut resumable = Resumable {
