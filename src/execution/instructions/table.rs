@@ -14,7 +14,7 @@ use crate::{
             define_instruction_fn, elem_drop, table_init, Args, InterpreterLoopOutcome,
         },
     },
-    Ref, TrapError, Value,
+    Ref, RuntimeError, TrapError, Value,
 };
 
 define_instruction_fn! {
@@ -197,14 +197,17 @@ define_instruction_fn! {
         // TODO this instruction is non-deterministic w.r.t. spec, and can fail if the embedder wills it.
         // for now we execute it always according to the following match expr.
         // if the grow operation fails, err := Value::I32(2^32-1) is pushed to the resumable.stack per spec
-        match tab.grow(n, val) {
+        let pushed_value = match tab.grow(n, val) {
             Ok(_) => {
-                resumable.stack.push_value(Value::I32(sz))?;
+                sz
             }
-            Err(_) => {
-                resumable.stack.push_value(Value::I32(u32::MAX))?;
+            Err(RuntimeError::TableGrowOverflowed | RuntimeError::TableGrowExceededLimit) => {
+                u32::MAX
             }
-        }
+            Err(_) => unreachable!("table grow operation cannot produce any other errors"),
+        };
+        resumable.stack.push_value(Value::I32(pushed_value))?;
+
         Ok(ControlFlow::Continue(()))
     }
 }
