@@ -1,14 +1,10 @@
 use core::num::NonZeroU64;
 
-use alloc::{
-    sync::{Arc, Weak},
-    vec::Vec,
-};
+use alloc::vec::Vec;
 
 use crate::{
     addrs::FuncAddr,
     core::slotmap::{SlotMap, SlotMapKey},
-    rw_spinlock::RwSpinLock,
     value_stack::Stack,
     Value,
 };
@@ -23,7 +19,7 @@ pub(crate) struct Resumable {
 }
 
 #[derive(Default)]
-pub(crate) struct Dormitory(pub(crate) Arc<RwSpinLock<SlotMap<Resumable>>>);
+pub(crate) struct Dormitory(SlotMap<Resumable>);
 
 impl Dormitory {
     #[allow(unused)]
@@ -31,18 +27,29 @@ impl Dormitory {
         Self::default()
     }
 
-    pub(crate) fn insert(&self, resumable: Resumable) -> InvokedResumableRef {
-        let key = self.0.write().insert(resumable);
+    pub(crate) fn insert(&mut self, resumable: Resumable) -> InvokedResumableRef {
+        let key = self.0.insert(resumable);
+        InvokedResumableRef { key }
+    }
 
-        InvokedResumableRef {
-            dormitory: Arc::downgrade(&self.0),
-            key,
-        }
+    pub(crate) fn get_mut(
+        &mut self,
+        resumable_ref: &InvokedResumableRef,
+    ) -> Option<&mut Resumable> {
+        self.0.get_mut(&resumable_ref.key)
+    }
+
+    pub(crate) fn remove(&mut self, resumable_ref: InvokedResumableRef) -> Option<Resumable> {
+        self.0.remove(&resumable_ref.key)
     }
 }
 
+/// # Note
+///
+/// Dropping a resumable ref does not deallocate the resumable anymore. It is up
+/// to the user to implement such garbage collection algorithms by using
+/// [`Store::drop_resumable`] to prevent memory leaks.
 pub struct InvokedResumableRef {
-    pub(crate) dormitory: Weak<RwSpinLock<SlotMap<Resumable>>>,
     pub(crate) key: SlotMapKey<Resumable>,
 }
 
@@ -58,18 +65,6 @@ pub enum ResumableRef {
     Fresh(FreshResumableRef),
     /// indicates this resumable has been invoked/resumed to at least once.
     Invoked(InvokedResumableRef),
-}
-
-impl Drop for InvokedResumableRef {
-    fn drop(&mut self) {
-        let Some(dormitory) = self.dormitory.upgrade() else {
-            // Either the dormitory was already dropped or `self` was used to finish execution.
-            return;
-        };
-
-        dormitory.write().remove(&self.key)
-            .expect("that the resumable could not have been removed already, because then this self could not exist or the dormitory weak pointer would have been None");
-    }
 }
 
 /// Represents the state of a possibly interrupted resumable.
@@ -97,7 +92,7 @@ mod test {
     /// Test that a dormitory can be constructed and that a resumable can be inserted
     #[test]
     fn dormitory_constructor() {
-        let dorm = Dormitory::new();
+        let mut dorm = Dormitory::new();
 
         let resumable = Resumable {
             stack: Stack::new(),
