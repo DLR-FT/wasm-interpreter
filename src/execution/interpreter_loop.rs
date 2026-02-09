@@ -246,8 +246,8 @@ pub(super) fn run<T: Config>(
                         if returns.len() != func_to_call_ty.returns.valtypes.len() {
                             return Err(RuntimeError::HostFunctionSignatureMismatch);
                         }
-                        for (value, ty) in zip(returns, func_to_call_ty.returns.valtypes) {
-                            if value.to_ty() != ty {
+                        for (value, ty) in zip(returns, &func_to_call_ty.returns.valtypes) {
+                            if value.to_ty() != *ty {
                                 return Err(RuntimeError::HostFunctionSignatureMismatch);
                             }
                             stack.push_value::<T>(value)?;
@@ -258,7 +258,7 @@ pub(super) fn run<T: Config>(
 
                         stack.push_call_frame::<T>(
                             current_func_addr,
-                            &func_to_call_ty,
+                            func_to_call_ty,
                             remaining_locals,
                             wasm.pc,
                             stp,
@@ -321,7 +321,7 @@ pub(super) fn run<T: Config>(
                 };
 
                 let func_to_call_ty = store.functions.get(func_to_call_addr).ty();
-                if *func_ty != func_to_call_ty {
+                if func_ty != func_to_call_ty {
                     return Err(TrapError::SignatureMismatch.into());
                 }
 
@@ -344,8 +344,8 @@ pub(super) fn run<T: Config>(
                         if returns.len() != func_to_call_ty.returns.valtypes.len() {
                             return Err(RuntimeError::HostFunctionSignatureMismatch);
                         }
-                        for (value, ty) in zip(returns, func_to_call_ty.returns.valtypes) {
-                            if value.to_ty() != ty {
+                        for (value, ty) in zip(returns, &func_to_call_ty.returns.valtypes) {
+                            if value.to_ty() != *ty {
                                 return Err(RuntimeError::HostFunctionSignatureMismatch);
                             }
                             stack.push_value::<T>(value)?;
@@ -356,7 +356,7 @@ pub(super) fn run<T: Config>(
 
                         stack.push_call_frame::<T>(
                             current_func_addr,
-                            &func_to_call_ty,
+                            func_to_call_ty,
                             remaining_locals,
                             wasm.pc,
                             stp,

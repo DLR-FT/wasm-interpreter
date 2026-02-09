@@ -47,10 +47,10 @@ pub struct HostFuncInst<T> {
 }
 
 impl<T> FuncInst<T> {
-    pub fn ty(&self) -> FuncType {
+    pub fn ty(&self) -> &FuncType {
         match self {
-            FuncInst::WasmFunc(wasm_func_inst) => wasm_func_inst.function_type.clone(),
-            FuncInst::HostFunc(host_func_inst) => host_func_inst.function_type.clone(),
+            FuncInst::WasmFunc(wasm_func_inst) => &wasm_func_inst.function_type,
+            FuncInst::HostFunc(host_func_inst) => &host_func_inst.function_type,
         }
     }
 }
