@@ -149,6 +149,11 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
         _ => None,
     });
 
+    let functions_test = IdxVec::new_from_imports_and_locals(
+        imported_functions.collect::<Vec<TypeIdx>>().into_iter(),
+            local_functions.into_iter(),
+    ).;
+
     let functions = ExtendedIdxVec::new(imported_functions.collect(), local_functions)
         .map_err(|IdxVecOverflowError| ValidationError::TooManyFunctions)?;
 

@@ -95,15 +95,23 @@ impl<I: Idx, T> IdxVec<I, T> {
     ///
     /// If the number of elements is larger than what can be addressed by a
     /// `u32`, i.e. `u32::MAX`, an error is returned instead.
-    pub fn new(elements: Vec<T>) -> Result<Self, IdxVecOverflowError> {
+    pub fn new(elements: impl ExactSizeIterator<Item = T>) -> Result<Self, IdxVecOverflowError> {
         if u32::try_from(elements.len()).is_err() {
             return Err(IdxVecOverflowError);
         }
 
         Ok(Self {
-            inner: elements.into_boxed_slice(),
+            inner: elements.collect(),
             _phantom: PhantomData,
         })
+    }
+
+    pub fn new_from_imports_and_locals(
+        imported_elements: impl ExactSizeIterator<Item = T>,
+        local_elements: impl ExactSizeIterator<Item = T>,
+    ) -> Result<Self, IdxVecOverflowError> {
+        let combined_elements: Vec<T> = imported_elements.chain(local_elements).collect();
+        Self::new(combined_elements.into_iter())
     }
 
     fn validate_index(&self, index: u32) -> Option<I> {
@@ -308,6 +316,15 @@ impl<I: Idx, T> ExtendedIdxVec<I, T> {
             .get(self.num_imports..)
             .expect("the imports length to never be larger than the total length")
             .iter()
+    }
+
+    /// Strips the information for how many definitions are imported vs.
+    /// locally-defined.
+    pub fn into_simple_idx_vec(self) -> IdxVec<I, T> {
+        IdxVec {
+            inner: self.inner,
+            _phantom: PhantomData,
+        }
     }
 }
 
