@@ -513,7 +513,7 @@ impl<'b, T: Config> Store<'b, T> {
     /// [`Store`] object.
     pub fn func_type_unchecked(&self, func_addr: FuncAddr) -> FuncType {
         // 1. Return `S.funcs[a].type`.
-        self.functions.get(func_addr).ty()
+        self.functions.get(func_addr).ty().clone()
 
         // 2. Post-condition: the returned function type is valid.
     }
@@ -1354,7 +1354,9 @@ impl ExternVal {
     pub fn extern_type<T: Config>(&self, store: &Store<T>) -> ExternType {
         match self {
             // TODO: fix ugly clone in function types
-            ExternVal::Func(func_addr) => ExternType::Func(store.functions.get(*func_addr).ty()),
+            ExternVal::Func(func_addr) => {
+                ExternType::Func(store.functions.get(*func_addr).ty().clone())
+            }
             ExternVal::Table(table_addr) => ExternType::Table(store.tables.get(*table_addr).ty),
             ExternVal::Mem(mem_addr) => ExternType::Mem(store.memories.get(*mem_addr).ty),
             ExternVal::Global(global_addr) => {
