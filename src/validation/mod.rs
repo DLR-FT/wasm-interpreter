@@ -522,7 +522,7 @@ impl<'wasm> ValidationInfo<'wasm> {
         &'a self,
     ) -> Map<
         core::slice::Iter<'a, Import<'wasm>>,
-        impl FnMut(&'a Import<'wasm>) -> (&'a str, &'a str, ExternType),
+        impl FnMut(&'a Import<'wasm>) -> (&'a str, &'a str, ExternType<'a>),
     > {
         self.imports.iter().map(|import| {
             (
@@ -541,7 +541,7 @@ impl<'wasm> ValidationInfo<'wasm> {
         &'a self,
     ) -> Map<
         core::slice::Iter<'a, Export<'wasm>>,
-        impl FnMut(&'a Export<'wasm>) -> (&'a str, ExternType),
+        impl FnMut(&'a Export<'wasm>) -> (&'a str, ExternType<'a>),
     > {
         self.exports
             .iter()

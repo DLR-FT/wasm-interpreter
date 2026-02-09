@@ -34,7 +34,7 @@ fn imports() {
             (
                 "foo",
                 "baz",
-                ExternType::Func(FuncType {
+                ExternType::Func(&FuncType {
                     params: ResultType {
                         valtypes: Vec::new()
                     },
@@ -82,7 +82,7 @@ fn exports() {
         &[
             (
                 "foo",
-                ExternType::Func(FuncType {
+                ExternType::Func(&FuncType {
                     params: ResultType {
                         valtypes: vec![ValType::NumType(NumType::I32)]
                     },
