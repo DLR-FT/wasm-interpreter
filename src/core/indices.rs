@@ -1,24 +1,26 @@
-//! # Type-state indices and index spaces
+//! # Type-safe Indices and Index Spaces
 //!
-//! Wasm uses different classes of definitions such as types, functions,
-//! globals, elements, etc. To be able to reference specific definitions inside
-//! a specific Wasm module, indices are used.
+//! Wasm specifies different classes of definitions (types, functions, globals,
+//! ...). Each definition can be uniquely addressed by a single index
+//! represented as a 32-bit integer. For every definition class, there exists a
+//! separate index space, along with a special index type per class: `typeidx` for
+//! types, `funcidx` for functions, etc.
 //!
-//! All indices are represented by a [`u32`], however a separate index space is
-//! used for each class of definitions (e.g. typeidx for types, funcidx for
-//! functions, etc.).
+//! Using `u32` and `Vec` types to represent such indices and index spaces
+//! across all classes of definitions comes with risks.
 //!
-//! A trivial solution would be to directly use [`u32`]s for all index types,
-//! however this is error-prone as the developer has to manually make sure not
-//! to mis-use of one index space for another.
+//! This module defines one newtype index type per definition class (e.g.
+//! [`TypeIdx`], [`FuncIdx`], [`GlobalIdx`]) and two index space types
+//! [`IdxVec`] and [`ExtendedIdxVec`].
 //!
-//! # What this module is
-//!
-//! This module defines a generic [`IdxVec`] to represent an index space for
-//! definitions of a specific class. Also, newtype structs are provided for
-//! every class of definitions (e.g. [`TypeIdx`], [`FuncIdx`], etc.). Together
-//! these two abstractions prevent incorrect use of indices across different
-//! definition classes.
+//! Note that there exist two index space types, due to the fact how index spaces are constructed in Wasm modules.
+//! - [`IdxVec`] is used for index spaces that are simply lists of definitions as they occur in the Wasm module.
+//! - [`ExtendedIdxVec`] is used for those index spaces that consist of imported
+//! definitions chained together with locally-defined definitions. Regardless of
+//! the origin of these definitions, they are accessed via the same indices.
+//! However, validation & instantiation require to know the number of imported
+//! or local definitions. The affected index spaces are functions, globals,
+//! tables and memories.
 //!
 //! # What this module is not
 //!
