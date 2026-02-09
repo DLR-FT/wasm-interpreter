@@ -1355,12 +1355,9 @@ impl ExternVal {
     /// # Safety
     /// The caller has to guarantee that `self` came from the same [`Store`] which
     /// is passed now as a reference.
-    pub fn extern_type<T: Config>(&self, store: &Store<T>) -> ExternType {
+    pub fn extern_type<'a, T: Config>(&self, store: &'a Store<T>) -> ExternType<'a> {
         match self {
-            // TODO: fix ugly clone in function types
-            ExternVal::Func(func_addr) => {
-                ExternType::Func(store.functions.get(*func_addr).ty().clone())
-            }
+            ExternVal::Func(func_addr) => ExternType::Func(store.functions.get(*func_addr).ty()),
             ExternVal::Table(table_addr) => ExternType::Table(store.tables.get(*table_addr).ty),
             ExternVal::Mem(mem_addr) => ExternType::Mem(store.memories.get(*mem_addr).ty),
             ExternVal::Global(global_addr) => {

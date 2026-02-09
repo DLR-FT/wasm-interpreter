@@ -58,7 +58,7 @@ impl ImportDesc {
     ///
     /// Note: This method may panic if self does not come from the given [`ValidationInfo`].
     ///<https://webassembly.github.io/spec/core/valid/modules.html#imports>
-    pub fn extern_type(&self, validation_info: &ValidationInfo) -> ExternType {
+    pub fn extern_type<'a>(&self, validation_info: &'a ValidationInfo) -> ExternType<'a> {
         match self {
             ImportDesc::Func(type_idx) => {
                 // unlike ExportDescs, these directly refer to the types section
@@ -68,8 +68,7 @@ impl ImportDesc {
                     .types
                     .get(*type_idx)
                     .expect("type index of import descs to always be valid if the validation info is correct");
-                // TODO ugly clone that should disappear when types are directly parsed from bytecode instead of vector copies
-                ExternType::Func(func_type.clone())
+                ExternType::Func(func_type)
             }
             ImportDesc::Table(ty) => ExternType::Table(*ty),
             ImportDesc::Mem(ty) => ExternType::Mem(*ty),

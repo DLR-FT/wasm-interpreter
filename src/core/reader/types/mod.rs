@@ -207,9 +207,9 @@ impl BlockType {
 }
 
 //https://webassembly.github.io/spec/core/valid/types.html#import-subtyping
-pub trait ImportSubTypeRelation {
+pub trait ImportSubTypeRelation<Rhs = Self> {
     // corresponds to "matches" (<=) in the spec
-    fn is_subtype_of(&self, other: &Self) -> bool;
+    fn is_subtype_of(&self, other: &Rhs) -> bool;
 }
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub struct Limits {
@@ -327,16 +327,16 @@ impl MemType {
 // <https://webassembly.github.io/spec/core/valid/types.html#import-subtyping>
 ///<https://webassembly.github.io/spec/core/valid/types.html#external-types>
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub enum ExternType {
-    Func(FuncType),
+pub enum ExternType<'a> {
+    Func(&'a FuncType),
     Table(TableType),
     Mem(MemType),
     Global(GlobalType),
 }
 
-impl ImportSubTypeRelation for ExternType {
+impl<'a, 'b> ImportSubTypeRelation<ExternType<'a>> for ExternType<'b> {
     // https://webassembly.github.io/spec/core/valid/types.html#match-limits
-    fn is_subtype_of(&self, other: &Self) -> bool {
+    fn is_subtype_of(&self, other: &ExternType<'a>) -> bool {
         match self {
             ExternType::Table(self_table_type) => match other {
                 ExternType::Table(other_table_type) => {

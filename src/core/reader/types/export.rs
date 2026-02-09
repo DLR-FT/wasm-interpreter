@@ -38,7 +38,7 @@ impl ExportDesc {
     /// Note: This method may panic if `self` does not come from the given [`ValidationInfo`].
     /// <https://webassembly.github.io/spec/core/valid/modules.html#exports>
     #[allow(unused)] // reason = "this function is analogous to ImportDesc::extern_type, however it is not yet clear if it is needed in the future"
-    pub fn extern_type(&self, validation_info: &ValidationInfo) -> ExternType {
+    pub fn extern_type<'a>(&self, validation_info: &'a ValidationInfo) -> ExternType<'a> {
         // TODO clean up logic for checking if an exported definition is an
         // import
         match self {
@@ -61,8 +61,7 @@ impl ExportDesc {
                     .types
                     .get(type_idx)
                     .expect("type indices to always be valid if the validation info is correct");
-                // TODO ugly clone that should disappear when types are directly parsed from bytecode instead of vector copies
-                ExternType::Func(func_type.clone())
+                ExternType::Func(func_type)
             }
             ExportDesc::Table(table_idx) => {
                 let table_type = match table_idx
