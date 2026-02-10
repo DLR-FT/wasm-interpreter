@@ -5,6 +5,8 @@
 //! Note: If any of these methods return `Err`, they may have consumed some bytes from the [WasmReader] object and thus consequent calls may result in unexpected behaviour.
 //! This is due to the fact that these methods read elemental types which cannot be split.
 
+use core::iter::{RepeatWith, Take};
+
 use alloc::vec::Vec;
 
 use crate::core::reader::WasmReader;
@@ -362,6 +364,27 @@ impl WasmReader<'_> {
         self.pc += len;
 
         core::str::from_utf8(utf8_str).map_err(ValidationError::MalformedUtf8)
+    }
+
+    /// # Safety
+    ///
+    /// The caller must guarantee that there is a valid name next in the Wasm
+    /// reader.
+    pub unsafe fn read_name_unchecked(&mut self) -> &str {
+        let len = self.read_var_u32().unwrap() as usize;
+
+        // SAFETY: Caller guarantees a valid name and therefore `len` bytes to
+        // be next.
+        let utf8_str = unsafe {
+            self.full_wasm_binary
+                .get_unchecked(self.pc..(self.pc + len))
+        };
+
+        self.pc += len;
+
+        // SAFETY: Caller guarantees a valid name and therefore also a valid
+        // UTF-8 string.
+        unsafe { core::str::from_utf8_unchecked(utf8_str) }
     }
 
     pub fn read_vec_enumerated<T, F>(

@@ -31,6 +31,22 @@ impl Import {
             desc,
         })
     }
+
+    /// # Safety
+    ///
+    /// The caller must guarantee that there is a valid import in the Wasm
+    /// reader next.
+    pub unsafe fn read_unchecked(wasm: &mut WasmReader) -> Self {
+        let module_name = unsafe { wasm.read_name_unchecked() };
+        let name = unsafe { wasm.read_name_unchecked() };
+        let desc = todo!();
+
+        Self {
+            module_name,
+            name,
+            desc,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]

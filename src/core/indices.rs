@@ -95,23 +95,15 @@ impl<I: Idx, T> IdxVec<I, T> {
     ///
     /// If the number of elements is larger than what can be addressed by a
     /// `u32`, i.e. `u32::MAX`, an error is returned instead.
-    pub fn new(elements: impl ExactSizeIterator<Item = T>) -> Result<Self, IdxVecOverflowError> {
+    pub fn new(elements: Vec<T>) -> Result<Self, IdxVecOverflowError> {
         if u32::try_from(elements.len()).is_err() {
             return Err(IdxVecOverflowError);
         }
 
         Ok(Self {
-            inner: elements.collect(),
+            inner: elements.into_boxed_slice(),
             _phantom: PhantomData,
         })
-    }
-
-    pub fn new_from_imports_and_locals(
-        imported_elements: impl ExactSizeIterator<Item = T>,
-        local_elements: impl ExactSizeIterator<Item = T>,
-    ) -> Result<Self, IdxVecOverflowError> {
-        let combined_elements: Vec<T> = imported_elements.chain(local_elements).collect();
-        Self::new(combined_elements.into_iter())
     }
 
     fn validate_index(&self, index: u32) -> Option<I> {
@@ -153,6 +145,8 @@ impl<I: Idx, T> IdxVec<I, T> {
     /// Creates an equivalent index space for one that already exists while
     /// allowing elements to be mapped.
     pub fn map<R, E>(&self, mapper: impl FnMut(&T) -> Result<R, E>) -> Result<IdxVec<I, R>, E> {
+        // No need to check maximum length, because self already guarantees it
+        // to be <= u32::MAX
         Ok(IdxVec {
             inner: self
                 .inner

@@ -20,6 +20,7 @@ use crate::ValidationError;
 pub(crate) mod code;
 pub(crate) mod data;
 pub(crate) mod globals;
+pub(crate) mod import_section;
 pub(crate) mod read_constant_expression;
 pub(crate) mod validation_stack;
 
@@ -149,7 +150,8 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
         _ => None,
     });
 
-    let functions_test = IdxVec::new_from_imports_and_locals(
+    let num_imported_functions = imported_functions.len
+    let functions_test = IdxVec::(
         imported_functions.collect::<Vec<TypeIdx>>().into_iter(),
             local_functions.into_iter(),
     ).;
