@@ -41,7 +41,7 @@ pub(crate) struct ImportsLength {
 pub struct ValidationInfo<'bytecode> {
     pub(crate) wasm: &'bytecode [u8],
     pub(crate) types: Vec<FuncType>,
-    pub(crate) imports: Vec<Import>,
+    pub(crate) imports: Vec<Import<'bytecode>>,
     pub(crate) functions: Vec<TypeIdx>,
     pub(crate) tables: Vec<TableType>,
     pub(crate) memories: Vec<MemType>,
@@ -490,12 +490,16 @@ fn read_next_header(
 }
 
 #[inline(always)]
-fn handle_section<T, F: FnOnce(&mut WasmReader, SectionHeader) -> Result<T, ValidationError>>(
-    wasm: &mut WasmReader,
+fn handle_section<'wasm, T, F>(
+    wasm: &mut WasmReader<'wasm>,
     header: &mut Option<SectionHeader>,
     section_ty: SectionTy,
     handler: F,
-) -> Result<Option<T>, ValidationError> {
+) -> Result<Option<T>, ValidationError>
+where
+    T: 'wasm,
+    F: FnOnce(&mut WasmReader<'wasm>, SectionHeader) -> Result<T, ValidationError>,
+{
     match &header {
         Some(SectionHeader { ty, .. }) if *ty == section_ty => {
             let h = header.take().unwrap();
@@ -508,19 +512,21 @@ fn handle_section<T, F: FnOnce(&mut WasmReader, SectionHeader) -> Result<T, Vali
     }
 }
 
-impl ValidationInfo<'_> {
+impl<'wasm> ValidationInfo<'wasm> {
     /// Returns the imports of this module as an iterator. Each import consist
     /// of a module name, a name and an extern type.
     ///
     /// See: WebAssembly Specification 2.0 - 7.1.5 - module_imports
     pub fn imports<'a>(
         &'a self,
-    ) -> Map<core::slice::Iter<'a, Import>, impl FnMut(&'a Import) -> (&'a str, &'a str, ExternType)>
-    {
+    ) -> Map<
+        core::slice::Iter<'a, Import<'wasm>>,
+        impl FnMut(&'a Import<'wasm>) -> (&'a str, &'a str, ExternType),
+    > {
         self.imports.iter().map(|import| {
             (
-                &*import.module_name,
-                &*import.name,
+                import.module_name,
+                import.name,
                 import.desc.extern_type(self),
             )
         })
