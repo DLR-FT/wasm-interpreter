@@ -9,7 +9,7 @@ use crate::core::indices::TypeIdx;
 use crate::core::reader::span::Span;
 use crate::core::reader::types::data::{DataModeActive, DataSegment};
 use crate::core::reader::types::element::{ActiveElem, ElemItems, ElemMode, ElemType};
-use crate::core::reader::types::export::{Export, ExportDesc};
+use crate::core::reader::types::export::ExportDesc;
 use crate::core::reader::types::global::{Global, GlobalType};
 use crate::core::reader::types::{
     ExternType, FuncType, ImportSubTypeRelation, MemType, ResultType, TableType,
@@ -22,6 +22,7 @@ use crate::resumable::{
     Dormitory, FreshResumableRef, InvokedResumableRef, Resumable, ResumableRef, RunState,
 };
 use crate::{RefType, RuntimeError, ValidationInfo};
+use alloc::borrow::ToOwned;
 use alloc::collections::btree_map::BTreeMap;
 use alloc::string::String;
 use alloc::sync::Arc;
@@ -287,19 +288,17 @@ impl<'b, T: Config> Store<'b, T> {
         let export_insts: BTreeMap<String, ExternVal> = module
             .exports
             .iter()
-            .map(|Export { name, desc }| {
+            .map(|export| {
                 let module_inst = self.modules.get(module_addr);
-                let value = match desc {
-                    ExportDesc::Func(func_idx) => {
-                        ExternVal::Func(module_inst.func_addrs[*func_idx])
-                    }
-                    ExportDesc::Table(table_idx) => ExternVal::Table(table_addrs_mod[*table_idx]),
-                    ExportDesc::Mem(mem_idx) => ExternVal::Mem(mem_addrs_mod[*mem_idx]),
+                let value = match export.desc {
+                    ExportDesc::Func(func_idx) => ExternVal::Func(module_inst.func_addrs[func_idx]),
+                    ExportDesc::Table(table_idx) => ExternVal::Table(table_addrs_mod[table_idx]),
+                    ExportDesc::Mem(mem_idx) => ExternVal::Mem(mem_addrs_mod[mem_idx]),
                     ExportDesc::Global(global_idx) => {
-                        ExternVal::Global(module_inst.global_addrs[*global_idx])
+                        ExternVal::Global(module_inst.global_addrs[global_idx])
                     }
                 };
-                (String::from(name), value)
+                (export.name.to_owned(), value)
             })
             .collect();
 

@@ -46,7 +46,7 @@ pub struct ValidationInfo<'bytecode> {
     pub(crate) tables: Vec<TableType>,
     pub(crate) memories: Vec<MemType>,
     pub(crate) globals: Vec<Global>,
-    pub(crate) exports: Vec<Export>,
+    pub(crate) exports: Vec<Export<'bytecode>>,
     /// Each block contains the validated code section and the stp corresponding to
     /// the beginning of that code section
     pub(crate) func_blocks_stps: Vec<(Span, usize)>,
@@ -63,10 +63,10 @@ fn validate_exports(validation_info: &ValidationInfo) -> Result<(), ValidationEr
     let mut found_export_names: btree_set::BTreeSet<&str> = btree_set::BTreeSet::new();
     use crate::core::reader::types::export::ExportDesc::*;
     for export in &validation_info.exports {
-        if found_export_names.contains(export.name.as_str()) {
+        if found_export_names.contains(export.name) {
             return Err(ValidationError::DuplicateExportName);
         }
-        found_export_names.insert(export.name.as_str());
+        found_export_names.insert(export.name);
         match export.desc {
             Func(func_idx) => {
                 if validation_info.functions.len()
@@ -538,9 +538,12 @@ impl<'wasm> ValidationInfo<'wasm> {
     /// See: WebAssembly Specification 2.0 - 7.1.5 - module_exports
     pub fn exports<'a>(
         &'a self,
-    ) -> Map<core::slice::Iter<'a, Export>, impl FnMut(&'a Export) -> (&'a str, ExternType)> {
+    ) -> Map<
+        core::slice::Iter<'a, Export<'wasm>>,
+        impl FnMut(&'a Export<'wasm>) -> (&'a str, ExternType),
+    > {
         self.exports
             .iter()
-            .map(|export| (&*export.name, export.desc.extern_type(self)))
+            .map(|export| (export.name, export.desc.extern_type(self)))
     }
 }
