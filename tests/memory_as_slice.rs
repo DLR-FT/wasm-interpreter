@@ -11,7 +11,7 @@ fn simple_byte_writes() {
 
     store
         .mem_access_mut_slice(mem, |mem_as_slice| {
-            for (n, x) in mem_as_slice.into_iter().enumerate() {
+            for (n, x) in mem_as_slice.iter_mut().enumerate() {
                 *x = u8::try_from(n % 256).expect("this to never be larger than 255");
             }
         })
@@ -38,7 +38,7 @@ fn interpret_as_str() {
     // Read the string again and check if it is equal to the original one
     store
         .mem_access_mut_slice(mem, |mem_as_slice| {
-            let bytes = &mem_as_slice[0..STR_TO_WRITE.as_bytes().len()];
+            let bytes = &mem_as_slice[0..STR_TO_WRITE.len()];
             let as_str = std::str::from_utf8(bytes).unwrap();
             assert_eq!(as_str, STR_TO_WRITE);
         })
