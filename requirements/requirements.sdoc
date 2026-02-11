@@ -1,7 +1,7 @@
 [DOCUMENT]
 TITLE: WASM Interpreter for Safety - Requirements
 
-[SECTION]
+[[SECTION]]
 TITLE: Functional Requirements
 
 [REQUIREMENT]
@@ -70,7 +70,7 @@ COMMENT: >>>
 All requirements that allow a dependency must specify the exact version of the dependency (at least major, minor and patch release)
 <<<
 
-[SECTION]
+[[SECTION]]
 TITLE: Low-Level Functional Requirements
 
 [REQUIREMENT]
@@ -178,11 +178,11 @@ RATIONALE: >>>
 An MSRV should be clearly stated to specify which toolchain is acceptable.
 <<<
 
-[/SECTION]
+[[/SECTION]]
 
-[/SECTION]
+[[/SECTION]]
 
-[SECTION]
+[[SECTION]]
 TITLE: Observability Requirements
 
 [REQUIREMENT]
@@ -195,7 +195,7 @@ RATIONALE: >>>
 Instrumentation is needed to generate evidence for certification. Instrumentation eases debugging. Instrumentation enables elaborate run-time monitoring.
 <<<
 
-[SECTION]
+[[SECTION]]
 TITLE: Low-Level Observability Requirements
 
 [REQUIREMENT]
@@ -250,6 +250,6 @@ STATEMENT: >>>
 The interpreter shall support the generation of certification evidence
 <<<
 
-[/SECTION]
+[[/SECTION]]
 
-[/SECTION]
+[[/SECTION]]
