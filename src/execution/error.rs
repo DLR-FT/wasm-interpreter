@@ -52,7 +52,7 @@ pub enum RuntimeError {
 impl Display for RuntimeError {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         match self {
-            RuntimeError::Trap(trap_error) => write!(f, "{trap_error}"),
+            RuntimeError::Trap(trap_error) => write!(f, "Execution trapped: {trap_error}"),
             RuntimeError::FunctionNotFound => f.write_str("Function not found"),
             RuntimeError::ModuleNotFound => f.write_str("No such module exists"),
             RuntimeError::ResumableNotFound => f.write_str("No such resumable exists"),
@@ -155,9 +155,7 @@ impl Display for TrapError {
             TrapError::TableAccessOutOfBounds => {
                 f.write_str("Indirect call: table index out of bounds")
             }
-            TrapError::ReachedUnreachable => {
-                f.write_str("an unreachable statement was reached, triggered a trap")
-            }
+            TrapError::ReachedUnreachable => f.write_str("An unreachable statement was reached"),
         }
     }
 }
