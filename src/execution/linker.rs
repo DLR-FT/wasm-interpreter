@@ -1,4 +1,5 @@
 use alloc::{
+    borrow::ToOwned,
     collections::btree_map::{BTreeMap, Entry},
     string::String,
     vec::Vec,
@@ -138,10 +139,9 @@ impl Linker {
         validation_info: &ValidationInfo,
     ) -> Result<Vec<ExternVal>, RuntimeError> {
         validation_info
-            .imports
-            .iter()
-            .map(|import| {
-                self.get_unchecked(import.module_name.clone(), import.name.clone())
+            .imports()
+            .map(|(module_name, name, _desc)| {
+                self.get_unchecked(module_name.to_owned(), name.to_owned())
                     .ok_or(RuntimeError::UnableToResolveExternLookup)
             })
             .collect()

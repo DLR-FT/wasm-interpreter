@@ -1,3 +1,5 @@
+use core::iter::Map;
+
 use alloc::collections::btree_set::{self, BTreeSet};
 use alloc::vec::Vec;
 
@@ -9,7 +11,7 @@ use crate::core::reader::types::element::ElemType;
 use crate::core::reader::types::export::Export;
 use crate::core::reader::types::global::{Global, GlobalType};
 use crate::core::reader::types::import::{Import, ImportDesc};
-use crate::core::reader::types::{FuncType, MemType, ResultType, TableType};
+use crate::core::reader::types::{ExternType, FuncType, MemType, ResultType, TableType};
 use crate::core::reader::WasmReader;
 use crate::core::sidetable::Sidetable;
 use crate::{ExportDesc, ValidationError};
@@ -478,5 +480,36 @@ fn handle_section<T, F: FnOnce(&mut WasmReader, SectionHeader) -> Result<T, Vali
             Ok(Some(ret))
         }
         _ => Ok(None),
+    }
+}
+
+impl ValidationInfo<'_> {
+    /// Returns the imports of this module as an iterator. Each import consist
+    /// of a module name, a name and an extern type.
+    ///
+    /// See: WebAssembly Specification 2.0 - 7.1.5 - module_imports
+    pub fn imports<'a>(
+        &'a self,
+    ) -> Map<core::slice::Iter<'a, Import>, impl FnMut(&'a Import) -> (&'a str, &'a str, ExternType)>
+    {
+        self.imports.iter().map(|import| {
+            (
+                &*import.module_name,
+                &*import.name,
+                import.desc.extern_type(self),
+            )
+        })
+    }
+
+    /// Returns the exports of this module as an iterator. Each export consist
+    /// of a name, and an extern type.
+    ///
+    /// See: WebAssembly Specification 2.0 - 7.1.5 - module_exports
+    pub fn exports<'a>(
+        &'a self,
+    ) -> Map<core::slice::Iter<'a, Export>, impl FnMut(&'a Export) -> (&'a str, ExternType)> {
+        self.exports
+            .iter()
+            .map(|export| (&*export.name, export.desc.extern_type(self)))
     }
 }
