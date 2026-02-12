@@ -1,7 +1,7 @@
 use alloc::collections::btree_set::BTreeSet;
 use alloc::vec::Vec;
 
-use crate::core::indices::FuncIdx;
+use crate::core::indices::{ExtendedIdxVec, FuncIdx, TypeIdx};
 use crate::core::reader::section_header::{SectionHeader, SectionTy};
 use crate::core::reader::types::global::{Global, GlobalType};
 use crate::core::reader::WasmReader;
@@ -20,7 +20,7 @@ pub(super) fn validate_global_section(
     section_header: SectionHeader,
     imported_global_types: &[GlobalType],
     validation_context_refs: &mut BTreeSet<FuncIdx>,
-    num_funcs: usize,
+    c_funcs: &ExtendedIdxVec<FuncIdx, TypeIdx>,
 ) -> Result<Vec<Global>, ValidationError> {
     assert_eq!(section_header.ty, SectionTy::Global);
 
@@ -28,7 +28,7 @@ pub(super) fn validate_global_section(
         let ty = GlobalType::read(wasm)?;
         let stack = &mut ValidationStack::new();
         let (init_expr, seen_func_idxs) =
-            read_constant_expression(wasm, stack, imported_global_types, num_funcs)?;
+            read_constant_expression(wasm, stack, imported_global_types, c_funcs)?;
 
         stack.assert_val_types(&[ty.ty], true)?;
         validation_context_refs.extend(seen_func_idxs);

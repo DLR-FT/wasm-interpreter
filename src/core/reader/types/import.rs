@@ -1,7 +1,8 @@
 use alloc::borrow::ToOwned;
 use alloc::string::String;
 
-use crate::core::indices::TypeIdx;
+use crate::core::indices::{IdxVec, TypeIdx};
+use crate::core::reader::types::FuncType;
 use crate::core::reader::WasmReader;
 use crate::{ValidationError, ValidationInfo};
 
@@ -10,19 +11,19 @@ use super::{ExternType, MemType, TableType};
 
 #[derive(Debug, Clone)]
 pub struct Import {
-    #[allow(warnings)]
     pub module_name: String,
-    #[allow(warnings)]
     pub name: String,
-    #[allow(warnings)]
     pub desc: ImportDesc,
 }
 
 impl Import {
-    pub fn read(wasm: &mut WasmReader) -> Result<Self, ValidationError> {
+    pub fn read_and_validate(
+        wasm: &mut WasmReader,
+        c_types: &IdxVec<TypeIdx, FuncType>,
+    ) -> Result<Self, ValidationError> {
         let module_name = wasm.read_name()?.to_owned();
         let name = wasm.read_name()?.to_owned();
-        let desc = ImportDesc::read(wasm)?;
+        let desc = ImportDesc::read_and_validate(wasm, c_types)?;
 
         Ok(Self {
             module_name,
@@ -41,9 +42,12 @@ pub enum ImportDesc {
 }
 
 impl ImportDesc {
-    pub fn read(wasm: &mut WasmReader) -> Result<Self, ValidationError> {
+    pub fn read_and_validate(
+        wasm: &mut WasmReader,
+        c_types: &IdxVec<TypeIdx, FuncType>,
+    ) -> Result<Self, ValidationError> {
         let desc = match wasm.read_u8()? {
-            0x00 => Self::Func(wasm.read_var_u32()? as TypeIdx),
+            0x00 => Self::Func(TypeIdx::read_and_validate(wasm, c_types)?),
             // https://webassembly.github.io/spec/core/binary/types.html#table-types
             0x01 => Self::Table(TableType::read(wasm)?),
             0x02 => Self::Mem(MemType::read(wasm)?),
@@ -59,18 +63,22 @@ impl ImportDesc {
     /// returns the external type of `self` according to typing relation,
     /// taking `validation_info` as validation context C
     ///
-    /// Note: This method may panic if self does not come from the given [`ValidationInfo`].
-    ///<https://webassembly.github.io/spec/core/valid/modules.html#imports>
-    pub fn extern_type(&self, validation_info: &ValidationInfo) -> ExternType {
+    /// # Safety
+    ///
+    /// The caller must ensure that `self` comes from the same
+    /// [`ValidationInfo`] that is passed as an argument here.
+    pub unsafe fn extern_type(&self, validation_info: &ValidationInfo) -> ExternType {
         match self {
             ImportDesc::Func(type_idx) => {
                 // unlike ExportDescs, these directly refer to the types section
                 // since a corresponding function entry in function section or body
                 // in code section does not exist for these
-                let func_type = validation_info
-                    .types
-                    .get(*type_idx)
-                    .expect("type index of import descs to always be valid if the validation info is correct");
+
+                // SAFETY: The caller ensures that the current `ImportDesc`
+                // comes from the same `ValidationInfo`. Because all type
+                // indices contained by a `ValidationInfo` must always be valid,
+                // this is safe.
+                let func_type = unsafe { validation_info.types.get(*type_idx) };
                 // TODO ugly clone that should disappear when types are directly parsed from bytecode instead of vector copies
                 ExternType::Func(func_type.clone())
             }

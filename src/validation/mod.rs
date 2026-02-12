@@ -1,32 +1,27 @@
 use alloc::collections::btree_set::{self, BTreeSet};
 use alloc::vec::Vec;
 
-use crate::core::indices::{FuncIdx, TypeIdx};
+use crate::core::indices::{
+    DataIdx, ElemIdx, ExtendedIdxVec, FuncIdx, GlobalIdx, IdxVec, IdxVecOverflowError, MemIdx,
+    TableIdx, TypeIdx,
+};
 use crate::core::reader::section_header::{SectionHeader, SectionTy};
 use crate::core::reader::span::Span;
 use crate::core::reader::types::data::DataSegment;
 use crate::core::reader::types::element::ElemType;
-use crate::core::reader::types::export::Export;
+use crate::core::reader::types::export::{Export, ExportDesc};
 use crate::core::reader::types::global::{Global, GlobalType};
 use crate::core::reader::types::import::{Import, ImportDesc};
 use crate::core::reader::types::{FuncType, MemType, ResultType, TableType};
 use crate::core::reader::WasmReader;
 use crate::core::sidetable::Sidetable;
-use crate::{ExportDesc, ValidationError};
+use crate::ValidationError;
 
 pub(crate) mod code;
 pub(crate) mod data;
 pub(crate) mod globals;
 pub(crate) mod read_constant_expression;
 pub(crate) mod validation_stack;
-
-#[derive(Clone, Debug)]
-pub(crate) struct ImportsLength {
-    pub imported_functions: usize,
-    pub imported_globals: usize,
-    pub imported_memories: usize,
-    pub imported_tables: usize,
-}
 
 /// Information collected from validating a module.
 ///
@@ -38,87 +33,33 @@ pub(crate) struct ImportsLength {
 #[derive(Clone, Debug)]
 pub struct ValidationInfo<'bytecode> {
     pub(crate) wasm: &'bytecode [u8],
-    pub(crate) types: Vec<FuncType>,
+    pub(crate) types: IdxVec<TypeIdx, FuncType>,
     pub(crate) imports: Vec<Import>,
-    pub(crate) functions: Vec<TypeIdx>,
-    pub(crate) tables: Vec<TableType>,
-    pub(crate) memories: Vec<MemType>,
-    pub(crate) globals: Vec<Global>,
-    #[allow(dead_code)]
+    pub(crate) functions: ExtendedIdxVec<FuncIdx, TypeIdx>,
+    pub(crate) tables: ExtendedIdxVec<TableIdx, TableType>,
+    pub(crate) memories: ExtendedIdxVec<MemIdx, MemType>,
+    pub(crate) globals: ExtendedIdxVec<GlobalIdx, Global>,
+    pub(crate) elements: IdxVec<ElemIdx, ElemType>,
+    pub(crate) data: IdxVec<DataIdx, DataSegment>,
     pub(crate) exports: Vec<Export>,
     /// Each block contains the validated code section and the stp corresponding to
     /// the beginning of that code section
     pub(crate) func_blocks_stps: Vec<(Span, usize)>,
     pub(crate) sidetable: Sidetable,
-    pub(crate) data: Vec<DataSegment>,
     /// The start function which is automatically executed during instantiation
     pub(crate) start: Option<FuncIdx>,
-    pub(crate) elements: Vec<ElemType>,
-    pub(crate) imports_length: ImportsLength,
     // pub(crate) exports_length: Exported,
 }
 
-fn validate_exports(validation_info: &ValidationInfo) -> Result<(), ValidationError> {
+fn validate_no_duplicate_exports(validation_info: &ValidationInfo) -> Result<(), ValidationError> {
     let mut found_export_names: btree_set::BTreeSet<&str> = btree_set::BTreeSet::new();
-    use crate::core::reader::types::export::ExportDesc::*;
     for export in &validation_info.exports {
         if found_export_names.contains(export.name.as_str()) {
             return Err(ValidationError::DuplicateExportName);
         }
         found_export_names.insert(export.name.as_str());
-        match export.desc {
-            FuncIdx(func_idx) => {
-                if validation_info.functions.len()
-                    + validation_info.imports_length.imported_functions
-                    <= func_idx
-                {
-                    return Err(ValidationError::InvalidFuncIdx(func_idx));
-                }
-            }
-            TableIdx(table_idx) => {
-                if validation_info.tables.len() + validation_info.imports_length.imported_tables
-                    <= table_idx
-                {
-                    return Err(ValidationError::InvalidTableIdx(table_idx));
-                }
-            }
-            MemIdx(mem_idx) => {
-                if validation_info.memories.len() + validation_info.imports_length.imported_memories
-                    <= mem_idx
-                {
-                    return Err(ValidationError::InvalidMemIdx(mem_idx));
-                }
-            }
-            GlobalIdx(global_idx) => {
-                if validation_info.globals.len() + validation_info.imports_length.imported_globals
-                    <= global_idx
-                {
-                    return Err(ValidationError::InvalidGlobalIdx(global_idx));
-                }
-            }
-        }
     }
     Ok(())
-}
-
-fn get_imports_length(imports: &Vec<Import>) -> ImportsLength {
-    let mut imports_length = ImportsLength {
-        imported_functions: 0,
-        imported_globals: 0,
-        imported_memories: 0,
-        imported_tables: 0,
-    };
-
-    for import in imports {
-        match import.desc {
-            ImportDesc::Func(_) => imports_length.imported_functions += 1,
-            ImportDesc::Global(_) => imports_length.imported_globals += 1,
-            ImportDesc::Mem(_) => imports_length.imported_memories += 1,
-            ImportDesc::Table(_) => imports_length.imported_tables += 1,
-        }
-    }
-
-    imports_length
 }
 
 pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
@@ -178,32 +119,16 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
     let types = handle_section(&mut wasm, &mut header, SectionTy::Type, |wasm, _| {
-        wasm.read_vec(FuncType::read)
+        wasm.read_vec(FuncType::read).map(|types| IdxVec::new(types).expect("that index space creation never fails because the length of the types vector is encoded as a 32-bit integer in the bytecode"))
     })?
     .unwrap_or_default();
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
     let imports = handle_section(&mut wasm, &mut header, SectionTy::Import, |wasm, _| {
-        wasm.read_vec(|wasm| {
-            let import = Import::read(wasm)?;
-
-            match import.desc {
-                ImportDesc::Func(type_idx) => {
-                    types
-                        .get(type_idx)
-                        .ok_or(ValidationError::InvalidTypeIdx(type_idx))?;
-                }
-                ImportDesc::Table(_table_type) => {}
-                ImportDesc::Mem(_mem_type) => {}
-                ImportDesc::Global(_global_type) => {}
-            }
-
-            Ok(import)
-        })
+        wasm.read_vec(|wasm| Import::read_and_validate(wasm, &types))
     })?
     .unwrap_or_default();
-    let imports_length = get_imports_length(&imports);
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
@@ -215,13 +140,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
     // only after that do the local functions get assigned their indices.
     let local_functions =
         handle_section(&mut wasm, &mut header, SectionTy::Function, |wasm, _| {
-            wasm.read_vec(|wasm| {
-                let type_idx = wasm.read_var_u32()? as usize;
-                types
-                    .get(type_idx)
-                    .ok_or(ValidationError::InvalidTypeIdx(type_idx))?;
-                Ok(type_idx)
-            })
+            wasm.read_vec(|wasm| TypeIdx::read_and_validate(wasm, &types))
         })?
         .unwrap_or_default();
 
@@ -230,96 +149,82 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
         _ => None,
     });
 
-    let all_functions = imported_functions
-        .clone()
-        .chain(local_functions.iter().cloned())
-        .collect::<Vec<TypeIdx>>();
+    let functions = ExtendedIdxVec::new(imported_functions.collect(), local_functions)
+        .map_err(|IdxVecOverflowError| ValidationError::TooManyFunctions)?;
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
-    let imported_tables = imports
-        .iter()
-        .filter_map(|m| match m.desc {
-            ImportDesc::Table(table) => Some(table),
-            _ => None,
-        })
-        .collect::<Vec<TableType>>();
-    let tables = handle_section(&mut wasm, &mut header, SectionTy::Table, |wasm, _| {
+    let imported_tables = imports.iter().filter_map(|m| match m.desc {
+        ImportDesc::Table(table) => Some(table),
+        _ => None,
+    });
+    let local_tables = handle_section(&mut wasm, &mut header, SectionTy::Table, |wasm, _| {
         wasm.read_vec(TableType::read)
     })?
     .unwrap_or_default();
 
-    let all_tables = {
-        let mut temp = imported_tables;
-        temp.extend(tables.clone());
-        temp
-    };
+    let tables = ExtendedIdxVec::new(imported_tables.collect(), local_tables)
+        .map_err(|IdxVecOverflowError| ValidationError::TooManyTables)?;
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
-    let imported_memories = imports
-        .iter()
-        .filter_map(|m| match m.desc {
-            ImportDesc::Mem(mem) => Some(mem),
-            _ => None,
-        })
-        .collect::<Vec<MemType>>();
+    let imported_memories = imports.iter().filter_map(|m| match m.desc {
+        ImportDesc::Mem(mem) => Some(mem),
+        _ => None,
+    });
     // let imported_memories_length = imported_memories.len();
-    let memories = handle_section(&mut wasm, &mut header, SectionTy::Memory, |wasm, _| {
+    let local_memories = handle_section(&mut wasm, &mut header, SectionTy::Memory, |wasm, _| {
         wasm.read_vec(MemType::read)
     })?
     .unwrap_or_default();
 
-    let all_memories = {
-        let mut temp = imported_memories;
-        temp.extend(memories.clone());
-        temp
-    };
-    if all_memories.len() > 1 {
+    let memories = ExtendedIdxVec::new(imported_memories.collect(), local_memories)
+        .map_err(|IdxVecOverflowError| ValidationError::TooManyMemories)?;
+
+    if memories.len() > 1 {
         return Err(ValidationError::UnsupportedMultipleMemoriesProposal);
     }
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
-    // we start off with the imported globals
-    let /* mut */ imported_global_types = imports
+    let imported_global_types: Vec<GlobalType> = imports
         .iter()
         .filter_map(|m| match m.desc {
             ImportDesc::Global(global) => Some(global),
             _ => None,
         })
-        .collect::<Vec<GlobalType>>();
-    let imported_global_types_len = imported_global_types.len();
-    let globals = handle_section(&mut wasm, &mut header, SectionTy::Global, |wasm, h| {
+        .collect();
+    let local_globals = handle_section(&mut wasm, &mut header, SectionTy::Global, |wasm, h| {
         globals::validate_global_section(
             wasm,
             h,
             &imported_global_types,
             &mut validation_context_refs,
-            all_functions.len(),
+            &functions,
         )
     })?
     .unwrap_or_default();
-    let mut all_globals = Vec::new();
-    for item in imported_global_types.iter().take(imported_global_types_len) {
-        all_globals.push(Global {
-            init_expr: Span::new(usize::MAX, 0),
-            ty: *item,
-        })
-    }
-    for item in &globals {
-        all_globals.push(*item)
-    }
+
+    let imported_globals = imported_global_types.iter().map(|ty| Global {
+        // TODO using a default MAX value for spans that are never executed is
+        // not really safe. Maybe opt for an Option instead.
+        init_expr: Span::new(usize::MAX, 0),
+        ty: *ty,
+    });
+    let globals = ExtendedIdxVec::new(imported_globals.collect(), local_globals)
+        .map_err(|IdxVecOverflowError| ValidationError::TooManyGlobals)?;
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
     let exports = handle_section(&mut wasm, &mut header, SectionTy::Export, |wasm, _| {
-        wasm.read_vec(Export::read)
+        wasm.read_vec(|wasm| {
+            Export::read_and_validate(wasm, &functions, &tables, &memories, &globals)
+        })
     })?
     .unwrap_or_default();
     validation_context_refs.extend(exports.iter().filter_map(
         |Export { name: _, desc }| match *desc {
-            ExportDesc::FuncIdx(func_idx) => Some(func_idx),
+            ExportDesc::Func(func_idx) => Some(func_idx),
             _ => None,
         },
     ));
@@ -327,14 +232,20 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
     let start = handle_section(&mut wasm, &mut header, SectionTy::Start, |wasm, _| {
-        let func_idx = wasm.read_var_u32().map(|idx| idx as FuncIdx)?;
+        let func_idx = FuncIdx::read_and_validate(wasm, &functions)?;
+
         // start function signature must be [] -> []
         // https://webassembly.github.io/spec/core/valid/modules.html#start-function
-        let type_idx = *all_functions
-            .get(func_idx)
-            .ok_or(ValidationError::InvalidFuncIdx(func_idx))?;
-        if types[type_idx]
-            != (FuncType {
+        // SAFETY: We just validated this function index using the same
+        // `IdxVec`.
+        let type_idx = unsafe { functions.get(func_idx) };
+
+        // SAFETY: There exists only one `IdxVec<TypeIdx, FuncType>` in the
+        // current function. Therefore, this has to be the same one used to
+        // create and validate this `TypeIdx`.
+        let func_type = unsafe { types.get(*type_idx) };
+        if func_type
+            != &(FuncType {
                 params: ResultType {
                     valtypes: Vec::new(),
                 },
@@ -351,17 +262,17 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
-    let elements: Vec<ElemType> =
-        handle_section(&mut wasm, &mut header, SectionTy::Element, |wasm, _| {
-            ElemType::read_from_wasm(
-                wasm,
-                &all_functions,
-                &mut validation_context_refs,
-                &all_tables,
-                &imported_global_types,
-            )
-        })?
-        .unwrap_or_default();
+    let elements = handle_section(&mut wasm, &mut header, SectionTy::Element, |wasm, _| {
+        ElemType::read_and_validate(
+            wasm,
+            &functions,
+            &mut validation_context_refs,
+            &tables,
+            &imported_global_types,
+        )
+        .map(|elements| IdxVec::new(elements).expect("that index space creation never fails because the length of the elements vector is encoded as a 32-bit integer in the bytecode"))
+    })?
+    .unwrap_or_default();
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
@@ -381,24 +292,33 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
 
     let mut sidetable = Sidetable::new();
     let func_blocks_stps = handle_section(&mut wasm, &mut header, SectionTy::Code, |wasm, h| {
-        code::validate_code_section(
-            wasm,
-            h,
-            &types,
-            &all_functions,
-            imported_functions.count(),
-            &all_globals,
-            &all_memories,
-            &data_count,
-            &all_tables,
-            &elements,
-            &validation_context_refs,
-            &mut sidetable,
-        )
+        // SAFETY: It is required that all passed index values are valid in all
+        // passed `IdxVec`s. The current function does not take any index types
+        // as arguments and every `IdxVec<..., ...>` is unique, i.e. uses
+        // different generics. Therefore, all index types must be valid in their
+        // relevant `IdxVec`s.
+        unsafe {
+            code::validate_code_section(
+                wasm,
+                h,
+                &types,
+                &functions,
+                &globals,
+                &memories,
+                data_count,
+                &tables,
+                &elements,
+                &validation_context_refs,
+                &mut sidetable,
+            )
+        }
     })?
     .unwrap_or_default();
 
-    if func_blocks_stps.len() != local_functions.len() {
+    if func_blocks_stps.len()
+        != usize::try_from(functions.len_local_definitions())
+            .expect("architecture to be at least 32 bits")
+    {
         return Err(ValidationError::FunctionAndCodeSectionsHaveDifferentLengths);
     }
 
@@ -406,19 +326,14 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
 
     let data_section = handle_section(&mut wasm, &mut header, SectionTy::Data, |wasm, h| {
         // wasm.read_vec(DataSegment::read)
-        data::validate_data_section(
-            wasm,
-            h,
-            &imported_global_types,
-            all_memories.len(),
-            all_functions.len(),
-        )
+        data::validate_data_section(wasm, h, &imported_global_types, &memories, &functions)
+            .map(|data_segments| IdxVec::new(data_segments).expect("that index space creation never fails because the length of the data segments vector is encoded as a 32-bit integer in the bytecode"))
     })?
     .unwrap_or_default();
 
     // https://webassembly.github.io/spec/core/binary/modules.html#data-count-section
     if let (Some(data_count), data_len) = (data_count, data_section.len()) {
-        if data_count as usize != data_len {
+        if data_count != data_len {
             return Err(ValidationError::DataCountAndDataSectionsLengthAreDifferent);
         }
     }
@@ -435,7 +350,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
         wasm: wasm.into_inner(),
         types,
         imports,
-        functions: local_functions,
+        functions,
         tables,
         memories,
         globals,
@@ -445,9 +360,8 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
         data: data_section,
         start,
         elements,
-        imports_length,
     };
-    validate_exports(&validation_info)?;
+    validate_no_duplicate_exports(&validation_info)?;
 
     Ok(validation_info)
 }

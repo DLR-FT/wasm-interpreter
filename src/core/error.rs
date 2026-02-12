@@ -1,13 +1,11 @@
-use crate::core::indices::GlobalIdx;
 use crate::validation_stack::ValidationStackEntry;
 use crate::RefType;
 use core::fmt::{Display, Formatter};
 use core::str::Utf8Error;
 
+use super::indices::FuncIdx;
 use crate::core::reader::section_header::SectionTy;
 use crate::core::reader::types::ValType;
-
-use super::indices::{DataIdx, ElemIdx, FuncIdx, LabelIdx, LocalIdx, MemIdx, TableIdx, TypeIdx};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum ValidationError {
@@ -53,23 +51,23 @@ pub enum ValidationError {
     MalformedElemKindDiscriminator(u8),
 
     /// An index for a type is invalid.
-    InvalidTypeIdx(TypeIdx),
+    InvalidTypeIdx(u32),
     /// An index for a function is invalid.
-    InvalidFuncIdx(FuncIdx),
+    InvalidFuncIdx(u32),
     /// An index for a table is invalid.
-    InvalidTableIdx(TableIdx),
+    InvalidTableIdx(u32),
     /// An index for a memory is invalid.
-    InvalidMemIdx(MemIdx),
+    InvalidMemIdx(u32),
     /// An index for a global is invalid.
-    InvalidGlobalIdx(GlobalIdx),
+    InvalidGlobalIdx(u32),
     /// An index for an element segment is invalid.
-    InvalidElemIdx(ElemIdx),
+    InvalidElemIdx(u32),
     /// An index for a data segment is invalid.
-    InvalidDataIdx(DataIdx),
+    InvalidDataIdx(u32),
     /// An index for a local is invalid.
-    InvalidLocalIdx(LocalIdx),
+    InvalidLocalIdx(u32),
     /// An index for a label is invalid.
-    InvalidLabelIdx(LabelIdx),
+    InvalidLabelIdx(u32),
     /// An index for a lane of some vector type is invalid.
     InvalidLaneIdx(u8),
 
@@ -153,6 +151,18 @@ pub enum ValidationError {
     /// The mode of an element was invalid. Only values in the range 0..=7 are
     /// allowed.
     InvalidElementMode(u32),
+    /// The module contains too many functions, i.e. imported or locally-defined
+    /// functions. The maximum number of functions is [`u32::MAX`].
+    TooManyFunctions,
+    /// The module contains too many tables, i.e. imported or locally-defined
+    /// tables. The maximum number of tables is [`u32::MAX`].
+    TooManyTables,
+    /// The module contains too many memories, i.e. imported or locally-defined
+    /// memories. The maximum number of memories is [`u32::MAX`].
+    TooManyMemories,
+    /// The module contains too many globals, i.e. imported or locally-defined
+    /// globals. The maximum number of memories is [`u32::MAX`].
+    TooManyGlobals,
 }
 
 impl Display for ValidationError {
@@ -224,6 +234,10 @@ impl Display for ValidationError {
             ValidationError::MissingDataCountSection => f.write_str("Some instructions could not be validated because the data count section is missing"),
             ValidationError::InvalidDataSegmentMode(mode) => write!(f, "The mode of a data segment was invalid (only 0..=2 is allowed): {mode}"),
             ValidationError::InvalidElementMode(mode) => write!(f, "The mode of an element was invalid (only 0..=7 is allowed): {mode}"),
+            ValidationError::TooManyFunctions => f.write_str("The module contains too many functions. The maximum number of functions (either imported or locally-defined) is 2^32 - 1"),
+            ValidationError::TooManyTables => f.write_str("The module contains too many tables. The maximum number of tables (either imported or locally-defined) is 2^32 - 1"),
+            ValidationError::TooManyMemories => f.write_str("The module contains too many memories. The maximum number of memories (either imported or locally-defined) is 2^32 - 1"),
+            ValidationError::TooManyGlobals => f.write_str("The module contains too many globals. The maximum number of globals (either imported or locally-defined) is 2^32 - 1"),
         }
     }
 }

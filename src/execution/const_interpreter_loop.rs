@@ -3,7 +3,7 @@ use crate::{
     assert_validated::UnwrapValidatedExt,
     config::Config,
     core::{
-        indices::GlobalIdx,
+        indices::{FuncIdx, GlobalIdx},
         reader::{span::Span, WasmReader},
     },
     unreachable_validated,
@@ -45,12 +45,17 @@ pub(crate) fn run_const<T: Config>(
                 break;
             }
             GLOBAL_GET => {
-                let global_idx = wasm.read_var_u32().unwrap_validated() as GlobalIdx;
+                // SAFETY: Validation guarantees there to be a valid global
+                // index next.
+                let global_idx = unsafe { GlobalIdx::read_unchecked(wasm) };
 
-                //TODO replace double indirection
-                let global = store
-                    .globals
-                    .get(store.modules.get(module).global_addrs[global_idx]);
+                let module_instance = store.modules.get(module);
+
+                // SAFETY: Validation guarantees the global index to be valid
+                // for the current module.
+                let global_addr = *unsafe { module_instance.global_addrs.get(global_idx) };
+
+                let global = store.globals.get(global_addr);
 
                 trace!(
                     "Constant instruction: global.get [{global_idx}] -> [{:?}]",
@@ -85,15 +90,13 @@ pub(crate) fn run_const<T: Config>(
                 trace!("Instruction: ref.null '{:?}' -> [{:?}]", reftype, reftype);
             }
             REF_FUNC => {
-                // we already checked for the func_idx to be in bounds during validation
-                let func_idx = wasm.read_var_u32().unwrap_validated() as usize;
-                let func_addr = *store
-                    .modules
-                    .get(module)
-                    .func_addrs
-                    .get(func_idx)
-                    .unwrap_validated();
-                stack.push_value::<T>(Value::Ref(Ref::Func(func_addr)))?;
+                // SAFETY: Validation guarantees there to be a valid function
+                // index next.
+                let func_idx = unsafe { FuncIdx::read_unchecked(wasm) };
+                // SAFETY: Validation guarantees the function index to be valid
+                // for the current module.
+                let func_addr = unsafe { store.modules.get(module).func_addrs.get(func_idx) };
+                stack.push_value::<T>(Value::Ref(Ref::Func(*func_addr)))?;
             }
 
             FD_EXTENSIONS => {

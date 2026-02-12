@@ -26,11 +26,6 @@ pub(crate) struct Resumable {
 pub(crate) struct Dormitory(pub(crate) Arc<RwSpinLock<SlotMap<Resumable>>>);
 
 impl Dormitory {
-    #[allow(unused)]
-    pub(crate) fn new() -> Self {
-        Self::default()
-    }
-
     pub(crate) fn insert(&self, resumable: Resumable) -> InvokedResumableRef {
         let key = self.0.write().insert(resumable);
 
@@ -97,7 +92,7 @@ mod test {
     /// Test that a dormitory can be constructed and that a resumable can be inserted
     #[test]
     fn dormitory_constructor() {
-        let dorm = Dormitory::new();
+        let dorm = Dormitory::default();
 
         let resumable = Resumable {
             stack: Stack::new(),

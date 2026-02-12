@@ -2,7 +2,9 @@ use alloc::{collections::btree_map::BTreeMap, string::String, vec, vec::Vec};
 
 use crate::{
     core::{
-        indices::TypeIdx,
+        indices::{
+            DataIdx, ElemIdx, ExtendedIdxVec, FuncIdx, GlobalIdx, IdxVec, MemIdx, TableIdx, TypeIdx,
+        },
         reader::{
             span::Span,
             types::{FuncType, MemType, TableType},
@@ -176,13 +178,13 @@ impl core::fmt::Debug for DataInst {
 ///<https://webassembly.github.io/spec/core/exec/runtime.html#module-instances>
 #[derive(Debug)]
 pub struct ModuleInst<'b> {
-    pub types: Vec<FuncType>,
-    pub func_addrs: Vec<FuncAddr>,
-    pub table_addrs: Vec<TableAddr>,
-    pub mem_addrs: Vec<MemAddr>,
-    pub global_addrs: Vec<GlobalAddr>,
-    pub elem_addrs: Vec<ElemAddr>,
-    pub data_addrs: Vec<DataAddr>,
+    pub types: IdxVec<TypeIdx, FuncType>,
+    pub func_addrs: ExtendedIdxVec<FuncIdx, FuncAddr>,
+    pub table_addrs: ExtendedIdxVec<TableIdx, TableAddr>,
+    pub mem_addrs: ExtendedIdxVec<MemIdx, MemAddr>,
+    pub global_addrs: ExtendedIdxVec<GlobalIdx, GlobalAddr>,
+    pub elem_addrs: IdxVec<ElemIdx, ElemAddr>,
+    pub data_addrs: IdxVec<DataIdx, DataAddr>,
     ///<https://webassembly.github.io/spec/core/exec/runtime.html#export-instances>
     /// matches the list of ExportInst structs in the spec, however the spec never uses the name attribute
     /// except during linking, which is up to the embedder to implement.

@@ -286,13 +286,13 @@ impl ValidationStack {
     ///
     pub fn assert_val_types_of_label_jump_types_on_top(
         &mut self,
-        label_idx: usize,
+        label_idx: u32,
         unify_to_expected_types: bool,
     ) -> Result<(), ValidationError> {
         let index_of_label_in_ctrl_stack = self
             .ctrl_stack
             .len()
-            .checked_sub(label_idx)
+            .checked_sub(usize::try_from(label_idx).expect("architecture to be at least 32 bits"))
             .and_then(|i| i.checked_sub(1));
 
         let label_types = index_of_label_in_ctrl_stack
