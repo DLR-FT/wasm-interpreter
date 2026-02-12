@@ -136,7 +136,7 @@ RELATIONS:
 UID: REQ-15
 TITLE: Allow log dependency
 STATEMENT: >>>
-The interpreter shall have an optional dependency on the ``log`` crate version ``0.4.22``
+The interpreter shall have an optional dependency on the ``log`` version ``0.4.22`` or later.
 <<<
 RATIONALE: >>>
 Logging is an essential tool to make a system observable, and aid in debugging. Bespoke crate is widely used in the Rust ecosystem and can be attached to any (or no) logging backend. Using conditional compilation, all of the ``log`` crate's footprint in the WASM interpreter (foremost the ``debug``, ``error``, ``info``, ``trace`` and ``warn`` macro) can be expanded to empty statements to avoid **any** run-time impact when opting out of the dependency on ``log``.
