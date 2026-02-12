@@ -1,3 +1,0 @@
-<div class="document">
-<p>The interpreter shall have an optional dependency on the <tt class="docutils literal">log</tt> crate version <tt class="docutils literal">0.4.22</tt></p>
-</div>

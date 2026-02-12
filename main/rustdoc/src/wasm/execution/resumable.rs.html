@@ -90,23 +90,43 @@
 <a href=#90 id=90 data-nosnippet>90</a>
 <a href=#91 id=91 data-nosnippet>91</a><span class="attr">#[cfg(test)]
 <a href=#92 id=92 data-nosnippet>92</a></span><span class="kw">mod </span>test {
-<a href=#93 id=93 data-nosnippet>93</a>    <span class="kw">use crate</span>::{addrs::FuncAddr, value_stack::Stack};
+<a href=#93 id=93 data-nosnippet>93</a>    <span class="kw">use </span>alloc::vec::Vec;
 <a href=#94 id=94 data-nosnippet>94</a>
-<a href=#95 id=95 data-nosnippet>95</a>    <span class="kw">use super</span>::{Dormitory, Resumable};
-<a href=#96 id=96 data-nosnippet>96</a>
-<a href=#97 id=97 data-nosnippet>97</a>    <span class="doccomment">/// Test that a dormitory can be constructed and that a resumable can be inserted
-<a href=#98 id=98 data-nosnippet>98</a>    </span><span class="attr">#[test]
-<a href=#99 id=99 data-nosnippet>99</a>    </span><span class="kw">fn </span>dormitory_constructor() {
-<a href=#100 id=100 data-nosnippet>100</a>        <span class="kw">let </span>dorm = Dormitory::new();
-<a href=#101 id=101 data-nosnippet>101</a>
-<a href=#102 id=102 data-nosnippet>102</a>        <span class="kw">let </span>resumable = Resumable {
-<a href=#103 id=103 data-nosnippet>103</a>            stack: Stack::new(),
-<a href=#104 id=104 data-nosnippet>104</a>            pc: <span class="number">11</span>,
-<a href=#105 id=105 data-nosnippet>105</a>            stp: <span class="number">13</span>,
-<a href=#106 id=106 data-nosnippet>106</a>            current_func_addr: FuncAddr::INVALID,
-<a href=#107 id=107 data-nosnippet>107</a>            maybe_fuel: <span class="prelude-val">None</span>,
-<a href=#108 id=108 data-nosnippet>108</a>        };
-<a href=#109 id=109 data-nosnippet>109</a>
-<a href=#110 id=110 data-nosnippet>110</a>        dorm.insert(resumable);
-<a href=#111 id=111 data-nosnippet>111</a>    }
-<a href=#112 id=112 data-nosnippet>112</a>}</code></pre></div></section></main></body></html>
+<a href=#95 id=95 data-nosnippet>95</a>    <span class="kw">use crate</span>::{
+<a href=#96 id=96 data-nosnippet>96</a>        addrs::{Addr, FuncAddr},
+<a href=#97 id=97 data-nosnippet>97</a>        core::reader::types::{FuncType, ResultType},
+<a href=#98 id=98 data-nosnippet>98</a>        value_stack::Stack,
+<a href=#99 id=99 data-nosnippet>99</a>    };
+<a href=#100 id=100 data-nosnippet>100</a>
+<a href=#101 id=101 data-nosnippet>101</a>    <span class="kw">use super</span>::{Dormitory, Resumable};
+<a href=#102 id=102 data-nosnippet>102</a>
+<a href=#103 id=103 data-nosnippet>103</a>    <span class="doccomment">/// Test that a dormitory can be constructed and that a resumable can be inserted
+<a href=#104 id=104 data-nosnippet>104</a>    </span><span class="attr">#[test]
+<a href=#105 id=105 data-nosnippet>105</a>    </span><span class="kw">fn </span>dormitory_constructor() {
+<a href=#106 id=106 data-nosnippet>106</a>        <span class="kw">let </span>dorm = Dormitory::new();
+<a href=#107 id=107 data-nosnippet>107</a>
+<a href=#108 id=108 data-nosnippet>108</a>        <span class="kw">let </span>empty_stack = Stack::new::&lt;()&gt;(
+<a href=#109 id=109 data-nosnippet>109</a>            Vec::new(),
+<a href=#110 id=110 data-nosnippet>110</a>            <span class="kw-2">&amp;</span>FuncType {
+<a href=#111 id=111 data-nosnippet>111</a>                params: ResultType {
+<a href=#112 id=112 data-nosnippet>112</a>                    valtypes: Vec::new(),
+<a href=#113 id=113 data-nosnippet>113</a>                },
+<a href=#114 id=114 data-nosnippet>114</a>                returns: ResultType {
+<a href=#115 id=115 data-nosnippet>115</a>                    valtypes: Vec::new(),
+<a href=#116 id=116 data-nosnippet>116</a>                },
+<a href=#117 id=117 data-nosnippet>117</a>            },
+<a href=#118 id=118 data-nosnippet>118</a>            <span class="kw-2">&amp;</span>[],
+<a href=#119 id=119 data-nosnippet>119</a>        )
+<a href=#120 id=120 data-nosnippet>120</a>        .unwrap();
+<a href=#121 id=121 data-nosnippet>121</a>
+<a href=#122 id=122 data-nosnippet>122</a>        <span class="kw">let </span>resumable = Resumable {
+<a href=#123 id=123 data-nosnippet>123</a>            stack: empty_stack,
+<a href=#124 id=124 data-nosnippet>124</a>            pc: <span class="number">11</span>,
+<a href=#125 id=125 data-nosnippet>125</a>            stp: <span class="number">13</span>,
+<a href=#126 id=126 data-nosnippet>126</a>            current_func_addr: FuncAddr::new_unchecked(<span class="number">0</span>),
+<a href=#127 id=127 data-nosnippet>127</a>            maybe_fuel: <span class="prelude-val">None</span>,
+<a href=#128 id=128 data-nosnippet>128</a>        };
+<a href=#129 id=129 data-nosnippet>129</a>
+<a href=#130 id=130 data-nosnippet>130</a>        dorm.insert(resumable);
+<a href=#131 id=131 data-nosnippet>131</a>    }
+<a href=#132 id=132 data-nosnippet>132</a>}</code></pre></div></section></main></body></html>
