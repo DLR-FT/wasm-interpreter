@@ -52,7 +52,7 @@
 <a href=#52 id=52 data-nosnippet>52</a><span class="kw">impl </span>Display <span class="kw">for </span>RuntimeError {
 <a href=#53 id=53 data-nosnippet>53</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; core::fmt::Result {
 <a href=#54 id=54 data-nosnippet>54</a>        <span class="kw">match </span><span class="self">self </span>{
-<a href=#55 id=55 data-nosnippet>55</a>            RuntimeError::Trap(trap_error) =&gt; <span class="macro">write!</span>(f, <span class="string">"{trap_error}"</span>),
+<a href=#55 id=55 data-nosnippet>55</a>            RuntimeError::Trap(trap_error) =&gt; <span class="macro">write!</span>(f, <span class="string">"Execution trapped: {trap_error}"</span>),
 <a href=#56 id=56 data-nosnippet>56</a>            RuntimeError::FunctionNotFound =&gt; f.write_str(<span class="string">"Function not found"</span>),
 <a href=#57 id=57 data-nosnippet>57</a>            RuntimeError::ModuleNotFound =&gt; f.write_str(<span class="string">"No such module exists"</span>),
 <a href=#58 id=58 data-nosnippet>58</a>            RuntimeError::ResumableNotFound =&gt; f.write_str(<span class="string">"No such resumable exists"</span>),
@@ -109,59 +109,61 @@
 <a href=#109 id=109 data-nosnippet>109</a>    }
 <a href=#110 id=110 data-nosnippet>110</a>}
 <a href=#111 id=111 data-nosnippet>111</a>
-<a href=#112 id=112 data-nosnippet>112</a><span class="attr">#[derive(Debug, PartialEq, Eq, Clone)]
-<a href=#113 id=113 data-nosnippet>113</a></span><span class="kw">pub enum </span>TrapError {
-<a href=#114 id=114 data-nosnippet>114</a>    DivideBy0,
-<a href=#115 id=115 data-nosnippet>115</a>    UnrepresentableResult,
-<a href=#116 id=116 data-nosnippet>116</a>    <span class="comment">// https://github.com/wasmi-labs/wasmi/blob/37d1449524a322817c55026eb21eb97dd693b9ce/crates/core/src/trap.rs#L265C5-L265C27
-<a href=#117 id=117 data-nosnippet>117</a>    </span>BadConversionToInteger,
-<a href=#118 id=118 data-nosnippet>118</a>
-<a href=#119 id=119 data-nosnippet>119</a>    <span class="doccomment">/// An access to a memory or data was out of bounds.
-<a href=#120 id=120 data-nosnippet>120</a>    ///
-<a href=#121 id=121 data-nosnippet>121</a>    /// Note: As of now, there is no way to distinguish between both of these. The reference
-<a href=#122 id=122 data-nosnippet>122</a>    /// interpreter and Wast testsuite messages call this error "memory access out of bounds".
-<a href=#123 id=123 data-nosnippet>123</a>    </span>MemoryOrDataAccessOutOfBounds,
-<a href=#124 id=124 data-nosnippet>124</a>    <span class="doccomment">/// An access to a table or an element was out of bounds.
-<a href=#125 id=125 data-nosnippet>125</a>    ///
-<a href=#126 id=126 data-nosnippet>126</a>    /// Note: As of now, there is no way to distinguish between both of these. The reference
-<a href=#127 id=127 data-nosnippet>127</a>    /// interpreter and Wast testsuite messages call this error "table access out of bounds".
-<a href=#128 id=128 data-nosnippet>128</a>    </span>TableOrElementAccessOutOfBounds,
-<a href=#129 id=129 data-nosnippet>129</a>    UninitializedElement,
-<a href=#130 id=130 data-nosnippet>130</a>    SignatureMismatch,
-<a href=#131 id=131 data-nosnippet>131</a>    IndirectCallNullFuncRef,
-<a href=#132 id=132 data-nosnippet>132</a>    TableAccessOutOfBounds,
-<a href=#133 id=133 data-nosnippet>133</a>    ReachedUnreachable,
-<a href=#134 id=134 data-nosnippet>134</a>}
-<a href=#135 id=135 data-nosnippet>135</a>
-<a href=#136 id=136 data-nosnippet>136</a><span class="kw">impl </span>Display <span class="kw">for </span>TrapError {
-<a href=#137 id=137 data-nosnippet>137</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; core::fmt::Result {
-<a href=#138 id=138 data-nosnippet>138</a>        <span class="kw">match </span><span class="self">self </span>{
-<a href=#139 id=139 data-nosnippet>139</a>            TrapError::DivideBy0 =&gt; f.write_str(<span class="string">"Divide by zero is not permitted"</span>),
-<a href=#140 id=140 data-nosnippet>140</a>            TrapError::UnrepresentableResult =&gt; f.write_str(<span class="string">"Result is unrepresentable"</span>),
-<a href=#141 id=141 data-nosnippet>141</a>            TrapError::BadConversionToInteger =&gt; f.write_str(<span class="string">"Bad conversion to integer"</span>),
-<a href=#142 id=142 data-nosnippet>142</a>            TrapError::MemoryOrDataAccessOutOfBounds =&gt; {
-<a href=#143 id=143 data-nosnippet>143</a>                f.write_str(<span class="string">"Memory or data access out of bounds"</span>)
-<a href=#144 id=144 data-nosnippet>144</a>            }
-<a href=#145 id=145 data-nosnippet>145</a>            TrapError::TableOrElementAccessOutOfBounds =&gt; {
-<a href=#146 id=146 data-nosnippet>146</a>                f.write_str(<span class="string">"Table or element access out of bounds"</span>)
-<a href=#147 id=147 data-nosnippet>147</a>            }
-<a href=#148 id=148 data-nosnippet>148</a>            TrapError::UninitializedElement =&gt; f.write_str(<span class="string">"Uninitialized element"</span>),
-<a href=#149 id=149 data-nosnippet>149</a>            TrapError::SignatureMismatch =&gt; f.write_str(<span class="string">"Indirect call signature mismatch"</span>),
-<a href=#150 id=150 data-nosnippet>150</a>            TrapError::IndirectCallNullFuncRef =&gt; {
-<a href=#151 id=151 data-nosnippet>151</a>                f.write_str(<span class="string">"Indirect call targeted null reference"</span>)
-<a href=#152 id=152 data-nosnippet>152</a>            }
-<a href=#153 id=153 data-nosnippet>153</a>            TrapError::TableAccessOutOfBounds =&gt; {
-<a href=#154 id=154 data-nosnippet>154</a>                f.write_str(<span class="string">"Indirect call: table index out of bounds"</span>)
-<a href=#155 id=155 data-nosnippet>155</a>            }
-<a href=#156 id=156 data-nosnippet>156</a>            TrapError::ReachedUnreachable =&gt; {
-<a href=#157 id=157 data-nosnippet>157</a>                f.write_str(<span class="string">"an unreachable statement was reached, triggered a trap"</span>)
-<a href=#158 id=158 data-nosnippet>158</a>            }
+<a href=#112 id=112 data-nosnippet>112</a><span class="kw">impl </span>core::error::Error <span class="kw">for </span>RuntimeError {}
+<a href=#113 id=113 data-nosnippet>113</a>
+<a href=#114 id=114 data-nosnippet>114</a><span class="attr">#[derive(Debug, PartialEq, Eq, Clone)]
+<a href=#115 id=115 data-nosnippet>115</a></span><span class="kw">pub enum </span>TrapError {
+<a href=#116 id=116 data-nosnippet>116</a>    DivideBy0,
+<a href=#117 id=117 data-nosnippet>117</a>    UnrepresentableResult,
+<a href=#118 id=118 data-nosnippet>118</a>    <span class="comment">// https://github.com/wasmi-labs/wasmi/blob/37d1449524a322817c55026eb21eb97dd693b9ce/crates/core/src/trap.rs#L265C5-L265C27
+<a href=#119 id=119 data-nosnippet>119</a>    </span>BadConversionToInteger,
+<a href=#120 id=120 data-nosnippet>120</a>
+<a href=#121 id=121 data-nosnippet>121</a>    <span class="doccomment">/// An access to a memory or data was out of bounds.
+<a href=#122 id=122 data-nosnippet>122</a>    ///
+<a href=#123 id=123 data-nosnippet>123</a>    /// Note: As of now, there is no way to distinguish between both of these. The reference
+<a href=#124 id=124 data-nosnippet>124</a>    /// interpreter and Wast testsuite messages call this error "memory access out of bounds".
+<a href=#125 id=125 data-nosnippet>125</a>    </span>MemoryOrDataAccessOutOfBounds,
+<a href=#126 id=126 data-nosnippet>126</a>    <span class="doccomment">/// An access to a table or an element was out of bounds.
+<a href=#127 id=127 data-nosnippet>127</a>    ///
+<a href=#128 id=128 data-nosnippet>128</a>    /// Note: As of now, there is no way to distinguish between both of these. The reference
+<a href=#129 id=129 data-nosnippet>129</a>    /// interpreter and Wast testsuite messages call this error "table access out of bounds".
+<a href=#130 id=130 data-nosnippet>130</a>    </span>TableOrElementAccessOutOfBounds,
+<a href=#131 id=131 data-nosnippet>131</a>    UninitializedElement,
+<a href=#132 id=132 data-nosnippet>132</a>    SignatureMismatch,
+<a href=#133 id=133 data-nosnippet>133</a>    IndirectCallNullFuncRef,
+<a href=#134 id=134 data-nosnippet>134</a>    TableAccessOutOfBounds,
+<a href=#135 id=135 data-nosnippet>135</a>    ReachedUnreachable,
+<a href=#136 id=136 data-nosnippet>136</a>}
+<a href=#137 id=137 data-nosnippet>137</a>
+<a href=#138 id=138 data-nosnippet>138</a><span class="kw">impl </span>Display <span class="kw">for </span>TrapError {
+<a href=#139 id=139 data-nosnippet>139</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; core::fmt::Result {
+<a href=#140 id=140 data-nosnippet>140</a>        <span class="kw">match </span><span class="self">self </span>{
+<a href=#141 id=141 data-nosnippet>141</a>            TrapError::DivideBy0 =&gt; f.write_str(<span class="string">"Divide by zero is not permitted"</span>),
+<a href=#142 id=142 data-nosnippet>142</a>            TrapError::UnrepresentableResult =&gt; f.write_str(<span class="string">"Result is unrepresentable"</span>),
+<a href=#143 id=143 data-nosnippet>143</a>            TrapError::BadConversionToInteger =&gt; f.write_str(<span class="string">"Bad conversion to integer"</span>),
+<a href=#144 id=144 data-nosnippet>144</a>            TrapError::MemoryOrDataAccessOutOfBounds =&gt; {
+<a href=#145 id=145 data-nosnippet>145</a>                f.write_str(<span class="string">"Memory or data access out of bounds"</span>)
+<a href=#146 id=146 data-nosnippet>146</a>            }
+<a href=#147 id=147 data-nosnippet>147</a>            TrapError::TableOrElementAccessOutOfBounds =&gt; {
+<a href=#148 id=148 data-nosnippet>148</a>                f.write_str(<span class="string">"Table or element access out of bounds"</span>)
+<a href=#149 id=149 data-nosnippet>149</a>            }
+<a href=#150 id=150 data-nosnippet>150</a>            TrapError::UninitializedElement =&gt; f.write_str(<span class="string">"Uninitialized element"</span>),
+<a href=#151 id=151 data-nosnippet>151</a>            TrapError::SignatureMismatch =&gt; f.write_str(<span class="string">"Indirect call signature mismatch"</span>),
+<a href=#152 id=152 data-nosnippet>152</a>            TrapError::IndirectCallNullFuncRef =&gt; {
+<a href=#153 id=153 data-nosnippet>153</a>                f.write_str(<span class="string">"Indirect call targeted null reference"</span>)
+<a href=#154 id=154 data-nosnippet>154</a>            }
+<a href=#155 id=155 data-nosnippet>155</a>            TrapError::TableAccessOutOfBounds =&gt; {
+<a href=#156 id=156 data-nosnippet>156</a>                f.write_str(<span class="string">"Indirect call: table index out of bounds"</span>)
+<a href=#157 id=157 data-nosnippet>157</a>            }
+<a href=#158 id=158 data-nosnippet>158</a>            TrapError::ReachedUnreachable =&gt; f.write_str(<span class="string">"An unreachable statement was reached"</span>),
 <a href=#159 id=159 data-nosnippet>159</a>        }
 <a href=#160 id=160 data-nosnippet>160</a>    }
 <a href=#161 id=161 data-nosnippet>161</a>}
 <a href=#162 id=162 data-nosnippet>162</a>
-<a href=#163 id=163 data-nosnippet>163</a><span class="kw">impl </span>From&lt;TrapError&gt; <span class="kw">for </span>RuntimeError {
-<a href=#164 id=164 data-nosnippet>164</a>    <span class="kw">fn </span>from(value: TrapError) -&gt; <span class="self">Self </span>{
-<a href=#165 id=165 data-nosnippet>165</a>        <span class="self">Self</span>::Trap(value)
-<a href=#166 id=166 data-nosnippet>166</a>    }
-<a href=#167 id=167 data-nosnippet>167</a>}</code></pre></div></section></main></body></html>
+<a href=#163 id=163 data-nosnippet>163</a><span class="kw">impl </span>core::error::Error <span class="kw">for </span>TrapError {}
+<a href=#164 id=164 data-nosnippet>164</a>
+<a href=#165 id=165 data-nosnippet>165</a><span class="kw">impl </span>From&lt;TrapError&gt; <span class="kw">for </span>RuntimeError {
+<a href=#166 id=166 data-nosnippet>166</a>    <span class="kw">fn </span>from(value: TrapError) -&gt; <span class="self">Self </span>{
+<a href=#167 id=167 data-nosnippet>167</a>        <span class="self">Self</span>::Trap(value)
+<a href=#168 id=168 data-nosnippet>168</a>    }
+<a href=#169 id=169 data-nosnippet>169</a>}</code></pre></div></section></main></body></html>
