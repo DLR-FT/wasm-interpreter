@@ -9,7 +9,7 @@ use crate::core::indices::TypeIdx;
 use crate::core::reader::span::Span;
 use crate::core::reader::types::data::{DataModeActive, DataSegment};
 use crate::core::reader::types::element::{ActiveElem, ElemItems, ElemMode, ElemType};
-use crate::core::reader::types::export::{Export, ExportDesc};
+use crate::core::reader::types::export::ExportDesc;
 use crate::core::reader::types::global::{Global, GlobalType};
 use crate::core::reader::types::{
     ExternType, FuncType, ImportSubTypeRelation, MemType, ResultType, TableType,
@@ -22,6 +22,7 @@ use crate::resumable::{
     Dormitory, FreshResumableRef, InvokedResumableRef, Resumable, ResumableRef, RunState,
 };
 use crate::{RefType, RuntimeError, ValidationInfo};
+use alloc::borrow::ToOwned;
 use alloc::collections::btree_map::BTreeMap;
 use alloc::string::String;
 use alloc::sync::Arc;
@@ -287,21 +288,17 @@ impl<'b, T: Config> Store<'b, T> {
         let export_insts: BTreeMap<String, ExternVal> = module
             .exports
             .iter()
-            .map(|Export { name, desc }| {
+            .map(|export| {
                 let module_inst = self.modules.get(module_addr);
-                let value = match desc {
-                    ExportDesc::FuncIdx(func_idx) => {
-                        ExternVal::Func(module_inst.func_addrs[*func_idx])
-                    }
-                    ExportDesc::TableIdx(table_idx) => {
-                        ExternVal::Table(table_addrs_mod[*table_idx])
-                    }
-                    ExportDesc::MemIdx(mem_idx) => ExternVal::Mem(mem_addrs_mod[*mem_idx]),
-                    ExportDesc::GlobalIdx(global_idx) => {
-                        ExternVal::Global(module_inst.global_addrs[*global_idx])
+                let value = match export.desc {
+                    ExportDesc::Func(func_idx) => ExternVal::Func(module_inst.func_addrs[func_idx]),
+                    ExportDesc::Table(table_idx) => ExternVal::Table(table_addrs_mod[table_idx]),
+                    ExportDesc::Mem(mem_idx) => ExternVal::Mem(mem_addrs_mod[mem_idx]),
+                    ExportDesc::Global(global_idx) => {
+                        ExternVal::Global(module_inst.global_addrs[global_idx])
                     }
                 };
-                (String::from(name), value)
+                (export.name.to_owned(), value)
             })
             .collect();
 
@@ -359,14 +356,14 @@ impl<'b, T: Config> Store<'b, T> {
                         s,
                         d,
                     )?;
-                    elem_drop(&self.modules, &mut self.elements, module_addr, i)?;
+                    elem_drop(&self.modules, &mut self.elements, module_addr, i);
                 }
                 ElemMode::Declarative => {
                     // instantiation step 15:
                     // TODO (for now, we are doing hopefully what is equivalent to it)
                     // execute:
                     //   elem.drop i
-                    elem_drop(&self.modules, &mut self.elements, module_addr, i)?;
+                    elem_drop(&self.modules, &mut self.elements, module_addr, i);
                 }
                 ElemMode::Passive => (),
             }
@@ -411,7 +408,7 @@ impl<'b, T: Config> Store<'b, T> {
                         s,
                         d,
                     )?;
-                    data_drop(&self.modules, &mut self.data, module_addr, i)?;
+                    data_drop(&self.modules, &mut self.data, module_addr, i);
                 }
                 crate::core::reader::types::data::DataMode::Passive => (),
             }
@@ -515,7 +512,7 @@ impl<'b, T: Config> Store<'b, T> {
     /// [`Store`] object.
     pub fn func_type_unchecked(&self, func_addr: FuncAddr) -> FuncType {
         // 1. Return `S.funcs[a].type`.
-        self.functions.get(func_addr).ty()
+        self.functions.get(func_addr).ty().clone()
 
         // 2. Post-condition: the returned function type is valid.
     }
@@ -1356,7 +1353,9 @@ impl ExternVal {
     pub fn extern_type<T: Config>(&self, store: &Store<T>) -> ExternType {
         match self {
             // TODO: fix ugly clone in function types
-            ExternVal::Func(func_addr) => ExternType::Func(store.functions.get(*func_addr).ty()),
+            ExternVal::Func(func_addr) => {
+                ExternType::Func(store.functions.get(*func_addr).ty().clone())
+            }
             ExternVal::Table(table_addr) => ExternType::Table(store.tables.get(*table_addr).ty),
             ExternVal::Mem(mem_addr) => ExternType::Mem(store.memories.get(*mem_addr).ty),
             ExternVal::Global(global_addr) => {

@@ -19,7 +19,7 @@ const CONTINUATION_BIT: u8 = 0b10000000;
 
 const INTEGER_BIT_FLAG: u8 = !CONTINUATION_BIT;
 
-impl WasmReader<'_> {
+impl<'wasm> WasmReader<'wasm> {
     /// Tries to read one byte and fails if the end of file is reached.
     pub fn read_u8(&mut self) -> Result<u8, ValidationError> {
         let byte = self.peek_u8()?;
@@ -351,7 +351,7 @@ impl WasmReader<'_> {
     }
 
     /// Note: If `Err`, the [WasmReader] object is no longer guaranteed to be in a valid state
-    pub fn read_name(&mut self) -> Result<&str, ValidationError> {
+    pub fn read_name(&mut self) -> Result<&'wasm str, ValidationError> {
         let len = self.read_var_u32()? as usize;
 
         let utf8_str = &self
@@ -369,7 +369,8 @@ impl WasmReader<'_> {
         mut read_element: F,
     ) -> Result<Vec<T>, ValidationError>
     where
-        F: FnMut(&mut WasmReader, usize) -> Result<T, ValidationError>,
+        T: 'wasm,
+        F: FnMut(&mut WasmReader<'wasm>, usize) -> Result<T, ValidationError>,
     {
         let mut idx = 0;
         self.read_vec(|wasm| {
@@ -382,7 +383,8 @@ impl WasmReader<'_> {
     /// Note: If `Err`, the [WasmReader] object is no longer guaranteed to be in a valid state
     pub fn read_vec<T, F>(&mut self, mut read_element: F) -> Result<Vec<T>, ValidationError>
     where
-        F: FnMut(&mut WasmReader) -> Result<T, ValidationError>,
+        T: 'wasm,
+        F: FnMut(&mut WasmReader<'wasm>) -> Result<T, ValidationError>,
     {
         let len = self.read_var_u32()?;
         core::iter::repeat_with(|| read_element(self))

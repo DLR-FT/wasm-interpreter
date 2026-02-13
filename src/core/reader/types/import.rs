@@ -1,6 +1,3 @@
-use alloc::borrow::ToOwned;
-use alloc::string::String;
-
 use crate::core::indices::TypeIdx;
 use crate::core::reader::WasmReader;
 use crate::{ValidationError, ValidationInfo};
@@ -9,19 +6,16 @@ use super::global::GlobalType;
 use super::{ExternType, MemType, TableType};
 
 #[derive(Debug, Clone)]
-pub struct Import {
-    #[allow(warnings)]
-    pub module_name: String,
-    #[allow(warnings)]
-    pub name: String,
-    #[allow(warnings)]
+pub struct Import<'wasm> {
+    pub module_name: &'wasm str,
+    pub name: &'wasm str,
     pub desc: ImportDesc,
 }
 
-impl Import {
-    pub fn read(wasm: &mut WasmReader) -> Result<Self, ValidationError> {
-        let module_name = wasm.read_name()?.to_owned();
-        let name = wasm.read_name()?.to_owned();
+impl<'wasm> Import<'wasm> {
+    pub fn read(wasm: &mut WasmReader<'wasm>) -> Result<Self, ValidationError> {
+        let module_name = wasm.read_name()?;
+        let name = wasm.read_name()?;
         let desc = ImportDesc::read(wasm)?;
 
         Ok(Self {

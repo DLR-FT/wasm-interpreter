@@ -1,6 +1,3 @@
-use alloc::borrow::ToOwned;
-use alloc::string::String;
-
 use crate::core::indices::{FuncIdx, GlobalIdx, MemIdx, TableIdx};
 use crate::core::reader::types::import::ImportDesc;
 use crate::core::reader::WasmReader;
@@ -9,33 +6,25 @@ use crate::{ValidationError, ValidationInfo};
 use super::ExternType;
 
 #[derive(Debug, Clone)]
-pub struct Export {
-    #[allow(dead_code)]
-    pub name: String,
-    #[allow(dead_code)]
+pub struct Export<'wasm> {
+    pub name: &'wasm str,
     pub desc: ExportDesc,
 }
 
-impl Export {
-    pub fn read(wasm: &mut WasmReader) -> Result<Self, ValidationError> {
-        let name = wasm.read_name()?.to_owned();
+impl<'wasm> Export<'wasm> {
+    pub fn read(wasm: &mut WasmReader<'wasm>) -> Result<Self, ValidationError> {
+        let name = wasm.read_name()?;
         let desc = ExportDesc::read(wasm)?;
         Ok(Export { name, desc })
     }
 }
 
 #[derive(Debug, Clone)]
-#[allow(clippy::all)]
-// TODO: change enum labels from FuncIdx -> Func
 pub enum ExportDesc {
-    #[allow(warnings)]
-    FuncIdx(FuncIdx),
-    #[allow(warnings)]
-    TableIdx(TableIdx),
-    #[allow(warnings)]
-    MemIdx(MemIdx),
-    #[allow(warnings)]
-    GlobalIdx(GlobalIdx),
+    Func(FuncIdx),
+    Table(TableIdx),
+    Mem(MemIdx),
+    Global(GlobalIdx),
 }
 
 impl ExportDesc {
@@ -44,11 +33,12 @@ impl ExportDesc {
     ///
     /// Note: This method may panic if `self` does not come from the given [`ValidationInfo`].
     /// <https://webassembly.github.io/spec/core/valid/modules.html#exports>
+    #[allow(unused)] // reason = "this function is analogous to ImportDesc::extern_type, however it is not yet clear if it is needed in the future"
     pub fn extern_type(&self, validation_info: &ValidationInfo) -> ExternType {
         // TODO clean up logic for checking if an exported definition is an
         // import
         match self {
-            ExportDesc::FuncIdx(func_idx) => {
+            ExportDesc::Func(func_idx) => {
                 let type_idx = match func_idx
                     .checked_sub(validation_info.imports_length.imported_functions)
                 {
@@ -70,7 +60,7 @@ impl ExportDesc {
                 // TODO ugly clone that should disappear when types are directly parsed from bytecode instead of vector copies
                 ExternType::Func(func_type.clone())
             }
-            ExportDesc::TableIdx(table_idx) => {
+            ExportDesc::Table(table_idx) => {
                 let table_type = match table_idx
                     .checked_sub(validation_info.imports_length.imported_tables)
                 {
@@ -87,7 +77,7 @@ impl ExportDesc {
                 };
                 ExternType::Table(table_type)
             }
-            ExportDesc::MemIdx(mem_idx) => {
+            ExportDesc::Mem(mem_idx) => {
                 let mem_type = match mem_idx
                     .checked_sub(validation_info.imports_length.imported_memories)
                 {
@@ -104,7 +94,7 @@ impl ExportDesc {
                 };
                 ExternType::Mem(mem_type)
             }
-            ExportDesc::GlobalIdx(global_idx) => {
+            ExportDesc::Global(global_idx) => {
                 let global_type =
                     match global_idx.checked_sub(validation_info.imports_length.imported_globals) {
                         Some(local_global_idx) => {
@@ -125,34 +115,6 @@ impl ExportDesc {
             }
         }
     }
-
-    pub fn get_function_idx(&self) -> Option<FuncIdx> {
-        match self {
-            ExportDesc::FuncIdx(func_idx) => Some(*func_idx),
-            _ => None,
-        }
-    }
-
-    pub fn get_global_idx(&self) -> Option<GlobalIdx> {
-        match self {
-            ExportDesc::GlobalIdx(global_idx) => Some(*global_idx),
-            _ => None,
-        }
-    }
-
-    pub fn get_memory_idx(&self) -> Option<MemIdx> {
-        match self {
-            ExportDesc::MemIdx(mem_idx) => Some(*mem_idx),
-            _ => None,
-        }
-    }
-
-    pub fn get_table_idx(&self) -> Option<TableIdx> {
-        match self {
-            ExportDesc::TableIdx(table_idx) => Some(*table_idx),
-            _ => None,
-        }
-    }
 }
 
 impl ExportDesc {
@@ -161,10 +123,10 @@ impl ExportDesc {
         let desc_idx = wasm.read_var_u32()? as usize;
 
         let desc = match desc_id {
-            0x00 => ExportDesc::FuncIdx(desc_idx),
-            0x01 => ExportDesc::TableIdx(desc_idx),
-            0x02 => ExportDesc::MemIdx(desc_idx),
-            0x03 => ExportDesc::GlobalIdx(desc_idx),
+            0x00 => ExportDesc::Func(desc_idx),
+            0x01 => ExportDesc::Table(desc_idx),
+            0x02 => ExportDesc::Mem(desc_idx),
+            0x03 => ExportDesc::Global(desc_idx),
             other => return Err(ValidationError::MalformedExportDescDiscriminator(other)),
         };
         Ok(desc)

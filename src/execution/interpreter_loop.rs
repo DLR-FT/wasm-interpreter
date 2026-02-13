@@ -225,14 +225,16 @@ pub(super) fn run<T: Config>(
                     .get(current_wasm_func_inst.module_addr)
                     .func_addrs[local_func_idx];
 
-                let func_to_call_ty = store.functions.get(func_to_call_addr).ty();
+                let func_to_call_inst = store.functions.get(func_to_call_addr);
 
                 trace!("Instruction: call [{func_to_call_addr:?}]");
 
-                match store.functions.get(func_to_call_addr) {
+                match func_to_call_inst {
                     FuncInst::HostFunc(host_func_to_call_inst) => {
                         let params = stack
-                            .pop_tail_iter(func_to_call_ty.params.valtypes.len())
+                            .pop_tail_iter(
+                                host_func_to_call_inst.function_type.params.valtypes.len(),
+                            )
                             .collect();
                         let returns =
                             (host_func_to_call_inst.hostcode)(&mut store.user_data, params);
@@ -243,11 +245,16 @@ pub(super) fn run<T: Config>(
 
                         // Verify that the return parameters match the host function parameters
                         // since we have no validation guarantees for host functions
-                        if returns.len() != func_to_call_ty.returns.valtypes.len() {
+                        if returns.len()
+                            != host_func_to_call_inst.function_type.returns.valtypes.len()
+                        {
                             return Err(RuntimeError::HostFunctionSignatureMismatch);
                         }
-                        for (value, ty) in zip(returns, func_to_call_ty.returns.valtypes) {
-                            if value.to_ty() != ty {
+                        for (value, ty) in zip(
+                            returns,
+                            &host_func_to_call_inst.function_type.returns.valtypes,
+                        ) {
+                            if value.to_ty() != *ty {
                                 return Err(RuntimeError::HostFunctionSignatureMismatch);
                             }
                             stack.push_value::<T>(value)?;
@@ -258,7 +265,7 @@ pub(super) fn run<T: Config>(
 
                         stack.push_call_frame::<T>(
                             current_func_addr,
-                            &func_to_call_ty,
+                            &wasm_func_to_call_inst.function_type,
                             remaining_locals,
                             wasm.pc,
                             stp,
@@ -320,17 +327,20 @@ pub(super) fn run<T: Config>(
                     Ref::Extern(_) => unreachable_validated!(),
                 };
 
-                let func_to_call_ty = store.functions.get(func_to_call_addr).ty();
-                if *func_ty != func_to_call_ty {
+                let func_to_call_inst = store.functions.get(func_to_call_addr);
+
+                if func_ty != func_to_call_inst.ty() {
                     return Err(TrapError::SignatureMismatch.into());
                 }
 
                 trace!("Instruction: call [{func_to_call_addr:?}]");
 
-                match store.functions.get(func_to_call_addr) {
+                match func_to_call_inst {
                     FuncInst::HostFunc(host_func_to_call_inst) => {
                         let params = stack
-                            .pop_tail_iter(func_to_call_ty.params.valtypes.len())
+                            .pop_tail_iter(
+                                host_func_to_call_inst.function_type.params.valtypes.len(),
+                            )
                             .collect();
                         let returns =
                             (host_func_to_call_inst.hostcode)(&mut store.user_data, params);
@@ -341,11 +351,16 @@ pub(super) fn run<T: Config>(
 
                         // Verify that the return parameters match the host function parameters
                         // since we have no validation guarantees for host functions
-                        if returns.len() != func_to_call_ty.returns.valtypes.len() {
+                        if returns.len()
+                            != host_func_to_call_inst.function_type.returns.valtypes.len()
+                        {
                             return Err(RuntimeError::HostFunctionSignatureMismatch);
                         }
-                        for (value, ty) in zip(returns, func_to_call_ty.returns.valtypes) {
-                            if value.to_ty() != ty {
+                        for (value, ty) in zip(
+                            returns,
+                            &host_func_to_call_inst.function_type.returns.valtypes,
+                        ) {
+                            if value.to_ty() != *ty {
                                 return Err(RuntimeError::HostFunctionSignatureMismatch);
                             }
                             stack.push_value::<T>(value)?;
@@ -356,7 +371,7 @@ pub(super) fn run<T: Config>(
 
                         stack.push_call_frame::<T>(
                             current_func_addr,
-                            &func_to_call_ty,
+                            &wasm_func_to_call_inst.function_type,
                             remaining_locals,
                             wasm.pc,
                             stp,
@@ -2520,7 +2535,7 @@ pub(super) fn run<T: Config>(
                     DATA_DROP => {
                         decrement_fuel!(T::get_fc_extension_flat_cost(DATA_DROP));
                         let data_idx = wasm.read_var_u32().unwrap_validated() as DataIdx;
-                        data_drop(&store.modules, &mut store.data, current_module, data_idx)?;
+                        data_drop(&store.modules, &mut store.data, current_module, data_idx);
                     }
                     // See https://webassembly.github.io/bulk-memory-operations/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-copy
                     MEMORY_COPY => {
@@ -2663,7 +2678,7 @@ pub(super) fn run<T: Config>(
                             &mut store.elements,
                             current_module,
                             elem_idx,
-                        )?;
+                        );
                     }
                     // https://webassembly.github.io/spec/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-table-mathsf-table-copy-x-y
                     TABLE_COPY => {
@@ -5683,7 +5698,7 @@ pub(super) fn elem_drop(
     store_elements: &mut AddrVec<ElemAddr, ElemInst>,
     current_module: ModuleAddr,
     elem_idx: usize,
-) -> Result<(), RuntimeError> {
+) {
     // WARN: i'm not sure if this is okay or not
     let elem_addr = *store_modules
         .get(current_module)
@@ -5691,7 +5706,6 @@ pub(super) fn elem_drop(
         .get(elem_idx)
         .unwrap_validated();
     store_elements.get_mut(elem_addr).references.clear();
-    Ok(())
 }
 
 #[inline(always)]
@@ -5737,7 +5751,7 @@ pub(super) fn data_drop(
     store_data: &mut AddrVec<DataAddr, DataInst>,
     current_module: ModuleAddr,
     data_idx: usize,
-) -> Result<(), RuntimeError> {
+) {
     // Here is debatable
     // If we were to be on par with the spec we'd have to use a DataInst struct
     // But since memory.init is specifically made for Passive data segments
@@ -5751,7 +5765,6 @@ pub(super) fn data_drop(
         .get(data_idx)
         .unwrap_validated();
     store_data.get_mut(data_addr).data.clear();
-    Ok(())
 }
 
 #[inline(always)]

@@ -8,13 +8,13 @@ use crate::core::reader::section_header::{SectionHeader, SectionTy};
 use crate::core::reader::span::Span;
 use crate::core::reader::types::data::DataSegment;
 use crate::core::reader::types::element::ElemType;
-use crate::core::reader::types::export::Export;
+use crate::core::reader::types::export::{Export, ExportDesc};
 use crate::core::reader::types::global::{Global, GlobalType};
 use crate::core::reader::types::import::{Import, ImportDesc};
 use crate::core::reader::types::{ExternType, FuncType, MemType, ResultType, TableType};
 use crate::core::reader::WasmReader;
 use crate::core::sidetable::Sidetable;
-use crate::{ExportDesc, ValidationError};
+use crate::ValidationError;
 
 pub(crate) mod code;
 pub(crate) mod data;
@@ -41,13 +41,12 @@ pub(crate) struct ImportsLength {
 pub struct ValidationInfo<'bytecode> {
     pub(crate) wasm: &'bytecode [u8],
     pub(crate) types: Vec<FuncType>,
-    pub(crate) imports: Vec<Import>,
+    pub(crate) imports: Vec<Import<'bytecode>>,
     pub(crate) functions: Vec<TypeIdx>,
     pub(crate) tables: Vec<TableType>,
     pub(crate) memories: Vec<MemType>,
     pub(crate) globals: Vec<Global>,
-    #[allow(dead_code)]
-    pub(crate) exports: Vec<Export>,
+    pub(crate) exports: Vec<Export<'bytecode>>,
     /// Each block contains the validated code section and the stp corresponding to
     /// the beginning of that code section
     pub(crate) func_blocks_stps: Vec<(Span, usize)>,
@@ -64,12 +63,12 @@ fn validate_exports(validation_info: &ValidationInfo) -> Result<(), ValidationEr
     let mut found_export_names: btree_set::BTreeSet<&str> = btree_set::BTreeSet::new();
     use crate::core::reader::types::export::ExportDesc::*;
     for export in &validation_info.exports {
-        if found_export_names.contains(export.name.as_str()) {
+        if found_export_names.contains(export.name) {
             return Err(ValidationError::DuplicateExportName);
         }
-        found_export_names.insert(export.name.as_str());
+        found_export_names.insert(export.name);
         match export.desc {
-            FuncIdx(func_idx) => {
+            Func(func_idx) => {
                 if validation_info.functions.len()
                     + validation_info.imports_length.imported_functions
                     <= func_idx
@@ -77,21 +76,21 @@ fn validate_exports(validation_info: &ValidationInfo) -> Result<(), ValidationEr
                     return Err(ValidationError::InvalidFuncIdx(func_idx));
                 }
             }
-            TableIdx(table_idx) => {
+            Table(table_idx) => {
                 if validation_info.tables.len() + validation_info.imports_length.imported_tables
                     <= table_idx
                 {
                     return Err(ValidationError::InvalidTableIdx(table_idx));
                 }
             }
-            MemIdx(mem_idx) => {
+            Mem(mem_idx) => {
                 if validation_info.memories.len() + validation_info.imports_length.imported_memories
                     <= mem_idx
                 {
                     return Err(ValidationError::InvalidMemIdx(mem_idx));
                 }
             }
-            GlobalIdx(global_idx) => {
+            Global(global_idx) => {
                 if validation_info.globals.len() + validation_info.imports_length.imported_globals
                     <= global_idx
                 {
@@ -237,6 +236,13 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
         .chain(local_functions.iter().cloned())
         .collect::<Vec<TypeIdx>>();
 
+    // All functions need to be addressable by a u32
+    if all_functions.len()
+        > usize::try_from(u32::MAX).expect("pointer width to be at least 32 bits")
+    {
+        return Err(ValidationError::TooManyFunctions);
+    }
+
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
     let imported_tables = imports
@@ -256,6 +262,11 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
         temp.extend(tables.clone());
         temp
     };
+
+    // All tables need to be addressable by a u32
+    if all_tables.len() > usize::try_from(u32::MAX).expect("pointer width to be at least 32 bits") {
+        return Err(ValidationError::TooManyTables);
+    }
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
@@ -277,8 +288,16 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
         temp.extend(memories.clone());
         temp
     };
+
     if all_memories.len() > 1 {
         return Err(ValidationError::UnsupportedMultipleMemoriesProposal);
+    }
+
+    // Note: Without the multiple memory proposal, this is dead code due to the previous check.
+    // All memories need to be addressable by a u32
+    if all_memories.len() > usize::try_from(u32::MAX).expect("pointer width to be at least 32 bits")
+    {
+        return Err(ValidationError::TooManyMemories);
     }
 
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
@@ -313,6 +332,12 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
         all_globals.push(*item)
     }
 
+    // All globals need to be addressable by a u32
+    if all_globals.len() > usize::try_from(u32::MAX).expect("pointer width to be at least 32 bits")
+    {
+        return Err(ValidationError::TooManyGlobals);
+    }
+
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
     let exports = handle_section(&mut wasm, &mut header, SectionTy::Export, |wasm, _| {
@@ -321,7 +346,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
     .unwrap_or_default();
     validation_context_refs.extend(exports.iter().filter_map(
         |Export { name: _, desc }| match *desc {
-            ExportDesc::FuncIdx(func_idx) => Some(func_idx),
+            ExportDesc::Func(func_idx) => Some(func_idx),
             _ => None,
         },
     ));
@@ -465,12 +490,16 @@ fn read_next_header(
 }
 
 #[inline(always)]
-fn handle_section<T, F: FnOnce(&mut WasmReader, SectionHeader) -> Result<T, ValidationError>>(
-    wasm: &mut WasmReader,
+fn handle_section<'wasm, T, F>(
+    wasm: &mut WasmReader<'wasm>,
     header: &mut Option<SectionHeader>,
     section_ty: SectionTy,
     handler: F,
-) -> Result<Option<T>, ValidationError> {
+) -> Result<Option<T>, ValidationError>
+where
+    T: 'wasm,
+    F: FnOnce(&mut WasmReader<'wasm>, SectionHeader) -> Result<T, ValidationError>,
+{
     match &header {
         Some(SectionHeader { ty, .. }) if *ty == section_ty => {
             let h = header.take().unwrap();
@@ -483,19 +512,21 @@ fn handle_section<T, F: FnOnce(&mut WasmReader, SectionHeader) -> Result<T, Vali
     }
 }
 
-impl ValidationInfo<'_> {
+impl<'wasm> ValidationInfo<'wasm> {
     /// Returns the imports of this module as an iterator. Each import consist
     /// of a module name, a name and an extern type.
     ///
     /// See: WebAssembly Specification 2.0 - 7.1.5 - module_imports
     pub fn imports<'a>(
         &'a self,
-    ) -> Map<core::slice::Iter<'a, Import>, impl FnMut(&'a Import) -> (&'a str, &'a str, ExternType)>
-    {
+    ) -> Map<
+        core::slice::Iter<'a, Import<'wasm>>,
+        impl FnMut(&'a Import<'wasm>) -> (&'a str, &'a str, ExternType),
+    > {
         self.imports.iter().map(|import| {
             (
-                &*import.module_name,
-                &*import.name,
+                import.module_name,
+                import.name,
                 import.desc.extern_type(self),
             )
         })
@@ -507,9 +538,12 @@ impl ValidationInfo<'_> {
     /// See: WebAssembly Specification 2.0 - 7.1.5 - module_exports
     pub fn exports<'a>(
         &'a self,
-    ) -> Map<core::slice::Iter<'a, Export>, impl FnMut(&'a Export) -> (&'a str, ExternType)> {
+    ) -> Map<
+        core::slice::Iter<'a, Export<'wasm>>,
+        impl FnMut(&'a Export<'wasm>) -> (&'a str, ExternType),
+    > {
         self.exports
             .iter()
-            .map(|export| (&*export.name, export.desc.extern_type(self)))
+            .map(|export| (export.name, export.desc.extern_type(self)))
     }
 }
