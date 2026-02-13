@@ -14,6 +14,7 @@ use crate::core::reader::types::import::{Import, ImportDesc};
 use crate::core::reader::types::{ExternType, FuncType, MemType, ResultType, TableType};
 use crate::core::reader::WasmReader;
 use crate::core::sidetable::Sidetable;
+use crate::core::utils::ToUsizeExt;
 use crate::{ExportDesc, ValidationError};
 
 pub(crate) mod code;
@@ -218,7 +219,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
     let local_functions =
         handle_section(&mut wasm, &mut header, SectionTy::Function, |wasm, _| {
             wasm.read_vec(|wasm| {
-                let type_idx = wasm.read_var_u32()? as usize;
+                let type_idx = wasm.read_var_u32()?.into_usize();
                 types
                     .get(type_idx)
                     .ok_or(ValidationError::InvalidTypeIdx(type_idx))?;
@@ -329,7 +330,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
     let start = handle_section(&mut wasm, &mut header, SectionTy::Start, |wasm, _| {
-        let func_idx = wasm.read_var_u32().map(|idx| idx as FuncIdx)?;
+        let func_idx = wasm.read_var_u32().map(|idx| idx.into_usize())?;
         // start function signature must be [] -> []
         // https://webassembly.github.io/spec/core/valid/modules.html#start-function
         let type_idx = *all_functions
@@ -420,7 +421,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
 
     // https://webassembly.github.io/spec/core/binary/modules.html#data-count-section
     if let (Some(data_count), data_len) = (data_count, data_section.len()) {
-        if data_count as usize != data_len {
+        if data_count.into_usize() != data_len {
             return Err(ValidationError::DataCountAndDataSectionsLengthAreDifferent);
         }
     }

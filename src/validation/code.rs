@@ -1,10 +1,9 @@
-use alloc::collections::btree_set::BTreeSet;
-use alloc::vec::Vec;
 use core::iter;
 
-use crate::core::indices::{
-    DataIdx, ElemIdx, FuncIdx, GlobalIdx, LabelIdx, LocalIdx, MemIdx, TableIdx, TypeIdx,
-};
+use alloc::collections::btree_set::BTreeSet;
+use alloc::vec::Vec;
+
+use crate::core::indices::{DataIdx, FuncIdx};
 use crate::core::reader::section_header::{SectionHeader, SectionTy};
 use crate::core::reader::span::Span;
 use crate::core::reader::types::element::ElemType;
@@ -13,6 +12,7 @@ use crate::core::reader::types::memarg::MemArg;
 use crate::core::reader::types::{BlockType, FuncType, MemType, NumType, TableType, ValType};
 use crate::core::reader::WasmReader;
 use crate::core::sidetable::{Sidetable, SidetableEntry};
+use crate::core::utils::ToUsizeExt;
 use crate::validation_stack::{LabelInfo, ValidationStack};
 use crate::{RefType, ValidationError};
 
@@ -42,7 +42,7 @@ pub fn validate_code_section(
         let func_ty = fn_types[ty_idx].clone();
 
         let func_size = wasm.read_var_u32()?;
-        let func_block = wasm.make_span(func_size as usize)?;
+        let func_block = wasm.make_span(func_size.into_usize())?;
         let previous_pc = wasm.pc;
 
         let locals = {
@@ -70,7 +70,7 @@ pub fn validate_code_section(
         )?;
 
         // Check if there were unread trailing instructions after the last END
-        if previous_pc + func_size as usize != wasm.pc {
+        if previous_pc + func_size.into_usize() != wasm.pc {
             return Err(ValidationError::CodeExprHasTrailingInstructions);
         }
 
@@ -87,7 +87,7 @@ pub fn validate_code_section(
 
 pub fn read_declared_locals(wasm: &mut WasmReader) -> Result<Vec<ValType>, ValidationError> {
     let locals = wasm.read_vec(|wasm| {
-        let n = wasm.read_var_u32()? as usize;
+        let n = wasm.read_var_u32()?.into_usize();
         let valtype = ValType::read(wasm)?;
 
         Ok((n, valtype))
@@ -116,7 +116,7 @@ pub fn read_declared_locals(wasm: &mut WasmReader) -> Result<Vec<ValType>, Valid
     // Flatten local types for easier representation where n > 1
     let locals = locals
         .into_iter()
-        .flat_map(|entry| iter::repeat(entry.1).take(entry.0))
+        .flat_map(|entry| iter::repeat_n(entry.1, entry.0))
         .collect::<Vec<ValType>>();
 
     Ok(locals)
@@ -302,14 +302,14 @@ fn read_instructions(
                 }
             }
             BR => {
-                let label_idx = wasm.read_var_u32()? as LabelIdx;
+                let label_idx = wasm.read_var_u32()?.into_usize();
                 validate_branch_and_generate_sidetable_entry(
                     wasm, label_idx, stack, sidetable, false,
                 )?;
                 stack.make_unspecified()?;
             }
             BR_IF => {
-                let label_idx = wasm.read_var_u32()? as LabelIdx;
+                let label_idx = wasm.read_var_u32()?.into_usize();
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 // The types are explicitly popped and pushed in
                 // https://webassembly.github.io/spec/core/appendix/algorithm.html
@@ -319,8 +319,9 @@ fn read_instructions(
                 )?;
             }
             BR_TABLE => {
-                let label_vec = wasm.read_vec(|wasm| wasm.read_var_u32().map(|v| v as LabelIdx))?;
-                let max_label_idx = wasm.read_var_u32()? as LabelIdx;
+                let label_vec =
+                    wasm.read_vec(|wasm| wasm.read_var_u32().map(|v| v.into_usize()))?;
+                let max_label_idx = wasm.read_var_u32()?.into_usize();
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 for label_idx in &label_vec {
                     validate_branch_and_generate_sidetable_entry(
@@ -426,7 +427,7 @@ fn read_instructions(
             }
             // call [t1*] -> [t2*]
             CALL => {
-                let func_idx = wasm.read_var_u32()? as FuncIdx;
+                let func_idx = wasm.read_var_u32()?.into_usize();
                 let type_idx = *type_idx_of_fn
                     .get(func_idx)
                     .ok_or(ValidationError::InvalidFuncIdx(func_idx))?;
@@ -441,9 +442,9 @@ fn read_instructions(
                 }
             }
             CALL_INDIRECT => {
-                let type_idx = wasm.read_var_u32()? as TypeIdx;
+                let type_idx = wasm.read_var_u32()?.into_usize();
 
-                let table_idx = wasm.read_var_u32()? as TableIdx;
+                let table_idx = wasm.read_var_u32()?.into_usize();
 
                 let tab = tables
                     .get(table_idx)
@@ -491,7 +492,7 @@ fn read_instructions(
             }
             // local.get: [] -> [t]
             LOCAL_GET => {
-                let local_idx = wasm.read_var_u32()? as LocalIdx;
+                let local_idx = wasm.read_var_u32()?.into_usize();
                 let local_ty = locals
                     .get(local_idx)
                     .ok_or(ValidationError::InvalidLocalIdx(local_idx))?;
@@ -499,7 +500,7 @@ fn read_instructions(
             }
             // local.set [t] -> []
             LOCAL_SET => {
-                let local_idx = wasm.read_var_u32()? as LocalIdx;
+                let local_idx = wasm.read_var_u32()?.into_usize();
                 let local_ty = locals
                     .get(local_idx)
                     .ok_or(ValidationError::InvalidLocalIdx(local_idx))?;
@@ -507,7 +508,7 @@ fn read_instructions(
             }
             // local.set [t] -> [t]
             LOCAL_TEE => {
-                let local_idx = wasm.read_var_u32()? as LocalIdx;
+                let local_idx = wasm.read_var_u32()?.into_usize();
                 let local_ty = locals
                     .get(local_idx)
                     .ok_or(ValidationError::InvalidLocalIdx(local_idx))?;
@@ -515,7 +516,7 @@ fn read_instructions(
             }
             // global.get [] -> [t]
             GLOBAL_GET => {
-                let global_idx = wasm.read_var_u32()? as GlobalIdx;
+                let global_idx = wasm.read_var_u32()?.into_usize();
                 let global = globals
                     .get(global_idx)
                     .ok_or(ValidationError::InvalidGlobalIdx(global_idx))?;
@@ -530,7 +531,7 @@ fn read_instructions(
             }
             // global.set [t] -> []
             GLOBAL_SET => {
-                let global_idx = wasm.read_var_u32()? as GlobalIdx;
+                let global_idx = wasm.read_var_u32()?.into_usize();
                 let global = globals
                     .get(global_idx)
                     .ok_or(ValidationError::InvalidGlobalIdx(global_idx))?;
@@ -542,7 +543,7 @@ fn read_instructions(
                 stack.assert_pop_val_type(global.ty.ty)?;
             }
             TABLE_GET => {
-                let table_idx = wasm.read_var_u32()? as TableIdx;
+                let table_idx = wasm.read_var_u32()?.into_usize();
 
                 if tables.len() <= table_idx {
                     return Err(ValidationError::InvalidTableIdx(table_idx));
@@ -554,7 +555,7 @@ fn read_instructions(
                 stack.push_valtype(ValType::RefType(t));
             }
             TABLE_SET => {
-                let table_idx = wasm.read_var_u32()? as TableIdx;
+                let table_idx = wasm.read_var_u32()?.into_usize();
 
                 if tables.len() <= table_idx {
                     return Err(ValidationError::InvalidTableIdx(table_idx));
@@ -888,7 +889,7 @@ fn read_instructions(
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
             }
             MEMORY_SIZE => {
-                let mem_idx = wasm.read_u8()? as MemIdx;
+                let mem_idx = usize::from(wasm.read_u8()?);
                 if mem_idx != 0 {
                     return Err(ValidationError::UnsupportedMultipleMemoriesProposal);
                 }
@@ -898,7 +899,7 @@ fn read_instructions(
                 stack.push_valtype(ValType::NumType(NumType::I32));
             }
             MEMORY_GROW => {
-                let mem_idx = wasm.read_u8()? as MemIdx;
+                let mem_idx = usize::from(wasm.read_u8()?);
                 if mem_idx != 0 {
                     return Err(ValidationError::UnsupportedMultipleMemoriesProposal);
                 }
@@ -1101,7 +1102,7 @@ fn read_instructions(
             }
 
             REF_FUNC => {
-                let func_idx = wasm.read_var_u32()? as FuncIdx;
+                let func_idx = wasm.read_var_u32()?.into_usize();
 
                 // checking for existence suffices for checking whether this function has a valid type.
                 if type_idx_of_fn.len() <= func_idx {
@@ -1167,15 +1168,17 @@ fn read_instructions(
                         stack.push_valtype(ValType::NumType(NumType::I64));
                     }
                     MEMORY_INIT => {
-                        let data_idx = wasm.read_var_u32()? as DataIdx;
-                        let mem_idx = wasm.read_u8()? as MemIdx;
+                        let data_idx = wasm.read_var_u32()?.into_usize();
+                        let mem_idx = usize::from(wasm.read_u8()?);
                         if mem_idx != 0 {
                             return Err(ValidationError::UnsupportedMultipleMemoriesProposal);
                         }
                         if memories.len() <= mem_idx {
                             return Err(ValidationError::InvalidMemIdx(mem_idx));
                         }
-                        if data_count.ok_or(ValidationError::MissingDataCountSection)? as usize
+                        if data_count
+                            .ok_or(ValidationError::MissingDataCountSection)?
+                            .into_usize()
                             <= data_idx
                         {
                             return Err(ValidationError::InvalidDataIdx(data_idx));
@@ -1187,14 +1190,17 @@ fn read_instructions(
                     DATA_DROP => {
                         let data_idx = wasm.read_var_u32()? as DataIdx;
 
-                        if data_count.ok_or(ValidationError::MissingDataCountSection)? as usize
+                        if data_count
+                            .ok_or(ValidationError::MissingDataCountSection)?
+                            .into_usize()
                             <= data_idx
                         {
                             return Err(ValidationError::InvalidDataIdx(data_idx));
                         }
                     }
                     MEMORY_COPY => {
-                        let (dst, src) = (wasm.read_u8()? as usize, wasm.read_u8()? as usize);
+                        let (dst, src) =
+                            (usize::from(wasm.read_u8()?), usize::from(wasm.read_u8()?));
                         if dst != 0 || src != 0 {
                             return Err(ValidationError::UnsupportedMultipleMemoriesProposal);
                         }
@@ -1206,7 +1212,7 @@ fn read_instructions(
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                     }
                     MEMORY_FILL => {
-                        let mem_idx = wasm.read_u8()? as MemIdx;
+                        let mem_idx = usize::from(wasm.read_u8()?);
                         if mem_idx != 0 {
                             return Err(ValidationError::UnsupportedMultipleMemoriesProposal);
                         }
@@ -1218,8 +1224,8 @@ fn read_instructions(
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                     }
                     TABLE_INIT => {
-                        let elem_idx = wasm.read_var_u32()? as ElemIdx;
-                        let table_idx = wasm.read_var_u32()? as TableIdx;
+                        let elem_idx = wasm.read_var_u32()?.into_usize();
+                        let table_idx = wasm.read_var_u32()?.into_usize();
 
                         if tables.len() <= table_idx {
                             return Err(ValidationError::InvalidTableIdx(table_idx));
@@ -1245,15 +1251,15 @@ fn read_instructions(
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                     }
                     ELEM_DROP => {
-                        let elem_idx = wasm.read_var_u32()? as ElemIdx;
+                        let elem_idx = wasm.read_var_u32()?.into_usize();
 
                         if elements.len() <= elem_idx {
                             return Err(ValidationError::InvalidElemIdx(elem_idx));
                         }
                     }
                     TABLE_COPY => {
-                        let table_x_idx = wasm.read_var_u32()? as TableIdx;
-                        let table_y_idx = wasm.read_var_u32()? as TableIdx;
+                        let table_x_idx = wasm.read_var_u32()?.into_usize();
+                        let table_y_idx = wasm.read_var_u32()?.into_usize();
 
                         if tables.len() <= table_x_idx {
                             return Err(ValidationError::InvalidTableIdx(table_x_idx));
@@ -1278,7 +1284,7 @@ fn read_instructions(
                         stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                     }
                     TABLE_GROW => {
-                        let table_idx = wasm.read_var_u32()? as TableIdx;
+                        let table_idx = wasm.read_var_u32()?.into_usize();
 
                         if tables.len() <= table_idx {
                             return Err(ValidationError::InvalidTableIdx(table_idx));
@@ -1292,7 +1298,7 @@ fn read_instructions(
                         stack.push_valtype(ValType::NumType(NumType::I32));
                     }
                     TABLE_SIZE => {
-                        let table_idx = wasm.read_var_u32()? as TableIdx;
+                        let table_idx = wasm.read_var_u32()?.into_usize();
 
                         if tables.len() <= table_idx {
                             return Err(ValidationError::InvalidTableIdx(table_idx));
@@ -1301,7 +1307,7 @@ fn read_instructions(
                         stack.push_valtype(ValType::NumType(NumType::I32));
                     }
                     TABLE_FILL => {
-                        let table_idx = wasm.read_var_u32()? as TableIdx;
+                        let table_idx = wasm.read_var_u32()?.into_usize();
 
                         if tables.len() <= table_idx {
                             return Err(ValidationError::InvalidTableIdx(table_idx));

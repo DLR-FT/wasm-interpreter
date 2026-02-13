@@ -108,7 +108,7 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
 
     /// Create a new, empty [`LinearMemory`]
     pub fn new_with_initial_pages(pages: PageCountTy) -> Self {
-        let size_bytes = Self::PAGE_SIZE * pages as usize;
+        let size_bytes = Self::PAGE_SIZE * usize::from(pages);
         let mut data = Vec::with_capacity(size_bytes);
         data.resize_with(size_bytes, || AtomicU8::new(0));
 
@@ -121,7 +121,7 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
     pub fn grow(&self, pages_to_add: PageCountTy) {
         let mut lock_guard = self.inner_data.write();
         let prior_length_bytes = lock_guard.len();
-        let new_length_bytes = prior_length_bytes + Self::PAGE_SIZE * pages_to_add as usize;
+        let new_length_bytes = prior_length_bytes + Self::PAGE_SIZE * usize::from(pages_to_add);
         lock_guard.resize_with(new_length_bytes, || AtomicU8::new(0));
     }
 
@@ -523,7 +523,7 @@ impl<const PAGE_SIZE: usize> core::fmt::Debug for LinearMemory<PAGE_SIZE> {
                 let mut list = f.debug_list();
                 deduplicated_with_count.for_each(|(count, value)| {
                     if count < MIN_REPETITIONS_FOR_GROUP {
-                        list.entries(iter::repeat(value).take(count));
+                        list.entries(iter::repeat_n(value, count));
                     } else {
                         list.entry(&format_args!("#{count} × {value}"));
                     }

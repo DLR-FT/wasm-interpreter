@@ -1,9 +1,10 @@
 use super::global::GlobalType;
 use super::RefType;
-use crate::core::indices::{FuncIdx, TableIdx};
+use crate::core::indices::FuncIdx;
 use crate::core::reader::span::Span;
 use crate::core::reader::types::TableType;
 use crate::core::reader::WasmReader;
+use crate::core::utils::ToUsizeExt;
 use crate::read_constant_expression::read_constant_expression;
 use crate::validation_stack::ValidationStack;
 use crate::{NumType, ValType, ValidationError};
@@ -230,8 +231,8 @@ impl ElemType {
                     // start validating elemmode of form active {table x, offset expr}
                     // 1-2. C.tables[x] must be defined with type: limits t
                     let table_type = tables
-                        .get(x as usize)
-                        .ok_or(ValidationError::InvalidTableIdx(x as TableIdx))?
+                        .get(x.into_usize())
+                        .ok_or(ValidationError::InvalidTableIdx(x.into_usize()))?
                         .et;
                     if table_type != t {
                         return Err(ValidationError::ActiveElementSegmentTypeMismatch);
@@ -325,11 +326,11 @@ fn parse_validate_shortened_initializer_list(
 ) -> Result<ElemItems, ValidationError> {
     wasm.read_vec(|w| {
         let func_idx = w.read_var_u32()?;
-        if num_funcs <= func_idx as usize {
+        if num_funcs <= func_idx.into_usize() {
             // TODO fix error
-            return Err(ValidationError::InvalidFuncIdx(func_idx as usize));
+            return Err(ValidationError::InvalidFuncIdx(func_idx.into_usize()));
         }
-        validation_context_refs.insert(func_idx as FuncIdx);
+        validation_context_refs.insert(func_idx.into_usize());
         Ok(func_idx)
     })
     .map(ElemItems::RefFuncs)

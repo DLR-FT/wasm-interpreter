@@ -15,6 +15,7 @@ use crate::core::reader::types::{
     ExternType, FuncType, ImportSubTypeRelation, MemType, ResultType, TableType,
 };
 use crate::core::reader::WasmReader;
+use crate::core::utils::ToUsizeExt;
 use crate::execution::interpreter_loop::{self, memory_init, table_init};
 use crate::execution::value::{Ref, Value};
 use crate::execution::{run_const_span, Stack};
@@ -199,7 +200,7 @@ impl<'b, T: Config> Store<'b, T> {
                             .modules
                             .get(module_addr)
                             .func_addrs
-                            .get(*func_idx as usize)
+                            .get(func_idx.into_usize())
                             .unwrap_validated();
 
                         new_list.push(Ref::Func(func_addr));
@@ -354,7 +355,7 @@ impl<'b, T: Config> Store<'b, T> {
                         &self.elements,
                         module_addr,
                         i,
-                        *table_idx_i as usize,
+                        table_idx_i.into_usize(),
                         n,
                         s,
                         d,
@@ -587,7 +588,7 @@ impl<'b, T: Config> Store<'b, T> {
     /// the current [`Store`] object.
     pub fn table_read_unchecked(&self, table_addr: TableAddr, i: u32) -> Result<Ref, RuntimeError> {
         // Convert `i` to usize for indexing
-        let i = usize::try_from(i).expect("the architecture to be at least 32-bit");
+        let i = i.into_usize();
 
         // 1. Let `ti` be the table instance `store.tables[tableaddr]`
         let ti = self.tables.get(table_addr);
@@ -616,7 +617,7 @@ impl<'b, T: Config> Store<'b, T> {
         r#ref: Ref,
     ) -> Result<(), RuntimeError> {
         // Convert `i` to usize for indexing
-        let i = usize::try_from(i).expect("the architecture to be at least 32-bit");
+        let i = i.into_usize();
 
         // 1. Let `ti` be the table instance `store.tables[tableaddr]`.
         let ti = self.tables.get_mut(table_addr);
@@ -721,7 +722,7 @@ impl<'b, T: Config> Store<'b, T> {
     /// current [`Store`] object.
     pub fn mem_read_unchecked(&self, mem_addr: MemAddr, i: u32) -> Result<u8, RuntimeError> {
         // Convert the index type
-        let i = usize::try_from(i).expect("the architecture to be at least 32-bit");
+        let i = i.into_usize();
 
         // 1. Let `mi` be the memory instance `store.mems[memaddr]`.
         let mi = self.memories.get(mem_addr);
@@ -745,7 +746,7 @@ impl<'b, T: Config> Store<'b, T> {
         byte: u8,
     ) -> Result<(), RuntimeError> {
         // Convert the index type
-        let i = usize::try_from(i).expect("the architecture to be at least 32-bit");
+        let i = i.into_usize();
 
         // 1. Let `mi` be the memory instance `store.mems[memaddr]`.
         let mi = self.memories.get(mem_addr);
@@ -933,7 +934,7 @@ impl<'b, T: Config> Store<'b, T> {
     fn alloc_table(&mut self, table_type: TableType, reff: Ref) -> TableAddr {
         let table_inst = TableInst {
             ty: table_type,
-            elem: vec![reff; table_type.lim.min as usize],
+            elem: vec![reff; table_type.lim.min.into_usize()],
         };
 
         self.tables.insert(table_inst)
