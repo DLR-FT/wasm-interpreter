@@ -108,7 +108,7 @@
 <a href=#108 id=108 data-nosnippet>108</a>
 <a href=#109 id=109 data-nosnippet>109</a>    <span class="doccomment">/// Create a new, empty [`LinearMemory`]
 <a href=#110 id=110 data-nosnippet>110</a>    </span><span class="kw">pub fn </span>new_with_initial_pages(pages: PageCountTy) -&gt; <span class="self">Self </span>{
-<a href=#111 id=111 data-nosnippet>111</a>        <span class="kw">let </span>size_bytes = <span class="self">Self</span>::PAGE_SIZE * pages <span class="kw">as </span>usize;
+<a href=#111 id=111 data-nosnippet>111</a>        <span class="kw">let </span>size_bytes = <span class="self">Self</span>::PAGE_SIZE * usize::from(pages);
 <a href=#112 id=112 data-nosnippet>112</a>        <span class="kw">let </span><span class="kw-2">mut </span>data = Vec::with_capacity(size_bytes);
 <a href=#113 id=113 data-nosnippet>113</a>        data.resize_with(size_bytes, || AtomicU8::new(<span class="number">0</span>));
 <a href=#114 id=114 data-nosnippet>114</a>
@@ -121,7 +121,7 @@
 <a href=#121 id=121 data-nosnippet>121</a>    </span><span class="kw">pub fn </span>grow(<span class="kw-2">&amp;</span><span class="self">self</span>, pages_to_add: PageCountTy) {
 <a href=#122 id=122 data-nosnippet>122</a>        <span class="kw">let </span><span class="kw-2">mut </span>lock_guard = <span class="self">self</span>.inner_data.write();
 <a href=#123 id=123 data-nosnippet>123</a>        <span class="kw">let </span>prior_length_bytes = lock_guard.len();
-<a href=#124 id=124 data-nosnippet>124</a>        <span class="kw">let </span>new_length_bytes = prior_length_bytes + <span class="self">Self</span>::PAGE_SIZE * pages_to_add <span class="kw">as </span>usize;
+<a href=#124 id=124 data-nosnippet>124</a>        <span class="kw">let </span>new_length_bytes = prior_length_bytes + <span class="self">Self</span>::PAGE_SIZE * usize::from(pages_to_add);
 <a href=#125 id=125 data-nosnippet>125</a>        lock_guard.resize_with(new_length_bytes, || AtomicU8::new(<span class="number">0</span>));
 <a href=#126 id=126 data-nosnippet>126</a>    }
 <a href=#127 id=127 data-nosnippet>127</a>
@@ -523,7 +523,7 @@
 <a href=#523 id=523 data-nosnippet>523</a>                </span><span class="kw">let </span><span class="kw-2">mut </span>list = f.debug_list();
 <a href=#524 id=524 data-nosnippet>524</a>                deduplicated_with_count.for_each(|(count, value)| {
 <a href=#525 id=525 data-nosnippet>525</a>                    <span class="kw">if </span>count &lt; MIN_REPETITIONS_FOR_GROUP {
-<a href=#526 id=526 data-nosnippet>526</a>                        list.entries(iter::repeat(value).take(count));
+<a href=#526 id=526 data-nosnippet>526</a>                        list.entries(iter::repeat_n(value, count));
 <a href=#527 id=527 data-nosnippet>527</a>                    } <span class="kw">else </span>{
 <a href=#528 id=528 data-nosnippet>528</a>                        list.entry(<span class="kw-2">&amp;</span><span class="macro">format_args!</span>(<span class="string">"#{count} × {value}"</span>));
 <a href=#529 id=529 data-nosnippet>529</a>                    }

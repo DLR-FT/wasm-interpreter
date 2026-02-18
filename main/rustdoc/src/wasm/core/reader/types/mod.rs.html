@@ -6,8 +6,8 @@
 <a href=#6 id=6 data-nosnippet>6</a><span class="kw">use </span>core::fmt::{Debug, Formatter};
 <a href=#7 id=7 data-nosnippet>7</a><span class="kw">use </span>global::GlobalType;
 <a href=#8 id=8 data-nosnippet>8</a>
-<a href=#9 id=9 data-nosnippet>9</a><span class="kw">use </span><span class="kw">crate</span>::core::indices::TypeIdx;
-<a href=#10 id=10 data-nosnippet>10</a><span class="kw">use </span><span class="kw">crate</span>::core::reader::WasmReader;
+<a href=#9 id=9 data-nosnippet>9</a><span class="kw">use </span><span class="kw">crate</span>::core::reader::WasmReader;
+<a href=#10 id=10 data-nosnippet>10</a><span class="kw">use </span><span class="kw">crate</span>::core::utils::ToUsizeExt;
 <a href=#11 id=11 data-nosnippet>11</a><span class="kw">use </span><span class="kw">crate</span>::execution::assert_validated::UnwrapValidatedExt;
 <a href=#12 id=12 data-nosnippet>12</a><span class="kw">use </span><span class="kw">crate</span>::ValidationError;
 <a href=#13 id=13 data-nosnippet>13</a>
@@ -162,7 +162,7 @@
 <a href=#162 id=162 data-nosnippet>162</a>
 <a href=#163 id=163 data-nosnippet>163</a><span class="kw">impl </span>BlockType {
 <a href=#164 id=164 data-nosnippet>164</a>    <span class="kw">pub fn </span>read(wasm: <span class="kw-2">&amp;mut </span>WasmReader) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, ValidationError&gt; {
-<a href=#165 id=165 data-nosnippet>165</a>        <span class="kw">if </span>wasm.peek_u8()<span class="question-mark">? </span><span class="kw">as </span>i8 == <span class="number">0x40 </span>{
+<a href=#165 id=165 data-nosnippet>165</a>        <span class="kw">if </span>wasm.peek_u8()<span class="question-mark">? </span>== <span class="number">0x40 </span>{
 <a href=#166 id=166 data-nosnippet>166</a>            <span class="comment">// Empty block type
 <a href=#167 id=167 data-nosnippet>167</a>            </span><span class="kw">let _ </span>= wasm.read_u8().unwrap_validated();
 <a href=#168 id=168 data-nosnippet>168</a>            <span class="prelude-val">Ok</span>(BlockType::Empty)
@@ -196,7 +196,7 @@
 <a href=#196 id=196 data-nosnippet>196</a>                },
 <a href=#197 id=197 data-nosnippet>197</a>            }),
 <a href=#198 id=198 data-nosnippet>198</a>            BlockType::Type(type_idx) =&gt; {
-<a href=#199 id=199 data-nosnippet>199</a>                <span class="kw">let </span>type_idx = <span class="kw-2">*</span>type_idx <span class="kw">as </span>TypeIdx;
+<a href=#199 id=199 data-nosnippet>199</a>                <span class="kw">let </span>type_idx = type_idx.into_usize();
 <a href=#200 id=200 data-nosnippet>200</a>                func_types
 <a href=#201 id=201 data-nosnippet>201</a>                    .get(type_idx)
 <a href=#202 id=202 data-nosnippet>202</a>                    .cloned()

@@ -54,7 +54,7 @@
 <a href=#54 id=54 data-nosnippet>54</a>        </span><span class="kw">loop </span>{
 <a href=#55 id=55 data-nosnippet>55</a>            <span class="comment">// s is even, so there are maybe active readers but no active or waiting writer
 <a href=#56 id=56 data-nosnippet>56</a>            // -&gt; reader can acquire read guard (as long as an overflow is avoided)
-<a href=#57 id=57 data-nosnippet>57</a>            </span><span class="kw">if </span>s % <span class="number">2 </span>== <span class="number">0 </span>&amp;&amp; s &lt; u32::MAX - <span class="number">2 </span>{
+<a href=#57 id=57 data-nosnippet>57</a>            </span><span class="kw">if </span>s.is_multiple_of(<span class="number">2</span>) &amp;&amp; s &lt; u32::MAX - <span class="number">2 </span>{
 <a href=#58 id=58 data-nosnippet>58</a>                <span class="kw">match </span><span class="self">self</span>.state.compare_exchange_weak(
 <a href=#59 id=59 data-nosnippet>59</a>                    s,
 <a href=#60 id=60 data-nosnippet>60</a>                    s + <span class="number">2</span>,
@@ -95,7 +95,7 @@
 <a href=#95 id=95 data-nosnippet>95</a>            }
 <a href=#96 id=96 data-nosnippet>96</a>
 <a href=#97 id=97 data-nosnippet>97</a>            <span class="comment">// announce that a writer is waiting if this is not yet announced
-<a href=#98 id=98 data-nosnippet>98</a>            </span><span class="kw">if </span>s % <span class="number">2 </span>== <span class="number">0 </span>{
+<a href=#98 id=98 data-nosnippet>98</a>            </span><span class="kw">if </span>s.is_multiple_of(<span class="number">2</span>) {
 <a href=#99 id=99 data-nosnippet>99</a>                <span class="kw">match </span><span class="self">self
 <a href=#100 id=100 data-nosnippet>100</a>                    </span>.state
 <a href=#101 id=101 data-nosnippet>101</a>                    <span class="comment">// ordering by the book

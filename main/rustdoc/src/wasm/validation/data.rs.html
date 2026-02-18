@@ -2,15 +2,15 @@
 <a href=#2 id=2 data-nosnippet>2</a>
 <a href=#3 id=3 data-nosnippet>3</a><span class="kw">use crate</span>::{
 <a href=#4 id=4 data-nosnippet>4</a>    core::{
-<a href=#5 id=5 data-nosnippet>5</a>        indices::MemIdx,
-<a href=#6 id=6 data-nosnippet>6</a>        reader::{
-<a href=#7 id=7 data-nosnippet>7</a>            section_header::{SectionHeader, SectionTy},
-<a href=#8 id=8 data-nosnippet>8</a>            types::{
-<a href=#9 id=9 data-nosnippet>9</a>                data::{DataMode, DataModeActive, DataSegment},
-<a href=#10 id=10 data-nosnippet>10</a>                global::GlobalType,
-<a href=#11 id=11 data-nosnippet>11</a>            },
-<a href=#12 id=12 data-nosnippet>12</a>            WasmReader,
-<a href=#13 id=13 data-nosnippet>13</a>        },
+<a href=#5 id=5 data-nosnippet>5</a>        reader::{
+<a href=#6 id=6 data-nosnippet>6</a>            section_header::{SectionHeader, SectionTy},
+<a href=#7 id=7 data-nosnippet>7</a>            types::{
+<a href=#8 id=8 data-nosnippet>8</a>                data::{DataMode, DataModeActive, DataSegment},
+<a href=#9 id=9 data-nosnippet>9</a>                global::GlobalType,
+<a href=#10 id=10 data-nosnippet>10</a>            },
+<a href=#11 id=11 data-nosnippet>11</a>            WasmReader,
+<a href=#12 id=12 data-nosnippet>12</a>        },
+<a href=#13 id=13 data-nosnippet>13</a>        utils::ToUsizeExt,
 <a href=#14 id=14 data-nosnippet>14</a>    },
 <a href=#15 id=15 data-nosnippet>15</a>    read_constant_expression::read_constant_expression,
 <a href=#16 id=16 data-nosnippet>16</a>    validation_stack::ValidationStack,
@@ -73,7 +73,7 @@
 <a href=#73 id=73 data-nosnippet>73</a>            }
 <a href=#74 id=74 data-nosnippet>74</a>            <span class="number">2 </span>=&gt; {
 <a href=#75 id=75 data-nosnippet>75</a>                <span class="macro">trace!</span>(<span class="string">"Data section: active {{ memory x, offset e }}"</span>);
-<a href=#76 id=76 data-nosnippet>76</a>                <span class="kw">let </span>mem_idx = wasm.read_var_u32()<span class="question-mark">? </span><span class="kw">as </span>MemIdx;
+<a href=#76 id=76 data-nosnippet>76</a>                <span class="kw">let </span>mem_idx = wasm.read_var_u32()<span class="question-mark">?</span>.into_usize();
 <a href=#77 id=77 data-nosnippet>77</a>                <span class="kw">if </span>mem_idx &gt;= no_of_total_memories {
 <a href=#78 id=78 data-nosnippet>78</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="kw">crate</span>::ValidationError::InvalidMemIdx(mem_idx));
 <a href=#79 id=79 data-nosnippet>79</a>                }
