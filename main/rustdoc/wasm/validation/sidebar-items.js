@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["get_imports_length","handle_section","read_next_header","validate","validate_exports"],"mod":["code","data","globals","read_constant_expression","validation_stack"],"struct":["ImportsLength","ValidationInfo"]};
+window.SIDEBAR_ITEMS = {"fn":["handle_section","read_next_header","validate","validate_no_duplicate_exports"],"mod":["code","data","globals","read_constant_expression","validation_stack"],"struct":["ValidationInfo"]};

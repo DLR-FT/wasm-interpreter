@@ -371,38 +371,40 @@
 <a href=#371 id=371 data-nosnippet>371</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;T&gt;, ValidationError&gt;
 <a href=#372 id=372 data-nosnippet>372</a>    <span class="kw">where
 <a href=#373 id=373 data-nosnippet>373</a>        </span>T: <span class="lifetime">'wasm</span>,
-<a href=#374 id=374 data-nosnippet>374</a>        F: FnMut(<span class="kw-2">&amp;mut </span>WasmReader&lt;<span class="lifetime">'wasm</span>&gt;, usize) -&gt; <span class="prelude-ty">Result</span>&lt;T, ValidationError&gt;,
+<a href=#374 id=374 data-nosnippet>374</a>        F: FnMut(<span class="kw-2">&amp;mut </span>WasmReader&lt;<span class="lifetime">'wasm</span>&gt;, u32) -&gt; <span class="prelude-ty">Result</span>&lt;T, ValidationError&gt;,
 <a href=#375 id=375 data-nosnippet>375</a>    {
 <a href=#376 id=376 data-nosnippet>376</a>        <span class="kw">let </span><span class="kw-2">mut </span>idx = <span class="number">0</span>;
 <a href=#377 id=377 data-nosnippet>377</a>        <span class="self">self</span>.read_vec(|wasm| {
 <a href=#378 id=378 data-nosnippet>378</a>            <span class="kw">let </span>ret = read_element(wasm, idx);
-<a href=#379 id=379 data-nosnippet>379</a>            idx += <span class="number">1</span>;
-<a href=#380 id=380 data-nosnippet>380</a>            ret
-<a href=#381 id=381 data-nosnippet>381</a>        })
-<a href=#382 id=382 data-nosnippet>382</a>    }
-<a href=#383 id=383 data-nosnippet>383</a>
-<a href=#384 id=384 data-nosnippet>384</a>    <span class="doccomment">/// Note: If `Err`, the [WasmReader] object is no longer guaranteed to be in a valid state
-<a href=#385 id=385 data-nosnippet>385</a>    </span><span class="kw">pub fn </span>read_vec&lt;T, F&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, <span class="kw-2">mut </span>read_element: F) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;T&gt;, ValidationError&gt;
-<a href=#386 id=386 data-nosnippet>386</a>    <span class="kw">where
-<a href=#387 id=387 data-nosnippet>387</a>        </span>T: <span class="lifetime">'wasm</span>,
-<a href=#388 id=388 data-nosnippet>388</a>        F: FnMut(<span class="kw-2">&amp;mut </span>WasmReader&lt;<span class="lifetime">'wasm</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;T, ValidationError&gt;,
-<a href=#389 id=389 data-nosnippet>389</a>    {
-<a href=#390 id=390 data-nosnippet>390</a>        <span class="kw">let </span>len = <span class="self">self</span>.read_var_u32()<span class="question-mark">?</span>;
-<a href=#391 id=391 data-nosnippet>391</a>        core::iter::repeat_with(|| read_element(<span class="self">self</span>))
-<a href=#392 id=392 data-nosnippet>392</a>            .take(len.into_usize())
-<a href=#393 id=393 data-nosnippet>393</a>            .collect()
-<a href=#394 id=394 data-nosnippet>394</a>    }
-<a href=#395 id=395 data-nosnippet>395</a>}
-<a href=#396 id=396 data-nosnippet>396</a>
-<a href=#397 id=397 data-nosnippet>397</a><span class="attr">#[cfg(test)]
-<a href=#398 id=398 data-nosnippet>398</a></span><span class="kw">mod </span>tests {
-<a href=#399 id=399 data-nosnippet>399</a>    <span class="kw">use </span><span class="kw">crate</span>::core::reader::WasmReader;
-<a href=#400 id=400 data-nosnippet>400</a>
-<a href=#401 id=401 data-nosnippet>401</a>    <span class="attr">#[test]
-<a href=#402 id=402 data-nosnippet>402</a>    </span><span class="kw">fn </span>test_var_i32() {
-<a href=#403 id=403 data-nosnippet>403</a>        <span class="kw">let </span>bytes = [<span class="number">0xC0</span>, <span class="number">0xBB</span>, <span class="number">0x78</span>];
-<a href=#404 id=404 data-nosnippet>404</a>        <span class="kw">let </span><span class="kw-2">mut </span>wasm = WasmReader::new(<span class="kw-2">&amp;</span>bytes);
-<a href=#405 id=405 data-nosnippet>405</a>
-<a href=#406 id=406 data-nosnippet>406</a>        <span class="macro">assert_eq!</span>(wasm.read_var_i32(), <span class="prelude-val">Ok</span>(-<span class="number">123456</span>));
-<a href=#407 id=407 data-nosnippet>407</a>    }
-<a href=#408 id=408 data-nosnippet>408</a>}</code></pre></div></section></main></body></html>
+<a href=#379 id=379 data-nosnippet>379</a>            idx = idx
+<a href=#380 id=380 data-nosnippet>380</a>                .checked_add(<span class="number">1</span>)
+<a href=#381 id=381 data-nosnippet>381</a>                .expect(<span class="string">"the length of vectors to be encoded as a u32"</span>);
+<a href=#382 id=382 data-nosnippet>382</a>            ret
+<a href=#383 id=383 data-nosnippet>383</a>        })
+<a href=#384 id=384 data-nosnippet>384</a>    }
+<a href=#385 id=385 data-nosnippet>385</a>
+<a href=#386 id=386 data-nosnippet>386</a>    <span class="doccomment">/// Note: If `Err`, the [WasmReader] object is no longer guaranteed to be in a valid state
+<a href=#387 id=387 data-nosnippet>387</a>    </span><span class="kw">pub fn </span>read_vec&lt;T, F&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, <span class="kw-2">mut </span>read_element: F) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;T&gt;, ValidationError&gt;
+<a href=#388 id=388 data-nosnippet>388</a>    <span class="kw">where
+<a href=#389 id=389 data-nosnippet>389</a>        </span>T: <span class="lifetime">'wasm</span>,
+<a href=#390 id=390 data-nosnippet>390</a>        F: FnMut(<span class="kw-2">&amp;mut </span>WasmReader&lt;<span class="lifetime">'wasm</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;T, ValidationError&gt;,
+<a href=#391 id=391 data-nosnippet>391</a>    {
+<a href=#392 id=392 data-nosnippet>392</a>        <span class="kw">let </span>len = <span class="self">self</span>.read_var_u32()<span class="question-mark">?</span>;
+<a href=#393 id=393 data-nosnippet>393</a>        core::iter::repeat_with(|| read_element(<span class="self">self</span>))
+<a href=#394 id=394 data-nosnippet>394</a>            .take(len.into_usize())
+<a href=#395 id=395 data-nosnippet>395</a>            .collect()
+<a href=#396 id=396 data-nosnippet>396</a>    }
+<a href=#397 id=397 data-nosnippet>397</a>}
+<a href=#398 id=398 data-nosnippet>398</a>
+<a href=#399 id=399 data-nosnippet>399</a><span class="attr">#[cfg(test)]
+<a href=#400 id=400 data-nosnippet>400</a></span><span class="kw">mod </span>tests {
+<a href=#401 id=401 data-nosnippet>401</a>    <span class="kw">use </span><span class="kw">crate</span>::core::reader::WasmReader;
+<a href=#402 id=402 data-nosnippet>402</a>
+<a href=#403 id=403 data-nosnippet>403</a>    <span class="attr">#[test]
+<a href=#404 id=404 data-nosnippet>404</a>    </span><span class="kw">fn </span>test_var_i32() {
+<a href=#405 id=405 data-nosnippet>405</a>        <span class="kw">let </span>bytes = [<span class="number">0xC0</span>, <span class="number">0xBB</span>, <span class="number">0x78</span>];
+<a href=#406 id=406 data-nosnippet>406</a>        <span class="kw">let </span><span class="kw-2">mut </span>wasm = WasmReader::new(<span class="kw-2">&amp;</span>bytes);
+<a href=#407 id=407 data-nosnippet>407</a>
+<a href=#408 id=408 data-nosnippet>408</a>        <span class="macro">assert_eq!</span>(wasm.read_var_i32(), <span class="prelude-val">Ok</span>(-<span class="number">123456</span>));
+<a href=#409 id=409 data-nosnippet>409</a>    }
+<a href=#410 id=410 data-nosnippet>410</a>}</code></pre></div></section></main></body></html>

@@ -2,7 +2,7 @@
 <a href=#2 id=2 data-nosnippet>2</a>
 <a href=#3 id=3 data-nosnippet>3</a><span class="kw">use crate</span>::{
 <a href=#4 id=4 data-nosnippet>4</a>    core::{
-<a href=#5 id=5 data-nosnippet>5</a>        indices::TypeIdx,
+<a href=#5 id=5 data-nosnippet>5</a>        indices::{DataIdx, ElemIdx, FuncIdx, GlobalIdx, IdxVec, MemIdx, TableIdx, TypeIdx},
 <a href=#6 id=6 data-nosnippet>6</a>        reader::{
 <a href=#7 id=7 data-nosnippet>7</a>            span::Span,
 <a href=#8 id=8 data-nosnippet>8</a>            types::{FuncType, MemType, TableType},
@@ -177,13 +177,13 @@
 <a href=#177 id=177 data-nosnippet>177</a><span class="doccomment">///&lt;https://webassembly.github.io/spec/core/exec/runtime.html#module-instances&gt;
 <a href=#178 id=178 data-nosnippet>178</a></span><span class="attr">#[derive(Debug)]
 <a href=#179 id=179 data-nosnippet>179</a></span><span class="kw">pub struct </span>ModuleInst&lt;<span class="lifetime">'b</span>&gt; {
-<a href=#180 id=180 data-nosnippet>180</a>    <span class="kw">pub </span>types: Vec&lt;FuncType&gt;,
-<a href=#181 id=181 data-nosnippet>181</a>    <span class="kw">pub </span>func_addrs: Vec&lt;FuncAddr&gt;,
-<a href=#182 id=182 data-nosnippet>182</a>    <span class="kw">pub </span>table_addrs: Vec&lt;TableAddr&gt;,
-<a href=#183 id=183 data-nosnippet>183</a>    <span class="kw">pub </span>mem_addrs: Vec&lt;MemAddr&gt;,
-<a href=#184 id=184 data-nosnippet>184</a>    <span class="kw">pub </span>global_addrs: Vec&lt;GlobalAddr&gt;,
-<a href=#185 id=185 data-nosnippet>185</a>    <span class="kw">pub </span>elem_addrs: Vec&lt;ElemAddr&gt;,
-<a href=#186 id=186 data-nosnippet>186</a>    <span class="kw">pub </span>data_addrs: Vec&lt;DataAddr&gt;,
+<a href=#180 id=180 data-nosnippet>180</a>    <span class="kw">pub </span>types: IdxVec&lt;TypeIdx, FuncType&gt;,
+<a href=#181 id=181 data-nosnippet>181</a>    <span class="kw">pub </span>func_addrs: IdxVec&lt;FuncIdx, FuncAddr&gt;,
+<a href=#182 id=182 data-nosnippet>182</a>    <span class="kw">pub </span>table_addrs: IdxVec&lt;TableIdx, TableAddr&gt;,
+<a href=#183 id=183 data-nosnippet>183</a>    <span class="kw">pub </span>mem_addrs: IdxVec&lt;MemIdx, MemAddr&gt;,
+<a href=#184 id=184 data-nosnippet>184</a>    <span class="kw">pub </span>global_addrs: IdxVec&lt;GlobalIdx, GlobalAddr&gt;,
+<a href=#185 id=185 data-nosnippet>185</a>    <span class="kw">pub </span>elem_addrs: IdxVec&lt;ElemIdx, ElemAddr&gt;,
+<a href=#186 id=186 data-nosnippet>186</a>    <span class="kw">pub </span>data_addrs: IdxVec&lt;DataIdx, DataAddr&gt;,
 <a href=#187 id=187 data-nosnippet>187</a>    <span class="doccomment">///&lt;https://webassembly.github.io/spec/core/exec/runtime.html#export-instances&gt;
 <a href=#188 id=188 data-nosnippet>188</a>    /// matches the list of ExportInst structs in the spec, however the spec never uses the name attribute
 <a href=#189 id=189 data-nosnippet>189</a>    /// except during linking, which is up to the embedder to implement.

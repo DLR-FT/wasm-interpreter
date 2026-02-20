@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"type":["DataIdx","ElemIdx","FuncIdx","GlobalIdx","LabelIdx","LocalIdx","MemIdx","TableIdx","TypeIdx"]};
+window.SIDEBAR_ITEMS = {"fn":["read_label_idx","read_label_idx_unchecked"],"struct":["DataIdx","ElemIdx","ExtendedIdxVec","FuncIdx","GlobalIdx","IdxVec","IdxVecOverflowError","LocalIdx","MemIdx","TableIdx","TypeIdx"],"trait":["Idx"]};
