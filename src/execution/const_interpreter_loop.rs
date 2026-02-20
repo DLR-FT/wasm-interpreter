@@ -57,8 +57,8 @@ pub(crate) fn run_const<T: Config>(
 
                 let module_instance = store.modules.get(module);
 
-                // SAFETY: Validation guarantees the global index to be valid
-                // for the current module.
+                // SAFETY: Validation guarantees the global index to be valid in
+                // the current module.
                 let global_addr = *unsafe { module_instance.global_addrs.get(global_idx) };
 
                 let global = store.globals.get(global_addr);
@@ -100,7 +100,7 @@ pub(crate) fn run_const<T: Config>(
                 // index next.
                 let func_idx = unsafe { FuncIdx::read_unchecked(wasm) };
                 // SAFETY: Validation guarantees the function index to be valid
-                // for the current module.
+                // in the current module.
                 let func_addr = unsafe { store.modules.get(module).func_addrs.get(func_idx) };
                 stack.push_value::<T>(Value::Ref(Ref::Func(*func_addr)))?;
             }
