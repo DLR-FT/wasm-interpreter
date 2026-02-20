@@ -210,7 +210,8 @@ impl<I: Idx, T> ExtendedIdxVec<I, T> {
     /// Returns the length of the locally-defined definitions part of this index
     /// space
     pub fn len_local_definitions(&self) -> u32 {
-        self.len()
+        self.inner
+            .len()
             .checked_sub(self.num_imports)
             .expect("that the number of imports is never larger than the total length of self")
     }
@@ -243,6 +244,10 @@ impl<I: Idx, T> ExtendedIdxVec<I, T> {
             .get(self.num_imports.into_usize()..)
             .expect("the imports length to never be larger than the total length")
             .iter()
+    }
+
+    pub fn inner(&self) -> &IdxVec<I, T> {
+        &self.inner
     }
 
     pub fn into_inner(self) -> IdxVec<I, T> {

@@ -240,13 +240,13 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
     while (skip_section(&mut wasm, &mut header)?).is_some() {}
 
     let start = handle_section(&mut wasm, &mut header, SectionTy::Start, |wasm, _| {
-        let func_idx = FuncIdx::read_and_validate(wasm, &functions)?;
+        let func_idx = FuncIdx::read_and_validate(wasm, functions.inner())?;
 
         // start function signature must be [] -> []
         // https://webassembly.github.io/spec/core/valid/modules.html#start-function
         // SAFETY: We just validated this function index using the same
         // `IdxVec`.
-        let type_idx = unsafe { functions.get(func_idx) };
+        let type_idx = unsafe { functions.inner().get(func_idx) };
 
         // SAFETY: There exists only one `IdxVec<TypeIdx, FuncType>` in the
         // current function. Therefore, this has to be the same one used to
