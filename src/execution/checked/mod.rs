@@ -19,7 +19,10 @@
 //! this enum, the entire enum has to be re-defined. The result is a completely
 //! new type [`StoredValue`].
 
-use core::num::NonZeroU64;
+use core::{
+    num::NonZeroU64,
+    ops::{Deref, DerefMut},
+};
 
 use crate::{
     addrs::{FuncAddr, GlobalAddr, MemAddr, ModuleAddr, TableAddr},
@@ -27,7 +30,7 @@ use crate::{
     core::reader::types::{FuncType, MemType, TableType},
     interop::InteropValueList,
     linker::Linker,
-    resumable::{ResumableRef, RunState},
+    resumable::{Resumable, RunState},
     ExternVal, GlobalType, HaltExecutionError, InstantiationOutcome, RuntimeError, Store, StoreId,
     ValidationInfo, Value,
 };
@@ -140,7 +143,7 @@ impl<'b, T: Config> Store<'b, T> {
         func_addr: Stored<FuncAddr>,
         params: Vec<StoredValue>,
         maybe_fuel: Option<u64>,
-    ) -> Result<StoredRunState, RuntimeError> {
+    ) -> Result<StoredRunState<T>, RuntimeError> {
         // 1. try unwrap
         let func_addr = func_addr.try_unwrap_into_bare(self.id)?;
         let params = try_unwrap_values(params, self.id)?;
@@ -377,51 +380,33 @@ impl<'b, T: Config> Store<'b, T> {
         func_addr: Stored<FuncAddr>,
         params: Vec<StoredValue>,
         maybe_fuel: Option<u64>,
-    ) -> Result<Stored<ResumableRef>, RuntimeError> {
+    ) -> Result<Stored<Resumable<T>>, RuntimeError> {
         // 1. try unwrap
         let func_addr = func_addr.try_unwrap_into_bare(self.id)?;
         let params = try_unwrap_values(params, self.id)?;
         // 2. call
-        let resumable_ref = self.create_resumable_unchecked(func_addr, params, maybe_fuel)?;
+        let resumable = self.create_resumable_unchecked(func_addr, params, maybe_fuel)?;
         // 3. rewrap
-        // SAFETY: The `ResumableRef` just came from the current store.
-        let stored_resumable_ref = unsafe { Stored::from_bare(resumable_ref, self.id) };
+        // SAFETY: The `Resumable` just came from the current store.
+        let stored_resumable = unsafe { Stored::from_bare(resumable, self.id) };
         // 4. return
-        Ok(stored_resumable_ref)
+        Ok(stored_resumable)
     }
 
     /// This is a safe variant of [`Store::resume_unchecked`].
     pub fn resume(
         &mut self,
-        resumable_ref: Stored<ResumableRef>,
-    ) -> Result<StoredRunState, RuntimeError> {
+        resumable: Stored<Resumable<T>>,
+    ) -> Result<StoredRunState<T>, RuntimeError> {
         // 1. try unwrap
-        let resumable_ref = resumable_ref.try_unwrap_into_bare(self.id)?;
+        let resumable = resumable.try_unwrap_into_bare(self.id)?;
         // 2. call
-        let run_state = self.resume_unchecked(resumable_ref)?;
+        let run_state = self.resume_unchecked(resumable)?;
         // 3. rewrap
         // SAFETY: The `RunState` just came from the current store.
         let stored_run_state = unsafe { StoredRunState::from_bare(run_state, self.id) };
         // 4. return
         Ok(stored_run_state)
-    }
-
-    /// This is a safe variant of [`Store::access_fuel_mut_unchecked`].
-    // TODO `&mut Stored<...>` seems off as a parameter type. Instead it should
-    // be `Stored<ResumableRef>`
-    pub fn access_fuel_mut<R>(
-        &mut self,
-        resumable_ref: &mut Stored<ResumableRef>,
-        f: impl FnOnce(&mut Option<u64>) -> R,
-    ) -> Result<R, RuntimeError> {
-        // 1. try unwrap
-        let resumable_ref = resumable_ref.as_mut().try_unwrap_into_bare(self.id)?;
-        // 2. call
-        let r = self.access_fuel_mut_unchecked(resumable_ref, f)?;
-        // 3. rewrap
-        // result type `R` is generic.
-        // 4. return
-        Ok(r)
     }
 
     /// This is a safer variant of [`Store::func_alloc_typed_unchecked`]. It is
@@ -509,23 +494,6 @@ impl<'b, T: Config> Store<'b, T> {
         // result is generic
         // 4. return
         Ok(returns)
-    }
-
-    /// This is a safe variant of [`Store::drop_resumable_unchecked`]
-    pub fn drop_resumable(
-        &mut self,
-        resumable_ref: Stored<ResumableRef>,
-    ) -> Result<(), RuntimeError> {
-        // 1. try unwrap
-        let resumable_ref = resumable_ref.try_unwrap_into_bare(self.id)?;
-        // 2. call
-        // SAFETY: It was just checked that this resumable ref comes from the
-        // current store.
-        unsafe { self.drop_resumable_unchecked(resumable_ref) };
-        // 3. rewrap
-        // result is unit type
-        // 4. return
-        Ok(())
     }
 }
 
@@ -803,15 +771,17 @@ impl<T: PartialEq> PartialEq for Stored<T> {
 
 impl<T: Eq> Eq for Stored<T> {}
 
-impl<T> Stored<T> {
-    // TODO remove this after the `ResumableRef` rework. Currently
-    // `ResumableRef` can store data, however it should merely be an addr type
-    // into the store in the future.
-    fn as_mut(&mut self) -> Stored<&mut T> {
-        Stored {
-            id: self.id,
-            inner: &mut self.inner,
-        }
+impl<T> Deref for Stored<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
+}
+
+impl<T> DerefMut for Stored<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.inner
     }
 }
 
@@ -908,19 +878,19 @@ impl StoredExternVal {
 }
 
 /// A stored variant of [`RunState`]
-pub enum StoredRunState {
+pub enum StoredRunState<T> {
     Finished {
         values: Vec<StoredValue>,
         maybe_remaining_fuel: Option<u64>,
     },
     Resumable {
-        resumable_ref: Stored<ResumableRef>,
+        resumable: Stored<Resumable<T>>,
         required_fuel: NonZeroU64,
     },
 }
 
-impl AbstractStored for StoredRunState {
-    type BareTy = RunState;
+impl<T> AbstractStored for StoredRunState<T> {
+    type BareTy = RunState<T>;
 
     unsafe fn from_bare(bare_value: Self::BareTy, id: StoreId) -> Self {
         match bare_value {
@@ -933,11 +903,11 @@ impl AbstractStored for StoredRunState {
                 maybe_remaining_fuel,
             },
             RunState::Resumable {
-                resumable_ref,
+                resumable,
                 required_fuel,
             } => Self::Resumable {
                 // SAFETY: Upheld by the caller
-                resumable_ref: unsafe { Stored::from_bare(resumable_ref, id) },
+                resumable: unsafe { Stored::from_bare(resumable, id) },
                 required_fuel,
             },
         }

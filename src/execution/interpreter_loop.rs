@@ -31,7 +31,7 @@ use crate::{
         utils::ToUsizeExt,
     },
     instances::{DataInst, ElemInst, FuncInst, MemInst, ModuleInst, TableInst},
-    resumable::Resumable,
+    resumable::WasmResumable,
     store::HaltExecutionError,
     unreachable_validated,
     value::{self, Ref, F32, F64},
@@ -50,9 +50,9 @@ use super::{little_endian::LittleEndianBytes, store::Store};
 ///
 /// # Safety
 ///
-/// The given resumable ref must be valid in the given [`Store`].
+/// The given resumable must be valid in the given [`Store`].
 pub(super) fn run<T: Config>(
-    resumable: &mut Resumable,
+    resumable: &mut WasmResumable,
     store: &mut Store<T>,
 ) -> Result<Option<NonZeroU64>, RuntimeError> {
     let stack = &mut resumable.stack;
