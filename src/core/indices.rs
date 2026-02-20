@@ -126,7 +126,6 @@ impl<I: Idx, T> IdxVec<I, T> {
             .expect("this to be a valid index due to the safety guarantees made by the caller")
     }
 
-    #[allow(unused)] // reason = "temporary until used by new index types"
     pub fn len(&self) -> u32 {
         u32::try_from(self.inner.len()).expect(
             "this to never be larger than u32::MAX, because this was checked for in Self::new",
