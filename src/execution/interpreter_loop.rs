@@ -43,6 +43,21 @@ use crate::execution::config::Config;
 
 use super::{little_endian::LittleEndianBytes, store::Store};
 
+/// A non-error outcome of execution of the interpreter loop
+pub enum InterpreterLoopOutcome {
+    /// Execution has returned normally, i.e. the end of the bottom-most
+    /// function on the stack was reached.
+    ExecutionReturned,
+    /// Execution was preempted because there was not enough fuel in the
+    /// [`WasmResumable`] object.
+    ///
+    OutOfFuel {
+        /// The amount of fuel required to continue execution at least the next
+        /// instruction.
+        required_fuel: NonZeroU64,
+    },
+}
+
 /// Interprets wasm native functions. Wasm parameters and Wasm return values are passed on the stack.
 /// Returns `Ok(None)` in case execution successfully terminates, `Ok(Some(required_fuel))` if execution
 /// terminates due to insufficient fuel, indicating how much fuel is required to resume with `required_fuel`,
@@ -54,7 +69,7 @@ use super::{little_endian::LittleEndianBytes, store::Store};
 pub(super) fn run<T: Config>(
     resumable: &mut WasmResumable,
     store: &mut Store<T>,
-) -> Result<Option<NonZeroU64>, RuntimeError> {
+) -> Result<InterpreterLoopOutcome, RuntimeError> {
     let stack = &mut resumable.stack;
     let mut current_func_addr = resumable.current_func_addr;
     let pc = resumable.pc;
@@ -102,7 +117,9 @@ pub(super) fn run<T: Config>(
                         resumable.current_func_addr = current_func_addr;
                         resumable.pc = prev_pc; // the instruction was fetched already, we roll this back
                         resumable.stp = stp;
-                        return Ok(NonZeroU64::new($cost-*fuel));
+                        return Ok(InterpreterLoopOutcome::OutOfFuel {
+                            required_fuel: NonZeroU64::new($cost - *fuel).expect("the last check guarantees that the current fuel is smaller than cost"),
+                        });
                     }
                 }
             }
@@ -1240,7 +1257,9 @@ pub(super) fn run<T: Config>(
                         resumable.current_func_addr = current_func_addr;
                         resumable.pc = wasm.pc - prev_pc; // the instruction was fetched already, we roll this back
                         resumable.stp = stp;
-                        return Ok(NonZeroU64::new(cost - *fuel));
+                        return Ok(InterpreterLoopOutcome::OutOfFuel {
+                            required_fuel: NonZeroU64::new(cost - *fuel).expect("the last check guarantees that the current fuel is smaller than cost"),
+                        });
                     }
                 }
 
@@ -2742,7 +2761,9 @@ pub(super) fn run<T: Config>(
                                 resumable.current_func_addr = current_func_addr;
                                 resumable.pc = wasm.pc - prev_pc; // the instruction was fetched already, we roll this back
                                 resumable.stp = stp;
-                                return Ok(NonZeroU64::new(cost - *fuel));
+                                return Ok(InterpreterLoopOutcome::OutOfFuel {
+                                    required_fuel: NonZeroU64::new(cost - *fuel).expect("the last check guarantees that the current fuel is smaller than cost"),
+                                });
                             }
                         }
 
@@ -2833,7 +2854,9 @@ pub(super) fn run<T: Config>(
                                 resumable.current_func_addr = current_func_addr;
                                 resumable.pc = wasm.pc - prev_pc; // the instruction was fetched already, we roll this back
                                 resumable.stp = stp;
-                                return Ok(NonZeroU64::new(cost - *fuel));
+                                return Ok(InterpreterLoopOutcome::OutOfFuel {
+                                    required_fuel: NonZeroU64::new(cost - *fuel).expect("the last check guarantees that the current fuel is smaller than cost"),
+                                });
                             }
                         }
 
@@ -2893,7 +2916,9 @@ pub(super) fn run<T: Config>(
                                 resumable.current_func_addr = current_func_addr;
                                 resumable.pc = wasm.pc - prev_pc; // the instruction was fetched already, we roll this back
                                 resumable.stp = stp;
-                                return Ok(NonZeroU64::new(cost - *fuel));
+                                return Ok(InterpreterLoopOutcome::OutOfFuel {
+                                    required_fuel: NonZeroU64::new(cost - *fuel).expect("the last check guarantees that the current fuel is smaller than cost"),
+                                });
                             }
                         }
 
@@ -2933,7 +2958,9 @@ pub(super) fn run<T: Config>(
                                 resumable.current_func_addr = current_func_addr;
                                 resumable.pc = wasm.pc - prev_pc; // the instruction was fetched already, we roll this back
                                 resumable.stp = stp;
-                                return Ok(NonZeroU64::new(cost - *fuel));
+                                return Ok(InterpreterLoopOutcome::OutOfFuel {
+                                    required_fuel: NonZeroU64::new(cost - *fuel).expect("the last check guarantees that the current fuel is smaller than cost"),
+                                });
                             }
                         }
 
@@ -3038,7 +3065,9 @@ pub(super) fn run<T: Config>(
                                 resumable.current_func_addr = current_func_addr;
                                 resumable.pc = wasm.pc - prev_pc; // the instruction was fetched already, we roll this back
                                 resumable.stp = stp;
-                                return Ok(NonZeroU64::new(cost - *fuel));
+                                return Ok(InterpreterLoopOutcome::OutOfFuel {
+                                    required_fuel: NonZeroU64::new(cost - *fuel).expect("the last check guarantees that the current fuel is smaller than cost"),
+                                });
                             }
                         }
 
@@ -3131,7 +3160,9 @@ pub(super) fn run<T: Config>(
                                 resumable.current_func_addr = current_func_addr;
                                 resumable.pc = wasm.pc - prev_pc; // the instruction was fetched already, we roll this back
                                 resumable.stp = stp;
-                                return Ok(NonZeroU64::new(cost - *fuel));
+                                return Ok(InterpreterLoopOutcome::OutOfFuel {
+                                    required_fuel: NonZeroU64::new(cost - *fuel).expect("the last check guarantees that the current fuel is smaller than cost"),
+                                });
                             }
                         }
 
@@ -3206,7 +3237,9 @@ pub(super) fn run<T: Config>(
                                 resumable.current_func_addr = current_func_addr;
                                 resumable.pc = wasm.pc - prev_pc; // the instruction was fetched already, we roll this back
                                 resumable.stp = stp;
-                                return Ok(NonZeroU64::new(cost - *fuel));
+                                return Ok(InterpreterLoopOutcome::OutOfFuel {
+                                    required_fuel: NonZeroU64::new(cost - *fuel).expect("the last check guarantees that the current fuel is smaller than cost"),
+                                });
                             }
                         }
 
@@ -6078,7 +6111,7 @@ pub(super) fn run<T: Config>(
             }
         }
     }
-    Ok(None)
+    Ok(InterpreterLoopOutcome::ExecutionReturned)
 }
 
 //helper function for avoiding code duplication at intraprocedural jumps

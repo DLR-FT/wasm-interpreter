@@ -13,7 +13,7 @@ use crate::core::reader::types::global::GlobalType;
 use crate::core::reader::types::{ExternType, FuncType, ImportSubTypeRelation, MemType, TableType};
 use crate::core::reader::WasmReader;
 use crate::core::utils::ToUsizeExt;
-use crate::execution::interpreter_loop::{self, memory_init, table_init};
+use crate::execution::interpreter_loop::{self, memory_init, table_init, InterpreterLoopOutcome};
 use crate::execution::value::{Ref, Value};
 use crate::execution::{run_const_span, Stack};
 use crate::resumable::{HostResumable, Resumable, RunState, WasmResumable};
@@ -1323,7 +1323,7 @@ impl<'b, T: Config> Store<'b, T> {
                 let result = interpreter_loop::run(&mut resumable, self)?;
 
                 match result {
-                    None => {
+                    InterpreterLoopOutcome::ExecutionReturned => {
                         let maybe_remaining_fuel = resumable.maybe_fuel;
                         let values = resumable.stack.into_values();
                         Ok(RunState::Finished {
@@ -1331,10 +1331,12 @@ impl<'b, T: Config> Store<'b, T> {
                             maybe_remaining_fuel,
                         })
                     }
-                    Some(required_fuel) => Ok(RunState::Resumable {
-                        resumable: Resumable::Wasm(resumable),
-                        required_fuel,
-                    }),
+                    InterpreterLoopOutcome::OutOfFuel { required_fuel } => {
+                        Ok(RunState::Resumable {
+                            resumable: Resumable::Wasm(resumable),
+                            required_fuel,
+                        })
+                    }
                 }
             }
             Resumable::Host(resumable) => {
