@@ -2,15 +2,10 @@ use core::num::NonZeroU64;
 
 use alloc::vec::Vec;
 
-use crate::{
-    addrs::FuncAddr,
-    core::slotmap::{SlotMap, SlotMapKey},
-    value_stack::Stack,
-    Value,
-};
+use crate::{addrs::FuncAddr, value_stack::Stack, HaltExecutionError, Value};
 
 #[derive(Debug)]
-pub(crate) struct Resumable {
+pub struct WasmResumable {
     pub(crate) stack: Stack,
     pub(crate) pc: usize,
     pub(crate) stp: usize,
@@ -18,52 +13,41 @@ pub(crate) struct Resumable {
     pub(crate) maybe_fuel: Option<u64>,
 }
 
-#[derive(Default)]
-pub(crate) struct Dormitory(SlotMap<Resumable>);
-
-impl Dormitory {
-    pub(crate) fn insert(&mut self, resumable: Resumable) -> InvokedResumableRef {
-        let key = self.0.insert(resumable);
-        InvokedResumableRef { key }
-    }
-
-    pub(crate) fn get_mut(
-        &mut self,
-        resumable_ref: &InvokedResumableRef,
-    ) -> Option<&mut Resumable> {
-        self.0.get_mut(&resumable_ref.key)
-    }
-
-    pub(crate) fn remove(&mut self, resumable_ref: InvokedResumableRef) -> Option<Resumable> {
-        self.0.remove(&resumable_ref.key)
-    }
-}
-
-/// # Note
-///
-/// Dropping a resumable ref does not deallocate the resumable anymore. It is up
-/// to the user to implement such garbage collection algorithms by using
-/// [`Store::drop_resumable`](crate::Store::drop_resumable) to prevent unnecessary memory usage.
-pub struct InvokedResumableRef {
-    pub(crate) key: SlotMapKey<Resumable>,
-}
-
-pub struct FreshResumableRef {
+#[derive(Debug)]
+pub struct HostResumable<T> {
+    /// Must be a host function instance.
     pub(crate) func_addr: FuncAddr,
+    /// Must contain the correct types as specified by the [`FuncType`](crate::FuncType) for
+    /// `func_addr`.
     pub(crate) params: Vec<Value>,
+    pub(crate) hostcode: fn(&mut T, Vec<Value>) -> Result<Vec<Value>, HaltExecutionError>,
     pub(crate) maybe_fuel: Option<u64>,
 }
 
-/// An object associated to a resumable that is held internally.
-pub enum ResumableRef {
-    /// indicates this resumable has never been invoked/resumed to.
-    Fresh(FreshResumableRef),
-    /// indicates this resumable has been invoked/resumed to at least once.
-    Invoked(InvokedResumableRef),
+#[derive(Debug)]
+pub enum Resumable<T> {
+    Wasm(WasmResumable),
+    Host(HostResumable<T>),
+}
+
+impl<T> Resumable<T> {
+    pub fn fuel(&self) -> Option<u64> {
+        match self {
+            Resumable::Wasm(wasm_resumable) => wasm_resumable.maybe_fuel,
+            Resumable::Host(host_resumable) => host_resumable.maybe_fuel,
+        }
+    }
+
+    pub fn fuel_mut(&mut self) -> &mut Option<u64> {
+        match self {
+            Resumable::Wasm(wasm_resumable) => &mut wasm_resumable.maybe_fuel,
+            Resumable::Host(host_resumable) => &mut host_resumable.maybe_fuel,
+        }
+    }
 }
 
 /// Represents the state of a possibly interrupted resumable.
-pub enum RunState {
+pub enum RunState<T> {
     /// represents a resumable that has executed completely with return values `values` and possibly remaining fuel
     /// `maybe_remaining_fuel` (has `Some(remaining_fuel)` for fuel-metered operations and `None` otherwise)
     Finished {
@@ -73,50 +57,7 @@ pub enum RunState {
     /// represents a resumable that has ran out of fuel during execution, missing at least `required_fuel` units of fuel
     /// to continue further execution.
     Resumable {
-        resumable_ref: ResumableRef,
+        resumable: Resumable<T>, // TODO make this a `WasmResumable`
         required_fuel: NonZeroU64,
     },
-}
-
-#[cfg(test)]
-mod test {
-    use alloc::vec::Vec;
-
-    use crate::{
-        addrs::{Addr, FuncAddr},
-        core::reader::types::{FuncType, ResultType},
-        value_stack::Stack,
-    };
-
-    use super::{Dormitory, Resumable};
-
-    /// Test that a dormitory can be constructed and that a resumable can be inserted
-    #[test]
-    fn dormitory_constructor() {
-        let mut dorm = Dormitory::default();
-
-        let empty_stack = Stack::new::<()>(
-            Vec::new(),
-            &FuncType {
-                params: ResultType {
-                    valtypes: Vec::new(),
-                },
-                returns: ResultType {
-                    valtypes: Vec::new(),
-                },
-            },
-            &[],
-        )
-        .unwrap();
-
-        let resumable = Resumable {
-            stack: empty_stack,
-            pc: 11,
-            stp: 13,
-            current_func_addr: FuncAddr::new_unchecked(0),
-            maybe_fuel: None,
-        };
-
-        dorm.insert(resumable);
-    }
 }

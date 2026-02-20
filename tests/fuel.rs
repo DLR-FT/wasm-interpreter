@@ -24,11 +24,11 @@ fn out_of_fuel() {
         .unwrap()
         .as_func()
         .unwrap();
-    let resumable_ref = store
+    let resumable = store
         .create_resumable(func_addr, Vec::new(), Some(40))
         .unwrap();
     assert!(matches!(
-        store.resume(resumable_ref).unwrap(),
+        store.resume(resumable).unwrap(),
         StoredRunState::Resumable { .. }
     ));
 }
@@ -98,28 +98,24 @@ fn resumable() {
         .as_global()
         .unwrap();
 
-    let resumable_ref_mult = store
+    let resumable_mult = store
         .create_resumable(mult_global_0, vec![], Some(0))
         .unwrap();
-    let resumable_ref_add = store
+    let resumable_add = store
         .create_resumable(add_global_1, vec![], Some(0))
         .unwrap();
 
-    let mut run_state_mult = store.resume(resumable_ref_mult).unwrap();
-    let mut run_state_add = store.resume(resumable_ref_add).unwrap();
-
-    let increment = |maybe_fuel: &mut Option<u64>| *maybe_fuel = maybe_fuel.map(|fuel| fuel + 2);
+    let mut run_state_mult = store.resume(resumable_mult).unwrap();
+    let mut run_state_add = store.resume(resumable_add).unwrap();
 
     for _ in 0..20 {
         run_state_mult = match run_state_mult {
             StoredRunState::Finished { .. } => panic!("should not terminate"),
-            StoredRunState::Resumable {
-                mut resumable_ref, ..
-            } => {
-                store
-                    .access_fuel_mut(&mut resumable_ref, increment)
-                    .unwrap();
-                store.resume(resumable_ref).unwrap()
+            StoredRunState::Resumable { mut resumable, .. } => {
+                if let Some(fuel) = resumable.fuel_mut() {
+                    *fuel += 2;
+                }
+                store.resume(resumable).unwrap()
             }
         };
 
@@ -131,13 +127,11 @@ fn resumable() {
 
         run_state_add = match run_state_add {
             StoredRunState::Finished { .. } => panic!("should not terminate"),
-            StoredRunState::Resumable {
-                mut resumable_ref, ..
-            } => {
-                store
-                    .access_fuel_mut(&mut resumable_ref, increment)
-                    .unwrap();
-                store.resume(resumable_ref).unwrap()
+            StoredRunState::Resumable { mut resumable, .. } => {
+                if let Some(fuel) = resumable.fuel_mut() {
+                    *fuel += 2;
+                }
+                store.resume(resumable).unwrap()
             }
         };
 
@@ -193,29 +187,26 @@ fn resumable_internal_state() {
         .unwrap()
         .as_global()
         .unwrap();
-    let resumable_ref_add = store
+    let resumable_add = store
         .create_resumable(add_global_0, vec![], Some(4))
         .unwrap();
     assert_eq!(
         store.global_read(global_0),
         Ok(StoredValue::I32(expected[0]))
     );
-    let mut run_state_add = store.resume(resumable_ref_add).unwrap();
-    let increment = |maybe_fuel: &mut Option<u64>| *maybe_fuel = maybe_fuel.map(|fuel| fuel + 4);
+    let mut run_state_add = store.resume(resumable_add).unwrap();
     for expected in expected.into_iter().take(4).skip(1) {
         run_state_add = match run_state_add {
             StoredRunState::Finished { .. } => {
                 assert_eq!(store.global_read(global_0), Ok(StoredValue::I32(expected)));
                 return;
             }
-            StoredRunState::Resumable {
-                mut resumable_ref, ..
-            } => {
+            StoredRunState::Resumable { mut resumable, .. } => {
                 assert_eq!(store.global_read(global_0), Ok(StoredValue::I32(expected)));
-                store
-                    .access_fuel_mut(&mut resumable_ref, increment)
-                    .unwrap();
-                store.resume(resumable_ref).unwrap()
+                if let Some(fuel) = resumable.fuel_mut() {
+                    *fuel += 4;
+                }
+                store.resume(resumable).unwrap()
             }
         }
     }
@@ -239,25 +230,22 @@ fn resumable_drop() {
         .unwrap()
         .as_func()
         .unwrap();
-    let resumable_ref = store
+    let resumable = store
         .create_resumable(func_addr, Vec::new(), Some(40))
         .unwrap();
     {
-        let resumable_ref = store
+        let resumable = store
             .create_resumable(func_addr, Vec::new(), Some(40))
             .unwrap();
 
-        let StoredRunState::Resumable { resumable_ref, .. } = store.resume(resumable_ref).unwrap()
-        else {
+        let StoredRunState::Resumable { .. } = store.resume(resumable).unwrap() else {
             panic!("expected unfinished resumable");
         };
-
-        store.drop_resumable(resumable_ref).unwrap();
     }
 
     // the outer resumable should still be able to access the dormitory in store
     assert!(matches!(
-        store.resume(resumable_ref).unwrap(),
+        store.resume(resumable).unwrap(),
         StoredRunState::Resumable { .. }
     ));
 }
