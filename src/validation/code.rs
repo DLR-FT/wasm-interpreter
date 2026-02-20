@@ -37,7 +37,7 @@ pub fn validate_code_section(
         // imported. Imported functions always live at the start of the index
         // space.
         let ty_idx = *type_idx_of_fn
-            .get(idx + num_imported_funcs)
+            .get(idx.into_usize() + num_imported_funcs)
             .ok_or(ValidationError::FunctionAndCodeSectionsHaveDifferentLengths)?;
         let func_ty = fn_types[ty_idx].clone();
 

@@ -371,12 +371,14 @@ impl<'wasm> WasmReader<'wasm> {
     ) -> Result<Vec<T>, ValidationError>
     where
         T: 'wasm,
-        F: FnMut(&mut WasmReader<'wasm>, usize) -> Result<T, ValidationError>,
+        F: FnMut(&mut WasmReader<'wasm>, u32) -> Result<T, ValidationError>,
     {
         let mut idx = 0;
         self.read_vec(|wasm| {
             let ret = read_element(wasm, idx);
-            idx += 1;
+            idx = idx
+                .checked_add(1)
+                .expect("the length of vectors to be encoded as a u32");
             ret
         })
     }
