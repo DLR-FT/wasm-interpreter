@@ -166,9 +166,9 @@ impl Stack {
         if self.call_frame_count() == 0 {
             None
         } else {
-            // SAFETY: This is safe, because we just checked that the call frame
-            // which we just popped is not the base call frame and only the base
-            // call frame can contain uninitialized fields.
+            // SAFETY: This is sound, because we just checked that the call
+            // frame which we just popped is not the base call frame and only
+            // the base call frame can contain uninitialized fields.
             unsafe {
                 Some((
                     return_func_addr.assume_init(),

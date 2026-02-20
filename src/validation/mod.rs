@@ -303,7 +303,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
     let func_blocks_stps = handle_section(&mut wasm, &mut header, SectionTy::Code, |wasm, h| {
         // SAFETY: It is required that all passed index values are valid in all
         // passed `IdxVec`s. The current function does not take any index types
-        // as arguments and every `IdxVec<..., ...>` is unique, i.e. uses
+        // as arguments and every `IdxVec<..., ...>` is unique because they use
         // different generics. Therefore, all index types must be valid in their
         // relevant `IdxVec`s.
         unsafe {

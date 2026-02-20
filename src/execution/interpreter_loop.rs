@@ -215,14 +215,14 @@ pub(super) fn run<T: Config>(
             }
             BLOCK => {
                 decrement_fuel!(T::get_flat_cost(BLOCK));
-                // SAFETY: Because the Wasm code is valid, there must be a valid
-                // block type next.
+                // SAFETY: Validation guarantess there to be a valid block type
+                // next.
                 let _ = unsafe { BlockType::read_unchecked(wasm) };
             }
             LOOP => {
                 decrement_fuel!(T::get_flat_cost(LOOP));
-                // SAFETY: Because the Wasm code is valid, there must be a valid
-                // block type next.
+                // SAFETY: Validation guarantees there to be a valid block type
+                // next.
                 let _ = unsafe { BlockType::read_unchecked(wasm) };
             }
             RETURN => {
@@ -243,10 +243,8 @@ pub(super) fn run<T: Config>(
 
                 let func_to_call_addr = {
                     let current_module = store.modules.get(current_wasm_func_inst.module_addr);
-                    // SAFETY: Validation guarantees this function index to be valid
-                    // within the current module. Therefore, it must also be valid
-                    // for the `IdxVec<FuncIdx, FuncAddr>` of the current module
-                    // instance.
+                    // SAFETY: Validation guarantees the function index to be
+                    // valid in the current module.
                     unsafe { current_module.func_addrs.get(func_idx) }
                 };
 
@@ -314,21 +312,21 @@ pub(super) fn run<T: Config>(
             // TODO: fix push_call_frame, because the func idx that you get from the table is global func idx
             CALL_INDIRECT => {
                 decrement_fuel!(T::get_flat_cost(CALL_INDIRECT));
-                // SAFETY: the Wasm code is valid and therefore the following
-                // bytes must encode a valid type index.
+                // SAFETY: Validation guarantees there to be a valid type index
+                // next.
                 let given_type_idx = unsafe { TypeIdx::read_unchecked(wasm) };
-                // SAFETY: The Wasm code is valid and therefore the following
-                // bytes must encode a valid table index.
+                // SAFETY: Validation guarantees there to be a valid table index
+                // next.
                 let table_idx = unsafe { TableIdx::read_unchecked(wasm) };
 
                 let module = store.modules.get(current_module);
 
-                // SAFETY: The module that is used now is the same one from
-                // which the table index was just read.
+                // SAFETY: Validation guarantees the table index to be valid in
+                // the current module.
                 let table_addr = unsafe { module.table_addrs.get(table_idx) };
                 let tab = store.tables.get(*table_addr);
-                // SAFETY: The module that is used now is the same one from
-                // which the type index was just read.
+                // SAFETY: Validation guarantees the type index to be valid in
+                // the current module.
                 let func_ty = unsafe { module.types.get(given_type_idx) };
 
                 let i: u32 = stack.pop_value().try_into().unwrap_validated();
@@ -508,12 +506,12 @@ pub(super) fn run<T: Config>(
             }
             TABLE_GET => {
                 decrement_fuel!(T::get_flat_cost(TABLE_GET));
-                // SAFETY: The Wasm code is valid and therefore the following
-                // bytes must encode a valid table index.
+                // SAFETY: Validation guarantees there to be a valid table index
+                // next.
                 let table_idx = unsafe { TableIdx::read_unchecked(wasm) };
                 let module = store.modules.get(current_module);
-                // SAFETY: The module that is used now is the same one from
-                // which the table index was just read.
+                // SAFETY: Validation guarantees the table index to be valid in
+                // the current module.
                 let table_addr = *unsafe { module.table_addrs.get(table_idx) };
                 let tab = store.tables.get(table_addr);
 
@@ -534,12 +532,12 @@ pub(super) fn run<T: Config>(
             }
             TABLE_SET => {
                 decrement_fuel!(T::get_flat_cost(TABLE_SET));
-                // SAFETY: The Wasm code is valid and therefore the following
-                // bytes must encode a valid table index.
+                // SAFETY: Validation guarantees there to be valid table index
+                // next.
                 let table_idx = unsafe { TableIdx::read_unchecked(wasm) };
                 let module = store.modules.get(current_module);
-                // SAFETY: The module that is used now is the same one from
-                // which the table index was just read.
+                // SAFETY: Validation guarantees the table index to be valid in
+                // the current module.
                 let table_addr = *unsafe { module.table_addrs.get(table_idx) };
                 let tab = store.tables.get_mut(table_addr);
 
@@ -2307,8 +2305,7 @@ pub(super) fn run<T: Config>(
                 let func_idx = unsafe { FuncIdx::read_unchecked(wasm) };
                 let current_module = store.modules.get(current_module);
                 // SAFETY: Validation guarantees the function index to be valid
-                // in the current module. Therefore, it must also be valid in
-                // the funcs index space of the current module instance.
+                // in the current module.
                 let func_addr = unsafe { current_module.func_addrs.get(func_idx) };
                 stack.push_value::<T>(Value::Ref(Ref::Func(*func_addr)))?;
             }
@@ -2488,8 +2485,8 @@ pub(super) fn run<T: Config>(
                         let s: u32 = stack.pop_value().try_into().unwrap_validated();
                         let d: u32 = stack.pop_value().try_into().unwrap_validated();
 
-                        // SAFETY: Validation guarantees a memory with index 0
-                        // to exist in the current module.
+                        // SAFETY: Validation guarantees at least one memory to
+                        // exist and that the data index is valid.
                         unsafe {
                             memory_init(
                                 &store.modules,
@@ -2509,8 +2506,8 @@ pub(super) fn run<T: Config>(
                         // SAFETY: Validation guarantees there to be a valid
                         // data index next.
                         let data_idx = unsafe { DataIdx::read_unchecked(wasm) };
-                        // SAFETY: The passed data index is valid in the current
-                        // module, whose module address is also passed.
+                        // SAFETY: Validation guarantees the data index to be
+                        // valid in the current module.
                         unsafe {
                             data_drop(&store.modules, &mut store.data, current_module, data_idx)
                         };
@@ -2528,9 +2525,11 @@ pub(super) fn run<T: Config>(
 
                         let module = store.modules.get(current_module);
 
-                        // SAFETY: Validation guarantees that a memory with index 0 exists.
+                        // SAFETY: Validation guarantees at least one memory to
+                        // exist.
                         let src_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
-                        // SAFETY: Validation guarantees that a memory with index 0 exists.
+                        // SAFETY: Validation guarantees at least one memory to
+                        // exist.
                         let dst_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
 
                         let n: u32 = stack.pop_value().try_into().unwrap_validated();
@@ -2616,8 +2615,8 @@ pub(super) fn run<T: Config>(
                         // SAFETY: Validation guarantees there to be a valid
                         // element index next.
                         let elem_idx = unsafe { ElemIdx::read_unchecked(wasm) };
-                        // SAFETY: The Wasm code is valid and therefore the
-                        // following bytes must encode a valid table index.
+                        // SAFETY: Validation guarantees there to be a valid
+                        // table index next.
                         let table_idx = unsafe { TableIdx::read_unchecked(wasm) };
 
                         let n: u32 = stack.pop_value().try_into().unwrap_validated(); // size
@@ -2638,8 +2637,8 @@ pub(super) fn run<T: Config>(
                         let s: i32 = stack.pop_value().try_into().unwrap_validated(); // offset
                         let d: i32 = stack.pop_value().try_into().unwrap_validated(); // dst
 
-                        // SAFETY: The passed table index is valid in the
-                        // current module, whose module address is also passed.
+                        // SAFETY: Validation guarantees the table index and the
+                        // element index to be valid in the current module.
                         unsafe {
                             table_init(
                                 &store.modules,
@@ -2660,8 +2659,8 @@ pub(super) fn run<T: Config>(
                         // index next.
                         let elem_idx = unsafe { ElemIdx::read_unchecked(wasm) };
 
-                        // SAFETY: The passed element index is valid in the
-                        // current module, whose module address is also passed.
+                        // SAFETY: Validation guarantees the element index to be
+                        // valid in the current module.
                         unsafe {
                             elem_drop(
                                 &store.modules,
@@ -2674,20 +2673,20 @@ pub(super) fn run<T: Config>(
                     // https://webassembly.github.io/spec/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-table-mathsf-table-copy-x-y
                     TABLE_COPY => {
                         decrement_fuel!(T::get_fc_extension_flat_cost(TABLE_COPY));
-                        // SAFETY: The Wasm code is valid and therefore the
-                        // following bytes must encode a valid table index.
+                        // SAFETY: Validation guarantees there to be a valid
+                        // table index next.
                         let table_x_idx = unsafe { TableIdx::read_unchecked(wasm) };
-                        // SAFETY: The Wasm code is valid and therefore the
-                        // following bytes must encode a valid table index.
+                        // SAFETY: Validation guarantees there to be a valid
+                        // table index next.
                         let table_y_idx = unsafe { TableIdx::read_unchecked(wasm) };
 
                         let module = store.modules.get(current_module);
 
-                        // SAFETY: The module that is used now is the same one from
-                        // which the table index was just read.
+                        // SAFETY: Validation guarantees the table index to be
+                        // valid in the current module.
                         let table_addr_x = *unsafe { module.table_addrs.get(table_x_idx) };
-                        // SAFETY: The module that is used now is the same one from
-                        // which the table index was just read.
+                        // SAFETY: Validation guarantees the table index to be
+                        // valid in the current module.
                         let table_addr_y = *unsafe { module.table_addrs.get(table_y_idx) };
 
                         let tab_x_elem_len = store.tables.get(table_addr_x).elem.len();
@@ -2761,13 +2760,13 @@ pub(super) fn run<T: Config>(
                     }
                     TABLE_GROW => {
                         decrement_fuel!(T::get_fc_extension_flat_cost(TABLE_GROW));
-                        // SAFETY: The Wasm code is valid and therefore the
-                        // following bytes must encode a valid table index.
+                        // SAFETY: Validation guarantees there to be a valid
+                        // table index next.
                         let table_idx = unsafe { TableIdx::read_unchecked(wasm) };
 
                         let module = store.modules.get(current_module);
-                        // SAFETY: The module that is used now is the same one from
-                        // which the table index was just read.
+                        // SAFETY: Validation guarantees the table index to be
+                        // valid in the current module.
                         let table_addr = *unsafe { module.table_addrs.get(table_idx) };
                         let tab = store.tables.get_mut(table_addr);
 
@@ -2804,13 +2803,13 @@ pub(super) fn run<T: Config>(
                     }
                     TABLE_SIZE => {
                         decrement_fuel!(T::get_fc_extension_flat_cost(TABLE_SIZE));
-                        // SAFETY: The Wasm code is valid and therefore the
-                        // following bytes must encode a valid table index.
+                        // SAFETY: Validation guarantees there to be valid table
+                        // index next.
                         let table_idx = unsafe { TableIdx::read_unchecked(wasm) };
 
                         let module = store.modules.get(current_module);
-                        // SAFETY: The module that is used now is the same one from
-                        // which the table index was just read.
+                        // SAFETY: Validation guarantees the table index to be
+                        // valid in the current module.
                         let table_addr = *unsafe { module.table_addrs.get(table_idx) };
                         let tab = store.tables.get_mut(table_addr);
 
@@ -2822,13 +2821,13 @@ pub(super) fn run<T: Config>(
                     }
                     TABLE_FILL => {
                         decrement_fuel!(T::get_fc_extension_flat_cost(TABLE_FILL));
-                        // SAFETY: The Wasm code is valid and therefore the
-                        // following bytes must encode a valid table index.
+                        // SAFETY: Validation guarantees there to be a valid
+                        // table index next.
                         let table_idx = unsafe { TableIdx::read_unchecked(wasm) };
 
                         let module = store.modules.get(current_module);
-                        // SAFETY: The module that is used now is the same one from
-                        // which the table index was just read.
+                        // SAFETY: Validation guarantees the table index to be
+                        // valid in the current module.
                         let table_addr = *unsafe { module.table_addrs.get(table_idx) };
                         let tab = store.tables.get_mut(table_addr);
 
@@ -2972,8 +2971,8 @@ pub(super) fn run<T: Config>(
                         decrement_fuel!(T::get_fd_extension_flat_cost(V128_LOAD));
                         let memarg = MemArg::read(wasm).unwrap_validated();
                         let module = store.modules.get(current_module);
-                        // SAFETY: Validation guarantees there to be at least
-                        // one memory
+                        // SAFETY: Validation guarantees at least one memory to
+                        // exist.
                         let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                         let memory = store.memories.get(mem_addr);
 
@@ -2987,7 +2986,8 @@ pub(super) fn run<T: Config>(
                         decrement_fuel!(T::get_fd_extension_flat_cost(V128_STORE));
                         let memarg = MemArg::read(wasm).unwrap_validated();
                         let module = store.modules.get(current_module);
-                        // SAFETY: Validation guarantees at least one memory to exist.
+                        // SAFETY: Validation guarantees at least one memory to
+                        // exist.
                         let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                         let memory = store.memories.get(mem_addr);
 
@@ -3003,7 +3003,8 @@ pub(super) fn run<T: Config>(
                         decrement_fuel!(T::get_fd_extension_flat_cost(V128_LOAD8X8_S));
                         let memarg = MemArg::read(wasm).unwrap_validated();
                         let module = store.modules.get(current_module);
-                        // SAFETY: Validation guarantees at least one memory to exist.
+                        // SAFETY: Validation guarantees at least one memory to
+                        // exist.
                         let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                         let memory = store.memories.get(mem_addr);
 
@@ -3025,7 +3026,8 @@ pub(super) fn run<T: Config>(
                         decrement_fuel!(T::get_fd_extension_flat_cost(V128_LOAD8X8_U));
                         let memarg = MemArg::read(wasm).unwrap_validated();
                         let module = store.modules.get(current_module);
-                        // SAFETY: Validation guarantees at least one memory to exist.
+                        // SAFETY: Validation guarantees at least one memory to
+                        // exist.
                         let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                         let memory = store.memories.get(mem_addr);
 
@@ -3047,7 +3049,8 @@ pub(super) fn run<T: Config>(
                         decrement_fuel!(T::get_fd_extension_flat_cost(V128_LOAD16X4_S));
                         let memarg = MemArg::read(wasm).unwrap_validated();
                         let module = store.modules.get(current_module);
-                        // SAFETY: Validation guarantees at least one memory to exist.
+                        // SAFETY: Validation guarantees at least one memory to
+                        // exist.
                         let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                         let memory = store.memories.get(mem_addr);
 
@@ -3069,7 +3072,8 @@ pub(super) fn run<T: Config>(
                         decrement_fuel!(T::get_fd_extension_flat_cost(V128_LOAD16X4_U));
                         let memarg = MemArg::read(wasm).unwrap_validated();
                         let module = store.modules.get(current_module);
-                        // SAFETY: Validation guarantees at least one memory to exist.
+                        // SAFETY: Validation guarantees at least one memory to
+                        // exist.
                         let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                         let memory = store.memories.get(mem_addr);
 
@@ -3091,7 +3095,8 @@ pub(super) fn run<T: Config>(
                         decrement_fuel!(T::get_fd_extension_flat_cost(V128_LOAD32X2_S));
                         let memarg = MemArg::read(wasm).unwrap_validated();
                         let module = store.modules.get(current_module);
-                        // SAFETY: Validation guarantees at least one memory to exist.
+                        // SAFETY: Validation guarantees at least one memory to
+                        // exist.
                         let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                         let memory = store.memories.get(mem_addr);
 
@@ -3113,7 +3118,8 @@ pub(super) fn run<T: Config>(
                         decrement_fuel!(T::get_fd_extension_flat_cost(V128_LOAD32X2_U));
                         let memarg = MemArg::read(wasm).unwrap_validated();
                         let module = store.modules.get(current_module);
-                        // SAFETY: Validation guarantees at least one memory to exist.
+                        // SAFETY: Validation guarantees at least one memory to
+                        // exist.
                         let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                         let memory = store.memories.get(mem_addr);
 
@@ -3137,7 +3143,8 @@ pub(super) fn run<T: Config>(
                         decrement_fuel!(T::get_fd_extension_flat_cost(V128_LOAD8_SPLAT));
                         let memarg = MemArg::read(wasm).unwrap_validated();
                         let module = store.modules.get(current_module);
-                        // SAFETY: Validation guarantees at least one memory to exist.
+                        // SAFETY: Validation guarantees at least one memory to
+                        // exist.
                         let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                         let memory = store.memories.get(mem_addr);
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
@@ -3150,7 +3157,8 @@ pub(super) fn run<T: Config>(
                         decrement_fuel!(T::get_fd_extension_flat_cost(V128_LOAD16_SPLAT));
                         let memarg = MemArg::read(wasm).unwrap_validated();
                         let module = store.modules.get(current_module);
-                        // SAFETY: Validation guarantees at least one memory to exist.
+                        // SAFETY: Validation guarantees at least one memory to
+                        // exist.
                         let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                         let memory = store.memories.get(mem_addr);
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
@@ -3163,7 +3171,8 @@ pub(super) fn run<T: Config>(
                         decrement_fuel!(T::get_fd_extension_flat_cost(V128_LOAD32_SPLAT));
                         let memarg = MemArg::read(wasm).unwrap_validated();
                         let module = store.modules.get(current_module);
-                        // SAFETY: Validation guarantees at least one memory to exist.
+                        // SAFETY: Validation guarantees at least one memory to
+                        // exist.
                         let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                         let memory = store.memories.get(mem_addr);
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
@@ -3176,7 +3185,8 @@ pub(super) fn run<T: Config>(
                         decrement_fuel!(T::get_fd_extension_flat_cost(V128_LOAD64_SPLAT));
                         let memarg = MemArg::read(wasm).unwrap_validated();
                         let module = store.modules.get(current_module);
-                        // SAFETY: Validation guarantees at least one memory to exist.
+                        // SAFETY: Validation guarantees at least one memory to
+                        // exist.
                         let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                         let memory = store.memories.get(mem_addr);
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
@@ -3192,7 +3202,8 @@ pub(super) fn run<T: Config>(
                         let memarg = MemArg::read(wasm).unwrap_validated();
 
                         let module = store.modules.get(current_module);
-                        // SAFETY: Validation guarantees at least one memory to exist.
+                        // SAFETY: Validation guarantees at least one memory to
+                        // exist.
                         let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                         let memory = store.memories.get(mem_addr);
 
@@ -3206,7 +3217,8 @@ pub(super) fn run<T: Config>(
                         decrement_fuel!(T::get_fd_extension_flat_cost(V128_LOAD64_ZERO));
                         let memarg = MemArg::read(wasm).unwrap_validated();
                         let module = store.modules.get(current_module);
-                        // SAFETY: Validation guarantees at least one memory to exist.
+                        // SAFETY: Validation guarantees at least one memory to
+                        // exist.
                         let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                         let memory = store.memories.get(mem_addr);
 
@@ -3224,7 +3236,8 @@ pub(super) fn run<T: Config>(
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let memarg = MemArg::read(wasm).unwrap_validated();
                         let module = store.modules.get(current_module);
-                        // SAFETY: Validation guarantees at least one memory to exist.
+                        // SAFETY: Validation guarantees at least one memory to
+                        // exist.
                         let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                         let memory = store.memories.get(mem_addr);
                         let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -3241,7 +3254,8 @@ pub(super) fn run<T: Config>(
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let memarg = MemArg::read(wasm).unwrap_validated();
                         let module = store.modules.get(current_module);
-                        // SAFETY: Validation guarantees at least one memory to exist.
+                        // SAFETY: Validation guarantees at least one memory to
+                        // exist.
                         let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                         let memory = store.memories.get(mem_addr);
                         let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -3257,7 +3271,8 @@ pub(super) fn run<T: Config>(
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let memarg = MemArg::read(wasm).unwrap_validated();
                         let module = store.modules.get(current_module);
-                        // SAFETY: Validation guarantees at least one memory to exist.
+                        // SAFETY: Validation guarantees at least one memory to
+                        // exist.
                         let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                         let memory = store.memories.get(mem_addr);
                         let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -3273,7 +3288,8 @@ pub(super) fn run<T: Config>(
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let memarg = MemArg::read(wasm).unwrap_validated();
                         let module = store.modules.get(current_module);
-                        // SAFETY: Validation guarantees at least one memory to exist.
+                        // SAFETY: Validation guarantees at least one memory to
+                        // exist.
                         let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                         let memory = store.memories.get(mem_addr);
                         let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -3291,7 +3307,8 @@ pub(super) fn run<T: Config>(
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let memarg = MemArg::read(wasm).unwrap_validated();
                         let module = store.modules.get(current_module);
-                        // SAFETY: Validation guarantees at least one memory to exist.
+                        // SAFETY: Validation guarantees at least one memory to
+                        // exist.
                         let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                         let memory = store.memories.get(mem_addr);
                         let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -3307,7 +3324,8 @@ pub(super) fn run<T: Config>(
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let memarg = MemArg::read(wasm).unwrap_validated();
                         let module = store.modules.get(current_module);
-                        // SAFETY: Validation guarantees at least one memory to exist.
+                        // SAFETY: Validation guarantees at least one memory to
+                        // exist.
                         let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                         let memory = store.memories.get(mem_addr);
                         let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -3323,7 +3341,8 @@ pub(super) fn run<T: Config>(
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let memarg = MemArg::read(wasm).unwrap_validated();
                         let module = store.modules.get(current_module);
-                        // SAFETY: Validation guarantees at least one memory to exist.
+                        // SAFETY: Validation guarantees at least one memory to
+                        // exist.
                         let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                         let memory = store.memories.get(mem_addr);
                         let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -3339,7 +3358,8 @@ pub(super) fn run<T: Config>(
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let memarg = MemArg::read(wasm).unwrap_validated();
                         let module = store.modules.get(current_module);
-                        // SAFETY: Validation guarantees at least one memory to exist.
+                        // SAFETY: Validation guarantees at least one memory to
+                        // exist.
                         let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                         let memory = store.memories.get(mem_addr);
                         let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -5682,7 +5702,7 @@ pub(super) unsafe fn memory_init(
 
 /// # Safety
 ///
-/// The caller must ensure that the given data index is alid in
+/// The caller must ensure that the given data index is valid in
 /// `store_modules.get(current_module).data_addrs`.
 #[inline(always)]
 pub(super) unsafe fn data_drop(

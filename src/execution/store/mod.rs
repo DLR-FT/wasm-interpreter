@@ -124,7 +124,8 @@ impl<'b, T: Config> Store<'b, T> {
 
         // instantiation: step 4
         let imports_as_extern_types = validation_info.imports.iter().map(|import| {
-            // SAFETY: `import` is part of `validation_info`.
+            // SAFETY: `import` is part of the same `validation_info` and
+            // therefore it was created as part of the same `validation_info`.
             unsafe { import.desc.extern_type(validation_info) }
         });
         for (extern_val, import_as_extern_type) in extern_vals.iter().zip(imports_as_extern_types) {

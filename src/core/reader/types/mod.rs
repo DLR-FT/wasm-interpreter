@@ -233,7 +233,8 @@ impl BlockType {
                 },
             }),
             BlockType::Type(type_idx) => {
-                // SAFETY: Upheld by the caller
+                // SAFETY: The caller ensures that this `IdxVec` is the same one
+                // used to validate the `TypeIdx` in `self`.
                 let func_type = unsafe { func_types.get(*type_idx) };
                 Ok(func_type.clone())
             }
