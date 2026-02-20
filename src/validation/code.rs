@@ -51,7 +51,7 @@ pub unsafe fn validate_code_section(
         // space.
         let ty_idx = c_funcs
             .iter_local_definitions()
-            .nth(idx)
+            .nth(idx.into_usize())
             .ok_or(ValidationError::FunctionAndCodeSectionsHaveDifferentLengths)?;
 
         // SAFETY: The caller ensures that all passed `TypeIdx` values,

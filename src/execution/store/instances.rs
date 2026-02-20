@@ -2,9 +2,7 @@ use alloc::{collections::btree_map::BTreeMap, string::String, vec, vec::Vec};
 
 use crate::{
     core::{
-        indices::{
-            DataIdx, ElemIdx, FuncIdx, GlobalIdx, IdxVec, MemIdx, TableIdx, TypeIdx,
-        },
+        indices::{DataIdx, ElemIdx, FuncIdx, GlobalIdx, IdxVec, MemIdx, TableIdx, TypeIdx},
         reader::{
             span::Span,
             types::{FuncType, MemType, TableType},
