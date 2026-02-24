@@ -2,14 +2,14 @@ use alloc::{string::String, vec::Vec};
 use wasm::{
     addrs::{FuncAddr, GlobalAddr, MemAddr, ModuleAddr, TableAddr},
     config::Config,
-    resumable::Resumable,
+    resumable::{HostResumable, WasmResumable},
     FuncType, GlobalType, HaltExecutionError, MemType, RuntimeError, TableType, ValidationInfo,
     Value,
 };
 
 use crate::{
     stored_types::{Stored, StoredExternVal, StoredInstantiationOutcome, StoredRunState},
-    AbstractStored, StoreId, StoredRef, StoredValue,
+    AbstractStored, StoreId, StoredRef, StoredResumable, StoredValue,
 };
 
 pub struct Store<'b, T: Config> {
@@ -148,7 +148,7 @@ impl<'b, T: Config> Store<'b, T> {
         func_addr: Stored<FuncAddr>,
         params: Vec<StoredValue>,
         maybe_fuel: Option<u64>,
-    ) -> Result<StoredRunState<T>, RuntimeError> {
+    ) -> Result<StoredRunState, RuntimeError> {
         // 1. try unwrap
         let func_addr = func_addr.try_unwrap_into_bare(self.id);
         let params = params.try_unwrap_into_bare(self.id);
@@ -417,7 +417,7 @@ impl<'b, T: Config> Store<'b, T> {
         func_addr: Stored<FuncAddr>,
         params: Vec<StoredValue>,
         maybe_fuel: Option<u64>,
-    ) -> Result<Stored<Resumable<T>>, RuntimeError> {
+    ) -> Result<StoredResumable<T>, RuntimeError> {
         // 1. try unwrap
         let func_addr = func_addr.try_unwrap_into_bare(self.id);
         let params = params.try_unwrap_into_bare(self.id);
@@ -428,7 +428,7 @@ impl<'b, T: Config> Store<'b, T> {
         let resumable = unsafe { self.inner.create_resumable(func_addr, params, maybe_fuel) }?;
         // 3. rewrap
         // SAFETY: The `Resumable` just came from the current store.
-        let stored_resumable = unsafe { Stored::from_bare(resumable, self.id) };
+        let stored_resumable = unsafe { StoredResumable::from_bare(resumable, self.id) };
         // 4. return
         Ok(stored_resumable)
     }
@@ -436,12 +436,12 @@ impl<'b, T: Config> Store<'b, T> {
     /// This is a safe variant of [`Store::resume`](wasm::Store::resume).
     pub fn resume(
         &mut self,
-        resumable: Stored<Resumable<T>>,
-    ) -> Result<StoredRunState<T>, RuntimeError> {
+        resumable: Stored<WasmResumable>,
+    ) -> Result<StoredRunState, RuntimeError> {
         // 1. try unwrap
         let resumable = resumable.try_unwrap_into_bare(self.id);
         // 2. call
-        // SAFETY: It was just checked that the `Resumable` came from the
+        // SAFETY: It was just checked that the `WasmResumable` came from the
         // current store through its store id.
         let run_state = unsafe { self.inner.resume(resumable) }?;
         // 3. rewrap
@@ -449,6 +449,24 @@ impl<'b, T: Config> Store<'b, T> {
         let stored_run_state = unsafe { StoredRunState::from_bare(run_state, self.id) };
         // 4. return
         Ok(stored_run_state)
+    }
+
+    /// This is a safe variant of [`wasm::Store::resume_host`].
+    pub fn resume_host(
+        &mut self,
+        resumable: Stored<HostResumable<T>>,
+    ) -> Result<Vec<StoredValue>, RuntimeError> {
+        // 1. try unwrap
+        let resumable = resumable.try_unwrap_into_bare(self.id);
+        // 2. call
+        // SAFETY: It was just checked that the `HostResumable` came from the
+        // current store through its store id.
+        let values = unsafe { self.inner.resume_host(resumable) }?;
+        // 3. rewrap
+        // SAFETY: All `Value`s just came from the current store.
+        let stored_values = unsafe { Vec::from_bare(values, self.id) };
+        // 4. return
+        Ok(stored_values)
     }
 
     /// This is a safe variant of

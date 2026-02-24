@@ -24,7 +24,10 @@ fn out_of_fuel() {
         .unwrap();
     let resumable = store
         .create_resumable(func_addr, Vec::new(), Some(40))
+        .unwrap()
+        .as_wasm_resumable()
         .unwrap();
+
     assert!(matches!(
         store.resume(resumable).unwrap(),
         StoredRunState::Resumable { .. }
@@ -98,9 +101,13 @@ fn resumable() {
 
     let resumable_mult = store
         .create_resumable(mult_global_0, vec![], Some(0))
+        .unwrap()
+        .as_wasm_resumable()
         .unwrap();
     let resumable_add = store
         .create_resumable(add_global_1, vec![], Some(0))
+        .unwrap()
+        .as_wasm_resumable()
         .unwrap();
 
     let mut run_state_mult = store.resume(resumable_mult).unwrap();
@@ -187,6 +194,8 @@ fn resumable_internal_state() {
         .unwrap();
     let resumable_add = store
         .create_resumable(add_global_0, vec![], Some(4))
+        .unwrap()
+        .as_wasm_resumable()
         .unwrap();
     assert_eq!(store.global_read(global_0), StoredValue::I32(expected[0]));
     let mut run_state_add = store.resume(resumable_add).unwrap();
@@ -227,10 +236,14 @@ fn resumable_drop() {
         .unwrap();
     let resumable = store
         .create_resumable(func_addr, Vec::new(), Some(40))
+        .unwrap()
+        .as_wasm_resumable()
         .unwrap();
     {
         let resumable = store
             .create_resumable(func_addr, Vec::new(), Some(40))
+            .unwrap()
+            .as_wasm_resumable()
             .unwrap();
 
         let StoredRunState::Resumable { .. } = store.resume(resumable).unwrap() else {

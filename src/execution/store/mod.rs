@@ -721,15 +721,27 @@ impl<'b, T: Config> Store<'b, T> {
         func_addr: FuncAddr,
         params: Vec<Value>,
         maybe_fuel: Option<u64>,
-    ) -> Result<RunState<T>, RuntimeError> {
+    ) -> Result<RunState, RuntimeError> {
         // SAFETY: The caller ensures that the function address and any function
         // addresses or extern addresses contained in the parameter values are
         // valid in the current store.
         let resumable = unsafe { self.create_resumable(func_addr, params, maybe_fuel)? };
 
-        // SAFETY: This resumable just came from the current store. Therefore,
-        // it must be valid in the current store.
-        unsafe { self.resume(resumable) }
+        match resumable {
+            Resumable::Wasm(wasm_resumable) => {
+                // SAFETY: This Wasm resumable just came from the current store.
+                // Therefore, it must be valid in the current store.
+                unsafe { self.resume(wasm_resumable) }
+            }
+            Resumable::Host(host_resumable) => {
+                // SAFETY: This host resumable just came from the current store.
+                // Therefore, it must be valid in the current store.
+                unsafe { self.resume_host(host_resumable) }.map(|results| RunState::Finished {
+                    values: results,
+                    maybe_remaining_fuel: maybe_fuel,
+                })
+            }
+        }
     }
 
     /// Allocates a new table with some table type and an initialization value `ref` and returns its table address.
@@ -1283,7 +1295,7 @@ impl<'b, T: Config> Store<'b, T> {
             return Err(RuntimeError::FunctionInvocationSignatureMismatch);
         };
 
-        match func_inst {
+        let resumable = match func_inst {
             FuncInst::WasmFunc(wasm_func_inst) => {
                 // Prepare a new stack with the locals for the entry function
                 let stack = Stack::new::<T>(
@@ -1292,24 +1304,25 @@ impl<'b, T: Config> Store<'b, T> {
                     &wasm_func_inst.locals,
                 )?;
 
-                Ok(Resumable::Wasm(WasmResumable {
+                Resumable::Wasm(WasmResumable {
                     current_func_addr: func_addr,
                     stack,
                     pc: wasm_func_inst.code_expr.from,
                     stp: wasm_func_inst.stp,
                     maybe_fuel,
-                }))
+                })
             }
-            FuncInst::HostFunc(host_func_inst) => Ok(Resumable::Host(HostResumable {
+            FuncInst::HostFunc(host_func_inst) => Resumable::Host(HostResumable {
                 func_addr,
                 params,
                 hostcode: host_func_inst.hostcode,
-                maybe_fuel,
-            })),
-        }
+            }),
+        };
+
+        Ok(resumable)
     }
 
-    /// Resumes the given [`Resumable`]. Returns a [`RunState`] that may contain
+    /// Resumes the given [`WasmResumable`]. Returns a [`RunState`] that may contain
     /// a new [`Resumable`] depending on whether execution ran out of fuel or
     /// finished normally.
     ///
@@ -1317,63 +1330,63 @@ impl<'b, T: Config> Store<'b, T> {
     ///
     /// The caller has to guarantee that the [`Resumable`] came from the current
     /// [`Store`] object.
-    pub unsafe fn resume(&mut self, resumable: Resumable<T>) -> Result<RunState<T>, RuntimeError> {
-        match resumable {
-            Resumable::Wasm(mut resumable) => {
-                let result = interpreter_loop::run(&mut resumable, self)?;
+    pub unsafe fn resume(
+        &mut self,
+        mut resumable: WasmResumable,
+    ) -> Result<RunState, RuntimeError> {
+        let result = interpreter_loop::run(&mut resumable, self)?;
 
-                match result {
-                    InterpreterLoopOutcome::ExecutionReturned => {
-                        let maybe_remaining_fuel = resumable.maybe_fuel;
-                        let values = resumable.stack.into_values();
-                        Ok(RunState::Finished {
-                            values,
-                            maybe_remaining_fuel,
-                        })
-                    }
-                    InterpreterLoopOutcome::OutOfFuel { required_fuel } => {
-                        Ok(RunState::Resumable {
-                            resumable: Resumable::Wasm(resumable),
-                            required_fuel,
-                        })
-                    }
-                }
-            }
-            Resumable::Host(resumable) => {
-                let returns = (resumable.hostcode)(&mut self.user_data, resumable.params);
+        let run_state = match result {
+            InterpreterLoopOutcome::ExecutionReturned => RunState::Finished {
+                values: resumable.stack.into_values(),
+                maybe_remaining_fuel: resumable.maybe_fuel,
+            },
+            InterpreterLoopOutcome::OutOfFuel { required_fuel } => RunState::Resumable {
+                resumable,
+                required_fuel,
+            },
+        };
 
-                debug!("Successfully invoked function");
+        Ok(run_state)
+    }
 
-                let returns = returns
-                    .map_err(|HaltExecutionError| RuntimeError::HostFunctionHaltedExecution)?;
+    /// # Safety
+    ///
+    /// The caller has to guarantee that the [`HostResumable`] came from the
+    /// current [`Store`] object.
+    pub unsafe fn resume_host(
+        &mut self,
+        resumable: HostResumable<T>,
+    ) -> Result<Vec<Value>, RuntimeError> {
+        let returns = (resumable.hostcode)(&mut self.user_data, resumable.params);
 
-                // Verify that the return parameters match the host function parameters
-                // since we have no validation guarantees for host functions
+        debug!("Successfully invoked function");
 
-                // SAFETY: The caller ensures that the resumable, and thus also
-                // the function address in it, is valid in the current store.
-                let function = unsafe { self.functions.get(resumable.func_addr) };
+        let returns =
+            returns.map_err(|HaltExecutionError| RuntimeError::HostFunctionHaltedExecution)?;
 
-                let FuncInst::HostFunc(host_func_inst) = function else {
-                    unreachable!("expected function to be a host function instance")
-                };
+        // Verify that the return parameters match the host function parameters
+        // since we have no validation guarantees for host functions
 
-                let return_types = returns.iter().map(|v| v.to_ty()).collect::<Vec<_>>();
-                if host_func_inst.function_type.returns.valtypes != return_types {
-                    trace!(
-                        "Func return types len: {}; returned args len: {}",
-                        host_func_inst.function_type.returns.valtypes.len(),
-                        return_types.len()
-                    );
-                    return Err(RuntimeError::HostFunctionSignatureMismatch);
-                }
+        // SAFETY: The caller ensures that the resumable, and thus also the
+        // function address in it, is valid in the current store.
+        let function = unsafe { self.functions.get(resumable.func_addr) };
 
-                Ok(RunState::Finished {
-                    values: returns,
-                    maybe_remaining_fuel: resumable.maybe_fuel,
-                })
-            }
+        let FuncInst::HostFunc(host_func_inst) = function else {
+            unreachable!("expected function to be a host function instance")
+        };
+
+        let return_types = returns.iter().map(|v| v.to_ty()).collect::<Vec<_>>();
+        if host_func_inst.function_type.returns.valtypes != return_types {
+            trace!(
+                "Func return types len: {}; returned args len: {}",
+                host_func_inst.function_type.returns.valtypes.len(),
+                return_types.len()
+            );
+            return Err(RuntimeError::HostFunctionSignatureMismatch);
         }
+
+        Ok(returns)
     }
 
     /// Invokes a function without fuel.
