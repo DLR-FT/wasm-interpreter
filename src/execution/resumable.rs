@@ -1,9 +1,13 @@
+//! TODO
+
 use core::num::NonZeroU64;
 
 use alloc::vec::Vec;
 
-use crate::{addrs::FuncAddr, value_stack::Stack, HaltExecutionError, Value};
+use crate::{addrs::FuncAddr, value_stack::Stack, Hostcode, Value};
 
+/// A [`WasmResumable`] is an object used to resume execution of Wasm code.
+///
 /// # Safety
 ///
 /// TODO:
@@ -31,36 +35,59 @@ impl WasmResumable {
     }
 }
 
+/// A [`HostCall`] object contains information required for executing a specific
+/// host function.
+#[derive(Clone, Debug)]
+pub struct HostCall {
+    /// Must contain the correct parameter types for the host function with host
+    /// code `hostcode`.
+    pub params: Vec<Value>,
+    pub hostcode: Hostcode,
+}
+
+/// An object used to finish the execution of host code of a [`HostCall`].
+#[derive(Debug, Clone)]
+pub struct HostCallFinisher {
+    pub(crate) host_func_addr: FuncAddr,
+}
+
+/// A [`HostResumable`] is used to resume execution after executing its
+/// [`HostCall`].
+///
+/// When a host function is called, a [`HostResumable`] and [`HostCall`] are
+/// returned. After the [`HostCall`] was used to execute the host function, the
+/// [`HostResumable`] is used together with the return values of the host call
+/// to resume execution.
 #[derive(Debug)]
-pub struct HostResumable<T> {
-    /// Must be a host function instance.
-    pub(crate) func_addr: FuncAddr,
-    /// Must contain the correct types as specified by the [`FuncType`](crate::FuncType) for
-    /// `func_addr`.
-    pub(crate) params: Vec<Value>,
-    pub(crate) hostcode: fn(&mut T, Vec<Value>) -> Result<Vec<Value>, HaltExecutionError>,
+pub struct HostResumable {
+    pub(crate) host_call_finisher: HostCallFinisher,
+    pub(crate) inner_resumable: WasmResumable,
 }
 
 #[derive(Debug)]
-pub enum Resumable<T> {
-    Wasm(WasmResumable),
-    Host(HostResumable<T>),
+pub enum CreateResumableOutcome {
+    Resumable(WasmResumable),
+    HostCall {
+        inner: HostCall,
+        finisher: HostCallFinisher,
+    },
 }
 
-impl<T> Resumable<T> {
-    /// Tries to convert this [`Resumable`] into a [`WasmResumable`]
-    pub fn as_wasm_resumable(self) -> Option<WasmResumable> {
+impl CreateResumableOutcome {
+    /// Tries to convert this [`CreateResumableOutcome`] into a [`WasmResumable`]
+    pub fn as_resumable(self) -> Option<WasmResumable> {
         match self {
-            Resumable::Wasm(wasm_resumable) => Some(wasm_resumable),
-            Resumable::Host(_) => None,
+            CreateResumableOutcome::Resumable(wasm_resumable) => Some(wasm_resumable),
+            CreateResumableOutcome::HostCall { .. } => None,
         }
     }
 
-    /// Tries to convert this [`Resumable`] into a [`HostResumable`]
-    pub fn as_host_resumable(self) -> Option<HostResumable<T>> {
+    /// Tries to convert this [`CreateResumableOutcome`] into a [`HostCall`] and
+    /// its [`HostCallFinisher`].
+    pub fn as_host_call(self) -> Option<(HostCall, HostCallFinisher)> {
         match self {
-            Resumable::Wasm(_) => None,
-            Resumable::Host(host_resumable) => Some(host_resumable),
+            CreateResumableOutcome::Resumable(_) => None,
+            CreateResumableOutcome::HostCall { inner, finisher } => Some((inner, finisher)),
         }
     }
 }
@@ -78,5 +105,12 @@ pub enum RunState {
     Resumable {
         resumable: WasmResumable,
         required_fuel: NonZeroU64,
+    },
+    /// A host function was called by Wasm code. Use the [`HostCall`] to execute
+    /// the host function and resume execution using the [`HostResumable`] and
+    /// the return values produced by execution.
+    HostCalled {
+        host_call: HostCall,
+        resumable: HostResumable,
     },
 }

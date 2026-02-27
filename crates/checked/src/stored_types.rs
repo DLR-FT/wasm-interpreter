@@ -5,9 +5,9 @@ use core::{
 
 use alloc::vec::Vec;
 use wasm::{
-    ExternVal, InstantiationOutcome,
+    ExternVal, Hostcode, InstantiationOutcome,
     addrs::{FuncAddr, GlobalAddr, MemAddr, ModuleAddr, TableAddr},
-    resumable::{HostResumable, Resumable, RunState, WasmResumable},
+    resumable::{HostCall, HostResumable, RunState, WasmResumable},
 };
 
 use crate::{AbstractStored, StoreId, StoredValue};
@@ -173,13 +173,13 @@ impl StoredExternVal {
 }
 
 /// A stored variant of [`Resumable`]
-pub enum StoredResumable<T> {
+pub enum StoredResumable {
     Wasm(Stored<WasmResumable>),
-    Host(Stored<HostResumable<T>>),
+    Host(Stored<HostResumable>),
 }
 
-impl<T> AbstractStored for StoredResumable<T> {
-    type BareTy = Resumable<T>;
+impl AbstractStored for StoredResumable {
+    type BareTy = Resumable;
 
     unsafe fn from_bare(bare_value: Self::BareTy, id: StoreId) -> Self {
         match bare_value {
@@ -209,7 +209,7 @@ impl<T> AbstractStored for StoredResumable<T> {
     }
 }
 
-impl<T> StoredResumable<T> {
+impl StoredResumable {
     /// A stored variant of [`Resumable::as_wasm_resumable`]
     pub fn as_wasm_resumable(self) -> Option<Stored<WasmResumable>> {
         match self {
@@ -219,10 +219,48 @@ impl<T> StoredResumable<T> {
     }
 
     /// A stored variant of [`Resumable::as_host_resumable`]
-    pub fn as_host_resumable(self) -> Option<Stored<HostResumable<T>>> {
+    pub fn as_host_resumable(self) -> Option<Stored<HostResumable>> {
         match self {
             StoredResumable::Wasm(_) => None,
             StoredResumable::Host(host_resumable) => Some(host_resumable),
+        }
+    }
+}
+
+/// A stored variant of [`HostCall`]
+struct StoredHostCall {
+    /// Must contain the correct parameter types for the host function with host
+    /// code `hostcode`.
+    pub params: Vec<StoredValue>,
+    pub hostcode: Hostcode,
+}
+
+impl AbstractStored for StoredHostCall {
+    type BareTy = HostCall;
+
+    unsafe fn from_bare(bare_value: Self::BareTy, id: StoreId) -> Self {
+        Self {
+            // SAFETY: Upheld by caller
+            params: unsafe { Vec::from_bare(bare_value.params, id) },
+            hostcode: bare_value.hostcode,
+        }
+    }
+
+    fn id(&self) -> Option<StoreId> {
+        self.params.id()
+    }
+
+    fn into_bare(self) -> Self::BareTy {
+        HostCall {
+            params: self.params.into_bare(),
+            hostcode: self.hostcode,
+        }
+    }
+
+    fn try_unwrap_into_bare(self, expected_store_id: StoreId) -> Self::BareTy {
+        HostCall {
+            params: self.params.try_unwrap_into_bare(expected_store_id),
+            hostcode: self.hostcode,
         }
     }
 }
@@ -236,6 +274,10 @@ pub enum StoredRunState {
     Resumable {
         resumable: Stored<WasmResumable>,
         required_fuel: NonZeroU64,
+    },
+    HostCalled {
+        host_call: StoredHostCall,
+        resumable: Stored<HostResumable>,
     },
 }
 
@@ -259,6 +301,15 @@ impl AbstractStored for StoredRunState {
                 // SAFETY: Upheld by the caller
                 resumable: unsafe { Stored::from_bare(resumable, id) },
                 required_fuel,
+            },
+            RunState::HostCalled {
+                host_call,
+                resumable,
+            } => Self::HostCalled {
+                // SAFETY: Upheld by caller
+                host_call: unsafe { StoredHostCall::from_bare(host_call, id) },
+                // SAFETY: Upheld by caller
+                resumable: unsafe { Stored::from_bare(resumable, id) },
             },
         }
     }

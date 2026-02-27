@@ -1,0 +1,3 @@
+- Find out how to provide shorter invoke functions
+- Find out how to allow calling host functions from inside the start function
+- Find better names. fn create_resumable, HostCallFinisher, HostResumable are not very good

@@ -1,10 +1,9 @@
 use alloc::{string::String, vec::Vec};
 use wasm::{
-    FuncType, GlobalType, HaltExecutionError, MemType, RuntimeError, TableType, ValidationInfo,
-    Value,
+    FuncType, GlobalType, Hostcode, MemType, RuntimeError, TableType, ValidationInfo, Value,
     addrs::{FuncAddr, GlobalAddr, MemAddr, ModuleAddr, TableAddr},
     config::Config,
-    resumable::{HostResumable, WasmResumable},
+    resumable::{HostCallFinisher, HostResumable, WasmResumable},
 };
 
 use crate::{
@@ -108,18 +107,11 @@ impl<'b, T: Config> Store<'b, T> {
     ///
     /// See [`Store::func_alloc`](crate::Store::func_alloc_unchecked) for more information.
     #[allow(clippy::let_and_return)] // reason = "to follow the 1234 structure"
-    pub unsafe fn func_alloc(
-        &mut self,
-        func_type: FuncType,
-        host_func: fn(&mut T, Vec<Value>) -> Result<Vec<Value>, HaltExecutionError>,
-    ) -> Stored<FuncAddr> {
+    pub fn func_alloc(&mut self, func_type: FuncType, hostcode: Hostcode) -> Stored<FuncAddr> {
         // 1. try unwrap
         // no stored parameters
         // 2. call
-        // SAFETY: The caller ensures that if the host function returns
-        // references, they originate either from the arguments or the current
-        // store.
-        let func_addr = unsafe { self.inner.func_alloc_unchecked(func_type, host_func) };
+        let func_addr = self.inner.func_alloc_unchecked(func_type, hostcode);
         // 3. rewrap
         // 4. return
         // SAFETY: The function address just came from the current store.
@@ -139,7 +131,7 @@ impl<'b, T: Config> Store<'b, T> {
         unsafe { self.inner.func_type_unchecked(func_addr) }
     }
 
-    /// This is a safe variant of [`Store::invoke_unchecked`](crate::Store::invoke_unchecked).
+    /// This is a safe variant of [`Store::invoke_unchecked`](wasm::Store::invoke_unchecked).
     pub fn invoke(
         &mut self,
         func_addr: Stored<FuncAddr>,
@@ -441,44 +433,73 @@ impl<'b, T: Config> Store<'b, T> {
         Ok(stored_run_state)
     }
 
-    /// This is a safe variant of [`Store::resume_host_unchecked`].
-    pub fn resume_host(
+    /// This is a safe variant of
+    /// [`Store::finish_host_call_unchecked`](wasm::Store::finish_host_call_unchecked).
+    pub fn finish_host_call(
         &mut self,
-        resumable: Stored<HostResumable<T>>,
+        host_call_finisher: Stored<HostCallFinisher>,
+        host_call_return_values: Vec<StoredValue>,
     ) -> Result<Vec<StoredValue>, RuntimeError> {
         // 1. try unwrap
-        let resumable = resumable.try_unwrap_into_bare(self.id);
+        let host_call_finisher = host_call_finisher.try_unwrap_into_bare(self.id);
+        let host_call_return_values = host_call_return_values.try_unwrap_into_bare(self.id);
         // 2. call
-        // SAFETY: It was just checked that the `HostResumable` came from the
-        // current store through its store id.
-        let values = unsafe { self.inner.resume_host_unchecked(resumable) }?;
+        // SAFETY: It was just checked that the `HostCallFinisher` and all
+        // `Value`s came from the current store through their store ids.
+        let return_values = unsafe {
+            self.inner
+                .finish_host_call_unchecked(host_call_finisher, host_call_return_values)
+        }?;
         // 3. rewrap
-        // SAFETY: All `Value`s just came from the current store.
-        let stored_values = unsafe { Vec::from_bare(values, self.id) };
+        // SAFETY: The `Value`s just came from the current store.
+        let stored_return_values = unsafe { Vec::from_bare(return_values, self.id) };
         // 4. return
-        Ok(stored_values)
+        Ok(stored_return_values)
     }
 
-    /// This is a safe variant of [`Store::invoke_without_fuel_unchecked`](crate::Store::invoke_without_fuel_unchecked).
-    pub fn invoke_without_fuel(
+    /// This is a safe variant of [`Store::finish_host_call_into_resumable_unchecked`](wasm::Store::finish_host_call_into_resumable_unchecked)
+    pub unsafe fn finish_host_call_into_resumable(
         &mut self,
-        func_addr: Stored<FuncAddr>,
-        params: Vec<StoredValue>,
-    ) -> Result<Vec<StoredValue>, RuntimeError> {
+        host_resumable: Stored<HostResumable>,
+        host_call_return_values: Vec<StoredValue>,
+    ) -> Result<Stored<WasmResumable>, RuntimeError> {
         // 1. try unwrap
-        let func_addr = func_addr.try_unwrap_into_bare(self.id);
-        let params = params.try_unwrap_into_bare(self.id);
+        let host_resumable = host_resumable.try_unwrap_into_bare(self.id);
+        let host_call_return_values = host_call_return_values.try_unwrap_into_bare(self.id);
         // 2. call
-        // SAFETY: It was just checked that the `FuncAddr` and any addresses
-        // contained in the parameters came from the current store through their
-        // store ids.
-        let returns = unsafe { self.inner.invoke_without_fuel_unchecked(func_addr, params) }?;
+        // SAFETY: It was just checked that the `HostResumable` and all `Value`s
+        // came from the current store through their store ids.
+        let resumable = unsafe {
+            self.inner
+                .finish_host_call_into_resumable_unchecked(host_resumable, host_call_return_values)
+        }?;
         // 3. rewrap
-        // SAFETY: All `Value`s just came from the current store.
-        let returns = unsafe { Vec::from_bare(returns, self.id) };
+        // SAFETY: The `WasmResumable` just came from the current store.
+        let stored_resumable = unsafe { Stored::from_bare(resumable, self.id) };
         // 4. return
-        Ok(returns)
+        Ok(stored_resumable)
     }
+
+    // /// This is a safe variant of [`Store::invoke_without_fuel_unchecked`](crate::Store::invoke_without_fuel_unchecked).
+    // pub fn invoke_without_fuel(
+    //     &mut self,
+    //     func_addr: Stored<FuncAddr>,
+    //     params: Vec<StoredValue>,
+    // ) -> Result<Vec<StoredValue>, RuntimeError> {
+    //     // 1. try unwrap
+    //     let func_addr = func_addr.try_unwrap_into_bare(self.id);
+    //     let params = params.try_unwrap_into_bare(self.id);
+    //     // 2. call
+    //     // SAFETY: It was just checked that the `FuncAddr` and any addresses
+    //     // contained in the parameters came from the current store through their
+    //     // store ids.
+    //     let returns = unsafe { self.inner.invoke_without_fuel_unchecked(func_addr, params) }?;
+    //     // 3. rewrap
+    //     // SAFETY: All `Value`s just came from the current store.
+    //     let returns = unsafe { Vec::from_bare(returns, self.id) };
+    //     // 4. return
+    //     Ok(returns)
+    // }
 
     /// This is a safe variant of [`Store::mem_access_mut_slice_unchecked`](crate::Store::mem_access_mut_slice_unchecked).
     pub fn mem_access_mut_slice<R>(
