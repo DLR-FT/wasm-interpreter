@@ -146,7 +146,7 @@ impl<'b, T: Config> Store<'b, T> {
     ) -> Result<StoredRunState<T>, RuntimeError> {
         // 1. try unwrap
         let func_addr = func_addr.try_unwrap_into_bare(self.id)?;
-        let params = try_unwrap_values(params, self.id)?;
+        let params = params.try_unwrap_into_bare(self.id)?;
         // 2. call
         let run_state = self.invoke_unchecked(func_addr, params, maybe_fuel)?;
         // 3. rewrap
@@ -383,7 +383,7 @@ impl<'b, T: Config> Store<'b, T> {
     ) -> Result<Stored<Resumable<T>>, RuntimeError> {
         // 1. try unwrap
         let func_addr = func_addr.try_unwrap_into_bare(self.id)?;
-        let params = try_unwrap_values(params, self.id)?;
+        let params = params.try_unwrap_into_bare(self.id)?;
         // 2. call
         let resumable = self.create_resumable_unchecked(func_addr, params, maybe_fuel)?;
         // 3. rewrap
@@ -447,12 +447,12 @@ impl<'b, T: Config> Store<'b, T> {
     ) -> Result<Vec<StoredValue>, RuntimeError> {
         // 1. try unwrap
         let func_addr = func_addr.try_unwrap_into_bare(self.id)?;
-        let params = try_unwrap_values(params, self.id)?;
+        let params = params.try_unwrap_into_bare(self.id)?;
         // 2. call
         let returns = self.invoke_without_fuel_unchecked(func_addr, params)?;
         // 3. rewrap
         // SAFETY: All `Value`s just came from the current store.
-        let returns = unsafe { wrap_vec_elements(returns, self.id) };
+        let returns = unsafe { Vec::from_bare(returns, self.id) };
         // 4. return
         Ok(returns)
     }
@@ -468,12 +468,12 @@ impl<'b, T: Config> Store<'b, T> {
     ) -> Result<Returns, RuntimeError> {
         // 1. try unwrap
         let function = function.try_unwrap_into_bare(self.id)?;
-        let params = try_unwrap_values(params.into_values(), self.id)?;
+        let params = params.into_values().try_unwrap_into_bare(self.id)?;
         // 2. call
         let returns = self.invoke_without_fuel_unchecked(function, params)?;
         // 3. rewrap
         // SAFETY: All `Value`s just came from the current store.
-        let stored_returns = unsafe { wrap_vec_elements(returns, self.id) };
+        let stored_returns = unsafe { Vec::from_bare(returns, self.id) };
         // 4. return
         let stored_returns = Returns::try_from_values(stored_returns.into_iter())
             .map_err(|_| RuntimeError::FunctionInvocationSignatureMismatch)?;
@@ -642,7 +642,7 @@ impl Linker {
         // SAFETY: All `ExternVal`s just came from the current `Linker`. Because
         // a Linker can always be used with only one unique `Store`, all
         // `ExternVal`s must be from the current Linker's store.
-        let stored_extern_vals = unsafe { wrap_vec_elements(extern_vals, linker_store_id) };
+        let stored_extern_vals = unsafe { Vec::from_bare(extern_vals, linker_store_id) };
         // 5. retur
         Ok(stored_extern_vals)
     }
@@ -785,6 +785,28 @@ impl<T> DerefMut for Stored<T> {
     }
 }
 
+impl<T: AbstractStored> AbstractStored for Vec<T> {
+    type BareTy = Vec<T::BareTy>;
+
+    unsafe fn from_bare(bare_value: Self::BareTy, id: StoreId) -> Self {
+        bare_value
+            .into_iter()
+            .map(|bare| {
+                // SAFETY: Upheld by caller
+                unsafe { T::from_bare(bare, id) }
+            })
+            .collect()
+    }
+
+    fn id(&self) -> Option<StoreId> {
+        self.iter().find_map(|t| t.id())
+    }
+
+    fn into_bare(self) -> Self::BareTy {
+        self.into_iter().map(|t| t.into_bare()).collect()
+    }
+}
+
 /// A stored variant of [`ExternVal`]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum StoredExternVal {
@@ -899,7 +921,7 @@ impl<T> AbstractStored for StoredRunState<T> {
                 maybe_remaining_fuel,
             } => Self::Finished {
                 // SAFETY: Upheld by the caller
-                values: unsafe { wrap_vec_elements(values, id) },
+                values: unsafe { Vec::from_bare(values, id) },
                 maybe_remaining_fuel,
             },
             RunState::Resumable {
@@ -949,38 +971,4 @@ impl AbstractStored for StoredInstantiationOutcome {
             maybe_remaining_fuel: self.maybe_remaining_fuel,
         }
     }
-}
-
-/// Helper method for associating every element in a [`Vec`] with a [`StoreId`].
-///
-/// # Safety
-///
-/// It must be guaranteed that all given elements come from the [`Store`] with
-/// the given [`StoreId`].
-unsafe fn wrap_vec_elements<S: AbstractStored>(values: Vec<S::BareTy>, id: StoreId) -> Vec<S> {
-    values
-        .into_iter()
-        .map(|value| {
-            // SAFETY: The caller guarantees that all values in this Vec come
-            // from the store with given id. Therefore, this is also true for
-            // this specific `Value`.
-            unsafe { S::from_bare(value, id) }
-        })
-        .collect()
-}
-
-/// Helper method for checking if all [`Value`]s in a slice have the given
-/// [`StoreId`] and then, if the check was true, converting them to a
-/// [`Vec<Value>`].
-///
-/// # Errors
-/// - [`RuntimeError::StoreIdMismatch`]
-fn try_unwrap_values<S: AbstractStored>(
-    stored_values: Vec<S>,
-    expected_store_id: StoreId,
-) -> Result<Vec<S::BareTy>, RuntimeError> {
-    stored_values
-        .into_iter()
-        .map(|stored_value| stored_value.try_unwrap_into_bare(expected_store_id))
-        .collect()
 }
