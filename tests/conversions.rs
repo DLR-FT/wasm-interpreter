@@ -18,7 +18,7 @@
 use core::{f32, f64};
 
 use hexf::{hexf32, hexf64};
-use wasm::{validate, RuntimeError, Store, TrapError};
+use wasm::{checked::Store, validate, RuntimeError, TrapError};
 
 const WAT: &str = r#"
       (module

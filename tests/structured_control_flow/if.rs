@@ -1,4 +1,4 @@
-use wasm::{validate, Store};
+use wasm::{checked::Store, validate};
 
 #[test_log::test]
 fn odd_with_if_else() {

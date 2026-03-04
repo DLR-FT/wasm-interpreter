@@ -1,5 +1,6 @@
 use crate::{
     addrs::FuncAddr,
+    checked::StoreId,
     value::{ExternAddr, Ref, ValueTypeMismatchError, F32, F64},
     RefType, Value,
 };
@@ -20,7 +21,7 @@ pub enum StoredValue {
 impl AbstractStored for StoredValue {
     type BareTy = Value;
 
-    unsafe fn from_bare(bare_value: Self::BareTy, id: crate::StoreId) -> Self {
+    unsafe fn from_bare(bare_value: Self::BareTy, id: StoreId) -> Self {
         match bare_value {
             Value::I32(x) => Self::I32(x),
             Value::I64(x) => Self::I64(x),
@@ -35,7 +36,7 @@ impl AbstractStored for StoredValue {
         }
     }
 
-    fn id(&self) -> Option<crate::StoreId> {
+    fn id(&self) -> Option<StoreId> {
         match self {
             Self::Ref(r#ref) => r#ref.id(),
             _ => None,
@@ -67,7 +68,7 @@ pub enum StoredRef {
 impl AbstractStored for StoredRef {
     type BareTy = Ref;
 
-    unsafe fn from_bare(bare_value: Self::BareTy, id: crate::StoreId) -> Self {
+    unsafe fn from_bare(bare_value: Self::BareTy, id: StoreId) -> Self {
         match bare_value {
             Ref::Null(ref_type) => Self::Null(ref_type),
             Ref::Func(func_addr) => {
@@ -79,7 +80,7 @@ impl AbstractStored for StoredRef {
         }
     }
 
-    fn id(&self) -> Option<crate::StoreId> {
+    fn id(&self) -> Option<StoreId> {
         match self {
             StoredRef::Func(stored_func_addr) => stored_func_addr.id(),
             StoredRef::Null(_) | StoredRef::Extern(_) => None,

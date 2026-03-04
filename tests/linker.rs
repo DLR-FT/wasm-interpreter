@@ -1,4 +1,4 @@
-use wasm::{checked::StoredValue, linker::Linker, validate, RuntimeError, Store};
+use wasm::{checked::Linker, checked::Store, checked::StoredValue, validate, RuntimeError};
 
 const SIMPLE_IMPORT_BASE: &str = r#"
 (module

@@ -1,4 +1,4 @@
-use wasm::{checked::StoredValue, validate, Store};
+use wasm::{checked::Store, checked::StoredValue, validate};
 
 /// A simple function to add two numbers and return the result, using [invoke_dynamic](wasm::RuntimeInstance::invoke_dynamic)
 /// instead of [invoke_named](wasm::RuntimeInstance::invoke_named).

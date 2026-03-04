@@ -16,8 +16,8 @@
 */
 
 use wasm::{
-    checked::StoredRefFunc, interop::RefExtern, validate, value::ExternAddr, RuntimeError, Store,
-    TrapError,
+    checked::Store, checked::StoredRefFunc, interop::RefExtern, validate, value::ExternAddr,
+    RuntimeError, TrapError,
 };
 
 #[test_log::test]

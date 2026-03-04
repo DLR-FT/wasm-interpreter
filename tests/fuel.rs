@@ -1,8 +1,9 @@
 use core::panic;
 use log::info;
 use wasm::{
+    checked::Store,
     checked::{StoredRunState, StoredValue},
-    validate, Store,
+    validate,
 };
 
 #[test_log::test]

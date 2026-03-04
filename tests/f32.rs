@@ -1,7 +1,7 @@
 #![allow(clippy::approx_constant)]
 use core::f32;
 
-use wasm::{validate, Store};
+use wasm::{checked::Store, validate};
 
 /// A simple function to test the f32.const implementation
 #[test_log::test]

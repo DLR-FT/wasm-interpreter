@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 */
-use wasm::{validate, Store, ValidationError};
+use wasm::{checked::Store, validate, ValidationError};
 
 #[test_log::test]
 fn memory_basic() {

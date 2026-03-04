@@ -1,4 +1,4 @@
-use wasm::{validate, Store};
+use wasm::{checked::Store, validate};
 
 const FIBONACCI_WITH_LOOP_AND_BR_IF: &str = r#"
 (module

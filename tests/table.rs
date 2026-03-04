@@ -16,7 +16,7 @@
 */
 use wasm::checked::{StoredExternVal, StoredRef, StoredRefFunc};
 use wasm::ValidationError;
-use wasm::{validate, Store};
+use wasm::{checked::Store, validate};
 
 #[test_log::test]
 fn table_basic() {
