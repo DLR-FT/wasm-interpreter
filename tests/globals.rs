@@ -6,7 +6,7 @@ use wasm::{checked::StoredValue, GlobalType, NumType, ValType};
 ///  - Getting the global's current value
 #[test_log::test]
 fn valid_global() {
-    use wasm::{validate, Store};
+    use wasm::{checked::Store, validate};
 
     let wat = r#"
     (module
@@ -80,7 +80,7 @@ fn global_invalid_value_stack() {
 #[ignore = "not yet implemented"]
 #[test_log::test]
 fn imported_globals() {
-    use wasm::{validate, Store};
+    use wasm::{checked::Store, validate};
 
     let wat = r#"
     (module
@@ -153,7 +153,7 @@ fn global_invalid_instr() {
 
 #[test_log::test]
 fn embedder_interface() {
-    use wasm::{validate, Store};
+    use wasm::{checked::Store, validate};
 
     let wat = r#"
     (module

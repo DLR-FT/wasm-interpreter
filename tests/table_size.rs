@@ -15,7 +15,7 @@
 # limitations under the License.
 */
 
-use wasm::{validate, Store};
+use wasm::{checked::Store, validate};
 
 #[test_log::test]
 fn table_size_test() {

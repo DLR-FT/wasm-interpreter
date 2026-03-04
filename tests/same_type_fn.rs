@@ -1,4 +1,4 @@
-use wasm::{validate, Store};
+use wasm::{checked::Store, validate};
 
 /// This test checks if we can validate and executa a module which has two functions with the same signature.
 #[test_log::test]

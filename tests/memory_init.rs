@@ -15,7 +15,7 @@
 # limitations under the License.
 */
 use wasm::ValidationError;
-use wasm::{validate, RuntimeError, Store, TrapError};
+use wasm::{checked::Store, validate, RuntimeError, TrapError};
 
 #[test_log::test]
 fn memory_init_test_1() {

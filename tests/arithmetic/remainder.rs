@@ -1,4 +1,4 @@
-use wasm::{validate, Store};
+use wasm::{checked::Store, validate};
 use wasm::{RuntimeError, TrapError};
 const REM_S_WAT: &str = r#"
     (module

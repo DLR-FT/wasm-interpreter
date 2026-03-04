@@ -1,4 +1,4 @@
-use wasm::{validate, Store};
+use wasm::{checked::Store, validate};
 
 const WAT_SUBTRACT_TEMPLATE: &str = r#"
     (module

@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 */
-use wasm::{validate, Store};
+use wasm::{checked::Store, validate};
 
 const WAT: &str = r#"
       (module

@@ -1,5 +1,4 @@
 use core::convert::Infallible;
-use core::sync::atomic::{AtomicU64, Ordering};
 
 use crate::addrs::{
     AddrVec, DataAddr, ElemAddr, FuncAddr, GlobalAddr, MemAddr, ModuleAddr, TableAddr,
@@ -63,9 +62,6 @@ pub struct Store<'b, T: Config> {
     /// space along with a `ModuleAddr` index type.
     pub(crate) modules: AddrVec<ModuleAddr, ModuleInst<'b>>,
 
-    /// A unique identifier for this store. This is used to verify that
-    /// stored objects belong to the current [`Store`].
-    pub(crate) id: StoreId,
     pub user_data: T,
 }
 
@@ -84,7 +80,6 @@ impl<'b, T: Config> Store<'b, T> {
             elements: AddrVec::default(),
             data: AddrVec::default(),
             modules: AddrVec::default(),
-            id: StoreId::new(),
             user_data,
         }
     }
@@ -772,14 +767,7 @@ impl<'b, T: Config> Store<'b, T> {
     /// Allocates a new linear memory and returns its memory address.
     ///
     /// See: WebAssembly Specification 2.0 - 7.1.9 - mem_alloc
-    ///
-    /// # A Note About Safety
-    ///
-    /// This method is always safe. However it returns a [`MemAddr`], which can
-    /// only be used with other unchecked methods. Consider using the safe and
-    /// stored [`Store::mem_alloc`] variant instead, which returns a
-    /// [`Stored<MemAddr>`](crate::execution::checked::Stored).
-    pub fn mem_alloc_unchecked(&mut self, mem_type: MemType) -> MemAddr {
+    pub fn mem_alloc(&mut self, mem_type: MemType) -> MemAddr {
         // 1. Pre-condition: `memtype` is valid.
 
         // 2. Let `memaddr` be the result of allocating a memory in `store` with memory type `memtype`.
@@ -1298,26 +1286,6 @@ impl<'b, T: Config> Store<'b, T> {
         accessor: impl FnOnce(&mut [u8]) -> R,
     ) -> R {
         self.memories.get(memory).mem.access_mut_slice(accessor)
-    }
-}
-
-/// A unique identifier for a specific [`Store`]
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub struct StoreId(u64);
-
-impl StoreId {
-    /// Creates a new unique [`StoreId`]
-    #[allow(clippy::new_without_default)] // reason = "StoreId::default() might be misunderstood to be some
-                                          // default value. However, a default value does not exist in that
-                                          // sense because every newly created StoreId must be unique. Also
-                                          // we don't want to allow the user to create new instances of
-                                          // this object."
-    pub(crate) fn new() -> Self {
-        static NEXT_STORE_ID: AtomicU64 = AtomicU64::new(0);
-
-        // TODO find a fix for the default wrapping behavior of `fetch_add`.
-        // Maybe we could return a `RuntimeError` here?
-        Self(NEXT_STORE_ID.fetch_add(1, Ordering::SeqCst))
     }
 }
 

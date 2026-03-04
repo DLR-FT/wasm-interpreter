@@ -22,6 +22,7 @@
 use core::{
     num::NonZeroU64,
     ops::{Deref, DerefMut},
+    sync::atomic::{AtomicU64, Ordering},
 };
 
 use crate::{
@@ -29,10 +30,9 @@ use crate::{
     config::Config,
     core::reader::types::{FuncType, MemType, TableType},
     interop::InteropValueList,
-    linker::Linker,
     resumable::{Resumable, RunState},
-    ExternVal, GlobalType, HaltExecutionError, InstantiationOutcome, RuntimeError, Store, StoreId,
-    ValidationInfo, Value,
+    ExternVal, GlobalType, HaltExecutionError, InstantiationOutcome, RuntimeError, ValidationInfo,
+    Value,
 };
 use alloc::{string::String, vec::Vec};
 
@@ -41,6 +41,14 @@ mod value;
 
 pub use interop::*;
 pub use value::*;
+
+pub struct Store<'b, T: Config> {
+    inner: crate::Store<'b, T>,
+
+    /// A unique identifier for this store. This is used to verify that
+    /// stored objects belong to the current [`Store`](crate::Store).
+    id: StoreId,
+}
 
 // All functions in this impl block must occur in the same order as they are
 // defined in for the unchecked `Store` methods. Also all functions must follow
@@ -51,10 +59,17 @@ pub use value::*;
 // 3. rewrap [results into stored objects]
 // 4. return [stored result objects]
 impl<'b, T: Config> Store<'b, T> {
+    pub fn new(user_data: T) -> Self {
+        Self {
+            inner: crate::Store::new(user_data),
+            id: StoreId::new(),
+        }
+    }
+
     // `fn new_checked` is missing, because it does not interact with any stored
     // objects.
 
-    /// This is a safe variant of [`Store::module_instantiate_unchecked`].
+    /// This is a safe variant of [`Store::module_instantiate_unchecked`](crate::Store::module_instantiate_unchecked).
     pub fn module_instantiate(
         &mut self,
         validation_info: &ValidationInfo<'b>,
@@ -68,7 +83,8 @@ impl<'b, T: Config> Store<'b, T> {
             .collect::<Result<Vec<ExternVal>, RuntimeError>>()?;
         // 2. call
         let instantiation_outcome =
-            self.module_instantiate_unchecked(validation_info, extern_vals, maybe_fuel)?;
+            self.inner
+                .module_instantiate_unchecked(validation_info, extern_vals, maybe_fuel)?;
         // 3. rewrap
         // SAFETY: The `InstantiationOutcome` just came from the current store.
         let stored_instantiation_outcome =
@@ -77,7 +93,7 @@ impl<'b, T: Config> Store<'b, T> {
         Ok(stored_instantiation_outcome)
     }
 
-    /// This is a safe variant of [`Store::instance_export_unchecked`].
+    /// This is a safe variant of [`Store::$1`](crate::Store::$1).
     pub fn instance_export(
         &self,
         module_addr: Stored<ModuleAddr>,
@@ -86,7 +102,7 @@ impl<'b, T: Config> Store<'b, T> {
         // 1. try unwrap
         let module_addr = module_addr.try_unwrap_into_bare(self.id)?;
         // 2. call
-        let extern_val = self.instance_export_unchecked(module_addr, name)?;
+        let extern_val = self.inner.instance_export_unchecked(module_addr, name)?;
         // 3. rewrap
         // SAFETY: The `ExternVal` just came from the current store.
         let stored_extern_val = unsafe { StoredExternVal::from_bare(extern_val, self.id) };
@@ -94,7 +110,7 @@ impl<'b, T: Config> Store<'b, T> {
         Ok(stored_extern_val)
     }
 
-    /// This is a safer variant of [`Store::func_alloc_unchecked`]. It is
+    /// This is a safer variant of [`Store::func_alloc_unchecked`](crate::Store::func_alloc_unchecked). It is
     /// functionally equal, with the only difference being that this function
     /// returns a [`Stored<FuncAddr>`].
     ///
@@ -104,7 +120,7 @@ impl<'b, T: Config> Store<'b, T> {
     /// given host function are references, their addresses came either from the
     /// host function arguments or from the current [`Store`] object.
     ///
-    /// See [`Store::func_alloc`] for more information.
+    /// See [`Store::func_alloc`](crate::Store::func_alloc_unchecked) for more information.
     #[allow(clippy::let_and_return)] // reason = "to follow the 1234 structure"
     pub unsafe fn func_alloc(
         &mut self,
@@ -117,7 +133,7 @@ impl<'b, T: Config> Store<'b, T> {
         // SAFETY: The caller ensures that if the host function returns
         // references, they originate either from the arguments or the current
         // store.
-        let func_addr = self.func_alloc_unchecked(func_type, host_func);
+        let func_addr = self.inner.func_alloc_unchecked(func_type, host_func);
         // 3. rewrap
         // SAFETY: The function address just came from the current store.
         let func_addr = unsafe { Stored::from_bare(func_addr, self.id) };
@@ -125,19 +141,19 @@ impl<'b, T: Config> Store<'b, T> {
         func_addr
     }
 
-    /// This is a safe variant of [`Store::func_type_unchecked`].
+    /// This is a safe variant of [`Store::func_type_unchecked`](crate::Store::func_type_unchecked).
     pub fn func_type(&self, func_addr: Stored<FuncAddr>) -> Result<FuncType, RuntimeError> {
         // 1. try unwrap
         let func_addr = func_addr.try_unwrap_into_bare(self.id)?;
         // 2. call
-        let func_type = self.func_type_unchecked(func_addr);
+        let func_type = self.inner.func_type_unchecked(func_addr);
         // 3. rewrap
         // `FuncType` does not have a stored variant.
         // 4. return
         Ok(func_type)
     }
 
-    /// This is a safe variant of [`Store::invoke_unchecked`].
+    /// This is a safe variant of [`Store::invoke_unchecked`](crate::Store::invoke_unchecked).
     pub fn invoke(
         &mut self,
         func_addr: Stored<FuncAddr>,
@@ -148,7 +164,7 @@ impl<'b, T: Config> Store<'b, T> {
         let func_addr = func_addr.try_unwrap_into_bare(self.id)?;
         let params = params.try_unwrap_into_bare(self.id)?;
         // 2. call
-        let run_state = self.invoke_unchecked(func_addr, params, maybe_fuel)?;
+        let run_state = self.inner.invoke_unchecked(func_addr, params, maybe_fuel)?;
         // 3. rewrap
         // SAFETY: The `RunState` just came from the current store.
         let stored_run_state = unsafe { StoredRunState::from_bare(run_state, self.id) };
@@ -156,7 +172,7 @@ impl<'b, T: Config> Store<'b, T> {
         Ok(stored_run_state)
     }
 
-    /// This is a safe variant of [`Store::table_alloc_unchecked`].
+    /// This is a safe variant of [`Store::table_alloc_unchecked`](crate::Store::table_alloc_unchecked).
     pub fn table_alloc(
         &mut self,
         table_type: TableType,
@@ -165,7 +181,7 @@ impl<'b, T: Config> Store<'b, T> {
         // 1. try unwrap
         let r#ref = r#ref.try_unwrap_into_bare(self.id)?;
         // 2. call
-        let table_addr = self.table_alloc_unchecked(table_type, r#ref)?;
+        let table_addr = self.inner.table_alloc_unchecked(table_type, r#ref)?;
         // 3. rewrap
         // SAFETY: The `TableAddr` just came from the current store.
         let stored_table_addr = unsafe { Stored::from_bare(table_addr, self.id) };
@@ -173,19 +189,19 @@ impl<'b, T: Config> Store<'b, T> {
         Ok(stored_table_addr)
     }
 
-    /// This is a safe variant of [`Store::table_type_unchecked`].
+    /// This is a safe variant of [`Store::table_type_unchecked`](crate::Store::table_type_unchecked).
     pub fn table_type(&self, table_addr: Stored<TableAddr>) -> Result<TableType, RuntimeError> {
         // 1. try unwrap
         let table_addr = table_addr.try_unwrap_into_bare(self.id)?;
         // 2. call
-        let table_type = self.table_type_unchecked(table_addr);
+        let table_type = self.inner.table_type_unchecked(table_addr);
         // 3. rewrap
         // `TableType` has no stored variant.
         // 4. return
         Ok(table_type)
     }
 
-    /// This is a safe variant of [`Store::table_read_unchecked`].
+    /// This is a safe variant of [`Store::table_read_unchecked`](crate::Store::table_read_unchecked).
     pub fn table_read(
         &self,
         table_addr: Stored<TableAddr>,
@@ -194,7 +210,7 @@ impl<'b, T: Config> Store<'b, T> {
         // 1. try unwrap
         let table_addr = table_addr.try_unwrap_into_bare(self.id)?;
         // 2. call
-        let r#ref = self.table_read_unchecked(table_addr, i)?;
+        let r#ref = self.inner.table_read_unchecked(table_addr, i)?;
         // 3. rewrap
         // SAFETY: The `Ref` ust came from the current store.
         let stored_ref = unsafe { StoredRef::from_bare(r#ref, self.id) };
@@ -202,7 +218,7 @@ impl<'b, T: Config> Store<'b, T> {
         Ok(stored_ref)
     }
 
-    /// This is a safe variant of [`Store::table_write_unchecked`].
+    /// This is a safe variant of [`Store::table_write_unchecked`](crate::Store::table_write_unchecked).
     pub fn table_write(
         &mut self,
         table_addr: Stored<TableAddr>,
@@ -213,33 +229,33 @@ impl<'b, T: Config> Store<'b, T> {
         let table_addr = table_addr.try_unwrap_into_bare(self.id)?;
         let r#ref = r#ref.try_unwrap_into_bare(self.id)?;
         // 2. call
-        self.table_write_unchecked(table_addr, i, r#ref)?;
+        self.inner.table_write_unchecked(table_addr, i, r#ref)?;
         // 3. rewrap
         // result is the unit type.
         // 4. return
         Ok(())
     }
 
-    /// This is a safe variant of [`Store::table_size_unchecked`].
+    /// This is a safe variant of [`Store::table_size_unchecked`](crate::Store::table_size_unchecked).
     pub fn table_size(&self, table_addr: Stored<TableAddr>) -> Result<u32, RuntimeError> {
         // 1. try unwrap
         let table_addr = table_addr.try_unwrap_into_bare(self.id)?;
         // 2. call
-        let table_size = self.table_size_unchecked(table_addr);
+        let table_size = self.inner.table_size_unchecked(table_addr);
         // 3. rewrap
         // table size has no stored variant.
         // 4. return
         Ok(table_size)
     }
 
-    /// This is a variant of [`Store::mem_alloc_unchecked`] that returns a
-    /// stored object.
+    /// This is a variant of [`Store::mem_alloc`](crate::Store::mem_alloc) that
+    /// returns a stored object.
     #[allow(clippy::let_and_return)] // reason = "to follow the 1234 structure"
     pub fn mem_alloc(&mut self, mem_type: MemType) -> Stored<MemAddr> {
         // 1. try unwrap
         // no stored parameters
         // 2. call
-        let mem_addr = self.mem_alloc_unchecked(mem_type);
+        let mem_addr = self.inner.mem_alloc(mem_type);
         // 3. rewrap
         // SAFETY: The `MemAddr` just came from the current store.
         let stored_mem_addr = unsafe { Stored::from_bare(mem_addr, self.id) };
@@ -247,31 +263,31 @@ impl<'b, T: Config> Store<'b, T> {
         stored_mem_addr
     }
 
-    /// This is a safe variant of [`Store::mem_type_unchecked`].
+    /// This is a safe variant of [`Store::mem_type_unchecked`](crate::Store::mem_type_unchecked).
     pub fn mem_type(&self, mem_addr: Stored<MemAddr>) -> Result<MemType, RuntimeError> {
         // 1. try unwrap
         let mem_addr = mem_addr.try_unwrap_into_bare(self.id)?;
         // 2. call
-        let mem_type = self.mem_type_unchecked(mem_addr);
+        let mem_type = self.inner.mem_type_unchecked(mem_addr);
         // 3. rewrap
         // `MemType` does not have a stored variant.
         // 4. return
         Ok(mem_type)
     }
 
-    /// This is a safe variant of [`Store::mem_read_unchecked`].
+    /// This is a safe variant of [`Store::mem_read_unchecked`](crate::Store::mem_read_unchecked).
     pub fn mem_read(&self, mem_addr: Stored<MemAddr>, i: u32) -> Result<u8, RuntimeError> {
         // 1. try unwrap
         let mem_addr = mem_addr.try_unwrap_into_bare(self.id)?;
         // 2. call
-        let byte = self.mem_read_unchecked(mem_addr, i)?;
+        let byte = self.inner.mem_read_unchecked(mem_addr, i)?;
         // 3. rewrap
         // a single byte does not have a stored variant.
         // 4. return
         Ok(byte)
     }
 
-    /// This is a safe variant of [`Store::mem_write_unchecked`].
+    /// This is a safe variant of [`Store::mem_write_unchecked`](crate::Store::mem_write_unchecked).
     pub fn mem_write(
         &mut self,
         mem_addr: Stored<MemAddr>,
@@ -281,38 +297,38 @@ impl<'b, T: Config> Store<'b, T> {
         // 1. try unwrap
         let mem_addr = mem_addr.try_unwrap_into_bare(self.id)?;
         // 2. call
-        self.mem_write_unchecked(mem_addr, i, byte)?;
+        self.inner.mem_write_unchecked(mem_addr, i, byte)?;
         // 3. rewrap
         // result is the unit type.
         // 4. return
         Ok(())
     }
 
-    /// This is a safe variant of [`Store::mem_size_unchecked`].
+    /// This is a safe variant of [`Store::mem_size_unchecked`](crate::Store::mem_size_unchecked).
     pub fn mem_size(&self, mem_addr: Stored<MemAddr>) -> Result<u32, RuntimeError> {
         // 1. try unwrap
         let mem_addr = mem_addr.try_unwrap_into_bare(self.id)?;
         // 2. call
-        let mem_size = self.mem_size_unchecked(mem_addr);
+        let mem_size = self.inner.mem_size_unchecked(mem_addr);
         // 3. rewrap
         // mem size does not have a stored variant.
         // 4. return
         Ok(mem_size)
     }
 
-    /// This is a safe variant of [`Store::mem_grow_unchecked`].
+    /// This is a safe variant of [`Store::mem_grow_unchecked`](crate::Store::mem_grow_unchecked).
     pub fn mem_grow(&mut self, mem_addr: Stored<MemAddr>, n: u32) -> Result<(), RuntimeError> {
         // 1. try unwrap
         let mem_addr = mem_addr.try_unwrap_into_bare(self.id)?;
         // 2. call
-        self.mem_grow_unchecked(mem_addr, n)?;
+        self.inner.mem_grow_unchecked(mem_addr, n)?;
         // 3. rewrap
         // result is the unit type.
         // 4. return
         Ok(())
     }
 
-    /// This is a safe variant of [`Store::global_alloc_unchecked`].
+    /// This is a safe variant of [`Store::global_alloc_unchecked`](crate::Store::global_alloc_unchecked).
     pub fn global_alloc(
         &mut self,
         global_type: GlobalType,
@@ -321,7 +337,7 @@ impl<'b, T: Config> Store<'b, T> {
         // 1. try unwrap
         let val = val.try_unwrap_into_bare(self.id)?;
         // 2. call
-        let global_addr = self.global_alloc_unchecked(global_type, val)?;
+        let global_addr = self.inner.global_alloc_unchecked(global_type, val)?;
         // 3. rewrap
         // SAFETY: The `GlobalAddr` just came from the current store.
         let stored_global_addr = unsafe { Stored::from_bare(global_addr, self.id) };
@@ -329,19 +345,19 @@ impl<'b, T: Config> Store<'b, T> {
         Ok(stored_global_addr)
     }
 
-    /// This is a safe variant of [`Store::global_type_unchecked`].
+    /// This is a safe variant of [`Store::global_type_unchecked`](crate::Store::global_type_unchecked).
     pub fn global_type(&self, global_addr: Stored<GlobalAddr>) -> Result<GlobalType, RuntimeError> {
         // 1. try unwrap
         let global_addr = global_addr.try_unwrap_into_bare(self.id)?;
         // 2. call
-        let global_type = self.global_type_unchecked(global_addr);
+        let global_type = self.inner.global_type_unchecked(global_addr);
         // 3. rewrap
         // `GlobalType` does not have a stored variant.
         // 4. return
         Ok(global_type)
     }
 
-    /// This is a safe variant of [`Store::global_read_unchecked`].
+    /// This is a safe variant of [`Store::global_read_unchecked`](crate::Store::global_read_unchecked).
     pub fn global_read(
         &self,
         global_addr: Stored<GlobalAddr>,
@@ -349,7 +365,7 @@ impl<'b, T: Config> Store<'b, T> {
         // 1. try unwrap
         let global_addr = global_addr.try_unwrap_into_bare(self.id)?;
         // 2. call
-        let value = self.global_read_unchecked(global_addr);
+        let value = self.inner.global_read_unchecked(global_addr);
         // 3. rewrap
         // SAFETY: The `Value` just came from the current store.
         let stored_value = unsafe { StoredValue::from_bare(value, self.id) };
@@ -357,7 +373,7 @@ impl<'b, T: Config> Store<'b, T> {
         Ok(stored_value)
     }
 
-    /// This is a safe variant of [`Store::global_write_unchecked`].
+    /// This is a safe variant of [`Store::global_write_unchecked`](crate::Store::global_write_unchecked).
     pub fn global_write(
         &mut self,
         global_addr: Stored<GlobalAddr>,
@@ -367,14 +383,14 @@ impl<'b, T: Config> Store<'b, T> {
         let global_addr = global_addr.try_unwrap_into_bare(self.id)?;
         let val = val.try_unwrap_into_bare(self.id)?;
         // 2. call
-        self.global_write_unchecked(global_addr, val)?;
+        self.inner.global_write_unchecked(global_addr, val)?;
         // 3. rewrap
         // result is the unit type.
         // 4. return
         Ok(())
     }
 
-    /// This is a safe variant of [`Store::create_resumable_unchecked`].
+    /// This is a safe variant of [`Store::create_resumable_unchecked`](crate::Store::create_resumable_unchecked).
     pub fn create_resumable(
         &self,
         func_addr: Stored<FuncAddr>,
@@ -385,7 +401,9 @@ impl<'b, T: Config> Store<'b, T> {
         let func_addr = func_addr.try_unwrap_into_bare(self.id)?;
         let params = params.try_unwrap_into_bare(self.id)?;
         // 2. call
-        let resumable = self.create_resumable_unchecked(func_addr, params, maybe_fuel)?;
+        let resumable = self
+            .inner
+            .create_resumable_unchecked(func_addr, params, maybe_fuel)?;
         // 3. rewrap
         // SAFETY: The `Resumable` just came from the current store.
         let stored_resumable = unsafe { Stored::from_bare(resumable, self.id) };
@@ -393,7 +411,7 @@ impl<'b, T: Config> Store<'b, T> {
         Ok(stored_resumable)
     }
 
-    /// This is a safe variant of [`Store::resume_unchecked`].
+    /// This is a safe variant of [`Store::resume_unchecked`](crate::Store::resume_unchecked).
     pub fn resume(
         &mut self,
         resumable: Stored<Resumable<T>>,
@@ -401,7 +419,7 @@ impl<'b, T: Config> Store<'b, T> {
         // 1. try unwrap
         let resumable = resumable.try_unwrap_into_bare(self.id)?;
         // 2. call
-        let run_state = self.resume_unchecked(resumable)?;
+        let run_state = self.inner.resume_unchecked(resumable)?;
         // 3. rewrap
         // SAFETY: The `RunState` just came from the current store.
         let stored_run_state = unsafe { StoredRunState::from_bare(run_state, self.id) };
@@ -409,7 +427,7 @@ impl<'b, T: Config> Store<'b, T> {
         Ok(stored_run_state)
     }
 
-    /// This is a safer variant of [`Store::func_alloc_typed_unchecked`]. It is
+    /// This is a safer variant of [`Store::func_alloc_typed_unchecked`](crate::Store::func_alloc_typed_unchecked). It is
     /// functionally equal, with the only difference being that this function
     /// returns a [`Stored<FuncAddr>`].
     ///
@@ -419,7 +437,7 @@ impl<'b, T: Config> Store<'b, T> {
     /// given host function are references, their addresses came either from the
     /// host function arguments or from the current [`Store`] object.
     ///
-    /// See: [`Store::func_alloc_typed_unchecked`] for more information.
+    /// See: [`Store::func_alloc_typed_unchecked`](crate::Store::func_alloc_typed_unchecked) for more information.
     #[allow(clippy::let_and_return)] // reason = "to follow the 1234 structure"
     pub fn func_alloc_typed<Params: InteropValueList, Returns: InteropValueList>(
         &mut self,
@@ -431,7 +449,9 @@ impl<'b, T: Config> Store<'b, T> {
         // SAFETY: The caller ensures that if the host function returns
         // references, they originate either from the arguments or the current
         // store.
-        let func_addr = self.func_alloc_typed_unchecked::<Params, Returns>(host_func);
+        let func_addr = self
+            .inner
+            .func_alloc_typed_unchecked::<Params, Returns>(host_func);
         // 3. rewrap
         // SAFETY: The function address just came from the current store.
         let func_addr = unsafe { Stored::from_bare(func_addr, self.id) };
@@ -439,7 +459,7 @@ impl<'b, T: Config> Store<'b, T> {
         func_addr
     }
 
-    /// This is a safe variant of [`Store::invoke_without_fuel_unchecked`].
+    /// This is a safe variant of [`Store::invoke_without_fuel_unchecked`](crate::Store::invoke_without_fuel_unchecked).
     pub fn invoke_without_fuel(
         &mut self,
         func_addr: Stored<FuncAddr>,
@@ -449,7 +469,9 @@ impl<'b, T: Config> Store<'b, T> {
         let func_addr = func_addr.try_unwrap_into_bare(self.id)?;
         let params = params.try_unwrap_into_bare(self.id)?;
         // 2. call
-        let returns = self.invoke_without_fuel_unchecked(func_addr, params)?;
+        let returns = self
+            .inner
+            .invoke_without_fuel_unchecked(func_addr, params)?;
         // 3. rewrap
         // SAFETY: All `Value`s just came from the current store.
         let returns = unsafe { Vec::from_bare(returns, self.id) };
@@ -457,7 +479,7 @@ impl<'b, T: Config> Store<'b, T> {
         Ok(returns)
     }
 
-    /// This is a safe variant of [`Store::invoke_typed_without_fuel_unchecked`].
+    /// This is a safe variant of [`Store::invoke_typed_without_fuel_unchecked`](crate::Store::invoke_typed_without_fuel_unchecked).
     pub fn invoke_typed_without_fuel<
         Params: StoredInteropValueList,
         Returns: StoredInteropValueList,
@@ -470,7 +492,7 @@ impl<'b, T: Config> Store<'b, T> {
         let function = function.try_unwrap_into_bare(self.id)?;
         let params = params.into_values().try_unwrap_into_bare(self.id)?;
         // 2. call
-        let returns = self.invoke_without_fuel_unchecked(function, params)?;
+        let returns = self.inner.invoke_without_fuel_unchecked(function, params)?;
         // 3. rewrap
         // SAFETY: All `Value`s just came from the current store.
         let stored_returns = unsafe { Vec::from_bare(returns, self.id) };
@@ -480,7 +502,7 @@ impl<'b, T: Config> Store<'b, T> {
         Ok(stored_returns)
     }
 
-    /// This is a safe variant of [`Store::mem_access_mut_slice`].
+    /// This is a safe variant of [`Store::mem_access_mut_slice_unchecked`](crate::Store::mem_access_mut_slice_unchecked).
     pub fn mem_access_mut_slice<R>(
         &self,
         memory: Stored<MemAddr>,
@@ -489,12 +511,25 @@ impl<'b, T: Config> Store<'b, T> {
         // 1. try unwrap
         let memory = memory.try_unwrap_into_bare(self.id)?;
         // 2. call
-        let returns = self.mem_access_mut_slice_unchecked(memory, accessor);
+        let returns = self.inner.mem_access_mut_slice_unchecked(memory, accessor);
         // 3. rewrap
         // result is generic
         // 4. return
         Ok(returns)
     }
+}
+
+#[derive(Default)]
+pub struct Linker {
+    inner: crate::linker::Linker,
+
+    /// This is for the checked API which makes sure that all objects used
+    /// originate from the same [`Store`].
+    ///
+    /// Initially the store id is `None`. Only when a store-specific object or a
+    /// [`Store`] itself is used with a checked method, is this field set.  Once
+    /// initialized it is never written to again.
+    store_id: Option<StoreId>,
 }
 
 // All functions in this impl block must occur in the same order as they are
@@ -508,7 +543,12 @@ impl<'b, T: Config> Store<'b, T> {
 // 4. rewrap [results into stored objects]
 // 5. return [stored result objects]
 impl Linker {
-    /// This is a safe variant of [`Linker::define_unchecked`].
+    /// Creates a new [`Linker`] that is not yet associated to any specific [`Store`].
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// This is a safe variant of [`Linker::define_unchecked`](crate::linker::Linker::define_unchecked).
     pub fn define(
         &mut self,
         module_name: String,
@@ -526,14 +566,14 @@ impl Linker {
         // 2. try unwrap
         let extern_val = extern_val.try_unwrap_into_bare(linker_store_id)?;
         // 3. call
-        self.define_unchecked(module_name, name, extern_val)?;
+        self.inner.define_unchecked(module_name, name, extern_val)?;
         // 4. rewrap
         // result is the unit type.
         // 5. return
         Ok(())
     }
 
-    /// This is a safe variant of [`Linker::define_module_instance_unchecked`].
+    /// This is a safe variant of [`Linker::define_module_instance_unchecked`](crate::linker::Linker::define_module_instance_unchecked).
     pub fn define_module_instance<T: Config>(
         &mut self,
         store: &Store<T>,
@@ -549,14 +589,15 @@ impl Linker {
         // 2. try unwrap
         let module = module.try_unwrap_into_bare(linker_store_id)?;
         // 3. call
-        self.define_module_instance_unchecked(store, module_name, module)?;
+        self.inner
+            .define_module_instance_unchecked(&store.inner, module_name, module)?;
         // 4. rewrap
         // result is the unit type.
         // 5. return
         Ok(())
     }
 
-    /// This is a safe variant of [`Linker::get_unchecked`].
+    /// This is a safe variant of [`Linker::get_unchecked`](crate::linker::Linker::get_unchecked).
     ///
     /// # Interaction with unchecked API
     ///
@@ -596,6 +637,7 @@ impl Linker {
         // no stored parameters
         // 3. call
         let extern_val = self
+            .inner
             .get_unchecked(module_name, name)
             .ok_or(RuntimeError::UnableToResolveExternLookup)?;
         // 4. rewrap
@@ -607,7 +649,7 @@ impl Linker {
         Ok(stored_extern_val)
     }
 
-    /// This is a safe variant of [`Linker::instantiate_pre_unchecked`].
+    /// This is a safe variant of [`Linker::instantiate_pre_unchecked`](crate::linker::Linker::instantiate_pre_unchecked).
     ///
     /// # Interaction with unchecked API
     ///
@@ -637,7 +679,7 @@ impl Linker {
         // 2. try unwrap
         // no stored parameters
         // 3. call
-        let extern_vals = self.instantiate_pre_unchecked(validation_info)?;
+        let extern_vals = self.inner.instantiate_pre_unchecked(validation_info)?;
         // 4. rewrap
         // SAFETY: All `ExternVal`s just came from the current `Linker`. Because
         // a Linker can always be used with only one unique `Store`, all
@@ -647,7 +689,7 @@ impl Linker {
         Ok(stored_extern_vals)
     }
 
-    /// This is a safe variant of [`Linker::module_instantiate_unchecked`].
+    /// This is a safe variant of [`Linker::module_instantiate_unchecked`](crate::linker::Linker::module_instantiate_unchecked).
     pub fn module_instantiate<'b, T: Config>(
         &mut self,
         store: &mut Store<'b, T>,
@@ -662,8 +704,11 @@ impl Linker {
         // 2. try unwrap
         // no stored parameters
         // 3. call
-        let instantiation_outcome =
-            self.module_instantiate_unchecked(store, validation_info, maybe_fuel)?;
+        let instantiation_outcome = self.inner.module_instantiate_unchecked(
+            &mut store.inner,
+            validation_info,
+            maybe_fuel,
+        )?;
         // 4. rewrap
         // SAFETY: The `InstantiationOutcome` just came from the current
         // `Linker`. Because a linker can always be used with only one unique
@@ -970,5 +1015,25 @@ impl AbstractStored for StoredInstantiationOutcome {
             module_addr: self.module_addr.into_bare(),
             maybe_remaining_fuel: self.maybe_remaining_fuel,
         }
+    }
+}
+
+/// A unique identifier for a specific [`Store`]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub struct StoreId(u64);
+
+impl StoreId {
+    /// Creates a new unique [`StoreId`]
+    #[allow(clippy::new_without_default)] // reason = "StoreId::default() might be misunderstood to be some
+                                          // default value. However, a default value does not exist in that
+                                          // sense because every newly created StoreId must be unique. Also
+                                          // we don't want to allow the user to create new instances of
+                                          // this object."
+    pub(crate) fn new() -> Self {
+        static NEXT_STORE_ID: AtomicU64 = AtomicU64::new(0);
+
+        // TODO find a fix for the default wrapping behavior of `fetch_add`.
+        // Maybe we could return a `RuntimeError` here?
+        Self(NEXT_STORE_ID.fetch_add(1, Ordering::SeqCst))
     }
 }

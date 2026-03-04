@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 */
-use wasm::{validate, RuntimeError, Store, TrapError};
+use wasm::{checked::Store, validate, RuntimeError, TrapError};
 
 #[test_log::test]
 fn memory_copy_test_1() {

@@ -16,7 +16,7 @@
 */
 use wasm::interop::RefExtern;
 use wasm::value::ExternAddr;
-use wasm::{validate, RuntimeError, Store, TrapError};
+use wasm::{checked::Store, validate, RuntimeError, TrapError};
 
 #[test_log::test]
 fn table_grow_test() {

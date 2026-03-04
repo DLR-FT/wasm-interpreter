@@ -1,4 +1,4 @@
-use wasm::{validate, Store};
+use wasm::{checked::Store, validate};
 
 const MULTIPLY_WAT_TEMPLATE: &str = r#"
     (module
