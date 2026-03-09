@@ -82,9 +82,11 @@ impl<'b, T: Config> Store<'b, T> {
             .map(|extern_val| extern_val.try_unwrap_into_bare(self.id))
             .collect::<Result<Vec<ExternVal>, RuntimeError>>()?;
         // 2. call
-        let instantiation_outcome =
+        // SAFETY: todo
+        let instantiation_outcome = unsafe {
             self.inner
-                .module_instantiate_unchecked(validation_info, extern_vals, maybe_fuel)?;
+                .module_instantiate_unchecked(validation_info, extern_vals, maybe_fuel)
+        }?;
         // 3. rewrap
         // SAFETY: The `InstantiationOutcome` just came from the current store.
         let stored_instantiation_outcome =
@@ -102,7 +104,8 @@ impl<'b, T: Config> Store<'b, T> {
         // 1. try unwrap
         let module_addr = module_addr.try_unwrap_into_bare(self.id)?;
         // 2. call
-        let extern_val = self.inner.instance_export_unchecked(module_addr, name)?;
+        // SAFETY: todo
+        let extern_val = unsafe { self.inner.instance_export_unchecked(module_addr, name) }?;
         // 3. rewrap
         // SAFETY: The `ExternVal` just came from the current store.
         let stored_extern_val = unsafe { StoredExternVal::from_bare(extern_val, self.id) };
@@ -133,7 +136,7 @@ impl<'b, T: Config> Store<'b, T> {
         // SAFETY: The caller ensures that if the host function returns
         // references, they originate either from the arguments or the current
         // store.
-        let func_addr = self.inner.func_alloc_unchecked(func_type, host_func);
+        let func_addr = unsafe { self.inner.func_alloc_unchecked(func_type, host_func) };
         // 3. rewrap
         // SAFETY: The function address just came from the current store.
         let func_addr = unsafe { Stored::from_bare(func_addr, self.id) };
@@ -146,7 +149,8 @@ impl<'b, T: Config> Store<'b, T> {
         // 1. try unwrap
         let func_addr = func_addr.try_unwrap_into_bare(self.id)?;
         // 2. call
-        let func_type = self.inner.func_type_unchecked(func_addr);
+        // SAFETY: todo
+        let func_type = unsafe { self.inner.func_type_unchecked(func_addr) };
         // 3. rewrap
         // `FuncType` does not have a stored variant.
         // 4. return
@@ -164,7 +168,8 @@ impl<'b, T: Config> Store<'b, T> {
         let func_addr = func_addr.try_unwrap_into_bare(self.id)?;
         let params = params.try_unwrap_into_bare(self.id)?;
         // 2. call
-        let run_state = self.inner.invoke_unchecked(func_addr, params, maybe_fuel)?;
+        // SAFETY: todo
+        let run_state = unsafe { self.inner.invoke_unchecked(func_addr, params, maybe_fuel) }?;
         // 3. rewrap
         // SAFETY: The `RunState` just came from the current store.
         let stored_run_state = unsafe { StoredRunState::from_bare(run_state, self.id) };
@@ -181,7 +186,8 @@ impl<'b, T: Config> Store<'b, T> {
         // 1. try unwrap
         let r#ref = r#ref.try_unwrap_into_bare(self.id)?;
         // 2. call
-        let table_addr = self.inner.table_alloc_unchecked(table_type, r#ref)?;
+        // SAFETY: todo
+        let table_addr = unsafe { self.inner.table_alloc_unchecked(table_type, r#ref) }?;
         // 3. rewrap
         // SAFETY: The `TableAddr` just came from the current store.
         let stored_table_addr = unsafe { Stored::from_bare(table_addr, self.id) };
@@ -194,7 +200,8 @@ impl<'b, T: Config> Store<'b, T> {
         // 1. try unwrap
         let table_addr = table_addr.try_unwrap_into_bare(self.id)?;
         // 2. call
-        let table_type = self.inner.table_type_unchecked(table_addr);
+        // SAFETY: todo
+        let table_type = unsafe { self.inner.table_type_unchecked(table_addr) };
         // 3. rewrap
         // `TableType` has no stored variant.
         // 4. return
@@ -210,7 +217,8 @@ impl<'b, T: Config> Store<'b, T> {
         // 1. try unwrap
         let table_addr = table_addr.try_unwrap_into_bare(self.id)?;
         // 2. call
-        let r#ref = self.inner.table_read_unchecked(table_addr, i)?;
+        // SAFETY: todo
+        let r#ref = unsafe { self.inner.table_read_unchecked(table_addr, i) }?;
         // 3. rewrap
         // SAFETY: The `Ref` ust came from the current store.
         let stored_ref = unsafe { StoredRef::from_bare(r#ref, self.id) };
@@ -229,7 +237,8 @@ impl<'b, T: Config> Store<'b, T> {
         let table_addr = table_addr.try_unwrap_into_bare(self.id)?;
         let r#ref = r#ref.try_unwrap_into_bare(self.id)?;
         // 2. call
-        self.inner.table_write_unchecked(table_addr, i, r#ref)?;
+        // SAFETY: todo
+        (unsafe { self.inner.table_write_unchecked(table_addr, i, r#ref) })?;
         // 3. rewrap
         // result is the unit type.
         // 4. return
@@ -241,7 +250,8 @@ impl<'b, T: Config> Store<'b, T> {
         // 1. try unwrap
         let table_addr = table_addr.try_unwrap_into_bare(self.id)?;
         // 2. call
-        let table_size = self.inner.table_size_unchecked(table_addr);
+        // SAFETY: todo
+        let table_size = unsafe { self.inner.table_size_unchecked(table_addr) };
         // 3. rewrap
         // table size has no stored variant.
         // 4. return
@@ -268,7 +278,8 @@ impl<'b, T: Config> Store<'b, T> {
         // 1. try unwrap
         let mem_addr = mem_addr.try_unwrap_into_bare(self.id)?;
         // 2. call
-        let mem_type = self.inner.mem_type_unchecked(mem_addr);
+        // SAFETY: todo
+        let mem_type = unsafe { self.inner.mem_type_unchecked(mem_addr) };
         // 3. rewrap
         // `MemType` does not have a stored variant.
         // 4. return
@@ -280,7 +291,8 @@ impl<'b, T: Config> Store<'b, T> {
         // 1. try unwrap
         let mem_addr = mem_addr.try_unwrap_into_bare(self.id)?;
         // 2. call
-        let byte = self.inner.mem_read_unchecked(mem_addr, i)?;
+        // SAFETY: todo
+        let byte = unsafe { self.inner.mem_read_unchecked(mem_addr, i) }?;
         // 3. rewrap
         // a single byte does not have a stored variant.
         // 4. return
@@ -297,7 +309,8 @@ impl<'b, T: Config> Store<'b, T> {
         // 1. try unwrap
         let mem_addr = mem_addr.try_unwrap_into_bare(self.id)?;
         // 2. call
-        self.inner.mem_write_unchecked(mem_addr, i, byte)?;
+        // SAFETY: todo
+        (unsafe { self.inner.mem_write_unchecked(mem_addr, i, byte) })?;
         // 3. rewrap
         // result is the unit type.
         // 4. return
@@ -309,7 +322,8 @@ impl<'b, T: Config> Store<'b, T> {
         // 1. try unwrap
         let mem_addr = mem_addr.try_unwrap_into_bare(self.id)?;
         // 2. call
-        let mem_size = self.inner.mem_size_unchecked(mem_addr);
+        // SAFETY: todo
+        let mem_size = unsafe { self.inner.mem_size_unchecked(mem_addr) };
         // 3. rewrap
         // mem size does not have a stored variant.
         // 4. return
@@ -321,7 +335,8 @@ impl<'b, T: Config> Store<'b, T> {
         // 1. try unwrap
         let mem_addr = mem_addr.try_unwrap_into_bare(self.id)?;
         // 2. call
-        self.inner.mem_grow_unchecked(mem_addr, n)?;
+        // SAFETY: todo
+        (unsafe { self.inner.mem_grow_unchecked(mem_addr, n) })?;
         // 3. rewrap
         // result is the unit type.
         // 4. return
@@ -337,7 +352,8 @@ impl<'b, T: Config> Store<'b, T> {
         // 1. try unwrap
         let val = val.try_unwrap_into_bare(self.id)?;
         // 2. call
-        let global_addr = self.inner.global_alloc_unchecked(global_type, val)?;
+        // SAFETY: todo
+        let global_addr = unsafe { self.inner.global_alloc_unchecked(global_type, val) }?;
         // 3. rewrap
         // SAFETY: The `GlobalAddr` just came from the current store.
         let stored_global_addr = unsafe { Stored::from_bare(global_addr, self.id) };
@@ -350,7 +366,8 @@ impl<'b, T: Config> Store<'b, T> {
         // 1. try unwrap
         let global_addr = global_addr.try_unwrap_into_bare(self.id)?;
         // 2. call
-        let global_type = self.inner.global_type_unchecked(global_addr);
+        // SAFETY: todo
+        let global_type = unsafe { self.inner.global_type_unchecked(global_addr) };
         // 3. rewrap
         // `GlobalType` does not have a stored variant.
         // 4. return
@@ -365,7 +382,8 @@ impl<'b, T: Config> Store<'b, T> {
         // 1. try unwrap
         let global_addr = global_addr.try_unwrap_into_bare(self.id)?;
         // 2. call
-        let value = self.inner.global_read_unchecked(global_addr);
+        // SAFETY: todo
+        let value = unsafe { self.inner.global_read_unchecked(global_addr) };
         // 3. rewrap
         // SAFETY: The `Value` just came from the current store.
         let stored_value = unsafe { StoredValue::from_bare(value, self.id) };
@@ -383,7 +401,8 @@ impl<'b, T: Config> Store<'b, T> {
         let global_addr = global_addr.try_unwrap_into_bare(self.id)?;
         let val = val.try_unwrap_into_bare(self.id)?;
         // 2. call
-        self.inner.global_write_unchecked(global_addr, val)?;
+        // SAFETY: todo
+        (unsafe { self.inner.global_write_unchecked(global_addr, val) })?;
         // 3. rewrap
         // result is the unit type.
         // 4. return
@@ -401,9 +420,11 @@ impl<'b, T: Config> Store<'b, T> {
         let func_addr = func_addr.try_unwrap_into_bare(self.id)?;
         let params = params.try_unwrap_into_bare(self.id)?;
         // 2. call
-        let resumable = self
-            .inner
-            .create_resumable_unchecked(func_addr, params, maybe_fuel)?;
+        // SAFETY: todo
+        let resumable = unsafe {
+            self.inner
+                .create_resumable_unchecked(func_addr, params, maybe_fuel)
+        }?;
         // 3. rewrap
         // SAFETY: The `Resumable` just came from the current store.
         let stored_resumable = unsafe { Stored::from_bare(resumable, self.id) };
@@ -419,7 +440,8 @@ impl<'b, T: Config> Store<'b, T> {
         // 1. try unwrap
         let resumable = resumable.try_unwrap_into_bare(self.id)?;
         // 2. call
-        let run_state = self.inner.resume_unchecked(resumable)?;
+        // SAFETY: todo
+        let run_state = unsafe { self.inner.resume_unchecked(resumable) }?;
         // 3. rewrap
         // SAFETY: The `RunState` just came from the current store.
         let stored_run_state = unsafe { StoredRunState::from_bare(run_state, self.id) };
@@ -439,7 +461,7 @@ impl<'b, T: Config> Store<'b, T> {
     ///
     /// See: [`Store::func_alloc_typed_unchecked`](crate::Store::func_alloc_typed_unchecked) for more information.
     #[allow(clippy::let_and_return)] // reason = "to follow the 1234 structure"
-    pub fn func_alloc_typed<Params: InteropValueList, Returns: InteropValueList>(
+    pub unsafe fn func_alloc_typed<Params: InteropValueList, Returns: InteropValueList>(
         &mut self,
         host_func: fn(&mut T, Vec<Value>) -> Result<Vec<Value>, HaltExecutionError>,
     ) -> Stored<FuncAddr> {
@@ -449,9 +471,10 @@ impl<'b, T: Config> Store<'b, T> {
         // SAFETY: The caller ensures that if the host function returns
         // references, they originate either from the arguments or the current
         // store.
-        let func_addr = self
-            .inner
-            .func_alloc_typed_unchecked::<Params, Returns>(host_func);
+        let func_addr = unsafe {
+            self.inner
+                .func_alloc_typed_unchecked::<Params, Returns>(host_func)
+        };
         // 3. rewrap
         // SAFETY: The function address just came from the current store.
         let func_addr = unsafe { Stored::from_bare(func_addr, self.id) };
@@ -469,9 +492,8 @@ impl<'b, T: Config> Store<'b, T> {
         let func_addr = func_addr.try_unwrap_into_bare(self.id)?;
         let params = params.try_unwrap_into_bare(self.id)?;
         // 2. call
-        let returns = self
-            .inner
-            .invoke_without_fuel_unchecked(func_addr, params)?;
+        // SAFETY: todo
+        let returns = unsafe { self.inner.invoke_without_fuel_unchecked(func_addr, params) }?;
         // 3. rewrap
         // SAFETY: All `Value`s just came from the current store.
         let returns = unsafe { Vec::from_bare(returns, self.id) };
@@ -492,7 +514,8 @@ impl<'b, T: Config> Store<'b, T> {
         let function = function.try_unwrap_into_bare(self.id)?;
         let params = params.into_values().try_unwrap_into_bare(self.id)?;
         // 2. call
-        let returns = self.inner.invoke_without_fuel_unchecked(function, params)?;
+        // SAFETY: todo
+        let returns = unsafe { self.inner.invoke_without_fuel_unchecked(function, params) }?;
         // 3. rewrap
         // SAFETY: All `Value`s just came from the current store.
         let stored_returns = unsafe { Vec::from_bare(returns, self.id) };
@@ -511,7 +534,8 @@ impl<'b, T: Config> Store<'b, T> {
         // 1. try unwrap
         let memory = memory.try_unwrap_into_bare(self.id)?;
         // 2. call
-        let returns = self.inner.mem_access_mut_slice_unchecked(memory, accessor);
+        // SAFETY: todo
+        let returns = unsafe { self.inner.mem_access_mut_slice_unchecked(memory, accessor) };
         // 3. rewrap
         // result is generic
         // 4. return
@@ -566,7 +590,8 @@ impl Linker {
         // 2. try unwrap
         let extern_val = extern_val.try_unwrap_into_bare(linker_store_id)?;
         // 3. call
-        self.inner.define_unchecked(module_name, name, extern_val)?;
+        // SAFETY: todo
+        unsafe { self.inner.define_unchecked(module_name, name, extern_val) }?;
         // 4. rewrap
         // result is the unit type.
         // 5. return
@@ -589,8 +614,11 @@ impl Linker {
         // 2. try unwrap
         let module = module.try_unwrap_into_bare(linker_store_id)?;
         // 3. call
-        self.inner
-            .define_module_instance_unchecked(&store.inner, module_name, module)?;
+        // SAFETY: todo
+        unsafe {
+            self.inner
+                .define_module_instance_unchecked(&store.inner, module_name, module)
+        }?;
         // 4. rewrap
         // result is the unit type.
         // 5. return
@@ -685,7 +713,7 @@ impl Linker {
         // a Linker can always be used with only one unique `Store`, all
         // `ExternVal`s must be from the current Linker's store.
         let stored_extern_vals = unsafe { Vec::from_bare(extern_vals, linker_store_id) };
-        // 5. retur
+        // 5. return
         Ok(stored_extern_vals)
     }
 
@@ -704,11 +732,11 @@ impl Linker {
         // 2. try unwrap
         // no stored parameters
         // 3. call
-        let instantiation_outcome = self.inner.module_instantiate_unchecked(
-            &mut store.inner,
-            validation_info,
-            maybe_fuel,
-        )?;
+        // SAFETY: todo
+        let instantiation_outcome = unsafe {
+            self.inner
+                .module_instantiate_unchecked(&mut store.inner, validation_info, maybe_fuel)
+        }?;
         // 4. rewrap
         // SAFETY: The `InstantiationOutcome` just came from the current
         // `Linker`. Because a linker can always be used with only one unique

@@ -59,7 +59,9 @@ pub(super) fn run<T: Config>(
     let mut current_func_addr = resumable.current_func_addr;
     let pc = resumable.pc;
     let mut stp = resumable.stp;
-    let func_inst = store.functions.get(current_func_addr);
+    // SAFETY: The caller ensures that the resumable and thus also its function
+    // address is valid in the current store.
+    let func_inst = unsafe { store.functions.get(current_func_addr) };
     let FuncInst::WasmFunc(wasm_func_inst) = &func_inst else {
         unreachable!(
             "the interpreter loop shall only be executed with native wasm functions as root call"
@@ -68,9 +70,12 @@ pub(super) fn run<T: Config>(
     let mut current_module = wasm_func_inst.module_addr;
 
     // Start reading the function's instructions
-    let wasm = &mut WasmReader::new(store.modules.get(current_module).wasm_bytecode);
+    // SAFETY: This module address was just read from the current store. Every
+    // store guarantees all addresses contained in it to be valid within itself.
+    let module = unsafe { store.modules.get(current_module) };
+    let wasm = &mut WasmReader::new(module.wasm_bytecode);
 
-    let mut current_sidetable: &Sidetable = &store.modules.get(current_module).sidetable;
+    let mut current_sidetable: &Sidetable = &module.sidetable;
 
     // local variable for holding where the function code ends (last END instr address + 1) to avoid lookup at every END instr
     let mut current_function_end_marker =
@@ -83,7 +88,7 @@ pub(super) fn run<T: Config>(
         // call the instruction hook
         store
             .user_data
-            .instruction_hook(store.modules.get(current_module).wasm_bytecode, wasm.pc);
+            .instruction_hook(module.wasm_bytecode, wasm.pc);
 
         // convenience macro for fuel metering. records the interpreter state within resumable and returns with
         // Ok(required_fuel) if the fuel to execute the instruction is not enough
@@ -134,17 +139,30 @@ pub(super) fn run<T: Config>(
 
                 trace!("end of function reached, returning to previous call frame");
                 current_func_addr = maybe_return_func_addr;
-                let FuncInst::WasmFunc(current_wasm_func_inst) =
-                    store.functions.get(current_func_addr)
-                else {
+
+                // SAFETY: The current function address must come from the given
+                // resumable or the current store, because these are the only
+                // parameters to this function. The resumable, including its
+                // function address, is guaranteed to be valid in the current
+                // store by the caller, and the store can only contain addresses
+                // that are valid within itself.
+                let current_function = unsafe { store.functions.get(current_func_addr) };
+                let FuncInst::WasmFunc(current_wasm_func_inst) = current_function else {
                     unreachable!("function addresses on the stack always correspond to native wasm functions")
                 };
                 current_module = current_wasm_func_inst.module_addr;
-                wasm.full_wasm_binary = store.modules.get(current_module).wasm_bytecode;
+
+                // SAFETY: The current module address must come from the current
+                // store, because it is the only parameter to this function that
+                // can contain module addresses. All stores guarantee all
+                // addresses in them to be valid within themselves.
+                let module = unsafe { store.modules.get(current_module) };
+
+                wasm.full_wasm_binary = module.wasm_bytecode;
                 wasm.pc = maybe_return_address;
                 stp = maybe_return_stp;
 
-                current_sidetable = &store.modules.get(current_module).sidetable;
+                current_sidetable = &module.sidetable;
 
                 current_function_end_marker = current_wasm_func_inst.code_expr.from()
                     + current_wasm_func_inst.code_expr.len();
@@ -239,20 +257,33 @@ pub(super) fn run<T: Config>(
                 // SAFETY: Validation guarantees there to be a valid function
                 // index next.
                 let func_idx = unsafe { FuncIdx::read_unchecked(wasm) };
+
+                // SAFETY: The current function address must come from the given
+                // resumable or the current store, because these are the only
+                // parameters to this function. The resumable, including its
+                // function address, is guaranteed to be valid in the current
+                // store by the caller, and the store can only contain addresses
+                // that are valid within itself.
                 let FuncInst::WasmFunc(current_wasm_func_inst) =
-                    store.functions.get(current_func_addr)
+                    (unsafe { store.functions.get(current_func_addr) })
                 else {
                     unreachable!()
                 };
 
-                let func_to_call_addr = {
-                    let current_module = store.modules.get(current_wasm_func_inst.module_addr);
-                    // SAFETY: Validation guarantees the function index to be
-                    // valid in the current module.
-                    unsafe { current_module.func_addrs.get(func_idx) }
-                };
+                // SAFETY: The current module address must come from the current
+                // store, because it is the only parameter to this function that
+                // can contain module addresses. All stores guarantee all
+                // addresses in them to be valid within themselves.
+                let current_module_inst =
+                    unsafe { store.modules.get(current_wasm_func_inst.module_addr) };
 
-                let func_to_call_inst = store.functions.get(*func_to_call_addr);
+                // SAFETY: Validation guarantees the function index to be
+                // valid in the current module.
+                let func_to_call_addr = unsafe { current_module_inst.func_addrs.get(func_idx) };
+
+                // SAFETY: This function address just came from the current
+                // store. Therefore, it must be valid in the current store.
+                let func_to_call_inst = unsafe { store.functions.get(*func_to_call_addr) };
 
                 trace!("Instruction: call [{func_to_call_addr:?}]");
 
@@ -300,12 +331,19 @@ pub(super) fn run<T: Config>(
 
                         current_func_addr = *func_to_call_addr;
                         current_module = wasm_func_to_call_inst.module_addr;
-                        wasm.full_wasm_binary = store.modules.get(current_module).wasm_bytecode;
+
+                        // SAFETY: The current module address was just set to an
+                        // address that came from the current store. Therefore,
+                        // this address must automatically be valid in the
+                        // current store.
+                        let module = unsafe { store.modules.get(current_module) };
+
+                        wasm.full_wasm_binary = module.wasm_bytecode;
                         wasm.move_start_to(wasm_func_to_call_inst.code_expr)
                             .expect("code expression spans to always be valid");
 
                         stp = wasm_func_to_call_inst.stp;
-                        current_sidetable = &store.modules.get(current_module).sidetable;
+                        current_sidetable = &module.sidetable;
                         current_function_end_marker = wasm_func_to_call_inst.code_expr.from()
                             + wasm_func_to_call_inst.code_expr.len();
                     }
@@ -323,12 +361,18 @@ pub(super) fn run<T: Config>(
                 // next.
                 let table_idx = unsafe { TableIdx::read_unchecked(wasm) };
 
-                let module = store.modules.get(current_module);
+                // SAFETY: The current module address must come from the current
+                // store, because it is the only parameter to this function that
+                // can contain module addresses. All stores guarantee all
+                // addresses in them to be valid within themselves.
+                let module = unsafe { store.modules.get(current_module) };
 
                 // SAFETY: Validation guarantees the table index to be valid in
                 // the current module.
                 let table_addr = unsafe { module.table_addrs.get(table_idx) };
-                let tab = store.tables.get(*table_addr);
+                // SAFETY: This table address was just read from the current
+                // store. Therefore, it is valid in the current store.
+                let tab = unsafe { store.tables.get(*table_addr) };
                 // SAFETY: Validation guarantees the type index to be valid in
                 // the current module.
                 let func_ty = unsafe { module.types.get(given_type_idx) };
@@ -354,7 +398,10 @@ pub(super) fn run<T: Config>(
                     Ref::Extern(_) => unreachable_validated!(),
                 };
 
-                let func_to_call_inst = store.functions.get(func_to_call_addr);
+                // SAFETY: This function address just came from a table of the
+                // current store. Therefore, it must be valid in the current
+                // store.
+                let func_to_call_inst = unsafe { store.functions.get(func_to_call_addr) };
 
                 if func_ty != func_to_call_inst.ty() {
                     return Err(TrapError::SignatureMismatch.into());
@@ -406,12 +453,18 @@ pub(super) fn run<T: Config>(
 
                         current_func_addr = func_to_call_addr;
                         current_module = wasm_func_to_call_inst.module_addr;
-                        wasm.full_wasm_binary = store.modules.get(current_module).wasm_bytecode;
+
+                        // SAFETY: The current module address was just set to an
+                        // address that came from the current store. Therefore,
+                        // this address must automatically be valid in the
+                        // current store.
+                        let module = unsafe { store.modules.get(current_module) };
+                        wasm.full_wasm_binary = module.wasm_bytecode;
                         wasm.move_start_to(wasm_func_to_call_inst.code_expr)
                             .expect("code expression spans to always be valid");
 
                         stp = wasm_func_to_call_inst.stp;
-                        current_sidetable = &store.modules.get(current_module).sidetable;
+                        current_sidetable = &module.sidetable;
                         current_function_end_marker = wasm_func_to_call_inst.code_expr.from()
                             + wasm_func_to_call_inst.code_expr.len();
                     }
@@ -480,11 +533,18 @@ pub(super) fn run<T: Config>(
                 // SAFETY: Validation guarantees there to be a valid global
                 // index next.
                 let global_idx = unsafe { GlobalIdx::read_unchecked(wasm) };
-                let module = store.modules.get(current_module);
+                // SAFETY: The current module address must come from the current
+                // store, because it is the only parameter to this function that
+                // can contain module addresses. All stores guarantee all
+                // addresses in them to be valid within themselves.
+                let module = unsafe { store.modules.get(current_module) };
+
                 // SAFETY: Validation guarantees the global index to be valid in
                 // the current module.
                 let global_addr = *unsafe { module.global_addrs.get(global_idx) };
-                let global = store.globals.get(global_addr);
+                // SAFETY: This global address was just read from the current
+                // store. Therefore, it is valid in the current store.
+                let global = unsafe { store.globals.get(global_addr) };
 
                 stack.push_value::<T>(global.value)?;
 
@@ -499,11 +559,17 @@ pub(super) fn run<T: Config>(
                 // SAFETY: Validation guarantees there to be a valid global
                 // index next.
                 let global_idx = unsafe { GlobalIdx::read_unchecked(wasm) };
-                let module = store.modules.get(current_module);
+                // SAFETY: The current module address must come from the current
+                // store, because it is the only parameter to this function that
+                // can contain module addresses. All stores guarantee all
+                // addresses in them to be valid within themselves.
+                let module = unsafe { store.modules.get(current_module) };
                 // SAFETY: Validation guarantees the global index to be valid in
                 // the current module.
                 let global_addr = *unsafe { module.global_addrs.get(global_idx) };
-                let global = store.globals.get_mut(global_addr);
+                // SAFETY: This global address was just read from the current
+                // store. Therefore, it is valid in the current store.
+                let global = unsafe { store.globals.get_mut(global_addr) };
 
                 global.value = stack.pop_value();
                 trace!("Instruction: GLOBAL_SET");
@@ -513,11 +579,18 @@ pub(super) fn run<T: Config>(
                 // SAFETY: Validation guarantees there to be a valid table index
                 // next.
                 let table_idx = unsafe { TableIdx::read_unchecked(wasm) };
-                let module = store.modules.get(current_module);
+                // SAFETY: The current module address must come from the current
+                // store, because it is the only parameter to this function that
+                // can contain module addresses. All stores guarantee all
+                // addresses in them to be valid within themselves.
+                let module = unsafe { store.modules.get(current_module) };
+
                 // SAFETY: Validation guarantees the table index to be valid in
                 // the current module.
                 let table_addr = *unsafe { module.table_addrs.get(table_idx) };
-                let tab = store.tables.get(table_addr);
+                // SAFETY: This table address was just read from the current
+                // store. Therefore, it is valid in the current store.
+                let tab = unsafe { store.tables.get(table_addr) };
 
                 let i: i32 = stack.pop_value().try_into().unwrap_validated();
 
@@ -539,11 +612,18 @@ pub(super) fn run<T: Config>(
                 // SAFETY: Validation guarantees there to be valid table index
                 // next.
                 let table_idx = unsafe { TableIdx::read_unchecked(wasm) };
-                let module = store.modules.get(current_module);
+                // SAFETY: The current module address must come from the current
+                // store, because it is the only parameter to this function that
+                // can contain module addresses. All stores guarantee all
+                // addresses in them to be valid within themselves.
+                let module = unsafe { store.modules.get(current_module) };
+
                 // SAFETY: Validation guarantees the table index to be valid in
                 // the current module.
                 let table_addr = *unsafe { module.table_addrs.get(table_idx) };
-                let tab = store.tables.get_mut(table_addr);
+                // SAFETY: This table address was just read from the current
+                // store. Therefore, it is valid in the current store.
+                let tab = unsafe { store.tables.get_mut(table_addr) };
 
                 let val: Ref = stack.pop_value().try_into().unwrap_validated();
                 let i: i32 = stack.pop_value().try_into().unwrap_validated();
@@ -567,10 +647,17 @@ pub(super) fn run<T: Config>(
                 let memarg = MemArg::read(wasm).unwrap_validated();
                 let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
 
-                let module = store.modules.get(current_module);
+                // SAFETY: The current module address must come from the current
+                // store, because it is the only parameter to this function that
+                // can contain module addresses. All stores guarantee all
+                // addresses in them to be valid within themselves.
+                let module = unsafe { store.modules.get(current_module) };
+
                 // SAFETY: Validation guarantees at least one memory to exist.
                 let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
-                let mem_inst = store.memories.get(mem_addr);
+                // SAFETY: This memory address was just read from the current
+                // store. Therefore, it is valid in the current store.
+                let mem_inst = unsafe { store.memories.get(mem_addr) };
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data = mem_inst.mem.load(idx)?;
@@ -583,10 +670,17 @@ pub(super) fn run<T: Config>(
                 let memarg = MemArg::read(wasm).unwrap_validated();
                 let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
 
-                let module = store.modules.get(current_module);
+                // SAFETY: The current module address must come from the current
+                // store, because it is the only parameter to this function that
+                // can contain module addresses. All stores guarantee all
+                // addresses in them to be valid within themselves.
+                let module = unsafe { store.modules.get(current_module) };
+
                 // SAFETY: Validation guarantees at least one memory to exist.
                 let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
-                let mem = store.memories.get(mem_addr);
+                // SAFETY: This memory address was just read from the current
+                // store. Therefore, it is valid in the current store.
+                let mem = unsafe { store.memories.get(mem_addr) };
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data = mem.mem.load(idx)?;
@@ -599,10 +693,17 @@ pub(super) fn run<T: Config>(
                 let memarg = MemArg::read(wasm).unwrap_validated();
                 let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
 
-                let module = store.modules.get(current_module);
+                // SAFETY: The current module address must come from the current
+                // store, because it is the only parameter to this function that
+                // can contain module addresses. All stores guarantee all
+                // addresses in them to be valid within themselves.
+                let module = unsafe { store.modules.get(current_module) };
+
                 // SAFETY: Validation guarantees at least one memory to exist.
                 let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
-                let mem = store.memories.get(mem_addr);
+                // SAFETY: This memory address was just read from the current
+                // store. Therefore, it is valid in the current store.
+                let mem = unsafe { store.memories.get(mem_addr) };
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data = mem.mem.load(idx)?;
@@ -615,10 +716,17 @@ pub(super) fn run<T: Config>(
                 let memarg = MemArg::read(wasm).unwrap_validated();
                 let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
 
-                let module = store.modules.get(current_module);
+                // SAFETY: The current module address must come from the current
+                // store, because it is the only parameter to this function that
+                // can contain module addresses. All stores guarantee all
+                // addresses in them to be valid within themselves.
+                let module = unsafe { store.modules.get(current_module) };
+
                 // SAFETY: Validation guarantees at least one memory to exist.
                 let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
-                let mem = store.memories.get(mem_addr);
+                // SAFETY: This memory address was just read from the current
+                // store. Therefore, it is valid in the current store.
+                let mem = unsafe { store.memories.get(mem_addr) };
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data = mem.mem.load(idx)?;
@@ -631,10 +739,17 @@ pub(super) fn run<T: Config>(
                 let memarg = MemArg::read(wasm).unwrap_validated();
                 let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
 
-                let module = store.modules.get(current_module);
+                // SAFETY: The current module address must come from the current
+                // store, because it is the only parameter to this function that
+                // can contain module addresses. All stores guarantee all
+                // addresses in them to be valid within themselves.
+                let module = unsafe { store.modules.get(current_module) };
+
                 // SAFETY: Validation guarantees at least one memory to exist.
                 let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
-                let mem = store.memories.get(mem_addr);
+                // SAFETY: This memory address was just read from the current
+                // store. Therefore, it is valid in the current store.
+                let mem = unsafe { store.memories.get(mem_addr) };
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data: i8 = mem.mem.load(idx)?;
@@ -647,10 +762,17 @@ pub(super) fn run<T: Config>(
                 let memarg = MemArg::read(wasm).unwrap_validated();
                 let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
 
-                let module = store.modules.get(current_module);
+                // SAFETY: The current module address must come from the current
+                // store, because it is the only parameter to this function that
+                // can contain module addresses. All stores guarantee all
+                // addresses in them to be valid within themselves.
+                let module = unsafe { store.modules.get(current_module) };
+
                 // SAFETY: Validation guarantees at least one memory to exist.
                 let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
-                let mem = store.memories.get(mem_addr);
+                // SAFETY: This memory address was just read from the current
+                // store. Therefore, it is valid in the current store.
+                let mem = unsafe { store.memories.get(mem_addr) };
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data: u8 = mem.mem.load(idx)?;
@@ -663,10 +785,17 @@ pub(super) fn run<T: Config>(
                 let memarg = MemArg::read(wasm).unwrap_validated();
                 let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
 
-                let module = store.modules.get(current_module);
+                // SAFETY: The current module address must come from the current
+                // store, because it is the only parameter to this function that
+                // can contain module addresses. All stores guarantee all
+                // addresses in them to be valid within themselves.
+                let module = unsafe { store.modules.get(current_module) };
+
                 // SAFETY: Validation guarantees at least one memory to exist.
                 let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
-                let mem = store.memories.get(mem_addr);
+                // SAFETY: This memory address was just read from the current
+                // store. Therefore, it is valid in the current store.
+                let mem = unsafe { store.memories.get(mem_addr) };
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data: i16 = mem.mem.load(idx)?;
@@ -679,10 +808,17 @@ pub(super) fn run<T: Config>(
                 let memarg = MemArg::read(wasm).unwrap_validated();
                 let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
 
-                let module = store.modules.get(current_module);
+                // SAFETY: The current module address must come from the current
+                // store, because it is the only parameter to this function that
+                // can contain module addresses. All stores guarantee all
+                // addresses in them to be valid within themselves.
+                let module = unsafe { store.modules.get(current_module) };
+
                 // SAFETY: Validation guarantees at least one memory to exist.
                 let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
-                let mem = store.memories.get(mem_addr);
+                // SAFETY: This memory address was just read from the current
+                // store. Therefore, it is valid in the current store.
+                let mem = unsafe { store.memories.get(mem_addr) };
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data: u16 = mem.mem.load(idx)?;
@@ -695,10 +831,17 @@ pub(super) fn run<T: Config>(
                 let memarg = MemArg::read(wasm).unwrap_validated();
                 let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
 
-                let module = store.modules.get(current_module);
+                // SAFETY: The current module address must come from the current
+                // store, because it is the only parameter to this function that
+                // can contain module addresses. All stores guarantee all
+                // addresses in them to be valid within themselves.
+                let module = unsafe { store.modules.get(current_module) };
+
                 // SAFETY: Validation guarantees at least one memory to exist.
                 let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
-                let mem = store.memories.get(mem_addr);
+                // SAFETY: This memory address was just read from the current
+                // store. Therefore, it is valid in the current store.
+                let mem = unsafe { store.memories.get(mem_addr) };
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data: i8 = mem.mem.load(idx)?;
@@ -711,10 +854,17 @@ pub(super) fn run<T: Config>(
                 let memarg = MemArg::read(wasm).unwrap_validated();
                 let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
 
-                let module = store.modules.get(current_module);
+                // SAFETY: The current module address must come from the current
+                // store, because it is the only parameter to this function that
+                // can contain module addresses. All stores guarantee all
+                // addresses in them to be valid within themselves.
+                let module = unsafe { store.modules.get(current_module) };
+
                 // SAFETY: Validation guarantees at least one memory to exist.
                 let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
-                let mem = store.memories.get(mem_addr);
+                // SAFETY: This memory address was just read from the current
+                // store. Therefore, it is valid in the current store.
+                let mem = unsafe { store.memories.get(mem_addr) };
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data: u8 = mem.mem.load(idx)?;
@@ -727,10 +877,17 @@ pub(super) fn run<T: Config>(
                 let memarg = MemArg::read(wasm).unwrap_validated();
                 let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
 
-                let module = store.modules.get(current_module);
+                // SAFETY: The current module address must come from the current
+                // store, because it is the only parameter to this function that
+                // can contain module addresses. All stores guarantee all
+                // addresses in them to be valid within themselves.
+                let module = unsafe { store.modules.get(current_module) };
+
                 // SAFETY: Validation guarantees at least one memory to exist.
                 let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
-                let mem = store.memories.get(mem_addr);
+                // SAFETY: This memory address was just read from the current
+                // store. Therefore, it is valid in the current store.
+                let mem = unsafe { store.memories.get(mem_addr) };
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data: i16 = mem.mem.load(idx)?;
@@ -743,10 +900,17 @@ pub(super) fn run<T: Config>(
                 let memarg = MemArg::read(wasm).unwrap_validated();
                 let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
 
-                let module = store.modules.get(current_module);
+                // SAFETY: The current module address must come from the current
+                // store, because it is the only parameter to this function that
+                // can contain module addresses. All stores guarantee all
+                // addresses in them to be valid within themselves.
+                let module = unsafe { store.modules.get(current_module) };
+
                 // SAFETY: Validation guarantees at least one memory to exist.
                 let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
-                let mem = store.memories.get(mem_addr);
+                // SAFETY: This memory address was just read from the current
+                // store. Therefore, it is valid in the current store.
+                let mem = unsafe { store.memories.get(mem_addr) };
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data: u16 = mem.mem.load(idx)?;
@@ -759,10 +923,17 @@ pub(super) fn run<T: Config>(
                 let memarg = MemArg::read(wasm).unwrap_validated();
                 let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
 
-                let module = store.modules.get(current_module);
+                // SAFETY: The current module address must come from the current
+                // store, because it is the only parameter to this function that
+                // can contain module addresses. All stores guarantee all
+                // addresses in them to be valid within themselves.
+                let module = unsafe { store.modules.get(current_module) };
+
                 // SAFETY: Validation guarantees at least one memory to exist.
                 let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
-                let mem = store.memories.get(mem_addr);
+                // SAFETY: This memory address was just read from the current
+                // store. Therefore, it is valid in the current store.
+                let mem = unsafe { store.memories.get(mem_addr) };
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data: i32 = mem.mem.load(idx)?;
@@ -775,10 +946,17 @@ pub(super) fn run<T: Config>(
                 let memarg = MemArg::read(wasm).unwrap_validated();
                 let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
 
-                let module = store.modules.get(current_module);
+                // SAFETY: The current module address must come from the current
+                // store, because it is the only parameter to this function that
+                // can contain module addresses. All stores guarantee all
+                // addresses in them to be valid within themselves.
+                let module = unsafe { store.modules.get(current_module) };
+
                 // SAFETY: Validation guarantees at least one memory to exist.
                 let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
-                let mem = store.memories.get(mem_addr);
+                // SAFETY: This memory address was just read from the current
+                // store. Therefore, it is valid in the current store.
+                let mem = unsafe { store.memories.get(mem_addr) };
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data: u32 = mem.mem.load(idx)?;
@@ -793,10 +971,17 @@ pub(super) fn run<T: Config>(
                 let data_to_store: u32 = stack.pop_value().try_into().unwrap_validated();
                 let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
 
-                let module = store.modules.get(current_module);
+                // SAFETY: The current module address must come from the current
+                // store, because it is the only parameter to this function that
+                // can contain module addresses. All stores guarantee all
+                // addresses in them to be valid within themselves.
+                let module = unsafe { store.modules.get(current_module) };
+
                 // SAFETY: Validation guarantees at least one memory to exist.
                 let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
-                let mem = store.memories.get(mem_addr);
+                // SAFETY: This memory address was just read from the current
+                // store. Therefore, it is valid in the current store.
+                let mem = unsafe { store.memories.get(mem_addr) };
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 mem.mem.store(idx, data_to_store)?;
@@ -810,10 +995,17 @@ pub(super) fn run<T: Config>(
                 let data_to_store: u64 = stack.pop_value().try_into().unwrap_validated();
                 let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
 
-                let module = store.modules.get(current_module);
+                // SAFETY: The current module address must come from the current
+                // store, because it is the only parameter to this function that
+                // can contain module addresses. All stores guarantee all
+                // addresses in them to be valid within themselves.
+                let module = unsafe { store.modules.get(current_module) };
+
                 // SAFETY: Validation guarantees at least one memory to exist.
                 let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
-                let mem = store.memories.get(mem_addr);
+                // SAFETY: This memory address was just read from the current
+                // store. Therefore, it is valid in the current store.
+                let mem = unsafe { store.memories.get(mem_addr) };
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 mem.mem.store(idx, data_to_store)?;
@@ -827,10 +1019,17 @@ pub(super) fn run<T: Config>(
                 let data_to_store: F32 = stack.pop_value().try_into().unwrap_validated();
                 let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
 
-                let module = store.modules.get(current_module);
+                // SAFETY: The current module address must come from the current
+                // store, because it is the only parameter to this function that
+                // can contain module addresses. All stores guarantee all
+                // addresses in them to be valid within themselves.
+                let module = unsafe { store.modules.get(current_module) };
+
                 // SAFETY: Validation guarantees at least one memory to exist.
                 let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
-                let mem = store.memories.get(mem_addr);
+                // SAFETY: This memory address was just read from the current
+                // store. Therefore, it is valid in the current store.
+                let mem = unsafe { store.memories.get(mem_addr) };
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 mem.mem.store(idx, data_to_store)?;
@@ -844,10 +1043,17 @@ pub(super) fn run<T: Config>(
                 let data_to_store: F64 = stack.pop_value().try_into().unwrap_validated();
                 let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
 
-                let module = store.modules.get(current_module);
+                // SAFETY: The current module address must come from the current
+                // store, because it is the only parameter to this function that
+                // can contain module addresses. All stores guarantee all
+                // addresses in them to be valid within themselves.
+                let module = unsafe { store.modules.get(current_module) };
+
                 // SAFETY: Validation guarantees at least one memory to exist.
                 let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
-                let mem = store.memories.get(mem_addr);
+                // SAFETY: This memory address was just read from the current
+                // store. Therefore, it is valid in the current store.
+                let mem = unsafe { store.memories.get(mem_addr) };
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 mem.mem.store(idx, data_to_store)?;
@@ -863,10 +1069,17 @@ pub(super) fn run<T: Config>(
 
                 let wrapped_data = data_to_store as i8;
 
-                let module = store.modules.get(current_module);
+                // SAFETY: The current module address must come from the current
+                // store, because it is the only parameter to this function that
+                // can contain module addresses. All stores guarantee all
+                // addresses in them to be valid within themselves.
+                let module = unsafe { store.modules.get(current_module) };
+
                 // SAFETY: Validation guarantees at least one memory to exist.
                 let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
-                let mem = store.memories.get(mem_addr);
+                // SAFETY: This memory address was just read from the current
+                // store. Therefore, it is valid in the current store.
+                let mem = unsafe { store.memories.get(mem_addr) };
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 mem.mem.store(idx, wrapped_data)?;
@@ -882,10 +1095,17 @@ pub(super) fn run<T: Config>(
 
                 let wrapped_data = data_to_store as i16;
 
-                let module = store.modules.get(current_module);
+                // SAFETY: The current module address must come from the current
+                // store, because it is the only parameter to this function that
+                // can contain module addresses. All stores guarantee all
+                // addresses in them to be valid within themselves.
+                let module = unsafe { store.modules.get(current_module) };
+
                 // SAFETY: Validation guarantees at least one memory to exist.
                 let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
-                let mem = store.memories.get(mem_addr);
+                // SAFETY: This memory address was just read from the current
+                // store. Therefore, it is valid in the current store.
+                let mem = unsafe { store.memories.get(mem_addr) };
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 mem.mem.store(idx, wrapped_data)?;
@@ -901,10 +1121,17 @@ pub(super) fn run<T: Config>(
 
                 let wrapped_data = data_to_store as i8;
 
-                let module = store.modules.get(current_module);
+                // SAFETY: The current module address must come from the current
+                // store, because it is the only parameter to this function that
+                // can contain module addresses. All stores guarantee all
+                // addresses in them to be valid within themselves.
+                let module = unsafe { store.modules.get(current_module) };
+
                 // SAFETY: Validation guarantees at least one memory to exist.
                 let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
-                let mem = store.memories.get(mem_addr);
+                // SAFETY: This memory address was just read from the current
+                // store. Therefore, it is valid in the current store.
+                let mem = unsafe { store.memories.get(mem_addr) };
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 mem.mem.store(idx, wrapped_data)?;
@@ -920,10 +1147,17 @@ pub(super) fn run<T: Config>(
 
                 let wrapped_data = data_to_store as i16;
 
-                let module = store.modules.get(current_module);
+                // SAFETY: The current module address must come from the current
+                // store, because it is the only parameter to this function that
+                // can contain module addresses. All stores guarantee all
+                // addresses in them to be valid within themselves.
+                let module = unsafe { store.modules.get(current_module) };
+
                 // SAFETY: Validation guarantees at least one memory to exist.
                 let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
-                let mem = store.memories.get(mem_addr);
+                // SAFETY: This memory address was just read from the current
+                // store. Therefore, it is valid in the current store.
+                let mem = unsafe { store.memories.get(mem_addr) };
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 mem.mem.store(idx, wrapped_data)?;
@@ -939,10 +1173,17 @@ pub(super) fn run<T: Config>(
 
                 let wrapped_data = data_to_store as i32;
 
-                let module = store.modules.get(current_module);
+                // SAFETY: The current module address must come from the current
+                // store, because it is the only parameter to this function that
+                // can contain module addresses. All stores guarantee all
+                // addresses in them to be valid within themselves.
+                let module = unsafe { store.modules.get(current_module) };
+
                 // SAFETY: Validation guarantees at least one memory to exist.
                 let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
-                let mem = store.memories.get(mem_addr);
+                // SAFETY: This memory address was just read from the current
+                // store. Therefore, it is valid in the current store.
+                let mem = unsafe { store.memories.get(mem_addr) };
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 mem.mem.store(idx, wrapped_data)?;
@@ -954,10 +1195,17 @@ pub(super) fn run<T: Config>(
                 // Note: This zero byte is reserved for the multiple memories
                 // proposal.
                 let _zero = wasm.read_u8().unwrap_validated();
-                let module = store.modules.get(current_module);
+                // SAFETY: The current module address must come from the current
+                // store, because it is the only parameter to this function that
+                // can contain module addresses. All stores guarantee all
+                // addresses in them to be valid within themselves.
+                let module = unsafe { store.modules.get(current_module) };
+
                 // SAFETY: Validation guarantees at least one memory to exist.
                 let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
-                let mem = store.memories.get(mem_addr);
+                // SAFETY: This memory address was just read from the current
+                // store. Therefore, it is valid in the current store.
+                let mem = unsafe { store.memories.get(mem_addr) };
                 let size = mem.size() as u32;
                 stack.push_value::<T>(Value::I32(size))?;
                 trace!("Instruction: memory.size [] -> [{}]", size);
@@ -966,10 +1214,17 @@ pub(super) fn run<T: Config>(
                 // Note: This zero byte is reserved for the multiple memories
                 // proposal.
                 let _zero = wasm.read_u8().unwrap_validated();
-                let module = store.modules.get(current_module);
+                // SAFETY: The current module address must come from the current
+                // store, because it is the only parameter to this function that
+                // can contain module addresses. All stores guarantee all
+                // addresses in them to be valid within themselves.
+                let module = unsafe { store.modules.get(current_module) };
+
                 // SAFETY: Validation guarantees at least one memory to exist.
                 let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
-                let mem = store.memories.get_mut(mem_addr);
+                // SAFETY: This memory address was just read from the current
+                // store. Therefore, it is valid in the current store.
+                let mem = unsafe { store.memories.get_mut(mem_addr) };
 
                 let sz: u32 = mem.size() as u32;
 
@@ -2307,7 +2562,12 @@ pub(super) fn run<T: Config>(
                 // SAFETY: Validation guarantees a valid function index to be
                 // next.
                 let func_idx = unsafe { FuncIdx::read_unchecked(wasm) };
-                let current_module = store.modules.get(current_module);
+
+                // SAFETY: The current module address must come from the current
+                // store, because it is the only parameter to this function that
+                // can contain module addresses. All stores guarantee all
+                // addresses in them to be valid within themselves.
+                let current_module = unsafe { store.modules.get(current_module) };
                 // SAFETY: Validation guarantees the function index to be valid
                 // in the current module.
                 let func_addr = unsafe { current_module.func_addrs.get(func_idx) };
@@ -2489,8 +2749,19 @@ pub(super) fn run<T: Config>(
                         let s: u32 = stack.pop_value().try_into().unwrap_validated();
                         let d: u32 = stack.pop_value().try_into().unwrap_validated();
 
-                        // SAFETY: Validation guarantees at least one memory to
-                        // exist and that the data index is valid.
+                        // SAFETY: All requirements are met:
+                        // 1. The current module address must come from the
+                        //    current store, because it is the only parameter to
+                        //    this function that can contain module addresses. All
+                        //    stores guarantee all addresses in them to be valid
+                        //    within themselves.
+                        // 2. Validation guarantees at least one memory to exist.
+                        // 3./5. The memory and data addresses are valid for a
+                        //       similar reason that the module address is valid:
+                        //       they are stored in the current module instance,
+                        //       which is also part of the current store.
+                        // 4. Validation gurantees this data index to be valid
+                        //    for the current module instance.
                         unsafe {
                             memory_init(
                                 &store.modules,
@@ -2510,8 +2781,18 @@ pub(super) fn run<T: Config>(
                         // SAFETY: Validation guarantees there to be a valid
                         // data index next.
                         let data_idx = unsafe { DataIdx::read_unchecked(wasm) };
-                        // SAFETY: Validation guarantees the data index to be
-                        // valid in the current module.
+                        // SAFETY: All requirements are met:
+                        // 1. The current module address must come from the
+                        //    current store, because it is the only parameter to
+                        //    this function that can contain module addresses. All
+                        //    stores guarantee all addresses in them to be valid
+                        //    within themselves.
+                        // 2. Validation guarantees the data index to be valid
+                        //    for the current module instance.
+                        // 3. The data address is valid for a similar reason that
+                        //    the module address is valid: it is stored in the
+                        //    current module instance, which is also part of the
+                        //    current store.
                         unsafe {
                             data_drop(&store.modules, &mut store.data, current_module, data_idx)
                         };
@@ -2527,7 +2808,11 @@ pub(super) fn run<T: Config>(
                         let _zero = wasm.read_u8().unwrap_validated();
                         let _zero = wasm.read_u8().unwrap_validated();
 
-                        let module = store.modules.get(current_module);
+                        // SAFETY: The current module address must come from the current
+                        // store, because it is the only parameter to this function that
+                        // can contain module addresses. All stores guarantee all
+                        // addresses in them to be valid within themselves.
+                        let module = unsafe { store.modules.get(current_module) };
 
                         // SAFETY: Validation guarantees at least one memory to
                         // exist.
@@ -2555,8 +2840,14 @@ pub(super) fn run<T: Config>(
                         let s: i32 = stack.pop_value().try_into().unwrap_validated();
                         let d: i32 = stack.pop_value().try_into().unwrap_validated();
 
-                        let src_mem = store.memories.get(src_addr);
-                        let dest_mem = store.memories.get(dst_addr);
+                        // SAFETY: This source memory address was just read from
+                        // the current store. Therefore, it must also be valid
+                        // in the current store.
+                        let src_mem = unsafe { store.memories.get(src_addr) };
+                        // SAFETY: This destination memory address was just read
+                        // from the current store. Therefore, it must also be
+                        // valid in the current store.
+                        let dest_mem = unsafe { store.memories.get(dst_addr) };
 
                         dest_mem.mem.copy(
                             d.cast_unsigned().into_usize(),
@@ -2577,10 +2868,18 @@ pub(super) fn run<T: Config>(
                         // memories proposal.
                         let _zero = wasm.read_u8().unwrap_validated();
 
-                        let module = store.modules.get(current_module);
+                        // SAFETY: The current module address must come from the current
+                        // store, because it is the only parameter to this function that
+                        // can contain module addresses. All stores guarantee all
+                        // addresses in them to be valid within themselves.
+                        let module = unsafe { store.modules.get(current_module) };
+
                         // SAFETY: Validation guarantees at least one memory to exist.
                         let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
-                        let mem = store.memories.get(mem_addr);
+                        // SAFETY: This memory address was just read from the
+                        // current store. Therefore, it is valid in the current
+                        // store.
+                        let mem = unsafe { store.memories.get(mem_addr) };
 
                         let n: u32 = stack.pop_value().try_into().unwrap_validated();
                         // decrement fuel, but push n back if it fails
@@ -2641,8 +2940,20 @@ pub(super) fn run<T: Config>(
                         let s: i32 = stack.pop_value().try_into().unwrap_validated(); // offset
                         let d: i32 = stack.pop_value().try_into().unwrap_validated(); // dst
 
-                        // SAFETY: Validation guarantees the table index and the
-                        // element index to be valid in the current module.
+                        // SAFETY: All requirements are met:
+                        // 1. The current module address must come from the
+                        //    current store, because it is the only parameter to
+                        //    this function that can contain module addresses. All
+                        //    stores guarantee all addresses in them to be valid
+                        //    within themselves.
+                        // 2. Validation guarantees the table index to be valid
+                        //    in the current module instance.
+                        // 3./5. The table/element addresses are valid for a
+                        //       similar reason that the module address is valid:
+                        //       they are stored in the current module instance,
+                        //       which is also part of the current store.
+                        // 4. Validation guarantees the element index to be
+                        //    valid in the current module instance.
                         unsafe {
                             table_init(
                                 &store.modules,
@@ -2663,8 +2974,18 @@ pub(super) fn run<T: Config>(
                         // index next.
                         let elem_idx = unsafe { ElemIdx::read_unchecked(wasm) };
 
-                        // SAFETY: Validation guarantees the element index to be
-                        // valid in the current module.
+                        // SAFETY: All requirements are met:
+                        // 1. The current module address must come from the
+                        //    current store, because it is the only parameter to
+                        //    this function that can contain module addresses. All
+                        //    stores guarantee all addresses in them to be valid
+                        //    within themselves.
+                        // 2. Validation guarantees the element index to be
+                        //    valid in the current module instance.
+                        // 3. The element address is valid for a similar reason
+                        //    that the module address is valid: it is stored in the
+                        //    current module instance, which is also part of the
+                        //    current store.
                         unsafe {
                             elem_drop(
                                 &store.modules,
@@ -2684,7 +3005,11 @@ pub(super) fn run<T: Config>(
                         // table index next.
                         let table_y_idx = unsafe { TableIdx::read_unchecked(wasm) };
 
-                        let module = store.modules.get(current_module);
+                        // SAFETY: The current module address must come from the current
+                        // store, because it is the only parameter to this function that
+                        // can contain module addresses. All stores guarantee all
+                        // addresses in them to be valid within themselves.
+                        let module = unsafe { store.modules.get(current_module) };
 
                         // SAFETY: Validation guarantees the table index to be
                         // valid in the current module.
@@ -2693,8 +3018,14 @@ pub(super) fn run<T: Config>(
                         // valid in the current module.
                         let table_addr_y = *unsafe { module.table_addrs.get(table_y_idx) };
 
-                        let tab_x_elem_len = store.tables.get(table_addr_x).elem.len();
-                        let tab_y_elem_len = store.tables.get(table_addr_y).elem.len();
+                        // SAFETY: This table address was just read from the
+                        // current store. Therefore, it is valid in the current
+                        // store.
+                        let tab_x_elem_len = unsafe { store.tables.get(table_addr_x) }.elem.len();
+                        // SAFETY: This table address was just read from the
+                        // current store. Therefore, it is valid in the current
+                        // store.
+                        let tab_y_elem_len = unsafe { store.tables.get(table_addr_y) }.elem.len();
 
                         let n: u32 = stack.pop_value().try_into().unwrap_validated(); // size
                         let cost = T::get_fc_extension_flat_cost(TABLE_COPY)
@@ -2737,17 +3068,22 @@ pub(super) fn run<T: Config>(
                         };
 
                         if table_addr_x == table_addr_y {
-                            let table = store.tables.get_mut(table_addr_x);
+                            // SAFETY: This table address was just read from the
+                            // current store. Therefore, it is valid in the
+                            // current store.
+                            let table = unsafe { store.tables.get_mut(table_addr_x) };
 
                             table.elem.copy_within(s as usize..src_res, d as usize);
                         } else {
                             let dst_addr = table_addr_x;
                             let src_addr = table_addr_y;
 
-                            let (src_table, dst_table) = store
-                                .tables
-                                .get_two_mut(src_addr, dst_addr)
-                                .expect("both addrs to never be equal");
+                            // SAFETY: These table addresses were just read from
+                            // the current store. Therefore, they are valid in
+                            // the current store.
+                            let (src_table, dst_table) =
+                                unsafe { store.tables.get_two_mut(src_addr, dst_addr) }
+                                    .expect("both addrs to never be equal");
 
                             dst_table.elem[d.into_usize()..dst_res]
                                 .copy_from_slice(&src_table.elem[s.into_usize()..src_res]);
@@ -2768,11 +3104,19 @@ pub(super) fn run<T: Config>(
                         // table index next.
                         let table_idx = unsafe { TableIdx::read_unchecked(wasm) };
 
-                        let module = store.modules.get(current_module);
+                        // SAFETY: The current module address must come from the current
+                        // store, because it is the only parameter to this function that
+                        // can contain module addresses. All stores guarantee all
+                        // addresses in them to be valid within themselves.
+                        let module = unsafe { store.modules.get(current_module) };
+
                         // SAFETY: Validation guarantees the table index to be
                         // valid in the current module.
                         let table_addr = *unsafe { module.table_addrs.get(table_idx) };
-                        let tab = store.tables.get_mut(table_addr);
+                        // SAFETY: This table address was just read from the
+                        // current store. Therefore, it is valid in the current
+                        // store.
+                        let tab = unsafe { store.tables.get_mut(table_addr) };
 
                         let sz = tab.elem.len() as u32;
 
@@ -2811,11 +3155,19 @@ pub(super) fn run<T: Config>(
                         // index next.
                         let table_idx = unsafe { TableIdx::read_unchecked(wasm) };
 
-                        let module = store.modules.get(current_module);
+                        // SAFETY: The current module address must come from the current
+                        // store, because it is the only parameter to this function that
+                        // can contain module addresses. All stores guarantee all
+                        // addresses in them to be valid within themselves.
+                        let module = unsafe { store.modules.get(current_module) };
+
                         // SAFETY: Validation guarantees the table index to be
                         // valid in the current module.
                         let table_addr = *unsafe { module.table_addrs.get(table_idx) };
-                        let tab = store.tables.get_mut(table_addr);
+                        // SAFETY: This table address was just read from the
+                        // current store. Therefore, it is valid in the current
+                        // store.
+                        let tab = unsafe { store.tables.get_mut(table_addr) };
 
                         let sz = tab.elem.len() as u32;
 
@@ -2829,11 +3181,19 @@ pub(super) fn run<T: Config>(
                         // table index next.
                         let table_idx = unsafe { TableIdx::read_unchecked(wasm) };
 
-                        let module = store.modules.get(current_module);
+                        // SAFETY: The current module address must come from the current
+                        // store, because it is the only parameter to this function that
+                        // can contain module addresses. All stores guarantee all
+                        // addresses in them to be valid within themselves.
+                        let module = unsafe { store.modules.get(current_module) };
+
                         // SAFETY: Validation guarantees the table index to be
                         // valid in the current module.
                         let table_addr = *unsafe { module.table_addrs.get(table_idx) };
-                        let tab = store.tables.get_mut(table_addr);
+                        // SAFETY: This table address was just read from the
+                        // current store. Therefore, it is valid in the current
+                        // store.
+                        let tab = unsafe { store.tables.get_mut(table_addr) };
 
                         let len: u32 = stack.pop_value().try_into().unwrap_validated();
                         let cost = T::get_fc_extension_flat_cost(TABLE_FILL)
@@ -2974,11 +3334,19 @@ pub(super) fn run<T: Config>(
                     V128_LOAD => {
                         decrement_fuel!(T::get_fd_extension_flat_cost(V128_LOAD));
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let module = store.modules.get(current_module);
+                        // SAFETY: The current module address must come from the current
+                        // store, because it is the only parameter to this function that
+                        // can contain module addresses. All stores guarantee all
+                        // addresses in them to be valid within themselves.
+                        let module = unsafe { store.modules.get(current_module) };
+
                         // SAFETY: Validation guarantees at least one memory to
                         // exist.
                         let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
-                        let memory = store.memories.get(mem_addr);
+                        // SAFETY: This memory address was just read from the
+                        // current store. Therefore, it is valid in the current
+                        // store.
+                        let memory = unsafe { store.memories.get(mem_addr) };
 
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -2989,11 +3357,19 @@ pub(super) fn run<T: Config>(
                     V128_STORE => {
                         decrement_fuel!(T::get_fd_extension_flat_cost(V128_STORE));
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let module = store.modules.get(current_module);
+                        // SAFETY: The current module address must come from the current
+                        // store, because it is the only parameter to this function that
+                        // can contain module addresses. All stores guarantee all
+                        // addresses in them to be valid within themselves.
+                        let module = unsafe { store.modules.get(current_module) };
+
                         // SAFETY: Validation guarantees at least one memory to
                         // exist.
                         let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
-                        let memory = store.memories.get(mem_addr);
+                        // SAFETY: This memory address was just read from the
+                        // current store. Therefore, it is valid in the current
+                        // store.
+                        let memory = unsafe { store.memories.get(mem_addr) };
 
                         let data: [u8; 16] = stack.pop_value().try_into().unwrap_validated();
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
@@ -3006,11 +3382,19 @@ pub(super) fn run<T: Config>(
                     V128_LOAD8X8_S => {
                         decrement_fuel!(T::get_fd_extension_flat_cost(V128_LOAD8X8_S));
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let module = store.modules.get(current_module);
+                        // SAFETY: The current module address must come from the current
+                        // store, because it is the only parameter to this function that
+                        // can contain module addresses. All stores guarantee all
+                        // addresses in them to be valid within themselves.
+                        let module = unsafe { store.modules.get(current_module) };
+
                         // SAFETY: Validation guarantees at least one memory to
                         // exist.
                         let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
-                        let memory = store.memories.get(mem_addr);
+                        // SAFETY: This memory address was just read from the
+                        // current store. Therefore, it is valid in the current
+                        // store.
+                        let memory = unsafe { store.memories.get(mem_addr) };
 
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -3029,11 +3413,19 @@ pub(super) fn run<T: Config>(
                     V128_LOAD8X8_U => {
                         decrement_fuel!(T::get_fd_extension_flat_cost(V128_LOAD8X8_U));
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let module = store.modules.get(current_module);
+                        // SAFETY: The current module address must come from the current
+                        // store, because it is the only parameter to this function that
+                        // can contain module addresses. All stores guarantee all
+                        // addresses in them to be valid within themselves.
+                        let module = unsafe { store.modules.get(current_module) };
+
                         // SAFETY: Validation guarantees at least one memory to
                         // exist.
                         let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
-                        let memory = store.memories.get(mem_addr);
+                        // SAFETY: This memory address was just read from the
+                        // current store. Therefore, it is valid in the current
+                        // store.
+                        let memory = unsafe { store.memories.get(mem_addr) };
 
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -3052,11 +3444,19 @@ pub(super) fn run<T: Config>(
                     V128_LOAD16X4_S => {
                         decrement_fuel!(T::get_fd_extension_flat_cost(V128_LOAD16X4_S));
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let module = store.modules.get(current_module);
+                        // SAFETY: The current module address must come from the current
+                        // store, because it is the only parameter to this function that
+                        // can contain module addresses. All stores guarantee all
+                        // addresses in them to be valid within themselves.
+                        let module = unsafe { store.modules.get(current_module) };
+
                         // SAFETY: Validation guarantees at least one memory to
                         // exist.
                         let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
-                        let memory = store.memories.get(mem_addr);
+                        // SAFETY: This memory address was just read from the
+                        // current store. Therefore, it is valid in the current
+                        // store.
+                        let memory = unsafe { store.memories.get(mem_addr) };
 
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -3075,11 +3475,19 @@ pub(super) fn run<T: Config>(
                     V128_LOAD16X4_U => {
                         decrement_fuel!(T::get_fd_extension_flat_cost(V128_LOAD16X4_U));
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let module = store.modules.get(current_module);
+                        // SAFETY: The current module address must come from the current
+                        // store, because it is the only parameter to this function that
+                        // can contain module addresses. All stores guarantee all
+                        // addresses in them to be valid within themselves.
+                        let module = unsafe { store.modules.get(current_module) };
+
                         // SAFETY: Validation guarantees at least one memory to
                         // exist.
                         let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
-                        let memory = store.memories.get(mem_addr);
+                        // SAFETY: This memory address was just read from the
+                        // current store. Therefore, it is valid in the current
+                        // store.
+                        let memory = unsafe { store.memories.get(mem_addr) };
 
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -3098,11 +3506,19 @@ pub(super) fn run<T: Config>(
                     V128_LOAD32X2_S => {
                         decrement_fuel!(T::get_fd_extension_flat_cost(V128_LOAD32X2_S));
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let module = store.modules.get(current_module);
+                        // SAFETY: The current module address must come from the current
+                        // store, because it is the only parameter to this function that
+                        // can contain module addresses. All stores guarantee all
+                        // addresses in them to be valid within themselves.
+                        let module = unsafe { store.modules.get(current_module) };
+
                         // SAFETY: Validation guarantees at least one memory to
                         // exist.
                         let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
-                        let memory = store.memories.get(mem_addr);
+                        // SAFETY: This memory address was just read from the
+                        // current store. Therefore, it is valid in the current
+                        // store.
+                        let memory = unsafe { store.memories.get(mem_addr) };
 
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -3121,11 +3537,19 @@ pub(super) fn run<T: Config>(
                     V128_LOAD32X2_U => {
                         decrement_fuel!(T::get_fd_extension_flat_cost(V128_LOAD32X2_U));
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let module = store.modules.get(current_module);
+                        // SAFETY: The current module address must come from the current
+                        // store, because it is the only parameter to this function that
+                        // can contain module addresses. All stores guarantee all
+                        // addresses in them to be valid within themselves.
+                        let module = unsafe { store.modules.get(current_module) };
+
                         // SAFETY: Validation guarantees at least one memory to
                         // exist.
                         let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
-                        let memory = store.memories.get(mem_addr);
+                        // SAFETY: This memory address was just read from the
+                        // current store. Therefore, it is valid in the current
+                        // store.
+                        let memory = unsafe { store.memories.get(mem_addr) };
 
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -3146,11 +3570,19 @@ pub(super) fn run<T: Config>(
                     V128_LOAD8_SPLAT => {
                         decrement_fuel!(T::get_fd_extension_flat_cost(V128_LOAD8_SPLAT));
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let module = store.modules.get(current_module);
+                        // SAFETY: The current module address must come from the current
+                        // store, because it is the only parameter to this function that
+                        // can contain module addresses. All stores guarantee all
+                        // addresses in them to be valid within themselves.
+                        let module = unsafe { store.modules.get(current_module) };
+
                         // SAFETY: Validation guarantees at least one memory to
                         // exist.
                         let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
-                        let memory = store.memories.get(mem_addr);
+                        // SAFETY: This memory address was just read from the
+                        // current store. Therefore, it is valid in the current
+                        // store.
+                        let memory = unsafe { store.memories.get(mem_addr) };
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let idx = calculate_mem_address(&memarg, relative_address)?;
 
@@ -3160,11 +3592,19 @@ pub(super) fn run<T: Config>(
                     V128_LOAD16_SPLAT => {
                         decrement_fuel!(T::get_fd_extension_flat_cost(V128_LOAD16_SPLAT));
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let module = store.modules.get(current_module);
+                        // SAFETY: The current module address must come from the current
+                        // store, because it is the only parameter to this function that
+                        // can contain module addresses. All stores guarantee all
+                        // addresses in them to be valid within themselves.
+                        let module = unsafe { store.modules.get(current_module) };
+
                         // SAFETY: Validation guarantees at least one memory to
                         // exist.
                         let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
-                        let memory = store.memories.get(mem_addr);
+                        // SAFETY: This memory address was just read from the
+                        // current store. Therefore, it is valid in the current
+                        // store.
+                        let memory = unsafe { store.memories.get(mem_addr) };
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let idx = calculate_mem_address(&memarg, relative_address)?;
 
@@ -3174,11 +3614,19 @@ pub(super) fn run<T: Config>(
                     V128_LOAD32_SPLAT => {
                         decrement_fuel!(T::get_fd_extension_flat_cost(V128_LOAD32_SPLAT));
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let module = store.modules.get(current_module);
+                        // SAFETY: The current module address must come from the current
+                        // store, because it is the only parameter to this function that
+                        // can contain module addresses. All stores guarantee all
+                        // addresses in them to be valid within themselves.
+                        let module = unsafe { store.modules.get(current_module) };
+
                         // SAFETY: Validation guarantees at least one memory to
                         // exist.
                         let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
-                        let memory = store.memories.get(mem_addr);
+                        // SAFETY: This memory address was just read from the
+                        // current store. Therefore, it is valid in the current
+                        // store.
+                        let memory = unsafe { store.memories.get(mem_addr) };
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let idx = calculate_mem_address(&memarg, relative_address)?;
 
@@ -3188,11 +3636,19 @@ pub(super) fn run<T: Config>(
                     V128_LOAD64_SPLAT => {
                         decrement_fuel!(T::get_fd_extension_flat_cost(V128_LOAD64_SPLAT));
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let module = store.modules.get(current_module);
+                        // SAFETY: The current module address must come from the current
+                        // store, because it is the only parameter to this function that
+                        // can contain module addresses. All stores guarantee all
+                        // addresses in them to be valid within themselves.
+                        let module = unsafe { store.modules.get(current_module) };
+
                         // SAFETY: Validation guarantees at least one memory to
                         // exist.
                         let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
-                        let memory = store.memories.get(mem_addr);
+                        // SAFETY: This memory address was just read from the
+                        // current store. Therefore, it is valid in the current
+                        // store.
+                        let memory = unsafe { store.memories.get(mem_addr) };
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let idx = calculate_mem_address(&memarg, relative_address)?;
 
@@ -3205,11 +3661,19 @@ pub(super) fn run<T: Config>(
                         decrement_fuel!(T::get_fd_extension_flat_cost(V128_LOAD32_ZERO));
                         let memarg = MemArg::read(wasm).unwrap_validated();
 
-                        let module = store.modules.get(current_module);
+                        // SAFETY: The current module address must come from the current
+                        // store, because it is the only parameter to this function that
+                        // can contain module addresses. All stores guarantee all
+                        // addresses in them to be valid within themselves.
+                        let module = unsafe { store.modules.get(current_module) };
+
                         // SAFETY: Validation guarantees at least one memory to
                         // exist.
                         let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
-                        let memory = store.memories.get(mem_addr);
+                        // SAFETY: This memory address was just read from the
+                        // current store. Therefore, it is valid in the current
+                        // store.
+                        let memory = unsafe { store.memories.get(mem_addr) };
 
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -3220,11 +3684,19 @@ pub(super) fn run<T: Config>(
                     V128_LOAD64_ZERO => {
                         decrement_fuel!(T::get_fd_extension_flat_cost(V128_LOAD64_ZERO));
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let module = store.modules.get(current_module);
+                        // SAFETY: The current module address must come from the current
+                        // store, because it is the only parameter to this function that
+                        // can contain module addresses. All stores guarantee all
+                        // addresses in them to be valid within themselves.
+                        let module = unsafe { store.modules.get(current_module) };
+
                         // SAFETY: Validation guarantees at least one memory to
                         // exist.
                         let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
-                        let memory = store.memories.get(mem_addr);
+                        // SAFETY: This memory address was just read from the
+                        // current store. Therefore, it is valid in the current
+                        // store.
+                        let memory = unsafe { store.memories.get(mem_addr) };
 
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -3239,11 +3711,19 @@ pub(super) fn run<T: Config>(
                         let data: [u8; 16] = stack.pop_value().try_into().unwrap_validated();
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let module = store.modules.get(current_module);
+                        // SAFETY: The current module address must come from the current
+                        // store, because it is the only parameter to this function that
+                        // can contain module addresses. All stores guarantee all
+                        // addresses in them to be valid within themselves.
+                        let module = unsafe { store.modules.get(current_module) };
+
                         // SAFETY: Validation guarantees at least one memory to
                         // exist.
                         let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
-                        let memory = store.memories.get(mem_addr);
+                        // SAFETY: This memory address was just read from the
+                        // current store. Therefore, it is valid in the current
+                        // store.
+                        let memory = unsafe { store.memories.get(mem_addr) };
                         let idx = calculate_mem_address(&memarg, relative_address)?;
                         let lane_idx = usize::from(wasm.read_u8().unwrap_validated());
                         let mut lanes: [u8; 16] = to_lanes(data);
@@ -3257,11 +3737,19 @@ pub(super) fn run<T: Config>(
                         let data: [u8; 16] = stack.pop_value().try_into().unwrap_validated();
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let module = store.modules.get(current_module);
+                        // SAFETY: The current module address must come from the current
+                        // store, because it is the only parameter to this function that
+                        // can contain module addresses. All stores guarantee all
+                        // addresses in them to be valid within themselves.
+                        let module = unsafe { store.modules.get(current_module) };
+
                         // SAFETY: Validation guarantees at least one memory to
                         // exist.
                         let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
-                        let memory = store.memories.get(mem_addr);
+                        // SAFETY: This memory address was just read from the
+                        // current store. Therefore, it is valid in the current
+                        // store.
+                        let memory = unsafe { store.memories.get(mem_addr) };
                         let idx = calculate_mem_address(&memarg, relative_address)?;
                         let lane_idx = usize::from(wasm.read_u8().unwrap_validated());
                         let mut lanes: [u16; 8] = to_lanes(data);
@@ -3274,11 +3762,19 @@ pub(super) fn run<T: Config>(
                         let data: [u8; 16] = stack.pop_value().try_into().unwrap_validated();
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let module = store.modules.get(current_module);
+                        // SAFETY: The current module address must come from the current
+                        // store, because it is the only parameter to this function that
+                        // can contain module addresses. All stores guarantee all
+                        // addresses in them to be valid within themselves.
+                        let module = unsafe { store.modules.get(current_module) };
+
                         // SAFETY: Validation guarantees at least one memory to
                         // exist.
                         let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
-                        let memory = store.memories.get(mem_addr);
+                        // SAFETY: This memory address was just read from the
+                        // current store. Therefore, it is valid in the current
+                        // store.
+                        let memory = unsafe { store.memories.get(mem_addr) };
                         let idx = calculate_mem_address(&memarg, relative_address)?;
                         let lane_idx = usize::from(wasm.read_u8().unwrap_validated());
                         let mut lanes: [u32; 4] = to_lanes(data);
@@ -3291,11 +3787,19 @@ pub(super) fn run<T: Config>(
                         let data: [u8; 16] = stack.pop_value().try_into().unwrap_validated();
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let module = store.modules.get(current_module);
+                        // SAFETY: The current module address must come from the current
+                        // store, because it is the only parameter to this function that
+                        // can contain module addresses. All stores guarantee all
+                        // addresses in them to be valid within themselves.
+                        let module = unsafe { store.modules.get(current_module) };
+
                         // SAFETY: Validation guarantees at least one memory to
                         // exist.
                         let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
-                        let memory = store.memories.get(mem_addr);
+                        // SAFETY: This memory address was just read from the
+                        // current store. Therefore, it is valid in the current
+                        // store.
+                        let memory = unsafe { store.memories.get(mem_addr) };
                         let idx = calculate_mem_address(&memarg, relative_address)?;
                         let lane_idx = usize::from(wasm.read_u8().unwrap_validated());
                         let mut lanes: [u64; 2] = to_lanes(data);
@@ -3310,11 +3814,19 @@ pub(super) fn run<T: Config>(
                         let data: [u8; 16] = stack.pop_value().try_into().unwrap_validated();
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let module = store.modules.get(current_module);
+                        // SAFETY: The current module address must come from the current
+                        // store, because it is the only parameter to this function that
+                        // can contain module addresses. All stores guarantee all
+                        // addresses in them to be valid within themselves.
+                        let module = unsafe { store.modules.get(current_module) };
+
                         // SAFETY: Validation guarantees at least one memory to
                         // exist.
                         let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
-                        let memory = store.memories.get(mem_addr);
+                        // SAFETY: This memory address was just read from the
+                        // current store. Therefore, it is valid in the current
+                        // store.
+                        let memory = unsafe { store.memories.get(mem_addr) };
                         let idx = calculate_mem_address(&memarg, relative_address)?;
                         let lane_idx = usize::from(wasm.read_u8().unwrap_validated());
 
@@ -3327,11 +3839,19 @@ pub(super) fn run<T: Config>(
                         let data: [u8; 16] = stack.pop_value().try_into().unwrap_validated();
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let module = store.modules.get(current_module);
+                        // SAFETY: The current module address must come from the current
+                        // store, because it is the only parameter to this function that
+                        // can contain module addresses. All stores guarantee all
+                        // addresses in them to be valid within themselves.
+                        let module = unsafe { store.modules.get(current_module) };
+
                         // SAFETY: Validation guarantees at least one memory to
                         // exist.
                         let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
-                        let memory = store.memories.get(mem_addr);
+                        // SAFETY: This memory address was just read from the
+                        // current store. Therefore, it is valid in the current
+                        // store.
+                        let memory = unsafe { store.memories.get(mem_addr) };
                         let idx = calculate_mem_address(&memarg, relative_address)?;
                         let lane_idx = usize::from(wasm.read_u8().unwrap_validated());
 
@@ -3344,11 +3864,19 @@ pub(super) fn run<T: Config>(
                         let data: [u8; 16] = stack.pop_value().try_into().unwrap_validated();
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let module = store.modules.get(current_module);
+                        // SAFETY: The current module address must come from the current
+                        // store, because it is the only parameter to this function that
+                        // can contain module addresses. All stores guarantee all
+                        // addresses in them to be valid within themselves.
+                        let module = unsafe { store.modules.get(current_module) };
+
                         // SAFETY: Validation guarantees at least one memory to
                         // exist.
                         let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
-                        let memory = store.memories.get(mem_addr);
+                        // SAFETY: This memory address was just read from the
+                        // current store. Therefore, it is valid in the current
+                        // store.
+                        let memory = unsafe { store.memories.get(mem_addr) };
                         let idx = calculate_mem_address(&memarg, relative_address)?;
                         let lane_idx = usize::from(wasm.read_u8().unwrap_validated());
 
@@ -3361,11 +3889,19 @@ pub(super) fn run<T: Config>(
                         let data: [u8; 16] = stack.pop_value().try_into().unwrap_validated();
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let memarg = MemArg::read(wasm).unwrap_validated();
-                        let module = store.modules.get(current_module);
+                        // SAFETY: The current module address must come from the current
+                        // store, because it is the only parameter to this function that
+                        // can contain module addresses. All stores guarantee all
+                        // addresses in them to be valid within themselves.
+                        let module = unsafe { store.modules.get(current_module) };
+
                         // SAFETY: Validation guarantees at least one memory to
                         // exist.
                         let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
-                        let memory = store.memories.get(mem_addr);
+                        // SAFETY: This memory address was just read from the
+                        // current store. Therefore, it is valid in the current
+                        // store.
+                        let memory = unsafe { store.memories.get(mem_addr) };
                         let idx = calculate_mem_address(&memarg, relative_address)?;
                         let lane_idx = usize::from(wasm.read_u8().unwrap_validated());
 
@@ -5581,10 +6117,11 @@ fn calculate_mem_address(memarg: &MemArg, relative_address: u32) -> Result<usize
 //helpers for avoiding code duplication during module instantiation
 /// # Safety
 ///
-/// - The caller must ensure that the given table index is valid in
-///   `store_modules.get(current_module).table_addrs`.
-/// - The caller must ensure that the given element index is valid in
-///   `store_modules.get(current_module).elem_addrs`.
+/// 1. The module address `current_module` must be valid in `store_modules` for a module instance `module_inst`.
+/// 2. The table index `table_idx` must be valid in `module_inst` for a table address `table_addr`.
+/// 3. `table_addr` must be valid in `store_tables`.
+/// 4. The element index `elem_idx` must be valid in `module_inst` for an element address `elem_addr`.
+/// 5. `elem_addr` must be valid in `store_elements`.
 // TODO instead of passing all module instances and the current module addr
 // separately, directly pass a `&ModuleInst`.
 #[inline(always)]
@@ -5604,19 +6141,21 @@ pub(super) unsafe fn table_init(
     let s = s.cast_unsigned().into_usize();
     let d = d.cast_unsigned().into_usize();
 
-    let current_module = store_modules.get(current_module);
-
+    // SAFETY: The caller ensures that this module address is valid in this
+    // address vector (1).
+    let module_inst = unsafe { store_modules.get(current_module) };
     // SAFETY: The caller ensures that `table_idx` is valid for this specific
-    // `IdxVec`.
-    let table_addr = *unsafe { current_module.table_addrs.get(table_idx) };
-
+    // `IdxVec` (2).
+    let table_addr = *unsafe { module_inst.table_addrs.get(table_idx) };
     // SAFETY: The caller ensures that `elem_idx` is valid for this specific
-    // `IdxVec`.
-    let elem_addr = *unsafe { current_module.elem_addrs.get(elem_idx) };
-
-    let tab = store_tables.get_mut(table_addr);
-
-    let elem = store_elements.get(elem_addr);
+    // `IdxVec` (4).
+    let elem_addr = *unsafe { module_inst.elem_addrs.get(elem_idx) };
+    // SAFETY: The caller ensures that this table address is valid in this
+    // address vector (3).
+    let tab = unsafe { store_tables.get_mut(table_addr) };
+    // SAFETY: The caller ensures that this element address is valid in this
+    // address vector (5).
+    let elem = unsafe { store_elements.get(elem_addr) };
 
     trace!(
         "Instruction: table.init '{}' '{}' [{} {} {}] -> []",
@@ -5644,8 +6183,9 @@ pub(super) unsafe fn table_init(
 
 /// # Safety
 ///
-/// The caller must ensure that the given element index is valid in
-/// `store_modules.get(current_module).elem_addrs`.
+/// 1. The module address `current_module` must be valid in `store_modules` for some module instance `module_inst`.
+/// 2. The element index `elem_idx` must be valid in `module_inst` for some element address `elem_addr`.
+/// 3. `elem_addr` must be valid in `store_elements`.
 #[inline(always)]
 pub(super) unsafe fn elem_drop(
     store_modules: &AddrVec<ModuleAddr, ModuleInst>,
@@ -5655,21 +6195,27 @@ pub(super) unsafe fn elem_drop(
 ) {
     // WARN: i'm not sure if this is okay or not
 
-    let module = store_modules.get(current_module);
-
+    // SAFETY: The caller ensures that this module address is valid in this
+    // address vector (1).
+    let module_inst = unsafe { store_modules.get(current_module) };
     // SAFETY: The caller ensures that `elem_idx` is valid for this specific
-    // `IdxVec`.
-    let elem_addr = *unsafe { module.elem_addrs.get(elem_idx) };
+    // `IdxVec` (2).
+    let elem_addr = *unsafe { module_inst.elem_addrs.get(elem_idx) };
 
-    store_elements.get_mut(elem_addr).references.clear();
+    // SAFETY: The caller ensures that this element address is valid in this
+    // address vector (3).
+    let elem = unsafe { store_elements.get_mut(elem_addr) };
+
+    elem.references.clear();
 }
 
 /// # Safety
 ///
-/// - The caller must ensure that the given memory index is valid in
-///   `store_modules.get(current_module).mem_addrs`.
-/// - The caller must ensure that the given data index is alid in
-///   `store_modules.get(current_module).data_addrs`.
+/// 1. The module address `current_module` must be valid in `store_modules` for some module instance `module_inst`.
+/// 2. The memory index `mem_idx` must be valid in `module_inst` for some memory address `mem_addr`.
+/// 3. `mem_addr` must be valid in `store_memories` for some memory instance `mem.
+/// 4. The data index `data_idx` must be valid in `module_inst` for some data address `data_addr`.
+/// 5. `data_addr` must be valid in `store_data`.
 #[inline(always)]
 #[allow(clippy::too_many_arguments)]
 pub(super) unsafe fn memory_init(
@@ -5687,16 +6233,21 @@ pub(super) unsafe fn memory_init(
     let s = s.into_usize();
     let d = d.into_usize();
 
-    let current_module = store_modules.get(current_module);
+    // SAFETY: The caller ensures that this is module address is valid in this
+    // address vector (1).
+    let module_inst = unsafe { store_modules.get(current_module) };
     // SAFETY: The caller ensures that `mem_idx` is valid for this specific
-    // `IdxVec`.
-    let mem_addr = *unsafe { current_module.mem_addrs.get(mem_idx) };
-    let mem = store_memories.get(mem_addr);
-
+    // `IdxVec` (2).
+    let mem_addr = *unsafe { module_inst.mem_addrs.get(mem_idx) };
+    // SAFETY: The caller ensures that this memory address is valid in this
+    // address vector (3).
+    let mem = unsafe { store_memories.get(mem_addr) };
     // SAFETY: The caller ensures that `data_idx` is valid for this specific
-    // `IdxVec`.
-    let data_addr = *unsafe { current_module.data_addrs.get(data_idx) };
-    let data = store_data.get(data_addr);
+    // `IdxVec` (4).
+    let data_addr = *unsafe { module_inst.data_addrs.get(data_idx) };
+    // SAFETY: The caller ensures that this data address is valid in this
+    // address vector (5).
+    let data = unsafe { store_data.get(data_addr) };
 
     mem.mem.init(d, &data.data, s, n)?;
 
@@ -5706,8 +6257,9 @@ pub(super) unsafe fn memory_init(
 
 /// # Safety
 ///
-/// The caller must ensure that the given data index is valid in
-/// `store_modules.get(current_module).data_addrs`.
+/// 1. The module address `current_module` must be valid in `store_modules` for some module instance `module_inst`.
+/// 2. The data index `data_idx` must be valid in `module_inst` for some data address `data_addr`.
+/// 3. `data_addr` must be valid in `store_data`.
 #[inline(always)]
 pub(super) unsafe fn data_drop(
     store_modules: &AddrVec<ModuleAddr, ModuleInst>,
@@ -5722,12 +6274,17 @@ pub(super) unsafe fn data_drop(
     // data segment is passive or active
 
     // Also, we should set data to null here (empty), which we do by clearing it
-    let module = store_modules.get(current_module);
+    // SAFETY: The caller guarantees this module to be valid in this address
+    // vector (1).
+    let module_inst = unsafe { store_modules.get(current_module) };
     // SAFETY: The caller ensures that `data_idx` is valid for this specific
-    // `IdxVec`.
-    let data_addr = *unsafe { module.data_addrs.get(data_idx) };
+    // `IdxVec` (2).
+    let data_addr = *unsafe { module_inst.data_addrs.get(data_idx) };
+    // SAFETY: The caller ensures that this data address is valid in this
+    // address vector (3).
+    let data = unsafe { store_data.get_mut(data_addr) };
 
-    store_data.get_mut(data_addr).data.clear();
+    data.data.clear();
 }
 
 #[inline(always)]

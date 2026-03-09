@@ -763,13 +763,24 @@ fn init_spectest(store: &mut Store<()>, linker: &mut Linker) -> Result<(), Runti
         StoredValue::F64(F64(666.6)),
     )?;
 
-    let print = store.func_alloc_typed::<(), ()>(spectec_functions::print);
-    let print_i32 = store.func_alloc_typed::<i32, ()>(spectec_functions::print_i32);
-    let print_i64 = store.func_alloc_typed::<i64, ()>(spectec_functions::print_i64);
-    let print_f32 = store.func_alloc_typed::<f32, ()>(spectec_functions::print_f32);
-    let print_f64 = store.func_alloc_typed::<f64, ()>(spectec_functions::print_f64);
-    let print_i32_f32 = store.func_alloc_typed::<(i32, f32), ()>(spectec_functions::print_i32_f32);
-    let print_f64_f64 = store.func_alloc_typed::<(f64, f64), ()>(spectec_functions::print_f64_f64);
+    // SAFETY: No host function has address parameters or result values.
+    // Therefore, invalid addresses are impossible.
+    let print = unsafe { store.func_alloc_typed::<(), ()>(spectec_functions::print) };
+    // SAFETY: Same as above
+    let print_i32 = unsafe { store.func_alloc_typed::<i32, ()>(spectec_functions::print_i32) };
+    // SAFETY: Same as above
+    let print_i64 = unsafe { store.func_alloc_typed::<i64, ()>(spectec_functions::print_i64) };
+    // SAFETY: Same as above
+    let print_f32 = unsafe { store.func_alloc_typed::<f32, ()>(spectec_functions::print_f32) };
+    // SAFETY: Same as above
+    let print_f64 = unsafe { store.func_alloc_typed::<f64, ()>(spectec_functions::print_f64) };
+    // SAFETY: Same as above
+    let print_i32_f32 =
+    // SAFETY: Same as above
+        unsafe { store.func_alloc_typed::<(i32, f32), ()>(spectec_functions::print_i32_f32) };
+    // SAFETY: Same as above
+    let print_f64_f64 =
+        unsafe { store.func_alloc_typed::<(f64, f64), ()>(spectec_functions::print_f64_f64) };
 
     linker.define(
         "spectest".to_owned(),
