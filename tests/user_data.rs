@@ -18,12 +18,14 @@ fn counter() {
     }
 
     let mut store = Store::new(MyCounter(0));
-    let add_one = store.func_alloc_typed_unchecked::<(), ()>(add_one);
+    // SAFETY: The host function does not have any parameter or return types.
+    // Therefore it cannot use invalid addresses.
+    let add_one = unsafe { store.func_alloc_typed_unchecked::<(), ()>(add_one) };
 
     for _ in 0..5 {
-        store
-            .invoke_typed_without_fuel_unchecked::<(), ()>(add_one, ())
-            .unwrap();
+        // SAFETY: Only one store exists in this test. Therefore, it is always
+        // the correct store.
+        unsafe { store.invoke_typed_without_fuel_unchecked::<(), ()>(add_one, ()) }.unwrap();
     }
 
     assert_eq!(store.user_data, MyCounter(5));
@@ -50,11 +52,13 @@ fn channels() {
         }
 
         let mut store = Store::new(MySender(tx));
-        let send_message = store.func_alloc_typed_unchecked::<(), ()>(send_message);
+        // SAFETY: The host function does not have any parameter or return
+        // types. Therefore it cannot use invalid addresses.
+        let send_message = unsafe { store.func_alloc_typed_unchecked::<(), ()>(send_message) };
 
-        store
-            .invoke_typed_without_fuel_unchecked::<(), ()>(send_message, ())
-            .unwrap();
+        // SAFETY: Only one store exists in this test. Therefore, it is always
+        // the correct store.
+        unsafe { store.invoke_typed_without_fuel_unchecked::<(), ()>(send_message, ()) }.unwrap();
     });
 
     assert_eq!(rx.recv(), Ok("Hello from host function!".to_owned()));
