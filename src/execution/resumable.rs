@@ -4,6 +4,14 @@ use alloc::vec::Vec;
 
 use crate::{addrs::FuncAddr, value_stack::Stack, HaltExecutionError, Value};
 
+/// # Safety
+///
+/// TODO:
+///
+/// - stack must be initialized with correct parameters to function
+///   referenced by function address
+/// - program counter must be valid for the bytecode of function referenced by the function address
+/// - stp must point to the correct sidetable entry for the function referenced by function address
 #[derive(Debug)]
 pub struct WasmResumable {
     pub(crate) stack: Stack,

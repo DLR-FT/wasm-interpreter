@@ -64,9 +64,10 @@ impl Linker {
     /// Defines a new extern value in the current [`Linker`] context.
     ///
     /// # Safety
+    ///
     /// It must be made sure that this [`Linker`] is only used with one specific
     /// [`Store`] and addresses that belong to that store.
-    pub fn define_unchecked(
+    pub unsafe fn define_unchecked(
         &mut self,
         module_name: String,
         name: String,
@@ -85,18 +86,24 @@ impl Linker {
     /// current [`Linker`].
     ///
     /// # Safety
+    ///
     /// It must be guaranteed that this [`Linker`] is only ever used with one
-    /// specific [`Store`] and that the given [`ModuleAddr`] belongs to this
+    /// specific [`Store`] and that the given [`ModuleAddr`] is valid in this
     /// store.
-    pub fn define_module_instance_unchecked<T: Config>(
+    pub unsafe fn define_module_instance_unchecked<T: Config>(
         &mut self,
         store: &Store<T>,
         module_name: String,
         module: ModuleAddr,
     ) -> Result<(), RuntimeError> {
-        let module = store.modules.get(module);
+        // SAFETY: The caller ensures that the given module address is valid in
+        // the given store.
+        let module = unsafe { store.modules.get(module) };
         for export in &module.exports {
-            self.define_unchecked(module_name.clone(), export.0.clone(), *export.1)?;
+            // SAFETY: The module and thus also its exported extern values come
+            // from the same store used now. Therefore, the extern values must
+            // be valid in this store.
+            unsafe { self.define_unchecked(module_name.clone(), export.0.clone(), *export.1)? };
         }
 
         Ok(())
@@ -138,19 +145,24 @@ impl Linker {
     /// in the current [`Linker`] context.
     ///
     /// # Safety
+    ///
     /// It must be guaranteed that this [`Linker`] is only ever used with one
     /// specific [`Store`].
-    pub fn module_instantiate_unchecked<'b, T: Config>(
+    pub unsafe fn module_instantiate_unchecked<'b, T: Config>(
         &self,
         store: &mut Store<'b, T>,
         validation_info: &ValidationInfo<'b>,
         maybe_fuel: Option<u64>,
     ) -> Result<InstantiationOutcome, RuntimeError> {
-        store.module_instantiate_unchecked(
-            validation_info,
-            self.instantiate_pre(validation_info)?,
-            maybe_fuel,
-        )
+        let instantiate_pre = self.instantiate_pre(validation_info)?;
+
+        // SAFETY: Because all extern values in a single linker can only come
+        // from one specific store, the current store must be the same store
+        // used to define all previous extern values. Therefore, the extern
+        // values in `instantiate_pre` must be from the same store that is
+        // passed now. Thus, using them as imports for module instantiation is
+        // sound.
+        unsafe { store.module_instantiate_unchecked(validation_info, instantiate_pre, maybe_fuel) }
     }
 }
 

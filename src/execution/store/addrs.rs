@@ -48,14 +48,24 @@ impl<A: Addr, Inst> Default for AddrVec<A, Inst> {
 
 impl<A: Addr, Inst> AddrVec<A, Inst> {
     /// Returns an instance by its address `addr`.
-    pub fn get(&self, addr: A) -> &Inst {
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure that the given address is valid in this vector.
+    pub unsafe fn get(&self, addr: A) -> &Inst {
+        // TODO use unwrap_unchecked instead
         self.inner
             .get(addr.into_inner())
             .expect("addrs to always be valid")
     }
 
     /// Returns a mutable reference to some instance by its address `addr`.
-    pub fn get_mut(&mut self, addr: A) -> &mut Inst {
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure that the given address is valid in this vector.
+    pub unsafe fn get_mut(&mut self, addr: A) -> &mut Inst {
+        // TODO use unwrap_unchecked instead
         self.inner
             .get_mut(addr.into_inner())
             .expect("addrs to always be valid")
@@ -73,7 +83,12 @@ impl<A: Addr, Inst> AddrVec<A, Inst> {
     /// Mutably borrows two instances by their addresses and returns those
     /// references. In the case where both given addresses are equal, `None` is
     /// returned instead.
-    pub(crate) fn get_two_mut(
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure that both given addresses are valid in this
+    /// vector.
+    pub(crate) unsafe fn get_two_mut(
         &mut self,
         addr_one: A,
         addr_two: A,

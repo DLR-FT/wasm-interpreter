@@ -175,6 +175,11 @@ impl core::fmt::Debug for DataInst {
 }
 
 ///<https://webassembly.github.io/spec/core/exec/runtime.html#module-instances>
+///
+/// # Safety
+///
+/// All indices contained in a module instance must be valid in their associated
+/// index vectors from the same module instance.
 #[derive(Debug)]
 pub struct ModuleInst<'b> {
     pub types: IdxVec<TypeIdx, FuncType>,

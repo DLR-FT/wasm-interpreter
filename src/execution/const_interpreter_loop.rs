@@ -19,17 +19,19 @@ use crate::{
 };
 
 // TODO update this documentation
-/// Execute a previosly-validated constant expression. These type of expressions are used for initializing global
-/// variables, data and element segments.
+/// Execute a validated constant expression. These type of expressions are used
+/// for initializing global variables, data and element segments.
 ///
 /// # Arguments
 /// TODO
 ///
 /// # Safety
-/// This function assumes that the expression has been validated. Passing unvalidated code will likely result in a
-/// panic, or undefined behaviour.
+///
+/// 1. the constant expression in the reader must be valid
+/// 2. the module address must be valid in the given store
+///
 // TODO this signature might change to support hooks or match the spec better
-pub(crate) fn run_const<T: Config>(
+pub(crate) unsafe fn run_const<T: Config>(
     wasm: &mut WasmReader,
     stack: &mut Stack,
     module: ModuleAddr,
@@ -55,13 +57,17 @@ pub(crate) fn run_const<T: Config>(
                 // index next.
                 let global_idx = unsafe { GlobalIdx::read_unchecked(wasm) };
 
-                let module_instance = store.modules.get(module);
+                // SAFETY: The caller ensures that the given module address is
+                // valid in the given store.
+                let module_instance = unsafe { store.modules.get(module) };
 
                 // SAFETY: Validation guarantees the global index to be valid in
                 // the current module.
                 let global_addr = *unsafe { module_instance.global_addrs.get(global_idx) };
 
-                let global = store.globals.get(global_addr);
+                // SAFETY: The global address just came from the same store.
+                // Therefore, it must be valid in this store.
+                let global = unsafe { store.globals.get(global_addr) };
 
                 trace!(
                     "Constant instruction: global.get [{global_idx}] -> [{:?}]",
@@ -136,7 +142,11 @@ pub(crate) fn run_const<T: Config>(
     Ok(())
 }
 
-pub(crate) fn run_const_span<T: Config>(
+/// # Safety
+///
+/// 1. the constant expression in bytecode in the given span must be valid
+/// 2. the module address must be valid in the given store
+pub(crate) unsafe fn run_const_span<T: Config>(
     wasm: &[u8],
     span: &Span,
     module: ModuleAddr,
@@ -158,7 +168,8 @@ pub(crate) fn run_const_span<T: Config>(
         },
         &[],
     )?;
-    run_const(&mut wasm, &mut stack, module, store)?;
+    // SAFETY: The current caller makes the same safety guarantees.
+    unsafe { run_const(&mut wasm, &mut stack, module, store)? };
 
     Ok(stack.peek_value())
 }
