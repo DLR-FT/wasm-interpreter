@@ -712,6 +712,7 @@ impl Linker {
         // SAFETY: All `ExternVal`s just came from the current `Linker`. Because
         // a Linker can always be used with only one unique `Store`, all
         // `ExternVal`s must be from the current Linker's store.
+        // SAFETY: todo
         let stored_extern_vals = unsafe { Vec::from_bare(extern_vals, linker_store_id) };
         // 5. return
         Ok(stored_extern_vals)
