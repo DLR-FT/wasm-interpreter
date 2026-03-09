@@ -195,7 +195,9 @@ pub(super) fn run<T: Config>(
             }
             IF => {
                 decrement_fuel!(T::get_flat_cost(IF));
-                wasm.read_var_u32().unwrap_validated();
+                // SAFETY: Validation guarantees there to be a valid block type
+                // next.
+                let _block_type = unsafe { BlockType::read_unchecked(wasm) };
 
                 let test_val: i32 = stack.pop_value().try_into().unwrap_validated();
 
