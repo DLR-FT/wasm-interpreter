@@ -1,11 +1,12 @@
-use crate::{
+use wasm::{
     addrs::FuncAddr,
-    checked::StoreId,
     value::{ExternAddr, Ref, ValueTypeMismatchError, F32, F64},
     RefType, Value,
 };
 
-use super::{AbstractStored, Stored};
+use crate::stored_types::Stored;
+
+use super::{AbstractStored, StoreId};
 
 /// A stored variant of [`Value`]
 #[derive(Clone, Copy, Debug, PartialEq)]

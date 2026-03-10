@@ -1,5 +1,6 @@
+use checked::Store;
 use wasm::RuntimeError;
-use wasm::{checked::Store, validate, TrapError};
+use wasm::{validate, TrapError};
 
 const WAT_SIGNED_DIVISION_TEMPLATE: &str = r#"
     (module

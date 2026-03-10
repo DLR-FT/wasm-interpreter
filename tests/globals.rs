@@ -1,4 +1,5 @@
-use wasm::{checked::StoredValue, GlobalType, NumType, ValType};
+use checked::{Store, StoredValue};
+use wasm::{validate, GlobalType, NumType, ValType};
 
 /// The WASM program has one mutable global initialized with a constant 3.
 /// It exports two methods:
@@ -6,8 +7,6 @@ use wasm::{checked::StoredValue, GlobalType, NumType, ValType};
 ///  - Getting the global's current value
 #[test_log::test]
 fn valid_global() {
-    use wasm::{checked::Store, validate};
-
     let wat = r#"
     (module
         (global $my_global (mut i32)
@@ -55,8 +54,6 @@ fn valid_global() {
 
 #[test_log::test]
 fn global_invalid_value_stack() {
-    use wasm::validate;
-
     let wat = r#"
     (module
         (global $my_global (mut i32)
@@ -80,8 +77,6 @@ fn global_invalid_value_stack() {
 #[ignore = "not yet implemented"]
 #[test_log::test]
 fn imported_globals() {
-    use wasm::{checked::Store, validate};
-
     let wat = r#"
     (module
         (import "env" "global" (global $my_global (mut i32)))
@@ -153,8 +148,6 @@ fn global_invalid_instr() {
 
 #[test_log::test]
 fn embedder_interface() {
-    use wasm::{checked::Store, validate};
-
     let wat = r#"
     (module
         (global (export "global_0") (mut i32) i32.const 1)

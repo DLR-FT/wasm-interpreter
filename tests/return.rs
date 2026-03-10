@@ -1,4 +1,5 @@
-use wasm::{checked::Store, validate};
+use checked::Store;
+use wasm::validate;
 
 /// A simple function to add 2 two i32s but using the RETURN opcode.
 #[test_log::test]
