@@ -14,8 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 */
+use checked::Store;
 use hexf::hexf32;
-use wasm::{checked::Store, validate};
+use wasm::validate;
 
 #[test_log::test]
 fn memory_redundancy() {

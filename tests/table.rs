@@ -14,9 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 */
-use wasm::checked::{StoredExternVal, StoredRef, StoredRefFunc};
+use checked::{Store, StoredExternVal, StoredRef, StoredRefFunc};
+use wasm::validate;
 use wasm::ValidationError;
-use wasm::{checked::Store, validate};
 
 #[test_log::test]
 fn table_basic() {

@@ -1,12 +1,12 @@
-use crate::{
+use alloc::{fmt::Debug, vec, vec::Vec};
+use wasm::{
     addrs::FuncAddr,
-    checked::{Stored, StoredRef, StoredValue},
     interop::RefExtern,
     value::{ValueTypeMismatchError, F32, F64},
     NumType, RefType, ValType,
 };
 
-use alloc::{fmt::Debug, vec, vec::Vec};
+use crate::{stored_types::Stored, StoredRef, StoredValue};
 
 /// A stored variant of [`InteropValue`](crate::execution::interop::InteropValue)
 pub trait StoredInteropValue

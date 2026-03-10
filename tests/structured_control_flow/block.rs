@@ -1,4 +1,5 @@
-use wasm::{checked::Store, validate};
+use checked::Store;
+use wasm::validate;
 
 /// Runs a function that does nothing and contains only a single empty block
 #[test_log::test]

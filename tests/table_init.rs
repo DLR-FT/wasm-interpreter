@@ -15,7 +15,8 @@
 # limitations under the License.
 */
 
-use wasm::{checked::Store, validate, RuntimeError, TrapError, ValidationError};
+use checked::Store;
+use wasm::{validate, RuntimeError, TrapError, ValidationError};
 
 #[test_log::test]
 fn table_init_1_test() {

@@ -1,4 +1,5 @@
-use wasm::{checked::Store, validate, RuntimeError};
+use checked::Store;
+use wasm::{validate, RuntimeError};
 
 #[test_log::test]
 fn use_incorrect_number_of_extern_vals() {
