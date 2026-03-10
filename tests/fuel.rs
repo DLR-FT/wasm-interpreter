@@ -1,10 +1,7 @@
+use checked::{Store, StoredRunState, StoredValue};
 use core::panic;
 use log::info;
-use wasm::{
-    checked::Store,
-    checked::{StoredRunState, StoredValue},
-    validate,
-};
+use wasm::validate;
 
 #[test_log::test]
 

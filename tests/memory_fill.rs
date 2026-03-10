@@ -17,7 +17,8 @@
 
 // use core::slice::SlicePattern;
 
-use wasm::{checked::Store, validate};
+use checked::Store;
+use wasm::validate;
 
 #[test_log::test]
 fn memory_fill() {

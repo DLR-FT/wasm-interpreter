@@ -17,8 +17,8 @@
 
 use std::error::Error;
 
+use checked::{StoredRef, StoredValue};
 use wasm::{
-    checked::{StoredRef, StoredValue},
     value::{F32, F64},
     RefType,
 };

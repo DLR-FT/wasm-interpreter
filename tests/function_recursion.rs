@@ -1,4 +1,5 @@
-use wasm::{checked::Store, validate};
+use checked::Store;
+use wasm::{validate, ValidationError};
 
 const FUNCTION_CALL: &str = r#"
     (module
@@ -42,8 +43,6 @@ fn simple_function_call() {
 /// A simple function to add 2 to an i32 using a recusive call to "add_one" and return the result
 #[test_log::test]
 fn recursion_valid() {
-    use wasm::{checked::Store, validate};
-
     let wat = r#"
     (module
         (func $add_one (export "add_one") (param $x i32) (result i32)
@@ -80,8 +79,6 @@ fn recursion_valid() {
 
 #[test_log::test]
 fn recursion_busted_stack() {
-    use wasm::{validate, ValidationError};
-
     let wat = r#"
     (module
         (func $add_one (export "add_one") (param $x i32) (result i32 i32)
