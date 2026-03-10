@@ -1,4 +1,5 @@
-use wasm::{checked::Store, validate};
+use checked::Store;
+use wasm::validate;
 
 const SELECT_TEST: &str = r#"
 (module
