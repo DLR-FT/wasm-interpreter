@@ -8,6 +8,8 @@ members = [
 resolver = "2"
 
 [workspace.dependencies]
+wasm-interpreter = { path = "." }
+
 env_logger = "0.10.1"
 indexmap = "=2.11.4"                                   # this version has MSRV 1.63, while the next 2.12.0 jumps to MSRV 1.82
 libm = "0.2.8"
