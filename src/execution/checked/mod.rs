@@ -541,6 +541,29 @@ impl<'b, T: Config> Store<'b, T> {
         // 4. return
         Ok(returns)
     }
+
+    /// This is a safe variant of [`Store::instance_exports_unchecked`](crate::Store::instance_exports_unchecked)
+    pub fn instance_exports(
+        &self,
+        module_addr: Stored<ModuleAddr>,
+    ) -> Vec<(String, StoredExternVal)> {
+        // 1. try unwrap
+        let module_addr = module_addr.try_unwrap_into_bare(self.id).unwrap();
+        // 2. call
+        // SAFETY: We just checked that this module address is valid in the
+        // current store through its store id.
+        let exports = unsafe { self.inner.instance_exports_unchecked(module_addr) };
+        // 3. rewrap
+        // 4. return
+        exports
+            .into_iter()
+            .map(|(name, externval)| {
+                // SAFETY: The `ExternVal`s just came from the current store.
+                let stored_externval = unsafe { StoredExternVal::from_bare(externval, self.id) };
+                (name, stored_externval)
+            })
+            .collect()
+    }
 }
 
 #[derive(Default)]
