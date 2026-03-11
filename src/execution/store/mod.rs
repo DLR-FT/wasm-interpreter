@@ -1491,6 +1491,30 @@ impl<'b, T: Config> Store<'b, T> {
         let memory = unsafe { self.memories.get(memory) };
         memory.mem.access_mut_slice(accessor)
     }
+
+    /// Returns all exports of a module instance by its module address.
+    ///
+    /// To get a single import by its known name, use
+    /// [`Store::instance_export_unchecked`].
+    ///
+    /// # Safety
+    ///
+    /// The caller has to guarantee that the given [`ModuleAddr`] came from the
+    /// current [`Store`] object.
+    pub unsafe fn instance_exports_unchecked(
+        &self,
+        module_addr: ModuleAddr,
+    ) -> Vec<(String, ExternVal)> {
+        // SAFETY: The caller ensures that the given module address is valid in
+        // the current store.
+        let module = unsafe { self.modules.get(module_addr) };
+
+        module
+            .exports
+            .iter()
+            .map(|(name, externval)| (name.clone(), *externval))
+            .collect()
+    }
 }
 
 /// A marker error for host functions to return, in case they want execution to be halted.
