@@ -1,10 +1,10 @@
 use alloc::{string::String, vec::Vec};
-use wasm::{addrs::ModuleAddr, config::Config, RuntimeError, ValidationInfo};
+use wasm::{RuntimeError, ValidationInfo, addrs::ModuleAddr, config::Config};
 
 use crate::{
+    AbstractStored, StoreId,
     store::Store,
     stored_types::{Stored, StoredExternVal, StoredInstantiationOutcome},
-    AbstractStored, StoreId,
 };
 
 #[derive(Default)]
@@ -49,10 +49,10 @@ impl Linker {
             .expect("this type to always contain a StoreId");
         let linker_store_id = *self.store_id.get_or_insert(extern_val_store_id);
         if linker_store_id != extern_val_store_id {
-            return Err(RuntimeError::StoreIdMismatch);
+            panic!("Store id mismatch");
         }
         // 2. try unwrap
-        let extern_val = extern_val.try_unwrap_into_bare(linker_store_id)?;
+        let extern_val = extern_val.try_unwrap_into_bare(linker_store_id);
         // 3. call
         // SAFETY: It was just checked that the `ExternVal` came from the store
         // with the same id that is cached in the current linker instance.
@@ -74,10 +74,10 @@ impl Linker {
         let module_store_id = module.id().expect("this type to always contain a StoreId");
         let linker_store_id = *self.store_id.get_or_insert(module_store_id);
         if linker_store_id != module_store_id {
-            return Err(RuntimeError::StoreIdMismatch);
+            panic!("Store id mismatch");
         }
         // 2. try unwrap
-        let module = module.try_unwrap_into_bare(linker_store_id)?;
+        let module = module.try_unwrap_into_bare(linker_store_id);
         // 3. call
         // SAFETY: It was just checked that the `ExternVal` came from the store
         // with the same id that is cached in the current linker instance.
@@ -193,7 +193,7 @@ impl Linker {
         // 1. get or insert `StoreId`
         let linker_store_id = *self.store_id.get_or_insert(store.id);
         if linker_store_id != store.id {
-            return Err(RuntimeError::StoreIdMismatch);
+            panic!("Store id mismatch");
         }
         // 2. try unwrap
         // no stored parameters
