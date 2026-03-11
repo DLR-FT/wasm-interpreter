@@ -9,7 +9,7 @@ use crate::{
 
 #[derive(Default)]
 pub struct Linker {
-    inner: wasm::linker::Linker,
+    inner: linker::Linker,
 
     /// This is for the checked API which makes sure that all objects used
     /// originate from the same [`Store`].

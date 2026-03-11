@@ -33,16 +33,19 @@ use core::sync::atomic::{AtomicU64, Ordering};
 use alloc::vec::Vec;
 
 mod interop;
-mod linker;
 mod store;
 mod stored_types;
 mod value;
 
 pub use interop::*;
-pub use linker::*;
 pub use store::*;
 pub use stored_types::*;
 pub use value::*;
+
+#[cfg(feature = "linker")]
+mod linker;
+#[cfg(feature = "linker")]
+pub use linker::*;
 
 /// A unique identifier for a specific [`Store`]
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
