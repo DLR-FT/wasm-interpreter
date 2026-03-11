@@ -23,6 +23,11 @@
 //! to be re-defined. The result is a completely new type [`StoredValue`].
 
 #![no_std]
+#![deny(
+    clippy::missing_safety_doc,
+    clippy::undocumented_unsafe_blocks,
+    unsafe_op_in_unsafe_fn
+)]
 
 extern crate alloc;
 
@@ -132,5 +137,14 @@ impl<T: AbstractStored> AbstractStored for Vec<T> {
 
     fn into_bare(self) -> Self::BareTy {
         self.into_iter().map(T::into_bare).collect()
+    }
+
+    fn try_unwrap_into_bare(
+        self,
+        expected_store_id: StoreId,
+    ) -> Result<Self::BareTy, RuntimeError> {
+        self.into_iter()
+            .map(|t| t.try_unwrap_into_bare(expected_store_id))
+            .collect()
     }
 }

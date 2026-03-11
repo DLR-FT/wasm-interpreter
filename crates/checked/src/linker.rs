@@ -54,6 +54,8 @@ impl Linker {
         // 2. try unwrap
         let extern_val = extern_val.try_unwrap_into_bare(linker_store_id)?;
         // 3. call
+        // SAFETY: It was just checked that the `ExternVal` came from the store
+        // with the same id that is cached in the current linker instance.
         unsafe { self.inner.define_unchecked(module_name, name, extern_val) }?;
         // 4. rewrap
         // result is the unit type.
@@ -77,6 +79,8 @@ impl Linker {
         // 2. try unwrap
         let module = module.try_unwrap_into_bare(linker_store_id)?;
         // 3. call
+        // SAFETY: It was just checked that the `ExternVal` came from the store
+        // with the same id that is cached in the current linker instance.
         unsafe {
             self.inner
                 .define_module_instance_unchecked(store.inner(), module_name, module)
@@ -194,6 +198,8 @@ impl Linker {
         // 2. try unwrap
         // no stored parameters
         // 3. call
+        // SAFETY: It was just checked that the `ExternVal` came from the store
+        // with the same id that is cached in the current linker instance.
         let instantiation_outcome = unsafe {
             self.inner
                 .module_instantiate_unchecked(&mut store.inner, validation_info, maybe_fuel)
