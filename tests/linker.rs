@@ -33,6 +33,7 @@ pub fn compile_simple_import() {
     let addon = linker
         .module_instantiate(&mut store, &validation_info_addon, None)
         .unwrap()
+        .unwrap()
         .module_addr;
     // We also want to define all of its exports, to makes them discoverable for
     // linking of the base module.
