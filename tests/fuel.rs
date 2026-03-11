@@ -188,19 +188,16 @@ fn resumable_internal_state() {
     let resumable_add = store
         .create_resumable(add_global_0, vec![], Some(4))
         .unwrap();
-    assert_eq!(
-        store.global_read(global_0),
-        Ok(StoredValue::I32(expected[0]))
-    );
+    assert_eq!(store.global_read(global_0), StoredValue::I32(expected[0]));
     let mut run_state_add = store.resume(resumable_add).unwrap();
     for expected in expected.into_iter().take(4).skip(1) {
         run_state_add = match run_state_add {
             StoredRunState::Finished { .. } => {
-                assert_eq!(store.global_read(global_0), Ok(StoredValue::I32(expected)));
+                assert_eq!(store.global_read(global_0), StoredValue::I32(expected));
                 return;
             }
             StoredRunState::Resumable { mut resumable, .. } => {
-                assert_eq!(store.global_read(global_0), Ok(StoredValue::I32(expected)));
+                assert_eq!(store.global_read(global_0), StoredValue::I32(expected));
                 if let Some(fuel) = resumable.fuel_mut() {
                     *fuel += 4;
                 }

@@ -63,7 +63,7 @@ impl<'b, T: Config> Store<'b, T> {
         maybe_fuel: Option<u64>,
     ) -> Result<StoredInstantiationOutcome, RuntimeError> {
         // 1. try unwrap
-        let extern_vals = extern_vals.try_unwrap_into_bare(self.id)?;
+        let extern_vals = extern_vals.try_unwrap_into_bare(self.id);
         // 2. call
         // SAFETY: It was just checked that the `ExternVal`s came from the
         // current store through their store ids.
@@ -87,7 +87,7 @@ impl<'b, T: Config> Store<'b, T> {
         name: &str,
     ) -> Result<StoredExternVal, RuntimeError> {
         // 1. try unwrap
-        let module_addr = module_addr.try_unwrap_into_bare(self.id)?;
+        let module_addr = module_addr.try_unwrap_into_bare(self.id);
         // 2. call
         // SAFETY: It was just checked that the `ModuleAddr` came from the
         // current store through its store id.
@@ -126,25 +126,23 @@ impl<'b, T: Config> Store<'b, T> {
         // store.
         let func_addr = unsafe { self.inner.func_alloc_unchecked(func_type, host_func) };
         // 3. rewrap
-        // SAFETY: The function address just came from the current store.
-        let func_addr = unsafe { Stored::from_bare(func_addr, self.id) };
         // 4. return
-        func_addr
+        // SAFETY: The function address just came from the current store.
+        unsafe { Stored::from_bare(func_addr, self.id) }
     }
 
     /// This is a safe variant of
     /// [`Store::func_type_unchecked`](wasm::Store::func_type_unchecked).
-    pub fn func_type(&self, func_addr: Stored<FuncAddr>) -> Result<FuncType, RuntimeError> {
+    pub fn func_type(&self, func_addr: Stored<FuncAddr>) -> FuncType {
         // 1. try unwrap
-        let func_addr = func_addr.try_unwrap_into_bare(self.id)?;
+        let func_addr = func_addr.try_unwrap_into_bare(self.id);
         // 2. call
-        // SAFETY: It was just checked that the `FuncAddr` came from the current
-        // store through its store id.
-        let func_type = unsafe { self.inner.func_type_unchecked(func_addr) };
         // 3. rewrap
         // `FuncType` does not have a stored variant.
         // 4. return
-        Ok(func_type)
+        // SAFETY: It was just checked that the `FuncAddr` came from the current
+        // store through its store id.
+        unsafe { self.inner.func_type_unchecked(func_addr) }
     }
 
     /// This is a safe variant of
@@ -156,8 +154,8 @@ impl<'b, T: Config> Store<'b, T> {
         maybe_fuel: Option<u64>,
     ) -> Result<StoredRunState<T>, RuntimeError> {
         // 1. try unwrap
-        let func_addr = func_addr.try_unwrap_into_bare(self.id)?;
-        let params = params.try_unwrap_into_bare(self.id)?;
+        let func_addr = func_addr.try_unwrap_into_bare(self.id);
+        let params = params.try_unwrap_into_bare(self.id);
         // 2. call
         // SAFETY: It was just checked that the `FuncAddr` and any addresses in
         // the parameters came from the current store through their store ids.
@@ -177,7 +175,7 @@ impl<'b, T: Config> Store<'b, T> {
         r#ref: StoredRef,
     ) -> Result<Stored<TableAddr>, RuntimeError> {
         // 1. try unwrap
-        let r#ref = r#ref.try_unwrap_into_bare(self.id)?;
+        let r#ref = r#ref.try_unwrap_into_bare(self.id);
         // 2. call
         // SAFETY: It was just checked that any address in the reference came
         // from the current store through its store id.
@@ -191,17 +189,16 @@ impl<'b, T: Config> Store<'b, T> {
 
     /// This is a safe variant of
     /// [`Store::table_type_unchecked`](wasm::Store::table_type_unchecked).
-    pub fn table_type(&self, table_addr: Stored<TableAddr>) -> Result<TableType, RuntimeError> {
+    pub fn table_type(&self, table_addr: Stored<TableAddr>) -> TableType {
         // 1. try unwrap
-        let table_addr = table_addr.try_unwrap_into_bare(self.id)?;
+        let table_addr = table_addr.try_unwrap_into_bare(self.id);
         // 2. call
-        // SAFETY: It was just checked that the `TableAddr` came from the
-        // current store through its store id.
-        let table_type = unsafe { self.inner.table_type_unchecked(table_addr) };
         // 3. rewrap
         // `TableType` has no stored variant.
         // 4. return
-        Ok(table_type)
+        // SAFETY: It was just checked that the `TableAddr` came from the
+        // current store through its store id.
+        unsafe { self.inner.table_type_unchecked(table_addr) }
     }
 
     /// This is a safe variant of
@@ -212,7 +209,7 @@ impl<'b, T: Config> Store<'b, T> {
         i: u32,
     ) -> Result<StoredRef, RuntimeError> {
         // 1. try unwrap
-        let table_addr = table_addr.try_unwrap_into_bare(self.id)?;
+        let table_addr = table_addr.try_unwrap_into_bare(self.id);
         // 2. call
         // SAFETY: It was just checked that the `TableAddr` came from the
         // current store through its store id.
@@ -233,8 +230,8 @@ impl<'b, T: Config> Store<'b, T> {
         r#ref: StoredRef,
     ) -> Result<(), RuntimeError> {
         // 1. try unwrap
-        let table_addr = table_addr.try_unwrap_into_bare(self.id)?;
-        let r#ref = r#ref.try_unwrap_into_bare(self.id)?;
+        let table_addr = table_addr.try_unwrap_into_bare(self.id);
+        let r#ref = r#ref.try_unwrap_into_bare(self.id);
         // 2. call
         // SAFETY: It was just checked that the `TableAddr` and any address in
         // the reference came from the current store through their store ids.
@@ -247,17 +244,16 @@ impl<'b, T: Config> Store<'b, T> {
 
     /// This is a safe variant of
     /// [`Store::table_size_unchecked`](wasm::Store::table_size_unchecked).
-    pub fn table_size(&self, table_addr: Stored<TableAddr>) -> Result<u32, RuntimeError> {
+    pub fn table_size(&self, table_addr: Stored<TableAddr>) -> u32 {
         // 1. try unwrap
-        let table_addr = table_addr.try_unwrap_into_bare(self.id)?;
+        let table_addr = table_addr.try_unwrap_into_bare(self.id);
         // 2. call
-        // SAFETY: It was just checked that the `TableAddr` came from the
-        // current store through its store id.
-        let table_size = unsafe { self.inner.table_size_unchecked(table_addr) };
         // 3. rewrap
         // table size has no stored variant.
         // 4. return
-        Ok(table_size)
+        // SAFETY: It was just checked that the `TableAddr` came from the
+        // current store through its store id.
+        unsafe { self.inner.table_size_unchecked(table_addr) }
     }
 
     /// This is a variant of [`Store::mem_alloc`](wasm::Store::mem_alloc) that
@@ -269,32 +265,30 @@ impl<'b, T: Config> Store<'b, T> {
         // 2. call
         let mem_addr = self.inner.mem_alloc(mem_type);
         // 3. rewrap
-        // SAFETY: The `MemAddr` just came from the current store.
-        let stored_mem_addr = unsafe { Stored::from_bare(mem_addr, self.id) };
         // 4. return
-        stored_mem_addr
+        // SAFETY: The `MemAddr` just came from the current store.
+        unsafe { Stored::from_bare(mem_addr, self.id) }
     }
 
     /// This is a safe variant of
     /// [`Store::mem_type_unchecked`](wasm::Store::mem_type_unchecked).
-    pub fn mem_type(&self, mem_addr: Stored<MemAddr>) -> Result<MemType, RuntimeError> {
+    pub fn mem_type(&self, mem_addr: Stored<MemAddr>) -> MemType {
         // 1. try unwrap
-        let mem_addr = mem_addr.try_unwrap_into_bare(self.id)?;
+        let mem_addr = mem_addr.try_unwrap_into_bare(self.id);
         // 2. call
-        // SAFETY: It was just checked that the `MemAddr` came from the current
-        // store through its store id.
-        let mem_type = unsafe { self.inner.mem_type_unchecked(mem_addr) };
         // 3. rewrap
         // `MemType` does not have a stored variant.
         // 4. return
-        Ok(mem_type)
+        // SAFETY: It was just checked that the `MemAddr` came from the current
+        // store through its store id.
+        unsafe { self.inner.mem_type_unchecked(mem_addr) }
     }
 
     /// This is a safe variant of
     /// [`Store::mem_read_unchecked`](wasm::Store::mem_read_unchecked).
     pub fn mem_read(&self, mem_addr: Stored<MemAddr>, i: u32) -> Result<u8, RuntimeError> {
         // 1. try unwrap
-        let mem_addr = mem_addr.try_unwrap_into_bare(self.id)?;
+        let mem_addr = mem_addr.try_unwrap_into_bare(self.id);
         // 2. call
         // SAFETY: It was just checked that the `MemAddr` came from the current
         // store through its store id.
@@ -314,7 +308,7 @@ impl<'b, T: Config> Store<'b, T> {
         byte: u8,
     ) -> Result<(), RuntimeError> {
         // 1. try unwrap
-        let mem_addr = mem_addr.try_unwrap_into_bare(self.id)?;
+        let mem_addr = mem_addr.try_unwrap_into_bare(self.id);
         // 2. call
         // SAFETY: It was just checked that the `MemAddr` came from the current
         // store through its store id.
@@ -327,24 +321,23 @@ impl<'b, T: Config> Store<'b, T> {
 
     /// This is a safe variant of
     /// [`Store::mem_size_unchecked`](wasm::Store::mem_size_unchecked).
-    pub fn mem_size(&self, mem_addr: Stored<MemAddr>) -> Result<u32, RuntimeError> {
+    pub fn mem_size(&self, mem_addr: Stored<MemAddr>) -> u32 {
         // 1. try unwrap
-        let mem_addr = mem_addr.try_unwrap_into_bare(self.id)?;
+        let mem_addr = mem_addr.try_unwrap_into_bare(self.id);
         // 2. call
-        // SAFETY: It was just checked that the `MemAddr` came from the current
-        // store through its store id.
-        let mem_size = unsafe { self.inner.mem_size_unchecked(mem_addr) };
         // 3. rewrap
         // mem size does not have a stored variant.
         // 4. return
-        Ok(mem_size)
+        // SAFETY: It was just checked that the `MemAddr` came from the current
+        // store through its store id.
+        unsafe { self.inner.mem_size_unchecked(mem_addr) }
     }
 
     /// This is a safe variant of
     /// [`Store::mem_grow_unchecked`](wasm::Store::mem_grow_unchecked).
     pub fn mem_grow(&mut self, mem_addr: Stored<MemAddr>, n: u32) -> Result<(), RuntimeError> {
         // 1. try unwrap
-        let mem_addr = mem_addr.try_unwrap_into_bare(self.id)?;
+        let mem_addr = mem_addr.try_unwrap_into_bare(self.id);
         // 2. call
         // SAFETY: It was just checked that the `MemAddr` came from the current
         // store through its store id.
@@ -363,7 +356,7 @@ impl<'b, T: Config> Store<'b, T> {
         val: StoredValue,
     ) -> Result<Stored<GlobalAddr>, RuntimeError> {
         // 1. try unwrap
-        let val = val.try_unwrap_into_bare(self.id)?;
+        let val = val.try_unwrap_into_bare(self.id);
         // 2. call
         // SAFETY: It was just checked that any address the value came from the
         // current store through its store id.
@@ -379,7 +372,7 @@ impl<'b, T: Config> Store<'b, T> {
     /// [`Store::global_type_unchecked`](wasm::Store::global_type_unchecked).
     pub fn global_type(&self, global_addr: Stored<GlobalAddr>) -> Result<GlobalType, RuntimeError> {
         // 1. try unwrap
-        let global_addr = global_addr.try_unwrap_into_bare(self.id)?;
+        let global_addr = global_addr.try_unwrap_into_bare(self.id);
         // 2. call
         // SAFETY: It was just checked that the `GlobalAddr` came from the
         // current store through its store id.
@@ -392,21 +385,17 @@ impl<'b, T: Config> Store<'b, T> {
 
     /// This is a safe variant of
     /// [`Store::global_read_unchecked`](wasm::Store::global_read_unchecked).
-    pub fn global_read(
-        &self,
-        global_addr: Stored<GlobalAddr>,
-    ) -> Result<StoredValue, RuntimeError> {
+    pub fn global_read(&self, global_addr: Stored<GlobalAddr>) -> StoredValue {
         // 1. try unwrap
-        let global_addr = global_addr.try_unwrap_into_bare(self.id)?;
+        let global_addr = global_addr.try_unwrap_into_bare(self.id);
         // 2. call
         // SAFETY: It was just checked that the `GlobalAddr` came from the
         // current store through its store id.
         let value = unsafe { self.inner.global_read_unchecked(global_addr) };
         // 3. rewrap
-        // SAFETY: The `Value` just came from the current store.
-        let stored_value = unsafe { StoredValue::from_bare(value, self.id) };
         // 4. return
-        Ok(stored_value)
+        // SAFETY: The `Value` just came from the current store.
+        unsafe { StoredValue::from_bare(value, self.id) }
     }
 
     /// This is a safe variant of
@@ -417,8 +406,8 @@ impl<'b, T: Config> Store<'b, T> {
         val: StoredValue,
     ) -> Result<(), RuntimeError> {
         // 1. try unwrap
-        let global_addr = global_addr.try_unwrap_into_bare(self.id)?;
-        let val = val.try_unwrap_into_bare(self.id)?;
+        let global_addr = global_addr.try_unwrap_into_bare(self.id);
+        let val = val.try_unwrap_into_bare(self.id);
         // 2. call
         // SAFETY: It was just checked that the `GlobalAddr` any any address
         // contained in the value came from the current store through their
@@ -439,8 +428,8 @@ impl<'b, T: Config> Store<'b, T> {
         maybe_fuel: Option<u64>,
     ) -> Result<Stored<Resumable<T>>, RuntimeError> {
         // 1. try unwrap
-        let func_addr = func_addr.try_unwrap_into_bare(self.id)?;
-        let params = params.try_unwrap_into_bare(self.id)?;
+        let func_addr = func_addr.try_unwrap_into_bare(self.id);
+        let params = params.try_unwrap_into_bare(self.id);
         // 2. call
         // SAFETY: It was just checked that the `FuncAddr` any any addresses
         // contained in the parameters came from the current store through their
@@ -463,7 +452,7 @@ impl<'b, T: Config> Store<'b, T> {
         resumable: Stored<Resumable<T>>,
     ) -> Result<StoredRunState<T>, RuntimeError> {
         // 1. try unwrap
-        let resumable = resumable.try_unwrap_into_bare(self.id)?;
+        let resumable = resumable.try_unwrap_into_bare(self.id);
         // 2. call
         // SAFETY: It was just checked that the `Resumable` came from the
         // current store through its store id.
@@ -505,10 +494,9 @@ impl<'b, T: Config> Store<'b, T> {
                 .func_alloc_typed_unchecked::<Params, Returns>(host_func)
         };
         // 3. rewrap
-        // SAFETY: The function address just came from the current store.
-        let func_addr = unsafe { Stored::from_bare(func_addr, self.id) };
         // 4. return
-        func_addr
+        // SAFETY: The function address just came from the current store.
+        unsafe { Stored::from_bare(func_addr, self.id) }
     }
 
     /// This is a safe variant of
@@ -519,8 +507,8 @@ impl<'b, T: Config> Store<'b, T> {
         params: Vec<StoredValue>,
     ) -> Result<Vec<StoredValue>, RuntimeError> {
         // 1. try unwrap
-        let func_addr = func_addr.try_unwrap_into_bare(self.id)?;
-        let params = params.try_unwrap_into_bare(self.id)?;
+        let func_addr = func_addr.try_unwrap_into_bare(self.id);
+        let params = params.try_unwrap_into_bare(self.id);
         // 2. call
         // SAFETY: It was just checked that the `FuncAddr` and any addresses
         // contained in the parameters came from the current store through their
@@ -544,8 +532,8 @@ impl<'b, T: Config> Store<'b, T> {
         params: Params,
     ) -> Result<Returns, RuntimeError> {
         // 1. try unwrap
-        let function = function.try_unwrap_into_bare(self.id)?;
-        let params = params.into_values().try_unwrap_into_bare(self.id)?;
+        let function = function.try_unwrap_into_bare(self.id);
+        let params = params.into_values().try_unwrap_into_bare(self.id);
         // 2. call
         // SAFETY: It was just checked that the `FuncAddr` and any addresses
         // contained in the parameters came from the current store through their
@@ -566,17 +554,16 @@ impl<'b, T: Config> Store<'b, T> {
         &self,
         memory: Stored<MemAddr>,
         accessor: impl FnOnce(&mut [u8]) -> R,
-    ) -> Result<R, RuntimeError> {
+    ) -> R {
         // 1. try unwrap
-        let memory = memory.try_unwrap_into_bare(self.id)?;
+        let memory = memory.try_unwrap_into_bare(self.id);
         // 2. call
-        // SAFETY: It was just checked that the `MemAddr` came from the current
-        // store through its store id.
-        let returns = unsafe { self.inner.mem_access_mut_slice_unchecked(memory, accessor) };
         // 3. rewrap
         // result is generic
         // 4. return
-        Ok(returns)
+        // SAFETY: It was just checked that the `MemAddr` came from the current
+        // store through its store id.
+        unsafe { self.inner.mem_access_mut_slice_unchecked(memory, accessor) }
     }
 
     /// This is a safe variant of
@@ -586,7 +573,7 @@ impl<'b, T: Config> Store<'b, T> {
         module_addr: Stored<ModuleAddr>,
     ) -> Vec<(String, StoredExternVal)> {
         // 1. try unwrap
-        let module_addr = module_addr.try_unwrap_into_bare(self.id).unwrap();
+        let module_addr = module_addr.try_unwrap_into_bare(self.id);
         // 2. call
         // SAFETY: We just checked that this module address is valid in the
         // current store through its store id.
