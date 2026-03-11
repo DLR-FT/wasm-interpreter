@@ -18,10 +18,6 @@ pub enum RuntimeError {
     UnknownExport,
     TableTypeMismatch,
 
-    /// The identifier of a stored object did not match the
-    /// [`Store`](crate::execution::store::Store) it was used with.
-    StoreIdMismatch,
-
     // Are all of these instantiation variants? Add a new `InstantiationError` enum?
     InvalidImportType,
     UnknownImport,
@@ -103,7 +99,6 @@ impl Display for RuntimeError {
             RuntimeError::FunctionInvocationSignatureMismatch => {
                 f.write_str("A function was invoked with incorrect parameters or return types")
             }
-            RuntimeError::StoreIdMismatch => f.write_str( "The identifier of a stored object did not match the store it was used with"),
             RuntimeError::LinkerNotYetAssociatedWithStoreId => f.write_str("A checked method of a linker was used, even though that linker has not yet been associated to any store through its id"),
         }
     }

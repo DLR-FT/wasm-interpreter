@@ -31,7 +31,6 @@ extern crate alloc;
 use core::sync::atomic::{AtomicU64, Ordering};
 
 use alloc::vec::Vec;
-use wasm::RuntimeError;
 
 mod interop;
 mod linker;
@@ -87,23 +86,19 @@ pub trait AbstractStored: Sized {
     fn into_bare(self) -> Self::BareTy;
 
     /// Checks if this stored object comes from a specific store by its
-    /// [`StoreId`]. If true, it converts self into its bare form, otherwise an
-    /// error is returned.
+    /// [`StoreId`]. If true, it converts self into its bare form.
     ///
-    /// # Errors
+    /// # Panics
     ///
-    /// - [`RuntimeError::StoreIdMismatch`]
-    fn try_unwrap_into_bare(
-        self,
-        expected_store_id: StoreId,
-    ) -> Result<Self::BareTy, RuntimeError> {
+    /// This function panics in the case of mismatching store ids.
+    fn try_unwrap_into_bare(self, expected_store_id: StoreId) -> Self::BareTy {
         if let Some(id) = self.id() {
             if id != expected_store_id {
-                return Err(RuntimeError::StoreIdMismatch);
+                panic!("Store id mismatch");
             }
         }
 
-        Ok(self.into_bare())
+        self.into_bare()
     }
 }
 
@@ -136,10 +131,7 @@ impl<T: AbstractStored> AbstractStored for Vec<T> {
         self.into_iter().map(T::into_bare).collect()
     }
 
-    fn try_unwrap_into_bare(
-        self,
-        expected_store_id: StoreId,
-    ) -> Result<Self::BareTy, RuntimeError> {
+    fn try_unwrap_into_bare(self, expected_store_id: StoreId) -> Self::BareTy {
         self.into_iter()
             .map(|t| t.try_unwrap_into_bare(expected_store_id))
             .collect()

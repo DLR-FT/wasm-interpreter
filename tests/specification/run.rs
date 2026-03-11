@@ -573,11 +573,7 @@ fn execute_assert_return(
                         _ => Err(WastError::UnknownGlobalReferenced),
                     })?;
 
-                Ok::<StoredValue, WastError>(
-                    store
-                        .global_read(global_addr)
-                        .expect("store ids to be correct"),
-                )
+                Ok::<StoredValue, WastError>(store.global_read(global_addr))
             }))
             .map_err(WastError::Panic)??;
 
