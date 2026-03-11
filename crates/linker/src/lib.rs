@@ -1,3 +1,11 @@
+//! A Name Resolution Based Linker
+//!
+//! TODO
+
+#![no_std]
+
+extern crate alloc;
+
 use alloc::{
     borrow::ToOwned,
     collections::btree_map::{BTreeMap, Entry},
@@ -5,11 +13,10 @@ use alloc::{
     vec::Vec,
 };
 
-use crate::{
-    addrs::ModuleAddr, store::InstantiationOutcome, ExternVal, RuntimeError, Store, ValidationInfo,
+use wasm::{
+    addrs::ModuleAddr, config::Config, store::InstantiationOutcome, ExternVal, RuntimeError, Store,
+    ValidationInfo,
 };
-
-use super::config::Config;
 
 /// A linker used to link a module's imports against extern values previously
 /// defined in this [`Linker`] context.
@@ -98,12 +105,12 @@ impl Linker {
     ) -> Result<(), RuntimeError> {
         // SAFETY: The caller ensures that the given module address is valid in
         // the given store.
-        let module = unsafe { store.modules.get(module) };
-        for export in &module.exports {
+        let module_exports = unsafe { store.instance_exports_unchecked(module) };
+        for export in module_exports {
             // SAFETY: The module and thus also its exported extern values come
             // from the same store used now. Therefore, the extern values must
             // be valid in this store.
-            unsafe { self.define_unchecked(module_name.clone(), export.0.clone(), *export.1)? };
+            unsafe { self.define_unchecked(module_name.clone(), export.0, export.1)? };
         }
 
         Ok(())
