@@ -128,21 +128,16 @@ impl Linker {
     /// Therefore, using the returned list of extern values may still fail when
     /// trying to instantiate a module with it.
     // TODO find a better name for this method? Maybe something like `link`?
-    pub fn instantiate_pre(
-        &self,
-        validation_info: &ValidationInfo,
-    ) -> Result<Vec<ExternVal>, RuntimeError> {
+    pub fn instantiate_pre(&self, validation_info: &ValidationInfo) -> Option<Vec<ExternVal>> {
         validation_info
             .imports()
-            .map(|(module_name, name, _desc)| {
-                self.get(module_name.to_owned(), name.to_owned())
-                    .ok_or(RuntimeError::UnableToResolveExternLookup)
-            })
+            .map(|(module_name, name, _desc)| self.get(module_name.to_owned(), name.to_owned()))
             .collect()
     }
 
-    /// Variant of [`Store::module_instantiate_unchecked`] with automatic name resolution
-    /// in the current [`Linker`] context.
+    /// Variant of [`Store::module_instantiate_unchecked`] with automatic name
+    /// resolution in the current [`Linker`] context. Returns `None` if name
+    /// resolution failed.
     ///
     /// # Safety
     ///
@@ -153,16 +148,16 @@ impl Linker {
         store: &mut Store<'b, T>,
         validation_info: &ValidationInfo<'b>,
         maybe_fuel: Option<u64>,
-    ) -> Result<InstantiationOutcome, RuntimeError> {
-        let instantiate_pre = self.instantiate_pre(validation_info)?;
-
-        // SAFETY: Because all extern values in a single linker can only come
-        // from one specific store, the current store must be the same store
-        // used to define all previous extern values. Therefore, the extern
-        // values in `instantiate_pre` must be from the same store that is
-        // passed now. Thus, using them as imports for module instantiation is
-        // sound.
-        unsafe { store.module_instantiate_unchecked(validation_info, instantiate_pre, maybe_fuel) }
+    ) -> Option<Result<InstantiationOutcome, RuntimeError>> {
+        self.instantiate_pre(validation_info).map(|instantiate_pre|
+            // SAFETY: Because all extern values in a single linker can only come
+            // from one specific store, the current store must be the same store
+            // used to define all previous extern values. Therefore, the extern
+            // values in `instantiate_pre` must be from the same store that is
+            // passed now. Thus, using them as imports for module instantiation is
+            // sound.
+            unsafe { store.module_instantiate_unchecked(validation_info, instantiate_pre, maybe_fuel) }
+        )
     }
 }
 

@@ -52,6 +52,8 @@ pub enum WastError {
     UnknownFunctionReferenced,
     #[error("An directive referenced a non-existing global export")]
     UnknownGlobalReferenced,
+    #[error("Module failed to link")]
+    FailedToLink,
 }
 
 impl From<wasm::ValidationError> for WastError {
