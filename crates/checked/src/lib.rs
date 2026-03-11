@@ -54,10 +54,10 @@ pub struct StoreId(u64);
 impl StoreId {
     /// Creates a new unique [`StoreId`]
     #[allow(clippy::new_without_default)] // reason = "StoreId::default() might be misunderstood to be some
-    // default value. However, a default value does not exist in that
-    // sense because every newly created StoreId must be unique. Also
-    // we don't want to allow the user to create new instances of
-    // this object."
+                                          // default value. However, a default value does not exist in that
+                                          // sense because every newly created StoreId must be unique. Also
+                                          // we don't want to allow the user to create new instances of
+                                          // this object."
     pub(crate) fn new() -> Self {
         static NEXT_STORE_ID: AtomicU64 = AtomicU64::new(0);
 

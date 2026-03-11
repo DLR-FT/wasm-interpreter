@@ -80,7 +80,8 @@ fn validate_instantiate<'a, 'b: 'a>(
     let module = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
         linker.module_instantiate(store, &validation_info, None)
     }))
-    .map_err(WastError::Panic)??
+    .map_err(WastError::Panic)?
+    .ok_or_else(|| WastError::FailedToLink)??
     .module_addr;
 
     *last_instantiated_module = Some(module);
@@ -360,12 +361,12 @@ fn run_directive<'a>(
             let result = match validate_instantiate(store, bytes, linker, last_instantiated_module)
             {
                 // module shouldn't have instantiated
-                Err(WastError::WasmRuntimeError(
-                    RuntimeError::ModuleNotFound
-                    | RuntimeError::UnknownImport
-                    | RuntimeError::InvalidImportType
-                    | RuntimeError::UnableToResolveExternLookup,
-                )) => Ok(()),
+                Err(
+                    WastError::WasmRuntimeError(
+                        RuntimeError::ModuleNotFound | RuntimeError::InvalidImportType,
+                    )
+                    | WastError::FailedToLink,
+                ) => Ok(()),
                 _ => Err(WastError::AssertUnlinkableButLinked),
             };
 

@@ -20,7 +20,6 @@ pub enum RuntimeError {
 
     // Are all of these instantiation variants? Add a new `InstantiationError` enum?
     InvalidImportType,
-    UnknownImport,
     /// It was attempted to register a symbol under a name for which a symbol already exists.
     RegistrySymbolAlreadyExists,
     MoreThanOneMemory,
@@ -32,17 +31,8 @@ pub enum RuntimeError {
     /// Happens when a definition would cause an extern to be defined with a
     /// module name and name for which an extern already exists.
     DuplicateExternDefinition,
-
-    /// An extern lookup could not be resolved because no matching extern value existed for it.
-    UnableToResolveExternLookup,
-
     /// A function was invoked with incorrect parameters or return types.
     FunctionInvocationSignatureMismatch,
-
-    /// A checked method of a [`Linker`](crate::execution::linker::Linker) was
-    /// used, even though that [`Linker`](crate::execution::linker::Linker) has
-    /// not yet been associated to any store through its id.
-    LinkerNotYetAssociatedWithStoreId,
 }
 
 impl Display for RuntimeError {
@@ -72,8 +62,6 @@ impl Display for RuntimeError {
             RuntimeError::TableTypeMismatch => {
                 f.write_str("An alloc/write operation failed on a table due to a type mismatch.")
             }
-            // TODO: maybe move these to LinkerError also add more info to them (the name's export, function idx, etc)
-            RuntimeError::UnknownImport => f.write_str("Unknown Import"),
             RuntimeError::MoreThanOneMemory => {
                 f.write_str("As of not only one memory is allowed per module.")
             }
@@ -93,13 +81,9 @@ impl Display for RuntimeError {
             RuntimeError::DuplicateExternDefinition => {
                 f.write_str("Linking failed because of a duplicate definition of some extern value")
             }
-            RuntimeError::UnableToResolveExternLookup => {
-                f.write_str("An extern lookup could not be resolved because no matching extern value existed for it.")
-            }
             RuntimeError::FunctionInvocationSignatureMismatch => {
                 f.write_str("A function was invoked with incorrect parameters or return types")
             }
-            RuntimeError::LinkerNotYetAssociatedWithStoreId => f.write_str("A checked method of a linker was used, even though that linker has not yet been associated to any store through its id"),
         }
     }
 }

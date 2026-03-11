@@ -1,10 +1,10 @@
 use alloc::{string::String, vec::Vec};
-use wasm::{RuntimeError, ValidationInfo, addrs::ModuleAddr, config::Config};
+use wasm::{addrs::ModuleAddr, config::Config, RuntimeError, ValidationInfo};
 
 use crate::{
-    AbstractStored, StoreId,
     store::Store,
     stored_types::{Stored, StoredExternVal, StoredInstantiationOutcome},
+    AbstractStored, StoreId,
 };
 
 #[derive(Default)]
@@ -92,84 +92,40 @@ impl Linker {
     }
 
     /// This is a safe variant of [`Linker::get_unchecked`](crate::linker::Linker::get_unchecked).
-    ///
-    /// # Interaction with unchecked API
-    ///
-    /// This method is able to find externs defined through the unchecked
-    /// `define` methods.  However, for this to work, at least one of the
-    /// following methods must have been called successfully:
-    /// [`Linker::define`], [`Linker::define_module_instance`],
-    /// [`Linker::module_instantiate`]. Otherwise, this method may spuriously
-    /// return an error.
-    ///
-    /// Therefore, it is advised against to mix the unchecked and checked API
-    /// for a single [`Linker`] instance.
-    ///
-    /// # Errors
-    ///
-    /// - [`RuntimeError::LinkerNotYetAssociatedWithStoreId`]
-    /// - [`RuntimeError::UnableToResolveExternLookup`]
-    pub fn get(&self, module_name: String, name: String) -> Result<StoredExternVal, RuntimeError> {
+    pub fn get(&self, module_name: String, name: String) -> Option<StoredExternVal> {
         // 1. get or insert the `StoreId`
-        // TODO docs are not consistent
-        let Some(linker_store_id) = self.store_id else {
-            // At this point we have no way to set the current store id, because
-            // the parameters are all non-stored types.
-
-            // We also know that nothing was defined in this linker context through
-            // the checked methods yet, because `self.store_id` has not been set
-            // yet. Therefore, a get would always return `None`.
-
-            // However, when an unchecked `define` method was used before, we
-            // also have to return `None` here, because even if the lookup for
-            // `module_name` and `name` returns something, we cannot attach a
-            // store id to it.
-
-            return Err(RuntimeError::LinkerNotYetAssociatedWithStoreId);
-        };
+        // Note: We can only get the id. If it has not been set yet, no
+        // definitions could have been made.
+        let linker_store_id = self.store_id?;
         // 2. try unwrap
         // no stored parameters
         // 3. call
-        let extern_val = self
-            .inner
-            .get(module_name, name)
-            .ok_or(RuntimeError::UnableToResolveExternLookup)?;
+        let extern_val = self.inner.get(module_name, name)?;
         // 4. rewrap
         // SAFETY: The `ExternVal` just came from the current `Linker`. Because
         // a `Linker` can always be used with only one unique `Store`, this
         // `ExternVal` must be from the current Linker's store.
         let stored_extern_val = unsafe { StoredExternVal::from_bare(extern_val, linker_store_id) };
         // 5. return
-        Ok(stored_extern_val)
+        Some(stored_extern_val)
     }
 
     /// This is a variant of [`Linker::instantiate_pre`](crate::linker::Linker::instantiate_pre).
-    ///
-    /// # Interaction with unchecked API
-    ///
-    /// See [`Linker::get`]
-    ///
-    /// # Errors
-    ///
-    /// - [`RuntimeError::LinkerNotYetAssociatedWithStoreId`]
-    /// - [`RuntimeError::UnableToResolveExternLookup`]
     pub fn instantiate_pre(
         &self,
         validation_info: &ValidationInfo,
-    ) -> Result<Vec<StoredExternVal>, RuntimeError> {
+    ) -> Option<Vec<StoredExternVal>> {
         // Special case: If the module has no imports, we don't perform any
         // linking. We need this special case, so that a `Linker`, that has not
         // yet been associated with some `Store`, can still be used to
         // pre-instantiate modules.
         if validation_info.imports().len() == 0 {
-            return Ok(Vec::new());
+            return Some(Vec::new());
         }
         // 1. get or insert `StoreId`
-        let Some(linker_store_id) = self.store_id else {
-            // We are not able to perform safe linking (see this method's and
-            // `Linker::get`'s documentations).
-            return Err(RuntimeError::LinkerNotYetAssociatedWithStoreId);
-        };
+        // Note: We can only get the id. If it has not been set yet, no
+        // definitions could have been made.
+        let linker_store_id = self.store_id?;
         // 2. try unwrap
         // no stored parameters
         // 3. call
@@ -180,7 +136,7 @@ impl Linker {
         // `ExternVal`s must be from the current Linker's store.
         let stored_extern_vals = unsafe { Vec::from_bare(extern_vals, linker_store_id) };
         // 5. retur
-        Ok(stored_extern_vals)
+        Some(stored_extern_vals)
     }
 
     /// This is a safe variant of [`Linker::module_instantiate_unchecked`](crate::linker::Linker::module_instantiate_unchecked).
@@ -189,7 +145,7 @@ impl Linker {
         store: &mut Store<'b, T>,
         validation_info: &ValidationInfo<'b>,
         maybe_fuel: Option<u64>,
-    ) -> Result<StoredInstantiationOutcome, RuntimeError> {
+    ) -> Option<Result<StoredInstantiationOutcome, RuntimeError>> {
         // 1. get or insert `StoreId`
         let linker_store_id = *self.store_id.get_or_insert(store.id);
         if linker_store_id != store.id {
@@ -200,10 +156,14 @@ impl Linker {
         // 3. call
         // SAFETY: It was just checked that the `ExternVal` came from the store
         // with the same id that is cached in the current linker instance.
-        let instantiation_outcome = unsafe {
+        let instantiation_outcome = match unsafe {
             self.inner
                 .module_instantiate_unchecked(&mut store.inner, validation_info, maybe_fuel)
-        }?;
+        } {
+            Some(Ok(instantiation_outcome)) => instantiation_outcome,
+            Some(Err(err)) => return Some(Err(err)),
+            None => return None,
+        };
         // 4. rewrap
         // SAFETY: The `InstantiationOutcome` just came from the current
         // `Linker`. Because a linker can always be used with only one unique
@@ -213,6 +173,6 @@ impl Linker {
             StoredInstantiationOutcome::from_bare(instantiation_outcome, linker_store_id)
         };
         // 5. return
-        Ok(stored_instantiation_outcome)
+        Some(Ok(stored_instantiation_outcome))
     }
 }
