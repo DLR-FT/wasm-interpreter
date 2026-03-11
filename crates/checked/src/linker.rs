@@ -9,7 +9,7 @@ use crate::{
 
 #[derive(Default)]
 pub struct Linker {
-    inner: wasm::linker::Linker,
+    inner: linker::Linker,
 
     /// This is for the checked API which makes sure that all objects used
     /// originate from the same [`Store`].
@@ -36,8 +36,7 @@ impl Linker {
         Self::default()
     }
 
-    /// This is a safe variant of
-    /// [`Linker::define_unchecked`](wasm::linker::Linker::define_unchecked).
+    /// This is a safe variant of [`Linker::define`](linker::Linker::define).
     pub fn define(
         &mut self,
         module_name: String,
@@ -65,7 +64,7 @@ impl Linker {
     }
 
     /// This is a safe variant of
-    /// [`Linker::define_module_instance_unchecked`](wasm::linker::Linker::define_module_instance_unchecked).
+    /// [`Linker::define_module_instance`](linker::Linker::define_module_instance).
     pub fn define_module_instance<T: Config>(
         &mut self,
         store: &Store<T>,
@@ -93,7 +92,7 @@ impl Linker {
         Ok(())
     }
 
-    /// This is a safe variant of [`Linker::get`](wasm::linker::Linker::get).
+    /// This is a safe variant of [`Linker::get`](linker::Linker::get).
     pub fn get(&self, module_name: String, name: String) -> Option<StoredExternVal> {
         // 1. get or insert the `StoreId`
         // Note: We can only get the id. If it has not been set yet, no
@@ -113,7 +112,7 @@ impl Linker {
     }
 
     /// This is a variant of
-    /// [`Linker::instantiate_pre`](wasm::linker::Linker::instantiate_pre).
+    /// [`Linker::instantiate_pre`](linker::Linker::instantiate_pre).
     pub fn instantiate_pre(
         &self,
         validation_info: &ValidationInfo,
@@ -143,7 +142,7 @@ impl Linker {
     }
 
     /// This is a safe variant of
-    /// [`Linker::module_instantiate_unchecked`](wasm::linker::Linker::module_instantiate_unchecked).
+    /// [`Linker::module_instantiate`](linker::Linker::module_instantiate).
     pub fn module_instantiate<'b, T: Config>(
         &mut self,
         store: &mut Store<'b, T>,
