@@ -174,13 +174,13 @@ fn embedder_interface() {
         .as_global()
         .expect("global");
 
-    assert_eq!(store.global_read(global_0), Ok(StoredValue::I32(1)));
-    assert_eq!(store.global_read(global_1), Ok(StoredValue::I64(3)));
+    assert_eq!(store.global_read(global_0), StoredValue::I32(1));
+    assert_eq!(store.global_read(global_1), StoredValue::I64(3));
 
     assert_eq!(store.global_write(global_0, StoredValue::I32(33)), Ok(()));
 
-    assert_eq!(store.global_read(global_0), Ok(StoredValue::I32(33)));
-    assert_eq!(store.global_read(global_1), Ok(StoredValue::I64(3)));
+    assert_eq!(store.global_read(global_0), StoredValue::I32(33));
+    assert_eq!(store.global_read(global_1), StoredValue::I64(3));
 
     assert_eq!(
         store.global_type(global_0),

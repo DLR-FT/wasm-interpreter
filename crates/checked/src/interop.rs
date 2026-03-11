@@ -8,7 +8,7 @@ use wasm::{
 
 use crate::{stored_types::Stored, StoredRef, StoredValue};
 
-/// A stored variant of [`InteropValue`](wasm::execution::interop::InteropValue)
+/// A stored variant of [`InteropValue`](wasm::interop::InteropValue)
 pub trait StoredInteropValue
 where
     Self: Copy + Debug + PartialEq + TryFrom<StoredValue, Error = ValueTypeMismatchError>,
