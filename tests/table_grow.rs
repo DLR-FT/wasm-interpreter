@@ -15,7 +15,7 @@
 # limitations under the License.
 */
 use checked::Store;
-use wasm::interop::RefExtern;
+use interop::RefExtern;
 use wasm::value::ExternAddr;
 use wasm::{validate, RuntimeError, TrapError};
 

@@ -5,6 +5,7 @@ use criterion::{
     Throughput,
 };
 
+use interop::StoreTypedInvocationExt;
 use wasm::{validate, Store};
 
 macro_rules! bench_wasm {

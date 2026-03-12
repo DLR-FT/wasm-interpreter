@@ -517,6 +517,34 @@ impl TryFrom<Value> for Ref {
     }
 }
 
+impl From<f32> for Value {
+    fn from(value: f32) -> Self {
+        F32(value).into()
+    }
+}
+
+impl TryFrom<Value> for f32 {
+    type Error = ValueTypeMismatchError;
+
+    fn try_from(value: Value) -> Result<Self, Self::Error> {
+        F32::try_from(value).map(|f| f.0)
+    }
+}
+
+impl From<f64> for Value {
+    fn from(value: f64) -> Self {
+        F64(value).into()
+    }
+}
+
+impl TryFrom<Value> for f64 {
+    type Error = ValueTypeMismatchError;
+
+    fn try_from(value: Value) -> Result<Self, Self::Error> {
+        F64::try_from(value).map(|f| f.0)
+    }
+}
+
 #[cfg(test)]
 mod test {
     use alloc::string::ToString;

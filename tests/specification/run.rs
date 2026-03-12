@@ -845,7 +845,8 @@ fn init_spectest(store: &mut Store<()>, linker: &mut Linker) -> Result<(), Runti
 }
 
 mod spectec_functions {
-    use wasm::{host_function_wrapper, HaltExecutionError, Value};
+    use interop::host_function_wrapper;
+    use wasm::{HaltExecutionError, Value};
 
     pub fn print(
         _user_data: &mut (),
