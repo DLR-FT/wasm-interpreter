@@ -16,9 +16,7 @@ use crate::core::utils::ToUsizeExt;
 use crate::execution::interpreter_loop::{self, memory_init, table_init, InterpreterLoopOutcome};
 use crate::execution::value::{Ref, Value};
 use crate::execution::{run_const_span, Stack};
-use crate::resumable::{
-    CreateResumableOutcome, HostCall, HostCallFinisher, HostResumable, RunState, WasmResumable,
-};
+use crate::resumable::{HostCall, HostResumable, HostThing, Resumable, RunState, WasmResumable};
 use crate::{RefType, RuntimeError, ValidationInfo};
 use alloc::borrow::ToOwned;
 use alloc::collections::btree_map::BTreeMap;
@@ -607,13 +605,13 @@ impl<'b, T: Config> Store<'b, T> {
             let create_resumable_outcome =
                 unsafe { self.create_resumable_unchecked(*func_addr, Vec::new(), maybe_fuel) }?;
 
-            let CreateResumableOutcome::Resumable(resumable) = create_resumable_outcome else {
+            let Resumable::Wasm(resumable) = create_resumable_outcome else {
                 todo!("calling host functions from the start function");
             };
 
             // SAFETY: The resumable just came from the current store.
             // Therefore, it is always valid in the current store.
-            let maybe_remaining_fuel = match unsafe { self.resume_unchecked(resumable) }? {
+            let maybe_remaining_fuel = match unsafe { self.resume_wasm_unchecked(resumable) }? {
                 RunState::Finished {
                     maybe_remaining_fuel,
                     ..
@@ -720,35 +718,20 @@ impl<'b, T: Config> Store<'b, T> {
     /// [`FuncAddr`] or [`ExternAddr`](crate::execution::value::ExternAddr)
     /// values contained in the parameter values came from the current [`Store`]
     /// object.
-    // pub unsafe fn invoke_unchecked(
-    //     &mut self,
-    //     func_addr: FuncAddr,
-    //     params: Vec<Value>,
-    //     maybe_fuel: Option<u64>,
-    // ) -> Result<RunState, RuntimeError> {
-    //     // SAFETY: The caller ensures that the function address and any function
-    //     // addresses or extern addresses contained in the parameter values are
-    //     // valid in the current store.
-    //     let resumable = unsafe { self.create_resumable_unchecked(func_addr, params, maybe_fuel)? };
-
-    //     match resumable {
-    //         Resumable::Wasm(wasm_resumable) => {
-    //             // SAFETY: This Wasm resumable just came from the current store.
-    //             // Therefore, it must be valid in the current store.
-    //             unsafe { self.resume_unchecked(wasm_resumable) }
-    //         }
-    //         Resumable::Host(host_resumable) => {
-    //             // SAFETY: This host resumable just came from the current store.
-    //             // Therefore, it must be valid in the current store.
-    //             unsafe { self.resume_host_unchecked(host_resumable) }.map(|results| {
-    //                 RunState::Finished {
-    //                     values: results,
-    //                     maybe_remaining_fuel: maybe_fuel,
-    //                 }
-    //             })
-    //         }
-    //     }
-    // }
+    pub unsafe fn invoke_unchecked(
+        &mut self,
+        func_addr: FuncAddr,
+        params: Vec<Value>,
+        maybe_fuel: Option<u64>,
+    ) -> Result<RunState, RuntimeError> {
+        // SAFETY: The caller ensures that the function address and any function
+        // addresses or extern addresses contained in the parameter values are
+        // valid in the current store.
+        let resumable = unsafe { self.create_resumable_unchecked(func_addr, params, maybe_fuel)? };
+        // SAFETY: The resumable just came from the current store. Therefore, it
+        // is always valid in the current store.
+        unsafe { self.resume_unchecked(resumable) }
+    }
 
     /// Allocates a new table with some table type and an initialization value `ref` and returns its table address.
     ///
@@ -1286,7 +1269,7 @@ impl<'b, T: Config> Store<'b, T> {
         func_addr: FuncAddr,
         params: Vec<Value>,
         maybe_fuel: Option<u64>,
-    ) -> Result<CreateResumableOutcome, RuntimeError> {
+    ) -> Result<Resumable, RuntimeError> {
         // SAFETY: The caller ensures that this function address is valid in the
         // current store.
         let func_inst = unsafe { self.functions.get(func_addr) };
@@ -1314,7 +1297,7 @@ impl<'b, T: Config> Store<'b, T> {
                     &wasm_func_inst.locals,
                 )?;
 
-                CreateResumableOutcome::Resumable(WasmResumable {
+                Resumable::Wasm(WasmResumable {
                     current_func_addr: func_addr,
                     stack,
                     pc: wasm_func_inst.code_expr.from,
@@ -1322,18 +1305,53 @@ impl<'b, T: Config> Store<'b, T> {
                     maybe_fuel,
                 })
             }
-            FuncInst::HostFunc(host_func_inst) => CreateResumableOutcome::HostCall {
-                inner: HostCall {
+            FuncInst::HostFunc(host_func_inst) => Resumable::Host(HostThing {
+                host_call: HostCall {
                     params,
                     hostcode: host_func_inst.hostcode,
                 },
-                finisher: HostCallFinisher {
+                host_resumable: HostResumable {
                     host_func_addr: func_addr,
+                    inner_resumable: None,
+                    maybe_fuel: Some(maybe_fuel),
                 },
-            },
+            }),
         };
 
         Ok(resumable)
+    }
+
+    /// Tries to resume the given [`Resumable`].
+    ///
+    /// Note: As [`Resumable`] is a enum type, it can also be deconstructed by
+    /// the user directly, removing the need to call this function.
+    ///
+    /// # Safety
+    ///
+    /// The given [`Resumable`] must come from the current [`Store`]. If the
+    /// [`Resumable`] was constructed by the user, it must contain a
+    /// [`WasmResumable`] or [`HostCall`] + [`HostResumable`] pair that came
+    /// from the current [`Store`].
+    // TODO the safety requirements on this function are a bit weird, because
+    // Resumable is an enum type, to which the user has full r/w access.
+    pub unsafe fn resume_unchecked(
+        &mut self,
+        resumable: Resumable,
+    ) -> Result<RunState, RuntimeError> {
+        match resumable {
+            Resumable::Wasm(wasm_resumable) => {
+                // SAFETY: The caller guarantees that this `WasmResumable` came
+                // from the current store.
+                unsafe { self.resume_wasm_unchecked(wasm_resumable) }
+            }
+            Resumable::Host(HostThing {
+                host_call,
+                host_resumable,
+            }) => Ok(RunState::HostCalled {
+                host_call,
+                resumable: host_resumable,
+            }),
+        }
     }
 
     /// Resumes the given [`WasmResumable`]. Returns a [`RunState`] that may contain
@@ -1344,7 +1362,7 @@ impl<'b, T: Config> Store<'b, T> {
     ///
     /// The caller has to guarantee that the [`Resumable`] came from the current
     /// [`Store`] object.
-    pub unsafe fn resume_unchecked(
+    pub unsafe fn resume_wasm_unchecked(
         &mut self,
         mut resumable: WasmResumable,
     ) -> Result<RunState, RuntimeError> {
@@ -1357,7 +1375,7 @@ impl<'b, T: Config> Store<'b, T> {
             },
             InterpreterLoopOutcome::OutOfFuel { required_fuel } => RunState::Resumable {
                 resumable,
-                required_fuel,
+                required_fuel: Some(required_fuel),
             },
             InterpreterLoopOutcome::HostCalled {
                 func_addr,
@@ -1366,10 +1384,9 @@ impl<'b, T: Config> Store<'b, T> {
             } => RunState::HostCalled {
                 host_call: HostCall { params, hostcode },
                 resumable: HostResumable {
-                    host_call_finisher: HostCallFinisher {
-                        host_func_addr: func_addr,
-                    },
-                    inner_resumable: resumable,
+                    host_func_addr: func_addr,
+                    inner_resumable: Some(resumable),
+                    maybe_fuel: None,
                 },
             },
         };
@@ -1381,19 +1398,19 @@ impl<'b, T: Config> Store<'b, T> {
     ///
     /// # Safety
     ///
-    /// The caller has to guarantee that the [`HostCallFinisher`] and all
+    /// The caller has to guarantee that the [`HostResumable`] and all
     /// addresses in the return values came from the current [`Store`] object.
-    pub unsafe fn finish_host_call_unchecked(
+    pub unsafe fn finish_host_call(
         &mut self,
-        host_call_finisher: HostCallFinisher,
+        host_resumable: HostResumable,
         host_call_return_values: Vec<Value>,
-    ) -> Result<Vec<Value>, RuntimeError> {
+    ) -> Result<RunState, RuntimeError> {
         // Verify that the return parameters match the host function parameters
         // since we have no validation guarantees for host functions
 
-        // SAFETY: The caller ensures that the `HostCallFinisher`, and thus also
+        // SAFETY: The caller ensures that the `HostResumable`, and thus also
         // the function address in it, is valid in the current store.
-        let function = unsafe { self.functions.get(host_call_finisher.host_func_addr) };
+        let function = unsafe { self.functions.get(host_resumable.host_func_addr) };
 
         let FuncInst::HostFunc(host_func_inst) = function else {
             unreachable!("expected function to be a host function instance")
@@ -1408,33 +1425,50 @@ impl<'b, T: Config> Store<'b, T> {
             return Err(RuntimeError::HostFunctionSignatureMismatch);
         }
 
-        Ok(host_call_return_values)
+        if let Some(mut wasm_resumable) = host_resumable.inner_resumable {
+            for return_value in host_call_return_values {
+                wasm_resumable.stack.push_value::<T>(return_value)?;
+            }
+
+            Ok(RunState::Resumable {
+                resumable: wasm_resumable,
+                required_fuel: None,
+            })
+        } else {
+            Ok(RunState::Finished {
+                values: host_call_return_values,
+                maybe_remaining_fuel: host_resumable
+                    .maybe_fuel
+                    .expect("this to be set if the inner WasmResumable is None"),
+            })
+        }
     }
 
+    /// Invokes a function without support for fuel or host functions.
+    ///
+    /// Useful for lightweight applications or testing.
+    ///
+    /// # Errors
+    ///
+    /// - [`RuntimeError::HostFunctionsDisabled`]
+    ///
     /// # Safety
     ///
-    /// The caller has to guarantee that the [`HostResumable`] and all addresses
-    /// in the return values come from the current [`Store`] object.
-    pub unsafe fn finish_host_call_into_resumable_unchecked(
+    /// The caller has to guarantee that the function address and any addresses
+    /// in the parameters came from the current store.
+    pub unsafe fn invoke_without_fuel_and_host_calls(
         &mut self,
-        host_resumable: HostResumable,
-        host_call_return_values: Vec<Value>,
-    ) -> Result<WasmResumable, RuntimeError> {
-        // SAFETY: The caller ensures that the host resumable, including the
-        // `HostCallFinisher` contained in it, and all addresses in the return
-        // values came from the current store.
-        let return_values = unsafe {
-            self.finish_host_call_unchecked(
-                host_resumable.host_call_finisher,
-                host_call_return_values,
-            )
-        }?;
-
-        let mut resumable = host_resumable.inner_resumable;
-        for value in return_values {
-            resumable.stack.push_value::<T>(value)?;
+        func_addr: FuncAddr,
+        params: Vec<Value>,
+    ) -> Result<Vec<Value>, RuntimeError> {
+        // SAFETY: The caller guarantees the function address and any addresses
+        // in the parameters to be valid in the current store.
+        let run_state = unsafe { self.invoke_unchecked(func_addr, params, None) }?;
+        match run_state {
+            RunState::Finished { values, .. } => Ok(values),
+            RunState::HostCalled { .. } => Err(RuntimeError::HostFunctionsDisabled),
+            RunState::Resumable { .. } => unreachable!("fuel was set to None"),
         }
-        Ok(resumable)
     }
 
     // /// Invokes a function without fuel.

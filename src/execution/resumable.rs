@@ -45,12 +45,6 @@ pub struct HostCall {
     pub hostcode: Hostcode,
 }
 
-/// An object used to finish the execution of host code of a [`HostCall`].
-#[derive(Debug, Clone)]
-pub struct HostCallFinisher {
-    pub(crate) host_func_addr: FuncAddr,
-}
-
 /// A [`HostResumable`] is used to resume execution after executing its
 /// [`HostCall`].
 ///
@@ -60,36 +54,22 @@ pub struct HostCallFinisher {
 /// to resume execution.
 #[derive(Debug)]
 pub struct HostResumable {
-    pub(crate) host_call_finisher: HostCallFinisher,
-    pub(crate) inner_resumable: WasmResumable,
+    pub(crate) host_func_addr: FuncAddr,
+    pub(crate) inner_resumable: Option<WasmResumable>,
+    /// this is only needed for when `inner_resumable` is `None`
+    pub(crate) maybe_fuel: Option<Option<u64>>,
 }
 
 #[derive(Debug)]
-pub enum CreateResumableOutcome {
-    Resumable(WasmResumable),
-    HostCall {
-        inner: HostCall,
-        finisher: HostCallFinisher,
-    },
+pub enum Resumable {
+    Wasm(WasmResumable),
+    Host(HostThing),
 }
 
-impl CreateResumableOutcome {
-    /// Tries to convert this [`CreateResumableOutcome`] into a [`WasmResumable`]
-    pub fn as_resumable(self) -> Option<WasmResumable> {
-        match self {
-            CreateResumableOutcome::Resumable(wasm_resumable) => Some(wasm_resumable),
-            CreateResumableOutcome::HostCall { .. } => None,
-        }
-    }
-
-    /// Tries to convert this [`CreateResumableOutcome`] into a [`HostCall`] and
-    /// its [`HostCallFinisher`].
-    pub fn as_host_call(self) -> Option<(HostCall, HostCallFinisher)> {
-        match self {
-            CreateResumableOutcome::Resumable(_) => None,
-            CreateResumableOutcome::HostCall { inner, finisher } => Some((inner, finisher)),
-        }
-    }
+#[derive(Debug)]
+pub struct HostThing {
+    pub(crate) host_call: HostCall,
+    pub(crate) host_resumable: HostResumable,
 }
 
 /// Represents the state of a possibly interrupted resumable.
@@ -101,10 +81,10 @@ pub enum RunState {
         maybe_remaining_fuel: Option<u64>,
     },
     /// represents a resumable that has ran out of fuel during execution, missing at least `required_fuel` units of fuel
-    /// to continue further execution.
+    /// to continue further execution (this is None if unknown).
     Resumable {
         resumable: WasmResumable,
-        required_fuel: NonZeroU64,
+        required_fuel: Option<NonZeroU64>,
     },
     /// A host function was called by Wasm code. Use the [`HostCall`] to execute
     /// the host function and resume execution using the [`HostResumable`] and

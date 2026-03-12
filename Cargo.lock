@@ -1496,6 +1496,7 @@ dependencies = [
  "itertools 0.14.0",
  "lazy_static",
  "libm",
+ "linker",
  "log",
  "log_wrapper",
  "regex",

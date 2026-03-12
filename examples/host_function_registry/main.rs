@@ -1,8 +1,4 @@
-use wasm::{
-    checked::{StoredExternVal, StoredResumableOrHostCall, StoredRunState, StoredValue},
-    linker::Linker,
-    Store,
-};
+use checked::{Linker, Store, StoredExternVal, StoredRunState, StoredValue};
 
 use crate::registry::Registry;
 
@@ -38,6 +34,7 @@ fn main() {
     let module = linker
         .module_instantiate(&mut store, &validation_info, None)
         .unwrap()
+        .unwrap()
         .module_addr;
 
     // Find the exported function of our module
@@ -48,7 +45,7 @@ fn main() {
         .unwrap();
 
     // Create a resumable
-    let StoredResumableOrHostCall::Resumable(resumable) = store
+    let resumable = store
         .create_resumable(
             mul_then_add,
             vec![
@@ -56,28 +53,26 @@ fn main() {
                 StoredValue::I32(4),
                 StoredValue::I32(5),
             ],
-            None,
+            Some(1),
         )
-        .unwrap()
-    else {
-        unreachable!("expected mul_then_add to be a Wasm function")
-    };
+        .unwrap();
 
-    let mut resumable = resumable;
+    // Run until finished, keep re-fueling when fuel runs out and forward host
+    // calls to the registry.
+    let mut run_state = store.resume(resumable).unwrap();
     let values = loop {
-        match store.resume(resumable).unwrap() {
+        match run_state {
             StoredRunState::Finished { values, .. } => break values,
-            StoredRunState::Resumable { .. } => unreachable!("fuel is disabled"),
+            StoredRunState::Resumable { mut resumable, .. } => {
+                if let Some(fuel) = resumable.fuel_mut() {
+                    *fuel += 2;
+                }
+                run_state = store.resume_wasm(resumable).unwrap();
+            }
             StoredRunState::HostCalled {
                 host_call,
                 resumable: host_resumable,
-            } => {
-                resumable = registry.perform_host_call_into_resumable(
-                    &mut store,
-                    host_call,
-                    host_resumable,
-                );
-            }
+            } => run_state = registry.perform_host_call(&mut store, host_call, host_resumable),
         }
     };
 

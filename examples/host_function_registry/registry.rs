@@ -1,12 +1,7 @@
 use std::collections::HashMap;
 
-use wasm::{
-    addrs::FuncAddr,
-    checked::{Stored, StoredHostCall, StoredInteropValueList, StoredValue},
-    config::Config,
-    resumable::{HostResumable, WasmResumable},
-    FuncType, ResultType, Store,
-};
+use checked::{Store, Stored, StoredHostCall, StoredInteropValueList, StoredRunState, StoredValue};
+use wasm::{addrs::FuncAddr, config::Config, resumable::HostResumable, FuncType, ResultType};
 
 /// A registry for boxed dynamically-dispatched host functions.
 #[derive(Default)]
@@ -58,18 +53,16 @@ impl Registry {
         })
     }
 
-    pub fn perform_host_call_into_resumable<T: Config>(
+    pub fn perform_host_call<T: Config>(
         &self,
         store: &mut Store<T>,
         host_call: StoredHostCall,
         host_resumable: Stored<HostResumable>,
-    ) -> Stored<WasmResumable> {
+    ) -> StoredRunState {
         let host_function = self.host_functions.get(&host_call.hostcode).unwrap();
 
         let returns = host_function(host_call.params);
 
-        store
-            .finish_host_call_into_resumable(host_resumable, returns)
-            .unwrap()
+        store.finish_host_call(host_resumable, returns).unwrap()
     }
 }

@@ -33,6 +33,9 @@ pub enum RuntimeError {
     DuplicateExternDefinition,
     /// A function was invoked with incorrect parameters or return types.
     FunctionInvocationSignatureMismatch,
+    /// A host function was called and the current type of invocation does not
+    /// support them
+    HostFunctionsDisabled,
 }
 
 impl Display for RuntimeError {
@@ -83,6 +86,9 @@ impl Display for RuntimeError {
             }
             RuntimeError::FunctionInvocationSignatureMismatch => {
                 f.write_str("A function was invoked with incorrect parameters or return types")
+            }
+            RuntimeError::HostFunctionsDisabled => {
+                f.write_str("A host function was called and the current type of invocation does not support them")
             }
         }
     }

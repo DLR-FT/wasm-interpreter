@@ -1,9 +1,9 @@
 use alloc::{string::String, vec::Vec};
 use wasm::{
-    FuncType, GlobalType, Hostcode, MemType, RuntimeError, TableType, ValidationInfo, Value,
+    FuncType, GlobalType, Hostcode, MemType, RuntimeError, TableType, ValidationInfo,
     addrs::{FuncAddr, GlobalAddr, MemAddr, ModuleAddr, TableAddr},
     config::Config,
-    resumable::{HostCallFinisher, HostResumable, WasmResumable},
+    resumable::{HostResumable, WasmResumable},
 };
 
 use crate::{
@@ -396,7 +396,7 @@ impl<'b, T: Config> Store<'b, T> {
         func_addr: Stored<FuncAddr>,
         params: Vec<StoredValue>,
         maybe_fuel: Option<u64>,
-    ) -> Result<StoredResumable<T>, RuntimeError> {
+    ) -> Result<StoredResumable, RuntimeError> {
         // 1. try unwrap
         let func_addr = func_addr.try_unwrap_into_bare(self.id);
         let params = params.try_unwrap_into_bare(self.id);
@@ -416,16 +416,31 @@ impl<'b, T: Config> Store<'b, T> {
     }
 
     /// This is a safe variant of [`Store::resume_unchecked`](wasm::Store::resume_unchecked).
-    pub fn resume(
-        &mut self,
-        resumable: Stored<WasmResumable>,
-    ) -> Result<StoredRunState, RuntimeError> {
+    pub fn resume(&mut self, resumable: StoredResumable) -> Result<StoredRunState, RuntimeError> {
         // 1. try unwrap
         let resumable = resumable.try_unwrap_into_bare(self.id);
         // 2. call
-        // SAFETY: It was just checked that the `WasmResumable` came from the
+        // SAFETY: It was just checked that the `Resumable` came from the
         // current store through its store id.
         let run_state = unsafe { self.inner.resume_unchecked(resumable) }?;
+        // 3. rewrap
+        // SAFETY: The `RunState` just came from the current store.
+        let stored_run_state = unsafe { StoredRunState::from_bare(run_state, self.id) };
+        // 4. return
+        Ok(stored_run_state)
+    }
+
+    /// This is a safe variant of [`Store::resume_wasm_unchecked`](wasm::Store::resume_wasm_unchecked).
+    pub fn resume_wasm(
+        &mut self,
+        wasm_resumable: Stored<WasmResumable>,
+    ) -> Result<StoredRunState, RuntimeError> {
+        // 1. try unwrap
+        let wasm_resumable = wasm_resumable.try_unwrap_into_bare(self.id);
+        // 2. call
+        // SAFETY: It was just checked that the `WasmResumable` came from the
+        // current store through its store id.
+        let run_state = unsafe { self.inner.resume_wasm_unchecked(wasm_resumable) }?;
         // 3. rewrap
         // SAFETY: The `RunState` just came from the current store.
         let stored_run_state = unsafe { StoredRunState::from_bare(run_state, self.id) };
@@ -437,47 +452,25 @@ impl<'b, T: Config> Store<'b, T> {
     /// [`Store::finish_host_call_unchecked`](wasm::Store::finish_host_call_unchecked).
     pub fn finish_host_call(
         &mut self,
-        host_call_finisher: Stored<HostCallFinisher>,
-        host_call_return_values: Vec<StoredValue>,
-    ) -> Result<Vec<StoredValue>, RuntimeError> {
-        // 1. try unwrap
-        let host_call_finisher = host_call_finisher.try_unwrap_into_bare(self.id);
-        let host_call_return_values = host_call_return_values.try_unwrap_into_bare(self.id);
-        // 2. call
-        // SAFETY: It was just checked that the `HostCallFinisher` and all
-        // `Value`s came from the current store through their store ids.
-        let return_values = unsafe {
-            self.inner
-                .finish_host_call_unchecked(host_call_finisher, host_call_return_values)
-        }?;
-        // 3. rewrap
-        // SAFETY: The `Value`s just came from the current store.
-        let stored_return_values = unsafe { Vec::from_bare(return_values, self.id) };
-        // 4. return
-        Ok(stored_return_values)
-    }
-
-    /// This is a safe variant of [`Store::finish_host_call_into_resumable_unchecked`](wasm::Store::finish_host_call_into_resumable_unchecked)
-    pub unsafe fn finish_host_call_into_resumable(
-        &mut self,
         host_resumable: Stored<HostResumable>,
         host_call_return_values: Vec<StoredValue>,
-    ) -> Result<Stored<WasmResumable>, RuntimeError> {
+    ) -> Result<StoredRunState, RuntimeError> {
         // 1. try unwrap
         let host_resumable = host_resumable.try_unwrap_into_bare(self.id);
         let host_call_return_values = host_call_return_values.try_unwrap_into_bare(self.id);
         // 2. call
-        // SAFETY: It was just checked that the `HostResumable` and all `Value`s
-        // came from the current store through their store ids.
-        let resumable = unsafe {
+        // SAFETY: It was just checked that the `HostResumable` and all
+        // addresses contained in the return values are valid in the current
+        // store through their store ids.
+        let run_state = unsafe {
             self.inner
-                .finish_host_call_into_resumable_unchecked(host_resumable, host_call_return_values)
+                .finish_host_call(host_resumable, host_call_return_values)
         }?;
         // 3. rewrap
-        // SAFETY: The `WasmResumable` just came from the current store.
-        let stored_resumable = unsafe { Stored::from_bare(resumable, self.id) };
+        // SAFETY: The `RunState` just came from the current store.
+        let stored_run_state = unsafe { StoredRunState::from_bare(run_state, self.id) };
         // 4. return
-        Ok(stored_resumable)
+        Ok(stored_run_state)
     }
 
     // /// This is a safe variant of [`Store::invoke_without_fuel_unchecked`](crate::Store::invoke_without_fuel_unchecked).

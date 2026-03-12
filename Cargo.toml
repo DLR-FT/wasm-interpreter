@@ -50,6 +50,7 @@ log_wrapper.path = "crates/log_wrapper"
 [dev-dependencies]
 checked = { workspace = true, features = ["linker", "interop"] }
 interop.workspace = true
+linker.workspace = true
 
 bumpalo = "3.17.0"
 env_logger = { workspace = true }
