@@ -106,7 +106,7 @@ impl Linker {
     ///
     /// It is guaranteed that the address contained by the returned
     /// [`ExternVal`] is part of the [`Store`] used with this [`Linker`].
-    pub fn get_unchecked(&self, module_name: String, name: String) -> Option<ExternVal> {
+    pub fn get(&self, module_name: String, name: String) -> Option<ExternVal> {
         self.extern_vals
             .get(&ImportKey { module_name, name })
             .copied()
@@ -120,19 +120,15 @@ impl Linker {
     /// This method does not perform type checking on the extern values.
     /// Therefore, using the returned list of extern values may still fail when
     /// trying to instantiate a module with it.
-    ///
-    /// # Safety
-    /// It must be guaranteed that this [`Linker`] is only ever used with one
-    /// specific [`Store`].
     // TODO find a better name for this method? Maybe something like `link`?
-    pub fn instantiate_pre_unchecked(
+    pub fn instantiate_pre(
         &self,
         validation_info: &ValidationInfo,
     ) -> Result<Vec<ExternVal>, RuntimeError> {
         validation_info
             .imports()
             .map(|(module_name, name, _desc)| {
-                self.get_unchecked(module_name.to_owned(), name.to_owned())
+                self.get(module_name.to_owned(), name.to_owned())
                     .ok_or(RuntimeError::UnableToResolveExternLookup)
             })
             .collect()
@@ -152,7 +148,7 @@ impl Linker {
     ) -> Result<InstantiationOutcome, RuntimeError> {
         store.module_instantiate_unchecked(
             validation_info,
-            self.instantiate_pre_unchecked(validation_info)?,
+            self.instantiate_pre(validation_info)?,
             maybe_fuel,
         )
     }
