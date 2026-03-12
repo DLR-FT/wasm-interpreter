@@ -1,5 +1,6 @@
 use std::sync::mpsc::Sender;
 
+use interop::StoreTypedInvocationExt;
 use wasm::{config::Config, HaltExecutionError, Store, Value};
 
 #[test_log::test]

@@ -1,7 +1,8 @@
 use log::info;
 
+use interop::{host_function_wrapper, StoreTypedInvocationExt};
 use wasm::{
-    host_function_wrapper, validate,
+    validate,
     value::{F32, F64},
     ExternVal, HaltExecutionError, RuntimeError, Store, Value,
 };

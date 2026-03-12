@@ -24,9 +24,7 @@ use core::{cmp::Ordering, marker::PhantomData};
 use alloc::vec::Vec;
 
 /// A trait for all address types.
-///
-/// This is used by [`AddrVec`] to create and read address types.
-pub(crate) trait Addr: Copy + core::fmt::Debug + core::fmt::Display + Eq {
+pub trait Addr: Copy + core::fmt::Debug + core::fmt::Display + Eq {
     fn new(inner: usize) -> Self;
 
     fn into_inner(self) -> usize;
