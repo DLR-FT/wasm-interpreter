@@ -3,6 +3,7 @@
 members = [
   "crates/benchmark",
   "crates/compare-testsuite-rs",
+  "crates/lib-wasm-coverage",
   "crates/log_wrapper",
 ]
 resolver = "2"
