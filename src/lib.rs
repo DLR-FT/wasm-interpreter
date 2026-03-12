@@ -12,8 +12,8 @@ extern crate log_wrapper;
 pub use core::error::ValidationError;
 pub use core::reader::types::opcode as opcodes;
 pub use core::reader::types::{
-    global::GlobalType, ExternType, FuncType, Limits, MemType, NumType, RefType, ResultType,
-    TableType, ValType,
+    global::GlobalType, opcode, ExternType, FuncType, Limits, MemType, NumType, RefType,
+    ResultType, TableType, ValType,
 };
 pub use core::rw_spinlock;
 pub use execution::error::{RuntimeError, TrapError};
