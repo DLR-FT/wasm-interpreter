@@ -32,15 +32,18 @@ use core::sync::atomic::{AtomicU64, Ordering};
 
 use alloc::vec::Vec;
 
-mod interop;
 mod store;
 mod stored_types;
 mod value;
 
-pub use interop::*;
 pub use store::*;
 pub use stored_types::*;
 pub use value::*;
+
+#[cfg(feature = "interop")]
+mod interop;
+#[cfg(feature = "interop")]
+pub use interop::*;
 
 #[cfg(feature = "linker")]
 mod linker;

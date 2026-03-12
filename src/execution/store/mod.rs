@@ -10,9 +10,7 @@ use crate::core::reader::types::data::{DataModeActive, DataSegment};
 use crate::core::reader::types::element::{ActiveElem, ElemItems, ElemMode, ElemType};
 use crate::core::reader::types::export::ExportDesc;
 use crate::core::reader::types::global::GlobalType;
-use crate::core::reader::types::{
-    ExternType, FuncType, ImportSubTypeRelation, MemType, ResultType, TableType,
-};
+use crate::core::reader::types::{ExternType, FuncType, ImportSubTypeRelation, MemType, TableType};
 use crate::core::reader::WasmReader;
 use crate::core::utils::ToUsizeExt;
 use crate::execution::interpreter_loop::{self, memory_init, table_init};
@@ -31,9 +29,7 @@ use instances::{
 };
 use linear_memory::LinearMemory;
 
-use super::interop::InteropValueList;
 use super::interpreter_loop::{data_drop, elem_drop};
-use super::value::ValueTypeMismatchError;
 use super::UnwrapValidatedExt;
 
 pub mod addrs;
@@ -1385,34 +1381,6 @@ impl<'b, T: Config> Store<'b, T> {
         }
     }
 
-    /// Allocates a new function with a statically known type signature with some host code.
-    ///
-    /// This function is simply syntactic sugar for calling
-    /// [`Store::func_alloc_unchecked`] with statically know types.
-    ///
-    /// # Safety
-    ///
-    /// Same as [`Store::func_alloc_unchecked`].
-    pub unsafe fn func_alloc_typed_unchecked<
-        Params: InteropValueList,
-        Returns: InteropValueList,
-    >(
-        &mut self,
-        host_func: fn(&mut T, Vec<Value>) -> Result<Vec<Value>, HaltExecutionError>,
-    ) -> FuncAddr {
-        let func_type = FuncType {
-            params: ResultType {
-                valtypes: Vec::from(Params::TYS),
-            },
-            returns: ResultType {
-                valtypes: Vec::from(Returns::TYS),
-            },
-        };
-        // SAFETY: The caller makes the same safety guarantees that are required
-        // by this function.
-        unsafe { self.func_alloc_unchecked(func_type, host_func) }
-    }
-
     /// Invokes a function without fuel.
     ///
     /// This function is simply syntactic sugar for calling
@@ -1442,36 +1410,6 @@ impl<'b, T: Config> Store<'b, T> {
             } => Ok(values),
             RunState::Resumable { .. } => unreachable!("fuel is disabled"),
         }
-    }
-
-    /// Invokes a function with a statically known type signature without fuel.
-    ///
-    /// This function is simply syntactic sugar for calling
-    /// [`Store::invoke_unchecked`] without any fuel and destructuring the
-    /// resulting [`RunState`] with statically known types.
-    ///
-    /// # Safety
-    ///
-    /// The caller has to guarantee that the given [`FuncAddr`] and any
-    /// [`FuncAddr`] or [`ExternAddr`](crate::execution::value::ExternAddr)
-    /// values contained in the parameter values came from the current [`Store`]
-    /// object.
-    pub unsafe fn invoke_typed_without_fuel_unchecked<
-        Params: InteropValueList,
-        Returns: InteropValueList,
-    >(
-        &mut self,
-        function: FuncAddr,
-        params: Params,
-    ) -> Result<Returns, RuntimeError> {
-        // SAFETY: The caller ensures that the given function address and all
-        // address types contained in the parameters are valid in the current
-        // store.
-        let return_values =
-            unsafe { self.invoke_without_fuel_unchecked(function, params.into_values()) }?;
-
-        Returns::try_from_values(return_values.into_iter())
-            .map_err(|ValueTypeMismatchError| RuntimeError::FunctionInvocationSignatureMismatch)
     }
 
     /// Allows a given closure to temporarily access the entire memory as a

@@ -4,6 +4,7 @@ members = [
   "crates/benchmark",
   "crates/checked",
   "crates/compare-testsuite-rs",
+  "crates/interop",
   "crates/linker",
   "crates/log_wrapper",
 ]
@@ -11,6 +12,7 @@ resolver = "2"
 
 [workspace.dependencies]
 checked = { path = "crates/checked" }
+interop = { path = "crates/interop" }
 linker = { path = "crates/linker" }
 wasm-interpreter = { path = "." }
 
@@ -46,7 +48,8 @@ libm = "=0.2.8"
 log_wrapper.path = "crates/log_wrapper"
 
 [dev-dependencies]
-checked = { workspace = true, features = ["linker"] }
+checked = { workspace = true, features = ["linker", "interop"] }
+interop.workspace = true
 
 bumpalo = "3.17.0"
 env_logger = { workspace = true }
