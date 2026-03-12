@@ -4,7 +4,7 @@ use std::str::FromStr;
 
 use log::{error, LevelFilter};
 
-use wasm::{validate, Store};
+use wasm::{checked::Store, validate};
 
 fn main() -> ExitCode {
     let level = LevelFilter::from_str(&env::var("RUST_LOG").unwrap_or("TRACE".to_owned())).unwrap();
@@ -30,9 +30,6 @@ fn main() -> ExitCode {
         (func (export "load_num") (result i32)
             i32.const 0
             i32.load)
-
-        (export "add_one" (func $add_one))
-        (export "add" (func $add))
     )
     "#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
@@ -47,7 +44,7 @@ fn main() -> ExitCode {
 
     let mut store = Store::new(());
 
-    let module = match store.module_instantiate_unchecked(&validation_info, Vec::new(), None) {
+    let module = match store.module_instantiate(&validation_info, Vec::new(), None) {
         Ok(outcome) => outcome.module_addr,
         Err(err) => {
             error!("Instantiation failed: {err:?} [{err}]");
@@ -56,46 +53,42 @@ fn main() -> ExitCode {
     };
 
     let add_one = store
-        .instance_export_unchecked(module, "add_one")
+        .instance_export(module, "add_one")
         .unwrap()
         .as_func()
         .unwrap();
 
     let add = store
-        .instance_export_unchecked(module, "add")
+        .instance_export(module, "add")
         .unwrap()
         .as_func()
         .unwrap();
 
     let store_num = store
-        .instance_export_unchecked(module, "store_num")
+        .instance_export(module, "store_num")
         .unwrap()
         .as_func()
         .unwrap();
 
     let load_num = store
-        .instance_export_unchecked(module, "load_num")
+        .instance_export(module, "load_num")
         .unwrap()
         .as_func()
         .unwrap();
 
-    let twelve: i32 = store
-        .invoke_typed_without_fuel_unchecked(add, (5, 7))
-        .unwrap();
+    let twelve: i32 = store.invoke_typed_without_fuel(add, (5, 7)).unwrap();
     assert_eq!(twelve, 12);
 
-    let twelve_plus_one: i32 = store
-        .invoke_typed_without_fuel_unchecked(add_one, twelve)
-        .unwrap();
+    let twelve_plus_one: i32 = store.invoke_typed_without_fuel(add_one, twelve).unwrap();
     assert_eq!(twelve_plus_one, 13);
 
     store
-        .invoke_typed_without_fuel_unchecked::<_, ()>(store_num, 42_i32)
+        .invoke_typed_without_fuel::<_, ()>(store_num, 42_i32)
         .unwrap();
 
     assert_eq!(
         store
-            .invoke_typed_without_fuel_unchecked::<(), i32>(load_num, ())
+            .invoke_typed_without_fuel::<(), i32>(load_num, ())
             .unwrap(),
         42_i32
     );
