@@ -373,7 +373,7 @@ mod tests {
 
     #[test]
     fn roundtrip_single_ref_func() {
-        let rust_value: RefFunc = RefFunc(Some(FuncAddr::new_unchecked(0)));
+        let rust_value: RefFunc = RefFunc(Some(FuncAddr::new(0)));
         let wasm_value: Value = rust_value.into();
         assert_eq!(wasm_value.try_into(), err::<u32>());
         assert_eq!(wasm_value.try_into(), err::<i32>());
@@ -453,7 +453,7 @@ mod tests {
 
     #[test]
     fn roundtrip_list2() {
-        let rust_values: (f32, RefFunc) = (3.0, RefFunc(Some(FuncAddr::new_unchecked(0))));
+        let rust_values: (f32, RefFunc) = (3.0, RefFunc(Some(FuncAddr::new(0))));
         let wasm_values: Vec<Value> = rust_values.into_values();
         let roundtrip_rust_values = InteropValueList::try_from_values(wasm_values.into_iter());
         assert_eq!(roundtrip_rust_values, Ok(rust_values));

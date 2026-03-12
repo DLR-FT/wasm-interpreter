@@ -27,7 +27,7 @@ use alloc::vec::Vec;
 ///
 /// This is used by [`AddrVec`] to create and read address types.
 pub(crate) trait Addr: Copy + core::fmt::Debug + core::fmt::Display + Eq {
-    fn new_unchecked(inner: usize) -> Self;
+    fn new(inner: usize) -> Self;
 
     fn into_inner(self) -> usize;
 }
@@ -67,7 +67,7 @@ impl<A: Addr, Inst> AddrVec<A, Inst> {
     pub(crate) fn insert(&mut self, instance: Inst) -> A {
         let new_addr = self.inner.len();
         self.inner.push(instance);
-        A::new_unchecked(new_addr)
+        A::new(new_addr)
     }
 
     /// Mutably borrows two instances by their addresses and returns those
@@ -120,7 +120,7 @@ impl core::fmt::Display for FuncAddr {
 }
 
 impl Addr for FuncAddr {
-    fn new_unchecked(inner: usize) -> Self {
+    fn new(inner: usize) -> Self {
         Self(inner)
     }
 
@@ -140,7 +140,7 @@ impl core::fmt::Display for TableAddr {
 }
 
 impl Addr for TableAddr {
-    fn new_unchecked(inner: usize) -> Self {
+    fn new(inner: usize) -> Self {
         Self(inner)
     }
 
@@ -160,7 +160,7 @@ impl core::fmt::Display for MemAddr {
 }
 
 impl Addr for MemAddr {
-    fn new_unchecked(inner: usize) -> Self {
+    fn new(inner: usize) -> Self {
         Self(inner)
     }
 
@@ -180,7 +180,7 @@ impl core::fmt::Display for GlobalAddr {
 }
 
 impl Addr for GlobalAddr {
-    fn new_unchecked(inner: usize) -> Self {
+    fn new(inner: usize) -> Self {
         Self(inner)
     }
 
@@ -201,7 +201,7 @@ impl core::fmt::Display for ElemAddr {
 }
 
 impl Addr for ElemAddr {
-    fn new_unchecked(inner: usize) -> Self {
+    fn new(inner: usize) -> Self {
         Self(inner)
     }
 
@@ -221,7 +221,7 @@ impl core::fmt::Display for DataAddr {
 }
 
 impl Addr for DataAddr {
-    fn new_unchecked(inner: usize) -> Self {
+    fn new(inner: usize) -> Self {
         Self(inner)
     }
 
@@ -241,7 +241,7 @@ impl core::fmt::Display for ModuleAddr {
 }
 
 impl Addr for ModuleAddr {
-    fn new_unchecked(inner: usize) -> Self {
+    fn new(inner: usize) -> Self {
         Self(inner)
     }
 
