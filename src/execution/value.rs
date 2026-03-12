@@ -590,7 +590,7 @@ mod test {
     #[test]
     fn display_ref() {
         assert_eq!(
-            Ref::Func(FuncAddr::new_unchecked(11)).to_string(),
+            Ref::Func(FuncAddr::new(11)).to_string(),
             "FuncRef(FuncAddr(11))"
         );
         assert_eq!(
