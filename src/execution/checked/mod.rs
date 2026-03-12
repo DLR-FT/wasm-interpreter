@@ -597,7 +597,7 @@ impl Linker {
         Ok(())
     }
 
-    /// This is a safe variant of [`Linker::get_unchecked`](crate::linker::Linker::get_unchecked).
+    /// This is a variant of [`Linker::get`](crate::linker::Linker::get).
     ///
     /// # Interaction with unchecked API
     ///
@@ -638,7 +638,7 @@ impl Linker {
         // 3. call
         let extern_val = self
             .inner
-            .get_unchecked(module_name, name)
+            .get(module_name, name)
             .ok_or(RuntimeError::UnableToResolveExternLookup)?;
         // 4. rewrap
         // SAFETY: The `ExternVal` just came from the current `Linker`. Because
@@ -649,7 +649,7 @@ impl Linker {
         Ok(stored_extern_val)
     }
 
-    /// This is a safe variant of [`Linker::instantiate_pre_unchecked`](crate::linker::Linker::instantiate_pre_unchecked).
+    /// This is a variant of [`Linker::instantiate_pre`](crate::linker::Linker::instantiate_pre).
     ///
     /// # Interaction with unchecked API
     ///
@@ -679,7 +679,7 @@ impl Linker {
         // 2. try unwrap
         // no stored parameters
         // 3. call
-        let extern_vals = self.inner.instantiate_pre_unchecked(validation_info)?;
+        let extern_vals = self.inner.instantiate_pre(validation_info)?;
         // 4. rewrap
         // SAFETY: All `ExternVal`s just came from the current `Linker`. Because
         // a Linker can always be used with only one unique `Store`, all
