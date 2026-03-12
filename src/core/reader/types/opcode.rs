@@ -206,7 +206,6 @@ pub mod fc_extensions {
     pub const TABLE_FILL: u32 = 0x11;
 }
 
-#[cfg(debug_assertions)]
 pub fn fc_extension_opcode_to_str(instr: u32) -> alloc::borrow::Cow<'static, str> {
     match instr {
         0x00 => "I32_TRUNC_SAT_F32_S",
@@ -508,7 +507,6 @@ pub mod fd_extensions {
     pub const F64X2_CONVERT_LOW_I32X4_U: u32 = 255;
 }
 
-#[cfg(debug_assertions)]
 pub fn fd_extension_opcode_to_str(instr: u32) -> alloc::borrow::Cow<'static, str> {
     use fd_extensions::*;
 
@@ -771,7 +769,6 @@ pub fn fd_extension_opcode_to_str(instr: u32) -> alloc::borrow::Cow<'static, str
     .into()
 }
 
-#[cfg(debug_assertions)]
 pub fn opcode_byte_to_str(byte: u8) -> alloc::borrow::Cow<'static, str> {
     match byte {
         UNREACHABLE => "UNREACHABLE",
