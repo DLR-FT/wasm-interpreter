@@ -52,10 +52,10 @@ macro_rules! bench_wasm {
             let mut store = Store::new(());
             // SAFETY: Only one store is used. Therefore, this must always be
             // the correct one.
-            let module = unsafe { store.module_instantiate_unchecked(&our_validation_info, Vec::new(), None) }.unwrap().module_addr;
+            let module = unsafe { store.module_instantiate(&our_validation_info, Vec::new(), None) }.unwrap().module_addr;
             // SAFETY: Only one store is used. Therefore, this must always be
             // the correct one.
-            let our_fn = unsafe { store.instance_export_unchecked(module, $entry_function) }
+            let our_fn = unsafe { store.instance_export(module, $entry_function) }
                 .unwrap()
                 .as_func()
                 .unwrap();
@@ -130,7 +130,7 @@ macro_rules! bench_wasm {
                     b.iter(|| {
                         // SAFETY: Only one store is used. Therefore, this must always be
                         // the correct one.
-                        unsafe { store.invoke_typed_without_fuel_unchecked::<$arg_type, $return_type>(our_fn, s) }.unwrap();
+                        unsafe { store.invoke_typed_without_fuel::<$arg_type, $return_type>(our_fn, s) }.unwrap();
                     })
                 });
             }

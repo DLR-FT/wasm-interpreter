@@ -56,7 +56,7 @@ impl Linker {
         // 3. call
         // SAFETY: It was just checked that the `ExternVal` came from the store
         // with the same id that is cached in the current linker instance.
-        unsafe { self.inner.define_unchecked(module_name, name, extern_val) }?;
+        unsafe { self.inner.define(module_name, name, extern_val) }?;
         // 4. rewrap
         // result is the unit type.
         // 5. return
@@ -84,7 +84,7 @@ impl Linker {
         // with the same id that is cached in the current linker instance.
         unsafe {
             self.inner
-                .define_module_instance_unchecked(store.inner(), module_name, module)
+                .define_module_instance(store.inner(), module_name, module)
         }?;
         // 4. rewrap
         // result is the unit type.
@@ -161,7 +161,7 @@ impl Linker {
         // with the same id that is cached in the current linker instance.
         let instantiation_outcome = match unsafe {
             self.inner
-                .module_instantiate_unchecked(&mut store.inner, validation_info, maybe_fuel)
+                .module_instantiate(&mut store.inner, validation_info, maybe_fuel)
         } {
             Some(Ok(instantiation_outcome)) => instantiation_outcome,
             Some(Err(err)) => return Some(Err(err)),

@@ -77,7 +77,7 @@ impl Linker {
     ///
     /// It must be made sure that this [`Linker`] is only used with one specific
     /// [`Store`] and addresses that belong to that store.
-    pub unsafe fn define_unchecked(
+    pub unsafe fn define(
         &mut self,
         module_name: String,
         name: String,
@@ -100,7 +100,7 @@ impl Linker {
     /// It must be guaranteed that this [`Linker`] is only ever used with one
     /// specific [`Store`] and that the given [`ModuleAddr`] is valid in this
     /// store.
-    pub unsafe fn define_module_instance_unchecked<T: Config>(
+    pub unsafe fn define_module_instance<T: Config>(
         &mut self,
         store: &Store<T>,
         module_name: String,
@@ -108,12 +108,12 @@ impl Linker {
     ) -> Result<(), RuntimeError> {
         // SAFETY: The caller ensures that the given module address is valid in
         // the given store.
-        let module_exports = unsafe { store.instance_exports_unchecked(module) };
+        let module_exports = unsafe { store.instance_exports(module) };
         for export in module_exports {
             // SAFETY: The module and thus also its exported extern values come
             // from the same store used now. Therefore, the extern values must
             // be valid in this store.
-            unsafe { self.define_unchecked(module_name.clone(), export.0, export.1)? };
+            unsafe { self.define(module_name.clone(), export.0, export.1)? };
         }
 
         Ok(())
@@ -153,7 +153,7 @@ impl Linker {
     ///
     /// It must be guaranteed that this [`Linker`] is only ever used with one
     /// specific [`Store`].
-    pub unsafe fn module_instantiate_unchecked<'b, T: Config>(
+    pub unsafe fn module_instantiate<'b, T: Config>(
         &self,
         store: &mut Store<'b, T>,
         validation_info: &ValidationInfo<'b>,
@@ -166,8 +166,7 @@ impl Linker {
             // values in `instantiate_pre` must be from the same store that is
             // passed now. Thus, using them as imports for module instantiation is
             // sound.
-            unsafe { store.module_instantiate_unchecked(validation_info, instantiate_pre, maybe_fuel) }
-        )
+            unsafe { store.module_instantiate(validation_info, instantiate_pre, maybe_fuel) })
     }
 }
 
