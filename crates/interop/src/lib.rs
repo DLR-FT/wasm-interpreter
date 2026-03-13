@@ -541,7 +541,7 @@ mod tests {
 /// fn main() {
 ///     let mut store = Store::new(());
 ///     // SAFETY: Parameters and result types do not contain address types.
-///     let foo_bar = unsafe { store.func_alloc_typed_unchecked::<(u32, i32), u32>(my_wrapped_host_func) };
+///     let foo_bar = unsafe { store.func_alloc_typed::<(u32, i32), u32>(my_wrapped_host_func) };
 /// }
 /// ```
 pub fn host_function_wrapper<Params: InteropValueList, Results: InteropValueList>(
@@ -561,8 +561,8 @@ pub trait StoreTypedInvocationExt<T: Config> {
     ///
     /// # Safety
     ///
-    /// Same as [`Store::func_alloc_unchecked`].
-    unsafe fn func_alloc_typed_unchecked<Params: InteropValueList, Returns: InteropValueList>(
+    /// Same as [`Store::func_alloc`].
+    unsafe fn func_alloc_typed<Params: InteropValueList, Returns: InteropValueList>(
         &mut self,
         host_func: fn(&mut T, Vec<Value>) -> Result<Vec<Value>, HaltExecutionError>,
     ) -> FuncAddr;
@@ -578,10 +578,7 @@ pub trait StoreTypedInvocationExt<T: Config> {
     /// The caller has to guarantee that the given [`FuncAddr`] and any
     /// [`FuncAddr`] or [`ExternAddr`] values contained in the parameter values
     /// came from the current [`Store`] object.
-    unsafe fn invoke_typed_without_fuel_unchecked<
-        Params: InteropValueList,
-        Returns: InteropValueList,
-    >(
+    unsafe fn invoke_typed_without_fuel<Params: InteropValueList, Returns: InteropValueList>(
         &mut self,
         function: FuncAddr,
         params: Params,
@@ -589,7 +586,7 @@ pub trait StoreTypedInvocationExt<T: Config> {
 }
 
 impl<T: Config> StoreTypedInvocationExt<T> for Store<'_, T> {
-    unsafe fn func_alloc_typed_unchecked<Params: InteropValueList, Returns: InteropValueList>(
+    unsafe fn func_alloc_typed<Params: InteropValueList, Returns: InteropValueList>(
         &mut self,
         host_func: fn(&mut T, Vec<Value>) -> Result<Vec<Value>, HaltExecutionError>,
     ) -> FuncAddr {
@@ -603,13 +600,10 @@ impl<T: Config> StoreTypedInvocationExt<T> for Store<'_, T> {
         };
         // SAFETY: The caller makes the same safety guarantees that are required
         // by this function.
-        unsafe { self.func_alloc_unchecked(func_type, host_func) }
+        unsafe { self.func_alloc(func_type, host_func) }
     }
 
-    unsafe fn invoke_typed_without_fuel_unchecked<
-        Params: InteropValueList,
-        Returns: InteropValueList,
-    >(
+    unsafe fn invoke_typed_without_fuel<Params: InteropValueList, Returns: InteropValueList>(
         &mut self,
         function: FuncAddr,
         params: Params,
@@ -617,8 +611,7 @@ impl<T: Config> StoreTypedInvocationExt<T> for Store<'_, T> {
         // SAFETY: The caller ensures that the given function address and all
         // address types contained in the parameters are valid in the current
         // store.
-        let return_values =
-            unsafe { self.invoke_without_fuel_unchecked(function, params.into_values()) }?;
+        let return_values = unsafe { self.invoke_without_fuel(function, params.into_values()) }?;
 
         Returns::try_from_values(return_values.into_iter())
             .map_err(|ValueTypeMismatchError| RuntimeError::FunctionInvocationSignatureMismatch)
