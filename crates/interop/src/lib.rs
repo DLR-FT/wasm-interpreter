@@ -18,10 +18,10 @@
 extern crate alloc;
 
 use wasm::{
-    FuncType, Hostcode, NumType, RefType, ResultType, Store, ValType, Value,
     addrs::FuncAddr,
     config::Config,
     value::{ExternAddr, Ref, ValueTypeMismatchError},
+    FuncType, Hostcode, NumType, RefType, ResultType, RuntimeError, Store, ValType, Value,
 };
 
 use alloc::{fmt::Debug, vec, vec::Vec};
@@ -546,26 +546,24 @@ pub trait StoreTypedInvocationExt<T: Config> {
         hostcode: Hostcode,
     ) -> FuncAddr;
 
-    // /// Invokes a function with a statically known type signature without fuel.
-    // ///
-    // /// This function is simply syntactic sugar for calling
-    // /// [`Store::invoke_unchecked`] without any fuel and destructuring the
-    // /// resulting [`RunState`] with statically known types.
-    // ///
-    // /// # Safety
-    // ///
-    // /// The caller has to guarantee that the given [`FuncAddr`] and any
-    // /// [`FuncAddr`] or [`ExternAddr`](crate::execution::value::ExternAddr)
-    // /// values contained in the parameter values came from the current [`Store`]
-    // /// object.
-    // unsafe fn invoke_typed_without_fuel_unchecked<
-    //     Params: InteropValueList,
-    //     Returns: InteropValueList,
-    // >(
-    //     &mut self,
-    //     function: FuncAddr,
-    //     params: Params,
-    // ) -> Result<Returns, RuntimeError>;
+    /// Invokes a function without support for fuel or host functions.
+    ///
+    /// Useful for lightweight applications or testing.
+    ///
+    /// # Errors
+    ///
+    /// - [`RuntimeError::HostFunctionsDisabled`]
+    /// - [`RuntimeError::FunctionInvocationSignatureMismatch`]
+    ///
+    /// # Safety
+    ///
+    /// The caller has to guarantee that the function address and any addresses
+    /// in the parameters came from the current store.
+    unsafe fn invoke_simple_typed<Params: InteropValueList, Returns: InteropValueList>(
+        &mut self,
+        func_addr: FuncAddr,
+        params: Params,
+    ) -> Result<Returns, RuntimeError>;
 }
 
 impl<T: Config> StoreTypedInvocationExt<T> for Store<'_, T> {
@@ -584,21 +582,16 @@ impl<T: Config> StoreTypedInvocationExt<T> for Store<'_, T> {
         self.func_alloc_unchecked(func_type, hostcode)
     }
 
-    // unsafe fn invoke_typed_without_fuel_unchecked<
-    //     Params: InteropValueList,
-    //     Returns: InteropValueList,
-    // >(
-    //     &mut self,
-    //     function: FuncAddr,
-    //     params: Params,
-    // ) -> Result<Returns, RuntimeError> {
-    //     // SAFETY: The caller ensures that the given function address and all
-    //     // address types contained in the parameters are valid in the current
-    //     // store.
-    //     let return_values =
-    //         unsafe { self.invoke_without_fuel_unchecked(function, params.into_values()) }?;
+    unsafe fn invoke_simple_typed<Params: InteropValueList, Returns: InteropValueList>(
+        &mut self,
+        func_addr: FuncAddr,
+        params: Params,
+    ) -> Result<Returns, RuntimeError> {
+        // SAFETY: The caller ensures that the given function address and all
+        // address teypes in the parameters are valid in the current store.
+        let return_values = unsafe { self.invoke_simple(func_addr, params.into_values()) }?;
 
-    //     Returns::try_from_values(return_values.into_iter())
-    //         .map_err(|ValueTypeMismatchError| RuntimeError::FunctionInvocationSignatureMismatch)
-    // }
+        Returns::try_from_values(return_values.into_iter())
+            .map_err(|ValueTypeMismatchError| RuntimeError::FunctionInvocationSignatureMismatch)
+    }
 }

@@ -5,9 +5,9 @@ use core::{
 
 use alloc::vec::Vec;
 use wasm::{
-    ExternVal, Hostcode, InstantiationOutcome,
     addrs::{FuncAddr, GlobalAddr, MemAddr, ModuleAddr, TableAddr},
     resumable::{HostCall, HostResumable, HostThing, Resumable, RunState, WasmResumable},
+    ExternVal, Hostcode, InstantiationOutcome,
 };
 
 use crate::{AbstractStored, StoreId, StoredValue};

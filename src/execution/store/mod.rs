@@ -1456,7 +1456,7 @@ impl<'b, T: Config> Store<'b, T> {
     ///
     /// The caller has to guarantee that the function address and any addresses
     /// in the parameters came from the current store.
-    pub unsafe fn invoke_without_fuel_and_host_calls(
+    pub unsafe fn invoke_simple(
         &mut self,
         func_addr: FuncAddr,
         params: Vec<Value>,

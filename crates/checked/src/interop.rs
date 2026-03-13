@@ -1,13 +1,13 @@
 use alloc::{fmt::Debug, vec, vec::Vec};
 use interop::{InteropValueList, RefExtern, StoreTypedInvocationExt};
 use wasm::{
-    Hostcode, NumType, RefType, ValType,
     addrs::FuncAddr,
     config::Config,
-    value::{F32, F64, ValueTypeMismatchError},
+    value::{ValueTypeMismatchError, F32, F64},
+    Hostcode, NumType, RefType, RuntimeError, ValType,
 };
 
-use crate::{AbstractStored, Store, StoredRef, StoredValue, stored_types::Stored};
+use crate::{stored_types::Stored, AbstractStored, Store, StoredRef, StoredValue};
 
 /// A stored variant of [`InteropValue`](crate::execution::interop::InteropValue)
 pub trait StoredInteropValue
@@ -275,29 +275,29 @@ impl<T: Config> Store<'_, T> {
         unsafe { Stored::from_bare(func_addr, self.id) }
     }
 
-    // /// This is a safe variant of [`Store::invoke_typed_without_fuel_unchecked`](crate::Store::invoke_typed_without_fuel_unchecked).
-    // pub fn invoke_typed_without_fuel<
-    //     Params: StoredInteropValueList,
-    //     Returns: StoredInteropValueList,
-    // >(
-    //     &mut self,
-    //     function: Stored<FuncAddr>,
-    //     params: Params,
-    // ) -> Result<Returns, RuntimeError> {
-    //     // 1. try unwrap
-    //     let function = function.try_unwrap_into_bare(self.id);
-    //     let params = params.into_values().try_unwrap_into_bare(self.id);
-    //     // 2. call
-    //     // SAFETY: It was just checked that the `FuncAddr` and any addresses
-    //     // contained in the parameters came from the current store through their
-    //     // store ids.
-    //     let returns = unsafe { self.inner.invoke_without_fuel_unchecked(function, params) }?;
-    //     // 3. rewrap
-    //     // SAFETY: All `Value`s just came from the current store.
-    //     let stored_returns = unsafe { Vec::from_bare(returns, self.id) };
-    //     // 4. return
-    //     let stored_returns = Returns::try_from_values(stored_returns.into_iter())
-    //         .map_err(|_| RuntimeError::FunctionInvocationSignatureMismatch)?;
-    //     Ok(stored_returns)
-    // }
+    /// This is a safe variant of
+    /// [`StoreTypedInvocationExt::invoke_simple_typed`]
+    pub fn invoke_simple_typed<Params: StoredInteropValueList, Returns: StoredInteropValueList>(
+        &mut self,
+        func_addr: Stored<FuncAddr>,
+        params: Params,
+    ) -> Result<Returns, RuntimeError> {
+        // 1. try unwrap
+        let params = params.into_values().try_unwrap_into_bare(self.id);
+        let func_addr = func_addr.try_unwrap_into_bare(self.id);
+        // 2. call
+        // Note: We cannot call the inner
+        // `invoke_simple_typed` due to issues with
+        // generics. Instead call the untyped version.
+        // SAFETY: We just checked that the function address and all addresses
+        // in the parameters are valid in the current store through their store
+        // ids.
+        let return_values = unsafe { self.inner.invoke_simple(func_addr, params) }?;
+        // 3. rewrap
+        // SAFETY: The return values just came from the current store.
+        let stored_return_values = unsafe { Vec::from_bare(return_values, self.id) };
+        // 4. return
+        Returns::try_from_values(stored_return_values.into_iter())
+            .map_err(|ValueTypeMismatchError| RuntimeError::FunctionInvocationSignatureMismatch)
+    }
 }

@@ -1,14 +1,14 @@
 use alloc::{string::String, vec::Vec};
 use wasm::{
-    FuncType, GlobalType, Hostcode, MemType, RuntimeError, TableType, ValidationInfo,
     addrs::{FuncAddr, GlobalAddr, MemAddr, ModuleAddr, TableAddr},
     config::Config,
     resumable::{HostResumable, WasmResumable},
+    FuncType, GlobalType, Hostcode, MemType, RuntimeError, TableType, ValidationInfo,
 };
 
 use crate::{
-    AbstractStored, StoreId, StoredRef, StoredResumable, StoredValue,
     stored_types::{Stored, StoredExternVal, StoredInstantiationOutcome, StoredRunState},
+    AbstractStored, StoreId, StoredRef, StoredResumable, StoredValue,
 };
 
 pub struct Store<'b, T: Config> {
