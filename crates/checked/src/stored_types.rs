@@ -1,7 +1,4 @@
-use core::{
-    num::NonZeroU64,
-    ops::{Deref, DerefMut},
-};
+use core::{num::NonZeroU64, ops::Deref};
 
 use alloc::vec::Vec;
 use wasm::{
@@ -16,6 +13,13 @@ use crate::{AbstractStored, StoreId, StoredValue};
 /// [`FuncAddr`], [`MemAddr`], etc.
 pub struct Stored<T> {
     id: StoreId,
+    /// The inner value of this stored object.
+    ///
+    /// # Safety
+    ///
+    /// It is important that mutable access to the this inner value is not
+    /// exposed to the user directly. Currently, there exists one exception to
+    /// this rule: [`Stored<Resumable<T>>::fuel_mut`].
     inner: T,
 }
 
@@ -74,9 +78,11 @@ impl<T> Deref for Stored<T> {
     }
 }
 
-impl<T> DerefMut for Stored<T> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.inner
+// Unfortuately we cannot implement `DerefMut` for `Stored`, because that allows
+// the user to replace the inner T. Therefore, wrap this method manually.
+impl<T> Stored<Resumable<T>> {
+    pub fn fuel_mut(&mut self) -> &mut Option<u64> {
+        self.inner.fuel_mut()
     }
 }
 
