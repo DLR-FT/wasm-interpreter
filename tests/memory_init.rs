@@ -16,7 +16,7 @@
 */
 use checked::Store;
 use wasm::ValidationError;
-use wasm::{validate, RuntimeError, TrapError};
+use wasm::{RuntimeError, TrapError, validate};
 
 #[test_log::test]
 fn memory_init_test_1() {
@@ -45,7 +45,7 @@ fn memory_init_test_1() {
         .unwrap()
         .as_func()
         .unwrap();
-    store.invoke_typed_without_fuel::<(), ()>(test, ()).unwrap();
+    store.invoke_simple_typed::<(), ()>(test, ()).unwrap();
 
     let load8_u = store
         .instance_export(module, "load8_u")
@@ -62,7 +62,7 @@ fn memory_init_test_1() {
     ]);
     for j in 0..offsets.len() {
         assert_eq!(
-            store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            store.invoke_simple_typed(load8_u, offsets[j]),
             Ok(results[j])
         );
     }
@@ -95,7 +95,7 @@ fn memory_init_test_2() {
         .unwrap()
         .as_func()
         .unwrap();
-    store.invoke_typed_without_fuel::<(), ()>(test, ()).unwrap();
+    store.invoke_simple_typed::<(), ()>(test, ()).unwrap();
 
     let load8_u = store
         .instance_export(module, "load8_u")
@@ -112,7 +112,7 @@ fn memory_init_test_2() {
     ]);
     for j in 0..offsets.len() {
         assert_eq!(
-            store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            store.invoke_simple_typed(load8_u, offsets[j]),
             Ok(results[j])
         );
     }
@@ -145,7 +145,7 @@ fn memory_init_test_3() {
         .unwrap()
         .as_func()
         .unwrap();
-    store.invoke_typed_without_fuel::<(), ()>(test, ()).unwrap();
+    store.invoke_simple_typed::<(), ()>(test, ()).unwrap();
 
     let load8_u = store
         .instance_export(module, "load8_u")
@@ -162,7 +162,7 @@ fn memory_init_test_3() {
     ]);
     for j in 0..offsets.len() {
         assert_eq!(
-            store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            store.invoke_simple_typed(load8_u, offsets[j]),
             Ok(results[j])
         );
     }
@@ -203,7 +203,7 @@ fn memory_init_test_4() {
         .unwrap()
         .as_func()
         .unwrap();
-    store.invoke_typed_without_fuel::<(), ()>(test, ()).unwrap();
+    store.invoke_simple_typed::<(), ()>(test, ()).unwrap();
 
     let load8_u = store
         .instance_export(module, "load8_u")
@@ -220,7 +220,7 @@ fn memory_init_test_4() {
     ]);
     for j in 0..offsets.len() {
         assert_eq!(
-            store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            store.invoke_simple_typed(load8_u, offsets[j]),
             Ok(results[j])
         );
     }
@@ -276,7 +276,7 @@ fn memory_init_test_7() {
         .unwrap()
         .as_func()
         .unwrap();
-    store.invoke_typed_without_fuel::<(), ()>(test, ()).unwrap();
+    store.invoke_simple_typed::<(), ()>(test, ()).unwrap();
 }
 
 #[test_log::test]
@@ -303,7 +303,7 @@ fn memory_init_test_8() {
         .as_func()
         .unwrap();
     assert_eq!(
-        store.invoke_typed_without_fuel::<(), ()>(test, ()).err(),
+        store.invoke_simple_typed::<(), ()>(test, ()).err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
     );
 }
@@ -331,7 +331,7 @@ fn memory_init_test_9() {
         .as_func()
         .unwrap();
     assert_eq!(
-        store.invoke_typed_without_fuel::<(), ()>(test, ()).err(),
+        store.invoke_simple_typed::<(), ()>(test, ()).err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
     );
 }
@@ -387,7 +387,7 @@ fn memory_init_test_12() {
         .unwrap()
         .as_func()
         .unwrap();
-    store.invoke_typed_without_fuel::<(), ()>(test, ()).unwrap();
+    store.invoke_simple_typed::<(), ()>(test, ()).unwrap();
 }
 
 #[test_log::test]
@@ -413,7 +413,7 @@ fn memory_init_test_13() {
         .as_func()
         .unwrap();
     assert_eq!(
-        store.invoke_typed_without_fuel::<(), ()>(test, ()).err(),
+        store.invoke_simple_typed::<(), ()>(test, ()).err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
     );
 }

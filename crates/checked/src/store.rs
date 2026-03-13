@@ -1,14 +1,14 @@
 use alloc::{string::String, vec::Vec};
 use wasm::{
+    FuncType, GlobalType, Hostcode, MemType, RuntimeError, TableType, ValidationInfo,
     addrs::{FuncAddr, GlobalAddr, MemAddr, ModuleAddr, TableAddr},
     config::Config,
     resumable::{HostResumable, WasmResumable},
-    FuncType, GlobalType, Hostcode, MemType, RuntimeError, TableType, ValidationInfo,
 };
 
 use crate::{
-    stored_types::{Stored, StoredExternVal, StoredInstantiationOutcome, StoredRunState},
     AbstractStored, StoreId, StoredRef, StoredResumable, StoredValue,
+    stored_types::{Stored, StoredExternVal, StoredInstantiationOutcome, StoredRunState},
 };
 
 pub struct Store<'b, T: Config> {
@@ -532,5 +532,27 @@ impl<'b, T: Config> Store<'b, T> {
                 (name, stored_externval)
             })
             .collect()
+    }
+
+    /// This is a safe variant of
+    /// [`Store::invoke_simple`](wasm::Store::invoke_simple)
+    pub fn invoke_simple(
+        &mut self,
+        func_addr: Stored<FuncAddr>,
+        params: Vec<StoredValue>,
+    ) -> Result<Vec<StoredValue>, RuntimeError> {
+        // 1. try unwrap
+        let params = params.try_unwrap_into_bare(self.id);
+        let func_addr = func_addr.try_unwrap_into_bare(self.id);
+        // 2. call
+        // SAFETY: We just checked that the function address and all addresses
+        // in the parameters are valid in the current store through their store
+        // ids.
+        let return_values = unsafe { self.inner.invoke_simple(func_addr, params) }?;
+        // 3. rewrap
+        // SAFETY: The return values just came from the current store.
+        let stored_return_values = unsafe { Vec::from_bare(return_values, self.id) };
+        // 4. return
+        Ok(stored_return_values)
     }
 }

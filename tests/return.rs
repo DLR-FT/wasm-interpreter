@@ -35,7 +35,7 @@ fn return_valid() {
         .as_func()
         .unwrap();
 
-    assert_eq!(12, store.invoke_typed_without_fuel(add, (10, 2)).unwrap());
-    assert_eq!(2, store.invoke_typed_without_fuel(add, (0, 2)).unwrap());
-    assert_eq!(-4, store.invoke_typed_without_fuel(add, (-6, 2)).unwrap());
+    assert_eq!(12, store.invoke_simple_typed(add, (10, 2)).unwrap());
+    assert_eq!(2, store.invoke_simple_typed(add, (0, 2)).unwrap());
+    assert_eq!(-4, store.invoke_simple_typed(add, (-6, 2)).unwrap());
 }

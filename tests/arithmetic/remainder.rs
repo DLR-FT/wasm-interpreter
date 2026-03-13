@@ -39,51 +39,39 @@ pub fn i64_remainder_signed_simple() {
 
     assert_eq!(
         0_i64,
-        store
-            .invoke_typed_without_fuel(rem_s, (20_i64, 2_i64))
-            .unwrap()
+        store.invoke_simple_typed(rem_s, (20_i64, 2_i64)).unwrap()
     );
     assert_eq!(
         999_i64,
         store
-            .invoke_typed_without_fuel(rem_s, (10_000_i64, 9_001_i64))
+            .invoke_simple_typed(rem_s, (10_000_i64, 9_001_i64))
             .unwrap()
     );
     assert_eq!(
         -2_i64,
-        store
-            .invoke_typed_without_fuel(rem_s, (-20_i64, 3_i64))
-            .unwrap()
+        store.invoke_simple_typed(rem_s, (-20_i64, 3_i64)).unwrap()
     );
     assert_eq!(
         -2_i64,
-        store
-            .invoke_typed_without_fuel(rem_s, (-20_i64, -3_i64))
-            .unwrap()
+        store.invoke_simple_typed(rem_s, (-20_i64, -3_i64)).unwrap()
     );
     assert_eq!(
         2_i64,
-        store
-            .invoke_typed_without_fuel(rem_s, (20_i64, -3_i64))
-            .unwrap()
+        store.invoke_simple_typed(rem_s, (20_i64, -3_i64)).unwrap()
     );
     assert_eq!(
         2_i64,
-        store
-            .invoke_typed_without_fuel(rem_s, (20_i64, 3_i64))
-            .unwrap()
+        store.invoke_simple_typed(rem_s, (20_i64, 3_i64)).unwrap()
     );
     assert_eq!(
         0_i64,
         store
-            .invoke_typed_without_fuel(rem_s, (i64::MIN, -1_i64))
+            .invoke_simple_typed(rem_s, (i64::MIN, -1_i64))
             .unwrap()
     );
     assert_eq!(
         0_i64,
-        store
-            .invoke_typed_without_fuel(rem_s, (i64::MIN, 2_i64))
-            .unwrap()
+        store.invoke_simple_typed(rem_s, (i64::MIN, 2_i64)).unwrap()
     );
 }
 
@@ -105,7 +93,7 @@ pub fn i64_remainder_signed_panic_dividend_0() {
         .as_func()
         .unwrap();
 
-    let result = store.invoke_typed_without_fuel::<(i64, i64), i64>(rem_s, (222_i64, 0_i64));
+    let result = store.invoke_simple_typed::<(i64, i64), i64>(rem_s, (222_i64, 0_i64));
 
     assert_eq!(
         result.unwrap_err(),
@@ -133,76 +121,60 @@ pub fn i64_remainder_unsigned_simple() {
 
     assert_eq!(
         0_i64,
-        store
-            .invoke_typed_without_fuel(rem_u, (i64::MIN, 2_i64))
-            .unwrap()
+        store.invoke_simple_typed(rem_u, (i64::MIN, 2_i64)).unwrap()
     );
     assert_eq!(
         i64::MIN,
         store
-            .invoke_typed_without_fuel(rem_u, (i64::MIN, -2_i64))
+            .invoke_simple_typed(rem_u, (i64::MIN, -2_i64))
             .unwrap()
     );
     assert_eq!(
         (i64::MAX - 1),
         store
-            .invoke_typed_without_fuel(rem_u, (-2_i64, i64::MIN))
+            .invoke_simple_typed(rem_u, (-2_i64, i64::MIN))
             .unwrap()
     );
     assert_eq!(
         2_i64,
-        store
-            .invoke_typed_without_fuel(rem_u, (2_i64, i64::MIN))
-            .unwrap()
+        store.invoke_simple_typed(rem_u, (2_i64, i64::MIN)).unwrap()
     );
 
     assert_eq!(
         0_i64,
-        store
-            .invoke_typed_without_fuel(rem_u, (20_i64, 2_i64))
-            .unwrap()
+        store.invoke_simple_typed(rem_u, (20_i64, 2_i64)).unwrap()
     );
     assert_eq!(
         999_i64,
         store
-            .invoke_typed_without_fuel(rem_u, (10_000_i64, 9_001_i64))
+            .invoke_simple_typed(rem_u, (10_000_i64, 9_001_i64))
             .unwrap()
     );
     assert_eq!(
         2_i64,
-        store
-            .invoke_typed_without_fuel(rem_u, (-20_i64, 3_i64))
-            .unwrap()
+        store.invoke_simple_typed(rem_u, (-20_i64, 3_i64)).unwrap()
     );
     assert_eq!(
         -20_i64,
-        store
-            .invoke_typed_without_fuel(rem_u, (-20_i64, -3_i64))
-            .unwrap()
+        store.invoke_simple_typed(rem_u, (-20_i64, -3_i64)).unwrap()
     );
     assert_eq!(
         20_i64,
-        store
-            .invoke_typed_without_fuel(rem_u, (20_i64, -3_i64))
-            .unwrap()
+        store.invoke_simple_typed(rem_u, (20_i64, -3_i64)).unwrap()
     );
     assert_eq!(
         2_i64,
-        store
-            .invoke_typed_without_fuel(rem_u, (20_i64, 3_i64))
-            .unwrap()
+        store.invoke_simple_typed(rem_u, (20_i64, 3_i64)).unwrap()
     );
     assert_eq!(
         i64::MIN,
         store
-            .invoke_typed_without_fuel(rem_u, (i64::MIN, -1_i64))
+            .invoke_simple_typed(rem_u, (i64::MIN, -1_i64))
             .unwrap()
     );
     assert_eq!(
         0_i64,
-        store
-            .invoke_typed_without_fuel(rem_u, (i64::MIN, 2_i64))
-            .unwrap()
+        store.invoke_simple_typed(rem_u, (i64::MIN, 2_i64)).unwrap()
     );
 }
 
@@ -224,7 +196,7 @@ pub fn i64_remainder_unsigned_panic_dividend_0() {
         .as_func()
         .unwrap();
 
-    let result = store.invoke_typed_without_fuel::<(i64, i64), i64>(rem_u, (222, 0));
+    let result = store.invoke_simple_typed::<(i64, i64), i64>(rem_u, (222, 0));
 
     assert_eq!(
         result.unwrap_err(),
@@ -250,35 +222,17 @@ pub fn i32_remainder_signed_simple() {
         .as_func()
         .unwrap();
 
-    assert_eq!(0, store.invoke_typed_without_fuel(rem_s, (20, 2)).unwrap());
+    assert_eq!(0, store.invoke_simple_typed(rem_s, (20, 2)).unwrap());
     assert_eq!(
         999,
-        store
-            .invoke_typed_without_fuel(rem_s, (10_000, 9_001))
-            .unwrap()
+        store.invoke_simple_typed(rem_s, (10_000, 9_001)).unwrap()
     );
-    assert_eq!(
-        -2,
-        store.invoke_typed_without_fuel(rem_s, (-20, 3)).unwrap()
-    );
-    assert_eq!(
-        -2,
-        store.invoke_typed_without_fuel(rem_s, (-20, -3)).unwrap()
-    );
-    assert_eq!(2, store.invoke_typed_without_fuel(rem_s, (20, -3)).unwrap());
-    assert_eq!(2, store.invoke_typed_without_fuel(rem_s, (20, 3)).unwrap());
-    assert_eq!(
-        0,
-        store
-            .invoke_typed_without_fuel(rem_s, (i32::MIN, -1))
-            .unwrap()
-    );
-    assert_eq!(
-        0,
-        store
-            .invoke_typed_without_fuel(rem_s, (i32::MIN, 2))
-            .unwrap()
-    );
+    assert_eq!(-2, store.invoke_simple_typed(rem_s, (-20, 3)).unwrap());
+    assert_eq!(-2, store.invoke_simple_typed(rem_s, (-20, -3)).unwrap());
+    assert_eq!(2, store.invoke_simple_typed(rem_s, (20, -3)).unwrap());
+    assert_eq!(2, store.invoke_simple_typed(rem_s, (20, 3)).unwrap());
+    assert_eq!(0, store.invoke_simple_typed(rem_s, (i32::MIN, -1)).unwrap());
+    assert_eq!(0, store.invoke_simple_typed(rem_s, (i32::MIN, 2)).unwrap());
 }
 
 /// A simple function to test signed remainder's RuntimeError when dividing by 0
@@ -299,7 +253,7 @@ pub fn remainder_signed_panic_dividend_0() {
         .as_func()
         .unwrap();
 
-    let result = store.invoke_typed_without_fuel::<(i32, i32), i32>(rem_s, (222, 0));
+    let result = store.invoke_simple_typed::<(i32, i32), i32>(rem_s, (222, 0));
 
     assert_eq!(
         result.unwrap_err(),
@@ -326,66 +280,37 @@ pub fn i32_remainder_unsigned_simple() {
         .as_func()
         .unwrap();
 
-    assert_eq!(
-        0,
-        store
-            .invoke_typed_without_fuel(rem_u, (i32::MIN, 2))
-            .unwrap()
-    );
+    assert_eq!(0, store.invoke_simple_typed(rem_u, (i32::MIN, 2)).unwrap());
     assert_eq!(
         i32::MIN,
-        store
-            .invoke_typed_without_fuel(rem_u, (i32::MIN, -2))
-            .unwrap()
+        store.invoke_simple_typed(rem_u, (i32::MIN, -2)).unwrap()
     );
     assert_eq!(
         -(i32::MIN + 2),
-        store
-            .invoke_typed_without_fuel(rem_u, (-2, i32::MIN))
-            .unwrap()
+        store.invoke_simple_typed(rem_u, (-2, i32::MIN)).unwrap()
     );
-    assert_eq!(
-        2,
-        store
-            .invoke_typed_without_fuel(rem_u, (2, i32::MIN))
-            .unwrap()
-    );
+    assert_eq!(2, store.invoke_simple_typed(rem_u, (2, i32::MIN)).unwrap());
     assert_eq!(
         i32::MAX,
         store
-            .invoke_typed_without_fuel(rem_u, (i32::MAX, i32::MIN))
+            .invoke_simple_typed(rem_u, (i32::MAX, i32::MIN))
             .unwrap()
     );
 
-    assert_eq!(0, store.invoke_typed_without_fuel(rem_u, (20, 2)).unwrap());
+    assert_eq!(0, store.invoke_simple_typed(rem_u, (20, 2)).unwrap());
     assert_eq!(
         999,
-        store
-            .invoke_typed_without_fuel(rem_u, (10_000, 9_001))
-            .unwrap()
+        store.invoke_simple_typed(rem_u, (10_000, 9_001)).unwrap()
     );
-    assert_eq!(2, store.invoke_typed_without_fuel(rem_u, (-20, 3)).unwrap());
-    assert_eq!(
-        -20,
-        store.invoke_typed_without_fuel(rem_u, (-20, -3)).unwrap()
-    );
-    assert_eq!(
-        20,
-        store.invoke_typed_without_fuel(rem_u, (20, -3)).unwrap()
-    );
-    assert_eq!(2, store.invoke_typed_without_fuel(rem_u, (20, 3)).unwrap());
+    assert_eq!(2, store.invoke_simple_typed(rem_u, (-20, 3)).unwrap());
+    assert_eq!(-20, store.invoke_simple_typed(rem_u, (-20, -3)).unwrap());
+    assert_eq!(20, store.invoke_simple_typed(rem_u, (20, -3)).unwrap());
+    assert_eq!(2, store.invoke_simple_typed(rem_u, (20, 3)).unwrap());
     assert_eq!(
         i32::MIN,
-        store
-            .invoke_typed_without_fuel(rem_u, (i32::MIN, -1))
-            .unwrap()
+        store.invoke_simple_typed(rem_u, (i32::MIN, -1)).unwrap()
     );
-    assert_eq!(
-        0,
-        store
-            .invoke_typed_without_fuel(rem_u, (i32::MIN, 2))
-            .unwrap()
-    );
+    assert_eq!(0, store.invoke_simple_typed(rem_u, (i32::MIN, 2)).unwrap());
 }
 
 /// A simple function to test signed remainder's RuntimeError when dividing by 0
@@ -407,7 +332,7 @@ pub fn i32_remainder_unsigned_panic_dividend_0() {
         .as_func()
         .unwrap();
 
-    let result = store.invoke_typed_without_fuel::<(i32, i32), i32>(rem_u, (222, 0));
+    let result = store.invoke_simple_typed::<(i32, i32), i32>(rem_u, (222, 0));
 
     assert_eq!(
         result.unwrap_err(),

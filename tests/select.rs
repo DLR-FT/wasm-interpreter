@@ -50,10 +50,10 @@ fn polymorphic_select_test() {
         .as_func()
         .unwrap();
 
-    assert_eq!(4, store.invoke_typed_without_fuel(select_test, 0).unwrap());
-    assert_eq!(8, store.invoke_typed_without_fuel(select_test, 1).unwrap());
-    assert_eq!(15, store.invoke_typed_without_fuel(select_test, 2).unwrap());
-    assert_eq!(16, store.invoke_typed_without_fuel(select_test, 3).unwrap());
+    assert_eq!(4, store.invoke_simple_typed(select_test, 0).unwrap());
+    assert_eq!(8, store.invoke_simple_typed(select_test, 1).unwrap());
+    assert_eq!(15, store.invoke_simple_typed(select_test, 2).unwrap());
+    assert_eq!(16, store.invoke_simple_typed(select_test, 3).unwrap());
 }
 
 #[test_log::test]
@@ -77,8 +77,8 @@ fn typed_select_test() {
         .as_func()
         .unwrap();
 
-    assert_eq!(4, store.invoke_typed_without_fuel(select_test, 0).unwrap());
-    assert_eq!(8, store.invoke_typed_without_fuel(select_test, 1).unwrap());
-    assert_eq!(15, store.invoke_typed_without_fuel(select_test, 2).unwrap());
-    assert_eq!(16, store.invoke_typed_without_fuel(select_test, 3).unwrap());
+    assert_eq!(4, store.invoke_simple_typed(select_test, 0).unwrap());
+    assert_eq!(8, store.invoke_simple_typed(select_test, 1).unwrap());
+    assert_eq!(15, store.invoke_simple_typed(select_test, 2).unwrap());
+    assert_eq!(16, store.invoke_simple_typed(select_test, 3).unwrap());
 }

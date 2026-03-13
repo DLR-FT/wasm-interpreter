@@ -15,7 +15,7 @@
 # limitations under the License.
 */
 use checked::Store;
-use wasm::{validate, RuntimeError, TrapError};
+use wasm::{RuntimeError, TrapError, validate};
 
 #[test_log::test]
 fn memory_trap_1() {
@@ -64,62 +64,59 @@ fn memory_trap_1() {
         .as_func()
         .unwrap();
 
-    assert_eq!(
-        store.invoke_typed_without_fuel(store_func, (-4, 42)),
-        Ok(())
-    );
-    assert_eq!(store.invoke_typed_without_fuel(load, -4), Ok(42));
+    assert_eq!(store.invoke_simple_typed(store_func, (-4, 42)), Ok(()));
+    assert_eq!(store.invoke_simple_typed(load, -4), Ok(42));
     assert_eq!(
         store
-            .invoke_typed_without_fuel::<(i32, i32), ()>(store_func, (-3, 0x12345678))
+            .invoke_simple_typed::<(i32, i32), ()>(store_func, (-3, 0x12345678))
             .err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
     );
     assert_eq!(
-        store.invoke_typed_without_fuel::<i32, i32>(load, -3).err(),
+        store.invoke_simple_typed::<i32, i32>(load, -3).err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
     );
     assert_eq!(
         store
-            .invoke_typed_without_fuel::<(i32, i32), ()>(store_func, (-2, 13))
+            .invoke_simple_typed::<(i32, i32), ()>(store_func, (-2, 13))
             .err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
     );
     assert_eq!(
-        store.invoke_typed_without_fuel::<i32, i32>(load, -2).err(),
+        store.invoke_simple_typed::<i32, i32>(load, -2).err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
     );
     assert_eq!(
         store
-            .invoke_typed_without_fuel::<(i32, i32), ()>(store_func, (-1, 13))
+            .invoke_simple_typed::<(i32, i32), ()>(store_func, (-1, 13))
             .err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
     );
     assert_eq!(
-        store.invoke_typed_without_fuel::<i32, i32>(load, -1).err(),
+        store.invoke_simple_typed::<i32, i32>(load, -1).err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
     );
     assert_eq!(
         store
-            .invoke_typed_without_fuel::<(i32, i32), ()>(store_func, (0, 13))
+            .invoke_simple_typed::<(i32, i32), ()>(store_func, (0, 13))
             .err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
     );
     assert_eq!(
-        store.invoke_typed_without_fuel::<i32, i32>(load, 0).err(),
+        store.invoke_simple_typed::<i32, i32>(load, 0).err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
     );
     assert_eq!(
         store
-            .invoke_typed_without_fuel::<(i32, i32), ()>(store_func, (0x80000000_u32 as i32, 13))
+            .invoke_simple_typed::<(i32, i32), ()>(store_func, (0x80000000_u32 as i32, 13))
             .err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
     );
     assert_eq!(
         store
-            .invoke_typed_without_fuel::<i32, i32>(load, 0x80000000_u32 as i32)
+            .invoke_simple_typed::<i32, i32>(load, 0x80000000_u32 as i32)
             .err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
     );
-    assert_eq!(store.invoke_typed_without_fuel(grow, 0x10001), Ok(-1));
+    assert_eq!(store.invoke_simple_typed(grow, 0x10001), Ok(-1));
 }

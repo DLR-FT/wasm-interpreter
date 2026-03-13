@@ -53,16 +53,7 @@ fn i64_add_one() {
         .as_func()
         .unwrap();
 
-    assert_eq!(
-        12_i64,
-        store.invoke_typed_without_fuel(add_one, 11_i64).unwrap()
-    );
-    assert_eq!(
-        1_i64,
-        store.invoke_typed_without_fuel(add_one, 0_i64).unwrap()
-    );
-    assert_eq!(
-        -5_i64,
-        store.invoke_typed_without_fuel(add_one, -6_i64).unwrap()
-    );
+    assert_eq!(12_i64, store.invoke_simple_typed(add_one, 11_i64).unwrap());
+    assert_eq!(1_i64, store.invoke_simple_typed(add_one, 0_i64).unwrap());
+    assert_eq!(-5_i64, store.invoke_simple_typed(add_one, -6_i64).unwrap());
 }

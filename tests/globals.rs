@@ -1,5 +1,5 @@
 use checked::{Store, StoredValue};
-use wasm::{validate, GlobalType, NumType, ValType};
+use wasm::{GlobalType, NumType, ValType, validate};
 
 /// The WASM program has one mutable global initialized with a constant 3.
 /// It exports two methods:
@@ -46,10 +46,10 @@ fn valid_global() {
         .unwrap();
 
     // Set global to 17. 5 is returned as previous (default) value.
-    assert_eq!(5, store.invoke_typed_without_fuel(set, 17).unwrap());
+    assert_eq!(5, store.invoke_simple_typed(set, 17).unwrap());
 
     // Now 17 will be returned when getting the global
-    assert_eq!(17, store.invoke_typed_without_fuel(get, ()).unwrap());
+    assert_eq!(17, store.invoke_simple_typed(get, ()).unwrap());
 }
 
 #[test_log::test]
@@ -114,10 +114,10 @@ fn imported_globals() {
         .unwrap();
 
     // Set global to 17. 3 is returned as previous (default) value.
-    assert_eq!(3, store.invoke_typed_without_fuel(set, 17).unwrap());
+    assert_eq!(3, store.invoke_simple_typed(set, 17).unwrap());
 
     // Now 17 will be returned when getting the global
-    assert_eq!(17, store.invoke_typed_without_fuel(get, ()).unwrap());
+    assert_eq!(17, store.invoke_simple_typed(get, ()).unwrap());
 }
 
 #[test_log::test]

@@ -37,8 +37,8 @@ fn basic_memory() {
         .as_func()
         .unwrap();
 
-    let _ = store.invoke_typed_without_fuel::<i32, ()>(store_num, 42);
-    assert_eq!(42, store.invoke_typed_without_fuel(load_num, ()).unwrap());
+    let _ = store.invoke_simple_typed::<i32, ()>(store_num, 42);
+    assert_eq!(42, store.invoke_simple_typed(load_num, ()).unwrap());
 }
 
 /// Two simple methods for storing and loading an f32 from the first slot in linear memory.
@@ -67,10 +67,7 @@ fn f32_basic_memory() {
         .unwrap();
 
     store
-        .invoke_typed_without_fuel::<f32, ()>(store_num, 133.7_f32)
+        .invoke_simple_typed::<f32, ()>(store_num, 133.7_f32)
         .unwrap();
-    assert_eq!(
-        133.7_f32,
-        store.invoke_typed_without_fuel(load_num, ()).unwrap()
-    );
+    assert_eq!(133.7_f32, store.invoke_simple_typed(load_num, ()).unwrap());
 }

@@ -35,10 +35,10 @@ fn odd_with_if_else() {
         .as_func()
         .unwrap();
 
-    assert_eq!(1, store.invoke_typed_without_fuel(odd, -5).unwrap());
-    assert_eq!(0, store.invoke_typed_without_fuel(odd, 0).unwrap());
-    assert_eq!(1, store.invoke_typed_without_fuel(odd, 3).unwrap());
-    assert_eq!(0, store.invoke_typed_without_fuel(odd, 4).unwrap());
+    assert_eq!(1, store.invoke_simple_typed(odd, -5).unwrap());
+    assert_eq!(0, store.invoke_simple_typed(odd, 0).unwrap());
+    assert_eq!(1, store.invoke_simple_typed(odd, 3).unwrap());
+    assert_eq!(0, store.invoke_simple_typed(odd, 4).unwrap());
 }
 
 #[test_log::test]
@@ -73,10 +73,10 @@ fn odd_with_if() {
         .as_func()
         .unwrap();
 
-    assert_eq!(1, store.invoke_typed_without_fuel(odd, -5).unwrap());
-    assert_eq!(0, store.invoke_typed_without_fuel(odd, 0).unwrap());
-    assert_eq!(1, store.invoke_typed_without_fuel(odd, 3).unwrap());
-    assert_eq!(0, store.invoke_typed_without_fuel(odd, 4).unwrap());
+    assert_eq!(1, store.invoke_simple_typed(odd, -5).unwrap());
+    assert_eq!(0, store.invoke_simple_typed(odd, 0).unwrap());
+    assert_eq!(1, store.invoke_simple_typed(odd, 3).unwrap());
+    assert_eq!(0, store.invoke_simple_typed(odd, 4).unwrap());
 }
 
 #[test_log::test]
@@ -133,10 +133,10 @@ fn odd_with_if_else_recursive() {
         .as_func()
         .unwrap();
 
-    assert_eq!(1, store.invoke_typed_without_fuel(even_odd_fn, 1).unwrap());
-    assert_eq!(0, store.invoke_typed_without_fuel(even_odd_fn, 0).unwrap());
-    assert_eq!(1, store.invoke_typed_without_fuel(even_odd_fn, 3).unwrap());
-    assert_eq!(0, store.invoke_typed_without_fuel(even_odd_fn, 4).unwrap());
+    assert_eq!(1, store.invoke_simple_typed(even_odd_fn, 1).unwrap());
+    assert_eq!(0, store.invoke_simple_typed(even_odd_fn, 0).unwrap());
+    assert_eq!(1, store.invoke_simple_typed(even_odd_fn, 3).unwrap());
+    assert_eq!(0, store.invoke_simple_typed(even_odd_fn, 4).unwrap());
 }
 
 #[test_log::test]
@@ -183,16 +183,13 @@ fn recursive_fibonacci_if_else() {
         .as_func()
         .unwrap();
 
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel(fibonacci_fn, -5).unwrap()
-    );
-    assert_eq!(1, store.invoke_typed_without_fuel(fibonacci_fn, 0).unwrap());
-    assert_eq!(1, store.invoke_typed_without_fuel(fibonacci_fn, 1).unwrap());
-    assert_eq!(2, store.invoke_typed_without_fuel(fibonacci_fn, 2).unwrap());
-    assert_eq!(3, store.invoke_typed_without_fuel(fibonacci_fn, 3).unwrap());
-    assert_eq!(5, store.invoke_typed_without_fuel(fibonacci_fn, 4).unwrap());
-    assert_eq!(8, store.invoke_typed_without_fuel(fibonacci_fn, 5).unwrap());
+    assert_eq!(1, store.invoke_simple_typed(fibonacci_fn, -5).unwrap());
+    assert_eq!(1, store.invoke_simple_typed(fibonacci_fn, 0).unwrap());
+    assert_eq!(1, store.invoke_simple_typed(fibonacci_fn, 1).unwrap());
+    assert_eq!(2, store.invoke_simple_typed(fibonacci_fn, 2).unwrap());
+    assert_eq!(3, store.invoke_simple_typed(fibonacci_fn, 3).unwrap());
+    assert_eq!(5, store.invoke_simple_typed(fibonacci_fn, 4).unwrap());
+    assert_eq!(8, store.invoke_simple_typed(fibonacci_fn, 5).unwrap());
 }
 
 #[test_log::test]
@@ -219,12 +216,8 @@ fn if_without_else_type_check1() {
         .as_func()
         .unwrap();
 
-    store
-        .invoke_typed_without_fuel::<i32, ()>(empty_fn, 1)
-        .unwrap();
-    store
-        .invoke_typed_without_fuel::<i32, ()>(empty_fn, 0)
-        .unwrap();
+    store.invoke_simple_typed::<i32, ()>(empty_fn, 1).unwrap();
+    store.invoke_simple_typed::<i32, ()>(empty_fn, 0).unwrap();
 }
 
 #[test_log::test]
@@ -272,18 +265,8 @@ fn if_without_else_type_check3() {
         .as_func()
         .unwrap();
 
-    assert_eq!(
-        7,
-        store
-            .invoke_typed_without_fuel(add_one_if_true_fn, 1)
-            .unwrap()
-    );
-    assert_eq!(
-        5,
-        store
-            .invoke_typed_without_fuel(add_one_if_true_fn, 0)
-            .unwrap()
-    );
+    assert_eq!(7, store.invoke_simple_typed(add_one_if_true_fn, 1).unwrap());
+    assert_eq!(5, store.invoke_simple_typed(add_one_if_true_fn, 0).unwrap());
 }
 
 #[test_log::test]
@@ -314,13 +297,13 @@ fn if_without_else_type_check4() {
     assert_eq!(
         (7, 42),
         store
-            .invoke_typed_without_fuel::<i32, (i32, i64)>(add_one_if_true_fn, 1)
+            .invoke_simple_typed::<i32, (i32, i64)>(add_one_if_true_fn, 1)
             .unwrap()
     );
     assert_eq!(
         (5, 20),
         store
-            .invoke_typed_without_fuel::<i32, (i32, i64)>(add_one_if_true_fn, 0)
+            .invoke_simple_typed::<i32, (i32, i64)>(add_one_if_true_fn, 0)
             .unwrap()
     );
 }

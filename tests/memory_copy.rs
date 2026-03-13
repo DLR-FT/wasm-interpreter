@@ -15,7 +15,7 @@
 # limitations under the License.
 */
 use checked::Store;
-use wasm::{validate, RuntimeError, TrapError};
+use wasm::{RuntimeError, TrapError, validate};
 
 #[test_log::test]
 fn memory_copy_test_1() {
@@ -44,7 +44,7 @@ fn memory_copy_test_1() {
         .unwrap()
         .as_func()
         .unwrap();
-    store.invoke_typed_without_fuel::<(), ()>(test, ()).unwrap();
+    store.invoke_simple_typed::<(), ()>(test, ()).unwrap();
 
     let load8_u = store
         .instance_export(module, "load8_u")
@@ -55,10 +55,7 @@ fn memory_copy_test_1() {
         0, 0, 3, 1, 4, 1, 0, 0, 0, 0, 0, 0, 7, 5, 2, 3, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     ]);
     for (j, result) in results.into_iter().enumerate() {
-        assert_eq!(
-            store.invoke_typed_without_fuel(load8_u, j as i32),
-            Ok(result)
-        );
+        assert_eq!(store.invoke_simple_typed(load8_u, j as i32), Ok(result));
     }
 }
 
@@ -90,7 +87,7 @@ fn memory_copy_test_2() {
         .unwrap()
         .as_func()
         .unwrap();
-    store.invoke_typed_without_fuel::<(), ()>(test, ()).unwrap();
+    store.invoke_simple_typed::<(), ()>(test, ()).unwrap();
 
     let load8_u = store
         .instance_export(module, "load8_u")
@@ -101,10 +98,7 @@ fn memory_copy_test_2() {
         0, 0, 3, 1, 4, 1, 0, 0, 0, 0, 0, 0, 7, 3, 1, 4, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     ]);
     for (j, result) in results.into_iter().enumerate() {
-        assert_eq!(
-            store.invoke_typed_without_fuel(load8_u, j as i32),
-            Ok(result)
-        );
+        assert_eq!(store.invoke_simple_typed(load8_u, j as i32), Ok(result));
     }
 }
 
@@ -136,7 +130,7 @@ fn memory_copy_test_3() {
         .unwrap()
         .as_func()
         .unwrap();
-    store.invoke_typed_without_fuel::<(), ()>(test, ()).unwrap();
+    store.invoke_simple_typed::<(), ()>(test, ()).unwrap();
 
     let load8_u = store
         .instance_export(module, "load8_u")
@@ -152,7 +146,7 @@ fn memory_copy_test_3() {
     ]);
     for j in 0..offsets.len() {
         assert_eq!(
-            store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            store.invoke_simple_typed(load8_u, offsets[j]),
             Ok(results[j])
         );
     }
@@ -186,7 +180,7 @@ fn memory_copy_test_4() {
         .unwrap()
         .as_func()
         .unwrap();
-    store.invoke_typed_without_fuel::<(), ()>(test, ()).unwrap();
+    store.invoke_simple_typed::<(), ()>(test, ()).unwrap();
 
     let load8_u = store
         .instance_export(module, "load8_u")
@@ -202,7 +196,7 @@ fn memory_copy_test_4() {
     ]);
     for j in 0..offsets.len() {
         assert_eq!(
-            store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            store.invoke_simple_typed(load8_u, offsets[j]),
             Ok(results[j])
         );
     }
@@ -236,7 +230,7 @@ fn memory_copy_test_5() {
         .unwrap()
         .as_func()
         .unwrap();
-    store.invoke_typed_without_fuel::<(), ()>(test, ()).unwrap();
+    store.invoke_simple_typed::<(), ()>(test, ()).unwrap();
 
     let load8_u = store
         .instance_export(module, "load8_u")
@@ -252,7 +246,7 @@ fn memory_copy_test_5() {
     ]);
     for j in 0..offsets.len() {
         assert_eq!(
-            store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            store.invoke_simple_typed(load8_u, offsets[j]),
             Ok(results[j])
         );
     }
@@ -285,7 +279,7 @@ fn memory_copy_test_6() {
         .unwrap()
         .as_func()
         .unwrap();
-    let result = store.invoke_typed_without_fuel::<(i32, i32, i32), ()>(run, (65516, 0, 40));
+    let result = store.invoke_simple_typed::<(i32, i32, i32), ()>(run, (65516, 0, 40));
     assert_eq!(
         result.err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds)),
@@ -340,7 +334,7 @@ fn memory_copy_test_6() {
     ]);
     for j in 0..offsets.len() {
         assert_eq!(
-            store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            store.invoke_simple_typed(load8_u, offsets[j]),
             Ok(results[j])
         );
     }
@@ -373,7 +367,7 @@ fn memory_copy_test_7() {
         .unwrap()
         .as_func()
         .unwrap();
-    let result = store.invoke_typed_without_fuel::<(i32, i32, i32), ()>(run, (65515, 0, 39));
+    let result = store.invoke_simple_typed::<(i32, i32, i32), ()>(run, (65515, 0, 39));
     assert_eq!(
         result.err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
@@ -428,7 +422,7 @@ fn memory_copy_test_7() {
     ]);
     for j in 0..offsets.len() {
         assert_eq!(
-            store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            store.invoke_simple_typed(load8_u, offsets[j]),
             Ok(results[j])
         );
     }
@@ -461,7 +455,7 @@ fn memory_copy_test_8() {
         .unwrap()
         .as_func()
         .unwrap();
-    let result = store.invoke_typed_without_fuel::<(i32, i32, i32), ()>(run, (65515, 0, 39));
+    let result = store.invoke_simple_typed::<(i32, i32, i32), ()>(run, (65515, 0, 39));
     assert_eq!(
         result.err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
@@ -516,7 +510,7 @@ fn memory_copy_test_8() {
     ]);
     for j in 0..offsets.len() {
         assert_eq!(
-            store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            store.invoke_simple_typed(load8_u, offsets[j]),
             Ok(results[j])
         );
     }
@@ -549,7 +543,7 @@ fn memory_copy_test_9() {
         .unwrap()
         .as_func()
         .unwrap();
-    let result = store.invoke_typed_without_fuel::<(i32, i32, i32), ()>(run, (0, 65516, 40));
+    let result = store.invoke_simple_typed::<(i32, i32, i32), ()>(run, (0, 65516, 40));
     assert_eq!(
         result.err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
@@ -605,7 +599,7 @@ fn memory_copy_test_9() {
     ]);
     for j in 0..offsets.len() {
         assert_eq!(
-            store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            store.invoke_simple_typed(load8_u, offsets[j]),
             Ok(results[j])
         );
     }
@@ -638,7 +632,7 @@ fn memory_copy_test_10() {
         .unwrap()
         .as_func()
         .unwrap();
-    let result = store.invoke_typed_without_fuel::<(i32, i32, i32), ()>(run, (0, 65515, 39));
+    let result = store.invoke_simple_typed::<(i32, i32, i32), ()>(run, (0, 65515, 39));
     assert_eq!(
         result.err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
@@ -694,7 +688,7 @@ fn memory_copy_test_10() {
     ]);
     for j in 0..offsets.len() {
         assert_eq!(
-            store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            store.invoke_simple_typed(load8_u, offsets[j]),
             Ok(results[j])
         );
     }
@@ -727,7 +721,7 @@ fn memory_copy_test_11() {
         .unwrap()
         .as_func()
         .unwrap();
-    let result = store.invoke_typed_without_fuel::<(i32, i32, i32), ()>(run, (65516, 65486, 40));
+    let result = store.invoke_simple_typed::<(i32, i32, i32), ()>(run, (65516, 65486, 40));
     assert_eq!(
         result.err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
@@ -783,7 +777,7 @@ fn memory_copy_test_11() {
     ]);
     for j in 0..offsets.len() {
         assert_eq!(
-            store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            store.invoke_simple_typed(load8_u, offsets[j]),
             Ok(results[j])
         );
     }
@@ -816,7 +810,7 @@ fn memory_copy_test_12() {
         .unwrap()
         .as_func()
         .unwrap();
-    let result = store.invoke_typed_without_fuel::<(i32, i32, i32), ()>(run, (65486, 65516, 40));
+    let result = store.invoke_simple_typed::<(i32, i32, i32), ()>(run, (65486, 65516, 40));
     assert_eq!(
         result.err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
@@ -872,7 +866,7 @@ fn memory_copy_test_12() {
     ]);
     for j in 0..offsets.len() {
         assert_eq!(
-            store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            store.invoke_simple_typed(load8_u, offsets[j]),
             Ok(results[j])
         );
     }
@@ -905,7 +899,7 @@ fn memory_copy_test_13() {
         .unwrap()
         .as_func()
         .unwrap();
-    let result = store.invoke_typed_without_fuel::<(i32, i32, i32), ()>(run, (65516, 65506, 40));
+    let result = store.invoke_simple_typed::<(i32, i32, i32), ()>(run, (65516, 65506, 40));
     assert_eq!(
         result.err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
@@ -961,7 +955,7 @@ fn memory_copy_test_13() {
     ]);
     for j in 0..offsets.len() {
         assert_eq!(
-            store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            store.invoke_simple_typed(load8_u, offsets[j]),
             Ok(results[j])
         );
     }
@@ -994,7 +988,7 @@ fn memory_copy_test_14() {
         .unwrap()
         .as_func()
         .unwrap();
-    let result = store.invoke_typed_without_fuel::<(i32, i32, i32), ()>(run, (65506, 65516, 40));
+    let result = store.invoke_simple_typed::<(i32, i32, i32), ()>(run, (65506, 65516, 40));
     assert_eq!(
         result.err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
@@ -1050,7 +1044,7 @@ fn memory_copy_test_14() {
     ]);
     for j in 0..offsets.len() {
         assert_eq!(
-            store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            store.invoke_simple_typed(load8_u, offsets[j]),
             Ok(results[j])
         );
     }
@@ -1083,7 +1077,7 @@ fn memory_copy_test_15() {
         .unwrap()
         .as_func()
         .unwrap();
-    let result = store.invoke_typed_without_fuel::<(i32, i32, i32), ()>(run, (65516, 65516, 40));
+    let result = store.invoke_simple_typed::<(i32, i32, i32), ()>(run, (65516, 65516, 40));
     assert_eq!(
         result.err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
@@ -1139,7 +1133,7 @@ fn memory_copy_test_15() {
     ]);
     for j in 0..offsets.len() {
         assert_eq!(
-            store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            store.invoke_simple_typed(load8_u, offsets[j]),
             Ok(results[j])
         );
     }
@@ -1172,8 +1166,8 @@ fn memory_copy_test_16() {
         .unwrap()
         .as_func()
         .unwrap();
-    let result = store
-        .invoke_typed_without_fuel::<(i32, i32, i32), ()>(run, (0, 65516, 4294963200_u32 as i32));
+    let result =
+        store.invoke_simple_typed::<(i32, i32, i32), ()>(run, (0, 65516, 4294963200_u32 as i32));
     assert_eq!(
         result.err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
@@ -1229,7 +1223,7 @@ fn memory_copy_test_16() {
     ]);
     for j in 0..offsets.len() {
         assert_eq!(
-            store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            store.invoke_simple_typed(load8_u, offsets[j]),
             Ok(results[j])
         );
     }
@@ -1262,10 +1256,8 @@ fn memory_copy_test_17() {
         .unwrap()
         .as_func()
         .unwrap();
-    let result = store.invoke_typed_without_fuel::<(i32, i32, i32), ()>(
-        run,
-        (65516, 61440, 4294967040_u32 as i32),
-    );
+    let result = store
+        .invoke_simple_typed::<(i32, i32, i32), ()>(run, (65516, 61440, 4294967040_u32 as i32));
     assert_eq!(
         result.err(),
         Some(RuntimeError::Trap(TrapError::MemoryOrDataAccessOutOfBounds))
@@ -1321,7 +1313,7 @@ fn memory_copy_test_17() {
     ]);
     for j in 0..offsets.len() {
         assert_eq!(
-            store.invoke_typed_without_fuel(load8_u, offsets[j]),
+            store.invoke_simple_typed(load8_u, offsets[j]),
             Ok(results[j])
         );
     }
