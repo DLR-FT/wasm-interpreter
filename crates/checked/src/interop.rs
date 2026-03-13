@@ -276,10 +276,7 @@ impl<T: Config> Store<'_, T> {
         // SAFETY: The caller ensures that if the host function returns
         // references, they originate either from the arguments or the current
         // store.
-        let func_addr = unsafe {
-            self.inner
-                .func_alloc_typed_unchecked::<Params, Returns>(host_func)
-        };
+        let func_addr = unsafe { self.inner.func_alloc_typed::<Params, Returns>(host_func) };
         // 3. rewrap
         // 4. return
         // SAFETY: The function address just came from the current store.
@@ -302,7 +299,7 @@ impl<T: Config> Store<'_, T> {
         // SAFETY: It was just checked that the `FuncAddr` and any addresses
         // contained in the parameters came from the current store through their
         // store ids.
-        let returns = unsafe { self.inner.invoke_without_fuel_unchecked(function, params) }?;
+        let returns = unsafe { self.inner.invoke_without_fuel(function, params) }?;
         // 3. rewrap
         // SAFETY: All `Value`s just came from the current store.
         let stored_returns = unsafe { Vec::from_bare(returns, self.id) };

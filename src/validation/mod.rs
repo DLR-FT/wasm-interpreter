@@ -29,8 +29,8 @@ pub(crate) mod validation_stack;
 /// Information collected from validating a module.
 ///
 /// This can be used to instantiate a new module instance in some
-/// [`Store`](crate::Store) through
-/// [`Store::module_instantiate_unchecked`](crate::Store::module_instantiate_unchecked)
+/// [`Store`](crate::Store) thorugh
+/// [`Store::module_instantiate`](crate::Store::module_instantiate)
 #[derive(Clone, Debug)]
 pub struct ValidationInfo<'bytecode> {
     pub(crate) wasm: &'bytecode [u8],
