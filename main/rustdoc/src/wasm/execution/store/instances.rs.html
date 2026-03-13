@@ -175,24 +175,29 @@
 <a href=#175 id=175 data-nosnippet>175</a>}
 <a href=#176 id=176 data-nosnippet>176</a>
 <a href=#177 id=177 data-nosnippet>177</a><span class="doccomment">///&lt;https://webassembly.github.io/spec/core/exec/runtime.html#module-instances&gt;
-<a href=#178 id=178 data-nosnippet>178</a></span><span class="attr">#[derive(Debug)]
-<a href=#179 id=179 data-nosnippet>179</a></span><span class="kw">pub struct </span>ModuleInst&lt;<span class="lifetime">'b</span>&gt; {
-<a href=#180 id=180 data-nosnippet>180</a>    <span class="kw">pub </span>types: IdxVec&lt;TypeIdx, FuncType&gt;,
-<a href=#181 id=181 data-nosnippet>181</a>    <span class="kw">pub </span>func_addrs: IdxVec&lt;FuncIdx, FuncAddr&gt;,
-<a href=#182 id=182 data-nosnippet>182</a>    <span class="kw">pub </span>table_addrs: IdxVec&lt;TableIdx, TableAddr&gt;,
-<a href=#183 id=183 data-nosnippet>183</a>    <span class="kw">pub </span>mem_addrs: IdxVec&lt;MemIdx, MemAddr&gt;,
-<a href=#184 id=184 data-nosnippet>184</a>    <span class="kw">pub </span>global_addrs: IdxVec&lt;GlobalIdx, GlobalAddr&gt;,
-<a href=#185 id=185 data-nosnippet>185</a>    <span class="kw">pub </span>elem_addrs: IdxVec&lt;ElemIdx, ElemAddr&gt;,
-<a href=#186 id=186 data-nosnippet>186</a>    <span class="kw">pub </span>data_addrs: IdxVec&lt;DataIdx, DataAddr&gt;,
-<a href=#187 id=187 data-nosnippet>187</a>    <span class="doccomment">///&lt;https://webassembly.github.io/spec/core/exec/runtime.html#export-instances&gt;
-<a href=#188 id=188 data-nosnippet>188</a>    /// matches the list of ExportInst structs in the spec, however the spec never uses the name attribute
-<a href=#189 id=189 data-nosnippet>189</a>    /// except during linking, which is up to the embedder to implement.
-<a href=#190 id=190 data-nosnippet>190</a>    /// therefore this is a map data structure instead.
-<a href=#191 id=191 data-nosnippet>191</a>    </span><span class="kw">pub </span>exports: BTreeMap&lt;String, ExternVal&gt;,
-<a href=#192 id=192 data-nosnippet>192</a>
-<a href=#193 id=193 data-nosnippet>193</a>    <span class="comment">// TODO the bytecode is not in the spec, but required for re-parsing
-<a href=#194 id=194 data-nosnippet>194</a>    </span><span class="kw">pub </span>wasm_bytecode: <span class="kw-2">&amp;</span><span class="lifetime">'b </span>[u8],
-<a href=#195 id=195 data-nosnippet>195</a>
-<a href=#196 id=196 data-nosnippet>196</a>    <span class="comment">// sidetable is not in the spec, but required for control flow
-<a href=#197 id=197 data-nosnippet>197</a>    </span><span class="kw">pub </span>sidetable: Sidetable,
-<a href=#198 id=198 data-nosnippet>198</a>}</code></pre></div></section></main></body></html>
+<a href=#178 id=178 data-nosnippet>178</a>///
+<a href=#179 id=179 data-nosnippet>179</a>/// # Safety
+<a href=#180 id=180 data-nosnippet>180</a>///
+<a href=#181 id=181 data-nosnippet>181</a>/// All indices contained in a module instance must be valid in their associated
+<a href=#182 id=182 data-nosnippet>182</a>/// index vectors from the same module instance.
+<a href=#183 id=183 data-nosnippet>183</a></span><span class="attr">#[derive(Debug)]
+<a href=#184 id=184 data-nosnippet>184</a></span><span class="kw">pub struct </span>ModuleInst&lt;<span class="lifetime">'b</span>&gt; {
+<a href=#185 id=185 data-nosnippet>185</a>    <span class="kw">pub </span>types: IdxVec&lt;TypeIdx, FuncType&gt;,
+<a href=#186 id=186 data-nosnippet>186</a>    <span class="kw">pub </span>func_addrs: IdxVec&lt;FuncIdx, FuncAddr&gt;,
+<a href=#187 id=187 data-nosnippet>187</a>    <span class="kw">pub </span>table_addrs: IdxVec&lt;TableIdx, TableAddr&gt;,
+<a href=#188 id=188 data-nosnippet>188</a>    <span class="kw">pub </span>mem_addrs: IdxVec&lt;MemIdx, MemAddr&gt;,
+<a href=#189 id=189 data-nosnippet>189</a>    <span class="kw">pub </span>global_addrs: IdxVec&lt;GlobalIdx, GlobalAddr&gt;,
+<a href=#190 id=190 data-nosnippet>190</a>    <span class="kw">pub </span>elem_addrs: IdxVec&lt;ElemIdx, ElemAddr&gt;,
+<a href=#191 id=191 data-nosnippet>191</a>    <span class="kw">pub </span>data_addrs: IdxVec&lt;DataIdx, DataAddr&gt;,
+<a href=#192 id=192 data-nosnippet>192</a>    <span class="doccomment">///&lt;https://webassembly.github.io/spec/core/exec/runtime.html#export-instances&gt;
+<a href=#193 id=193 data-nosnippet>193</a>    /// matches the list of ExportInst structs in the spec, however the spec never uses the name attribute
+<a href=#194 id=194 data-nosnippet>194</a>    /// except during linking, which is up to the embedder to implement.
+<a href=#195 id=195 data-nosnippet>195</a>    /// therefore this is a map data structure instead.
+<a href=#196 id=196 data-nosnippet>196</a>    </span><span class="kw">pub </span>exports: BTreeMap&lt;String, ExternVal&gt;,
+<a href=#197 id=197 data-nosnippet>197</a>
+<a href=#198 id=198 data-nosnippet>198</a>    <span class="comment">// TODO the bytecode is not in the spec, but required for re-parsing
+<a href=#199 id=199 data-nosnippet>199</a>    </span><span class="kw">pub </span>wasm_bytecode: <span class="kw-2">&amp;</span><span class="lifetime">'b </span>[u8],
+<a href=#200 id=200 data-nosnippet>200</a>
+<a href=#201 id=201 data-nosnippet>201</a>    <span class="comment">// sidetable is not in the spec, but required for control flow
+<a href=#202 id=202 data-nosnippet>202</a>    </span><span class="kw">pub </span>sidetable: Sidetable,
+<a href=#203 id=203 data-nosnippet>203</a>}</code></pre></div></section></main></body></html>
