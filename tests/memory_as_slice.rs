@@ -1,6 +1,7 @@
 use std::io::Write;
 
-use wasm::{checked::Store, Limits, MemType};
+use checked::Store;
+use wasm::{Limits, MemType};
 
 #[test_log::test]
 fn simple_byte_writes() {
@@ -9,13 +10,11 @@ fn simple_byte_writes() {
         limits: Limits { min: 1, max: None },
     });
 
-    store
-        .mem_access_mut_slice(mem, |mem_as_slice| {
-            for (n, x) in mem_as_slice.iter_mut().enumerate() {
-                *x = u8::try_from(n % 256).expect("this to never be larger than 255");
-            }
-        })
-        .unwrap();
+    store.mem_access_mut_slice(mem, |mem_as_slice| {
+        for (n, x) in mem_as_slice.iter_mut().enumerate() {
+            *x = u8::try_from(n % 256).expect("this to never be larger than 255");
+        }
+    });
 }
 
 #[test_log::test]
@@ -28,19 +27,15 @@ fn interpret_as_str() {
     const STR_TO_WRITE: &str = "Hello World!";
 
     // Write a string into the memory
-    store
-        .mem_access_mut_slice(mem, |mut mem_as_slice| {
-            let bytes_written = mem_as_slice.write(STR_TO_WRITE.as_bytes()).unwrap();
-            assert_eq!(bytes_written, 12);
-        })
-        .unwrap();
+    store.mem_access_mut_slice(mem, |mut mem_as_slice| {
+        let bytes_written = mem_as_slice.write(STR_TO_WRITE.as_bytes()).unwrap();
+        assert_eq!(bytes_written, 12);
+    });
 
     // Read the string again and check if it is equal to the original one
-    store
-        .mem_access_mut_slice(mem, |mem_as_slice| {
-            let bytes = &mem_as_slice[0..STR_TO_WRITE.len()];
-            let as_str = std::str::from_utf8(bytes).unwrap();
-            assert_eq!(as_str, STR_TO_WRITE);
-        })
-        .unwrap();
+    store.mem_access_mut_slice(mem, |mem_as_slice| {
+        let bytes = &mem_as_slice[0..STR_TO_WRITE.len()];
+        let as_str = std::str::from_utf8(bytes).unwrap();
+        assert_eq!(as_str, STR_TO_WRITE);
+    });
 }

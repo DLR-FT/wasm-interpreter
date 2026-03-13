@@ -1,14 +1,15 @@
-use crate::{
+use alloc::{fmt::Debug, vec, vec::Vec};
+use interop::{InteropValueList, RefExtern, StoreTypedInvocationExt};
+use wasm::{
     addrs::FuncAddr,
-    checked::{Stored, StoredRef, StoredValue},
-    interop::RefExtern,
+    config::Config,
     value::{ValueTypeMismatchError, F32, F64},
-    NumType, RefType, ValType,
+    HaltExecutionError, NumType, RefType, RuntimeError, ValType, Value,
 };
 
-use alloc::{fmt::Debug, vec, vec::Vec};
+use crate::{stored_types::Stored, AbstractStored, Store, StoredRef, StoredValue};
 
-/// A stored variant of [`InteropValue`](crate::execution::interop::InteropValue)
+/// A stored variant of [`InteropValue`](wasm::interop::InteropValue)
 pub trait StoredInteropValue
 where
     Self: Copy + Debug + PartialEq + TryFrom<StoredValue, Error = ValueTypeMismatchError>,
@@ -249,5 +250,62 @@ where
             B::try_from(values.next().unwrap())?,
             C::try_from(values.next().unwrap())?,
         ))
+    }
+}
+
+impl<T: Config> Store<'_, T> {
+    /// This is a safer variant of [`Store::func_alloc_typed_unchecked`](crate::Store::func_alloc_typed_unchecked). It is
+    /// functionally equal, with the only difference being that this function
+    /// returns a [`Stored<FuncAddr>`].
+    ///
+    /// # Safety
+    ///
+    /// The caller has to guarantee that if the [`Value`]s returned from the
+    /// given host function are references, their addresses came either from the
+    /// host function arguments or from the current [`Store`] object.
+    ///
+    /// See: [`Store::func_alloc_typed_unchecked`](crate::Store::func_alloc_typed_unchecked) for more information.
+    #[allow(clippy::let_and_return)] // reason = "to follow the 1234 structure"
+    pub unsafe fn func_alloc_typed<Params: InteropValueList, Returns: InteropValueList>(
+        &mut self,
+        host_func: fn(&mut T, Vec<Value>) -> Result<Vec<Value>, HaltExecutionError>,
+    ) -> Stored<FuncAddr> {
+        // 1. try unwrap
+        // no stored parameters
+        // 2. call
+        // SAFETY: The caller ensures that if the host function returns
+        // references, they originate either from the arguments or the current
+        // store.
+        let func_addr = unsafe { self.inner.func_alloc_typed::<Params, Returns>(host_func) };
+        // 3. rewrap
+        // 4. return
+        // SAFETY: The function address just came from the current store.
+        unsafe { Stored::from_bare(func_addr, self.id) }
+    }
+
+    /// This is a safe variant of [`Store::invoke_typed_without_fuel_unchecked`](crate::Store::invoke_typed_without_fuel_unchecked).
+    pub fn invoke_typed_without_fuel<
+        Params: StoredInteropValueList,
+        Returns: StoredInteropValueList,
+    >(
+        &mut self,
+        function: Stored<FuncAddr>,
+        params: Params,
+    ) -> Result<Returns, RuntimeError> {
+        // 1. try unwrap
+        let function = function.try_unwrap_into_bare(self.id);
+        let params = params.into_values().try_unwrap_into_bare(self.id);
+        // 2. call
+        // SAFETY: It was just checked that the `FuncAddr` and any addresses
+        // contained in the parameters came from the current store through their
+        // store ids.
+        let returns = unsafe { self.inner.invoke_without_fuel(function, params) }?;
+        // 3. rewrap
+        // SAFETY: All `Value`s just came from the current store.
+        let stored_returns = unsafe { Vec::from_bare(returns, self.id) };
+        // 4. return
+        let stored_returns = Returns::try_from_values(stored_returns.into_iter())
+            .map_err(|_| RuntimeError::FunctionInvocationSignatureMismatch)?;
+        Ok(stored_returns)
     }
 }

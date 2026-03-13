@@ -10,9 +10,7 @@ use crate::core::reader::types::data::{DataModeActive, DataSegment};
 use crate::core::reader::types::element::{ActiveElem, ElemItems, ElemMode, ElemType};
 use crate::core::reader::types::export::ExportDesc;
 use crate::core::reader::types::global::GlobalType;
-use crate::core::reader::types::{
-    ExternType, FuncType, ImportSubTypeRelation, MemType, ResultType, TableType,
-};
+use crate::core::reader::types::{ExternType, FuncType, ImportSubTypeRelation, MemType, TableType};
 use crate::core::reader::WasmReader;
 use crate::core::utils::ToUsizeExt;
 use crate::execution::interpreter_loop::{self, memory_init, table_init};
@@ -31,9 +29,7 @@ use instances::{
 };
 use linear_memory::LinearMemory;
 
-use super::interop::InteropValueList;
 use super::interpreter_loop::{data_drop, elem_drop};
-use super::value::ValueTypeMismatchError;
 use super::UnwrapValidatedExt;
 
 pub mod addrs;
@@ -100,7 +96,7 @@ impl<'b, T: Config> Store<'b, T> {
     ///
     /// The caller has to guarantee that any address values contained in the
     /// [`ExternVal`]s came from the current [`Store`] object.
-    pub unsafe fn module_instantiate_unchecked(
+    pub unsafe fn module_instantiate(
         &mut self,
         validation_info: &ValidationInfo<'b>,
         extern_vals: Vec<ExternVal>,
@@ -605,7 +601,7 @@ impl<'b, T: Config> Store<'b, T> {
             // and is therefore valid in the current store. Furthermore, there
             // are no function arguments and thus also no other address types
             // can be invalid.
-            let run_state = unsafe { self.invoke_unchecked(*func_addr, Vec::new(), maybe_fuel) }?;
+            let run_state = unsafe { self.invoke(*func_addr, Vec::new(), maybe_fuel) }?;
 
             let RunState::Finished {
                 maybe_remaining_fuel,
@@ -633,7 +629,7 @@ impl<'b, T: Config> Store<'b, T> {
     ///
     /// The caller has to guarantee that the [`ModuleAddr`] came from the
     /// current [`Store`] object.
-    pub unsafe fn instance_export_unchecked(
+    pub unsafe fn instance_export(
         &self,
         module_addr: ModuleAddr,
         name: &str,
@@ -676,7 +672,7 @@ impl<'b, T: Config> Store<'b, T> {
     /// The caller has to guarantee that if the [`Value`]s returned from the
     /// given host function are references, their addresses came either from the
     /// host function arguments or from the current [`Store`] object.
-    pub unsafe fn func_alloc_unchecked(
+    pub unsafe fn func_alloc(
         &mut self,
         func_type: FuncType,
         host_func: fn(&mut T, Vec<Value>) -> Result<Vec<Value>, HaltExecutionError>,
@@ -702,7 +698,7 @@ impl<'b, T: Config> Store<'b, T> {
     ///
     /// The caller has to guarantee that the [`FuncAddr`] came from the current
     /// [`Store`] object.
-    pub unsafe fn func_type_unchecked(&self, func_addr: FuncAddr) -> FuncType {
+    pub unsafe fn func_type(&self, func_addr: FuncAddr) -> FuncType {
         // 1. Return `S.funcs[a].type`.
         // SAFETY: The caller ensures this function address to be valid for the
         // current store.
@@ -720,7 +716,7 @@ impl<'b, T: Config> Store<'b, T> {
     /// [`FuncAddr`] or [`ExternAddr`](crate::execution::value::ExternAddr)
     /// values contained in the parameter values came from the current [`Store`]
     /// object.
-    pub unsafe fn invoke_unchecked(
+    pub unsafe fn invoke(
         &mut self,
         func_addr: FuncAddr,
         params: Vec<Value>,
@@ -729,11 +725,11 @@ impl<'b, T: Config> Store<'b, T> {
         // SAFETY: The caller ensures that the function address and any function
         // addresses or extern addresses contained in the parameter values are
         // valid in the current store.
-        let resumable = unsafe { self.create_resumable_unchecked(func_addr, params, maybe_fuel)? };
+        let resumable = unsafe { self.create_resumable(func_addr, params, maybe_fuel)? };
 
         // SAFETY: This resumable just came from the current store. Therefore,
         // it must be valid in the current store.
-        unsafe { self.resume_unchecked(resumable) }
+        unsafe { self.resume(resumable) }
     }
 
     /// Allocates a new table with some table type and an initialization value `ref` and returns its table address.
@@ -744,7 +740,7 @@ impl<'b, T: Config> Store<'b, T> {
     ///
     /// The caller has to guarantee that any [`FuncAddr`] or [`ExternAddr`](crate::execution::value::ExternAddr)
     /// values contained in `r#ref` came from the current [`Store`] object.
-    pub unsafe fn table_alloc_unchecked(
+    pub unsafe fn table_alloc(
         &mut self,
         table_type: TableType,
         r#ref: Ref,
@@ -776,7 +772,7 @@ impl<'b, T: Config> Store<'b, T> {
     ///
     /// The caller has to guarantee that the given [`TableAddr`] came from
     /// the current [`Store`] object.
-    pub unsafe fn table_type_unchecked(&self, table_addr: TableAddr) -> TableType {
+    pub unsafe fn table_type(&self, table_addr: TableAddr) -> TableType {
         // 1. Return `S.tables[a].type`.
         // SAFETY: The caller ensures that the given table address is valid in
         // the current store.
@@ -794,11 +790,7 @@ impl<'b, T: Config> Store<'b, T> {
     ///
     /// The caller has to guarantee that the given [`TableAddr`] must come from
     /// the current [`Store`] object.
-    pub unsafe fn table_read_unchecked(
-        &self,
-        table_addr: TableAddr,
-        i: u32,
-    ) -> Result<Ref, RuntimeError> {
+    pub unsafe fn table_read(&self, table_addr: TableAddr, i: u32) -> Result<Ref, RuntimeError> {
         // Convert `i` to usize for indexing
         let i = i.into_usize();
 
@@ -825,7 +817,7 @@ impl<'b, T: Config> Store<'b, T> {
     /// [`FuncAddr`] or [`ExternAddr`](crate::execution::value::ExternAddr)
     /// values contained in the [`Ref`] must come from the current [`Store`]
     /// object.
-    pub unsafe fn table_write_unchecked(
+    pub unsafe fn table_write(
         &mut self,
         table_addr: TableAddr,
         i: u32,
@@ -864,7 +856,7 @@ impl<'b, T: Config> Store<'b, T> {
     ///
     /// The caller has to guarantee that the given [`TableAddr`] must come from
     /// the current [`Store`] object.
-    pub unsafe fn table_size_unchecked(&self, table_addr: TableAddr) -> u32 {
+    pub unsafe fn table_size(&self, table_addr: TableAddr) -> u32 {
         // 1. Return the length of `store.tables[tableaddr].elem`.
         // SAFETY: The caller ensures that the table address is valid in the
         // current store.
@@ -887,7 +879,7 @@ impl<'b, T: Config> Store<'b, T> {
     /// [`FuncAddr`] or [`ExternAddr`](crate::execution::value::ExternAddr)
     /// values contained in the [`Ref`] must come from the current [`Store`]
     /// object.
-    pub unsafe fn table_grow_unchecked(
+    pub unsafe fn table_grow(
         &mut self,
         table_addr: TableAddr,
         n: u32,
@@ -925,7 +917,7 @@ impl<'b, T: Config> Store<'b, T> {
     ///
     /// The caller has to guarantee that the given [`MemAddr`] came from the
     /// current [`Store`] object.
-    pub unsafe fn mem_type_unchecked(&self, mem_addr: MemAddr) -> MemType {
+    pub unsafe fn mem_type(&self, mem_addr: MemAddr) -> MemType {
         // 1. Return `S.mems[a].type`.
         // SAFETY: The caller ensures that the given memory address is valid in
         // the current store.
@@ -943,7 +935,7 @@ impl<'b, T: Config> Store<'b, T> {
     ///
     /// The caller has to guarantee that the given [`MemAddr`] came from the
     /// current [`Store`] object.
-    pub unsafe fn mem_read_unchecked(&self, mem_addr: MemAddr, i: u32) -> Result<u8, RuntimeError> {
+    pub unsafe fn mem_read(&self, mem_addr: MemAddr, i: u32) -> Result<u8, RuntimeError> {
         // Convert the index type
         let i = i.into_usize();
 
@@ -965,7 +957,7 @@ impl<'b, T: Config> Store<'b, T> {
     ///
     /// The caller has to guarantee that the given [`MemAddr`] came from the
     /// current [`Store`] object.
-    pub unsafe fn mem_write_unchecked(
+    pub unsafe fn mem_write(
         &self,
         mem_addr: MemAddr,
         i: u32,
@@ -990,7 +982,7 @@ impl<'b, T: Config> Store<'b, T> {
     ///
     /// The caller has to guarantee that the given [`MemAddr`] came from the
     /// current [`Store`] object.
-    pub unsafe fn mem_size_unchecked(&self, mem_addr: MemAddr) -> u32 {
+    pub unsafe fn mem_size(&self, mem_addr: MemAddr) -> u32 {
         // 1. Return the length of `store.mems[memaddr].data` divided by the page size.
         // SAFETY: The caller ensures that the given memory address is valid in
         // the current store.
@@ -1010,11 +1002,7 @@ impl<'b, T: Config> Store<'b, T> {
     ///
     /// The caller has to guarantee that the given [`MemAddr`] came from the
     /// current [`Store`] object.
-    pub unsafe fn mem_grow_unchecked(
-        &mut self,
-        mem_addr: MemAddr,
-        n: u32,
-    ) -> Result<(), RuntimeError> {
+    pub unsafe fn mem_grow(&mut self, mem_addr: MemAddr, n: u32) -> Result<(), RuntimeError> {
         // 1. Try growing the memory instance `store.mems[memaddr]` by `n` pages:
         //   a. If it succeeds, then return the updated store.
         //   b. Else, return `error`.
@@ -1035,7 +1023,7 @@ impl<'b, T: Config> Store<'b, T> {
     /// The caller has to guarantee that any [`FuncAddr`] or
     /// [`ExternAddr`](crate::execution::value::ExternAddr) values contained in
     /// the [`Value`] came from the current [`Store`] object.
-    pub unsafe fn global_alloc_unchecked(
+    pub unsafe fn global_alloc(
         &mut self,
         global_type: GlobalType,
         val: Value,
@@ -1066,7 +1054,7 @@ impl<'b, T: Config> Store<'b, T> {
     ///
     /// The caller has to guarantee that the given [`GlobalAddr`] came from the
     /// current [`Store`] object.
-    pub unsafe fn global_type_unchecked(&self, global_addr: GlobalAddr) -> GlobalType {
+    pub unsafe fn global_type(&self, global_addr: GlobalAddr) -> GlobalType {
         // 1. Return `S.globals[a].type`.
         // SAFETY: The caller ensures that the given global address is valid in
         // the current store.
@@ -1083,7 +1071,7 @@ impl<'b, T: Config> Store<'b, T> {
     ///
     /// The caller has to guarantee that the given [`GlobalAddr`] came from the
     /// current [`Store`] object.
-    pub unsafe fn global_read_unchecked(&self, global_addr: GlobalAddr) -> Value {
+    pub unsafe fn global_read(&self, global_addr: GlobalAddr) -> Value {
         // 1. Let `gi` be the global instance `store.globals[globaladdr].
         // SAFETY: The caller ensures that the given global address is valid in
         // the current store.
@@ -1107,7 +1095,7 @@ impl<'b, T: Config> Store<'b, T> {
     /// [`FuncAddr`] or [`ExternAddr`](crate::execution::value::ExternAddr)
     /// values contained in the [`Value`] came from the current [`Store`]
     /// object.
-    pub unsafe fn global_write_unchecked(
+    pub unsafe fn global_write(
         &mut self,
         global_addr: GlobalAddr,
         val: Value,
@@ -1267,7 +1255,7 @@ impl<'b, T: Config> Store<'b, T> {
     /// The caller has to guarantee that the [`FuncAddr`] and any [`FuncAddr`]
     /// or [`ExternAddr`](crate::execution::value::ExternAddr) values contained
     /// in the parameter values came from the current [`Store`] object.
-    pub unsafe fn create_resumable_unchecked(
+    pub unsafe fn create_resumable(
         &self,
         func_addr: FuncAddr,
         params: Vec<Value>,
@@ -1325,10 +1313,7 @@ impl<'b, T: Config> Store<'b, T> {
     ///
     /// The caller has to guarantee that the [`Resumable`] came from the current
     /// [`Store`] object.
-    pub unsafe fn resume_unchecked(
-        &mut self,
-        resumable: Resumable<T>,
-    ) -> Result<RunState<T>, RuntimeError> {
+    pub unsafe fn resume(&mut self, resumable: Resumable<T>) -> Result<RunState<T>, RuntimeError> {
         match resumable {
             Resumable::Wasm(mut resumable) => {
                 let result = interpreter_loop::run(&mut resumable, self)?;
@@ -1385,39 +1370,10 @@ impl<'b, T: Config> Store<'b, T> {
         }
     }
 
-    /// Allocates a new function with a statically known type signature with some host code.
-    ///
-    /// This function is simply syntactic sugar for calling
-    /// [`Store::func_alloc_unchecked`] with statically know types.
-    ///
-    /// # Safety
-    ///
-    /// Same as [`Store::func_alloc_unchecked`].
-    pub unsafe fn func_alloc_typed_unchecked<
-        Params: InteropValueList,
-        Returns: InteropValueList,
-    >(
-        &mut self,
-        host_func: fn(&mut T, Vec<Value>) -> Result<Vec<Value>, HaltExecutionError>,
-    ) -> FuncAddr {
-        let func_type = FuncType {
-            params: ResultType {
-                valtypes: Vec::from(Params::TYS),
-            },
-            returns: ResultType {
-                valtypes: Vec::from(Returns::TYS),
-            },
-        };
-        // SAFETY: The caller makes the same safety guarantees that are required
-        // by this function.
-        unsafe { self.func_alloc_unchecked(func_type, host_func) }
-    }
-
     /// Invokes a function without fuel.
     ///
-    /// This function is simply syntactic sugar for calling
-    /// [`Store::invoke_unchecked`] without any fuel and destructuring the
-    /// resulting [`RunState`].
+    /// This function is simply syntactic sugar for calling [`Store::invoke`]
+    /// without any fuel and destructuring the resulting [`RunState`].
     ///
     /// # Safety
     ///
@@ -1425,7 +1381,7 @@ impl<'b, T: Config> Store<'b, T> {
     /// [`FuncAddr`] or [`ExternAddr`](crate::execution::value::ExternAddr)
     /// values contained in the parameter values came from the current [`Store`]
     /// object.
-    pub unsafe fn invoke_without_fuel_unchecked(
+    pub unsafe fn invoke_without_fuel(
         &mut self,
         function: FuncAddr,
         params: Vec<Value>,
@@ -1433,7 +1389,7 @@ impl<'b, T: Config> Store<'b, T> {
         // SAFETY: The caller ensures that the given function address and all
         // address types contained in the parameters are valid in the current
         // store.
-        let run_state = unsafe { self.invoke_unchecked(function, params, None) }?;
+        let run_state = unsafe { self.invoke(function, params, None) }?;
 
         match run_state {
             RunState::Finished {
@@ -1444,36 +1400,6 @@ impl<'b, T: Config> Store<'b, T> {
         }
     }
 
-    /// Invokes a function with a statically known type signature without fuel.
-    ///
-    /// This function is simply syntactic sugar for calling
-    /// [`Store::invoke_unchecked`] without any fuel and destructuring the
-    /// resulting [`RunState`] with statically known types.
-    ///
-    /// # Safety
-    ///
-    /// The caller has to guarantee that the given [`FuncAddr`] and any
-    /// [`FuncAddr`] or [`ExternAddr`](crate::execution::value::ExternAddr)
-    /// values contained in the parameter values came from the current [`Store`]
-    /// object.
-    pub unsafe fn invoke_typed_without_fuel_unchecked<
-        Params: InteropValueList,
-        Returns: InteropValueList,
-    >(
-        &mut self,
-        function: FuncAddr,
-        params: Params,
-    ) -> Result<Returns, RuntimeError> {
-        // SAFETY: The caller ensures that the given function address and all
-        // address types contained in the parameters are valid in the current
-        // store.
-        let return_values =
-            unsafe { self.invoke_without_fuel_unchecked(function, params.into_values()) }?;
-
-        Returns::try_from_values(return_values.into_iter())
-            .map_err(|ValueTypeMismatchError| RuntimeError::FunctionInvocationSignatureMismatch)
-    }
-
     /// Allows a given closure to temporarily access the entire memory as a
     /// `&mut [u8]`.
     ///
@@ -1481,7 +1407,7 @@ impl<'b, T: Config> Store<'b, T> {
     ///
     /// The caller has to guarantee that the given [`MemAddr`] came from the
     /// current [`Store`] object.
-    pub unsafe fn mem_access_mut_slice_unchecked<R>(
+    pub unsafe fn mem_access_mut_slice<R>(
         &self,
         memory: MemAddr,
         accessor: impl FnOnce(&mut [u8]) -> R,
@@ -1490,6 +1416,27 @@ impl<'b, T: Config> Store<'b, T> {
         // the current store.
         let memory = unsafe { self.memories.get(memory) };
         memory.mem.access_mut_slice(accessor)
+    }
+
+    /// Returns all exports of a module instance by its module address.
+    ///
+    /// To get a single import by its known name, use
+    /// [`Store::instance_export`].
+    ///
+    /// # Safety
+    ///
+    /// The caller has to guarantee that the given [`ModuleAddr`] came from the
+    /// current [`Store`] object.
+    pub unsafe fn instance_exports(&self, module_addr: ModuleAddr) -> Vec<(String, ExternVal)> {
+        // SAFETY: The caller ensures that the given module address is valid in
+        // the current store.
+        let module = unsafe { self.modules.get(module_addr) };
+
+        module
+            .exports
+            .iter()
+            .map(|(name, externval)| (name.clone(), *externval))
+            .collect()
     }
 }
 

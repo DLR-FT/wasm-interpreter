@@ -1,7 +1,8 @@
 #![allow(clippy::approx_constant)]
 use core::f64;
 
-use wasm::{checked::Store, validate};
+use checked::Store;
+use wasm::validate;
 
 /// A simple function to test the f64.const implementation
 #[test_log::test]

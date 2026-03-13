@@ -1,4 +1,5 @@
-use wasm::{checked::Linker, checked::Store, checked::StoredValue, validate, RuntimeError};
+use checked::{Linker, Store, StoredValue};
+use wasm::{validate, RuntimeError};
 
 const SIMPLE_IMPORT_BASE: &str = r#"
 (module
@@ -31,6 +32,7 @@ pub fn compile_simple_import() {
     // First instantiate the addon module
     let addon = linker
         .module_instantiate(&mut store, &validation_info_addon, None)
+        .unwrap()
         .unwrap()
         .module_addr;
     // We also want to define all of its exports, to makes them discoverable for

@@ -1,11 +1,12 @@
-use crate::{
+use wasm::{
     addrs::FuncAddr,
-    checked::StoreId,
     value::{ExternAddr, Ref, ValueTypeMismatchError, F32, F64},
     RefType, Value,
 };
 
-use super::{AbstractStored, Stored};
+use crate::stored_types::Stored;
+
+use super::{AbstractStored, StoreId};
 
 /// A stored variant of [`Value`]
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -36,13 +37,6 @@ impl AbstractStored for StoredValue {
         }
     }
 
-    fn id(&self) -> Option<StoreId> {
-        match self {
-            Self::Ref(r#ref) => r#ref.id(),
-            _ => None,
-        }
-    }
-
     fn into_bare(self) -> Self::BareTy {
         match self {
             Self::I32(x) => Value::I32(x),
@@ -51,6 +45,17 @@ impl AbstractStored for StoredValue {
             Self::F64(x) => Value::F64(x),
             Self::V128(x) => Value::V128(x),
             Self::Ref(stored_ref) => Value::Ref(stored_ref.into_bare()),
+        }
+    }
+
+    fn try_unwrap_into_bare(self, expected_store_id: StoreId) -> Self::BareTy {
+        match self {
+            Self::I32(x) => Value::I32(x),
+            Self::I64(x) => Value::I64(x),
+            Self::F32(x) => Value::F32(x),
+            Self::F64(x) => Value::F64(x),
+            Self::V128(x) => Value::V128(x),
+            Self::Ref(stored_ref) => Value::Ref(stored_ref.try_unwrap_into_bare(expected_store_id)),
         }
     }
 }
@@ -80,17 +85,20 @@ impl AbstractStored for StoredRef {
         }
     }
 
-    fn id(&self) -> Option<StoreId> {
-        match self {
-            StoredRef::Func(stored_func_addr) => stored_func_addr.id(),
-            StoredRef::Null(_) | StoredRef::Extern(_) => None,
-        }
-    }
-
     fn into_bare(self) -> Self::BareTy {
         match self {
             Self::Null(ref_type) => Ref::Null(ref_type),
             Self::Func(stored_func_addr) => Ref::Func(stored_func_addr.into_bare()),
+            Self::Extern(extern_addr) => Ref::Extern(extern_addr),
+        }
+    }
+
+    fn try_unwrap_into_bare(self, expected_store_id: StoreId) -> Self::BareTy {
+        match self {
+            Self::Null(ref_type) => Ref::Null(ref_type),
+            Self::Func(stored_func_addr) => {
+                Ref::Func(stored_func_addr.try_unwrap_into_bare(expected_store_id))
+            }
             Self::Extern(extern_addr) => Ref::Extern(extern_addr),
         }
     }

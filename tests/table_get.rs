@@ -15,10 +15,9 @@
 # limitations under the License.
 */
 
-use wasm::{
-    checked::Store, checked::StoredRefFunc, interop::RefExtern, validate, value::ExternAddr,
-    RuntimeError, TrapError,
-};
+use checked::{Store, StoredRefFunc};
+use interop::RefExtern;
+use wasm::{validate, value::ExternAddr, RuntimeError, TrapError};
 
 #[test_log::test]
 fn table_funcref_test() {

@@ -14,9 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 */
-use wasm::interop::RefExtern;
+use checked::Store;
+use interop::RefExtern;
 use wasm::value::ExternAddr;
-use wasm::{checked::Store, validate, RuntimeError, TrapError};
+use wasm::{validate, RuntimeError, TrapError};
 
 #[test_log::test]
 fn table_fill_test() {

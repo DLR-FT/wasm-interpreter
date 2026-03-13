@@ -1,5 +1,6 @@
 use std::sync::mpsc::Sender;
 
+use interop::StoreTypedInvocationExt;
 use wasm::{config::Config, HaltExecutionError, Store, Value};
 
 #[test_log::test]
@@ -20,12 +21,12 @@ fn counter() {
     let mut store = Store::new(MyCounter(0));
     // SAFETY: The host function does not have any parameter or return types.
     // Therefore it cannot use invalid addresses.
-    let add_one = unsafe { store.func_alloc_typed_unchecked::<(), ()>(add_one) };
+    let add_one = unsafe { store.func_alloc_typed::<(), ()>(add_one) };
 
     for _ in 0..5 {
         // SAFETY: Only one store exists in this test. Therefore, it is always
         // the correct store.
-        unsafe { store.invoke_typed_without_fuel_unchecked::<(), ()>(add_one, ()) }.unwrap();
+        unsafe { store.invoke_typed_without_fuel::<(), ()>(add_one, ()) }.unwrap();
     }
 
     assert_eq!(store.user_data, MyCounter(5));
@@ -54,11 +55,11 @@ fn channels() {
         let mut store = Store::new(MySender(tx));
         // SAFETY: The host function does not have any parameter or return
         // types. Therefore it cannot use invalid addresses.
-        let send_message = unsafe { store.func_alloc_typed_unchecked::<(), ()>(send_message) };
+        let send_message = unsafe { store.func_alloc_typed::<(), ()>(send_message) };
 
         // SAFETY: Only one store exists in this test. Therefore, it is always
         // the correct store.
-        unsafe { store.invoke_typed_without_fuel_unchecked::<(), ()>(send_message, ()) }.unwrap();
+        unsafe { store.invoke_typed_without_fuel::<(), ()>(send_message, ()) }.unwrap();
     });
 
     assert_eq!(rx.recv(), Ok("Hello from host function!".to_owned()));

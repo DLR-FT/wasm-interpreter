@@ -4,14 +4,11 @@ use std::panic::AssertUnwindSafe;
 use std::panic::UnwindSafe;
 
 use bumpalo::Bump;
+use checked::{Linker, Store, Stored, StoredExternVal, StoredRef, StoredValue};
 use itertools::enumerate;
 use log::debug;
 use wasm::addrs::ModuleAddr;
-use wasm::checked::Linker;
-use wasm::checked::Stored;
-use wasm::checked::StoredExternVal;
-use wasm::checked::StoredRef;
-use wasm::checked::StoredValue;
+use wasm::validate;
 use wasm::value::F32;
 use wasm::value::F64;
 use wasm::GlobalType;
@@ -23,7 +20,6 @@ use wasm::RuntimeError;
 use wasm::TableType;
 use wasm::TrapError;
 use wasm::ValType;
-use wasm::{checked::Store, validate};
 use wast::core::WastArgCore;
 use wast::core::WastRetCore;
 use wast::{QuoteWat, WastArg, WastDirective, WastRet, Wat};
@@ -84,7 +80,8 @@ fn validate_instantiate<'a, 'b: 'a>(
     let module = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
         linker.module_instantiate(store, &validation_info, None)
     }))
-    .map_err(WastError::Panic)??
+    .map_err(WastError::Panic)?
+    .ok_or_else(|| WastError::FailedToLink)??
     .module_addr;
 
     *last_instantiated_module = Some(module);
@@ -364,12 +361,12 @@ fn run_directive<'a>(
             let result = match validate_instantiate(store, bytes, linker, last_instantiated_module)
             {
                 // module shouldn't have instantiated
-                Err(WastError::WasmRuntimeError(
-                    RuntimeError::ModuleNotFound
-                    | RuntimeError::UnknownImport
-                    | RuntimeError::InvalidImportType
-                    | RuntimeError::UnableToResolveExternLookup,
-                )) => Ok(()),
+                Err(
+                    WastError::WasmRuntimeError(
+                        RuntimeError::ModuleNotFound | RuntimeError::InvalidImportType,
+                    )
+                    | WastError::FailedToLink,
+                ) => Ok(()),
                 _ => Err(WastError::AssertUnlinkableButLinked),
             };
 
@@ -577,11 +574,7 @@ fn execute_assert_return(
                         _ => Err(WastError::UnknownGlobalReferenced),
                     })?;
 
-                Ok::<StoredValue, WastError>(
-                    store
-                        .global_read(global_addr)
-                        .expect("store ids to be correct"),
-                )
+                Ok::<StoredValue, WastError>(store.global_read(global_addr))
             }))
             .map_err(WastError::Panic)??;
 
@@ -852,7 +845,8 @@ fn init_spectest(store: &mut Store<()>, linker: &mut Linker) -> Result<(), Runti
 }
 
 mod spectec_functions {
-    use wasm::{host_function_wrapper, HaltExecutionError, Value};
+    use interop::host_function_wrapper;
+    use wasm::{HaltExecutionError, Value};
 
     pub fn print(
         _user_data: &mut (),

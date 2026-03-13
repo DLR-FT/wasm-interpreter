@@ -1,0 +1,14 @@
+[package]
+name = "checked"
+version = "0.2.0"
+edition = "2021"
+rust-version = "1.87.0" # Keep this in sync with the requirements!
+
+[dependencies]
+wasm-interpreter.workspace = true
+interop = { workspace = true, optional = true }
+linker = { workspace = true, optional = true }
+
+[features]
+# linker
+# interop

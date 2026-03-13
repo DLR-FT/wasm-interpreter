@@ -1,3 +1,14 @@
+//! A Name Resolution Based Linker
+
+#![no_std]
+#![deny(
+    clippy::missing_safety_doc,
+    clippy::undocumented_unsafe_blocks,
+    unsafe_op_in_unsafe_fn
+)]
+
+extern crate alloc;
+
 use alloc::{
     borrow::ToOwned,
     collections::btree_map::{BTreeMap, Entry},
@@ -5,11 +16,10 @@ use alloc::{
     vec::Vec,
 };
 
-use crate::{
-    addrs::ModuleAddr, store::InstantiationOutcome, ExternVal, RuntimeError, Store, ValidationInfo,
+use wasm::{
+    addrs::ModuleAddr, config::Config, store::InstantiationOutcome, ExternVal, RuntimeError, Store,
+    ValidationInfo,
 };
-
-use super::config::Config;
 
 /// A linker used to link a module's imports against extern values previously
 /// defined in this [`Linker`] context.
@@ -17,7 +27,7 @@ use super::config::Config;
 /// # Manual Instantiation vs. Instantiation through [`Linker`]
 ///
 /// Traditionally, module instances are instantiated via the method
-/// [`Store::module_instantiate_unchecked`], which is part of the official Embedder API
+/// [`Store::module_instantiate`], which is part of the official Embedder API
 /// defined by the specification. However, this method accepts a list of extern
 /// values as an argument. Therefore, if the user wants to manually perform
 /// linking they have to figure out the imports of their module, then gather the
@@ -25,7 +35,7 @@ use super::config::Config;
 ///
 /// This process of manual linking is very tedious and error-prone, which is why
 /// the [`Linker`] exists. It builds on top of the original instantiation method
-/// with [`Linker::module_instantiate_unchecked`]. Internally this method performs name
+/// with [`Linker::module_instantiate`]. Internally this method performs name
 /// resolution and then calls the original instantiation. Name resolution is
 /// performed on all extern values which were previously defined in the current
 /// context.
@@ -35,8 +45,8 @@ use super::config::Config;
 /// An extern value is represented as a [`ExternVal`]. It contains an address to
 /// some store-allocated instance. In a linker context, every external value is
 /// stored in map with a unique key `(module name, name)`. To define new extern
-/// value in some linker context, use [`Linker::define_unchecked`] or
-/// [`Linker::define_module_instance_unchecked`].
+/// value in some linker context, use [`Linker::define`] or
+/// [`Linker::define_module_instance`].
 ///
 /// # Relationship with [`Store`]
 ///
@@ -67,7 +77,7 @@ impl Linker {
     ///
     /// It must be made sure that this [`Linker`] is only used with one specific
     /// [`Store`] and addresses that belong to that store.
-    pub unsafe fn define_unchecked(
+    pub unsafe fn define(
         &mut self,
         module_name: String,
         name: String,
@@ -90,7 +100,7 @@ impl Linker {
     /// It must be guaranteed that this [`Linker`] is only ever used with one
     /// specific [`Store`] and that the given [`ModuleAddr`] is valid in this
     /// store.
-    pub unsafe fn define_module_instance_unchecked<T: Config>(
+    pub unsafe fn define_module_instance<T: Config>(
         &mut self,
         store: &Store<T>,
         module_name: String,
@@ -98,12 +108,12 @@ impl Linker {
     ) -> Result<(), RuntimeError> {
         // SAFETY: The caller ensures that the given module address is valid in
         // the given store.
-        let module = unsafe { store.modules.get(module) };
-        for export in &module.exports {
+        let module_exports = unsafe { store.instance_exports(module) };
+        for export in module_exports {
             // SAFETY: The module and thus also its exported extern values come
             // from the same store used now. Therefore, the extern values must
             // be valid in this store.
-            unsafe { self.define_unchecked(module_name.clone(), export.0.clone(), *export.1)? };
+            unsafe { self.define(module_name.clone(), export.0, export.1)? };
         }
 
         Ok(())
@@ -120,7 +130,7 @@ impl Linker {
     }
 
     /// Performs initial linking of a [`ValidationInfo`]'s imports producing a
-    /// list of extern values usable with [`Store::module_instantiate_unchecked`].
+    /// list of extern values usable with [`Store::module_instantiate`].
     ///
     /// # A note on type checking
     ///
@@ -128,41 +138,35 @@ impl Linker {
     /// Therefore, using the returned list of extern values may still fail when
     /// trying to instantiate a module with it.
     // TODO find a better name for this method? Maybe something like `link`?
-    pub fn instantiate_pre(
-        &self,
-        validation_info: &ValidationInfo,
-    ) -> Result<Vec<ExternVal>, RuntimeError> {
+    pub fn instantiate_pre(&self, validation_info: &ValidationInfo) -> Option<Vec<ExternVal>> {
         validation_info
             .imports()
-            .map(|(module_name, name, _desc)| {
-                self.get(module_name.to_owned(), name.to_owned())
-                    .ok_or(RuntimeError::UnableToResolveExternLookup)
-            })
+            .map(|(module_name, name, _desc)| self.get(module_name.to_owned(), name.to_owned()))
             .collect()
     }
 
-    /// Variant of [`Store::module_instantiate_unchecked`] with automatic name resolution
-    /// in the current [`Linker`] context.
+    /// Variant of [`Store::module_instantiate`] with automatic name resolution
+    /// in the current [`Linker`] context. Returns `None` if name resolution
+    /// failed.
     ///
     /// # Safety
     ///
     /// It must be guaranteed that this [`Linker`] is only ever used with one
     /// specific [`Store`].
-    pub unsafe fn module_instantiate_unchecked<'b, T: Config>(
+    pub unsafe fn module_instantiate<'b, T: Config>(
         &self,
         store: &mut Store<'b, T>,
         validation_info: &ValidationInfo<'b>,
         maybe_fuel: Option<u64>,
-    ) -> Result<InstantiationOutcome, RuntimeError> {
-        let instantiate_pre = self.instantiate_pre(validation_info)?;
-
-        // SAFETY: Because all extern values in a single linker can only come
-        // from one specific store, the current store must be the same store
-        // used to define all previous extern values. Therefore, the extern
-        // values in `instantiate_pre` must be from the same store that is
-        // passed now. Thus, using them as imports for module instantiation is
-        // sound.
-        unsafe { store.module_instantiate_unchecked(validation_info, instantiate_pre, maybe_fuel) }
+    ) -> Option<Result<InstantiationOutcome, RuntimeError>> {
+        self.instantiate_pre(validation_info).map(|instantiate_pre|
+            // SAFETY: Because all extern values in a single linker can only come
+            // from one specific store, the current store must be the same store
+            // used to define all previous extern values. Therefore, the extern
+            // values in `instantiate_pre` must be from the same store that is
+            // passed now. Thus, using them as imports for module instantiation is
+            // sound.
+            unsafe { store.module_instantiate(validation_info, instantiate_pre, maybe_fuel) })
     }
 }
 

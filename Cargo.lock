@@ -117,6 +117,7 @@ name = "benchmark"
 version = "0.1.0"
 dependencies = [
  "criterion",
+ "interop",
  "wasm-interpreter",
  "wasmi",
  "wasmtime",
@@ -156,6 +157,15 @@ name = "cfg-if"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9330f8b2ff13f34540b44e946ef35111825727b38d33286ef986142615121801"
+
+[[package]]
+name = "checked"
+version = "0.2.0"
+dependencies = [
+ "interop",
+ "linker",
+ "wasm-interpreter",
+]
 
 [[package]]
 name = "ciborium"
@@ -644,6 +654,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "interop"
+version = "0.2.0"
+dependencies = [
+ "wasm-interpreter",
+]
+
+[[package]]
 name = "is-terminal"
 version = "0.4.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -732,6 +749,13 @@ name = "libm"
 version = "0.2.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4ec2a862134d2a7d32d7983ddcdd1c4923530833c9f2ea1a44fc5fa473989058"
+
+[[package]]
+name = "linker"
+version = "0.2.0"
+dependencies = [
+ "wasm-interpreter",
+]
 
 [[package]]
 name = "linux-raw-sys"
@@ -1464,9 +1488,11 @@ name = "wasm-interpreter"
 version = "0.2.0"
 dependencies = [
  "bumpalo",
+ "checked",
  "env_logger 0.10.2",
  "envconfig",
  "hexf",
+ "interop",
  "itertools 0.14.0",
  "lazy_static",
  "libm",

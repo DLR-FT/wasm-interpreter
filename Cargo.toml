@@ -2,12 +2,20 @@
 
 members = [
   "crates/benchmark",
+  "crates/checked",
   "crates/compare-testsuite-rs",
+  "crates/interop",
+  "crates/linker",
   "crates/log_wrapper",
 ]
 resolver = "2"
 
 [workspace.dependencies]
+checked = { path = "crates/checked" }
+interop = { path = "crates/interop" }
+linker = { path = "crates/linker" }
+wasm-interpreter = { path = "." }
+
 env_logger = "0.10.1"
 indexmap = "=2.11.4"                                   # this version has MSRV 1.63, while the next 2.12.0 jumps to MSRV 1.82
 libm = "0.2.8"
@@ -40,6 +48,9 @@ libm = "=0.2.8"
 log_wrapper.path = "crates/log_wrapper"
 
 [dev-dependencies]
+checked = { workspace = true, features = ["linker", "interop"] }
+interop.workspace = true
+
 bumpalo = "3.17.0"
 env_logger = { workspace = true }
 hexf = "0.2.1"
