@@ -45,9 +45,7 @@ impl Linker {
         extern_val: StoredExternVal,
     ) -> Result<(), RuntimeError> {
         // 1. get or insert the `StoreId`
-        let extern_val_store_id = extern_val
-            .id()
-            .expect("this type to always contain a StoreId");
+        let extern_val_store_id = extern_val.id();
         let linker_store_id = *self.store_id.get_or_insert(extern_val_store_id);
         if linker_store_id != extern_val_store_id {
             panic!("Store id mismatch");
@@ -73,7 +71,7 @@ impl Linker {
         module: Stored<ModuleAddr>,
     ) -> Result<(), RuntimeError> {
         // 1. get or insert the `StoreId`
-        let module_store_id = module.id().expect("this type to always contain a StoreId");
+        let module_store_id = module.id();
         let linker_store_id = *self.store_id.get_or_insert(module_store_id);
         if linker_store_id != module_store_id {
             panic!("Store id mismatch");

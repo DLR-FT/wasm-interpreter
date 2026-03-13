@@ -33,12 +33,22 @@ impl<T> AbstractStored for Stored<T> {
         }
     }
 
-    fn id(&self) -> Option<StoreId> {
-        Some(self.id)
-    }
-
     fn into_bare(self) -> Self::BareTy {
         self.inner
+    }
+
+    fn try_unwrap_into_bare(self, expected_store_id: StoreId) -> Self::BareTy {
+        if self.id != expected_store_id {
+            panic!("Mismatched store ids");
+        }
+
+        self.into_bare()
+    }
+}
+
+impl<T> Stored<T> {
+    pub(crate) fn id(&self) -> StoreId {
+        self.id
     }
 }
 
@@ -123,15 +133,6 @@ impl AbstractStored for StoredExternVal {
         }
     }
 
-    fn id(&self) -> Option<StoreId> {
-        match self {
-            StoredExternVal::Func(stored_func_addr) => stored_func_addr.id(),
-            StoredExternVal::Table(stored_table_addr) => stored_table_addr.id(),
-            StoredExternVal::Mem(stored_mem_addr) => stored_mem_addr.id(),
-            StoredExternVal::Global(stored_global_addr) => stored_global_addr.id(),
-        }
-    }
-
     fn into_bare(self) -> Self::BareTy {
         match self {
             StoredExternVal::Func(stored_func_addr) => {
@@ -146,9 +147,35 @@ impl AbstractStored for StoredExternVal {
             }
         }
     }
+
+    fn try_unwrap_into_bare(self, expected_store_id: StoreId) -> Self::BareTy {
+        match self {
+            StoredExternVal::Func(stored_func_addr) => {
+                ExternVal::Func(stored_func_addr.try_unwrap_into_bare(expected_store_id))
+            }
+            StoredExternVal::Table(stored_table_addr) => {
+                ExternVal::Table(stored_table_addr.try_unwrap_into_bare(expected_store_id))
+            }
+            StoredExternVal::Mem(stored_mem_addr) => {
+                ExternVal::Mem(stored_mem_addr.try_unwrap_into_bare(expected_store_id))
+            }
+            StoredExternVal::Global(stored_global_addr) => {
+                ExternVal::Global(stored_global_addr.try_unwrap_into_bare(expected_store_id))
+            }
+        }
+    }
 }
 
 impl StoredExternVal {
+    pub(crate) fn id(&self) -> StoreId {
+        match self {
+            StoredExternVal::Func(stored) => stored.id,
+            StoredExternVal::Table(stored) => stored.id,
+            StoredExternVal::Mem(stored) => stored.id,
+            StoredExternVal::Global(stored) => stored.id,
+        }
+    }
+
     pub fn as_func(self) -> Option<Stored<FuncAddr>> {
         match self {
             StoredExternVal::Func(func_addr) => Some(func_addr),
@@ -214,13 +241,6 @@ impl<T> AbstractStored for StoredRunState<T> {
         }
     }
 
-    fn id(&self) -> Option<StoreId> {
-        match self {
-            StoredRunState::Finished { values, .. } => values.id(),
-            StoredRunState::Resumable { resumable, .. } => resumable.id(),
-        }
-    }
-
     fn into_bare(self) -> Self::BareTy {
         match self {
             StoredRunState::Finished {
@@ -235,6 +255,25 @@ impl<T> AbstractStored for StoredRunState<T> {
                 required_fuel,
             } => RunState::Resumable {
                 resumable: resumable.into_bare(),
+                required_fuel,
+            },
+        }
+    }
+
+    fn try_unwrap_into_bare(self, expected_store_id: StoreId) -> Self::BareTy {
+        match self {
+            StoredRunState::Finished {
+                values,
+                maybe_remaining_fuel,
+            } => RunState::Finished {
+                values: values.try_unwrap_into_bare(expected_store_id),
+                maybe_remaining_fuel,
+            },
+            StoredRunState::Resumable {
+                resumable,
+                required_fuel,
+            } => RunState::Resumable {
+                resumable: resumable.try_unwrap_into_bare(expected_store_id),
                 required_fuel,
             },
         }
@@ -258,13 +297,16 @@ impl AbstractStored for StoredInstantiationOutcome {
         }
     }
 
-    fn id(&self) -> Option<StoreId> {
-        self.module_addr.id()
-    }
-
     fn into_bare(self) -> Self::BareTy {
         InstantiationOutcome {
             module_addr: self.module_addr.into_bare(),
+            maybe_remaining_fuel: self.maybe_remaining_fuel,
+        }
+    }
+
+    fn try_unwrap_into_bare(self, expected_store_id: StoreId) -> Self::BareTy {
+        InstantiationOutcome {
+            module_addr: self.module_addr.try_unwrap_into_bare(expected_store_id),
             maybe_remaining_fuel: self.maybe_remaining_fuel,
         }
     }

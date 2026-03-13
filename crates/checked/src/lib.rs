@@ -83,11 +83,6 @@ pub trait AbstractStored: Sized {
     /// with the given [`StoreId`].
     unsafe fn from_bare(bare_value: Self::BareTy, id: StoreId) -> Self;
 
-    /// Gets the id of this stored object
-    ///
-    /// Not all stored objects require to have an id attached to them.
-    fn id(&self) -> Option<StoreId>;
-
     /// Converts this stored object into its bare form that does not have any [`StoreId`] attached to it.
     fn into_bare(self) -> Self::BareTy;
 
@@ -97,15 +92,7 @@ pub trait AbstractStored: Sized {
     /// # Panics
     ///
     /// This function panics in the case of mismatching store ids.
-    fn try_unwrap_into_bare(self, expected_store_id: StoreId) -> Self::BareTy {
-        if let Some(id) = self.id() {
-            if id != expected_store_id {
-                panic!("Store id mismatch");
-            }
-        }
-
-        self.into_bare()
-    }
+    fn try_unwrap_into_bare(self, expected_store_id: StoreId) -> Self::BareTy;
 }
 
 impl<T: AbstractStored> AbstractStored for Vec<T> {
@@ -127,10 +114,6 @@ impl<T: AbstractStored> AbstractStored for Vec<T> {
                 unsafe { T::from_bare(bare, id) }
             })
             .collect()
-    }
-
-    fn id(&self) -> Option<StoreId> {
-        self.iter().find_map(T::id)
     }
 
     fn into_bare(self) -> Self::BareTy {
