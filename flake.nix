@@ -122,6 +122,7 @@
                   cargo-watch
                   critcmp # compare criterion.rs benchmark results
                   wabt
+                  wasm-tools
 
                   # utilities
                   treefmtEval.config.build.wrapper
