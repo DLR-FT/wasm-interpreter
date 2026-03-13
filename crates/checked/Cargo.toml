@@ -8,6 +8,7 @@ rust-version = "1.87.0" # Keep this in sync with the requirements!
 wasm-interpreter.workspace = true
 interop = { workspace = true, optional = true }
 linker = { workspace = true, optional = true }
+registry = { workspace = true, optional = true }
 
 [features]
 # linker

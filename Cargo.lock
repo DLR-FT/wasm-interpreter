@@ -164,6 +164,7 @@ version = "0.2.0"
 dependencies = [
  "interop",
  "linker",
+ "registry",
  "wasm-interpreter",
 ]
 
@@ -1032,6 +1033,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7a2d987857b319362043e95f5353c0535c1f58eec5336fdfcf626430af7def58"
 
 [[package]]
+name = "registry"
+version = "0.1.0"
+dependencies = [
+ "interop",
+ "wasm-interpreter",
+]
+
+[[package]]
 name = "rustc-hash"
 version = "2.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1500,6 +1509,7 @@ dependencies = [
  "log",
  "log_wrapper",
  "regex",
+ "registry",
  "serde",
  "serde_json",
  "test-log",
