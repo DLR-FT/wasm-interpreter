@@ -96,7 +96,15 @@
           in
           {
             # packages from `pkgs/`, injected into the `pkgs` via our `overlay.nix`
-            packages = pkgs.wasm-interpreter-pkgs;
+            packages = pkgs.wasm-interpreter-pkgs // {
+              polybench-rs-wasm = pkgs.pkgsCross.wasm32-unknown-none.callPackage ./pkgs/polybench-rs.nix {
+                # make custom Rust platform based on binary Rust distro to avoid compiling LLVM from scratch
+                rustPlatform = pkgs.makeRustPlatform {
+                  cargo = rust-toolchain-nixpkgs-current;
+                  rustc = rust-toolchain-nixpkgs-current;
+                };
+              };
+            };
 
             # a devshell with all the necessary bells and whistles
             devShells.default = (
