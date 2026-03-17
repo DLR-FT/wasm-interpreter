@@ -13,7 +13,7 @@ use std::process::ExitCode;
 #[macro_use]
 extern crate log_wrapper;
 
-use wasm::{validate, Store};
+use wasm::{Store, validate};
 
 fn main() -> ExitCode {
     env_logger::init();
@@ -63,28 +63,20 @@ fn main() -> ExitCode {
 
     // get funcref to the entry function
     let entry_function = store
-        .instance_export_unchecked(module, "entry")
+        .instance_export_unchecked(module, "main")
         .unwrap()
         .as_func()
         .unwrap();
 
     // call the entry function
-    store
-        .invoke_typed_without_fuel_unchecked::<i32, i32>(entry_function, 42_i32)
-        .unwrap();
-
-    // print the trace
-    for val in store.user_data.trace {
-        let output = std::process::Command::new("wasm-tools")
-            .arg("addr2line")
-            .arg(&wasm_file_path)
-            .arg(format!("{val:#0x}"))
-            .output()
-            .expect("failed to execute wasm-tools addr2line");
-
-        std::io::Write::write_all(&mut std::io::stdout(), &output.stdout).unwrap();
-        std::io::Write::write_all(&mut std::io::stderr(), &output.stderr).unwrap();
+    match store.invoke_typed_without_fuel_unchecked::<(i32, i32), i32>(entry_function, (0, 0)) {
+        Ok(x) => eprintln!("execution finished with return value(s) {x:?}"),
+        Err(e) => eprintln!("execution abortde due to {e:?}"),
     }
+
+    eprintln!("recorded {} trace points", store.user_data.trace.len());
+
+    lib_wasm_coverage::reporter::report_source_lines(&wasm_bytes, &store.user_data.trace);
 
     ExitCode::SUCCESS
 }

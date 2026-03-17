@@ -16,13 +16,13 @@
 #[cfg(feature = "alloc")]
 #[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
 pub struct FullTraceToVec {
-    pub trace: alloc::vec::Vec<usize>,
+    pub trace: alloc::vec::Vec<u64>,
 }
 
 #[cfg(feature = "alloc")]
 impl wasm::config::Config for FullTraceToVec {
     fn instruction_hook(&mut self, bytecode: &[u8], pc: usize) {
-        self.trace.push(pc);
+        self.trace.push(pc.try_into().unwrap());
         trace!("pc = {pc:#x?}, instruction = {:#02x?}", bytecode[pc]);
     }
 }
@@ -47,7 +47,7 @@ impl wasm::config::Config for FullTraceToVec {
 #[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
 pub struct BasicBlockTraceToVec {
     /// Sequence of program counters
-    pub trace: alloc::vec::Vec<usize>,
+    pub trace: alloc::vec::Vec<u64>,
 
     /// Set to `true` before executing a basic block demarcating instruction, set to `false` just
     /// before executing the first instruction of the next basic block
@@ -71,12 +71,12 @@ impl wasm::config::Config for BasicBlockTraceToVec {
                 _,
             ) => {
                 self.start_of_bb = true;
-                self.trace.push(pc);
+                self.trace.push(pc.try_into().unwrap());
                 trace!("leaving basic block with pc = {pc:#x?}, instruction = {instr:#02x?}");
             }
             (instr, true) => {
                 self.start_of_bb = false;
-                self.trace.push(pc);
+                self.trace.push(pc.try_into().unwrap());
                 trace!("entering basic block with pc = {pc:#x?}, instruction = {instr:#02x?}");
             }
             _ => {}
