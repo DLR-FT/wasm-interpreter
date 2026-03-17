@@ -5,7 +5,7 @@ use crate::{
     sanitize_path, write_details_summary,
 };
 
-pub fn generate(report: &CIFullReport) -> ReportSummary {
+pub fn generate(report: &CIFullReport) -> ReportSummary<'_> {
     // No logic here
     // The analysis done for the summary is minimal and can be done in the Display trait to avoid code duplication
     ReportSummary(report)
