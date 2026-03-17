@@ -275,6 +275,7 @@
               inputsFrom = [ self.checks.${system}.wasm-interpreter-msrv ];
               nativeBuildInputs = with pkgs; [
                 ((rust-bin.selectLatestNightlyWith (toolchain: toolchain.default)).override {
+                  targets = [ "wasm32-unknown-unknown" ];
                   extensions = [
                     "miri-preview"
                     "rust-analysis"

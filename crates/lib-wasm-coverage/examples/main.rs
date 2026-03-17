@@ -13,7 +13,7 @@ use std::process::ExitCode;
 #[macro_use]
 extern crate log_wrapper;
 
-use wasm::{validate, Store};
+use wasm::{Store, Value, validate};
 
 fn main() -> ExitCode {
     env_logger::init();
@@ -53,7 +53,7 @@ fn main() -> ExitCode {
     let mut store = Store::new(user_data);
 
     // instantiate the module
-    let module = match store.module_instantiate_unchecked(&validation_info, Vec::new(), None) {
+    let module = match unsafe { store.module_instantiate(&validation_info, Vec::new(), None) } {
         Ok(outcome) => outcome.module_addr,
         Err(err) => {
             error!("Instantiation failed: {err:?} [{err}]");
@@ -62,29 +62,20 @@ fn main() -> ExitCode {
     };
 
     // get funcref to the entry function
-    let entry_function = store
-        .instance_export_unchecked(module, "entry")
+    let entry_function = unsafe { store.instance_export(module, "main") }
         .unwrap()
         .as_func()
         .unwrap();
 
     // call the entry function
-    store
-        .invoke_typed_without_fuel_unchecked::<i32, i32>(entry_function, 42_i32)
-        .unwrap();
-
-    // print the trace
-    for val in store.user_data.trace {
-        let output = std::process::Command::new("wasm-tools")
-            .arg("addr2line")
-            .arg(&wasm_file_path)
-            .arg(format!("{val:#0x}"))
-            .output()
-            .expect("failed to execute wasm-tools addr2line");
-
-        std::io::Write::write_all(&mut std::io::stdout(), &output.stdout).unwrap();
-        std::io::Write::write_all(&mut std::io::stderr(), &output.stderr).unwrap();
+    match unsafe { store.invoke_without_fuel(entry_function, vec![Value::I32(0), Value::I32(0)]) } {
+        Ok(x) => eprintln!("execution finished with return value(s) {x:?}"),
+        Err(e) => eprintln!("execution abortde due to {e:?}"),
     }
+
+    eprintln!("recorded {} trace points", store.user_data.trace.len());
+
+    lib_wasm_coverage::reporter::report_source_lines(&wasm_bytes, &store.user_data.trace);
 
     ExitCode::SUCCESS
 }
