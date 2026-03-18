@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["StoredExternVal","StoredRunState"],"mod":["interop","value"],"struct":["Linker","Store","StoreId","Stored","StoredInstantiationOutcome"],"trait":["AbstractStored"]};
