@@ -7,7 +7,7 @@
 </p>
 <p align="center">
   <a href="https://github.com/DLR-FT/wasm-interpreter/actions/workflows/nix.yaml"><img src="https://github.com/DLR-FT/wasm-interpreter/actions/workflows/nix.yaml/badge.svg" alt="ci status" /></a>
-  <a href="https://app.codecov.io/github/dlr-ft/wasm-interpreter"><img src="https://codecov.io/gh/DLR-FT/wasm-interpreter/branch/dev/modular-crates/graph/badge.svg?component=interpreter" alt="code coverage" /></a>
+  <a href="https://app.codecov.io/github/DLR-FT/wasm-interpreter"><img src="https://codecov.io/gh/DLR-FT/wasm-interpreter/graph/badge.svg?component=interpreter" alt="code coverage" /></a>
   <a href="https://dlr-ft.github.io/wasm-interpreter/main/rustdoc/wasm"><img src="https://img.shields.io/badge/rustdoc-passing-orange" alt="license" /></a>
   <a href="#license"><img src="https://img.shields.io/badge/license-MIT%20or%20Apache%202.0-blue" alt="license" /></a>
 </p>
