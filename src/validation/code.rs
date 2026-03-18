@@ -1401,7 +1401,7 @@ unsafe fn read_instructions(
                     | V128_LOAD16X4_S | V128_LOAD16X4_U
                     | V128_LOAD32X2_S | V128_LOAD32X2_U
                     => {
-let _mem_idx = MemIdx::validate(0, c_mems)?;
+                        let _mem_idx = MemIdx::validate(0, c_mems)?;
                         let memarg = MemArg::read(wasm)?;
                         if memarg.align > 3 {
                             return Err(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: 3 });
@@ -1412,7 +1412,7 @@ let _mem_idx = MemIdx::validate(0, c_mems)?;
 
                     // v128.loadN_splat + v128.loadN_zero
                     V128_LOAD8_SPLAT => {
-let _mem_idx = MemIdx::validate(0, c_mems)?;
+                        let _mem_idx = MemIdx::validate(0, c_mems)?;
                         let memarg = MemArg::read(wasm)?;
                         if memarg.align > 0 {
                             return Err(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: 0 });
@@ -1421,7 +1421,7 @@ let _mem_idx = MemIdx::validate(0, c_mems)?;
                         stack.push_valtype(ValType::VecType);
                     }
                     V128_LOAD16_SPLAT => {
-let _mem_idx = MemIdx::validate(0, c_mems)?;
+                        let _mem_idx = MemIdx::validate(0, c_mems)?;
                         let memarg = MemArg::read(wasm)?;
                         if memarg.align > 1 {
                             return Err(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: 1 });
@@ -1430,7 +1430,7 @@ let _mem_idx = MemIdx::validate(0, c_mems)?;
                         stack.push_valtype(ValType::VecType);
                     }
                     V128_LOAD32_SPLAT | V128_LOAD32_ZERO => {
-let _mem_idx = MemIdx::validate(0, c_mems)?;
+                        let _mem_idx = MemIdx::validate(0, c_mems)?;
                         let memarg = MemArg::read(wasm)?;
                         if memarg.align > 2 {
                             return Err(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: 2 });
@@ -1439,7 +1439,7 @@ let _mem_idx = MemIdx::validate(0, c_mems)?;
                         stack.push_valtype(ValType::VecType);
                     }
                     V128_LOAD64_SPLAT | V128_LOAD64_ZERO => {
-let _mem_idx = MemIdx::validate(0, c_mems)?;
+                    let _mem_idx = MemIdx::validate(0, c_mems)?;
                         let memarg = MemArg::read(wasm)?;
                         if memarg.align > 3 {
                             return Err(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: 3 });
@@ -1455,7 +1455,7 @@ let _mem_idx = MemIdx::validate(0, c_mems)?;
                         if lane_idx >= 16 {
                             return Err(ValidationError::InvalidLaneIdx(lane_idx));
                         }
-let _mem_idx = MemIdx::validate(0, c_mems)?;
+                        let _mem_idx = MemIdx::validate(0, c_mems)?;
                         if memarg.align > 0 {
                             return Err(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: 0 });
                         }
@@ -1469,7 +1469,7 @@ let _mem_idx = MemIdx::validate(0, c_mems)?;
                         if lane_idx >= 8 {
                             return Err(ValidationError::InvalidLaneIdx(lane_idx));
                         }
-let _mem_idx = MemIdx::validate(0, c_mems)?;
+                        let _mem_idx = MemIdx::validate(0, c_mems)?;
                         if memarg.align > 1 {
                             return Err(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: 1 });
                         }
@@ -1483,7 +1483,7 @@ let _mem_idx = MemIdx::validate(0, c_mems)?;
                         if lane_idx >= 4 {
                             return Err(ValidationError::InvalidLaneIdx(lane_idx));
                         }
-let _mem_idx = MemIdx::validate(0, c_mems)?;
+                        let _mem_idx = MemIdx::validate(0, c_mems)?;
                         if memarg.align > 2 {
                             return Err(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: 2 });
                         }
@@ -1497,7 +1497,7 @@ let _mem_idx = MemIdx::validate(0, c_mems)?;
                         if lane_idx >= 2 {
                             return Err(ValidationError::InvalidLaneIdx(lane_idx));
                         }
-let _mem_idx = MemIdx::validate(0, c_mems)?;
+                        let _mem_idx = MemIdx::validate(0, c_mems)?;
                         if memarg.align > 3 {
                             return Err(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: 3 });
                         }
@@ -1513,7 +1513,7 @@ let _mem_idx = MemIdx::validate(0, c_mems)?;
                         if lane_idx >= 16 {
                             return Err(ValidationError::InvalidLaneIdx(lane_idx));
                         }
-let _mem_idx = MemIdx::validate(0, c_mems)?;
+                        let _mem_idx = MemIdx::validate(0, c_mems)?;
                         if memarg.align > 0 {
                             return Err(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: 0 });
                         }
@@ -1526,7 +1526,7 @@ let _mem_idx = MemIdx::validate(0, c_mems)?;
                         if lane_idx >= 8 {
                             return Err(ValidationError::InvalidLaneIdx(lane_idx));
                         }
-let _mem_idx = MemIdx::validate(0, c_mems)?;
+                        let _mem_idx = MemIdx::validate(0, c_mems)?;
                         if memarg.align > 1 {
                             return Err(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: 1 });
                         }
@@ -1539,7 +1539,7 @@ let _mem_idx = MemIdx::validate(0, c_mems)?;
                         if lane_idx >= 4 {
                             return Err(ValidationError::InvalidLaneIdx(lane_idx));
                         }
-let _mem_idx = MemIdx::validate(0, c_mems)?;
+                        let _mem_idx = MemIdx::validate(0, c_mems)?;
                         if memarg.align > 2 {
                             return Err(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: 2 });
                         }
@@ -1552,7 +1552,7 @@ let _mem_idx = MemIdx::validate(0, c_mems)?;
                         if lane_idx >= 2 {
                             return Err(ValidationError::InvalidLaneIdx(lane_idx));
                         }
-let _mem_idx = MemIdx::validate(0, c_mems)?;
+                        let _mem_idx = MemIdx::validate(0, c_mems)?;
                         if memarg.align > 3 {
                             return Err(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: 3 });
                         }
