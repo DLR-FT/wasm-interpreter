@@ -1,0 +1,26 @@
+comment:
+  layout: "header, diff, components"
+  hide_project_coverage: false
+
+component_management:
+  default_rules:
+    statuses:
+      - type: project
+        target: auto
+  individual_components:
+    - component_id: interpreter
+      name: interpreter
+      paths:
+        - src/
+    - component_id: checked
+      name: checked
+      paths:
+        - crates/checked/src
+    - component_id: linker
+      name: linker
+      paths:
+        - crates/linker/src
+    - component_id: interop
+      name: interop
+      paths:
+        - crates/interop/src
