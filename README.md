@@ -20,7 +20,7 @@ A minimal in-place interpreter for [WebAssembly](https://webassembly.org/) bytec
 - **`no_std` support**: The interpreter requires only Rust's `core` and `alloc` libraries allowing its use in various environments, such as bare-metal systems.
 - **Minimal dependencies**: The interpreter requires only two dependencies: `log`, `libm`.
 - **Compliance with specification**: The interpreter passes all tests from the [official WebAssembly testsuite](https://github.com/WebAssembly/testsuite), except for the unfinished proposal tests. See [`GlobalConfig` in `tests/specification/mod.rs`](tests/specification/mod.rs) for the default spec-test filter regex.
-- **Host functions**: The host system can provide functions for Wasm code to call.
+- **Returning host functions**: The host system can provide functions for Wasm code to call. Contrary to other Wasm runtimes, host functions are not owned by the interpreter. Instead control flow is returned back to the user, when Wasm code calls a host function.
 - **Fuel & resumable execution**: A fuel mechanism is used to halt execution once fuel runs out. Then fuel can be refilled and execution resumed.
 
 _For information on other features, visit our [requirements page](https://dlr-ft.github.io/wasm-interpreter/main/requirements/html/index.html)._
