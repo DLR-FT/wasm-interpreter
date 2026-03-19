@@ -49,7 +49,7 @@ pub fn host_func_call_within_module() {
         .unwrap();
     // SAFETY: Only one store exists in this test. Therefore, it is always the
     // correct store.
-    let result = unsafe { store.invoke_typed_without_fuel::<i32, i32>(function_ref, 2) }
+    let result = unsafe { store.invoke_simple_typed::<i32, i32>(function_ref, 2) }
         .expect("wasm function invocation failed");
     assert_eq!(4, result);
 }
@@ -62,7 +62,7 @@ pub fn host_func_call_as_first_func() {
     let hello = unsafe { store.func_alloc_typed::<(), ()>(hello) };
     // SAFETY: Only one store exists in this test. Therefore, it is always the
     // correct store.
-    let result = unsafe { store.invoke_typed_without_fuel::<(), ()>(hello, ()) };
+    let result = unsafe { store.invoke_simple_typed::<(), ()>(hello, ()) };
     assert_eq!(Ok(()), result);
 }
 
@@ -164,9 +164,8 @@ pub fn simple_multivariate_host_func_within_module() {
         .unwrap();
     // SAFETY: Only one store exists in this test. Therefore, it is always the
     // correct store.
-    let result =
-        unsafe { store.invoke_typed_without_fuel::<(), (f64, i32, i64)>(function_ref, ()) }
-            .expect("wasm function invocation failed");
+    let result = unsafe { store.invoke_simple_typed::<(), (f64, i32, i64)>(function_ref, ()) }
+        .expect("wasm function invocation failed");
     assert_eq!((8.0, 6, 5), result);
 }
 
@@ -210,9 +209,8 @@ pub fn simple_multivariate_host_func_with_host_func_wrapper() {
         .unwrap();
     // SAFETY: Only one store exists in this test. Therefore, it is always the
     // correct store.
-    let result =
-        unsafe { store.invoke_typed_without_fuel::<(), (f64, i32, i64)>(function_ref, ()) }
-            .expect("wasm function invocation failed");
+    let result = unsafe { store.invoke_simple_typed::<(), (f64, i32, i64)>(function_ref, ()) }
+        .expect("wasm function invocation failed");
     assert_eq!((6.0, 8, 5), result);
 }
 
@@ -226,10 +224,9 @@ pub fn simple_multivariate_host_func_as_first_func() {
 
     // SAFETY: Only one store exists in this test. Therefore, it is always the
     // correct store.
-    let result = unsafe {
-        store.invoke_typed_without_fuel::<(i32, f64), (f64, i32)>(fancy_add_mult, (3, 5.0))
-    }
-    .expect("wasm function invocation failed");
+    let result =
+        unsafe { store.invoke_simple_typed::<(i32, f64), (f64, i32)>(fancy_add_mult, (3, 5.0)) }
+            .expect("wasm function invocation failed");
     assert_eq!((15.0, 8), result);
 }
 
@@ -291,7 +288,7 @@ pub fn weird_multi_typed_host_func() {
 
     // SAFETY: Only one store exists in this test. Therefore, it is always the
     // correct store.
-    let result = unsafe { store.invoke_typed_without_fuel::<(), (f64, i64)>(function_ref, ()) }
+    let result = unsafe { store.invoke_simple_typed::<(), (f64, i64)>(function_ref, ()) }
         .expect("wasm function invocation failed");
     assert_eq!((10.0, 6), result);
 }
@@ -333,6 +330,6 @@ pub fn host_func_runtime_error() {
         .unwrap();
     // SAFETY: Only one store exists in this test. Therefore, it is always the
     // correct store.
-    let result = unsafe { store.invoke_typed_without_fuel::<(), (f64, i64)>(function_ref, ()) };
+    let result = unsafe { store.invoke_simple_typed::<(), (f64, i64)>(function_ref, ()) };
     assert_eq!(Err(RuntimeError::HostFunctionSignatureMismatch), result);
 }

@@ -29,9 +29,9 @@ fn i32_add_one() {
         .as_func()
         .unwrap();
 
-    assert_eq!(12, store.invoke_typed_without_fuel(add_one, 11).unwrap());
-    assert_eq!(1, store.invoke_typed_without_fuel(add_one, 0).unwrap());
-    assert_eq!(-5, store.invoke_typed_without_fuel(add_one, -6).unwrap());
+    assert_eq!(12, store.invoke_simple_typed(add_one, 11).unwrap());
+    assert_eq!(1, store.invoke_simple_typed(add_one, 0).unwrap());
+    assert_eq!(-5, store.invoke_simple_typed(add_one, -6).unwrap());
 }
 
 /// A simple function to add 1 to an i64 and return the result
@@ -53,16 +53,7 @@ fn i64_add_one() {
         .as_func()
         .unwrap();
 
-    assert_eq!(
-        12_i64,
-        store.invoke_typed_without_fuel(add_one, 11_i64).unwrap()
-    );
-    assert_eq!(
-        1_i64,
-        store.invoke_typed_without_fuel(add_one, 0_i64).unwrap()
-    );
-    assert_eq!(
-        -5_i64,
-        store.invoke_typed_without_fuel(add_one, -6_i64).unwrap()
-    );
+    assert_eq!(12_i64, store.invoke_simple_typed(add_one, 11_i64).unwrap());
+    assert_eq!(1_i64, store.invoke_simple_typed(add_one, 0_i64).unwrap());
+    assert_eq!(-5_i64, store.invoke_simple_typed(add_one, -6_i64).unwrap());
 }

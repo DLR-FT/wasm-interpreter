@@ -34,9 +34,7 @@ fn simple_function_call() {
 
     assert_eq!(
         3 * 7 + 13,
-        store
-            .invoke_typed_without_fuel(simple_caller, (3, 7))
-            .unwrap()
+        store.invoke_simple_typed(simple_caller, (3, 7)).unwrap()
     );
 }
 
@@ -72,9 +70,9 @@ fn recursion_valid() {
         .as_func()
         .unwrap();
 
-    assert_eq!(12, store.invoke_typed_without_fuel(add_two, 10).unwrap());
-    assert_eq!(2, store.invoke_typed_without_fuel(add_two, 0).unwrap());
-    assert_eq!(-4, store.invoke_typed_without_fuel(add_two, -6).unwrap());
+    assert_eq!(12, store.invoke_simple_typed(add_two, 10).unwrap());
+    assert_eq!(2, store.invoke_simple_typed(add_two, 0).unwrap());
+    assert_eq!(-4, store.invoke_simple_typed(add_two, -6).unwrap());
 }
 
 #[test_log::test]
@@ -139,7 +137,7 @@ fn multivalue_call() {
     assert_eq!(
         (10, 42.0, 5),
         store
-            .invoke_typed_without_fuel::<(), (i32, f32, i64)>(foo, ())
+            .invoke_simple_typed::<(), (i32, f32, i64)>(foo, ())
             .unwrap()
     );
 }

@@ -27,9 +27,7 @@ fn empty() {
         .as_func()
         .unwrap();
 
-    store
-        .invoke_typed_without_fuel::<(), ()>(do_nothing, ())
-        .unwrap();
+    store.invoke_simple_typed::<(), ()>(do_nothing, ()).unwrap();
 }
 
 #[test_log::test]
@@ -66,7 +64,7 @@ fn branch() {
         .as_func()
         .unwrap();
 
-    assert_eq!(8, store.invoke_typed_without_fuel(with_branch, ()).unwrap());
+    assert_eq!(8, store.invoke_simple_typed(with_branch, ()).unwrap());
 }
 
 const BRANCH23_WAT: &str = r#"
@@ -113,10 +111,7 @@ fn branch2() {
         .as_func()
         .unwrap();
 
-    assert_eq!(
-        13,
-        store.invoke_typed_without_fuel(with_branch, ()).unwrap()
-    );
+    assert_eq!(13, store.invoke_simple_typed(with_branch, ()).unwrap());
 }
 
 #[test_log::test]
@@ -137,7 +132,7 @@ fn branch3() {
         .as_func()
         .unwrap();
 
-    assert_eq!(5, store.invoke_typed_without_fuel(with_branch, ()).unwrap());
+    assert_eq!(5, store.invoke_simple_typed(with_branch, ()).unwrap());
 }
 
 #[test_log::test]
@@ -171,7 +166,7 @@ fn param_and_result() {
         .as_func()
         .unwrap();
 
-    assert_eq!(7, store.invoke_typed_without_fuel(add_one, 6).unwrap());
+    assert_eq!(7, store.invoke_simple_typed(add_one, 6).unwrap());
 }
 
 const RETURN_OUT_OF_BLOCK: &str = r#"
@@ -220,7 +215,7 @@ fn return_out_of_block() {
         .as_func()
         .unwrap();
 
-    assert_eq!(3, store.invoke_typed_without_fuel(get_three, ()).unwrap());
+    assert_eq!(3, store.invoke_simple_typed(get_three, ()).unwrap());
 }
 
 #[test_log::test]
@@ -240,7 +235,7 @@ fn br_return_out_of_block() {
         .unwrap()
         .as_func()
         .unwrap();
-    assert_eq!(3, store.invoke_typed_without_fuel(get_three, ()).unwrap());
+    assert_eq!(3, store.invoke_simple_typed(get_three, ()).unwrap());
 }
 
 #[test_log::test]
@@ -261,7 +256,7 @@ fn return_out_of_block2() {
         .as_func()
         .unwrap();
 
-    assert_eq!(5, store.invoke_typed_without_fuel(get_three, ()).unwrap());
+    assert_eq!(5, store.invoke_simple_typed(get_three, ()).unwrap());
 }
 
 #[test_log::test]
@@ -282,7 +277,7 @@ fn br_return_out_of_block2() {
         .as_func()
         .unwrap();
 
-    assert_eq!(5, store.invoke_typed_without_fuel(get_three, ()).unwrap());
+    assert_eq!(5, store.invoke_simple_typed(get_three, ()).unwrap());
 }
 
 #[test_log::test]
@@ -321,9 +316,9 @@ fn branch_if() {
         .as_func()
         .unwrap();
 
-    assert_eq!(6, store.invoke_typed_without_fuel(abs, 6).unwrap());
-    assert_eq!(123, store.invoke_typed_without_fuel(abs, -123).unwrap());
-    assert_eq!(0, store.invoke_typed_without_fuel(abs, 0).unwrap());
+    assert_eq!(6, store.invoke_simple_typed(abs, 6).unwrap());
+    assert_eq!(123, store.invoke_simple_typed(abs, -123).unwrap());
+    assert_eq!(0, store.invoke_simple_typed(abs, 0).unwrap());
 }
 
 #[test_log::test]
@@ -392,7 +387,7 @@ fn recursive_fibonacci() {
         .unwrap();
 
     let first_ten = (0..10)
-        .map(|n| store.invoke_typed_without_fuel(fibonacci, n).unwrap())
+        .map(|n| store.invoke_simple_typed(fibonacci, n).unwrap())
         .collect::<Vec<i32>>();
     assert_eq!(&first_ten, &[0, 1, 1, 2, 3, 5, 8, 13, 21, 34]);
 }
@@ -444,14 +439,14 @@ fn switch_case() {
         .as_func()
         .unwrap();
 
-    assert_eq!(9, store.invoke_typed_without_fuel(switch_case, -5).unwrap());
-    assert_eq!(9, store.invoke_typed_without_fuel(switch_case, -1).unwrap());
-    assert_eq!(1, store.invoke_typed_without_fuel(switch_case, 0).unwrap());
-    assert_eq!(3, store.invoke_typed_without_fuel(switch_case, 1).unwrap());
-    assert_eq!(5, store.invoke_typed_without_fuel(switch_case, 2).unwrap());
-    assert_eq!(7, store.invoke_typed_without_fuel(switch_case, 3).unwrap());
-    assert_eq!(9, store.invoke_typed_without_fuel(switch_case, 4).unwrap());
-    assert_eq!(9, store.invoke_typed_without_fuel(switch_case, 7).unwrap());
+    assert_eq!(9, store.invoke_simple_typed(switch_case, -5).unwrap());
+    assert_eq!(9, store.invoke_simple_typed(switch_case, -1).unwrap());
+    assert_eq!(1, store.invoke_simple_typed(switch_case, 0).unwrap());
+    assert_eq!(3, store.invoke_simple_typed(switch_case, 1).unwrap());
+    assert_eq!(5, store.invoke_simple_typed(switch_case, 2).unwrap());
+    assert_eq!(7, store.invoke_simple_typed(switch_case, 3).unwrap());
+    assert_eq!(9, store.invoke_simple_typed(switch_case, 4).unwrap());
+    assert_eq!(9, store.invoke_simple_typed(switch_case, 7).unwrap());
 }
 
 #[test_log::test]

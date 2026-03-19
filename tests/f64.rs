@@ -33,7 +33,7 @@ pub fn f64_const() {
 
     assert_eq!(
         3.14159265359_f64,
-        store.invoke_typed_without_fuel(function, ()).unwrap()
+        store.invoke_simple_typed(function, ()).unwrap()
     );
 }
 
@@ -69,13 +69,13 @@ pub fn f64_eq() {
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (1.1_f64, 1.1_f64))
+            .invoke_simple_typed(function, (1.1_f64, 1.1_f64))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (1.1_f64, 1.2_f64))
+            .invoke_simple_typed(function, (1.1_f64, 1.2_f64))
             .unwrap()
     );
 }
@@ -110,19 +110,19 @@ pub fn f64_ne() {
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (1.1_f64, 1.1_f64))
+            .invoke_simple_typed(function, (1.1_f64, 1.1_f64))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (1.1_f64, 1.2_f64))
+            .invoke_simple_typed(function, (1.1_f64, 1.2_f64))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (0.0_f64, -0.0_f64))
+            .invoke_simple_typed(function, (0.0_f64, -0.0_f64))
             .unwrap()
     );
 }
@@ -157,19 +157,19 @@ pub fn f64_lt() {
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (1.0_f64, 2.0_f64))
+            .invoke_simple_typed(function, (1.0_f64, 2.0_f64))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (2.0_f64, 1.0_f64))
+            .invoke_simple_typed(function, (2.0_f64, 1.0_f64))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (1.0_f64, 1.0_f64))
+            .invoke_simple_typed(function, (1.0_f64, 1.0_f64))
             .unwrap()
     );
 }
@@ -204,19 +204,19 @@ pub fn f64_gt() {
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (1.0_f64, 2.0_f64))
+            .invoke_simple_typed(function, (1.0_f64, 2.0_f64))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (2.0_f64, 1.0_f64))
+            .invoke_simple_typed(function, (2.0_f64, 1.0_f64))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (1.0_f64, 1.0_f64))
+            .invoke_simple_typed(function, (1.0_f64, 1.0_f64))
             .unwrap()
     );
 }
@@ -251,19 +251,19 @@ pub fn f64_le() {
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (1.0_f64, 2.0_f64))
+            .invoke_simple_typed(function, (1.0_f64, 2.0_f64))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (2.0_f64, 1.0_f64))
+            .invoke_simple_typed(function, (2.0_f64, 1.0_f64))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (1.0_f64, 1.0_f64))
+            .invoke_simple_typed(function, (1.0_f64, 1.0_f64))
             .unwrap()
     );
 }
@@ -298,19 +298,19 @@ pub fn f64_ge() {
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (1.0_f64, 2.0_f64))
+            .invoke_simple_typed(function, (1.0_f64, 2.0_f64))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (2.0_f64, 1.0_f64))
+            .invoke_simple_typed(function, (2.0_f64, 1.0_f64))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (1.0_f64, 1.0_f64))
+            .invoke_simple_typed(function, (1.0_f64, 1.0_f64))
             .unwrap()
     );
 }
@@ -343,47 +343,47 @@ pub fn f64_abs() {
 
     {
         let result = store
-            .invoke_typed_without_fuel::<f64, f64>(function, -f64::NAN)
+            .invoke_simple_typed::<f64, f64>(function, -f64::NAN)
             .unwrap();
         assert!(result.is_nan());
         assert!(result.is_sign_positive());
     }
     {
         let result = store
-            .invoke_typed_without_fuel::<f64, f64>(function, f64::NAN)
+            .invoke_simple_typed::<f64, f64>(function, f64::NAN)
             .unwrap();
         assert!(result.is_nan());
         assert!(result.is_sign_positive());
     }
     {
         let result = store
-            .invoke_typed_without_fuel::<f64, f64>(function, f64::NEG_INFINITY)
+            .invoke_simple_typed::<f64, f64>(function, f64::NEG_INFINITY)
             .unwrap();
         assert!(result.is_infinite());
         assert!(result.is_sign_positive());
     }
     {
         let result = store
-            .invoke_typed_without_fuel::<f64, f64>(function, f64::INFINITY)
+            .invoke_simple_typed::<f64, f64>(function, f64::INFINITY)
             .unwrap();
         assert!(result.is_infinite());
         assert!(result.is_sign_positive());
     }
     assert_eq!(
         1.5_f64,
-        store.invoke_typed_without_fuel(function, 1.5_f64).unwrap()
+        store.invoke_simple_typed(function, 1.5_f64).unwrap()
     );
     assert_eq!(
         1.5_f64,
-        store.invoke_typed_without_fuel(function, -1.5_f64).unwrap()
+        store.invoke_simple_typed(function, -1.5_f64).unwrap()
     );
     assert_eq!(
         0.0_f64,
-        store.invoke_typed_without_fuel(function, 0.0_f64).unwrap()
+        store.invoke_simple_typed(function, 0.0_f64).unwrap()
     );
     assert_eq!(
         0.0_f64,
-        store.invoke_typed_without_fuel(function, -0.0_f64).unwrap()
+        store.invoke_simple_typed(function, -0.0_f64).unwrap()
     );
 }
 
@@ -415,47 +415,47 @@ pub fn f64_neg() {
 
     {
         let result = store
-            .invoke_typed_without_fuel::<f64, f64>(function, -f64::NAN)
+            .invoke_simple_typed::<f64, f64>(function, -f64::NAN)
             .unwrap();
         assert!(result.is_nan());
         assert!(result.is_sign_positive());
     }
     {
         let result = store
-            .invoke_typed_without_fuel::<f64, f64>(function, f64::NAN)
+            .invoke_simple_typed::<f64, f64>(function, f64::NAN)
             .unwrap();
         assert!(result.is_nan());
         assert!(result.is_sign_negative());
     }
     {
         let result = store
-            .invoke_typed_without_fuel::<f64, f64>(function, f64::NEG_INFINITY)
+            .invoke_simple_typed::<f64, f64>(function, f64::NEG_INFINITY)
             .unwrap();
         assert!(result.is_infinite());
         assert!(result.is_sign_positive());
     }
     {
         let result = store
-            .invoke_typed_without_fuel::<f64, f64>(function, f64::INFINITY)
+            .invoke_simple_typed::<f64, f64>(function, f64::INFINITY)
             .unwrap();
         assert!(result.is_infinite());
         assert!(result.is_sign_negative());
     }
     assert_eq!(
         -1.5_f64,
-        store.invoke_typed_without_fuel(function, 1.5_f64).unwrap()
+        store.invoke_simple_typed(function, 1.5_f64).unwrap()
     );
     assert_eq!(
         1.5_f64,
-        store.invoke_typed_without_fuel(function, -1.5_f64).unwrap()
+        store.invoke_simple_typed(function, -1.5_f64).unwrap()
     );
     assert_eq!(
         -0.0_f64,
-        store.invoke_typed_without_fuel(function, 0.0_f64).unwrap()
+        store.invoke_simple_typed(function, 0.0_f64).unwrap()
     );
     assert_eq!(
         0.0_f64,
-        store.invoke_typed_without_fuel(function, -0.0_f64).unwrap()
+        store.invoke_simple_typed(function, -0.0_f64).unwrap()
     );
 }
 
@@ -487,15 +487,15 @@ pub fn f64_ceil() {
 
     assert_eq!(
         2.0_f64,
-        store.invoke_typed_without_fuel(function, 1.5_f64).unwrap()
+        store.invoke_simple_typed(function, 1.5_f64).unwrap()
     );
     assert_eq!(
         -1.0_f64,
-        store.invoke_typed_without_fuel(function, -1.5_f64).unwrap()
+        store.invoke_simple_typed(function, -1.5_f64).unwrap()
     );
     assert_eq!(
         0.0_f64,
-        store.invoke_typed_without_fuel(function, -0.1_f64).unwrap()
+        store.invoke_simple_typed(function, -0.1_f64).unwrap()
     );
 }
 
@@ -527,15 +527,15 @@ pub fn f64_floor() {
 
     assert_eq!(
         1.0_f64,
-        store.invoke_typed_without_fuel(function, 1.5_f64).unwrap()
+        store.invoke_simple_typed(function, 1.5_f64).unwrap()
     );
     assert_eq!(
         -2.0_f64,
-        store.invoke_typed_without_fuel(function, -1.5_f64).unwrap()
+        store.invoke_simple_typed(function, -1.5_f64).unwrap()
     );
     assert_eq!(
         -1.0_f64,
-        store.invoke_typed_without_fuel(function, -0.1_f64).unwrap()
+        store.invoke_simple_typed(function, -0.1_f64).unwrap()
     );
 }
 
@@ -567,15 +567,15 @@ pub fn f64_trunc() {
 
     assert_eq!(
         1.0_f64,
-        store.invoke_typed_without_fuel(function, 1.5_f64).unwrap()
+        store.invoke_simple_typed(function, 1.5_f64).unwrap()
     );
     assert_eq!(
         -1.0_f64,
-        store.invoke_typed_without_fuel(function, -1.5_f64).unwrap()
+        store.invoke_simple_typed(function, -1.5_f64).unwrap()
     );
     assert_eq!(
         0.0_f64,
-        store.invoke_typed_without_fuel(function, 0.9_f64).unwrap()
+        store.invoke_simple_typed(function, 0.9_f64).unwrap()
     );
 }
 
@@ -607,19 +607,19 @@ pub fn f64_nearest() {
 
     assert_eq!(
         2.0_f64,
-        store.invoke_typed_without_fuel(function, 1.5_f64).unwrap()
+        store.invoke_simple_typed(function, 1.5_f64).unwrap()
     );
     assert_eq!(
         -2.0_f64,
-        store.invoke_typed_without_fuel(function, -1.5_f64).unwrap()
+        store.invoke_simple_typed(function, -1.5_f64).unwrap()
     );
     assert_eq!(
         1.0_f64,
-        store.invoke_typed_without_fuel(function, 0.6_f64).unwrap()
+        store.invoke_simple_typed(function, 0.6_f64).unwrap()
     );
     assert_eq!(
         0.0_f64,
-        store.invoke_typed_without_fuel(function, 0.4_f64).unwrap()
+        store.invoke_simple_typed(function, 0.4_f64).unwrap()
     );
 }
 
@@ -652,14 +652,14 @@ pub fn f64_sqrt() {
 
     assert_eq!(
         2.0_f64,
-        store.invoke_typed_without_fuel(function, 4.0_f64).unwrap()
+        store.invoke_simple_typed(function, 4.0_f64).unwrap()
     );
     assert_eq!(
         1.4142135623730951_f64,
-        store.invoke_typed_without_fuel(function, 2.0_f64).unwrap()
+        store.invoke_simple_typed(function, 2.0_f64).unwrap()
     );
     assert!(store
-        .invoke_typed_without_fuel::<f64, f64>(function, -f64::NAN)
+        .invoke_simple_typed::<f64, f64>(function, -f64::NAN)
         .unwrap()
         .is_nan());
 }
@@ -694,19 +694,19 @@ pub fn f64_add() {
     assert_eq!(
         3.0_f64,
         store
-            .invoke_typed_without_fuel(function, (1.5_f64, 1.5_f64))
+            .invoke_simple_typed(function, (1.5_f64, 1.5_f64))
             .unwrap()
     );
     assert_eq!(
         -1.0_f64,
         store
-            .invoke_typed_without_fuel(function, (1.0_f64, -2.0_f64))
+            .invoke_simple_typed(function, (1.0_f64, -2.0_f64))
             .unwrap()
     );
     assert_eq!(
         0.0_f64,
         store
-            .invoke_typed_without_fuel(function, (0.1_f64, -0.1_f64))
+            .invoke_simple_typed(function, (0.1_f64, -0.1_f64))
             .unwrap()
     );
 }
@@ -741,19 +741,19 @@ pub fn f64_sub() {
     assert_eq!(
         0.0_f64,
         store
-            .invoke_typed_without_fuel(function, (1.5_f64, 1.5_f64))
+            .invoke_simple_typed(function, (1.5_f64, 1.5_f64))
             .unwrap()
     );
     assert_eq!(
         3.0_f64,
         store
-            .invoke_typed_without_fuel(function, (1.0_f64, -2.0_f64))
+            .invoke_simple_typed(function, (1.0_f64, -2.0_f64))
             .unwrap()
     );
     assert_eq!(
         0.2_f64,
         store
-            .invoke_typed_without_fuel(function, (0.1_f64, -0.1_f64))
+            .invoke_simple_typed(function, (0.1_f64, -0.1_f64))
             .unwrap()
     );
 }
@@ -788,19 +788,19 @@ pub fn f64_mul() {
     assert_eq!(
         6.0_f64,
         store
-            .invoke_typed_without_fuel(function, (2.0_f64, 3.0_f64))
+            .invoke_simple_typed(function, (2.0_f64, 3.0_f64))
             .unwrap()
     );
     assert_eq!(
         -4.0_f64,
         store
-            .invoke_typed_without_fuel(function, (2.0_f64, -2.0_f64))
+            .invoke_simple_typed(function, (2.0_f64, -2.0_f64))
             .unwrap()
     );
     assert_eq!(
         0.0_f64,
         store
-            .invoke_typed_without_fuel(function, (0.0_f64, 5.0_f64))
+            .invoke_simple_typed(function, (0.0_f64, 5.0_f64))
             .unwrap()
     );
 }
@@ -835,21 +835,21 @@ pub fn f64_div() {
     assert_eq!(
         2.0_f64,
         store
-            .invoke_typed_without_fuel(function, (6.0_f64, 3.0_f64))
+            .invoke_simple_typed(function, (6.0_f64, 3.0_f64))
             .unwrap()
     );
     assert_eq!(
         -1.0_f64,
         store
-            .invoke_typed_without_fuel(function, (2.0_f64, -2.0_f64))
+            .invoke_simple_typed(function, (2.0_f64, -2.0_f64))
             .unwrap()
     );
     assert!(store
-        .invoke_typed_without_fuel::<(f64, f64), f64>(function, (1.0_f64, 0.0_f64))
+        .invoke_simple_typed::<(f64, f64), f64>(function, (1.0_f64, 0.0_f64))
         .unwrap()
         .is_infinite());
     assert!(store
-        .invoke_typed_without_fuel::<(f64, f64), f64>(function, (0.0_f64, 0.0_f64))
+        .invoke_simple_typed::<(f64, f64), f64>(function, (0.0_f64, 0.0_f64))
         .unwrap()
         .is_nan());
 }
@@ -883,23 +883,20 @@ pub fn f64_min() {
 
     {
         let result = store
-            .invoke_typed_without_fuel::<(f64, f64), f64>(function, (f64::NAN, -f64::NAN))
+            .invoke_simple_typed::<(f64, f64), f64>(function, (f64::NAN, -f64::NAN))
             .unwrap();
         assert!(result.is_nan());
     }
     {
         let result = store
-            .invoke_typed_without_fuel::<(f64, f64), f64>(function, (f64::NAN, f64::NAN))
+            .invoke_simple_typed::<(f64, f64), f64>(function, (f64::NAN, f64::NAN))
             .unwrap();
         assert!(result.is_nan());
         assert!(result.is_sign_positive());
     }
     {
         let result = store
-            .invoke_typed_without_fuel::<(f64, f64), f64>(
-                function,
-                (f64::INFINITY, f64::NEG_INFINITY),
-            )
+            .invoke_simple_typed::<(f64, f64), f64>(function, (f64::INFINITY, f64::NEG_INFINITY))
             .unwrap();
         assert!(result.is_infinite());
         assert!(result.is_sign_negative());
@@ -907,35 +904,35 @@ pub fn f64_min() {
     assert_eq!(
         42_f64,
         store
-            .invoke_typed_without_fuel(function, (f64::INFINITY, 42_f64))
+            .invoke_simple_typed(function, (f64::INFINITY, 42_f64))
             .unwrap()
     );
     assert_eq!(
         -0_f64,
         store
-            .invoke_typed_without_fuel(function, (-0_f64, 0_f64))
+            .invoke_simple_typed(function, (-0_f64, 0_f64))
             .unwrap()
     );
     assert_eq!(
         1.0_f64,
         store
-            .invoke_typed_without_fuel(function, (1.0_f64, 2.0_f64))
+            .invoke_simple_typed(function, (1.0_f64, 2.0_f64))
             .unwrap()
     );
     assert_eq!(
         -2.0_f64,
         store
-            .invoke_typed_without_fuel(function, (-1.0_f64, -2.0_f64))
+            .invoke_simple_typed(function, (-1.0_f64, -2.0_f64))
             .unwrap()
     );
     assert_eq!(
         -0.0_f64,
         store
-            .invoke_typed_without_fuel(function, (0.0_f64, -0.0_f64))
+            .invoke_simple_typed(function, (0.0_f64, -0.0_f64))
             .unwrap()
     );
     assert!(store
-        .invoke_typed_without_fuel::<(f64, f64), f64>(function, (f64::NAN, 1.0_f64))
+        .invoke_simple_typed::<(f64, f64), f64>(function, (f64::NAN, 1.0_f64))
         .unwrap()
         .is_nan());
 }
@@ -969,23 +966,20 @@ pub fn f64_max() {
 
     {
         let result = store
-            .invoke_typed_without_fuel::<(f64, f64), f64>(function, (f64::NAN, -f64::NAN))
+            .invoke_simple_typed::<(f64, f64), f64>(function, (f64::NAN, -f64::NAN))
             .unwrap();
         assert!(result.is_nan());
     }
     {
         let result = store
-            .invoke_typed_without_fuel::<(f64, f64), f64>(function, (f64::NAN, f64::NAN))
+            .invoke_simple_typed::<(f64, f64), f64>(function, (f64::NAN, f64::NAN))
             .unwrap();
         assert!(result.is_nan());
         assert!(result.is_sign_positive());
     }
     {
         let result = store
-            .invoke_typed_without_fuel::<(f64, f64), f64>(
-                function,
-                (f64::INFINITY, f64::NEG_INFINITY),
-            )
+            .invoke_simple_typed::<(f64, f64), f64>(function, (f64::INFINITY, f64::NEG_INFINITY))
             .unwrap();
         assert!(result.is_infinite());
         assert!(result.is_sign_positive());
@@ -993,36 +987,36 @@ pub fn f64_max() {
     assert_eq!(
         42_f64,
         store
-            .invoke_typed_without_fuel(function, (f64::NEG_INFINITY, 42_f64))
+            .invoke_simple_typed(function, (f64::NEG_INFINITY, 42_f64))
             .unwrap()
     );
     assert_eq!(
         0_f64,
         store
-            .invoke_typed_without_fuel(function, (-0_f64, 0_f64))
+            .invoke_simple_typed(function, (-0_f64, 0_f64))
             .unwrap()
     );
 
     assert_eq!(
         2.0_f64,
         store
-            .invoke_typed_without_fuel(function, (1.0_f64, 2.0_f64))
+            .invoke_simple_typed(function, (1.0_f64, 2.0_f64))
             .unwrap()
     );
     assert_eq!(
         -1.0_f64,
         store
-            .invoke_typed_without_fuel(function, (-1.0_f64, -2.0_f64))
+            .invoke_simple_typed(function, (-1.0_f64, -2.0_f64))
             .unwrap()
     );
     assert_eq!(
         0.0_f64,
         store
-            .invoke_typed_without_fuel(function, (0.0_f64, -0.0_f64))
+            .invoke_simple_typed(function, (0.0_f64, -0.0_f64))
             .unwrap()
     );
     assert!(store
-        .invoke_typed_without_fuel::<(f64, f64), f64>(function, (f64::NAN, 1.0_f64))
+        .invoke_simple_typed::<(f64, f64), f64>(function, (f64::NAN, 1.0_f64))
         .unwrap()
         .is_nan());
 }
@@ -1057,25 +1051,25 @@ pub fn f64_copysign() {
     assert_eq!(
         1.5_f64,
         store
-            .invoke_typed_without_fuel(function, (1.5_f64, 2.0_f64))
+            .invoke_simple_typed(function, (1.5_f64, 2.0_f64))
             .unwrap()
     );
     assert_eq!(
         -1.5_f64,
         store
-            .invoke_typed_without_fuel(function, (1.5_f64, -2.0_f64))
+            .invoke_simple_typed(function, (1.5_f64, -2.0_f64))
             .unwrap()
     );
     assert_eq!(
         -1.5_f64,
         store
-            .invoke_typed_without_fuel(function, (-1.5_f64, -0.0_f64))
+            .invoke_simple_typed(function, (-1.5_f64, -0.0_f64))
             .unwrap()
     );
     assert_eq!(
         1.5_f64,
         store
-            .invoke_typed_without_fuel(function, (-1.5_f64, 0.0_f64))
+            .invoke_simple_typed(function, (-1.5_f64, 0.0_f64))
             .unwrap()
     );
 }

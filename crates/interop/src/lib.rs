@@ -567,18 +567,15 @@ pub trait StoreTypedInvocationExt<T: Config> {
         host_func: fn(&mut T, Vec<Value>) -> Result<Vec<Value>, HaltExecutionError>,
     ) -> FuncAddr;
 
-    /// Invokes a function with a statically known type signature without fuel.
-    ///
-    /// This function is simply syntactic sugar for calling [`Store::invoke`]
-    /// without any fuel and destructuring the resulting
-    /// [`RunState`](wasm::resumable::RunState) with statically known types.
+    /// Invokes a function without support for fuel or host functions but with a
+    /// statically known type signature.
     ///
     /// # Safety
     ///
     /// The caller has to guarantee that the given [`FuncAddr`] and any
     /// [`FuncAddr`] or [`ExternAddr`] values contained in the parameter values
     /// came from the current [`Store`] object.
-    unsafe fn invoke_typed_without_fuel<Params: InteropValueList, Returns: InteropValueList>(
+    unsafe fn invoke_simple_typed<Params: InteropValueList, Returns: InteropValueList>(
         &mut self,
         function: FuncAddr,
         params: Params,
@@ -603,17 +600,16 @@ impl<T: Config> StoreTypedInvocationExt<T> for Store<'_, T> {
         unsafe { self.func_alloc(func_type, host_func) }
     }
 
-    unsafe fn invoke_typed_without_fuel<Params: InteropValueList, Returns: InteropValueList>(
+    unsafe fn invoke_simple_typed<Params: InteropValueList, Returns: InteropValueList>(
         &mut self,
         function: FuncAddr,
         params: Params,
     ) -> Result<Returns, RuntimeError> {
-        // SAFETY: The caller ensures that the given function address and all
-        // address types contained in the parameters are valid in the current
-        // store.
-        let return_values = unsafe { self.invoke_without_fuel(function, params.into_values()) }?;
-
-        Returns::try_from_values(return_values.into_iter())
+        let params = params.into_values();
+        // SAFETY: The caller ensures that the function address and any
+        // addresses in the parameters are valid in the current store.
+        let returns = unsafe { self.invoke_simple(function, params) }?;
+        Returns::try_from_values(returns.into_iter())
             .map_err(|ValueTypeMismatchError| RuntimeError::FunctionInvocationSignatureMismatch)
     }
 }

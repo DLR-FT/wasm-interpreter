@@ -37,6 +37,6 @@ fn same_type_fn() {
         .as_func()
         .unwrap();
 
-    assert_eq!(-5, store.invoke_typed_without_fuel(add_one, -6).unwrap());
-    assert_eq!(-4, store.invoke_typed_without_fuel(add_two, -6).unwrap());
+    assert_eq!(-5, store.invoke_simple_typed(add_one, -6).unwrap());
+    assert_eq!(-4, store.invoke_simple_typed(add_two, -6).unwrap());
 }

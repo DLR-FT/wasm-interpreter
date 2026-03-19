@@ -29,12 +29,12 @@ fn dynamic_add() {
         .unwrap();
 
     let res = store
-        .invoke_without_fuel(add, vec![StoredValue::I32(11), StoredValue::I32(1)])
+        .invoke_simple(add, vec![StoredValue::I32(11), StoredValue::I32(1)])
         .expect("invocation failed");
     assert_eq!(vec![StoredValue::I32(12)], res);
 
     let res = store
-        .invoke_without_fuel(
+        .invoke_simple(
             add,
             vec![StoredValue::I32(-6i32 as u32), StoredValue::I32(1)],
         )
