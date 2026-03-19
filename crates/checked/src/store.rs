@@ -470,25 +470,24 @@ impl<'b, T: Config> Store<'b, T> {
     }
 
     /// This is a safe variant of
-    /// [`Store::invoke_without_fuel`](wasm::Store::invoke_without_fuel).
-    pub fn invoke_without_fuel(
+    /// [`Store::invoke_simple`](wasm::Store::invoke_simple)
+    pub fn invoke_simple(
         &mut self,
-        func_addr: Stored<FuncAddr>,
+        function: Stored<FuncAddr>,
         params: Vec<StoredValue>,
     ) -> Result<Vec<StoredValue>, RuntimeError> {
         // 1. try unwrap
-        let func_addr = func_addr.try_unwrap_into_bare(self.id);
+        let function = function.try_unwrap_into_bare(self.id);
         let params = params.try_unwrap_into_bare(self.id);
         // 2. call
-        // SAFETY: It was just checked that the `FuncAddr` and any addresses
-        // contained in the parameters came from the current store through their
-        // store ids.
-        let returns = unsafe { self.inner.invoke_without_fuel(func_addr, params) }?;
+        // SAFETY: It was just checked that the `FuncAddr` and all `Value`s came
+        // from the current store through their store ids.
+        let return_values = unsafe { self.inner.invoke_simple(function, params) }?;
         // 3. rewrap
-        // SAFETY: All `Value`s just came from the current store.
-        let returns = unsafe { Vec::from_bare(returns, self.id) };
+        // SAFETY: The `Value`s just came from the current store.
+        let stored_return_values = unsafe { Vec::from_bare(return_values, self.id) };
         // 4. return
-        Ok(returns)
+        Ok(stored_return_values)
     }
 
     /// This is a safe variant of

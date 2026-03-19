@@ -75,27 +75,27 @@ fn table_funcref_test() {
         .unwrap();
 
     store
-        .invoke_typed_without_fuel::<RefExtern, ()>(init, RefExtern(Some(ExternAddr(1))))
+        .invoke_simple_typed::<RefExtern, ()>(init, RefExtern(Some(ExternAddr(1))))
         .unwrap();
 
     assert_eq!(
-        store.invoke_typed_without_fuel(get_externref, 0),
+        store.invoke_simple_typed(get_externref, 0),
         Ok(RefExtern(None))
     );
     assert_eq!(
-        store.invoke_typed_without_fuel(get_externref, 1),
+        store.invoke_simple_typed(get_externref, 1),
         Ok(RefExtern(Some(ExternAddr(1))))
     );
     assert_eq!(
-        store.invoke_typed_without_fuel(get_funcref, 0),
+        store.invoke_simple_typed(get_funcref, 0),
         Ok(StoredRefFunc(None))
     );
-    assert_eq!(store.invoke_typed_without_fuel(is_null_funcref, 1), Ok(0));
-    assert_eq!(store.invoke_typed_without_fuel(is_null_funcref, 2), Ok(0));
+    assert_eq!(store.invoke_simple_typed(is_null_funcref, 1), Ok(0));
+    assert_eq!(store.invoke_simple_typed(is_null_funcref, 2), Ok(0));
 
     assert_eq!(
         store
-            .invoke_typed_without_fuel::<i32, StoredRefFunc>(get_externref, 2)
+            .invoke_simple_typed::<i32, StoredRefFunc>(get_externref, 2)
             .err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
@@ -103,7 +103,7 @@ fn table_funcref_test() {
     );
     assert_eq!(
         store
-            .invoke_typed_without_fuel::<i32, StoredRefFunc>(get_funcref, 3)
+            .invoke_simple_typed::<i32, StoredRefFunc>(get_funcref, 3)
             .err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
@@ -111,7 +111,7 @@ fn table_funcref_test() {
     );
     assert_eq!(
         store
-            .invoke_typed_without_fuel::<i32, StoredRefFunc>(get_externref, -1)
+            .invoke_simple_typed::<i32, StoredRefFunc>(get_externref, -1)
             .err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds
@@ -119,7 +119,7 @@ fn table_funcref_test() {
     );
     assert_eq!(
         store
-            .invoke_typed_without_fuel::<i32, StoredRefFunc>(get_funcref, -1)
+            .invoke_simple_typed::<i32, StoredRefFunc>(get_funcref, -1)
             .err(),
         Some(RuntimeError::Trap(
             TrapError::TableOrElementAccessOutOfBounds

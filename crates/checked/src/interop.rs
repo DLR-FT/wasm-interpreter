@@ -284,30 +284,16 @@ impl<T: Config> Store<'_, T> {
         unsafe { Stored::from_bare(func_addr, self.id) }
     }
 
-    /// This is a safe variant of
-    /// [`Store::invoke_typed_without_fuel`](wasm::Store::invoke_typed_without_fuel).
-    pub fn invoke_typed_without_fuel<
-        Params: StoredInteropValueList,
-        Returns: StoredInteropValueList,
-    >(
+    pub fn invoke_simple_typed<Params: StoredInteropValueList, Returns: StoredInteropValueList>(
         &mut self,
         function: Stored<FuncAddr>,
         params: Params,
     ) -> Result<Returns, RuntimeError> {
-        // 1. try unwrap
-        let function = function.try_unwrap_into_bare(self.id);
-        let params = params.into_values().try_unwrap_into_bare(self.id);
-        // 2. call
-        // SAFETY: It was just checked that the `FuncAddr` and any addresses
-        // contained in the parameters came from the current store through their
-        // store ids.
-        let returns = unsafe { self.inner.invoke_without_fuel(function, params) }?;
-        // 3. rewrap
-        // SAFETY: All `Value`s just came from the current store.
-        let stored_returns = unsafe { Vec::from_bare(returns, self.id) };
-        // 4. return
-        let stored_returns = Returns::try_from_values(stored_returns.into_iter())
-            .map_err(|_| RuntimeError::FunctionInvocationSignatureMismatch)?;
-        Ok(stored_returns)
+        let params = params.into_values();
+        // SAFETY: The caller ensures that the function address and any
+        // addresses in the parameters are valid in the current store.
+        let returns = self.invoke_simple(function, params)?;
+        Returns::try_from_values(returns.into_iter())
+            .map_err(|ValueTypeMismatchError| RuntimeError::FunctionInvocationSignatureMismatch)
     }
 }

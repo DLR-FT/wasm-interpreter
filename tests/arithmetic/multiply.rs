@@ -31,21 +31,17 @@ pub fn i32_multiply() {
         .as_func()
         .unwrap();
 
-    assert_eq!(33, store.invoke_typed_without_fuel(multiply, 11).unwrap());
-    assert_eq!(0, store.invoke_typed_without_fuel(multiply, 0).unwrap());
-    assert_eq!(-30, store.invoke_typed_without_fuel(multiply, -10).unwrap());
+    assert_eq!(33, store.invoke_simple_typed(multiply, 11).unwrap());
+    assert_eq!(0, store.invoke_simple_typed(multiply, 0).unwrap());
+    assert_eq!(-30, store.invoke_simple_typed(multiply, -10).unwrap());
 
     assert_eq!(
         i32::MAX - 5,
-        store
-            .invoke_typed_without_fuel(multiply, i32::MAX - 1)
-            .unwrap()
+        store.invoke_simple_typed(multiply, i32::MAX - 1).unwrap()
     );
     assert_eq!(
         i32::MIN + 3,
-        store
-            .invoke_typed_without_fuel(multiply, i32::MIN + 1)
-            .unwrap()
+        store.invoke_simple_typed(multiply, i32::MIN + 1).unwrap()
     );
 }
 
@@ -70,29 +66,19 @@ pub fn i64_multiply() {
         .as_func()
         .unwrap();
 
-    assert_eq!(
-        33_i64,
-        store.invoke_typed_without_fuel(multiply, 11_i64).unwrap()
-    );
-    assert_eq!(
-        0_i64,
-        store.invoke_typed_without_fuel(multiply, 0_i64).unwrap()
-    );
+    assert_eq!(33_i64, store.invoke_simple_typed(multiply, 11_i64).unwrap());
+    assert_eq!(0_i64, store.invoke_simple_typed(multiply, 0_i64).unwrap());
     assert_eq!(
         -30_i64,
-        store.invoke_typed_without_fuel(multiply, -10_i64).unwrap()
+        store.invoke_simple_typed(multiply, -10_i64).unwrap()
     );
 
     assert_eq!(
         i64::MAX - 5,
-        store
-            .invoke_typed_without_fuel(multiply, i64::MAX - 1)
-            .unwrap()
+        store.invoke_simple_typed(multiply, i64::MAX - 1).unwrap()
     );
     assert_eq!(
         i64::MIN + 3,
-        store
-            .invoke_typed_without_fuel(multiply, i64::MIN + 1)
-            .unwrap()
+        store.invoke_simple_typed(multiply, i64::MIN + 1).unwrap()
     );
 }

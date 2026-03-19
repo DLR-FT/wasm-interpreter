@@ -44,22 +44,10 @@ pub fn i32_add() {
         .as_func()
         .unwrap();
 
-    assert_eq!(
-        2,
-        store.invoke_typed_without_fuel(function, (1, 1)).unwrap()
-    );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel(function, (1, 0)).unwrap()
-    );
-    assert_eq!(
-        -2,
-        store.invoke_typed_without_fuel(function, (-1, -1)).unwrap()
-    );
-    assert_eq!(
-        0,
-        store.invoke_typed_without_fuel(function, (-1, 1)).unwrap()
-    );
+    assert_eq!(2, store.invoke_simple_typed(function, (1, 1)).unwrap());
+    assert_eq!(1, store.invoke_simple_typed(function, (1, 0)).unwrap());
+    assert_eq!(-2, store.invoke_simple_typed(function, (-1, -1)).unwrap());
+    assert_eq!(0, store.invoke_simple_typed(function, (-1, 1)).unwrap());
     // Chaned the following value from the spec:
     // - 0x80000000 to -2147483648 = (0x80000000 as u32) as i32
     let i32_min = 0x80000000_u32 as i32;
@@ -67,25 +55,23 @@ pub fn i32_add() {
     assert_eq!(
         i32_min,
         store
-            .invoke_typed_without_fuel(function, (0x7fffffff, 1))
+            .invoke_simple_typed(function, (0x7fffffff, 1))
             .unwrap()
     );
     assert_eq!(
         0x7fffffff,
-        store
-            .invoke_typed_without_fuel(function, (i32_min, -1))
-            .unwrap()
+        store.invoke_simple_typed(function, (i32_min, -1)).unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (i32_min, i32_min))
+            .invoke_simple_typed(function, (i32_min, i32_min))
             .unwrap()
     );
     assert_eq!(
         0x40000000,
         store
-            .invoke_typed_without_fuel(function, (0x3fffffff, 1))
+            .invoke_simple_typed(function, (0x3fffffff, 1))
             .unwrap()
     );
 }
@@ -108,18 +94,9 @@ pub fn i32_sub() {
         .as_func()
         .unwrap();
 
-    assert_eq!(
-        0,
-        store.invoke_typed_without_fuel(function, (1, 1)).unwrap()
-    );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel(function, (1, 0)).unwrap()
-    );
-    assert_eq!(
-        0,
-        store.invoke_typed_without_fuel(function, (-1, -1)).unwrap()
-    );
+    assert_eq!(0, store.invoke_simple_typed(function, (1, 1)).unwrap());
+    assert_eq!(1, store.invoke_simple_typed(function, (1, 0)).unwrap());
+    assert_eq!(0, store.invoke_simple_typed(function, (-1, -1)).unwrap());
     // Chaned the following value from the spec:
     // - 0x80000000 to -2147483648 = (0x80000000 as u32) as i32
     let i32_min = 0x80000000_u32 as i32;
@@ -127,25 +104,23 @@ pub fn i32_sub() {
     assert_eq!(
         i32_min,
         store
-            .invoke_typed_without_fuel(function, (0x7fffffff, -1))
+            .invoke_simple_typed(function, (0x7fffffff, -1))
             .unwrap()
     );
     assert_eq!(
         0x7fffffff,
-        store
-            .invoke_typed_without_fuel(function, (i32_min, 1))
-            .unwrap()
+        store.invoke_simple_typed(function, (i32_min, 1)).unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (i32_min, i32_min))
+            .invoke_simple_typed(function, (i32_min, i32_min))
             .unwrap()
     );
     assert_eq!(
         0x40000000,
         store
-            .invoke_typed_without_fuel(function, (0x3fffffff, -1))
+            .invoke_simple_typed(function, (0x3fffffff, -1))
             .unwrap()
     );
 }
@@ -178,7 +153,7 @@ pub fn i32_eqz_panic() {
         .as_func()
         .unwrap();
 
-    assert_eq!(1, store.invoke_typed_without_fuel(i32_eqz, ()).unwrap());
+    assert_eq!(1, store.invoke_simple_typed(i32_eqz, ()).unwrap());
 }
 
 /// A function to test the i32.eqz implementation using the [WASM TestSuite](https://github.com/WebAssembly/testsuite/blob/5741d6c5172866174fde27c6b5447af757528d1a/i32.wast#L286)
@@ -209,24 +184,19 @@ pub fn i32_eqz() {
         .as_func()
         .unwrap();
 
-    assert_eq!(1, store.invoke_typed_without_fuel(i32_eqz, 0).unwrap());
-    assert_eq!(0, store.invoke_typed_without_fuel(i32_eqz, 1).unwrap());
+    assert_eq!(1, store.invoke_simple_typed(i32_eqz, 0).unwrap());
+    assert_eq!(0, store.invoke_simple_typed(i32_eqz, 1).unwrap());
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(i32_eqz, 0x80000000u32 as i32)
+            .invoke_simple_typed(i32_eqz, 0x80000000u32 as i32)
             .unwrap()
     );
+    assert_eq!(0, store.invoke_simple_typed(i32_eqz, 0x7fffffff).unwrap());
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(i32_eqz, 0x7fffffff)
-            .unwrap()
-    );
-    assert_eq!(
-        0,
-        store
-            .invoke_typed_without_fuel(i32_eqz, 0xffffffffu32 as i32)
+            .invoke_simple_typed(i32_eqz, 0xffffffffu32 as i32)
             .unwrap()
     );
 }
@@ -260,7 +230,7 @@ pub fn i32_eq_panic_first_arg() {
         .as_func()
         .unwrap();
 
-    assert_eq!(1, store.invoke_typed_without_fuel(i32_eq, ()).unwrap());
+    assert_eq!(1, store.invoke_simple_typed(i32_eq, ()).unwrap());
 }
 
 #[should_panic]
@@ -292,7 +262,7 @@ pub fn i32_eq_panic_second_arg() {
         .as_func()
         .unwrap();
 
-    assert_eq!(1, store.invoke_typed_without_fuel(i32_eq, ()).unwrap());
+    assert_eq!(1, store.invoke_simple_typed(i32_eq, ()).unwrap());
 }
 
 /// A function to test the i32.eq implementation using the [WASM TestSuite](https://github.com/WebAssembly/testsuite/blob/5741d6c5172866174fde27c6b5447af757528d1a/i32.wast#L292)
@@ -313,76 +283,58 @@ pub fn i32_eq() {
         .as_func()
         .unwrap();
 
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel(function, (0, 0)).unwrap()
-    );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel(function, (1, 1)).unwrap()
-    );
-    assert_eq!(
-        0,
-        store.invoke_typed_without_fuel(function, (-1, 1)).unwrap()
-    );
+    assert_eq!(1, store.invoke_simple_typed(function, (0, 0)).unwrap());
+    assert_eq!(1, store.invoke_simple_typed(function, (1, 1)).unwrap());
+    assert_eq!(0, store.invoke_simple_typed(function, (-1, 1)).unwrap());
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, 0x80000000u32 as i32))
+            .invoke_simple_typed(function, (0x80000000u32 as i32, 0x80000000u32 as i32))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (0x7fffffff, 0x7fffffff))
+            .invoke_simple_typed(function, (0x7fffffff, 0x7fffffff))
             .unwrap()
     );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel(function, (-1, -1)).unwrap()
-    );
-    assert_eq!(
-        0,
-        store.invoke_typed_without_fuel(function, (1, 0)).unwrap()
-    );
-    assert_eq!(
-        0,
-        store.invoke_typed_without_fuel(function, (0, 1)).unwrap()
-    );
+    assert_eq!(1, store.invoke_simple_typed(function, (-1, -1)).unwrap());
+    assert_eq!(0, store.invoke_simple_typed(function, (1, 0)).unwrap());
+    assert_eq!(0, store.invoke_simple_typed(function, (0, 1)).unwrap());
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, 0))
+            .invoke_simple_typed(function, (0x80000000u32 as i32, 0))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (0, 0x80000000u32 as i32))
+            .invoke_simple_typed(function, (0, 0x80000000u32 as i32))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, -1))
+            .invoke_simple_typed(function, (0x80000000u32 as i32, -1))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (-1, 0x80000000u32 as i32))
+            .invoke_simple_typed(function, (-1, 0x80000000u32 as i32))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, 0x7fffffff))
+            .invoke_simple_typed(function, (0x80000000u32 as i32, 0x7fffffff))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (0x7fffffff, 0x80000000u32 as i32))
+            .invoke_simple_typed(function, (0x7fffffff, 0x80000000u32 as i32))
             .unwrap()
     );
 }
@@ -405,76 +357,58 @@ pub fn i32_ne() {
         .as_func()
         .unwrap();
 
-    assert_eq!(
-        0,
-        store.invoke_typed_without_fuel(function, (0, 0)).unwrap()
-    );
-    assert_eq!(
-        0,
-        store.invoke_typed_without_fuel(function, (1, 1)).unwrap()
-    );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel(function, (-1, 1)).unwrap()
-    );
+    assert_eq!(0, store.invoke_simple_typed(function, (0, 0)).unwrap());
+    assert_eq!(0, store.invoke_simple_typed(function, (1, 1)).unwrap());
+    assert_eq!(1, store.invoke_simple_typed(function, (-1, 1)).unwrap());
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, 0x80000000u32 as i32))
+            .invoke_simple_typed(function, (0x80000000u32 as i32, 0x80000000u32 as i32))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (0x7fffffff, 0x7fffffff))
+            .invoke_simple_typed(function, (0x7fffffff, 0x7fffffff))
             .unwrap()
     );
-    assert_eq!(
-        0,
-        store.invoke_typed_without_fuel(function, (-1, -1)).unwrap()
-    );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel(function, (1, 0)).unwrap()
-    );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel(function, (0, 1)).unwrap()
-    );
+    assert_eq!(0, store.invoke_simple_typed(function, (-1, -1)).unwrap());
+    assert_eq!(1, store.invoke_simple_typed(function, (1, 0)).unwrap());
+    assert_eq!(1, store.invoke_simple_typed(function, (0, 1)).unwrap());
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, 0))
+            .invoke_simple_typed(function, (0x80000000u32 as i32, 0))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (0, 0x80000000u32 as i32))
+            .invoke_simple_typed(function, (0, 0x80000000u32 as i32))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, -1))
+            .invoke_simple_typed(function, (0x80000000u32 as i32, -1))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (-1, 0x80000000u32 as i32))
+            .invoke_simple_typed(function, (-1, 0x80000000u32 as i32))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, 0x7fffffff))
+            .invoke_simple_typed(function, (0x80000000u32 as i32, 0x7fffffff))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (0x7fffffff, 0x80000000u32 as i32))
+            .invoke_simple_typed(function, (0x7fffffff, 0x80000000u32 as i32))
             .unwrap()
     );
 }
@@ -497,76 +431,58 @@ pub fn i32_lt_s() {
         .as_func()
         .unwrap();
 
-    assert_eq!(
-        0,
-        store.invoke_typed_without_fuel(function, (0, 0)).unwrap()
-    );
-    assert_eq!(
-        0,
-        store.invoke_typed_without_fuel(function, (1, 1)).unwrap()
-    );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel(function, (-1, 1)).unwrap()
-    );
+    assert_eq!(0, store.invoke_simple_typed(function, (0, 0)).unwrap());
+    assert_eq!(0, store.invoke_simple_typed(function, (1, 1)).unwrap());
+    assert_eq!(1, store.invoke_simple_typed(function, (-1, 1)).unwrap());
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, 0x80000000u32 as i32))
+            .invoke_simple_typed(function, (0x80000000u32 as i32, 0x80000000u32 as i32))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (0x7fffffff, 0x7fffffff))
+            .invoke_simple_typed(function, (0x7fffffff, 0x7fffffff))
             .unwrap()
     );
-    assert_eq!(
-        0,
-        store.invoke_typed_without_fuel(function, (-1, -1)).unwrap()
-    );
-    assert_eq!(
-        0,
-        store.invoke_typed_without_fuel(function, (1, 0)).unwrap()
-    );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel(function, (0, 1)).unwrap()
-    );
+    assert_eq!(0, store.invoke_simple_typed(function, (-1, -1)).unwrap());
+    assert_eq!(0, store.invoke_simple_typed(function, (1, 0)).unwrap());
+    assert_eq!(1, store.invoke_simple_typed(function, (0, 1)).unwrap());
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, 0))
+            .invoke_simple_typed(function, (0x80000000u32 as i32, 0))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (0, 0x80000000u32 as i32))
+            .invoke_simple_typed(function, (0, 0x80000000u32 as i32))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, -1))
+            .invoke_simple_typed(function, (0x80000000u32 as i32, -1))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (-1, 0x80000000u32 as i32))
+            .invoke_simple_typed(function, (-1, 0x80000000u32 as i32))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, 0x7fffffff))
+            .invoke_simple_typed(function, (0x80000000u32 as i32, 0x7fffffff))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (0x7fffffff, 0x80000000u32 as i32))
+            .invoke_simple_typed(function, (0x7fffffff, 0x80000000u32 as i32))
             .unwrap()
     );
 }
@@ -589,76 +505,58 @@ pub fn i32_lt_u() {
         .as_func()
         .unwrap();
 
-    assert_eq!(
-        0,
-        store.invoke_typed_without_fuel(function, (0, 0)).unwrap()
-    );
-    assert_eq!(
-        0,
-        store.invoke_typed_without_fuel(function, (1, 1)).unwrap()
-    );
-    assert_eq!(
-        0,
-        store.invoke_typed_without_fuel(function, (-1, 1)).unwrap()
-    );
+    assert_eq!(0, store.invoke_simple_typed(function, (0, 0)).unwrap());
+    assert_eq!(0, store.invoke_simple_typed(function, (1, 1)).unwrap());
+    assert_eq!(0, store.invoke_simple_typed(function, (-1, 1)).unwrap());
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, 0x80000000u32 as i32))
+            .invoke_simple_typed(function, (0x80000000u32 as i32, 0x80000000u32 as i32))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (0x7fffffff, 0x7fffffff))
+            .invoke_simple_typed(function, (0x7fffffff, 0x7fffffff))
             .unwrap()
     );
-    assert_eq!(
-        0,
-        store.invoke_typed_without_fuel(function, (-1, -1)).unwrap()
-    );
-    assert_eq!(
-        0,
-        store.invoke_typed_without_fuel(function, (1, 0)).unwrap()
-    );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel(function, (0, 1)).unwrap()
-    );
+    assert_eq!(0, store.invoke_simple_typed(function, (-1, -1)).unwrap());
+    assert_eq!(0, store.invoke_simple_typed(function, (1, 0)).unwrap());
+    assert_eq!(1, store.invoke_simple_typed(function, (0, 1)).unwrap());
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, 0))
+            .invoke_simple_typed(function, (0x80000000u32 as i32, 0))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (0, 0x80000000u32 as i32))
+            .invoke_simple_typed(function, (0, 0x80000000u32 as i32))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, -1))
+            .invoke_simple_typed(function, (0x80000000u32 as i32, -1))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (-1, 0x80000000u32 as i32))
+            .invoke_simple_typed(function, (-1, 0x80000000u32 as i32))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, 0x7fffffff))
+            .invoke_simple_typed(function, (0x80000000u32 as i32, 0x7fffffff))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (0x7fffffff, 0x80000000u32 as i32))
+            .invoke_simple_typed(function, (0x7fffffff, 0x80000000u32 as i32))
             .unwrap()
     );
 }
@@ -681,76 +579,58 @@ pub fn i32_gt_s() {
         .as_func()
         .unwrap();
 
-    assert_eq!(
-        0,
-        store.invoke_typed_without_fuel(function, (0, 0)).unwrap()
-    );
-    assert_eq!(
-        0,
-        store.invoke_typed_without_fuel(function, (1, 1)).unwrap()
-    );
-    assert_eq!(
-        0,
-        store.invoke_typed_without_fuel(function, (-1, 1)).unwrap()
-    );
+    assert_eq!(0, store.invoke_simple_typed(function, (0, 0)).unwrap());
+    assert_eq!(0, store.invoke_simple_typed(function, (1, 1)).unwrap());
+    assert_eq!(0, store.invoke_simple_typed(function, (-1, 1)).unwrap());
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, 0x80000000u32 as i32))
+            .invoke_simple_typed(function, (0x80000000u32 as i32, 0x80000000u32 as i32))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (0x7fffffff, 0x7fffffff))
+            .invoke_simple_typed(function, (0x7fffffff, 0x7fffffff))
             .unwrap()
     );
-    assert_eq!(
-        0,
-        store.invoke_typed_without_fuel(function, (-1, -1)).unwrap()
-    );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel(function, (1, 0)).unwrap()
-    );
-    assert_eq!(
-        0,
-        store.invoke_typed_without_fuel(function, (0, 1)).unwrap()
-    );
+    assert_eq!(0, store.invoke_simple_typed(function, (-1, -1)).unwrap());
+    assert_eq!(1, store.invoke_simple_typed(function, (1, 0)).unwrap());
+    assert_eq!(0, store.invoke_simple_typed(function, (0, 1)).unwrap());
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, 0))
+            .invoke_simple_typed(function, (0x80000000u32 as i32, 0))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (0, 0x80000000u32 as i32))
+            .invoke_simple_typed(function, (0, 0x80000000u32 as i32))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, -1))
+            .invoke_simple_typed(function, (0x80000000u32 as i32, -1))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (-1, 0x80000000u32 as i32))
+            .invoke_simple_typed(function, (-1, 0x80000000u32 as i32))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, 0x7fffffff))
+            .invoke_simple_typed(function, (0x80000000u32 as i32, 0x7fffffff))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (0x7fffffff, 0x80000000u32 as i32))
+            .invoke_simple_typed(function, (0x7fffffff, 0x80000000u32 as i32))
             .unwrap()
     );
 }
@@ -773,76 +653,58 @@ pub fn i32_gt_u() {
         .as_func()
         .unwrap();
 
-    assert_eq!(
-        0,
-        store.invoke_typed_without_fuel(function, (0, 0)).unwrap()
-    );
-    assert_eq!(
-        0,
-        store.invoke_typed_without_fuel(function, (1, 1)).unwrap()
-    );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel(function, (-1, 1)).unwrap()
-    );
+    assert_eq!(0, store.invoke_simple_typed(function, (0, 0)).unwrap());
+    assert_eq!(0, store.invoke_simple_typed(function, (1, 1)).unwrap());
+    assert_eq!(1, store.invoke_simple_typed(function, (-1, 1)).unwrap());
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, 0x80000000u32 as i32))
+            .invoke_simple_typed(function, (0x80000000u32 as i32, 0x80000000u32 as i32))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (0x7fffffff, 0x7fffffff))
+            .invoke_simple_typed(function, (0x7fffffff, 0x7fffffff))
             .unwrap()
     );
-    assert_eq!(
-        0,
-        store.invoke_typed_without_fuel(function, (-1, -1)).unwrap()
-    );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel(function, (1, 0)).unwrap()
-    );
-    assert_eq!(
-        0,
-        store.invoke_typed_without_fuel(function, (0, 1)).unwrap()
-    );
+    assert_eq!(0, store.invoke_simple_typed(function, (-1, -1)).unwrap());
+    assert_eq!(1, store.invoke_simple_typed(function, (1, 0)).unwrap());
+    assert_eq!(0, store.invoke_simple_typed(function, (0, 1)).unwrap());
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, 0))
+            .invoke_simple_typed(function, (0x80000000u32 as i32, 0))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (0, 0x80000000u32 as i32))
+            .invoke_simple_typed(function, (0, 0x80000000u32 as i32))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, -1))
+            .invoke_simple_typed(function, (0x80000000u32 as i32, -1))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (-1, 0x80000000u32 as i32))
+            .invoke_simple_typed(function, (-1, 0x80000000u32 as i32))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, 0x7fffffff))
+            .invoke_simple_typed(function, (0x80000000u32 as i32, 0x7fffffff))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (0x7fffffff, 0x80000000u32 as i32))
+            .invoke_simple_typed(function, (0x7fffffff, 0x80000000u32 as i32))
             .unwrap()
     );
 }
@@ -865,76 +727,58 @@ pub fn i32_le_s() {
         .as_func()
         .unwrap();
 
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel(function, (0, 0)).unwrap()
-    );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel(function, (1, 1)).unwrap()
-    );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel(function, (-1, 1)).unwrap()
-    );
+    assert_eq!(1, store.invoke_simple_typed(function, (0, 0)).unwrap());
+    assert_eq!(1, store.invoke_simple_typed(function, (1, 1)).unwrap());
+    assert_eq!(1, store.invoke_simple_typed(function, (-1, 1)).unwrap());
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, 0x80000000u32 as i32))
+            .invoke_simple_typed(function, (0x80000000u32 as i32, 0x80000000u32 as i32))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (0x7fffffff, 0x7fffffff))
+            .invoke_simple_typed(function, (0x7fffffff, 0x7fffffff))
             .unwrap()
     );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel(function, (-1, -1)).unwrap()
-    );
-    assert_eq!(
-        0,
-        store.invoke_typed_without_fuel(function, (1, 0)).unwrap()
-    );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel(function, (0, 1)).unwrap()
-    );
+    assert_eq!(1, store.invoke_simple_typed(function, (-1, -1)).unwrap());
+    assert_eq!(0, store.invoke_simple_typed(function, (1, 0)).unwrap());
+    assert_eq!(1, store.invoke_simple_typed(function, (0, 1)).unwrap());
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, 0))
+            .invoke_simple_typed(function, (0x80000000u32 as i32, 0))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (0, 0x80000000u32 as i32))
+            .invoke_simple_typed(function, (0, 0x80000000u32 as i32))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, -1))
+            .invoke_simple_typed(function, (0x80000000u32 as i32, -1))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (-1, 0x80000000u32 as i32))
+            .invoke_simple_typed(function, (-1, 0x80000000u32 as i32))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, 0x7fffffff))
+            .invoke_simple_typed(function, (0x80000000u32 as i32, 0x7fffffff))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (0x7fffffff, 0x80000000u32 as i32))
+            .invoke_simple_typed(function, (0x7fffffff, 0x80000000u32 as i32))
             .unwrap()
     );
 }
@@ -958,76 +802,58 @@ pub fn i32_le_u() {
         .as_func()
         .unwrap();
 
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel(function, (0, 0)).unwrap()
-    );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel(function, (1, 1)).unwrap()
-    );
-    assert_eq!(
-        0,
-        store.invoke_typed_without_fuel(function, (-1, 1)).unwrap()
-    );
+    assert_eq!(1, store.invoke_simple_typed(function, (0, 0)).unwrap());
+    assert_eq!(1, store.invoke_simple_typed(function, (1, 1)).unwrap());
+    assert_eq!(0, store.invoke_simple_typed(function, (-1, 1)).unwrap());
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, 0x80000000u32 as i32))
+            .invoke_simple_typed(function, (0x80000000u32 as i32, 0x80000000u32 as i32))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (0x7fffffff, 0x7fffffff))
+            .invoke_simple_typed(function, (0x7fffffff, 0x7fffffff))
             .unwrap()
     );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel(function, (-1, -1)).unwrap()
-    );
-    assert_eq!(
-        0,
-        store.invoke_typed_without_fuel(function, (1, 0)).unwrap()
-    );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel(function, (0, 1)).unwrap()
-    );
+    assert_eq!(1, store.invoke_simple_typed(function, (-1, -1)).unwrap());
+    assert_eq!(0, store.invoke_simple_typed(function, (1, 0)).unwrap());
+    assert_eq!(1, store.invoke_simple_typed(function, (0, 1)).unwrap());
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, 0))
+            .invoke_simple_typed(function, (0x80000000u32 as i32, 0))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (0, 0x80000000u32 as i32))
+            .invoke_simple_typed(function, (0, 0x80000000u32 as i32))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, -1))
+            .invoke_simple_typed(function, (0x80000000u32 as i32, -1))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (-1, 0x80000000u32 as i32))
+            .invoke_simple_typed(function, (-1, 0x80000000u32 as i32))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, 0x7fffffff))
+            .invoke_simple_typed(function, (0x80000000u32 as i32, 0x7fffffff))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (0x7fffffff, 0x80000000u32 as i32))
+            .invoke_simple_typed(function, (0x7fffffff, 0x80000000u32 as i32))
             .unwrap()
     );
 }
@@ -1050,76 +876,58 @@ pub fn i32_ge_s() {
         .as_func()
         .unwrap();
 
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel(function, (0, 0)).unwrap()
-    );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel(function, (1, 1)).unwrap()
-    );
-    assert_eq!(
-        0,
-        store.invoke_typed_without_fuel(function, (-1, 1)).unwrap()
-    );
+    assert_eq!(1, store.invoke_simple_typed(function, (0, 0)).unwrap());
+    assert_eq!(1, store.invoke_simple_typed(function, (1, 1)).unwrap());
+    assert_eq!(0, store.invoke_simple_typed(function, (-1, 1)).unwrap());
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, 0x80000000u32 as i32))
+            .invoke_simple_typed(function, (0x80000000u32 as i32, 0x80000000u32 as i32))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (0x7fffffff, 0x7fffffff))
+            .invoke_simple_typed(function, (0x7fffffff, 0x7fffffff))
             .unwrap()
     );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel(function, (-1, -1)).unwrap()
-    );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel(function, (1, 0)).unwrap()
-    );
-    assert_eq!(
-        0,
-        store.invoke_typed_without_fuel(function, (0, 1)).unwrap()
-    );
+    assert_eq!(1, store.invoke_simple_typed(function, (-1, -1)).unwrap());
+    assert_eq!(1, store.invoke_simple_typed(function, (1, 0)).unwrap());
+    assert_eq!(0, store.invoke_simple_typed(function, (0, 1)).unwrap());
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, 0))
+            .invoke_simple_typed(function, (0x80000000u32 as i32, 0))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (0, 0x80000000u32 as i32))
+            .invoke_simple_typed(function, (0, 0x80000000u32 as i32))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, -1))
+            .invoke_simple_typed(function, (0x80000000u32 as i32, -1))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (-1, 0x80000000u32 as i32))
+            .invoke_simple_typed(function, (-1, 0x80000000u32 as i32))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, 0x7fffffff))
+            .invoke_simple_typed(function, (0x80000000u32 as i32, 0x7fffffff))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (0x7fffffff, 0x80000000u32 as i32))
+            .invoke_simple_typed(function, (0x7fffffff, 0x80000000u32 as i32))
             .unwrap()
     );
 }
@@ -1142,76 +950,58 @@ pub fn i32_ge_u() {
         .as_func()
         .unwrap();
 
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel(function, (0, 0)).unwrap()
-    );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel(function, (1, 1)).unwrap()
-    );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel(function, (-1, 1)).unwrap()
-    );
+    assert_eq!(1, store.invoke_simple_typed(function, (0, 0)).unwrap());
+    assert_eq!(1, store.invoke_simple_typed(function, (1, 1)).unwrap());
+    assert_eq!(1, store.invoke_simple_typed(function, (-1, 1)).unwrap());
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, 0x80000000u32 as i32))
+            .invoke_simple_typed(function, (0x80000000u32 as i32, 0x80000000u32 as i32))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (0x7fffffff, 0x7fffffff))
+            .invoke_simple_typed(function, (0x7fffffff, 0x7fffffff))
             .unwrap()
     );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel(function, (-1, -1)).unwrap()
-    );
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel(function, (1, 0)).unwrap()
-    );
-    assert_eq!(
-        0,
-        store.invoke_typed_without_fuel(function, (0, 1)).unwrap()
-    );
+    assert_eq!(1, store.invoke_simple_typed(function, (-1, -1)).unwrap());
+    assert_eq!(1, store.invoke_simple_typed(function, (1, 0)).unwrap());
+    assert_eq!(0, store.invoke_simple_typed(function, (0, 1)).unwrap());
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, 0))
+            .invoke_simple_typed(function, (0x80000000u32 as i32, 0))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (0, 0x80000000u32 as i32))
+            .invoke_simple_typed(function, (0, 0x80000000u32 as i32))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, -1))
+            .invoke_simple_typed(function, (0x80000000u32 as i32, -1))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (-1, 0x80000000u32 as i32))
+            .invoke_simple_typed(function, (-1, 0x80000000u32 as i32))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (0x80000000u32 as i32, 0x7fffffff))
+            .invoke_simple_typed(function, (0x80000000u32 as i32, 0x7fffffff))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (0x7fffffff, 0x80000000u32 as i32))
+            .invoke_simple_typed(function, (0x7fffffff, 0x80000000u32 as i32))
             .unwrap()
     );
 }

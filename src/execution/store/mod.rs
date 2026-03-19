@@ -1389,10 +1389,9 @@ impl<'b, T: Config> Store<'b, T> {
         Ok(returns)
     }
 
-    /// Invokes a function without fuel.
+    /// Invokes a function without support for fuel or host functions.
     ///
-    /// This function is simply syntactic sugar for calling [`Store::invoke`]
-    /// without any fuel and destructuring the resulting [`RunState`].
+    /// This function wraps [`Store::invoke`].
     ///
     /// # Safety
     ///
@@ -1400,7 +1399,7 @@ impl<'b, T: Config> Store<'b, T> {
     /// [`FuncAddr`] or [`ExternAddr`](crate::execution::value::ExternAddr)
     /// values contained in the parameter values came from the current [`Store`]
     /// object.
-    pub unsafe fn invoke_without_fuel(
+    pub unsafe fn invoke_simple(
         &mut self,
         function: FuncAddr,
         params: Vec<Value>,
