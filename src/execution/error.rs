@@ -11,8 +11,6 @@ pub enum RuntimeError {
     HostFunctionSignatureMismatch,
     WriteOnImmutableGlobal,
     GlobalTypeMismatch,
-    /// A host function returned the [`HaltExecutionError`](crate::HaltExecutionError), which caused execution to be halted.
-    HostFunctionHaltedExecution,
     // An access to a table element was out of bounds
     TableAccessOutOfBounds,
     UnknownExport,
@@ -54,9 +52,6 @@ impl Display for RuntimeError {
             }
             RuntimeError::HostFunctionSignatureMismatch => {
                 f.write_str("host function call did not respect its type signature")
-            }
-            RuntimeError::HostFunctionHaltedExecution => {
-                f.write_str("A host function requested execution to be halted.")
             }
             RuntimeError::InvalidImportType => f.write_str("Invalid import type"),
             RuntimeError::TableAccessOutOfBounds => f.write_str("A table access was out of bounds"),
