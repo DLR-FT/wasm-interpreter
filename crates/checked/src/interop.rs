@@ -1,13 +1,13 @@
 use alloc::{fmt::Debug, vec, vec::Vec};
-use interop::{InteropValueList, RefExtern, StoreTypedInvocationExt};
+use interop::RefExtern;
 use wasm::{
     addrs::FuncAddr,
     config::Config,
     value::{ValueTypeMismatchError, F32, F64},
-    HaltExecutionError, NumType, RefType, RuntimeError, ValType, Value,
+    FuncType, Hostcode, NumType, RefType, ResultType, RuntimeError, ValType,
 };
 
-use crate::{stored_types::Stored, AbstractStored, Store, StoredRef, StoredValue};
+use crate::{stored_types::Stored, Store, StoredRef, StoredValue};
 
 /// A stored variant of [`InteropValue`](interop::InteropValue)
 pub trait StoredInteropValue
@@ -254,34 +254,25 @@ where
 }
 
 impl<T: Config> Store<'_, T> {
-    /// This is a safer variant of
-    /// [`Store::func_alloc_typed`](wasm::Store::func_alloc_typed). It is
-    /// functionally equal, with the only difference being that this function
-    /// returns a [`Stored<FuncAddr>`].
-    ///
-    /// # Safety
-    ///
-    /// The caller has to guarantee that if the [`Value`]s returned from the
-    /// given host function are references, their addresses came either from the
-    /// host function arguments or from the current [`Store`] object.
-    ///
-    /// See: [`Store::func_alloc_typed`](wasm::Store::func_alloc_typed) for more information.
+    /// This is a variant of
+    /// [`StoreTypedInvocationExt::func_alloc_typed`](interop::StoreTypedInvocationExt::func_alloc_typed).
+    /// It is functionally equal, with the only difference being that this
+    /// function returns a [`Stored<FuncAddr>`].
     #[allow(clippy::let_and_return)] // reason = "to follow the 1234 structure"
-    pub unsafe fn func_alloc_typed<Params: InteropValueList, Returns: InteropValueList>(
+    pub fn func_alloc_typed<Params: StoredInteropValueList, Returns: StoredInteropValueList>(
         &mut self,
-        host_func: fn(&mut T, Vec<Value>) -> Result<Vec<Value>, HaltExecutionError>,
+        host_func: Hostcode,
     ) -> Stored<FuncAddr> {
-        // 1. try unwrap
-        // no stored parameters
-        // 2. call
-        // SAFETY: The caller ensures that if the host function returns
-        // references, they originate either from the arguments or the current
-        // store.
-        let func_addr = unsafe { self.inner.func_alloc_typed::<Params, Returns>(host_func) };
-        // 3. rewrap
-        // 4. return
-        // SAFETY: The function address just came from the current store.
-        unsafe { Stored::from_bare(func_addr, self.id) }
+        let func_type = FuncType {
+            params: ResultType {
+                valtypes: Vec::from(Params::TYS),
+            },
+            returns: ResultType {
+                valtypes: Vec::from(Returns::TYS),
+            },
+        };
+
+        self.func_alloc(func_type, host_func)
     }
 
     pub fn invoke_simple_typed<Params: StoredInteropValueList, Returns: StoredInteropValueList>(

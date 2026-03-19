@@ -130,7 +130,7 @@ macro_rules! bench_wasm {
                     b.iter(|| {
                         // SAFETY: Only one store is used. Therefore, this must always be
                         // the correct one.
-                        unsafe { store.invoke_typed_without_fuel::<$arg_type, $return_type>(our_fn, s) }.unwrap();
+                        unsafe { store.invoke_simple_typed::<$arg_type, $return_type>(our_fn, s) }.unwrap();
                     })
                 });
             }

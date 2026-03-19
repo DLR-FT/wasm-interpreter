@@ -20,9 +20,9 @@ pub struct GlobalConfig {
     pub allow_test_pattern: Regex,
 
     /// A regex that acts as a blocklist filter for tests.
-    /// By default all `simd_*` and `proposals` tests are blocked.
+    /// By default all `simd_*`, `proposals` and `start` tests are blocked.
     /// To not block anything use: `^$`
-    #[envconfig(default = r"^(proposals|names\.wast)$")]
+    #[envconfig(default = r"^(proposals|names\.wast|start\.wast)$")]
     pub block_test_pattern: Regex,
 
     /// This makes the testsuite runner re-enable the panic hook during all interpreter calls, resulting in the printing of panic info on every interpreter panic.
@@ -134,7 +134,11 @@ pub fn spec_tests() -> ExitCode {
         "all of the above",
         successful_mini_tests,
         total_mini_tests - successful_mini_tests,
-        if total_mini_tests == 0 { 0.0 } else {(successful_mini_tests as f64) * 100.0 / (total_mini_tests as f64)},
+        if total_mini_tests == 0 {
+            0.0
+        } else {
+            (successful_mini_tests as f64) * 100.0 / (total_mini_tests as f64)
+        },
         filename_width = longest_filename_len + 1,
         passed_width = 7,
         failed_width = 7,

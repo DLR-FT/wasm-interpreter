@@ -33,6 +33,13 @@ pub enum RuntimeError {
     DuplicateExternDefinition,
     /// A function was invoked with incorrect parameters or return types.
     FunctionInvocationSignatureMismatch,
+    /// The [`Store::invoke_simple`](crate::Store::invoke_simple) method was
+    /// used to execute some Wasm code but this resulted a host call, which is
+    /// not supported in this mode.
+    UnexpectedHostCall,
+    /// A host function was called from a start function during module
+    /// instantiation.
+    UnsupportedHostCallDuringInstantiation,
 }
 
 impl Display for RuntimeError {
@@ -84,6 +91,8 @@ impl Display for RuntimeError {
             RuntimeError::FunctionInvocationSignatureMismatch => {
                 f.write_str("A function was invoked with incorrect parameters or return types")
             }
+            RuntimeError::UnexpectedHostCall => f.write_str(" The Store::invoke_simple method was used to execute some Wasm code but this resulted a host call, which is not supported in this mode"),
+            RuntimeError::UnsupportedHostCallDuringInstantiation => f.write_str("A host function was called from a start function during module instantiation"),
         }
     }
 }
