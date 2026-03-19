@@ -1500,9 +1500,6 @@ impl<'b, T: Config> Store<'b, T> {
     }
 }
 
-/// A marker error for host functions to return, in case they want execution to be halted.
-pub struct HaltExecutionError;
-
 ///<https://webassembly.github.io/spec/core/exec/runtime.html#external-values>
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum ExternVal {
