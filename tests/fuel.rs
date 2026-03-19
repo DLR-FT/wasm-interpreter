@@ -25,11 +25,11 @@ fn out_of_fuel() {
     let resumable = store
         .create_resumable(func_addr, Vec::new(), Some(40))
         .unwrap()
-        .as_wasm_resumable()
+        .as_wasm()
         .unwrap();
 
     assert!(matches!(
-        store.resume(resumable).unwrap(),
+        store.resume_wasm(resumable).unwrap(),
         StoredRunState::Resumable { .. }
     ));
 }
@@ -102,16 +102,16 @@ fn resumable() {
     let resumable_mult = store
         .create_resumable(mult_global_0, vec![], Some(0))
         .unwrap()
-        .as_wasm_resumable()
+        .as_wasm()
         .unwrap();
     let resumable_add = store
         .create_resumable(add_global_1, vec![], Some(0))
         .unwrap()
-        .as_wasm_resumable()
+        .as_wasm()
         .unwrap();
 
-    let mut run_state_mult = store.resume(resumable_mult).unwrap();
-    let mut run_state_add = store.resume(resumable_add).unwrap();
+    let mut run_state_mult = store.resume_wasm(resumable_mult).unwrap();
+    let mut run_state_add = store.resume_wasm(resumable_add).unwrap();
 
     for _ in 0..20 {
         run_state_mult = match run_state_mult {
@@ -120,8 +120,9 @@ fn resumable() {
                 if let Some(fuel) = resumable.fuel_mut() {
                     *fuel += 2;
                 }
-                store.resume(resumable).unwrap()
+                store.resume_wasm(resumable).unwrap()
             }
+            StoredRunState::HostCalled { .. } => unreachable!("there are no host functions"),
         };
 
         info!(
@@ -136,8 +137,9 @@ fn resumable() {
                 if let Some(fuel) = resumable.fuel_mut() {
                     *fuel += 2;
                 }
-                store.resume(resumable).unwrap()
+                store.resume_wasm(resumable).unwrap()
             }
+            StoredRunState::HostCalled { .. } => unreachable!("there are no host functions"),
         };
 
         info!(
@@ -195,10 +197,10 @@ fn resumable_internal_state() {
     let resumable_add = store
         .create_resumable(add_global_0, vec![], Some(4))
         .unwrap()
-        .as_wasm_resumable()
+        .as_wasm()
         .unwrap();
     assert_eq!(store.global_read(global_0), StoredValue::I32(expected[0]));
-    let mut run_state_add = store.resume(resumable_add).unwrap();
+    let mut run_state_add = store.resume_wasm(resumable_add).unwrap();
     for expected in expected.into_iter().take(4).skip(1) {
         run_state_add = match run_state_add {
             StoredRunState::Finished { .. } => {
@@ -210,8 +212,9 @@ fn resumable_internal_state() {
                 if let Some(fuel) = resumable.fuel_mut() {
                     *fuel += 4;
                 }
-                store.resume(resumable).unwrap()
+                store.resume_wasm(resumable).unwrap()
             }
+            StoredRunState::HostCalled { .. } => unreachable!("there are no host functions"),
         }
     }
 }
@@ -237,23 +240,23 @@ fn resumable_drop() {
     let resumable = store
         .create_resumable(func_addr, Vec::new(), Some(40))
         .unwrap()
-        .as_wasm_resumable()
+        .as_wasm()
         .unwrap();
     {
         let resumable = store
             .create_resumable(func_addr, Vec::new(), Some(40))
             .unwrap()
-            .as_wasm_resumable()
+            .as_wasm()
             .unwrap();
 
-        let StoredRunState::Resumable { .. } = store.resume(resumable).unwrap() else {
+        let StoredRunState::Resumable { .. } = store.resume_wasm(resumable).unwrap() else {
             panic!("expected unfinished resumable");
         };
     }
 
     // the outer resumable should still be able to access the dormitory in store
     assert!(matches!(
-        store.resume(resumable).unwrap(),
+        store.resume_wasm(resumable).unwrap(),
         StoredRunState::Resumable { .. }
     ));
 }

@@ -21,8 +21,7 @@ use wasm::{
     addrs::FuncAddr,
     config::Config,
     value::{ExternAddr, Ref, ValueTypeMismatchError},
-    FuncType, HaltExecutionError, NumType, RefType, ResultType, RuntimeError, Store, ValType,
-    Value,
+    FuncType, Hostcode, NumType, RefType, ResultType, RuntimeError, Store, ValType, Value,
 };
 
 use alloc::{fmt::Debug, vec, vec::Vec};
@@ -544,10 +543,10 @@ mod tests {
 ///     let foo_bar = unsafe { store.func_alloc_typed::<(u32, i32), u32>(my_wrapped_host_func) };
 /// }
 /// ```
-pub fn host_function_wrapper<Params: InteropValueList, Results: InteropValueList>(
+pub fn host_function_wrapper<Params: InteropValueList, Results: InteropValueList, R>(
     params: Vec<Value>,
-    f: impl FnOnce(Params) -> Result<Results, HaltExecutionError>,
-) -> Result<Vec<Value>, HaltExecutionError> {
+    f: impl FnOnce(Params) -> Result<Results, R>,
+) -> Result<Vec<Value>, R> {
     let params =
         Params::try_from_values(params.into_iter()).expect("Params match the actual parameters");
     f(params).map(Results::into_values)
@@ -558,13 +557,9 @@ pub trait StoreTypedInvocationExt<T: Config> {
     ///
     /// This function is simply syntactic sugar for calling
     /// [`Store::func_alloc`] with statically know types.
-    ///
-    /// # Safety
-    ///
-    /// Same as [`Store::func_alloc`].
-    unsafe fn func_alloc_typed<Params: InteropValueList, Returns: InteropValueList>(
+    fn func_alloc_typed<Params: InteropValueList, Returns: InteropValueList>(
         &mut self,
-        host_func: fn(&mut T, Vec<Value>) -> Result<Vec<Value>, HaltExecutionError>,
+        hostcode: Hostcode,
     ) -> FuncAddr;
 
     /// Invokes a function without support for fuel or host functions but with a
@@ -583,9 +578,9 @@ pub trait StoreTypedInvocationExt<T: Config> {
 }
 
 impl<T: Config> StoreTypedInvocationExt<T> for Store<'_, T> {
-    unsafe fn func_alloc_typed<Params: InteropValueList, Returns: InteropValueList>(
+    fn func_alloc_typed<Params: InteropValueList, Returns: InteropValueList>(
         &mut self,
-        host_func: fn(&mut T, Vec<Value>) -> Result<Vec<Value>, HaltExecutionError>,
+        hostcode: Hostcode,
     ) -> FuncAddr {
         let func_type = FuncType {
             params: ResultType {
@@ -595,9 +590,7 @@ impl<T: Config> StoreTypedInvocationExt<T> for Store<'_, T> {
                 valtypes: Vec::from(Returns::TYS),
             },
         };
-        // SAFETY: The caller makes the same safety guarantees that are required
-        // by this function.
-        unsafe { self.func_alloc(func_type, host_func) }
+        self.func_alloc(func_type, hostcode)
     }
 
     unsafe fn invoke_simple_typed<Params: InteropValueList, Returns: InteropValueList>(

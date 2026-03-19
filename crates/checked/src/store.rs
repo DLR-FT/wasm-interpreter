@@ -3,8 +3,7 @@ use wasm::{
     addrs::{FuncAddr, GlobalAddr, MemAddr, ModuleAddr, TableAddr},
     config::Config,
     resumable::{HostResumable, WasmResumable},
-    FuncType, GlobalType, HaltExecutionError, MemType, RuntimeError, TableType, ValidationInfo,
-    Value,
+    FuncType, GlobalType, Hostcode, MemType, RuntimeError, TableType, ValidationInfo,
 };
 
 use crate::{
@@ -98,31 +97,15 @@ impl<'b, T: Config> Store<'b, T> {
         Ok(stored_extern_val)
     }
 
-    /// This is a safer variant of
-    /// [`Store::func_alloc`](wasm::Store::func_alloc). It is functionally
-    /// equal, with the only difference being that this function returns a
-    /// [`Stored<FuncAddr>`].
-    ///
-    /// # Safety
-    ///
-    /// The caller has to guarantee that if the [`Value`]s returned from the
-    /// given host function are references, their addresses came either from the
-    /// host function arguments or from the current [`Store`] object.
-    ///
-    /// See [`Store::func_alloc`](wasm::Store::func_alloc) for more information.
+    /// This is a variant of [`Store::func_alloc`](wasm::Store::func_alloc). It
+    /// is functionally equal, with the only difference being that this function
+    /// returns a [`Stored<FuncAddr>`].
     #[allow(clippy::let_and_return)] // reason = "to follow the 1234 structure"
-    pub unsafe fn func_alloc(
-        &mut self,
-        func_type: FuncType,
-        host_func: fn(&mut T, Vec<Value>) -> Result<Vec<Value>, HaltExecutionError>,
-    ) -> Stored<FuncAddr> {
+    pub fn func_alloc(&mut self, func_type: FuncType, hostcode: Hostcode) -> Stored<FuncAddr> {
         // 1. try unwrap
         // no stored parameters
         // 2. call
-        // SAFETY: The caller ensures that if the host function returns
-        // references, they originate either from the arguments or the current
-        // store.
-        let func_addr = unsafe { self.inner.func_alloc(func_type, host_func) };
+        let func_addr = self.inner.func_alloc(func_type, hostcode);
         // 3. rewrap
         // 4. return
         // SAFETY: The function address just came from the current store.
@@ -417,7 +400,7 @@ impl<'b, T: Config> Store<'b, T> {
         func_addr: Stored<FuncAddr>,
         params: Vec<StoredValue>,
         maybe_fuel: Option<u64>,
-    ) -> Result<StoredResumable<T>, RuntimeError> {
+    ) -> Result<StoredResumable, RuntimeError> {
         // 1. try unwrap
         let func_addr = func_addr.try_unwrap_into_bare(self.id);
         let params = params.try_unwrap_into_bare(self.id);
@@ -434,14 +417,11 @@ impl<'b, T: Config> Store<'b, T> {
     }
 
     /// This is a safe variant of [`Store::resume`](wasm::Store::resume).
-    pub fn resume(
-        &mut self,
-        resumable: Stored<WasmResumable>,
-    ) -> Result<StoredRunState, RuntimeError> {
+    pub fn resume(&mut self, resumable: StoredResumable) -> Result<StoredRunState, RuntimeError> {
         // 1. try unwrap
         let resumable = resumable.try_unwrap_into_bare(self.id);
         // 2. call
-        // SAFETY: It was just checked that the `WasmResumable` came from the
+        // SAFETY: It was just checked that the `Resumable` came from the
         // current store through its store id.
         let run_state = unsafe { self.inner.resume(resumable) }?;
         // 3. rewrap
@@ -451,22 +431,45 @@ impl<'b, T: Config> Store<'b, T> {
         Ok(stored_run_state)
     }
 
-    /// This is a safe variant of [`wasm::Store::resume_host`].
-    pub fn resume_host(
+    /// This is a safe variant of [`Store::resume_wasm`](wasm::Store::resume_wasm).
+    pub fn resume_wasm(
         &mut self,
-        resumable: Stored<HostResumable<T>>,
-    ) -> Result<Vec<StoredValue>, RuntimeError> {
+        resumable: Stored<WasmResumable>,
+    ) -> Result<StoredRunState, RuntimeError> {
         // 1. try unwrap
         let resumable = resumable.try_unwrap_into_bare(self.id);
         // 2. call
-        // SAFETY: It was just checked that the `HostResumable` came from the
+        // SAFETY: It was just checked that the `WasmResumable` came from the
         // current store through its store id.
-        let values = unsafe { self.inner.resume_host(resumable) }?;
+        let run_state = unsafe { self.inner.resume_wasm(resumable) }?;
         // 3. rewrap
-        // SAFETY: All `Value`s just came from the current store.
-        let stored_values = unsafe { Vec::from_bare(values, self.id) };
+        // SAFETY: The `RunState` just came from the current store.
+        let stored_run_state = unsafe { StoredRunState::from_bare(run_state, self.id) };
         // 4. return
-        Ok(stored_values)
+        Ok(stored_run_state)
+    }
+
+    /// This is a safe variant of [`wasm::Store::finish_host_call`].
+    pub fn finish_host_call(
+        &mut self,
+        host_resumable: Stored<HostResumable>,
+        host_call_return_values: Vec<StoredValue>,
+    ) -> Result<StoredRunState, RuntimeError> {
+        // 1. try unwrap
+        let host_resumable = host_resumable.try_unwrap_into_bare(self.id);
+        let host_call_return_values = host_call_return_values.try_unwrap_into_bare(self.id);
+        // 2. call
+        // SAFETY: It was just checked that the `HostResumable` and all `Value`s
+        // came from the current store through their store ids.
+        let run_state = unsafe {
+            self.inner
+                .finish_host_call(host_resumable, host_call_return_values)
+        }?;
+        // 3. rewrap
+        // SAFETY: The `RunState`s just came from the current store.
+        let stored_run_state = unsafe { StoredRunState::from_bare(run_state, self.id) };
+        // 4. return
+        Ok(stored_run_state)
     }
 
     /// This is a safe variant of
@@ -491,7 +494,7 @@ impl<'b, T: Config> Store<'b, T> {
     }
 
     /// This is a safe variant of
-    /// [`Store::mem_access_mut_slice`](wasm::Store::mem_access_mut_slice).
+    /// [`Store::mem_access_mut_slice`](crate::Store::mem_access_mut_slice).
     pub fn mem_access_mut_slice<R>(
         &self,
         memory: Stored<MemAddr>,
