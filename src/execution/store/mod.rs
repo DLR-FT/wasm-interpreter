@@ -1267,17 +1267,21 @@ impl<'b, T: Config> Store<'b, T> {
 
         let func_ty = func_inst.ty();
 
-        // Verify that the given parameters match the function parameters
-        let param_types = params.iter().map(|v| v.to_ty()).collect::<Vec<_>>();
-
-        if func_ty.params.valtypes != param_types {
-            trace!(
-                "Func param types len: {}; Given args len: {}",
-                func_ty.params.valtypes.len(),
-                param_types.len()
-            );
+        // Verify that the given parameter types match the function parameter types
+        if func_ty.params.valtypes.len() != params.len() {
             return Err(RuntimeError::FunctionInvocationSignatureMismatch);
         }
+
+        let type_mismatch = func_ty
+            .params
+            .valtypes
+            .iter()
+            .zip(&params)
+            .any(|(func_val_ty, param_val)| func_val_ty != &param_val.to_ty());
+
+        if type_mismatch {
+            return Err(RuntimeError::FunctionInvocationSignatureMismatch);
+        };
 
         match func_inst {
             FuncInst::WasmFunc(wasm_func_inst) => {
