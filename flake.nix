@@ -300,6 +300,8 @@
                 useNextest = false;
               };
 
+              workspace-checks = self.packages.${system}.rust-workspace;
+
               # check that the requirements can be parsed
               requirements = pkgs.runCommand "check-requirement" { nativeBuildInputs = [ pkgs.strictdoc ]; } ''
                 shopt -s globstar
