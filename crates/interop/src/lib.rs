@@ -525,33 +525,6 @@ mod tests {
     }
 }
 
-/// Helper function to quickly construct host functions without worrying about wasm to Rust
-/// type conversion. For reading/writing user data into the current configuration, simply move
-/// `user_data` into the passed closure.
-/// # Example
-/// ```
-/// use wasm::{validate,  Store, host_function_wrapper, Value, HaltExecutionError};
-/// fn my_wrapped_host_func(user_data: &mut (), params: Vec<Value>) -> Result<Vec<Value>, HaltExecutionError> {
-///     host_function_wrapper(params, |(x, y): (u32, i32)| -> Result<u32, HaltExecutionError> {
-///         let _user_data = user_data;
-///         Ok(x + (y as u32))
-///     })
-/// }
-/// fn main() {
-///     let mut store = Store::new(());
-///     // SAFETY: Parameters and result types do not contain address types.
-///     let foo_bar = unsafe { store.func_alloc_typed::<(u32, i32), u32>(my_wrapped_host_func) };
-/// }
-/// ```
-pub fn host_function_wrapper<Params: InteropValueList, Results: InteropValueList, R>(
-    params: Vec<Value>,
-    f: impl FnOnce(Params) -> Result<Results, R>,
-) -> Result<Vec<Value>, R> {
-    let params =
-        Params::try_from_values(params.into_iter()).expect("Params match the actual parameters");
-    f(params).map(Results::into_values)
-}
-
 pub trait StoreTypedInvocationExt<T: Config> {
     /// Allocates a new function with a statically known type signature with some host code.
     ///
