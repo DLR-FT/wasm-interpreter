@@ -1401,7 +1401,7 @@
 <a href=#1401 id=1401 data-nosnippet>1401</a>                    | V128_LOAD16X4_S | V128_LOAD16X4_U
 <a href=#1402 id=1402 data-nosnippet>1402</a>                    | V128_LOAD32X2_S | V128_LOAD32X2_U
 <a href=#1403 id=1403 data-nosnippet>1403</a>                    =&gt; {
-<a href=#1404 id=1404 data-nosnippet>1404</a><span class="kw">let </span>_mem_idx = MemIdx::validate(<span class="number">0</span>, c_mems)<span class="question-mark">?</span>;
+<a href=#1404 id=1404 data-nosnippet>1404</a>                        <span class="kw">let </span>_mem_idx = MemIdx::validate(<span class="number">0</span>, c_mems)<span class="question-mark">?</span>;
 <a href=#1405 id=1405 data-nosnippet>1405</a>                        <span class="kw">let </span>memarg = MemArg::read(wasm)<span class="question-mark">?</span>;
 <a href=#1406 id=1406 data-nosnippet>1406</a>                        <span class="kw">if </span>memarg.align &gt; <span class="number">3 </span>{
 <a href=#1407 id=1407 data-nosnippet>1407</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: <span class="number">3 </span>});
@@ -1412,7 +1412,7 @@
 <a href=#1412 id=1412 data-nosnippet>1412</a>
 <a href=#1413 id=1413 data-nosnippet>1413</a>                    <span class="comment">// v128.loadN_splat + v128.loadN_zero
 <a href=#1414 id=1414 data-nosnippet>1414</a>                    </span>V128_LOAD8_SPLAT =&gt; {
-<a href=#1415 id=1415 data-nosnippet>1415</a><span class="kw">let </span>_mem_idx = MemIdx::validate(<span class="number">0</span>, c_mems)<span class="question-mark">?</span>;
+<a href=#1415 id=1415 data-nosnippet>1415</a>                        <span class="kw">let </span>_mem_idx = MemIdx::validate(<span class="number">0</span>, c_mems)<span class="question-mark">?</span>;
 <a href=#1416 id=1416 data-nosnippet>1416</a>                        <span class="kw">let </span>memarg = MemArg::read(wasm)<span class="question-mark">?</span>;
 <a href=#1417 id=1417 data-nosnippet>1417</a>                        <span class="kw">if </span>memarg.align &gt; <span class="number">0 </span>{
 <a href=#1418 id=1418 data-nosnippet>1418</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: <span class="number">0 </span>});
@@ -1421,7 +1421,7 @@
 <a href=#1421 id=1421 data-nosnippet>1421</a>                        stack.push_valtype(ValType::VecType);
 <a href=#1422 id=1422 data-nosnippet>1422</a>                    }
 <a href=#1423 id=1423 data-nosnippet>1423</a>                    V128_LOAD16_SPLAT =&gt; {
-<a href=#1424 id=1424 data-nosnippet>1424</a><span class="kw">let </span>_mem_idx = MemIdx::validate(<span class="number">0</span>, c_mems)<span class="question-mark">?</span>;
+<a href=#1424 id=1424 data-nosnippet>1424</a>                        <span class="kw">let </span>_mem_idx = MemIdx::validate(<span class="number">0</span>, c_mems)<span class="question-mark">?</span>;
 <a href=#1425 id=1425 data-nosnippet>1425</a>                        <span class="kw">let </span>memarg = MemArg::read(wasm)<span class="question-mark">?</span>;
 <a href=#1426 id=1426 data-nosnippet>1426</a>                        <span class="kw">if </span>memarg.align &gt; <span class="number">1 </span>{
 <a href=#1427 id=1427 data-nosnippet>1427</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: <span class="number">1 </span>});
@@ -1430,7 +1430,7 @@
 <a href=#1430 id=1430 data-nosnippet>1430</a>                        stack.push_valtype(ValType::VecType);
 <a href=#1431 id=1431 data-nosnippet>1431</a>                    }
 <a href=#1432 id=1432 data-nosnippet>1432</a>                    V128_LOAD32_SPLAT | V128_LOAD32_ZERO =&gt; {
-<a href=#1433 id=1433 data-nosnippet>1433</a><span class="kw">let </span>_mem_idx = MemIdx::validate(<span class="number">0</span>, c_mems)<span class="question-mark">?</span>;
+<a href=#1433 id=1433 data-nosnippet>1433</a>                        <span class="kw">let </span>_mem_idx = MemIdx::validate(<span class="number">0</span>, c_mems)<span class="question-mark">?</span>;
 <a href=#1434 id=1434 data-nosnippet>1434</a>                        <span class="kw">let </span>memarg = MemArg::read(wasm)<span class="question-mark">?</span>;
 <a href=#1435 id=1435 data-nosnippet>1435</a>                        <span class="kw">if </span>memarg.align &gt; <span class="number">2 </span>{
 <a href=#1436 id=1436 data-nosnippet>1436</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: <span class="number">2 </span>});
@@ -1439,7 +1439,7 @@
 <a href=#1439 id=1439 data-nosnippet>1439</a>                        stack.push_valtype(ValType::VecType);
 <a href=#1440 id=1440 data-nosnippet>1440</a>                    }
 <a href=#1441 id=1441 data-nosnippet>1441</a>                    V128_LOAD64_SPLAT | V128_LOAD64_ZERO =&gt; {
-<a href=#1442 id=1442 data-nosnippet>1442</a><span class="kw">let </span>_mem_idx = MemIdx::validate(<span class="number">0</span>, c_mems)<span class="question-mark">?</span>;
+<a href=#1442 id=1442 data-nosnippet>1442</a>                    <span class="kw">let </span>_mem_idx = MemIdx::validate(<span class="number">0</span>, c_mems)<span class="question-mark">?</span>;
 <a href=#1443 id=1443 data-nosnippet>1443</a>                        <span class="kw">let </span>memarg = MemArg::read(wasm)<span class="question-mark">?</span>;
 <a href=#1444 id=1444 data-nosnippet>1444</a>                        <span class="kw">if </span>memarg.align &gt; <span class="number">3 </span>{
 <a href=#1445 id=1445 data-nosnippet>1445</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: <span class="number">3 </span>});
@@ -1455,7 +1455,7 @@
 <a href=#1455 id=1455 data-nosnippet>1455</a>                        <span class="kw">if </span>lane_idx &gt;= <span class="number">16 </span>{
 <a href=#1456 id=1456 data-nosnippet>1456</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidLaneIdx(lane_idx));
 <a href=#1457 id=1457 data-nosnippet>1457</a>                        }
-<a href=#1458 id=1458 data-nosnippet>1458</a><span class="kw">let </span>_mem_idx = MemIdx::validate(<span class="number">0</span>, c_mems)<span class="question-mark">?</span>;
+<a href=#1458 id=1458 data-nosnippet>1458</a>                        <span class="kw">let </span>_mem_idx = MemIdx::validate(<span class="number">0</span>, c_mems)<span class="question-mark">?</span>;
 <a href=#1459 id=1459 data-nosnippet>1459</a>                        <span class="kw">if </span>memarg.align &gt; <span class="number">0 </span>{
 <a href=#1460 id=1460 data-nosnippet>1460</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: <span class="number">0 </span>});
 <a href=#1461 id=1461 data-nosnippet>1461</a>                        }
@@ -1469,7 +1469,7 @@
 <a href=#1469 id=1469 data-nosnippet>1469</a>                        <span class="kw">if </span>lane_idx &gt;= <span class="number">8 </span>{
 <a href=#1470 id=1470 data-nosnippet>1470</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidLaneIdx(lane_idx));
 <a href=#1471 id=1471 data-nosnippet>1471</a>                        }
-<a href=#1472 id=1472 data-nosnippet>1472</a><span class="kw">let </span>_mem_idx = MemIdx::validate(<span class="number">0</span>, c_mems)<span class="question-mark">?</span>;
+<a href=#1472 id=1472 data-nosnippet>1472</a>                        <span class="kw">let </span>_mem_idx = MemIdx::validate(<span class="number">0</span>, c_mems)<span class="question-mark">?</span>;
 <a href=#1473 id=1473 data-nosnippet>1473</a>                        <span class="kw">if </span>memarg.align &gt; <span class="number">1 </span>{
 <a href=#1474 id=1474 data-nosnippet>1474</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: <span class="number">1 </span>});
 <a href=#1475 id=1475 data-nosnippet>1475</a>                        }
@@ -1483,7 +1483,7 @@
 <a href=#1483 id=1483 data-nosnippet>1483</a>                        <span class="kw">if </span>lane_idx &gt;= <span class="number">4 </span>{
 <a href=#1484 id=1484 data-nosnippet>1484</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidLaneIdx(lane_idx));
 <a href=#1485 id=1485 data-nosnippet>1485</a>                        }
-<a href=#1486 id=1486 data-nosnippet>1486</a><span class="kw">let </span>_mem_idx = MemIdx::validate(<span class="number">0</span>, c_mems)<span class="question-mark">?</span>;
+<a href=#1486 id=1486 data-nosnippet>1486</a>                        <span class="kw">let </span>_mem_idx = MemIdx::validate(<span class="number">0</span>, c_mems)<span class="question-mark">?</span>;
 <a href=#1487 id=1487 data-nosnippet>1487</a>                        <span class="kw">if </span>memarg.align &gt; <span class="number">2 </span>{
 <a href=#1488 id=1488 data-nosnippet>1488</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: <span class="number">2 </span>});
 <a href=#1489 id=1489 data-nosnippet>1489</a>                        }
@@ -1497,7 +1497,7 @@
 <a href=#1497 id=1497 data-nosnippet>1497</a>                        <span class="kw">if </span>lane_idx &gt;= <span class="number">2 </span>{
 <a href=#1498 id=1498 data-nosnippet>1498</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidLaneIdx(lane_idx));
 <a href=#1499 id=1499 data-nosnippet>1499</a>                        }
-<a href=#1500 id=1500 data-nosnippet>1500</a><span class="kw">let </span>_mem_idx = MemIdx::validate(<span class="number">0</span>, c_mems)<span class="question-mark">?</span>;
+<a href=#1500 id=1500 data-nosnippet>1500</a>                        <span class="kw">let </span>_mem_idx = MemIdx::validate(<span class="number">0</span>, c_mems)<span class="question-mark">?</span>;
 <a href=#1501 id=1501 data-nosnippet>1501</a>                        <span class="kw">if </span>memarg.align &gt; <span class="number">3 </span>{
 <a href=#1502 id=1502 data-nosnippet>1502</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: <span class="number">3 </span>});
 <a href=#1503 id=1503 data-nosnippet>1503</a>                        }
@@ -1513,7 +1513,7 @@
 <a href=#1513 id=1513 data-nosnippet>1513</a>                        <span class="kw">if </span>lane_idx &gt;= <span class="number">16 </span>{
 <a href=#1514 id=1514 data-nosnippet>1514</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidLaneIdx(lane_idx));
 <a href=#1515 id=1515 data-nosnippet>1515</a>                        }
-<a href=#1516 id=1516 data-nosnippet>1516</a><span class="kw">let </span>_mem_idx = MemIdx::validate(<span class="number">0</span>, c_mems)<span class="question-mark">?</span>;
+<a href=#1516 id=1516 data-nosnippet>1516</a>                        <span class="kw">let </span>_mem_idx = MemIdx::validate(<span class="number">0</span>, c_mems)<span class="question-mark">?</span>;
 <a href=#1517 id=1517 data-nosnippet>1517</a>                        <span class="kw">if </span>memarg.align &gt; <span class="number">0 </span>{
 <a href=#1518 id=1518 data-nosnippet>1518</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: <span class="number">0 </span>});
 <a href=#1519 id=1519 data-nosnippet>1519</a>                        }
@@ -1526,7 +1526,7 @@
 <a href=#1526 id=1526 data-nosnippet>1526</a>                        <span class="kw">if </span>lane_idx &gt;= <span class="number">8 </span>{
 <a href=#1527 id=1527 data-nosnippet>1527</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidLaneIdx(lane_idx));
 <a href=#1528 id=1528 data-nosnippet>1528</a>                        }
-<a href=#1529 id=1529 data-nosnippet>1529</a><span class="kw">let </span>_mem_idx = MemIdx::validate(<span class="number">0</span>, c_mems)<span class="question-mark">?</span>;
+<a href=#1529 id=1529 data-nosnippet>1529</a>                        <span class="kw">let </span>_mem_idx = MemIdx::validate(<span class="number">0</span>, c_mems)<span class="question-mark">?</span>;
 <a href=#1530 id=1530 data-nosnippet>1530</a>                        <span class="kw">if </span>memarg.align &gt; <span class="number">1 </span>{
 <a href=#1531 id=1531 data-nosnippet>1531</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: <span class="number">1 </span>});
 <a href=#1532 id=1532 data-nosnippet>1532</a>                        }
@@ -1539,7 +1539,7 @@
 <a href=#1539 id=1539 data-nosnippet>1539</a>                        <span class="kw">if </span>lane_idx &gt;= <span class="number">4 </span>{
 <a href=#1540 id=1540 data-nosnippet>1540</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidLaneIdx(lane_idx));
 <a href=#1541 id=1541 data-nosnippet>1541</a>                        }
-<a href=#1542 id=1542 data-nosnippet>1542</a><span class="kw">let </span>_mem_idx = MemIdx::validate(<span class="number">0</span>, c_mems)<span class="question-mark">?</span>;
+<a href=#1542 id=1542 data-nosnippet>1542</a>                        <span class="kw">let </span>_mem_idx = MemIdx::validate(<span class="number">0</span>, c_mems)<span class="question-mark">?</span>;
 <a href=#1543 id=1543 data-nosnippet>1543</a>                        <span class="kw">if </span>memarg.align &gt; <span class="number">2 </span>{
 <a href=#1544 id=1544 data-nosnippet>1544</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: <span class="number">2 </span>});
 <a href=#1545 id=1545 data-nosnippet>1545</a>                        }
@@ -1552,7 +1552,7 @@
 <a href=#1552 id=1552 data-nosnippet>1552</a>                        <span class="kw">if </span>lane_idx &gt;= <span class="number">2 </span>{
 <a href=#1553 id=1553 data-nosnippet>1553</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::InvalidLaneIdx(lane_idx));
 <a href=#1554 id=1554 data-nosnippet>1554</a>                        }
-<a href=#1555 id=1555 data-nosnippet>1555</a><span class="kw">let </span>_mem_idx = MemIdx::validate(<span class="number">0</span>, c_mems)<span class="question-mark">?</span>;
+<a href=#1555 id=1555 data-nosnippet>1555</a>                        <span class="kw">let </span>_mem_idx = MemIdx::validate(<span class="number">0</span>, c_mems)<span class="question-mark">?</span>;
 <a href=#1556 id=1556 data-nosnippet>1556</a>                        <span class="kw">if </span>memarg.align &gt; <span class="number">3 </span>{
 <a href=#1557 id=1557 data-nosnippet>1557</a>                            <span class="kw">return </span><span class="prelude-val">Err</span>(ValidationError::ErroneousAlignment { alignment: memarg.align, minimum_required_alignment: <span class="number">3 </span>});
 <a href=#1558 id=1558 data-nosnippet>1558</a>                        }
