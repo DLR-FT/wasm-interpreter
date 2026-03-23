@@ -18,9 +18,11 @@ use crate::core::reader::types::{ExternType, FuncType, MemType, ResultType, Tabl
 use crate::core::reader::WasmReader;
 use crate::core::sidetable::Sidetable;
 use crate::core::utils::ToUsizeExt;
+use crate::custom_section::CustomSection;
 use crate::ValidationError;
 
 pub(crate) mod code;
+pub(crate) mod custom_section;
 pub(crate) mod data;
 pub(crate) mod globals;
 pub(crate) mod read_constant_expression;
@@ -49,7 +51,7 @@ pub struct ValidationInfo<'bytecode> {
     pub(crate) sidetable: Sidetable,
     /// The start function which is automatically executed during instantiation
     pub(crate) start: Option<FuncIdx>,
-    pub(crate) custom_sections: Vec<(&'bytecode str, &'bytecode [u8])>,
+    pub(crate) custom_sections: Vec<CustomSection<'bytecode>>,
     // pub(crate) exports_length: Exported,
 }
 
@@ -95,27 +97,21 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
     read_next_header(&mut wasm, &mut header)?;
 
     let mut custom_sections = Vec::new();
-    while let Some(custom_section) = try_read_custom_section(&mut wasm, &mut header)? {
-        custom_sections.push(custom_section);
-    }
+    read_all_custom_sections(&mut wasm, &mut header, &mut custom_sections)?;
 
     let types = handle_section(&mut wasm, &mut header, SectionTy::Type, |wasm, _| {
         wasm.read_vec(FuncType::read).map(|types| IdxVec::new(types).expect("that index space creation never fails because the length of the types vector is encoded as a 32-bit integer in the bytecode"))
     })?
     .unwrap_or_default();
 
-    while let Some(custom_section) = try_read_custom_section(&mut wasm, &mut header)? {
-        custom_sections.push(custom_section);
-    }
+    read_all_custom_sections(&mut wasm, &mut header, &mut custom_sections)?;
 
     let imports = handle_section(&mut wasm, &mut header, SectionTy::Import, |wasm, _| {
         wasm.read_vec(|wasm| Import::read_and_validate(wasm, &types))
     })?
     .unwrap_or_default();
 
-    while let Some(custom_section) = try_read_custom_section(&mut wasm, &mut header)? {
-        custom_sections.push(custom_section);
-    }
+    read_all_custom_sections(&mut wasm, &mut header, &mut custom_sections)?;
 
     // The `Function` section only covers module-level (or "local") functions.
     // Imported functions have their types known in the `import` section. Both
@@ -137,9 +133,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
     let functions = ExtendedIdxVec::new(imported_functions.collect(), local_functions)
         .map_err(|IdxVecOverflowError| ValidationError::TooManyFunctions)?;
 
-    while let Some(custom_section) = try_read_custom_section(&mut wasm, &mut header)? {
-        custom_sections.push(custom_section);
-    }
+    read_all_custom_sections(&mut wasm, &mut header, &mut custom_sections)?;
 
     let imported_tables = imports.iter().filter_map(|m| match m.desc {
         ImportDesc::Table(table) => Some(table),
@@ -153,9 +147,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
     let tables = ExtendedIdxVec::new(imported_tables.collect(), local_tables)
         .map_err(|IdxVecOverflowError| ValidationError::TooManyTables)?;
 
-    while let Some(custom_section) = try_read_custom_section(&mut wasm, &mut header)? {
-        custom_sections.push(custom_section);
-    }
+    read_all_custom_sections(&mut wasm, &mut header, &mut custom_sections)?;
 
     let imported_memories = imports.iter().filter_map(|m| match m.desc {
         ImportDesc::Mem(mem) => Some(mem),
@@ -174,9 +166,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
         return Err(ValidationError::UnsupportedMultipleMemoriesProposal);
     }
 
-    while let Some(custom_section) = try_read_custom_section(&mut wasm, &mut header)? {
-        custom_sections.push(custom_section);
-    }
+    read_all_custom_sections(&mut wasm, &mut header, &mut custom_sections)?;
 
     let imported_global_types: Vec<GlobalType> = imports
         .iter()
@@ -205,9 +195,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
     let globals = ExtendedIdxVec::new(imported_globals.collect(), local_globals)
         .map_err(|IdxVecOverflowError| ValidationError::TooManyGlobals)?;
 
-    while let Some(custom_section) = try_read_custom_section(&mut wasm, &mut header)? {
-        custom_sections.push(custom_section);
-    }
+    read_all_custom_sections(&mut wasm, &mut header, &mut custom_sections)?;
 
     let exports = handle_section(&mut wasm, &mut header, SectionTy::Export, |wasm, _| {
         wasm.read_vec(|wasm| {
@@ -228,9 +216,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
         },
     ));
 
-    while let Some(custom_section) = try_read_custom_section(&mut wasm, &mut header)? {
-        custom_sections.push(custom_section);
-    }
+    read_all_custom_sections(&mut wasm, &mut header, &mut custom_sections)?;
 
     let start = handle_section(&mut wasm, &mut header, SectionTy::Start, |wasm, _| {
         let func_idx = FuncIdx::read_and_validate(wasm, functions.inner())?;
@@ -261,9 +247,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
         }
     })?;
 
-    while let Some(custom_section) = try_read_custom_section(&mut wasm, &mut header)? {
-        custom_sections.push(custom_section);
-    }
+    read_all_custom_sections(&mut wasm, &mut header, &mut custom_sections)?;
 
     let elements = handle_section(&mut wasm, &mut header, SectionTy::Element, |wasm, _| {
         ElemType::read_and_validate(
@@ -277,9 +261,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
     })?
     .unwrap_or_default();
 
-    while let Some(custom_section) = try_read_custom_section(&mut wasm, &mut header)? {
-        custom_sections.push(custom_section);
-    }
+    read_all_custom_sections(&mut wasm, &mut header, &mut custom_sections)?;
 
     // https://webassembly.github.io/spec/core/binary/modules.html#data-count-section
     // As per the official documentation:
@@ -293,9 +275,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
         trace!("data count: {dc}");
     }
 
-    while let Some(custom_section) = try_read_custom_section(&mut wasm, &mut header)? {
-        custom_sections.push(custom_section);
-    }
+    read_all_custom_sections(&mut wasm, &mut header, &mut custom_sections)?;
 
     let mut sidetable = Sidetable::new();
     let func_blocks_stps = handle_section(&mut wasm, &mut header, SectionTy::Code, |wasm, h| {
@@ -326,9 +306,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
         return Err(ValidationError::FunctionAndCodeSectionsHaveDifferentLengths);
     }
 
-    while let Some(custom_section) = try_read_custom_section(&mut wasm, &mut header)? {
-        custom_sections.push(custom_section);
-    }
+    read_all_custom_sections(&mut wasm, &mut header, &mut custom_sections)?;
 
     let data_section = handle_section(&mut wasm, &mut header, SectionTy::Data, |wasm, h| {
         // wasm.read_vec(DataSegment::read)
@@ -344,9 +322,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
         }
     }
 
-    while let Some(custom_section) = try_read_custom_section(&mut wasm, &mut header)? {
-        custom_sections.push(custom_section);
-    }
+    read_all_custom_sections(&mut wasm, &mut header, &mut custom_sections)?;
 
     // All sections should have been handled
     if let Some(header) = header {
@@ -408,37 +384,27 @@ where
     }
 }
 
-fn try_read_custom_section<'wasm>(
+/// Reads the next sections as long as they are custom sections and pushes them
+/// into the `custom_sections` vector.
+fn read_all_custom_sections<'wasm>(
     wasm: &mut WasmReader<'wasm>,
     section_header: &mut Option<SectionHeader>,
-) -> Result<Option<(&'wasm str, &'wasm [u8])>, ValidationError> {
-    handle_section(wasm, section_header, SectionTy::Custom, |wasm, h| {
-        // customsec ::= section_0(custom)
-        // custom ::= name byte*
-        // name ::= b*:vec(byte) => name (if utf8(name) = b*)
-        // vec(B) ::= n:u32 (x:B)^n => x^n
-        let name = wasm.read_name()?;
+    custom_sections: &mut Vec<CustomSection<'wasm>>,
+) -> Result<(), ValidationError> {
+    let mut read_custom_section = || {
+        handle_section(
+            wasm,
+            section_header,
+            SectionTy::Custom,
+            CustomSection::read_and_validate,
+        )
+    };
 
-        let section_start = wasm.pc;
-        let section_end = h
-            .contents
-            .from()
-            .checked_add(h.contents.len())
-            .ok_or(ValidationError::InvalidCustomSectionLength)?;
+    while let Some(custom_section) = read_custom_section()? {
+        custom_sections.push(custom_section);
+    }
 
-        let contents = wasm
-            .full_wasm_binary
-            .get(section_start..section_end)
-            .ok_or(ValidationError::InvalidCustomSectionLength)?;
-
-        let section_len = section_end
-            .checked_sub(section_start)
-            .expect("section start <= section end always");
-
-        wasm.skip(section_len)?;
-
-        Ok((name, contents))
-    })
+    Ok(())
 }
 
 impl<'wasm> ValidationInfo<'wasm> {
@@ -481,7 +447,7 @@ impl<'wasm> ValidationInfo<'wasm> {
     /// Returns a list of all custom sections in the bytecode. Every custom
     /// section consists of its name and the custom section's bytecode
     /// (excluding the name itself).
-    pub fn custom_sections(&self) -> &[(&'wasm str, &'wasm [u8])] {
+    pub fn custom_sections(&self) -> &[CustomSection<'wasm>] {
         &self.custom_sections
     }
 }
