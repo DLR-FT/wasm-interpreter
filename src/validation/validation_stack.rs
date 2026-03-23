@@ -404,7 +404,7 @@ impl ValidationStack {
 
 /// corresponds to `opdtype` <https://webassembly.github.io/spec/core/valid/instructions.html#instructions>
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum ValidationStackEntry {
+pub(crate) enum ValidationStackEntry {
     Val(ValType),
     Bottom,
 }

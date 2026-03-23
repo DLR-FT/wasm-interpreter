@@ -1,4 +1,3 @@
-use crate::validation_stack::ValidationStackEntry;
 use crate::RefType;
 use core::fmt::{Display, Formatter};
 use core::str::Utf8Error;
@@ -42,8 +41,6 @@ pub enum ValidationError {
     },
     /// The discriminator of a mut type is malformed.
     MalformedMutDiscriminator(u8),
-    /// Block types use a special 33-bit signed integer for encoding type indices.
-    MalformedBlockTypeTypeIdx(i64),
     /// A variable-length integer was read but it overflowed.
     MalformedVariableLengthInteger,
     /// The discriminator of an element kind is malformed.
@@ -79,7 +76,6 @@ pub enum ValidationError {
     InvalidMultiByteInstr(u8, u32),
     EndInvalidValueStack,
     InvalidValidationStackValType(Option<ValType>),
-    InvalidValidationStackType(ValidationStackEntry),
     ExpectedAnOperand,
     /// The memory size specified by a mem type exceeds the maximum size.
     MemoryTooLarge,
@@ -132,7 +128,6 @@ pub enum ValidationError {
     FunctionAndCodeSectionsHaveDifferentLengths,
     /// The data count specified in the data count section and the length of the data section must match.
     DataCountAndDataSectionsLengthAreDifferent,
-    InvalidImportType,
     /// The function signature of the start function is invalid. It must not specify any parameters or return values.
     InvalidStartFunctionSignature,
     /// An active element segment's type and its table's type are different.
@@ -185,7 +180,6 @@ impl Display for ValidationError {
             ValidationError::MalformedLimitsDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as a limits type discriminator"),
             ValidationError::MalformedLimitsMinLargerThanMax { min, max } => write!(f, "Limits are malformed because min={min} is larger than max={max}"),
             ValidationError::MalformedMutDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as a mute type discriminator"),
-            ValidationError::MalformedBlockTypeTypeIdx(idx) => write!(f, "The type index {idx} which is encoded as a singed 33-bit integer inside a block type is malformed"),
             ValidationError::MalformedVariableLengthInteger => write!(f, "Reading a variable-length integer overflowed"),
             ValidationError::MalformedElemKindDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as an element kind discriminator"),
 
@@ -208,7 +202,6 @@ impl Display for ValidationError {
             ValidationError::ActiveElementSegmentTypeMismatch => write!(f, "an element segment's type and its table's type are different"),
             ValidationError::EndInvalidValueStack => write!(f, "Different value stack types were expected at the end of a block/function"),
             ValidationError::InvalidValidationStackValType(ty) => write!(f, "An unexpected type `{ty:?}` was found on the stack when trying to pop another"),
-            ValidationError::InvalidValidationStackType(ty) => write!(f, "An unexpected type `{ty:?}` was found on the stack"),
             ValidationError::ExpectedAnOperand => write!(f, "Expected a value type operand on the stack"),
             ValidationError::MemoryTooLarge => write!(f, "The size specified by a memory type exceeds the maximum size"),
             ValidationError::MutationOfConstGlobal => write!(f, "An attempt has been made to mutate a const global"),
@@ -229,7 +222,6 @@ impl Display for ValidationError {
             ValidationError::CodeExprHasTrailingInstructions => write!(f,"A code expression has invalid trailing instructions following its `end` instruction"),
             ValidationError::FunctionAndCodeSectionsHaveDifferentLengths => write!(f,"The function and code sections have different lengths"),
             ValidationError::DataCountAndDataSectionsLengthAreDifferent => write!(f,"The data count section specifies a different length than there are data segments in the data section"),
-            ValidationError::InvalidImportType => f.write_str("Invalid import type"),
             ValidationError::InvalidStartFunctionSignature => write!(f,"The start function has parameters or return types which it is not allowed to have"),
             ValidationError::I33IsNegative => f.write_str("An i33 type is negative which is not allowed"),
             ValidationError::MissingDataCountSection => f.write_str("Some instructions could not be validated because the data count section is missing"),
