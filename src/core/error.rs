@@ -4,7 +4,6 @@ use core::fmt::{Display, Formatter};
 use core::str::Utf8Error;
 
 use super::indices::FuncIdx;
-use crate::core::reader::section_header::SectionTy;
 use crate::core::reader::types::ValType;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -71,8 +70,8 @@ pub enum ValidationError {
     /// An index for a lane of some vector type is invalid.
     InvalidLaneIdx(u8),
 
-    /// A section with given type is out of order. All section types have a fixed order in which they must occur.
-    SectionOutOfOrder(SectionTy),
+    /// The last section was read, but there is still content in the bytecode.
+    UnexpectedContentAfterLastSection,
     /// A custom section contains more bytes than its section header specifies.
     InvalidCustomSectionLength,
     ExprMissingEnd,
@@ -201,7 +200,7 @@ impl Display for ValidationError {
             ValidationError::InvalidLabelIdx(idx) => write!(f, "The label index {idx} is invalid"),
             ValidationError::InvalidLaneIdx(idx) => write!(f, "The lane index {idx} is invalid"),
 
-            ValidationError::SectionOutOfOrder(ty) => write!(f, "A section of type `{ty:?}` is defined out of order"),
+            ValidationError::UnexpectedContentAfterLastSection => write!(f, "The last section was read, but there is still content in the bytecode"),
             ValidationError::InvalidCustomSectionLength => write!(f, "A custom section contains more bytes than its section header specifies"),
             ValidationError::ExprMissingEnd => write!(f, "An expr type is missing an end byte"),
             ValidationError::InvalidInstr(byte) => write!(f, "The instruction opcode {byte:#x} is invalid"),

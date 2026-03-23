@@ -325,8 +325,8 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
     read_all_custom_sections(&mut wasm, &mut header, &mut custom_sections)?;
 
     // All sections should have been handled
-    if let Some(header) = header {
-        return Err(ValidationError::SectionOutOfOrder(header.ty));
+    if let Some(_header) = header {
+        return Err(ValidationError::UnexpectedContentAfterLastSection);
     }
 
     debug!("Validation was successful");
