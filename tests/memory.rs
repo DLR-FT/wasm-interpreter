@@ -57,7 +57,7 @@ fn memory_min_greater_than_max() {
         let validation_info = validate(&wasm_bytes);
         assert_eq!(
             validation_info.err().unwrap(),
-            ValidationError::MalformedLimitsMinLargerThanMax { min: 1, max: 0 }
+            ValidationError::InvalidLimitsMinLargerThanMax { min: 1, max: 0 }
         );
     });
 }

@@ -308,7 +308,7 @@ impl Limits {
 
         if let Some(max) = limits.max {
             if limits.min > max {
-                return Err(ValidationError::MalformedLimitsMinLargerThanMax {
+                return Err(ValidationError::InvalidLimitsMinLargerThanMax {
                     min: limits.min,
                     max,
                 });

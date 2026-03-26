@@ -35,7 +35,7 @@ pub enum ValidationError {
     /// The discriminator of a limits type is malformed.
     MalformedLimitsDiscriminator(u8),
     /// The min field of a limits type is larger than the max field.
-    MalformedLimitsMinLargerThanMax {
+    InvalidLimitsMinLargerThanMax {
         min: u32,
         max: u32,
     },
@@ -180,7 +180,6 @@ impl Display for ValidationError {
             ValidationError::MalformedExportDescDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as an export description discriminator"),
             ValidationError::MalformedImportDescDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as an import description discriminator"),
             ValidationError::MalformedLimitsDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as a limits type discriminator"),
-            ValidationError::MalformedLimitsMinLargerThanMax { min, max } => write!(f, "Limits are malformed because min={min} is larger than max={max}"),
             ValidationError::MalformedMutDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as a mute type discriminator"),
             ValidationError::MalformedVariableLengthInteger => write!(f, "Reading a variable-length integer overflowed"),
             ValidationError::MalformedElemKindDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as an element kind discriminator"),
@@ -197,6 +196,7 @@ impl Display for ValidationError {
             ValidationError::InvalidLabelIdx(idx) => write!(f, "The label index {idx} is invalid"),
             ValidationError::InvalidLaneIdx(idx) => write!(f, "The lane index {idx} is invalid"),
 
+            ValidationError::InvalidLimitsMinLargerThanMax { min, max } => write!(f, "Limits are invalid because min={min} is larger than max={max}"),
             ValidationError::UnexpectedContentAfterLastSection => write!(f, "The last section was read, but there is still content in the bytecode"),
             ValidationError::InvalidCustomSectionLength => write!(f, "A custom section contains more bytes than its section header specifies"),
             ValidationError::ExprMissingEnd => write!(f, "An expr type is missing an end byte"),
