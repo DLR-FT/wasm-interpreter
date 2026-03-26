@@ -230,7 +230,10 @@ impl ElemType {
                     // created and also validated in this function.
                     let table_type = unsafe { c_tables.get(x) };
                     if table_type.et != t {
-                        return Err(ValidationError::ActiveElementSegmentTypeMismatch);
+                        return Err(ValidationError::ActiveElementSegmentTypeMismatch {
+                            active_element_type: t,
+                            table_ref_type: table_type.et,
+                        });
                     }
                     // 3-4. _expr must be valid with type I32 and be const: already checked during the parse of initializer expressions above.
                     // Then elemmode is valid with type t.

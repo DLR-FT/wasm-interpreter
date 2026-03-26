@@ -136,7 +136,10 @@ pub enum ValidationError {
     /// The function signature of the start function is invalid. It must not specify any parameters or return values.
     InvalidStartFunctionSignature,
     /// An active element segment's type and its table's type are different.
-    ActiveElementSegmentTypeMismatch,
+    ActiveElementSegmentTypeMismatch {
+        active_element_type: RefType,
+        table_ref_type: RefType,
+    },
     /// 33-bit signed integers are sometimes used to encode unsigned 32-bit
     /// integers to prevent collisions between bit patterns of different types.
     /// Therefore, 33-bit signed integers may never be negative.
@@ -206,7 +209,7 @@ impl Display for ValidationError {
             ValidationError::ExprMissingEnd => write!(f, "An expr type is missing an end byte"),
             ValidationError::InvalidInstr(byte) => write!(f, "The instruction opcode {byte:#x} is invalid"),
             ValidationError::InvalidMultiByteInstr(first_byte, second_instr) => write!(f, "The multi-byte instruction opcode {first_byte:#x} {second_instr} is invalid"),
-            ValidationError::ActiveElementSegmentTypeMismatch => write!(f, "an element segment's type and its table's type are different"),
+            ValidationError::ActiveElementSegmentTypeMismatch{ active_element_type, table_ref_type} => write!(f, "an element segment's type {active_element_type:?} and its table's type {table_ref_type:?} are different"),
             ValidationError::EndInvalidValueStack => write!(f, "Different value stack types were expected at the end of a block/function"),
             ValidationError::InvalidValidationStackValType(ty) => write!(f, "An unexpected type `{ty:?}` was found on the stack when trying to pop another"),
             ValidationError::ExpectedAnOperand => write!(f, "Expected a value type operand on the stack"),
