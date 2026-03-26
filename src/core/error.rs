@@ -41,8 +41,11 @@ pub enum ValidationError {
     },
     /// The discriminator of a mut type is malformed.
     MalformedMutDiscriminator(u8),
-    /// A variable-length integer was read but it overflowed.
-    MalformedVariableLengthInteger,
+    /// A variable-length integer could not be read because its binary
+    /// representation was too long.
+    VariableLengthIntegerRepresentationTooLong,
+    /// A variable-length integer was read, but it overflowed.
+    VariableLengthIntegerOverflowed,
     /// The discriminator of an element kind is malformed.
     MalformedElemKindDiscriminator(u8),
     /// The align field of a mem arg is too large.
@@ -181,7 +184,8 @@ impl Display for ValidationError {
             ValidationError::MalformedImportDescDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as an import description discriminator"),
             ValidationError::MalformedLimitsDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as a limits type discriminator"),
             ValidationError::MalformedMutDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as a mute type discriminator"),
-            ValidationError::MalformedVariableLengthInteger => write!(f, "Reading a variable-length integer overflowed"),
+            ValidationError::VariableLengthIntegerRepresentationTooLong => write!(f, "A variable-length integer could not be read because its binary representation was too long"),
+            ValidationError::VariableLengthIntegerOverflowed=> write!(f, "Reading a variable-length integer overflowed"),
             ValidationError::MalformedElemKindDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as an element kind discriminator"),
             ValidationError::MalformedMemArgFlags => write!(f, "The align field of a mem arg is too large"),
 
