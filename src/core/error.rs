@@ -50,6 +50,8 @@ pub enum ValidationError {
     MalformedElemKindDiscriminator(u8),
     /// The align field of a mem arg is too large.
     MalformedMemArgFlags,
+    // A span could not be created for some Wasm bytecode because it was out-of-bounds.
+    MalformedSpan,
 
     /// An index for a type is invalid.
     InvalidTypeIdx(u32),
@@ -191,6 +193,7 @@ impl Display for ValidationError {
             ValidationError::VariableLengthIntegerOverflowed=> write!(f, "Reading a variable-length integer overflowed"),
             ValidationError::MalformedElemKindDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as an element kind discriminator"),
             ValidationError::MalformedMemArgFlags => write!(f, "The align field of a mem arg is too large"),
+            ValidationError::MalformedSpan => write!(f, "A span could not be created for some Wasm bytecode because it was out-of-bounds"),
 
             ValidationError::InvalidTypeIdx(idx) => write!(f, "The type index {idx} is invalid"),
             ValidationError::InvalidFuncIdx(idx) => write!(f, "The function index {idx} is invalid"),

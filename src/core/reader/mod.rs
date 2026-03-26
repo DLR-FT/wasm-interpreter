@@ -67,7 +67,7 @@ impl<'a> WasmReader<'a> {
     /// not yield an error.
     pub fn make_span(&self, len: usize) -> Result<Span, ValidationError> {
         if self.pc + len > self.full_wasm_binary.len() {
-            return Err(ValidationError::Eof);
+            return Err(ValidationError::MalformedSpan);
         }
         Ok(Span::new(self.pc, len))
     }
