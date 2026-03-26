@@ -45,6 +45,8 @@ pub enum ValidationError {
     MalformedVariableLengthInteger,
     /// The discriminator of an element kind is malformed.
     MalformedElemKindDiscriminator(u8),
+    /// The align field of a mem arg is too large.
+    MalformedMemArgFlags,
 
     /// An index for a type is invalid.
     InvalidTypeIdx(u32),
@@ -182,6 +184,7 @@ impl Display for ValidationError {
             ValidationError::MalformedMutDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as a mute type discriminator"),
             ValidationError::MalformedVariableLengthInteger => write!(f, "Reading a variable-length integer overflowed"),
             ValidationError::MalformedElemKindDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as an element kind discriminator"),
+            ValidationError::MalformedMemArgFlags => write!(f, "The align field of a mem arg is too large"),
 
             ValidationError::InvalidTypeIdx(idx) => write!(f, "The type index {idx} is invalid"),
             ValidationError::InvalidFuncIdx(idx) => write!(f, "The function index {idx} is invalid"),
