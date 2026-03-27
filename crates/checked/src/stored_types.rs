@@ -3,8 +3,8 @@ use core::{num::NonZeroU64, ops::Deref};
 use alloc::vec::Vec;
 use wasm::{
     addrs::{FuncAddr, GlobalAddr, MemAddr, ModuleAddr, TableAddr},
-    resumable::{Resumable, RunState},
-    ExternVal, InstantiationOutcome,
+    resumable::{HostCall, HostResumable, Resumable, RunState, WasmResumable},
+    ExternVal, Hostcode, InstantiationOutcome,
 };
 
 use crate::{AbstractStored, StoreId, StoredValue};
@@ -88,9 +88,9 @@ impl<T> Deref for Stored<T> {
     }
 }
 
-// Unfortuately we cannot implement `DerefMut` for `Stored`, because that allows
-// the user to replace the inner T. Therefore, wrap this method manually.
-impl<T> Stored<Resumable<T>> {
+// Unfortunately we cannot implement `DerefMut` for `Stored`, because that
+// allows the user to replace the inner T. Therefore, wrap this method manually.
+impl Stored<WasmResumable> {
     pub fn fuel_mut(&mut self) -> &mut Option<u64> {
         self.inner.fuel_mut()
     }
@@ -205,20 +205,140 @@ impl StoredExternVal {
     }
 }
 
+/// A stored variant of [`Resumable`]
+pub enum StoredResumable {
+    Wasm(Stored<WasmResumable>),
+    Host {
+        host_call: StoredHostCall,
+        host_resumable: Stored<HostResumable>,
+    },
+}
+
+impl AbstractStored for StoredResumable {
+    type BareTy = Resumable;
+
+    unsafe fn from_bare(bare_value: Self::BareTy, id: StoreId) -> Self {
+        match bare_value {
+            Resumable::Wasm(wasm_resumable) => {
+                // SAFETY: Upheld by caller
+                Self::Wasm(unsafe { Stored::from_bare(wasm_resumable, id) })
+            }
+            Resumable::Host {
+                host_call,
+                host_resumable,
+            } => {
+                Self::Host {
+                    // SAFETY: Upheld by caller
+                    host_call: unsafe { StoredHostCall::from_bare(host_call, id) },
+                    // SAFETY: Upheld by caller
+                    host_resumable: unsafe { Stored::from_bare(host_resumable, id) },
+                }
+            }
+        }
+    }
+
+    fn into_bare(self) -> Self::BareTy {
+        match self {
+            Self::Wasm(wasm_resumable) => Resumable::Wasm(wasm_resumable.into_bare()),
+            Self::Host {
+                host_call,
+                host_resumable,
+            } => Resumable::Host {
+                host_call: host_call.into_bare(),
+                host_resumable: host_resumable.into_bare(),
+            },
+        }
+    }
+
+    fn try_unwrap_into_bare(self, expected_store_id: StoreId) -> Self::BareTy {
+        match self {
+            StoredResumable::Wasm(stored) => {
+                Resumable::Wasm(stored.try_unwrap_into_bare(expected_store_id))
+            }
+            StoredResumable::Host {
+                host_call,
+                host_resumable,
+            } => Resumable::Host {
+                host_call: host_call.try_unwrap_into_bare(expected_store_id),
+                host_resumable: host_resumable.try_unwrap_into_bare(expected_store_id),
+            },
+        }
+    }
+}
+
+impl StoredResumable {
+    /// A stored variant of [`Resumable::as_wasm`].
+    pub fn as_wasm(self) -> Option<Stored<WasmResumable>> {
+        match self {
+            StoredResumable::Wasm(wasm_resumable) => Some(wasm_resumable),
+            StoredResumable::Host { .. } => None,
+        }
+    }
+
+    /// A stored variant of [`Resumable::as_host`]
+    pub fn as_host(self) -> Option<(StoredHostCall, Stored<HostResumable>)> {
+        match self {
+            StoredResumable::Wasm(_) => None,
+            StoredResumable::Host {
+                host_call,
+                host_resumable,
+            } => Some((host_call, host_resumable)),
+        }
+    }
+}
+
+/// A stored variant of [`HostCall`]
+pub struct StoredHostCall {
+    /// Must contain the correct parameter types for the host function with host
+    /// code `hostcode`.
+    pub params: Vec<StoredValue>,
+    pub hostcode: Hostcode,
+}
+
+impl AbstractStored for StoredHostCall {
+    type BareTy = HostCall;
+
+    unsafe fn from_bare(bare_value: Self::BareTy, id: StoreId) -> Self {
+        Self {
+            // SAFETY: Upheld by caller
+            params: unsafe { Vec::from_bare(bare_value.params, id) },
+            hostcode: bare_value.hostcode,
+        }
+    }
+
+    fn into_bare(self) -> Self::BareTy {
+        HostCall {
+            params: self.params.into_bare(),
+            hostcode: self.hostcode,
+        }
+    }
+
+    fn try_unwrap_into_bare(self, expected_store_id: StoreId) -> Self::BareTy {
+        HostCall {
+            params: self.params.try_unwrap_into_bare(expected_store_id),
+            hostcode: self.hostcode,
+        }
+    }
+}
+
 /// A stored variant of [`RunState`]
-pub enum StoredRunState<T> {
+pub enum StoredRunState {
     Finished {
         values: Vec<StoredValue>,
         maybe_remaining_fuel: Option<u64>,
     },
     Resumable {
-        resumable: Stored<Resumable<T>>,
-        required_fuel: NonZeroU64,
+        resumable: Stored<WasmResumable>,
+        required_fuel: Option<NonZeroU64>,
+    },
+    HostCalled {
+        host_call: StoredHostCall,
+        resumable: Stored<HostResumable>,
     },
 }
 
-impl<T> AbstractStored for StoredRunState<T> {
-    type BareTy = RunState<T>;
+impl AbstractStored for StoredRunState {
+    type BareTy = RunState;
 
     unsafe fn from_bare(bare_value: Self::BareTy, id: StoreId) -> Self {
         match bare_value {
@@ -237,6 +357,15 @@ impl<T> AbstractStored for StoredRunState<T> {
                 // SAFETY: Upheld by the caller
                 resumable: unsafe { Stored::from_bare(resumable, id) },
                 required_fuel,
+            },
+            RunState::HostCalled {
+                host_call,
+                resumable,
+            } => Self::HostCalled {
+                // SAFETY: Upheld by caller
+                host_call: unsafe { StoredHostCall::from_bare(host_call, id) },
+                // SAFETY: Upheld by caller
+                resumable: unsafe { Stored::from_bare(resumable, id) },
             },
         }
     }
@@ -257,6 +386,13 @@ impl<T> AbstractStored for StoredRunState<T> {
                 resumable: resumable.into_bare(),
                 required_fuel,
             },
+            StoredRunState::HostCalled {
+                host_call,
+                resumable,
+            } => RunState::HostCalled {
+                host_call: host_call.into_bare(),
+                resumable: resumable.into_bare(),
+            },
         }
     }
 
@@ -275,6 +411,13 @@ impl<T> AbstractStored for StoredRunState<T> {
             } => RunState::Resumable {
                 resumable: resumable.try_unwrap_into_bare(expected_store_id),
                 required_fuel,
+            },
+            StoredRunState::HostCalled {
+                host_call,
+                resumable,
+            } => RunState::HostCalled {
+                host_call: host_call.try_unwrap_into_bare(expected_store_id),
+                resumable: resumable.try_unwrap_into_bare(expected_store_id),
             },
         }
     }

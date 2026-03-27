@@ -11,8 +11,6 @@ pub enum RuntimeError {
     HostFunctionSignatureMismatch,
     WriteOnImmutableGlobal,
     GlobalTypeMismatch,
-    /// A host function returned the [`HaltExecutionError`](crate::HaltExecutionError), which caused execution to be halted.
-    HostFunctionHaltedExecution,
     // An access to a table element was out of bounds
     TableAccessOutOfBounds,
     UnknownExport,
@@ -33,6 +31,13 @@ pub enum RuntimeError {
     DuplicateExternDefinition,
     /// A function was invoked with incorrect parameters or return types.
     FunctionInvocationSignatureMismatch,
+    /// The [`Store::invoke_simple`](crate::Store::invoke_simple) method was
+    /// used to execute some Wasm code but this resulted a host call, which is
+    /// not supported in this mode.
+    UnexpectedHostCall,
+    /// A host function was called from a start function during module
+    /// instantiation.
+    UnsupportedHostCallDuringInstantiation,
 }
 
 impl Display for RuntimeError {
@@ -47,9 +52,6 @@ impl Display for RuntimeError {
             }
             RuntimeError::HostFunctionSignatureMismatch => {
                 f.write_str("host function call did not respect its type signature")
-            }
-            RuntimeError::HostFunctionHaltedExecution => {
-                f.write_str("A host function requested execution to be halted.")
             }
             RuntimeError::InvalidImportType => f.write_str("Invalid import type"),
             RuntimeError::TableAccessOutOfBounds => f.write_str("A table access was out of bounds"),
@@ -84,6 +86,8 @@ impl Display for RuntimeError {
             RuntimeError::FunctionInvocationSignatureMismatch => {
                 f.write_str("A function was invoked with incorrect parameters or return types")
             }
+            RuntimeError::UnexpectedHostCall => f.write_str(" The Store::invoke_simple method was used to execute some Wasm code but this resulted a host call, which is not supported in this mode"),
+            RuntimeError::UnsupportedHostCallDuringInstantiation => f.write_str("A host function was called from a start function during module instantiation"),
         }
     }
 }

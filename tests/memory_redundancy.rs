@@ -110,25 +110,25 @@ fn memory_redundancy() {
         .unwrap();
 
     assert_eq!(
-        store.invoke_typed_without_fuel(test_store_to_load, ()),
+        store.invoke_simple_typed(test_store_to_load, ()),
         Ok(0x00000080)
     );
     store
-        .invoke_typed_without_fuel::<(), ()>(zero_everything, ())
+        .invoke_simple_typed::<(), ()>(zero_everything, ())
         .unwrap();
     assert_eq!(
-        store.invoke_typed_without_fuel(test_redundant_load, ()),
+        store.invoke_simple_typed(test_redundant_load, ()),
         Ok(0x00000080)
     );
     store
-        .invoke_typed_without_fuel::<(), ()>(zero_everything, ())
+        .invoke_simple_typed::<(), ()>(zero_everything, ())
         .unwrap();
     assert_eq!(
-        store.invoke_typed_without_fuel(test_dead_store, ()),
+        store.invoke_simple_typed(test_dead_store, ()),
         Ok(hexf32!("0x1.18p-144"))
     );
     store
-        .invoke_typed_without_fuel::<(), ()>(zero_everything, ())
+        .invoke_simple_typed::<(), ()>(zero_everything, ())
         .unwrap();
-    assert_eq!(store.invoke_typed_without_fuel(malloc_aliasing, ()), Ok(43));
+    assert_eq!(store.invoke_simple_typed(malloc_aliasing, ()), Ok(43));
 }

@@ -37,5 +37,5 @@ fn start_function() {
         .as_func()
         .unwrap();
 
-    assert_eq!(42, store.invoke_typed_without_fuel(load_num, ()).unwrap());
+    assert_eq!(42, store.invoke_simple_typed(load_num, ()).unwrap());
 }

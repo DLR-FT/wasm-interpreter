@@ -6,17 +6,17 @@
 //! 1. There must be only imports and one `impl` with one function (`run`) in it.
 //! 2. This module must only use [`RuntimeError`] and never [`Error`](crate::core::error::ValidationError).
 
+use alloc::vec::Vec;
 use core::{
     num::NonZeroU64,
     {
         array,
-        iter::zip,
         ops::{Add, Div, Mul, Neg, Sub},
     },
 };
 
 use crate::{
-    addrs::{AddrVec, DataAddr, ElemAddr, MemAddr, ModuleAddr, TableAddr},
+    addrs::{AddrVec, DataAddr, ElemAddr, FuncAddr, MemAddr, ModuleAddr, TableAddr},
     assert_validated::UnwrapValidatedExt,
     core::{
         indices::{
@@ -30,9 +30,9 @@ use crate::{
         sidetable::Sidetable,
         utils::ToUsizeExt,
     },
+    execution::store::Hostcode,
     instances::{DataInst, ElemInst, FuncInst, MemInst, ModuleInst, TableInst},
     resumable::WasmResumable,
-    store::HaltExecutionError,
     unreachable_validated,
     value::{self, Ref, F32, F64},
     value_stack::Stack,
@@ -42,6 +42,28 @@ use crate::{
 use crate::execution::config::Config;
 
 use super::{little_endian::LittleEndianBytes, store::Store};
+
+/// A non-error outcome of execution of the interpreter loop
+pub enum InterpreterLoopOutcome {
+    /// Execution has returned normally, i.e. the end of the bottom-most
+    /// function on the stack was reached.
+    ExecutionReturned,
+    /// Execution was preempted because there was not enough fuel in the
+    /// [`WasmResumable`] object.
+    ///
+    OutOfFuel {
+        /// The amount of fuel required to continue execution at least the next
+        /// instruction.
+        required_fuel: NonZeroU64,
+    },
+    HostCalled {
+        func_addr: FuncAddr,
+        // TODO this allocation might be preventable. mutably borrow the stack
+        // instead
+        params: Vec<Value>,
+        hostcode: Hostcode,
+    },
+}
 
 /// Interprets wasm native functions. Wasm parameters and Wasm return values are passed on the stack.
 /// Returns `Ok(None)` in case execution successfully terminates, `Ok(Some(required_fuel))` if execution
@@ -54,7 +76,7 @@ use super::{little_endian::LittleEndianBytes, store::Store};
 pub(super) fn run<T: Config>(
     resumable: &mut WasmResumable,
     store: &mut Store<T>,
-) -> Result<Option<NonZeroU64>, RuntimeError> {
+) -> Result<InterpreterLoopOutcome, RuntimeError> {
     let stack = &mut resumable.stack;
     let mut current_func_addr = resumable.current_func_addr;
     let pc = resumable.pc;
@@ -102,7 +124,9 @@ pub(super) fn run<T: Config>(
                         resumable.current_func_addr = current_func_addr;
                         resumable.pc = prev_pc; // the instruction was fetched already, we roll this back
                         resumable.stp = stp;
-                        return Ok(NonZeroU64::new($cost-*fuel));
+                        return Ok(InterpreterLoopOutcome::OutOfFuel {
+                            required_fuel: NonZeroU64::new($cost - *fuel).expect("the last check guarantees that the current fuel is smaller than cost"),
+                        });
                     }
                 }
             }
@@ -294,29 +318,15 @@ pub(super) fn run<T: Config>(
                                 host_func_to_call_inst.function_type.params.valtypes.len(),
                             )
                             .collect();
-                        let returns =
-                            (host_func_to_call_inst.hostcode)(&mut store.user_data, params);
 
-                        let returns = returns.map_err(|HaltExecutionError| {
-                            RuntimeError::HostFunctionHaltedExecution
-                        })?;
-
-                        // Verify that the return parameters match the host function parameters
-                        // since we have no validation guarantees for host functions
-                        if returns.len()
-                            != host_func_to_call_inst.function_type.returns.valtypes.len()
-                        {
-                            return Err(RuntimeError::HostFunctionSignatureMismatch);
-                        }
-                        for (value, ty) in zip(
-                            returns,
-                            &host_func_to_call_inst.function_type.returns.valtypes,
-                        ) {
-                            if value.to_ty() != *ty {
-                                return Err(RuntimeError::HostFunctionSignatureMismatch);
-                            }
-                            stack.push_value::<T>(value)?;
-                        }
+                        resumable.current_func_addr = current_func_addr;
+                        resumable.pc = wasm.pc;
+                        resumable.stp = stp;
+                        return Ok(InterpreterLoopOutcome::HostCalled {
+                            params,
+                            func_addr: *func_to_call_addr,
+                            hostcode: host_func_to_call_inst.hostcode,
+                        });
                     }
                     FuncInst::WasmFunc(wasm_func_to_call_inst) => {
                         let remaining_locals = &wasm_func_to_call_inst.locals;
@@ -416,29 +426,15 @@ pub(super) fn run<T: Config>(
                                 host_func_to_call_inst.function_type.params.valtypes.len(),
                             )
                             .collect();
-                        let returns =
-                            (host_func_to_call_inst.hostcode)(&mut store.user_data, params);
 
-                        let returns = returns.map_err(|HaltExecutionError| {
-                            RuntimeError::HostFunctionHaltedExecution
-                        })?;
-
-                        // Verify that the return parameters match the host function parameters
-                        // since we have no validation guarantees for host functions
-                        if returns.len()
-                            != host_func_to_call_inst.function_type.returns.valtypes.len()
-                        {
-                            return Err(RuntimeError::HostFunctionSignatureMismatch);
-                        }
-                        for (value, ty) in zip(
-                            returns,
-                            &host_func_to_call_inst.function_type.returns.valtypes,
-                        ) {
-                            if value.to_ty() != *ty {
-                                return Err(RuntimeError::HostFunctionSignatureMismatch);
-                            }
-                            stack.push_value::<T>(value)?;
-                        }
+                        resumable.current_func_addr = current_func_addr;
+                        resumable.pc = wasm.pc;
+                        resumable.stp = stp;
+                        return Ok(InterpreterLoopOutcome::HostCalled {
+                            params,
+                            func_addr: func_to_call_addr,
+                            hostcode: host_func_to_call_inst.hostcode,
+                        });
                     }
                     FuncInst::WasmFunc(wasm_func_to_call_inst) => {
                         let remaining_locals = &wasm_func_to_call_inst.locals;
@@ -1240,7 +1236,9 @@ pub(super) fn run<T: Config>(
                         resumable.current_func_addr = current_func_addr;
                         resumable.pc = wasm.pc - prev_pc; // the instruction was fetched already, we roll this back
                         resumable.stp = stp;
-                        return Ok(NonZeroU64::new(cost - *fuel));
+                        return Ok(InterpreterLoopOutcome::OutOfFuel {
+                            required_fuel: NonZeroU64::new(cost - *fuel).expect("the last check guarantees that the current fuel is smaller than cost"),
+                        });
                     }
                 }
 
@@ -2742,7 +2740,9 @@ pub(super) fn run<T: Config>(
                                 resumable.current_func_addr = current_func_addr;
                                 resumable.pc = wasm.pc - prev_pc; // the instruction was fetched already, we roll this back
                                 resumable.stp = stp;
-                                return Ok(NonZeroU64::new(cost - *fuel));
+                                return Ok(InterpreterLoopOutcome::OutOfFuel {
+                                    required_fuel: NonZeroU64::new(cost - *fuel).expect("the last check guarantees that the current fuel is smaller than cost"),
+                                });
                             }
                         }
 
@@ -2833,7 +2833,9 @@ pub(super) fn run<T: Config>(
                                 resumable.current_func_addr = current_func_addr;
                                 resumable.pc = wasm.pc - prev_pc; // the instruction was fetched already, we roll this back
                                 resumable.stp = stp;
-                                return Ok(NonZeroU64::new(cost - *fuel));
+                                return Ok(InterpreterLoopOutcome::OutOfFuel {
+                                    required_fuel: NonZeroU64::new(cost - *fuel).expect("the last check guarantees that the current fuel is smaller than cost"),
+                                });
                             }
                         }
 
@@ -2893,7 +2895,9 @@ pub(super) fn run<T: Config>(
                                 resumable.current_func_addr = current_func_addr;
                                 resumable.pc = wasm.pc - prev_pc; // the instruction was fetched already, we roll this back
                                 resumable.stp = stp;
-                                return Ok(NonZeroU64::new(cost - *fuel));
+                                return Ok(InterpreterLoopOutcome::OutOfFuel {
+                                    required_fuel: NonZeroU64::new(cost - *fuel).expect("the last check guarantees that the current fuel is smaller than cost"),
+                                });
                             }
                         }
 
@@ -2933,7 +2937,9 @@ pub(super) fn run<T: Config>(
                                 resumable.current_func_addr = current_func_addr;
                                 resumable.pc = wasm.pc - prev_pc; // the instruction was fetched already, we roll this back
                                 resumable.stp = stp;
-                                return Ok(NonZeroU64::new(cost - *fuel));
+                                return Ok(InterpreterLoopOutcome::OutOfFuel {
+                                    required_fuel: NonZeroU64::new(cost - *fuel).expect("the last check guarantees that the current fuel is smaller than cost"),
+                                });
                             }
                         }
 
@@ -3038,7 +3044,9 @@ pub(super) fn run<T: Config>(
                                 resumable.current_func_addr = current_func_addr;
                                 resumable.pc = wasm.pc - prev_pc; // the instruction was fetched already, we roll this back
                                 resumable.stp = stp;
-                                return Ok(NonZeroU64::new(cost - *fuel));
+                                return Ok(InterpreterLoopOutcome::OutOfFuel {
+                                    required_fuel: NonZeroU64::new(cost - *fuel).expect("the last check guarantees that the current fuel is smaller than cost"),
+                                });
                             }
                         }
 
@@ -3131,7 +3139,9 @@ pub(super) fn run<T: Config>(
                                 resumable.current_func_addr = current_func_addr;
                                 resumable.pc = wasm.pc - prev_pc; // the instruction was fetched already, we roll this back
                                 resumable.stp = stp;
-                                return Ok(NonZeroU64::new(cost - *fuel));
+                                return Ok(InterpreterLoopOutcome::OutOfFuel {
+                                    required_fuel: NonZeroU64::new(cost - *fuel).expect("the last check guarantees that the current fuel is smaller than cost"),
+                                });
                             }
                         }
 
@@ -3206,7 +3216,9 @@ pub(super) fn run<T: Config>(
                                 resumable.current_func_addr = current_func_addr;
                                 resumable.pc = wasm.pc - prev_pc; // the instruction was fetched already, we roll this back
                                 resumable.stp = stp;
-                                return Ok(NonZeroU64::new(cost - *fuel));
+                                return Ok(InterpreterLoopOutcome::OutOfFuel {
+                                    required_fuel: NonZeroU64::new(cost - *fuel).expect("the last check guarantees that the current fuel is smaller than cost"),
+                                });
                             }
                         }
 
@@ -6078,7 +6090,7 @@ pub(super) fn run<T: Config>(
             }
         }
     }
-    Ok(None)
+    Ok(InterpreterLoopOutcome::ExecutionReturned)
 }
 
 //helper function for avoiding code duplication at intraprocedural jumps

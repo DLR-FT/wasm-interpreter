@@ -74,7 +74,7 @@ pub fn unmet_imports() {
     // assert_eq!(
     //     RuntimeError::UnmetImport,
     //     instance
-    //         .store.invoke_typed_without_fuel::<(), i32>(&get_three, ())
+    //         .store.invoke_simple_typed::<(), i32>(&get_three, ())
     //         .expect_err("Expected invoke to fail due to unmet imports")
     // );
 }
@@ -127,7 +127,7 @@ pub fn run_simple_import() {
         .as_func()
         .unwrap();
 
-    assert_eq!(3, store.invoke_typed_without_fuel(get_three, ()).unwrap());
+    assert_eq!(3, store.invoke_simple_typed(get_three, ()).unwrap());
 
     // Function 0 should be the imported function
     let get_three = store
@@ -135,7 +135,7 @@ pub fn run_simple_import() {
         .unwrap()
         .as_func()
         .unwrap();
-    assert_eq!(3, store.invoke_typed_without_fuel(get_three, ()).unwrap());
+    assert_eq!(3, store.invoke_simple_typed(get_three, ()).unwrap());
 }
 
 #[test_log::test]
@@ -163,7 +163,7 @@ pub fn run_call_indirect() {
         .as_func()
         .unwrap();
 
-    assert_eq!((1, 3), store.invoke_typed_without_fuel(run, ()).unwrap());
+    assert_eq!((1, 3), store.invoke_simple_typed(run, ()).unwrap());
 }
 
 // #[test_log::test]
@@ -182,5 +182,5 @@ pub fn run_call_indirect() {
 //     // let run = instance.get_function_by_name("base", "get_three").unwrap();
 //     // Unmet import since we can't have cyclical imports
 //     // Currently, this passes since we don't allow chained imports.
-//     // assert!(store.invoke_typed_without_fuel::<(), i32>(&run, ()).unwrap_err() == wasm::RuntimeError::UnmetImport);
+//     // assert!(store.invoke_simple_typed::<(), i32>(&run, ()).unwrap_err() == wasm::RuntimeError::UnmetImport);
 // }

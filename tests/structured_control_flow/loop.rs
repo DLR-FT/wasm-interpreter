@@ -67,14 +67,11 @@ fn fibonacci_with_loop_and_br_if() {
         .as_func()
         .unwrap();
 
-    assert_eq!(
-        1,
-        store.invoke_typed_without_fuel(fibonacci_fn, -5).unwrap()
-    );
-    assert_eq!(1, store.invoke_typed_without_fuel(fibonacci_fn, 0).unwrap());
-    assert_eq!(1, store.invoke_typed_without_fuel(fibonacci_fn, 1).unwrap());
-    assert_eq!(2, store.invoke_typed_without_fuel(fibonacci_fn, 2).unwrap());
-    assert_eq!(3, store.invoke_typed_without_fuel(fibonacci_fn, 3).unwrap());
-    assert_eq!(5, store.invoke_typed_without_fuel(fibonacci_fn, 4).unwrap());
-    assert_eq!(8, store.invoke_typed_without_fuel(fibonacci_fn, 5).unwrap());
+    assert_eq!(1, store.invoke_simple_typed(fibonacci_fn, -5).unwrap());
+    assert_eq!(1, store.invoke_simple_typed(fibonacci_fn, 0).unwrap());
+    assert_eq!(1, store.invoke_simple_typed(fibonacci_fn, 1).unwrap());
+    assert_eq!(2, store.invoke_simple_typed(fibonacci_fn, 2).unwrap());
+    assert_eq!(3, store.invoke_simple_typed(fibonacci_fn, 3).unwrap());
+    assert_eq!(5, store.invoke_simple_typed(fibonacci_fn, 4).unwrap());
+    assert_eq!(8, store.invoke_simple_typed(fibonacci_fn, 5).unwrap());
 }

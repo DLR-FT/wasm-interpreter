@@ -33,7 +33,7 @@ pub fn f32_const() {
 
     assert_eq!(
         3.141_592_7_f32,
-        store.invoke_typed_without_fuel(function, ()).unwrap()
+        store.invoke_simple_typed(function, ()).unwrap()
     );
 }
 
@@ -71,13 +71,13 @@ pub fn f32_eq() {
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (1.1_f32, 1.1_f32))
+            .invoke_simple_typed(function, (1.1_f32, 1.1_f32))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (1.1_f32, 1.2_f32))
+            .invoke_simple_typed(function, (1.1_f32, 1.2_f32))
             .unwrap()
     );
 }
@@ -104,19 +104,19 @@ pub fn f32_ne() {
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (1.1_f32, 1.1_f32))
+            .invoke_simple_typed(function, (1.1_f32, 1.1_f32))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (1.1_f32, 1.2_f32))
+            .invoke_simple_typed(function, (1.1_f32, 1.2_f32))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (0.0_f32, -0.0_f32))
+            .invoke_simple_typed(function, (0.0_f32, -0.0_f32))
             .unwrap()
     );
 }
@@ -143,19 +143,19 @@ pub fn f32_lt() {
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (1.0_f32, 2.0_f32))
+            .invoke_simple_typed(function, (1.0_f32, 2.0_f32))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (2.0_f32, 1.0_f32))
+            .invoke_simple_typed(function, (2.0_f32, 1.0_f32))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (1.0_f32, 1.0_f32))
+            .invoke_simple_typed(function, (1.0_f32, 1.0_f32))
             .unwrap()
     );
 }
@@ -182,19 +182,19 @@ pub fn f32_gt() {
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (1.0_f32, 2.0_f32))
+            .invoke_simple_typed(function, (1.0_f32, 2.0_f32))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (2.0_f32, 1.0_f32))
+            .invoke_simple_typed(function, (2.0_f32, 1.0_f32))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (1.0_f32, 1.0_f32))
+            .invoke_simple_typed(function, (1.0_f32, 1.0_f32))
             .unwrap()
     );
 }
@@ -221,19 +221,19 @@ pub fn f32_le() {
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (1.0_f32, 2.0_f32))
+            .invoke_simple_typed(function, (1.0_f32, 2.0_f32))
             .unwrap()
     );
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (2.0_f32, 1.0_f32))
+            .invoke_simple_typed(function, (2.0_f32, 1.0_f32))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (1.0_f32, 1.0_f32))
+            .invoke_simple_typed(function, (1.0_f32, 1.0_f32))
             .unwrap()
     );
 }
@@ -260,19 +260,19 @@ pub fn f32_ge() {
     assert_eq!(
         0,
         store
-            .invoke_typed_without_fuel(function, (1.0_f32, 2.0_f32))
+            .invoke_simple_typed(function, (1.0_f32, 2.0_f32))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (2.0_f32, 1.0_f32))
+            .invoke_simple_typed(function, (2.0_f32, 1.0_f32))
             .unwrap()
     );
     assert_eq!(
         1,
         store
-            .invoke_typed_without_fuel(function, (1.0_f32, 1.0_f32))
+            .invoke_simple_typed(function, (1.0_f32, 1.0_f32))
             .unwrap()
     );
 }
@@ -306,47 +306,47 @@ pub fn f32_abs() {
 
     {
         let result = store
-            .invoke_typed_without_fuel::<f32, f32>(function, -f32::NAN)
+            .invoke_simple_typed::<f32, f32>(function, -f32::NAN)
             .unwrap();
         assert!(result.is_nan());
         assert!(result.is_sign_positive());
     }
     {
         let result = store
-            .invoke_typed_without_fuel::<f32, f32>(function, f32::NAN)
+            .invoke_simple_typed::<f32, f32>(function, f32::NAN)
             .unwrap();
         assert!(result.is_nan());
         assert!(result.is_sign_positive());
     }
     {
         let result = store
-            .invoke_typed_without_fuel::<f32, f32>(function, f32::NEG_INFINITY)
+            .invoke_simple_typed::<f32, f32>(function, f32::NEG_INFINITY)
             .unwrap();
         assert!(result.is_infinite());
         assert!(result.is_sign_positive());
     }
     {
         let result = store
-            .invoke_typed_without_fuel::<f32, f32>(function, f32::INFINITY)
+            .invoke_simple_typed::<f32, f32>(function, f32::INFINITY)
             .unwrap();
         assert!(result.is_infinite());
         assert!(result.is_sign_positive());
     }
     assert_eq!(
         1.5_f32,
-        store.invoke_typed_without_fuel(function, 1.5_f32).unwrap()
+        store.invoke_simple_typed(function, 1.5_f32).unwrap()
     );
     assert_eq!(
         1.5_f32,
-        store.invoke_typed_without_fuel(function, -1.5_f32).unwrap()
+        store.invoke_simple_typed(function, -1.5_f32).unwrap()
     );
     assert_eq!(
         0.0_f32,
-        store.invoke_typed_without_fuel(function, 0.0_f32).unwrap()
+        store.invoke_simple_typed(function, 0.0_f32).unwrap()
     );
     assert_eq!(
         0.0_f32,
-        store.invoke_typed_without_fuel(function, -0.0_f32).unwrap()
+        store.invoke_simple_typed(function, -0.0_f32).unwrap()
     );
 }
 
@@ -371,47 +371,47 @@ pub fn f32_neg() {
 
     {
         let result = store
-            .invoke_typed_without_fuel::<f32, f32>(function, -f32::NAN)
+            .invoke_simple_typed::<f32, f32>(function, -f32::NAN)
             .unwrap();
         assert!(result.is_nan());
         assert!(result.is_sign_positive());
     }
     {
         let result = store
-            .invoke_typed_without_fuel::<f32, f32>(function, f32::NAN)
+            .invoke_simple_typed::<f32, f32>(function, f32::NAN)
             .unwrap();
         assert!(result.is_nan());
         assert!(result.is_sign_negative());
     }
     {
         let result = store
-            .invoke_typed_without_fuel::<f32, f32>(function, f32::NEG_INFINITY)
+            .invoke_simple_typed::<f32, f32>(function, f32::NEG_INFINITY)
             .unwrap();
         assert!(result.is_infinite());
         assert!(result.is_sign_positive());
     }
     {
         let result = store
-            .invoke_typed_without_fuel::<f32, f32>(function, f32::INFINITY)
+            .invoke_simple_typed::<f32, f32>(function, f32::INFINITY)
             .unwrap();
         assert!(result.is_infinite());
         assert!(result.is_sign_negative());
     }
     assert_eq!(
         -1.5_f32,
-        store.invoke_typed_without_fuel(function, 1.5_f32).unwrap()
+        store.invoke_simple_typed(function, 1.5_f32).unwrap()
     );
     assert_eq!(
         1.5_f32,
-        store.invoke_typed_without_fuel(function, -1.5_f32).unwrap()
+        store.invoke_simple_typed(function, -1.5_f32).unwrap()
     );
     assert_eq!(
         -0.0_f32,
-        store.invoke_typed_without_fuel(function, 0.0_f32).unwrap()
+        store.invoke_simple_typed(function, 0.0_f32).unwrap()
     );
     assert_eq!(
         0.0_f32,
-        store.invoke_typed_without_fuel(function, -0.0_f32).unwrap()
+        store.invoke_simple_typed(function, -0.0_f32).unwrap()
     );
 }
 
@@ -436,15 +436,15 @@ pub fn f32_ceil() {
 
     assert_eq!(
         2.0_f32,
-        store.invoke_typed_without_fuel(function, 1.5_f32).unwrap()
+        store.invoke_simple_typed(function, 1.5_f32).unwrap()
     );
     assert_eq!(
         -1.0_f32,
-        store.invoke_typed_without_fuel(function, -1.5_f32).unwrap()
+        store.invoke_simple_typed(function, -1.5_f32).unwrap()
     );
     assert_eq!(
         0.0_f32,
-        store.invoke_typed_without_fuel(function, -0.1_f32).unwrap()
+        store.invoke_simple_typed(function, -0.1_f32).unwrap()
     );
 }
 
@@ -469,15 +469,15 @@ pub fn f32_floor() {
 
     assert_eq!(
         1.0_f32,
-        store.invoke_typed_without_fuel(function, 1.5_f32).unwrap()
+        store.invoke_simple_typed(function, 1.5_f32).unwrap()
     );
     assert_eq!(
         -2.0_f32,
-        store.invoke_typed_without_fuel(function, -1.5_f32).unwrap()
+        store.invoke_simple_typed(function, -1.5_f32).unwrap()
     );
     assert_eq!(
         -1.0_f32,
-        store.invoke_typed_without_fuel(function, -0.1_f32).unwrap()
+        store.invoke_simple_typed(function, -0.1_f32).unwrap()
     );
 }
 
@@ -502,15 +502,15 @@ pub fn f32_trunc() {
 
     assert_eq!(
         1.0_f32,
-        store.invoke_typed_without_fuel(function, 1.5_f32).unwrap()
+        store.invoke_simple_typed(function, 1.5_f32).unwrap()
     );
     assert_eq!(
         -1.0_f32,
-        store.invoke_typed_without_fuel(function, -1.5_f32).unwrap()
+        store.invoke_simple_typed(function, -1.5_f32).unwrap()
     );
     assert_eq!(
         0.0_f32,
-        store.invoke_typed_without_fuel(function, 0.9_f32).unwrap()
+        store.invoke_simple_typed(function, 0.9_f32).unwrap()
     );
 }
 
@@ -535,19 +535,19 @@ pub fn f32_nearest() {
 
     assert_eq!(
         2.0_f32,
-        store.invoke_typed_without_fuel(function, 1.5_f32).unwrap()
+        store.invoke_simple_typed(function, 1.5_f32).unwrap()
     );
     assert_eq!(
         -2.0_f32,
-        store.invoke_typed_without_fuel(function, -1.5_f32).unwrap()
+        store.invoke_simple_typed(function, -1.5_f32).unwrap()
     );
     assert_eq!(
         1.0_f32,
-        store.invoke_typed_without_fuel(function, 0.6_f32).unwrap()
+        store.invoke_simple_typed(function, 0.6_f32).unwrap()
     );
     assert_eq!(
         0.0_f32,
-        store.invoke_typed_without_fuel(function, 0.4_f32).unwrap()
+        store.invoke_simple_typed(function, 0.4_f32).unwrap()
     );
 }
 
@@ -573,14 +573,14 @@ pub fn f32_sqrt() {
 
     assert_eq!(
         2.0_f32,
-        store.invoke_typed_without_fuel(function, 4.0_f32).unwrap()
+        store.invoke_simple_typed(function, 4.0_f32).unwrap()
     );
     assert_eq!(
         1.4142135_f32,
-        store.invoke_typed_without_fuel(function, 2.0_f32).unwrap()
+        store.invoke_simple_typed(function, 2.0_f32).unwrap()
     );
     assert!(store
-        .invoke_typed_without_fuel::<f32, f32>(function, -f32::NAN)
+        .invoke_simple_typed::<f32, f32>(function, -f32::NAN)
         .unwrap()
         .is_nan());
 }
@@ -616,19 +616,19 @@ pub fn f32_add() {
     assert_eq!(
         3.0_f32,
         store
-            .invoke_typed_without_fuel(function, (1.5_f32, 1.5_f32))
+            .invoke_simple_typed(function, (1.5_f32, 1.5_f32))
             .unwrap()
     );
     assert_eq!(
         -1.0_f32,
         store
-            .invoke_typed_without_fuel(function, (1.0_f32, -2.0_f32))
+            .invoke_simple_typed(function, (1.0_f32, -2.0_f32))
             .unwrap()
     );
     assert_eq!(
         0.0_f32,
         store
-            .invoke_typed_without_fuel(function, (0.1_f32, -0.1_f32))
+            .invoke_simple_typed(function, (0.1_f32, -0.1_f32))
             .unwrap()
     );
 }
@@ -655,19 +655,19 @@ pub fn f32_sub() {
     assert_eq!(
         0.0_f32,
         store
-            .invoke_typed_without_fuel(function, (1.5_f32, 1.5_f32))
+            .invoke_simple_typed(function, (1.5_f32, 1.5_f32))
             .unwrap()
     );
     assert_eq!(
         3.0_f32,
         store
-            .invoke_typed_without_fuel(function, (1.0_f32, -2.0_f32))
+            .invoke_simple_typed(function, (1.0_f32, -2.0_f32))
             .unwrap()
     );
     assert_eq!(
         0.2_f32,
         store
-            .invoke_typed_without_fuel(function, (0.1_f32, -0.1_f32))
+            .invoke_simple_typed(function, (0.1_f32, -0.1_f32))
             .unwrap()
     );
 }
@@ -694,19 +694,19 @@ pub fn f32_mul() {
     assert_eq!(
         6.0_f32,
         store
-            .invoke_typed_without_fuel(function, (2.0_f32, 3.0_f32))
+            .invoke_simple_typed(function, (2.0_f32, 3.0_f32))
             .unwrap()
     );
     assert_eq!(
         -4.0_f32,
         store
-            .invoke_typed_without_fuel(function, (2.0_f32, -2.0_f32))
+            .invoke_simple_typed(function, (2.0_f32, -2.0_f32))
             .unwrap()
     );
     assert_eq!(
         0.0_f32,
         store
-            .invoke_typed_without_fuel(function, (0.0_f32, 5.0_f32))
+            .invoke_simple_typed(function, (0.0_f32, 5.0_f32))
             .unwrap()
     );
 }
@@ -733,21 +733,21 @@ pub fn f32_div() {
     assert_eq!(
         2.0_f32,
         store
-            .invoke_typed_without_fuel(function, (6.0_f32, 3.0_f32))
+            .invoke_simple_typed(function, (6.0_f32, 3.0_f32))
             .unwrap()
     );
     assert_eq!(
         -1.0_f32,
         store
-            .invoke_typed_without_fuel(function, (2.0_f32, -2.0_f32))
+            .invoke_simple_typed(function, (2.0_f32, -2.0_f32))
             .unwrap()
     );
     assert!(store
-        .invoke_typed_without_fuel::<(f32, f32), f32>(function, (1.0_f32, 0.0_f32))
+        .invoke_simple_typed::<(f32, f32), f32>(function, (1.0_f32, 0.0_f32))
         .unwrap()
         .is_infinite());
     assert!(store
-        .invoke_typed_without_fuel::<(f32, f32), f32>(function, (0.0_f32, 0.0_f32))
+        .invoke_simple_typed::<(f32, f32), f32>(function, (0.0_f32, 0.0_f32))
         .unwrap()
         .is_nan());
 }
@@ -773,23 +773,20 @@ pub fn f32_min() {
 
     {
         let result = store
-            .invoke_typed_without_fuel::<(f32, f32), f32>(function, (f32::NAN, -f32::NAN))
+            .invoke_simple_typed::<(f32, f32), f32>(function, (f32::NAN, -f32::NAN))
             .unwrap();
         assert!(result.is_nan());
     }
     {
         let result = store
-            .invoke_typed_without_fuel::<(f32, f32), f32>(function, (f32::NAN, f32::NAN))
+            .invoke_simple_typed::<(f32, f32), f32>(function, (f32::NAN, f32::NAN))
             .unwrap();
         assert!(result.is_nan());
         assert!(result.is_sign_positive());
     }
     {
         let result = store
-            .invoke_typed_without_fuel::<(f32, f32), f32>(
-                function,
-                (f32::INFINITY, f32::NEG_INFINITY),
-            )
+            .invoke_simple_typed::<(f32, f32), f32>(function, (f32::INFINITY, f32::NEG_INFINITY))
             .unwrap();
         assert!(result.is_infinite());
         assert!(result.is_sign_negative());
@@ -797,35 +794,35 @@ pub fn f32_min() {
     assert_eq!(
         42_f32,
         store
-            .invoke_typed_without_fuel(function, (f32::INFINITY, 42_f32))
+            .invoke_simple_typed(function, (f32::INFINITY, 42_f32))
             .unwrap()
     );
     assert_eq!(
         -0_f32,
         store
-            .invoke_typed_without_fuel(function, (-0_f32, 0_f32))
+            .invoke_simple_typed(function, (-0_f32, 0_f32))
             .unwrap()
     );
     assert_eq!(
         1.0_f32,
         store
-            .invoke_typed_without_fuel(function, (1.0_f32, 2.0_f32))
+            .invoke_simple_typed(function, (1.0_f32, 2.0_f32))
             .unwrap()
     );
     assert_eq!(
         -2.0_f32,
         store
-            .invoke_typed_without_fuel(function, (-1.0_f32, -2.0_f32))
+            .invoke_simple_typed(function, (-1.0_f32, -2.0_f32))
             .unwrap()
     );
     assert_eq!(
         -0.0_f32,
         store
-            .invoke_typed_without_fuel(function, (0.0_f32, -0.0_f32))
+            .invoke_simple_typed(function, (0.0_f32, -0.0_f32))
             .unwrap()
     );
     assert!(store
-        .invoke_typed_without_fuel::<(f32, f32), f32>(function, (f32::NAN, 1.0_f32))
+        .invoke_simple_typed::<(f32, f32), f32>(function, (f32::NAN, 1.0_f32))
         .unwrap()
         .is_nan());
 }
@@ -851,23 +848,20 @@ pub fn f32_max() {
 
     {
         let result = store
-            .invoke_typed_without_fuel::<(f32, f32), f32>(function, (f32::NAN, -f32::NAN))
+            .invoke_simple_typed::<(f32, f32), f32>(function, (f32::NAN, -f32::NAN))
             .unwrap();
         assert!(result.is_nan());
     }
     {
         let result = store
-            .invoke_typed_without_fuel::<(f32, f32), f32>(function, (f32::NAN, f32::NAN))
+            .invoke_simple_typed::<(f32, f32), f32>(function, (f32::NAN, f32::NAN))
             .unwrap();
         assert!(result.is_nan());
         assert!(result.is_sign_positive());
     }
     {
         let result = store
-            .invoke_typed_without_fuel::<(f32, f32), f32>(
-                function,
-                (f32::INFINITY, f32::NEG_INFINITY),
-            )
+            .invoke_simple_typed::<(f32, f32), f32>(function, (f32::INFINITY, f32::NEG_INFINITY))
             .unwrap();
         assert!(result.is_infinite());
         assert!(result.is_sign_positive());
@@ -875,36 +869,36 @@ pub fn f32_max() {
     assert_eq!(
         42_f32,
         store
-            .invoke_typed_without_fuel(function, (f32::NEG_INFINITY, 42_f32))
+            .invoke_simple_typed(function, (f32::NEG_INFINITY, 42_f32))
             .unwrap()
     );
     assert_eq!(
         0_f32,
         store
-            .invoke_typed_without_fuel(function, (-0_f32, 0_f32))
+            .invoke_simple_typed(function, (-0_f32, 0_f32))
             .unwrap()
     );
 
     assert_eq!(
         2.0_f32,
         store
-            .invoke_typed_without_fuel(function, (1.0_f32, 2.0_f32))
+            .invoke_simple_typed(function, (1.0_f32, 2.0_f32))
             .unwrap()
     );
     assert_eq!(
         -1.0_f32,
         store
-            .invoke_typed_without_fuel(function, (-1.0_f32, -2.0_f32))
+            .invoke_simple_typed(function, (-1.0_f32, -2.0_f32))
             .unwrap()
     );
     assert_eq!(
         0.0_f32,
         store
-            .invoke_typed_without_fuel(function, (0.0_f32, -0.0_f32))
+            .invoke_simple_typed(function, (0.0_f32, -0.0_f32))
             .unwrap()
     );
     assert!(store
-        .invoke_typed_without_fuel::<(f32, f32), f32>(function, (f32::NAN, 1.0_f32))
+        .invoke_simple_typed::<(f32, f32), f32>(function, (f32::NAN, 1.0_f32))
         .unwrap()
         .is_nan());
 }
@@ -931,25 +925,25 @@ pub fn f32_copysign() {
     assert_eq!(
         1.5_f32,
         store
-            .invoke_typed_without_fuel(function, (1.5_f32, 2.0_f32))
+            .invoke_simple_typed(function, (1.5_f32, 2.0_f32))
             .unwrap()
     );
     assert_eq!(
         -1.5_f32,
         store
-            .invoke_typed_without_fuel(function, (1.5_f32, -2.0_f32))
+            .invoke_simple_typed(function, (1.5_f32, -2.0_f32))
             .unwrap()
     );
     assert_eq!(
         -1.5_f32,
         store
-            .invoke_typed_without_fuel(function, (-1.5_f32, -0.0_f32))
+            .invoke_simple_typed(function, (-1.5_f32, -0.0_f32))
             .unwrap()
     );
     assert_eq!(
         1.5_f32,
         store
-            .invoke_typed_without_fuel(function, (-1.5_f32, 0.0_f32))
+            .invoke_simple_typed(function, (-1.5_f32, 0.0_f32))
             .unwrap()
     );
 }
@@ -980,7 +974,7 @@ pub fn f32_convert_i32_s() {
 
     let i32_s_val = -42_i32;
     let f32_result = store
-        .invoke_typed_without_fuel::<i32, f32>(convert_i32_s, i32_s_val)
+        .invoke_simple_typed::<i32, f32>(convert_i32_s, i32_s_val)
         .unwrap();
     assert_eq!(f32_result, -42.0_f32);
 }
@@ -1021,7 +1015,7 @@ pub fn f32_convert_i32_u() {
 
     for (input, expected) in test_cases {
         let result = store
-            .invoke_typed_without_fuel::<i32, f32>(convert_i32_u, input)
+            .invoke_simple_typed::<i32, f32>(convert_i32_u, input)
             .unwrap();
         assert_eq!(
             result, expected,
@@ -1033,7 +1027,7 @@ pub fn f32_convert_i32_u() {
     // Test for precision loss
     let large_value = 0xFFFFFFFF_u32 as i32; // Maximum u32 value
     let result = store
-        .invoke_typed_without_fuel::<i32, f32>(convert_i32_u, large_value)
+        .invoke_simple_typed::<i32, f32>(convert_i32_u, large_value)
         .unwrap();
     assert!(
         result > 4294967040.0 && result <= 4294967296.0,
@@ -1067,20 +1061,20 @@ pub fn f32_convert_i64_s() {
 
     let i64_s_val = i64::MIN; // Minimum i64 value
     let f32_result: f32 = store
-        .invoke_typed_without_fuel::<i64, f32>(convert_i64_s, i64_s_val)
+        .invoke_simple_typed::<i64, f32>(convert_i64_s, i64_s_val)
         .unwrap();
     assert_eq!(f32_result, i64::MIN as f32);
 
     assert_eq!(
         9223371500000000000.0,
         store
-            .invoke_typed_without_fuel::<i64, f32>(convert_i64_s, 0x7fffff4000000001_i64)
+            .invoke_simple_typed::<i64, f32>(convert_i64_s, 0x7fffff4000000001_i64)
             .unwrap()
     );
     assert_eq!(
         -9223371500000000000.0,
         store
-            .invoke_typed_without_fuel::<i64, f32>(convert_i64_s, 0x8000004000000001_u64 as i64)
+            .invoke_simple_typed::<i64, f32>(convert_i64_s, 0x8000004000000001_u64 as i64)
             .unwrap()
     );
 }
@@ -1112,13 +1106,13 @@ pub fn f32_convert_i64_u() {
     assert_eq!(
         9223373000000000000.0,
         store
-            .invoke_typed_without_fuel::<i64, f32>(convert_i64_u, 0x8000008000000001u64 as i64)
+            .invoke_simple_typed::<i64, f32>(convert_i64_u, 0x8000008000000001u64 as i64)
             .unwrap()
     );
     assert_eq!(
         18446743000000000000.0,
         store
-            .invoke_typed_without_fuel::<i64, f32>(convert_i64_u, 0xfffffe8000000001u64 as i64)
+            .invoke_simple_typed::<i64, f32>(convert_i64_u, 0xfffffe8000000001u64 as i64)
             .unwrap()
     );
 }
@@ -1159,7 +1153,7 @@ pub fn f32_reinterpret_i32() {
 
     for (input, expected) in test_cases {
         let result = store
-            .invoke_typed_without_fuel::<i32, f32>(reinterpret_i32, input)
+            .invoke_simple_typed::<i32, f32>(reinterpret_i32, input)
             .unwrap();
         if expected.is_nan() {
             assert!(result.is_nan(), "Failed for input: {input:x}");

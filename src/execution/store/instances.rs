@@ -12,19 +12,19 @@ use crate::{
     },
     linear_memory::LinearMemory,
     value::Ref,
-    GlobalType, Limits, RefType, RuntimeError, TrapError, ValType, Value,
+    GlobalType, Hostcode, Limits, RefType, RuntimeError, TrapError, ValType, Value,
 };
 
 use super::{
     addrs::{DataAddr, ElemAddr, FuncAddr, GlobalAddr, MemAddr, ModuleAddr, TableAddr},
-    ExternVal, HaltExecutionError,
+    ExternVal,
 };
 
 #[derive(Debug)]
 // TODO does not match the spec FuncInst
-pub enum FuncInst<T> {
+pub enum FuncInst {
     WasmFunc(WasmFuncInst),
-    HostFunc(HostFuncInst<T>),
+    HostFunc(HostFuncInst),
 }
 
 #[derive(Debug)]
@@ -42,12 +42,12 @@ pub struct WasmFuncInst {
 }
 
 #[derive(Debug)]
-pub struct HostFuncInst<T> {
+pub struct HostFuncInst {
     pub function_type: FuncType,
-    pub hostcode: fn(&mut T, Vec<Value>) -> Result<Vec<Value>, HaltExecutionError>,
+    pub hostcode: Hostcode,
 }
 
-impl<T> FuncInst<T> {
+impl FuncInst {
     pub fn ty(&self) -> &FuncType {
         match self {
             FuncInst::WasmFunc(wasm_func_inst) => &wasm_func_inst.function_type,

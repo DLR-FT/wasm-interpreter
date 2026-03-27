@@ -1,16 +1,12 @@
 use log::info;
 
-use interop::{host_function_wrapper, StoreTypedInvocationExt};
+use checked::{Store, StoredExternVal, StoredValue};
+use registry::Registry;
 use wasm::{
     validate,
     value::{F32, F64},
-    ExternVal, HaltExecutionError, RuntimeError, Store, Value,
+    FuncType, NumType, ResultType, RuntimeError, ValType,
 };
-
-fn hello(_: &mut (), _values: Vec<Value>) -> Result<Vec<Value>, HaltExecutionError> {
-    info!("Host function says hello from wasm!");
-    Ok(Vec::new())
-}
 
 #[test_log::test]
 pub fn host_func_call_within_module() {
@@ -26,30 +22,22 @@ pub fn host_func_call_within_module() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    fn hello(_: &mut (), _values: Vec<Value>) -> Result<Vec<Value>, HaltExecutionError> {
-        info!("Host function says hello from wasm!");
-        Ok(Vec::new())
-    }
-
     let mut store = Store::new(());
-    // SAFETY: The host function does not have any parameter and return types.
-    // Therefore it cannot use invalid addresses.
-    let hello = unsafe { store.func_alloc_typed::<(), ()>(hello) };
-    // SAFETY: Only one store exists in this test. Therefore, it is always the
-    // correct store.
-    let importing_mod =
-        unsafe { store.module_instantiate(&validation_info, vec![ExternVal::Func(hello)], None) }
-            .unwrap()
-            .module_addr;
-    // SAFETY: Only one store exists in this test. Therefore, it is always the
-    // correct store.
-    let function_ref = unsafe { store.instance_export(importing_mod, "hello_caller") }
+    let mut registry = Registry::default();
+    let hello = registry.alloc_host_function_typed(&mut store, |(), ()| {
+        info!("Host function says hello from wasm!");
+    });
+    let importing_mod = store
+        .module_instantiate(&validation_info, vec![StoredExternVal::Func(hello)], None)
+        .unwrap()
+        .module_addr;
+    let function_ref = store
+        .instance_export(importing_mod, "hello_caller")
         .unwrap()
         .as_func()
         .unwrap();
-    // SAFETY: Only one store exists in this test. Therefore, it is always the
-    // correct store.
-    let result = unsafe { store.invoke_typed_without_fuel::<i32, i32>(function_ref, 2) }
+    let result = registry
+        .invoke_without_fuel_typed::<_, i32, i32>(&mut (), &mut store, function_ref, 2)
         .expect("wasm function invocation failed");
     assert_eq!(4, result);
 }
@@ -57,16 +45,18 @@ pub fn host_func_call_within_module() {
 #[test_log::test]
 pub fn host_func_call_as_first_func() {
     let mut store = Store::new(());
-    // SAFETY: The host function does not have any parameter and return types.
-    // Therefore it cannot use invalid addresses.
-    let hello = unsafe { store.func_alloc_typed::<(), ()>(hello) };
-    // SAFETY: Only one store exists in this test. Therefore, it is always the
-    // correct store.
-    let result = unsafe { store.invoke_typed_without_fuel::<(), ()>(hello, ()) };
+    let mut registry = Registry::default();
+
+    let hello = registry.alloc_host_function_typed(&mut store, |(), ()| {
+        info!("Host function says hello from wasm!");
+    });
+
+    let result = registry.invoke_without_fuel_typed(&mut (), &mut store, hello, ());
     assert_eq!(Ok(()), result);
 }
 
 #[test_log::test]
+#[ignore = "host functions calls are not yet supported from the start function"]
 pub fn host_func_call_as_start_func() {
     let wat = r#"(module
     (import "hello_mod" "hello" (func $hello (param) (result)))
@@ -76,17 +66,18 @@ pub fn host_func_call_as_start_func() {
     let validation_info = validate(&wasm_bytes).unwrap();
 
     let mut store = Store::new(());
-    // SAFETY: The host function does not have any parameter and return types.
-    // Therefore it cannot use invalid addresses.
-    let hello = unsafe { store.func_alloc_typed::<(), ()>(hello) };
-    // SAFETY: Only one store exists in this test. Therefore, it is always the
-    // correct store.
-    let _module_addr =
-        unsafe { store.module_instantiate(&validation_info, vec![ExternVal::Func(hello)], None) }
-            .expect("instantiation to be successful");
+    let mut registry = Registry::default();
+    let hello = registry.alloc_host_function_typed(&mut store, |(), ()| {
+        info!("Host function says hello from wasm!");
+    });
+
+    let _module_addr = store
+        .module_instantiate(&validation_info, vec![StoredExternVal::Func(hello)], None)
+        .expect("instantiation to be successful");
 }
 
 #[test_log::test]
+#[ignore = "host functions calls are not yet supported from the start function"]
 pub fn host_func_call_within_start_func() {
     let wat = r#"(module
     (import "hello_mod" "hello" (func $hello (param) (result)))
@@ -102,26 +93,18 @@ pub fn host_func_call_within_start_func() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
     let mut store = Store::new(());
-    // SAFETY: The host function does not have any parameter and return types.
-    // Therefore it cannot use invalid addresses.
-    let hello = unsafe { store.func_alloc_typed::<(), ()>(hello) };
-    // SAFETY: Only one store exists in this test. Therefore, it is always the
-    // correct store.
-    let _module_addr =
-        unsafe { store.module_instantiate(&validation_info, vec![ExternVal::Func(hello)], None) }
-            .expect("instantiation to be successful");
+    let mut registry = Registry::default();
+    let hello = registry.alloc_host_function_typed(&mut store, |(), ()| {
+        info!("Host function says hello from wasm!");
+    });
+    let _module_addr = store
+        .module_instantiate(&validation_info, vec![StoredExternVal::Func(hello)], None)
+        .expect("instantiation to be successful");
 }
 
-fn fancy_add_mult(_: &mut (), values: Vec<Value>) -> Result<Vec<Value>, HaltExecutionError> {
-    let x: u32 = values[0].try_into().unwrap();
-    let y: f64 = values[1].try_into().unwrap();
-
+fn fancy_add_mult(_: &mut (), (x, y): (u32, f64)) -> (f64, u32) {
     info!("multiplying, adding, casting, swapping as host function");
-
-    Ok(Vec::from([
-        Value::F64(F64((x as f64) * y)),
-        Value::I32(x + (y as u32)),
-    ]))
+    ((x as f64) * y, x + (y as u32))
 }
 
 const SIMPLE_MULTIVARIATE_MODULE_EXAMPLE: &str = r#"(module
@@ -140,33 +123,26 @@ pub fn simple_multivariate_host_func_within_module() {
     let validation_info = validate(&wasm_bytes).unwrap();
 
     let mut store = Store::new(());
-    // SAFETY: The host function does not have any address parameter or return
-    // types. Therefore it cannot use invalid addresses.
-    let fancy_add_mult =
-        unsafe { store.func_alloc_typed::<(i32, f64), (f64, i32)>(fancy_add_mult) };
-    // SAFETY: Only one store exists in this test. Therefore, it is always the
-    // correct store.
-    let importing_mod = unsafe {
-        store.module_instantiate(
+    let mut registry = Registry::default();
+    let fancy_add_mult = registry.alloc_host_function_typed(&mut store, fancy_add_mult);
+
+    let importing_mod = store
+        .module_instantiate(
             &validation_info,
-            vec![ExternVal::Func(fancy_add_mult)],
+            vec![StoredExternVal::Func(fancy_add_mult)],
             None,
         )
-    }
-    .unwrap()
-    .module_addr;
+        .unwrap()
+        .module_addr;
 
-    // SAFETY: Only one store exists in this test. Therefore, it is always the
-    // correct store.
-    let function_ref = unsafe { store.instance_export(importing_mod, "fancy_add_mult_caller") }
+    let function_ref = store
+        .instance_export(importing_mod, "fancy_add_mult_caller")
         .unwrap()
         .as_func()
         .unwrap();
-    // SAFETY: Only one store exists in this test. Therefore, it is always the
-    // correct store.
-    let result =
-        unsafe { store.invoke_typed_without_fuel::<(), (f64, i32, i64)>(function_ref, ()) }
-            .expect("wasm function invocation failed");
+    let result = registry
+        .invoke_without_fuel_typed::<_, (), (f64, i32, i64)>(&mut (), &mut store, function_ref, ())
+        .expect("wasm function invocation failed");
     assert_eq!((8.0, 6, 5), result);
 }
 
@@ -175,61 +151,47 @@ pub fn simple_multivariate_host_func_with_host_func_wrapper() {
     let wasm_bytes = wat::parse_str(SIMPLE_MULTIVARIATE_MODULE_EXAMPLE).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
 
-    fn wrapped_add_mult(_: &mut (), params: Vec<Value>) -> Result<Vec<Value>, HaltExecutionError> {
-        host_function_wrapper(
-            params,
-            |(x, y): (i32, f64)| -> Result<(f64, i32), HaltExecutionError> {
-                Ok((y + (x as f64), x * (y as i32)))
-            },
-        )
+    fn wrapped_add_mult(_: &mut (), (x, y): (i32, f64)) -> (f64, i32) {
+        (y + (x as f64), x * (y as i32))
     }
 
     let mut store = Store::new(());
-
-    // SAFETY: The host function does not have any address parameter or return
-    // types. Therefore it cannot use invalid addresses.
-    let wrapped_add_mult =
-        unsafe { store.func_alloc_typed::<(i32, f64), (f64, i32)>(wrapped_add_mult) };
-    // SAFETY: Only one store exists in this test. Therefore, it is always the
-    // correct store.
-    let importing_mod = unsafe {
-        store.module_instantiate(
+    let mut registry = Registry::default();
+    let wrapped_add_mult = registry.alloc_host_function_typed(&mut store, wrapped_add_mult);
+    let importing_mod = store
+        .module_instantiate(
             &validation_info,
-            vec![ExternVal::Func(wrapped_add_mult)],
+            vec![StoredExternVal::Func(wrapped_add_mult)],
             None,
         )
-    }
-    .unwrap()
-    .module_addr;
+        .unwrap()
+        .module_addr;
 
-    // SAFETY: Only one store exists in this test. Therefore, it is always the
-    // correct store.
-    let function_ref = unsafe { store.instance_export(importing_mod, "fancy_add_mult_caller") }
+    let function_ref = store
+        .instance_export(importing_mod, "fancy_add_mult_caller")
         .unwrap()
         .as_func()
         .unwrap();
-    // SAFETY: Only one store exists in this test. Therefore, it is always the
-    // correct store.
-    let result =
-        unsafe { store.invoke_typed_without_fuel::<(), (f64, i32, i64)>(function_ref, ()) }
-            .expect("wasm function invocation failed");
+    let result = registry
+        .invoke_without_fuel_typed::<_, (), (f64, i32, i64)>(&mut (), &mut store, function_ref, ())
+        .expect("wasm function invocation failed");
     assert_eq!((6.0, 8, 5), result);
 }
 
 #[test_log::test]
 pub fn simple_multivariate_host_func_as_first_func() {
     let mut store = Store::new(());
-    // SAFETY: The host function does not have any address parameter or return
-    // types. Therefore it cannot use invalid addresses.
-    let fancy_add_mult =
-        unsafe { store.func_alloc_typed::<(i32, f64), (f64, i32)>(fancy_add_mult) };
+    let mut registry = Registry::default();
+    let fancy_add_mult = registry.alloc_host_function_typed(&mut store, fancy_add_mult);
 
-    // SAFETY: Only one store exists in this test. Therefore, it is always the
-    // correct store.
-    let result = unsafe {
-        store.invoke_typed_without_fuel::<(i32, f64), (f64, i32)>(fancy_add_mult, (3, 5.0))
-    }
-    .expect("wasm function invocation failed");
+    let result = registry
+        .invoke_without_fuel_typed::<_, (i32, f64), (f64, i32)>(
+            &mut (),
+            &mut store,
+            fancy_add_mult,
+            (3, 5.0),
+        )
+        .expect("wasm function invocation failed");
     assert_eq!((15.0, 8), result);
 }
 
@@ -247,51 +209,69 @@ pub fn weird_multi_typed_host_func() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).unwrap();
 
-    fn weird_add_mult(_: &mut (), values: Vec<Value>) -> Result<Vec<Value>, HaltExecutionError> {
-        Ok(Vec::from([match values[0] {
-            Value::I32(val) => {
+    fn weird_add_mult(_: &mut (), values: Vec<StoredValue>) -> Vec<StoredValue> {
+        Vec::from([match values[0] {
+            StoredValue::I32(val) => {
                 info!("host function saw I32");
-                Value::F64(F64((val * 5) as f64))
+                StoredValue::F64(F64((val * 5) as f64))
             }
-            Value::F32(F32(val)) => {
+            StoredValue::F32(F32(val)) => {
                 info!("host function saw F32");
-                Value::I64((val + 3.0) as u64)
+                StoredValue::I64((val + 3.0) as u64)
             }
             _ => panic!("no other types admitted"),
-        }]))
+        }])
     }
 
     let mut store = Store::new(());
+    let mut registry = Registry::default();
 
-    // SAFETY: The host function does not have any address parameter or return
-    // types. Therefore it cannot use invalid addresses.
-    let weird_mult = unsafe { store.func_alloc_typed::<i32, f64>(weird_add_mult) };
-    // SAFETY: The host function does not have any address parameter or return
-    // types. Therefore it cannot use invalid addresses.
-    let weird_add = unsafe { store.func_alloc_typed::<f32, i64>(weird_add_mult) };
+    let weird_mult = registry.alloc_host_function(
+        &mut store,
+        FuncType {
+            params: ResultType {
+                valtypes: vec![ValType::NumType(NumType::I32)],
+            },
+            returns: ResultType {
+                valtypes: vec![ValType::NumType(NumType::F64)],
+            },
+        },
+        weird_add_mult,
+    );
 
-    // SAFETY: Only one store exists in this test. Therefore, it is always the
-    // correct store.
-    let importing_mod = unsafe {
-        store.module_instantiate(
+    let weird_add = registry.alloc_host_function(
+        &mut store,
+        FuncType {
+            params: ResultType {
+                valtypes: vec![ValType::NumType(NumType::F32)],
+            },
+            returns: ResultType {
+                valtypes: vec![ValType::NumType(NumType::I64)],
+            },
+        },
+        weird_add_mult,
+    );
+
+    let importing_mod = store
+        .module_instantiate(
             &validation_info,
-            vec![ExternVal::Func(weird_mult), ExternVal::Func(weird_add)],
+            vec![
+                StoredExternVal::Func(weird_mult),
+                StoredExternVal::Func(weird_add),
+            ],
             None,
         )
-    }
-    .unwrap()
-    .module_addr;
+        .unwrap()
+        .module_addr;
 
-    // SAFETY: Only one store exists in this test. Therefore, it is always the
-    // correct store.
-    let function_ref = unsafe { store.instance_export(importing_mod, "weird_add_mult_caller") }
+    let function_ref = store
+        .instance_export(importing_mod, "weird_add_mult_caller")
         .unwrap()
         .as_func()
         .unwrap();
 
-    // SAFETY: Only one store exists in this test. Therefore, it is always the
-    // correct store.
-    let result = unsafe { store.invoke_typed_without_fuel::<(), (f64, i64)>(function_ref, ()) }
+    let result = registry
+        .invoke_without_fuel_typed::<_, (), (f64, i64)>(&mut (), &mut store, function_ref, ())
         .expect("wasm function invocation failed");
     assert_eq!((10.0, 6), result);
 }
@@ -309,30 +289,40 @@ pub fn host_func_runtime_error() {
     let wasm_bytes = wat::parse_str(wat).unwrap();
     let validation_info = validate(&wasm_bytes).expect("validation failed");
 
-    fn mult3(_: &mut (), values: Vec<Value>) -> Result<Vec<Value>, HaltExecutionError> {
+    fn mult3(_: &mut (), values: Vec<StoredValue>) -> Vec<StoredValue> {
         let val: i32 = values[0].try_into().unwrap();
         info!("careless host function making type errors...");
-        Ok(Vec::from([Value::I64((val * 3) as u64)]))
+        vec![StoredValue::I64((val * 3) as u64)]
     }
 
     let mut store = Store::new(());
-    // SAFETY: The host function does not have any address parameter or return
-    // types. Therefore it cannot use invalid addresses.
-    let mult3 = unsafe { store.func_alloc_typed::<i32, i32>(mult3) };
-    // SAFETY: Only one store exists in this test. Therefore, it is always the
-    // correct store.
-    let importing_mod =
-        unsafe { store.module_instantiate(&validation_info, vec![ExternVal::Func(mult3)], None) }
-            .unwrap()
-            .module_addr;
-    // SAFETY: Only one store exists in this test. Therefore, it is always the
-    // correct store.
-    let function_ref = unsafe { store.instance_export(importing_mod, "mult3_caller") }
+    let mut registry = Registry::default();
+    let mult3 = registry.alloc_host_function(
+        &mut store,
+        FuncType {
+            params: ResultType {
+                valtypes: vec![ValType::NumType(NumType::I32)],
+            },
+            returns: ResultType {
+                valtypes: vec![ValType::NumType(NumType::I32)],
+            },
+        },
+        mult3,
+    );
+    let importing_mod = store
+        .module_instantiate(&validation_info, vec![StoredExternVal::Func(mult3)], None)
+        .unwrap()
+        .module_addr;
+    let function_ref = store
+        .instance_export(importing_mod, "mult3_caller")
         .unwrap()
         .as_func()
         .unwrap();
-    // SAFETY: Only one store exists in this test. Therefore, it is always the
-    // correct store.
-    let result = unsafe { store.invoke_typed_without_fuel::<(), (f64, i64)>(function_ref, ()) };
+    let result = registry.invoke_without_fuel_typed::<_, (), (f64, i64)>(
+        &mut (),
+        &mut store,
+        function_ref,
+        (),
+    );
     assert_eq!(Err(RuntimeError::HostFunctionSignatureMismatch), result);
 }

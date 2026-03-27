@@ -68,7 +68,7 @@ pub fn compile_simple_import() {
         .unwrap();
 
     // Perform a call to see if everything works as expected
-    let get_three_result = store.invoke_without_fuel(get_three, Vec::new()).unwrap();
+    let get_three_result = store.invoke_simple(get_three, Vec::new()).unwrap();
     assert_eq!(get_three_result, &[StoredValue::I32(3)],);
 }
 

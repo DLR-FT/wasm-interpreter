@@ -7,6 +7,7 @@ use bumpalo::Bump;
 use checked::{Linker, Store, Stored, StoredExternVal, StoredRef, StoredValue};
 use itertools::enumerate;
 use log::debug;
+use registry::Registry;
 use wasm::addrs::ModuleAddr;
 use wasm::validate;
 use wasm::value::F32;
@@ -127,9 +128,12 @@ pub fn run_spec_test(filepath: &str) -> Result<AssertReport, ScriptError> {
     // instantiation.
     let mut linker = Linker::new();
 
+    // The registry is used to keep track of host functions.
+    let mut registry = Registry::default();
+
     // Initialize a few extern values inside the store and make them available
     // to be imported by all future module instantiations.
-    init_spectest(&mut store, &mut linker)
+    init_spectest(&mut store, &mut linker, &mut registry)
         .expect("spectest environment initialization to always succeed on an empty Store/Linker");
 
     // Because the linker only links imports and exports and does not keep track
@@ -148,6 +152,7 @@ pub fn run_spec_test(filepath: &str) -> Result<AssertReport, ScriptError> {
             &mut visible_modules,
             &mut last_instantiated_module,
             &mut linker,
+            &mut registry,
         )?;
 
         if let Some(assert_outcome) = directive_result {
@@ -168,6 +173,7 @@ fn run_directive<'a>(
     visible_modules: &mut HashMap<String, Stored<ModuleAddr>>,
     last_instantiated_module: &mut Option<Stored<ModuleAddr>>,
     linker: &mut Linker,
+    registry: &mut Registry<()>,
 ) -> Result<Option<AssertOutcome>, ScriptError> {
     match wast_directive {
         wast::WastDirective::Wat(mut quoted) => {
@@ -224,6 +230,7 @@ fn run_directive<'a>(
                 exec,
                 results,
                 last_instantiated_module,
+                registry,
             );
 
             Ok(Some(AssertOutcome {
@@ -244,6 +251,7 @@ fn run_directive<'a>(
                 exec,
                 last_instantiated_module,
                 linker,
+                registry,
             );
             let result = match result {
                 Err(WastError::WasmRuntimeError(wasm::RuntimeError::Trap(trap_error))) => {
@@ -303,7 +311,7 @@ fn run_directive<'a>(
                         "Module directive (WAT) failed in validation or instantiation.",
                         line_number,
                         cmd,
-                    ))
+                    ));
                 }
                 Err(_other) => None,
             };
@@ -388,6 +396,7 @@ fn run_directive<'a>(
                 wast::WastExecute::Invoke(call),
                 last_instantiated_module,
                 linker,
+                registry,
             );
 
             let result = match execution_result {
@@ -458,7 +467,7 @@ fn run_directive<'a>(
             })??;
 
             catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
-                store.invoke_without_fuel(func_addr, args)
+                registry.invoke_without_fuel(&mut (), store, func_addr, args)
             }))
             .map_err(|panic_error| {
                 ScriptError::new(
@@ -485,7 +494,9 @@ fn run_directive<'a>(
             unimplemented!("`thread` directive does not exist anymore");
         }
         wast::WastDirective::AssertException { .. } => {
-            unimplemented!("`assert_exception` directive is required only by tests for certain proposals which are not yet supported")
+            unimplemented!(
+                "`assert_exception` directive is required only by tests for certain proposals which are not yet supported"
+            )
         }
         wast::WastDirective::Wait { .. } => {
             unimplemented!("`wait` directive does not exist anymore");
@@ -499,6 +510,7 @@ fn execute_assert_return(
     exec: wast::WastExecute,
     results: Vec<wast::WastRet>,
     last_instantiated_module: &mut Option<Stored<ModuleAddr>>,
+    registry: &mut Registry<()>,
 ) -> Result<(), WastError> {
     match exec {
         wast::WastExecute::Invoke(invoke_info) => {
@@ -537,7 +549,7 @@ fn execute_assert_return(
             .map_err(WastError::Panic)??;
 
             let actual = catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
-                store.invoke_without_fuel(func_addr, args)
+                registry.invoke_without_fuel(&mut (), store, func_addr, args)
             }))
             .map_err(WastError::Panic)??;
 
@@ -591,6 +603,7 @@ fn execute<'a>(
     exec: wast::WastExecute,
     last_instantiated_module: &mut Option<Stored<ModuleAddr>>,
     linker: &mut Linker,
+    registry: &mut Registry<()>,
 ) -> Result<(), WastError> {
     match exec {
         wast::WastExecute::Invoke(invoke_info) => {
@@ -619,7 +632,7 @@ fn execute<'a>(
             .map_err(WastError::Panic)??;
 
             catch_unwind_and_suppress_panic_handler(AssertUnwindSafe(|| {
-                store.invoke_without_fuel(func_addr, args)
+                registry.invoke_without_fuel(&mut (), store, func_addr, args)
             }))
             .map_err(WastError::Panic)??;
 
@@ -705,7 +718,11 @@ pub fn catch_unwind_and_suppress_panic_handler<R>(
 // allocated and linked by this function.
 //
 // See: <https://github.com/WebAssembly/spec/tree/main/interpreter#spectest-host-module>
-fn init_spectest(store: &mut Store<()>, linker: &mut Linker) -> Result<(), RuntimeError> {
+fn init_spectest(
+    store: &mut Store<()>,
+    linker: &mut Linker,
+    registry: &mut Registry<()>,
+) -> Result<(), RuntimeError> {
     let memory = store.mem_alloc(MemType {
         limits: Limits {
             min: 1,
@@ -756,24 +773,13 @@ fn init_spectest(store: &mut Store<()>, linker: &mut Linker) -> Result<(), Runti
         StoredValue::F64(F64(666.6)),
     )?;
 
-    // SAFETY: No host function has address parameters or result values.
-    // Therefore, invalid addresses are impossible.
-    let print = unsafe { store.func_alloc_typed::<(), ()>(spectec_functions::print) };
-    // SAFETY: Same as above
-    let print_i32 = unsafe { store.func_alloc_typed::<i32, ()>(spectec_functions::print_i32) };
-    // SAFETY: Same as above
-    let print_i64 = unsafe { store.func_alloc_typed::<i64, ()>(spectec_functions::print_i64) };
-    // SAFETY: Same as above
-    let print_f32 = unsafe { store.func_alloc_typed::<f32, ()>(spectec_functions::print_f32) };
-    // SAFETY: Same as above
-    let print_f64 = unsafe { store.func_alloc_typed::<f64, ()>(spectec_functions::print_f64) };
-    // SAFETY: Same as above
-    let print_i32_f32 =
-    // SAFETY: Same as above
-        unsafe { store.func_alloc_typed::<(i32, f32), ()>(spectec_functions::print_i32_f32) };
-    // SAFETY: Same as above
-    let print_f64_f64 =
-        unsafe { store.func_alloc_typed::<(f64, f64), ()>(spectec_functions::print_f64_f64) };
+    let print = registry.alloc_host_function_typed(store, |(), _: ()| {});
+    let print_i32 = registry.alloc_host_function_typed(store, |(), _: i32| {});
+    let print_i64 = registry.alloc_host_function_typed(store, |(), _: i64| {});
+    let print_f32 = registry.alloc_host_function_typed(store, |(), _: f32| {});
+    let print_f64 = registry.alloc_host_function_typed(store, |(), _: f64| {});
+    let print_i32_f32 = registry.alloc_host_function_typed(store, |(), _: (i32, f32)| {});
+    let print_f64_f64 = registry.alloc_host_function_typed(store, |(), _: (f64, f64)| {});
 
     linker.define(
         "spectest".to_owned(),
@@ -842,79 +848,4 @@ fn init_spectest(store: &mut Store<()>, linker: &mut Linker) -> Result<(), Runti
     )?;
 
     Ok(())
-}
-
-mod spectec_functions {
-    use interop::host_function_wrapper;
-    use wasm::{HaltExecutionError, Value};
-
-    pub fn print(
-        _user_data: &mut (),
-        params: Vec<Value>,
-    ) -> Result<Vec<Value>, HaltExecutionError> {
-        host_function_wrapper::<(), ()>(params, |()| {
-            // TODO print something here?
-            Ok(())
-        })
-    }
-
-    pub fn print_i32(
-        _user_data: &mut (),
-        params: Vec<Value>,
-    ) -> Result<Vec<Value>, HaltExecutionError> {
-        host_function_wrapper::<i32, ()>(params, |_x| {
-            // TODO print parameters here?
-            Ok(())
-        })
-    }
-
-    pub fn print_i64(
-        _user_data: &mut (),
-        params: Vec<Value>,
-    ) -> Result<Vec<Value>, HaltExecutionError> {
-        host_function_wrapper::<i64, ()>(params, |_x| {
-            // TODO print parameters here?
-            Ok(())
-        })
-    }
-
-    pub fn print_f32(
-        _user_data: &mut (),
-        params: Vec<Value>,
-    ) -> Result<Vec<Value>, HaltExecutionError> {
-        host_function_wrapper::<f32, ()>(params, |_x| {
-            // TODO print parameters here?
-            Ok(())
-        })
-    }
-
-    pub fn print_f64(
-        _user_data: &mut (),
-        params: Vec<Value>,
-    ) -> Result<Vec<Value>, HaltExecutionError> {
-        host_function_wrapper::<f64, ()>(params, |_x| {
-            // TODO print parameters here?
-            Ok(())
-        })
-    }
-
-    pub fn print_i32_f32(
-        _user_data: &mut (),
-        params: Vec<Value>,
-    ) -> Result<Vec<Value>, HaltExecutionError> {
-        host_function_wrapper::<(i32, f32), ()>(params, |(_a, _b)| {
-            // TODO print parameters here?
-            Ok(())
-        })
-    }
-
-    pub fn print_f64_f64(
-        _user_data: &mut (),
-        params: Vec<Value>,
-    ) -> Result<Vec<Value>, HaltExecutionError> {
-        host_function_wrapper::<(f64, f64), ()>(params, |(_a, _b)| {
-            // TODO print parameters here?
-            Ok(())
-        })
-    }
 }
