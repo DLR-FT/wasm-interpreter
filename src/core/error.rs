@@ -52,6 +52,12 @@ pub enum ValidationError {
     MalformedMemArgFlags,
     // A span could not be created for some Wasm bytecode because it was out-of-bounds.
     MalformedSpan,
+    /// The offset field of a memarg overflowed.
+    /// 
+    /// Note: This error is needed, because the spectest runner uses `wast` to
+    /// re-encode modules, which always parses the offset of memargs as u64
+    /// integers.
+    MemArgOffsetOverflowed,
 
     /// An index for a type is invalid.
     InvalidTypeIdx(u32),
@@ -197,6 +203,7 @@ impl Display for ValidationError {
             ValidationError::MalformedElemKindDiscriminator(byte) => write!(f, "Failed to parse {byte:#x} as an element kind discriminator"),
             ValidationError::MalformedMemArgFlags => write!(f, "The align field of a mem arg is too large"),
             ValidationError::MalformedSpan => write!(f, "A span could not be created for some Wasm bytecode because it was out-of-bounds"),
+            ValidationError::MemArgOffsetOverflowed => write!(f, "The offset field of a memarg overflowed"),
 
             ValidationError::InvalidTypeIdx(idx) => write!(f, "The type index {idx} is invalid"),
             ValidationError::InvalidFuncIdx(idx) => write!(f, "The function index {idx} is invalid"),

@@ -11,7 +11,11 @@ pub struct MemArg {
 impl MemArg {
     pub fn read(wasm: &mut WasmReader) -> Result<Self, ValidationError> {
         let align = wasm.read_var_u32()?;
-        let offset = wasm.read_var_u32()?;
+        let offset = match wasm.read_var_u32() {
+            Ok(offset) => offset,
+            Err(ValidationError::VariableLengthIntegerOverflowed) => return Err(ValidationError::MemArgOffsetOverflowed),
+            Err(other) => return Err(other),
+        };
 
         // The specification does not include this requirement and this check is
         // practically irrelevant, because all aligns >= 32 are caught during
