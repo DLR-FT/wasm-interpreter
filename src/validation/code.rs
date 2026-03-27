@@ -904,7 +904,7 @@ unsafe fn read_instructions(
                 // memories proposal.
                 let zero = wasm.read_u8()?;
                 if zero != 0 {
-                    return Err(ValidationError::UnsupportedMultipleMemoriesProposal);
+                    return Err(ValidationError::ExpectedZeroByte);
                 }
                 let _mem_idx = MemIdx::validate(0, c_mems)?;
 
@@ -915,7 +915,7 @@ unsafe fn read_instructions(
                 // memories proposal.
                 let zero = wasm.read_u8()?;
                 if zero != 0 {
-                    return Err(ValidationError::UnsupportedMultipleMemoriesProposal);
+                    return Err(ValidationError::ExpectedZeroByte);
                 }
                 let _mem_idx = MemIdx::validate(0, c_mems)?;
 
@@ -1184,7 +1184,7 @@ unsafe fn read_instructions(
                         // memories proposal.
                         let zero = wasm.read_u8()?;
                         if zero != 0 {
-                            return Err(ValidationError::UnsupportedMultipleMemoriesProposal);
+                            return Err(ValidationError::ExpectedZeroByte);
                         }
                         if c_mems.len() == 0 {
                             return Err(ValidationError::InvalidMemIdx(0));
@@ -1207,7 +1207,7 @@ unsafe fn read_instructions(
                         // memories proposal.
                         let zeros = (wasm.read_u8()?, wasm.read_u8()?);
                         if zeros != (0, 0) {
-                            return Err(ValidationError::UnsupportedMultipleMemoriesProposal);
+                            return Err(ValidationError::ExpectedZeroByte);
                         }
                         let _mem_idx = MemIdx::validate(0, c_mems)?;
 
@@ -1220,7 +1220,7 @@ unsafe fn read_instructions(
                         // memories proposal.
                         let zero = wasm.read_u8()?;
                         if zero != 0 {
-                            return Err(ValidationError::UnsupportedMultipleMemoriesProposal);
+                            return Err(ValidationError::ExpectedZeroByte);
                         }
                         let _mem_idx = MemIdx::validate(0, c_mems)?;
 

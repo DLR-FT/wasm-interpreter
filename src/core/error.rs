@@ -129,6 +129,9 @@ pub enum ValidationError {
     DuplicateExportName,
     /// Multiple memories are not yet allowed without the proposal.
     UnsupportedMultipleMemoriesProposal,
+    /// Expected a zero byte in a memory instruction, but a non-zero byte was
+    /// found.
+    ExpectedZeroByte,
     /// An expr in the code section has trailing instructions following its `end` instruction.
     CodeExprHasTrailingInstructions,
     /// The lengths of the function and code sections must match.
@@ -232,6 +235,7 @@ impl Display for ValidationError {
             ValidationError::TooManyLocals(n) => write!(f,"There are {n} locals and this exceeds the maximum allowed number of 2^32-1"),
             ValidationError::DuplicateExportName => write!(f,"Multiple exports share the same name"),
             ValidationError::UnsupportedMultipleMemoriesProposal => write!(f,"A memory index other than 1 was used, but the proposal for multiple memories is not yet supported"),
+            ValidationError::ExpectedZeroByte => write!(f, "Expected a zero byte, but found non-zero byte"),
             ValidationError::CodeExprHasTrailingInstructions => write!(f,"A code expression has invalid trailing instructions following its `end` instruction"),
             ValidationError::FunctionAndCodeSectionsHaveDifferentLengths => write!(f,"The function and code sections have different lengths"),
             ValidationError::DataCountAndDataSectionsLengthAreDifferent => write!(f,"The data count section specifies a different length than there are data segments in the data section"),
