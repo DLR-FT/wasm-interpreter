@@ -88,7 +88,11 @@ pub enum ValidationError {
     InvalidCustomSectionLength,
     ExprMissingEnd,
     InvalidInstr(u8),
+    /// An instruction is valid, but not constant as required.
+    InvalidConstInstr(u8),
     InvalidMultiByteInstr(u8, u32),
+    /// An multi-byte instruction is valid, but not constant as required.
+    InvalidConstMultiByteInstr(u8, u32),
     EndInvalidValueStack,
     InvalidValidationStackValType(Option<ValType>),
     ExpectedAnOperand,
@@ -224,7 +228,9 @@ impl Display for ValidationError {
             ValidationError::InvalidCustomSectionLength => write!(f, "A custom section contains more bytes than its section header specifies"),
             ValidationError::ExprMissingEnd => write!(f, "An expr type is missing an end byte"),
             ValidationError::InvalidInstr(byte) => write!(f, "The instruction opcode {byte:#x} is invalid"),
+            ValidationError::InvalidConstInstr(byte) => write!(f, "The instruction {byte:#x} is valid but not constant"),
             ValidationError::InvalidMultiByteInstr(first_byte, second_instr) => write!(f, "The multi-byte instruction opcode {first_byte:#x} {second_instr} is invalid"),
+            ValidationError::InvalidConstMultiByteInstr(first_byte, second_instr) => write!(f, "The multi-byte instruction {first_byte:#x} {second_instr} is valid but not constant"),
             ValidationError::ActiveElementSegmentTypeMismatch{ active_element_type, table_ref_type} => write!(f, "an element segment's type {active_element_type:?} and its table's type {table_ref_type:?} are different"),
             ValidationError::EndInvalidValueStack => write!(f, "Different value stack types were expected at the end of a block/function"),
             ValidationError::InvalidValidationStackValType(ty) => write!(f, "An unexpected type `{ty:?}` was found on the stack when trying to pop another"),
