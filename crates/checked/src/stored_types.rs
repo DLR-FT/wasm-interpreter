@@ -66,7 +66,7 @@ impl<T: Copy> Copy for Stored<T> {}
 impl<T: core::fmt::Debug> core::fmt::Debug for Stored<T> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_struct("Stored")
-            .field("inner", &self)
+            .field("inner", &self.inner)
             .field("id", &self.id)
             .finish()
     }
