@@ -302,10 +302,6 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
     })?
     .unwrap_or_default();
 
-    if func_blocks_stps.len() != functions.len_local_definitions().into_usize() {
-        return Err(ValidationError::FunctionAndCodeSectionsHaveDifferentLengths);
-    }
-
     read_all_custom_sections(&mut wasm, &mut header, &mut custom_sections)?;
 
     let data_section = handle_section(&mut wasm, &mut header, SectionTy::Data, |wasm, h| {
@@ -315,18 +311,22 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
     })?
     .unwrap_or_default();
 
-    // https://webassembly.github.io/spec/core/binary/modules.html#data-count-section
-    if let Some(data_count) = data_count {
-        if data_count != data_section.len() {
-            return Err(ValidationError::DataCountAndDataSectionsLengthAreDifferent);
-        }
-    }
-
     read_all_custom_sections(&mut wasm, &mut header, &mut custom_sections)?;
 
     // All sections should have been handled
     if let Some(_header) = header {
         return Err(ValidationError::UnexpectedContentAfterLastSection);
+    }
+
+    if func_blocks_stps.len() != functions.len_local_definitions().into_usize() {
+        return Err(ValidationError::FunctionAndCodeSectionsHaveDifferentLengths);
+    }
+
+    // https://webassembly.github.io/spec/core/binary/modules.html#data-count-section
+    if let Some(data_count) = data_count {
+        if data_count != data_section.len() {
+            return Err(ValidationError::DataCountAndDataSectionsLengthAreDifferent);
+        }
     }
 
     debug!("Validation was successful");
