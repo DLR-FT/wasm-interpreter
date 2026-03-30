@@ -1,3 +1,4 @@
+use core::cmp::Ordering;
 use core::iter::Map;
 
 use alloc::collections::btree_set::{self, BTreeSet};
@@ -377,13 +378,17 @@ where
             let h = header.take().unwrap();
             trace!("Handling section {:?}", h.ty);
             let end_of_section_idx = h.contents.from + h.contents.len;
-            let ret = handler(wasm, h)?;
-            if wasm.pc != end_of_section_idx {
-                return Err(ValidationError::SectionSizeMismatch);
-            }
-            // Handle error only after checking that the entire section was
-            // decoded.
-            // let ret = ret?;
+            let result = handler(wasm, h);
+            let ret = match wasm.pc.cmp(&end_of_section_idx) {
+                Ordering::Less => {
+                    result?;
+                    return Err(ValidationError::SectionSizeMismatch);
+                }
+                Ordering::Equal => result?,
+                Ordering::Greater => {
+                    return Err(ValidationError::SectionSizeMismatch);
+                }
+            };
             read_next_header(wasm, header)?;
             Ok(Some(ret))
         }

@@ -22,6 +22,8 @@ pub struct GlobalConfig {
     /// A regex that acts as a blocklist filter for tests.
     /// By default all `simd_*` and `proposals` tests are blocked.
     /// To not block anything use: `^$`
+    /// TODO re-enable binary, when we have a fix for two of its asserts:
+    /// https://github.com/WebAssembly/spec/pull/1904
     #[envconfig(default = r"^(proposals|names\.wast)$")]
     pub block_test_pattern: Regex,
 
