@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["ExternVal"],"mod":["addrs"],"struct":["HaltExecutionError","InstantiationOutcome","Store"],"trait":["ExternFilterable"]};
+window.SIDEBAR_ITEMS = {"enum":["ExternVal"],"mod":["addrs"],"struct":["InstantiationOutcome","Store"],"trait":["ExternFilterable"],"type":["Hostcode"]};

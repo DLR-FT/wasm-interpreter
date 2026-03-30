@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["Resumable","RunState"],"struct":["HostResumable","WasmResumable"]};
+window.SIDEBAR_ITEMS = {"enum":["Resumable","RunState"],"struct":["HostCall","HostResumable","WasmResumable"]};
