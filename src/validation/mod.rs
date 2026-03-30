@@ -376,7 +376,11 @@ where
         Some(SectionHeader { ty, .. }) if *ty == section_ty => {
             let h = header.take().unwrap();
             trace!("Handling section {:?}", h.ty);
+            let end_of_section_idx = h.contents.from + h.contents.len;
             let ret = handler(wasm, h)?;
+            if wasm.pc != end_of_section_idx {
+                return Err(ValidationError::SectionSizeMismatch);
+            }
             read_next_header(wasm, header)?;
             Ok(Some(ret))
         }

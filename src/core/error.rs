@@ -58,6 +58,8 @@ pub enum ValidationError {
     /// re-encode modules, which always parses the offset of memargs as u64
     /// integers.
     MemArgOffsetOverflowed,
+    /// A section was read but not all of its bytes were consumed.
+    SectionSizeMismatch,
 
     /// An index for a type is invalid.
     InvalidTypeIdx(u32),
@@ -204,6 +206,7 @@ impl Display for ValidationError {
             ValidationError::MalformedMemArgFlags => write!(f, "The align field of a mem arg is too large"),
             ValidationError::MalformedSpan => write!(f, "A span could not be created for some Wasm bytecode because it was out-of-bounds"),
             ValidationError::MemArgOffsetOverflowed => write!(f, "The offset field of a memarg overflowed"),
+            ValidationError::SectionSizeMismatch => write!(f, "A section was read but not all of its bytes were consumed"),
 
             ValidationError::InvalidTypeIdx(idx) => write!(f, "The type index {idx} is invalid"),
             ValidationError::InvalidFuncIdx(idx) => write!(f, "The function index {idx} is invalid"),
