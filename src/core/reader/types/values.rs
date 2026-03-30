@@ -368,11 +368,11 @@ impl<'wasm> WasmReader<'wasm> {
     ) -> Result<Vec<T>, ValidationError>
     where
         T: 'wasm,
-        F: FnMut(&mut WasmReader<'wasm>, u32) -> Result<T, ValidationError>,
+        F: FnMut(&mut WasmReader<'wasm>, u32, u32) -> Result<T, ValidationError>,
     {
         let mut idx = 0;
-        self.read_vec(|wasm| {
-            let ret = read_element(wasm, idx);
+        self.read_vec(|wasm, len| {
+            let ret = read_element(wasm, idx, len);
             idx = idx
                 .checked_add(1)
                 .expect("the length of vectors to be encoded as a u32");
@@ -384,10 +384,10 @@ impl<'wasm> WasmReader<'wasm> {
     pub fn read_vec<T, F>(&mut self, mut read_element: F) -> Result<Vec<T>, ValidationError>
     where
         T: 'wasm,
-        F: FnMut(&mut WasmReader<'wasm>) -> Result<T, ValidationError>,
+        F: FnMut(&mut WasmReader<'wasm>, u32) -> Result<T, ValidationError>,
     {
         let len = self.read_var_u32()?;
-        core::iter::repeat_with(|| read_element(self))
+        core::iter::repeat_with(|| read_element(self, len))
             .take(len.into_usize())
             .collect()
     }

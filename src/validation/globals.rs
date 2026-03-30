@@ -24,7 +24,7 @@ pub(super) fn validate_global_section(
 ) -> Result<Vec<Global>, ValidationError> {
     assert_eq!(section_header.ty, SectionTy::Global);
 
-    wasm.read_vec(|wasm| {
+    wasm.read_vec(|wasm, _len| {
         let ty = GlobalType::read(wasm)?;
         let stack = &mut ValidationStack::new();
         let (init_expr, seen_func_idxs) =

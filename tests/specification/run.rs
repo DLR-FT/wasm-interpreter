@@ -20,6 +20,7 @@ use wasm::RuntimeError;
 use wasm::TableType;
 use wasm::TrapError;
 use wasm::ValType;
+use wasm::ValidationError;
 use wast::core::WastArgCore;
 use wast::core::WastRetCore;
 use wast::{QuoteWat, WastArg, WastDirective, WastRet, Wat};
@@ -53,7 +54,181 @@ pub fn error_to_wasm_testsuite_string(runtime_error: &RuntimeError) -> Result<St
         RuntimeError::HostFunctionSignatureMismatch => Ok("host function signature mismatch"),
         _ => Err(WastError::UnrepresentedRuntimeError),
     }
-    .map(ToOwned::to_owned)
+    .map(str::to_owned)
+}
+
+pub fn validation_error_to_wasm_testsuite_string(
+    validation_error: &ValidationError,
+) -> Result<String, WastError> {
+    match validation_error {
+        ValidationError::InvalidMagic => Ok("magic header not detected"),
+        ValidationError::InvalidBinaryFormatVersion => Ok("unknown binary version"),
+        ValidationError::Eof => Ok("unexpected end of section or function"),
+        ValidationError::MalformedUtf8(_) => Ok("malformed UTF-8 encoding"),
+        ValidationError::MalformedSectionTypeDiscriminator(_) => Ok("malformed section id"),
+        ValidationError::MalformedNumTypeDiscriminator(_) => Ok("malformed number type"),
+        ValidationError::MalformedVecTypeDiscriminator(_) => Ok("malformed vector type"),
+        ValidationError::MalformedFuncTypeDiscriminator(_) => Ok("malformed function type"),
+        // Note: MalformedValType does not exist in the reference
+        // interpreter. Because it uses `either`, malformed value types are
+        // recognized as malformed reference types instead.
+        ValidationError::MalformedRefTypeDiscriminator(_) | ValidationError::MalformedValType => {
+            Ok("malformed reference type")
+        }
+        // TODO Not sure about this, maybe merge into above match arm. This also isn't tested for.
+        ValidationError::I33IsNegative => Ok("malformed reference type"),
+        ValidationError::MalformedExportDescDiscriminator(_) => Ok("malformed export kind"),
+        ValidationError::MalformedImportDescDiscriminator(_) => Ok("malformed import kind"),
+        ValidationError::MalformedMutDiscriminator(_) => Ok("malformed mutability"),
+        ValidationError::VariableLengthIntegerRepresentationTooLong => {
+            Ok("integer representation too long")
+        }
+
+        ValidationError::VariableLengthIntegerOverflowed => Ok("integer too large"),
+        ValidationError::MalformedLimitsDiscriminator(invalid_descriptor) => {
+            // The spec interpreter incorrectly reads the limits descriptor as a
+            // variable-lengh integer. Therefore, we have to distinguish between
+            // its two error cases:
+            if *invalid_descriptor > 0x80 {
+                Ok("integer representation too long")
+            } else {
+                Ok("integer too large")
+            }
+        }
+        ValidationError::MalformedElemKindDiscriminator(_) => Ok("malformed element kind"),
+        ValidationError::MalformedMemArgFlags => Ok("malformed memop flags"),
+        ValidationError::MalformedSpan => Ok("length out of bounds"),
+        ValidationError::MemArgOffsetOverflowed => Ok("i32 constant"),
+        ValidationError::SectionSizeMismatch => Ok("section size mismatch"),
+        ValidationError::InvalidTypeIdx(type_idx) => return Ok(format!("unknown type {type_idx}")),
+        ValidationError::InvalidFuncIdx(func_idx) => {
+            return Ok(format!("unknown function {func_idx}"))
+        }
+        ValidationError::InvalidTableIdx(table_idx) => {
+            return Ok(format!("unknown table {table_idx}"))
+        }
+        ValidationError::InvalidMemIdx(mem_idx) => return Ok(format!("unknown memory {mem_idx}")),
+        ValidationError::InvalidGlobalIdx(global_idx) => {
+            return Ok(format!("unknown global {global_idx}"))
+        }
+        ValidationError::InvalidElemIdx(elem_idx) => {
+            return Ok(format!("unknown elem segment {elem_idx}"))
+        }
+        ValidationError::InvalidDataIdx(data_idx) => {
+            return Ok(format!("unknown data segment {data_idx}"))
+        }
+        ValidationError::InvalidLocalIdx(local_idx) => {
+            return Ok(format!("unknown local {local_idx}"))
+        }
+        ValidationError::InvalidLabelIdx(label_idx) => {
+            return Ok(format!("unknown label {label_idx}"))
+        }
+        ValidationError::InvalidLaneIdx(_) => Ok("invalid lane index"),
+        ValidationError::InvalidLimitsMinLargerThanMax { .. } => {
+            Ok("size minimum must not be greater than maximum")
+        }
+        ValidationError::UnexpectedContentAfterLastSection => {
+            Ok("unexpected content after last section")
+        }
+        ValidationError::ExprMissingEnd => Ok("unexpected end of section or function"),
+        ValidationError::InvalidSelectTypeVectorLength(_) => Ok("invalid result arity"),
+        ValidationError::InvalidInstr(byte) => return Ok(format!("illegal opcode {byte:02x}")),
+        ValidationError::InvalidConstInstr(_)
+        | ValidationError::InvalidConstMultiByteInstr(_, _) => Ok("constant expression required"),
+        ValidationError::InvalidMultiByteInstr(byte, i) => {
+            return Ok(format!("illegal opcode {byte:02x} {i:02x}"))
+        }
+        ValidationError::EndInvalidValueStack
+        | ValidationError::InvalidValidationStackValType(_)
+        | ValidationError::ExpectedAnOperand
+        | ValidationError::MismatchedRefTypesOnValidationStack { .. }
+        | ValidationError::ExpectedReferenceTypeOnStack(_) => Ok("type mismatch"),
+        ValidationError::MemoryTooLarge => Ok("memory size must be at most 65536 pages (4GiB)"),
+        ValidationError::MutationOfConstGlobal => Ok("global is immutable"),
+        ValidationError::ErroneousAlignment { .. } => {
+            Ok("alignment must not be larger than natural")
+        }
+        ValidationError::ValidationCtrlStackEmpty => {
+            return Err(WastError::UnrepresentedValidationError(
+                validation_error.clone(),
+            ))
+        }
+        // TODO check if this
+        ValidationError::ElseWithoutMatchingIf => Ok("misplaced ELSE opcode"),
+        // TODO
+        ValidationError::IfWithoutMatchingElse => Ok("ELSE or END opcode expected"),
+        ValidationError::MismatchedRefTypesDuringTableInit { elem_ty, table_ty } => {
+            return Ok(format!(
+                "type mismatch: element segment's type {} does not match table's element type {}",
+                ref_to_str(*elem_ty),
+                ref_to_str(*table_ty)
+            ));
+        }
+        ValidationError::MismatchedRefTypesDuringTableCopy {
+            source_table_ty,
+            destination_table_ty,
+        } => {
+            return Ok(format!(
+                "type mismatch: source element type {} does not match destination element type {}",
+                ref_to_str(*source_table_ty),
+                ref_to_str(*destination_table_ty)
+            ))
+        }
+        ValidationError::IndirectCallToNonFuncRefTable(table_type) => {
+            return Ok(format!(
+                "type mismatch: instruction requires table of functions but table has {}",
+                ref_to_str(*table_type)
+            ));
+        }
+        ValidationError::ReferencingAnUnreferencedFunction(_) => {
+            Ok("undeclared function reference")
+        }
+        ValidationError::TooManyLocals(_) => Ok("too many locals"),
+        ValidationError::DuplicateExportName => Ok("duplicate export name"),
+        ValidationError::UnsupportedMultipleMemoriesProposal => {
+            Ok("multiple memories are not allowed (yet)")
+        }
+        ValidationError::ExpectedZeroByte => Ok("zero byte expected"),
+        ValidationError::CodeExprOverflow => Ok("END opcode expected"),
+
+        ValidationError::CodeExprHasTrailingInstructions
+        | ValidationError::LastCodeExprOverflow
+        | ValidationError::InvalidCustomSectionLength => Ok("section size mismatch"),
+        ValidationError::FunctionAndCodeSectionsHaveDifferentLengths => {
+            Ok("function and code section have inconsistent lengths")
+        }
+        ValidationError::DataCountAndDataSectionsLengthAreDifferent => {
+            Ok("data count and data section have inconsistent lengths")
+        }
+        ValidationError::InvalidStartFunctionSignature => Ok("start function"),
+        ValidationError::ActiveElementSegmentTypeMismatch {
+            active_element_type,
+            table_ref_type,
+        } => {
+            return Ok(format!(
+                "type mismatch: element segment's type {} does not match table's element type {}",
+                ref_to_str(*active_element_type),
+                ref_to_str(*table_ref_type)
+            ));
+        }
+        ValidationError::MissingDataCountSection => Ok("data count section required"),
+        ValidationError::InvalidDataSegmentMode(_) => Ok("malformed data segement kind"),
+        ValidationError::InvalidElementMode(_) => Ok("malformed elements segment kind"),
+        ValidationError::TooManyFunctions
+        | ValidationError::TooManyTables
+        | ValidationError::TooManyMemories
+        | ValidationError::TooManyGlobals => Err(WastError::UnrepresentedValidationError(
+            validation_error.clone(),
+        )),
+    }
+    .map(str::to_owned)
+}
+
+fn ref_to_str(r: RefType) -> &'static str {
+    match r {
+        RefType::FuncRef => "funcref",
+        RefType::ExternRef => "externref",
+    }
 }
 
 /// Clear the bytes and runtime instance before calling this function
@@ -280,22 +455,36 @@ fn run_directive<'a>(
         wast::WastDirective::AssertMalformed {
             span,
             module: mut modulee,
-            message: _,
+            message,
         }
         | wast::WastDirective::AssertInvalid {
             span,
             module: mut modulee,
-            message: _,
+            message,
         } => {
             let line_number = get_linenum(contents, span);
             let cmd = get_command(contents, span);
-            let result = encode(&mut modulee).and_then(|bytes| {
-                let bytes = arena.alloc_slice_clone(&bytes);
-                validate_instantiate(store, bytes, linker, last_instantiated_module)
-            });
+
+            // Note: We can only run this assertion, if we can re-encode this
+            // module into its binary format. This is because we cannot parse
+            // the text format.
+            // TODO We could compare the error message returned by the wast
+            // crate and `message`
+            let Ok(bytes) = encode(&mut modulee) else {
+                return Ok(Some(AssertOutcome {
+                    line_number,
+                    command: cmd.to_owned(),
+                    maybe_error: None,
+                }));
+            };
+
+            let bytes = arena.alloc_slice_clone(&bytes);
+            let result = validate_instantiate(store, bytes, linker, last_instantiated_module);
 
             let maybe_assert_error = match result {
-                Ok(_module) => Some(WastError::AssertInvalidButValid),
+                Ok(_) | Err(WastError::FailedToLink | WastError::WasmRuntimeError(_)) => {
+                    Some(WastError::AssertInvalidButValid)
+                }
                 Err(panic_err @ WastError::Panic(_)) => {
                     return Err(ScriptError::new(
                         filepath,
@@ -305,7 +494,24 @@ fn run_directive<'a>(
                         cmd,
                     ))
                 }
-                Err(_other) => None,
+                Err(WastError::WasmError(validation_error)) => {
+                    match validation_error_to_wasm_testsuite_string(&validation_error) {
+                        Ok(actual_message) => {
+                            if actual_message.contains(message) {
+                                None
+                            } else {
+                                Some(WastError::UnexpectedValidationError {
+                                    expected: message.to_owned(),
+                                    actual: validation_error,
+                                })
+                            }
+                        }
+                        Err(err) => Some(err),
+                    }
+                }
+                Err(other_err) => {
+                    unreachable!("no other errors should be possible here, got: {other_err}")
+                }
             };
 
             Ok(Some(AssertOutcome {

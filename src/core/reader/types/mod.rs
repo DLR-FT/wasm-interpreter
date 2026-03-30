@@ -125,7 +125,7 @@ pub struct ResultType {
 
 impl ResultType {
     pub fn read(wasm: &mut WasmReader) -> Result<Self, ValidationError> {
-        let valtypes = wasm.read_vec(ValType::read)?;
+        let valtypes = wasm.read_vec(|w, _len| ValType::read(w))?;
 
         Ok(ResultType { valtypes })
     }

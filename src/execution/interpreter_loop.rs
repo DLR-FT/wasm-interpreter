@@ -205,7 +205,7 @@ pub(super) fn run<T: Config>(
             BR_TABLE => {
                 decrement_fuel!(T::get_flat_cost(BR_TABLE));
                 let label_vec = wasm
-                    .read_vec(|wasm| {
+                    .read_vec(|wasm, _len| {
                         // SAFETY: Validation guarantees that there is a
                         // valid vec of label indices.
                         Ok(unsafe { read_label_idx_unchecked(wasm) })
@@ -490,7 +490,7 @@ pub(super) fn run<T: Config>(
             }
             SELECT_T => {
                 decrement_fuel!(T::get_flat_cost(SELECT_T));
-                let _type_vec = wasm.read_vec(ValType::read).unwrap_validated();
+                let _type_vec = wasm.read_vec(|w, _len| ValType::read(w)).unwrap_validated();
                 let test_val: i32 = stack.pop_value().try_into().unwrap_validated();
                 let val2 = stack.pop_value();
                 let val1 = stack.pop_value();

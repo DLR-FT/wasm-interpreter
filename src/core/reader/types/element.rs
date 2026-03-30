@@ -56,7 +56,7 @@ impl ElemType {
         c_tables: &IdxVec<TableIdx, TableType>,
         imported_global_types: &[GlobalType],
     ) -> Result<Vec<Self>, ValidationError> {
-        wasm.read_vec(|wasm| {
+        wasm.read_vec(|wasm, _len| {
             let prop = wasm.read_var_u32()?;
 
             let elem = match prop {
@@ -322,7 +322,7 @@ fn parse_validate_shortened_initializer_list(
     c_funcs: &IdxVec<FuncIdx, TypeIdx>,
     validation_context_refs: &mut BTreeSet<FuncIdx>,
 ) -> Result<ElemItems, ValidationError> {
-    wasm.read_vec(|w| {
+    wasm.read_vec(|w, _len| {
         let func_idx = FuncIdx::read_and_validate(w, c_funcs)?;
         validation_context_refs.insert(func_idx);
         Ok(func_idx)
@@ -345,7 +345,7 @@ fn parse_validate_generic_initializer_list(
     c_funcs: &IdxVec<FuncIdx, TypeIdx>,
     validation_context_refs: &mut BTreeSet<FuncIdx>,
 ) -> Result<ElemItems, ValidationError> {
-    wasm.read_vec(|w| {
+    wasm.read_vec(|w, _len| {
         let mut valid_stack = ValidationStack::new();
         let (span, seen_func_refs) =
             read_constant_expression(w, &mut valid_stack, imported_global_types, c_funcs)?;

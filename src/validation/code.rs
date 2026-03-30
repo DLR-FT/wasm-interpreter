@@ -1,3 +1,4 @@
+use core::cmp::Ordering;
 use core::iter;
 
 use alloc::collections::btree_set::BTreeSet;
@@ -45,7 +46,7 @@ pub unsafe fn validate_code_section(
     sidetable: &mut Sidetable,
 ) -> Result<Vec<(Span, usize)>, ValidationError> {
     assert_eq!(section_header.ty, SectionTy::Code);
-    let code_block_spans_stps = wasm.read_vec_enumerated(|wasm, idx| {
+    let code_block_spans_stps = wasm.read_vec_enumerated(|wasm, idx, len| {
         // We need to offset the index by the number of functions that were
         // imported. Imported functions always live at the start of the index
         // space.
@@ -60,7 +61,7 @@ pub unsafe fn validate_code_section(
 
         let func_size = wasm.read_var_u32()?;
         let func_block = wasm.make_span(func_size.into_usize())?;
-        let previous_pc = wasm.pc;
+        let function_end = wasm.pc + func_size.into_usize();
 
         let locals = {
             let params = func_ty.params.valtypes.iter().cloned();
@@ -73,7 +74,7 @@ pub unsafe fn validate_code_section(
 
         // SAFETY: The caller ensures the same safety requirements for the same
         // unmodified index values.
-        unsafe {
+        let result = unsafe {
             read_instructions(
                 wasm,
                 &mut stack,
@@ -88,11 +89,32 @@ pub unsafe fn validate_code_section(
                 c_elems,
                 validation_context_refs,
             )
-        }?;
+        };
 
-        // Check if there were unread trailing instructions after the last END
-        if previous_pc + func_size.into_usize() != wasm.pc {
-            return Err(ValidationError::CodeExprHasTrailingInstructions);
+        // Depending on how much code was read, we want to return different results
+        match wasm.pc.cmp(&function_end) {
+            Ordering::Less => {
+                result?;
+                return Err(ValidationError::CodeExprHasTrailingInstructions);
+            }
+            Ordering::Equal => {
+                result?;
+            }
+            Ordering::Greater => {
+                // We have read past the end of the expr. Therefore, any
+                // returned errors are incorrect and can be ignored.
+
+                // If this was the last code expr, we return a special error as a
+                // workaround to match the reference interpreter's behaviour.
+                let last_code_expr_idx = len
+                    .checked_sub(1)
+                    .expect("length to be at least one, or this closure would never be executed");
+                if idx == last_code_expr_idx {
+                    return Err(ValidationError::LastCodeExprOverflow);
+                } else {
+                    return Err(ValidationError::CodeExprOverflow);
+                }
+            }
         }
 
         Ok((func_block, stp))
@@ -107,7 +129,7 @@ pub unsafe fn validate_code_section(
 }
 
 pub fn read_declared_locals(wasm: &mut WasmReader) -> Result<Vec<ValType>, ValidationError> {
-    let locals = wasm.read_vec(|wasm| {
+    let locals = wasm.read_vec(|wasm, _len| {
         let n = wasm.read_var_u32()?.into_usize();
         let valtype = ValType::read(wasm)?;
 
@@ -366,7 +388,7 @@ unsafe fn read_instructions(
                 )?;
             }
             BR_TABLE => {
-                let label_vec = wasm.read_vec(read_label_idx)?;
+                let label_vec = wasm.read_vec(|w, _len| read_label_idx(w))?;
                 let max_label_idx = read_label_idx(wasm)?;
                 stack.assert_pop_val_type(ValType::NumType(NumType::I32))?;
                 for label_idx in &label_vec {
@@ -538,7 +560,7 @@ unsafe fn read_instructions(
                 stack.validate_polymorphic_select()?;
             }
             SELECT_T => {
-                let type_vec = wasm.read_vec(ValType::read)?;
+                let type_vec = wasm.read_vec(|w, _len| ValType::read(w))?;
                 if type_vec.len() != 1 {
                     return Err(ValidationError::InvalidSelectTypeVectorLength(
                         type_vec.len(),

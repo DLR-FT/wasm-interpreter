@@ -13,7 +13,9 @@ impl MemArg {
         let align = wasm.read_var_u32()?;
         let offset = match wasm.read_var_u32() {
             Ok(offset) => offset,
-            Err(ValidationError::VariableLengthIntegerOverflowed) => return Err(ValidationError::MemArgOffsetOverflowed),
+            Err(ValidationError::VariableLengthIntegerOverflowed) => {
+                return Err(ValidationError::MemArgOffsetOverflowed)
+            }
             Err(other) => return Err(other),
         };
 

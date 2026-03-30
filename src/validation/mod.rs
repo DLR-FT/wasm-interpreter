@@ -100,14 +100,14 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
     read_all_custom_sections(&mut wasm, &mut header, &mut custom_sections)?;
 
     let types = handle_section(&mut wasm, &mut header, SectionTy::Type, |wasm, _| {
-        wasm.read_vec(FuncType::read).map(|types| IdxVec::new(types).expect("that index space creation never fails because the length of the types vector is encoded as a 32-bit integer in the bytecode"))
+        wasm.read_vec(|w, _len| FuncType::read(w)).map(|types| IdxVec::new(types).expect("that index space creation never fails because the length of the types vector is encoded as a 32-bit integer in the bytecode"))
     })?
     .unwrap_or_default();
 
     read_all_custom_sections(&mut wasm, &mut header, &mut custom_sections)?;
 
     let imports = handle_section(&mut wasm, &mut header, SectionTy::Import, |wasm, _| {
-        wasm.read_vec(|wasm| Import::read_and_validate(wasm, &types))
+        wasm.read_vec(|wasm, _len| Import::read_and_validate(wasm, &types))
     })?
     .unwrap_or_default();
 
@@ -121,7 +121,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
     // only after that do the local functions get assigned their indices.
     let local_functions =
         handle_section(&mut wasm, &mut header, SectionTy::Function, |wasm, _| {
-            wasm.read_vec(|wasm| TypeIdx::read_and_validate(wasm, &types))
+            wasm.read_vec(|wasm, _len| TypeIdx::read_and_validate(wasm, &types))
         })?
         .unwrap_or_default();
 
@@ -140,7 +140,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
         _ => None,
     });
     let local_tables = handle_section(&mut wasm, &mut header, SectionTy::Table, |wasm, _| {
-        wasm.read_vec(TableType::read)
+        wasm.read_vec(|w, _len| TableType::read(w))
     })?
     .unwrap_or_default();
 
@@ -155,7 +155,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
     });
     // let imported_memories_length = imported_memories.len();
     let local_memories = handle_section(&mut wasm, &mut header, SectionTy::Memory, |wasm, _| {
-        wasm.read_vec(MemType::read)
+        wasm.read_vec(|w, _len| MemType::read(w))
     })?
     .unwrap_or_default();
 
@@ -198,7 +198,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
     read_all_custom_sections(&mut wasm, &mut header, &mut custom_sections)?;
 
     let exports = handle_section(&mut wasm, &mut header, SectionTy::Export, |wasm, _| {
-        wasm.read_vec(|wasm| {
+        wasm.read_vec(|wasm, _len| {
             Export::read_and_validate(
                 wasm,
                 functions.inner(),
@@ -381,6 +381,9 @@ where
             if wasm.pc != end_of_section_idx {
                 return Err(ValidationError::SectionSizeMismatch);
             }
+            // Handle error only after checking that the entire section was
+            // decoded.
+            // let ret = ret?;
             read_next_header(wasm, header)?;
             Ok(Some(ret))
         }

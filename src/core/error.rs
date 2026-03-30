@@ -53,7 +53,7 @@ pub enum ValidationError {
     // A span could not be created for some Wasm bytecode because it was out-of-bounds.
     MalformedSpan,
     /// The offset field of a memarg overflowed.
-    /// 
+    ///
     /// Note: This error is needed, because the spectest runner uses `wast` to
     /// re-encode modules, which always parses the offset of memargs as u64
     /// integers.
@@ -146,6 +146,15 @@ pub enum ValidationError {
     ExpectedZeroByte,
     /// An expr in the code section has trailing instructions following its `end` instruction.
     CodeExprHasTrailingInstructions,
+    /// Decoding an expr did not finish at its expected end.
+    CodeExprOverflow,
+    /// Decoding the last expr in the code section did not finish at its
+    /// expected end.
+    ///
+    /// Note: This error is a specialization of
+    /// [`ValidationError::CodeExprOverflow`] and only needed to match the
+    /// reference interpreter's behavior in the spectest runner.
+    LastCodeExprOverflow,
     /// The lengths of the function and code sections must match.
     FunctionAndCodeSectionsHaveDifferentLengths,
     /// The data count specified in the data count section and the length of the data section must match.
@@ -253,6 +262,8 @@ impl Display for ValidationError {
             ValidationError::UnsupportedMultipleMemoriesProposal => write!(f,"A memory index other than 1 was used, but the proposal for multiple memories is not yet supported"),
             ValidationError::ExpectedZeroByte => write!(f, "Expected a zero byte, but found non-zero byte"),
             ValidationError::CodeExprHasTrailingInstructions => write!(f,"A code expression has invalid trailing instructions following its `end` instruction"),
+            ValidationError::CodeExprOverflow => write!(f, "Decoding an expr did not finish at its expected end"),
+            ValidationError::LastCodeExprOverflow => write!(f, "Decoding the last expr in the code section did not finish at its expected end"),
             ValidationError::FunctionAndCodeSectionsHaveDifferentLengths => write!(f,"The function and code sections have different lengths"),
             ValidationError::DataCountAndDataSectionsLengthAreDifferent => write!(f,"The data count section specifies a different length than there are data segments in the data section"),
             ValidationError::InvalidStartFunctionSignature => write!(f,"The start function has parameters or return types which it is not allowed to have"),

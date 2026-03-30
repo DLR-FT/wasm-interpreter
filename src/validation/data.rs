@@ -27,7 +27,7 @@ pub(super) fn validate_data_section(
 ) -> Result<Vec<DataSegment>, ValidationError> {
     assert_eq!(section_header.ty, SectionTy::Data);
 
-    wasm.read_vec(|wasm| {
+    wasm.read_vec(|wasm, _len| {
         use crate::{NumType, ValType};
         let mode = wasm.read_var_u32()?;
         let data_sec: DataSegment = match mode {
@@ -49,7 +49,7 @@ pub(super) fn validate_data_section(
 
                 valid_stack.assert_val_types(&[ValType::NumType(NumType::I32)], true)?;
 
-                let byte_vec = wasm.read_vec(|el| el.read_u8())?;
+                let byte_vec = wasm.read_vec(|el, _len| el.read_u8())?;
 
                 // WARN: we currently don't take into consideration how we act when we are dealing with globals here
                 DataSegment {
@@ -66,7 +66,7 @@ pub(super) fn validate_data_section(
                 trace!("Data section: passive");
                 DataSegment {
                     mode: DataMode::Passive,
-                    init: wasm.read_vec(|el| el.read_u8())?,
+                    init: wasm.read_vec(|el, _len| el.read_u8())?,
                 }
             }
             2 => {
@@ -85,7 +85,7 @@ pub(super) fn validate_data_section(
 
                 valid_stack.assert_val_types(&[ValType::NumType(NumType::I32)], true)?;
 
-                let byte_vec = wasm.read_vec(|el| el.read_u8())?;
+                let byte_vec = wasm.read_vec(|el, _len| el.read_u8())?;
 
                 DataSegment {
                     mode: DataMode::Active(DataModeActive {

@@ -1,6 +1,6 @@
 use std::any::Any;
 
-use wasm::{RuntimeError, TrapError};
+use wasm::{RuntimeError, TrapError, ValidationError};
 
 use super::test_errors::AssertEqError;
 
@@ -44,6 +44,8 @@ pub enum WastError {
     Wast(#[from] wast::Error),
     #[error("Runtime error not represented in WAST")]
     UnrepresentedRuntimeError,
+    #[error("Validation error not represented in WAST: {0}")]
+    UnrepresentedValidationError(ValidationError),
     #[error("{0}")]
     Io(#[from] std::io::Error),
     #[error("Some directive either referenced a non-existing Wasm module by its id or it did not specify an id at all and there was no other module defined prior to this directive.")]
@@ -54,6 +56,11 @@ pub enum WastError {
     UnknownGlobalReferenced,
     #[error("Module failed to link")]
     FailedToLink,
+    #[error("Got unexpected validation error {actual}, expected {expected}")]
+    UnexpectedValidationError {
+        expected: String,
+        actual: ValidationError,
+    },
 }
 
 impl From<wasm::ValidationError> for WastError {
