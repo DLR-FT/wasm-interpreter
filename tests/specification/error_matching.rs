@@ -105,6 +105,7 @@ fn validation_error_to_message(validation_error: &ValidationError) -> Option<Str
         | InvalidValidationStackValType(_)
         | ExpectedAnOperand
         | MismatchedRefTypesOnValidationStack { .. }
+        | IfWithoutMatchingElse
         | ExpectedReferenceTypeOnStack(_) => "type mismatch",
         MemoryTooLarge => "memory size must be at most 65536 pages (4GiB)",
         MutationOfConstGlobal => "global is immutable",
@@ -112,8 +113,6 @@ fn validation_error_to_message(validation_error: &ValidationError) -> Option<Str
         ValidationCtrlStackEmpty => return None,
         // TODO check if this
         ElseWithoutMatchingIf => "misplaced ELSE opcode",
-        // TODO
-        IfWithoutMatchingElse => "ELSE or END opcode expected",
         MismatchedRefTypesDuringTableInit { elem_ty, table_ty } => {
             return Some(format!(
                 "type mismatch: element segment's type {} does not match table's element type {}",
