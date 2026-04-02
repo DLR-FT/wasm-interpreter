@@ -7,6 +7,7 @@ use std::path::Path;
 use std::process::ExitCode;
 
 mod ci_reports;
+mod error_matching;
 mod files;
 mod reports;
 mod run;
