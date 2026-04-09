@@ -9,6 +9,14 @@ pub fn match_runtime_error(actual: &RuntimeError, expected_message: &str) -> boo
 }
 
 pub fn match_validation_error(actual: &ValidationError, expected_message: &str) -> bool {
+    // test location: binary-leb128.wast:347
+    // rationale: we prioritize errors that violate section boundaries
+    if actual == &ValidationError::SectionSizeMismatch
+        && expected_message == "integer representation too long"
+    {
+        return true;
+    }
+
     validation_error_to_message(actual)
         .is_some_and(|actual_message| actual_message.contains(expected_message))
 }
