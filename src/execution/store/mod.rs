@@ -16,6 +16,7 @@ use crate::core::utils::ToUsizeExt;
 use crate::execution::interpreter_loop::{self, memory_init, table_init, InterpreterLoopOutcome};
 use crate::execution::value::{Ref, Value};
 use crate::execution::{run_const_span, Stack};
+use crate::instances::MemInst;
 use crate::resumable::{HostCall, HostResumable, Resumable, RunState, WasmResumable};
 use crate::{RefType, RuntimeError, ValidationInfo};
 use alloc::borrow::ToOwned;
@@ -79,7 +80,7 @@ pub struct Store<'b, T: Config> {
 pub(crate) struct StoreInner {
     pub(crate) functions: AddrVec<FuncAddr, FuncInst>,
     pub(crate) tables: AddrVec<TableAddr, TableInst>,
-    pub(crate) memories: AddrVec<MemAddr, UnsharedMemInst>,
+    pub(crate) memories: AddrVec<MemAddr, MemInst>,
     pub(crate) globals: AddrVec<GlobalAddr, GlobalInst>,
     pub(crate) elements: AddrVec<ElemAddr, ElemInst>,
     pub(crate) data: AddrVec<DataAddr, DataInst>,
@@ -1234,7 +1235,7 @@ impl<'b, T: Config> Store<'b, T> {
             ),
         };
 
-        self.inner.memories.insert(mem_inst)
+        self.inner.memories.insert(MemInst::Unshared(mem_inst))
     }
 
     /// <https://webassembly.github.io/spec/core/exec/modules.html#globals>

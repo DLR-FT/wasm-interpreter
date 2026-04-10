@@ -1,4 +1,4 @@
-use alloc::{collections::btree_map::BTreeMap, string::String, vec, vec::Vec};
+use alloc::{collections::btree_map::BTreeMap, string::String, sync::Arc, vec, vec::Vec};
 
 use crate::{
     core::{
@@ -106,6 +106,16 @@ impl TableInst {
         self.ty.lim = limits_prime;
         Ok(())
     }
+}
+
+pub enum MemInst {
+    Shared(SharedMemInst),
+    Unshared(UnsharedMemInst),
+}
+
+pub struct SharedMemInst {
+    pub ty: MemType,
+    pub mem: Arc<LinearMemory>,
 }
 
 pub struct UnsharedMemInst {

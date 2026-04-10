@@ -28,7 +28,7 @@ use crate::{
         },
         store::Hostcode,
     },
-    instances::{DataInst, ElemInst, FuncInst, ModuleInst, TableInst, UnsharedMemInst},
+    instances::{DataInst, ElemInst, FuncInst, MemInst, ModuleInst, TableInst},
     resumable::WasmResumable,
     unreachable_validated,
     value_stack::Stack,
@@ -307,7 +307,7 @@ pub(super) unsafe fn elem_drop(
 #[allow(clippy::too_many_arguments)]
 pub(super) unsafe fn memory_init(
     store_modules: &AddrVec<ModuleAddr, ModuleInst>,
-    store_memories: &mut AddrVec<MemAddr, UnsharedMemInst>,
+    store_memories: &mut AddrVec<MemAddr, MemInst>,
     store_data: &AddrVec<DataAddr, DataInst>,
     current_module: ModuleAddr,
     data_idx: DataIdx,
@@ -328,7 +328,9 @@ pub(super) unsafe fn memory_init(
     let mem_addr = *unsafe { module_inst.mem_addrs.get(mem_idx) };
     // SAFETY: The caller ensures that this memory address is valid in this
     // address vector (3).
-    let mem = unsafe { store_memories.get(mem_addr) };
+    let MemInst::UnsharedMemInst(mem) = (unsafe { store_memories.get(mem_addr) }) else {
+        todo!("memory.init on shared memory")
+    };
     // SAFETY: The caller ensures that `data_idx` is valid for this specific
     // `IdxVec` (4).
     let data_addr = *unsafe { module_inst.data_addrs.get(data_idx) };
