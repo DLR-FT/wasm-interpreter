@@ -24,7 +24,7 @@ use alloc::string::String;
 use alloc::vec;
 use alloc::vec::Vec;
 use instances::{
-    DataInst, ElemInst, FuncInst, GlobalInst, HostFuncInst, MemInst, ModuleInst, TableInst,
+    DataInst, ElemInst, FuncInst, GlobalInst, HostFuncInst, ModuleInst, TableInst, UnsharedMemInst,
     WasmFuncInst,
 };
 use linear_memory::LinearMemory;
@@ -79,7 +79,7 @@ pub struct Store<'b, T: Config> {
 pub(crate) struct StoreInner {
     pub(crate) functions: AddrVec<FuncAddr, FuncInst>,
     pub(crate) tables: AddrVec<TableAddr, TableInst>,
-    pub(crate) memories: AddrVec<MemAddr, MemInst>,
+    pub(crate) memories: AddrVec<MemAddr, UnsharedMemInst>,
     pub(crate) globals: AddrVec<GlobalAddr, GlobalInst>,
     pub(crate) elements: AddrVec<ElemAddr, ElemInst>,
     pub(crate) data: AddrVec<DataAddr, DataInst>,
@@ -1227,7 +1227,7 @@ impl<'b, T: Config> Store<'b, T> {
 
     /// <https://webassembly.github.io/spec/core/exec/modules.html#memories>
     fn alloc_mem(&mut self, mem_type: MemType) -> MemAddr {
-        let mem_inst = MemInst {
+        let mem_inst = UnsharedMemInst {
             ty: mem_type,
             mem: LinearMemory::new_with_initial_pages(
                 mem_type.limits.min.try_into().unwrap_validated(),
