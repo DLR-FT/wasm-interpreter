@@ -31,7 +31,7 @@ use crate::{
         utils::ToUsizeExt,
     },
     execution::store::Hostcode,
-    instances::{DataInst, ElemInst, FuncInst, MemInst, ModuleInst, TableInst},
+    instances::{DataInst, ElemInst, FuncInst, ModuleInst, TableInst, UnsharedMemInst},
     resumable::WasmResumable,
     unreachable_validated,
     value::{self, Ref, F32, F64},
@@ -6234,7 +6234,7 @@ pub(super) unsafe fn elem_drop(
 #[allow(clippy::too_many_arguments)]
 pub(super) unsafe fn memory_init(
     store_modules: &AddrVec<ModuleAddr, ModuleInst>,
-    store_memories: &mut AddrVec<MemAddr, MemInst>,
+    store_memories: &mut AddrVec<MemAddr, UnsharedMemInst>,
     store_data: &AddrVec<DataAddr, DataInst>,
     current_module: ModuleAddr,
     data_idx: DataIdx,

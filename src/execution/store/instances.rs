@@ -108,11 +108,12 @@ impl TableInst {
     }
 }
 
-pub struct MemInst {
+pub struct UnsharedMemInst {
     pub ty: MemType,
     pub mem: LinearMemory,
 }
-impl core::fmt::Debug for MemInst {
+
+impl core::fmt::Debug for UnsharedMemInst {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_struct("MemInst")
             .field("ty", &self.ty)
@@ -120,7 +121,7 @@ impl core::fmt::Debug for MemInst {
     }
 }
 
-impl MemInst {
+impl UnsharedMemInst {
     /// <https://webassembly.github.io/spec/core/exec/modules.html#growing-memories>
     pub fn grow(&mut self, n: u32) -> Result<(), RuntimeError> {
         // TODO refactor error, the spec Table.grow raises Memory.{SizeOverflow, SizeLimit, OutOfMemory}
