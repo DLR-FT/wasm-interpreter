@@ -47,12 +47,7 @@ pub(crate) mod linear_memory;
 /// All addresses contained in a store must be valid for their associated
 /// address vectors in the same store.
 pub struct Store<'b, T: Config> {
-    pub(crate) functions: AddrVec<FuncAddr, FuncInst>,
-    pub(crate) tables: AddrVec<TableAddr, TableInst>,
-    pub(crate) memories: AddrVec<MemAddr, MemInst>,
-    pub(crate) globals: AddrVec<GlobalAddr, GlobalInst>,
-    pub(crate) elements: AddrVec<ElemAddr, ElemInst>,
-    pub(crate) data: AddrVec<DataAddr, DataInst>,
+    pub(crate) inner: StoreInner,
 
     // fields outside of the spec but are convenient are below
     /// An address space of modules instantiated within the context of this [`Store`].
@@ -66,6 +61,15 @@ pub struct Store<'b, T: Config> {
     pub user_data: T,
 }
 
+pub(crate) struct StoreInner {
+    pub(crate) functions: AddrVec<FuncAddr, FuncInst>,
+    pub(crate) tables: AddrVec<TableAddr, TableInst>,
+    pub(crate) memories: AddrVec<MemAddr, MemInst>,
+    pub(crate) globals: AddrVec<GlobalAddr, GlobalInst>,
+    pub(crate) elements: AddrVec<ElemAddr, ElemInst>,
+    pub(crate) data: AddrVec<DataAddr, DataInst>,
+}
+
 impl<'b, T: Config> Store<'b, T> {
     /// Creates a new empty store with some user data
     ///
@@ -74,12 +78,14 @@ impl<'b, T: Config> Store<'b, T> {
         // 1. Return the empty store.
         // For us the store is empty except for the user data, which we do not have control over.
         Self {
-            functions: AddrVec::default(),
-            tables: AddrVec::default(),
-            memories: AddrVec::default(),
-            globals: AddrVec::default(),
-            elements: AddrVec::default(),
-            data: AddrVec::default(),
+            inner: StoreInner {
+                functions: AddrVec::default(),
+                tables: AddrVec::default(),
+                memories: AddrVec::default(),
+                globals: AddrVec::default(),
+                elements: AddrVec::default(),
+                data: AddrVec::default(),
+            },
             modules: AddrVec::default(),
             user_data,
         }
@@ -459,8 +465,8 @@ impl<'b, T: Config> Store<'b, T> {
                     unsafe {
                         table_init(
                             &self.modules,
-                            &mut self.tables,
-                            &self.elements,
+                            &mut self.inner.tables,
+                            &self.inner.elements,
                             module_addr,
                             element_idx,
                             *table_idx_i,
@@ -479,7 +485,12 @@ impl<'b, T: Config> Store<'b, T> {
                     // 3. The element address is valid because it comes from a
                     //    module instance that is part of the current store itself.
                     unsafe {
-                        elem_drop(&self.modules, &mut self.elements, module_addr, element_idx);
+                        elem_drop(
+                            &self.modules,
+                            &mut self.inner.elements,
+                            module_addr,
+                            element_idx,
+                        );
                     }
                 }
                 ElemMode::Declarative => {
@@ -503,7 +514,12 @@ impl<'b, T: Config> Store<'b, T> {
                     // 3. The element address is valid because it comes from a
                     //    module instance that is part of the current store itself.
                     unsafe {
-                        elem_drop(&self.modules, &mut self.elements, module_addr, element_idx);
+                        elem_drop(
+                            &self.modules,
+                            &mut self.inner.elements,
+                            module_addr,
+                            element_idx,
+                        );
                     }
                 }
                 ElemMode::Passive => (),
@@ -557,8 +573,8 @@ impl<'b, T: Config> Store<'b, T> {
                     unsafe {
                         memory_init(
                             &self.modules,
-                            &mut self.memories,
-                            &self.data,
+                            &mut self.inner.memories,
+                            &self.inner.data,
                             module_addr,
                             i,
                             *memory_idx,
@@ -577,7 +593,7 @@ impl<'b, T: Config> Store<'b, T> {
                     //    same module.
                     // 3. The data address is valid because it comes from a
                     //    module instance that is part of the current store itself.
-                    unsafe { data_drop(&self.modules, &mut self.data, module_addr, i) };
+                    unsafe { data_drop(&self.modules, &mut self.inner.data, module_addr, i) };
                 }
                 crate::core::reader::types::data::DataMode::Passive => (),
             }
@@ -684,10 +700,12 @@ impl<'b, T: Config> Store<'b, T> {
         // 3. Return the new store paired with `funcaddr`.
         //
         // Note: Returning the new store is a noop for us because we mutate the store instead.
-        self.functions.insert(FuncInst::HostFunc(HostFuncInst {
-            function_type: func_type,
-            hostcode,
-        }))
+        self.inner
+            .functions
+            .insert(FuncInst::HostFunc(HostFuncInst {
+                function_type: func_type,
+                hostcode,
+            }))
     }
 
     /// Gets the type of a function by its addr.
@@ -702,7 +720,7 @@ impl<'b, T: Config> Store<'b, T> {
         // 1. Return `S.funcs[a].type`.
         // SAFETY: The caller ensures this function address to be valid for the
         // current store.
-        let function = unsafe { self.functions.get(func_addr) };
+        let function = unsafe { self.inner.functions.get(func_addr) };
         function.ty().clone()
 
         // 2. Post-condition: the returned function type is valid.
@@ -775,7 +793,7 @@ impl<'b, T: Config> Store<'b, T> {
         // 1. Return `S.tables[a].type`.
         // SAFETY: The caller ensures that the given table address is valid in
         // the current store.
-        let table = unsafe { self.tables.get(table_addr) };
+        let table = unsafe { self.inner.tables.get(table_addr) };
         table.ty
 
         // 2. Post-condition: the returned table type is valid.
@@ -796,7 +814,7 @@ impl<'b, T: Config> Store<'b, T> {
         // 1. Let `ti` be the table instance `store.tables[tableaddr]`
         // SAFETY: The caller ensures that the given table address is valid in
         // the current store.
-        let ti = unsafe { self.tables.get(table_addr) };
+        let ti = unsafe { self.inner.tables.get(table_addr) };
 
         // 2. If `i` is larger than or equal to the length of `ti.elem`, then return `error`.
         // 3. Else, return the reference value `ti.elem[i]`.
@@ -828,7 +846,7 @@ impl<'b, T: Config> Store<'b, T> {
         // 1. Let `ti` be the table instance `store.tables[tableaddr]`.
         // SAFETY: The caller ensures that the given table address is valid in
         // the current store.
-        let ti = unsafe { self.tables.get_mut(table_addr) };
+        let ti = unsafe { self.inner.tables.get_mut(table_addr) };
 
         // Check pre-condition: ref has correct type
         if ti.ty.et != r#ref.ty() {
@@ -859,7 +877,7 @@ impl<'b, T: Config> Store<'b, T> {
         // 1. Return the length of `store.tables[tableaddr].elem`.
         // SAFETY: The caller ensures that the table address is valid in the
         // current store.
-        let table = unsafe { self.tables.get(table_addr) };
+        let table = unsafe { self.inner.tables.get(table_addr) };
         let len = table.elem.len();
 
         // In addition we have to convert the length back to a `u32`
@@ -891,7 +909,7 @@ impl<'b, T: Config> Store<'b, T> {
         // Note: Returning the new store is a noop for us because we mutate the store instead.
         // SAFETY: The caller ensures that the given table address is valid in
         // the current store.
-        let table = unsafe { self.tables.get_mut(table_addr) };
+        let table = unsafe { self.inner.tables.get_mut(table_addr) };
         table.grow(n, r#ref)
     }
 
@@ -920,7 +938,7 @@ impl<'b, T: Config> Store<'b, T> {
         // 1. Return `S.mems[a].type`.
         // SAFETY: The caller ensures that the given memory address is valid in
         // the current store.
-        let memory = unsafe { self.memories.get(mem_addr) };
+        let memory = unsafe { self.inner.memories.get(mem_addr) };
         memory.ty
 
         // 2. Post-condition: the returned memory type is valid.
@@ -941,7 +959,7 @@ impl<'b, T: Config> Store<'b, T> {
         // 1. Let `mi` be the memory instance `store.mems[memaddr]`.
         // SAFETY: The caller ensures that the given memory address is valid in
         // the current store.
-        let mi = unsafe { self.memories.get(mem_addr) };
+        let mi = unsafe { self.inner.memories.get(mem_addr) };
 
         // 2. If `i` is larger than or equal to the length of `mi.data`, then return `error`.
         // 3. Else, return the byte `mi.data[i]`.
@@ -968,7 +986,7 @@ impl<'b, T: Config> Store<'b, T> {
         // 1. Let `mi` be the memory instance `store.mems[memaddr]`.
         // SAFETY: The caller ensures that the given memory address is valid in
         // the current store.
-        let mi = unsafe { self.memories.get(mem_addr) };
+        let mi = unsafe { self.inner.memories.get(mem_addr) };
 
         mi.mem.store(i, byte)
     }
@@ -985,7 +1003,7 @@ impl<'b, T: Config> Store<'b, T> {
         // 1. Return the length of `store.mems[memaddr].data` divided by the page size.
         // SAFETY: The caller ensures that the given memory address is valid in
         // the current store.
-        let memory = unsafe { self.memories.get(mem_addr) };
+        let memory = unsafe { self.inner.memories.get(mem_addr) };
         let length = memory.size();
 
         // In addition we have to convert the length back to a `u32`
@@ -1009,7 +1027,7 @@ impl<'b, T: Config> Store<'b, T> {
         // Note: Returning the new store is a noop for us because we mutate the store instead.
         // SAFETY: The caller ensures that the given memory address is valid in
         // the current store.
-        let memory = unsafe { self.memories.get_mut(mem_addr) };
+        let memory = unsafe { self.inner.memories.get_mut(mem_addr) };
         memory.grow(n)
     }
 
@@ -1057,7 +1075,7 @@ impl<'b, T: Config> Store<'b, T> {
         // 1. Return `S.globals[a].type`.
         // SAFETY: The caller ensures that the given global address is valid in
         // the current store.
-        let global = unsafe { self.globals.get(global_addr) };
+        let global = unsafe { self.inner.globals.get(global_addr) };
         global.ty
         // 2. Post-condition: the returned global type is valid
     }
@@ -1074,7 +1092,7 @@ impl<'b, T: Config> Store<'b, T> {
         // 1. Let `gi` be the global instance `store.globals[globaladdr].
         // SAFETY: The caller ensures that the given global address is valid in
         // the current store.
-        let gi = unsafe { self.globals.get(global_addr) };
+        let gi = unsafe { self.inner.globals.get(global_addr) };
 
         // 2. Return the value `gi.value`.
         gi.value
@@ -1101,7 +1119,7 @@ impl<'b, T: Config> Store<'b, T> {
     ) -> Result<(), RuntimeError> {
         // 1. Let `gi` be the global instance `store.globals[globaladdr]`.
         // SAFETY: The caller ensures that the given global address is valid in the current module.
-        let gi = unsafe { self.globals.get_mut(global_addr) };
+        let gi = unsafe { self.inner.globals.get_mut(global_addr) };
 
         // 2. Let `mut t` be the structure of the global type `gi.type`.
         let r#mut = gi.ty.is_mut;
@@ -1173,7 +1191,7 @@ impl<'b, T: Config> Store<'b, T> {
             stp,
             module_addr,
         });
-        self.functions.insert(func_inst)
+        self.inner.functions.insert(func_inst)
     }
 
     /// <https://webassembly.github.io/spec/core/exec/modules.html#tables>
@@ -1189,7 +1207,7 @@ impl<'b, T: Config> Store<'b, T> {
             elem: vec![reff; table_type.lim.min.into_usize()],
         };
 
-        self.tables.insert(table_inst)
+        self.inner.tables.insert(table_inst)
     }
 
     /// <https://webassembly.github.io/spec/core/exec/modules.html#memories>
@@ -1201,7 +1219,7 @@ impl<'b, T: Config> Store<'b, T> {
             ),
         };
 
-        self.memories.insert(mem_inst)
+        self.inner.memories.insert(mem_inst)
     }
 
     /// <https://webassembly.github.io/spec/core/exec/modules.html#globals>
@@ -1217,7 +1235,7 @@ impl<'b, T: Config> Store<'b, T> {
             value: val,
         };
 
-        self.globals.insert(global_inst)
+        self.inner.globals.insert(global_inst)
     }
 
     /// <https://webassembly.github.io/spec/core/exec/modules.html#element-segments>
@@ -1233,7 +1251,7 @@ impl<'b, T: Config> Store<'b, T> {
             references: refs,
         };
 
-        self.elements.insert(elem_inst)
+        self.inner.elements.insert(elem_inst)
     }
 
     /// <https://webassembly.github.io/spec/core/exec/modules.html#data-segments>
@@ -1242,7 +1260,7 @@ impl<'b, T: Config> Store<'b, T> {
             data: Vec::from(bytes),
         };
 
-        self.data.insert(data_inst)
+        self.inner.data.insert(data_inst)
     }
 
     /// Creates a new resumable, which when resumed for the first time invokes the function `function_ref` is associated
@@ -1262,7 +1280,7 @@ impl<'b, T: Config> Store<'b, T> {
     ) -> Result<Resumable, RuntimeError> {
         // SAFETY: The caller ensures that this function address is valid in the
         // current store.
-        let func_inst = unsafe { self.functions.get(func_addr) };
+        let func_inst = unsafe { self.inner.functions.get(func_addr) };
 
         let func_ty = func_inst.ty();
 
@@ -1396,7 +1414,7 @@ impl<'b, T: Config> Store<'b, T> {
 
         // SAFETY: The caller ensures that the `HostResumable`, and thus also
         // the function address in it, is valid in the current store.
-        let function = unsafe { self.functions.get(host_resumable.host_func_addr) };
+        let function = unsafe { self.inner.functions.get(host_resumable.host_func_addr) };
 
         let FuncInst::HostFunc(host_func_inst) = function else {
             unreachable!("expected function to be a host function instance")
@@ -1474,7 +1492,7 @@ impl<'b, T: Config> Store<'b, T> {
     ) -> R {
         // SAFETY: The caller ensures that the given memory address is valid in
         // the current store.
-        let memory = unsafe { self.memories.get(memory) };
+        let memory = unsafe { self.inner.memories.get(memory) };
         memory.mem.access_mut_slice(accessor)
     }
 
@@ -1522,25 +1540,25 @@ impl ExternVal {
             ExternVal::Func(func_addr) => {
                 // SAFETY: The caller ensures that self including the function
                 // address in self is valid in the given store.
-                let function = unsafe { store.functions.get(*func_addr) };
+                let function = unsafe { store.inner.functions.get(*func_addr) };
                 ExternType::Func(function.ty().clone())
             }
             ExternVal::Table(table_addr) => {
                 // SAFETY: The caller ensures that self including the table
                 // address in self is valid in the given store.
-                let table = unsafe { store.tables.get(*table_addr) };
+                let table = unsafe { store.inner.tables.get(*table_addr) };
                 ExternType::Table(table.ty)
             }
             ExternVal::Mem(mem_addr) => {
                 // SAFETY: The caller ensures that self including the memory
                 // address in self is valid in the given store.
-                let memory = unsafe { store.memories.get(*mem_addr) };
+                let memory = unsafe { store.inner.memories.get(*mem_addr) };
                 ExternType::Mem(memory.ty)
             }
             ExternVal::Global(global_addr) => {
                 // SAFETY: The caller ensures that self including the global
                 // address in self is valid in the given store.
-                let global = unsafe { store.globals.get(*global_addr) };
+                let global = unsafe { store.inner.globals.get(*global_addr) };
                 ExternType::Global(global.ty)
             }
         }
