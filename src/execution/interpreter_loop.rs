@@ -24,7 +24,7 @@ use crate::{
             TableIdx, TypeIdx,
         },
         reader::{
-            types::{memarg::MemArg, BlockType},
+            types::{memarg::MemArg, opcode, BlockType},
             WasmReader,
         },
         sidetable::Sidetable,
@@ -41,7 +41,7 @@ use crate::{
 
 use crate::execution::config::Config;
 
-use super::{little_endian::LittleEndianBytes, store::Store};
+use super::{little_endian::LittleEndianBytes, store::Store, store::StoreInner};
 
 /// A non-error outcome of execution of the interpreter loop
 pub enum InterpreterLoopOutcome {
@@ -95,7 +95,8 @@ pub(super) fn run<T: Config>(
     // SAFETY: This module address was just read from the current store. Every
     // store guarantees all addresses contained in it to be valid within itself.
     let module = unsafe { store.modules.get(current_module) };
-    let wasm = &mut WasmReader::new(module.wasm_bytecode);
+    let wasm_bytecode = module.wasm_bytecode;
+    let wasm = &mut WasmReader::new(wasm_bytecode);
 
     let mut current_sidetable: &Sidetable = &module.sidetable;
 
@@ -111,9 +112,7 @@ pub(super) fn run<T: Config>(
     use crate::core::reader::types::opcode::*;
     loop {
         // call the instruction hook
-        store
-            .user_data
-            .instruction_hook(module.wasm_bytecode, wasm.pc);
+        store.user_data.instruction_hook(wasm_bytecode, wasm.pc);
 
         // convenience macro for fuel metering. records the interpreter state within resumable and returns with
         // Ok(required_fuel) if the fuel to execute the instruction is not enough
@@ -145,56 +144,46 @@ pub(super) fn run<T: Config>(
 
         match first_instr_byte {
             NOP => {
-                decrement_fuel!(T::get_flat_cost(NOP));
-                trace!("Instruction: NOP");
+                let args = Args {
+                    store_inner,
+                    modules: &store.modules,
+                    prev_pc,
+                    stack,
+                    wasm,
+                    stp: &mut stp,
+                    current_func_addr: &mut current_func_addr,
+                    current_module: &mut current_module,
+                    maybe_fuel: &mut resumable.maybe_fuel,
+                    current_function_end_marker: &mut current_function_end_marker,
+                    current_sidetable: &mut current_sidetable,
+                };
+                if let Some(interpreter_loop_outcome) = nop::<T>(args)? {
+                    resumable.current_func_addr = current_func_addr;
+                    resumable.stp = stp;
+                    resumable.pc = wasm.pc;
+                    return Ok(interpreter_loop_outcome);
+                }
             }
             END => {
-                // There might be multiple ENDs in a single function. We want to
-                // exit only when the outermost block (aka function block) ends.
-                if wasm.pc != current_function_end_marker {
-                    continue;
+                let args = Args {
+                    store_inner,
+                    modules: &store.modules,
+                    prev_pc,
+                    stack,
+                    wasm,
+                    stp: &mut stp,
+                    current_func_addr: &mut current_func_addr,
+                    current_module: &mut current_module,
+                    maybe_fuel: &mut resumable.maybe_fuel,
+                    current_function_end_marker: &mut current_function_end_marker,
+                    current_sidetable: &mut current_sidetable,
+                };
+                if let Some(interpreter_loop_outcome) = unsafe { end::<T>(args) }? {
+                    resumable.current_func_addr = current_func_addr;
+                    resumable.stp = stp;
+                    resumable.pc = wasm.pc;
+                    return Ok(interpreter_loop_outcome);
                 }
-
-                let Some((maybe_return_func_addr, maybe_return_address, maybe_return_stp)) =
-                    stack.pop_call_frame()
-                else {
-                    // We finished this entire invocation if this was the base call frame.
-                    break;
-                };
-                // If there are one or more call frames, we need to continue
-                // from where the callee was called from.
-
-                trace!("end of function reached, returning to previous call frame");
-                current_func_addr = maybe_return_func_addr;
-
-                // SAFETY: The current function address must come from the given
-                // resumable or the current store, because these are the only
-                // parameters to this function. The resumable, including its
-                // function address, is guaranteed to be valid in the current
-                // store by the caller, and the store can only contain addresses
-                // that are valid within itself.
-                let current_function = unsafe { store_inner.functions.get(current_func_addr) };
-                let FuncInst::WasmFunc(current_wasm_func_inst) = current_function else {
-                    unreachable!("function addresses on the stack always correspond to native wasm functions")
-                };
-                current_module = current_wasm_func_inst.module_addr;
-
-                // SAFETY: The current module address must come from the current
-                // store, because it is the only parameter to this function that
-                // can contain module addresses. All stores guarantee all
-                // addresses in them to be valid within themselves.
-                let module = unsafe { store.modules.get(current_module) };
-
-                wasm.full_wasm_binary = module.wasm_bytecode;
-                wasm.pc = maybe_return_address;
-                stp = maybe_return_stp;
-
-                current_sidetable = &module.sidetable;
-
-                current_function_end_marker = current_wasm_func_inst.code_expr.from()
-                    + current_wasm_func_inst.code_expr.len();
-
-                trace!("Instruction: END");
             }
             IF => {
                 decrement_fuel!(T::get_flat_cost(IF));
@@ -6328,3 +6317,123 @@ fn from_lanes<const M: usize, const N: usize, T: LittleEndianBytes<M>>(lanes: [T
     let mut bytes = lanes.into_iter().flat_map(T::to_le_bytes);
     array::from_fn(|_| bytes.next().unwrap())
 }
+
+struct Args<'a, 'sidetable, 'wasm, 'other> {
+    store_inner: &'other mut StoreInner,
+    modules: &'sidetable AddrVec<ModuleAddr, ModuleInst<'wasm>>,
+    prev_pc: usize,
+    stack: &'a mut Stack,
+    wasm: &'a mut WasmReader<'wasm>,
+    stp: &'a mut usize,
+    current_func_addr: &'a mut FuncAddr,
+    current_module: &'a mut ModuleAddr,
+    maybe_fuel: &'a mut Option<u64>,
+    current_function_end_marker: &'a mut usize,
+    current_sidetable: &'a mut &'sidetable Sidetable,
+}
+
+macro_rules! define_instruction {
+    ($name:ident, $opcode:expr, $contents:expr) => {
+        #[inline(never)]
+        fn $name<'a, T: Config>(
+            args: Args,
+        ) -> Result<Option<InterpreterLoopOutcome>, RuntimeError> {
+            if let Some(outcome) = decrement_fuel(
+                T::get_flat_cost($opcode),
+                args.maybe_fuel,
+                args.wasm,
+                args.prev_pc,
+            ) {
+                return Ok(Some(outcome));
+            }
+
+            $contents(args)
+        }
+    };
+}
+
+#[inline(always)]
+fn decrement_fuel(
+    cost: u64,
+    maybe_fuel: &mut Option<u64>,
+    wasm: &mut WasmReader,
+    prev_pc: usize,
+) -> Option<InterpreterLoopOutcome> {
+    if let Some(fuel) = maybe_fuel {
+        if *fuel >= cost {
+            *fuel -= cost;
+        } else {
+            wasm.pc = prev_pc; // the instruction was fetched already, we roll this back
+            return Some(InterpreterLoopOutcome::OutOfFuel {
+                required_fuel: NonZeroU64::new(cost - *fuel)
+                    .expect("the last check guarantees that the current fuel is smaller than cost"),
+            });
+        }
+    }
+
+    None
+}
+
+define_instruction!(nop, opcode::NOP, |_args| Ok(None));
+
+define_instruction!(end, opcode::END, |Args {
+                                           store_inner,
+                                           modules,
+                                           stack,
+                                           wasm,
+                                           stp,
+                                           current_func_addr,
+                                           current_module,
+                                           current_function_end_marker,
+                                           current_sidetable,
+                                           ..
+                                       }| {
+    // There might be multiple ENDs in a single function. We want to
+    // exit only when the outermost block (aka function block) ends.
+    if wasm.pc != *current_function_end_marker {
+        return Ok(None);
+    }
+
+    let Some((maybe_return_func_addr, maybe_return_address, maybe_return_stp)) =
+        stack.pop_call_frame()
+    else {
+        // We finished this entire invocation if this was the base call frame.
+        return Ok(Some(InterpreterLoopOutcome::ExecutionReturned));
+    };
+    // If there are one or more call frames, we need to continue
+    // from where the callee was called from.
+
+    trace!("end of function reached, returning to previous call frame");
+    *current_func_addr = maybe_return_func_addr;
+
+    // SAFETY: The current function address must come from the given
+    // resumable or the current store, because these are the only
+    // parameters to this function. The resumable, including its
+    // function address, is guaranteed to be valid in the current
+    // store by the caller, and the store can only contain addresses
+    // that are valid within itself.
+    let current_function = unsafe { store_inner.functions.get(*current_func_addr) };
+    let FuncInst::WasmFunc(current_wasm_func_inst) = current_function else {
+        unreachable!("function addresses on the stack always correspond to native wasm functions")
+    };
+    *current_module = current_wasm_func_inst.module_addr;
+
+    // SAFETY: The current module address must come from the current
+    // store, because it is the only parameter to this function that
+    // can contain module addresses. All stores guarantee all
+    // addresses in them to be valid within themselves.
+    let module = unsafe { modules.get(*current_module) };
+
+    wasm.full_wasm_binary = module.wasm_bytecode;
+    wasm.pc = maybe_return_address;
+    *stp = maybe_return_stp;
+
+    *current_sidetable = &module.sidetable;
+
+    *current_function_end_marker =
+        current_wasm_func_inst.code_expr.from() + current_wasm_func_inst.code_expr.len();
+
+    trace!("Instruction: END");
+
+    Ok(None)
+});
