@@ -83,7 +83,7 @@ pub(super) fn run<T: Config>(
     let mut stp = resumable.stp;
     // SAFETY: The caller ensures that the resumable and thus also its function
     // address is valid in the current store.
-    let func_inst = unsafe { store.functions.get(current_func_addr) };
+    let func_inst = unsafe { store.inner.functions.get(current_func_addr) };
     let FuncInst::WasmFunc(wasm_func_inst) = &func_inst else {
         unreachable!(
             "the interpreter loop shall only be executed with native wasm functions as root call"
@@ -99,9 +99,12 @@ pub(super) fn run<T: Config>(
 
     let mut current_sidetable: &Sidetable = &module.sidetable;
 
-    // local variable for holding where the function code ends (last END instr address + 1) to avoid lookup at every END instr
     let mut current_function_end_marker =
         wasm_func_inst.code_expr.from() + wasm_func_inst.code_expr.len();
+
+    let store_inner = &mut store.inner;
+
+    // local variable for holding where the function code ends (last END instr address + 1) to avoid lookup at every END instr
 
     wasm.pc = pc;
 
@@ -170,7 +173,7 @@ pub(super) fn run<T: Config>(
                 // function address, is guaranteed to be valid in the current
                 // store by the caller, and the store can only contain addresses
                 // that are valid within itself.
-                let current_function = unsafe { store.functions.get(current_func_addr) };
+                let current_function = unsafe { store_inner.functions.get(current_func_addr) };
                 let FuncInst::WasmFunc(current_wasm_func_inst) = current_function else {
                     unreachable!("function addresses on the stack always correspond to native wasm functions")
                 };
@@ -291,7 +294,7 @@ pub(super) fn run<T: Config>(
                 // store by the caller, and the store can only contain addresses
                 // that are valid within itself.
                 let FuncInst::WasmFunc(current_wasm_func_inst) =
-                    (unsafe { store.functions.get(current_func_addr) })
+                    (unsafe { store_inner.functions.get(current_func_addr) })
                 else {
                     unreachable!()
                 };
@@ -309,7 +312,7 @@ pub(super) fn run<T: Config>(
 
                 // SAFETY: This function address just came from the current
                 // store. Therefore, it must be valid in the current store.
-                let func_to_call_inst = unsafe { store.functions.get(*func_to_call_addr) };
+                let func_to_call_inst = unsafe { store_inner.functions.get(*func_to_call_addr) };
 
                 trace!("Instruction: call [{func_to_call_addr:?}]");
 
@@ -382,7 +385,7 @@ pub(super) fn run<T: Config>(
                 let table_addr = unsafe { module.table_addrs.get(table_idx) };
                 // SAFETY: This table address was just read from the current
                 // store. Therefore, it is valid in the current store.
-                let tab = unsafe { store.tables.get(*table_addr) };
+                let tab = unsafe { store_inner.tables.get(*table_addr) };
                 // SAFETY: Validation guarantees the type index to be valid in
                 // the current module.
                 let func_ty = unsafe { module.types.get(given_type_idx) };
@@ -411,7 +414,7 @@ pub(super) fn run<T: Config>(
                 // SAFETY: This function address just came from a table of the
                 // current store. Therefore, it must be valid in the current
                 // store.
-                let func_to_call_inst = unsafe { store.functions.get(func_to_call_addr) };
+                let func_to_call_inst = unsafe { store_inner.functions.get(func_to_call_addr) };
 
                 if func_ty != func_to_call_inst.ty() {
                     return Err(TrapError::SignatureMismatch.into());
@@ -538,7 +541,7 @@ pub(super) fn run<T: Config>(
                 let global_addr = *unsafe { module.global_addrs.get(global_idx) };
                 // SAFETY: This global address was just read from the current
                 // store. Therefore, it is valid in the current store.
-                let global = unsafe { store.globals.get(global_addr) };
+                let global = unsafe { store_inner.globals.get(global_addr) };
 
                 stack.push_value(global.value)?;
 
@@ -563,7 +566,7 @@ pub(super) fn run<T: Config>(
                 let global_addr = *unsafe { module.global_addrs.get(global_idx) };
                 // SAFETY: This global address was just read from the current
                 // store. Therefore, it is valid in the current store.
-                let global = unsafe { store.globals.get_mut(global_addr) };
+                let global = unsafe { store_inner.globals.get_mut(global_addr) };
 
                 global.value = stack.pop_value();
                 trace!("Instruction: GLOBAL_SET");
@@ -584,7 +587,7 @@ pub(super) fn run<T: Config>(
                 let table_addr = *unsafe { module.table_addrs.get(table_idx) };
                 // SAFETY: This table address was just read from the current
                 // store. Therefore, it is valid in the current store.
-                let tab = unsafe { store.tables.get(table_addr) };
+                let tab = unsafe { store_inner.tables.get(table_addr) };
 
                 let i: i32 = stack.pop_value().try_into().unwrap_validated();
 
@@ -617,7 +620,7 @@ pub(super) fn run<T: Config>(
                 let table_addr = *unsafe { module.table_addrs.get(table_idx) };
                 // SAFETY: This table address was just read from the current
                 // store. Therefore, it is valid in the current store.
-                let tab = unsafe { store.tables.get_mut(table_addr) };
+                let tab = unsafe { store_inner.tables.get_mut(table_addr) };
 
                 let val: Ref = stack.pop_value().try_into().unwrap_validated();
                 let i: i32 = stack.pop_value().try_into().unwrap_validated();
@@ -651,7 +654,7 @@ pub(super) fn run<T: Config>(
                 let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                 // SAFETY: This memory address was just read from the current
                 // store. Therefore, it is valid in the current store.
-                let mem_inst = unsafe { store.memories.get(mem_addr) };
+                let mem_inst = unsafe { store_inner.memories.get(mem_addr) };
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data = mem_inst.mem.load(idx)?;
@@ -674,7 +677,7 @@ pub(super) fn run<T: Config>(
                 let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                 // SAFETY: This memory address was just read from the current
                 // store. Therefore, it is valid in the current store.
-                let mem = unsafe { store.memories.get(mem_addr) };
+                let mem = unsafe { store_inner.memories.get(mem_addr) };
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data = mem.mem.load(idx)?;
@@ -697,7 +700,7 @@ pub(super) fn run<T: Config>(
                 let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                 // SAFETY: This memory address was just read from the current
                 // store. Therefore, it is valid in the current store.
-                let mem = unsafe { store.memories.get(mem_addr) };
+                let mem = unsafe { store_inner.memories.get(mem_addr) };
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data = mem.mem.load(idx)?;
@@ -720,7 +723,7 @@ pub(super) fn run<T: Config>(
                 let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                 // SAFETY: This memory address was just read from the current
                 // store. Therefore, it is valid in the current store.
-                let mem = unsafe { store.memories.get(mem_addr) };
+                let mem = unsafe { store_inner.memories.get(mem_addr) };
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data = mem.mem.load(idx)?;
@@ -743,7 +746,7 @@ pub(super) fn run<T: Config>(
                 let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                 // SAFETY: This memory address was just read from the current
                 // store. Therefore, it is valid in the current store.
-                let mem = unsafe { store.memories.get(mem_addr) };
+                let mem = unsafe { store_inner.memories.get(mem_addr) };
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data: i8 = mem.mem.load(idx)?;
@@ -766,7 +769,7 @@ pub(super) fn run<T: Config>(
                 let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                 // SAFETY: This memory address was just read from the current
                 // store. Therefore, it is valid in the current store.
-                let mem = unsafe { store.memories.get(mem_addr) };
+                let mem = unsafe { store_inner.memories.get(mem_addr) };
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data: u8 = mem.mem.load(idx)?;
@@ -789,7 +792,7 @@ pub(super) fn run<T: Config>(
                 let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                 // SAFETY: This memory address was just read from the current
                 // store. Therefore, it is valid in the current store.
-                let mem = unsafe { store.memories.get(mem_addr) };
+                let mem = unsafe { store_inner.memories.get(mem_addr) };
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data: i16 = mem.mem.load(idx)?;
@@ -812,7 +815,7 @@ pub(super) fn run<T: Config>(
                 let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                 // SAFETY: This memory address was just read from the current
                 // store. Therefore, it is valid in the current store.
-                let mem = unsafe { store.memories.get(mem_addr) };
+                let mem = unsafe { store_inner.memories.get(mem_addr) };
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data: u16 = mem.mem.load(idx)?;
@@ -835,7 +838,7 @@ pub(super) fn run<T: Config>(
                 let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                 // SAFETY: This memory address was just read from the current
                 // store. Therefore, it is valid in the current store.
-                let mem = unsafe { store.memories.get(mem_addr) };
+                let mem = unsafe { store_inner.memories.get(mem_addr) };
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data: i8 = mem.mem.load(idx)?;
@@ -858,7 +861,7 @@ pub(super) fn run<T: Config>(
                 let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                 // SAFETY: This memory address was just read from the current
                 // store. Therefore, it is valid in the current store.
-                let mem = unsafe { store.memories.get(mem_addr) };
+                let mem = unsafe { store_inner.memories.get(mem_addr) };
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data: u8 = mem.mem.load(idx)?;
@@ -881,7 +884,7 @@ pub(super) fn run<T: Config>(
                 let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                 // SAFETY: This memory address was just read from the current
                 // store. Therefore, it is valid in the current store.
-                let mem = unsafe { store.memories.get(mem_addr) };
+                let mem = unsafe { store_inner.memories.get(mem_addr) };
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data: i16 = mem.mem.load(idx)?;
@@ -904,7 +907,7 @@ pub(super) fn run<T: Config>(
                 let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                 // SAFETY: This memory address was just read from the current
                 // store. Therefore, it is valid in the current store.
-                let mem = unsafe { store.memories.get(mem_addr) };
+                let mem = unsafe { store_inner.memories.get(mem_addr) };
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data: u16 = mem.mem.load(idx)?;
@@ -927,7 +930,7 @@ pub(super) fn run<T: Config>(
                 let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                 // SAFETY: This memory address was just read from the current
                 // store. Therefore, it is valid in the current store.
-                let mem = unsafe { store.memories.get(mem_addr) };
+                let mem = unsafe { store_inner.memories.get(mem_addr) };
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data: i32 = mem.mem.load(idx)?;
@@ -950,7 +953,7 @@ pub(super) fn run<T: Config>(
                 let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                 // SAFETY: This memory address was just read from the current
                 // store. Therefore, it is valid in the current store.
-                let mem = unsafe { store.memories.get(mem_addr) };
+                let mem = unsafe { store_inner.memories.get(mem_addr) };
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 let data: u32 = mem.mem.load(idx)?;
@@ -975,7 +978,7 @@ pub(super) fn run<T: Config>(
                 let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                 // SAFETY: This memory address was just read from the current
                 // store. Therefore, it is valid in the current store.
-                let mem = unsafe { store.memories.get(mem_addr) };
+                let mem = unsafe { store_inner.memories.get(mem_addr) };
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 mem.mem.store(idx, data_to_store)?;
@@ -999,7 +1002,7 @@ pub(super) fn run<T: Config>(
                 let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                 // SAFETY: This memory address was just read from the current
                 // store. Therefore, it is valid in the current store.
-                let mem = unsafe { store.memories.get(mem_addr) };
+                let mem = unsafe { store_inner.memories.get(mem_addr) };
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 mem.mem.store(idx, data_to_store)?;
@@ -1023,7 +1026,7 @@ pub(super) fn run<T: Config>(
                 let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                 // SAFETY: This memory address was just read from the current
                 // store. Therefore, it is valid in the current store.
-                let mem = unsafe { store.memories.get(mem_addr) };
+                let mem = unsafe { store_inner.memories.get(mem_addr) };
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 mem.mem.store(idx, data_to_store)?;
@@ -1047,7 +1050,7 @@ pub(super) fn run<T: Config>(
                 let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                 // SAFETY: This memory address was just read from the current
                 // store. Therefore, it is valid in the current store.
-                let mem = unsafe { store.memories.get(mem_addr) };
+                let mem = unsafe { store_inner.memories.get(mem_addr) };
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 mem.mem.store(idx, data_to_store)?;
@@ -1073,7 +1076,7 @@ pub(super) fn run<T: Config>(
                 let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                 // SAFETY: This memory address was just read from the current
                 // store. Therefore, it is valid in the current store.
-                let mem = unsafe { store.memories.get(mem_addr) };
+                let mem = unsafe { store_inner.memories.get(mem_addr) };
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 mem.mem.store(idx, wrapped_data)?;
@@ -1099,7 +1102,7 @@ pub(super) fn run<T: Config>(
                 let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                 // SAFETY: This memory address was just read from the current
                 // store. Therefore, it is valid in the current store.
-                let mem = unsafe { store.memories.get(mem_addr) };
+                let mem = unsafe { store_inner.memories.get(mem_addr) };
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 mem.mem.store(idx, wrapped_data)?;
@@ -1125,7 +1128,7 @@ pub(super) fn run<T: Config>(
                 let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                 // SAFETY: This memory address was just read from the current
                 // store. Therefore, it is valid in the current store.
-                let mem = unsafe { store.memories.get(mem_addr) };
+                let mem = unsafe { store_inner.memories.get(mem_addr) };
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 mem.mem.store(idx, wrapped_data)?;
@@ -1151,7 +1154,7 @@ pub(super) fn run<T: Config>(
                 let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                 // SAFETY: This memory address was just read from the current
                 // store. Therefore, it is valid in the current store.
-                let mem = unsafe { store.memories.get(mem_addr) };
+                let mem = unsafe { store_inner.memories.get(mem_addr) };
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 mem.mem.store(idx, wrapped_data)?;
@@ -1177,7 +1180,7 @@ pub(super) fn run<T: Config>(
                 let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                 // SAFETY: This memory address was just read from the current
                 // store. Therefore, it is valid in the current store.
-                let mem = unsafe { store.memories.get(mem_addr) };
+                let mem = unsafe { store_inner.memories.get(mem_addr) };
 
                 let idx = calculate_mem_address(&memarg, relative_address)?;
                 mem.mem.store(idx, wrapped_data)?;
@@ -1199,7 +1202,7 @@ pub(super) fn run<T: Config>(
                 let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                 // SAFETY: This memory address was just read from the current
                 // store. Therefore, it is valid in the current store.
-                let mem = unsafe { store.memories.get(mem_addr) };
+                let mem = unsafe { store_inner.memories.get(mem_addr) };
                 let size = mem.size() as u32;
                 stack.push_value(Value::I32(size))?;
                 trace!("Instruction: memory.size [] -> [{}]", size);
@@ -1218,7 +1221,7 @@ pub(super) fn run<T: Config>(
                 let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
                 // SAFETY: This memory address was just read from the current
                 // store. Therefore, it is valid in the current store.
-                let mem = unsafe { store.memories.get_mut(mem_addr) };
+                let mem = unsafe { store_inner.memories.get_mut(mem_addr) };
 
                 let sz: u32 = mem.size() as u32;
 
@@ -2763,8 +2766,8 @@ pub(super) fn run<T: Config>(
                         unsafe {
                             memory_init(
                                 &store.modules,
-                                &mut store.memories,
-                                &store.data,
+                                &mut store_inner.memories,
+                                &store_inner.data,
                                 current_module,
                                 data_idx,
                                 MemIdx::new(0),
@@ -2792,7 +2795,12 @@ pub(super) fn run<T: Config>(
                         //    current module instance, which is also part of the
                         //    current store.
                         unsafe {
-                            data_drop(&store.modules, &mut store.data, current_module, data_idx)
+                            data_drop(
+                                &store.modules,
+                                &mut store_inner.data,
+                                current_module,
+                                data_idx,
+                            )
                         };
                     }
                     // See https://webassembly.github.io/bulk-memory-operations/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-copy
@@ -2843,11 +2851,11 @@ pub(super) fn run<T: Config>(
                         // SAFETY: This source memory address was just read from
                         // the current store. Therefore, it must also be valid
                         // in the current store.
-                        let src_mem = unsafe { store.memories.get(src_addr) };
+                        let src_mem = unsafe { store_inner.memories.get(src_addr) };
                         // SAFETY: This destination memory address was just read
                         // from the current store. Therefore, it must also be
                         // valid in the current store.
-                        let dest_mem = unsafe { store.memories.get(dst_addr) };
+                        let dest_mem = unsafe { store_inner.memories.get(dst_addr) };
 
                         dest_mem.mem.copy(
                             d.cast_unsigned().into_usize(),
@@ -2879,7 +2887,7 @@ pub(super) fn run<T: Config>(
                         // SAFETY: This memory address was just read from the
                         // current store. Therefore, it is valid in the current
                         // store.
-                        let mem = unsafe { store.memories.get(mem_addr) };
+                        let mem = unsafe { store_inner.memories.get(mem_addr) };
 
                         let n: u32 = stack.pop_value().try_into().unwrap_validated();
                         // decrement fuel, but push n back if it fails
@@ -2961,8 +2969,8 @@ pub(super) fn run<T: Config>(
                         unsafe {
                             table_init(
                                 &store.modules,
-                                &mut store.tables,
-                                &store.elements,
+                                &mut store_inner.tables,
+                                &store_inner.elements,
                                 current_module,
                                 elem_idx,
                                 table_idx,
@@ -2993,7 +3001,7 @@ pub(super) fn run<T: Config>(
                         unsafe {
                             elem_drop(
                                 &store.modules,
-                                &mut store.elements,
+                                &mut store_inner.elements,
                                 current_module,
                                 elem_idx,
                             );
@@ -3025,11 +3033,13 @@ pub(super) fn run<T: Config>(
                         // SAFETY: This table address was just read from the
                         // current store. Therefore, it is valid in the current
                         // store.
-                        let tab_x_elem_len = unsafe { store.tables.get(table_addr_x) }.elem.len();
+                        let tab_x_elem_len =
+                            unsafe { store_inner.tables.get(table_addr_x) }.elem.len();
                         // SAFETY: This table address was just read from the
                         // current store. Therefore, it is valid in the current
                         // store.
-                        let tab_y_elem_len = unsafe { store.tables.get(table_addr_y) }.elem.len();
+                        let tab_y_elem_len =
+                            unsafe { store_inner.tables.get(table_addr_y) }.elem.len();
 
                         let n: u32 = stack.pop_value().try_into().unwrap_validated(); // size
                         let cost = T::get_fc_extension_flat_cost(TABLE_COPY)
@@ -3077,7 +3087,7 @@ pub(super) fn run<T: Config>(
                             // SAFETY: This table address was just read from the
                             // current store. Therefore, it is valid in the
                             // current store.
-                            let table = unsafe { store.tables.get_mut(table_addr_x) };
+                            let table = unsafe { store_inner.tables.get_mut(table_addr_x) };
 
                             table.elem.copy_within(s as usize..src_res, d as usize);
                         } else {
@@ -3088,7 +3098,7 @@ pub(super) fn run<T: Config>(
                             // the current store. Therefore, they are valid in
                             // the current store.
                             let (src_table, dst_table) =
-                                unsafe { store.tables.get_two_mut(src_addr, dst_addr) }
+                                unsafe { store_inner.tables.get_two_mut(src_addr, dst_addr) }
                                     .expect("both addrs to never be equal");
 
                             dst_table.elem[d.into_usize()..dst_res]
@@ -3122,7 +3132,7 @@ pub(super) fn run<T: Config>(
                         // SAFETY: This table address was just read from the
                         // current store. Therefore, it is valid in the current
                         // store.
-                        let tab = unsafe { store.tables.get_mut(table_addr) };
+                        let tab = unsafe { store_inner.tables.get_mut(table_addr) };
 
                         let sz = tab.elem.len() as u32;
 
@@ -3175,7 +3185,7 @@ pub(super) fn run<T: Config>(
                         // SAFETY: This table address was just read from the
                         // current store. Therefore, it is valid in the current
                         // store.
-                        let tab = unsafe { store.tables.get_mut(table_addr) };
+                        let tab = unsafe { store_inner.tables.get_mut(table_addr) };
 
                         let sz = tab.elem.len() as u32;
 
@@ -3201,7 +3211,7 @@ pub(super) fn run<T: Config>(
                         // SAFETY: This table address was just read from the
                         // current store. Therefore, it is valid in the current
                         // store.
-                        let tab = unsafe { store.tables.get_mut(table_addr) };
+                        let tab = unsafe { store_inner.tables.get_mut(table_addr) };
 
                         let len: u32 = stack.pop_value().try_into().unwrap_validated();
                         let cost = T::get_fc_extension_flat_cost(TABLE_FILL)
@@ -3356,7 +3366,7 @@ pub(super) fn run<T: Config>(
                         // SAFETY: This memory address was just read from the
                         // current store. Therefore, it is valid in the current
                         // store.
-                        let memory = unsafe { store.memories.get(mem_addr) };
+                        let memory = unsafe { store_inner.memories.get(mem_addr) };
 
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -3379,7 +3389,7 @@ pub(super) fn run<T: Config>(
                         // SAFETY: This memory address was just read from the
                         // current store. Therefore, it is valid in the current
                         // store.
-                        let memory = unsafe { store.memories.get(mem_addr) };
+                        let memory = unsafe { store_inner.memories.get(mem_addr) };
 
                         let data: [u8; 16] = stack.pop_value().try_into().unwrap_validated();
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
@@ -3404,7 +3414,7 @@ pub(super) fn run<T: Config>(
                         // SAFETY: This memory address was just read from the
                         // current store. Therefore, it is valid in the current
                         // store.
-                        let memory = unsafe { store.memories.get(mem_addr) };
+                        let memory = unsafe { store_inner.memories.get(mem_addr) };
 
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -3435,7 +3445,7 @@ pub(super) fn run<T: Config>(
                         // SAFETY: This memory address was just read from the
                         // current store. Therefore, it is valid in the current
                         // store.
-                        let memory = unsafe { store.memories.get(mem_addr) };
+                        let memory = unsafe { store_inner.memories.get(mem_addr) };
 
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -3466,7 +3476,7 @@ pub(super) fn run<T: Config>(
                         // SAFETY: This memory address was just read from the
                         // current store. Therefore, it is valid in the current
                         // store.
-                        let memory = unsafe { store.memories.get(mem_addr) };
+                        let memory = unsafe { store_inner.memories.get(mem_addr) };
 
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -3497,7 +3507,7 @@ pub(super) fn run<T: Config>(
                         // SAFETY: This memory address was just read from the
                         // current store. Therefore, it is valid in the current
                         // store.
-                        let memory = unsafe { store.memories.get(mem_addr) };
+                        let memory = unsafe { store_inner.memories.get(mem_addr) };
 
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -3528,7 +3538,7 @@ pub(super) fn run<T: Config>(
                         // SAFETY: This memory address was just read from the
                         // current store. Therefore, it is valid in the current
                         // store.
-                        let memory = unsafe { store.memories.get(mem_addr) };
+                        let memory = unsafe { store_inner.memories.get(mem_addr) };
 
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -3559,7 +3569,7 @@ pub(super) fn run<T: Config>(
                         // SAFETY: This memory address was just read from the
                         // current store. Therefore, it is valid in the current
                         // store.
-                        let memory = unsafe { store.memories.get(mem_addr) };
+                        let memory = unsafe { store_inner.memories.get(mem_addr) };
 
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -3592,7 +3602,7 @@ pub(super) fn run<T: Config>(
                         // SAFETY: This memory address was just read from the
                         // current store. Therefore, it is valid in the current
                         // store.
-                        let memory = unsafe { store.memories.get(mem_addr) };
+                        let memory = unsafe { store_inner.memories.get(mem_addr) };
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let idx = calculate_mem_address(&memarg, relative_address)?;
 
@@ -3614,7 +3624,7 @@ pub(super) fn run<T: Config>(
                         // SAFETY: This memory address was just read from the
                         // current store. Therefore, it is valid in the current
                         // store.
-                        let memory = unsafe { store.memories.get(mem_addr) };
+                        let memory = unsafe { store_inner.memories.get(mem_addr) };
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let idx = calculate_mem_address(&memarg, relative_address)?;
 
@@ -3636,7 +3646,7 @@ pub(super) fn run<T: Config>(
                         // SAFETY: This memory address was just read from the
                         // current store. Therefore, it is valid in the current
                         // store.
-                        let memory = unsafe { store.memories.get(mem_addr) };
+                        let memory = unsafe { store_inner.memories.get(mem_addr) };
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let idx = calculate_mem_address(&memarg, relative_address)?;
 
@@ -3658,7 +3668,7 @@ pub(super) fn run<T: Config>(
                         // SAFETY: This memory address was just read from the
                         // current store. Therefore, it is valid in the current
                         // store.
-                        let memory = unsafe { store.memories.get(mem_addr) };
+                        let memory = unsafe { store_inner.memories.get(mem_addr) };
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let idx = calculate_mem_address(&memarg, relative_address)?;
 
@@ -3683,7 +3693,7 @@ pub(super) fn run<T: Config>(
                         // SAFETY: This memory address was just read from the
                         // current store. Therefore, it is valid in the current
                         // store.
-                        let memory = unsafe { store.memories.get(mem_addr) };
+                        let memory = unsafe { store_inner.memories.get(mem_addr) };
 
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -3706,7 +3716,7 @@ pub(super) fn run<T: Config>(
                         // SAFETY: This memory address was just read from the
                         // current store. Therefore, it is valid in the current
                         // store.
-                        let memory = unsafe { store.memories.get(mem_addr) };
+                        let memory = unsafe { store_inner.memories.get(mem_addr) };
 
                         let relative_address: u32 = stack.pop_value().try_into().unwrap_validated();
                         let idx = calculate_mem_address(&memarg, relative_address)?;
@@ -3733,7 +3743,7 @@ pub(super) fn run<T: Config>(
                         // SAFETY: This memory address was just read from the
                         // current store. Therefore, it is valid in the current
                         // store.
-                        let memory = unsafe { store.memories.get(mem_addr) };
+                        let memory = unsafe { store_inner.memories.get(mem_addr) };
                         let idx = calculate_mem_address(&memarg, relative_address)?;
                         let lane_idx = usize::from(wasm.read_u8().unwrap_validated());
                         let mut lanes: [u8; 16] = to_lanes(data);
@@ -3759,7 +3769,7 @@ pub(super) fn run<T: Config>(
                         // SAFETY: This memory address was just read from the
                         // current store. Therefore, it is valid in the current
                         // store.
-                        let memory = unsafe { store.memories.get(mem_addr) };
+                        let memory = unsafe { store_inner.memories.get(mem_addr) };
                         let idx = calculate_mem_address(&memarg, relative_address)?;
                         let lane_idx = usize::from(wasm.read_u8().unwrap_validated());
                         let mut lanes: [u16; 8] = to_lanes(data);
@@ -3784,7 +3794,7 @@ pub(super) fn run<T: Config>(
                         // SAFETY: This memory address was just read from the
                         // current store. Therefore, it is valid in the current
                         // store.
-                        let memory = unsafe { store.memories.get(mem_addr) };
+                        let memory = unsafe { store_inner.memories.get(mem_addr) };
                         let idx = calculate_mem_address(&memarg, relative_address)?;
                         let lane_idx = usize::from(wasm.read_u8().unwrap_validated());
                         let mut lanes: [u32; 4] = to_lanes(data);
@@ -3809,7 +3819,7 @@ pub(super) fn run<T: Config>(
                         // SAFETY: This memory address was just read from the
                         // current store. Therefore, it is valid in the current
                         // store.
-                        let memory = unsafe { store.memories.get(mem_addr) };
+                        let memory = unsafe { store_inner.memories.get(mem_addr) };
                         let idx = calculate_mem_address(&memarg, relative_address)?;
                         let lane_idx = usize::from(wasm.read_u8().unwrap_validated());
                         let mut lanes: [u64; 2] = to_lanes(data);
@@ -3836,7 +3846,7 @@ pub(super) fn run<T: Config>(
                         // SAFETY: This memory address was just read from the
                         // current store. Therefore, it is valid in the current
                         // store.
-                        let memory = unsafe { store.memories.get(mem_addr) };
+                        let memory = unsafe { store_inner.memories.get(mem_addr) };
                         let idx = calculate_mem_address(&memarg, relative_address)?;
                         let lane_idx = usize::from(wasm.read_u8().unwrap_validated());
 
@@ -3861,7 +3871,7 @@ pub(super) fn run<T: Config>(
                         // SAFETY: This memory address was just read from the
                         // current store. Therefore, it is valid in the current
                         // store.
-                        let memory = unsafe { store.memories.get(mem_addr) };
+                        let memory = unsafe { store_inner.memories.get(mem_addr) };
                         let idx = calculate_mem_address(&memarg, relative_address)?;
                         let lane_idx = usize::from(wasm.read_u8().unwrap_validated());
 
@@ -3886,7 +3896,7 @@ pub(super) fn run<T: Config>(
                         // SAFETY: This memory address was just read from the
                         // current store. Therefore, it is valid in the current
                         // store.
-                        let memory = unsafe { store.memories.get(mem_addr) };
+                        let memory = unsafe { store_inner.memories.get(mem_addr) };
                         let idx = calculate_mem_address(&memarg, relative_address)?;
                         let lane_idx = usize::from(wasm.read_u8().unwrap_validated());
 
@@ -3911,7 +3921,7 @@ pub(super) fn run<T: Config>(
                         // SAFETY: This memory address was just read from the
                         // current store. Therefore, it is valid in the current
                         // store.
-                        let memory = unsafe { store.memories.get(mem_addr) };
+                        let memory = unsafe { store_inner.memories.get(mem_addr) };
                         let idx = calculate_mem_address(&memarg, relative_address)?;
                         let lane_idx = usize::from(wasm.read_u8().unwrap_validated());
 
