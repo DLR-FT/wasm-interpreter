@@ -64,7 +64,7 @@ pub(crate) unsafe fn run_const<T: Config>(
 
                 // SAFETY: The global address just came from the same store.
                 // Therefore, it must be valid in this store.
-                let global = unsafe { store.globals.get(global_addr) };
+                let global = unsafe { store.inner.globals.get(global_addr) };
 
                 trace!(
                     "Constant instruction: global.get [{global_idx}] -> [{:?}]",
