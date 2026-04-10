@@ -34,7 +34,7 @@ use super::UnwrapValidatedExt;
 
 pub mod addrs;
 pub(crate) mod instances;
-pub(crate) mod linear_memory;
+pub mod linear_memory;
 
 /// The store represents all global state that can be manipulated by WebAssembly programs. It
 /// consists of the runtime representation of all instances of functions, tables, memories, and

@@ -131,7 +131,8 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
     }
 
     /// Get the length in bytes currently allocated to this [`LinearMemory`]
-    // TODO remove this op
+    // TODO implement is_empty
+    #[allow(clippy::len_without_is_empty)]
     pub fn len(&self) -> usize {
         self.inner_data.read().len()
     }
