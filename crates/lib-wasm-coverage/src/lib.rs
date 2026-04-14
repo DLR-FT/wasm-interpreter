@@ -13,3 +13,6 @@ pub mod probes;
 
 #[cfg(feature = "std")]
 pub mod reporter;
+
+#[cfg(feature = "std")]
+pub mod covlist;
