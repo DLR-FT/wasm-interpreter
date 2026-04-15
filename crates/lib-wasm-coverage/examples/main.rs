@@ -49,7 +49,7 @@ fn main() -> ExitCode {
     };
 
     // intialize a coverage enabled store
-    let user_data = lib_wasm_coverage::probes::BasicBlockTraceToVec::default();
+    let user_data = lib_wasm_coverage::probes::BasicBlockTraceToCovList::default();
     let mut store = Store::new(user_data);
 
     // instantiate the module
@@ -73,9 +73,10 @@ fn main() -> ExitCode {
         Err(e) => eprintln!("execution abortde due to {e:?}"),
     }
 
-    eprintln!("recorded {} trace points", store.user_data.trace.len());
-
-    lib_wasm_coverage::reporter::report_source_lines(&wasm_bytes, &store.user_data.trace);
+    lib_wasm_coverage::reporter::report_source_lines(
+        &wasm_bytes,
+        (&store.user_data.ranges).into_iter().flatten(),
+    );
 
     ExitCode::SUCCESS
 }
