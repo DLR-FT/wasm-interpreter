@@ -1,12 +1,22 @@
 // TODO what does it mean if the column is non zero, but the line is?
 
-use core::error::Error;
-use std::{eprintln, path};
+use core::{array::IntoIter, error::Error};
+use std::{collections::HashMap, eprintln, path, println};
 
 use gimli::{Dwarf, EndianSlice};
 use std::prelude::rust_2024::*;
 use wasmparser::{Parser, Payload};
 
+/// Outputs a crude coverage report in lcov format from stdout.
+/// - The report only accounts for lines that are targetable within the DWARF information of `wasm_bytecode`
+/// (instrumented lines). The rest of the lines are not taken into consideration for coverage (comments etc.).
+/// - The report does not keep record of how many times a source code line is hit during execution. The lines are either
+/// marked as hit once or zero times.
+/// - The report does not include function/branch/basic block coverage as a whole. Only basic line coverage is reported.
+/// 
+/// # Panics
+/// 
+/// - if the source code has no instrumented lines (to our best knowledge, there is no valid lcov format for this).
 pub fn report_source_lines(wasm_bytecode: &[u8], execution_trace: &[u64]) {
     let cur = Parser::new(0);
 
@@ -33,16 +43,20 @@ pub fn report_source_lines(wasm_bytecode: &[u8], execution_trace: &[u64]) {
     .unwrap();
 
     // TODO continue
-    eprintln!("{dwarf:#?}");
+    //eprintln!("{dwarf:#?}");
 
-    let thing = dwarf.units().next().unwrap().unwrap();
+    //let thing = dwarf.units().next().unwrap().unwrap();
 
-    eprintln!("DEBUG HERE\n{:#?}", &thing);
+    //eprintln!("DEBUG HERE\n{:#?}", &thing);
 
     let mut line_lookup_cacher = DwarfAddr2LineLookup::new(dwarf);
-    eprintln!("loading");
+
+    let mut line_hit_table: std::collections::HashMap<u64, bool> = HashMap::from_iter(line_lookup_cacher
+        .into_iter().map(|(_, (_, line, _))| (*line, false)));
+
+    //eprintln!("loading");
     line_lookup_cacher.load().unwrap();
-    eprintln!("looking up");
+    //eprintln!("looking up");
 
     // let mut already_seen_pc = std::collections::BTreeSet::new();
     for pc in execution_trace {
@@ -50,14 +64,30 @@ pub fn report_source_lines(wasm_bytecode: &[u8], execution_trace: &[u64]) {
         //already_seen_pc.insert(pc)
         //&&
         let Some(scl) = line_lookup_cacher.lookup(*pc) {
-            eprintln!("pc = {pc:#x?} <- {scl}");
+            //eprintln!("pc = {pc:#x?} <- {scl}");
+            line_hit_table.insert(scl.line, true);
         }
     }
+
+    // print lcov format
+    // relative source file location 
+    println!("SF:wasm_label_test_prog.rs");
+    let mut num_hit_lines = 0;
+    // each instrumented line
+    for (line, hit) in &line_hit_table {
+        println!("DA:{},{}",line, if *hit {num_hit_lines+=1;1} else {0});
+    }
+    // number of instrumented lines that were hit
+    println!("LH:{}",num_hit_lines);
+    // number of instrumented lines in total
+    println!("LF:{}",line_hit_table.len());
+    // end of record for this SF
+    println!("end_of_record");
 }
 
 struct DwarfAddr2LineLookup<R: gimli::Reader> {
     dwarf: Dwarf<R>,
-    pc_to_source_file_cache: std::collections::HashMap<u64, (usize, u64, u64)>,
+    pc_to_source_file_cache: HashMap<u64, (usize, u64, u64)>,
     source_file_list: Vec<path::PathBuf>,
 }
 
@@ -176,5 +206,15 @@ where
             }
         }
         Ok(())
+    }
+}
+
+impl<'a, R: gimli::Reader> IntoIterator for &'a DwarfAddr2LineLookup<R> {
+    type Item = <&'a HashMap<u64, (usize, u64, u64)> as core::iter::IntoIterator>::Item;
+
+    type IntoIter = <&'a HashMap<u64, (usize, u64, u64)> as core::iter::IntoIterator>::IntoIter;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.pc_to_source_file_cache.iter()
     }
 }
