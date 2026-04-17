@@ -36,7 +36,7 @@ fn table_grow_test() {
     "#;
 
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes).unwrap();
+    let validation_info = decode_and_validate(&wasm_bytes, ()).unwrap();
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
@@ -184,7 +184,7 @@ fn table_grow_outside_i32_range() {
     "#;
 
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes).unwrap();
+    let validation_info = decode_and_validate(&wasm_bytes, ()).unwrap();
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
@@ -211,7 +211,7 @@ fn table_grow_unlimited() {
     "#;
 
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes).unwrap();
+    let validation_info = decode_and_validate(&wasm_bytes, ()).unwrap();
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
@@ -242,7 +242,7 @@ fn table_grow_with_max() {
     "#;
 
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes).unwrap();
+    let validation_info = decode_and_validate(&wasm_bytes, ()).unwrap();
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
@@ -292,7 +292,7 @@ fn table_grow_check_null() {
     "#;
 
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes).unwrap();
+    let validation_info = decode_and_validate(&wasm_bytes, ()).unwrap();
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
@@ -338,7 +338,7 @@ fn table_grow_with_exported_table_test() {
     "#;
 
     let wasm_bytes = wat::parse_str(target_wat).unwrap();
-    let validation_info = decode_and_validate(&wasm_bytes).unwrap();
+    let validation_info = decode_and_validate(&wasm_bytes, ()).unwrap();
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&validation_info, Vec::new(), None)

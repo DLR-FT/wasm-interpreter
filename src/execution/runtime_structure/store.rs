@@ -36,6 +36,7 @@ use crate::{
             value_stack::Stack,
         },
     },
+    validation::validation_config::ValidationConfig,
     AddrVec, Config, DataAddr, ElemAddr, ExternVal, FuncAddr, FuncType, GlobalAddr, GlobalType,
     HostCall, HostResumable, MemAddr, MemType, Module, ModuleAddr, Ref, RefType, Resumable,
     RunState, RuntimeError, TableAddr, TableType, Value, WasmResumable,
@@ -122,9 +123,9 @@ impl<'b, T: Config> Store<'b, T> {
     ///
     /// The caller has to guarantee that any address values contained in the
     /// [`ExternVal`]s came from the current [`Store`] object.
-    pub unsafe fn module_instantiate(
+    pub unsafe fn module_instantiate<T2: ValidationConfig>(
         &mut self,
-        validation_info: &Module<'b>,
+        validation_info: &Module<'b, T2>,
         extern_vals: Vec<ExternVal>,
         maybe_fuel: Option<u64>,
     ) -> Result<InstantiationOutcome, RuntimeError> {

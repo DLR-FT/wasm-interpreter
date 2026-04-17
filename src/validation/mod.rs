@@ -27,7 +27,9 @@ use crate::{
         },
         utils::ToUsizeExt,
     },
-    validation::modules::functions::decode_and_validate_code_section,
+    validation::{
+        modules::functions::decode_and_validate_code_section, validation_config::ValidationConfig,
+    },
     CustomSection, DecodingError, ValidationError,
 };
 
@@ -37,13 +39,16 @@ pub mod modules;
 pub mod types;
 pub mod validation_stack;
 
+#[path = "config.rs"]
+pub mod validation_config;
+
 /// Information collected from validating a module.
 ///
 /// This can be used to instantiate a new module instance in some
 /// [`Store`](crate::Store) thorugh
 /// [`Store::module_instantiate`](crate::Store::module_instantiate)
 #[derive(Clone, Debug)]
-pub struct Module<'bytecode> {
+pub struct Module<'bytecode, T: ValidationConfig> {
     pub(crate) wasm: &'bytecode [u8],
     pub(crate) types: IdxVec<TypeIdx, FuncType>,
     pub(crate) imports: Vec<Import<'bytecode>>,
@@ -62,9 +67,12 @@ pub struct Module<'bytecode> {
     pub(crate) start: Option<FuncIdx>,
     pub(crate) custom_sections: Vec<CustomSection<'bytecode>>,
     // pub(crate) exports_length: Exported,
+    pub user_data: T,
 }
 
-fn validate_no_duplicate_exports(validation_info: &Module) -> Result<(), ValidationError> {
+fn validate_no_duplicate_exports<T: ValidationConfig>(
+    validation_info: &Module<T>,
+) -> Result<(), ValidationError> {
     let mut found_export_names: btree_set::BTreeSet<&str> = btree_set::BTreeSet::new();
     for export in &validation_info.exports {
         if found_export_names.contains(export.name) {
@@ -75,7 +83,10 @@ fn validate_no_duplicate_exports(validation_info: &Module) -> Result<(), Validat
     Ok(())
 }
 
-pub fn decode_and_validate(wasm: &[u8]) -> Result<Module<'_>, ValidationError> {
+pub fn decode_and_validate<T: ValidationConfig>(
+    wasm: &[u8],
+    mut user_data: T,
+) -> Result<Module<'_, T>, ValidationError> {
     let mut wasm = WasmDecoder::new(wasm);
 
     // represents C.refs in https://webassembly.github.io/spec/core/valid/conventions.html#context
@@ -302,6 +313,7 @@ pub fn decode_and_validate(wasm: &[u8]) -> Result<Module<'_>, ValidationError> {
                 &elements,
                 &validation_context_refs,
                 &mut sidetable,
+                &mut user_data,
             )
         }
     })?
@@ -354,6 +366,7 @@ pub fn decode_and_validate(wasm: &[u8]) -> Result<Module<'_>, ValidationError> {
         start,
         elements,
         custom_sections,
+        user_data,
     };
     validate_no_duplicate_exports(&validation_info)?;
 
@@ -375,7 +388,7 @@ fn read_all_custom_sections<'wasm>(
     Ok(())
 }
 
-impl<'wasm> Module<'wasm> {
+impl<'wasm, T: ValidationConfig> Module<'wasm, T> {
     /// Returns the imports of this module as an iterator. Each import consist
     /// of a module name, a name and an extern type.
     ///
