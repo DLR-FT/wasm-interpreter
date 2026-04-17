@@ -17,7 +17,7 @@ use crate::core::reader::WasmReader;
 use crate::core::sidetable::{Sidetable, SidetableEntry};
 use crate::core::utils::ToUsizeExt;
 use crate::validation_stack::{LabelInfo, ValidationStack};
-use crate::{RefType, ValidationError};
+use crate::{RefType, ValidationConfig, ValidationError};
 
 /// # Safety
 ///
@@ -31,7 +31,7 @@ use crate::{RefType, ValidationError};
 /// | [`FuncIdx`] | [`IdxVec<FuncIdx, TypeIdx>`] contained in [`ExtendedIdxVec<FuncIdx, TypeIdx>`] |
 /// | [`TableIdx`] | [`IdxVec<TableIdx, TableType>`] |
 #[allow(clippy::too_many_arguments)]
-pub unsafe fn validate_code_section(
+pub unsafe fn validate_code_section<T: ValidationConfig>(
     wasm: &mut WasmReader,
     section_header: SectionHeader,
     fn_types: &IdxVec<TypeIdx, FuncType>,
@@ -43,6 +43,7 @@ pub unsafe fn validate_code_section(
     c_elems: &IdxVec<ElemIdx, ElemType>,
     validation_context_refs: &BTreeSet<FuncIdx>,
     sidetable: &mut Sidetable,
+    user_data: &mut T,
 ) -> Result<Vec<(Span, usize)>, ValidationError> {
     assert_eq!(section_header.ty, SectionTy::Code);
     let code_block_spans_stps = wasm.read_vec_enumerated(|wasm, idx| {
@@ -87,6 +88,7 @@ pub unsafe fn validate_code_section(
                 c_tables,
                 c_elems,
                 validation_context_refs,
+                user_data,
             )
         }?;
 
@@ -218,7 +220,7 @@ fn validate_branch_and_generate_sidetable_entry(
 /// | [`FuncIdx`] | [`IdxVec<FuncIdx, TypeIdx>`] |
 /// | [`TableIdx`] | [`IdxVec<TableIdx, TableType>`] |
 #[allow(clippy::too_many_arguments)]
-unsafe fn read_instructions(
+unsafe fn read_instructions<T: ValidationConfig>(
     wasm: &mut WasmReader,
     stack: &mut ValidationStack,
     sidetable: &mut Sidetable,
@@ -231,6 +233,7 @@ unsafe fn read_instructions(
     c_tables: &IdxVec<TableIdx, TableType>,
     c_elems: &IdxVec<ElemIdx, ElemType>,
     validation_context_refs: &BTreeSet<FuncIdx>,
+    user_data: &mut T,
 ) -> Result<(), ValidationError> {
     loop {
         let Ok(first_instr_byte) = wasm.read_u8() else {
@@ -243,6 +246,8 @@ unsafe fn read_instructions(
 
         #[cfg(not(debug_assertions))]
         trace!("Read instruction byte {first_instr_byte:#04X?} ({first_instr_byte}) at wasm_binary[{}]", wasm.pc);
+
+        user_data.instruction_hook(&wasm.full_wasm_binary, wasm.pc);
 
         use crate::core::reader::types::opcode::*;
         match first_instr_byte {

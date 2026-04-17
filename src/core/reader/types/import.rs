@@ -1,7 +1,7 @@
 use crate::core::indices::{IdxVec, TypeIdx};
 use crate::core::reader::types::FuncType;
 use crate::core::reader::WasmReader;
-use crate::{ValidationError, ValidationInfo};
+use crate::{ValidationConfig, ValidationError, ValidationInfo};
 
 use super::global::GlobalType;
 use super::{ExternType, MemType, TableType};
@@ -64,7 +64,10 @@ impl ImportDesc {
     ///
     /// The caller must ensure that `self` comes from the same
     /// [`ValidationInfo`] that is passed as an argument here.
-    pub unsafe fn extern_type(&self, validation_info: &ValidationInfo) -> ExternType {
+    pub unsafe fn extern_type<T: ValidationConfig>(
+        &self,
+        validation_info: &ValidationInfo<T>,
+    ) -> ExternType {
         match self {
             ImportDesc::Func(type_idx) => {
                 // unlike ExportDescs, these directly refer to the types section

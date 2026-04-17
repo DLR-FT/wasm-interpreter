@@ -28,13 +28,20 @@ pub(crate) mod globals;
 pub(crate) mod read_constant_expression;
 pub(crate) mod validation_stack;
 
+pub trait ValidationConfig {
+    #[inline(always)]
+    fn instruction_hook(&mut self, _bytecode: &[u8], _pc: usize) {}
+}
+
+impl ValidationConfig for () {}
+
 /// Information collected from validating a module.
 ///
 /// This can be used to instantiate a new module instance in some
 /// [`Store`](crate::Store) thorugh
 /// [`Store::module_instantiate`](crate::Store::module_instantiate)
 #[derive(Clone, Debug)]
-pub struct ValidationInfo<'bytecode> {
+pub struct ValidationInfo<'bytecode, T: ValidationConfig> {
     pub(crate) wasm: &'bytecode [u8],
     pub(crate) types: IdxVec<TypeIdx, FuncType>,
     pub(crate) imports: Vec<Import<'bytecode>>,
@@ -53,9 +60,12 @@ pub struct ValidationInfo<'bytecode> {
     pub(crate) start: Option<FuncIdx>,
     pub(crate) custom_sections: Vec<CustomSection<'bytecode>>,
     // pub(crate) exports_length: Exported,
+    pub user_data: T,
 }
 
-fn validate_no_duplicate_exports(validation_info: &ValidationInfo) -> Result<(), ValidationError> {
+fn validate_no_duplicate_exports<T: ValidationConfig>(
+    validation_info: &ValidationInfo<T>,
+) -> Result<(), ValidationError> {
     let mut found_export_names: btree_set::BTreeSet<&str> = btree_set::BTreeSet::new();
     for export in &validation_info.exports {
         if found_export_names.contains(export.name) {
@@ -66,7 +76,10 @@ fn validate_no_duplicate_exports(validation_info: &ValidationInfo) -> Result<(),
     Ok(())
 }
 
-pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
+pub fn validate<T: ValidationConfig>(
+    wasm: &[u8],
+    mut user_data: T,
+) -> Result<ValidationInfo<'_, T>, ValidationError> {
     let mut wasm = WasmReader::new(wasm);
 
     // represents C.refs in https://webassembly.github.io/spec/core/valid/conventions.html#context
@@ -297,6 +310,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
                 &elements,
                 &validation_context_refs,
                 &mut sidetable,
+                &mut user_data,
             )
         }
     })?
@@ -345,6 +359,7 @@ pub fn validate(wasm: &[u8]) -> Result<ValidationInfo<'_>, ValidationError> {
         start,
         elements,
         custom_sections,
+        user_data,
     };
     validate_no_duplicate_exports(&validation_info)?;
 
@@ -407,7 +422,7 @@ fn read_all_custom_sections<'wasm>(
     Ok(())
 }
 
-impl<'wasm> ValidationInfo<'wasm> {
+impl<'wasm, T: ValidationConfig> ValidationInfo<'wasm, T> {
     /// Returns the imports of this module as an iterator. Each import consist
     /// of a module name, a name and an extern type.
     ///
