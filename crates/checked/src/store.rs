@@ -3,6 +3,7 @@ use wasm::{
     addrs::{FuncAddr, GlobalAddr, MemAddr, ModuleAddr, TableAddr},
     config::Config,
     resumable::{HostResumable, WasmResumable},
+    validation_config::ValidationConfig,
     FuncType, GlobalType, Hostcode, MemType, RuntimeError, TableType, ValidationInfo,
 };
 
@@ -54,9 +55,9 @@ impl<'b, T: Config> Store<'b, T> {
 
     /// This is a safe variant of
     /// [`Store::module_instantiate`](wasm::Store::module_instantiate).
-    pub fn module_instantiate(
+    pub fn module_instantiate<T2: ValidationConfig>(
         &mut self,
-        validation_info: &ValidationInfo<'b>,
+        validation_info: &ValidationInfo<'b, T2>,
         extern_vals: Vec<StoredExternVal>,
         maybe_fuel: Option<u64>,
     ) -> Result<StoredInstantiationOutcome, RuntimeError> {
