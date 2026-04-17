@@ -1,7 +1,7 @@
 use crate::core::indices::{FuncIdx, GlobalIdx, IdxVec, MemIdx, TableIdx, TypeIdx};
 use crate::core::reader::types::global::Global;
 use crate::core::reader::WasmReader;
-use crate::{MemType, TableType, ValidationError, ValidationInfo};
+use crate::{MemType, TableType, ValidationConfig, ValidationError, ValidationInfo};
 
 use super::ExternType;
 
@@ -42,7 +42,10 @@ impl ExportDesc {
     /// The caller must ensure that `self` comes from the same
     /// [`ValidationInfo`] that is passed as an argument here.
     #[allow(unused)] // reason = "this function is analogous to ImportDesc::extern_type, however it is not yet clear if it is needed in the future"
-    pub unsafe fn extern_type(&self, validation_info: &ValidationInfo) -> ExternType {
+    pub unsafe fn extern_type<T: ValidationConfig>(
+        &self,
+        validation_info: &ValidationInfo<T>,
+    ) -> ExternType {
         // TODO clean up logic for checking if an exported definition is an
         // import
         match self {
