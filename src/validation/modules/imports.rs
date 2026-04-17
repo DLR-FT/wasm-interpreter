@@ -6,6 +6,7 @@ use crate::{
             indices::{IdxVec, TypeIdx},
         },
     },
+    validation::validation_config::ValidationConfig,
     DecodingError, ExternType, FuncType, GlobalType, MemType, Module, TableType, ValidationError,
 };
 
@@ -50,7 +51,7 @@ impl ImportDesc {
     ///
     /// The caller must ensure that `self` comes from the same
     /// [`Module`] that is passed as an argument here.
-    pub unsafe fn extern_type(&self, module: &Module) -> ExternType {
+    pub unsafe fn extern_type<T: ValidationConfig>(&self, module: &Module<T>) -> ExternType {
         match self {
             ImportDesc::Func(type_idx) => {
                 // unlike ExportDescs, these directly refer to the types section

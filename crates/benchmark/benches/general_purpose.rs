@@ -53,7 +53,7 @@ macro_rules! bench_wasm {
             let wasm_bytes = $wasm_bytes;
 
             // Our interpreter
-            let our_validation_info = decode_and_validate(&wasm_bytes).unwrap();
+            let our_validation_info = decode_and_validate(&wasm_bytes, ()).unwrap();
             struct UserData;
             impl wasm::Config for UserData {
                 const MAX_VALUE_STACK_SIZE: usize = $value_stack_size;

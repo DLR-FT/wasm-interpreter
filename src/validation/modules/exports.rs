@@ -7,6 +7,7 @@ use crate::{
             indices::{FuncIdx, GlobalIdx, IdxVec, MemIdx, TableIdx, TypeIdx},
         },
     },
+    validation::validation_config::ValidationConfig,
     DecodingError, ExternType, MemType, Module, TableType, ValidationError,
 };
 
@@ -52,7 +53,10 @@ impl ExportDesc {
     /// The caller must ensure that `self` comes from the same
     /// [`Module`] that is passed as an argument here.
     #[allow(unused)] // reason = "this function is analogous to ImportDesc::extern_type, however it is not yet clear if it is needed in the future"
-    pub unsafe fn extern_type(&self, validation_info: &Module) -> ExternType {
+    pub unsafe fn extern_type<T: ValidationConfig>(
+        &self,
+        validation_info: &Module<T>,
+    ) -> ExternType {
         // TODO clean up logic for checking if an exported definition is an
         // import
         match self {

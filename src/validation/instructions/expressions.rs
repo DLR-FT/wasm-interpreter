@@ -17,7 +17,10 @@ use crate::{
         },
         utils::ToUsizeExt,
     },
-    validation::validation_stack::{LabelInfo, ValidationStack},
+    validation::{
+        validation_config::ValidationConfig,
+        validation_stack::{LabelInfo, ValidationStack},
+    },
     RefType, ValidationError,
 };
 
@@ -100,7 +103,7 @@ fn validate_branch_and_generate_sidetable_entry(
 /// | [`FuncIdx`] | [`IdxVec<FuncIdx, TypeIdx>`] |
 /// | [`TableIdx`] | [`IdxVec<TableIdx, TableType>`] |
 #[allow(clippy::too_many_arguments)]
-pub unsafe fn decode_and_validate_expr(
+pub unsafe fn decode_and_validate_expr<T: ValidationConfig>(
     wasm: &mut WasmDecoder,
     stack: &mut ValidationStack,
     sidetable: &mut Sidetable,
@@ -113,6 +116,7 @@ pub unsafe fn decode_and_validate_expr(
     c_tables: &IdxVec<TableIdx, TableType>,
     c_elems: &IdxVec<ElemIdx, ElemType>,
     validation_context_refs: &BTreeSet<FuncIdx>,
+    user_data: &mut T,
 ) -> Result<(), ValidationError> {
     loop {
         let Ok(first_instr_byte) = wasm.decode_u8() else {
@@ -124,6 +128,8 @@ pub unsafe fn decode_and_validate_expr(
             "Validating instruction {first_instr_byte:#x} at pc={}",
             wasm.pc
         );
+
+        user_data.instruction_hook(wasm.full_wasm_binary, wasm.pc);
 
         use crate::core::structure::instructions::*;
         match first_instr_byte {
