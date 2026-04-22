@@ -84,3 +84,32 @@ impl wasm::config::Config for BasicBlockTraceToVec {
         if let IF | ELSE | END = bytecode[pc] {}
     }
 }
+
+#[cfg(feature = "alloc")]
+#[derive(Debug, Default)]
+pub struct CovListTraceToVec {
+    pub trace: crate::covlist::CovList,
+
+    last_bb_start_pc: Option<u64>,
+}
+
+#[cfg(feature = "alloc")]
+impl wasm::config::Config for CovListTraceToVec {
+    fn instruction_hook(&mut self, bytecode: &[u8], pc: usize) {
+        use wasm::opcode::*;
+        let last_bb_start_pc = self.last_bb_start_pc.unwrap_or({
+            let instr = bytecode[pc];
+            trace!("entering basic block with pc = {pc:#x?}, instruction = {instr:#02x?}");
+            pc.try_into().unwrap()
+        });
+        self.last_bb_start_pc = Some(last_bb_start_pc);
+
+        if let instr @ (UNREACHABLE | LOOP | IF | ELSE | END | BR | BR_IF | BR_TABLE | RETURN
+        | CALL | CALL_INDIRECT) = bytecode[pc]
+        {
+            let last_bb_end_pc: u64 = pc.try_into().unwrap();
+            self.trace.insert(last_bb_start_pc..(last_bb_end_pc + 1));
+            trace!("leaving basic block with pc = {pc:#x?}, instruction = {instr:#02x?}");
+        }
+    }
+}
