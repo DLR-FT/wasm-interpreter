@@ -7,7 +7,7 @@ use gimli::{Dwarf, EndianSlice};
 use std::prelude::rust_2024::*;
 use wasmparser::{Parser, Payload};
 
-pub fn report_source_lines(wasm_bytecode: &[u8], execution_trace: &[u64]) {
+pub fn report_source_lines(wasm_bytecode: &[u8], execution_trace: impl Iterator<Item = u64>) {
     let cur = Parser::new(0);
 
     let mut custom_sections = std::collections::HashMap::new();
@@ -49,7 +49,7 @@ pub fn report_source_lines(wasm_bytecode: &[u8], execution_trace: &[u64]) {
         if
         //already_seen_pc.insert(pc)
         //&&
-        let Some(scl) = line_lookup_cacher.lookup(*pc) {
+        let Some(scl) = line_lookup_cacher.lookup(pc) {
             eprintln!("pc = {pc:#x?} <- {scl}");
         }
     }

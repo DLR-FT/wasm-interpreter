@@ -68,14 +68,14 @@ fn main() -> ExitCode {
         .unwrap();
 
     // call the entry function
-    match unsafe { store.invoke_without_fuel(entry_function, vec![Value::I32(0), Value::I32(0)]) } {
+    match unsafe { store.invoke_without_fuel(entry_function, vec![Value::I32(191), Value::I32(377)]) } {
         Ok(x) => eprintln!("execution finished with return value(s) {x:?}"),
         Err(e) => eprintln!("execution abortde due to {e:?}"),
     }
 
     eprintln!("recorded {} trace points", store.user_data.trace.len());
 
-    lib_wasm_coverage::reporter::report_source_lines(&wasm_bytes, &store.user_data.trace);
+    lib_wasm_coverage::reporter::report_source_lines(&wasm_bytes, store.user_data.trace.into_iter());
 
     ExitCode::SUCCESS
 }
