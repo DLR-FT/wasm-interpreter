@@ -17,7 +17,7 @@
 
 // use core::slice::SlicePattern;
 
-use checked::Store;
+use checked::{Store, StoredRunState};
 use wasm::validate;
 
 #[test_log::test]
@@ -66,4 +66,55 @@ fn memory_fill() {
 #[test_log::test]
 fn memory_fill_with_control_flow() {
     todo!()
+}
+
+#[test_log::test]
+fn fill_with_fuel() {
+    let w = r#"
+    (module
+        (memory (export "mem") 1)
+        (func (export "fill")
+            (memory.fill (i32.const 0) (i32.const 2777) (i32.const 100))
+        )
+    )
+  "#;
+    let wasm_bytes = wat::parse_str(w).unwrap();
+    let validation_info = validate(&wasm_bytes).unwrap();
+    let mut store = Store::new(());
+    let module = store
+        .module_instantiate(&validation_info, Vec::new(), None)
+        .unwrap()
+        .module_addr;
+
+    let fill = store
+        .instance_export(module, "fill")
+        .unwrap()
+        .as_func()
+        .unwrap();
+    let mem = store
+        .instance_export(module, "mem")
+        .unwrap()
+        .as_mem()
+        .expect("memory");
+
+    let mut run_state = store.invoke(fill, Vec::new(), Some(1)).unwrap();
+    loop {
+        match run_state {
+            StoredRunState::Finished { .. } => break,
+            StoredRunState::Resumable { mut resumable, .. } => {
+                *resumable.fuel_mut().as_mut().unwrap() += 1;
+                run_state = store.resume_wasm(resumable).unwrap();
+            }
+            StoredRunState::HostCalled { .. } => unreachable!("no host calls exist"),
+        }
+    }
+
+    let expected = [vec![217u8; 100], vec![0u8; 5]].concat();
+    for (idx, expected_byte) in expected.into_iter().enumerate() {
+        let mem_byte: u8 = store.mem_read(mem, idx as u32).unwrap();
+        assert_eq!(
+            mem_byte.to_ascii_lowercase(),
+            expected_byte.to_ascii_lowercase()
+        );
+    }
 }
