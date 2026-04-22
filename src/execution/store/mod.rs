@@ -1413,7 +1413,7 @@ impl<'b, T: Config> Store<'b, T> {
 
         if let Some(mut wasm_resumable) = host_resumable.inner_resumable {
             for return_value in host_call_return_values {
-                wasm_resumable.stack.push_value::<T>(return_value)?;
+                wasm_resumable.stack.push_value(return_value)?;
             }
 
             Ok(RunState::Resumable {

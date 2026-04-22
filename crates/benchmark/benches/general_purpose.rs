@@ -17,6 +17,8 @@ macro_rules! bench_wasm {
         arg_type = $arg_type:ty;
         return_type = $return_type:ty;
         inputs = $inputs:expr;
+        value_stack_size = $value_stack_size:expr;
+        call_stack_size = $call_stack_size:expr;
     } => {
         bench_wasm!{
             name = $name;
@@ -30,6 +32,8 @@ macro_rules! bench_wasm {
             arg_type = $arg_type;
             return_type = $return_type;
             inputs = $inputs;
+            value_stack_size = $value_stack_size;
+            call_stack_size = $call_stack_size;
         }
     };
 
@@ -41,6 +45,8 @@ macro_rules! bench_wasm {
         arg_type = $arg_type:ty;
         return_type = $return_type:ty;
         inputs = $inputs:expr;
+        value_stack_size = $value_stack_size:expr;
+        call_stack_size = $call_stack_size:expr;
     } => {
 
         fn $name(c: &mut Criterion) {
@@ -49,7 +55,12 @@ macro_rules! bench_wasm {
 
             // Our interpreter
             let our_validation_info = validate(&wasm_bytes).unwrap();
-            let mut store = Store::new(());
+            struct UserData;
+            impl wasm::config::Config for UserData {
+                const MAX_VALUE_STACK_SIZE: usize = $value_stack_size;
+                const MAX_CALL_STACK_SIZE: usize = $call_stack_size;
+            }
+            let mut store = Store::new(UserData);
             // SAFETY: Only one store is used. Therefore, this must always be
             // the correct one.
             let module = unsafe { store.module_instantiate(&our_validation_info, Vec::new(), None) }.unwrap().module_addr;
@@ -166,6 +177,8 @@ bench_wasm! {
     arg_type = i32;
     return_type = i32;
     inputs = (0..=9).map(|p| 1 << p);
+    value_stack_size = 0x800;
+    call_stack_size = 0x400;
 }
 
 bench_wasm! {
@@ -205,6 +218,8 @@ bench_wasm! {
     arg_type = i32;
     return_type = i32;
     inputs = (0..=20).map(|p| 1 << p);
+    value_stack_size = 8;
+    call_stack_size = 2;
 }
 
 criterion_group! {
