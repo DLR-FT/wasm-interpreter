@@ -1,16 +1,26 @@
 #![no_std]
+#![no_main]
 
 #[no_mangle]
-fn entry(mut x: i32) -> i32 {
-    x = x.wrapping_mul(2);
+fn main(mut x: i32, mut y: i32) -> i32 {
+    x = x.wrapping_mul(x);
 
-    x = x.wrapping_add(5);
+    y = x.wrapping_add(y);
 
-    x = x.wrapping_mul(3);
+    x = x.wrapping_mul(42);
 
-    if x % 2 == 0 {
-        1
+    if (x + y) % 3 == 0 {
+        171
     } else {
-        2
+        if (x+y) % 3 == 1 {
+            644
+        } else {
+            1310
+        }
     }
+}
+
+#[panic_handler]
+fn panic(_info: &core::panic::PanicInfo) -> ! {
+    loop {}
 }
