@@ -83,7 +83,7 @@ impl CovList {
 
     pub fn contains(&self, value: u64) -> bool {
         let range = self.tree.range(RangeToInclusive { end: value }).next_back();
-        range.is_some_and(|(_, range)|range.contains(&value))
+        range.is_some_and(|(_, range)| range.contains(&value))
     }
 }
 
