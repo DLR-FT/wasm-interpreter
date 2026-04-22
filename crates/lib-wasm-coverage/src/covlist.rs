@@ -2,10 +2,10 @@ use alloc::{
     collections::{BTreeMap, btree_map::IntoValues},
     vec::Vec,
 };
-use core::ops::{Range, RangeTo};
+use core::ops::{Range, RangeTo, RangeToInclusive};
 use std::collections::btree_map::Values;
 
-/// A helper data structure that keeps a list of disjoint ranges ordered per their starting points
+/// A helper data structure that keeps an ordered list of disjoint ranges ordered per their starting points
 #[derive(Default, Debug)]
 pub struct CovList {
     tree: BTreeMap<u64, Range<u64>>,
@@ -79,6 +79,11 @@ impl CovList {
         // s_i <= s_k < e_i were removed by the operation above.
         // e_i <= s_k already does not overlap.
         self.tree.insert(start, range_to_insert);
+    }
+
+    pub fn contains(&self, value: u64) -> bool {
+        let range = self.tree.range(RangeToInclusive { end: value }).next_back();
+        range.is_some_and(|(_, range)|range.contains(&value))
     }
 }
 
@@ -200,5 +205,20 @@ mod tests {
         covlist.insert(11..13);
         let nums: Vec<_> = covlist.into_iter().collect();
         assert_eq!(nums, vec![11..13]);
+    }
+
+    #[test]
+    fn test9() {
+        let mut covlist = CovList::new();
+        covlist.insert(2..5);
+        covlist.insert(10..15);
+        covlist.insert(13..17);
+        assert!(!covlist.contains(1));
+        assert!(!covlist.contains(5));
+        assert!(!covlist.contains(7));
+        assert!(covlist.contains(2));
+        assert!(covlist.contains(4));
+        assert!(covlist.contains(10));
+        assert!(covlist.contains(15));
     }
 }
