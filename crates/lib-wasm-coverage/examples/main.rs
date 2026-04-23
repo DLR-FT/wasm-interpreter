@@ -13,31 +13,37 @@ use std::process::ExitCode;
 #[macro_use]
 extern crate log_wrapper;
 
-use wasm::{Store, Value, validate};
+use clap::Parser;
+use lib_wasm_coverage::probes::{CovListTraceToVec, ExecutionTrace, FullTraceToVec};
+use wasm::{Store, ValidationInfo, Value, config::Config, validate};
+
+#[derive(clap::Parser)]
+#[command(version, about, long_about = None)]
+struct Args {
+    wasm_file_path: String,
+    input_file_path: String,
+    #[arg(value_enum, default_value_t = ProbeType::FullTrace)]
+    probe_type: ProbeType
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, clap::ValueEnum)]
+enum ProbeType {
+    FullTrace,
+    CovList
+}
 
 fn main() -> ExitCode {
     env_logger::init();
+    let args = Args::parse();
 
-    let wasm_bytes;
-
-    // TODO remove this hack
-    let wasm_file_path;
-
-    // prepare the wasm bytecode from argv1
-    let mut args = std::env::args();
-    if let Some(file_path) = args.nth(1) {
-        wasm_file_path = file_path;
-        match std::fs::read(&wasm_file_path) {
-            Ok(x) => wasm_bytes = x,
-            Err(e) => {
-                error!("Failed to read {wasm_file_path:?}: {e}");
-                return ExitCode::FAILURE;
-            }
+    let wasm_bytes= match std::fs::read(&args.wasm_file_path) {
+        Ok(x) => x,
+        Err(e) => {
+            let wasm_file_path = &args.wasm_file_path;
+            error!("Failed to read {wasm_file_path:?}: {e}");
+            return ExitCode::FAILURE;
         }
-    } else {
-        error!("argv1 must name a .wasm file");
-        return ExitCode::FAILURE;
-    }
+    };
 
     // validate the bytecode
     let validation_info = match validate(&wasm_bytes) {
@@ -48,8 +54,19 @@ fn main() -> ExitCode {
         }
     };
 
+    match args.probe_type {
+        ProbeType::FullTrace => continue_with_probe(FullTraceToVec::default(), &wasm_bytes, validation_info),
+        ProbeType::CovList => continue_with_probe(CovListTraceToVec::default(), &wasm_bytes, validation_info)
+    }
+
+}
+
+fn continue_with_probe<T>(user_data: T, wasm_bytes: &[u8], validation_info: ValidationInfo) -> ExitCode
+where
+    for<'a> &'a T : IntoIterator<Item = u64>,
+    T: ExecutionTrace + Config {
+
     // intialize a coverage enabled store
-    let user_data = lib_wasm_coverage::probes::FullTraceToVec::default();
     let mut store = Store::new(user_data);
 
     // instantiate the module
@@ -74,8 +91,6 @@ fn main() -> ExitCode {
         Ok(x) => eprintln!("execution finished with return value(s) {x:?}"),
         Err(e) => eprintln!("execution abortde due to {e:?}"),
     }
-
-    eprintln!("recorded {} trace points", store.user_data.trace.len());
 
     lib_wasm_coverage::reporter::report_source_lines(&wasm_bytes, store.user_data.into_iter());
 

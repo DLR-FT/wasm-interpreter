@@ -42,9 +42,9 @@ pub fn report_source_lines(wasm_bytecode: &[u8], execution_trace: impl Iterator<
 
     eprintln!("DEBUG HERE\n{:#?}", &thing);
 
-    let mut line_lookup_cacher = DwarfAddr2LineLookup::new(dwarf);
+    let mut line_lookup_cacher = DwarfAddr2LineLookup::new();
     eprintln!("loading");
-    line_lookup_cacher.load().unwrap();
+    line_lookup_cacher.load(&dwarf).unwrap();
     eprintln!("looking up");
 
     // let mut already_seen_pc = std::collections::BTreeSet::new();
@@ -58,8 +58,7 @@ pub fn report_source_lines(wasm_bytecode: &[u8], execution_trace: impl Iterator<
     }
 }
 
-struct DwarfAddr2LineLookup<R: gimli::Reader> {
-    dwarf: Dwarf<R>,
+pub struct DwarfAddr2LineLookup {
     pc_to_source_file_cache: std::collections::HashMap<u64, (usize, u64, u64)>,
     source_file_list: Vec<path::PathBuf>,
 }
@@ -78,13 +77,10 @@ impl<'a> std::fmt::Display for SourceCodeLocation<'a> {
     }
 }
 
-impl<R: gimli::Reader> DwarfAddr2LineLookup<R>
-where
-    <R as gimli::Reader>::Offset: core::fmt::LowerHex + std::hash::Hash,
+impl DwarfAddr2LineLookup
 {
-    pub fn new(dwarf: Dwarf<R>) -> Self {
+    pub fn new() -> Self {
         Self {
-            dwarf,
             pc_to_source_file_cache: Default::default(),
             source_file_list: Default::default(),
         }
@@ -100,15 +96,15 @@ where
             })
     }
 
-    pub fn load(&mut self) -> Result<(), std::boxed::Box<dyn Error>> {
+    pub fn load<R: gimli::Reader>(&mut self, dwarf: &Dwarf<R>) -> Result<(), std::boxed::Box<dyn Error>> {
         // temporary map to accelerate the `source location -> index` lookup
         let mut temp_lut = std::collections::HashMap::new();
 
         // iterate over the compilation units
-        let mut iter = self.dwarf.units();
+        let mut iter = dwarf.units();
         while let Some(header) = iter.next()? {
-            let unit = self.dwarf.unit(header)?;
-            let unit = unit.unit_ref(&self.dwarf);
+            let unit = dwarf.unit(header)?;
+            let unit = unit.unit_ref(dwarf);
 
             // get the line program for the compilation unit
             if let Some(program) = unit.line_program.clone() {
