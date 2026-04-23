@@ -49,7 +49,7 @@ fn main() -> ExitCode {
     };
 
     // intialize a coverage enabled store
-    let user_data = lib_wasm_coverage::probes::BasicBlockTraceToVec::default();
+    let user_data = lib_wasm_coverage::probes::FullTraceToVec::default();
     let mut store = Store::new(user_data);
 
     // instantiate the module
@@ -68,14 +68,16 @@ fn main() -> ExitCode {
         .unwrap();
 
     // call the entry function
-    match unsafe { store.invoke_without_fuel(entry_function, vec![Value::I32(171), Value::I32(379)]) } {
+    match unsafe {
+        store.invoke_without_fuel(entry_function, vec![Value::I32(171), Value::I32(379)])
+    } {
         Ok(x) => eprintln!("execution finished with return value(s) {x:?}"),
         Err(e) => eprintln!("execution abortde due to {e:?}"),
     }
 
     eprintln!("recorded {} trace points", store.user_data.trace.len());
 
-    lib_wasm_coverage::reporter::report_source_lines(&wasm_bytes, store.user_data.trace.into_iter());
+    lib_wasm_coverage::reporter::report_source_lines(&wasm_bytes, store.user_data.into_iter());
 
     ExitCode::SUCCESS
 }

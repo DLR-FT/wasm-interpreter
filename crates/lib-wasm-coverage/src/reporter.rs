@@ -9,6 +9,7 @@ use wasmparser::{Parser, Payload};
 
 pub fn report_source_lines(wasm_bytecode: &[u8], execution_trace: impl Iterator<Item = u64>) {
     let cur = Parser::new(0);
+    let mut offset: u64 = 0;
 
     let mut custom_sections = std::collections::HashMap::new();
     for thing in cur.parse_all(wasm_bytecode) {
@@ -16,7 +17,9 @@ pub fn report_source_lines(wasm_bytecode: &[u8], execution_trace: impl Iterator<
             Payload::CustomSection(csr) => {
                 custom_sections.insert(csr.name(), csr.data());
             }
-
+            Payload::CodeSectionStart { range, .. } => {
+                offset = range.start.try_into().unwrap();
+            }
             _ => {
                 eprintln!("ignoring");
             }
@@ -49,7 +52,7 @@ pub fn report_source_lines(wasm_bytecode: &[u8], execution_trace: impl Iterator<
         if
         //already_seen_pc.insert(pc)
         //&&
-        let Some(scl) = line_lookup_cacher.lookup(pc) {
+        let Some(scl) = line_lookup_cacher.lookup(pc - offset) {
             eprintln!("pc = {pc:#x?} <- {scl}");
         }
     }
