@@ -73,7 +73,7 @@ pub enum InterpreterLoopOutcome {
 /// # Safety
 ///
 /// The given resumable must be valid in the given [`Store`].
-pub(super) fn run<T: Config>(
+pub(super) unsafe fn run<T: Config>(
     resumable: &mut WasmResumable,
     store: &mut Store<T>,
 ) -> Result<InterpreterLoopOutcome, RuntimeError> {
