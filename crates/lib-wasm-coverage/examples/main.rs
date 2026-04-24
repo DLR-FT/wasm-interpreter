@@ -8,13 +8,13 @@
 /// ```
 ///
 /// https://yurydelendik.github.io/webassembly-dwarf/#locating
-use std::process::ExitCode;
+use std::process::{ExitCode, Termination};
 
 #[macro_use]
 extern crate log_wrapper;
 
 use clap::Parser;
-use lib_wasm_coverage::probes::{CovListTraceToVec, ExecutionTrace, FullTraceToVec};
+use lib_wasm_coverage::{probes::{CovListTraceToVec, FullTraceToVec}, reporter::{DwarfAddr2LineLookup, SourceCodeLocation, parse_dwarf}};
 use wasm::{Store, ValidationInfo, Value, config::Config, validate};
 
 #[derive(clap::Parser)]
@@ -37,10 +37,32 @@ fn main() -> ExitCode {
     let args = Args::parse();
 
     let wasm_bytes= match std::fs::read(&args.wasm_file_path) {
-        Ok(x) => x,
+        Ok(wasm_bytes) => wasm_bytes,
         Err(e) => {
             let wasm_file_path = &args.wasm_file_path;
             error!("Failed to read {wasm_file_path:?}: {e}");
+            return ExitCode::FAILURE;
+        }
+    };
+
+    let inputs = match std::fs::read_to_string(&args.input_file_path) {
+        Ok(inputs) => {
+            let mut result = Vec::new();
+            for s in inputs.split_whitespace() {
+                let v= match s.parse::<i32>() {
+                    Ok(v) => v,
+                    Err(e) => {
+                        error!("Failed to parse input file, input is i32s seperated by whitespace: {e}");
+                        return ExitCode::FAILURE;
+                    }
+                };
+                result.push(Value::I32(v.cast_unsigned()));
+            }
+            result
+        }
+        Err(e) => {
+            let input_file_path = &args.input_file_path;
+            error!("Failed to read {input_file_path:?}: {e}");
             return ExitCode::FAILURE;
         }
     };
@@ -54,23 +76,22 @@ fn main() -> ExitCode {
         }
     };
 
-    match args.probe_type {
-        ProbeType::FullTrace => continue_with_probe(FullTraceToVec::default(), &wasm_bytes, validation_info),
-        ProbeType::CovList => continue_with_probe(CovListTraceToVec::default(), &wasm_bytes, validation_info)
-    }
+    let mut dwarf_table = parse_dwarf(&wasm_bytes);
 
+    match &args.probe_type {
+        ProbeType::FullTrace => continue_with_fulltrace_probe(&wasm_bytes, &validation_info, inputs, &mut dwarf_table),
+        ProbeType::CovList => continue_with_covlisttrace_probe(&wasm_bytes, &validation_info, inputs, &mut dwarf_table)
+    }
+    
 }
 
-fn continue_with_probe<T>(user_data: T, wasm_bytes: &[u8], validation_info: ValidationInfo) -> ExitCode
-where
-    for<'a> &'a T : IntoIterator<Item = u64>,
-    T: ExecutionTrace + Config {
-
+fn continue_with_fulltrace_probe(wasm_bytes: &[u8], validation_info: &ValidationInfo, inputs: Vec<Value>, dwarf_table: &mut DwarfAddr2LineLookup) -> ExitCode {
+    let user_data = FullTraceToVec::default();
     // intialize a coverage enabled store
     let mut store = Store::new(user_data);
 
     // instantiate the module
-    let module = match unsafe { store.module_instantiate(&validation_info, Vec::new(), None) } {
+    let module = match unsafe { store.module_instantiate(validation_info, Vec::new(), None) } {
         Ok(outcome) => outcome.module_addr,
         Err(err) => {
             error!("Instantiation failed: {err:?} [{err}]");
@@ -86,13 +107,73 @@ where
 
     // call the entry function
     match unsafe {
-        store.invoke_without_fuel(entry_function, vec![Value::I32(171), Value::I32(379)])
+        store.invoke_without_fuel(entry_function, inputs)
     } {
         Ok(x) => eprintln!("execution finished with return value(s) {x:?}"),
-        Err(e) => eprintln!("execution abortde due to {e:?}"),
+        Err(e) => eprintln!("execution aborted due to {e:?}"),
     }
 
-    lib_wasm_coverage::reporter::report_source_lines(&wasm_bytes, store.user_data.into_iter());
+    for pc in &store.user_data.trace {
+        if
+        //already_seen_pc.insert(pc)
+        //&&
+        let Some((file_idx, line, col, hit)) = dwarf_table.pc_to_source_file_cache.get_mut(pc) {
+            let scl = SourceCodeLocation {
+                path: &dwarf_table.source_file_list[*file_idx],
+                line: *line,
+                col: *col
+            };
+            eprintln!("pc = {pc:#x?} <- {scl}");
+            *hit = true;
+        }
+    }
+
+    ExitCode::SUCCESS
+}
+
+fn continue_with_covlisttrace_probe(wasm_bytes: &[u8], validation_info: &ValidationInfo, inputs: Vec<Value>, dwarf_table: &mut DwarfAddr2LineLookup) -> ExitCode {
+    let user_data = CovListTraceToVec::default();
+    // intialize a coverage enabled store
+    let mut store = Store::new(user_data);
+
+    // instantiate the module
+    let module = match unsafe { store.module_instantiate(validation_info, Vec::new(), None) } {
+        Ok(outcome) => outcome.module_addr,
+        Err(err) => {
+            error!("Instantiation failed: {err:?} [{err}]");
+            return ExitCode::FAILURE;
+        }
+    };
+
+    // get funcref to the entry function
+    let entry_function = unsafe { store.instance_export(module, "main") }
+        .unwrap()
+        .as_func()
+        .unwrap();
+
+    // call the entry function
+    match unsafe {
+        store.invoke_without_fuel(entry_function, inputs)
+    } {
+        Ok(x) => eprintln!("execution finished with return value(s) {x:?}"),
+        Err(e) => eprintln!("execution aborted due to {e:?}"),
+    }
+
+    for range in &store.user_data.trace {
+        eprintln!("{:?}",range)
+    }
+
+    for (pc, (file_idx, line, col, hit)) in dwarf_table.pc_to_source_file_cache.iter_mut() {
+        if store.user_data.trace.contains(*pc) {
+            let scl = SourceCodeLocation {
+                path: &dwarf_table.source_file_list[*file_idx],
+                line: *line,
+                col: *col
+            };
+            eprintln!("pc = {pc:#x?} <- {scl}");
+            *hit = true;
+        }
+    }
 
     ExitCode::SUCCESS
 }

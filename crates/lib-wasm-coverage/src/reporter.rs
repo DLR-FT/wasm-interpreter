@@ -4,10 +4,15 @@ use core::error::Error;
 use std::{eprintln, path};
 
 use gimli::{Dwarf, EndianSlice};
-use std::prelude::rust_2024::*;
 use wasmparser::{Parser, Payload};
 
-pub fn report_source_lines(wasm_bytecode: &[u8], execution_trace: impl Iterator<Item = u64>) {
+#[derive(Debug,Clone,PartialEq, Eq)]
+pub struct DwarfAddr2LineLookup {
+    pub pc_to_source_file_cache: std::collections::HashMap<u64, (usize, u64, u64, bool)>,
+    pub source_file_list: std::vec::Vec<path::PathBuf>,
+}
+
+pub fn parse_dwarf(wasm_bytecode: &[u8]) -> DwarfAddr2LineLookup {
     let cur = Parser::new(0);
     let mut offset: u64 = 0;
 
@@ -35,39 +40,16 @@ pub fn report_source_lines(wasm_bytecode: &[u8], execution_trace: impl Iterator<
     })
     .unwrap();
 
-    // TODO continue
-    eprintln!("{dwarf:#?}");
-
-    let thing = dwarf.units().next().unwrap().unwrap();
-
-    eprintln!("DEBUG HERE\n{:#?}", &thing);
-
-    let mut line_lookup_cacher = DwarfAddr2LineLookup::new();
-    eprintln!("loading");
-    line_lookup_cacher.load(&dwarf).unwrap();
-    eprintln!("looking up");
-
-    // let mut already_seen_pc = std::collections::BTreeSet::new();
-    for pc in execution_trace {
-        if
-        //already_seen_pc.insert(pc)
-        //&&
-        let Some(scl) = line_lookup_cacher.lookup(pc - offset) {
-            eprintln!("pc = {pc:#x?} <- {scl}");
-        }
-    }
-}
-
-pub struct DwarfAddr2LineLookup {
-    pc_to_source_file_cache: std::collections::HashMap<u64, (usize, u64, u64)>,
-    source_file_list: Vec<path::PathBuf>,
+    let mut result = DwarfAddr2LineLookup::new();
+    result.load(&dwarf, offset);
+    result
 }
 
 #[derive(Debug)]
 pub struct SourceCodeLocation<'a> {
-    path: &'a path::Path,
-    line: u64,
-    col: u64,
+    pub path: &'a path::Path,
+    pub line: u64,
+    pub col: u64,
 }
 
 impl<'a> std::fmt::Display for SourceCodeLocation<'a> {
@@ -89,14 +71,14 @@ impl DwarfAddr2LineLookup
     pub fn lookup<'a>(&'a self, pc: u64) -> Option<SourceCodeLocation<'a>> {
         self.pc_to_source_file_cache
             .get(&pc)
-            .map(|(idx, line, col)| SourceCodeLocation {
+            .map(|(idx, line, col, _)| SourceCodeLocation {
                 path: self.source_file_list[*idx].as_path(),
                 line: *line,
                 col: *col,
             })
     }
 
-    pub fn load<R: gimli::Reader>(&mut self, dwarf: &Dwarf<R>) -> Result<(), std::boxed::Box<dyn Error>> {
+    pub fn load<R: gimli::Reader>(&mut self, dwarf: &Dwarf<R>, offset: u64) -> Result<(), std::boxed::Box<dyn Error>> {
         // temporary map to accelerate the `source location -> index` lookup
         let mut temp_lut = std::collections::HashMap::new();
 
@@ -161,7 +143,7 @@ impl DwarfAddr2LineLookup
 
                         let pc = row.address();
                         self.pc_to_source_file_cache
-                            .insert(pc, (current_pc_location_idx, line, column));
+                            .insert(pc+offset, (current_pc_location_idx, line, column, false));
 
                         // eprintln!(
                         //     "{:#x} {}:{}:{}",

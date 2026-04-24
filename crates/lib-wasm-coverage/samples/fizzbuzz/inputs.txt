@@ -1,4 +1,1 @@
-# deliberately not covering the case nothing is said
-12
-20
 45

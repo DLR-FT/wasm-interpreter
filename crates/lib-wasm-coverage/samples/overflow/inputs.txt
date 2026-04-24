@@ -1,2 +1,1 @@
-# coverage hits the case where the value overflows
 2147483647 1

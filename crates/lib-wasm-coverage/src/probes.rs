@@ -1,14 +1,7 @@
 //! Trace probes for coverage measurement
 //!
 //! Contains different probes to record execution traces
-pub trait ExecutionTrace
-where
-    for<'a> &'a Self: IntoIterator<Item = u64>,
-{
-    fn covers(&self, instr_addr: u64) -> bool {
-        self.into_iter().any(|instr| instr == instr_addr)
-    }
-}
+//! 
 /// Trace every instruction which is executed, recording to a [`Vec`]
 ///
 /// This is a rather naive solution, it would suffice to only trace the basic blocks. This is mainly
@@ -28,27 +21,6 @@ impl wasm::config::Config for FullTraceToVec {
     }
 }
 
-pub struct FullTraceToVecIterator<'a>(core::iter::Copied<core::slice::Iter<'a, u64>>);
-
-impl<'a> Iterator for FullTraceToVecIterator<'a> {
-    type Item = u64;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.0.next()
-    }
-}
-
-impl<'a> IntoIterator for &'a FullTraceToVec {
-    type Item = u64;
-
-    type IntoIter = FullTraceToVecIterator<'a>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        FullTraceToVecIterator(self.trace.iter().copied())
-    }
-}
-
-impl ExecutionTrace for FullTraceToVec {}
 
 /// Trace every basic block which is executed, recording to a [`Vec`]
 ///
@@ -120,11 +92,14 @@ pub struct CovListTraceToVec {
 impl wasm::config::Config for CovListTraceToVec {
     fn instruction_hook(&mut self, bytecode: &[u8], pc: usize) {
         use wasm::opcode::*;
-        let last_bb_start_pc = self.last_bb_start_pc.unwrap_or({
-            let instr = bytecode[pc];
-            trace!("entering basic block with pc = {pc:#x?}, instruction = {instr:#02x?}");
-            pc.try_into().unwrap()
-        });
+        let last_bb_start_pc = match self.last_bb_start_pc {
+            Some(last_bb_start_pc) => last_bb_start_pc,
+            None => {
+                let instr = bytecode[pc];
+                trace!("entering basic block with pc = {pc:#x?}, instruction = {instr:#02x?}");
+                pc.try_into().unwrap()
+            }
+        };
         self.last_bb_start_pc = Some(last_bb_start_pc);
 
         if let instr @ (UNREACHABLE | LOOP | IF | ELSE | END | BR | BR_IF | BR_TABLE | RETURN
@@ -132,35 +107,8 @@ impl wasm::config::Config for CovListTraceToVec {
         {
             let last_bb_end_pc: u64 = pc.try_into().unwrap();
             self.trace.insert(last_bb_start_pc..(last_bb_end_pc + 1));
+            self.last_bb_start_pc = None;
             trace!("leaving basic block with pc = {pc:#x?}, instruction = {instr:#02x?}");
         }
-    }
-}
-
-pub struct CovListTraceToVecIterator<'a>(
-    core::iter::Flatten<crate::covlist::CovListRefIterator<'a>>,
-);
-
-impl<'a> Iterator for CovListTraceToVecIterator<'a> {
-    type Item = u64;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.0.next()
-    }
-}
-
-impl<'a> IntoIterator for &'a CovListTraceToVec {
-    type Item = u64;
-
-    type IntoIter = CovListTraceToVecIterator<'a>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        CovListTraceToVecIterator((&self.trace).into_iter().flatten())
-    }
-}
-
-impl ExecutionTrace for CovListTraceToVec {
-    fn covers(&self, instr_addr: u64) -> bool {
-        self.trace.contains(instr_addr)
     }
 }
