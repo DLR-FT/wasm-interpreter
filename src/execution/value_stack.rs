@@ -1,10 +1,10 @@
 use core::mem::MaybeUninit;
 
-use alloc::boxed::Box;
 use alloc::vec::Vec;
 
 use crate::addrs::FuncAddr;
 use crate::config::Config;
+use crate::core::fixed_capacity_vec::FixedCapacityVec;
 use crate::core::indices::LocalIdx;
 use crate::core::reader::types::{FuncType, ValType};
 use crate::core::utils::ToUsizeExt;
@@ -21,56 +21,38 @@ use crate::RuntimeError;
 #[derive(Debug)]
 pub(crate) struct Stack {
     /// WASM values on the stack, i.e. the actual data that instructions operate on
-    values: Box<[Value]>,
-
-    /// Stack pointer aka an index into [`Self::values`], pointing to the element above the current top
-    ///
-    /// - If this is 0, than the stack is empty. You must not pop the stack.
-    /// - If this is equal to `self.values.len()`, then the stack is full. You must not push.
-    stack_height: usize,
+    values: FixedCapacityVec<Value>,
 
     /// Call frames
     ///
     /// Each time a function is called, a new frame is pushed, whenever a function returns, a frame is popped
-    frames: Vec<CallFrame>,
+    frames: FixedCapacityVec<CallFrame>,
 }
 
 impl Stack {
     pub fn new<T: Config>(
-        mut params_to_base_call_frame: Vec<Value>,
+        params_to_base_call_frame: Vec<Value>,
         base_call_frame_func_ty: &FuncType,
         base_call_frame_remaining_locals: &[ValType],
     ) -> Result<Self, RuntimeError> {
-        // retain the length of the `params_to_base_call_frame` as index to the first free stack entry
-        let stack_pointer_idx = params_to_base_call_frame.len();
-
-        // realloc Vec to correct size
-        params_to_base_call_frame.resize(T::MAX_VALUE_STACK_SIZE, Value::I32(0));
-
         let mut stack = Self {
-            values: params_to_base_call_frame.into_boxed_slice(),
-            stack_height: stack_pointer_idx,
-            frames: Vec::new(),
+            values: FixedCapacityVec::with_capacity(T::MAX_VALUE_STACK_SIZE),
+            frames: FixedCapacityVec::with_capacity(T::MAX_CALL_STACK_SIZE),
         };
 
-        // The following is a copy of `Stack::push_call_frame` except that it
-        // only partially initializes the call frame's fields.
-
-        if stack.call_frame_count() > T::MAX_CALL_STACK_SIZE {
-            return Err(RuntimeError::StackExhaustion);
-        }
+        stack.values.push_from_slice(&params_to_base_call_frame)?;
 
         debug_assert!(
-            stack.stack_height >= base_call_frame_func_ty.params.valtypes.len(),
+            stack.values.len() >= base_call_frame_func_ty.params.valtypes.len(),
             "when pushing a new call frame, at least as many values need to be on the stack as required by the new call frames's function"
         );
 
         // the topmost `param_count` values are transferred into/consumed by this new call frame
         let param_count = base_call_frame_func_ty.params.valtypes.len();
-        let call_frame_base_idx = stack.stack_height - param_count;
+        let call_frame_base_idx = stack.values.len() - param_count;
 
         // verify that enough space is on the stack to push the remaining locals
-        if base_call_frame_remaining_locals.len() + stack.stack_height >= stack.values.len() {
+        if base_call_frame_remaining_locals.len() + stack.values.len() >= stack.values.capacity() {
             return Err(RuntimeError::StackExhaustion);
         }
 
@@ -81,7 +63,7 @@ impl Stack {
         }
 
         // now that the locals are all populated, the actual stack section of this call frame begins
-        let value_stack_base_idx = stack.stack_height;
+        let value_stack_base_idx = stack.values.len();
 
         stack.frames.push(CallFrame {
             return_func_addr: MaybeUninit::uninit(),
@@ -90,23 +72,16 @@ impl Stack {
             call_frame_base_idx,
             return_value_count: base_call_frame_func_ty.returns.valtypes.len(),
             return_stp: MaybeUninit::uninit(),
-        });
+        })?;
 
         Ok(stack)
     }
 
-    pub(super) fn into_values(self) -> Vec<Value> {
-        let Self {
-            values: value_stack,
-            stack_height: stack_pointer_idx,
-            ..
-        } = self;
-
-        // convert the existing heap allocation into a vector, but shorten it
-        let mut values = Vec::from(value_stack);
-        values.truncate(stack_pointer_idx);
-
-        values
+    pub(super) fn into_values(mut self) -> Vec<Value> {
+        self.values
+            .pop_into_slice(self.values.len())
+            .unwrap_validated()
+            .to_vec()
     }
 
     /// Pop a value from the value stack
@@ -118,16 +93,17 @@ impl Stack {
         // this interpreter invocation.
         debug_assert!(
             if !self.frames.is_empty() {
-                self.stack_height > self.current_call_frame().value_stack_base_idx
+                self.values.len() > self.current_call_frame().value_stack_base_idx
             } else {
                 true
             },
             "can not pop values past the current call frame"
         );
 
-        debug_assert!(self.stack_height > 0, "pop results in stack underflow");
+        debug_assert!(!self.values.is_empty(), "pop results in stack underflow");
 
-        // SAFETY: this is not safe if the stack is empty
+        // SAFETY: this is safe only if there is at least one `Value` on the stack, which must
+        // belong to the current `CallFrame`.
         unsafe { self.pop_value_unchecked() }
     }
 
@@ -136,27 +112,22 @@ impl Stack {
     /// # Safety
     ///
     /// This will underflow the stack and cause undefined behavior, if the stack is empty. To
-    /// check, before pushing, assure that the [`Self::stack_height`] is greater than 0.
+    /// check, before pushing, assure that [`Self::values`] is not empty.
     #[inline(always)]
     unsafe fn pop_value_unchecked(&mut self) -> Value {
-        // stack_pointer_idx always points to the first unused entry above the stack's topmost value
-        self.stack_height -= 1;
-        // *self.values.get(self.stack_height).unwrap_validated()
-        unsafe { *self.values.get_unchecked(self.stack_height) }
+        // SAFETY: safe only if stack contains at least one element
+        unsafe { self.values.pop_unchecked() }
     }
 
     /// Returns a cloned copy of the top value on the stack, or `None` if the stack is empty
     pub fn peek_value(&self) -> Option<Value> {
-        match self.stack_height {
-            0 => None,
-            i => Some(*self.values.get(i - 1).unwrap_validated()),
-        }
+        self.values.peek().ok().cloned()
     }
 
     /// Push a value to the value stack after veryfing that this will not overflow the stack
     pub fn push_value(&mut self, value: Value) -> Result<(), RuntimeError> {
         // check for value stack exhaustion
-        if self.stack_height >= self.values.len() {
+        if self.values.len() >= self.values.capacity() {
             return Err(RuntimeError::StackExhaustion);
         }
 
@@ -171,14 +142,11 @@ impl Stack {
     /// # Safety
     ///
     /// This will overflow the stack and cause undefined behavior, if the stack is already full. To
-    /// check, before pushing, assure that the [`Self::stack_height`] is smaller than the maximum
-    /// allowed stack size.
+    /// check, before pushing, assure that the [`Self::values`] is not full.
     #[inline(always)]
     unsafe fn push_value_unchecked(&mut self, value: Value) {
-        debug_assert!(self.stack_height < self.values.len());
-
-        *self.values.get_mut(self.stack_height).unwrap_validated() = value;
-        self.stack_height += 1;
+        // SAFETY: safe when called with remaining space on the stack.
+        unsafe { self.values.push_unchecked(value) }
     }
 
     /// Returns a shared reference to a specific local by its index in the current call frame.
@@ -200,8 +168,13 @@ impl Stack {
     }
 
     /// Get a shared reference to the current [`CallFrame`]
+    ///
+    /// # Safety
+    ///
+    /// This will underflow if no active call frame is on the stack.
     pub fn current_call_frame(&self) -> &CallFrame {
-        self.frames.last().unwrap_validated()
+        // SAFETY: must only be called if there is at least one callframe on the stack.
+        unsafe { self.frames.peek_unchecked() }
     }
 
     /// Pop a [`CallFrame`] from the call stack, returning the caller function store address, return address, and the return stp
@@ -218,12 +191,12 @@ impl Stack {
             ..
         } = self.frames.pop().unwrap_validated();
 
-        let remove_count = self.stack_height - call_frame_base_idx - return_value_count;
+        let remove_count = self.values.len() - call_frame_base_idx - return_value_count;
 
         self.remove_in_between(remove_count, return_value_count);
 
         debug_assert_eq!(
-            self.stack_height,
+            self.values.len(),
             call_frame_base_idx + return_value_count,
             "after a function call finished, the stack must have exactly as many values as it had before calling the function plus the number of function return values"
         );
@@ -262,16 +235,16 @@ impl Stack {
         }
 
         debug_assert!(
-            self.stack_height>= func_ty.params.valtypes.len(),
+            self.values.len()>= func_ty.params.valtypes.len(),
             "when pushing a new call frame, at least as many values need to be on the stack as required by the new call frames's function"
         );
 
         // the topmost `param_count` values are transferred into/consumed by this new call frame
         let param_count = func_ty.params.valtypes.len();
-        let call_frame_base_idx = self.stack_height - param_count;
+        let call_frame_base_idx = self.values.len() - param_count;
 
         // verify that enough space is on the stack to push the remaining locals
-        if remaining_locals.len() + self.stack_height >= self.values.len() {
+        if remaining_locals.len() + self.values.len() >= self.values.capacity() {
             return Err(RuntimeError::StackExhaustion);
         }
 
@@ -282,7 +255,7 @@ impl Stack {
         }
 
         // now that the locals are all populated, the actual stack section of this call frame begins
-        let value_stack_base_idx = self.stack_height;
+        let value_stack_base_idx = self.values.len();
 
         self.frames.push(CallFrame {
             return_func_addr: MaybeUninit::new(return_func_addr),
@@ -291,7 +264,7 @@ impl Stack {
             call_frame_base_idx,
             return_value_count: func_ty.returns.valtypes.len(),
             return_stp: MaybeUninit::new(return_stp),
-        });
+        })?;
 
         Ok(())
     }
@@ -307,14 +280,8 @@ impl Stack {
     /// Note that this is providing the values in reverse order compared to popping `n` values
     /// (which would yield the element closest to the **top** of the value stack first).
     pub fn pop_tail_iter(&mut self, n: usize) -> Vec<Value> {
-        let start = self.stack_height - n;
-        // TODO optimize and reconsider
-        let mut tail = Vec::with_capacity(n);
-        tail.extend_from_slice(self.values.get(start..self.stack_height).unwrap_validated());
-
+        let tail = self.values.pop_into_slice(n).unwrap_validated().to_vec();
         debug_assert_eq!(tail.len(), n);
-
-        self.stack_height -= n;
         tail
     }
 
@@ -329,10 +296,7 @@ impl Stack {
     /// - `keep_count` topmost elements will be identical before and after the operation
     /// - all elements below the `remove_count + keep_count` topmost stack entry remain
     pub fn remove_in_between(&mut self, remove_count: usize, keep_count: usize) {
-        let len = self.stack_height;
-        self.values
-            .copy_within(len - keep_count..len, len - keep_count - remove_count);
-        self.stack_height -= remove_count;
+        self.values.remove_in_between(remove_count, keep_count);
     }
 }
 
