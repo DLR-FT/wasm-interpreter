@@ -1236,7 +1236,7 @@
 <a href=#1236 id=1236 data-nosnippet>1236</a>                    } <span class="kw">else </span>{
 <a href=#1237 id=1237 data-nosnippet>1237</a>                        stack.push_value::&lt;T&gt;(Value::I32(n)).unwrap_validated(); <span class="comment">// we are pushing back what was just popped, this can't panic.
 <a href=#1238 id=1238 data-nosnippet>1238</a>                        </span>resumable.current_func_addr = current_func_addr;
-<a href=#1239 id=1239 data-nosnippet>1239</a>                        resumable.pc = wasm.pc - prev_pc; <span class="comment">// the instruction was fetched already, we roll this back
+<a href=#1239 id=1239 data-nosnippet>1239</a>                        resumable.pc = prev_pc; <span class="comment">// the instruction was fetched already, we roll this back
 <a href=#1240 id=1240 data-nosnippet>1240</a>                        </span>resumable.stp = stp;
 <a href=#1241 id=1241 data-nosnippet>1241</a>                        <span class="kw">return </span><span class="prelude-val">Ok</span>(InterpreterLoopOutcome::OutOfFuel {
 <a href=#1242 id=1242 data-nosnippet>1242</a>                            required_fuel: NonZeroU64::new(cost - <span class="kw-2">*</span>fuel).expect(<span class="string">"the last check guarantees that the current fuel is smaller than cost"</span>),
@@ -2740,7 +2740,7 @@
 <a href=#2740 id=2740 data-nosnippet>2740</a>                            } <span class="kw">else </span>{
 <a href=#2741 id=2741 data-nosnippet>2741</a>                                stack.push_value::&lt;T&gt;(Value::I32(n)).unwrap_validated(); <span class="comment">// we are pushing back what was just popped, this can't panic.
 <a href=#2742 id=2742 data-nosnippet>2742</a>                                </span>resumable.current_func_addr = current_func_addr;
-<a href=#2743 id=2743 data-nosnippet>2743</a>                                resumable.pc = wasm.pc - prev_pc; <span class="comment">// the instruction was fetched already, we roll this back
+<a href=#2743 id=2743 data-nosnippet>2743</a>                                resumable.pc = prev_pc; <span class="comment">// the instruction was fetched already, we roll this back
 <a href=#2744 id=2744 data-nosnippet>2744</a>                                </span>resumable.stp = stp;
 <a href=#2745 id=2745 data-nosnippet>2745</a>                                <span class="kw">return </span><span class="prelude-val">Ok</span>(InterpreterLoopOutcome::OutOfFuel {
 <a href=#2746 id=2746 data-nosnippet>2746</a>                                    required_fuel: NonZeroU64::new(cost - <span class="kw-2">*</span>fuel).expect(<span class="string">"the last check guarantees that the current fuel is smaller than cost"</span>),
@@ -2833,7 +2833,7 @@
 <a href=#2833 id=2833 data-nosnippet>2833</a>                            } <span class="kw">else </span>{
 <a href=#2834 id=2834 data-nosnippet>2834</a>                                stack.push_value::&lt;T&gt;(Value::I32(n)).unwrap_validated(); <span class="comment">// we are pushing back what was just popped, this can't panic.
 <a href=#2835 id=2835 data-nosnippet>2835</a>                                </span>resumable.current_func_addr = current_func_addr;
-<a href=#2836 id=2836 data-nosnippet>2836</a>                                resumable.pc = wasm.pc - prev_pc; <span class="comment">// the instruction was fetched already, we roll this back
+<a href=#2836 id=2836 data-nosnippet>2836</a>                                resumable.pc = prev_pc; <span class="comment">// the instruction was fetched already, we roll this back
 <a href=#2837 id=2837 data-nosnippet>2837</a>                                </span>resumable.stp = stp;
 <a href=#2838 id=2838 data-nosnippet>2838</a>                                <span class="kw">return </span><span class="prelude-val">Ok</span>(InterpreterLoopOutcome::OutOfFuel {
 <a href=#2839 id=2839 data-nosnippet>2839</a>                                    required_fuel: NonZeroU64::new(cost - <span class="kw-2">*</span>fuel).expect(<span class="string">"the last check guarantees that the current fuel is smaller than cost"</span>),
@@ -2895,7 +2895,7 @@
 <a href=#2895 id=2895 data-nosnippet>2895</a>                            } <span class="kw">else </span>{
 <a href=#2896 id=2896 data-nosnippet>2896</a>                                stack.push_value::&lt;T&gt;(Value::I32(n)).unwrap_validated(); <span class="comment">// we are pushing back what was just popped, this can't panic.
 <a href=#2897 id=2897 data-nosnippet>2897</a>                                </span>resumable.current_func_addr = current_func_addr;
-<a href=#2898 id=2898 data-nosnippet>2898</a>                                resumable.pc = wasm.pc - prev_pc; <span class="comment">// the instruction was fetched already, we roll this back
+<a href=#2898 id=2898 data-nosnippet>2898</a>                                resumable.pc = prev_pc; <span class="comment">// the instruction was fetched already, we roll this back
 <a href=#2899 id=2899 data-nosnippet>2899</a>                                </span>resumable.stp = stp;
 <a href=#2900 id=2900 data-nosnippet>2900</a>                                <span class="kw">return </span><span class="prelude-val">Ok</span>(InterpreterLoopOutcome::OutOfFuel {
 <a href=#2901 id=2901 data-nosnippet>2901</a>                                    required_fuel: NonZeroU64::new(cost - <span class="kw-2">*</span>fuel).expect(<span class="string">"the last check guarantees that the current fuel is smaller than cost"</span>),
@@ -2937,7 +2937,7 @@
 <a href=#2937 id=2937 data-nosnippet>2937</a>                            } <span class="kw">else </span>{
 <a href=#2938 id=2938 data-nosnippet>2938</a>                                stack.push_value::&lt;T&gt;(Value::I32(n)).unwrap_validated(); <span class="comment">// we are pushing back what was just popped, this can't panic.
 <a href=#2939 id=2939 data-nosnippet>2939</a>                                </span>resumable.current_func_addr = current_func_addr;
-<a href=#2940 id=2940 data-nosnippet>2940</a>                                resumable.pc = wasm.pc - prev_pc; <span class="comment">// the instruction was fetched already, we roll this back
+<a href=#2940 id=2940 data-nosnippet>2940</a>                                resumable.pc = prev_pc; <span class="comment">// the instruction was fetched already, we roll this back
 <a href=#2941 id=2941 data-nosnippet>2941</a>                                </span>resumable.stp = stp;
 <a href=#2942 id=2942 data-nosnippet>2942</a>                                <span class="kw">return </span><span class="prelude-val">Ok</span>(InterpreterLoopOutcome::OutOfFuel {
 <a href=#2943 id=2943 data-nosnippet>2943</a>                                    required_fuel: NonZeroU64::new(cost - <span class="kw-2">*</span>fuel).expect(<span class="string">"the last check guarantees that the current fuel is smaller than cost"</span>),
@@ -3044,7 +3044,7 @@
 <a href=#3044 id=3044 data-nosnippet>3044</a>                            } <span class="kw">else </span>{
 <a href=#3045 id=3045 data-nosnippet>3045</a>                                stack.push_value::&lt;T&gt;(Value::I32(n)).unwrap_validated(); <span class="comment">// we are pushing back what was just popped, this can't panic.
 <a href=#3046 id=3046 data-nosnippet>3046</a>                                </span>resumable.current_func_addr = current_func_addr;
-<a href=#3047 id=3047 data-nosnippet>3047</a>                                resumable.pc = wasm.pc - prev_pc; <span class="comment">// the instruction was fetched already, we roll this back
+<a href=#3047 id=3047 data-nosnippet>3047</a>                                resumable.pc = prev_pc; <span class="comment">// the instruction was fetched already, we roll this back
 <a href=#3048 id=3048 data-nosnippet>3048</a>                                </span>resumable.stp = stp;
 <a href=#3049 id=3049 data-nosnippet>3049</a>                                <span class="kw">return </span><span class="prelude-val">Ok</span>(InterpreterLoopOutcome::OutOfFuel {
 <a href=#3050 id=3050 data-nosnippet>3050</a>                                    required_fuel: NonZeroU64::new(cost - <span class="kw-2">*</span>fuel).expect(<span class="string">"the last check guarantees that the current fuel is smaller than cost"</span>),
@@ -3139,7 +3139,7 @@
 <a href=#3139 id=3139 data-nosnippet>3139</a>                            } <span class="kw">else </span>{
 <a href=#3140 id=3140 data-nosnippet>3140</a>                                stack.push_value::&lt;T&gt;(Value::I32(n)).unwrap_validated(); <span class="comment">// we are pushing back what was just popped, this can't panic.
 <a href=#3141 id=3141 data-nosnippet>3141</a>                                </span>resumable.current_func_addr = current_func_addr;
-<a href=#3142 id=3142 data-nosnippet>3142</a>                                resumable.pc = wasm.pc - prev_pc; <span class="comment">// the instruction was fetched already, we roll this back
+<a href=#3142 id=3142 data-nosnippet>3142</a>                                resumable.pc = prev_pc; <span class="comment">// the instruction was fetched already, we roll this back
 <a href=#3143 id=3143 data-nosnippet>3143</a>                                </span>resumable.stp = stp;
 <a href=#3144 id=3144 data-nosnippet>3144</a>                                <span class="kw">return </span><span class="prelude-val">Ok</span>(InterpreterLoopOutcome::OutOfFuel {
 <a href=#3145 id=3145 data-nosnippet>3145</a>                                    required_fuel: NonZeroU64::new(cost - <span class="kw-2">*</span>fuel).expect(<span class="string">"the last check guarantees that the current fuel is smaller than cost"</span>),
@@ -3216,7 +3216,7 @@
 <a href=#3216 id=3216 data-nosnippet>3216</a>                            } <span class="kw">else </span>{
 <a href=#3217 id=3217 data-nosnippet>3217</a>                                stack.push_value::&lt;T&gt;(Value::I32(len)).unwrap_validated(); <span class="comment">// we are pushing back what was just popped, this can't panic.
 <a href=#3218 id=3218 data-nosnippet>3218</a>                                </span>resumable.current_func_addr = current_func_addr;
-<a href=#3219 id=3219 data-nosnippet>3219</a>                                resumable.pc = wasm.pc - prev_pc; <span class="comment">// the instruction was fetched already, we roll this back
+<a href=#3219 id=3219 data-nosnippet>3219</a>                                resumable.pc = prev_pc; <span class="comment">// the instruction was fetched already, we roll this back
 <a href=#3220 id=3220 data-nosnippet>3220</a>                                </span>resumable.stp = stp;
 <a href=#3221 id=3221 data-nosnippet>3221</a>                                <span class="kw">return </span><span class="prelude-val">Ok</span>(InterpreterLoopOutcome::OutOfFuel {
 <a href=#3222 id=3222 data-nosnippet>3222</a>                                    required_fuel: NonZeroU64::new(cost - <span class="kw-2">*</span>fuel).expect(<span class="string">"the last check guarantees that the current fuel is smaller than cost"</span>),
