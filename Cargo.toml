@@ -5,6 +5,7 @@ members = [
   "crates/checked",
   "crates/compare-testsuite-rs",
   "crates/interop",
+  "crates/lib-wasm-coverage",
   "crates/linker",
   "crates/log_wrapper",
   "crates/registry",

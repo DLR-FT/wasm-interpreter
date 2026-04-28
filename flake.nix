@@ -96,7 +96,15 @@
           in
           {
             # packages from `pkgs/`, injected into the `pkgs` via our `overlay.nix`
-            packages = pkgs.wasm-interpreter-pkgs;
+            packages = pkgs.wasm-interpreter-pkgs // {
+              polybench-rs-wasm = pkgs.pkgsCross.wasm32-unknown-none.callPackage ./pkgs/polybench-rs.nix {
+                # make custom Rust platform based on binary Rust distro to avoid compiling LLVM from scratch
+                rustPlatform = pkgs.makeRustPlatform {
+                  cargo = rust-toolchain-nixpkgs-current;
+                  rustc = rust-toolchain-nixpkgs-current;
+                };
+              };
+            };
 
             # a devshell with all the necessary bells and whistles
             devShells.default = (
@@ -122,6 +130,7 @@
                   cargo-watch
                   critcmp # compare criterion.rs benchmark results
                   wabt
+                  wasm-tools
 
                   # utilities
                   treefmtEval.config.build.wrapper
@@ -266,6 +275,7 @@
               inputsFrom = [ self.checks.${system}.wasm-interpreter-msrv ];
               nativeBuildInputs = with pkgs; [
                 ((rust-bin.selectLatestNightlyWith (toolchain: toolchain.default)).override {
+                  targets = [ "wasm32-unknown-unknown" ];
                   extensions = [
                     "miri-preview"
                     "rust-analysis"
