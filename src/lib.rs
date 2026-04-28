@@ -4,6 +4,8 @@
     clippy::undocumented_unsafe_blocks,
     unsafe_op_in_unsafe_fn
 )]
+#![feature(explicit_tail_calls)]
+#![expect(incomplete_features)]
 
 extern crate alloc;
 #[macro_use]
