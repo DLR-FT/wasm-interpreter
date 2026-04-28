@@ -60,6 +60,8 @@
 //! - `log`: Enables logging (enables `log` dependency).
 
 #![no_std]
+#![expect(incomplete_features)]
+#![feature(explicit_tail_calls)]
 
 extern crate alloc;
 

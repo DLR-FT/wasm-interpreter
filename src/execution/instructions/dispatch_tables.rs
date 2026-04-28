@@ -6,20 +6,20 @@ use crate::{
     Config,
 };
 
-pub(crate) trait HasBaseDispatchTable {
-    const DISPATCH_TABLE: [InstructionHandlerFn; 256];
+pub(crate) trait HasBaseDispatchTable<T> {
+    const DISPATCH_TABLE: [InstructionHandlerFn<T>; 256];
 }
 
-pub(crate) trait HasFcDispatchTable {
-    const FC_DISPATCH_TABLE: [InstructionHandlerFn; 18];
+pub(crate) trait HasFcDispatchTable<T> {
+    const FC_DISPATCH_TABLE: [InstructionHandlerFn<T>; 18];
 }
 
-pub(crate) trait HasFdDispatchTable {
-    const FD_DISPATCH_TABLE: [InstructionHandlerFn; 256];
+pub(crate) trait HasFdDispatchTable<T> {
+    const FD_DISPATCH_TABLE: [InstructionHandlerFn<T>; 256];
 }
 
-impl<T: Config> HasBaseDispatchTable for T {
-    const DISPATCH_TABLE: [InstructionHandlerFn; 256] = [
+impl<T: Config> HasBaseDispatchTable<T> for T {
+    const DISPATCH_TABLE: [InstructionHandlerFn<T>; 256] = [
         control::unreachable::<T>,
         control::nop::<T>,
         control::block::<T>,
@@ -279,8 +279,8 @@ impl<T: Config> HasBaseDispatchTable for T {
     ];
 }
 
-impl<T: Config> HasFcDispatchTable for T {
-    const FC_DISPATCH_TABLE: [InstructionHandlerFn; 18] = [
+impl<T: Config> HasFcDispatchTable<T> for T {
+    const FC_DISPATCH_TABLE: [InstructionHandlerFn<T>; 18] = [
         numeric::i32_trunc_sat_f32_s::<T>,
         numeric::i32_trunc_sat_f32_u::<T>,
         numeric::i32_trunc_sat_f64_s::<T>,
@@ -302,8 +302,8 @@ impl<T: Config> HasFcDispatchTable for T {
     ];
 }
 
-impl<T: Config> HasFdDispatchTable for T {
-    const FD_DISPATCH_TABLE: [InstructionHandlerFn; 256] = [
+impl<T: Config> HasFdDispatchTable<T> for T {
+    const FD_DISPATCH_TABLE: [InstructionHandlerFn<T>; 256] = [
         memory::v128_load::<T>,
         memory::v128_load8x8_s::<T>,
         memory::v128_load8x8_u::<T>,
