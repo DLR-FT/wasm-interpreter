@@ -135,36 +135,48 @@ pub(super) unsafe fn run<T: Config>(
         prev_pc: 0, // this is set in dispatch function
     };
 
-    dispatch(args)
+    dispatch_wrapper(args)
 }
 
+macro_rules! dispatch_macro {
+    ($args:expr) => {{
+        let mut args: Args<T> = $args;
+
+        // call the instruction hook
+        args.user_data
+            .instruction_hook(args.wasm.full_wasm_binary, args.wasm.pc);
+
+        args.prev_pc = args.wasm.pc;
+
+        let first_instr_byte = args.wasm.read_u8().unwrap_validated();
+
+        #[cfg(debug_assertions)]
+        trace!(
+            "Executing instruction {}",
+            crate::execution::interpreter_loop::opcode_byte_to_str(first_instr_byte)
+        );
+
+        use crate::execution::interpreter_loop::dispatch_tables::HasBaseDispatchTable;
+
+        let instruction_handler: crate::execution::interpreter_loop::InstructionHandlerFn<T> = unsafe {
+            *T::DISPATCH_TABLE
+                .get(usize::from(first_instr_byte))
+                .unwrap_unchecked() };
+
+        // SAFETY: All possible instruction handler functions use the same safety requirements, as
+        // they are defined through the same macro: The caller ensures that the resumable is valid
+        // in the current store. Also all other address types passed via the `Args` must come from
+        // the current store itself. Therefore, they are automatically valid in this store.
+        unsafe { become instruction_handler(args) }
+    }};
+}
+
+pub(crate) use dispatch_macro;
+
 // #[inline(always)]
-fn dispatch<T: Config>(mut args: Args<T>) -> Result<InterpreterLoopOutcome, RuntimeError> {
-    let _: InstructionHandlerFn<T> = dispatch::<T>;
-
-    // call the instruction hook
-    args.user_data
-        .instruction_hook(args.wasm.full_wasm_binary, args.wasm.pc);
-
-    args.prev_pc = args.wasm.pc;
-
-    let first_instr_byte = args.wasm.read_u8().unwrap_validated();
-
-    #[cfg(debug_assertions)]
-    trace!(
-        "Executing instruction {}",
-        opcode_byte_to_str(first_instr_byte)
-    );
-
-    let instruction_handler: InstructionHandlerFn<T> = *T::DISPATCH_TABLE
-        .get(usize::from(first_instr_byte))
-        .expect("the instruction to be valid because the code is validated");
-
-    // SAFETY: All possible instruction handler functions use the same safety requirements, as
-    // they are defined through the same macro: The caller ensures that the resumable is valid
-    // in the current store. Also all other address types passed via the `Args` must come from
-    // the current store itself. Therefore, they are automatically valid in this store.
-    unsafe { become instruction_handler(args) }
+fn dispatch_wrapper<T: Config>(mut args: Args<T>) -> Result<InterpreterLoopOutcome, RuntimeError> {
+    let _: InstructionHandlerFn<T> = dispatch_wrapper::<T>;
+    dispatch_macro!(args)
 }
 
 //helper function for avoiding code duplication at intraprocedural jumps
@@ -452,7 +464,8 @@ macro_rules! define_instruction {
                 return Ok(interpreter_loop_outcome);
             }
 
-            become crate::execution::interpreter_loop::dispatch(args)
+            crate::execution::interpreter_loop::dispatch_macro!(args)
+            // become crate::execution::interpreter_loop::dispatch(args)
         }
     };
 

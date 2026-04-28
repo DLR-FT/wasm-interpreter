@@ -9,6 +9,7 @@ pub struct MemArg {
 }
 
 impl MemArg {
+    #[inline(always)]
     pub fn read(wasm: &mut WasmReader) -> Result<Self, ValidationError> {
         let align = wasm.read_var_u32()?;
         let offset = wasm.read_var_u32()?;

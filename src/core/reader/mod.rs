@@ -96,6 +96,7 @@ impl<'a> WasmReader<'a> {
     /// Read the current byte without advancing the [`pc`](Self::pc)
     ///
     /// May yield an error if the [`pc`](Self::pc) advanced past the end of the WASM binary slice
+    #[inline(always)]
     pub fn peek_u8(&self) -> Result<u8, ValidationError> {
         self.full_wasm_binary
             .get(self.pc)
