@@ -138,7 +138,7 @@ pub(super) unsafe fn run<T: Config>(
     dispatch(args)
 }
 
-#[inline(always)]
+// #[inline(always)]
 fn dispatch<T: Config>(mut args: Args<T>) -> Result<InterpreterLoopOutcome, RuntimeError> {
     let _: InstructionHandlerFn<T> = dispatch::<T>;
 
@@ -452,7 +452,7 @@ macro_rules! define_instruction {
                 return Ok(interpreter_loop_outcome);
             }
 
-            crate::execution::interpreter_loop::dispatch(args)
+            become crate::execution::interpreter_loop::dispatch(args)
         }
     };
 
@@ -543,6 +543,7 @@ pub(crate) unsafe fn fc_extensions<T: crate::config::Config>(
 /// types contained in the [`Args`](crate::execution::interpreter_loop::Args) must be valid
 /// in the [`StoreInner`](crate::execution::store::StoreInner) that is also contained in the
 /// [`Args`](crate::execution::interpreter_loop::Args).
+#[inline(never)]
 pub(crate) unsafe fn fd_extensions<T: crate::config::Config>(
     args: Args<T>,
 ) -> Result<crate::execution::interpreter_loop::InterpreterLoopOutcome, crate::RuntimeError> {
