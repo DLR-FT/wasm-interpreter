@@ -9,6 +9,7 @@ use crate::{
         calculate_mem_address, data_drop, define_instruction, from_lanes, memory_init, to_lanes,
         Args, InterpreterLoopOutcome,
     },
+    instances::MemInst,
     value::{F32, F64},
     Value,
 };
@@ -39,10 +40,12 @@ define_instruction!(
         let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
         // SAFETY: This memory address was just read from the current
         // store. Therefore, it is valid in the current store.
-        let mem_inst = unsafe { store_inner.memories.get(mem_addr) };
-
+        let mem_inst = unsafe { store_inner.memories.get_mut(mem_addr) };
         let idx = calculate_mem_address(&memarg, relative_address)?;
-        let data = mem_inst.mem.load(idx)?;
+        let data = match mem_inst {
+            MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load(idx)?,
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load(idx)?,
+        };
 
         resumable.stack.push_value::<T>(Value::I32(data))?;
         trace!("Instruction: i32.load [{relative_address}] -> [{data}]");
@@ -77,7 +80,10 @@ define_instruction!(
         let mem = unsafe { store_inner.memories.get(mem_addr) };
 
         let idx = calculate_mem_address(&memarg, relative_address)?;
-        let data = mem.mem.load(idx)?;
+        let data = match mem {
+            MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load(idx)?,
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load(idx)?,
+        };
 
         resumable.stack.push_value::<T>(Value::I64(data))?;
         trace!("Instruction: i64.load [{relative_address}] -> [{data}]");
@@ -112,7 +118,10 @@ define_instruction!(
         let mem = unsafe { store_inner.memories.get(mem_addr) };
 
         let idx = calculate_mem_address(&memarg, relative_address)?;
-        let data = mem.mem.load(idx)?;
+        let data = match mem {
+            MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load(idx)?,
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load(idx)?,
+        };
 
         resumable.stack.push_value::<T>(Value::F32(data))?;
         trace!("Instruction: f32.load [{relative_address}] -> [{data}]");
@@ -147,7 +156,10 @@ define_instruction!(
         let mem = unsafe { store_inner.memories.get(mem_addr) };
 
         let idx = calculate_mem_address(&memarg, relative_address)?;
-        let data = mem.mem.load(idx)?;
+        let data = match mem {
+            MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load(idx)?,
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load(idx)?,
+        };
 
         resumable.stack.push_value::<T>(Value::F64(data))?;
         trace!("Instruction: f64.load [{relative_address}] -> [{data}]");
@@ -185,7 +197,10 @@ define_instruction!(
         let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
         let idx = calculate_mem_address(&memarg, relative_address)?;
 
-        let data: u128 = memory.mem.load(idx)?;
+        let data: u128 = match memory {
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load(idx)?,
+            MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load(idx)?,
+        };
         resumable.stack.push_value::<T>(data.to_le_bytes().into())?;
         Ok(None)
     }
@@ -219,7 +234,10 @@ define_instruction!(
         let mem = unsafe { store_inner.memories.get(mem_addr) };
 
         let idx = calculate_mem_address(&memarg, relative_address)?;
-        let data: i8 = mem.mem.load(idx)?;
+        let data: i8 = match mem {
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load(idx)?,
+            MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load(idx)?,
+        };
 
         resumable.stack.push_value::<T>(Value::I32(data as u32))?;
         trace!("Instruction: i32.load8_s [{relative_address}] -> [{data}]");
@@ -254,7 +272,10 @@ define_instruction!(
         let mem = unsafe { store_inner.memories.get(mem_addr) };
 
         let idx = calculate_mem_address(&memarg, relative_address)?;
-        let data: u8 = mem.mem.load(idx)?;
+        let data: u8 = match mem {
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load(idx)?,
+            MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load(idx)?,
+        };
 
         resumable.stack.push_value::<T>(Value::I32(data as u32))?;
         trace!("Instruction: i32.load8_u [{relative_address}] -> [{data}]");
@@ -289,7 +310,10 @@ define_instruction!(
         let mem = unsafe { store_inner.memories.get(mem_addr) };
 
         let idx = calculate_mem_address(&memarg, relative_address)?;
-        let data: i16 = mem.mem.load(idx)?;
+        let data: i16 = match mem {
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load(idx)?,
+            MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load(idx)?,
+        };
 
         resumable.stack.push_value::<T>(Value::I32(data as u32))?;
         trace!("Instruction: i32.load16_s [{relative_address}] -> [{data}]");
@@ -324,7 +348,10 @@ define_instruction!(
         let mem = unsafe { store_inner.memories.get(mem_addr) };
 
         let idx = calculate_mem_address(&memarg, relative_address)?;
-        let data: u16 = mem.mem.load(idx)?;
+        let data: u16 = match mem {
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load(idx)?,
+            MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load(idx)?,
+        };
 
         resumable.stack.push_value::<T>(Value::I32(data as u32))?;
         trace!("Instruction: i32.load16_u [{relative_address}] -> [{data}]");
@@ -359,7 +386,10 @@ define_instruction!(
         let mem = unsafe { store_inner.memories.get(mem_addr) };
 
         let idx = calculate_mem_address(&memarg, relative_address)?;
-        let data: i8 = mem.mem.load(idx)?;
+        let data: i8 = match mem {
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load(idx)?,
+            MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load(idx)?,
+        };
 
         resumable.stack.push_value::<T>(Value::I64(data as u64))?;
         trace!("Instruction: i64.load8_s [{relative_address}] -> [{data}]");
@@ -394,7 +424,10 @@ define_instruction!(
         let mem = unsafe { store_inner.memories.get(mem_addr) };
 
         let idx = calculate_mem_address(&memarg, relative_address)?;
-        let data: u8 = mem.mem.load(idx)?;
+        let data: u8 = match mem {
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load(idx)?,
+            MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load(idx)?,
+        };
 
         resumable.stack.push_value::<T>(Value::I64(data as u64))?;
         trace!("Instruction: i64.load8_u [{relative_address}] -> [{data}]");
@@ -429,7 +462,10 @@ define_instruction!(
         let mem = unsafe { store_inner.memories.get(mem_addr) };
 
         let idx = calculate_mem_address(&memarg, relative_address)?;
-        let data: i16 = mem.mem.load(idx)?;
+        let data: i16 = match mem {
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load(idx)?,
+            MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load(idx)?,
+        };
 
         resumable.stack.push_value::<T>(Value::I64(data as u64))?;
         trace!("Instruction: i64.load16_s [{relative_address}] -> [{data}]");
@@ -464,7 +500,10 @@ define_instruction!(
         let mem = unsafe { store_inner.memories.get(mem_addr) };
 
         let idx = calculate_mem_address(&memarg, relative_address)?;
-        let data: u16 = mem.mem.load(idx)?;
+        let data: u16 = match mem {
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load(idx)?,
+            MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load(idx)?,
+        };
 
         resumable.stack.push_value::<T>(Value::I64(data as u64))?;
         trace!("Instruction: i64.load16_u [{relative_address}] -> [{data}]");
@@ -499,7 +538,10 @@ define_instruction!(
         let mem = unsafe { store_inner.memories.get(mem_addr) };
 
         let idx = calculate_mem_address(&memarg, relative_address)?;
-        let data: i32 = mem.mem.load(idx)?;
+        let data: i32 = match mem {
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load(idx)?,
+            MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load(idx)?,
+        };
 
         resumable.stack.push_value::<T>(Value::I64(data as u64))?;
         trace!("Instruction: i64.load32_s [{relative_address}] -> [{data}]");
@@ -534,7 +576,10 @@ define_instruction!(
         let mem = unsafe { store_inner.memories.get(mem_addr) };
 
         let idx = calculate_mem_address(&memarg, relative_address)?;
-        let data: u32 = mem.mem.load(idx)?;
+        let data: u32 = match mem {
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load(idx)?,
+            MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load(idx)?,
+        };
 
         resumable.stack.push_value::<T>(Value::I64(data as u64))?;
         trace!("Instruction: i64.load32_u [{relative_address}] -> [{data}]");
@@ -573,7 +618,11 @@ define_instruction!(
         let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
         let idx = calculate_mem_address(&memarg, relative_address)?;
 
-        let half_data: [u8; 8] = memory.mem.load_bytes::<8>(idx)?; // v128 load always loads half of a v128
+        // v128 load always loads half of a v128
+        let half_data: [u8; 8] = match memory {
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load_bytes::<8>(idx)?,
+            MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load_bytes::<8>(idx)?,
+        };
 
         // Special case where we have only half of a v128. To convert it to lanes via `to_lanes`, pad the data with zeros
         let data: [u8; 16] = array::from_fn(|i| *half_data.get(i).unwrap_or(&0));
@@ -617,7 +666,11 @@ define_instruction!(
         let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
         let idx = calculate_mem_address(&memarg, relative_address)?;
 
-        let half_data: [u8; 8] = memory.mem.load_bytes::<8>(idx)?; // v128 load always loads half of a v128
+        // v128 load always loads half of a v128
+        let half_data: [u8; 8] = match memory {
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load_bytes::<8>(idx)?,
+            MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load_bytes::<8>(idx)?,
+        };
 
         // Special case where we have only half of a v128. To convert it to lanes via `to_lanes`, pad the data with zeros
         let data: [u8; 16] = array::from_fn(|i| *half_data.get(i).unwrap_or(&0));
@@ -661,7 +714,11 @@ define_instruction!(
         let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
         let idx = calculate_mem_address(&memarg, relative_address)?;
 
-        let half_data: [u8; 8] = memory.mem.load_bytes::<8>(idx)?; // v128 load always loads half of a v128
+        // v128 load always loads half of a v128
+        let half_data: [u8; 8] = match memory {
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load_bytes::<8>(idx)?,
+            MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load_bytes::<8>(idx)?,
+        };
 
         // Special case where we have only half of a v128. To convert it to lanes via `to_lanes`, pad the data with zeros
         let data: [u8; 16] = array::from_fn(|i| *half_data.get(i).unwrap_or(&0));
@@ -705,7 +762,11 @@ define_instruction!(
         let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
         let idx = calculate_mem_address(&memarg, relative_address)?;
 
-        let half_data: [u8; 8] = memory.mem.load_bytes::<8>(idx)?; // v128 load always loads half of a v128
+        // v128 load always loads half of a v128
+        let half_data: [u8; 8] = match memory {
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load_bytes::<8>(idx)?,
+            MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load_bytes::<8>(idx)?,
+        };
 
         // Special case where we have only half of a v128. To convert it to lanes via `to_lanes`, pad the data with zeros
         let data: [u8; 16] = array::from_fn(|i| *half_data.get(i).unwrap_or(&0));
@@ -749,7 +810,11 @@ define_instruction!(
         let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
         let idx = calculate_mem_address(&memarg, relative_address)?;
 
-        let half_data: [u8; 8] = memory.mem.load_bytes::<8>(idx)?; // v128 load always loads half of a v128
+        // v128 load always loads half of a v128
+        let half_data: [u8; 8] = match memory {
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load_bytes::<8>(idx)?,
+            MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load_bytes::<8>(idx)?,
+        };
 
         // Special case where we have only half of a v128. To convert it to lanes via `to_lanes`, pad the data with zeros
         let data: [u8; 16] = array::from_fn(|i| *half_data.get(i).unwrap_or(&0));
@@ -793,7 +858,11 @@ define_instruction!(
         let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
         let idx = calculate_mem_address(&memarg, relative_address)?;
 
-        let half_data: [u8; 8] = memory.mem.load_bytes::<8>(idx)?; // v128 load always loads half of a v128
+        // v128 load always loads half of a v128
+        let half_data: [u8; 8] = match memory {
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load_bytes::<8>(idx)?,
+            MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load_bytes::<8>(idx)?,
+        };
 
         // Special case where we have only half of a v128. To convert it to lanes via `to_lanes`, pad the data with zeros
         let data: [u8; 16] = array::from_fn(|i| *half_data.get(i).unwrap_or(&0));
@@ -838,7 +907,10 @@ define_instruction!(
         let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
         let idx = calculate_mem_address(&memarg, relative_address)?;
 
-        let lane = memory.mem.load::<1, u8>(idx)?;
+        let lane = match memory {
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load::<1, u8>(idx)?,
+            MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load::<1, u8>(idx)?,
+        };
         resumable
             .stack
             .push_value::<T>(Value::V128(from_lanes([lane; 16])))?;
@@ -874,7 +946,10 @@ define_instruction!(
         let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
         let idx = calculate_mem_address(&memarg, relative_address)?;
 
-        let lane = memory.mem.load::<2, u16>(idx)?;
+        let lane = match memory {
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load::<2, u16>(idx)?,
+            MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load::<2, u16>(idx)?,
+        };
         resumable
             .stack
             .push_value::<T>(Value::V128(from_lanes([lane; 8])))?;
@@ -910,7 +985,11 @@ define_instruction!(
         let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
         let idx = calculate_mem_address(&memarg, relative_address)?;
 
-        let lane = memory.mem.load::<4, u32>(idx)?;
+        let lane = match memory {
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load::<4, u32>(idx)?,
+            MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load::<4, u32>(idx)?,
+        };
+
         resumable
             .stack
             .push_value::<T>(Value::V128(from_lanes([lane; 4])))?;
@@ -946,7 +1025,10 @@ define_instruction!(
         let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
         let idx = calculate_mem_address(&memarg, relative_address)?;
 
-        let lane = memory.mem.load::<8, u64>(idx)?;
+        let lane = match memory {
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load::<8, u64>(idx)?,
+            MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load::<8, u64>(idx)?,
+        };
         resumable
             .stack
             .push_value::<T>(Value::V128(from_lanes([lane; 2])))?;
@@ -986,7 +1068,12 @@ define_instruction!(
         let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
         let idx = calculate_mem_address(&memarg, relative_address)?;
 
-        let data = memory.mem.load::<4, u32>(idx)? as u128;
+        let data = match memory {
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load::<4, u32>(idx)? as u128,
+            MemInst::Unshared(unshared_mem_inst) => {
+                unshared_mem_inst.mem.load::<4, u32>(idx)? as u128
+            }
+        };
         resumable
             .stack
             .push_value::<T>(Value::V128(data.to_le_bytes()))?;
@@ -1023,7 +1110,12 @@ define_instruction!(
         let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
         let idx = calculate_mem_address(&memarg, relative_address)?;
 
-        let data = memory.mem.load::<8, u64>(idx)? as u128;
+        let data = match memory {
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load::<8, u64>(idx)? as u128,
+            MemInst::Unshared(unshared_mem_inst) => {
+                unshared_mem_inst.mem.load::<8, u64>(idx)? as u128
+            }
+        };
         resumable
             .stack
             .push_value::<T>(Value::V128(data.to_le_bytes()))?;
@@ -1063,7 +1155,11 @@ define_instruction!(
         let idx = calculate_mem_address(&memarg, relative_address)?;
         let lane_idx = usize::from(wasm.read_u8().unwrap_validated());
         let mut lanes: [u8; 16] = to_lanes(data);
-        *lanes.get_mut(lane_idx).unwrap_validated() = memory.mem.load::<1, u8>(idx)?;
+        let lane = match memory {
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load::<1, u8>(idx)?,
+            MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load::<1, u8>(idx)?,
+        };
+        *lanes.get_mut(lane_idx).unwrap_validated() = lane;
         resumable
             .stack
             .push_value::<T>(Value::V128(from_lanes(lanes)))?;
@@ -1102,7 +1198,11 @@ define_instruction!(
         let idx = calculate_mem_address(&memarg, relative_address)?;
         let lane_idx = usize::from(wasm.read_u8().unwrap_validated());
         let mut lanes: [u16; 8] = to_lanes(data);
-        *lanes.get_mut(lane_idx).unwrap_validated() = memory.mem.load::<2, u16>(idx)?;
+        let lane = match memory {
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load::<2, u16>(idx)?,
+            MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load::<2, u16>(idx)?,
+        };
+        *lanes.get_mut(lane_idx).unwrap_validated() = lane;
         resumable
             .stack
             .push_value::<T>(Value::V128(from_lanes(lanes)))?;
@@ -1140,7 +1240,11 @@ define_instruction!(
         let idx = calculate_mem_address(&memarg, relative_address)?;
         let lane_idx = usize::from(wasm.read_u8().unwrap_validated());
         let mut lanes: [u32; 4] = to_lanes(data);
-        *lanes.get_mut(lane_idx).unwrap_validated() = memory.mem.load::<4, u32>(idx)?;
+        let lane = match memory {
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load::<4, u32>(idx)?,
+            MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load::<4, u32>(idx)?,
+        };
+        *lanes.get_mut(lane_idx).unwrap_validated() = lane;
         resumable
             .stack
             .push_value::<T>(Value::V128(from_lanes(lanes)))?;
@@ -1178,7 +1282,11 @@ define_instruction!(
         let idx = calculate_mem_address(&memarg, relative_address)?;
         let lane_idx = usize::from(wasm.read_u8().unwrap_validated());
         let mut lanes: [u64; 2] = to_lanes(data);
-        *lanes.get_mut(lane_idx).unwrap_validated() = memory.mem.load::<8, u64>(idx)?;
+        let lane = match memory {
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load::<8, u64>(idx)?,
+            MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load::<8, u64>(idx)?,
+        };
+        *lanes.get_mut(lane_idx).unwrap_validated() = lane;
         resumable
             .stack
             .push_value::<T>(Value::V128(from_lanes(lanes)))?;
@@ -1213,10 +1321,15 @@ define_instruction!(
         let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
         // SAFETY: This memory address was just read from the current
         // store. Therefore, it is valid in the current store.
-        let mem = unsafe { store_inner.memories.get(mem_addr) };
+        let mem = unsafe { store_inner.memories.get_mut(mem_addr) };
 
         let idx = calculate_mem_address(&memarg, relative_address)?;
-        mem.mem.store(idx, data_to_store)?;
+        match mem {
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.store(idx, data_to_store)?,
+            MemInst::Unshared(unshared_mem_inst) => {
+                unshared_mem_inst.mem.store(idx, data_to_store)?
+            }
+        };
 
         trace!("Instruction: i32.store [{relative_address} {data_to_store}] -> []");
         Ok(None)
@@ -1249,10 +1362,15 @@ define_instruction!(
         let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
         // SAFETY: This memory address was just read from the current
         // store. Therefore, it is valid in the current store.
-        let mem = unsafe { store_inner.memories.get(mem_addr) };
+        let mem = unsafe { store_inner.memories.get_mut(mem_addr) };
 
         let idx = calculate_mem_address(&memarg, relative_address)?;
-        mem.mem.store(idx, data_to_store)?;
+        match mem {
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.store(idx, data_to_store)?,
+            MemInst::Unshared(unshared_mem_inst) => {
+                unshared_mem_inst.mem.store(idx, data_to_store)?
+            }
+        };
 
         trace!("Instruction: i64.store [{relative_address} {data_to_store}] -> []");
         Ok(None)
@@ -1285,10 +1403,15 @@ define_instruction!(
         let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
         // SAFETY: This memory address was just read from the current
         // store. Therefore, it is valid in the current store.
-        let mem = unsafe { store_inner.memories.get(mem_addr) };
+        let mem = unsafe { store_inner.memories.get_mut(mem_addr) };
 
         let idx = calculate_mem_address(&memarg, relative_address)?;
-        mem.mem.store(idx, data_to_store)?;
+        match mem {
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.store(idx, data_to_store)?,
+            MemInst::Unshared(unshared_mem_inst) => {
+                unshared_mem_inst.mem.store(idx, data_to_store)?
+            }
+        };
 
         trace!("Instruction: f32.store [{relative_address} {data_to_store}] -> []");
         Ok(None)
@@ -1321,10 +1444,15 @@ define_instruction!(
         let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
         // SAFETY: This memory address was just read from the current
         // store. Therefore, it is valid in the current store.
-        let mem = unsafe { store_inner.memories.get(mem_addr) };
+        let mem = unsafe { store_inner.memories.get_mut(mem_addr) };
 
         let idx = calculate_mem_address(&memarg, relative_address)?;
-        mem.mem.store(idx, data_to_store)?;
+        match mem {
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.store(idx, data_to_store)?,
+            MemInst::Unshared(unshared_mem_inst) => {
+                unshared_mem_inst.mem.store(idx, data_to_store)?
+            }
+        };
 
         trace!("Instruction: f64.store [{relative_address} {data_to_store}] -> []");
         Ok(None)
@@ -1356,13 +1484,20 @@ define_instruction!(
         // SAFETY: This memory address was just read from the
         // current store. Therefore, it is valid in the current
         // store.
-        let memory = unsafe { store_inner.memories.get(mem_addr) };
+        let memory = unsafe { store_inner.memories.get_mut(mem_addr) };
 
         let data: [u8; 16] = resumable.stack.pop_value().try_into().unwrap_validated();
         let relative_address: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
         let idx = calculate_mem_address(&memarg, relative_address)?;
 
-        memory.mem.store(idx, u128::from_le_bytes(data))?;
+        match memory {
+            MemInst::Shared(shared_mem_inst) => {
+                shared_mem_inst.mem.store(idx, u128::from_le_bytes(data))?
+            }
+            MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst
+                .mem
+                .store(idx, u128::from_le_bytes(data))?,
+        }
         Ok(None)
     }
 );
@@ -1396,10 +1531,15 @@ define_instruction!(
         let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
         // SAFETY: This memory address was just read from the current
         // store. Therefore, it is valid in the current store.
-        let mem = unsafe { store_inner.memories.get(mem_addr) };
+        let mem = unsafe { store_inner.memories.get_mut(mem_addr) };
 
         let idx = calculate_mem_address(&memarg, relative_address)?;
-        mem.mem.store(idx, wrapped_data)?;
+        match mem {
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.store(idx, wrapped_data)?,
+            MemInst::Unshared(unshared_mem_inst) => {
+                unshared_mem_inst.mem.store(idx, wrapped_data)?
+            }
+        }
 
         trace!("Instruction: i32.store8 [{relative_address} {wrapped_data}] -> []");
         Ok(None)
@@ -1434,10 +1574,15 @@ define_instruction!(
         let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
         // SAFETY: This memory address was just read from the current
         // store. Therefore, it is valid in the current store.
-        let mem = unsafe { store_inner.memories.get(mem_addr) };
+        let mem = unsafe { store_inner.memories.get_mut(mem_addr) };
 
         let idx = calculate_mem_address(&memarg, relative_address)?;
-        mem.mem.store(idx, wrapped_data)?;
+        match mem {
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.store(idx, wrapped_data)?,
+            MemInst::Unshared(unshared_mem_inst) => {
+                unshared_mem_inst.mem.store(idx, wrapped_data)?
+            }
+        }
 
         trace!("Instruction: i32.store16 [{relative_address} {data_to_store}] -> []");
         Ok(None)
@@ -1472,10 +1617,15 @@ define_instruction!(
         let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
         // SAFETY: This memory address was just read from the current
         // store. Therefore, it is valid in the current store.
-        let mem = unsafe { store_inner.memories.get(mem_addr) };
+        let mem = unsafe { store_inner.memories.get_mut(mem_addr) };
 
         let idx = calculate_mem_address(&memarg, relative_address)?;
-        mem.mem.store(idx, wrapped_data)?;
+        match mem {
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.store(idx, wrapped_data)?,
+            MemInst::Unshared(unshared_mem_inst) => {
+                unshared_mem_inst.mem.store(idx, wrapped_data)?
+            }
+        }
 
         trace!("Instruction: i64.store8 [{relative_address} {data_to_store}] -> []");
         Ok(None)
@@ -1510,10 +1660,15 @@ define_instruction!(
         let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
         // SAFETY: This memory address was just read from the current
         // store. Therefore, it is valid in the current store.
-        let mem = unsafe { store_inner.memories.get(mem_addr) };
+        let mem = unsafe { store_inner.memories.get_mut(mem_addr) };
 
         let idx = calculate_mem_address(&memarg, relative_address)?;
-        mem.mem.store(idx, wrapped_data)?;
+        match mem {
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.store(idx, wrapped_data)?,
+            MemInst::Unshared(unshared_mem_inst) => {
+                unshared_mem_inst.mem.store(idx, wrapped_data)?
+            }
+        }
 
         trace!("Instruction: i64.store16 [{relative_address} {data_to_store}] -> []");
         Ok(None)
@@ -1548,10 +1703,15 @@ define_instruction!(
         let mem_addr = *unsafe { module.mem_addrs.get(MemIdx::new(0)) };
         // SAFETY: This memory address was just read from the current
         // store. Therefore, it is valid in the current store.
-        let mem = unsafe { store_inner.memories.get(mem_addr) };
+        let mem = unsafe { store_inner.memories.get_mut(mem_addr) };
 
         let idx = calculate_mem_address(&memarg, relative_address)?;
-        mem.mem.store(idx, wrapped_data)?;
+        match mem {
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.store(idx, wrapped_data)?,
+            MemInst::Unshared(unshared_mem_inst) => {
+                unshared_mem_inst.mem.store(idx, wrapped_data)?
+            }
+        }
 
         trace!("Instruction: i64.store32 [{relative_address} {data_to_store}] -> []");
         Ok(None)
@@ -1586,13 +1746,18 @@ define_instruction!(
         // SAFETY: This memory address was just read from the
         // current store. Therefore, it is valid in the current
         // store.
-        let memory = unsafe { store_inner.memories.get(mem_addr) };
+        let memory = unsafe { store_inner.memories.get_mut(mem_addr) };
         let idx = calculate_mem_address(&memarg, relative_address)?;
         let lane_idx = usize::from(wasm.read_u8().unwrap_validated());
 
         let lane = *to_lanes::<1, 16, u8>(data).get(lane_idx).unwrap_validated();
 
-        memory.mem.store::<1, u8>(idx, lane)?;
+        match memory {
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.store::<1, u8>(idx, lane)?,
+            MemInst::Unshared(unshared_mem_inst) => {
+                unshared_mem_inst.mem.store::<1, u8>(idx, lane)?
+            }
+        }
         Ok(None)
     }
 );
@@ -1623,13 +1788,18 @@ define_instruction!(
         // SAFETY: This memory address was just read from the
         // current store. Therefore, it is valid in the current
         // store.
-        let memory = unsafe { store_inner.memories.get(mem_addr) };
+        let memory = unsafe { store_inner.memories.get_mut(mem_addr) };
         let idx = calculate_mem_address(&memarg, relative_address)?;
         let lane_idx = usize::from(wasm.read_u8().unwrap_validated());
 
         let lane = *to_lanes::<2, 8, u16>(data).get(lane_idx).unwrap_validated();
 
-        memory.mem.store::<2, u16>(idx, lane)?;
+        match memory {
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.store::<2, u16>(idx, lane)?,
+            MemInst::Unshared(unshared_mem_inst) => {
+                unshared_mem_inst.mem.store::<2, u16>(idx, lane)?
+            }
+        }
         Ok(None)
     }
 );
@@ -1660,13 +1830,18 @@ define_instruction!(
         // SAFETY: This memory address was just read from the
         // current store. Therefore, it is valid in the current
         // store.
-        let memory = unsafe { store_inner.memories.get(mem_addr) };
+        let memory = unsafe { store_inner.memories.get_mut(mem_addr) };
         let idx = calculate_mem_address(&memarg, relative_address)?;
         let lane_idx = usize::from(wasm.read_u8().unwrap_validated());
 
         let lane = *to_lanes::<4, 4, u32>(data).get(lane_idx).unwrap_validated();
 
-        memory.mem.store::<4, u32>(idx, lane)?;
+        match memory {
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.store::<4, u32>(idx, lane)?,
+            MemInst::Unshared(unshared_mem_inst) => {
+                unshared_mem_inst.mem.store::<4, u32>(idx, lane)?
+            }
+        }
         Ok(None)
     }
 );
@@ -1697,13 +1872,18 @@ define_instruction!(
         // SAFETY: This memory address was just read from the
         // current store. Therefore, it is valid in the current
         // store.
-        let memory = unsafe { store_inner.memories.get(mem_addr) };
+        let memory = unsafe { store_inner.memories.get_mut(mem_addr) };
         let idx = calculate_mem_address(&memarg, relative_address)?;
         let lane_idx = usize::from(wasm.read_u8().unwrap_validated());
 
         let lane = *to_lanes::<8, 2, u64>(data).get(lane_idx).unwrap_validated();
 
-        memory.mem.store::<8, u64>(idx, lane)?;
+        match memory {
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.store::<8, u64>(idx, lane)?,
+            MemInst::Unshared(unshared_mem_inst) => {
+                unshared_mem_inst.mem.store::<8, u64>(idx, lane)?
+            }
+        }
         Ok(None)
     }
 );
@@ -1734,7 +1914,10 @@ define_instruction!(
         // SAFETY: This memory address was just read from the current
         // store. Therefore, it is valid in the current store.
         let mem = unsafe { store_inner.memories.get(mem_addr) };
-        let size = mem.size() as u32;
+        let size = match mem {
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.size() as u32,
+            MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.size() as u32,
+        };
         resumable.stack.push_value::<T>(Value::I32(size))?;
         trace!("Instruction: memory.size [] -> [{}]", size);
         Ok(None)
@@ -1769,7 +1952,10 @@ define_instruction!(
         // store. Therefore, it is valid in the current store.
         let mem = unsafe { store_inner.memories.get_mut(mem_addr) };
 
-        let sz: u32 = mem.size() as u32;
+        let sz: u32 = match mem {
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.size() as u32,
+            MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.size() as u32,
+        };
 
         let n: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
         // decrement fuel, but push n back if it fails
@@ -1792,10 +1978,14 @@ define_instruction!(
             }
         }
 
+        let result = match mem {
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.grow(n),
+            MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.grow(n),
+        };
         // TODO this instruction is non-deterministic w.r.t. spec, and can fail if the embedder wills it.
         // for now we execute it always according to the following match expr.
         // if the grow operation fails, err := Value::I32(2^32-1) is pushed to the resumable.stack per spec
-        let pushed_value = match mem.grow(n) {
+        let pushed_value = match result {
             Ok(_) => sz,
             Err(_) => u32::MAX,
         };
@@ -1839,7 +2029,7 @@ define_instruction!(
         // SAFETY: This memory address was just read from the
         // current store. Therefore, it is valid in the current
         // store.
-        let mem = unsafe { store_inner.memories.get(mem_addr) };
+        let mem = unsafe { store_inner.memories.get_mut(mem_addr) };
 
         let n: u32 = resumable.stack.pop_value().try_into().unwrap_validated();
         // decrement fuel, but push n back if it fails
@@ -1870,8 +2060,18 @@ define_instruction!(
 
         let d: i32 = resumable.stack.pop_value().try_into().unwrap_validated();
 
-        mem.mem
-            .fill(d.cast_unsigned().into_usize(), val as u8, n.into_usize())?;
+        match mem {
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.fill(
+                d.cast_unsigned().into_usize(),
+                val as u8,
+                n.into_usize(),
+            )?,
+            MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.fill(
+                d.cast_unsigned().into_usize(),
+                val as u8,
+                n.into_usize(),
+            )?,
+        };
 
         trace!("Instruction: memory.fill");
         Ok(None)
@@ -1945,14 +2145,22 @@ define_instruction!(
         // SAFETY: This destination memory address was just read
         // from the current store. Therefore, it must also be
         // valid in the current store.
-        let dest_mem = unsafe { store_inner.memories.get(dst_addr) };
+        let dest_mem = unsafe { store_inner.memories.get_mut(dst_addr) };
 
-        dest_mem.mem.copy(
-            d.cast_unsigned().into_usize(),
-            &src_mem.mem,
-            s.cast_unsigned().into_usize(),
-            n.into_usize(),
-        )?;
+        match dest_mem {
+            MemInst::Shared(_) => todo!("mem.copy on shared mem"),
+            MemInst::UnsharedMemInst(unshared_dst) => match src_mem {
+                MemInst::Shared(_) => todo!("mem.copy on shared mem"),
+                MemInst::UnsharedMemInst(unshared_src) => {
+                    unshared_dst.mem.copy(
+                        d.cast_unsigned().into_usize(),
+                        &unshared_src.mem,
+                        s.cast_unsigned().into_usize(),
+                        n.into_usize(),
+                    )?;
+                }
+            },
+        }
         trace!("Instruction: memory.copy");
         Ok(None)
     }

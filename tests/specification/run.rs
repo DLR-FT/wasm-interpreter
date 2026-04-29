@@ -727,6 +727,7 @@ fn init_spectest(
         limits: Limits {
             min: 1,
             max: Some(2),
+            shared: false,
         },
     });
 
@@ -735,6 +736,7 @@ fn init_spectest(
             lim: Limits {
                 min: 10,
                 max: Some(20),
+                shared: false,
             },
             et: RefType::FuncRef,
         },

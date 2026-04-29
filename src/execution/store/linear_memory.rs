@@ -1,6 +1,7 @@
 use core::{
     iter,
-    sync::atomic::{AtomicU8, Ordering},
+    ptr::NonNull,
+    sync::atomic::{AtomicU8, AtomicUsize, Ordering},
 };
 
 use alloc::vec::Vec;

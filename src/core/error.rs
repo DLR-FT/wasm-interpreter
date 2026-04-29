@@ -163,6 +163,11 @@ pub enum ValidationError {
     /// The module contains too many globals, i.e. imported or locally-defined
     /// globals. The maximum number of memories is [`u32::MAX`].
     TooManyGlobals,
+    /// A table type was marked as shared but shared tables are not yet
+    /// implemented.
+    SharedTablesNotYetImplemented,
+    /// A memory type is shared and thus requires a max limit but none was set.
+    SharedMemoryWithoutMaxLimit,
 }
 
 impl core::error::Error for ValidationError {}
@@ -240,6 +245,8 @@ impl Display for ValidationError {
             ValidationError::TooManyTables => f.write_str("The module contains too many tables. The maximum number of tables (either imported or locally-defined) is 2^32 - 1"),
             ValidationError::TooManyMemories => f.write_str("The module contains too many memories. The maximum number of memories (either imported or locally-defined) is 2^32 - 1"),
             ValidationError::TooManyGlobals => f.write_str("The module contains too many globals. The maximum number of globals (either imported or locally-defined) is 2^32 - 1"),
+            ValidationError::SharedTablesNotYetImplemented => f.write_str("A table type was marked as shared but shared tables are not yet implemented"),
+            ValidationError::SharedMemoryWithoutMaxLimit => f.write_str("A memory type is shared and thus requires a max limit but none was set"),
         }
     }
 }

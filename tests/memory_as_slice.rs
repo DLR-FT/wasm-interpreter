@@ -7,7 +7,11 @@ use wasm::{Limits, MemType};
 fn simple_byte_writes() {
     let mut store = Store::new(());
     let mem = store.mem_alloc(MemType {
-        limits: Limits { min: 1, max: None },
+        limits: Limits {
+            min: 1,
+            max: None,
+            shared: false,
+        },
     });
 
     store.mem_access_mut_slice(mem, |mem_as_slice| {
@@ -21,7 +25,11 @@ fn simple_byte_writes() {
 fn interpret_as_str() {
     let mut store = Store::new(());
     let mem = store.mem_alloc(MemType {
-        limits: Limits { min: 1, max: None },
+        limits: Limits {
+            min: 1,
+            max: None,
+            shared: false,
+        },
     });
 
     const STR_TO_WRITE: &str = "Hello World!";

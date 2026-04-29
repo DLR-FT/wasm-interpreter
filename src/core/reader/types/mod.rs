@@ -251,6 +251,7 @@ pub trait ImportSubTypeRelation {
 pub struct Limits {
     pub min: u32,
     pub max: Option<u32>,
+    pub shared: bool,
 }
 
 impl Limits {
@@ -293,7 +294,11 @@ impl Limits {
         let limits = match wasm.read_u8()? {
             0x00 => {
                 let min = wasm.read_var_u32()?;
-                Self { min, max: None }
+                Self {
+                    min,
+                    max: None,
+                    shared: false,
+                }
             }
             0x01 => {
                 let min = wasm.read_var_u32()?;
@@ -301,6 +306,16 @@ impl Limits {
                 Self {
                     min,
                     max: Some(max),
+                    shared: false,
+                }
+            }
+            0x03 => {
+                let min = wasm.read_var_u32()?;
+                let max = wasm.read_var_u32()?;
+                Self {
+                    min,
+                    max: Some(max),
+                    shared: true,
                 }
             }
             other => return Err(ValidationError::MalformedLimitsDiscriminator(other)),
@@ -333,6 +348,9 @@ impl TableType {
         if lim.max.is_none() {
             lim.max = Some(u32::MAX)
         };
+        if lim.shared {
+            return Err(ValidationError::SharedTablesNotYetImplemented);
+        }
         trace!("Table: {:?}", Self { et, lim });
         Ok(Self { et, lim })
     }
@@ -354,6 +372,9 @@ impl MemType {
             if max_limit > (1 << 16) {
                 return Err(ValidationError::MemoryTooLarge);
             }
+        }
+        if limit.shared && limit.max.is_none() {
+            return Err(ValidationError::SharedMemoryWithoutMaxLimit);
         }
 
         Ok(Self { limits: limit })

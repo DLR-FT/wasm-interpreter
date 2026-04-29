@@ -496,7 +496,7 @@ impl<'b, T: Config> Store<'b, T> {
     /// This is a safe variant of
     /// [`Store::mem_access_mut_slice`](crate::Store::mem_access_mut_slice).
     pub fn mem_access_mut_slice<R>(
-        &self,
+        &mut self,
         memory: Stored<MemAddr>,
         accessor: impl FnOnce(&mut [u8]) -> R,
     ) -> R {

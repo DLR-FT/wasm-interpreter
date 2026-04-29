@@ -18,6 +18,7 @@ use crate::execution::value::{Ref, Value};
 use crate::execution::{run_const_span, Stack};
 use crate::instances::MemInst;
 use crate::resumable::{HostCall, HostResumable, Resumable, RunState, WasmResumable};
+use crate::unshared_linear_memory::UnsharedLinearMemory;
 use crate::{RefType, RuntimeError, ValidationInfo};
 use alloc::borrow::ToOwned;
 use alloc::collections::btree_map::BTreeMap;
@@ -36,6 +37,7 @@ use super::UnwrapValidatedExt;
 pub mod addrs;
 pub(crate) mod instances;
 pub mod linear_memory;
+pub mod unshared_linear_memory;
 
 /// The store represents all global state that can be manipulated by WebAssembly programs. It
 /// consists of the runtime representation of all instances of functions, tables, memories, and
@@ -955,7 +957,10 @@ impl<'b, T: Config> Store<'b, T> {
         // SAFETY: The caller ensures that the given memory address is valid in
         // the current store.
         let memory = unsafe { self.inner.memories.get(mem_addr) };
-        memory.ty
+        match memory {
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.ty,
+            MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.ty,
+        }
 
         // 2. Post-condition: the returned memory type is valid.
     }
@@ -975,7 +980,11 @@ impl<'b, T: Config> Store<'b, T> {
         // 1. Let `mi` be the memory instance `store.mems[memaddr]`.
         // SAFETY: The caller ensures that the given memory address is valid in
         // the current store.
-        let mi = unsafe { self.inner.memories.get(mem_addr) };
+        let MemInst::Unshared(mi) = (unsafe { self.inner.memories.get(mem_addr) }) else {
+            unimplemented!(
+                "mem_read on shared memory instance is not yet defined in specification"
+            );
+        };
 
         // 2. If `i` is larger than or equal to the length of `mi.data`, then return `error`.
         // 3. Else, return the byte `mi.data[i]`.
@@ -991,7 +1000,7 @@ impl<'b, T: Config> Store<'b, T> {
     /// The caller has to guarantee that the given [`MemAddr`] came from the
     /// current [`Store`] object.
     pub unsafe fn mem_write(
-        &self,
+        &mut self,
         mem_addr: MemAddr,
         i: u32,
         byte: u8,
@@ -1002,7 +1011,11 @@ impl<'b, T: Config> Store<'b, T> {
         // 1. Let `mi` be the memory instance `store.mems[memaddr]`.
         // SAFETY: The caller ensures that the given memory address is valid in
         // the current store.
-        let mi = unsafe { self.inner.memories.get(mem_addr) };
+        let MemInst::Unshared(mi) = (unsafe { self.inner.memories.get_mut(mem_addr) }) else {
+            unimplemented!(
+                "mem_write on shared memory instance is not yet defined in specification"
+            );
+        };
 
         mi.mem.store(i, byte)
     }
@@ -1019,7 +1032,11 @@ impl<'b, T: Config> Store<'b, T> {
         // 1. Return the length of `store.mems[memaddr].data` divided by the page size.
         // SAFETY: The caller ensures that the given memory address is valid in
         // the current store.
-        let memory = unsafe { self.inner.memories.get(mem_addr) };
+        let MemInst::Unshared(memory) = (unsafe { self.inner.memories.get(mem_addr) }) else {
+            unimplemented!(
+                "mem_size on shared memory instance is not yet defined in specification"
+            );
+        };
         let length = memory.size();
 
         // In addition we have to convert the length back to a `u32`
@@ -1043,7 +1060,11 @@ impl<'b, T: Config> Store<'b, T> {
         // Note: Returning the new store is a noop for us because we mutate the store instead.
         // SAFETY: The caller ensures that the given memory address is valid in
         // the current store.
-        let memory = unsafe { self.inner.memories.get_mut(mem_addr) };
+        let MemInst::Unshared(memory) = (unsafe { self.inner.memories.get_mut(mem_addr) }) else {
+            unimplemented!(
+                "mem_grow on shared memory instance is not yet defined in specification"
+            );
+        };
         memory.grow(n)
     }
 
@@ -1230,7 +1251,7 @@ impl<'b, T: Config> Store<'b, T> {
     fn alloc_mem(&mut self, mem_type: MemType) -> MemAddr {
         let mem_inst = UnsharedMemInst {
             ty: mem_type,
-            mem: LinearMemory::new_with_initial_pages(
+            mem: UnsharedLinearMemory::new_with_initial_pages(
                 mem_type.limits.min.try_into().unwrap_validated(),
             ),
         };
@@ -1503,14 +1524,19 @@ impl<'b, T: Config> Store<'b, T> {
     /// The caller has to guarantee that the given [`MemAddr`] came from the
     /// current [`Store`] object.
     pub unsafe fn mem_access_mut_slice<R>(
-        &self,
+        &mut self,
         memory: MemAddr,
         accessor: impl FnOnce(&mut [u8]) -> R,
     ) -> R {
         // SAFETY: The caller ensures that the given memory address is valid in
         // the current store.
-        let memory = unsafe { self.inner.memories.get(memory) };
-        memory.mem.access_mut_slice(accessor)
+        let memory = unsafe { self.inner.memories.get_mut(memory) };
+        match memory {
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.access_mut_slice(accessor),
+            MemInst::Unshared(unshared_mem_inst) => {
+                unshared_mem_inst.mem.access_mut_slice(accessor)
+            }
+        }
     }
 
     /// Returns all exports of a module instance by its module address.
@@ -1570,7 +1596,11 @@ impl ExternVal {
                 // SAFETY: The caller ensures that self including the memory
                 // address in self is valid in the given store.
                 let memory = unsafe { store.inner.memories.get(*mem_addr) };
-                ExternType::Mem(memory.ty)
+                let ty = match memory {
+                    MemInst::Shared(shared_mem_inst) => shared_mem_inst.ty,
+                    MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.ty,
+                };
+                ExternType::Mem(ty)
             }
             ExternVal::Global(global_addr) => {
                 // SAFETY: The caller ensures that self including the global

@@ -328,7 +328,7 @@ pub(super) unsafe fn memory_init(
     let mem_addr = *unsafe { module_inst.mem_addrs.get(mem_idx) };
     // SAFETY: The caller ensures that this memory address is valid in this
     // address vector (3).
-    let MemInst::UnsharedMemInst(mem) = (unsafe { store_memories.get(mem_addr) }) else {
+    let MemInst::Unshared(mem) = (unsafe { store_memories.get_mut(mem_addr) }) else {
         todo!("memory.init on shared memory")
     };
     // SAFETY: The caller ensures that `data_idx` is valid for this specific

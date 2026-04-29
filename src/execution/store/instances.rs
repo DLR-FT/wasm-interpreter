@@ -11,6 +11,7 @@ use crate::{
         utils::ToUsizeExt,
     },
     linear_memory::LinearMemory,
+    unshared_linear_memory::UnsharedLinearMemory,
     value::Ref,
     GlobalType, Hostcode, Limits, RefType, RuntimeError, TrapError, ValType, Value,
 };
@@ -99,6 +100,7 @@ impl TableInst {
         let limits_prime = Limits {
             min: len,
             max: self.ty.lim.max,
+            shared: self.ty.lim.shared,
         };
 
         self.elem.extend(vec![reff; n.into_usize()]);
@@ -117,10 +119,44 @@ pub struct SharedMemInst {
     pub ty: MemType,
     pub mem: Arc<LinearMemory>,
 }
+impl SharedMemInst {
+    /// Can never be bigger than 65,356 pages
+    pub fn size(&self) -> usize {
+        self.mem.len() / (crate::Limits::MEM_PAGE_SIZE.into_usize())
+    }
+}
+
+impl SharedMemInst {
+    /// <https://webassembly.github.io/spec/core/exec/modules.html#growing-memories>
+    pub fn grow(&mut self, n: u32) -> Result<(), RuntimeError> {
+        // TODO refactor error, the spec Table.grow raises Memory.{SizeOverflow, SizeLimit, OutOfMemory}
+        let len = n + self.mem.pages() as u32;
+        if len > Limits::MAX_MEM_PAGES {
+            return Err(TrapError::MemoryOrDataAccessOutOfBounds.into());
+        }
+
+        // roughly matches step 4,5,6
+        // checks limits_prime.valid() for limits_prime := { min: len, max: self.ty.lim.max }
+        // https://webassembly.github.io/spec/core/valid/types.html#limits
+        if self.ty.limits.max.map(|max| len > max).unwrap_or(false) {
+            return Err(TrapError::MemoryOrDataAccessOutOfBounds.into());
+        }
+        let limits_prime = Limits {
+            min: len,
+            max: self.ty.limits.max,
+            shared: self.ty.limits.shared,
+        };
+
+        self.mem.grow(n.try_into().unwrap());
+
+        self.ty.limits = limits_prime;
+        Ok(())
+    }
+}
 
 pub struct UnsharedMemInst {
     pub ty: MemType,
-    pub mem: LinearMemory,
+    pub mem: UnsharedLinearMemory,
 }
 
 impl core::fmt::Debug for UnsharedMemInst {
@@ -149,6 +185,7 @@ impl UnsharedMemInst {
         let limits_prime = Limits {
             min: len,
             max: self.ty.limits.max,
+            shared: self.ty.limits.shared,
         };
 
         self.mem.grow(n.try_into().unwrap());
