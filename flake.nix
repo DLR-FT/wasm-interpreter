@@ -146,24 +146,49 @@
                     command = ''
                       cd -- "$PRJ_ROOT"
                       COMMON_BENCH_CMD=(cargo bench --package benchmark --bench general_purpose --)
+                      GIT_WORKTREE_PATH=.benchmark-main-worktree
 
-                      # clone main branch of this repo to temporary copy; with trap based self clean-up
-                      trap -- "rm --recursive --force -- \"$PRJ_ROOT/.main_clone\"" EXIT
-                      git clone --depth=1 --single-branch --no-tags --recursive --branch=main -- "file://$PRJ_ROOT" "$PRJ_ROOT/.main_clone"
+                      # add a git worktree for the main branch
+                      if [ ! -d "$GIT_WORKTREE_PATH" ]
+                      then
+                        echo "creating new git worktree"
+                        git worktree add --force "$GIT_WORKTREE_PATH" main
+                      else
+                        echo "found existing git worktree"
+                      fi
 
-                      # bench main
-                      pushd -- .main_clone
-                      "''${COMMON_BENCH_CMD[@]}" --save-baseline benchmark-main.baseline
-                      popd
+                      # reset worktree to current origin main (but don't fetch)
+                      git -C "$GIT_WORKTREE_PATH" reset --hard origin/main
 
-                      # bench current
+                      # check if benchmark re-run is required
+                      CURRENT_MAIN_COMMIT="$(git -C "$GIT_WORKTREE_PATH" rev-parse HEAD)"
+                      LAST_BENCHMARKED_COMMIT="$(cat "$GIT_WORKTREE_PATH/target/LAST_BENCHMARKED_COMMIT" 2> /dev/null || true)"
+
+                      # bench main as baseline if it wasn't already benched
+                      if [ "$CURRENT_MAIN_COMMIT" == "$LAST_BENCHMARKED_COMMIT" ]
+                      then
+                        echo "skipping main baseline benchmark, the commit was already benched: $LAST_BENCHMARKED_COMMIT"
+                      else
+                        echo "benchmarking main baseline with commit: $CURRENT_MAIN_COMMIT"
+                        pushd -- "$GIT_WORKTREE_PATH"
+                        cargo clean
+                        "''${COMMON_BENCH_CMD[@]}" --save-baseline benchmark-main.baseline
+                        popd
+                        echo "$CURRENT_MAIN_COMMIT" > "$GIT_WORKTREE_PATH/target/LAST_BENCHMARKED_COMMIT"
+                      fi
+
+                      # bench current workdir state
+                      echo "benchmarking current workdir state"
                       "''${COMMON_BENCH_CMD[@]}" --save-baseline benchmark-current.baseline
 
-                      # copy results from current to main clone dir
-                      find target/ -type d -name 'benchmark-current.baseline' -exec cp --recursive --no-target-directory -- {} .main_clone/{} \;
+                      # delete old current dev branch benchmark results
+                      find "$GIT_WORKTREE_PATH/target/" -type d -name 'benchmark-current.baseline' -delete
+
+                      # copy results from current to main worktree target/ dir
+                      find target/ -type d -name 'benchmark-current.baseline' -exec cp --recursive --no-target-directory -- {} "$GIT_WORKTREE_PATH/"{} \;
 
                       # compare results
-                      critcmp --target-dir .main_clone/target -- "benchmark-main.baseline" "benchmark-current.baseline"
+                      critcmp --target-dir "$GIT_WORKTREE_PATH"/target -- "benchmark-main.baseline" "benchmark-current.baseline"
                     '';
                     help = "benchmark the current HEAD against the main branch";
                     category = "benchmark";
