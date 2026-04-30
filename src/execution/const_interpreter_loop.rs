@@ -41,11 +41,8 @@ pub(crate) unsafe fn run_const<T: Config>(
     loop {
         let first_instr_byte = wasm.read_u8().unwrap_validated();
 
-        #[cfg(debug_assertions)]
+        #[cfg(feature = "log")]
         crate::core::utils::print_beautiful_instruction_name_1_byte(first_instr_byte, wasm.pc);
-
-        #[cfg(not(debug_assertions))]
-        trace!("Read instruction byte {first_instr_byte:#04X?} ({first_instr_byte}) at wasm_binary[{}]", wasm.pc);
 
         match first_instr_byte {
             END => {

@@ -1,6 +1,6 @@
 // TODO Reconsider the importance of this module. All of its functions do the same?
 
-#[cfg(debug_assertions)]
+#[cfg(feature = "log")]
 pub fn print_beautiful_instruction_name_1_byte(first_byte: u8, pc: usize) {
     use crate::core::reader::types::opcode::opcode_byte_to_str;
 
@@ -11,7 +11,7 @@ pub fn print_beautiful_instruction_name_1_byte(first_byte: u8, pc: usize) {
     );
 }
 
-#[cfg(debug_assertions)]
+#[cfg(feature = "log")]
 pub fn print_beautiful_fc_extension(second_byte: u32, pc: usize) {
     use crate::core::reader::types::opcode::fc_extension_opcode_to_str;
 
@@ -22,7 +22,7 @@ pub fn print_beautiful_fc_extension(second_byte: u32, pc: usize) {
     );
 }
 
-#[cfg(debug_assertions)]
+#[cfg(feature = "log")]
 pub fn print_beautiful_fd_extension(second_byte: u32, pc: usize) {
     use crate::core::reader::types::opcode::fd_extension_opcode_to_str;
 
