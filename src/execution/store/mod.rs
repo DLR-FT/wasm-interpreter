@@ -16,13 +16,15 @@ use crate::core::utils::ToUsizeExt;
 use crate::execution::interpreter_loop::{self, memory_init, table_init, InterpreterLoopOutcome};
 use crate::execution::value::{Ref, Value};
 use crate::execution::{run_const_span, Stack};
-use crate::instances::MemInst;
+use crate::instances::{MemInst, SharedMemInst};
+use crate::linear_memory::LinearMemory;
 use crate::resumable::{HostCall, HostResumable, Resumable, RunState, WasmResumable};
 use crate::unshared_linear_memory::UnsharedLinearMemory;
 use crate::{RefType, RuntimeError, ValidationInfo};
 use alloc::borrow::ToOwned;
 use alloc::collections::btree_map::BTreeMap;
 use alloc::string::String;
+use alloc::sync::Arc;
 use alloc::vec;
 use alloc::vec::Vec;
 use instances::{
@@ -928,6 +930,36 @@ impl<'b, T: Config> Store<'b, T> {
         // the current store.
         let table = unsafe { self.inner.tables.get_mut(table_addr) };
         table.grow(n, r#ref)
+    }
+
+    /// Allocates a new shared linear memory from the given [`LinearMemory`]
+    pub fn mem_alloc_shared(
+        &mut self,
+        linear_memory: Arc<LinearMemory>,
+        mut mem_type: MemType,
+    ) -> Result<MemAddr, RuntimeError> {
+        mem_type.limits.shared = true;
+        let len = linear_memory.len();
+
+        let Some(max) = mem_type.limits.max else {
+            return Err(RuntimeError::SharedLinearMemoryAllocationError);
+        };
+
+        let min = mem_type.limits.min.into_usize();
+        let max = max.into_usize();
+
+        if !(min..=max).contains(&len) {
+            return Err(RuntimeError::SharedLinearMemoryAllocationError);
+        }
+
+        let mem_inst = SharedMemInst {
+            ty: mem_type,
+            mem: linear_memory,
+        };
+
+        let mem_addr = self.inner.memories.insert(MemInst::Shared(mem_inst));
+
+        Ok(mem_addr)
     }
 
     /// Allocates a new linear memory and returns its memory address.

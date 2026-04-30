@@ -38,6 +38,9 @@ pub enum RuntimeError {
     /// A host function was called from a start function during module
     /// instantiation.
     UnsupportedHostCallDuringInstantiation,
+    /// The allocation of a new shared linear memory failed. This happens either if no maximum limit
+    /// was specified or the size of the linear memory is not within its memory type's limits.
+    SharedLinearMemoryAllocationError,
 }
 
 impl Display for RuntimeError {
@@ -88,6 +91,7 @@ impl Display for RuntimeError {
             }
             RuntimeError::UnexpectedHostCall => f.write_str(" The Store::invoke_simple method was used to execute some Wasm code but this resulted a host call, which is not supported in this mode"),
             RuntimeError::UnsupportedHostCallDuringInstantiation => f.write_str("A host function was called from a start function during module instantiation"),
+            RuntimeError::SharedLinearMemoryAllocationError => f.write_str("The allocation of a new shared linear memory failed. This happens either if no maximum limit was specified or the size of the linear memory is not within its memory type's limits")
         }
     }
 }
