@@ -1,12 +1,16 @@
+use core::sync::atomic::{AtomicU8, Ordering};
+
 use alloc::vec::Vec;
 
 use crate::{
-    linear_memory::PageCountTy, little_endian::LittleEndianBytes, RuntimeError, TrapError,
+    linear_memory::{LinearMemory, PageCountTy},
+    little_endian::LittleEndianBytes,
+    RuntimeError, TrapError,
 };
 
 pub struct UnsharedLinearMemory<const PAGE_SIZE: usize = { crate::Limits::MEM_PAGE_SIZE as usize }>
 {
-    data: Vec<u8>,
+    pub(crate) data: Vec<u8>,
 }
 
 impl<const PAGE_SIZE: usize> UnsharedLinearMemory<PAGE_SIZE> {
@@ -255,6 +259,175 @@ impl<const PAGE_SIZE: usize> UnsharedLinearMemory<PAGE_SIZE> {
         Ok(())
     }
 
+    pub fn copy_shared(
+        &mut self,
+        destination_index: usize,
+        source_mem: &LinearMemory,
+        source_index: usize,
+        count: usize,
+    ) -> Result<(), RuntimeError> {
+        // other is the source
+        let lock_guard_other = source_mem.inner_data.read();
+
+        /* check source for out of bounds access */
+        // Specification step 12.
+        if count > lock_guard_other.len() {
+            error!("copy count is bigger than the source linear memory");
+            return Err(TrapError::MemoryOrDataAccessOutOfBounds.into());
+        }
+
+        // Specification step 12.
+        if source_index > lock_guard_other.len() - count {
+            error!("copy source extends beyond the linear memory's end");
+            return Err(TrapError::MemoryOrDataAccessOutOfBounds.into());
+        }
+
+        /* check destination for out of bounds access */
+        // Specification step 12.
+        if count > self.data.len() {
+            error!("copy count is bigger than the destination linear memory");
+            return Err(TrapError::MemoryOrDataAccessOutOfBounds.into());
+        }
+
+        // Specification step 12.
+        if destination_index > self.data.len() - count {
+            error!("copy destination extends beyond the linear memory's end");
+            return Err(TrapError::MemoryOrDataAccessOutOfBounds.into());
+        }
+
+        /* check if there is anything to be done */
+        // Specification step 13.
+        if count == 0 {
+            return Ok(());
+        }
+
+        /* do the copy */
+        let copy_one_byte = move |i| {
+            // SAFETY:
+            // The safety of this `unsafe` block depends on the index being valid, which it is
+            // because:
+            //
+            // - the first if statement in this function guarantees that `count` elements can fit
+            //   into the `LinearMemory` `&source_mem`
+            // - the second if statement in this function guarantees that even with the offset
+            //   `source_index`, writing all `count`'s bytes does not extend beyond the last byte in
+            let src_byte: &AtomicU8 = unsafe { lock_guard_other.get_unchecked(i + source_index) };
+
+            // SAFETY:
+            // The safety of this `unsafe` block depends on the index being valid, which it is
+            // because:
+            //
+            // - the third if statement in this function guarantees that `count` elements can fit
+            //   into the `LinearMemory` `&self`
+            // - the fourth if statement in this function guarantees that even with the offset
+            //   `destination_index`, writing all `count`'s bytes does not extend beyond the last byte in
+            //   the `LinearMemory` `&self`
+            let dst_byte: &mut u8 = unsafe { self.data.get_unchecked_mut(i + destination_index) };
+
+            let byte = src_byte.load(Ordering::Relaxed);
+            *dst_byte = byte;
+        };
+
+        // TODO investigate if it is worth to only do reverse order copy if there is actual overlap
+
+        // Specification step 14.
+        if destination_index <= source_index {
+            // if source index is bigger than or equal to destination index, forward processing copy
+            // handles overlaps just fine
+            (0..count).for_each(copy_one_byte)
+        }
+        // Specification step 15.
+        else {
+            // if source index is smaller than destination index, backward processing is required to
+            // avoid data loss on overlaps
+            (0..count).rev().for_each(copy_one_byte)
+        }
+
+        Ok(())
+    }
+
+    pub fn copy_within(
+        &mut self,
+        destination_index: usize,
+        source_index: usize,
+        count: usize,
+    ) -> Result<(), RuntimeError> {
+        /* check source for out of bounds access */
+        // Specification step 12.
+        if count > self.data.len() {
+            error!("copy count is bigger than the source linear memory");
+            return Err(TrapError::MemoryOrDataAccessOutOfBounds.into());
+        }
+
+        // Specification step 12.
+        if source_index > self.data.len() - count {
+            error!("copy source extends beyond the linear memory's end");
+            return Err(TrapError::MemoryOrDataAccessOutOfBounds.into());
+        }
+
+        /* check destination for out of bounds access */
+        // Specification step 12.
+        if count > self.data.len() {
+            error!("copy count is bigger than the destination linear memory");
+            return Err(TrapError::MemoryOrDataAccessOutOfBounds.into());
+        }
+
+        // Specification step 12.
+        if destination_index > self.data.len() - count {
+            error!("copy destination extends beyond the linear memory's end");
+            return Err(TrapError::MemoryOrDataAccessOutOfBounds.into());
+        }
+
+        /* check if there is anything to be done */
+        // Specification step 13.
+        if count == 0 {
+            return Ok(());
+        }
+
+        /* do the copy */
+        let copy_one_byte = move |i| {
+            // SAFETY:
+            // The safety of this `unsafe` block depends on the index being valid, which it is
+            // because:
+            //
+            // - the first if statement in this function guarantees that `count` elements can fit
+            //   into the `LinearMemory` `&source_mem`
+            // - the second if statement in this function guarantees that even with the offset
+            //   `source_index`, writing all `count`'s bytes does not extend beyond the last byte in
+            let src_byte: u8 = *unsafe { self.data.get_unchecked(i + source_index) };
+
+            // SAFETY:
+            // The safety of this `unsafe` block depends on the index being valid, which it is
+            // because:
+            //
+            // - the third if statement in this function guarantees that `count` elements can fit
+            //   into the `LinearMemory` `&self`
+            // - the fourth if statement in this function guarantees that even with the offset
+            //   `destination_index`, writing all `count`'s bytes does not extend beyond the last byte in
+            //   the `LinearMemory` `&self`
+            let dst_byte: &mut u8 = unsafe { self.data.get_unchecked_mut(i + destination_index) };
+
+            *dst_byte = src_byte
+        };
+
+        // TODO investigate if it is worth to only do reverse order copy if there is actual overlap
+
+        // Specification step 14.
+        if destination_index <= source_index {
+            // if source index is bigger than or equal to destination index, forward processing copy
+            // handles overlaps just fine
+            (0..count).for_each(copy_one_byte)
+        }
+        // Specification step 15.
+        else {
+            // if source index is smaller than destination index, backward processing is required to
+            // avoid data loss on overlaps
+            (0..count).rev().for_each(copy_one_byte)
+        }
+
+        Ok(())
+    }
+
     pub fn init(
         &mut self,
         destination_index: usize,
@@ -262,7 +435,7 @@ impl<const PAGE_SIZE: usize> UnsharedLinearMemory<PAGE_SIZE> {
         source_index: usize,
         count: usize,
     ) -> Result<(), RuntimeError> {
-        let data_len = self.data.len();
+        let data_len = source_data.len();
 
         /* check source for out of bounds access */
         // Specification step 16.

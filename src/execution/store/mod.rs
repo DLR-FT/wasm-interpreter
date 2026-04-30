@@ -29,7 +29,6 @@ use instances::{
     DataInst, ElemInst, FuncInst, GlobalInst, HostFuncInst, ModuleInst, TableInst, UnsharedMemInst,
     WasmFuncInst,
 };
-use linear_memory::LinearMemory;
 
 use super::interpreter_loop::{data_drop, elem_drop};
 use super::UnwrapValidatedExt;

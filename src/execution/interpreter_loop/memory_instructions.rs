@@ -2138,29 +2138,73 @@ define_instruction!(
         let s: i32 = resumable.stack.pop_value().try_into().unwrap_validated();
         let d: i32 = resumable.stack.pop_value().try_into().unwrap_validated();
 
-        // SAFETY: This source memory address was just read from
-        // the current store. Therefore, it must also be valid
-        // in the current store.
-        let src_mem = unsafe { store_inner.memories.get(src_addr) };
-        // SAFETY: This destination memory address was just read
-        // from the current store. Therefore, it must also be
-        // valid in the current store.
-        let dest_mem = unsafe { store_inner.memories.get_mut(dst_addr) };
+        // SAFETY: The source and destination memory addresses were just read
+        // from the current store. Therefore, they must also be valid in the
+        // current store.
+        let maybe_two_distinct_mems =
+            unsafe { store_inner.memories.get_two_mut(src_addr, dst_addr) };
 
-        match dest_mem {
-            MemInst::Shared(_) => todo!("mem.copy on shared mem"),
-            MemInst::UnsharedMemInst(unshared_dst) => match src_mem {
-                MemInst::Shared(_) => todo!("mem.copy on shared mem"),
-                MemInst::UnsharedMemInst(unshared_src) => {
-                    unshared_dst.mem.copy(
-                        d.cast_unsigned().into_usize(),
+        let destination_index = d.cast_unsigned().into_usize();
+        let source_index = s.cast_unsigned().into_usize();
+        let count = n.into_usize();
+
+        if let Some((src_mem, dst_mem)) = maybe_two_distinct_mems {
+            match (dst_mem, src_mem) {
+                (MemInst::Shared(shared_dst), MemInst::Shared(shared_src)) => {
+                    shared_dst
+                        .mem
+                        .copy(destination_index, &shared_src.mem, source_index, count)?;
+                }
+                (MemInst::Shared(shared_dst), MemInst::Unshared(unshared_src)) => {
+                    shared_dst.mem.copy_unshared(
+                        destination_index,
                         &unshared_src.mem,
-                        s.cast_unsigned().into_usize(),
-                        n.into_usize(),
+                        source_index,
+                        count,
                     )?;
                 }
-            },
+                (MemInst::Unshared(unshared_dst), MemInst::Shared(shared_src)) => {
+                    unshared_dst.mem.copy_shared(
+                        destination_index,
+                        &shared_src.mem,
+                        source_index,
+                        count,
+                    )?;
+                }
+                (MemInst::Unshared(unshared_dst), MemInst::Unshared(unshared_src)) => {
+                    unshared_dst.mem.copy(
+                        destination_index,
+                        &unshared_src.mem,
+                        source_index,
+                        count,
+                    )?;
+                }
+            }
+        } else {
+            debug_assert_eq!(src_addr, dst_addr);
+
+            // SAFETY: The destination memory address was just read from the
+            // current store. Therefore, it must also be valid in the current
+            // store.
+            let src_and_dst_memory = unsafe { store_inner.memories.get_mut(dst_addr) };
+
+            match src_and_dst_memory {
+                MemInst::Shared(shared_mem_inst) => {
+                    shared_mem_inst.mem.copy(
+                        destination_index,
+                        &shared_mem_inst.mem,
+                        source_index,
+                        count,
+                    )?;
+                }
+                MemInst::Unshared(unshared_mem_inst) => {
+                    unshared_mem_inst
+                        .mem
+                        .copy_within(destination_index, source_index, count)?;
+                }
+            }
         }
+
         trace!("Instruction: memory.copy");
         Ok(None)
     }

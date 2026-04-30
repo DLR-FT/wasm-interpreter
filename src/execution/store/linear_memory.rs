@@ -1,7 +1,6 @@
 use core::{
     iter,
-    ptr::NonNull,
-    sync::atomic::{AtomicU8, AtomicUsize, Ordering},
+    sync::atomic::{AtomicU8, Ordering},
 };
 
 use alloc::vec::Vec;
@@ -9,6 +8,7 @@ use alloc::vec::Vec;
 use crate::{
     execution::little_endian::LittleEndianBytes,
     rw_spinlock::{ReadLockGuard, RwSpinLock},
+    unshared_linear_memory::UnsharedLinearMemory,
     RuntimeError, TrapError,
 };
 
@@ -87,7 +87,7 @@ use crate::{
 /// ```
 // TODO if a memmap like operation is available, the linear memory implementation can be optimized brutally. Out-of-bound access can be mapped to userspace handled page-faults, e.g. the MMU takes over that responsibility of catching out of bounds. Grow can happen without copying of data, by mapping new pages consecutively after the current final page of the linear memory.
 pub struct LinearMemory<const PAGE_SIZE: usize = { crate::Limits::MEM_PAGE_SIZE as usize }> {
-    inner_data: RwSpinLock<Vec<AtomicU8>>,
+    pub(crate) inner_data: RwSpinLock<Vec<AtomicU8>>,
 }
 
 /// Type to express the page count
@@ -365,6 +365,100 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
 
             let byte = src_byte.load(Ordering::Relaxed);
             dst_byte.store(byte, Ordering::Relaxed);
+        };
+
+        // TODO investigate if it is worth to only do reverse order copy if there is actual overlap
+
+        // Specification step 14.
+        if destination_index <= source_index {
+            // if source index is bigger than or equal to destination index, forward processing copy
+            // handles overlaps just fine
+            (0..count).for_each(copy_one_byte)
+        }
+        // Specification step 15.
+        else {
+            // if source index is smaller than destination index, backward processing is required to
+            // avoid data loss on overlaps
+            (0..count).rev().for_each(copy_one_byte)
+        }
+
+        Ok(())
+    }
+
+    /// Copy `count` bytes from one region in the linear memory to another region in the same or a
+    /// different linear memory
+    ///
+    /// - Both regions may overlap
+    /// - Copies the `count` bytes starting from `source_index`, overwriting the `count` bytes
+    ///   starting from `destination_index`
+    ///
+    /// <https://webassembly.github.io/spec/core/exec/instructions.html#xref-syntax-instructions-syntax-instr-memory-mathsf-memory-copy>
+    pub fn copy_unshared(
+        &self,
+        destination_index: usize,
+        source_mem: &UnsharedLinearMemory,
+        source_index: usize,
+        count: usize,
+    ) -> Result<(), RuntimeError> {
+        // self is the destination
+        let lock_guard_self = self.inner_data.read();
+        /* check source for out of bounds access */
+        // Specification step 12.
+        if count > source_mem.data.len() {
+            error!("copy count is bigger than the source linear memory");
+            return Err(TrapError::MemoryOrDataAccessOutOfBounds.into());
+        }
+
+        // Specification step 12.
+        if source_index > source_mem.data.len() - count {
+            error!("copy source extends beyond the linear memory's end");
+            return Err(TrapError::MemoryOrDataAccessOutOfBounds.into());
+        }
+
+        /* check destination for out of bounds access */
+        // Specification step 12.
+        if count > lock_guard_self.len() {
+            error!("copy count is bigger than the destination linear memory");
+            return Err(TrapError::MemoryOrDataAccessOutOfBounds.into());
+        }
+
+        // Specification step 12.
+        if destination_index > lock_guard_self.len() - count {
+            error!("copy destination extends beyond the linear memory's end");
+            return Err(TrapError::MemoryOrDataAccessOutOfBounds.into());
+        }
+
+        /* check if there is anything to be done */
+        // Specification step 13.
+        if count == 0 {
+            return Ok(());
+        }
+
+        /* do the copy */
+        let copy_one_byte = move |i| {
+            // SAFETY:
+            // The safety of this `unsafe` block depends on the index being valid, which it is
+            // because:
+            //
+            // - the first if statement in this function guarantees that `count` elements can fit
+            //   into the `LinearMemory` `&source_mem`
+            // - the second if statement in this function guarantees that even with the offset
+            //   `source_index`, writing all `count`'s bytes does not extend beyond the last byte in
+            let src_byte: &u8 = unsafe { source_mem.data.get_unchecked(i + source_index) };
+
+            // SAFETY:
+            // The safety of this `unsafe` block depends on the index being valid, which it is
+            // because:
+            //
+            // - the third if statement in this function guarantees that `count` elements can fit
+            //   into the `LinearMemory` `&self`
+            // - the fourth if statement in this function guarantees that even with the offset
+            //   `destination_index`, writing all `count`'s bytes does not extend beyond the last byte in
+            //   the `LinearMemory` `&self`
+            let dst_byte: &AtomicU8 =
+                unsafe { lock_guard_self.get_unchecked(i + destination_index) };
+
+            dst_byte.store(*src_byte, Ordering::Relaxed);
         };
 
         // TODO investigate if it is worth to only do reverse order copy if there is actual overlap
