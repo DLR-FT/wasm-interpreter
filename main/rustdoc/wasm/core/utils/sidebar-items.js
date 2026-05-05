@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["print_beautiful_fc_extension","print_beautiful_fd_extension","print_beautiful_instruction_name_1_byte"],"trait":["ToUsizeExt"]};
+window.SIDEBAR_ITEMS = {"trait":["ToUsizeExt"]};
