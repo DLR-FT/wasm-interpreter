@@ -56,7 +56,7 @@ fn table_basic() {
 
 //     w.iter().for_each(|wat| {
 //         let wasm_bytes = wat::parse_str(wat).unwrap();
-//         let validation_info = validate(&wasm_bytes).expect("validation failed");
+//         let validation_info = validate(&wasm_bytes, ()).expect("validation failed");
 //         RuntimeInstance::new(&validation_info)
 //     });
 // }
@@ -316,7 +316,7 @@ fn call_indirect_type_check() {
 
 //     w.iter().for_each(|wat| {
 //         let wasm_bytes = wat::parse_str(wat).unwrap();
-//         let validation_info = validate(&wasm_bytes);
+//         let validation_info = validate(&wasm_bytes, ());
 //         // assert!(validation_info.err().unwrap() == ValidationError::InvalidLimit);
 //     });
 // }

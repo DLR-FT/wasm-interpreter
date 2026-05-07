@@ -37,7 +37,7 @@ pub fn our() -> f32 {
         decode_and_validate, ExternVal, FuncType, ResultType, RunState, Store, ValType, Value,
     };
 
-    let module = decode_and_validate(COREMARK_MINIMAL_BYTECODE).unwrap();
+    let module = decode_and_validate(COREMARK_MINIMAL_BYTECODE, &mut ()).unwrap();
     let mut store = Store::new(());
     let env_clock_ms_function = store.func_alloc(
         FuncType {
