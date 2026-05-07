@@ -37,7 +37,7 @@ fn table_grow_test() {
     "#;
 
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let validation_info = validate(&wasm_bytes).unwrap();
+    let validation_info = validate(&wasm_bytes, ()).unwrap();
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
@@ -185,7 +185,7 @@ fn table_grow_outside_i32_range() {
     "#;
 
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let validation_info = validate(&wasm_bytes).unwrap();
+    let validation_info = validate(&wasm_bytes, ()).unwrap();
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
@@ -212,7 +212,7 @@ fn table_grow_unlimited() {
     "#;
 
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let validation_info = validate(&wasm_bytes).unwrap();
+    let validation_info = validate(&wasm_bytes, ()).unwrap();
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
@@ -243,7 +243,7 @@ fn table_grow_with_max() {
     "#;
 
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let validation_info = validate(&wasm_bytes).unwrap();
+    let validation_info = validate(&wasm_bytes, ()).unwrap();
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
@@ -293,7 +293,7 @@ fn table_grow_check_null() {
     "#;
 
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let validation_info = validate(&wasm_bytes).unwrap();
+    let validation_info = validate(&wasm_bytes, ()).unwrap();
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
@@ -339,7 +339,7 @@ fn table_grow_with_exported_table_test() {
     "#;
 
     let wasm_bytes = wat::parse_str(target_wat).unwrap();
-    let validation_info = validate(&wasm_bytes).unwrap();
+    let validation_info = validate(&wasm_bytes, ()).unwrap();
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
@@ -366,7 +366,7 @@ fn table_grow_with_exported_table_test() {
 //     "#;
 
 //     let wasm_bytes = wat::parse_str(import1_wat).unwrap();
-//     let validation_info = validate(&wasm_bytes).unwrap();
+//     let validation_info = validate(&wasm_bytes, ()).unwrap();
 //     let mut import1_instance = RuntimeInstance::new(&validation_info).expect("import1 instantiation failed");
 
 //     let grow = import1_store.instance_export(module, "grow").unwrap().as_func().unwrap();
@@ -386,7 +386,7 @@ fn table_grow_with_exported_table_test() {
 //     "#;
 
 //     let wasm_bytes = wat::parse_str(import2_wat).unwrap();
-//     let validation_info = validate(&wasm_bytes).unwrap();
+//     let validation_info = validate(&wasm_bytes, ()).unwrap();
 //     let mut import2_instance = RuntimeInstance::new(&validation_info).expect("import2 instantiation failed");
 
 //     let size = import2_store.instance_export(module, "size").unwrap().as_func().unwrap();

@@ -54,7 +54,7 @@ const FIBONACCI_WITH_LOOP_AND_BR_IF: &str = r#"
 fn fibonacci_with_loop_and_br_if() {
     let wasm_bytes = wat::parse_str(FIBONACCI_WITH_LOOP_AND_BR_IF).unwrap();
 
-    let validation_info = validate(&wasm_bytes).expect("validation failed");
+    let validation_info = validate(&wasm_bytes, ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&validation_info, Vec::new(), None)

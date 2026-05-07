@@ -41,7 +41,7 @@ fn memory_trap_1() {
 )
 "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let validation_info = validate(&wasm_bytes).unwrap();
+    let validation_info = validate(&wasm_bytes, ()).unwrap();
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&validation_info, Vec::new(), None)

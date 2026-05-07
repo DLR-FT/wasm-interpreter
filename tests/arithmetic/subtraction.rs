@@ -18,7 +18,7 @@ pub fn i64_subtract() {
 
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
-    let validation_info = validate(&wasm_bytes).expect("validation failed");
+    let validation_info = validate(&wasm_bytes, ()).expect("validation failed");
 
     let mut store = Store::new(());
     let module = store

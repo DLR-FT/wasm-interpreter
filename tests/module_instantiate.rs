@@ -11,7 +11,7 @@ fn use_incorrect_number_of_extern_vals() {
     "#;
 
     let wasm_bytes = wat::parse_str(MODULE_WITH_IMPORTS).unwrap();
-    let validation_info = validate(&wasm_bytes).unwrap();
+    let validation_info = validate(&wasm_bytes, ()).unwrap();
 
     let mut store = Store::new(());
 

@@ -46,7 +46,7 @@ fn table_funcref_test() {
 )
     "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let validation_info = validate(&wasm_bytes).unwrap();
+    let validation_info = validate(&wasm_bytes, ()).unwrap();
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
@@ -139,7 +139,7 @@ fn table_type_error_test() {
 
     for module in invalid_modules {
         let wasm_bytes = wat::parse_str(module).unwrap();
-        let result = validate(&wasm_bytes);
+        let result = validate(&wasm_bytes, ());
         assert!(
             result.is_err(),
             "Result `{result:?}` was expected to be `Err`, but it is not."

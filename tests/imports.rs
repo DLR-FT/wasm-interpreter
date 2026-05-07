@@ -60,7 +60,7 @@ const CALL_INDIRECT_BASE: &str = r#"
 #[test_log::test]
 pub fn unmet_imports() {
     // let wasm_bytes = wat::parse_str(UNMET_IMPORTS).unwrap();
-    // let validation_info = validate(&wasm_bytes).expect("validation failed");
+    // let validation_info = validate(&wasm_bytes, ()).expect("validation failed");
     // let mut instance = RuntimeInstance::new(&validation_info);
     // assert!(matches!(
     //     RuntimeInstance::new(&validation_info).err().unwrap(),
@@ -82,7 +82,7 @@ pub fn unmet_imports() {
 #[test_log::test]
 pub fn compile_simple_import() {
     let wasm_bytes = wat::parse_str(SIMPLE_IMPORT_ADDON).unwrap();
-    let validation_info = validate(&wasm_bytes).expect("validation failed");
+    let validation_info = validate(&wasm_bytes, ()).expect("validation failed");
     let mut store = Store::new(());
     let module_env = store
         .module_instantiate(&validation_info, Vec::new(), None)
@@ -92,7 +92,7 @@ pub fn compile_simple_import() {
     let get_one = store.instance_export(module_env, "get_one").unwrap();
 
     let wasm_bytes = wat::parse_str(SIMPLE_IMPORT_BASE).unwrap();
-    let validation_info = validate(&wasm_bytes).expect("validation failed");
+    let validation_info = validate(&wasm_bytes, ()).expect("validation failed");
     let _module_base = store
         .module_instantiate(&validation_info, vec![get_one], None)
         .expect("Successful instantiation");
@@ -105,7 +105,7 @@ pub fn compile_simple_import() {
 #[test_log::test]
 pub fn run_simple_import() {
     let wasm_bytes = wat::parse_str(SIMPLE_IMPORT_ADDON).unwrap();
-    let validation_info = validate(&wasm_bytes).expect("validation failed");
+    let validation_info = validate(&wasm_bytes, ()).expect("validation failed");
     let mut store = Store::new(());
     let module_env = store
         .module_instantiate(&validation_info, Vec::new(), None)
@@ -115,7 +115,7 @@ pub fn run_simple_import() {
     let get_one = store.instance_export(module_env, "get_one").unwrap();
 
     let wasm_bytes = wat::parse_str(SIMPLE_IMPORT_BASE).unwrap();
-    let validation_info = validate(&wasm_bytes).expect("validation failed");
+    let validation_info = validate(&wasm_bytes, ()).expect("validation failed");
     let module_base = store
         .module_instantiate(&validation_info, vec![get_one], None)
         .unwrap()
@@ -141,7 +141,7 @@ pub fn run_simple_import() {
 #[test_log::test]
 pub fn run_call_indirect() {
     let wasm_bytes = wat::parse_str(SIMPLE_IMPORT_ADDON).unwrap();
-    let validation_info = validate(&wasm_bytes).expect("validation failed");
+    let validation_info = validate(&wasm_bytes, ()).expect("validation failed");
     let mut store = Store::new(());
     let module_env = store
         .module_instantiate(&validation_info, Vec::new(), None)
@@ -151,7 +151,7 @@ pub fn run_call_indirect() {
     let get_one = store.instance_export(module_env, "get_one").unwrap();
 
     let wasm_bytes = wat::parse_str(CALL_INDIRECT_BASE).unwrap();
-    let validation_info = validate(&wasm_bytes).expect("validation failed");
+    let validation_info = validate(&wasm_bytes, ()).expect("validation failed");
     let module_base = store
         .module_instantiate(&validation_info, vec![get_one], None)
         .expect("Successful instantiation")
@@ -169,12 +169,12 @@ pub fn run_call_indirect() {
 // #[test_log::test]
 // pub fn run_cyclical() {
 //     let wasm_bytes = wat::parse_str(CYCLICAL_IMPORT).unwrap();
-//     let validation_info = validate(&wasm_bytes).expect("validation failed");
+//     let validation_info = validate(&wasm_bytes, ()).expect("validation failed");
 //     let mut instance =
 //         RuntimeInstance::new_named((), "env", &validation_info)
 
 //     let wasm_bytes = wat::parse_str(SIMPLE_IMPORT_BASE).unwrap();
-//     let validation_info = validate(&wasm_bytes).expect("validation failed");
+//     let validation_info = validate(&wasm_bytes, ()).expect("validation failed");
 //     instance
 //         .store.module_instantiate( &validation_info, Vec::new(), None)
 //         .expect("Successful instantiation");
