@@ -45,11 +45,11 @@ pub type Sidetable = Vec<SidetableEntry>;
 // TODO Remove Clone trait from sidetables
 #[derive(Debug, Clone)]
 pub struct SidetableEntry {
-    /// Δpc: the amount to adjust the instruction pointer by if the branch is taken
-    pub delta_pc: isize,
+    /// pc: the location the instruction pointer should jump to if the branch is taken
+    pub pc: usize,
 
-    /// Δstp: the amount to adjust the side-table index by if the branch is taken
-    pub delta_stp: isize,
+    /// stp: the next value side-table index if the branch is taken
+    pub stp: usize,
 
     /// valcnt: the number of values that will be copied if the branch is taken
     ///
