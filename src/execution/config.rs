@@ -49,6 +49,17 @@ pub trait Config {
         1
     }
 
+    /// Amount of fuel to be deducted when a multi-byte instruction that starts with the byte 0xFE is hit. This method
+    /// should return the cost of an instruction obtained by prepending 0xFE to of an unsigned 32-bit LEB
+    /// representation of `instr`. Multi-byte sequences obtained this way that do not correspond to any Wasm instruction
+    /// are ignored.
+    // It must always be checked that the calls to this method fold into a constant if it is just a match statement that
+    // yields constants.
+    #[inline(always)]
+    fn get_fe_extension_flat_cost(_instr: u32) -> u64 {
+        1
+    }
+
     /// Amount of fuel to be deducted per element of a single byte instruction `instr` that executes in asymptotically
     /// linear time with respect to one of the values it pops from the stack.
     ///

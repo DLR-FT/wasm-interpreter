@@ -37,6 +37,7 @@ use crate::{
 
 use super::{little_endian::LittleEndianBytes, store::Store, store::StoreInner};
 
+mod atomic_instructions;
 mod control_instructions;
 mod memory_instructions;
 mod numeric_instructions;
@@ -466,6 +467,19 @@ macro_rules! define_instruction {
             $contents(args)
         });
     };
+
+    (fe_fuel_check, $name: ident, $opcode: expr, $contents:expr) => {
+        define_instruction!(no_fuel_check, $name, $opcode, |args: Args| {
+            if let Some(outcome) = crate::execution::interpreter_loop::decrement_fuel(
+                T::get_fe_extension_flat_cost($opcode),
+                &mut args.resumable.maybe_fuel,
+            ) {
+                return Ok(Some(outcome));
+            }
+
+            $contents(args)
+        });
+    };
 }
 
 pub(crate) use define_instruction;
@@ -515,6 +529,26 @@ define_instruction!(
         let second_instr = args.wasm.read_var_u32().unwrap_validated();
 
         let instruction_fn = T::FD_DISPATCH_TABLE
+            .get(second_instr.into_usize())
+            .expect("the instruction to be valid because the code is validated");
+
+        // SAFETY: All possible instruction handler functions use the same safety requirements, as
+        // they are defined through the same macro: The caller ensures that the resumable is valid
+        // in the current store. Also all other address types passed via the `Args` must come from
+        // the current store itself. Therefore, they are automatically valid in this store.
+        unsafe { instruction_fn(args) }
+    }
+);
+
+define_instruction!(
+    no_fuel_check,
+    fe_extensions,
+    opcode::FE_EXTENSIONS,
+    |args: Args| {
+        // Should we call instruction hook here as well? Multibyte instruction
+        let second_instr = args.wasm.read_var_u32().unwrap_validated();
+
+        let instruction_fn = T::FE_DISPATCH_TABLE
             .get(second_instr.into_usize())
             .expect("the instruction to be valid because the code is validated");
 
