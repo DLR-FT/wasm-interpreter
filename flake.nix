@@ -182,7 +182,7 @@
                       "''${COMMON_BENCH_CMD[@]}" --save-baseline benchmark-current.baseline
 
                       # delete old current dev branch benchmark results
-                      find "$GIT_WORKTREE_PATH/target/" -type d -name 'benchmark-current.baseline' -delete
+                      find "$GIT_WORKTREE_PATH/target/" -type d -name 'benchmark-current.baseline' -exec rm --recursive -- {} \;
 
                       # copy results from current to main worktree target/ dir
                       find target/ -type d -name 'benchmark-current.baseline' -exec cp --recursive --no-target-directory -- {} "$GIT_WORKTREE_PATH/"{} \;
