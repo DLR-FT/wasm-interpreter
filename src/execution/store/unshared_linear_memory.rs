@@ -1,6 +1,6 @@
 use core::sync::atomic::{AtomicU8, Ordering};
 
-use alloc::vec::Vec;
+use alloc::{vec, vec::Vec};
 
 use crate::{
     linear_memory::{LinearMemory, PageCountTy},
@@ -20,8 +20,7 @@ impl<const PAGE_SIZE: usize> UnsharedLinearMemory<PAGE_SIZE> {
 
     pub fn new_with_initial_pages(pages: PageCountTy) -> Self {
         let size_bytes = PAGE_SIZE * usize::from(pages);
-        let mut data = Vec::with_capacity(size_bytes);
-        data.resize(size_bytes, 0);
+        let data = vec![0; size_bytes];
 
         Self { data }
     }
