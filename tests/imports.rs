@@ -60,7 +60,7 @@ const CALL_INDIRECT_BASE: &str = r#"
 #[test_log::test]
 pub fn unmet_imports() {
     // let wasm_bytes = wat::parse_str(UNMET_IMPORTS).unwrap();
-    // let validation_info = validate(&wasm_bytes).expect("validation failed");
+    // let validation_info = validate(&wasm_bytes, ()).expect("validation failed");
     // let mut instance = RuntimeInstance::new(&validation_info);
     // assert!(matches!(
     //     RuntimeInstance::new(&validation_info).err().unwrap(),
@@ -169,12 +169,12 @@ pub fn run_call_indirect() {
 // #[test_log::test]
 // pub fn run_cyclical() {
 //     let wasm_bytes = wat::parse_str(CYCLICAL_IMPORT).unwrap();
-//     let validation_info = validate(&wasm_bytes).expect("validation failed");
+//     let validation_info = validate(&wasm_bytes, ()).expect("validation failed");
 //     let mut instance =
 //         RuntimeInstance::new_named((), "env", &validation_info)
 
 //     let wasm_bytes = wat::parse_str(SIMPLE_IMPORT_BASE).unwrap();
-//     let validation_info = validate(&wasm_bytes).expect("validation failed");
+//     let validation_info = validate(&wasm_bytes, ()).expect("validation failed");
 //     instance
 //         .store.module_instantiate( &validation_info, Vec::new(), None)
 //         .expect("Successful instantiation");
