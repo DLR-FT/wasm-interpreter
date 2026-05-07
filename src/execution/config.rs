@@ -24,7 +24,7 @@ pub trait Config {
     // yields constants.
     #[inline(always)]
     fn get_flat_cost(_instr: u8) -> u64 {
-        1
+        0
     }
 
     /// Amount of fuel to be deducted when a multi-byte instruction that starts with the byte 0xFC is hit. This method
@@ -35,7 +35,7 @@ pub trait Config {
     // yields constants.
     #[inline(always)]
     fn get_fc_extension_flat_cost(_instr: u32) -> u64 {
-        1
+        0
     }
 
     /// Amount of fuel to be deducted when a multi-byte instruction that starts with the byte 0xFD is hit. This method
@@ -46,7 +46,7 @@ pub trait Config {
     // yields constants.
     #[inline(always)]
     fn get_fd_extension_flat_cost(_instr: u32) -> u64 {
-        1
+        0
     }
 
     /// Amount of fuel to be deducted per element of a single byte instruction `instr` that executes in asymptotically
