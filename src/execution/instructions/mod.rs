@@ -17,7 +17,7 @@ use crate::{
         assert_validated::UnwrapValidatedExt,
         config::Config,
         instructions::dispatch_tables::{
-            HasBaseDispatchTable, HasFcDispatchTable, HasFdDispatchTable,
+            HasBaseDispatchTable, HasFcDispatchTable, HasFdDispatchTable, HasFeDispatchTable,
         },
         numerics::representations::LittleEndianBytes,
         runtime_structure::{
@@ -35,6 +35,7 @@ use crate::{
     TrapError, Value, WasmResumable,
 };
 
+mod atomic;
 mod control;
 mod memory;
 mod numeric;
@@ -644,6 +645,65 @@ macro_rules! define_instruction {
             }
         }
     };
+
+    ($name:expr, $name_mod:ident, fuel_check = flat_fe($instruction:ident)) => {
+        pub(crate) mod $name_mod {
+            use ::core::ops::ControlFlow;
+
+            use $crate::{
+                core::{
+                    decoding::decoder::WasmDecoder, sidetable::Sidetable,
+                    structure::instructions::fe_extensions,
+                },
+                execution::{
+                    instructions::{decrement_fuel, InterpreterLoopOutcome, State},
+                    resumable::WasmResumable,
+                    runtime_structure::{
+                        addresses::{AddrVec, ModuleAddr},
+                        module_instances::ModuleInst,
+                        store::StoreInner,
+                    },
+                },
+                Config, RuntimeError,
+            };
+
+            /// # Safety
+            ///
+            /// The given [`WasmResumable`] and all address types contained in the [`State`] must be
+            /// valid in the [`StoreInner`] that is also contained in the [`State`].
+            pub(crate) unsafe fn wrapper<'wasm, 'modules, T: Config>(
+                wasm: &mut WasmDecoder<'wasm>,
+                resumable: &mut WasmResumable,
+                current_sidetable: &mut &'modules Sidetable,
+                store_inner: &mut StoreInner,
+                modules: &'modules AddrVec<ModuleAddr, ModuleInst<'wasm>>,
+                current_module: &mut ModuleAddr,
+                current_function_end_marker: &mut usize,
+            ) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+                if let ControlFlow::Break(outcome) = decrement_fuel(
+                    T::get_fe_extension_flat_cost(fe_extensions::$instruction),
+                    &mut resumable.maybe_fuel,
+                ) {
+                    return Ok(core::ops::ControlFlow::Break(outcome));
+                }
+
+                let state = State {
+                    store_inner,
+                    modules,
+                    wasm,
+                    current_module,
+                    current_function_end_marker,
+                    current_sidetable,
+                    resumable,
+                };
+
+                // SAFETY: The instruction implementation requires that the `State` is correct
+                // according to its safety documentation. The caller of the current function
+                // guarantees the same for all fields.
+                unsafe { $name(state) }
+            }
+        }
+    };
 }
 
 pub(crate) use define_instruction;
@@ -717,6 +777,43 @@ pub unsafe fn fd_extensions_dispatch<T: Config>(
     let second_instr = state.wasm.decode_var_u32().unwrap_validated();
 
     let instruction_fn = T::FD_DISPATCH_TABLE
+        .get(second_instr.into_usize())
+        .expect("the instruction to be valid because the code is validated");
+
+    // SAFETY: All possible instruction handler functions use the same safety requirements, as
+    // they are defined through the same macro: The caller ensures that the resumable is valid
+    // in the current store. Also all other address types passed via the `State` must come from
+    // the current store itself. Therefore, they are automatically valid in this store.
+    unsafe {
+        instruction_fn(
+            state.wasm,
+            state.resumable,
+            state.current_sidetable,
+            state.store_inner,
+            state.modules,
+            state.current_module,
+            state.current_function_end_marker,
+        )
+    }
+}
+
+define_instruction!(
+    super::fe_extensions_dispatch::<T>,
+    fe_extensions_dispatch_mod,
+    fuel_check = omit
+);
+/// # Safety
+///
+/// The given [`WasmResumable`] and all address types contained in the [`State`] must be
+/// valid in the [`StoreInner`] that is also contained in the [`State`].
+#[inline(always)]
+pub unsafe fn fe_extensions_dispatch<T: Config>(
+    state: State,
+) -> Result<ControlFlow<InterpreterLoopOutcome>, RuntimeError> {
+    // should we call instruction hook here as well? multibyte instruction
+    let second_instr = state.wasm.decode_var_u32().unwrap_validated();
+
+    let instruction_fn = T::FE_DISPATCH_TABLE
         .get(second_instr.into_usize())
         .expect("the instruction to be valid because the code is validated");
 
