@@ -5,9 +5,12 @@ use crate::{
         reader::types::{memarg::MemArg, opcode},
         utils::ToUsizeExt,
     },
-    execution::interpreter_loop::{
-        calculate_mem_address, data_drop, define_instruction, from_lanes, memory_init, to_lanes,
-        Args, InterpreterLoopOutcome,
+    execution::{
+        interpreter_loop::{
+            calculate_mem_address, data_drop, define_instruction, from_lanes, memory_init,
+            to_lanes, Args, InterpreterLoopOutcome,
+        },
+        store::linear_memory::Ord,
     },
     instances::MemInst,
     value::{F32, F64},
@@ -44,7 +47,7 @@ define_instruction!(
         let idx = calculate_mem_address(&memarg, relative_address)?;
         let data = match mem_inst {
             MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load(idx)?,
-            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load(idx)?,
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load(idx, Ord::Unord)?,
         };
 
         resumable.stack.push_value::<T>(Value::I32(data))?;
@@ -82,7 +85,7 @@ define_instruction!(
         let idx = calculate_mem_address(&memarg, relative_address)?;
         let data = match mem {
             MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load(idx)?,
-            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load(idx)?,
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load(idx, Ord::Unord)?,
         };
 
         resumable.stack.push_value::<T>(Value::I64(data))?;
@@ -120,7 +123,7 @@ define_instruction!(
         let idx = calculate_mem_address(&memarg, relative_address)?;
         let data = match mem {
             MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load(idx)?,
-            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load(idx)?,
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load(idx, Ord::Unord)?,
         };
 
         resumable.stack.push_value::<T>(Value::F32(data))?;
@@ -158,7 +161,7 @@ define_instruction!(
         let idx = calculate_mem_address(&memarg, relative_address)?;
         let data = match mem {
             MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load(idx)?,
-            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load(idx)?,
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load(idx, Ord::Unord)?,
         };
 
         resumable.stack.push_value::<T>(Value::F64(data))?;
@@ -198,7 +201,7 @@ define_instruction!(
         let idx = calculate_mem_address(&memarg, relative_address)?;
 
         let data: u128 = match memory {
-            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load(idx)?,
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load(idx, Ord::Unord)?,
             MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load(idx)?,
         };
         resumable.stack.push_value::<T>(data.to_le_bytes().into())?;
@@ -235,7 +238,7 @@ define_instruction!(
 
         let idx = calculate_mem_address(&memarg, relative_address)?;
         let data: i8 = match mem {
-            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load(idx)?,
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load(idx, Ord::Unord)?,
             MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load(idx)?,
         };
 
@@ -273,7 +276,7 @@ define_instruction!(
 
         let idx = calculate_mem_address(&memarg, relative_address)?;
         let data: u8 = match mem {
-            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load(idx)?,
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load(idx, Ord::Unord)?,
             MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load(idx)?,
         };
 
@@ -311,7 +314,7 @@ define_instruction!(
 
         let idx = calculate_mem_address(&memarg, relative_address)?;
         let data: i16 = match mem {
-            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load(idx)?,
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load(idx, Ord::Unord)?,
             MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load(idx)?,
         };
 
@@ -349,7 +352,7 @@ define_instruction!(
 
         let idx = calculate_mem_address(&memarg, relative_address)?;
         let data: u16 = match mem {
-            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load(idx)?,
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load(idx, Ord::Unord)?,
             MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load(idx)?,
         };
 
@@ -387,7 +390,7 @@ define_instruction!(
 
         let idx = calculate_mem_address(&memarg, relative_address)?;
         let data: i8 = match mem {
-            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load(idx)?,
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load(idx, Ord::Unord)?,
             MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load(idx)?,
         };
 
@@ -425,7 +428,7 @@ define_instruction!(
 
         let idx = calculate_mem_address(&memarg, relative_address)?;
         let data: u8 = match mem {
-            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load(idx)?,
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load(idx, Ord::Unord)?,
             MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load(idx)?,
         };
 
@@ -463,7 +466,7 @@ define_instruction!(
 
         let idx = calculate_mem_address(&memarg, relative_address)?;
         let data: i16 = match mem {
-            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load(idx)?,
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load(idx, Ord::Unord)?,
             MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load(idx)?,
         };
 
@@ -501,7 +504,7 @@ define_instruction!(
 
         let idx = calculate_mem_address(&memarg, relative_address)?;
         let data: u16 = match mem {
-            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load(idx)?,
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load(idx, Ord::Unord)?,
             MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load(idx)?,
         };
 
@@ -539,7 +542,7 @@ define_instruction!(
 
         let idx = calculate_mem_address(&memarg, relative_address)?;
         let data: i32 = match mem {
-            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load(idx)?,
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load(idx, Ord::Unord)?,
             MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load(idx)?,
         };
 
@@ -577,7 +580,7 @@ define_instruction!(
 
         let idx = calculate_mem_address(&memarg, relative_address)?;
         let data: u32 = match mem {
-            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load(idx)?,
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load(idx, Ord::Unord)?,
             MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load(idx)?,
         };
 
@@ -620,7 +623,7 @@ define_instruction!(
 
         // v128 load always loads half of a v128
         let half_data: [u8; 8] = match memory {
-            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load_bytes::<8>(idx)?,
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load_bytes::<8>(idx, Ord::Unord)?,
             MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load_bytes::<8>(idx)?,
         };
 
@@ -668,7 +671,7 @@ define_instruction!(
 
         // v128 load always loads half of a v128
         let half_data: [u8; 8] = match memory {
-            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load_bytes::<8>(idx)?,
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load_bytes::<8>(idx, Ord::Unord)?,
             MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load_bytes::<8>(idx)?,
         };
 
@@ -716,7 +719,7 @@ define_instruction!(
 
         // v128 load always loads half of a v128
         let half_data: [u8; 8] = match memory {
-            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load_bytes::<8>(idx)?,
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load_bytes::<8>(idx, Ord::Unord)?,
             MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load_bytes::<8>(idx)?,
         };
 
@@ -764,7 +767,7 @@ define_instruction!(
 
         // v128 load always loads half of a v128
         let half_data: [u8; 8] = match memory {
-            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load_bytes::<8>(idx)?,
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load_bytes::<8>(idx, Ord::Unord)?,
             MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load_bytes::<8>(idx)?,
         };
 
@@ -812,7 +815,7 @@ define_instruction!(
 
         // v128 load always loads half of a v128
         let half_data: [u8; 8] = match memory {
-            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load_bytes::<8>(idx)?,
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load_bytes::<8>(idx, Ord::Unord)?,
             MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load_bytes::<8>(idx)?,
         };
 
@@ -860,7 +863,7 @@ define_instruction!(
 
         // v128 load always loads half of a v128
         let half_data: [u8; 8] = match memory {
-            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load_bytes::<8>(idx)?,
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load_bytes::<8>(idx, Ord::Unord)?,
             MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load_bytes::<8>(idx)?,
         };
 
@@ -908,7 +911,7 @@ define_instruction!(
         let idx = calculate_mem_address(&memarg, relative_address)?;
 
         let lane = match memory {
-            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load::<1, u8>(idx)?,
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load::<1, u8>(idx, Ord::Unord)?,
             MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load::<1, u8>(idx)?,
         };
         resumable
@@ -947,7 +950,7 @@ define_instruction!(
         let idx = calculate_mem_address(&memarg, relative_address)?;
 
         let lane = match memory {
-            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load::<2, u16>(idx)?,
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load::<2, u16>(idx, Ord::Unord)?,
             MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load::<2, u16>(idx)?,
         };
         resumable
@@ -986,7 +989,7 @@ define_instruction!(
         let idx = calculate_mem_address(&memarg, relative_address)?;
 
         let lane = match memory {
-            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load::<4, u32>(idx)?,
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load::<4, u32>(idx, Ord::Unord)?,
             MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load::<4, u32>(idx)?,
         };
 
@@ -1026,7 +1029,7 @@ define_instruction!(
         let idx = calculate_mem_address(&memarg, relative_address)?;
 
         let lane = match memory {
-            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load::<8, u64>(idx)?,
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load::<8, u64>(idx, Ord::Unord)?,
             MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load::<8, u64>(idx)?,
         };
         resumable
@@ -1069,7 +1072,7 @@ define_instruction!(
         let idx = calculate_mem_address(&memarg, relative_address)?;
 
         let data = match memory {
-            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load::<4, u32>(idx)? as u128,
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load::<4, u32>(idx, Ord::Unord)? as u128,
             MemInst::Unshared(unshared_mem_inst) => {
                 unshared_mem_inst.mem.load::<4, u32>(idx)? as u128
             }
@@ -1111,7 +1114,7 @@ define_instruction!(
         let idx = calculate_mem_address(&memarg, relative_address)?;
 
         let data = match memory {
-            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load::<8, u64>(idx)? as u128,
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load::<8, u64>(idx, Ord::Unord)? as u128,
             MemInst::Unshared(unshared_mem_inst) => {
                 unshared_mem_inst.mem.load::<8, u64>(idx)? as u128
             }
@@ -1156,7 +1159,7 @@ define_instruction!(
         let lane_idx = usize::from(wasm.read_u8().unwrap_validated());
         let mut lanes: [u8; 16] = to_lanes(data);
         let lane = match memory {
-            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load::<1, u8>(idx)?,
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load::<1, u8>(idx, Ord::Unord)?,
             MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load::<1, u8>(idx)?,
         };
         *lanes.get_mut(lane_idx).unwrap_validated() = lane;
@@ -1199,7 +1202,7 @@ define_instruction!(
         let lane_idx = usize::from(wasm.read_u8().unwrap_validated());
         let mut lanes: [u16; 8] = to_lanes(data);
         let lane = match memory {
-            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load::<2, u16>(idx)?,
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load::<2, u16>(idx, Ord::Unord)?,
             MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load::<2, u16>(idx)?,
         };
         *lanes.get_mut(lane_idx).unwrap_validated() = lane;
@@ -1241,7 +1244,7 @@ define_instruction!(
         let lane_idx = usize::from(wasm.read_u8().unwrap_validated());
         let mut lanes: [u32; 4] = to_lanes(data);
         let lane = match memory {
-            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load::<4, u32>(idx)?,
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load::<4, u32>(idx, Ord::Unord)?,
             MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load::<4, u32>(idx)?,
         };
         *lanes.get_mut(lane_idx).unwrap_validated() = lane;
@@ -1283,7 +1286,7 @@ define_instruction!(
         let lane_idx = usize::from(wasm.read_u8().unwrap_validated());
         let mut lanes: [u64; 2] = to_lanes(data);
         let lane = match memory {
-            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load::<8, u64>(idx)?,
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.load::<8, u64>(idx, Ord::Unord)?,
             MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst.mem.load::<8, u64>(idx)?,
         };
         *lanes.get_mut(lane_idx).unwrap_validated() = lane;
@@ -1325,7 +1328,7 @@ define_instruction!(
 
         let idx = calculate_mem_address(&memarg, relative_address)?;
         match mem {
-            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.store(idx, data_to_store)?,
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.store(idx, data_to_store, Ord::Unord)?,
             MemInst::Unshared(unshared_mem_inst) => {
                 unshared_mem_inst.mem.store(idx, data_to_store)?
             }
@@ -1366,7 +1369,7 @@ define_instruction!(
 
         let idx = calculate_mem_address(&memarg, relative_address)?;
         match mem {
-            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.store(idx, data_to_store)?,
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.store(idx, data_to_store, Ord::Unord)?,
             MemInst::Unshared(unshared_mem_inst) => {
                 unshared_mem_inst.mem.store(idx, data_to_store)?
             }
@@ -1407,7 +1410,7 @@ define_instruction!(
 
         let idx = calculate_mem_address(&memarg, relative_address)?;
         match mem {
-            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.store(idx, data_to_store)?,
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.store(idx, data_to_store, Ord::Unord)?,
             MemInst::Unshared(unshared_mem_inst) => {
                 unshared_mem_inst.mem.store(idx, data_to_store)?
             }
@@ -1448,7 +1451,7 @@ define_instruction!(
 
         let idx = calculate_mem_address(&memarg, relative_address)?;
         match mem {
-            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.store(idx, data_to_store)?,
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.store(idx, data_to_store, Ord::Unord)?,
             MemInst::Unshared(unshared_mem_inst) => {
                 unshared_mem_inst.mem.store(idx, data_to_store)?
             }
@@ -1492,7 +1495,7 @@ define_instruction!(
 
         match memory {
             MemInst::Shared(shared_mem_inst) => {
-                shared_mem_inst.mem.store(idx, u128::from_le_bytes(data))?
+                shared_mem_inst.mem.store(idx, u128::from_le_bytes(data), Ord::Unord)?
             }
             MemInst::Unshared(unshared_mem_inst) => unshared_mem_inst
                 .mem
@@ -1535,7 +1538,7 @@ define_instruction!(
 
         let idx = calculate_mem_address(&memarg, relative_address)?;
         match mem {
-            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.store(idx, wrapped_data)?,
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.store(idx, wrapped_data, Ord::Unord)?,
             MemInst::Unshared(unshared_mem_inst) => {
                 unshared_mem_inst.mem.store(idx, wrapped_data)?
             }
@@ -1578,7 +1581,7 @@ define_instruction!(
 
         let idx = calculate_mem_address(&memarg, relative_address)?;
         match mem {
-            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.store(idx, wrapped_data)?,
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.store(idx, wrapped_data, Ord::Unord)?,
             MemInst::Unshared(unshared_mem_inst) => {
                 unshared_mem_inst.mem.store(idx, wrapped_data)?
             }
@@ -1621,7 +1624,7 @@ define_instruction!(
 
         let idx = calculate_mem_address(&memarg, relative_address)?;
         match mem {
-            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.store(idx, wrapped_data)?,
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.store(idx, wrapped_data, Ord::Unord)?,
             MemInst::Unshared(unshared_mem_inst) => {
                 unshared_mem_inst.mem.store(idx, wrapped_data)?
             }
@@ -1664,7 +1667,7 @@ define_instruction!(
 
         let idx = calculate_mem_address(&memarg, relative_address)?;
         match mem {
-            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.store(idx, wrapped_data)?,
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.store(idx, wrapped_data, Ord::Unord)?,
             MemInst::Unshared(unshared_mem_inst) => {
                 unshared_mem_inst.mem.store(idx, wrapped_data)?
             }
@@ -1707,7 +1710,7 @@ define_instruction!(
 
         let idx = calculate_mem_address(&memarg, relative_address)?;
         match mem {
-            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.store(idx, wrapped_data)?,
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.store(idx, wrapped_data, Ord::Unord)?,
             MemInst::Unshared(unshared_mem_inst) => {
                 unshared_mem_inst.mem.store(idx, wrapped_data)?
             }
@@ -1753,7 +1756,7 @@ define_instruction!(
         let lane = *to_lanes::<1, 16, u8>(data).get(lane_idx).unwrap_validated();
 
         match memory {
-            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.store::<1, u8>(idx, lane)?,
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.store::<1, u8>(idx, lane, Ord::Unord)?,
             MemInst::Unshared(unshared_mem_inst) => {
                 unshared_mem_inst.mem.store::<1, u8>(idx, lane)?
             }
@@ -1795,7 +1798,7 @@ define_instruction!(
         let lane = *to_lanes::<2, 8, u16>(data).get(lane_idx).unwrap_validated();
 
         match memory {
-            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.store::<2, u16>(idx, lane)?,
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.store::<2, u16>(idx, lane, Ord::Unord)?,
             MemInst::Unshared(unshared_mem_inst) => {
                 unshared_mem_inst.mem.store::<2, u16>(idx, lane)?
             }
@@ -1837,7 +1840,7 @@ define_instruction!(
         let lane = *to_lanes::<4, 4, u32>(data).get(lane_idx).unwrap_validated();
 
         match memory {
-            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.store::<4, u32>(idx, lane)?,
+            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.store::<4, u32>(idx, lane, Ord::Unord)?,
             MemInst::Unshared(unshared_mem_inst) => {
                 unshared_mem_inst.mem.store::<4, u32>(idx, lane)?
             }
@@ -1879,7 +1882,9 @@ define_instruction!(
         let lane = *to_lanes::<8, 2, u64>(data).get(lane_idx).unwrap_validated();
 
         match memory {
-            MemInst::Shared(shared_mem_inst) => shared_mem_inst.mem.store::<8, u64>(idx, lane)?,
+            MemInst::Shared(shared_mem_inst) => {
+                shared_mem_inst.mem.store::<8, u64>(idx, lane, Ord::Unord)?
+            }
             MemInst::Unshared(unshared_mem_inst) => {
                 unshared_mem_inst.mem.store::<8, u64>(idx, lane)?
             }

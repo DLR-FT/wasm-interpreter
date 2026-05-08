@@ -120,6 +120,8 @@ pub enum TrapError {
     IndirectCallNullFuncRef,
     TableAccessOutOfBounds,
     ReachedUnreachable,
+    /// An atomic access was not properly aligned.
+    UnalignedAtomicAccess
 }
 
 impl Display for TrapError {
@@ -143,6 +145,7 @@ impl Display for TrapError {
                 f.write_str("Indirect call: table index out of bounds")
             }
             TrapError::ReachedUnreachable => f.write_str("An unreachable statement was reached"),
+            TrapError::UnalignedAtomicAccess => f.write_str("An atomic access was not properly aligned"),
         }
     }
 }

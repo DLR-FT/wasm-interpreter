@@ -12,6 +12,26 @@ use crate::{
     RuntimeError, TrapError,
 };
 
+/// A memory ordering used for atomic accesses
+///
+/// See: WebAssembly Specification 2.0 (with Threads proposal) - 4.2.17 Events - ord
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum Ord {
+    Unord,
+    SeqCst,
+    Init,
+}
+
+impl Ord {
+    fn into_ordering(self) -> Ordering {
+        match self {
+            Ord::Unord => Ordering::Relaxed,
+            Ord::SeqCst => Ordering::SeqCst,
+            Ord::Init => todo!("handle init ordering"),
+        }
+    }
+}
+
 /// Implementation of the linear memory suitable for concurrent access
 ///
 /// Implements the base for the instructions described in
@@ -138,20 +158,82 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
         self.inner_data.read().len()
     }
 
-    /// At a given index, store a datum in the [`LinearMemory`]
     pub fn store<const N: usize, T: LittleEndianBytes<N>>(
         &self,
         index: usize,
         value: T,
+        ord: Ord,
     ) -> Result<(), RuntimeError> {
-        self.store_bytes::<N>(index, value.to_le_bytes())
+        // 13.
+        let index_is_properly_aligned = index % N == 0;
+        if ord == Ord::SeqCst && !index_is_properly_aligned {
+            return Err(TrapError::UnalignedAtomicAccess.into());
+        }
+
+        // 16.
+        let bytes = value.to_le_bytes();
+        // 18. The current memory is shared
+        // a.
+        let n = self.rd_len_action();
+        // b.
+        let end_index_is_out_of_bounds = index.checked_add(N).is_none_or(|end_index| end_index > n);
+        if end_index_is_out_of_bounds {
+            return Err(TrapError::MemoryOrDataAccessOutOfBounds.into());
+        }
+        // c.
+        // TODO There is a contradiction: tearing is allowed for types with <= 32 bits. However, 64
+        // bit atomic accesses could still be required to not tear as described here:
+        // https://github.com/WebAssembly/threads/issues/9#issuecomment-725389629
+        let may_tear: bool = tearing::<N, T>(index);
+
+        // d.
+        unsafe { self.write_action(index, &bytes, ord, may_tear) }
+    }
+
+    pub fn rd_len_action(&self) -> usize {
+        let lock_guard = self.inner_data.read();
+        // Note: The spec defines a `rd` action to have a specific ord, but we can just directly
+        // read from the &usize, as no-one as write access to it anyway.
+        lock_guard.len()
+    }
+
+    /// The `wr` action
+    pub unsafe fn write_action(
+        &self,
+        index: usize,
+        bytes: &[u8],
+        ord: Ord,
+        may_tear: bool,
+    ) -> Result<(), RuntimeError> {
+        if may_tear {
+            let lock_guard = self.inner_data.read();
+
+            for (i, byte) in bytes.into_iter().enumerate() {
+                let dst = unsafe { lock_guard.get_unchecked(i + index) };
+                dst.store(*byte, ord.into_ordering());
+            }
+        } else {
+            let mut lock_guard = self.inner_data.write();
+
+            for (i, byte) in bytes.into_iter().enumerate() {
+                let dst = unsafe { lock_guard.get_unchecked_mut(i + index) };
+                // Note: We have an exclusive reference, and therefore no need to use an atomic
+                // instruction.
+                *dst.get_mut() = *byte;
+            }
+        }
+
+        Ok(())
     }
 
     /// At a given index, store a number of bytes `N` in the [`LinearMemory`]
+    ///
+    /// This operation tears: It decomposes into observable byte-wise accesses when in a data race.
     pub fn store_bytes<const N: usize>(
         &self,
         index: usize,
         bytes: [u8; N],
+        ord: Ord,
     ) -> Result<(), RuntimeError> {
         let lock_guard = self.inner_data.read();
 
@@ -172,34 +254,24 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
             return Err(TrapError::MemoryOrDataAccessOutOfBounds.into());
         }
 
-        /* do the store */
-        for (i, byte) in bytes.into_iter().enumerate() {
-            // SAFETY:
-            // The safety of this `unsafe` block depends on the index being valid, which it is
-            // because:
-            //
-            // - the first if statement in this function guarantees that a `T` can fit into the
-            //   `LinearMemory` `&self`
-            // - the second if statement in this function guarantees that even with the offset
-            //   `index`, writing all of `value`'s bytes does not extend beyond the last byte in
-            //   the `LinearMemory` `&self`
-            let dst = unsafe { lock_guard.get_unchecked(i + index) };
-            dst.store(byte, Ordering::Relaxed);
-        }
-
-        Ok(())
+        unsafe { self.write_action(index, &bytes, ord, true) }
     }
 
     /// From a given index, load a datum from the [`LinearMemory`]
     pub fn load<const N: usize, T: LittleEndianBytes<N>>(
         &self,
         index: usize,
+        ord: Ord,
     ) -> Result<T, RuntimeError> {
-        self.load_bytes::<N>(index).map(T::from_le_bytes)
+        self.load_bytes::<N>(index, ord).map(T::from_le_bytes)
     }
 
     /// From a given index, load a number of bytes `N` from the [`LinearMemory`]
-    pub fn load_bytes<const N: usize>(&self, index: usize) -> Result<[u8; N], RuntimeError> {
+    pub fn load_bytes<const N: usize>(
+        &self,
+        index: usize,
+        ord: Ord,
+    ) -> Result<[u8; N], RuntimeError> {
         let lock_guard = self.inner_data.read();
 
         /* check source for out of bounds access */
@@ -233,7 +305,7 @@ impl<const PAGE_SIZE: usize> LinearMemory<PAGE_SIZE> {
             //   `index`, reading all `N` bytes does not extend beyond the last byte in
             //   the `LinearMemory` `&self`
             let src = unsafe { lock_guard.get_unchecked(i + index) };
-            *byte = src.load(Ordering::Relaxed);
+            *byte = src.load(ord.into_ordering());
         }
 
         Ok(bytes)
@@ -689,9 +761,9 @@ mod test {
         let lin_mem = LinearMemory::<PAGE_SIZE>::new_with_initial_pages(page_count);
         assert_eq!(lin_mem.pages(), page_count);
 
-        lin_mem.store(1, 0xffu8).unwrap();
-        lin_mem.store(10, 1u8).unwrap();
-        lin_mem.store(200, 0xffu8).unwrap();
+        lin_mem.store(1, 0xffu8, Ord::SeqCst).unwrap();
+        lin_mem.store(10, 1u8, Ord::SeqCst).unwrap();
+        lin_mem.store(200, 0xffu8, Ord::SeqCst).unwrap();
 
         let expected = "LinearMemory { inner_data: [0, 255, #8 × 0, 1, #189 × 0, 255, #311 × 0] }";
         let debug_repr = format!("{lin_mem:?}");
@@ -717,11 +789,11 @@ mod test {
         for offset in 0..highest_legal_offset {
             let lin_mem = LinearMemory::<PAGE_SIZE>::new_with_initial_pages(PAGES);
 
-            lin_mem.store(offset, x).unwrap();
+            lin_mem.store(offset, x, Ord::Unord).unwrap();
 
             assert_eq!(
                 lin_mem
-                    .load::<{ core::mem::size_of::<i8>() }, i8>(offset)
+                    .load::<{ core::mem::size_of::<i8>() }, i8>(offset, Ord::Unord)
                     .unwrap(),
                 x,
                 "load store roundtrip for {x:?} failed!"
@@ -736,11 +808,11 @@ mod test {
         for offset in 0..highest_legal_offset {
             let lin_mem = LinearMemory::<PAGE_SIZE>::new_with_initial_pages(PAGES);
 
-            lin_mem.store(offset, x).unwrap();
+            lin_mem.store(offset, x, Ord::Unord).unwrap();
 
             assert_eq!(
                 lin_mem
-                    .load::<{ core::mem::size_of::<F32>() }, F32>(offset)
+                    .load::<{ core::mem::size_of::<F32>() }, F32>(offset, Ord::Unord)
                     .unwrap(),
                 x,
                 "load store roundtrip for {x:?} failed!"
@@ -755,11 +827,11 @@ mod test {
         for offset in 0..highest_legal_offset {
             let lin_mem = LinearMemory::<PAGE_SIZE>::new_with_initial_pages(PAGES);
 
-            lin_mem.store(offset, x).unwrap();
+            lin_mem.store(offset, x, Ord::Unord).unwrap();
 
             assert_eq!(
                 lin_mem
-                    .load::<{ core::mem::size_of::<F64>() }, F64>(offset)
+                    .load::<{ core::mem::size_of::<F64>() }, F64>(offset, Ord::Unord)
                     .unwrap(),
                 x,
                 "load store roundtrip for {x:?} failed!"
@@ -774,11 +846,11 @@ mod test {
         for offset in 0..highest_legal_offset {
             let lin_mem = LinearMemory::<PAGE_SIZE>::new_with_initial_pages(PAGES);
 
-            lin_mem.store(offset, x).unwrap();
+            lin_mem.store(offset, x, Ord::Unord).unwrap();
 
             assert!(
                 lin_mem
-                    .load::<{ core::mem::size_of::<F64>() }, F64>(offset)
+                    .load::<{ core::mem::size_of::<F64>() }, F64>(offset, Ord::Unord)
                     .unwrap()
                     .is_nan(),
                 "load store roundtrip for {x:?} failed!"
@@ -796,7 +868,9 @@ mod test {
         let lowest_illegal_offset = PAGE_SIZE - mem::size_of::<u128>() + 1;
         let lin_mem = LinearMemory::<PAGE_SIZE>::new_with_initial_pages(pages);
 
-        lin_mem.store(lowest_illegal_offset, x).unwrap();
+        lin_mem
+            .store(lowest_illegal_offset, x, Ord::Unord)
+            .unwrap();
     }
 
     #[test]
@@ -809,7 +883,9 @@ mod test {
         let lowest_illegal_offset = PAGE_SIZE - mem::size_of::<u8>() + 1;
         let lin_mem = LinearMemory::<PAGE_SIZE>::new_with_initial_pages(pages);
 
-        lin_mem.store(lowest_illegal_offset, x).unwrap();
+        lin_mem
+            .store(lowest_illegal_offset, x, Ord::Unord)
+            .unwrap();
     }
 
     #[test]
@@ -821,7 +897,7 @@ mod test {
         let lowest_illegal_offset = PAGE_SIZE - mem::size_of::<u128>() + 1;
         let lin_mem = LinearMemory::<PAGE_SIZE>::new_with_initial_pages(pages);
 
-        let _x: u128 = lin_mem.load(lowest_illegal_offset).unwrap();
+        let _x: u128 = lin_mem.load(lowest_illegal_offset, Ord::Unord).unwrap();
     }
 
     #[test]
@@ -833,7 +909,7 @@ mod test {
         let lowest_illegal_offset = PAGE_SIZE - mem::size_of::<u8>() + 1;
         let lin_mem = LinearMemory::<PAGE_SIZE>::new_with_initial_pages(pages);
 
-        let _x: u8 = lin_mem.load(lowest_illegal_offset).unwrap();
+        let _x: u8 = lin_mem.load(lowest_illegal_offset, Ord::Unord).unwrap();
     }
 
     #[test]
@@ -843,4 +919,12 @@ mod test {
         let lin_mem_1 = LinearMemory::<PAGE_SIZE>::new_with_initial_pages(1);
         lin_mem_0.copy(0, &lin_mem_1, 0, PAGE_SIZE + 1).unwrap();
     }
+}
+
+#[inline(always)]
+fn tearing<const N: usize, T: LittleEndianBytes<N>>(index: usize) -> bool {
+    let is_properly_aligned = index % N == 0;
+    let is_max_32_bits_large = N <= 4;
+    let no_tears = is_properly_aligned && is_max_32_bits_large;
+    !no_tears
 }

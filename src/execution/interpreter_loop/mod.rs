@@ -10,29 +10,20 @@ use alloc::vec::Vec;
 use core::{array, num::NonZeroU64};
 
 use crate::{
-    addrs::{AddrVec, DataAddr, ElemAddr, FuncAddr, MemAddr, ModuleAddr, TableAddr},
-    assert_validated::UnwrapValidatedExt,
-    core::{
+    RuntimeError, TrapError, Value, addrs::{AddrVec, DataAddr, ElemAddr, FuncAddr, MemAddr, ModuleAddr, TableAddr}, assert_validated::UnwrapValidatedExt, core::{
         indices::{DataIdx, ElemIdx, MemIdx, TableIdx},
         reader::{
-            types::{memarg::MemArg, opcode},
-            WasmReader,
+            WasmReader, types::{memarg::MemArg, opcode}
         },
         sidetable::Sidetable,
         utils::ToUsizeExt,
-    },
-    execution::{
+    }, execution::{
         config::Config,
         interpreter_loop::dispatch_tables::{
-            HasBaseDispatchTable, HasFcDispatchTable, HasFdDispatchTable,
+            HasBaseDispatchTable, HasFcDispatchTable, HasFdDispatchTable, HasFeDispatchTable,
         },
         store::Hostcode,
-    },
-    instances::{DataInst, ElemInst, FuncInst, MemInst, ModuleInst, TableInst},
-    resumable::WasmResumable,
-    unreachable_validated,
-    value_stack::Stack,
-    RuntimeError, TrapError, Value,
+    }, instances::{DataInst, ElemInst, FuncInst, MemInst, ModuleInst, TableInst}, opcodes::opcode_byte_to_str, resumable::WasmResumable, unreachable_validated, value_stack::Stack
 };
 
 use super::{little_endian::LittleEndianBytes, store::Store, store::StoreInner};
