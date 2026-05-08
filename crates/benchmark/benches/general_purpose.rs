@@ -48,7 +48,7 @@ macro_rules! bench_wasm {
             let wasm_bytes = $wasm_bytes;
 
             // Our interpreter
-            let our_validation_info = validate(&wasm_bytes).unwrap();
+            let our_validation_info = validate(&wasm_bytes, ()).unwrap();
             let mut store = Store::new(());
             // SAFETY: Only one store is used. Therefore, this must always be
             // the correct one.

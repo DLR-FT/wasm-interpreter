@@ -28,7 +28,7 @@ fn memory_size_1() {
 )
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let validation_info = validate(&wasm_bytes).unwrap();
+    let validation_info = validate(&wasm_bytes, ()).unwrap();
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
@@ -65,7 +65,7 @@ fn memory_size_2() {
 )
   "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let validation_info = validate(&wasm_bytes).unwrap();
+    let validation_info = validate(&wasm_bytes, ()).unwrap();
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
@@ -102,7 +102,7 @@ fn memory_size_3() {
 )
 "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let validation_info = validate(&wasm_bytes).unwrap();
+    let validation_info = validate(&wasm_bytes, ()).unwrap();
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
@@ -143,7 +143,7 @@ fn memory_size_4() {
 )
 "#;
     let wasm_bytes = wat::parse_str(w).unwrap();
-    let validation_info = validate(&wasm_bytes).unwrap();
+    let validation_info = validate(&wasm_bytes, ()).unwrap();
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
@@ -195,7 +195,7 @@ fn memory_size_5() {
             info!("{info_str}");
         }
     }
-    let validation_info = validate(&wasm_bytes);
+    let validation_info = validate(&wasm_bytes, ());
     assert_eq!(
         validation_info.err(),
         Some(wasm::ValidationError::EndInvalidValueStack)
@@ -223,7 +223,7 @@ fn memory_size_6() {
             info!("{info_str}");
         }
     }
-    let validation_info = validate(&wasm_bytes);
+    let validation_info = validate(&wasm_bytes, ());
     assert_eq!(
         validation_info.err(),
         Some(wasm::ValidationError::EndInvalidValueStack)

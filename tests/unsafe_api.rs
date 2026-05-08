@@ -13,7 +13,7 @@ fn invoke_typed() {
     )"#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
 
-    let validation_info = validate(&wasm_bytes).unwrap();
+    let validation_info = validate(&wasm_bytes, ()).unwrap();
     let mut store = Store::new(());
 
     // SAFETY: There are no extern values and therefore none can be invalid in

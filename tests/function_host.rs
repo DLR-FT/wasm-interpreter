@@ -20,7 +20,7 @@ pub fn host_func_call_within_module() {
     )
 )"#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
-    let validation_info = validate(&wasm_bytes).expect("validation failed");
+    let validation_info = validate(&wasm_bytes, ()).expect("validation failed");
 
     let mut store = Store::new(());
     let mut registry = Registry::default();
@@ -63,7 +63,7 @@ pub fn host_func_call_as_start_func() {
     (start $hello)
 )"#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
-    let validation_info = validate(&wasm_bytes).unwrap();
+    let validation_info = validate(&wasm_bytes, ()).unwrap();
 
     let mut store = Store::new(());
     let mut registry = Registry::default();
@@ -91,7 +91,7 @@ pub fn host_func_call_within_start_func() {
     (start $hello_caller)
 )"#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
-    let validation_info = validate(&wasm_bytes).unwrap();
+    let validation_info = validate(&wasm_bytes, ()).unwrap();
     let mut store = Store::new(());
     let mut registry = Registry::default();
     let hello = registry.alloc_host_function_typed(&mut store, |(), ()| {
@@ -120,7 +120,7 @@ const SIMPLE_MULTIVARIATE_MODULE_EXAMPLE: &str = r#"(module
 #[test_log::test]
 pub fn simple_multivariate_host_func_within_module() {
     let wasm_bytes = wat::parse_str(SIMPLE_MULTIVARIATE_MODULE_EXAMPLE).unwrap();
-    let validation_info = validate(&wasm_bytes).unwrap();
+    let validation_info = validate(&wasm_bytes, ()).unwrap();
 
     let mut store = Store::new(());
     let mut registry = Registry::default();
@@ -149,7 +149,7 @@ pub fn simple_multivariate_host_func_within_module() {
 #[test_log::test]
 pub fn simple_multivariate_host_func_with_host_func_wrapper() {
     let wasm_bytes = wat::parse_str(SIMPLE_MULTIVARIATE_MODULE_EXAMPLE).unwrap();
-    let validation_info = validate(&wasm_bytes).unwrap();
+    let validation_info = validate(&wasm_bytes, ()).unwrap();
 
     fn wrapped_add_mult(_: &mut (), (x, y): (i32, f64)) -> (f64, i32) {
         (y + (x as f64), x * (y as i32))
@@ -207,7 +207,7 @@ pub fn weird_multi_typed_host_func() {
         call $weird_add
 ))"#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
-    let validation_info = validate(&wasm_bytes).unwrap();
+    let validation_info = validate(&wasm_bytes, ()).unwrap();
 
     fn weird_add_mult(_: &mut (), values: Vec<StoredValue>) -> Vec<StoredValue> {
         Vec::from([match values[0] {
@@ -287,7 +287,7 @@ pub fn host_func_runtime_error() {
     )
 )"#;
     let wasm_bytes = wat::parse_str(wat).unwrap();
-    let validation_info = validate(&wasm_bytes).expect("validation failed");
+    let validation_info = validate(&wasm_bytes, ()).expect("validation failed");
 
     fn mult3(_: &mut (), values: Vec<StoredValue>) -> Vec<StoredValue> {
         let val: i32 = values[0].try_into().unwrap();

@@ -7,7 +7,7 @@ fn empty_module() {
     "#;
     let wasm_bytes = wat::parse_str(EMPTY_MODULE).unwrap();
 
-    let validation_info = validate(&wasm_bytes).unwrap();
+    let validation_info = validate(&wasm_bytes, ()).unwrap();
 
     assert_eq!(validation_info.imports().len(), 0);
     assert_eq!(validation_info.exports().len(), 0);
@@ -24,7 +24,7 @@ fn imports() {
 
     let wasm_bytes = wat::parse_str(MODULE_WITH_IMPORTS).unwrap();
 
-    let validation_info = validate(&wasm_bytes).unwrap();
+    let validation_info = validate(&wasm_bytes, ()).unwrap();
 
     let imports: Vec<(&str, &str, ExternType)> = validation_info.imports().collect();
 
@@ -73,7 +73,7 @@ fn exports() {
 
     let wasm_bytes = wat::parse_str(MODULE_WITH_EXPORTED_DEFINITIONS).unwrap();
 
-    let validation_info = validate(&wasm_bytes).unwrap();
+    let validation_info = validate(&wasm_bytes, ()).unwrap();
 
     let exports: Vec<(&str, ExternType)> = validation_info.exports().collect();
 

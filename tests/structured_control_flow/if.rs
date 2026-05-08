@@ -22,7 +22,7 @@ fn odd_with_if_else() {
 )"#,
     )
     .unwrap();
-    let validation_info = validate(&wasm_bytes).expect("validation failed");
+    let validation_info = validate(&wasm_bytes, ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
@@ -60,7 +60,7 @@ fn odd_with_if() {
 )"#,
     )
     .unwrap();
-    let validation_info = validate(&wasm_bytes).expect("validation failed");
+    let validation_info = validate(&wasm_bytes, ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
@@ -120,7 +120,7 @@ fn odd_with_if_else_recursive() {
 )"#,
     )
     .unwrap();
-    let validation_info = validate(&wasm_bytes).expect("validation failed");
+    let validation_info = validate(&wasm_bytes, ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
@@ -170,7 +170,7 @@ fn recursive_fibonacci_if_else() {
 )"#,
     )
     .unwrap();
-    let validation_info = validate(&wasm_bytes).expect("validation failed");
+    let validation_info = validate(&wasm_bytes, ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
@@ -203,7 +203,7 @@ fn if_without_else_type_check1() {
 )"#,
     )
     .unwrap();
-    let validation_info = validate(&wasm_bytes).expect("validation failed");
+    let validation_info = validate(&wasm_bytes, ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
@@ -235,7 +235,7 @@ fn if_without_else_type_check2() {
     )
     .unwrap();
     assert_eq!(
-        validate(&wasm_bytes).err().unwrap(),
+        validate(&wasm_bytes, ()).err().unwrap(),
         wasm::ValidationError::IfWithoutMatchingElse
     );
 }
@@ -252,7 +252,7 @@ fn if_without_else_type_check3() {
 )"#,
     )
     .unwrap();
-    let validation_info = validate(&wasm_bytes).expect("validation failed");
+    let validation_info = validate(&wasm_bytes, ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
@@ -282,7 +282,7 @@ fn if_without_else_type_check4() {
 )"#,
     )
     .unwrap();
-    let validation_info = validate(&wasm_bytes).expect("validation failed");
+    let validation_info = validate(&wasm_bytes, ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&validation_info, Vec::new(), None)

@@ -17,7 +17,7 @@ use crate::execution::interpreter_loop::{self, memory_init, table_init, Interpre
 use crate::execution::value::{Ref, Value};
 use crate::execution::{run_const_span, Stack};
 use crate::resumable::{HostCall, HostResumable, Resumable, RunState, WasmResumable};
-use crate::{RefType, RuntimeError, ValidationInfo};
+use crate::{validation_config::ValidationConfig, RefType, RuntimeError, ValidationInfo};
 use alloc::borrow::ToOwned;
 use alloc::collections::btree_map::BTreeMap;
 use alloc::string::String;
@@ -96,9 +96,9 @@ impl<'b, T: Config> Store<'b, T> {
     ///
     /// The caller has to guarantee that any address values contained in the
     /// [`ExternVal`]s came from the current [`Store`] object.
-    pub unsafe fn module_instantiate(
+    pub unsafe fn module_instantiate<T2: ValidationConfig>(
         &mut self,
-        validation_info: &ValidationInfo<'b>,
+        validation_info: &ValidationInfo<'b, T2>,
         extern_vals: Vec<ExternVal>,
         maybe_fuel: Option<u64>,
     ) -> Result<InstantiationOutcome, RuntimeError> {

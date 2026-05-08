@@ -35,9 +35,9 @@ fn polymorphic_select_test() {
         .replace("{{TYPE_1}}", "")
         .replace("{{TYPE_2}}", "");
     let wasm_bytes = wat::parse_str(wat).unwrap();
-    validate(&wasm_bytes).expect("validation failed");
+    validate(&wasm_bytes, ()).expect("validation failed");
 
-    let validation_info = validate(&wasm_bytes).expect("validation failed");
+    let validation_info = validate(&wasm_bytes, ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
@@ -62,9 +62,9 @@ fn typed_select_test() {
         .replace("{{TYPE_1}}", "(result i32)")
         .replace("{{TYPE_2}}", "(result i64)");
     let wasm_bytes = wat::parse_str(wat).unwrap();
-    validate(&wasm_bytes).expect("validation failed");
+    validate(&wasm_bytes, ()).expect("validation failed");
 
-    let validation_info = validate(&wasm_bytes).expect("validation failed");
+    let validation_info = validate(&wasm_bytes, ()).expect("validation failed");
     let mut store = Store::new(());
     let module = store
         .module_instantiate(&validation_info, Vec::new(), None)
