@@ -6106,215 +6106,213 @@
 <a href=#6106 id=6106 data-nosnippet>6106</a>
 <a href=#6107 id=6107 data-nosnippet>6107</a>    stack.remove_in_between(sidetable_entry.popcnt, sidetable_entry.valcnt);
 <a href=#6108 id=6108 data-nosnippet>6108</a>
-<a href=#6109 id=6109 data-nosnippet>6109</a>    <span class="kw-2">*</span>current_stp = current_stp.checked_add_signed(sidetable_entry.delta_stp)
-<a href=#6110 id=6110 data-nosnippet>6110</a>        .expect(<span class="string">"that adding the delta stp never causes the stp to go out of bounds unless there is a bug in the sidetable generation"</span>);
-<a href=#6111 id=6111 data-nosnippet>6111</a>    wasm.pc = wasm.pc.checked_add_signed(sidetable_entry.delta_pc)
-<a href=#6112 id=6112 data-nosnippet>6112</a>    .expect(<span class="string">"that adding the delta pc never causes the pc to go out of bounds unless there is a bug in the sidetable generation"</span>);
-<a href=#6113 id=6113 data-nosnippet>6113</a>
-<a href=#6114 id=6114 data-nosnippet>6114</a>    <span class="prelude-val">Ok</span>(())
-<a href=#6115 id=6115 data-nosnippet>6115</a>}
-<a href=#6116 id=6116 data-nosnippet>6116</a>
-<a href=#6117 id=6117 data-nosnippet>6117</a><span class="attr">#[inline(always)]
-<a href=#6118 id=6118 data-nosnippet>6118</a></span><span class="kw">fn </span>calculate_mem_address(memarg: <span class="kw-2">&amp;</span>MemArg, relative_address: u32) -&gt; <span class="prelude-ty">Result</span>&lt;usize, RuntimeError&gt; {
-<a href=#6119 id=6119 data-nosnippet>6119</a>    memarg
-<a href=#6120 id=6120 data-nosnippet>6120</a>        .offset
-<a href=#6121 id=6121 data-nosnippet>6121</a>        <span class="comment">// The spec states that this should be a 33 bit integer, e.g. it is not legal to wrap if the
-<a href=#6122 id=6122 data-nosnippet>6122</a>        // sum of offset and relative_address exceeds u32::MAX. To emulate this behavior, we use a
-<a href=#6123 id=6123 data-nosnippet>6123</a>        // checked addition.
-<a href=#6124 id=6124 data-nosnippet>6124</a>        // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
-<a href=#6125 id=6125 data-nosnippet>6125</a>        </span>.checked_add(relative_address)
-<a href=#6126 id=6126 data-nosnippet>6126</a>        .ok_or(TrapError::MemoryOrDataAccessOutOfBounds)<span class="question-mark">?
-<a href=#6127 id=6127 data-nosnippet>6127</a>        </span>.try_into()
-<a href=#6128 id=6128 data-nosnippet>6128</a>        .map_err(|<span class="kw">_</span>| TrapError::MemoryOrDataAccessOutOfBounds.into())
-<a href=#6129 id=6129 data-nosnippet>6129</a>}
-<a href=#6130 id=6130 data-nosnippet>6130</a>
-<a href=#6131 id=6131 data-nosnippet>6131</a><span class="comment">//helpers for avoiding code duplication during module instantiation
-<a href=#6132 id=6132 data-nosnippet>6132</a></span><span class="doccomment">/// # Safety
-<a href=#6133 id=6133 data-nosnippet>6133</a>///
-<a href=#6134 id=6134 data-nosnippet>6134</a>/// 1. The module address `current_module` must be valid in `store_modules` for a module instance `module_inst`.
-<a href=#6135 id=6135 data-nosnippet>6135</a>/// 2. The table index `table_idx` must be valid in `module_inst` for a table address `table_addr`.
-<a href=#6136 id=6136 data-nosnippet>6136</a>/// 3. `table_addr` must be valid in `store_tables`.
-<a href=#6137 id=6137 data-nosnippet>6137</a>/// 4. The element index `elem_idx` must be valid in `module_inst` for an element address `elem_addr`.
-<a href=#6138 id=6138 data-nosnippet>6138</a>/// 5. `elem_addr` must be valid in `store_elements`.
-<a href=#6139 id=6139 data-nosnippet>6139</a></span><span class="comment">// TODO instead of passing all module instances and the current module addr
-<a href=#6140 id=6140 data-nosnippet>6140</a>// separately, directly pass a `&amp;ModuleInst`.
-<a href=#6141 id=6141 data-nosnippet>6141</a></span><span class="attr">#[inline(always)]
-<a href=#6142 id=6142 data-nosnippet>6142</a>#[allow(clippy::too_many_arguments)]
-<a href=#6143 id=6143 data-nosnippet>6143</a></span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">unsafe fn </span>table_init(
-<a href=#6144 id=6144 data-nosnippet>6144</a>    store_modules: <span class="kw-2">&amp;</span>AddrVec&lt;ModuleAddr, ModuleInst&gt;,
-<a href=#6145 id=6145 data-nosnippet>6145</a>    store_tables: <span class="kw-2">&amp;mut </span>AddrVec&lt;TableAddr, TableInst&gt;,
-<a href=#6146 id=6146 data-nosnippet>6146</a>    store_elements: <span class="kw-2">&amp;</span>AddrVec&lt;ElemAddr, ElemInst&gt;,
-<a href=#6147 id=6147 data-nosnippet>6147</a>    current_module: ModuleAddr,
-<a href=#6148 id=6148 data-nosnippet>6148</a>    elem_idx: ElemIdx,
-<a href=#6149 id=6149 data-nosnippet>6149</a>    table_idx: TableIdx,
-<a href=#6150 id=6150 data-nosnippet>6150</a>    n: u32,
-<a href=#6151 id=6151 data-nosnippet>6151</a>    s: i32,
-<a href=#6152 id=6152 data-nosnippet>6152</a>    d: i32,
-<a href=#6153 id=6153 data-nosnippet>6153</a>) -&gt; <span class="prelude-ty">Result</span>&lt;(), RuntimeError&gt; {
-<a href=#6154 id=6154 data-nosnippet>6154</a>    <span class="kw">let </span>n = n.into_usize();
-<a href=#6155 id=6155 data-nosnippet>6155</a>    <span class="kw">let </span>s = s.cast_unsigned().into_usize();
-<a href=#6156 id=6156 data-nosnippet>6156</a>    <span class="kw">let </span>d = d.cast_unsigned().into_usize();
-<a href=#6157 id=6157 data-nosnippet>6157</a>
-<a href=#6158 id=6158 data-nosnippet>6158</a>    <span class="comment">// SAFETY: The caller ensures that this module address is valid in this
-<a href=#6159 id=6159 data-nosnippet>6159</a>    // address vector (1).
-<a href=#6160 id=6160 data-nosnippet>6160</a>    </span><span class="kw">let </span>module_inst = <span class="kw">unsafe </span>{ store_modules.get(current_module) };
-<a href=#6161 id=6161 data-nosnippet>6161</a>    <span class="comment">// SAFETY: The caller ensures that `table_idx` is valid for this specific
-<a href=#6162 id=6162 data-nosnippet>6162</a>    // `IdxVec` (2).
-<a href=#6163 id=6163 data-nosnippet>6163</a>    </span><span class="kw">let </span>table_addr = <span class="kw-2">*</span><span class="kw">unsafe </span>{ module_inst.table_addrs.get(table_idx) };
-<a href=#6164 id=6164 data-nosnippet>6164</a>    <span class="comment">// SAFETY: The caller ensures that `elem_idx` is valid for this specific
-<a href=#6165 id=6165 data-nosnippet>6165</a>    // `IdxVec` (4).
-<a href=#6166 id=6166 data-nosnippet>6166</a>    </span><span class="kw">let </span>elem_addr = <span class="kw-2">*</span><span class="kw">unsafe </span>{ module_inst.elem_addrs.get(elem_idx) };
-<a href=#6167 id=6167 data-nosnippet>6167</a>    <span class="comment">// SAFETY: The caller ensures that this table address is valid in this
-<a href=#6168 id=6168 data-nosnippet>6168</a>    // address vector (3).
-<a href=#6169 id=6169 data-nosnippet>6169</a>    </span><span class="kw">let </span>tab = <span class="kw">unsafe </span>{ store_tables.get_mut(table_addr) };
-<a href=#6170 id=6170 data-nosnippet>6170</a>    <span class="comment">// SAFETY: The caller ensures that this element address is valid in this
-<a href=#6171 id=6171 data-nosnippet>6171</a>    // address vector (5).
-<a href=#6172 id=6172 data-nosnippet>6172</a>    </span><span class="kw">let </span>elem = <span class="kw">unsafe </span>{ store_elements.get(elem_addr) };
-<a href=#6173 id=6173 data-nosnippet>6173</a>
-<a href=#6174 id=6174 data-nosnippet>6174</a>    <span class="macro">trace!</span>(
-<a href=#6175 id=6175 data-nosnippet>6175</a>        <span class="string">"Instruction: table.init '{}' '{}' [{} {} {}] -&gt; []"</span>,
-<a href=#6176 id=6176 data-nosnippet>6176</a>        elem_idx,
-<a href=#6177 id=6177 data-nosnippet>6177</a>        table_idx,
-<a href=#6178 id=6178 data-nosnippet>6178</a>        d,
-<a href=#6179 id=6179 data-nosnippet>6179</a>        s,
-<a href=#6180 id=6180 data-nosnippet>6180</a>        n
-<a href=#6181 id=6181 data-nosnippet>6181</a>    );
-<a href=#6182 id=6182 data-nosnippet>6182</a>
-<a href=#6183 id=6183 data-nosnippet>6183</a>    <span class="kw">let </span>final_src_offset = s
-<a href=#6184 id=6184 data-nosnippet>6184</a>        .checked_add(n)
-<a href=#6185 id=6185 data-nosnippet>6185</a>        .filter(|<span class="kw-2">&amp;</span>res| res &lt;= elem.len())
-<a href=#6186 id=6186 data-nosnippet>6186</a>        .ok_or(TrapError::TableOrElementAccessOutOfBounds)<span class="question-mark">?</span>;
-<a href=#6187 id=6187 data-nosnippet>6187</a>
-<a href=#6188 id=6188 data-nosnippet>6188</a>    <span class="kw">if </span>d.checked_add(n).filter(|<span class="kw-2">&amp;</span>res| res &lt;= tab.len()).is_none() {
-<a href=#6189 id=6189 data-nosnippet>6189</a>        <span class="kw">return </span><span class="prelude-val">Err</span>(TrapError::TableOrElementAccessOutOfBounds.into());
-<a href=#6190 id=6190 data-nosnippet>6190</a>    }
-<a href=#6191 id=6191 data-nosnippet>6191</a>
-<a href=#6192 id=6192 data-nosnippet>6192</a>    <span class="kw">let </span>dest = <span class="kw-2">&amp;mut </span>tab.elem[d..];
-<a href=#6193 id=6193 data-nosnippet>6193</a>    <span class="kw">let </span>src = <span class="kw-2">&amp;</span>elem.references[s..final_src_offset];
-<a href=#6194 id=6194 data-nosnippet>6194</a>    dest[..src.len()].copy_from_slice(src);
-<a href=#6195 id=6195 data-nosnippet>6195</a>    <span class="prelude-val">Ok</span>(())
-<a href=#6196 id=6196 data-nosnippet>6196</a>}
-<a href=#6197 id=6197 data-nosnippet>6197</a>
-<a href=#6198 id=6198 data-nosnippet>6198</a><span class="doccomment">/// # Safety
-<a href=#6199 id=6199 data-nosnippet>6199</a>///
-<a href=#6200 id=6200 data-nosnippet>6200</a>/// 1. The module address `current_module` must be valid in `store_modules` for some module instance `module_inst`.
-<a href=#6201 id=6201 data-nosnippet>6201</a>/// 2. The element index `elem_idx` must be valid in `module_inst` for some element address `elem_addr`.
-<a href=#6202 id=6202 data-nosnippet>6202</a>/// 3. `elem_addr` must be valid in `store_elements`.
-<a href=#6203 id=6203 data-nosnippet>6203</a></span><span class="attr">#[inline(always)]
-<a href=#6204 id=6204 data-nosnippet>6204</a></span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">unsafe fn </span>elem_drop(
-<a href=#6205 id=6205 data-nosnippet>6205</a>    store_modules: <span class="kw-2">&amp;</span>AddrVec&lt;ModuleAddr, ModuleInst&gt;,
-<a href=#6206 id=6206 data-nosnippet>6206</a>    store_elements: <span class="kw-2">&amp;mut </span>AddrVec&lt;ElemAddr, ElemInst&gt;,
-<a href=#6207 id=6207 data-nosnippet>6207</a>    current_module: ModuleAddr,
-<a href=#6208 id=6208 data-nosnippet>6208</a>    elem_idx: ElemIdx,
-<a href=#6209 id=6209 data-nosnippet>6209</a>) {
-<a href=#6210 id=6210 data-nosnippet>6210</a>    <span class="comment">// WARN: i'm not sure if this is okay or not
-<a href=#6211 id=6211 data-nosnippet>6211</a>
-<a href=#6212 id=6212 data-nosnippet>6212</a>    // SAFETY: The caller ensures that this module address is valid in this
-<a href=#6213 id=6213 data-nosnippet>6213</a>    // address vector (1).
-<a href=#6214 id=6214 data-nosnippet>6214</a>    </span><span class="kw">let </span>module_inst = <span class="kw">unsafe </span>{ store_modules.get(current_module) };
-<a href=#6215 id=6215 data-nosnippet>6215</a>    <span class="comment">// SAFETY: The caller ensures that `elem_idx` is valid for this specific
-<a href=#6216 id=6216 data-nosnippet>6216</a>    // `IdxVec` (2).
-<a href=#6217 id=6217 data-nosnippet>6217</a>    </span><span class="kw">let </span>elem_addr = <span class="kw-2">*</span><span class="kw">unsafe </span>{ module_inst.elem_addrs.get(elem_idx) };
-<a href=#6218 id=6218 data-nosnippet>6218</a>
-<a href=#6219 id=6219 data-nosnippet>6219</a>    <span class="comment">// SAFETY: The caller ensures that this element address is valid in this
-<a href=#6220 id=6220 data-nosnippet>6220</a>    // address vector (3).
-<a href=#6221 id=6221 data-nosnippet>6221</a>    </span><span class="kw">let </span>elem = <span class="kw">unsafe </span>{ store_elements.get_mut(elem_addr) };
-<a href=#6222 id=6222 data-nosnippet>6222</a>
-<a href=#6223 id=6223 data-nosnippet>6223</a>    elem.references.clear();
-<a href=#6224 id=6224 data-nosnippet>6224</a>}
-<a href=#6225 id=6225 data-nosnippet>6225</a>
-<a href=#6226 id=6226 data-nosnippet>6226</a><span class="doccomment">/// # Safety
-<a href=#6227 id=6227 data-nosnippet>6227</a>///
-<a href=#6228 id=6228 data-nosnippet>6228</a>/// 1. The module address `current_module` must be valid in `store_modules` for some module instance `module_inst`.
-<a href=#6229 id=6229 data-nosnippet>6229</a>/// 2. The memory index `mem_idx` must be valid in `module_inst` for some memory address `mem_addr`.
-<a href=#6230 id=6230 data-nosnippet>6230</a>/// 3. `mem_addr` must be valid in `store_memories` for some memory instance `mem.
-<a href=#6231 id=6231 data-nosnippet>6231</a>/// 4. The data index `data_idx` must be valid in `module_inst` for some data address `data_addr`.
-<a href=#6232 id=6232 data-nosnippet>6232</a>/// 5. `data_addr` must be valid in `store_data`.
-<a href=#6233 id=6233 data-nosnippet>6233</a></span><span class="attr">#[inline(always)]
-<a href=#6234 id=6234 data-nosnippet>6234</a>#[allow(clippy::too_many_arguments)]
-<a href=#6235 id=6235 data-nosnippet>6235</a></span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">unsafe fn </span>memory_init(
-<a href=#6236 id=6236 data-nosnippet>6236</a>    store_modules: <span class="kw-2">&amp;</span>AddrVec&lt;ModuleAddr, ModuleInst&gt;,
-<a href=#6237 id=6237 data-nosnippet>6237</a>    store_memories: <span class="kw-2">&amp;mut </span>AddrVec&lt;MemAddr, MemInst&gt;,
-<a href=#6238 id=6238 data-nosnippet>6238</a>    store_data: <span class="kw-2">&amp;</span>AddrVec&lt;DataAddr, DataInst&gt;,
-<a href=#6239 id=6239 data-nosnippet>6239</a>    current_module: ModuleAddr,
-<a href=#6240 id=6240 data-nosnippet>6240</a>    data_idx: DataIdx,
-<a href=#6241 id=6241 data-nosnippet>6241</a>    mem_idx: MemIdx,
-<a href=#6242 id=6242 data-nosnippet>6242</a>    n: u32,
-<a href=#6243 id=6243 data-nosnippet>6243</a>    s: u32,
-<a href=#6244 id=6244 data-nosnippet>6244</a>    d: u32,
-<a href=#6245 id=6245 data-nosnippet>6245</a>) -&gt; <span class="prelude-ty">Result</span>&lt;(), RuntimeError&gt; {
-<a href=#6246 id=6246 data-nosnippet>6246</a>    <span class="kw">let </span>n = n.into_usize();
-<a href=#6247 id=6247 data-nosnippet>6247</a>    <span class="kw">let </span>s = s.into_usize();
-<a href=#6248 id=6248 data-nosnippet>6248</a>    <span class="kw">let </span>d = d.into_usize();
-<a href=#6249 id=6249 data-nosnippet>6249</a>
-<a href=#6250 id=6250 data-nosnippet>6250</a>    <span class="comment">// SAFETY: The caller ensures that this is module address is valid in this
-<a href=#6251 id=6251 data-nosnippet>6251</a>    // address vector (1).
-<a href=#6252 id=6252 data-nosnippet>6252</a>    </span><span class="kw">let </span>module_inst = <span class="kw">unsafe </span>{ store_modules.get(current_module) };
-<a href=#6253 id=6253 data-nosnippet>6253</a>    <span class="comment">// SAFETY: The caller ensures that `mem_idx` is valid for this specific
-<a href=#6254 id=6254 data-nosnippet>6254</a>    // `IdxVec` (2).
-<a href=#6255 id=6255 data-nosnippet>6255</a>    </span><span class="kw">let </span>mem_addr = <span class="kw-2">*</span><span class="kw">unsafe </span>{ module_inst.mem_addrs.get(mem_idx) };
-<a href=#6256 id=6256 data-nosnippet>6256</a>    <span class="comment">// SAFETY: The caller ensures that this memory address is valid in this
-<a href=#6257 id=6257 data-nosnippet>6257</a>    // address vector (3).
-<a href=#6258 id=6258 data-nosnippet>6258</a>    </span><span class="kw">let </span>mem = <span class="kw">unsafe </span>{ store_memories.get(mem_addr) };
-<a href=#6259 id=6259 data-nosnippet>6259</a>    <span class="comment">// SAFETY: The caller ensures that `data_idx` is valid for this specific
-<a href=#6260 id=6260 data-nosnippet>6260</a>    // `IdxVec` (4).
-<a href=#6261 id=6261 data-nosnippet>6261</a>    </span><span class="kw">let </span>data_addr = <span class="kw-2">*</span><span class="kw">unsafe </span>{ module_inst.data_addrs.get(data_idx) };
-<a href=#6262 id=6262 data-nosnippet>6262</a>    <span class="comment">// SAFETY: The caller ensures that this data address is valid in this
-<a href=#6263 id=6263 data-nosnippet>6263</a>    // address vector (5).
-<a href=#6264 id=6264 data-nosnippet>6264</a>    </span><span class="kw">let </span>data = <span class="kw">unsafe </span>{ store_data.get(data_addr) };
+<a href=#6109 id=6109 data-nosnippet>6109</a>    <span class="kw-2">*</span>current_stp = sidetable_entry.stp;
+<a href=#6110 id=6110 data-nosnippet>6110</a>    wasm.pc = sidetable_entry.pc;
+<a href=#6111 id=6111 data-nosnippet>6111</a>
+<a href=#6112 id=6112 data-nosnippet>6112</a>    <span class="prelude-val">Ok</span>(())
+<a href=#6113 id=6113 data-nosnippet>6113</a>}
+<a href=#6114 id=6114 data-nosnippet>6114</a>
+<a href=#6115 id=6115 data-nosnippet>6115</a><span class="attr">#[inline(always)]
+<a href=#6116 id=6116 data-nosnippet>6116</a></span><span class="kw">fn </span>calculate_mem_address(memarg: <span class="kw-2">&amp;</span>MemArg, relative_address: u32) -&gt; <span class="prelude-ty">Result</span>&lt;usize, RuntimeError&gt; {
+<a href=#6117 id=6117 data-nosnippet>6117</a>    memarg
+<a href=#6118 id=6118 data-nosnippet>6118</a>        .offset
+<a href=#6119 id=6119 data-nosnippet>6119</a>        <span class="comment">// The spec states that this should be a 33 bit integer, e.g. it is not legal to wrap if the
+<a href=#6120 id=6120 data-nosnippet>6120</a>        // sum of offset and relative_address exceeds u32::MAX. To emulate this behavior, we use a
+<a href=#6121 id=6121 data-nosnippet>6121</a>        // checked addition.
+<a href=#6122 id=6122 data-nosnippet>6122</a>        // See: https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions
+<a href=#6123 id=6123 data-nosnippet>6123</a>        </span>.checked_add(relative_address)
+<a href=#6124 id=6124 data-nosnippet>6124</a>        .ok_or(TrapError::MemoryOrDataAccessOutOfBounds)<span class="question-mark">?
+<a href=#6125 id=6125 data-nosnippet>6125</a>        </span>.try_into()
+<a href=#6126 id=6126 data-nosnippet>6126</a>        .map_err(|<span class="kw">_</span>| TrapError::MemoryOrDataAccessOutOfBounds.into())
+<a href=#6127 id=6127 data-nosnippet>6127</a>}
+<a href=#6128 id=6128 data-nosnippet>6128</a>
+<a href=#6129 id=6129 data-nosnippet>6129</a><span class="comment">//helpers for avoiding code duplication during module instantiation
+<a href=#6130 id=6130 data-nosnippet>6130</a></span><span class="doccomment">/// # Safety
+<a href=#6131 id=6131 data-nosnippet>6131</a>///
+<a href=#6132 id=6132 data-nosnippet>6132</a>/// 1. The module address `current_module` must be valid in `store_modules` for a module instance `module_inst`.
+<a href=#6133 id=6133 data-nosnippet>6133</a>/// 2. The table index `table_idx` must be valid in `module_inst` for a table address `table_addr`.
+<a href=#6134 id=6134 data-nosnippet>6134</a>/// 3. `table_addr` must be valid in `store_tables`.
+<a href=#6135 id=6135 data-nosnippet>6135</a>/// 4. The element index `elem_idx` must be valid in `module_inst` for an element address `elem_addr`.
+<a href=#6136 id=6136 data-nosnippet>6136</a>/// 5. `elem_addr` must be valid in `store_elements`.
+<a href=#6137 id=6137 data-nosnippet>6137</a></span><span class="comment">// TODO instead of passing all module instances and the current module addr
+<a href=#6138 id=6138 data-nosnippet>6138</a>// separately, directly pass a `&amp;ModuleInst`.
+<a href=#6139 id=6139 data-nosnippet>6139</a></span><span class="attr">#[inline(always)]
+<a href=#6140 id=6140 data-nosnippet>6140</a>#[allow(clippy::too_many_arguments)]
+<a href=#6141 id=6141 data-nosnippet>6141</a></span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">unsafe fn </span>table_init(
+<a href=#6142 id=6142 data-nosnippet>6142</a>    store_modules: <span class="kw-2">&amp;</span>AddrVec&lt;ModuleAddr, ModuleInst&gt;,
+<a href=#6143 id=6143 data-nosnippet>6143</a>    store_tables: <span class="kw-2">&amp;mut </span>AddrVec&lt;TableAddr, TableInst&gt;,
+<a href=#6144 id=6144 data-nosnippet>6144</a>    store_elements: <span class="kw-2">&amp;</span>AddrVec&lt;ElemAddr, ElemInst&gt;,
+<a href=#6145 id=6145 data-nosnippet>6145</a>    current_module: ModuleAddr,
+<a href=#6146 id=6146 data-nosnippet>6146</a>    elem_idx: ElemIdx,
+<a href=#6147 id=6147 data-nosnippet>6147</a>    table_idx: TableIdx,
+<a href=#6148 id=6148 data-nosnippet>6148</a>    n: u32,
+<a href=#6149 id=6149 data-nosnippet>6149</a>    s: i32,
+<a href=#6150 id=6150 data-nosnippet>6150</a>    d: i32,
+<a href=#6151 id=6151 data-nosnippet>6151</a>) -&gt; <span class="prelude-ty">Result</span>&lt;(), RuntimeError&gt; {
+<a href=#6152 id=6152 data-nosnippet>6152</a>    <span class="kw">let </span>n = n.into_usize();
+<a href=#6153 id=6153 data-nosnippet>6153</a>    <span class="kw">let </span>s = s.cast_unsigned().into_usize();
+<a href=#6154 id=6154 data-nosnippet>6154</a>    <span class="kw">let </span>d = d.cast_unsigned().into_usize();
+<a href=#6155 id=6155 data-nosnippet>6155</a>
+<a href=#6156 id=6156 data-nosnippet>6156</a>    <span class="comment">// SAFETY: The caller ensures that this module address is valid in this
+<a href=#6157 id=6157 data-nosnippet>6157</a>    // address vector (1).
+<a href=#6158 id=6158 data-nosnippet>6158</a>    </span><span class="kw">let </span>module_inst = <span class="kw">unsafe </span>{ store_modules.get(current_module) };
+<a href=#6159 id=6159 data-nosnippet>6159</a>    <span class="comment">// SAFETY: The caller ensures that `table_idx` is valid for this specific
+<a href=#6160 id=6160 data-nosnippet>6160</a>    // `IdxVec` (2).
+<a href=#6161 id=6161 data-nosnippet>6161</a>    </span><span class="kw">let </span>table_addr = <span class="kw-2">*</span><span class="kw">unsafe </span>{ module_inst.table_addrs.get(table_idx) };
+<a href=#6162 id=6162 data-nosnippet>6162</a>    <span class="comment">// SAFETY: The caller ensures that `elem_idx` is valid for this specific
+<a href=#6163 id=6163 data-nosnippet>6163</a>    // `IdxVec` (4).
+<a href=#6164 id=6164 data-nosnippet>6164</a>    </span><span class="kw">let </span>elem_addr = <span class="kw-2">*</span><span class="kw">unsafe </span>{ module_inst.elem_addrs.get(elem_idx) };
+<a href=#6165 id=6165 data-nosnippet>6165</a>    <span class="comment">// SAFETY: The caller ensures that this table address is valid in this
+<a href=#6166 id=6166 data-nosnippet>6166</a>    // address vector (3).
+<a href=#6167 id=6167 data-nosnippet>6167</a>    </span><span class="kw">let </span>tab = <span class="kw">unsafe </span>{ store_tables.get_mut(table_addr) };
+<a href=#6168 id=6168 data-nosnippet>6168</a>    <span class="comment">// SAFETY: The caller ensures that this element address is valid in this
+<a href=#6169 id=6169 data-nosnippet>6169</a>    // address vector (5).
+<a href=#6170 id=6170 data-nosnippet>6170</a>    </span><span class="kw">let </span>elem = <span class="kw">unsafe </span>{ store_elements.get(elem_addr) };
+<a href=#6171 id=6171 data-nosnippet>6171</a>
+<a href=#6172 id=6172 data-nosnippet>6172</a>    <span class="macro">trace!</span>(
+<a href=#6173 id=6173 data-nosnippet>6173</a>        <span class="string">"Instruction: table.init '{}' '{}' [{} {} {}] -&gt; []"</span>,
+<a href=#6174 id=6174 data-nosnippet>6174</a>        elem_idx,
+<a href=#6175 id=6175 data-nosnippet>6175</a>        table_idx,
+<a href=#6176 id=6176 data-nosnippet>6176</a>        d,
+<a href=#6177 id=6177 data-nosnippet>6177</a>        s,
+<a href=#6178 id=6178 data-nosnippet>6178</a>        n
+<a href=#6179 id=6179 data-nosnippet>6179</a>    );
+<a href=#6180 id=6180 data-nosnippet>6180</a>
+<a href=#6181 id=6181 data-nosnippet>6181</a>    <span class="kw">let </span>final_src_offset = s
+<a href=#6182 id=6182 data-nosnippet>6182</a>        .checked_add(n)
+<a href=#6183 id=6183 data-nosnippet>6183</a>        .filter(|<span class="kw-2">&amp;</span>res| res &lt;= elem.len())
+<a href=#6184 id=6184 data-nosnippet>6184</a>        .ok_or(TrapError::TableOrElementAccessOutOfBounds)<span class="question-mark">?</span>;
+<a href=#6185 id=6185 data-nosnippet>6185</a>
+<a href=#6186 id=6186 data-nosnippet>6186</a>    <span class="kw">if </span>d.checked_add(n).filter(|<span class="kw-2">&amp;</span>res| res &lt;= tab.len()).is_none() {
+<a href=#6187 id=6187 data-nosnippet>6187</a>        <span class="kw">return </span><span class="prelude-val">Err</span>(TrapError::TableOrElementAccessOutOfBounds.into());
+<a href=#6188 id=6188 data-nosnippet>6188</a>    }
+<a href=#6189 id=6189 data-nosnippet>6189</a>
+<a href=#6190 id=6190 data-nosnippet>6190</a>    <span class="kw">let </span>dest = <span class="kw-2">&amp;mut </span>tab.elem[d..];
+<a href=#6191 id=6191 data-nosnippet>6191</a>    <span class="kw">let </span>src = <span class="kw-2">&amp;</span>elem.references[s..final_src_offset];
+<a href=#6192 id=6192 data-nosnippet>6192</a>    dest[..src.len()].copy_from_slice(src);
+<a href=#6193 id=6193 data-nosnippet>6193</a>    <span class="prelude-val">Ok</span>(())
+<a href=#6194 id=6194 data-nosnippet>6194</a>}
+<a href=#6195 id=6195 data-nosnippet>6195</a>
+<a href=#6196 id=6196 data-nosnippet>6196</a><span class="doccomment">/// # Safety
+<a href=#6197 id=6197 data-nosnippet>6197</a>///
+<a href=#6198 id=6198 data-nosnippet>6198</a>/// 1. The module address `current_module` must be valid in `store_modules` for some module instance `module_inst`.
+<a href=#6199 id=6199 data-nosnippet>6199</a>/// 2. The element index `elem_idx` must be valid in `module_inst` for some element address `elem_addr`.
+<a href=#6200 id=6200 data-nosnippet>6200</a>/// 3. `elem_addr` must be valid in `store_elements`.
+<a href=#6201 id=6201 data-nosnippet>6201</a></span><span class="attr">#[inline(always)]
+<a href=#6202 id=6202 data-nosnippet>6202</a></span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">unsafe fn </span>elem_drop(
+<a href=#6203 id=6203 data-nosnippet>6203</a>    store_modules: <span class="kw-2">&amp;</span>AddrVec&lt;ModuleAddr, ModuleInst&gt;,
+<a href=#6204 id=6204 data-nosnippet>6204</a>    store_elements: <span class="kw-2">&amp;mut </span>AddrVec&lt;ElemAddr, ElemInst&gt;,
+<a href=#6205 id=6205 data-nosnippet>6205</a>    current_module: ModuleAddr,
+<a href=#6206 id=6206 data-nosnippet>6206</a>    elem_idx: ElemIdx,
+<a href=#6207 id=6207 data-nosnippet>6207</a>) {
+<a href=#6208 id=6208 data-nosnippet>6208</a>    <span class="comment">// WARN: i'm not sure if this is okay or not
+<a href=#6209 id=6209 data-nosnippet>6209</a>
+<a href=#6210 id=6210 data-nosnippet>6210</a>    // SAFETY: The caller ensures that this module address is valid in this
+<a href=#6211 id=6211 data-nosnippet>6211</a>    // address vector (1).
+<a href=#6212 id=6212 data-nosnippet>6212</a>    </span><span class="kw">let </span>module_inst = <span class="kw">unsafe </span>{ store_modules.get(current_module) };
+<a href=#6213 id=6213 data-nosnippet>6213</a>    <span class="comment">// SAFETY: The caller ensures that `elem_idx` is valid for this specific
+<a href=#6214 id=6214 data-nosnippet>6214</a>    // `IdxVec` (2).
+<a href=#6215 id=6215 data-nosnippet>6215</a>    </span><span class="kw">let </span>elem_addr = <span class="kw-2">*</span><span class="kw">unsafe </span>{ module_inst.elem_addrs.get(elem_idx) };
+<a href=#6216 id=6216 data-nosnippet>6216</a>
+<a href=#6217 id=6217 data-nosnippet>6217</a>    <span class="comment">// SAFETY: The caller ensures that this element address is valid in this
+<a href=#6218 id=6218 data-nosnippet>6218</a>    // address vector (3).
+<a href=#6219 id=6219 data-nosnippet>6219</a>    </span><span class="kw">let </span>elem = <span class="kw">unsafe </span>{ store_elements.get_mut(elem_addr) };
+<a href=#6220 id=6220 data-nosnippet>6220</a>
+<a href=#6221 id=6221 data-nosnippet>6221</a>    elem.references.clear();
+<a href=#6222 id=6222 data-nosnippet>6222</a>}
+<a href=#6223 id=6223 data-nosnippet>6223</a>
+<a href=#6224 id=6224 data-nosnippet>6224</a><span class="doccomment">/// # Safety
+<a href=#6225 id=6225 data-nosnippet>6225</a>///
+<a href=#6226 id=6226 data-nosnippet>6226</a>/// 1. The module address `current_module` must be valid in `store_modules` for some module instance `module_inst`.
+<a href=#6227 id=6227 data-nosnippet>6227</a>/// 2. The memory index `mem_idx` must be valid in `module_inst` for some memory address `mem_addr`.
+<a href=#6228 id=6228 data-nosnippet>6228</a>/// 3. `mem_addr` must be valid in `store_memories` for some memory instance `mem.
+<a href=#6229 id=6229 data-nosnippet>6229</a>/// 4. The data index `data_idx` must be valid in `module_inst` for some data address `data_addr`.
+<a href=#6230 id=6230 data-nosnippet>6230</a>/// 5. `data_addr` must be valid in `store_data`.
+<a href=#6231 id=6231 data-nosnippet>6231</a></span><span class="attr">#[inline(always)]
+<a href=#6232 id=6232 data-nosnippet>6232</a>#[allow(clippy::too_many_arguments)]
+<a href=#6233 id=6233 data-nosnippet>6233</a></span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">unsafe fn </span>memory_init(
+<a href=#6234 id=6234 data-nosnippet>6234</a>    store_modules: <span class="kw-2">&amp;</span>AddrVec&lt;ModuleAddr, ModuleInst&gt;,
+<a href=#6235 id=6235 data-nosnippet>6235</a>    store_memories: <span class="kw-2">&amp;mut </span>AddrVec&lt;MemAddr, MemInst&gt;,
+<a href=#6236 id=6236 data-nosnippet>6236</a>    store_data: <span class="kw-2">&amp;</span>AddrVec&lt;DataAddr, DataInst&gt;,
+<a href=#6237 id=6237 data-nosnippet>6237</a>    current_module: ModuleAddr,
+<a href=#6238 id=6238 data-nosnippet>6238</a>    data_idx: DataIdx,
+<a href=#6239 id=6239 data-nosnippet>6239</a>    mem_idx: MemIdx,
+<a href=#6240 id=6240 data-nosnippet>6240</a>    n: u32,
+<a href=#6241 id=6241 data-nosnippet>6241</a>    s: u32,
+<a href=#6242 id=6242 data-nosnippet>6242</a>    d: u32,
+<a href=#6243 id=6243 data-nosnippet>6243</a>) -&gt; <span class="prelude-ty">Result</span>&lt;(), RuntimeError&gt; {
+<a href=#6244 id=6244 data-nosnippet>6244</a>    <span class="kw">let </span>n = n.into_usize();
+<a href=#6245 id=6245 data-nosnippet>6245</a>    <span class="kw">let </span>s = s.into_usize();
+<a href=#6246 id=6246 data-nosnippet>6246</a>    <span class="kw">let </span>d = d.into_usize();
+<a href=#6247 id=6247 data-nosnippet>6247</a>
+<a href=#6248 id=6248 data-nosnippet>6248</a>    <span class="comment">// SAFETY: The caller ensures that this is module address is valid in this
+<a href=#6249 id=6249 data-nosnippet>6249</a>    // address vector (1).
+<a href=#6250 id=6250 data-nosnippet>6250</a>    </span><span class="kw">let </span>module_inst = <span class="kw">unsafe </span>{ store_modules.get(current_module) };
+<a href=#6251 id=6251 data-nosnippet>6251</a>    <span class="comment">// SAFETY: The caller ensures that `mem_idx` is valid for this specific
+<a href=#6252 id=6252 data-nosnippet>6252</a>    // `IdxVec` (2).
+<a href=#6253 id=6253 data-nosnippet>6253</a>    </span><span class="kw">let </span>mem_addr = <span class="kw-2">*</span><span class="kw">unsafe </span>{ module_inst.mem_addrs.get(mem_idx) };
+<a href=#6254 id=6254 data-nosnippet>6254</a>    <span class="comment">// SAFETY: The caller ensures that this memory address is valid in this
+<a href=#6255 id=6255 data-nosnippet>6255</a>    // address vector (3).
+<a href=#6256 id=6256 data-nosnippet>6256</a>    </span><span class="kw">let </span>mem = <span class="kw">unsafe </span>{ store_memories.get(mem_addr) };
+<a href=#6257 id=6257 data-nosnippet>6257</a>    <span class="comment">// SAFETY: The caller ensures that `data_idx` is valid for this specific
+<a href=#6258 id=6258 data-nosnippet>6258</a>    // `IdxVec` (4).
+<a href=#6259 id=6259 data-nosnippet>6259</a>    </span><span class="kw">let </span>data_addr = <span class="kw-2">*</span><span class="kw">unsafe </span>{ module_inst.data_addrs.get(data_idx) };
+<a href=#6260 id=6260 data-nosnippet>6260</a>    <span class="comment">// SAFETY: The caller ensures that this data address is valid in this
+<a href=#6261 id=6261 data-nosnippet>6261</a>    // address vector (5).
+<a href=#6262 id=6262 data-nosnippet>6262</a>    </span><span class="kw">let </span>data = <span class="kw">unsafe </span>{ store_data.get(data_addr) };
+<a href=#6263 id=6263 data-nosnippet>6263</a>
+<a href=#6264 id=6264 data-nosnippet>6264</a>    mem.mem.init(d, <span class="kw-2">&amp;</span>data.data, s, n)<span class="question-mark">?</span>;
 <a href=#6265 id=6265 data-nosnippet>6265</a>
-<a href=#6266 id=6266 data-nosnippet>6266</a>    mem.mem.init(d, <span class="kw-2">&amp;</span>data.data, s, n)<span class="question-mark">?</span>;
-<a href=#6267 id=6267 data-nosnippet>6267</a>
-<a href=#6268 id=6268 data-nosnippet>6268</a>    <span class="macro">trace!</span>(<span class="string">"Instruction: memory.init"</span>);
-<a href=#6269 id=6269 data-nosnippet>6269</a>    <span class="prelude-val">Ok</span>(())
-<a href=#6270 id=6270 data-nosnippet>6270</a>}
-<a href=#6271 id=6271 data-nosnippet>6271</a>
-<a href=#6272 id=6272 data-nosnippet>6272</a><span class="doccomment">/// # Safety
-<a href=#6273 id=6273 data-nosnippet>6273</a>///
-<a href=#6274 id=6274 data-nosnippet>6274</a>/// 1. The module address `current_module` must be valid in `store_modules` for some module instance `module_inst`.
-<a href=#6275 id=6275 data-nosnippet>6275</a>/// 2. The data index `data_idx` must be valid in `module_inst` for some data address `data_addr`.
-<a href=#6276 id=6276 data-nosnippet>6276</a>/// 3. `data_addr` must be valid in `store_data`.
-<a href=#6277 id=6277 data-nosnippet>6277</a></span><span class="attr">#[inline(always)]
-<a href=#6278 id=6278 data-nosnippet>6278</a></span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">unsafe fn </span>data_drop(
-<a href=#6279 id=6279 data-nosnippet>6279</a>    store_modules: <span class="kw-2">&amp;</span>AddrVec&lt;ModuleAddr, ModuleInst&gt;,
-<a href=#6280 id=6280 data-nosnippet>6280</a>    store_data: <span class="kw-2">&amp;mut </span>AddrVec&lt;DataAddr, DataInst&gt;,
-<a href=#6281 id=6281 data-nosnippet>6281</a>    current_module: ModuleAddr,
-<a href=#6282 id=6282 data-nosnippet>6282</a>    data_idx: DataIdx,
-<a href=#6283 id=6283 data-nosnippet>6283</a>) {
-<a href=#6284 id=6284 data-nosnippet>6284</a>    <span class="comment">// Here is debatable
-<a href=#6285 id=6285 data-nosnippet>6285</a>    // If we were to be on par with the spec we'd have to use a DataInst struct
-<a href=#6286 id=6286 data-nosnippet>6286</a>    // But since memory.init is specifically made for Passive data segments
-<a href=#6287 id=6287 data-nosnippet>6287</a>    // I thought that using DataMode would be better because we can see if the
-<a href=#6288 id=6288 data-nosnippet>6288</a>    // data segment is passive or active
-<a href=#6289 id=6289 data-nosnippet>6289</a>
-<a href=#6290 id=6290 data-nosnippet>6290</a>    // Also, we should set data to null here (empty), which we do by clearing it
-<a href=#6291 id=6291 data-nosnippet>6291</a>    // SAFETY: The caller guarantees this module to be valid in this address
-<a href=#6292 id=6292 data-nosnippet>6292</a>    // vector (1).
-<a href=#6293 id=6293 data-nosnippet>6293</a>    </span><span class="kw">let </span>module_inst = <span class="kw">unsafe </span>{ store_modules.get(current_module) };
-<a href=#6294 id=6294 data-nosnippet>6294</a>    <span class="comment">// SAFETY: The caller ensures that `data_idx` is valid for this specific
-<a href=#6295 id=6295 data-nosnippet>6295</a>    // `IdxVec` (2).
-<a href=#6296 id=6296 data-nosnippet>6296</a>    </span><span class="kw">let </span>data_addr = <span class="kw-2">*</span><span class="kw">unsafe </span>{ module_inst.data_addrs.get(data_idx) };
-<a href=#6297 id=6297 data-nosnippet>6297</a>    <span class="comment">// SAFETY: The caller ensures that this data address is valid in this
-<a href=#6298 id=6298 data-nosnippet>6298</a>    // address vector (3).
-<a href=#6299 id=6299 data-nosnippet>6299</a>    </span><span class="kw">let </span>data = <span class="kw">unsafe </span>{ store_data.get_mut(data_addr) };
-<a href=#6300 id=6300 data-nosnippet>6300</a>
-<a href=#6301 id=6301 data-nosnippet>6301</a>    data.data.clear();
-<a href=#6302 id=6302 data-nosnippet>6302</a>}
-<a href=#6303 id=6303 data-nosnippet>6303</a>
-<a href=#6304 id=6304 data-nosnippet>6304</a><span class="attr">#[inline(always)]
-<a href=#6305 id=6305 data-nosnippet>6305</a></span><span class="kw">fn </span>to_lanes&lt;<span class="kw">const </span>M: usize, <span class="kw">const </span>N: usize, T: LittleEndianBytes&lt;M&gt;&gt;(data: [u8; <span class="number">16</span>]) -&gt; [T; N] {
-<a href=#6306 id=6306 data-nosnippet>6306</a>    <span class="macro">assert_eq!</span>(M * N, <span class="number">16</span>);
-<a href=#6307 id=6307 data-nosnippet>6307</a>
-<a href=#6308 id=6308 data-nosnippet>6308</a>    <span class="kw">let </span><span class="kw-2">mut </span>lanes = data
-<a href=#6309 id=6309 data-nosnippet>6309</a>        .chunks(M)
-<a href=#6310 id=6310 data-nosnippet>6310</a>        .map(|chunk| T::from_le_bytes(chunk.try_into().unwrap()));
-<a href=#6311 id=6311 data-nosnippet>6311</a>    array::from_fn(|<span class="kw">_</span>| lanes.next().unwrap())
-<a href=#6312 id=6312 data-nosnippet>6312</a>}
-<a href=#6313 id=6313 data-nosnippet>6313</a>
-<a href=#6314 id=6314 data-nosnippet>6314</a><span class="attr">#[inline(always)]
-<a href=#6315 id=6315 data-nosnippet>6315</a></span><span class="kw">fn </span>from_lanes&lt;<span class="kw">const </span>M: usize, <span class="kw">const </span>N: usize, T: LittleEndianBytes&lt;M&gt;&gt;(lanes: [T; N]) -&gt; [u8; <span class="number">16</span>] {
-<a href=#6316 id=6316 data-nosnippet>6316</a>    <span class="macro">assert_eq!</span>(M * N, <span class="number">16</span>);
-<a href=#6317 id=6317 data-nosnippet>6317</a>
-<a href=#6318 id=6318 data-nosnippet>6318</a>    <span class="kw">let </span><span class="kw-2">mut </span>bytes = lanes.into_iter().flat_map(T::to_le_bytes);
-<a href=#6319 id=6319 data-nosnippet>6319</a>    array::from_fn(|<span class="kw">_</span>| bytes.next().unwrap())
-<a href=#6320 id=6320 data-nosnippet>6320</a>}</code></pre></div></section></main></body></html>
+<a href=#6266 id=6266 data-nosnippet>6266</a>    <span class="macro">trace!</span>(<span class="string">"Instruction: memory.init"</span>);
+<a href=#6267 id=6267 data-nosnippet>6267</a>    <span class="prelude-val">Ok</span>(())
+<a href=#6268 id=6268 data-nosnippet>6268</a>}
+<a href=#6269 id=6269 data-nosnippet>6269</a>
+<a href=#6270 id=6270 data-nosnippet>6270</a><span class="doccomment">/// # Safety
+<a href=#6271 id=6271 data-nosnippet>6271</a>///
+<a href=#6272 id=6272 data-nosnippet>6272</a>/// 1. The module address `current_module` must be valid in `store_modules` for some module instance `module_inst`.
+<a href=#6273 id=6273 data-nosnippet>6273</a>/// 2. The data index `data_idx` must be valid in `module_inst` for some data address `data_addr`.
+<a href=#6274 id=6274 data-nosnippet>6274</a>/// 3. `data_addr` must be valid in `store_data`.
+<a href=#6275 id=6275 data-nosnippet>6275</a></span><span class="attr">#[inline(always)]
+<a href=#6276 id=6276 data-nosnippet>6276</a></span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">unsafe fn </span>data_drop(
+<a href=#6277 id=6277 data-nosnippet>6277</a>    store_modules: <span class="kw-2">&amp;</span>AddrVec&lt;ModuleAddr, ModuleInst&gt;,
+<a href=#6278 id=6278 data-nosnippet>6278</a>    store_data: <span class="kw-2">&amp;mut </span>AddrVec&lt;DataAddr, DataInst&gt;,
+<a href=#6279 id=6279 data-nosnippet>6279</a>    current_module: ModuleAddr,
+<a href=#6280 id=6280 data-nosnippet>6280</a>    data_idx: DataIdx,
+<a href=#6281 id=6281 data-nosnippet>6281</a>) {
+<a href=#6282 id=6282 data-nosnippet>6282</a>    <span class="comment">// Here is debatable
+<a href=#6283 id=6283 data-nosnippet>6283</a>    // If we were to be on par with the spec we'd have to use a DataInst struct
+<a href=#6284 id=6284 data-nosnippet>6284</a>    // But since memory.init is specifically made for Passive data segments
+<a href=#6285 id=6285 data-nosnippet>6285</a>    // I thought that using DataMode would be better because we can see if the
+<a href=#6286 id=6286 data-nosnippet>6286</a>    // data segment is passive or active
+<a href=#6287 id=6287 data-nosnippet>6287</a>
+<a href=#6288 id=6288 data-nosnippet>6288</a>    // Also, we should set data to null here (empty), which we do by clearing it
+<a href=#6289 id=6289 data-nosnippet>6289</a>    // SAFETY: The caller guarantees this module to be valid in this address
+<a href=#6290 id=6290 data-nosnippet>6290</a>    // vector (1).
+<a href=#6291 id=6291 data-nosnippet>6291</a>    </span><span class="kw">let </span>module_inst = <span class="kw">unsafe </span>{ store_modules.get(current_module) };
+<a href=#6292 id=6292 data-nosnippet>6292</a>    <span class="comment">// SAFETY: The caller ensures that `data_idx` is valid for this specific
+<a href=#6293 id=6293 data-nosnippet>6293</a>    // `IdxVec` (2).
+<a href=#6294 id=6294 data-nosnippet>6294</a>    </span><span class="kw">let </span>data_addr = <span class="kw-2">*</span><span class="kw">unsafe </span>{ module_inst.data_addrs.get(data_idx) };
+<a href=#6295 id=6295 data-nosnippet>6295</a>    <span class="comment">// SAFETY: The caller ensures that this data address is valid in this
+<a href=#6296 id=6296 data-nosnippet>6296</a>    // address vector (3).
+<a href=#6297 id=6297 data-nosnippet>6297</a>    </span><span class="kw">let </span>data = <span class="kw">unsafe </span>{ store_data.get_mut(data_addr) };
+<a href=#6298 id=6298 data-nosnippet>6298</a>
+<a href=#6299 id=6299 data-nosnippet>6299</a>    data.data.clear();
+<a href=#6300 id=6300 data-nosnippet>6300</a>}
+<a href=#6301 id=6301 data-nosnippet>6301</a>
+<a href=#6302 id=6302 data-nosnippet>6302</a><span class="attr">#[inline(always)]
+<a href=#6303 id=6303 data-nosnippet>6303</a></span><span class="kw">fn </span>to_lanes&lt;<span class="kw">const </span>M: usize, <span class="kw">const </span>N: usize, T: LittleEndianBytes&lt;M&gt;&gt;(data: [u8; <span class="number">16</span>]) -&gt; [T; N] {
+<a href=#6304 id=6304 data-nosnippet>6304</a>    <span class="macro">assert_eq!</span>(M * N, <span class="number">16</span>);
+<a href=#6305 id=6305 data-nosnippet>6305</a>
+<a href=#6306 id=6306 data-nosnippet>6306</a>    <span class="kw">let </span><span class="kw-2">mut </span>lanes = data
+<a href=#6307 id=6307 data-nosnippet>6307</a>        .chunks(M)
+<a href=#6308 id=6308 data-nosnippet>6308</a>        .map(|chunk| T::from_le_bytes(chunk.try_into().unwrap()));
+<a href=#6309 id=6309 data-nosnippet>6309</a>    array::from_fn(|<span class="kw">_</span>| lanes.next().unwrap())
+<a href=#6310 id=6310 data-nosnippet>6310</a>}
+<a href=#6311 id=6311 data-nosnippet>6311</a>
+<a href=#6312 id=6312 data-nosnippet>6312</a><span class="attr">#[inline(always)]
+<a href=#6313 id=6313 data-nosnippet>6313</a></span><span class="kw">fn </span>from_lanes&lt;<span class="kw">const </span>M: usize, <span class="kw">const </span>N: usize, T: LittleEndianBytes&lt;M&gt;&gt;(lanes: [T; N]) -&gt; [u8; <span class="number">16</span>] {
+<a href=#6314 id=6314 data-nosnippet>6314</a>    <span class="macro">assert_eq!</span>(M * N, <span class="number">16</span>);
+<a href=#6315 id=6315 data-nosnippet>6315</a>
+<a href=#6316 id=6316 data-nosnippet>6316</a>    <span class="kw">let </span><span class="kw-2">mut </span>bytes = lanes.into_iter().flat_map(T::to_le_bytes);
+<a href=#6317 id=6317 data-nosnippet>6317</a>    array::from_fn(|<span class="kw">_</span>| bytes.next().unwrap())
+<a href=#6318 id=6318 data-nosnippet>6318</a>}</code></pre></div></section></main></body></html>
